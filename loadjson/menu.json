@@ -1,0 +1,1066 @@
+[
+  {
+    "model": "system.menumeta",
+    "pk": 1,
+    "fields": {
+      "created_time": "2023-06-20T09:25:08.529Z",
+      "updated_time": "2023-06-25T07:32:26.446Z",
+      "description": "关于信息",
+      "title": "menus.hsAbout",
+      "icon": "ep:coin",
+      "r_svg_name": null,
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": null,
+      "frame_loading": false,
+      "transition_enter": null,
+      "transition_leave": null,
+      "is_hidden_tag": false,
+      "dynamic_level": 1
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 18,
+    "fields": {
+      "created_time": "2023-06-23T09:20:19.830Z",
+      "updated_time": "2023-06-23T09:21:01.562Z",
+      "description": null,
+      "title": "menus.hssysManagement",
+      "icon": "ep:setting",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 19,
+    "fields": {
+      "created_time": "2023-06-23T09:32:26.032Z",
+      "updated_time": "2023-06-23T09:32:26.032Z",
+      "description": null,
+      "title": "menus.hsUser",
+      "icon": "ep:user",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 20,
+    "fields": {
+      "created_time": "2023-06-23T09:33:45.874Z",
+      "updated_time": "2023-06-23T09:33:45.874Z",
+      "description": null,
+      "title": "menus.hsRole",
+      "icon": "ep:scale-to-original",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 21,
+    "fields": {
+      "created_time": "2023-06-23T09:34:25.879Z",
+      "updated_time": "2023-06-23T09:34:25.879Z",
+      "description": null,
+      "title": "menus.hsMenu",
+      "icon": "ep:menu",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 22,
+    "fields": {
+      "created_time": "2023-06-23T09:35:44.168Z",
+      "updated_time": "2023-06-28T09:33:48.633Z",
+      "description": null,
+      "title": "创建用户",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 23,
+    "fields": {
+      "created_time": "2023-06-23T09:36:13.730Z",
+      "updated_time": "2023-06-23T09:36:13.730Z",
+      "description": null,
+      "title": "删除用户",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 24,
+    "fields": {
+      "created_time": "2023-06-23T09:36:43.857Z",
+      "updated_time": "2023-06-23T09:36:43.857Z",
+      "description": null,
+      "title": "更新用户",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 25,
+    "fields": {
+      "created_time": "2023-06-23T09:37:13.088Z",
+      "updated_time": "2023-06-23T09:37:13.088Z",
+      "description": null,
+      "title": "查询用户",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 26,
+    "fields": {
+      "created_time": "2023-06-23T09:56:13.555Z",
+      "updated_time": "2023-06-23T09:56:13.555Z",
+      "description": null,
+      "title": "创建角色",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 27,
+    "fields": {
+      "created_time": "2023-06-23T09:56:37.319Z",
+      "updated_time": "2023-06-23T09:56:37.319Z",
+      "description": null,
+      "title": "删除角色",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 28,
+    "fields": {
+      "created_time": "2023-06-23T09:57:02.355Z",
+      "updated_time": "2023-06-23T09:57:02.355Z",
+      "description": null,
+      "title": "更新角色",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 29,
+    "fields": {
+      "created_time": "2023-06-23T09:57:26.869Z",
+      "updated_time": "2023-06-23T09:57:26.869Z",
+      "description": null,
+      "title": "查询角色",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 30,
+    "fields": {
+      "created_time": "2023-06-23T09:58:07.581Z",
+      "updated_time": "2023-06-23T09:58:07.581Z",
+      "description": null,
+      "title": "批量删除用户",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 31,
+    "fields": {
+      "created_time": "2023-06-23T09:58:28.889Z",
+      "updated_time": "2023-06-23T09:58:28.889Z",
+      "description": null,
+      "title": "批量删除角色",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 32,
+    "fields": {
+      "created_time": "2023-06-23T10:00:17.839Z",
+      "updated_time": "2023-06-23T10:00:17.839Z",
+      "description": null,
+      "title": "创建菜单",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 33,
+    "fields": {
+      "created_time": "2023-06-23T10:00:47.772Z",
+      "updated_time": "2023-06-23T10:00:47.772Z",
+      "description": null,
+      "title": "删除菜单",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 34,
+    "fields": {
+      "created_time": "2023-06-23T10:01:13.868Z",
+      "updated_time": "2023-06-23T10:01:13.868Z",
+      "description": null,
+      "title": "更新菜单",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 35,
+    "fields": {
+      "created_time": "2023-06-23T10:01:51.613Z",
+      "updated_time": "2023-06-23T10:01:51.613Z",
+      "description": null,
+      "title": "查询菜单",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 36,
+    "fields": {
+      "created_time": "2023-06-23T10:02:18.519Z",
+      "updated_time": "2023-06-23T10:02:18.519Z",
+      "description": null,
+      "title": "批量删除菜单",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 37,
+    "fields": {
+      "created_time": "2023-06-23T10:02:49.282Z",
+      "updated_time": "2023-06-23T10:02:49.282Z",
+      "description": null,
+      "title": "菜单拖拽排序",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 38,
+    "fields": {
+      "created_time": "2023-06-25T08:45:24.976Z",
+      "updated_time": "2023-06-28T10:06:12.273Z",
+      "description": null,
+      "title": "聊天室",
+      "icon": "ep:chat-line-square",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 39,
+    "fields": {
+      "created_time": "2023-06-26T10:29:57.563Z",
+      "updated_time": "2023-06-26T10:31:21.330Z",
+      "description": null,
+      "title": "上传头像",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 40,
+    "fields": {
+      "created_time": "2023-06-28T02:15:48.301Z",
+      "updated_time": "2023-06-28T03:22:42.209Z",
+      "description": null,
+      "title": "访问日志",
+      "icon": "ep:document",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 41,
+    "fields": {
+      "created_time": "2023-06-28T02:36:02.763Z",
+      "updated_time": "2023-06-28T02:36:02.763Z",
+      "description": null,
+      "title": "删除日志",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 42,
+    "fields": {
+      "created_time": "2023-06-28T02:36:33.478Z",
+      "updated_time": "2023-06-28T02:36:33.478Z",
+      "description": null,
+      "title": "查询日志",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 43,
+    "fields": {
+      "created_time": "2023-06-28T02:37:06.458Z",
+      "updated_time": "2023-06-28T02:37:06.458Z",
+      "description": null,
+      "title": "批量删除日志",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 44,
+    "fields": {
+      "created_time": "2023-06-29T08:12:07.906Z",
+      "updated_time": "2023-06-30T06:37:12.255Z",
+      "description": null,
+      "title": "定时任务日志",
+      "icon": "ep:box",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "http://localhost:8848/api/flower/",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 1,
+    "fields": {
+      "created_time": "2023-06-20T09:29:57.857Z",
+      "updated_time": "2023-06-25T07:32:26.456Z",
+      "description": null,
+      "parent": null,
+      "menu_type": 1,
+      "name": "about",
+      "rank": 27,
+      "path": "/about/index",
+      "component": "about/index",
+      "is_active": true,
+      "meta": 1
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 14,
+    "fields": {
+      "created_time": "2023-06-23T09:20:19.836Z",
+      "updated_time": "2023-06-23T09:21:01.566Z",
+      "description": null,
+      "parent": null,
+      "menu_type": 0,
+      "name": "system",
+      "rank": 1,
+      "path": "/system",
+      "component": "",
+      "is_active": true,
+      "meta": 18
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 15,
+    "fields": {
+      "created_time": "2023-06-23T09:32:26.041Z",
+      "updated_time": "2023-06-23T09:32:26.041Z",
+      "description": null,
+      "parent": 14,
+      "menu_type": 1,
+      "name": "systemUser",
+      "rank": 2,
+      "path": "/system/user/index",
+      "component": "system/user/index",
+      "is_active": true,
+      "meta": 19
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 16,
+    "fields": {
+      "created_time": "2023-06-23T09:33:45.885Z",
+      "updated_time": "2023-06-23T09:33:45.885Z",
+      "description": null,
+      "parent": 14,
+      "menu_type": 1,
+      "name": "systemRole",
+      "rank": 9,
+      "path": "/system/role/index",
+      "component": "system/role/index",
+      "is_active": true,
+      "meta": 20
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 17,
+    "fields": {
+      "created_time": "2023-06-23T09:34:25.890Z",
+      "updated_time": "2023-06-23T09:34:25.890Z",
+      "description": null,
+      "parent": 14,
+      "menu_type": 1,
+      "name": "systemMenu",
+      "rank": 15,
+      "path": "/system/menu/index",
+      "component": "system/menu/index",
+      "is_active": true,
+      "meta": 21
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 18,
+    "fields": {
+      "created_time": "2023-06-23T09:35:44.175Z",
+      "updated_time": "2023-06-28T09:33:48.642Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "create:systemUser",
+      "rank": 3,
+      "path": "rbac/user$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 22
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 19,
+    "fields": {
+      "created_time": "2023-06-23T09:36:13.739Z",
+      "updated_time": "2023-06-23T09:36:13.739Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "delete:systemUser",
+      "rank": 5,
+      "path": "rbac/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 23
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 20,
+    "fields": {
+      "created_time": "2023-06-23T09:36:43.861Z",
+      "updated_time": "2023-06-23T09:36:43.861Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "update:systemUser",
+      "rank": 6,
+      "path": "rbac/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 24
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 21,
+    "fields": {
+      "created_time": "2023-06-23T09:37:13.092Z",
+      "updated_time": "2023-06-23T09:37:13.092Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "list:systemUser",
+      "rank": 7,
+      "path": "rbac/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 25
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 22,
+    "fields": {
+      "created_time": "2023-06-23T09:56:13.561Z",
+      "updated_time": "2023-06-23T09:56:13.561Z",
+      "description": null,
+      "parent": 16,
+      "menu_type": 2,
+      "name": "create:systemRole",
+      "rank": 10,
+      "path": "rbac/role$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 26
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 23,
+    "fields": {
+      "created_time": "2023-06-23T09:56:37.325Z",
+      "updated_time": "2023-06-23T09:56:37.325Z",
+      "description": null,
+      "parent": 16,
+      "menu_type": 2,
+      "name": "delete:systemRole",
+      "rank": 11,
+      "path": "rbac/role/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 27
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 24,
+    "fields": {
+      "created_time": "2023-06-23T09:57:02.365Z",
+      "updated_time": "2023-06-23T09:57:02.365Z",
+      "description": null,
+      "parent": 16,
+      "menu_type": 2,
+      "name": "update:systemRole",
+      "rank": 12,
+      "path": "rbac/role/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 28
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 25,
+    "fields": {
+      "created_time": "2023-06-23T09:57:26.880Z",
+      "updated_time": "2023-06-23T09:57:26.880Z",
+      "description": null,
+      "parent": 16,
+      "menu_type": 2,
+      "name": "list:systemRole",
+      "rank": 13,
+      "path": "rbac/role$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 29
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 26,
+    "fields": {
+      "created_time": "2023-06-23T09:58:07.584Z",
+      "updated_time": "2023-06-23T09:58:07.584Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "manyDelete:systemUser",
+      "rank": 8,
+      "path": "rbac/user/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 30
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 27,
+    "fields": {
+      "created_time": "2023-06-23T09:58:28.908Z",
+      "updated_time": "2023-06-23T09:58:28.908Z",
+      "description": null,
+      "parent": 16,
+      "menu_type": 2,
+      "name": "manyDelete:systemRole",
+      "rank": 14,
+      "path": "rbac/role/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 31
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 28,
+    "fields": {
+      "created_time": "2023-06-23T10:00:17.848Z",
+      "updated_time": "2023-06-23T10:00:17.848Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "create:systemMenu",
+      "rank": 16,
+      "path": "rbac/menu$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 32
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 29,
+    "fields": {
+      "created_time": "2023-06-23T10:00:47.779Z",
+      "updated_time": "2023-06-23T10:00:47.779Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "delete:systemMenu",
+      "rank": 17,
+      "path": "rbac/menu/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 33
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 30,
+    "fields": {
+      "created_time": "2023-06-23T10:01:13.877Z",
+      "updated_time": "2023-06-23T10:01:13.877Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "update:systemMenu",
+      "rank": 18,
+      "path": "rbac/menu/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 34
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 31,
+    "fields": {
+      "created_time": "2023-06-23T10:01:51.633Z",
+      "updated_time": "2023-06-23T10:01:51.633Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "list:systemMenu",
+      "rank": 19,
+      "path": "rbac/menu$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 35
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 32,
+    "fields": {
+      "created_time": "2023-06-23T10:02:18.521Z",
+      "updated_time": "2023-06-23T10:02:18.521Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "manyDelete:systemMenu",
+      "rank": 20,
+      "path": "rbac/menu/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 36
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 33,
+    "fields": {
+      "created_time": "2023-06-23T10:02:49.285Z",
+      "updated_time": "2023-06-23T10:02:49.285Z",
+      "description": null,
+      "parent": 17,
+      "menu_type": 2,
+      "name": "rank:systemMenu",
+      "rank": 21,
+      "path": "rbac/menu/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 37
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 34,
+    "fields": {
+      "created_time": "2023-06-25T08:45:24.985Z",
+      "updated_time": "2023-06-28T10:06:12.283Z",
+      "description": null,
+      "parent": null,
+      "menu_type": 1,
+      "name": "chat",
+      "rank": 0,
+      "path": "/chat/index",
+      "component": "chat/index",
+      "is_active": true,
+      "meta": 38
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 35,
+    "fields": {
+      "created_time": "2023-06-26T10:29:57.567Z",
+      "updated_time": "2023-06-26T10:31:21.335Z",
+      "description": null,
+      "parent": 15,
+      "menu_type": 2,
+      "name": "upload:systemAvatar",
+      "rank": 4,
+      "path": "rbac/upload",
+      "component": "POST",
+      "is_active": true,
+      "meta": 39
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 36,
+    "fields": {
+      "created_time": "2023-06-28T02:15:48.304Z",
+      "updated_time": "2023-06-28T03:22:42.217Z",
+      "description": null,
+      "parent": 14,
+      "menu_type": 1,
+      "name": "operationLog",
+      "rank": 22,
+      "path": "/system/operation/index",
+      "component": "system/operation-log/index",
+      "is_active": true,
+      "meta": 40
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 37,
+    "fields": {
+      "created_time": "2023-06-28T02:36:02.766Z",
+      "updated_time": "2023-06-28T02:36:02.766Z",
+      "description": null,
+      "parent": 36,
+      "menu_type": 2,
+      "name": "delete:systemOperationLog",
+      "rank": 23,
+      "path": "api/system/operation/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 41
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 38,
+    "fields": {
+      "created_time": "2023-06-28T02:36:33.480Z",
+      "updated_time": "2023-06-28T02:36:33.480Z",
+      "description": null,
+      "parent": 36,
+      "menu_type": 2,
+      "name": "list:systemOperationLog",
+      "rank": 24,
+      "path": "api/system/operation$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 42
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 39,
+    "fields": {
+      "created_time": "2023-06-28T02:37:06.461Z",
+      "updated_time": "2023-06-28T02:37:06.461Z",
+      "description": null,
+      "parent": 36,
+      "menu_type": 2,
+      "name": "manyDelete:systemOperationLog",
+      "rank": 25,
+      "path": "api/system/operation/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 43
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 40,
+    "fields": {
+      "created_time": "2023-06-29T08:12:07.911Z",
+      "updated_time": "2023-06-30T06:37:12.264Z",
+      "description": null,
+      "parent": 14,
+      "menu_type": 0,
+      "name": "systemFlower",
+      "rank": 26,
+      "path": "/system/flower",
+      "component": "",
+      "is_active": true,
+      "meta": 44
+    }
+  }
+]
