@@ -111,8 +111,8 @@ CACHES = {
     },
 }
 
-# create database xbook default character set utf8 COLLATE utf8_general_ci;
-# grant all on xbook.* to xbook@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
+# create database server default character set utf8 COLLATE utf8_general_ci;
+# grant all on server.* to server@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
 # python manage.py makemigrations
 # python manage.py migrate
 DATABASES = {
