@@ -571,7 +571,7 @@
     "pk": 44,
     "fields": {
       "created_time": "2023-06-29T08:12:07.906Z",
-      "updated_time": "2023-06-30T06:37:12.255Z",
+      "updated_time": "2023-07-01T03:48:02.098Z",
       "description": null,
       "title": "定时任务日志",
       "icon": "ep:box",
@@ -579,7 +579,7 @@
       "is_show_menu": true,
       "is_show_parent": false,
       "is_keepalive": false,
-      "frame_url": "http://localhost:8848/api/flower/",
+      "frame_url": "/api/flower/",
       "frame_loading": false,
       "transition_enter": "",
       "transition_leave": "",
@@ -1093,7 +1093,7 @@
     "pk": 40,
     "fields": {
       "created_time": "2023-06-29T08:12:07.911Z",
-      "updated_time": "2023-06-30T06:37:12.264Z",
+      "updated_time": "2023-07-01T03:48:02.108Z",
       "description": null,
       "parent": 14,
       "menu_type": 0,
