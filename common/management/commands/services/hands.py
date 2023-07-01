@@ -10,6 +10,7 @@ HTTP_HOST = settings.HTTP_BIND_HOST or '127.0.0.1'
 HTTP_PORT = settings.HTTP_LISTEN_PORT or 8080
 CELERY_FLOWER_HOST = settings.CELERY_FLOWER_HOST or '127.0.0.1'
 CELERY_FLOWER_PORT = settings.CELERY_FLOWER_PORT or 5555
+CELERY_FLOWER_AUTH = settings.CELERY_FLOWER_AUTH or 'flower:flower'
 DEBUG = settings.DEBUG or False
 APPS_DIR = BASE_DIR = settings.BASE_DIR
 LOG_DIR = os.path.join(BASE_DIR, 'logs')

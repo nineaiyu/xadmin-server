@@ -12,7 +12,7 @@ class GunicornService(BaseService):
 
     @property
     def cmd(self):
-        print("\n- Start Gunicorn WSGI HTTP Server")
+        print("\n- Start Gunicorn ASGI HTTP Server")
 
         log_format = '%(h)s %(t)s %(L)ss "%(r)s" %(s)s %(b)s '
         bind = f'{HTTP_HOST}:{HTTP_PORT}'

@@ -21,3 +21,4 @@ channels-redis==4.1.0
 django-simple-captcha==0.5.17
 user-agents==2.2.0
 aiofiles==23.1.0
+websockets==11.0.3

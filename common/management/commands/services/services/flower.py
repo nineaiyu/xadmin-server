@@ -29,6 +29,7 @@ class FlowerService(BaseService):
             '--max_tasks=1000',
             '--persistent=True',
             '--state_save_interval=600000',
+            f'--basic-auth={CELERY_FLOWER_AUTH}',
             f'-db={self.db_file}',
             '--state_save_interval=600000',
             f'--address={CELERY_FLOWER_HOST}',
