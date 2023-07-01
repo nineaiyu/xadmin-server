@@ -1,6 +1,13 @@
 version: '3.2'
 
 services:
+  xadmin-redis:
+    image: 'bitnami/redis:6.2.7'
+    container_name: xadmin-redis
+    restart: always
+    environment:
+      - REDIS_PASSWORD=nineven
+
   xadmin-server:
     container_name: xadmin-server
     restart: always
@@ -12,12 +19,14 @@ services:
     volumes:
       - ./:/data/xadmin-server
     external_links:
-        - mariadb:mariadb 
-        - redis:redis
+#        - mariadb:mariadb
+        - xadmin-redis:redis
 #    extra_hosts:
-#      - "mariadb:172.31.32.1"
+#        - "mariadb:172.31.32.1"
     sysctls:
         - net.core.somaxconn=4096
     ports:
         - 8896:8896
+    depends_on:
+        - xadmin-redis
 
