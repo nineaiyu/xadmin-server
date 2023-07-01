@@ -3,6 +3,10 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 前端 [xadmin-client](https://github.com/nineaiyu/xadmin-client) 
 
+### 在线预览
+[https://xadmin.dvcloud.xin/](https://xadmin.dvcloud.xin/)
+账号密码：admin/admin123
+
 ### 生成数据表并迁移
 ```shell
 python manage.py makemigrations
