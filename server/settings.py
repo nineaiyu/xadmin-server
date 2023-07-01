@@ -503,7 +503,8 @@ PERMISSION_WHITE_URL = [
 ]
 
 PERMISSION_SHOW_PREFIX = [
-    'api/system'
+    'api/system',
+    'api/flower',
 ]
 
 API_LOG_ENABLE = locals().get("API_LOG_ENABLE", True)

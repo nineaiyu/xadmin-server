@@ -5,7 +5,7 @@
     "fields": {
       "created_time": "2023-06-20T09:25:08.529Z",
       "updated_time": "2023-06-25T07:32:26.446Z",
-      "description": "关于信息",
+      "description": "",
       "title": "menus.hsAbout",
       "icon": "ep:coin",
       "r_svg_name": null,
@@ -588,6 +588,48 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 45,
+    "fields": {
+      "created_time": "2023-07-01T01:04:16.316Z",
+      "updated_time": "2023-07-01T01:04:16.316Z",
+      "description": null,
+      "title": "查询任务日志",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 46,
+    "fields": {
+      "created_time": "2023-07-01T01:04:51.590Z",
+      "updated_time": "2023-07-01T01:05:03.709Z",
+      "description": null,
+      "title": "操作任务日志",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
@@ -597,7 +639,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "about",
-      "rank": 27,
+      "rank": 29,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
@@ -683,7 +725,7 @@
       "menu_type": 2,
       "name": "create:systemUser",
       "rank": 3,
-      "path": "rbac/user$",
+      "path": "api/system/user$",
       "component": "POST",
       "is_active": true,
       "meta": 22
@@ -700,7 +742,7 @@
       "menu_type": 2,
       "name": "delete:systemUser",
       "rank": 5,
-      "path": "rbac/user/(?P<pk>[^/.]+)$",
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 23
@@ -717,7 +759,7 @@
       "menu_type": 2,
       "name": "update:systemUser",
       "rank": 6,
-      "path": "rbac/user/(?P<pk>[^/.]+)$",
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
       "meta": 24
@@ -734,7 +776,7 @@
       "menu_type": 2,
       "name": "list:systemUser",
       "rank": 7,
-      "path": "rbac/user$",
+      "path": "api/system/user$",
       "component": "GET",
       "is_active": true,
       "meta": 25
@@ -751,7 +793,7 @@
       "menu_type": 2,
       "name": "create:systemRole",
       "rank": 10,
-      "path": "rbac/role$",
+      "path": "api/system/role$",
       "component": "POST",
       "is_active": true,
       "meta": 26
@@ -768,7 +810,7 @@
       "menu_type": 2,
       "name": "delete:systemRole",
       "rank": 11,
-      "path": "rbac/role/(?P<pk>[^/.]+)$",
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 27
@@ -785,7 +827,7 @@
       "menu_type": 2,
       "name": "update:systemRole",
       "rank": 12,
-      "path": "rbac/role/(?P<pk>[^/.]+)$",
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
       "meta": 28
@@ -802,7 +844,7 @@
       "menu_type": 2,
       "name": "list:systemRole",
       "rank": 13,
-      "path": "rbac/role$",
+      "path": "api/system/role$",
       "component": "GET",
       "is_active": true,
       "meta": 29
@@ -819,7 +861,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemUser",
       "rank": 8,
-      "path": "rbac/user/many_delete$",
+      "path": "api/system/user/many_delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 30
@@ -836,7 +878,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemRole",
       "rank": 14,
-      "path": "rbac/role/many_delete$",
+      "path": "api/system/role/many_delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 31
@@ -853,7 +895,7 @@
       "menu_type": 2,
       "name": "create:systemMenu",
       "rank": 16,
-      "path": "rbac/menu$",
+      "path": "api/system/menu$",
       "component": "POST",
       "is_active": true,
       "meta": 32
@@ -870,7 +912,7 @@
       "menu_type": 2,
       "name": "delete:systemMenu",
       "rank": 17,
-      "path": "rbac/menu/(?P<pk>[^/.]+)$",
+      "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 33
@@ -887,7 +929,7 @@
       "menu_type": 2,
       "name": "update:systemMenu",
       "rank": 18,
-      "path": "rbac/menu/(?P<pk>[^/.]+)$",
+      "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
       "meta": 34
@@ -904,7 +946,7 @@
       "menu_type": 2,
       "name": "list:systemMenu",
       "rank": 19,
-      "path": "rbac/menu$",
+      "path": "api/system/menu$",
       "component": "GET",
       "is_active": true,
       "meta": 35
@@ -921,7 +963,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemMenu",
       "rank": 20,
-      "path": "rbac/menu/many_delete$",
+      "path": "api/system/menu/many_delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 36
@@ -938,7 +980,7 @@
       "menu_type": 2,
       "name": "rank:systemMenu",
       "rank": 21,
-      "path": "rbac/menu/action_rank$",
+      "path": "api/system/menu/action_rank$",
       "component": "POST",
       "is_active": true,
       "meta": 37
@@ -972,7 +1014,7 @@
       "menu_type": 2,
       "name": "upload:systemAvatar",
       "rank": 4,
-      "path": "rbac/upload",
+      "path": "api/system/upload",
       "component": "POST",
       "is_active": true,
       "meta": 39
@@ -1061,6 +1103,40 @@
       "component": "",
       "is_active": true,
       "meta": 44
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 41,
+    "fields": {
+      "created_time": "2023-07-01T01:04:16.321Z",
+      "updated_time": "2023-07-01T01:04:16.321Z",
+      "description": null,
+      "parent": 40,
+      "menu_type": 2,
+      "name": "list:systemFlower",
+      "rank": 28,
+      "path": "api/flower/(?P<path>.*)",
+      "component": "GET",
+      "is_active": true,
+      "meta": 45
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 42,
+    "fields": {
+      "created_time": "2023-07-01T01:04:51.593Z",
+      "updated_time": "2023-07-01T01:05:03.717Z",
+      "description": null,
+      "parent": 40,
+      "menu_type": 2,
+      "name": "update:systemFlower",
+      "rank": 27,
+      "path": "api/flower/(?P<path>.*)",
+      "component": "POST",
+      "is_active": true,
+      "meta": 46
     }
   }
 ]

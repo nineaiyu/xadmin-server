@@ -14,7 +14,8 @@ from django.utils.module_loading import import_string
 
 def check_show_url(url):
     for prefix in settings.PERMISSION_SHOW_PREFIX:
-        return re.match(prefix, url)
+        if re.match(prefix, url):
+            return True
 
 
 def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
