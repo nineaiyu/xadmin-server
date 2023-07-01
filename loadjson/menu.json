@@ -22,7 +22,7 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 18,
+    "pk": 2,
     "fields": {
       "created_time": "2023-06-23T09:20:19.830Z",
       "updated_time": "2023-06-23T09:21:01.562Z",
@@ -43,7 +43,7 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 19,
+    "pk": 3,
     "fields": {
       "created_time": "2023-06-23T09:32:26.032Z",
       "updated_time": "2023-06-23T09:32:26.032Z",
@@ -64,7 +64,7 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 20,
+    "pk": 4,
     "fields": {
       "created_time": "2023-06-23T09:33:45.874Z",
       "updated_time": "2023-06-23T09:33:45.874Z",
@@ -85,7 +85,7 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 21,
+    "pk": 5,
     "fields": {
       "created_time": "2023-06-23T09:34:25.879Z",
       "updated_time": "2023-06-23T09:34:25.879Z",
@@ -106,10 +106,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 22,
+    "pk": 6,
     "fields": {
       "created_time": "2023-06-23T09:35:44.168Z",
-      "updated_time": "2023-06-28T09:33:48.633Z",
+      "updated_time": "2023-07-01T12:11:00.143Z",
       "description": null,
       "title": "创建用户",
       "icon": "",
@@ -127,10 +127,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 23,
+    "pk": 7,
     "fields": {
       "created_time": "2023-06-23T09:36:13.730Z",
-      "updated_time": "2023-06-23T09:36:13.730Z",
+      "updated_time": "2023-07-01T12:11:05.534Z",
       "description": null,
       "title": "删除用户",
       "icon": "",
@@ -148,10 +148,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 24,
+    "pk": 8,
     "fields": {
       "created_time": "2023-06-23T09:36:43.857Z",
-      "updated_time": "2023-06-23T09:36:43.857Z",
+      "updated_time": "2023-07-01T12:11:07.158Z",
       "description": null,
       "title": "更新用户",
       "icon": "",
@@ -169,10 +169,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 25,
+    "pk": 9,
     "fields": {
       "created_time": "2023-06-23T09:37:13.088Z",
-      "updated_time": "2023-06-23T09:37:13.088Z",
+      "updated_time": "2023-07-01T12:13:14.390Z",
       "description": null,
       "title": "查询用户",
       "icon": "",
@@ -190,10 +190,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 26,
+    "pk": 10,
     "fields": {
       "created_time": "2023-06-23T09:56:13.555Z",
-      "updated_time": "2023-06-23T09:56:13.555Z",
+      "updated_time": "2023-07-01T12:11:13.724Z",
       "description": null,
       "title": "创建角色",
       "icon": "",
@@ -211,10 +211,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 27,
+    "pk": 11,
     "fields": {
       "created_time": "2023-06-23T09:56:37.319Z",
-      "updated_time": "2023-06-23T09:56:37.319Z",
+      "updated_time": "2023-07-01T12:11:15.299Z",
       "description": null,
       "title": "删除角色",
       "icon": "",
@@ -232,10 +232,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 28,
+    "pk": 12,
     "fields": {
       "created_time": "2023-06-23T09:57:02.355Z",
-      "updated_time": "2023-06-23T09:57:02.355Z",
+      "updated_time": "2023-07-01T12:11:16.833Z",
       "description": null,
       "title": "更新角色",
       "icon": "",
@@ -253,10 +253,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 29,
+    "pk": 13,
     "fields": {
       "created_time": "2023-06-23T09:57:26.869Z",
-      "updated_time": "2023-06-23T09:57:26.869Z",
+      "updated_time": "2023-07-01T12:13:17.590Z",
       "description": null,
       "title": "查询角色",
       "icon": "",
@@ -274,10 +274,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 30,
+    "pk": 14,
     "fields": {
       "created_time": "2023-06-23T09:58:07.581Z",
-      "updated_time": "2023-06-23T09:58:07.581Z",
+      "updated_time": "2023-07-01T12:11:11.633Z",
       "description": null,
       "title": "批量删除用户",
       "icon": "",
@@ -295,10 +295,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 31,
+    "pk": 15,
     "fields": {
       "created_time": "2023-06-23T09:58:28.889Z",
-      "updated_time": "2023-06-23T09:58:28.889Z",
+      "updated_time": "2023-07-01T12:11:20.224Z",
       "description": null,
       "title": "批量删除角色",
       "icon": "",
@@ -316,10 +316,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 32,
+    "pk": 16,
     "fields": {
       "created_time": "2023-06-23T10:00:17.839Z",
-      "updated_time": "2023-06-23T10:00:17.839Z",
+      "updated_time": "2023-07-01T12:11:24.433Z",
       "description": null,
       "title": "创建菜单",
       "icon": "",
@@ -337,10 +337,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 33,
+    "pk": 17,
     "fields": {
       "created_time": "2023-06-23T10:00:47.772Z",
-      "updated_time": "2023-06-23T10:00:47.772Z",
+      "updated_time": "2023-07-01T12:11:25.924Z",
       "description": null,
       "title": "删除菜单",
       "icon": "",
@@ -358,10 +358,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 34,
+    "pk": 18,
     "fields": {
       "created_time": "2023-06-23T10:01:13.868Z",
-      "updated_time": "2023-06-23T10:01:13.868Z",
+      "updated_time": "2023-07-01T12:11:27.216Z",
       "description": null,
       "title": "更新菜单",
       "icon": "",
@@ -379,10 +379,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 35,
+    "pk": 19,
     "fields": {
       "created_time": "2023-06-23T10:01:51.613Z",
-      "updated_time": "2023-06-23T10:01:51.613Z",
+      "updated_time": "2023-07-01T12:13:20.947Z",
       "description": null,
       "title": "查询菜单",
       "icon": "",
@@ -400,10 +400,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 36,
+    "pk": 20,
     "fields": {
       "created_time": "2023-06-23T10:02:18.519Z",
-      "updated_time": "2023-06-23T10:02:18.519Z",
+      "updated_time": "2023-07-01T12:11:30.306Z",
       "description": null,
       "title": "批量删除菜单",
       "icon": "",
@@ -421,10 +421,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 37,
+    "pk": 21,
     "fields": {
       "created_time": "2023-06-23T10:02:49.282Z",
-      "updated_time": "2023-06-23T10:02:49.282Z",
+      "updated_time": "2023-07-01T12:11:32.082Z",
       "description": null,
       "title": "菜单拖拽排序",
       "icon": "",
@@ -442,7 +442,7 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 38,
+    "pk": 22,
     "fields": {
       "created_time": "2023-06-25T08:45:24.976Z",
       "updated_time": "2023-06-28T10:06:12.273Z",
@@ -463,10 +463,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 39,
+    "pk": 23,
     "fields": {
       "created_time": "2023-06-26T10:29:57.563Z",
-      "updated_time": "2023-06-26T10:31:21.330Z",
+      "updated_time": "2023-07-01T12:11:03.784Z",
       "description": null,
       "title": "上传头像",
       "icon": "",
@@ -484,10 +484,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 40,
+    "pk": 24,
     "fields": {
       "created_time": "2023-06-28T02:15:48.301Z",
-      "updated_time": "2023-06-28T03:22:42.209Z",
+      "updated_time": "2023-07-01T12:11:57.495Z",
       "description": null,
       "title": "访问日志",
       "icon": "ep:document",
@@ -505,10 +505,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 41,
+    "pk": 25,
     "fields": {
       "created_time": "2023-06-28T02:36:02.763Z",
-      "updated_time": "2023-06-28T02:36:02.763Z",
+      "updated_time": "2023-07-01T12:11:50.206Z",
       "description": null,
       "title": "删除日志",
       "icon": "",
@@ -526,10 +526,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 42,
+    "pk": 26,
     "fields": {
       "created_time": "2023-06-28T02:36:33.478Z",
-      "updated_time": "2023-06-28T02:36:33.478Z",
+      "updated_time": "2023-07-01T12:13:24.990Z",
       "description": null,
       "title": "查询日志",
       "icon": "",
@@ -547,10 +547,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 43,
+    "pk": 27,
     "fields": {
       "created_time": "2023-06-28T02:37:06.458Z",
-      "updated_time": "2023-06-28T02:37:06.458Z",
+      "updated_time": "2023-07-01T12:11:53.838Z",
       "description": null,
       "title": "批量删除日志",
       "icon": "",
@@ -568,12 +568,12 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 44,
+    "pk": 28,
     "fields": {
       "created_time": "2023-06-29T08:12:07.906Z",
-      "updated_time": "2023-07-01T03:48:02.098Z",
+      "updated_time": "2023-07-01T12:12:01.737Z",
       "description": null,
-      "title": "定时任务日志",
+      "title": "定时任务",
       "icon": "ep:box",
       "r_svg_name": "",
       "is_show_menu": true,
@@ -589,10 +589,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 45,
+    "pk": 29,
     "fields": {
       "created_time": "2023-07-01T01:04:16.316Z",
-      "updated_time": "2023-07-01T01:04:16.316Z",
+      "updated_time": "2023-07-01T12:13:29.439Z",
       "description": null,
       "title": "查询任务日志",
       "icon": "",
@@ -610,10 +610,10 @@
   },
   {
     "model": "system.menumeta",
-    "pk": 46,
+    "pk": 30,
     "fields": {
       "created_time": "2023-07-01T01:04:51.590Z",
-      "updated_time": "2023-07-01T01:05:03.709Z",
+      "updated_time": "2023-07-01T12:11:43.597Z",
       "description": null,
       "title": "操作任务日志",
       "icon": "",
@@ -648,7 +648,7 @@
   },
   {
     "model": "system.menu",
-    "pk": 14,
+    "pk": 2,
     "fields": {
       "created_time": "2023-06-23T09:20:19.836Z",
       "updated_time": "2023-06-23T09:21:01.566Z",
@@ -660,335 +660,335 @@
       "path": "/system",
       "component": "",
       "is_active": true,
-      "meta": 18
+      "meta": 2
     }
   },
   {
     "model": "system.menu",
-    "pk": 15,
+    "pk": 3,
     "fields": {
       "created_time": "2023-06-23T09:32:26.041Z",
       "updated_time": "2023-06-23T09:32:26.041Z",
       "description": null,
-      "parent": 14,
+      "parent": 2,
       "menu_type": 1,
       "name": "systemUser",
       "rank": 2,
       "path": "/system/user/index",
       "component": "system/user/index",
       "is_active": true,
-      "meta": 19
+      "meta": 3
     }
   },
   {
     "model": "system.menu",
-    "pk": 16,
+    "pk": 4,
     "fields": {
       "created_time": "2023-06-23T09:33:45.885Z",
       "updated_time": "2023-06-23T09:33:45.885Z",
       "description": null,
-      "parent": 14,
+      "parent": 2,
       "menu_type": 1,
       "name": "systemRole",
       "rank": 9,
       "path": "/system/role/index",
       "component": "system/role/index",
       "is_active": true,
-      "meta": 20
+      "meta": 4
     }
   },
   {
     "model": "system.menu",
-    "pk": 17,
+    "pk": 5,
     "fields": {
       "created_time": "2023-06-23T09:34:25.890Z",
       "updated_time": "2023-06-23T09:34:25.890Z",
       "description": null,
-      "parent": 14,
+      "parent": 2,
       "menu_type": 1,
       "name": "systemMenu",
       "rank": 15,
       "path": "/system/menu/index",
       "component": "system/menu/index",
       "is_active": true,
-      "meta": 21
+      "meta": 5
     }
   },
   {
     "model": "system.menu",
-    "pk": 18,
+    "pk": 6,
     "fields": {
       "created_time": "2023-06-23T09:35:44.175Z",
-      "updated_time": "2023-06-28T09:33:48.642Z",
+      "updated_time": "2023-07-01T12:11:00.152Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "create:systemUser",
-      "rank": 3,
+      "rank": 4,
       "path": "api/system/user$",
       "component": "POST",
       "is_active": true,
-      "meta": 22
+      "meta": 6
     }
   },
   {
     "model": "system.menu",
-    "pk": 19,
+    "pk": 7,
     "fields": {
       "created_time": "2023-06-23T09:36:13.739Z",
-      "updated_time": "2023-06-23T09:36:13.739Z",
+      "updated_time": "2023-07-01T12:11:05.543Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "delete:systemUser",
-      "rank": 5,
+      "rank": 6,
       "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 23
+      "meta": 7
     }
   },
   {
     "model": "system.menu",
-    "pk": 20,
+    "pk": 8,
     "fields": {
       "created_time": "2023-06-23T09:36:43.861Z",
-      "updated_time": "2023-06-23T09:36:43.861Z",
+      "updated_time": "2023-07-01T12:11:07.168Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "update:systemUser",
-      "rank": 6,
+      "rank": 7,
       "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 24
+      "meta": 8
     }
   },
   {
     "model": "system.menu",
-    "pk": 21,
+    "pk": 9,
     "fields": {
       "created_time": "2023-06-23T09:37:13.092Z",
-      "updated_time": "2023-06-23T09:37:13.092Z",
+      "updated_time": "2023-07-01T12:13:14.399Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "list:systemUser",
-      "rank": 7,
+      "rank": 3,
       "path": "api/system/user$",
       "component": "GET",
       "is_active": true,
-      "meta": 25
+      "meta": 9
     }
   },
   {
     "model": "system.menu",
-    "pk": 22,
+    "pk": 10,
     "fields": {
       "created_time": "2023-06-23T09:56:13.561Z",
-      "updated_time": "2023-06-23T09:56:13.561Z",
+      "updated_time": "2023-07-01T12:11:13.734Z",
       "description": null,
-      "parent": 16,
+      "parent": 4,
       "menu_type": 2,
       "name": "create:systemRole",
-      "rank": 10,
+      "rank": 11,
       "path": "api/system/role$",
       "component": "POST",
       "is_active": true,
-      "meta": 26
+      "meta": 10
     }
   },
   {
     "model": "system.menu",
-    "pk": 23,
+    "pk": 11,
     "fields": {
       "created_time": "2023-06-23T09:56:37.325Z",
-      "updated_time": "2023-06-23T09:56:37.325Z",
+      "updated_time": "2023-07-01T12:11:15.309Z",
       "description": null,
-      "parent": 16,
+      "parent": 4,
       "menu_type": 2,
       "name": "delete:systemRole",
-      "rank": 11,
+      "rank": 12,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 27
+      "meta": 11
     }
   },
   {
     "model": "system.menu",
-    "pk": 24,
+    "pk": 12,
     "fields": {
       "created_time": "2023-06-23T09:57:02.365Z",
-      "updated_time": "2023-06-23T09:57:02.365Z",
+      "updated_time": "2023-07-01T12:11:16.842Z",
       "description": null,
-      "parent": 16,
+      "parent": 4,
       "menu_type": 2,
       "name": "update:systemRole",
-      "rank": 12,
+      "rank": 13,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 28
+      "meta": 12
     }
   },
   {
     "model": "system.menu",
-    "pk": 25,
+    "pk": 13,
     "fields": {
       "created_time": "2023-06-23T09:57:26.880Z",
-      "updated_time": "2023-06-23T09:57:26.880Z",
+      "updated_time": "2023-07-01T12:13:17.599Z",
       "description": null,
-      "parent": 16,
+      "parent": 4,
       "menu_type": 2,
       "name": "list:systemRole",
-      "rank": 13,
+      "rank": 10,
       "path": "api/system/role$",
       "component": "GET",
       "is_active": true,
-      "meta": 29
+      "meta": 13
     }
   },
   {
     "model": "system.menu",
-    "pk": 26,
+    "pk": 14,
     "fields": {
       "created_time": "2023-06-23T09:58:07.584Z",
-      "updated_time": "2023-06-23T09:58:07.584Z",
+      "updated_time": "2023-07-01T12:11:11.643Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "manyDelete:systemUser",
       "rank": 8,
       "path": "api/system/user/many_delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 30
+      "meta": 14
     }
   },
   {
     "model": "system.menu",
-    "pk": 27,
+    "pk": 15,
     "fields": {
       "created_time": "2023-06-23T09:58:28.908Z",
-      "updated_time": "2023-06-23T09:58:28.908Z",
+      "updated_time": "2023-07-01T12:11:20.234Z",
       "description": null,
-      "parent": 16,
+      "parent": 4,
       "menu_type": 2,
       "name": "manyDelete:systemRole",
       "rank": 14,
       "path": "api/system/role/many_delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 31
+      "meta": 15
     }
   },
   {
     "model": "system.menu",
-    "pk": 28,
+    "pk": 16,
     "fields": {
       "created_time": "2023-06-23T10:00:17.848Z",
-      "updated_time": "2023-06-23T10:00:17.848Z",
+      "updated_time": "2023-07-01T12:11:24.442Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "create:systemMenu",
-      "rank": 16,
+      "rank": 17,
       "path": "api/system/menu$",
       "component": "POST",
       "is_active": true,
-      "meta": 32
+      "meta": 16
     }
   },
   {
     "model": "system.menu",
-    "pk": 29,
+    "pk": 17,
     "fields": {
       "created_time": "2023-06-23T10:00:47.779Z",
-      "updated_time": "2023-06-23T10:00:47.779Z",
+      "updated_time": "2023-07-01T12:11:25.933Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "delete:systemMenu",
-      "rank": 17,
+      "rank": 18,
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 33
+      "meta": 17
     }
   },
   {
     "model": "system.menu",
-    "pk": 30,
+    "pk": 18,
     "fields": {
       "created_time": "2023-06-23T10:01:13.877Z",
-      "updated_time": "2023-06-23T10:01:13.877Z",
+      "updated_time": "2023-07-01T12:11:27.225Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "update:systemMenu",
-      "rank": 18,
+      "rank": 19,
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 34
+      "meta": 18
     }
   },
   {
     "model": "system.menu",
-    "pk": 31,
+    "pk": 19,
     "fields": {
       "created_time": "2023-06-23T10:01:51.633Z",
-      "updated_time": "2023-06-23T10:01:51.633Z",
+      "updated_time": "2023-07-01T12:13:20.957Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "list:systemMenu",
-      "rank": 19,
+      "rank": 16,
       "path": "api/system/menu$",
       "component": "GET",
       "is_active": true,
-      "meta": 35
+      "meta": 19
     }
   },
   {
     "model": "system.menu",
-    "pk": 32,
+    "pk": 20,
     "fields": {
       "created_time": "2023-06-23T10:02:18.521Z",
-      "updated_time": "2023-06-23T10:02:18.521Z",
+      "updated_time": "2023-07-01T12:11:30.317Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "manyDelete:systemMenu",
       "rank": 20,
       "path": "api/system/menu/many_delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 36
+      "meta": 20
     }
   },
   {
     "model": "system.menu",
-    "pk": 33,
+    "pk": 21,
     "fields": {
       "created_time": "2023-06-23T10:02:49.285Z",
-      "updated_time": "2023-06-23T10:02:49.285Z",
+      "updated_time": "2023-07-01T12:11:32.092Z",
       "description": null,
-      "parent": 17,
+      "parent": 5,
       "menu_type": 2,
       "name": "rank:systemMenu",
       "rank": 21,
       "path": "api/system/menu/action_rank$",
       "component": "POST",
       "is_active": true,
-      "meta": 37
+      "meta": 21
     }
   },
   {
     "model": "system.menu",
-    "pk": 34,
+    "pk": 22,
     "fields": {
       "created_time": "2023-06-25T08:45:24.985Z",
       "updated_time": "2023-06-28T10:06:12.283Z",
@@ -1000,143 +1000,143 @@
       "path": "/chat/index",
       "component": "chat/index",
       "is_active": true,
-      "meta": 38
+      "meta": 22
     }
   },
   {
     "model": "system.menu",
-    "pk": 35,
+    "pk": 23,
     "fields": {
       "created_time": "2023-06-26T10:29:57.567Z",
-      "updated_time": "2023-06-26T10:31:21.335Z",
+      "updated_time": "2023-07-01T12:11:03.793Z",
       "description": null,
-      "parent": 15,
+      "parent": 3,
       "menu_type": 2,
       "name": "upload:systemAvatar",
-      "rank": 4,
+      "rank": 5,
       "path": "api/system/upload",
       "component": "POST",
       "is_active": true,
-      "meta": 39
+      "meta": 23
     }
   },
   {
     "model": "system.menu",
-    "pk": 36,
+    "pk": 24,
     "fields": {
       "created_time": "2023-06-28T02:15:48.304Z",
-      "updated_time": "2023-06-28T03:22:42.217Z",
+      "updated_time": "2023-07-01T12:11:57.498Z",
       "description": null,
-      "parent": 14,
+      "parent": 2,
       "menu_type": 1,
       "name": "operationLog",
       "rank": 22,
       "path": "/system/operation/index",
       "component": "system/operation-log/index",
       "is_active": true,
-      "meta": 40
+      "meta": 24
     }
   },
   {
     "model": "system.menu",
-    "pk": 37,
+    "pk": 25,
     "fields": {
       "created_time": "2023-06-28T02:36:02.766Z",
-      "updated_time": "2023-06-28T02:36:02.766Z",
+      "updated_time": "2023-07-01T12:11:50.215Z",
       "description": null,
-      "parent": 36,
+      "parent": 24,
       "menu_type": 2,
       "name": "delete:systemOperationLog",
-      "rank": 23,
+      "rank": 24,
       "path": "api/system/operation/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 41
+      "meta": 25
     }
   },
   {
     "model": "system.menu",
-    "pk": 38,
+    "pk": 26,
     "fields": {
       "created_time": "2023-06-28T02:36:33.480Z",
-      "updated_time": "2023-06-28T02:36:33.480Z",
+      "updated_time": "2023-07-01T12:13:24.999Z",
       "description": null,
-      "parent": 36,
+      "parent": 24,
       "menu_type": 2,
       "name": "list:systemOperationLog",
-      "rank": 24,
+      "rank": 23,
       "path": "api/system/operation$",
       "component": "GET",
       "is_active": true,
-      "meta": 42
+      "meta": 26
     }
   },
   {
     "model": "system.menu",
-    "pk": 39,
+    "pk": 27,
     "fields": {
       "created_time": "2023-06-28T02:37:06.461Z",
-      "updated_time": "2023-06-28T02:37:06.461Z",
+      "updated_time": "2023-07-01T12:11:53.848Z",
       "description": null,
-      "parent": 36,
+      "parent": 24,
       "menu_type": 2,
       "name": "manyDelete:systemOperationLog",
       "rank": 25,
       "path": "api/system/operation/many_delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 43
+      "meta": 27
     }
   },
   {
     "model": "system.menu",
-    "pk": 40,
+    "pk": 28,
     "fields": {
       "created_time": "2023-06-29T08:12:07.911Z",
-      "updated_time": "2023-07-01T03:48:02.108Z",
+      "updated_time": "2023-07-01T12:12:01.747Z",
       "description": null,
-      "parent": 14,
+      "parent": 2,
       "menu_type": 0,
       "name": "systemFlower",
       "rank": 26,
       "path": "/system/flower",
       "component": "",
       "is_active": true,
-      "meta": 44
+      "meta": 28
     }
   },
   {
     "model": "system.menu",
-    "pk": 41,
+    "pk": 29,
     "fields": {
       "created_time": "2023-07-01T01:04:16.321Z",
-      "updated_time": "2023-07-01T01:04:16.321Z",
+      "updated_time": "2023-07-01T12:13:29.448Z",
       "description": null,
-      "parent": 40,
+      "parent": 28,
       "menu_type": 2,
       "name": "list:systemFlower",
-      "rank": 28,
+      "rank": 27,
       "path": "api/flower/(?P<path>.*)",
       "component": "GET",
       "is_active": true,
-      "meta": 45
+      "meta": 29
     }
   },
   {
     "model": "system.menu",
-    "pk": 42,
+    "pk": 30,
     "fields": {
       "created_time": "2023-07-01T01:04:51.593Z",
-      "updated_time": "2023-07-01T01:05:03.717Z",
+      "updated_time": "2023-07-01T12:11:43.607Z",
       "description": null,
-      "parent": 40,
+      "parent": 28,
       "menu_type": 2,
       "name": "update:systemFlower",
-      "rank": 27,
+      "rank": 28,
       "path": "api/flower/(?P<path>.*)",
       "component": "POST",
       "is_active": true,
-      "meta": 46
+      "meta": 30
     }
   }
 ]
