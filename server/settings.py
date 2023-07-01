@@ -516,4 +516,5 @@ API_MODEL_MAP = locals().get("API_MODEL_MAP", {
     "/api/system/upload": "文件上传",
     "/api/system/login": "用户登录",
     "/api/system/logout": "用户登出",
+    "/api/flower": "定时任务",
 })
