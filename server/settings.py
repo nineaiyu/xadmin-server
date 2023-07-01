@@ -495,7 +495,7 @@ HTTP_LISTEN_PORT = 8896
 # celery flower 任务监控配置
 CELERY_FLOWER_PORT = 5566
 CELERY_FLOWER_HOST = '127.0.0.1'
-
+CELERY_FLOWER_AUTH = 'flower:flower123.'
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/userinfo$",
