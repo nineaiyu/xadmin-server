@@ -50,7 +50,7 @@ class Menu(DbBaseModel):
     menu_type = models.SmallIntegerField(choices=menu_type_choices, default=0, verbose_name="节点类型")
 
     name = models.CharField(verbose_name="组件英文名称", max_length=128, unique=True)
-    rank = models.IntegerField(verbose_name="菜单顺序", default=0)
+    rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
     path = models.CharField(verbose_name="路由地址", max_length=256)
     component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True)
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)

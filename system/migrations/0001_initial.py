@@ -70,7 +70,7 @@ class Migration(migrations.Migration):
                 ('menu_type', models.SmallIntegerField(choices=[(0, '目录'), (1, '菜单'), (2, '权限')], default=0,
                                                        verbose_name='节点类型')),
                 ('name', models.CharField(max_length=128, unique=True, verbose_name='组件英文名称')),
-                ('rank', models.IntegerField(default=0, verbose_name='菜单顺序')),
+                ('rank', models.IntegerField(default=9999, verbose_name='菜单顺序')),
                 ('path', models.CharField(max_length=256, verbose_name='路由地址')),
                 ('component', models.CharField(blank=True, max_length=256, null=True, verbose_name='组件地址')),
                 ('is_active', models.BooleanField(default=True, verbose_name='是否启用该菜单')),
