@@ -129,7 +129,7 @@ def format_menu_data(data):
     for d in data:
         if d.get('count', -1) < 2:
             route = {
-                'path': d.get('path'),
+                'path': f"/default{d.get('path')}",
                 'title': d.get('title'),
                 'meta': {**d.get('meta', {})},
                 'children': [d]
