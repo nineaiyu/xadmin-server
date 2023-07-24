@@ -20,7 +20,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'pk': {'read_only': True}, 'avatar': {'read_only': True}}
         # extra_kwargs = {'password': {'write_only': True}}
-        read_only_fields = list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
+        read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
     roles_info = serializers.SerializerMethodField(read_only=True)
 
@@ -126,13 +126,6 @@ class MenuSerializer(serializers.ModelSerializer):
         serializer.is_valid(raise_exception=True)
         validated_data['meta'] = serializer.save()
         return super().create(validated_data)
-
-    # def save(self, **kwargs):
-    #     user_obj = self.context.get('request').user
-    #     if user_obj and user_obj.is_superuser:
-    #         return super().save(**kwargs)
-    #     else:
-    #         raise Exception("权限拒绝，非系统管理员")
 
 
 class RoleSerializer(serializers.ModelSerializer):
