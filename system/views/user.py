@@ -6,6 +6,7 @@
 # date : 6/16/2023
 import logging
 
+from django.db.models import FileField
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -92,10 +93,13 @@ class UserView(BaseModelSet):
                 except Exception as e:
                     logger.error(f"user:{request.user} upload file type error Exception:{e}")
                     return ApiResponse(code=1002, detail="错误的图片类型")
+                delete_avatar_name = None
                 if user_obj.avatar:
-                    user_obj.avatar.delete()
+                    delete_avatar_name = user_obj.avatar.name
                 user_obj.avatar = file_obj
                 user_obj.save(update_fields=['avatar'])
+                if delete_avatar_name:
+                    FileField(name=delete_avatar_name).storage.delete(delete_avatar_name)
                 return ApiResponse()
         return ApiResponse(code=1004, detail="数据异常")
 
