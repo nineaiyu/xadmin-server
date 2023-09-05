@@ -4,14 +4,18 @@
 # filename : user
 # author : ly_13
 # date : 6/16/2023
+import logging
 
 from django_filters import rest_framework as filters
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
-from system.models import UserInfo, UserRole
+from system.models import UserInfo
 from system.utils.serializer import UserInfoSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class UserFilter(filters.FilterSet):
@@ -39,10 +43,10 @@ class UserView(BaseModelSet):
         password = request.data.get('password')
         if password:
             valid_data = serializer.data
-            roles = valid_data.pop('roles')
+            # roles = valid_data.pop('roles')
             valid_data.pop('roles_info')
             user = UserInfo.objects.create_user(**valid_data, password=password)
-            user.roles.set(UserRole.objects.filter(pk__in=roles))
+            # user.roles.set(UserRole.objects.filter(pk__in=roles))
             if user:
                 return ApiResponse(detail=f"用户{user.username}添加成功", data=self.get_serializer(user).data)
         return ApiResponse(code=1003, detail="数据异常，用户创建失败")
@@ -64,3 +68,45 @@ class UserView(BaseModelSet):
         if instance.is_superuser:
             raise Exception("超级管理员禁止删除")
         instance.delete()
+
+    @action(methods=['delete'], detail=False)
+    def many_delete(self, request, *args, **kwargs):
+        self.queryset = self.queryset.filter(is_superuser=False)
+        return super().many_delete(request, *args, **kwargs)
+
+    @action(methods=['post'], detail=False)
+    def upload(self, request, *args, **kwargs):
+        files = request.FILES.getlist('file', [])
+        uid = request.data.get('uid')
+        if uid:
+            user_obj = UserInfo.objects.filter(pk=uid).first()
+            if user_obj:
+                file_obj = files[0]
+                try:
+                    file_type = file_obj.name.split(".")[-1]
+                    if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
+                        logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
+                        raise
+                    if file_obj.size > 1024 * 1024 * 3:
+                        return ApiResponse(code=1003, detail="图片大小不能超过3兆")
+                except Exception as e:
+                    logger.error(f"user:{request.user} upload file type error Exception:{e}")
+                    return ApiResponse(code=1002, detail="错误的图片类型")
+                if user_obj.avatar:
+                    user_obj.avatar.delete()
+                user_obj.avatar = file_obj
+                user_obj.save(update_fields=['avatar'])
+                return ApiResponse()
+        return ApiResponse(code=1004, detail="数据异常")
+
+    @action(methods=['post'], detail=False)
+    def reset_password(self, request, *args, **kwargs):
+        uid = request.data.get('uid')
+        password = request.data.get('password')
+        if uid and password:
+            user_obj = UserInfo.objects.filter(pk=uid).first()
+            if user_obj:
+                user_obj.set_password(password)
+                user_obj.save()
+                return ApiResponse()
+        return ApiResponse(code=1001, detail='修改失败')

@@ -121,7 +121,8 @@ class UserInfo(AbstractUser):
     avatar = models.FileField(verbose_name="用户头像", null=True, blank=True, upload_to=upload_directory_path)
     nickname = models.CharField(verbose_name="昵称", max_length=150, blank=True)
     sex = models.SmallIntegerField(verbose_name="性别", default=0, help_text='0：男 1：女 2：保密')
-    mobile = models.CharField(verbose_name="手机号", max_length=16, default='')
+    mobile = models.CharField(verbose_name="手机号", max_length=16, default='', blank=True)
+    remark = models.TextField(verbose_name="备注", default='', blank=True)
 
     class Meta:
         verbose_name = "用户信息"

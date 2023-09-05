@@ -16,9 +16,9 @@ class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'sex', 'date_joined', 'pk', 'mobile',
-                  'is_active', 'roles', 'avatar', 'roles_info']
+                  'is_active', 'roles', 'avatar', 'roles_info', 'remark']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
-                        'pk': {'read_only': True}, 'avatar': {'read_only': True}}
+                        'pk': {'read_only': True}, 'avatar': {'read_only': True}, 'roles': {'read_only': True}}
         # extra_kwargs = {'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 

@@ -12,7 +12,6 @@ from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView
 from system.views.menu import UserRoutesView, MenuView
 from system.views.operationlog import OperationLogView
 from system.views.role import RoleView
-from system.views.upload import UploadView
 from system.views.user import UserView
 
 router = SimpleRouter(False)
@@ -29,7 +28,7 @@ auth_url = [
     re_path('logout', LogoutView.as_view(), name='logout'),
     re_path('refresh', RefreshTokenView.as_view(), name='refresh'),
     re_path('userinfo', UserInfoView.as_view(), name='userinfo'),
-    re_path('upload', UploadView.as_view(), name='upload'),
+    # re_path('upload', UploadView.as_view(), name='upload'),
 ]
 
 menu_url = [

@@ -18,7 +18,7 @@ class UploadView(APIView):
 
     def post(self, request):
         """
-        该方法 主要是本地上传文件接口，负责上传 用户头像
+        该方法 主要是本地上传文件接口
         :param request:
         :return:
         """
