@@ -4,6 +4,7 @@
 # filename : serializer
 # author : ly_13
 # date : 6/6/2023
+import os.path
 from typing import OrderedDict
 
 from django.conf import settings
@@ -160,3 +161,112 @@ class OperationLogSerializer(serializers.ModelSerializer):
         if not module_name and map_module_name:
             return map_module_name
         return module_name
+
+
+class UploadFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.UploadFile
+        fields = ['pk', 'filepath', 'filename', 'filesize']
+        read_only_fields = [x.name for x in models.UploadFile._meta.fields]
+
+
+class NotifyAnnouncementBaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Notification
+        fields = '__all__'
+
+        read_only_fields = ['pk', 'owner']
+
+    files = serializers.JSONField(write_only=True)
+
+    def validate(self, attrs):
+        files = attrs.get('files')
+        if files is not None:
+            del attrs['files']
+            attrs['file'] = models.UploadFile.objects.filter(
+                filepath__in=[file.replace(os.path.join('/', settings.MEDIA_URL), '') for file in files],
+                owner=self.context.get('request').user).all()
+        return attrs
+
+    def save_data(self, validated_data, owner):
+        validated_data['owner'] = owner
+        instance = super().create(validated_data)
+        if instance:
+            instance.file.filter(is_tmp=True).update(is_tmp=False)
+        return instance
+
+    def update(self, instance, validated_data):
+        o_files = [x['pk'] for x in instance.file.all().values('pk')]
+        n_files = []
+        if validated_data.get('file'):
+            n_files = [x['pk'] for x in validated_data.get('file').values('pk')]
+
+        instance = super().update(instance, validated_data)
+        if instance:
+            instance.file.filter(is_tmp=True).update(is_tmp=False)
+            del_files = set(o_files) - set(n_files)
+            if del_files:
+                for file in models.UploadFile.objects.filter(pk__in=del_files, owner=self.context.get('request').user):
+                    file.delete()  # 这样操作，才可以同时删除底层的文件，如果直接 queryset 进行delete操作，则不删除底层文件
+        return instance
+
+
+class NotifySerializer(NotifyAnnouncementBaseSerializer):
+    class Meta:
+        model = models.Notification
+        fields = ['pk', 'level', 'unread', 'title', 'message', 'description', "created_time", "owner",
+                  'notify_type', 'extra_json', "owner_info", "files", "owners", "publish"]
+
+        read_only_fields = ['pk', 'owner']
+
+    owners = serializers.JSONField(write_only=True)
+    owner_info = serializers.SerializerMethodField()
+
+    def get_owner_info(self, obj):
+        return {'pk': obj.owner.pk, 'username': obj.owner.username}
+
+    def create(self, validated_data):
+        owners = validated_data.get('owners')
+        result = []
+        if owners:
+            del validated_data['owners']
+            for owner in models.UserInfo.objects.filter(pk__in=owners):
+                result.append(self.save_data(validated_data, owner))
+        if not result:
+            raise Exception(f'用户ID {",".join(owners)} 不存在')
+        return result[0]
+
+
+class AnnouncementSerializer(NotifyAnnouncementBaseSerializer):
+    class Meta:
+        model = models.Announcement
+        fields = ['pk', 'level', 'title', 'message', 'description', "created_time", "owner",
+                  'extra_json', "files", "publish", "read_count"]
+
+        read_only_fields = ['pk', 'owner']
+
+    read_count = serializers.SerializerMethodField()
+
+    def get_read_count(self, obj):
+        return obj.owner.count()
+
+
+class SimpleNotifySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Notification
+        fields = ['pk', 'level', 'unread', 'title', 'message', "created_time", "times", "notify_type"]
+
+        read_only_fields = [x.name for x in models.Notification._meta.fields]
+
+    times = serializers.SerializerMethodField()
+
+    def get_times(self, obj):
+        return obj.created_time.strftime('%Y年%m月%d日 %H:%M:%S')
+
+
+class SimpleAnnouncementSerializer(SimpleNotifySerializer):
+    class Meta:
+        model = models.Announcement
+        fields = ['pk', 'level', 'title', 'message', "created_time", "times", "notify_type"]
+
+        read_only_fields = [x.name for x in models.Announcement._meta.fields]

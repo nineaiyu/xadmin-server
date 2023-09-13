@@ -12,7 +12,7 @@ from celery.utils.log import get_task_logger
 from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
-from system.models import OperationLog
+from system.models import OperationLog, UploadFile
 
 logger = get_task_logger(__name__)
 
@@ -29,3 +29,9 @@ def auto_clean_black_token(clean_day=1):
     clean_time = timezone.now() - datetime.timedelta(days=clean_day)
     deleted, _rows_count = OutstandingToken.objects.filter(expires_at__lte=clean_time).delete()
     logger.info(f"clean {_rows_count} black token {deleted}")
+
+
+def auto_clean_tmp_file(clean_day=1):
+    clean_time = timezone.now() - datetime.timedelta(days=clean_day)
+    deleted, _rows_count = UploadFile.objects.filter(created_time__lte=clean_time).delete()
+    logger.info(f"clean {_rows_count} upload tmp file {deleted}")

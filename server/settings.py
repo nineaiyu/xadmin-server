@@ -471,6 +471,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'system.tasks.auto_clean_black_token_job',
         'schedule': crontab(hour='2', minute='22'),
         'args': ()
+    },
+    'auto_clean_tmp_file_job': {
+        'task': 'system.tasks.auto_clean_tmp_file_job',
+        'schedule': crontab(hour='2', minute='32'),
+        'args': ()
     }
 }
 

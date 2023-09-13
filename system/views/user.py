@@ -14,6 +14,7 @@ from rest_framework.filters import OrderingFilter
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from system.models import UserInfo
+from system.utils import notify
 from system.utils.serializer import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
@@ -112,5 +113,7 @@ class UserView(BaseModelSet):
             if user_obj:
                 user_obj.set_password(password)
                 user_obj.save()
+                notify.notify_info(users=user_obj, title="密码重置成功",
+                                   message="密码被管理员重置成功")
                 return ApiResponse()
         return ApiResponse(code=1001, detail='修改失败')

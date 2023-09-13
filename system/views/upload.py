@@ -9,7 +9,8 @@ import logging
 from rest_framework.views import APIView
 
 from common.core.response import ApiResponse
-from system.models import UserInfo
+from system.models import UploadFile
+from system.utils.serializer import UploadFileSerializer
 
 logger = logging.getLogger(__file__)
 
@@ -24,23 +25,17 @@ class UploadView(APIView):
         """
         # 获取多个file
         files = request.FILES.getlist('file', [])
-        user_obj = request.user
-        uid = request.query_params.get('uid')
-        if user_obj.is_superuser and uid:
-            user_obj = UserInfo.objects.filter(pk=uid).first()
-        if user_obj:
-            file_obj = files[0]
+        result = []
+        for file_obj in files:
             try:
                 file_type = file_obj.name.split(".")[-1]
-                if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
-                    logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
-                    raise
+                # if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
+                #     logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
+                #     raise
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
-                return ApiResponse(code=1002, detail="错误的图片类型")
-            if user_obj.avatar:
-                user_obj.avatar.delete()
-            user_obj.avatar = file_obj
-            user_obj.save(update_fields=['avatar'])
-            return ApiResponse()
-        return ApiResponse(code=1004, detail="数据异常")
+                return ApiResponse(code=1002, detail="错误的文件类型")
+            obj = UploadFile.objects.create(owner=request.user, filename=file_obj.name, filesize=file_obj.size,
+                                            filepath=file_obj)
+            result.append(obj)
+        return ApiResponse(data=UploadFileSerializer(result, many=True).data)
