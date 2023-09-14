@@ -11,17 +11,18 @@ from rest_framework.filters import OrderingFilter
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
-from system.models import Announcement
-from system.utils.serializer import AnnouncementSerializer, SimpleAnnouncementSerializer
+from system.models import Announcement, AnnouncementUserRead
+from system.utils.serializer import AnnouncementSerializer, SimpleAnnouncementSerializer, \
+    AnnouncementUserReadMessageSerializer
 
 
 class AnnouncementMessageFilter(filters.FilterSet):
     message = filters.CharFilter(field_name='message', lookup_expr='icontains')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
-
+    pk = filters.NumberFilter(field_name='id')
     class Meta:
         model = Announcement
-        fields = ['level', 'publish']
+        fields = ['level', 'publish', 'pk']
 
 
 class AnnouncementMessage(BaseModelSet):
@@ -42,6 +43,27 @@ class AnnouncementMessage(BaseModelSet):
         instance.publish = request.data.get('publish')
         instance.save(update_fields=['publish'])
         return ApiResponse()
+
+
+class AnnouncementUserReadMessageFilter(filters.FilterSet):
+    message = filters.CharFilter(field_name='announcement__message', lookup_expr='icontains')
+    title = filters.CharFilter(field_name='announcement__title', lookup_expr='icontains')
+    username = filters.CharFilter(field_name='owner__username')
+    owner_id = filters.NumberFilter(field_name='owner__pk')
+    announcement_id = filters.NumberFilter(field_name='announcement__pk')
+
+    class Meta:
+        model = AnnouncementUserRead
+        fields = ['title', ]
+
+
+class AnnouncementUserReadMessage(BaseModelSet):
+    queryset = AnnouncementUserRead.objects.all()
+    serializer_class = AnnouncementUserReadMessageSerializer
+
+    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ['updated_time', 'created_time', 'pk']
+    filterset_class = AnnouncementUserReadMessageFilter
 
 
 class UserAnnouncement(BaseModelSet):

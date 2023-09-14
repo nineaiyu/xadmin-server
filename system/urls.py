@@ -7,7 +7,7 @@
 from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
-from system.views.announcement import AnnouncementMessage, UserAnnouncement
+from system.views.announcement import AnnouncementMessage, UserAnnouncement, AnnouncementUserReadMessage
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, UserInfoView, \
     CaptchaView
 from system.views.menu import UserRoutesView, MenuView
@@ -46,6 +46,7 @@ router.register('operation', OperationLogView, basename='operation_log')
 
 router.register('notify', NotifyMessage, basename='notify')
 router.register('announcement', AnnouncementMessage, basename='announcement')
+router.register('read/announcement', AnnouncementUserReadMessage, basename='read_announcement')
 
 router.register('notice', UserNotice, basename='notice')
 router.register('announce', UserAnnouncement, basename='announce')

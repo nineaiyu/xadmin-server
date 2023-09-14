@@ -240,8 +240,8 @@ class NotifySerializer(NotifyAnnouncementBaseSerializer):
 class AnnouncementSerializer(NotifyAnnouncementBaseSerializer):
     class Meta:
         model = models.Announcement
-        fields = ['pk', 'level', 'title', 'message', 'description', "created_time", "owner",
-                  'extra_json', "files", "publish", "read_count"]
+        fields = ['pk', 'level', 'title', 'message', 'description', "created_time", 'extra_json', "files", "publish",
+                  "read_count"]
 
         read_only_fields = ['pk', 'owner']
 
@@ -270,3 +270,20 @@ class SimpleAnnouncementSerializer(SimpleNotifySerializer):
         fields = ['pk', 'level', 'title', 'message', "created_time", "times", "notify_type"]
 
         read_only_fields = [x.name for x in models.Announcement._meta.fields]
+
+
+class AnnouncementUserReadMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.AnnouncementUserRead
+        fields = ['pk', 'owner_info', 'announcement', "created_time"]
+        read_only_fields = [x.name for x in models.AnnouncementUserRead._meta.fields]
+        # depth = 1
+
+    owner_info = serializers.SerializerMethodField()
+    announcement = serializers.SerializerMethodField()
+
+    def get_owner_info(self, obj):
+        return {'pk': obj.owner.pk, 'username': obj.owner.username}
+
+    def get_announcement(self, obj):
+        return AnnouncementSerializer(obj.announcement).data
