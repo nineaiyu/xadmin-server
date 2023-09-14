@@ -1365,6 +1365,90 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 68,
+    "fields": {
+      "created_time": "2023-09-13T09:58:45.861Z",
+      "updated_time": "2023-09-13T10:08:16.929Z",
+      "description": null,
+      "title": "用户已读系统公告",
+      "icon": "ep:cellphone",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 69,
+    "fields": {
+      "created_time": "2023-09-13T10:01:21.097Z",
+      "updated_time": "2023-09-13T10:01:21.097Z",
+      "description": null,
+      "title": "查询用户已读公告",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 70,
+    "fields": {
+      "created_time": "2023-09-13T10:02:20.984Z",
+      "updated_time": "2023-09-13T10:02:20.984Z",
+      "description": null,
+      "title": "删除用户已读公告",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 71,
+    "fields": {
+      "created_time": "2023-09-13T10:03:20.504Z",
+      "updated_time": "2023-09-13T10:03:20.504Z",
+      "description": null,
+      "title": "批量删除用户已读公告",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
@@ -2178,6 +2262,74 @@
       "component": "PUT",
       "is_active": true,
       "meta": 67
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 64,
+    "fields": {
+      "created_time": "2023-09-13T09:58:45.921Z",
+      "updated_time": "2023-09-13T10:08:16.989Z",
+      "description": null,
+      "parent": 48,
+      "menu_type": 1,
+      "name": "systemAnnouncementRead",
+      "rank": 9999,
+      "path": "/system/announcement/read/list",
+      "component": "system/announcement/read/list",
+      "is_active": true,
+      "meta": 68
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 65,
+    "fields": {
+      "created_time": "2023-09-13T10:01:21.158Z",
+      "updated_time": "2023-09-13T10:01:21.158Z",
+      "description": null,
+      "parent": 64,
+      "menu_type": 2,
+      "name": "list:systemAnnouncementRead",
+      "rank": 9999,
+      "path": "api/system/read/announcement$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 69
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 66,
+    "fields": {
+      "created_time": "2023-09-13T10:02:21.046Z",
+      "updated_time": "2023-09-13T10:02:21.046Z",
+      "description": null,
+      "parent": 64,
+      "menu_type": 2,
+      "name": "delete:systemAnnouncementRead",
+      "rank": 9999,
+      "path": "api/system/read/announcement/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 70
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 67,
+    "fields": {
+      "created_time": "2023-09-13T10:03:20.565Z",
+      "updated_time": "2023-09-13T10:03:20.565Z",
+      "description": null,
+      "parent": 64,
+      "menu_type": 2,
+      "name": "manyDelete:systemAnnouncementRead",
+      "rank": 9999,
+      "path": "api/system/read/announcement/many_delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 71
     }
   }
 ]
