@@ -23,6 +23,12 @@ class OwnerModelSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericV
         return ApiResponse(data=data)
 
 
+class OnlyListModelSet(mixins.ListModelMixin, GenericViewSet):
+    def list(self, request, *args, **kwargs):
+        data = super().list(request, *args, **kwargs).data
+        return ApiResponse(data=data)
+
+
 class BaseModelSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):

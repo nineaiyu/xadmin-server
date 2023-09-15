@@ -188,13 +188,14 @@ class UploadFile(DbBaseModel):
         verbose_name_plural = "上传的文件"
 
 
-class AnnouncementNotificationBase(DbBaseModel):
+class NoticeMessage(DbBaseModel):
+    owner = models.ManyToManyField(to=UserInfo, through="NoticeUserRead", null=True, blank=True)
     level_choices = (
         ('', 'default'), ('success', 'success'), ('primary', 'primary'), ('warning', 'warning'),
         ('danger', 'danger'))
     level = models.CharField(verbose_name='消息级别', choices=level_choices, default='', max_length=20)
-    notify_type_choices = ((1, '消息通知'), (2, '系统通知'), (3, '系统公告'))
-    notify_type = models.SmallIntegerField(verbose_name="消息类型", choices=notify_type_choices, default=1)
+    notice_type_choices = ((0, '系统通知'), (1, '消息通知'), (2, '系统公告'))
+    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=notice_type_choices, default=1)
     title = models.CharField(verbose_name='消息标题', max_length=255)
     message = models.TextField(verbose_name='具体信息内容', blank=True, null=True)
     extra_json = models.JSONField(verbose_name="额外的json数据", blank=True, null=True)
@@ -202,7 +203,8 @@ class AnnouncementNotificationBase(DbBaseModel):
     publish = models.BooleanField(verbose_name="是否发布", default=True)
 
     class Meta:
-        abstract = True
+        verbose_name = "消息通知"
+        verbose_name_plural = "消息通知"
         ordering = ('-created_time',)
 
     def delete(self, using=None, keep_parents=False):
@@ -212,49 +214,17 @@ class AnnouncementNotificationBase(DbBaseModel):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"${self.title}-{self.created_time}-${self.get_notify_type_display()}"
+        return f"${self.title}-{self.created_time}-${self.get_notice_type_display()}"
 
 
-class Notification(AnnouncementNotificationBase):
-    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE, related_name='notifications',
-                              verbose_name='被通知的用户')
+class NoticeUserRead(DbBaseModel):
+    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE)
+    notice = models.ForeignKey(NoticeMessage, on_delete=models.CASCADE)
     unread = models.BooleanField(verbose_name='是否未读', default=True, blank=False, db_index=True)
 
     class Meta:
-        abstract = False
-        verbose_name = "消息通知"
-        verbose_name_plural = "消息通知"
         ordering = ('-created_time',)
+        verbose_name = "用户已读消息"
+        verbose_name_plural = "用户已读消息"
         index_together = ('owner', 'unread')
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        if self.notify_type not in [1, 2]:
-            raise Exception('notify type illegal')
-        return super().save(force_insert, force_update, using, update_fields)
-
-    def __str__(self):
-        return f"{self.owner.username}-${self.title}-{self.created_time}"
-
-
-class Announcement(AnnouncementNotificationBase):
-    owner = models.ManyToManyField(to=UserInfo, through="AnnouncementUserRead", null=True, blank=True)
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.notify_type = 3
-        return super().save(force_insert, force_update, using, update_fields)
-
-    class Meta:
-        abstract = False
-        ordering = ('-created_time',)
-        verbose_name = "公告"
-        verbose_name_plural = "公告"
-
-
-class AnnouncementUserRead(DbBaseModel):
-    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE)
-    announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE)
-
-    class Meta:
-        ordering = ('-created_time',)
-        verbose_name = "公告用户已读"
-        verbose_name_plural = "公告用户已读"
+        unique_together = ('owner', 'notice')

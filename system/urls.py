@@ -7,10 +7,9 @@
 from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
-from system.views.announcement import AnnouncementMessage, UserAnnouncement, AnnouncementUserReadMessage
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
 from system.views.menu import UserRoutesView, MenuView
-from system.views.notification import NotifyMessage, UserNotice
+from system.views.notice import NoticeUserReadMessageView, NoticeMessageView, UserNoticeMessage
 from system.views.operationlog import OperationLogView
 from system.views.role import RoleView
 from system.views.upload import UploadView
@@ -39,6 +38,7 @@ menu_url = [
 
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
+router.register('notice', UserNoticeMessage, basename='user_notice')
 
 # 系统设置相关路由
 router.register('user', UserView, basename='user')
@@ -46,11 +46,8 @@ router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
 router.register('operation', OperationLogView, basename='operation_log')
 
-router.register('notify', NotifyMessage, basename='notify')
-router.register('announcement', AnnouncementMessage, basename='announcement')
-router.register('read/announcement', AnnouncementUserReadMessage, basename='read_announcement')
+router.register('message/notice', NoticeMessageView, basename='message_notice')
+router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 
-router.register('notice', UserNotice, basename='notice')
-router.register('announce', UserAnnouncement, basename='announce')
 
 urlpatterns = no_auth_url + auth_url + menu_url + router.get_urls()

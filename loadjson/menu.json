@@ -1033,9 +1033,9 @@
     "pk": 52,
     "fields": {
       "created_time": "2023-09-11T06:50:38.982Z",
-      "updated_time": "2023-09-13T07:22:56.503Z",
+      "updated_time": "2023-09-15T10:31:23.714Z",
       "description": null,
-      "title": "消息公告",
+      "title": "通知公告",
       "icon": "ep:copy-document",
       "r_svg_name": "",
       "is_show_menu": true,
@@ -1054,7 +1054,7 @@
     "pk": 53,
     "fields": {
       "created_time": "2023-09-11T06:53:54.292Z",
-      "updated_time": "2023-09-13T06:36:23.462Z",
+      "updated_time": "2023-09-15T09:17:27.835Z",
       "description": null,
       "title": "查询消息通知",
       "icon": "",
@@ -1075,7 +1075,7 @@
     "pk": 54,
     "fields": {
       "created_time": "2023-09-11T06:54:38.614Z",
-      "updated_time": "2023-09-13T06:36:30.019Z",
+      "updated_time": "2023-09-15T09:18:07.066Z",
       "description": null,
       "title": "删除消息通知",
       "icon": "",
@@ -1096,7 +1096,7 @@
     "pk": 55,
     "fields": {
       "created_time": "2023-09-11T06:55:18.052Z",
-      "updated_time": "2023-09-13T06:36:30.327Z",
+      "updated_time": "2023-09-15T09:18:00.324Z",
       "description": null,
       "title": "批量删除消息通知",
       "icon": "",
@@ -1117,7 +1117,7 @@
     "pk": 56,
     "fields": {
       "created_time": "2023-09-11T08:18:20.894Z",
-      "updated_time": "2023-09-13T06:36:34.952Z",
+      "updated_time": "2023-09-15T09:17:53.383Z",
       "description": null,
       "title": "添加消息通知",
       "icon": "",
@@ -1138,7 +1138,7 @@
     "pk": 57,
     "fields": {
       "created_time": "2023-09-11T08:19:33.283Z",
-      "updated_time": "2023-09-13T06:36:26.828Z",
+      "updated_time": "2023-09-15T09:17:43.960Z",
       "description": null,
       "title": "修改消息通知",
       "icon": "",
@@ -1180,9 +1180,9 @@
     "pk": 59,
     "fields": {
       "created_time": "2023-09-13T06:36:12.437Z",
-      "updated_time": "2023-09-13T07:22:37.530Z",
+      "updated_time": "2023-09-15T07:50:21.410Z",
       "description": null,
-      "title": "用户消息",
+      "title": "消息公告",
       "icon": "ep:message",
       "r_svg_name": "",
       "is_show_menu": true,
@@ -1201,12 +1201,12 @@
     "pk": 60,
     "fields": {
       "created_time": "2023-09-13T06:38:50.256Z",
-      "updated_time": "2023-09-13T07:22:47.687Z",
+      "updated_time": "2023-09-15T07:54:50.419Z",
       "description": null,
       "title": "系统公告",
       "icon": "ep:message-box",
       "r_svg_name": "",
-      "is_show_menu": true,
+      "is_show_menu": false,
       "is_show_parent": false,
       "is_keepalive": false,
       "frame_url": "",
@@ -1348,7 +1348,7 @@
     "pk": 67,
     "fields": {
       "created_time": "2023-09-13T08:21:00.478Z",
-      "updated_time": "2023-09-13T08:21:36.844Z",
+      "updated_time": "2023-09-15T09:18:12.264Z",
       "description": null,
       "title": "消息是否发布",
       "icon": "",
@@ -1369,9 +1369,9 @@
     "pk": 68,
     "fields": {
       "created_time": "2023-09-13T09:58:45.861Z",
-      "updated_time": "2023-09-13T10:08:16.929Z",
+      "updated_time": "2023-09-15T07:53:10.343Z",
       "description": null,
-      "title": "用户已读系统公告",
+      "title": "用户已读",
       "icon": "ep:cellphone",
       "r_svg_name": "",
       "is_show_menu": true,
@@ -1390,7 +1390,7 @@
     "pk": 69,
     "fields": {
       "created_time": "2023-09-13T10:01:21.097Z",
-      "updated_time": "2023-09-13T10:01:21.097Z",
+      "updated_time": "2023-09-15T09:18:24.582Z",
       "description": null,
       "title": "查询用户已读公告",
       "icon": "",
@@ -1411,7 +1411,7 @@
     "pk": 70,
     "fields": {
       "created_time": "2023-09-13T10:02:20.984Z",
-      "updated_time": "2023-09-13T10:02:20.984Z",
+      "updated_time": "2023-09-15T09:18:30.822Z",
       "description": null,
       "title": "删除用户已读公告",
       "icon": "",
@@ -1432,7 +1432,7 @@
     "pk": 71,
     "fields": {
       "created_time": "2023-09-13T10:03:20.504Z",
-      "updated_time": "2023-09-13T10:03:20.504Z",
+      "updated_time": "2023-09-15T09:18:35.654Z",
       "description": null,
       "title": "批量删除用户已读公告",
       "icon": "",
@@ -1533,6 +1533,90 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 76,
+    "fields": {
+      "created_time": "2023-09-15T10:17:08.859Z",
+      "updated_time": "2023-09-15T10:20:32.609Z",
+      "description": null,
+      "title": "修改用户已读状态",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 77,
+    "fields": {
+      "created_time": "2023-09-15T13:30:38.523Z",
+      "updated_time": "2023-09-15T13:31:29.362Z",
+      "description": null,
+      "title": "消息中心",
+      "icon": "ep:notification",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 78,
+    "fields": {
+      "created_time": "2023-09-15T13:31:24.727Z",
+      "updated_time": "2023-09-15T13:31:24.727Z",
+      "description": null,
+      "title": "获取个人消息",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 79,
+    "fields": {
+      "created_time": "2023-09-15T14:08:33.694Z",
+      "updated_time": "2023-09-15T14:08:33.694Z",
+      "description": null,
+      "title": "个人消息已读",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
@@ -1542,7 +1626,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "about",
-      "rank": 52,
+      "rank": 51,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
@@ -1899,7 +1983,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "chat",
-      "rank": 50,
+      "rank": 44,
       "path": "/chat/index",
       "component": "chat/index",
       "is_active": true,
@@ -2001,7 +2085,7 @@
       "parent": 2,
       "menu_type": 0,
       "name": "systemFlower",
-      "rank": 47,
+      "rank": 41,
       "path": "/system/flower",
       "component": "",
       "is_active": true,
@@ -2018,7 +2102,7 @@
       "parent": 28,
       "menu_type": 2,
       "name": "list:systemFlower",
-      "rank": 48,
+      "rank": 42,
       "path": "api/flower/(?P<path>.*)",
       "component": "GET",
       "is_active": true,
@@ -2035,7 +2119,7 @@
       "parent": 28,
       "menu_type": 2,
       "name": "update:systemFlower",
-      "rank": 49,
+      "rank": 43,
       "path": "api/flower/(?P<path>.*)",
       "component": "POST",
       "is_active": true,
@@ -2081,13 +2165,13 @@
     "pk": 48,
     "fields": {
       "created_time": "2023-09-11T06:50:39.036Z",
-      "updated_time": "2023-09-13T07:22:56.571Z",
+      "updated_time": "2023-09-15T10:31:23.762Z",
       "description": null,
       "parent": 2,
       "menu_type": 0,
-      "name": "systemNotice",
+      "name": "systemNoticeDir",
       "rank": 28,
-      "path": "/system/notify/",
+      "path": "/system/notice/",
       "component": "system/notify/index",
       "is_active": true,
       "meta": 52
@@ -2098,13 +2182,13 @@
     "pk": 49,
     "fields": {
       "created_time": "2023-09-11T06:53:54.361Z",
-      "updated_time": "2023-09-13T06:36:23.521Z",
+      "updated_time": "2023-09-15T09:17:27.911Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "list:systemNotify",
+      "name": "list:systemNotice",
       "rank": 30,
-      "path": "api/system/notify$",
+      "path": "api/system/message/notice$",
       "component": "GET",
       "is_active": true,
       "meta": 53
@@ -2115,13 +2199,13 @@
     "pk": 50,
     "fields": {
       "created_time": "2023-09-11T06:54:38.682Z",
-      "updated_time": "2023-09-13T06:36:30.079Z",
+      "updated_time": "2023-09-15T09:18:07.125Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "delete:systemNotify",
+      "name": "delete:systemNotice",
       "rank": 34,
-      "path": "api/system/notify/(?P<pk>[^/.]+)$",
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 54
@@ -2132,13 +2216,13 @@
     "pk": 51,
     "fields": {
       "created_time": "2023-09-11T06:55:18.120Z",
-      "updated_time": "2023-09-13T06:36:30.395Z",
+      "updated_time": "2023-09-15T09:18:00.384Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "manyDelete:systemNotify",
+      "name": "manyDelete:systemNotice",
       "rank": 33,
-      "path": "api/system/notify/many_delete$",
+      "path": "api/system/message/notice/many_delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 55
@@ -2149,13 +2233,13 @@
     "pk": 52,
     "fields": {
       "created_time": "2023-09-11T08:18:20.950Z",
-      "updated_time": "2023-09-13T06:36:35.020Z",
+      "updated_time": "2023-09-15T09:17:53.442Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "create:systemNotify",
+      "name": "create:systemNotice",
       "rank": 32,
-      "path": "api/system/notify$",
+      "path": "api/system/message/notice$",
       "component": "POST",
       "is_active": true,
       "meta": 56
@@ -2166,13 +2250,13 @@
     "pk": 53,
     "fields": {
       "created_time": "2023-09-11T08:19:33.343Z",
-      "updated_time": "2023-09-13T06:36:26.887Z",
+      "updated_time": "2023-09-15T09:17:44.018Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "update:systemNotify",
+      "name": "update:systemNotice",
       "rank": 31,
-      "path": "api/system/notify/(?P<pk>[^/.]+)$",
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
       "meta": 57
@@ -2200,135 +2284,16 @@
     "pk": 55,
     "fields": {
       "created_time": "2023-09-13T06:36:12.497Z",
-      "updated_time": "2023-09-13T07:22:37.598Z",
+      "updated_time": "2023-09-15T07:50:21.460Z",
       "description": null,
       "parent": 48,
       "menu_type": 1,
-      "name": "systemNotify",
+      "name": "systemNotice",
       "rank": 29,
-      "path": "/system/notify/index",
-      "component": "system/notify/index",
+      "path": "/system/notice/index",
+      "component": "system/notice/index",
       "is_active": true,
       "meta": 59
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 56,
-    "fields": {
-      "created_time": "2023-09-13T06:38:50.325Z",
-      "updated_time": "2023-09-13T07:22:47.755Z",
-      "description": null,
-      "parent": 48,
-      "menu_type": 1,
-      "name": "systemAnnouncement",
-      "rank": 36,
-      "path": "/system/announcement/index",
-      "component": "system/announcement/index",
-      "is_active": true,
-      "meta": 60
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 57,
-    "fields": {
-      "created_time": "2023-09-13T07:05:39.128Z",
-      "updated_time": "2023-09-13T07:05:39.128Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "list:systemAnnouncement",
-      "rank": 37,
-      "path": "api/system/announcement$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 61
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 58,
-    "fields": {
-      "created_time": "2023-09-13T07:06:15.291Z",
-      "updated_time": "2023-09-13T07:06:15.291Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "update:systemAnnouncement",
-      "rank": 38,
-      "path": "api/system/announcement/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 62
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 59,
-    "fields": {
-      "created_time": "2023-09-13T07:07:06.187Z",
-      "updated_time": "2023-09-13T07:07:06.187Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "create:systemAnnouncement",
-      "rank": 39,
-      "path": "api/system/announcement$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 63
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 60,
-    "fields": {
-      "created_time": "2023-09-13T07:07:42.542Z",
-      "updated_time": "2023-09-13T07:07:42.542Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "manyDelete:systemAnnouncement",
-      "rank": 40,
-      "path": "api/system/announcement/many_delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 64
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 61,
-    "fields": {
-      "created_time": "2023-09-13T07:08:11.448Z",
-      "updated_time": "2023-09-13T07:08:11.448Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "delete:systemAnnouncement",
-      "rank": 41,
-      "path": "api/system/announcement/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 65
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 62,
-    "fields": {
-      "created_time": "2023-09-13T08:19:50.753Z",
-      "updated_time": "2023-09-13T08:19:50.753Z",
-      "description": null,
-      "parent": 56,
-      "menu_type": 2,
-      "name": "update:systemAnnouncementPublish",
-      "rank": 42,
-      "path": "api/system/announcement/(?P<pk>[^/.]+)/publish$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 66
     }
   },
   {
@@ -2336,13 +2301,13 @@
     "pk": 63,
     "fields": {
       "created_time": "2023-09-13T08:21:00.547Z",
-      "updated_time": "2023-09-13T08:21:36.911Z",
+      "updated_time": "2023-09-15T09:18:12.324Z",
       "description": null,
       "parent": 55,
       "menu_type": 2,
-      "name": "update:systemNotifyPublish",
+      "name": "update:systemNoticePublish",
       "rank": 35,
-      "path": "api/system/notify/(?P<pk>[^/.]+)/publish$",
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
       "component": "PUT",
       "is_active": true,
       "meta": 67
@@ -2353,14 +2318,14 @@
     "pk": 64,
     "fields": {
       "created_time": "2023-09-13T09:58:45.921Z",
-      "updated_time": "2023-09-13T10:08:16.989Z",
+      "updated_time": "2023-09-15T07:53:10.396Z",
       "description": null,
       "parent": 48,
       "menu_type": 1,
-      "name": "systemAnnouncementRead",
-      "rank": 43,
-      "path": "/system/announcement/read/list",
-      "component": "system/announcement/read/list",
+      "name": "systemNoticeRead",
+      "rank": 36,
+      "path": "/system/notice/read/list",
+      "component": "system/notice/read/list",
       "is_active": true,
       "meta": 68
     }
@@ -2370,13 +2335,13 @@
     "pk": 65,
     "fields": {
       "created_time": "2023-09-13T10:01:21.158Z",
-      "updated_time": "2023-09-13T10:01:21.158Z",
+      "updated_time": "2023-09-15T09:18:24.640Z",
       "description": null,
       "parent": 64,
       "menu_type": 2,
-      "name": "list:systemAnnouncementRead",
-      "rank": 44,
-      "path": "api/system/read/announcement$",
+      "name": "list:systemNoticeRead",
+      "rank": 37,
+      "path": "api/system/message/read$",
       "component": "GET",
       "is_active": true,
       "meta": 69
@@ -2387,13 +2352,13 @@
     "pk": 66,
     "fields": {
       "created_time": "2023-09-13T10:02:21.046Z",
-      "updated_time": "2023-09-13T10:02:21.046Z",
+      "updated_time": "2023-09-15T09:18:30.881Z",
       "description": null,
       "parent": 64,
       "menu_type": 2,
-      "name": "delete:systemAnnouncementRead",
-      "rank": 45,
-      "path": "api/system/read/announcement/many_delete$",
+      "name": "delete:systemNoticeRead",
+      "rank": 38,
+      "path": "api/system/message/read/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 70
@@ -2404,13 +2369,13 @@
     "pk": 67,
     "fields": {
       "created_time": "2023-09-13T10:03:20.565Z",
-      "updated_time": "2023-09-13T10:03:20.565Z",
+      "updated_time": "2023-09-15T09:18:35.714Z",
       "description": null,
       "parent": 64,
       "menu_type": 2,
-      "name": "manyDelete:systemAnnouncementRead",
-      "rank": 46,
-      "path": "api/system/read/announcement/many_delete$",
+      "name": "manyDelete:systemNoticeRead",
+      "rank": 39,
+      "path": "api/system/message/read/many_delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 71
@@ -2426,7 +2391,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "userInfo",
-      "rank": 51,
+      "rank": 45,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
@@ -2443,7 +2408,7 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 9999,
+      "rank": 46,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
@@ -2460,7 +2425,7 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfoAvatar",
-      "rank": 9999,
+      "rank": 47,
       "path": "api/system/userinfo/upload$",
       "component": "POST",
       "is_active": true,
@@ -2477,11 +2442,79 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfoPassword",
-      "rank": 9999,
+      "rank": 48,
       "path": "api/system/userinfo/reset_password$",
       "component": "POST",
       "is_active": true,
       "meta": 75
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 72,
+    "fields": {
+      "created_time": "2023-09-15T10:17:08.911Z",
+      "updated_time": "2023-09-15T10:20:32.660Z",
+      "description": null,
+      "parent": 64,
+      "menu_type": 2,
+      "name": "update:systemNoticeReadState",
+      "rank": 40,
+      "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 76
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 73,
+    "fields": {
+      "created_time": "2023-09-15T13:30:38.584Z",
+      "updated_time": "2023-09-15T13:31:29.421Z",
+      "description": null,
+      "parent": null,
+      "menu_type": 1,
+      "name": "userNotice",
+      "rank": 49,
+      "path": "/user/notice/index",
+      "component": "user/notice/index",
+      "is_active": true,
+      "meta": 77
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 74,
+    "fields": {
+      "created_time": "2023-09-15T13:31:24.794Z",
+      "updated_time": "2023-09-15T13:31:24.794Z",
+      "description": null,
+      "parent": 73,
+      "menu_type": 2,
+      "name": "list:userNotice",
+      "rank": 50,
+      "path": "api/system/notice$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 78
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 75,
+    "fields": {
+      "created_time": "2023-09-15T14:08:33.755Z",
+      "updated_time": "2023-09-15T14:08:33.755Z",
+      "description": null,
+      "parent": 73,
+      "menu_type": 2,
+      "name": "update:userNoticeRead",
+      "rank": 9999,
+      "path": "api/system/notice/read$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 79
     }
   }
 ]

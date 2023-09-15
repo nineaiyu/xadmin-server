@@ -152,16 +152,41 @@ class UploadFileSerializer(serializers.ModelSerializer):
         read_only_fields = [x.name for x in models.UploadFile._meta.fields]
 
 
-class NotifyAnnouncementBaseSerializer(serializers.ModelSerializer):
+class NoticeMessageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Notification
-        fields = '__all__'
+        model = models.NoticeMessage
+        fields = ['pk', 'level', 'title', 'message', "created_time", "owner", "user_count", "read_user_count",
+                  'notice_type', 'extra_json', "files", "owners", "publish", 'notice_type_display']
 
         read_only_fields = ['pk', 'owner']
 
+    notice_type_display = serializers.CharField(source="get_notice_type_display", read_only=True)
+    owners = serializers.JSONField(write_only=True)
     files = serializers.JSONField(write_only=True)
 
+    user_count = serializers.SerializerMethodField(read_only=True)
+    read_user_count = serializers.SerializerMethodField(read_only=True)
+
+    def get_read_user_count(self, obj):
+        if obj.notice_type in [0, 1]:
+            return models.NoticeUserRead.objects.filter(notice=obj, unread=False, owner_id__in=obj.owner.all()).count()
+
+        elif obj.notice_type == 2:
+            return obj.owner.count()
+
+        return 0
+
+    def get_user_count(self, obj):
+        return obj.owner.count()
+
     def validate(self, attrs):
+        notice_type = attrs.get('notice_type')
+        owners = attrs.get('owners')
+        if notice_type == 1 and not owners:
+            raise Exception('消息通知缺少用户')
+        if notice_type == 2 and owners:
+            attrs.pop('owners')
+
         files = attrs.get('files')
         if files is not None:
             del attrs['files']
@@ -170,14 +195,18 @@ class NotifyAnnouncementBaseSerializer(serializers.ModelSerializer):
                 owner=self.context.get('request').user).all()
         return attrs
 
-    def save_data(self, validated_data, owner):
-        validated_data['owner'] = owner
+    def create(self, validated_data):
+        owners = []
+        if validated_data.get('owners') is not None:
+            owners = validated_data.pop('owners')
         instance = super().create(validated_data)
-        if instance:
-            instance.file.filter(is_tmp=True).update(is_tmp=False)
+        instance.file.filter(is_tmp=True).update(is_tmp=False)
+        if owners and validated_data['notice_type'] in [0, 1]:
+            instance.owner.set(models.UserInfo.objects.filter(pk__in=owners))
         return instance
 
     def update(self, instance, validated_data):
+        validated_data.pop('notice_type')  # 不能修改消息类型
         o_files = [x['pk'] for x in instance.file.all().values('pk')]
         n_files = []
         if validated_data.get('file'):
@@ -193,79 +222,36 @@ class NotifyAnnouncementBaseSerializer(serializers.ModelSerializer):
         return instance
 
 
-class NotifySerializer(NotifyAnnouncementBaseSerializer):
+class UserNoticeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Notification
-        fields = ['pk', 'level', 'unread', 'title', 'message', 'description', "created_time", "owner",
-                  'notify_type', 'extra_json', "owner_info", "files", "owners", "publish"]
-
+        model = models.NoticeMessage
+        fields = ['pk', 'level', 'title', 'message', "created_time", 'notice_type_display', 'unread']
         read_only_fields = ['pk', 'owner']
 
-    owners = serializers.JSONField(write_only=True)
-    owner_info = serializers.SerializerMethodField()
+    notice_type_display = serializers.CharField(source="get_notice_type_display", read_only=True)
+    unread = serializers.SerializerMethodField()
 
-    def get_owner_info(self, obj):
-        return {'pk': obj.owner.pk, 'username': obj.owner.username}
-
-    def create(self, validated_data):
-        owners = validated_data.get('owners')
-        result = []
-        if owners:
-            del validated_data['owners']
-            for owner in models.UserInfo.objects.filter(pk__in=owners):
-                result.append(self.save_data(validated_data, owner))
-        if not result:
-            raise Exception(f'用户ID {",".join(owners)} 不存在')
-        return result[0]
+    def get_unread(self, obj):
+        queryset = models.NoticeUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
+        if obj.notice_type in [0, 1]:
+            return bool(queryset.filter(unread=True).count())
+        elif obj.notice_type == 2:
+            return not bool(queryset.count())
+        return True
 
 
-class AnnouncementSerializer(NotifyAnnouncementBaseSerializer):
+class NoticeUserReadMessageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Announcement
-        fields = ['pk', 'level', 'title', 'message', 'description', "created_time", 'extra_json', "files", "publish",
-                  "read_count"]
-
-        read_only_fields = ['pk', 'owner']
-
-    read_count = serializers.SerializerMethodField()
-
-    def get_read_count(self, obj):
-        return obj.owner.count()
-
-
-class SimpleNotifySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Notification
-        fields = ['pk', 'level', 'unread', 'title', 'message', "created_time", "times", "notify_type"]
-
-        read_only_fields = [x.name for x in models.Notification._meta.fields]
-
-    times = serializers.SerializerMethodField()
-
-    def get_times(self, obj):
-        return obj.created_time.strftime('%Y年%m月%d日 %H:%M:%S')
-
-
-class SimpleAnnouncementSerializer(SimpleNotifySerializer):
-    class Meta:
-        model = models.Announcement
-        fields = ['pk', 'level', 'title', 'message', "created_time", "times", "notify_type"]
-
-        read_only_fields = [x.name for x in models.Announcement._meta.fields]
-
-
-class AnnouncementUserReadMessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.AnnouncementUserRead
-        fields = ['pk', 'owner_info', 'announcement', "created_time"]
-        read_only_fields = [x.name for x in models.AnnouncementUserRead._meta.fields]
+        model = models.NoticeUserRead
+        fields = ['pk', 'owner_info', 'notice_info', "updated_time", "unread"]
+        read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
     owner_info = serializers.SerializerMethodField()
-    announcement = serializers.SerializerMethodField()
+    notice_info = serializers.SerializerMethodField()
 
     def get_owner_info(self, obj):
         return {'pk': obj.owner.pk, 'username': obj.owner.username}
 
-    def get_announcement(self, obj):
-        return AnnouncementSerializer(obj.announcement).data
+    def get_notice_info(self, obj):
+        return NoticeMessageSerializer(obj.notice).data

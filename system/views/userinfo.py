@@ -11,8 +11,6 @@ from rest_framework.decorators import action
 
 from common.core.modelset import OwnerModelSet
 from common.core.response import ApiResponse
-from system.models import UserInfo
-from system.utils import notify
 from system.utils.serializer import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
