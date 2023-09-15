@@ -237,8 +237,6 @@ class Notification(AnnouncementNotificationBase):
 
 
 class Announcement(AnnouncementNotificationBase):
-    # owner = models.ManyToManyField(to=UserInfo, related_name='announcement', verbose_name='已读的用户', null=True,
-    #                                blank=True)
     owner = models.ManyToManyField(to=UserInfo, through="AnnouncementUserRead", null=True, blank=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):

@@ -13,7 +13,7 @@ from system.models import Notification
 
 
 def base_notify(users: List | QuerySet, title: str, message: str, notify_type: int,
-                level: Optional[Literal['success', 'info', 'warning', 'error']], extra_json: Dict = None):
+                level: Optional[Literal['success', '', 'warning', 'error']], extra_json: Dict = None):
     if isinstance(users, (QuerySet, list)):
         recipients = users
     else:
@@ -41,7 +41,7 @@ def notify_success(users: List | QuerySet, title: str, message: str, notify_type
 
 
 def notify_info(users: List | QuerySet, title: str, message: str, notify_type: int = 2, extra_json: Dict = None):
-    return base_notify(users, title, message, notify_type, 'info', extra_json)
+    return base_notify(users, title, message, notify_type, '', extra_json)
 
 
 def notify_warning(users: List | QuerySet, title: str, message: str, notify_type: int = 2, extra_json: Dict = None):

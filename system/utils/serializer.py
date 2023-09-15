@@ -13,7 +13,7 @@ from rest_framework import serializers
 from system import models
 
 
-class UserInfoSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'sex', 'date_joined', 'pk', 'mobile',
@@ -37,32 +37,14 @@ class UserInfoSerializer(serializers.ModelSerializer):
         return result
 
 
-class UserInfoUpdateSerializer(serializers.ModelSerializer):
+class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo
-        fields = ['first_name', 'old_password', 'new_password']
-        extra_kwargs = {
-            "old_password": {"write_only": True},
-            "new_password": {"write_only": True},
-        }
-
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-
-    def validate(self, attrs):
-        attrs['first_name'] = attrs['first_name'][:8]
-        return attrs
-
-    def update(self, instance, validated_data):
-        old_password = validated_data.get("old_password")
-        new_password = validated_data.get("new_password")
-        if old_password and new_password:
-            if not instance.check_password(validated_data.get("old_password")):
-                raise Exception('旧密码校验失败')
-            instance.set_password(validated_data.get("new_password"))
-            instance.save()
-            return instance
-        return super(UserInfoUpdateSerializer, self).update(instance, validated_data)
+        fields = ['username', 'nickname', 'email', 'last_login', 'sex', 'pk', 'mobile', 'avatar', 'roles_info',
+                  'date_joined']
+        extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
+                        'pk': {'read_only': True}, 'avatar': {'read_only': True}}
+        read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
 
 class RouteMetaSerializer(serializers.ModelSerializer):

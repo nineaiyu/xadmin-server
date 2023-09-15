@@ -22,7 +22,6 @@ from common.core.throttle import RegisterThrottle
 from common.utils.token import make_token, verify_token
 from system.models import UserInfo
 from system.utils.captcha import CaptchaAuth
-from system.utils.serializer import UserInfoSerializer, UserInfoUpdateSerializer
 
 
 def get_token_lifetime(user_obj):
@@ -114,20 +113,6 @@ class LoginView(TokenObtainPairView):
                 return ApiResponse(code=9999, detail='验证码不正确，请重新输入')
 
         return ApiResponse(code=9999, detail='token校验失败,请刷新页面重试')
-
-
-class UserInfoView(APIView):
-
-    def get(self, request):
-        data = UserInfoSerializer(request.user).data
-        return ApiResponse(data=data)
-
-    def put(self, request):
-        serializer = UserInfoUpdateSerializer(request.user, data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return ApiResponse()
-        return ApiResponse(code=1001, detail='修改失败')
 
 
 class RefreshTokenView(TokenRefreshView):

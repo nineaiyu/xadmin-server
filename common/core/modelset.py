@@ -6,10 +6,21 @@
 # date : 6/2/2023
 import json
 
+from rest_framework import mixins
 from rest_framework.decorators import action
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from common.core.response import ApiResponse
+
+
+class OwnerModelSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    def retrieve(self, request, *args, **kwargs):
+        data = super().retrieve(request, *args, **kwargs).data
+        return ApiResponse(data=data)
+
+    def update(self, request, *args, **kwargs):
+        data = super().update(request, *args, **kwargs).data
+        return ApiResponse(data=data)
 
 
 class BaseModelSet(ModelViewSet):

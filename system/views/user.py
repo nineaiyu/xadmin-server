@@ -15,7 +15,7 @@ from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from system.models import UserInfo
 from system.utils import notify
-from system.utils.serializer import UserInfoSerializer
+from system.utils.serializer import UserSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class UserFilter(filters.FilterSet):
 
 class UserView(BaseModelSet):
     queryset = UserInfo.objects.all()
-    serializer_class = UserInfoSerializer
+    serializer_class = UserSerializer
 
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['date_joined', 'last_login']
@@ -52,19 +52,6 @@ class UserView(BaseModelSet):
             if user:
                 return ApiResponse(detail=f"用户{user.username}添加成功", data=self.get_serializer(user).data)
         return ApiResponse(code=1003, detail="数据异常，用户创建失败")
-
-    def update(self, request, *args, **kwargs):
-        password = request.data.get('password')
-        pk = request.data.get('pk')
-        username = request.data.get('username')
-        if password and pk and username:
-            obj = UserInfo.objects.filter(pk=pk).first()
-            if obj:
-                obj.set_password(password)
-                obj.save(update_fields=["password"])
-                return ApiResponse(detail=f"用户{obj.username}密码重置成功", data=self.get_serializer(obj).data)
-        else:
-            return super().update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         if instance.is_superuser:
