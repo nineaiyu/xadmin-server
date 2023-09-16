@@ -51,3 +51,37 @@ docker compose up
 ```shell
 python manage.py dumpdata system.MenuMeta system.Menu -o loadjson/menu.json
 ```
+
+### nginx 前端代理
+```shell
+    location /ws/message {
+        proxy_pass http://127.0.0.1:28896;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_redirect off;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $server_name;
+        proxy_set_header X-Forwarded-Proto https; # https代理需求添加该参数
+    }
+
+    location ~ ^/(api|flower|media) {
+        proxy_pass http://127.0.0.1:28896;
+        proxy_send_timeout 180;
+        proxy_connect_timeout 180;
+        proxy_read_timeout 180;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $server_name;
+        proxy_set_header X-Forwarded-Proto https; # https代理需求添加该参数
+    }
+
+
+    location / {
+        try_files $uri $uri/  /index.html;
+    }
+
+```
