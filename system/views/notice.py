@@ -37,7 +37,7 @@ class NoticeMessageView(BaseModelSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, level_choices=get_choices_dict(NoticeMessage.level_choices),
-                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices[1:]))
+                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices))
 
     @action(methods=['put'], detail=True)
     def publish(self, request, *args, **kwargs):
@@ -72,7 +72,7 @@ class NoticeUserReadMessageView(BaseModelSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, level_choices=get_choices_dict(NoticeMessage.level_choices),
-                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices[1:]))
+                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices))
 
     @action(methods=['put'], detail=True)
     def state(self, request, *args, **kwargs):
@@ -114,10 +114,14 @@ class UserNoticeMessage(OnlyListModelSet):
     filterset_class = UserNoticeMessageFilter
 
     def list(self, request, *args, **kwargs):
+        unread_count = self.get_queryset().filter(
+            (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
+                                                                 noticeuserread__unread=True)).count()
         self.queryset = self.get_queryset().filter(Q(notice_type=2) | Q(notice_type__in=[0, 1], owner=request.user))
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, level_choices=get_choices_dict(NoticeMessage.level_choices),
-                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices[1:]))
+        return ApiResponse(**data, unread_count=unread_count,
+                           level_choices=get_choices_dict(NoticeMessage.level_choices),
+                           notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices))
 
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
@@ -139,10 +143,21 @@ class UserNoticeMessage(OnlyListModelSet):
 
         return ApiResponse(data={'results': results, 'total': notice_queryset.count() + announce_queryset.count()})
 
+    def read_message(self, pks, request):
+        if pks:
+            NoticeUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
+            for pk in pks:
+                NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
+        return ApiResponse(detail="操作成功")
+
     @action(methods=['put'], detail=False)
     def read(self, request, *args, **kwargs):
-        pks = request.data.get('pks')
-        NoticeUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
-        for pk in pks:
-            NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
-        return ApiResponse(detail="操作成功")
+        pks = request.data.get('pks', [])
+        return self.read_message(pks, request)
+
+    @action(methods=['put'], detail=False)
+    def read_all(self, request, *args, **kwargs):
+        pks = [pk['pk'] for pk in self.get_queryset().filter(
+            (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
+                                                                 noticeuserread__unread=True)).values('pk')]
+        return self.read_message(pks, request)

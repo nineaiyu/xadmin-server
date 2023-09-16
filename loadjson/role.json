@@ -4,12 +4,13 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-07-01T02:02:21.972Z",
-      "updated_time": "2023-09-15T15:33:25.935Z",
+      "updated_time": "2023-09-16T02:59:48.914Z",
       "description": "",
       "name": "管理员",
       "code": "admin",
       "is_active": true,
       "menu": [
+        76,
         75,
         74,
         73,
@@ -24,6 +25,7 @@
         64,
         63,
         55,
+        54,
         53,
         52,
         51,
