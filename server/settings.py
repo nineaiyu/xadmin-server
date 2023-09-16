@@ -183,7 +183,7 @@ STATIC_URL = 'static/'
 # Media配置
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "upload")
-
+FILE_UPLOAD_SIZE = 1024 * 1024 * 10
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
