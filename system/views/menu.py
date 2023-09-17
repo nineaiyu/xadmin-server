@@ -44,9 +44,8 @@ class MenuView(BaseModelSet):
     #     meta_obj = serializer.save()
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
-        return ApiResponse(data=serializer.data, choices_dict=get_choices_dict(Menu.method_choices),
+        data = super().list(request, *args, **kwargs).data
+        return ApiResponse(**data, choices_dict=get_choices_dict(Menu.method_choices),
                            api_url_list=get_all_url_dict(''))
 
     @action(methods=['post'], detail=False)
