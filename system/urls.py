@@ -44,7 +44,7 @@ router.register('notice', UserNoticeMessage, basename='user_notice')
 router.register('user', UserView, basename='user')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
-router.register('operation', OperationLogView, basename='operation_log')
+router.register('operation-log', OperationLogView, basename='operation_log')
 
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')

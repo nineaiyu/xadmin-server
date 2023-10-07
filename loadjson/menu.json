@@ -1869,7 +1869,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemUser",
       "rank": 8,
-      "path": "api/system/user/many_delete$",
+      "path": "api/system/user/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 14
@@ -1886,7 +1886,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemRole",
       "rank": 17,
-      "path": "api/system/role/many_delete$",
+      "path": "api/system/role/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 15
@@ -1971,7 +1971,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemMenu",
       "rank": 23,
-      "path": "api/system/menu/many_delete$",
+      "path": "api/system/menu/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 20
@@ -2056,7 +2056,7 @@
       "menu_type": 2,
       "name": "delete:systemOperationLog",
       "rank": 27,
-      "path": "api/system/operation/(?P<pk>[^/.]+)$",
+      "path": "api/system/operation-log/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
       "meta": 25
@@ -2090,7 +2090,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemOperationLog",
       "rank": 28,
-      "path": "api/system/operation/many_delete$",
+      "path": "api/system/operation-log/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 27
@@ -2243,7 +2243,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemNotice",
       "rank": 34,
-      "path": "api/system/message/notice/many_delete$",
+      "path": "api/system/message/notice/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 55
@@ -2396,7 +2396,7 @@
       "menu_type": 2,
       "name": "manyDelete:systemNoticeRead",
       "rank": 40,
-      "path": "api/system/message/read/many_delete$",
+      "path": "api/system/message/read/many-delete$",
       "component": "DELETE",
       "is_active": true,
       "meta": 71

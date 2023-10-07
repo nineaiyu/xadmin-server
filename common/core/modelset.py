@@ -52,7 +52,7 @@ class BaseModelSet(ModelViewSet):
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
-    @action(methods=['delete'], detail=False)
+    @action(methods=['delete'], detail=False, url_path='many-delete')
     def many_delete(self, request, *args, **kwargs):
         pks = request.query_params.get('pks', None)
         if not pks:
