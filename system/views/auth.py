@@ -47,7 +47,7 @@ class TempTokenView(APIView):
 
     def get(self, request):
         token = make_token(get_request_ident(request), time_limit=600, force_new=True).encode('utf-8')
-        return ApiResponse(token=token)
+        return ApiResponse(token=token, lifetime=settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days)
 
 
 class CaptchaView(APIView):
