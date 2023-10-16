@@ -40,7 +40,7 @@ def common_exception_handler(exc, context):
         unexpected_exception_logger.exception('')
 
     if not ret:  # drf内置处理不了，丢给django 的，我们自己来处理
-        return ApiResponse(detail=str(exc), code=500)
+        return ApiResponse(detail=str(exc), code=500, status=500)
     else:
         if not ret.data.get('detail'):
             ret.data['detail'] = str(exc)
