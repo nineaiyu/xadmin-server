@@ -49,5 +49,4 @@ router.register('operation-log', OperationLogView, basename='operation_log')
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 
-
 urlpatterns = no_auth_url + auth_url + menu_url + router.get_urls()

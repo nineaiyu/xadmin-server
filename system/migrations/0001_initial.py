@@ -10,7 +10,6 @@ import system.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [

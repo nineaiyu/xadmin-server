@@ -7,9 +7,12 @@
 import re
 from collections import OrderedDict
 
+from django.apps import apps
 from django.conf import settings
 from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
+
+from common.base.magic import import_from_string
 
 
 def check_show_url(url):
@@ -66,3 +69,22 @@ def get_all_url_dict(pre_url='/'):
     url_ordered_dict['#'] = {'name': '#', 'url': '#'}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
+
+
+def auto_register_app_url(urlpatterns):
+    for name, value in apps.app_configs.items():
+        try:
+            urls = import_from_string(f"{name}.config.URLPATTERNS")
+            if urls:
+                urlpatterns.extend(urls)
+                for url in urls:
+                    settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
+        except Exception as e:
+            pass
+
+        try:
+            urls = import_from_string(f"{name}.config.PERMISSION_WHITE_REURL")
+            if urls:
+                settings.PERMISSION_WHITE_URL.extend(urls)
+        except Exception as e:
+            pass

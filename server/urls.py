@@ -20,6 +20,7 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 
 from common.celery.flower import CeleryFlowerView
+from common.core.utils import auto_register_app_url
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,3 +29,5 @@ urlpatterns = [
     # media路径配置 开发环境可以启动下面配置，正式环境需要让nginx读取资源，无需进行转发
     re_path('^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
+
+auto_register_app_url(urlpatterns)
