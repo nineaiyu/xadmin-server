@@ -26,3 +26,7 @@ class PageNumber(PageNumberPagination):
             # ('previous', self.get_previous_link()),
             ('results', data)
         ]))
+
+
+class MenuPageNumber(PageNumber):
+    max_page_size = 500  # 返回最大数据条数
