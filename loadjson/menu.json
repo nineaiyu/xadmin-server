@@ -4,7 +4,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-06-20T09:25:08.529Z",
-      "updated_time": "2023-09-13T02:21:14.415Z",
+      "updated_time": "2023-10-23T03:35:59.689Z",
       "description": "",
       "title": "menus.hsAbout",
       "icon": "ep:info-filled",
@@ -14,8 +14,8 @@
       "is_keepalive": false,
       "frame_url": null,
       "frame_loading": false,
-      "transition_enter": null,
-      "transition_leave": null,
+      "transition_enter": "flip",
+      "transition_leave": "rubberBand",
       "is_hidden_tag": false,
       "dynamic_level": 1
     }
@@ -151,7 +151,7 @@
     "pk": 8,
     "fields": {
       "created_time": "2023-06-23T09:36:43.857Z",
-      "updated_time": "2023-07-01T12:11:07.158Z",
+      "updated_time": "2023-11-17T02:33:22.680Z",
       "description": null,
       "title": "更新用户",
       "icon": "",
@@ -1579,7 +1579,7 @@
     "pk": 78,
     "fields": {
       "created_time": "2023-09-15T13:31:24.727Z",
-      "updated_time": "2023-09-15T13:31:24.727Z",
+      "updated_time": "2023-11-16T03:41:58.919Z",
       "description": null,
       "title": "获取个人消息",
       "icon": "",
@@ -1638,16 +1638,1003 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 83,
+    "fields": {
+      "created_time": "2023-11-17T09:34:44.026Z",
+      "updated_time": "2023-11-28T10:08:49.548Z",
+      "description": null,
+      "title": "爱看电影",
+      "icon": "ep:video-camera",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 84,
+    "fields": {
+      "created_time": "2023-11-17T09:37:11.734Z",
+      "updated_time": "2023-11-22T02:36:25.443Z",
+      "description": null,
+      "title": "阿里云盘",
+      "icon": "ri:cloud-line",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 85,
+    "fields": {
+      "created_time": "2023-11-17T09:43:21.965Z",
+      "updated_time": "2023-11-19T05:52:43.603Z",
+      "description": null,
+      "title": "查询阿里云盘",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 86,
+    "fields": {
+      "created_time": "2023-11-17T09:47:29.610Z",
+      "updated_time": "2023-11-19T05:53:35.080Z",
+      "description": null,
+      "title": "删除阿里云盘",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 87,
+    "fields": {
+      "created_time": "2023-11-17T09:55:37.798Z",
+      "updated_time": "2023-11-19T05:53:48.050Z",
+      "description": null,
+      "title": "更新阿里云盘",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 88,
+    "fields": {
+      "created_time": "2023-11-17T09:57:21.309Z",
+      "updated_time": "2023-11-19T05:54:02.144Z",
+      "description": null,
+      "title": "添加云盘-获取二维码",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 89,
+    "fields": {
+      "created_time": "2023-11-17T09:58:36.385Z",
+      "updated_time": "2023-11-19T05:54:09.930Z",
+      "description": null,
+      "title": "检查云盘状态",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 90,
+    "fields": {
+      "created_time": "2023-11-17T10:05:36.609Z",
+      "updated_time": "2023-11-19T05:54:20.372Z",
+      "description": null,
+      "title": "清理云盘数据",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 91,
+    "fields": {
+      "created_time": "2023-11-19T08:32:30.521Z",
+      "updated_time": "2023-11-19T08:32:30.521Z",
+      "description": null,
+      "title": "批量删除阿里云盘",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 92,
+    "fields": {
+      "created_time": "2023-11-20T07:52:43.697Z",
+      "updated_time": "2023-11-20T08:07:18.565Z",
+      "description": null,
+      "title": "影视管理",
+      "icon": "ep:video-camera",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 93,
+    "fields": {
+      "created_time": "2023-11-20T07:54:32.889Z",
+      "updated_time": "2023-11-20T07:54:32.889Z",
+      "description": null,
+      "title": "查询影视",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 94,
+    "fields": {
+      "created_time": "2023-11-20T07:55:02.424Z",
+      "updated_time": "2023-11-20T07:55:02.424Z",
+      "description": null,
+      "title": "删除影视",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 95,
+    "fields": {
+      "created_time": "2023-11-20T07:55:28.935Z",
+      "updated_time": "2023-11-20T07:55:28.935Z",
+      "description": null,
+      "title": "更新影视",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 96,
+    "fields": {
+      "created_time": "2023-11-20T07:56:07.310Z",
+      "updated_time": "2023-11-20T07:56:07.310Z",
+      "description": null,
+      "title": "批量删除影视",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 97,
+    "fields": {
+      "created_time": "2023-11-20T07:56:54.057Z",
+      "updated_time": "2023-11-20T07:56:54.057Z",
+      "description": null,
+      "title": "添加影视",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 98,
+    "fields": {
+      "created_time": "2023-11-20T09:58:41.232Z",
+      "updated_time": "2023-11-20T09:58:41.232Z",
+      "description": null,
+      "title": "上传影视海报",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 99,
+    "fields": {
+      "created_time": "2023-11-21T05:48:06.350Z",
+      "updated_time": "2023-11-23T06:22:55.807Z",
+      "description": null,
+      "title": "单集管理",
+      "icon": "ep:video-camera-filled",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": true,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 100,
+    "fields": {
+      "created_time": "2023-11-21T05:49:23.430Z",
+      "updated_time": "2023-11-23T06:23:03.661Z",
+      "description": null,
+      "title": "查询单集视频",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 101,
+    "fields": {
+      "created_time": "2023-11-21T05:49:59.580Z",
+      "updated_time": "2023-11-23T06:23:11.320Z",
+      "description": null,
+      "title": "删除单集视频",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 102,
+    "fields": {
+      "created_time": "2023-11-21T05:50:53.849Z",
+      "updated_time": "2023-11-23T06:23:30.129Z",
+      "description": null,
+      "title": "更新单集视频",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 103,
+    "fields": {
+      "created_time": "2023-11-21T05:52:37.472Z",
+      "updated_time": "2023-11-23T06:23:17.066Z",
+      "description": null,
+      "title": "单集视频拖拽排序",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 104,
+    "fields": {
+      "created_time": "2023-11-21T05:54:26.524Z",
+      "updated_time": "2023-11-23T06:23:32.289Z",
+      "description": null,
+      "title": "添加单集视频",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 105,
+    "fields": {
+      "created_time": "2023-11-21T05:55:10.963Z",
+      "updated_time": "2023-11-23T06:23:25.953Z",
+      "description": null,
+      "title": "批量删除单集视频",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 106,
+    "fields": {
+      "created_time": "2023-11-21T07:02:07.478Z",
+      "updated_time": "2023-11-27T03:34:46.800Z",
+      "description": null,
+      "title": "上传云盘-检查是否可以秒传",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 107,
+    "fields": {
+      "created_time": "2023-11-21T07:03:29.293Z",
+      "updated_time": "2023-11-27T03:34:50.735Z",
+      "description": null,
+      "title": "上传云盘-分片上传数据",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 108,
+    "fields": {
+      "created_time": "2023-11-21T07:04:17.497Z",
+      "updated_time": "2023-11-27T03:34:54.064Z",
+      "description": null,
+      "title": "上传云盘-上传完成回调",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 109,
+    "fields": {
+      "created_time": "2023-11-21T07:04:49.660Z",
+      "updated_time": "2023-11-27T03:34:57.059Z",
+      "description": null,
+      "title": "上传云盘-获取上传授权",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 110,
+    "fields": {
+      "created_time": "2023-11-22T02:36:18.833Z",
+      "updated_time": "2023-11-22T02:36:28.914Z",
+      "description": null,
+      "title": "存储管理",
+      "icon": "ep:mostly-cloudy",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 111,
+    "fields": {
+      "created_time": "2023-11-22T02:37:40.748Z",
+      "updated_time": "2023-11-22T02:37:40.748Z",
+      "description": null,
+      "title": "文件管理",
+      "icon": "ep:files",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 112,
+    "fields": {
+      "created_time": "2023-11-22T02:38:31.864Z",
+      "updated_time": "2023-11-22T02:38:31.864Z",
+      "description": null,
+      "title": "查询云盘文件",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 113,
+    "fields": {
+      "created_time": "2023-11-22T02:39:10.192Z",
+      "updated_time": "2023-11-22T02:39:10.192Z",
+      "description": null,
+      "title": "删除云盘文件",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 114,
+    "fields": {
+      "created_time": "2023-11-22T02:39:48.234Z",
+      "updated_time": "2023-11-22T02:39:48.234Z",
+      "description": null,
+      "title": "批量删除云盘文件",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 115,
+    "fields": {
+      "created_time": "2023-11-22T02:42:02.066Z",
+      "updated_time": "2023-11-22T02:42:02.066Z",
+      "description": null,
+      "title": "批量下载云盘文件",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 116,
+    "fields": {
+      "created_time": "2023-11-22T02:43:23.562Z",
+      "updated_time": "2023-11-22T07:11:50.578Z",
+      "description": null,
+      "title": "获取文件下载连接",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 117,
+    "fields": {
+      "created_time": "2023-11-22T02:45:23.293Z",
+      "updated_time": "2023-11-22T02:45:23.293Z",
+      "description": null,
+      "title": "获取视频预览连接",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 118,
+    "fields": {
+      "created_time": "2023-11-22T07:02:25.216Z",
+      "updated_time": "2023-11-22T07:02:25.216Z",
+      "description": null,
+      "title": "更新云盘文件描述",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 119,
+    "fields": {
+      "created_time": "2023-11-27T08:19:33.457Z",
+      "updated_time": "2023-11-28T10:08:29.903Z",
+      "description": null,
+      "title": "影视分类",
+      "icon": "ep:scale-to-original",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 120,
+    "fields": {
+      "created_time": "2023-11-27T08:20:23.173Z",
+      "updated_time": "2023-11-27T08:20:23.173Z",
+      "description": null,
+      "title": "添加影视分类",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 121,
+    "fields": {
+      "created_time": "2023-11-27T08:21:01.828Z",
+      "updated_time": "2023-11-27T08:21:01.828Z",
+      "description": null,
+      "title": "删除影视分类",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 122,
+    "fields": {
+      "created_time": "2023-11-27T08:21:33.912Z",
+      "updated_time": "2023-11-27T08:21:33.912Z",
+      "description": null,
+      "title": "更新影视分类",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 123,
+    "fields": {
+      "created_time": "2023-11-27T08:22:16.657Z",
+      "updated_time": "2023-11-27T08:22:16.657Z",
+      "description": null,
+      "title": "查询影视分类",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 124,
+    "fields": {
+      "created_time": "2023-11-27T08:22:44.679Z",
+      "updated_time": "2023-11-27T08:22:44.679Z",
+      "description": null,
+      "title": "批量删除影视分类",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 125,
+    "fields": {
+      "created_time": "2023-11-28T07:01:32.034Z",
+      "updated_time": "2023-11-28T07:01:32.034Z",
+      "description": null,
+      "title": "观看历史",
+      "icon": "ep:document-copy",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 126,
+    "fields": {
+      "created_time": "2023-11-28T07:02:22.503Z",
+      "updated_time": "2023-11-28T07:02:22.503Z",
+      "description": null,
+      "title": "删除观看历史",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 127,
+    "fields": {
+      "created_time": "2023-11-28T07:03:04.483Z",
+      "updated_time": "2023-11-28T07:03:04.483Z",
+      "description": null,
+      "title": "批量删除观看历史",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 128,
+    "fields": {
+      "created_time": "2023-11-28T07:03:51.809Z",
+      "updated_time": "2023-11-28T07:03:51.809Z",
+      "description": null,
+      "title": "查询观看历史",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 129,
+    "fields": {
+      "created_time": "2023-11-28T07:21:20.600Z",
+      "updated_time": "2023-11-28T07:21:20.600Z",
+      "description": null,
+      "title": "更新播放时间",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
       "created_time": "2023-06-20T09:29:57.857Z",
-      "updated_time": "2023-09-13T02:21:14.482Z",
+      "updated_time": "2023-10-23T03:35:59.692Z",
       "description": null,
       "parent": null,
       "menu_type": 1,
       "name": "about",
-      "rank": 53,
+      "rank": 100,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
@@ -1761,7 +2748,7 @@
     "pk": 8,
     "fields": {
       "created_time": "2023-06-23T09:36:43.861Z",
-      "updated_time": "2023-07-01T12:11:07.168Z",
+      "updated_time": "2023-11-17T02:33:22.683Z",
       "description": null,
       "parent": 3,
       "menu_type": 2,
@@ -2412,7 +3399,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "userInfo",
-      "rank": 45,
+      "rank": 92,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
@@ -2429,7 +3416,7 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 46,
+      "rank": 93,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
@@ -2446,7 +3433,7 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfoAvatar",
-      "rank": 47,
+      "rank": 94,
       "path": "api/system/userinfo/upload$",
       "component": "POST",
       "is_active": true,
@@ -2463,7 +3450,7 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfoPassword",
-      "rank": 48,
+      "rank": 95,
       "path": "api/system/userinfo/reset_password$",
       "component": "POST",
       "is_active": true,
@@ -2497,7 +3484,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "userNotice",
-      "rank": 49,
+      "rank": 96,
       "path": "/user/notice/index",
       "component": "user/notice/index",
       "is_active": true,
@@ -2509,12 +3496,12 @@
     "pk": 74,
     "fields": {
       "created_time": "2023-09-15T13:31:24.794Z",
-      "updated_time": "2023-09-15T13:31:24.794Z",
+      "updated_time": "2023-11-16T03:41:58.922Z",
       "description": null,
       "parent": 73,
       "menu_type": 2,
       "name": "list:userNotice",
-      "rank": 50,
+      "rank": 99,
       "path": "api/system/notice$",
       "component": "GET",
       "is_active": true,
@@ -2531,7 +3518,7 @@
       "parent": 73,
       "menu_type": 2,
       "name": "update:userNoticeRead",
-      "rank": 51,
+      "rank": 97,
       "path": "api/system/notice/read$",
       "component": "PUT",
       "is_active": true,
@@ -2548,11 +3535,810 @@
       "parent": 73,
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
-      "rank": 52,
+      "rank": 98,
       "path": "api/system/notice/read_all$",
       "component": "PUT",
       "is_active": true,
       "meta": 80
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 79,
+    "fields": {
+      "created_time": "2023-11-17T09:34:44.030Z",
+      "updated_time": "2023-11-28T10:08:49.552Z",
+      "description": null,
+      "parent": null,
+      "menu_type": 0,
+      "name": "movies",
+      "rank": 45,
+      "path": "/movies",
+      "component": "",
+      "is_active": true,
+      "meta": 83
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 80,
+    "fields": {
+      "created_time": "2023-11-17T09:37:11.738Z",
+      "updated_time": "2023-11-22T02:36:25.447Z",
+      "description": null,
+      "parent": 106,
+      "menu_type": 1,
+      "name": "MoviesDrive",
+      "rank": 47,
+      "path": "/movies/drive/index",
+      "component": "movies/drive/index",
+      "is_active": true,
+      "meta": 84
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 81,
+    "fields": {
+      "created_time": "2023-11-17T09:43:21.968Z",
+      "updated_time": "2023-11-19T05:52:43.606Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "list:MoviesDrive",
+      "rank": 48,
+      "path": "api/movies/drive$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 85
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 82,
+    "fields": {
+      "created_time": "2023-11-17T09:47:29.614Z",
+      "updated_time": "2023-11-19T05:53:35.084Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "delete:MoviesDrive",
+      "rank": 49,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 86
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 83,
+    "fields": {
+      "created_time": "2023-11-17T09:55:37.801Z",
+      "updated_time": "2023-11-19T05:53:48.053Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "update:MoviesDrive",
+      "rank": 50,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 87
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 84,
+    "fields": {
+      "created_time": "2023-11-17T09:57:21.312Z",
+      "updated_time": "2023-11-19T05:54:02.147Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "get:MoviesDriveQrCode",
+      "rank": 51,
+      "path": "api/movies/qrcode-drive",
+      "component": "GET",
+      "is_active": true,
+      "meta": 88
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 85,
+    "fields": {
+      "created_time": "2023-11-17T09:58:36.389Z",
+      "updated_time": "2023-11-19T05:54:09.933Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "check:MoviesDriveQrCode",
+      "rank": 52,
+      "path": "api/movies/qrcode-drive",
+      "component": "POST",
+      "is_active": true,
+      "meta": 89
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 86,
+    "fields": {
+      "created_time": "2023-11-17T10:05:36.612Z",
+      "updated_time": "2023-11-19T05:54:20.375Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "clean:MoviesDrive",
+      "rank": 53,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)/clean$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 90
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 87,
+    "fields": {
+      "created_time": "2023-11-19T08:32:30.524Z",
+      "updated_time": "2023-11-19T08:32:30.524Z",
+      "description": null,
+      "parent": 80,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesDrive",
+      "rank": 54,
+      "path": "api/movies/drive/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 91
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 88,
+    "fields": {
+      "created_time": "2023-11-20T07:52:43.757Z",
+      "updated_time": "2023-11-20T08:07:18.568Z",
+      "description": null,
+      "parent": 79,
+      "menu_type": 1,
+      "name": "MoviesFilm",
+      "rank": 73,
+      "path": "/movies/film/index",
+      "component": "movies/film/index",
+      "is_active": true,
+      "meta": 92
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 89,
+    "fields": {
+      "created_time": "2023-11-20T07:54:32.892Z",
+      "updated_time": "2023-11-20T07:54:32.892Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "list:MoviesFilm",
+      "rank": 74,
+      "path": "api/movies/film$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 93
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 90,
+    "fields": {
+      "created_time": "2023-11-20T07:55:02.427Z",
+      "updated_time": "2023-11-20T07:55:02.427Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "delete:MoviesFilm",
+      "rank": 75,
+      "path": "api/movies/film/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 94
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 91,
+    "fields": {
+      "created_time": "2023-11-20T07:55:28.938Z",
+      "updated_time": "2023-11-20T07:55:28.938Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "update:MoviesFilm",
+      "rank": 76,
+      "path": "api/movies/film/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 95
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 92,
+    "fields": {
+      "created_time": "2023-11-20T07:56:07.312Z",
+      "updated_time": "2023-11-20T07:56:07.312Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesFilm",
+      "rank": 77,
+      "path": "api/movies/film/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 96
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 93,
+    "fields": {
+      "created_time": "2023-11-20T07:56:54.060Z",
+      "updated_time": "2023-11-20T07:56:54.060Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "create:MoviesFilm",
+      "rank": 78,
+      "path": "api/movies/film$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 97
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 94,
+    "fields": {
+      "created_time": "2023-11-20T09:58:41.235Z",
+      "updated_time": "2023-11-20T09:58:41.236Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "upload:MoviesFilmPoster",
+      "rank": 79,
+      "path": "api/movies/film/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 98
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 95,
+    "fields": {
+      "created_time": "2023-11-21T05:48:06.353Z",
+      "updated_time": "2023-11-23T06:22:55.810Z",
+      "description": null,
+      "parent": 79,
+      "menu_type": 1,
+      "name": "MoviesEpisode",
+      "rank": 80,
+      "path": "/movies/episode/index",
+      "component": "movies/episode/index",
+      "is_active": true,
+      "meta": 99
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 96,
+    "fields": {
+      "created_time": "2023-11-21T05:49:23.434Z",
+      "updated_time": "2023-11-23T06:23:03.664Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "list:MoviesEpisode",
+      "rank": 83,
+      "path": "api/movies/episode$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 100
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 97,
+    "fields": {
+      "created_time": "2023-11-21T05:49:59.584Z",
+      "updated_time": "2023-11-23T06:23:11.324Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "delete:MoviesEpisode",
+      "rank": 84,
+      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 101
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 98,
+    "fields": {
+      "created_time": "2023-11-21T05:50:53.852Z",
+      "updated_time": "2023-11-23T06:23:30.132Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "update:MoviesEpisode",
+      "rank": 81,
+      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 102
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 99,
+    "fields": {
+      "created_time": "2023-11-21T05:52:37.477Z",
+      "updated_time": "2023-11-23T06:23:17.069Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "rank:MoviesEpisode",
+      "rank": 85,
+      "path": "api/movies/episode/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 103
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 100,
+    "fields": {
+      "created_time": "2023-11-21T05:54:26.528Z",
+      "updated_time": "2023-11-23T06:23:32.292Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "create:MoviesEpisode",
+      "rank": 82,
+      "path": "api/movies/episode$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 104
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 101,
+    "fields": {
+      "created_time": "2023-11-21T05:55:10.966Z",
+      "updated_time": "2023-11-23T06:23:25.956Z",
+      "description": null,
+      "parent": 95,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesEpisode",
+      "rank": 86,
+      "path": "api/movies/episode/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 105
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 102,
+    "fields": {
+      "created_time": "2023-11-21T07:02:07.482Z",
+      "updated_time": "2023-11-27T03:34:46.804Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodePreHash",
+      "rank": 63,
+      "path": "api/movies/episode/pre_hash$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 106
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 103,
+    "fields": {
+      "created_time": "2023-11-21T07:03:29.296Z",
+      "updated_time": "2023-11-27T03:34:50.738Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeContentHash",
+      "rank": 64,
+      "path": "api/movies/episode/content_hash$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 107
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 104,
+    "fields": {
+      "created_time": "2023-11-21T07:04:17.500Z",
+      "updated_time": "2023-11-27T03:34:54.066Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeComplete",
+      "rank": 65,
+      "path": "api/movies/episode/upload_complete$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 108
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 105,
+    "fields": {
+      "created_time": "2023-11-21T07:04:49.663Z",
+      "updated_time": "2023-11-27T03:34:57.062Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeAuthSid",
+      "rank": 66,
+      "path": "api/movies/episode/auth_sid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 109
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 106,
+    "fields": {
+      "created_time": "2023-11-22T02:36:18.836Z",
+      "updated_time": "2023-11-22T02:36:28.917Z",
+      "description": null,
+      "parent": 79,
+      "menu_type": 0,
+      "name": "storage",
+      "rank": 46,
+      "path": "/movies/storage",
+      "component": "",
+      "is_active": true,
+      "meta": 110
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 107,
+    "fields": {
+      "created_time": "2023-11-22T02:37:40.751Z",
+      "updated_time": "2023-11-22T02:37:40.751Z",
+      "description": null,
+      "parent": 106,
+      "menu_type": 1,
+      "name": "MoviesFile",
+      "rank": 55,
+      "path": "/movies/file/index",
+      "component": "movies/file/index",
+      "is_active": true,
+      "meta": 111
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 108,
+    "fields": {
+      "created_time": "2023-11-22T02:38:31.881Z",
+      "updated_time": "2023-11-22T02:38:31.881Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "list:MoviesFile",
+      "rank": 56,
+      "path": "api/movies/file$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 112
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 109,
+    "fields": {
+      "created_time": "2023-11-22T02:39:10.195Z",
+      "updated_time": "2023-11-22T02:39:10.195Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "delete:MoviesFile",
+      "rank": 57,
+      "path": "api/movies/file/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 113
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 110,
+    "fields": {
+      "created_time": "2023-11-22T02:39:48.237Z",
+      "updated_time": "2023-11-22T02:39:48.237Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesFile",
+      "rank": 58,
+      "path": "api/movies/file/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 114
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 111,
+    "fields": {
+      "created_time": "2023-11-22T02:42:02.069Z",
+      "updated_time": "2023-11-22T02:42:02.069Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "manyDownload:MoviesFile",
+      "rank": 59,
+      "path": "api/movies/file/many-download$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 115
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 112,
+    "fields": {
+      "created_time": "2023-11-22T02:43:23.566Z",
+      "updated_time": "2023-11-22T07:11:50.581Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "get:MoviesFileDownloadUrl",
+      "rank": 60,
+      "path": "api/movies/file/(?P<pk>[^/.]+)/download-url$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 116
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 113,
+    "fields": {
+      "created_time": "2023-11-22T02:45:23.296Z",
+      "updated_time": "2023-11-22T02:45:23.296Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "get:MoviesFilePreviewUrl",
+      "rank": 61,
+      "path": "api/movies/file/(?P<pk>[^/.]+)/preview$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 117
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 114,
+    "fields": {
+      "created_time": "2023-11-22T07:02:25.220Z",
+      "updated_time": "2023-11-22T07:02:25.220Z",
+      "description": null,
+      "parent": 107,
+      "menu_type": 2,
+      "name": "update:MoviesFile",
+      "rank": 62,
+      "path": "api/movies/file/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 118
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 115,
+    "fields": {
+      "created_time": "2023-11-27T08:19:33.461Z",
+      "updated_time": "2023-11-28T10:08:29.906Z",
+      "description": null,
+      "parent": 79,
+      "menu_type": 1,
+      "name": "MoviesCategory",
+      "rank": 67,
+      "path": "/movies/category/index",
+      "component": "movies/category/index",
+      "is_active": true,
+      "meta": 119
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 116,
+    "fields": {
+      "created_time": "2023-11-27T08:20:23.176Z",
+      "updated_time": "2023-11-27T08:20:23.176Z",
+      "description": null,
+      "parent": 115,
+      "menu_type": 2,
+      "name": "create:MoviesCategory",
+      "rank": 68,
+      "path": "api/movies/category$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 120
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 117,
+    "fields": {
+      "created_time": "2023-11-27T08:21:01.832Z",
+      "updated_time": "2023-11-27T08:21:01.832Z",
+      "description": null,
+      "parent": 115,
+      "menu_type": 2,
+      "name": "delete:MoviesCategory",
+      "rank": 69,
+      "path": "api/movies/category/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 121
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 118,
+    "fields": {
+      "created_time": "2023-11-27T08:21:33.914Z",
+      "updated_time": "2023-11-27T08:21:33.914Z",
+      "description": null,
+      "parent": 115,
+      "menu_type": 2,
+      "name": "update:MoviesCategory",
+      "rank": 70,
+      "path": "api/movies/category/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 122
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 119,
+    "fields": {
+      "created_time": "2023-11-27T08:22:16.660Z",
+      "updated_time": "2023-11-27T08:22:16.660Z",
+      "description": null,
+      "parent": 115,
+      "menu_type": 2,
+      "name": "list:MoviesCategory",
+      "rank": 71,
+      "path": "api/movies/category$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 123
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 120,
+    "fields": {
+      "created_time": "2023-11-27T08:22:44.682Z",
+      "updated_time": "2023-11-27T08:22:44.682Z",
+      "description": null,
+      "parent": 115,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesCategory",
+      "rank": 72,
+      "path": "api/movies/category/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 124
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 121,
+    "fields": {
+      "created_time": "2023-11-28T07:01:32.038Z",
+      "updated_time": "2023-11-28T07:01:32.038Z",
+      "description": null,
+      "parent": 79,
+      "menu_type": 1,
+      "name": "MoviesWatchHistory",
+      "rank": 87,
+      "path": "/movies/history/index",
+      "component": "movies/history/index",
+      "is_active": true,
+      "meta": 125
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 122,
+    "fields": {
+      "created_time": "2023-11-28T07:02:22.506Z",
+      "updated_time": "2023-11-28T07:02:22.506Z",
+      "description": null,
+      "parent": 121,
+      "menu_type": 2,
+      "name": "delete:MoviesWatchHistory",
+      "rank": 88,
+      "path": "api/movies/history/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 126
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 123,
+    "fields": {
+      "created_time": "2023-11-28T07:03:04.486Z",
+      "updated_time": "2023-11-28T07:03:04.486Z",
+      "description": null,
+      "parent": 121,
+      "menu_type": 2,
+      "name": "manyDelete:MoviesWatchHistory",
+      "rank": 89,
+      "path": "api/movies/history/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 127
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 124,
+    "fields": {
+      "created_time": "2023-11-28T07:03:51.812Z",
+      "updated_time": "2023-11-28T07:03:51.812Z",
+      "description": null,
+      "parent": 121,
+      "menu_type": 2,
+      "name": "list:MoviesWatchHistory",
+      "rank": 90,
+      "path": "api/movies/history$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 128
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 125,
+    "fields": {
+      "created_time": "2023-11-28T07:21:20.604Z",
+      "updated_time": "2023-11-28T07:21:20.604Z",
+      "description": null,
+      "parent": 121,
+      "menu_type": 2,
+      "name": "update:MoviesWatchTimes",
+      "rank": 91,
+      "path": "api/movies/history/times$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 129
     }
   }
 ]
