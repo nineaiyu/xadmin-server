@@ -6,11 +6,10 @@
 # date : 11/17/2023
 
 import logging
-from collections import OrderedDict
 
 from rest_framework import serializers
 
-from movies.models import AliyunDrive, AliyunFile, FilmInfo, Category, EpisodeInfo, WatchHistory
+from movies.models import AliyunDrive, AliyunFile, FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
 
 logger = logging.getLogger(__file__)
 
@@ -51,24 +50,57 @@ class CategoryListSerializer(serializers.ModelSerializer):
 class FilmInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FilmInfo
-        fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'subtitles', 'director',
+        fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'subtitle', 'director', 'channel',
                   'starring', 'times', 'views', 'rate', 'description', 'enable', 'created_time', 'updated_time',
-                  'category_info']
+                  'category_info', 'release_date', 'region_info', 'language_info', 'channel_info', 'subtitle_info',
+                  'director_info', 'introduction', 'current_play_pk']
         extra_kwargs = {'pk': {'read_only': True}, 'poster': {'read_only': True}}
-        # read_only_fields = list(set([x.name for x in FilmInfo._meta.fields]) - {"pk", "views"})
 
     category_info = serializers.SerializerMethodField(read_only=True)
+    region_info = serializers.SerializerMethodField(read_only=True)
+    language_info = serializers.SerializerMethodField(read_only=True)
+    channel_info = serializers.SerializerMethodField(read_only=True)
+    subtitle_info = serializers.SerializerMethodField(read_only=True)
+    director_info = serializers.SerializerMethodField(read_only=True)
+    current_play_pk = serializers.SerializerMethodField(read_only=True)
 
     def get_category_info(self, obj):
-        result = []
-        if isinstance(obj, OrderedDict):
-            queryset = obj.get('category')
-        else:
-            queryset = obj.category.all()
-        if queryset:
-            for objs in queryset:
-                result.append({'pk': objs.pk, 'name': objs.name})
-        return result
+        return CategoryListSerializer(obj.category, many=True).data
+
+    def get_region_info(self, obj):
+        return CategoryListSerializer(obj.region, many=True).data
+
+    def get_language_info(self, obj):
+        return CategoryListSerializer(obj.language, many=True).data
+
+    def get_channel_info(self, obj):
+        return CategoryListSerializer(obj.channel, many=True).data
+
+    def get_subtitle_info(self, obj):
+        return CategoryListSerializer(obj.subtitle, many=True).data
+
+    def get_director_info(self, obj):
+        return CategoryListSerializer(obj.director, many=True).data
+
+    def get_current_play_pk(self, obj):
+        user = self.context.get('user')
+        if user and user.is_authenticated:
+            history = obj.watchhistory_set.last()
+            if history:
+                return history.episode_id
+        episode = obj.episodeinfo_set.order_by('-rank').first()
+        if episode:
+            return episode.pk
+        return 1
+
+    def update(self, instance, validated_data):
+        if instance.episodeinfo_set.count() == 0:
+            validated_data['enable'] = False
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        validated_data['enable'] = False
+        return super().create(validated_data)
 
 
 class EpisodeInfoSerializer(serializers.ModelSerializer):
@@ -97,12 +129,14 @@ class EpisodeInfoSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['name', 'created_time', 'pk', 'description', 'enable', 'count']
+        fields = ['name', 'created_time', 'pk', 'description', 'enable', 'count', 'category_type', 'category_display',
+                  'rank']
 
     count = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_type_display', read_only=True)
 
     def get_count(self, obj):
-        return obj.filminfo_set.count()
+        return obj.film_category.count()
 
 
 class WatchHistorySerializer(serializers.ModelSerializer):
@@ -120,3 +154,18 @@ class WatchHistorySerializer(serializers.ModelSerializer):
         times = obj.episode.files.duration if obj.episode.files.duration else obj.episode.film.times
         return {'pk': obj.episode.pk, 'name': obj.episode.name, 'film_name': obj.episode.film.name,
                 'times': times, 'film_pk': obj.episode.film.pk}
+
+
+class SwipeInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SwipeInfo
+        fields = ['pk', 'name', 'rank', 'picture', 'enable', 'created_time', 'description', 'route']
+        read_only_fields = ['pk', 'picture', 'created_time']
+
+
+class ActorInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActorInfo
+        fields = ['pk', 'name', 'foreign_name', 'enable', 'created_time', 'description', 'sex', 'birthday',
+                  'introduction', 'avatar']
+        read_only_fields = ['pk', 'avatar', 'created_time']

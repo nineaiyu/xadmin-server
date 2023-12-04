@@ -57,24 +57,81 @@ class AliyunFile(DbBaseModel):
 
 
 class Category(DbBaseModel):
-    name = models.CharField(max_length=64, verbose_name="类别", unique=True)
+    name = models.CharField(max_length=64, verbose_name="类别")
+    category_type_choices = ((1, '视频渠道'), (2, '地区国家'), (3, '视频类型'), (4, '视频语言'), (5, '视频字幕'))
+    category_type = models.SmallIntegerField(verbose_name="类型", choices=category_type_choices, default=1)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
+    rank = models.IntegerField(verbose_name="展示顺序", default=999)
+
+    class Meta:
+        ordering = ['rank']
+        verbose_name = '类型'
+        verbose_name_plural = "类型"
+        unique_together = ('category_type', 'name')
+
+    @classmethod
+    def get_channel_category(cls):
+        return cls.objects.filter(category_type=1, enable=True).all()
+
+    @classmethod
+    def get_region_category(cls):
+        return cls.objects.filter(category_type=2, enable=True).all()
+
+    @classmethod
+    def get_video_category(cls):
+        return cls.objects.filter(category_type=3, enable=True).all()
+
+    @classmethod
+    def get_language_category(cls):
+        return cls.objects.filter(category_type=4, enable=True).all()
+
+    @classmethod
+    def get_subtitle_category(cls):
+        return cls.objects.filter(category_type=5, enable=True).all()
+
+
+class ActorInfo(DbBaseModel):
+    name = models.CharField(max_length=64, verbose_name="演员名字", unique=True)
+    foreign_name = models.CharField(max_length=64, verbose_name="外文")
+    avatar = models.FileField(verbose_name="头像", null=True, blank=True, upload_to=upload_directory_path)
+    sex = models.SmallIntegerField(verbose_name="性别", default=0, help_text='0：男 1：女 2：保密')
+    birthday = models.DateField(verbose_name="出生日期")
+    introduction = models.TextField(verbose_name="简介", null=True, blank=True)
+    enable = models.BooleanField(default=True, verbose_name="是否启用")
+
+    class Meta:
+        verbose_name = '演员'
+        verbose_name_plural = "演员"
+
+    def delete(self, using=None, keep_parents=False):
+        if self.avatar:
+            self.avatar.delete()  # 删除存储的文件
+        return super().delete(using, keep_parents)
 
 
 class FilmInfo(DbBaseModel):
     name = models.CharField(max_length=64, verbose_name="电影片名")
     title = models.CharField(max_length=64, verbose_name="电影译名")
     poster = models.FileField(verbose_name="海报", null=True, blank=True, upload_to=upload_directory_path)
-    category = models.ManyToManyField(to=Category, verbose_name="类别")
-    region = models.CharField(max_length=64, verbose_name="地区")
-    language = models.CharField(max_length=64, verbose_name="语言")
-    subtitles = models.CharField(max_length=64, verbose_name="字幕")
-    director = models.CharField(max_length=64, verbose_name="导演")
-    starring = models.CharField(max_length=256, verbose_name="演员")
+    channel = models.ManyToManyField(to=Category, verbose_name="频道，电影，电视，综艺等分类",
+                                     related_name='channel_category')
+    category = models.ManyToManyField(to=Category, verbose_name="类别，科幻，灾难，武侠等分类",
+                                      related_name='film_category')
+    region = models.ManyToManyField(to=Category, verbose_name="地区，内地，中国台湾，中国香港，欧洲等分类",
+                                    related_name='region_category')
+    language = models.ManyToManyField(to=Category, verbose_name="语言，中文，英语，韩语等",
+                                      related_name='language_category')
+    subtitle = models.ManyToManyField(to=Category, verbose_name="字幕，中英对照",
+                                      related_name='subtitle_category')
+
+    director = models.ManyToManyField(to=ActorInfo, verbose_name="导演", related_name='director_actor')
+    starring = models.ManyToManyField(to=ActorInfo, verbose_name="演员", related_name='starring_actor')
     times = models.IntegerField(verbose_name="片长，分钟", default=90)
     rate = models.FloatField(verbose_name="评分", default=5)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
     views = models.BigIntegerField(verbose_name="观看次数", default=0)
+    release_date = models.DateField(verbose_name="上映时间")
+    introduction = models.TextField(verbose_name="剧情", null=True, blank=True)
 
     class Meta:
         verbose_name = '影片信息'
@@ -109,13 +166,34 @@ class EpisodeInfo(DbBaseModel):
 class WatchHistory(DbBaseModel):
     owner = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='history_query', null=True, blank=True,
                               verbose_name='创建人', on_delete=models.CASCADE)
+    film = models.ForeignKey(to=FilmInfo, verbose_name="视频", on_delete=models.CASCADE)
     episode = models.ForeignKey(to=EpisodeInfo, verbose_name="单集视频", on_delete=models.CASCADE)
     times = models.FloatField(verbose_name="播放的时间")
 
     class Meta:
         verbose_name = '播放历史'
         verbose_name_plural = "播放历史"
-        unique_together = ('owner', 'episode')
+        unique_together = ('owner', 'film')
 
     def __str__(self):
-        return f"播放历史:{self.episode} {self.owner.name}"
+        return f"播放历史:{self.episode} {self.owner}"
+
+
+class SwipeInfo(DbBaseModel):
+    name = models.CharField(max_length=64, verbose_name="轮播名称", null=True, blank=True)
+    picture = models.FileField(verbose_name="轮播图片", null=True, blank=True, upload_to=upload_directory_path)
+    route = models.CharField(max_length=128, verbose_name="前端路由地址", null=True, blank=True)
+    rank = models.IntegerField(verbose_name="轮播图片顺序", default=999)
+    enable = models.BooleanField(default=True, verbose_name="是否启用")
+
+    class Meta:
+        verbose_name = '轮播图片'
+        verbose_name_plural = "轮播图片"
+
+    def delete(self, using=None, keep_parents=False):
+        if self.picture:
+            self.picture.delete()  # 删除存储的文件
+        return super().delete(using, keep_parents)
+
+    def __str__(self):
+        return f"轮播图片:{self.name} {self.picture}"
