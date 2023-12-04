@@ -508,6 +508,7 @@ CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
+    "^/api/system/logout$",
     "^/api/system/userinfo/self$",
     "^/api/system/notice/unread$",
     "^/api/system/routes$",

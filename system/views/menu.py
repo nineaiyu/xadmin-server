@@ -57,7 +57,7 @@ class MenuView(BaseModelSet):
             pks = request.data.get('pks', [])
             rank = 0
             for pk in pks:
-                Menu.objects.filter(pk=pk).update(rank=rank)
+                self.queryset.filter(pk=pk).update(rank=rank)
                 rank += 1
             return ApiResponse(detail='菜单顺序保存成功')
         return ApiResponse(code=1001, detail="操作失败")

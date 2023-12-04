@@ -99,6 +99,7 @@ class UserRole(DbBaseModel):
     name = models.CharField(max_length=128, verbose_name="角色名称", unique=True)
     code = models.CharField(max_length=128, verbose_name="角色标识", unique=True)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    auto_bind = models.BooleanField(verbose_name="是否绑定该角色", default=False)
     menu = models.ManyToManyField(to='Menu', verbose_name="菜单权限", null=True, blank=True)
 
     class Meta:
