@@ -20,7 +20,7 @@ from common.cache.storage import BlackAccessTokenCache
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.utils.token import make_token, verify_token
-from system.models import UserInfo
+from system.models import UserInfo, UserRole
 from system.utils.captcha import CaptchaAuth
 
 
@@ -69,6 +69,7 @@ class RegisterView(APIView):
         token = data.get('token')
         username = data.get('username')
         password = data.get('password')
+        channel = data.get('channel')
         if verify_token(token, client_id, success_once=True) and username and password:
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
@@ -76,6 +77,10 @@ class RegisterView(APIView):
             user = auth.authenticate(username=username, password=password)
             if not user:
                 user = UserInfo.objects.create_user(username=username, password=password, first_name=username)
+                if channel and user:
+                    roles = UserRole.objects.filter(is_active=True, auto_bind=True, code=channel)
+                    if roles:
+                        user.roles.set(roles)
 
             if user.is_active:
                 refresh = RefreshToken.for_user(user)

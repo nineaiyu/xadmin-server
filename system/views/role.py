@@ -25,7 +25,7 @@ class RoleFilter(filters.FilterSet):
 
     class Meta:
         model = UserRole
-        fields = ['name', 'is_active']
+        fields = ['name', 'is_active', 'auto_bind']
 
 
 class RoleView(BaseModelSet):

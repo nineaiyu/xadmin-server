@@ -53,7 +53,7 @@ class UserInfoView(OwnerModelSet):
         if old_password and sure_password:
             instance = self.get_object()
             if not instance.check_password(old_password):
-                raise Exception('旧密码校验失败')
+                return ApiResponse(code=1001, detail='旧密码校验失败')
             instance.set_password(sure_password)
             instance.save(update_fields=['password'])
             return ApiResponse()

@@ -114,7 +114,7 @@ class MenuSerializer(serializers.ModelSerializer):
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time']
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'auto_bind']
         read_only_fields = ['pk']
 
 
