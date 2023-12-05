@@ -43,12 +43,12 @@ class HomeView(APIView):
     @cache_response(timeout=600)
     def get(self, request):
         film_queryset = FilmInfo.objects.filter(enable=True)
-        film_result = [
-            {
+        film_result = []
+        if film_queryset.count():
+            film_result.append({
                 'title': '最近更新',
                 'data': H5FilmInfoSerializer(film_queryset.order_by('-created_time').all()[:9], many=True).data
-            }
-        ]
+            })
 
         for obj in Category.get_channel_category():
             film_data = film_queryset.filter(channel=obj).order_by('-views')
