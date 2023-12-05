@@ -187,8 +187,13 @@ class WatchHistoryView(BaseModelSet):
         file_id = request.data.get('file_id')
         episode = EpisodeInfo.objects.filter(files_id=file_id).first()
         if times and episode:
-            WatchHistory.objects.update_or_create(defaults={'times': times, 'episode': episode}, owner=request.user,
-                                                  film=episode.film)
+            self.queryset.update_or_create(defaults={'times': times, 'episode': episode}, owner=request.user,
+                                           film=episode.film)
+        return ApiResponse()
+
+    @action(methods=['post'], detail=False)
+    def clean(self, request, *args, **kwargs):
+        self.queryset.delete()
         return ApiResponse()
 
 

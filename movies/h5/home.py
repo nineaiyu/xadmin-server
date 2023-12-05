@@ -164,7 +164,7 @@ class H5FilmPreviewView(APIView):
 
 
 class H5WatchHistoryFilter(filters.FilterSet):
-    name = filters.CharFilter(field_name='episode__name', lookup_expr='icontains')
+    name = filters.CharFilter(field_name='film__name', lookup_expr='icontains')
 
     class Meta:
         model = WatchHistory
