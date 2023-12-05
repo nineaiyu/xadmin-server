@@ -76,7 +76,7 @@ def save_file_info(complete: BaseFile, request, drive_obj):
         aliyun_drive=drive_obj,
         **defaults
     )
-    delay_sync_drive_size(drive_obj)
+    delay_sync_drive_size(drive_obj.pk)
     return obj
 
 
