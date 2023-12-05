@@ -4,12 +4,14 @@
 # filename : home
 # author : ly_13
 # date : 11/30/2023
+from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 from rest_framework.views import APIView
 
+from common.base.magic import cache_response
 from common.core.filter import OwnerUserFilter
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
@@ -38,6 +40,7 @@ class HomeView(APIView):
     permission_classes = []
     authentication_classes = []
 
+    @cache_response(timeout=600)
     def get(self, request):
         film_queryset = FilmInfo.objects.filter(enable=True)
         film_result = [
@@ -101,6 +104,11 @@ class H5FilmView(OnlyListModelSet):
     ordering_fields = ['created_time', 'rate', 'views', 'release_date']
     filterset_class = FilmFilter
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data)
@@ -110,6 +118,7 @@ class H5FilmFilterView(APIView):
     permission_classes = []
     authentication_classes = []
 
+    @cache_response(timeout=600)
     def get(self, request):
         channel = CategoryListSerializer(Category.get_channel_category(), many=True).data
         channel.insert(0, {'value': '', 'label': '频道'})
@@ -137,6 +146,11 @@ class H5FilmFilterView(APIView):
 class H5FilmDetailView(APIView):
     permission_classes = []
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{kwargs.get('pk')}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     def get(self, request, pk):
         film_obj = FilmInfo.objects.filter(pk=pk).first()
         if film_obj:
@@ -152,6 +166,7 @@ class H5FilmDetailView(APIView):
 class H5FilmPreviewView(APIView):
     permission_classes = []
 
+    @cache_response(timeout=18)
     def get(self, request, pk):
         instance = EpisodeInfo.objects.filter(pk=pk).first()
         serializer = AliyunFileSerializer(instance.files)
@@ -184,6 +199,11 @@ class H5WatchHistoryView(WatchHistoryView):
 class H5FilmActorDetailView(APIView):
     permission_classes = []
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{kwargs.get('pk')}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     def get(self, request, pk):
         actor_obj = ActorInfo.objects.filter(pk=pk).first()
         if actor_obj:

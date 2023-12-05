@@ -482,6 +482,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'system.tasks.auto_clean_tmp_file_job',
         'schedule': crontab(hour='2', minute='32'),
         'args': ()
+    },
+    'sync_drive_size_job': {
+        'task': 'movies.tasks.batch_sync_drive_size',
+        'schedule': crontab(hour='2', minute='42'),
+        'args': ()
     }
 }
 

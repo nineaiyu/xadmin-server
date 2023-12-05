@@ -22,6 +22,7 @@ from common.utils.token import generate_alphanumeric_token_of_length
 from movies.config import MOVIES_STORAGE_PREFIX
 from movies.libs.alidrive.types import BaseFile
 from movies.models import AliyunFile, AliyunDrive, WatchHistory
+from movies.tasks import delay_sync_drive_size
 from movies.utils.serializer import AliyunFileSerializer
 from movies.utils.storage import get_aliyun_drive, batch_get_download_url, batch_delete_file, get_video_preview, \
     get_download_url
@@ -75,7 +76,7 @@ def save_file_info(complete: BaseFile, request, drive_obj):
         aliyun_drive=drive_obj,
         **defaults
     )
-    # delay_sync_drive_size(drive_obj)
+    delay_sync_drive_size(drive_obj)
     return obj
 
 

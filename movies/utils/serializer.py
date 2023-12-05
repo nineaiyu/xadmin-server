@@ -53,7 +53,7 @@ class FilmInfoSerializer(serializers.ModelSerializer):
         fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'subtitle', 'director', 'channel',
                   'starring', 'times', 'views', 'rate', 'description', 'enable', 'created_time', 'updated_time',
                   'category_info', 'release_date', 'region_info', 'language_info', 'channel_info', 'subtitle_info',
-                  'director_info', 'introduction', 'current_play_pk']
+                  'director_info', 'introduction', 'current_play_pk', 'episode_count']
         extra_kwargs = {'pk': {'read_only': True}, 'poster': {'read_only': True}}
 
     category_info = serializers.SerializerMethodField(read_only=True)
@@ -63,6 +63,7 @@ class FilmInfoSerializer(serializers.ModelSerializer):
     subtitle_info = serializers.SerializerMethodField(read_only=True)
     director_info = serializers.SerializerMethodField(read_only=True)
     current_play_pk = serializers.SerializerMethodField(read_only=True)
+    episode_count = serializers.SerializerMethodField(read_only=True)
 
     def get_category_info(self, obj):
         return CategoryListSerializer(obj.category, many=True).data
@@ -92,6 +93,9 @@ class FilmInfoSerializer(serializers.ModelSerializer):
         if episode:
             return episode.pk
         return 1
+
+    def get_episode_count(self, obj):
+        return obj.episodeinfo_set.count()
 
     def update(self, instance, validated_data):
         if instance.episodeinfo_set.count() == 0:

@@ -123,6 +123,7 @@ def get_aliyun_drive(drive_obj: AliyunDrive) -> Aligo:
             return Aligo(drive_obj, refresh_token=drive_obj.refresh_token)
 
 
+@MagicCacheData.make_cache(timeout=3600, key_func=lambda *args: f"{args[0].file_id}")
 def get_video_m3u8(file_obj: AliyunFile, template_id='FHD|HD|SD|LD', url_expire_sec=14400):
     drive_obj = AliyunDrive.objects.filter(active=True, enable=True, access_token__isnull=False,
                                            pk=file_obj.aliyun_drive.pk).first()
