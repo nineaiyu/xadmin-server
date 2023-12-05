@@ -127,7 +127,7 @@ class FilmInfo(DbBaseModel):
     director = models.ManyToManyField(to=ActorInfo, verbose_name="导演", related_name='director_actor')
     starring = models.ManyToManyField(to=ActorInfo, verbose_name="演员", related_name='starring_actor')
     times = models.IntegerField(verbose_name="片长，分钟", default=90)
-    rate = models.FloatField(verbose_name="评分", default=5)
+    rate = models.DecimalField(verbose_name="评分", max_digits=5, decimal_places=1, default=5)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
     views = models.BigIntegerField(verbose_name="观看次数", default=0)
     release_date = models.DateField(verbose_name="上映时间")

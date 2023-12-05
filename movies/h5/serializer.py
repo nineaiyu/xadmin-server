@@ -18,7 +18,7 @@ logger = logging.getLogger(__file__)
 class H5FilmInfoSerializer(FilmInfoSerializer):
     class Meta:
         model = FilmInfo
-        fields = ['pk', 'name', 'poster', 'rate', 'category_info', 'release_date']
+        fields = ['pk', 'name', 'poster', 'rate', 'category_info', 'release_date', 'channel_info']
         read_only_fields = list(set([x.name for x in FilmInfo._meta.fields]))
 
 
