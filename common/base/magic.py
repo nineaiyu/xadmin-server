@@ -180,13 +180,14 @@ class MagicCacheData(object):
                         cache.set(cache_key, res, cache_time)
                         try:
                             res['data'] = func(*args, **kwargs)
-                            res['status'] = 'ok'
-                            cache.set(cache_key, res, cache_time)
                             logger.info(
                                 f"exec {func} finished. time:{time.time() - n_time} cache_time:{cache_time} cache_key:{cache_key} result:{res}")
                         except Exception as e:
                             logger.error(
                                 f"exec {func} failed. time:{time.time() - n_time}  cache_time:{cache_time} cache_key:{cache_key} Exception:{e}")
+
+                        res['status'] = 'ok'
+                        cache.set(cache_key, res, cache_time)
 
                         return res['data']
 
