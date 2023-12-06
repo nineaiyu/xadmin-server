@@ -7,14 +7,13 @@
 import json
 import logging
 
-from django.conf import settings
-from django.db.models import Q, FileField
+from django.db.models import Q
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.base.utils import get_choices_dict
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, UploadFileAction, RankAction
 from common.core.response import ApiResponse
 from movies.models import FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
 from movies.utils.serializer import FilmInfoSerializer, CategorySerializer, EpisodeInfoSerializer, \
@@ -53,7 +52,8 @@ class FilmFilter(filters.FilterSet):
         fields = ['id']
 
 
-class FilmInfoView(BaseModelSet):
+class FilmInfoView(BaseModelSet, UploadFileAction):
+    FILE_UPLOAD_FIELD = 'poster'
     queryset = FilmInfo.objects.all().distinct()
     serializer_class = FilmInfoSerializer
 
@@ -72,30 +72,6 @@ class FilmInfoView(BaseModelSet):
         }
         return ApiResponse(**data, **category_result)
 
-    @action(methods=['post'], detail=True)
-    def upload(self, request, *args, **kwargs):
-        files = request.FILES.getlist('file', [])
-        instance = self.get_object()
-        file_obj = files[0]
-        try:
-            file_type = file_obj.name.split(".")[-1]
-            if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
-                logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
-                raise
-            if file_obj.size > settings.FILE_UPLOAD_SIZE:
-                return ApiResponse(code=1003, detail=f"图片大小不能超过 {settings.FILE_UPLOAD_SIZE}")
-        except Exception as e:
-            logger.error(f"user:{request.user} upload file type error Exception:{e}")
-            return ApiResponse(code=1002, detail="错误的图片类型")
-        delete_avatar_name = None
-        if instance.poster:
-            delete_avatar_name = instance.poster.name
-        instance.poster = file_obj
-        instance.save(update_fields=['poster'])
-        if delete_avatar_name:
-            FileField(name=delete_avatar_name).storage.delete(delete_avatar_name)
-        return ApiResponse()
-
 
 class EpisodeInfoFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
@@ -107,23 +83,13 @@ class EpisodeInfoFilter(filters.FilterSet):
         fields = ['id']
 
 
-class EpisodeInfoView(BaseModelSet):
+class EpisodeInfoView(BaseModelSet, RankAction):
     queryset = EpisodeInfo.objects.all().distinct()
     serializer_class = EpisodeInfoSerializer
 
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['rank', 'created_time']
     filterset_class = EpisodeInfoFilter
-
-    @action(methods=['post'], detail=False)
-    def action_rank(self, request, *args, **kwargs):
-        pks = request.data.get('pks', [])
-        film = request.data.get('film')
-        rank = 1
-        for pk in pks:
-            self.queryset.filter(film=film, pk=pk).update(rank=rank)
-            rank += 1
-        return ApiResponse(detail='播放顺序保存成功')
 
 
 class CategoryFilter(filters.FilterSet):
@@ -136,7 +102,7 @@ class CategoryFilter(filters.FilterSet):
         fields = ['id']
 
 
-class CategoryView(BaseModelSet):
+class CategoryView(BaseModelSet, RankAction):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
@@ -147,15 +113,6 @@ class CategoryView(BaseModelSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(Category.category_type_choices))
-
-    @action(methods=['post'], detail=False)
-    def action_rank(self, request, *args, **kwargs):
-        pks = request.data.get('pks', [])
-        rank = 1
-        for pk in pks:
-            self.queryset.filter(pk=pk).update(rank=rank)
-            rank += 1
-        return ApiResponse(detail='顺序保存成功')
 
 
 class WatchHistoryFilter(filters.FilterSet):
@@ -207,46 +164,14 @@ class SwipeInfoFilter(filters.FilterSet):
         fields = ['id']
 
 
-class SwipeInfoView(BaseModelSet):
+class SwipeInfoView(BaseModelSet, UploadFileAction, RankAction):
+    FILE_UPLOAD_FIELD = 'picture'
     queryset = SwipeInfo.objects.all().distinct()
     serializer_class = SwipeInfoSerializer
 
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_time', 'rank']
     filterset_class = SwipeInfoFilter
-
-    @action(methods=['post'], detail=False)
-    def action_rank(self, request, *args, **kwargs):
-        pks = request.data.get('pks', [])
-        rank = 1
-        for pk in pks:
-            self.queryset.filter(pk=pk).update(rank=rank)
-            rank += 1
-        return ApiResponse(detail='播放顺序保存成功')
-
-    @action(methods=['post'], detail=True)
-    def upload(self, request, *args, **kwargs):
-        files = request.FILES.getlist('file', [])
-        instance = self.get_object()
-        file_obj = files[0]
-        try:
-            file_type = file_obj.name.split(".")[-1]
-            if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
-                logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
-                raise
-            if file_obj.size > settings.FILE_UPLOAD_SIZE:
-                return ApiResponse(code=1003, detail=f"图片大小不能超过 {settings.FILE_UPLOAD_SIZE}")
-        except Exception as e:
-            logger.error(f"user:{request.user} upload file type error Exception:{e}")
-            return ApiResponse(code=1002, detail="错误的图片类型")
-        delete_avatar_name = None
-        if instance.picture:
-            delete_avatar_name = instance.picture.name
-        instance.picture = file_obj
-        instance.save(update_fields=['picture'])
-        if delete_avatar_name:
-            FileField(name=delete_avatar_name).storage.delete(delete_avatar_name)
-        return ApiResponse()
 
 
 class ActorInfoFilter(filters.FilterSet):
@@ -274,34 +199,11 @@ class ActorInfoFilter(filters.FilterSet):
         fields = ['id']
 
 
-class ActorInfoView(BaseModelSet):
+class ActorInfoView(BaseModelSet, UploadFileAction):
+    FILE_UPLOAD_FIELD = 'avatar'
     queryset = ActorInfo.objects.all()
     serializer_class = ActorInfoSerializer
 
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_time']
     filterset_class = ActorInfoFilter
-
-    @action(methods=['post'], detail=True)
-    def upload(self, request, *args, **kwargs):
-        files = request.FILES.getlist('file', [])
-        instance = self.get_object()
-        file_obj = files[0]
-        try:
-            file_type = file_obj.name.split(".")[-1]
-            if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
-                logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
-                raise
-            if file_obj.size > settings.FILE_UPLOAD_SIZE:
-                return ApiResponse(code=1003, detail=f"图片大小不能超过 {settings.FILE_UPLOAD_SIZE}")
-        except Exception as e:
-            logger.error(f"user:{request.user} upload file type error Exception:{e}")
-            return ApiResponse(code=1002, detail="错误的图片类型")
-        delete_avatar_name = None
-        if instance.avatar:
-            delete_avatar_name = instance.avatar.name
-        instance.avatar = file_obj
-        instance.save(update_fields=['avatar'])
-        if delete_avatar_name:
-            FileField(name=delete_avatar_name).storage.delete(delete_avatar_name)
-        return ApiResponse()
