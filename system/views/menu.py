@@ -7,12 +7,11 @@
 
 
 from django_filters import rest_framework as filters
-from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.views import APIView
 
 from common.base.utils import menu_list_to_tree, get_choices_dict, format_menu_data
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, RankAction
 from common.core.pagination import MenuPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
@@ -31,7 +30,7 @@ class MenuFilter(filters.FilterSet):
         fields = ['name']
 
 
-class MenuView(BaseModelSet):
+class MenuView(BaseModelSet, RankAction):
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
     pagination_class = MenuPageNumber
@@ -40,27 +39,10 @@ class MenuView(BaseModelSet):
     ordering_fields = ['updated_time', 'name', 'created_time']
     filterset_class = MenuFilter
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = MenuMetaSerializer(data=request.data.get('meta', {}))
-    #     serializer.is_valid(raise_exception=True)
-    #     meta_obj = serializer.save()
-
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(Menu.method_choices),
                            api_url_list=get_all_url_dict(''))
-
-    @action(methods=['post'], detail=False)
-    def action_rank(self, request, *args, **kwargs):
-        action = request.data.get('action')
-        if action == 'order':
-            pks = request.data.get('pks', [])
-            rank = 0
-            for pk in pks:
-                self.queryset.filter(pk=pk).update(rank=rank)
-                rank += 1
-            return ApiResponse(detail='菜单顺序保存成功')
-        return ApiResponse(code=1001, detail="操作失败")
 
 
 class UserRoutesView(APIView):
