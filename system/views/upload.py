@@ -29,7 +29,7 @@ class UploadView(APIView):
         result = []
         for file_obj in files:
             try:
-                file_type = file_obj.name.split(".")[-1]
+                # file_type = file_obj.name.split(".")[-1]
                 # if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
                 #     logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
                 #     raise

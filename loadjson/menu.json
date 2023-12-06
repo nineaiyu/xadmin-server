@@ -2022,7 +2022,7 @@
       "menu_type": 2,
       "name": "upload:systemAvatar",
       "rank": 5,
-      "path": "api/system/user/upload$",
+      "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
       "meta": 23
@@ -2445,9 +2445,9 @@
       "description": null,
       "parent": 68,
       "menu_type": 2,
-      "name": "update:UserInfoAvatar",
+      "name": "upload:UserInfoAvatar",
       "rank": 47,
-      "path": "api/system/userinfo/upload$",
+      "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
       "meta": 74
