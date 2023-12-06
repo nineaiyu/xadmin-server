@@ -47,6 +47,21 @@ class UploadFileAction(object):
         return ApiResponse()
 
 
+class RankAction(object):
+
+    def get_queryset(self):
+        raise NotImplementedError('get_queryset must be overridden')
+
+    @action(methods=['post'], detail=False)
+    def action_rank(self, request, *args, **kwargs):
+        pks = request.data.get('pks', [])
+        rank = 1
+        for pk in pks:
+            self.get_queryset().filter(pk=pk).update(rank=rank)
+            rank += 1
+        return ApiResponse(detail='顺序保存成功')
+
+
 class OwnerModelSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     def retrieve(self, request, *args, **kwargs):
         data = super().retrieve(request, *args, **kwargs).data
