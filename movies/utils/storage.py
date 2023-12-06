@@ -69,6 +69,8 @@ def format_m3u8_data(preview_play_info: List[LiveTranscodingTask]):
     start_str = '#EXTM3U'
     for preview in preview_play_info:
         if preview.status == 'finished':
+            if not preview.url:
+                continue
             if preview.template_id == 'SD':
                 stream_inf = StreamInfo(bandwidth=836280, program_id=1, codecs="mp4a.40.2,avc1.64001f",
                                         name=preview.template_name,

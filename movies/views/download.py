@@ -10,7 +10,7 @@ import logging
 from io import BytesIO
 from wsgiref.util import FileWrapper
 
-from django.http import FileResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.http import FileResponse, HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 from django.views import View
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -47,6 +47,7 @@ class DownloadView(ReadOnlyModelViewSet):
 class M3U8View(View):
     def get(self, request, file_id):
         token = request.GET.get('token')
+        act = request.GET.get('act')
         if token and file_id and verify_token(token, file_id, success_once=False):
             instance = AliyunFile.objects.filter(file_id=file_id, category='video').first()
             if instance:
@@ -55,12 +56,23 @@ class M3U8View(View):
                 except Exception as e:
                     logger.warning(f" {instance} views 保存失败 {e}")
                 m3u8_data = get_video_m3u8(instance)
-                buffer = BytesIO(m3u8_data.encode('utf-8'))
-                m3u8_file = FileWrapper(buffer)
-                response = FileResponse(m3u8_file)
-                response['Content-Type'] = "audio/mpegurl"
-                return response
-        return ApiResponse(detail='error')
+                if act and act == 'json':
+                    data = m3u8_data.replace('#EXTM3U\n', '').split('\n')
+                    if len(data) % 2 == 0:
+                        result = []
+                        for i in range(0, len(data), 2):
+                            result.append({
+                                'label': data[i].split('NAME=')[-1].replace('pds', ''),
+                                'url': data[i + 1]
+                            })
+                        return JsonResponse(data={'detail': 'success', 'code': 1000, 'data': result})
+                else:
+                    buffer = BytesIO(m3u8_data.encode('utf-8'))
+                    m3u8_file = FileWrapper(buffer)
+                    response = FileResponse(m3u8_file)
+                    response['Content-Type'] = "audio/mpegurl"
+                    return response
+        return JsonResponse(data={'detail': '资源获取失败', 'code': 1001})
 
 
 class DirectlyDownloadView(APIView):
