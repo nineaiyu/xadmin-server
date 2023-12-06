@@ -61,16 +61,29 @@ def get_aliyun_drive_obj(request):
     return file_info, False, None
 
 
-def save_file_info(complete: BaseFile, request, drive_obj):
+def get_duration(complete: BaseFile):
+    duration = complete.video_media_metadata.duration
+    if not duration:
+        video_media_video_stream = complete.video_media_metadata.video_media_video_stream
+        if video_media_video_stream:
+            duration = video_media_video_stream[0].duration
+    if not duration:
+        duration = 0
+    return duration
+
+
+def save_file_info(complete: BaseFile, request, drive_obj, ali_obj):
     fields = ['name', 'file_id', 'drive_id', 'size', 'content_type', 'content_hash', 'crc64_hash', 'category',
               'duration']
     defaults = {}
     for f in fields:
         if hasattr(complete, f):
             defaults[f] = getattr(complete, f)
-    video_media_video_stream = complete.video_media_metadata.video_media_video_stream
-    if video_media_video_stream:
-        defaults['duration'] = video_media_video_stream[0].duration
+    defaults['duration'] = get_duration(complete)
+    if not defaults['duration'] and complete.category == 'video':
+        time.sleep(2)
+        complete = ali_obj.get_file(complete.file_id, complete.drive_id)
+        defaults['duration'] = get_duration(complete)
     obj = AliyunFile.objects.create(
         owner=request.user,
         aliyun_drive=drive_obj,
@@ -85,6 +98,8 @@ class AliyunFileFilter(filters.FilterSet):
     max_size = filters.NumberFilter(field_name="size", lookup_expr='lte')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    file_id = filters.CharFilter(field_name='file_id')
+    pk = filters.NumberFilter(field_name='id')
     drive_id = filters.NumberFilter(field_name="aliyun_drive_id")
     used = filters.BooleanFilter(method="used_filter")
 
@@ -182,8 +197,9 @@ class AliyunFileView(BaseModelSet):
         if not check_status:
             data['part_info_list'] = ali_obj.reget_upload_part_url(part_info)
         else:
+            time.sleep(1)  # 延时获取数据，防止数据异常
             complete = ali_obj.get_file(part_info.file_id, part_info.drive_id)
-            obj = save_file_info(complete, request, drive_obj)
+            obj = save_file_info(complete, request, drive_obj, ali_obj)
             UploadPartInfoCache(file_info.get('sid')).del_storage_cache()
             data['file_id'] = complete.file_id
             data['pk'] = obj.pk
@@ -195,7 +211,7 @@ class AliyunFileView(BaseModelSet):
         complete, check_status = ali_obj.upload_complete(file_info)
         logger.debug(f'{file_info.get("file_name")} pre_hash check {complete}')
         if complete and check_status:
-            obj = save_file_info(complete, request, drive_obj)
+            obj = save_file_info(complete, request, drive_obj, ali_obj)
             UploadPartInfoCache(file_info.get('sid')).del_storage_cache()
             return ApiResponse(**{'check_status': check_status, 'file_id': complete.file_id, 'pk': obj.pk})
         return ApiResponse(detail='上传失败')
