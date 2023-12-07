@@ -18,7 +18,7 @@ from common.core.response import ApiResponse
 class UploadFileAction(object):
     FILE_UPLOAD_TYPE = ['png', 'jpeg', 'jpg', 'gif']
     FILE_UPLOAD_FIELD = 'avatar'
-    FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
+    FILE_UPLOAD_SIZE = settings.PICTURE_UPLOAD_SIZE
 
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
