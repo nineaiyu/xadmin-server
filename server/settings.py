@@ -190,6 +190,7 @@ STATIC_URL = 'static/'
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "upload")
 FILE_UPLOAD_SIZE = 1024 * 1024 * 10
+PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
@@ -341,10 +342,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'main'
         },
-        'file': {
+        'server': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件，根据时间自动切
-            'filename': os.path.join(BASE_LOG_DIR, "debug.log"),  # 日志文件
+            'filename': os.path.join(BASE_LOG_DIR, "server.log"),  # 日志文件
             'maxBytes': 1024 * 1024 * 100,  # 日志大小 100M
             'backupCount': 10,  # 备份数为3
             # 'when': 'W6',  # 每天一切， 可选值有S/秒 M/分 H/小时 D/天 W0-W6/周(0=周一) midnight/如果没指定时间就默认在午夜
@@ -353,7 +354,7 @@ LOGGING = {
         },
         'drf_exception': {
             'encoding': 'utf8',
-            'level': 'DEBUG',
+            'level': 'ERROR',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'exception',
             'maxBytes': 1024 * 1024 * 100,
@@ -362,7 +363,7 @@ LOGGING = {
         },
         'unexpected_exception': {
             'encoding': 'utf8',
-            'level': 'DEBUG',
+            'level': 'ERROR',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'exception',
             'maxBytes': 1024 * 1024 * 100,
@@ -381,7 +382,7 @@ LOGGING = {
     },
     'loggers': {
         '': {  # 默认的logger应用如下配置
-            'handlers': ['file', 'console', 'drf_exception', 'unexpected_exception'],
+            'handlers': ['server', 'console', 'drf_exception', 'unexpected_exception'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -391,27 +392,27 @@ LOGGING = {
             'level': 'DEBUG',
         },
         'django.request': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'server'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'django.server': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'server'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'django.db.backends': {
             'handlers': ['console', 'sql'],
             'propagate': True,
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
         'drf_exception': {
             'handlers': ['console', 'drf_exception'],
-            'level': 'INFO',
+            'level': 'ERROR',
         },
         'unexpected_exception': {
-            'handlers': ['unexpected_exception'],
-            'level': 'INFO',
+            'handlers': ['console', 'unexpected_exception'],
+            'level': 'ERROR',
         },
     },
 }
