@@ -127,7 +127,7 @@ class EpisodeInfoSerializer(serializers.ModelSerializer):
 
     def get_files(self, obj):
         return {'pk': obj.files.pk, 'file_id': obj.files.file_id, 'name': obj.files.name,
-                'duration': obj.files.duration}
+                'duration': obj.files.duration, 'size': obj.files.size}
 
 
 class CategorySerializer(serializers.ModelSerializer):
