@@ -110,7 +110,7 @@ class File(Core):
         """
         body = BatchGetFileRequest(file_id_list=file_id_list, drive_id=drive_id)
         result = self._core_batch_get_files(body)
-        return [BaseFile(**i.body) for i in result]
+        return [BaseFile(**i.body.to_dict()) for i in result]
 
     def get_folder_by_path(
             self, path: str = '/', parent_file_id: str = 'root', create_folder: bool = False,

@@ -17,7 +17,6 @@ from common.base.utils import AesBaseCrypt
 from common.cache.storage import DownloadUrlCache
 from common.core.filter import OwnerUserFilter
 from common.core.modelset import BaseModelSet
-from common.core.pagination import PageNumber
 from common.core.response import ApiResponse
 from common.utils.pending import get_pending_result
 from movies.config import MOVIES_STORAGE_PREFIX
@@ -26,6 +25,7 @@ from movies.libs.alidrive.core.Auth import Auth
 from movies.models import AliyunDrive
 from movies.utils.serializer import AliyunDriveSerializer
 from movies.utils.storage import get_aliyun_drive, DriveQrCache
+from movies.utils.util import save_file_info, get_duration
 
 logger = logging.getLogger(__file__)
 
@@ -89,6 +89,36 @@ class AliyunDriveView(BaseModelSet):
                 clean_drive_file(instance)
             instance.delete()
         return ApiResponse(detail=f"批量操作成功")
+
+    @action(methods=['get'], detail=True)
+    def get_files(self, request, *args, **kwargs):
+        instance = self.get_object()
+        file_id = request.query_params.get('file_id')
+        results = []
+        if file_id and isinstance(file_id, str) and len(file_id) > 20:
+            ali_obj: Aligo = get_aliyun_drive(instance)
+            file_complete_list = ali_obj.get_file_list(parent_file_id=file_id)
+            for complete in file_complete_list:
+                if complete:
+                    fields = ['name', 'file_id', 'drive_id', 'size', 'content_type', 'category', 'duration']
+                    defaults = {}
+                    for f in fields:
+                        if hasattr(complete, f):
+                            defaults[f] = getattr(complete, f)
+                    defaults['duration'] = get_duration(complete)
+                    results.append(defaults)
+        return ApiResponse(data={'results': results})
+
+    @action(methods=['post'], detail=True)
+    def import_files(self, request, *args, **kwargs):
+        instance = self.get_object()
+        file_ids = request.data.get('file_ids')
+        if file_ids:
+            ali_obj: Aligo = get_aliyun_drive(instance)
+            file_complete_list = ali_obj.batch_get_files(file_ids)
+            for complete in file_complete_list:
+                save_file_info(complete, request.user, instance, ali_obj, is_upload=False)
+        return ApiResponse()
 
 
 def expect_func(result, *args, **kwargs):

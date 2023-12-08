@@ -28,7 +28,7 @@ class AliyunFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = AliyunFile
         fields = ['pk', 'aliyun_drive', 'name', 'file_id', 'created_time', 'size', 'content_type', 'category',
-                  'downloads', 'description', 'used', 'duration']
+                  'downloads', 'description', 'used', 'duration', 'is_upload']
         read_only_fields = list(set([x.name for x in AliyunFile._meta.fields]) - {"description"})
 
     used = serializers.SerializerMethodField()

@@ -47,6 +47,7 @@ class AliyunFile(DbBaseModel):
     crc64_hash = models.CharField(max_length=64, verbose_name="crc64_hash")
     downloads = models.BigIntegerField(verbose_name="下载次数", default=0)
     duration = models.FloatField(verbose_name="视频长度", default=0)
+    is_upload = models.BooleanField(default=True, verbose_name="是否是上传的文件数据")
 
     class Meta:
         verbose_name = '文件信息'
