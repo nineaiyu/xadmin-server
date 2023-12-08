@@ -9,6 +9,7 @@ from hashlib import md5
 from django.db.models import Q
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
+from rest_framework.generics import get_object_or_404
 from rest_framework.views import APIView
 
 from common.base.magic import cache_response
@@ -19,7 +20,7 @@ from movies.h5.serializer import H5FilmInfoSerializer, H5WatchHistorySerializer,
 from movies.models import FilmInfo, SwipeInfo, Category, WatchHistory, EpisodeInfo, ActorInfo
 from movies.utils.serializer import SwipeInfoSerializer, CategoryListSerializer, \
     AliyunFileSerializer, FilmInfoSerializer, EpisodeInfoSerializer, ActorInfoSerializer
-from movies.utils.storage import get_video_preview
+from movies.utils.storage import get_video_preview, get_download_url
 from movies.views.film import WatchHistoryView
 
 release_date = {
@@ -166,9 +167,18 @@ class H5FilmDetailView(APIView):
 class H5FilmPreviewView(APIView):
     permission_classes = []
 
-    @cache_response(timeout=18)
-    def get(self, request, pk):
-        instance = EpisodeInfo.objects.filter(pk=pk).first()
+    def get_object(self):
+        queryset = EpisodeInfo.objects.all()
+        obj = get_object_or_404(queryset, pk=self.kwargs.get('pk'))
+        return obj
+
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{kwargs.get('pk')}"
+
+    @cache_response(timeout=18, key_func='get_cache_key')
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
         serializer = AliyunFileSerializer(instance.files)
         data = serializer.data
         data['preview_url'] = get_video_preview(instance.files)
@@ -176,6 +186,15 @@ class H5FilmPreviewView(APIView):
         if request.user.is_authenticated and obj:
             data['times'] = obj.times
         return ApiResponse(data=data)
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        download_url = get_download_url(instance.files)
+        if download_url:
+            instance.files.downloads += 1
+            instance.files.save(update_fields=['downloads'])
+            return ApiResponse(**download_url)
+        return ApiResponse(code=1002, detail='获取下载连接失败')
 
 
 class H5WatchHistoryFilter(filters.FilterSet):
