@@ -89,7 +89,7 @@ class FilmInfoSerializer(serializers.ModelSerializer):
             history = obj.watchhistory_set.last()
             if history:
                 return history.episode_id
-        episode = obj.episodeinfo_set.order_by('-rank').first()
+        episode = obj.episodeinfo_set.order_by('rank').first()
         if episode:
             return episode.pk
         return 1

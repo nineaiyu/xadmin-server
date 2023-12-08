@@ -156,7 +156,7 @@ class H5FilmDetailView(APIView):
         film_obj = FilmInfo.objects.filter(pk=pk).first()
         if film_obj:
             film_info = FilmInfoSerializer(film_obj, context={'user': request.user}).data
-            episode_info = EpisodeInfoSerializer(EpisodeInfo.objects.filter(film=film_obj).order_by('-rank').all(),
+            episode_info = EpisodeInfoSerializer(EpisodeInfo.objects.filter(film=film_obj).order_by('rank').all(),
                                                  many=True).data
             director = H5ActorInfoSerializer(film_obj.director, many=True).data
             starring = H5ActorInfoSerializer(film_obj.starring, many=True).data
