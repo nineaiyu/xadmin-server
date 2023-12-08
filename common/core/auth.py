@@ -41,5 +41,6 @@ class CookieJWTAuthentication(JWTAuthentication):
             cookies = request.META.get('HTTP_COOKIE')
             if cookies:
                 cookie_dict = parse_cookie(cookies)
-                header = f"Bearer {cookie_dict.get('X-Token')}".encode('utf-8')
+                if cookie_dict and cookie_dict.get('X-Token'):
+                    header = f"Bearer {cookie_dict.get('X-Token')}".encode('utf-8')
         return header
