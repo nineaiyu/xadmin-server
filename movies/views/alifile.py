@@ -190,5 +190,5 @@ class AliyunFileView(BaseModelSet):
         instance = self.get_object()
         ali_obj = get_aliyun_drive(instance.aliyun_drive)
         complete = ali_obj.get_file(instance.file_id, instance.drive_id)
-        save_file_info(complete, instance.owner, instance.aliyun_drive, ali_obj, True)
+        save_file_info(complete, instance.owner, instance.aliyun_drive, ali_obj)
         return ApiResponse()
