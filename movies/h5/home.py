@@ -8,6 +8,7 @@ from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.views import APIView
@@ -113,6 +114,13 @@ class H5FilmView(OnlyListModelSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data)
+
+    @action(methods=['get'], detail=True)
+    def recommend(self, request, *args, **kwargs):
+        instance = self.get_object()
+        queryset = self.queryset.filter(category__in=instance.category.all()).all()[:9]
+        serializer = self.get_serializer(queryset, many=True)
+        return ApiResponse(data=serializer.data)
 
 
 class H5FilmFilterView(APIView):
