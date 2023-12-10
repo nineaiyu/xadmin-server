@@ -118,7 +118,7 @@ class H5FilmView(OnlyListModelSet):
     @action(methods=['get'], detail=True)
     def recommend(self, request, *args, **kwargs):
         instance = self.get_object()
-        queryset = self.queryset.filter(category__in=instance.category.all()).all()[:9]
+        queryset = self.queryset.filter(category__in=instance.category.all()).distinct()[:9]
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse(data={'results': serializer.data})
 
