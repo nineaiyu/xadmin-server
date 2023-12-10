@@ -120,7 +120,7 @@ class H5FilmView(OnlyListModelSet):
         instance = self.get_object()
         queryset = self.queryset.filter(category__in=instance.category.all()).all()[:9]
         serializer = self.get_serializer(queryset, many=True)
-        return ApiResponse(data=serializer.data)
+        return ApiResponse(data={'results': serializer.data})
 
 
 class H5FilmFilterView(APIView):
@@ -235,5 +235,5 @@ class H5FilmActorDetailView(APIView):
         actor_obj = ActorInfo.objects.filter(pk=pk).first()
         if actor_obj:
             actor = ActorInfoSerializer(actor_obj).data
-            return ApiResponse(data=actor)
+            return ApiResponse(data={'results': [actor]})
         return ApiResponse()
