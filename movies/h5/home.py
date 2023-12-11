@@ -108,7 +108,7 @@ class H5FilmView(OnlyListModelSet):
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
-        return f"{func_name}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
+        return f"{func_name}_｛{kwargs.get('pk', 0)}｝_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
