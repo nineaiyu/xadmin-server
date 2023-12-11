@@ -18,9 +18,13 @@ logger = logging.getLogger(__name__)
 @receiver([post_save, post_delete])
 def clean_cache_handler(sender, **kwargs):
     if issubclass(sender, EpisodeInfo):
+        if kwargs.get('update_fields') == {'views'}:
+            return
         cache_response.invalid_cache('H5FilmDetailView_get_*')
         logger.info(f"invalid cache {sender}")
     elif issubclass(sender, FilmInfo):
+        if kwargs.get('update_fields') == {'views'}:
+            return
         cache_response.invalid_cache('HomeView_get')
         cache_response.invalid_cache('H5FilmActorDetailView_get_*')
         cache_response.invalid_cache('H5FilmView_list_*')
