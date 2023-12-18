@@ -234,7 +234,7 @@ class H5WatchHistoryView(WatchHistoryView):
     serializer_class = H5WatchHistorySerializer
 
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter, OwnerUserFilter]
-    ordering_fields = ['created_time', 'times']
+    ordering_fields = ['created_time', 'times', 'updated_time']
     filterset_class = H5WatchHistoryFilter
 
 
