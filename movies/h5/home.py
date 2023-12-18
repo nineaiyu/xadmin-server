@@ -98,7 +98,6 @@ class FilmFilter(filters.FilterSet):
 
 class H5FilmView(OnlyListModelSet):
     permission_classes = []
-    authentication_classes = []
     queryset = FilmInfo.objects.filter(enable=True).all()
     serializer_class = H5FilmInfoSerializer
 
@@ -123,6 +122,20 @@ class H5FilmView(OnlyListModelSet):
             '-created_time').distinct()[:9]
         serializer = self.get_serializer(queryset, many=True)
         return ApiResponse(data={'results': serializer.data})
+
+    @action(methods=['get'], detail=True)
+    def current(self, request, *args, **kwargs):
+        current = 0
+        instance = self.get_object()
+        if request.user and request.user.is_authenticated:
+            history = instance.watchhistory_set.last()
+            if history:
+                current = history.episode_id
+        if not current:
+            episode = instance.episodeinfo_set.order_by('rank').first()
+            if episode:
+                current = episode.pk
+        return ApiResponse(current=current)
 
 
 class H5FilmFilterView(APIView):
@@ -165,7 +178,7 @@ class H5FilmDetailView(APIView):
     def get(self, request, pk):
         film_obj = FilmInfo.objects.filter(pk=pk).first()
         if film_obj:
-            film_info = FilmInfoSerializer(film_obj, context={'user': request.user}).data
+            film_info = FilmInfoSerializer(film_obj).data
             episode_info = EpisodeInfoSerializer(EpisodeInfo.objects.filter(film=film_obj).order_by('rank').all(),
                                                  many=True).data
             director = H5ActorInfoSerializer(film_obj.director, many=True).data

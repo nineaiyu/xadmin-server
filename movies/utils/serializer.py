@@ -53,7 +53,7 @@ class FilmInfoSerializer(serializers.ModelSerializer):
         fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'subtitle', 'director', 'channel',
                   'starring', 'times', 'views', 'rate', 'description', 'enable', 'created_time', 'updated_time',
                   'category_info', 'release_date', 'region_info', 'language_info', 'channel_info', 'subtitle_info',
-                  'director_info', 'introduction', 'current_play_pk', 'episode_count']
+                  'director_info', 'introduction', 'episode_count']
         extra_kwargs = {'pk': {'read_only': True}, 'poster': {'read_only': True}}
 
     category_info = serializers.SerializerMethodField(read_only=True)
@@ -62,7 +62,6 @@ class FilmInfoSerializer(serializers.ModelSerializer):
     channel_info = serializers.SerializerMethodField(read_only=True)
     subtitle_info = serializers.SerializerMethodField(read_only=True)
     director_info = serializers.SerializerMethodField(read_only=True)
-    current_play_pk = serializers.SerializerMethodField(read_only=True)
     episode_count = serializers.SerializerMethodField(read_only=True)
 
     def get_category_info(self, obj):
@@ -83,16 +82,6 @@ class FilmInfoSerializer(serializers.ModelSerializer):
     def get_director_info(self, obj):
         return CategoryListSerializer(obj.director, many=True).data
 
-    def get_current_play_pk(self, obj):
-        user = self.context.get('user')
-        if user and user.is_authenticated:
-            history = obj.watchhistory_set.last()
-            if history:
-                return history.episode_id
-        episode = obj.episodeinfo_set.order_by('rank').first()
-        if episode:
-            return episode.pk
-        return 1
 
     def get_episode_count(self, obj):
         return obj.episodeinfo_set.count()
