@@ -4,12 +4,13 @@
 # filename : menu
 # author : ly_13
 # date : 6/6/2023
-
+from hashlib import md5
 
 from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 from rest_framework.views import APIView
 
+from common.base.magic import cache_response
 from common.base.utils import menu_list_to_tree, get_choices_dict, format_menu_data
 from common.core.modelset import BaseModelSet, RankAction
 from common.core.pagination import MenuPageNumber
@@ -39,6 +40,11 @@ class MenuView(BaseModelSet, RankAction):
     ordering_fields = ['updated_time', 'name', 'created_time']
     filterset_class = MenuFilter
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(Menu.method_choices),
@@ -47,6 +53,11 @@ class MenuView(BaseModelSet, RankAction):
 
 class UserRoutesView(APIView):
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{request.user.pk}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     def get(self, request):
         menu_list = []
         user_obj = request.user

@@ -52,8 +52,8 @@ class Menu(DbBaseModel):
 
     name = models.CharField(verbose_name="组件英文名称", max_length=128, unique=True)
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
-    path = models.CharField(verbose_name="路由地址", max_length=256)
-    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True)
+    path = models.CharField(verbose_name="路由地址", max_length=256, help_text='权限类型时，该参数为请求的URL')
+    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True, help_text='权限类型时，该参数为请求方式')
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
 
@@ -229,3 +229,38 @@ class NoticeUserRead(DbBaseModel):
         verbose_name_plural = "用户已读消息"
         index_together = ('owner', 'unread')
         unique_together = ('owner', 'notice')
+
+
+
+class BaseConfig(DbBaseModel):
+    value = models.TextField(max_length=10240, verbose_name="配置值")
+    enable = models.BooleanField(default=True, verbose_name="是否启用该配置项")
+
+    class Meta:
+        verbose_name = '基础配置'
+        verbose_name_plural = "基础配置"
+        abstract = True
+
+
+class SystemConfig(BaseConfig):
+    key = models.CharField(max_length=256, unique=True, verbose_name="配置名称")
+
+    class Meta:
+        verbose_name = '系统配置项'
+        verbose_name_plural = "系统配置项"
+
+    def __str__(self):
+        return "%s-%s" % (self.key, self.description)
+
+
+class UserPersonalConfig(BaseConfig):
+    owner = models.ForeignKey(to=UserInfo, verbose_name="用户ID", on_delete=models.CASCADE)
+    key = models.CharField(max_length=256, verbose_name="配置名称")
+
+    class Meta:
+        verbose_name = '个人配置项'
+        verbose_name_plural = "个人配置项"
+        unique_together = (('owner', 'key'),)
+
+    def __str__(self):
+        return "%s-%s" % (self.key, self.description)

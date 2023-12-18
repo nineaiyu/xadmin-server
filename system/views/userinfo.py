@@ -8,6 +8,7 @@ import logging
 
 from rest_framework.decorators import action
 
+from common.base.magic import cache_response
 from common.core.modelset import OwnerModelSet, UploadFileAction
 from common.core.response import ApiResponse
 from system.utils.serializer import UserInfoSerializer
@@ -21,6 +22,14 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
 
     def get_object(self):
         return self.request.user
+
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{request.user.pk}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     @action(methods=['post'], detail=False)
     def reset_password(self, request, *args, **kwargs):

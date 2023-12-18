@@ -138,6 +138,18 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+# https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
+# 读写分离 可能会出现 the current database router prevents this relation.
+# 1.项目设置了router读写分离，且在ORM create()方法中，使用了前边filter()方法得到的数据，
+# 2.由于django是惰性查询，前边的filter()并没有立即查询，而是在create()中引用了filter()的数据时，执行了filter()，
+# 3.此时写操作的db指针指向write_db，filter()的db指针指向read_db，两者发生冲突，导致服务禁止了此次与mysql的交互
+# 解决办法：
+# 在前边filter()方法中，使用using()方法，使filter()方法立即与数据库交互，查出数据。
+# Author.objects.using("default")
+# >>> p = Person(name="Fred")
+# >>> p.save(using="second")  # (statement 2)
+
+DATABASE_ROUTERS = ['common.core.db.router.DBRouter']
 
 CHANNEL_LAYERS = {
     "default": {
@@ -417,9 +429,10 @@ LOGGING = {
 }
 
 CACHE_KEY_TEMPLATE = {
-    'pending_state_key': 'pending_state',
+    'config_key': 'config',
     'make_token_key': 'make_token',
     'download_url_key': 'download_url',
+    'pending_state_key': 'pending_state',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
 }

@@ -4,11 +4,14 @@
 # filename : notice
 # author : ly_13
 # date : 9/15/2023
+from hashlib import md5
+
 from django.db.models import Q
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
+from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet, OnlyListModelSet
 from common.core.response import ApiResponse
@@ -112,7 +115,7 @@ class UserNoticeMessage(OnlyListModelSet):
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_time', 'pk']
     filterset_class = UserNoticeMessageFilter
-
+    @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         unread_count = self.get_queryset().filter(
             (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
@@ -123,6 +126,11 @@ class UserNoticeMessage(OnlyListModelSet):
                            level_choices=get_choices_dict(NoticeMessage.level_choices),
                            notice_type_choices=get_choices_dict(NoticeMessage.notice_type_choices))
 
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{request.user.pk}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
+
+    @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
         notice_queryset = self.get_queryset().filter(notice_type__in=[0, 1], owner=request.user,
