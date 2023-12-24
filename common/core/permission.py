@@ -7,17 +7,33 @@
 import re
 
 from django.conf import settings
+from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
+from common.base.magic import MagicCacheData
 from system.models import Menu
 
 
+def get_user_menu_queryset(user_obj):
+    q = Q()
+    has_role = False
+    if user_obj.roles.count():
+        q |= Q(userrole__in=user_obj.roles.all())
+        has_role = True
+    if user_obj.dept:
+        q |= Q(userrole__deptinfo=user_obj.dept)
+        has_role = True
+    if has_role:
+        return Menu.objects.filter(q).all()
+
+
+@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: f"permission_{x.pk}")
 def get_user_permission(user_obj):
     menu = []
-    if user_obj.roles:
-        menu_obj = Menu.objects.filter(userrole__in=user_obj.roles.all()).distinct()
-        menu = menu_obj.filter(is_active=True, menu_type=2).values('path', 'component').all().distinct()
+    menu_queryset = get_user_menu_queryset(user_obj)
+    if menu_queryset:
+        menu = menu_queryset.filter(is_active=True, menu_type=2).values('path', 'component').distinct()
     return menu
 
 

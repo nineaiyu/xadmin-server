@@ -7,13 +7,13 @@
 from hashlib import md5
 
 from django_filters import rest_framework as filters
-from rest_framework.filters import OrderingFilter
 from rest_framework.views import APIView
 
 from common.base.magic import cache_response
 from common.base.utils import menu_list_to_tree, get_choices_dict, format_menu_data
 from common.core.modelset import BaseModelSet, RankAction
 from common.core.pagination import MenuPageNumber
+from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
 from system.models import Menu
@@ -36,7 +36,6 @@ class MenuView(BaseModelSet, RankAction):
     serializer_class = MenuSerializer
     pagination_class = MenuPageNumber
 
-    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['updated_time', 'name', 'created_time']
     filterset_class = MenuFilter
 
@@ -57,7 +56,7 @@ class UserRoutesView(APIView):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
         return f"{func_name}_{request.user.pk}"
 
-    @cache_response(timeout=600, key_func='get_cache_key')
+    @cache_response(timeout=3600 * 24 * 7, key_func='get_cache_key')
     def get(self, request):
         menu_list = []
         user_obj = request.user
@@ -67,13 +66,10 @@ class UserRoutesView(APIView):
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))
         else:
-            if user_obj.roles:
-                menu_obj = Menu.objects.filter(userrole__in=user_obj.roles.all()).all().distinct()
-            else:
-                menu_obj = None
-
-        if menu_obj:
-            menu_list = RouteSerializer(menu_obj.filter(is_active=True, menu_type__in=[0, 1]).order_by('rank'),
-                                        many=True, context={'user': request.user}).data
+            menu_queryset = get_user_menu_queryset(user_obj)
+            if menu_queryset:
+                menu_list = RouteSerializer(
+                    menu_queryset.filter(is_active=True, menu_type__in=[0, 1]).distinct().order_by('rank'),
+                    many=True, context={'user': request.user}).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))

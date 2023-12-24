@@ -10,8 +10,8 @@ import logging
 from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.dispatch import receiver
 
-from common.base.magic import cache_response
-from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead
+from common.base.magic import cache_response, MagicCacheData
+from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo
 
 logger = logging.getLogger(__name__)
 
@@ -27,35 +27,43 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
             cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
             cache_response.invalid_cache(f'UserRoutesView_get_{instance.pk}')
 
+        if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
+            if instance.userinfo_set.count():
+                invalid_roles_cache(instance)
 
 def invalid_notify_cache(pk):
-    cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}')
+    cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')
     cache_response.invalid_cache(f'UserNoticeMessage_list_{pk}_*')
+
+
+def invalid_roles_cache(instance):
+    for pk in instance.userinfo_set.values_list('pk', flat=True).distinct():
+        cache_response.invalid_cache(f'UserRoutesView_get_{pk}')  # 清理路由
+        MagicCacheData.invalid_cache(f'permission_{pk}')  # 清理权限
 
 
 @receiver([post_save, pre_delete])
 def clean_cache_handler(sender, instance, **kwargs):
     if issubclass(sender, Menu):
         cache_response.invalid_cache('MenuView_list_*')
-        queryset = instance.userrole_set.values('userinfo')
+        queryset = instance.userrole_set.values_list('userinfo', flat=True)
         if queryset.count() > 100:
             cache_response.invalid_cache('UserRoutesView_get_*')
         else:
-            for pk in set([x.get('userinfo') for x in queryset]):
+            for pk in set(queryset):
                 cache_response.invalid_cache(f'UserRoutesView_get_{pk}')
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserRole):
-        for pk in instance.userinfo_set.values('pk').all().distinct():
-            cache_response.invalid_cache(f'UserRoutesView_get_{pk.get("pk")}')
+        invalid_roles_cache(instance)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, NoticeMessage):
-        if instance.notice_type == 3:
+        if instance.notice_type == 2:
             cache_response.invalid_cache(f'UserNoticeMessage_unread_*')
         else:
-            for pk in instance.owner.values('pk').distinct():
-                invalid_notify_cache(pk.get("pk"))
+            for pk in instance.notice_user.values_list('pk', flat=True).distinct():
+                invalid_notify_cache(pk)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserInfo):
@@ -64,3 +72,11 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, NoticeUserRead):
         invalid_notify_cache(instance.owner.pk)
+
+
+@receiver([pre_delete])
+def clean_cache_handler_pre_delete(sender, instance, **kwargs):
+    if issubclass(sender, DeptInfo):
+        if instance.userinfo_set.count():
+            invalid_roles_cache(instance)
+            logger.info(f"invalid cache {sender}")

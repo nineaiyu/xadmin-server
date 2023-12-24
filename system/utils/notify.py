@@ -26,7 +26,7 @@ def base_notify(users: List | QuerySet, title: str, message: str, notice_type: i
         notice_type=notice_type,
         extra_json=extra_json
     )
-    notify_obj.owner.set(recipients)
+    notify_obj.notice_user.set(recipients)
     return notify_obj
 
 

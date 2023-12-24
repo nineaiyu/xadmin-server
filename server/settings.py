@@ -237,9 +237,11 @@ REST_FRAMEWORK = {
         # 'rest_framework.permissions.IsAuthenticated',
         'common.core.permission.IsAuthenticated',
     ],
-    # 'DEFAULT_FILTER_BACKENDS': (
-    #     'django_filters.rest_framework.DjangoFilterBackend',
-    # ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'common.core.filter.DataPermissionFilter'
+    ),
 }
 
 # DRF扩展缓存时间
@@ -531,6 +533,10 @@ PERMISSION_WHITE_URL = [
 PERMISSION_SHOW_PREFIX = [
     'api/system',
     'api/flower',
+]
+
+PERMISSION_DATA_AUTH_APPS = [
+    'system'
 ]
 
 API_LOG_ENABLE = locals().get("API_LOG_ENABLE", True)

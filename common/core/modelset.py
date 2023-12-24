@@ -41,7 +41,8 @@ class UploadFileAction(object):
         if file_instance:
             delete_file_name = file_instance.name
         setattr(instance, self.FILE_UPLOAD_FIELD, file_obj)
-        instance.save(update_fields=[self.FILE_UPLOAD_FIELD])
+        instance.modifier = request.user
+        instance.save(update_fields=[self.FILE_UPLOAD_FIELD, 'modifier'])
         if delete_file_name:
             FileField(name=delete_file_name).storage.delete(delete_file_name)
         return ApiResponse()

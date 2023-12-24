@@ -33,7 +33,6 @@ class NoticeMessageView(BaseModelSet):
     queryset = NoticeMessage.objects.all()
     serializer_class = NoticeMessageSerializer
 
-    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['updated_time', 'created_time', 'pk']
     filterset_class = NoticeMessageFilter
 
@@ -44,9 +43,10 @@ class NoticeMessageView(BaseModelSet):
 
     @action(methods=['put'], detail=True)
     def publish(self, request, *args, **kwargs):
-        instance = self.get_object()
+        instance: NoticeMessage = self.get_object()
         instance.publish = request.data.get('publish')
-        instance.save(update_fields=['publish'])
+        instance.modifier = request.user
+        instance.save(update_fields=['publish', 'modifier'])
         return ApiResponse()
 
 
@@ -68,7 +68,6 @@ class NoticeUserReadMessageView(BaseModelSet):
     queryset = NoticeUserRead.objects.all()
     serializer_class = NoticeUserReadMessageSerializer
 
-    filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['updated_time', 'created_time', 'pk']
     filterset_class = NoticeUserReadMessageFilter
 
@@ -81,8 +80,9 @@ class NoticeUserReadMessageView(BaseModelSet):
     def state(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.notice.notice_type in [0, 1]:
-            instance.unread = True
-            instance.save(update_fields=['unread'])
+            instance.unread = request.data.get('unread', True)
+            instance.modifier = request.user
+            instance.save(update_fields=['unread', 'modifier'])
         if instance.notice.notice_type == 2:
             instance.delete()
         return ApiResponse()
@@ -97,11 +97,13 @@ class UserNoticeMessageFilter(filters.FilterSet):
     def unread_filter(self, queryset, name, value):
         if value:
             return queryset.filter(
-                (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
+                (Q(notice_type=2) & ~Q(notice_user=self.request.user)) | Q(notice_type__in=[0, 1],
+                                                                           notice_user=self.request.user,
                                                                      noticeuserread__unread=True))
         else:
             return queryset.filter(
-                (Q(notice_type=2, owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
+                (Q(notice_type=2, notice_user=self.request.user)) | Q(notice_type__in=[0, 1],
+                                                                      notice_user=self.request.user,
                                                                 noticeuserread__unread=False))
 
     class Meta:
@@ -115,12 +117,15 @@ class UserNoticeMessage(OnlyListModelSet):
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_time', 'pk']
     filterset_class = UserNoticeMessageFilter
+
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         unread_count = self.get_queryset().filter(
-            (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
+            (Q(notice_type=2) & ~Q(notice_user=self.request.user)) | Q(notice_type__in=[0, 1],
+                                                                       notice_user=self.request.user,
                                                                  noticeuserread__unread=True)).count()
-        self.queryset = self.get_queryset().filter(Q(notice_type=2) | Q(notice_type__in=[0, 1], owner=request.user))
+        self.queryset = self.get_queryset().filter(
+            Q(notice_type=2) | Q(notice_type__in=[0, 1], notice_user=request.user))
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, unread_count=unread_count,
                            level_choices=get_choices_dict(NoticeMessage.level_choices),
@@ -133,9 +138,9 @@ class UserNoticeMessage(OnlyListModelSet):
     @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
-        notice_queryset = self.get_queryset().filter(notice_type__in=[0, 1], owner=request.user,
+        notice_queryset = self.get_queryset().filter(notice_type__in=[0, 1], notice_user=request.user,
                                                      noticeuserread__unread=True)
-        announce_queryset = self.get_queryset().filter(notice_type=2).exclude(owner=request.user)
+        announce_queryset = self.get_queryset().filter(notice_type=2).exclude(notice_user=request.user)
         results = [
             {
                 "key": "1",
@@ -165,7 +170,9 @@ class UserNoticeMessage(OnlyListModelSet):
 
     @action(methods=['put'], detail=False)
     def read_all(self, request, *args, **kwargs):
-        pks = [pk['pk'] for pk in self.get_queryset().filter(
-            (Q(notice_type=2) & ~Q(owner=self.request.user)) | Q(notice_type__in=[0, 1], owner=self.request.user,
-                                                                 noticeuserread__unread=True)).values('pk')]
+        pks = self.get_queryset().filter(
+            (Q(notice_type=2) & ~Q(notice_user=self.request.user)) | Q(notice_type__in=[0, 1],
+                                                                       notice_user=self.request.user,
+                                                                       noticeuserread__unread=True)).values_list('pk',
+                                                                                                                 flat=True).distinct()
         return self.read_message(pks, request)

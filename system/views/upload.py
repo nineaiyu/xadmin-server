@@ -10,6 +10,7 @@ from django.conf import settings
 from rest_framework.views import APIView
 
 from common.core.response import ApiResponse
+from common.core.throttle import UploadThrottle
 from system.models import UploadFile
 from system.utils.serializer import UploadFileSerializer
 
@@ -17,6 +18,7 @@ logger = logging.getLogger(__file__)
 
 
 class UploadView(APIView):
+    throttle_classes = [UploadThrottle]
 
     def post(self, request):
         """
@@ -38,7 +40,7 @@ class UploadView(APIView):
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
                 return ApiResponse(code=1002, detail="错误的文件类型")
-            obj = UploadFile.objects.create(owner=request.user, filename=file_obj.name, filesize=file_obj.size,
+            obj = UploadFile.objects.create(creator=request.user, filename=file_obj.name, filesize=file_obj.size,
                                             filepath=file_obj)
             result.append(obj)
         return ApiResponse(data=UploadFileSerializer(result, many=True).data)

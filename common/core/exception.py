@@ -6,6 +6,7 @@
 # date : 6/2/2023
 from logging import getLogger
 
+from django.db.models import ProtectedError, RestrictedError
 from rest_framework.exceptions import Throttled, APIException
 from rest_framework.views import exception_handler
 from rest_framework.views import set_rollback
@@ -36,6 +37,10 @@ def common_exception_handler(exc, context):
         else:
             ret.data = {'detail': exc.detail}
         set_rollback()
+
+    elif isinstance(exc, (ProtectedError, RestrictedError)):
+        set_rollback()
+        return ApiResponse(code=998, detail='该条数据与其他数据有绑定')
     else:
         unexpected_exception_logger.exception('')
 

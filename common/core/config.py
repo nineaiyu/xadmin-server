@@ -53,7 +53,7 @@ class ConfigCacheBase(object):
         if value:
             try:
                 context_dict = {}
-                for sys_obj_dict in self.model.objects.filter(enable=True).values().all():
+                for sys_obj_dict in self.model.objects.filter(is_active=True).values().all():
                     if re.findall('{{.*%s.*}}' % sys_obj_dict['key'], sys_obj_dict['value']):
                         logger.warning(f"get same render key. so continue")
                         continue
@@ -83,7 +83,7 @@ class ConfigCacheBase(object):
         return value
 
     def get_value_from_db(self, key):
-        data = self.serializer(self.model.objects.filter(enable=True, key=key).first()).data
+        data = self.serializer(self.model.objects.filter(is_active=True, key=key).first()).data
         if re.findall('{{.*%s.*}}' % data['key'], data['value']):
             logger.warning(f"get same render key:{key}. so get default value")
             data['key'] = ''
@@ -109,10 +109,10 @@ class ConfigCacheBase(object):
         cache.set_storage_cache(db_data, timeout=self.timeout)
         return db_data.get('value')
 
-    def save_db(self, key, value, enable, description, **kwargs):
+    def save_db(self, key, value, is_active, description, **kwargs):
         defaults = {'value': value}
-        if enable is not None:
-            defaults['enable'] = enable
+        if is_active is not None:
+            defaults['is_active'] = is_active
         if description is not None:
             defaults['description'] = description
         self.model.objects.update_or_create(key=key, defaults=defaults, **kwargs)
@@ -120,10 +120,10 @@ class ConfigCacheBase(object):
     def delete_db(self, key, **kwargs):
         self.model.objects.filter(key=key, **kwargs).delete()
 
-    def set_value(self, key, value, enable=None, description=None, **kwargs):
+    def set_value(self, key, value, is_active=None, description=None, **kwargs):
         if not isinstance(value, str):
             value = json.dumps(value)
-        self.save_db(key, value, enable, description, **kwargs)
+        self.save_db(key, value, is_active, description, **kwargs)
         self.cache(f'{self.px}_{key}').del_storage_cache()
 
     def set_default_value(self, key, **kwargs):
@@ -184,8 +184,8 @@ class UserPersonalConfigCache(ConfigCache):
     def delete_db(self, key, **kwargs):
         super(UserPersonalConfigCache, self).delete_db(key, owner=self.user_obj)
 
-    def save_db(self, key, value, enable=None, description=None, **kwargs):
-        super(UserPersonalConfigCache, self).save_db(key, value, enable, description, owner=self.user_obj)
+    def save_db(self, key, value, is_active=None, description=None, **kwargs):
+        super(UserPersonalConfigCache, self).save_db(key, value, is_active, description, owner=self.user_obj)
 
     def set_default_value(self, key, **kwargs):
         super(UserPersonalConfigCache, self).set_default_value(key, owner=self.user_obj)
