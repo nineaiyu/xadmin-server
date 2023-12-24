@@ -36,6 +36,8 @@ def invalid_user_cache(user_pk):
     cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
     cache_response.invalid_cache(f'UserRoutesView_get_{user_pk}')
     MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
+    cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
+
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')

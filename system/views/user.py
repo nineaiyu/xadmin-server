@@ -12,8 +12,9 @@ from rest_framework.decorators import action
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet, UploadFileAction
 from common.core.response import ApiResponse
-from system.models import UserInfo, UserRole, DataPermission, DeptInfo
+from system.models import UserInfo, DeptInfo
 from system.utils import notify
+from system.utils.modelset import ChangeRolePermissionAction
 from system.utils.serializer import UserSerializer
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ class UserFilter(filters.FilterSet):
         fields = ['email', 'is_active', 'gender', 'pk', 'mode_type']
 
 
-class UserView(BaseModelSet, UploadFileAction):
+class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer
@@ -53,6 +54,7 @@ class UserView(BaseModelSet, UploadFileAction):
             print(valid_data)
             # roles = valid_data.pop('roles')
             valid_data.pop('roles_info')
+            valid_data.pop('rules_info')
             valid_data.pop('dept_info')
             dept = valid_data.pop('dept', None)
             if dept:
@@ -86,21 +88,3 @@ class UserView(BaseModelSet, UploadFileAction):
             return ApiResponse()
         return ApiResponse(code=1001, detail='修改失败')
 
-    @action(methods=['post'], detail=True)
-    def empower(self, request, *args, **kwargs):
-        instance = self.get_object()
-        roles = request.data.get('roles')
-        rules = request.data.get('rules')
-        mode_type = request.data.get('mode_type')
-        if roles or rules:
-            if roles is not None:
-                roles_queryset = UserRole.objects.filter(pk__in=roles).all()
-                instance.roles.set(roles_queryset)
-            if rules is not None:
-                instance.mode_type = mode_type
-                instance.modifier = request.user
-                instance.save(update_fields=['mode_type', 'modifier'])
-                rules_queryset = DataPermission.objects.filter(pk__in=rules).all()
-                instance.rules.set(rules_queryset)
-            return ApiResponse(detail="操作成功")
-        return ApiResponse(code=1004, detail="数据异常")

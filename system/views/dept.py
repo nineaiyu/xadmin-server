@@ -7,13 +7,13 @@
 import logging
 
 from django_filters import rest_framework as filters
-from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet
 from common.core.pagination import MenuPageNumber
 from common.core.response import ApiResponse
-from system.models import DeptInfo, UserRole, DataPermission
+from system.models import DeptInfo
+from system.utils.modelset import ChangeRolePermissionAction
 from system.utils.serializer import DeptSerializer
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class DeptFilter(filters.FilterSet):
         fields = ['pk', 'is_active', 'code', 'mode_type']
 
 
-class DeptView(BaseModelSet):
+class DeptView(BaseModelSet, ChangeRolePermissionAction):
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
     pagination_class = MenuPageNumber
@@ -41,21 +41,3 @@ class DeptView(BaseModelSet):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(DeptInfo.mode_type_choices))
 
-    @action(methods=['post'], detail=True)
-    def empower(self, request, *args, **kwargs):
-        instance = self.get_object()
-        roles = request.data.get('roles')
-        rules = request.data.get('rules')
-        mode_type = request.data.get('mode_type')
-        if roles or rules:
-            if roles is not None:
-                roles_queryset = UserRole.objects.filter(pk__in=roles).all()
-                instance.roles.set(roles_queryset)
-            if rules is not None:
-                instance.mode_type = mode_type
-                instance.modifier = request.user
-                instance.save(update_fields=['mode_type', 'modifier'])
-                rules_queryset = DataPermission.objects.filter(pk__in=rules).all()
-                instance.rules.set(rules_queryset)
-            return ApiResponse(detail="操作成功")
-        return ApiResponse(code=1004, detail="数据异常")

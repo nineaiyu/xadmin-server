@@ -93,6 +93,8 @@ class DataPermissionFilter(BaseFilterBackend):
             if dept_obj.mode_type == 1:
                 q1 &= q
             else:
+                if q == Q():
+                    return queryset
                 q1 |= q
         logger.warning(f"{app_label}.{model_name} : {q1}")
         return queryset.filter(q1)

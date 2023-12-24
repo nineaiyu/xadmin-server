@@ -7,11 +7,17 @@ from django.utils import timezone
 from common.core.models import upload_directory_path, DbAuditModel
 
 
-class UserInfo(DbAuditModel, AbstractUser):
-    roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
-    rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
+class ModeTypeAbstract(models.Model):
     mode_type_choices = ((0, '或模式'), (1, '且模式'))
     mode_type = models.SmallIntegerField(choices=mode_type_choices, default=0, verbose_name="数据权限模式")
+
+    class Meta:
+        abstract = True
+
+
+class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
+    roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
+    rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
     dept = models.ForeignKey(to="DeptInfo", verbose_name="所属部门", on_delete=models.PROTECT, blank=True, null=True,
                              related_query_name="dept_query")
     avatar = models.FileField(verbose_name="用户头像", null=True, blank=True, upload_to=upload_directory_path)
@@ -98,10 +104,8 @@ class Menu(DbAuditModel):
         return f"{self.name}-{self.menu_type}-{self.meta.title}"
 
 
-class DataPermission(DbAuditModel):
+class DataPermission(DbAuditModel, ModeTypeAbstract):
     name = models.CharField(verbose_name="数据权限名称", max_length=256, unique=True)
-    mode_type_choices = ((0, '或模式'), (1, '且模式'))
-    mode_type = models.SmallIntegerField(choices=mode_type_choices, default=1, verbose_name="模式类型")
     rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
@@ -129,15 +133,13 @@ class UserRole(DbAuditModel):
         return f"{self.name}-{self.created_time}"
 
 
-class DeptInfo(DbAuditModel):
+class DeptInfo(DbAuditModel, ModeTypeAbstract):
     name = models.CharField(verbose_name="用户组名称", max_length=128)
     code = models.CharField(max_length=128, verbose_name="组标识", unique=True)
     parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    mode_type_choices = ((0, '或模式'), (1, '且模式'))
-    mode_type = models.SmallIntegerField(choices=mode_type_choices, default=0, verbose_name="数据权限模式")
     rank = models.IntegerField(verbose_name="组顺序", default=99)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
