@@ -37,7 +37,8 @@ class DataPermissionFilter(BaseFilterBackend):
 
         # table = f'*'
         dept_obj = user_obj.dept
-        permission = DataPermission.objects.filter(Q(userinfo=user_obj) | Q(deptinfo=dept_obj))
+        permission = DataPermission.objects.filter(is_active=True).filter(
+            Q(userinfo=user_obj) | (Q(deptinfo=dept_obj) & Q(deptinfo__is_active=True)))
         results = []
         for obj in permission:
             rules = []

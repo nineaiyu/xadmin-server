@@ -19,13 +19,13 @@ def get_user_menu_queryset(user_obj):
     q = Q()
     has_role = False
     if user_obj.roles.count():
-        q |= Q(userrole__in=user_obj.roles.all())
+        q |= (Q(userrole__in=user_obj.roles.all()) & Q(userrole__is_active=True))
         has_role = True
     if user_obj.dept:
-        q |= Q(userrole__deptinfo=user_obj.dept)
+        q |= (Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True))
         has_role = True
     if has_role:
-        return Menu.objects.filter(q).all()
+        return Menu.objects.filter(is_active=True).filter(q).all()
 
 
 @MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: x.pk)
@@ -33,7 +33,7 @@ def get_user_permission(user_obj):
     menu = []
     menu_queryset = get_user_menu_queryset(user_obj)
     if menu_queryset:
-        menu = menu_queryset.filter(is_active=True, menu_type=2).values('path', 'component').distinct()
+        menu = menu_queryset.filter(menu_type=2).values('path', 'component').distinct()
     return menu
 
 

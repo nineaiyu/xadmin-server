@@ -68,7 +68,7 @@ class DeptSerializer(UserSerializer):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display', 'rules_info']
+                  'mode_type', 'mode_display', 'rules_info', 'auto_bind']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
@@ -117,12 +117,11 @@ class RouteMetaSerializer(BaseModelSerializer):
     def get_auths(self, obj):
         user = self.context.get('user')
         if user.is_superuser:
-            menu_obj = models.Menu.objects
+            menu_obj = models.Menu.objects.filter(is_active=True)
         else:
             menu_obj = get_user_menu_queryset(user)
         if menu_obj:
-            return menu_obj.filter(menu_type=2, parent=obj.menu, is_active=True).values_list('name',
-                                                                                             flat=True).distinct()
+            return menu_obj.filter(menu_type=2, parent=obj.menu).values_list('name', flat=True).distinct()
         else:
             return []
 
@@ -158,7 +157,7 @@ class MenuSerializer(BaseModelSerializer):
 class RoleSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'auto_bind']
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time']
         read_only_fields = ['pk']
 
 

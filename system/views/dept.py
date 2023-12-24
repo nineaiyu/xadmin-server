@@ -26,7 +26,7 @@ class DeptFilter(filters.FilterSet):
 
     class Meta:
         model = DeptInfo
-        fields = ['pk', 'is_active', 'code', 'mode_type']
+        fields = ['pk', 'is_active', 'code', 'mode_type', 'auto_bind']
 
 
 class DeptView(BaseModelSet, ChangeRolePermissionAction):

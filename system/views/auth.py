@@ -20,7 +20,7 @@ from common.cache.storage import BlackAccessTokenCache
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.utils.token import make_token, verify_token
-from system.models import UserInfo, UserRole
+from system.models import UserInfo, DeptInfo
 from system.utils.captcha import CaptchaAuth
 
 
@@ -69,18 +69,20 @@ class RegisterView(APIView):
         token = data.get('token')
         username = data.get('username')
         password = data.get('password')
-        channel = data.get('channel')
+        channel = data.get('channel', 'default')
         if verify_token(token, client_id, success_once=True) and username and password:
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
 
             user = auth.authenticate(username=username, password=password)
+            update_fields = ['last_login']
             if not user:
                 user = UserInfo.objects.create_user(username=username, password=password, first_name=username)
                 if channel and user:
-                    roles = UserRole.objects.filter(is_active=True, auto_bind=True, code=channel)
-                    if roles:
-                        user.roles.set(roles)
+                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel)
+                    if dept:
+                        user.dept = dept
+                        update_fields.append('dept')
 
             if user.is_active:
                 refresh = RefreshToken.for_user(user)
@@ -89,7 +91,7 @@ class RegisterView(APIView):
                     'access': str(refresh.access_token),
                 }
                 user.last_login = timezone.now()
-                user.save(update_fields=["last_login"])
+                user.save(update_fields=update_fields)
                 result.update(**get_token_lifetime(user))
                 return ApiResponse(data=result)
         return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')

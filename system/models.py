@@ -121,7 +121,6 @@ class UserRole(DbAuditModel):
     name = models.CharField(max_length=128, verbose_name="角色名称", unique=True)
     code = models.CharField(max_length=128, verbose_name="角色标识", unique=True)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
-    auto_bind = models.BooleanField(verbose_name="是否绑定该角色", default=False)
     menu = models.ManyToManyField(to='Menu', verbose_name="菜单权限", null=True, blank=True)
 
     class Meta:
@@ -141,6 +140,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract):
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
     rank = models.IntegerField(verbose_name="组顺序", default=99)
+    auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
     @classmethod

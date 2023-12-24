@@ -69,7 +69,7 @@ class UserRoutesView(APIView):
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
                 menu_list = RouteSerializer(
-                    menu_queryset.filter(is_active=True, menu_type__in=[0, 1]).distinct().order_by('rank'),
-                    many=True, context={'user': request.user}).data
+                    menu_queryset.filter(menu_type__in=[0, 1]).distinct().order_by('rank'), many=True,
+                    context={'user': request.user}).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))
