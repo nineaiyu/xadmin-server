@@ -28,7 +28,7 @@ def get_user_menu_queryset(user_obj):
         return Menu.objects.filter(q).all()
 
 
-@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: f"permission_{x.pk}")
+@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: x.pk)
 def get_user_permission(user_obj):
     menu = []
     menu_queryset = get_user_menu_queryset(user_obj)

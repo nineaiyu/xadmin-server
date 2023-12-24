@@ -11,7 +11,7 @@ from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.dispatch import receiver
 
 from common.base.magic import cache_response, MagicCacheData
-from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo
+from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,18 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
                 invalid_notify_cache(pk)
 
         if isinstance(instance, UserInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
-            cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
-            cache_response.invalid_cache(f'UserRoutesView_get_{instance.pk}')
+            invalid_user_cache(instance.pk)
+
 
         if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             if instance.userinfo_set.count():
                 invalid_roles_cache(instance)
+
+
+def invalid_user_cache(user_pk):
+    cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
+    cache_response.invalid_cache(f'UserRoutesView_get_{user_pk}')
+    MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')
@@ -38,8 +44,7 @@ def invalid_notify_cache(pk):
 
 def invalid_roles_cache(instance):
     for pk in instance.userinfo_set.values_list('pk', flat=True).distinct():
-        cache_response.invalid_cache(f'UserRoutesView_get_{pk}')  # 清理路由
-        MagicCacheData.invalid_cache(f'permission_{pk}')  # 清理权限
+        invalid_user_cache(pk)
 
 
 @receiver([post_save, pre_delete])
@@ -52,6 +57,13 @@ def clean_cache_handler(sender, instance, **kwargs):
         else:
             for pk in set(queryset):
                 cache_response.invalid_cache(f'UserRoutesView_get_{pk}')
+                MagicCacheData.invalid_cache(f'get_user_permission_{pk}')  # 清理权限
+        for obj in DeptInfo.objects.filter(roles__menu=instance).distinct():
+            invalid_roles_cache(obj)
+        logger.info(f"invalid cache {sender}")
+
+    if issubclass(sender, DataPermission):
+        invalid_roles_cache(instance)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserRole):
@@ -67,7 +79,7 @@ def clean_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserInfo):
-        cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
+        invalid_user_cache(instance.pk)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, NoticeUserRead):

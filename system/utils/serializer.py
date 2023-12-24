@@ -68,7 +68,7 @@ class DeptSerializer(UserSerializer):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display']
+                  'mode_type', 'mode_display', 'rules_info']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
@@ -82,7 +82,7 @@ class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'mobile', 'avatar', 'roles_info',
-                  'date_joined', 'gender_display']
+                  'date_joined', 'gender_display', 'dept_info']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'pk': {'read_only': True}, 'avatar': {'read_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
