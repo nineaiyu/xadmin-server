@@ -1,0 +1,157 @@
+[
+  {
+    "model": "system.datapermission",
+    "pk": 1,
+    "fields": {
+      "created_time": "2023-12-24T06:09:48.598Z",
+      "updated_time": "2023-12-25T12:57:34.024Z",
+      "description": "全部数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "全部数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "*",
+          "match": "*",
+          "type": "value.all",
+          "value": "*"
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 2,
+    "fields": {
+      "created_time": "2023-12-24T06:11:34.092Z",
+      "updated_time": "2023-12-25T12:57:41.010Z",
+      "description": "仅本部门下的本人数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 1,
+      "name": "仅本部门下的本人数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "creator",
+          "match": "exact",
+          "type": "value.user.id",
+          "value": ""
+        },
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "type": "value.user.dept.id",
+          "value": ""
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 3,
+    "fields": {
+      "created_time": "2023-12-24T06:12:40.796Z",
+      "updated_time": "2023-12-25T13:46:14.837Z",
+      "description": "本部门及以下数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "本部门及以下数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "type": "value.user.dept.ids",
+          "value": ""
+        },
+        {
+          "table": "system.userinfo",
+          "field": "dept",
+          "match": "exact",
+          "type": "value.user.dept.id",
+          "value": ""
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 4,
+    "fields": {
+      "created_time": "2023-12-24T06:13:13.633Z",
+      "updated_time": "2023-12-25T13:43:04.535Z",
+      "description": "本部门数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "本部门数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "type": "value.user.dept.id",
+          "value": ""
+        },
+        {
+          "table": "system.userinfo",
+          "field": "dept",
+          "match": "exact",
+          "type": "value.user.dept.id",
+          "value": ""
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 5,
+    "fields": {
+      "created_time": "2023-12-24T06:52:26.814Z",
+      "updated_time": "2023-12-24T07:03:32.289Z",
+      "description": "仅本人数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "mode_type": 0,
+      "name": "仅本人数据",
+      "rules": [
+        {
+          "table": "system.userpersonalconfig",
+          "field": "owner",
+          "match": "exact",
+          "type": "value.user.id",
+          "value": ""
+        },
+        {
+          "table": "system.noticeuserread",
+          "field": "owner",
+          "match": "exact",
+          "type": "value.user.id",
+          "value": ""
+        },
+        {
+          "table": "system.operationlog",
+          "field": "creator",
+          "match": "exact",
+          "type": "value.user.id",
+          "value": ""
+        }
+      ],
+      "is_active": true
+    }
+  }
+]

@@ -51,7 +51,6 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
         password = request.data.get('password')
         if password:
             valid_data = serializer.data
-            print(valid_data)
             # roles = valid_data.pop('roles')
             valid_data.pop('roles_info')
             valid_data.pop('rules_info')
@@ -59,7 +58,8 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             dept = valid_data.pop('dept', None)
             if dept:
                 valid_data['dept_id'] = dept
-            user = UserInfo.objects.create_user(**valid_data, password=password)
+            user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
+                                                dept_belong=request.user.dept)
             # user.roles.set(UserRole.objects.filter(pk__in=roles))
             if user:
                 return ApiResponse(detail=f"用户{user.username}添加成功", data=self.get_serializer(user).data)

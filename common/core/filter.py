@@ -45,6 +45,12 @@ class DataPermissionFilter(BaseFilterBackend):
             if obj.is_active:
                 for rule in obj.rules:
                     if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
+                        if rule.get('type') == 'value.all':
+                            if obj.mode_type == 1:  # 且模式，存在*，则忽略该规则
+                                continue
+                            else:  # 或模式，存在* 则该规则表仅*生效
+                                rules = [rule]
+                                break
                         rules.append(rule)
                 if rules:
                     results.append({'mode': obj.mode_type, 'rules': rules})
@@ -72,7 +78,7 @@ class DataPermissionFilter(BaseFilterBackend):
                 elif f_type == 'value.date':
                     val = json.loads(rule['value'])
                     if val < 0:
-                        rule['value'] = timezone.now() - datetime.timedelta(seconds=val)
+                        rule['value'] = timezone.now() - datetime.timedelta(seconds=-val)
                     else:
                         rule['value'] = timezone.now() + datetime.timedelta(seconds=val)
                 elif f_type == 'value.json':
@@ -93,6 +99,8 @@ class DataPermissionFilter(BaseFilterBackend):
         for q in set(or_qs):
             if dept_obj.mode_type == 1:
                 q1 &= q
+                if q == Q():
+                    return queryset.none()
             else:
                 if q == Q():
                     return queryset
