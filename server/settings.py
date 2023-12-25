@@ -522,6 +522,8 @@ HTTP_LISTEN_PORT = 8896
 CELERY_FLOWER_PORT = 5566
 CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
+
+# 访问白名单配置
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/logout$",
@@ -530,23 +532,24 @@ PERMISSION_WHITE_URL = [
     "^/api/system/routes$",
 ]
 
+# 访问权限配置
 PERMISSION_SHOW_PREFIX = [
     'api/system',
     'api/flower',
 ]
-
+# 数据权限配置
 PERMISSION_DATA_AUTH_APPS = [
     'system'
 ]
 
-API_LOG_ENABLE = locals().get("API_LOG_ENABLE", True)
-API_LOG_METHODS = locals().get("API_LOG_METHODS", ["POST", "DELETE", "PUT"])  # 'ALL'
+API_LOG_ENABLE = True
+API_LOG_METHODS = ["POST", "DELETE", "PUT"]  # 'ALL'
 
 # 在操作日志中详细记录的请求模块映射
-API_MODEL_MAP = locals().get("API_MODEL_MAP", {
+API_MODEL_MAP = {
     "/api/system/refresh": "Token刷新",
     "/api/system/upload": "文件上传",
     "/api/system/login": "用户登录",
     "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
-})
+}

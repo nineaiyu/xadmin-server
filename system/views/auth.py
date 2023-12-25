@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : server
-# filename : system
+# filename : auth
 # author : ly_13
 # date : 6/6/2023
 import base64
@@ -79,7 +79,7 @@ class RegisterView(APIView):
             if not user:
                 user = UserInfo.objects.create_user(username=username, password=password, first_name=username)
                 if channel and user:
-                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel)
+                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
                     if dept:
                         user.dept = dept
                         update_fields.append('dept')
