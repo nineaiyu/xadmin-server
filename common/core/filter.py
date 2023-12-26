@@ -28,6 +28,16 @@ class OwnerUserFilter(BaseFilterBackend):
 
 class DataPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
+        """
+        1.获取所有数据权限规则
+        2.循环判断规则
+            a.循环判断最内层规则，根据模式和全部数据进行判断【如果规则数量为一个，则模式该规则链为或模式】
+                如果模式为或模式，并存在全部数据，则该规则链其他规则失效，仅保留该规则
+                如果模式为且模式，并且存在全部数据，则该改则失效
+            b.判断外层规则 【如果规则数量为一个，则模式该规则链为或模式】
+                若模式为或模式，并存在全部数据，则直接返回queryset
+                若模式为且模式，则 返回queryset.filter(规则)
+        """
         user_obj: UserInfo = request.user
         if user_obj.is_superuser:
             return queryset
@@ -42,18 +52,19 @@ class DataPermissionFilter(BaseFilterBackend):
         results = []
         for obj in permission:
             rules = []
-            if obj.is_active:
-                for rule in obj.rules:
-                    if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
-                        if rule.get('type') == 'value.all':
-                            if obj.mode_type == 1:  # 且模式，存在*，则忽略该规则
-                                continue
-                            else:  # 或模式，存在* 则该规则表仅*生效
-                                rules = [rule]
-                                break
-                        rules.append(rule)
-                if rules:
-                    results.append({'mode': obj.mode_type, 'rules': rules})
+            if len(obj.rules) == 1:
+                obj.mode_type = 0
+            for rule in obj.rules:
+                if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
+                    if rule.get('type') == 'value.all':
+                        if obj.mode_type == 1:  # 且模式，存在*，则忽略该规则
+                            continue
+                        else:  # 或模式，存在* 则该规则表仅*生效
+                            rules = [rule]
+                            break
+                    rules.append(rule)
+            if rules:
+                results.append({'mode': obj.mode_type, 'rules': rules})
         or_qs = []
         if not results:
             return queryset.none()
@@ -90,20 +101,28 @@ class DataPermissionFilter(BaseFilterBackend):
             q = Q()
             if result.get('mode') == 1:
                 for a in set(qs):
+                    if a == Q():
+                        continue
                     q &= a
             else:
                 for a in set(qs):
+                    if a == Q():
+                        q = Q()
+                        break
                     q |= a
             or_qs.append(q)
         q1 = Q()
         for q in set(or_qs):
             if dept_obj.mode_type == 1:
-                q1 &= q
                 if q == Q():
-                    return queryset.none()
+                    continue
+                q1 &= q
             else:
                 if q == Q():
                     return queryset
                 q1 |= q
+        if dept_obj.mode_type == 1 and q1 == Q():
+            return queryset.none()
+
         logger.warning(f"{app_label}.{model_name} : {q1}")
         return queryset.filter(q1)
