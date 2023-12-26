@@ -3,6 +3,7 @@ import datetime
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from common.core.models import upload_directory_path, DbAuditModel
 
@@ -206,19 +207,37 @@ class UploadFile(DbAuditModel):
 
 
 class NoticeMessage(DbAuditModel):
+    class NoticeChoices(models.IntegerChoices):
+        SYSTEM = 0, _("系统通知")
+        NOTICE = 1, _("系统公告")
+        USER = 2, _("用户通知")
+        DEPT = 3, _("部门通知")
+        ROLE = 4, _("角色通知")
+
     notice_user = models.ManyToManyField(to=UserInfo, through="NoticeUserRead", null=True, blank=True,
-                                         through_fields=('notice', 'owner'))
+                                         through_fields=('notice', 'owner'), verbose_name="通知的人")
+    notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的人部门")
+    notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的人角色")
     level_choices = (
         ('', 'default'), ('success', 'success'), ('primary', 'primary'), ('warning', 'warning'),
         ('danger', 'danger'))
     level = models.CharField(verbose_name='消息级别', choices=level_choices, default='', max_length=20)
-    notice_type_choices = ((0, '系统通知'), (1, '消息通知'), (2, '系统公告'))
-    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=notice_type_choices, default=1)
+    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=2)
     title = models.CharField(verbose_name='消息标题', max_length=255)
     message = models.TextField(verbose_name='具体信息内容', blank=True, null=True)
     extra_json = models.JSONField(verbose_name="额外的json数据", blank=True, null=True)
     file = models.ManyToManyField(to=UploadFile, verbose_name="上传的资源")
     publish = models.BooleanField(verbose_name="是否发布", default=True)
+
+    @classmethod
+    @property
+    def user_choices(cls):
+        return [cls.NoticeChoices.USER, cls.NoticeChoices.SYSTEM]
+
+    @classmethod
+    @property
+    def notice_choices(cls):
+        return [cls.NoticeChoices.NOTICE, cls.NoticeChoices.DEPT, cls.NoticeChoices.ROLE]
 
     class Meta:
         verbose_name = "消息通知"

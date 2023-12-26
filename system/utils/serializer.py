@@ -197,10 +197,12 @@ class UploadFileSerializer(BaseModelSerializer):
 
 
 class NoticeMessageSerializer(BaseModelSerializer):
+
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", "notice_user", "user_count", "read_user_count",
-                  'notice_type', 'extra_json', "files", "notice_users", "publish", 'notice_type_display']
+                  'notice_type', 'extra_json', "files", "notice_users", "publish", 'notice_type_display', 'notice_dept',
+                  'notice_role']
 
         read_only_fields = ['pk', 'notice_user']
 
@@ -212,25 +214,43 @@ class NoticeMessageSerializer(BaseModelSerializer):
     read_user_count = serializers.SerializerMethodField(read_only=True)
 
     def get_read_user_count(self, obj):
-        if obj.notice_type in [0, 1]:
+        if obj.notice_type in models.NoticeMessage.user_choices:
             return models.NoticeUserRead.objects.filter(notice=obj, unread=False,
                                                         owner_id__in=obj.notice_user.all()).count()
 
-        elif obj.notice_type == 2:
+        elif obj.notice_type in models.NoticeMessage.notice_choices:
             return obj.notice_user.count()
 
         return 0
 
     def get_user_count(self, obj):
+        if obj.notice_type == models.NoticeMessage.NoticeChoices.DEPT:
+            return models.UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
+        if obj.notice_type == models.NoticeMessage.NoticeChoices.ROLE:
+            return models.UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
         return obj.notice_user.count()
 
     def validate(self, attrs):
         notice_type = attrs.get('notice_type')
         notice_users = attrs.get('notice_users')
-        if notice_type == 1 and not notice_users:
-            raise Exception('消息通知缺少用户')
-        if notice_type == 2 and notice_users:
-            attrs.pop('notice_users')
+
+        if notice_type == models.NoticeMessage.NoticeChoices.ROLE:
+            attrs.pop('notice_dept', None)
+            attrs.pop('notice_users', None)
+            if not attrs.get('notice_role'):
+                raise Exception('消息通知缺少角色')
+
+        if notice_type == models.NoticeMessage.NoticeChoices.DEPT:
+            attrs.pop('notice_users', None)
+            attrs.pop('notice_role', None)
+            if not attrs.get('notice_dept'):
+                raise Exception('消息通知缺少部门')
+
+        if notice_type == models.NoticeMessage.NoticeChoices.USER:
+            attrs.pop('notice_role', None)
+            attrs.pop('notice_dept', None)
+            if not notice_users:
+                raise Exception('消息通知缺少用户')
 
         files = attrs.get('files')
         if files is not None:
@@ -243,15 +263,15 @@ class NoticeMessageSerializer(BaseModelSerializer):
     def create(self, validated_data):
         notice_users = []
         if validated_data.get('notice_users') is not None:
-            notice_users = validated_data.pop('notice_users')
+            notice_users = validated_data.pop('notice_users', None)
         instance = super().create(validated_data)
         instance.file.filter(is_tmp=True).update(is_tmp=False)
-        if notice_users and validated_data['notice_type'] in [0, 1]:
+        if notice_users and validated_data['notice_type'] in models.NoticeMessage.user_choices:
             instance.notice_user.set(models.UserInfo.objects.filter(pk__in=notice_users))
         return instance
 
     def update(self, instance, validated_data):
-        validated_data.pop('notice_type')  # 不能修改消息类型
+        notice_type = validated_data.pop('notice_type')  # 不能修改消息类型
         o_files = instance.file.all().values_list('pk', flat=True)
         n_files = []
         if validated_data.get('file'):
@@ -259,6 +279,9 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
         instance = super().update(instance, validated_data)
         if instance:
+            if notice_type in models.NoticeMessage.user_choices:
+                form_users = set(validated_data.get('notice_users'))
+                instance.notice_user.set(models.UserInfo.objects.filter(pk__in=form_users))
             instance.file.filter(is_tmp=True).update(is_tmp=False)
             del_files = set(o_files) - set(n_files)
             if del_files:
@@ -279,9 +302,9 @@ class UserNoticeSerializer(BaseModelSerializer):
 
     def get_unread(self, obj):
         queryset = models.NoticeUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
-        if obj.notice_type in [0, 1]:
+        if obj.notice_type in models.NoticeMessage.user_choices:
             return bool(queryset.filter(unread=True).count())
-        elif obj.notice_type == 2:
+        elif obj.notice_type in models.NoticeMessage.notice_choices:
             return not bool(queryset.count())
         return True
 
@@ -310,3 +333,16 @@ class DataPermissionSerializer(BaseModelSerializer):
         read_only_fields = ['pk']
 
     mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+
+    def validate(self, attrs):
+        rules = attrs.get('rules', [])
+        if len(rules) < 2:
+            attrs['mode_type'] = 0
+        return attrs
+
+
+class SystemConfigSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.SystemConfig
+        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description']
+        read_only_fields = ['pk']

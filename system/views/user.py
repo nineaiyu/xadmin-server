@@ -37,7 +37,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer
 
-    ordering_fields = ['date_joined', 'last_login']
+    ordering_fields = ['date_joined', 'last_login', 'created_time']
     filterset_class = UserFilter
 
     def list(self, request, *args, **kwargs):
@@ -52,9 +52,9 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
         if password:
             valid_data = serializer.data
             # roles = valid_data.pop('roles')
-            valid_data.pop('roles_info')
-            valid_data.pop('rules_info')
-            valid_data.pop('dept_info')
+            valid_data.pop('roles_info', None)
+            valid_data.pop('rules_info', None)
+            valid_data.pop('dept_info', None)
             dept = valid_data.pop('dept', None)
             if dept:
                 valid_data['dept_id'] = dept

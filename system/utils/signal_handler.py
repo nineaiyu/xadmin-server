@@ -73,7 +73,7 @@ def clean_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, NoticeMessage):
-        if instance.notice_type == 2:
+        if instance.notice_type in NoticeMessage.notice_choices:
             cache_response.invalid_cache(f'UserNoticeMessage_unread_*')
         else:
             for pk in instance.notice_user.values_list('pk', flat=True).distinct():
