@@ -13,6 +13,7 @@ from system.models import NoticeMessage
 
 SYSTEM = NoticeMessage.NoticeChoices.SYSTEM
 
+
 def base_notify(users: List | QuerySet, title: str, message: str, notice_type: int,
                 level: Optional[Literal['success', '', 'warning', 'error']], extra_json: Dict = None):
     if isinstance(users, (QuerySet, list)):

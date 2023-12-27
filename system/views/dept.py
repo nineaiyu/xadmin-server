@@ -39,5 +39,4 @@ class DeptView(BaseModelSet, ChangeRolePermissionAction):
 
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(DeptInfo.mode_type_choices))
-
+        return ApiResponse(**data, choices_dict=get_choices_dict(DeptInfo.ModeChoices.choices))

@@ -42,7 +42,7 @@ class DataPermissionView(BaseModelSet):
 
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(DataPermission.mode_type_choices))
+        return ApiResponse(**data, choices_dict=get_choices_dict(DataPermission.ModeChoices.choices))
 
     @action(methods=['get'], detail=False)
     def fields(self, request, *args, **kwargs):

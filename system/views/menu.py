@@ -46,8 +46,8 @@ class MenuView(BaseModelSet, RankAction):
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(Menu.method_choices),
-                           api_url_list=get_all_url_dict(''))
+        return ApiResponse(**data, choices_dict=get_choices_dict(Menu.MethodChoices.choices),
+                           menu_choices=get_choices_dict(Menu.MenuChoices.choices), api_url_list=get_all_url_dict(''))
 
 
 class UserRoutesView(APIView):
@@ -60,8 +60,9 @@ class UserRoutesView(APIView):
     def get(self, request):
         menu_list = []
         user_obj = request.user
+        menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
-            menu_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=[0, 1]).order_by('rank'),
+            menu_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
                                         many=True, context={'user': request.user}).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))
@@ -69,7 +70,7 @@ class UserRoutesView(APIView):
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
                 menu_list = RouteSerializer(
-                    menu_queryset.filter(menu_type__in=[0, 1]).distinct().order_by('rank'), many=True,
+                    menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
                     context={'user': request.user}).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))

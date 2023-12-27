@@ -30,5 +30,5 @@ class Command(LoadCommand):
         options["database"] = DEFAULT_DB_ALIAS
         options["app_label"] = ""
         options["exclude"] = []
-        options["format"]= "json"
+        options["format"] = "json"
         super(Command, self).handle(*fixture_labels, **options)

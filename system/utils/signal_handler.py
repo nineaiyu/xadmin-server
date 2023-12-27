@@ -26,10 +26,25 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
         if isinstance(instance, UserInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             invalid_user_cache(instance.pk)
 
-
         if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             if instance.userinfo_set.count():
                 invalid_roles_cache(instance)
+
+        if isinstance(instance, NoticeMessage):
+            invalid_notify_caches(instance, kwargs.get('pk_set', []))
+
+
+def invalid_notify_caches(instance, pk_set):
+    pks = []
+    if instance.notice_type == NoticeMessage.NoticeChoices.USER:
+        pks = pk_set
+    if instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
+        pks = UserInfo.objects.filter(roles__in=pk_set).values_list('pk', flat=True)
+    if instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
+        pks = UserInfo.objects.filter(dept__in=pk_set).values_list('pk', flat=True)
+    if pks:
+        for pk in set(pks):
+            invalid_notify_cache(pk)
 
 
 def invalid_user_cache(user_pk):
@@ -73,11 +88,17 @@ def clean_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, NoticeMessage):
-        if instance.notice_type in NoticeMessage.notice_choices:
-            cache_response.invalid_cache(f'UserNoticeMessage_unread_*')
+        pk_set = None
+        if instance.notice_type == NoticeMessage.NoticeChoices.NOTICE:
+            invalid_notify_cache('*')
+        elif instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
+            pk_set = instance.notice_dept.values_list('pk', flat=True)
+        elif instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
+            pk_set = instance.notice_role.values_list('pk', flat=True)
         else:
-            for pk in instance.notice_user.values_list('pk', flat=True).distinct():
-                invalid_notify_cache(pk)
+            pk_set = instance.notice_user.values_list('pk', flat=True)
+        if pk_set:
+            invalid_notify_caches(instance, pk_set)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserInfo):

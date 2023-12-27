@@ -151,9 +151,7 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def PICTURE_UPLOAD_SIZE(self):
-        return self.get_value('PICTURE_UPLOAD_SIZE', 1024 * 1024 *0.5)
-
-
+        return self.get_value('PICTURE_UPLOAD_SIZE', 1024 * 1024 * 0.5)
 
 
 class ConfigCache(BaseConfCache):

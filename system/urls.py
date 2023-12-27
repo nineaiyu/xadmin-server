@@ -8,6 +8,7 @@ from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
+from system.views.config import SystemConfigView
 from system.views.dept import DeptView
 from system.views.menu import UserRoutesView, MenuView
 from system.views.notice import NoticeUserReadMessageView, NoticeMessageView, UserNoticeMessage
@@ -45,11 +46,13 @@ router.register('notice', UserNoticeMessage, basename='user_notice')
 # 系统设置相关路由
 router.register('user', UserView, basename='user')
 router.register('dept', DeptView, basename='dept')
-router.register('permission', DataPermissionView, basename='permission')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
+router.register('config', SystemConfigView, basename='sysconfig')
+router.register('permission', DataPermissionView, basename='permission')
 router.register('operation-log', OperationLogView, basename='operation_log')
 
+# 消息通知路由
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 

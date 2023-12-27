@@ -601,26 +601,6 @@
   },
   {
     "model": "system.menu",
-    "pk": 54,
-    "fields": {
-      "created_time": "2023-09-12T09:29:25.917Z",
-      "updated_time": "2023-09-12T09:29:25.917Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "send:systemNotify",
-      "rank": 12,
-      "path": "#",
-      "component": "GET",
-      "is_active": true,
-      "meta": 58
-    }
-  },
-  {
-    "model": "system.menu",
     "pk": 53,
     "fields": {
       "created_time": "2023-09-11T08:19:33.343Z",

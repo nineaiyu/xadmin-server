@@ -32,7 +32,7 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
     @cache_response(timeout=600, key_func='get_cache_key')
     def retrieve(self, request, *args, **kwargs):
         data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.gender_choices))
+        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices))
 
     @action(methods=['post'], detail=False)
     def reset_password(self, request, *args, **kwargs):

@@ -1,73 +1,74 @@
 [
-{
+  {
     "model": "system.deptinfo",
     "pk": 2,
     "fields": {
-        "created_time": "2023-12-24T06:14:02.544Z",
-        "updated_time": "2023-12-24T06:22:10.476Z",
-        "description": null,
-        "creator": 1,
-        "modifier": 1,
-        "dept_belong": null,
-        "mode_type": 0,
-        "name": "测试部门",
-        "code": "test",
-        "parent": 1,
-        "rank": 2,
-        "auto_bind": false,
-        "is_active": true,
-        "roles": [],
-        "rules": []
+      "created_time": "2023-12-24T06:14:02.544Z",
+      "updated_time": "2023-12-24T06:22:10.476Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "测试部门",
+      "code": "test",
+      "parent": 1,
+      "rank": 2,
+      "auto_bind": false,
+      "is_active": true,
+      "roles": [],
+      "rules": []
     }
-},
-{
+  },
+  {
     "model": "system.deptinfo",
     "pk": 3,
     "fields": {
-        "created_time": "2023-12-24T06:14:46.829Z",
-        "updated_time": "2023-12-24T08:19:33.166Z",
-        "description": null,
-        "creator": 1,
-        "modifier": 1,
-        "dept_belong": null,
-        "mode_type": 0,
-        "name": "默认部门",
-        "code": "default",
-        "parent": 1,
-        "rank": 1,
-        "auto_bind": true,
-        "is_active": true,
-        "roles": [
-            2
-        ],
-        "rules": [
-            3
-        ]
+      "created_time": "2023-12-24T06:14:46.829Z",
+      "updated_time": "2023-12-24T08:19:33.166Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "默认部门",
+      "code": "default",
+      "parent": 1,
+      "rank": 1,
+      "auto_bind": true,
+      "is_active": true,
+      "roles": [
+        2
+      ],
+      "rules": [
+        2,
+        5
+      ]
     }
-},
-{
+  },
+  {
     "model": "system.deptinfo",
     "pk": 1,
     "fields": {
-        "created_time": "2023-12-24T06:09:00.563Z",
-        "updated_time": "2023-12-24T06:09:00.563Z",
-        "description": null,
-        "creator": 1,
-        "modifier": 1,
-        "dept_belong": null,
-        "mode_type": 0,
-        "name": "xAdmin管理团队",
-        "code": "xadmin",
-        "parent": null,
-        "rank": 1,
-        "auto_bind": false,
-        "is_active": true,
-        "roles": [
-            1
-        ],
-        "rules": [
-            1
-        ]
+      "created_time": "2023-12-24T06:09:00.563Z",
+      "updated_time": "2023-12-24T06:09:00.563Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "xAdmin管理团队",
+      "code": "xadmin",
+      "parent": null,
+      "rank": 1,
+      "auto_bind": false,
+      "is_active": true,
+      "roles": [
+        1
+      ],
+      "rules": [
+        1
+      ]
     }
-}
+  }
 ]

@@ -1,13 +1,16 @@
 # xadmin-server
+
 xadmin-基于Django+vue3的rbac权限管理系统
 
-前端 [xadmin-client](https://github.com/nineaiyu/xadmin-client) 
+前端 [xadmin-client](https://github.com/nineaiyu/xadmin-client)
 
 ### 在线预览
+
 [https://xadmin.dvcloud.xin/](https://xadmin.dvcloud.xin/)
 账号密码：admin/admin123
 
 ### 生成数据表并迁移
+
 ```shell
 python manage.py makemigrations
 python manage.py migrate
@@ -20,7 +23,8 @@ python manage.py createsuperuser
 ```
 
 ### 启动程序
-##### a.本地环境直接启动 
+
+##### a.本地环境直接启动
 
 ```shell
 python manage.py start all
@@ -32,10 +36,10 @@ python manage.py start all
 docker compose up -d
 ```
 
-### 导入默认菜单
+### 首次启动，需要先创建管理用户，并进行导入默认菜单
 
 ```shell
-python manage.py loaddata loadjson/menu.json
+python manage.py load_init_json
 ```
 
 # 附录
@@ -46,13 +50,14 @@ python manage.py loaddata loadjson/menu.json
 docker compose up
 ```
 
-### 保存当前菜单为文件
+### 导出系统相关配置信息，包含角色，部门，菜单等配置
 
 ```shell
-python manage.py dumpdata system.MenuMeta system.Menu -o loadjson/menu.json
+python manage.py dump_init_json
 ```
 
 ### nginx 前端代理
+
 ```shell
     location /ws/message {
         proxy_pass http://127.0.0.1:28896;

@@ -32,6 +32,7 @@ class UserSerializer(BaseModelSerializer):
     dept_info = serializers.SerializerMethodField(read_only=True)
     gender_display = serializers.CharField(read_only=True, source='get_gender_display')
     mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+
     def get_roles_info(self, obj):
         result = []
         if isinstance(obj, OrderedDict):
@@ -121,7 +122,8 @@ class RouteMetaSerializer(BaseModelSerializer):
         else:
             menu_obj = get_user_menu_queryset(user)
         if menu_obj:
-            return menu_obj.filter(menu_type=2, parent=obj.menu).values_list('name', flat=True).distinct()
+            return menu_obj.filter(menu_type=models.Menu.MenuChoices.PERMISSION, parent=obj.menu).values_list('name',
+                                                                                                              flat=True).distinct()
         else:
             return []
 
@@ -197,7 +199,6 @@ class UploadFileSerializer(BaseModelSerializer):
 
 
 class NoticeMessageSerializer(BaseModelSerializer):
-
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", "notice_user", "user_count", "read_user_count",
@@ -337,7 +338,7 @@ class DataPermissionSerializer(BaseModelSerializer):
     def validate(self, attrs):
         rules = attrs.get('rules', [])
         if len(rules) < 2:
-            attrs['mode_type'] = 0
+            attrs['mode_type'] = models.DataPermission.ModeChoices.OR
         return attrs
 
 

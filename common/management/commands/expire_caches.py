@@ -10,6 +10,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "args", metavar="cache key", nargs="+", help="please input cache key"
         )
+
     def handle(self, *args, **options):
         for key in args:
             if key.endswith("*"):

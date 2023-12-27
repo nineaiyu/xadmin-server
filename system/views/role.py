@@ -31,4 +31,3 @@ class RoleView(BaseModelSet):
 
     ordering_fields = ['updated_time', 'name', 'created_time', 'pk']
     filterset_class = RoleFilter
-

@@ -14,9 +14,10 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
 from common.core.db.utils import RelatedManager
-from system.models import UserInfo, DataPermission
+from system.models import UserInfo, DataPermission, ModeTypeAbstract
 
 logger = logging.getLogger(__name__)
+
 
 class OwnerUserFilter(BaseFilterBackend):
 
@@ -53,11 +54,11 @@ class DataPermissionFilter(BaseFilterBackend):
         for obj in permission:
             rules = []
             if len(obj.rules) == 1:
-                obj.mode_type = 0
+                obj.mode_type = ModeTypeAbstract.ModeChoices.OR
             for rule in obj.rules:
                 if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
                     if rule.get('type') == 'value.all':
-                        if obj.mode_type == 1:  # 且模式，存在*，则忽略该规则
+                        if obj.mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
                             continue
                         else:  # 或模式，存在* 则该规则表仅*生效
                             rules = [rule]
@@ -83,7 +84,7 @@ class DataPermissionFilter(BaseFilterBackend):
                     rule['value'] = user_obj.dept.recursion_dept_info(json.loads(rule['value']))
                 elif f_type == 'value.all':
                     rule['match'] = 'all'
-                    if dept_obj.mode_type == 0 and result.get('mode') == 0:
+                    if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                         logger.warning(f"{app_label}.{model_name} : all queryset")
                         return queryset  # 全部数据直接返回 queryset
                 elif f_type == 'value.date':
@@ -99,7 +100,7 @@ class DataPermissionFilter(BaseFilterBackend):
             #  ((0, '或模式'), (1, '且模式'))
             qs = RelatedManager.get_filter_attrs_qs(result.get('rules'))
             q = Q()
-            if result.get('mode') == 1:
+            if result.get('mode') == ModeTypeAbstract.ModeChoices.AND:
                 for a in set(qs):
                     if a == Q():
                         continue
@@ -113,7 +114,7 @@ class DataPermissionFilter(BaseFilterBackend):
             or_qs.append(q)
         q1 = Q()
         for q in set(or_qs):
-            if dept_obj.mode_type == 1:
+            if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND:
                 if q == Q():
                     continue
                 q1 &= q
@@ -121,7 +122,7 @@ class DataPermissionFilter(BaseFilterBackend):
                 if q == Q():
                     return queryset
                 q1 |= q
-        if dept_obj.mode_type == 1 and q1 == Q():
+        if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
             return queryset.none()
 
         logger.warning(f"{app_label}.{model_name} : {q1}")

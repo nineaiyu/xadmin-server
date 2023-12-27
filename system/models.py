@@ -9,27 +9,31 @@ from common.core.models import upload_directory_path, DbAuditModel
 
 
 class ModeTypeAbstract(models.Model):
-    mode_type_choices = ((0, '或模式'), (1, '且模式'))
-    mode_type = models.SmallIntegerField(choices=mode_type_choices, default=0, verbose_name="数据权限模式")
+    class ModeChoices(models.IntegerChoices):
+        OR = 0, _("或模式")
+        AND = 1, _("且模式")
+
+    mode_type = models.SmallIntegerField(choices=ModeChoices, default=ModeChoices.OR, verbose_name="数据权限模式")
 
     class Meta:
         abstract = True
 
 
 class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
+    class GenderChoices(models.IntegerChoices):
+        UNKNOWN = 0, _("保密")
+        MALE = 1, _("男")
+        FEMALE = 2, _("女")
+
+    avatar = models.FileField(verbose_name="用户头像", null=True, blank=True, upload_to=upload_directory_path)
+    nickname = models.CharField(verbose_name="昵称", max_length=150, blank=True)
+    gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name="性别")
+    mobile = models.CharField(verbose_name="手机号", max_length=16, default='', blank=True)
+
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
     dept = models.ForeignKey(to="DeptInfo", verbose_name="所属部门", on_delete=models.PROTECT, blank=True, null=True,
                              related_query_name="dept_query")
-    avatar = models.FileField(verbose_name="用户头像", null=True, blank=True, upload_to=upload_directory_path)
-    nickname = models.CharField(verbose_name="昵称", max_length=150, blank=True)
-    gender_choices = (
-        (0, "保密"),
-        (1, "男"),
-        (2, "女"),
-    )
-    gender = models.IntegerField(choices=gender_choices, default=0, verbose_name="性别", help_text="性别")
-    mobile = models.CharField(verbose_name="手机号", max_length=16, default='', blank=True)
 
     class Meta:
         verbose_name = "用户信息"
@@ -73,23 +77,30 @@ class MenuMeta(DbAuditModel):
 
 
 class Menu(DbAuditModel):
+    class MenuChoices(models.IntegerChoices):
+        DIRECTORY = 0, _("目录")
+        MENU = 1, _("菜单")
+        PERMISSION = 2, _("权限")
+
+    class MethodChoices(models.TextChoices):
+        GET = 'GET', _("GET")
+        POST = 'POST', _("POST")
+        PUT = 'PUT', _("PUT")
+        DELETE = 'DELETE', _("DELETE")
+
     parent = models.ForeignKey(to='Menu', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True)
-
-    menu_type_choices = ((0, '目录'), (1, '菜单'), (2, '权限'))
-    menu_type = models.SmallIntegerField(choices=menu_type_choices, default=0, verbose_name="节点类型")
-
+    menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY, verbose_name="节点类型")
     name = models.CharField(verbose_name="组件英文名称", max_length=128, unique=True)
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
     path = models.CharField(verbose_name="路由地址", max_length=256, help_text='权限类型时，该参数为请求的URL')
-    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True, help_text='权限类型时，该参数为请求方式')
+    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True,
+                                 help_text='权限类型时，该参数为请求方式')
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
 
     # permission_marking = models.CharField(verbose_name="权限标识", max_length=256)
     # api_route = models.CharField(max_length=256, verbose_name="后端权限路由")
-    method_choices = (('GET', 'get'), ('POST', 'post'), ('PUT', 'put'), ('DELETE', 'delete'))
-
-    # method = models.CharField(choices=method_choices, default='GET', verbose_name="请求方式", max_length=10)
+    # method = models.CharField(choices=MethodChoices, default='GET', verbose_name="请求方式", max_length=10)
 
     def delete(self, using=None, keep_parents=False):
         if self.meta:
@@ -214,15 +225,18 @@ class NoticeMessage(DbAuditModel):
         DEPT = 3, _("部门通知")
         ROLE = 4, _("角色通知")
 
+    class LevelChoices(models.TextChoices):
+        DEFAULT = '', _("普通通知")
+        PRIMARY = 'primary', _("一般通知")
+        SUCCESS = 'success', _("成功通知")
+        DANGER = 'danger', _("重要通知")
+
     notice_user = models.ManyToManyField(to=UserInfo, through="NoticeUserRead", null=True, blank=True,
                                          through_fields=('notice', 'owner'), verbose_name="通知的人")
     notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的人部门")
     notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的人角色")
-    level_choices = (
-        ('', 'default'), ('success', 'success'), ('primary', 'primary'), ('warning', 'warning'),
-        ('danger', 'danger'))
-    level = models.CharField(verbose_name='消息级别', choices=level_choices, default='', max_length=20)
-    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=2)
+    level = models.CharField(verbose_name='消息级别', choices=LevelChoices, default=LevelChoices.DEFAULT, max_length=20)
+    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=NoticeChoices.USER)
     title = models.CharField(verbose_name='消息标题', max_length=255)
     message = models.TextField(verbose_name='具体信息内容', blank=True, null=True)
     extra_json = models.JSONField(verbose_name="额外的json数据", blank=True, null=True)
@@ -251,7 +265,7 @@ class NoticeMessage(DbAuditModel):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"${self.title}-{self.created_time}-${self.get_notice_type_display()}"
+        return f"{self.title}-{self.created_time}-{self.get_notice_type_display()}"
 
 
 class NoticeUserRead(DbAuditModel):

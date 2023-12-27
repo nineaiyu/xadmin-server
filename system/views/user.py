@@ -42,8 +42,8 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
 
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.gender_choices),
-                           mode_choices=get_choices_dict(DeptInfo.mode_type_choices))
+        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices),
+                           mode_choices=get_choices_dict(DeptInfo.ModeChoices.choices))
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -87,4 +87,3 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
                                message="密码被管理员重置成功")
             return ApiResponse()
         return ApiResponse(code=1001, detail='修改失败')
-

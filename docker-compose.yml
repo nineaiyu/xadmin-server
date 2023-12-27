@@ -19,14 +19,14 @@ services:
     volumes:
       - ./:/data/xadmin-server
     external_links:
-#        - mariadb:mariadb
-        - xadmin-redis:redis
-#    extra_hosts:
-#        - "mariadb:172.31.32.1"
+      #        - mariadb:mariadb
+      - xadmin-redis:redis
+    #    extra_hosts:
+    #        - "mariadb:172.31.32.1"
     sysctls:
-        - net.core.somaxconn=4096
+      - net.core.somaxconn=4096
     ports:
-        - 8896:8896
+      - 8896:8896
     depends_on:
-        - xadmin-redis
+      - xadmin-redis
 

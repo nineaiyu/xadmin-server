@@ -33,7 +33,7 @@ def get_user_permission(user_obj):
     menu = []
     menu_queryset = get_user_menu_queryset(user_obj)
     if menu_queryset:
-        menu = menu_queryset.filter(menu_type=2).values('path', 'component').distinct()
+        menu = menu_queryset.filter(menu_type=Menu.MenuChoices.PERMISSION).values('path', 'component').distinct()
     return menu
 
 
