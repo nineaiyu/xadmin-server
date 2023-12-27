@@ -12,11 +12,13 @@ from movies.tasks import delay_sync_drive_size
 
 
 def get_duration(complete: BaseFile):
-    duration = complete.video_media_metadata.duration
-    if not duration:
-        video_media_video_stream = complete.video_media_metadata.video_media_video_stream
-        if video_media_video_stream:
-            duration = video_media_video_stream[0].duration
+    duration = None
+    if complete.category == 'video':
+        duration = complete.video_media_metadata.duration
+        if not duration:
+            video_media_video_stream = complete.video_media_metadata.video_media_video_stream
+            if video_media_video_stream:
+                duration = video_media_video_stream[0].duration
     if not duration:
         duration = 0
     return duration
