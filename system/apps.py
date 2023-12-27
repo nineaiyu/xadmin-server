@@ -6,5 +6,6 @@ class SystemConfig(AppConfig):
     name = 'system'
 
     def ready(self):
+        from .utils import demo_handler
         from .utils import signal_handler
         super().ready()
