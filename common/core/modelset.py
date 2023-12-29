@@ -109,6 +109,6 @@ class BaseModelSet(ModelViewSet):
             return ApiResponse(code=1003, detail="数据异常，批量操作id不存在")
         pks = json.loads(pks)
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
-        for instance in self.queryset.filter(pk__in=pks):
+        for instance in self.get_queryset().filter(pk__in=pks):
             instance.delete()
         return ApiResponse(detail=f"批量操作成功")

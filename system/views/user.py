@@ -10,6 +10,7 @@ from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
+from common.core.filter import get_filter_queryset
 from common.core.modelset import BaseModelSet, UploadFileAction
 from common.core.response import ApiResponse
 from system.models import UserInfo, DeptInfo
@@ -57,10 +58,11 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             valid_data.pop('dept_info', None)
             dept = valid_data.pop('dept', None)
             if dept:
-                valid_data['dept_id'] = dept
+                valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user)
+            else:
+                valid_data['dept'] = request.user.dept
             user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
                                                 dept_belong=request.user.dept)
-            # user.roles.set(UserRole.objects.filter(pk__in=roles))
             if user:
                 return ApiResponse(detail=f"用户{user.username}添加成功", data=self.get_serializer(user).data)
         return ApiResponse(code=1003, detail="数据异常，用户创建失败")
@@ -70,7 +72,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             raise Exception("超级管理员禁止删除")
         instance.delete()
 
-    @action(methods=['delete'], detail=False)
+    @action(methods=['delete'], detail=False, url_path='many-delete')
     def many_delete(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().many_delete(request, *args, **kwargs)

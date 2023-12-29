@@ -16,7 +16,8 @@ from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet, OnlyListModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
-from system.utils.serializer import NoticeMessageSerializer, NoticeUserReadMessageSerializer, UserNoticeSerializer
+from system.utils.serializer import NoticeMessageSerializer, NoticeUserReadMessageSerializer, UserNoticeSerializer, \
+    AnnouncementSerializer
 
 
 class NoticeMessageFilter(filters.FilterSet):
@@ -48,6 +49,11 @@ class NoticeMessageView(BaseModelSet):
         instance.modifier = request.user
         instance.save(update_fields=['publish', 'modifier'])
         return ApiResponse()
+
+    @action(methods=['post'], detail=False)
+    def announcement(self, request, *args, **kwargs):
+        self.serializer_class = AnnouncementSerializer
+        return super().create(request, *args, **kwargs)
 
 
 class NoticeUserReadMessageFilter(filters.FilterSet):

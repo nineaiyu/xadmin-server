@@ -36,7 +36,7 @@ class MenuView(BaseModelSet, RankAction):
     serializer_class = MenuSerializer
     pagination_class = MenuPageNumber
 
-    ordering_fields = ['updated_time', 'name', 'created_time']
+    ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):

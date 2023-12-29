@@ -119,6 +119,20 @@ class Menu(DbAuditModel):
 
 
 class DataPermission(DbAuditModel, ModeTypeAbstract):
+    class FieldKeyChoices(models.TextChoices):
+        TEXT = 'value.text', _('文本格式')
+        JSON = 'value.json', _('json格式')
+        ALL = 'value.all', _('全部数据')
+        DATE = 'value.date', _('距离当前时间多少秒')
+        OWNER = 'value.user.id', _('本人ID')
+        OWNER_DEPARTMENT = 'value.user.dept.id', _('本部门ID')
+        OWNER_DEPARTMENTS = 'value.user.dept.ids', _('本部门ID及部门以下数据')
+        DEPARTMENTS = 'value.dept.ids', _('部门ID及部门以下数据')
+        TABLE_USER = 'value.table.user.ids', _('选择用户ID')
+        TABLE_MENU = 'value.table.menu.ids', _('选择菜单ID')
+        TABLE_ROLE = 'value.table.role.ids', _('选择角色ID')
+        TABLE_DEPT = 'value.table.dept.ids', _('选择部门ID')
+
     name = models.CharField(verbose_name="数据权限名称", max_length=256, unique=True)
     rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
@@ -158,20 +172,25 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract):
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
     @classmethod
-    def recursion_dept_info(cls, dept_id: int, dept_all_list=None, dept_list=None):
+    def recursion_dept_info(cls, dept_id: int, dept_all_list=None, dept_list=None, is_parent=False):
+        parent = 'parent'
+        pk = 'pk'
+        if is_parent:
+            parent, pk = pk, parent
         if not dept_all_list:
             dept_all_list = DeptInfo.objects.values("pk", "parent")
         if dept_list is None:
             dept_list = [dept_id]
         for dept in dept_all_list:
-            if dept.get("parent") == dept_id:
-                dept_list.append(dept.get("pk"))
-                cls.recursion_dept_info(dept.get("pk"), dept_all_list, dept_list)
+            if dept.get(parent) == dept_id:
+                if dept.get(pk):
+                    dept_list.append(dept.get(pk))
+                    cls.recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
         return list(set(dept_list))
 
     class Meta:
-        verbose_name = "用户组信息"
-        verbose_name_plural = "用户组信息"
+        verbose_name = "部门信息"
+        verbose_name_plural = "部门信息"
         ordering = ("-rank", "-created_time",)
 
 

@@ -1,6 +1,30 @@
 [
   {
     "model": "system.menumeta",
+    "pk": 164,
+    "fields": {
+      "created_time": "2023-12-29T08:05:39.810Z",
+      "updated_time": "2023-12-29T09:02:07.358Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "title": "发布全员系统公告",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": 163,
     "fields": {
       "created_time": "2023-12-24T00:32:44.917Z",
@@ -2188,7 +2212,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-06-20T09:25:08.529Z",
-      "updated_time": "2023-12-15T08:24:13.046Z",
+      "updated_time": "2023-12-28T09:32:37.510Z",
       "description": "",
       "creator": 1,
       "modifier": 1,

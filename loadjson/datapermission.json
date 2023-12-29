@@ -59,7 +59,7 @@
     "pk": 3,
     "fields": {
       "created_time": "2023-12-24T06:12:40.796Z",
-      "updated_time": "2023-12-25T13:46:14.837Z",
+      "updated_time": "2023-12-29T07:09:35.797Z",
       "description": "本部门及以下数据",
       "creator": 1,
       "modifier": 1,
@@ -70,15 +70,8 @@
         {
           "table": "*",
           "field": "dept_belong",
-          "match": "exact",
+          "match": "in",
           "type": "value.user.dept.ids",
-          "value": ""
-        },
-        {
-          "table": "system.userinfo",
-          "field": "dept",
-          "match": "exact",
-          "type": "value.user.dept.id",
           "value": ""
         }
       ],
@@ -148,6 +141,54 @@
           "field": "creator",
           "match": "exact",
           "type": "value.user.id",
+          "value": ""
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 6,
+    "fields": {
+      "created_time": "2023-12-28T07:02:00.398Z",
+      "updated_time": "2023-12-29T07:04:09.284Z",
+      "description": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "mode_type": 0,
+      "name": "演示模式菜单",
+      "rules": [
+        {
+          "table": "system.menu",
+          "field": "id",
+          "match": "in",
+          "type": "value.table.menu.ids",
+          "value": "[22,2,3,9,6,23,7,8,14,46,47,145,146,147,148,149,150,151,4,13,10,11,12,15,152,153,154,155,156,157,158,159,5,19,24,26,25,27,48,55,49,53,52,51,50,63,64,65,66,67,72,28,29,30,68,69,70,71,73,75,76,74,1]"
+        }
+      ],
+      "is_active": true
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": 8,
+    "fields": {
+      "created_time": "2023-12-29T07:36:08.620Z",
+      "updated_time": "2023-12-29T08:53:48.414Z",
+      "description": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "mode_type": 0,
+      "name": "演示模式仅本部门及以下数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "type": "value.user.dept.ids",
           "value": ""
         }
       ],

@@ -71,50 +71,14 @@ class DataPermissionView(BaseModelSet):
                 'name': f"{app._meta.verbose_name}-{app._meta.app_label}.{app._meta.model_name}"
             })
 
-        values = [
-            {
-                'label': "文本",
-                'key': 'value.text',
-                'value_show': True
-            }, {
-                'label': "非文本",
-                'key': 'value.json',
-                'value_show': True
-            },
-            {
-                'label': "全部数据",
-                'key': 'value.all',
-                'value_show': False
-            }, {
-                'label': "距离当前时间多少秒",
-                'key': 'value.date',
-                'value_show': True
-            },
-            {
-                'label': "本人ID",
-                'key': 'value.user.id',
-                'value_show': False
-
-            },
-            {
-                'label': "本部门ID",
-                'key': 'value.user.dept.id',
-                'value_show': False
-
-            },
-            {
-                'label': "本部门ID及部门以下数据ID",
-                'key': 'value.user.dept.ids',
-                'value_show': False
-
-            },
-            {
-                'label': "部门ID及部门以下数据ID",
-                'key': 'value.dept.ids',
-                'value_show': True
-            },
+        disabled_choices = [
+            DataPermission.FieldKeyChoices.TEXT,
+            DataPermission.FieldKeyChoices.JSON,
+            DataPermission.FieldKeyChoices.DATE,
+            DataPermission.FieldKeyChoices.DEPARTMENTS
         ]
-        return ApiResponse(data={'results': results, 'values': values})
+        return ApiResponse(data={'results': results, 'values': get_choices_dict(DataPermission.FieldKeyChoices.choices,
+                                                                                disabled_choices=disabled_choices)})
 
     @action(methods=['get'], detail=False)
     def lookups(self, request, *args, **kwargs):

@@ -27,12 +27,22 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
             invalid_user_cache(instance.pk)
 
         if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
-            if instance.userinfo_set.count():
-                invalid_roles_cache(instance)
+            for dept in DeptInfo.objects.filter(pk__in=DeptInfo.recursion_dept_info(instance.pk)).all():
+                if dept.userinfo_set.count():
+                    invalid_roles_cache(instance)
 
         if isinstance(instance, NoticeMessage):
             invalid_notify_caches(instance, kwargs.get('pk_set', []))
 
+        if isinstance(instance, UserRole):
+            invalid_roles_cache(instance)
+            invalid_dept_caches(instance)
+
+
+def invalid_dept_caches(instance):
+    for dept in instance.deptinfo_set.all().distinct():
+        if dept.userinfo_set.count():
+            invalid_roles_cache(dept)
 
 def invalid_notify_caches(instance, pk_set):
     pks = []
@@ -81,6 +91,7 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, DataPermission):
         invalid_roles_cache(instance)
+        invalid_dept_caches(instance)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserRole):

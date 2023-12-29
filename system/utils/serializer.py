@@ -10,8 +10,9 @@ from typing import OrderedDict
 from django.conf import settings
 from rest_framework import serializers
 
+from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
-from common.core.serializers import BaseModelSerializer
+from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system import models
 
 
@@ -75,6 +76,14 @@ class DeptSerializer(UserSerializer):
     user_count = serializers.SerializerMethodField(read_only=True)
     mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
 
+    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects)
+
+    def validate(self, attrs):
+        parent = attrs.get('parent')
+        if not parent:
+            attrs['parent'] = self.request.user.dept
+        return attrs
+
     def get_user_count(self, obj):
         return obj.userinfo_set.count()
 
@@ -131,7 +140,8 @@ class RouteMetaSerializer(BaseModelSerializer):
 class MenuMetaSerializer(BaseModelSerializer):
     class Meta:
         model = models.MenuMeta
-        fields = '__all__'
+        exclude = ['creator', 'modifier']
+        read_only_fields = ['creator', 'modifier', 'pk', 'dept_belong']
 
 
 class MenuSerializer(BaseModelSerializer):
@@ -139,18 +149,22 @@ class MenuSerializer(BaseModelSerializer):
 
     class Meta:
         model = models.Menu
-        fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active']
+        fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
+                  'menu_type_display']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
+    menu_type_display = serializers.CharField(source='get_menu_type_display', read_only=True)
+
     def update(self, instance, validated_data):
-        serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True)
+        serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
+                                        context=self.context)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        serializer = MenuMetaSerializer(data=validated_data.pop('meta'))
+        serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context)
         serializer.is_valid(raise_exception=True)
         validated_data['meta'] = serializer.save()
         return super().create(validated_data)
@@ -201,14 +215,12 @@ class UploadFileSerializer(BaseModelSerializer):
 class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
         model = models.NoticeMessage
-        fields = ['pk', 'level', 'title', 'message', "created_time", "notice_user", "user_count", "read_user_count",
-                  'notice_type', 'extra_json', "files", "notice_users", "publish", 'notice_type_display', 'notice_dept',
-                  'notice_role']
+        fields = ['pk', 'level', 'title', 'message', "created_time", "user_count", "read_user_count", 'extra_json',
+                  'notice_type', "files", "publish", 'notice_type_display', "notice_user", 'notice_dept', 'notice_role']
+        # extra_kwargs = {'notice_user': {'read_only': False}}
 
-        read_only_fields = ['pk', 'notice_user']
-
+    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects)
     notice_type_display = serializers.CharField(source="get_notice_type_display", read_only=True)
-    notice_users = serializers.JSONField(write_only=True)
     files = serializers.JSONField(write_only=True)
 
     user_count = serializers.SerializerMethodField(read_only=True)
@@ -231,18 +243,22 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return models.UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
         return obj.notice_user.count()
 
+    def validate_notice_type(self, val):
+        if models.NoticeMessage.NoticeChoices.NOTICE == val:
+            raise PermissionError('参数有误')
+        return val
+
     def validate(self, attrs):
         notice_type = attrs.get('notice_type')
-        notice_users = attrs.get('notice_users')
 
         if notice_type == models.NoticeMessage.NoticeChoices.ROLE:
             attrs.pop('notice_dept', None)
-            attrs.pop('notice_users', None)
+            attrs.pop('notice_user', None)
             if not attrs.get('notice_role'):
                 raise Exception('消息通知缺少角色')
 
         if notice_type == models.NoticeMessage.NoticeChoices.DEPT:
-            attrs.pop('notice_users', None)
+            attrs.pop('notice_user', None)
             attrs.pop('notice_role', None)
             if not attrs.get('notice_dept'):
                 raise Exception('消息通知缺少部门')
@@ -250,29 +266,24 @@ class NoticeMessageSerializer(BaseModelSerializer):
         if notice_type == models.NoticeMessage.NoticeChoices.USER:
             attrs.pop('notice_role', None)
             attrs.pop('notice_dept', None)
-            if not notice_users:
+            if not attrs.get('notice_user'):
                 raise Exception('消息通知缺少用户')
 
         files = attrs.get('files')
         if files is not None:
             del attrs['files']
-            attrs['file'] = models.UploadFile.objects.filter(
-                filepath__in=[file.replace(os.path.join('/', settings.MEDIA_URL), '') for file in files],
-                creator=self.context.get('request').user).all()
+            queryset = models.UploadFile.objects.filter(
+                filepath__in=[file.replace(os.path.join('/', settings.MEDIA_URL), '') for file in files])
+            attrs['file'] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
     def create(self, validated_data):
-        notice_users = []
-        if validated_data.get('notice_users') is not None:
-            notice_users = validated_data.pop('notice_users', None)
         instance = super().create(validated_data)
         instance.file.filter(is_tmp=True).update(is_tmp=False)
-        if notice_users and validated_data['notice_type'] in models.NoticeMessage.user_choices:
-            instance.notice_user.set(models.UserInfo.objects.filter(pk__in=notice_users))
         return instance
 
     def update(self, instance, validated_data):
-        notice_type = validated_data.pop('notice_type')  # 不能修改消息类型
+        validated_data.pop('notice_type')  # 不能修改消息类型
         o_files = instance.file.all().values_list('pk', flat=True)
         n_files = []
         if validated_data.get('file'):
@@ -280,16 +291,20 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
         instance = super().update(instance, validated_data)
         if instance:
-            if notice_type in models.NoticeMessage.user_choices:
-                form_users = set(validated_data.get('notice_users'))
-                instance.notice_user.set(models.UserInfo.objects.filter(pk__in=form_users))
             instance.file.filter(is_tmp=True).update(is_tmp=False)
             del_files = set(o_files) - set(n_files)
             if del_files:
-                for file in models.UploadFile.objects.filter(pk__in=del_files,
-                                                             creator=self.context.get('request').user):
+                for file in models.UploadFile.objects.filter(pk__in=del_files):
                     file.delete()  # 这样操作，才可以同时删除底层的文件，如果直接 queryset 进行delete操作，则不删除底层文件
         return instance
+
+
+class AnnouncementSerializer(NoticeMessageSerializer):
+
+    def validate_notice_type(self, val):
+        if models.NoticeMessage.NoticeChoices.NOTICE == val:
+            return val
+        raise PermissionError('参数有误')
 
 
 class UserNoticeSerializer(BaseModelSerializer):

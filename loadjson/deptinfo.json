@@ -1,6 +1,58 @@
 [
   {
     "model": "system.deptinfo",
+    "pk": 4,
+    "fields": {
+      "created_time": "2023-12-28T06:57:51.754Z",
+      "updated_time": "2023-12-28T06:57:51.754Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "mode_type": 0,
+      "name": "演示部门",
+      "code": "demo",
+      "parent": 1,
+      "rank": 99,
+      "auto_bind": false,
+      "is_active": true,
+      "roles": [
+        4
+      ],
+      "rules": [
+        6,
+        8
+      ]
+    }
+  },
+  {
+    "model": "system.deptinfo",
+    "pk": 3,
+    "fields": {
+      "created_time": "2023-12-24T06:14:46.829Z",
+      "updated_time": "2023-12-29T07:08:57.346Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "默认部门",
+      "code": "default",
+      "parent": 1,
+      "rank": 3,
+      "auto_bind": true,
+      "is_active": true,
+      "roles": [
+        2
+      ],
+      "rules": [
+        3,
+        5
+      ]
+    }
+  },
+  {
+    "model": "system.deptinfo",
     "pk": 2,
     "fields": {
       "created_time": "2023-12-24T06:14:02.544Z",
@@ -18,32 +70,6 @@
       "is_active": true,
       "roles": [],
       "rules": []
-    }
-  },
-  {
-    "model": "system.deptinfo",
-    "pk": 3,
-    "fields": {
-      "created_time": "2023-12-24T06:14:46.829Z",
-      "updated_time": "2023-12-24T08:19:33.166Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "mode_type": 0,
-      "name": "默认部门",
-      "code": "default",
-      "parent": 1,
-      "rank": 1,
-      "auto_bind": true,
-      "is_active": true,
-      "roles": [
-        2
-      ],
-      "rules": [
-        2,
-        5
-      ]
     }
   },
   {
