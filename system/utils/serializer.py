@@ -76,7 +76,7 @@ class DeptSerializer(UserSerializer):
     user_count = serializers.SerializerMethodField(read_only=True)
     mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
 
-    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects)
+    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
 
     def validate(self, attrs):
         parent = attrs.get('parent')

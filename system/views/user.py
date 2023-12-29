@@ -58,7 +58,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             valid_data.pop('dept_info', None)
             dept = valid_data.pop('dept', None)
             if dept:
-                valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user)
+                valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user).first()
             else:
                 valid_data['dept'] = request.user.dept
             user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
