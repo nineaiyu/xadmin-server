@@ -12,9 +12,11 @@ from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from common.core.filter import get_filter_queryset
 from system.models import Menu
 
 
+@MagicCacheData.make_cache(timeout=5, key_func=lambda x: x.pk)
 def get_user_menu_queryset(user_obj):
     q = Q()
     has_role = False
@@ -25,7 +27,7 @@ def get_user_menu_queryset(user_obj):
         q |= (Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True))
         has_role = True
     if has_role:
-        return Menu.objects.filter(is_active=True).filter(q).all()
+        return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
 
 
 @MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: x.pk)

@@ -7,7 +7,7 @@
 
 from django_filters import rest_framework as filters
 
-from common.core.modelset import BaseModelSet
+from common.core.modelset import ListDeleteModelSet
 from system.models import OperationLog
 from system.utils.serializer import OperationLogSerializer
 
@@ -24,7 +24,7 @@ class OperationLogFilter(filters.FilterSet):
         fields = ['module', 'creator_id']
 
 
-class OperationLogView(BaseModelSet):
+class OperationLogView(ListDeleteModelSet):
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
 

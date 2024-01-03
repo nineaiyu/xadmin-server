@@ -30,9 +30,15 @@ class BaseModelSerializer(ModelSerializer):
     class Meta:
         model = None
 
-    def __init__(self, instance=None, data=empty, request=None, **kwargs):
+    def __init__(self, instance=None, data=empty, request=None, fields=None, **kwargs):
         super().__init__(instance, data, **kwargs)
         self.request: Request = request or self.context.get("request", None)
+
+        if fields is not None:
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
 
     def create(self, validated_data):
         if self.request:

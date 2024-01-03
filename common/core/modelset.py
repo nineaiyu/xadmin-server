@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db.models import FileField
 from rest_framework import mixins
 from rest_framework.decorators import action
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from common.core.response import ApiResponse
 
@@ -63,23 +63,7 @@ class RankAction(object):
         return ApiResponse(detail='顺序保存成功')
 
 
-class OwnerModelSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
-    def retrieve(self, request, *args, **kwargs):
-        data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-    def update(self, request, *args, **kwargs):
-        data = super().update(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-
-class OnlyListModelSet(mixins.ListModelMixin, GenericViewSet):
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-
-class BaseModelSet(ModelViewSet):
+class BaseAction(object):
 
     def create(self, request, *args, **kwargs):
         data = super().create(request, *args, **kwargs).data
@@ -112,3 +96,20 @@ class BaseModelSet(ModelViewSet):
         for instance in self.get_queryset().filter(pk__in=pks):
             instance.delete()
         return ApiResponse(detail=f"批量操作成功")
+
+
+class OwnerModelSet(BaseAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+    pass
+
+
+class OnlyListModelSet(BaseAction, mixins.ListModelMixin, GenericViewSet):
+    pass
+
+
+class BaseModelSet(BaseAction, ModelViewSet):
+    pass
+
+
+# 只允许读和删除，不允许创建和修改
+class ListDeleteModelSet(BaseAction, mixins.DestroyModelMixin, ReadOnlyModelViewSet):
+    pass

@@ -15,14 +15,29 @@ from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from user_agents import parse
 
 from common.cache.storage import BlackAccessTokenCache
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
+from common.utils.request import get_request_ip, get_browser, get_os
 from common.utils.token import make_token, verify_token
-from system.models import UserInfo, DeptInfo
+from system.models import UserInfo, DeptInfo, UserLoginLog
 from system.utils.captcha import CaptchaAuth
+from system.utils.serializer import UserLoginLogSerializer
 
+
+def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+    data = {
+        'ipaddress': get_request_ip(request),
+        'browser': get_browser(request),
+        'system': get_os(request),
+        'agent': str(parse(request.META['HTTP_USER_AGENT'])),
+        'login_type': login_type
+    }
+    serializer = UserLoginLogSerializer(data=data, request=request)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
 
 def get_token_lifetime(user_obj):
     access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
@@ -93,6 +108,8 @@ class RegisterView(APIView):
                 user.last_login = timezone.now()
                 user.save(update_fields=update_fields)
                 result.update(**get_token_lifetime(user))
+                request.user = user
+                save_login_log(request)
                 return ApiResponse(data=result)
         return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')
 
@@ -114,7 +131,8 @@ class LoginView(TokenObtainPairView):
                     return ApiResponse(code=9999, detail=e.args[0])
                 data = serializer.validated_data
                 data.update(get_token_lifetime(serializer.user))
-
+                request.user = serializer.user
+                save_login_log(request)
                 return ApiResponse(data=data)
             else:
                 return ApiResponse(code=9999, detail='验证码不正确，请重新输入')

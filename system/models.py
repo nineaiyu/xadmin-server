@@ -336,3 +336,21 @@ class UserPersonalConfig(BaseConfig):
 
     def __str__(self):
         return "%s-%s" % (self.key, self.description)
+
+
+class UserLoginLog(DbAuditModel):
+    class LoginTypeChoices(models.IntegerChoices):
+        USERNAME = 0, _("用户密码登录")
+        SMS = 1, _("短信验证登录")
+        WECHAT = 2, _("微信扫码登录")
+
+    ipaddress = models.GenericIPAddressField(verbose_name="登录ip地址", null=True, blank=True)
+    browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
+    system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
+    agent = models.CharField(max_length=128, verbose_name="agent信息", null=True, blank=True)
+    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices.choices,
+                                          verbose_name="登录类型")
+
+    class Meta:
+        verbose_name = "登录日志"
+        verbose_name_plural = "登录日志"

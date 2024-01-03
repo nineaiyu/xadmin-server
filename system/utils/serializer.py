@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 6/6/2023
 import os.path
-from typing import OrderedDict
 
 from django.conf import settings
 from rest_framework import serializers
@@ -16,7 +15,55 @@ from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedFi
 from system import models
 
 
-class UserSerializer(BaseModelSerializer):
+class RoleSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.UserRole
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time']
+        read_only_fields = ['pk']
+
+
+class DataPermissionSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.DataPermission
+        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "mode_display"]
+        read_only_fields = ['pk']
+
+    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+
+    def validate(self, attrs):
+        rules = attrs.get('rules', [])
+        if len(rules) < 2:
+            attrs['mode_type'] = models.DataPermission.ModeChoices.OR
+        return attrs
+
+
+class BaseRoleRuleInfo(BaseModelSerializer):
+    roles_info = RoleSerializer(fields=['pk', 'name'], many=True, read_only=True, source='roles')
+    rules_info = DataPermissionSerializer(fields=['pk', 'name'], many=True, read_only=True, source='rules')
+    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+
+
+class DeptSerializer(BaseRoleRuleInfo):
+    class Meta:
+        model = models.DeptInfo
+        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
+                  'mode_type', 'mode_display', 'rules_info', 'auto_bind']
+        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
+
+    user_count = serializers.SerializerMethodField(read_only=True)
+    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
+
+    def validate(self, attrs):
+        parent = attrs.get('parent')
+        if not parent:
+            attrs['parent'] = self.request.user.dept
+        return attrs
+
+    def get_user_count(self, obj):
+        return obj.userinfo_set.count()
+
+
+class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'pk', 'roles', 'rules',
@@ -28,64 +75,8 @@ class UserSerializer(BaseModelSerializer):
         # extra_kwargs = {'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    roles_info = serializers.SerializerMethodField(read_only=True)
-    rules_info = serializers.SerializerMethodField(read_only=True)
-    dept_info = serializers.SerializerMethodField(read_only=True)
+    dept_info = DeptSerializer(fields=['name'], read_only=True, source='dept', many=False)
     gender_display = serializers.CharField(read_only=True, source='get_gender_display')
-    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
-
-    def get_roles_info(self, obj):
-        result = []
-        if isinstance(obj, OrderedDict):
-            queryset = obj.get('roles')
-        else:
-            queryset = obj.roles.all()
-        if queryset:
-            for obj in queryset:
-                result.append({'pk': obj.pk, 'name': obj.name})
-        return result
-
-    def get_rules_info(self, obj):
-        result = []
-        if isinstance(obj, OrderedDict):
-            queryset = obj.get('rules')
-        else:
-            queryset = obj.rules.all()
-        if queryset:
-            for obj in queryset:
-                result.append({'pk': obj.pk, 'name': obj.name})
-        return result
-
-    def get_dept_info(self, obj):
-        if isinstance(obj, OrderedDict):
-            dept = obj.get('dept')
-        else:
-            dept = obj.dept
-        if dept:
-            return dept.name
-        return '/'
-
-
-class DeptSerializer(UserSerializer):
-    class Meta:
-        model = models.DeptInfo
-        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display', 'rules_info', 'auto_bind']
-        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
-
-    user_count = serializers.SerializerMethodField(read_only=True)
-    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
-
-    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
-
-    def validate(self, attrs):
-        parent = attrs.get('parent')
-        if not parent:
-            attrs['parent'] = self.request.user.dept
-        return attrs
-
-    def get_user_count(self, obj):
-        return obj.userinfo_set.count()
 
 
 class UserInfoSerializer(UserSerializer):
@@ -170,13 +161,6 @@ class MenuSerializer(BaseModelSerializer):
         return super().create(validated_data)
 
 
-class RoleSerializer(BaseModelSerializer):
-    class Meta:
-        model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time']
-        read_only_fields = ['pk']
-
-
 class RouteSerializer(MenuSerializer):
     meta = RouteMetaSerializer()
 
@@ -189,13 +173,8 @@ class OperationLogSerializer(BaseModelSerializer):
                   "response_result", "status_code", "created_time"]
         read_only_fields = ["pk"] + list(set([x.name for x in models.OperationLog._meta.fields]))
 
-    creator = serializers.SerializerMethodField()
+    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
     module = serializers.SerializerMethodField()
-
-    def get_creator(self, obj):
-        if obj.creator:
-            return {'pk': obj.creator.pk, 'username': obj.creator.username}
-        return {}
 
     def get_module(self, obj):
         module_name = obj.module
@@ -332,29 +311,9 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
-    owner_info = serializers.SerializerMethodField()
-    notice_info = serializers.SerializerMethodField()
-
-    def get_owner_info(self, obj):
-        return {'pk': obj.owner.pk, 'username': obj.owner.username}
-
-    def get_notice_info(self, obj):
-        return NoticeMessageSerializer(obj.notice).data
-
-
-class DataPermissionSerializer(BaseModelSerializer):
-    class Meta:
-        model = models.DataPermission
-        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "mode_display"]
-        read_only_fields = ['pk']
-
-    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
-
-    def validate(self, attrs):
-        rules = attrs.get('rules', [])
-        if len(rules) < 2:
-            attrs['mode_type'] = models.DataPermission.ModeChoices.OR
-        return attrs
+    owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner')
+    notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type_display', 'message', 'publish'],
+                                          read_only=True, source='notice')
 
 
 class SystemConfigSerializer(BaseModelSerializer):
@@ -362,3 +321,14 @@ class SystemConfigSerializer(BaseModelSerializer):
         model = models.SystemConfig
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description']
         read_only_fields = ['pk']
+
+
+class UserLoginLogSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.UserLoginLog
+        fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time',
+                  'login_display']
+        read_only_fields = ['pk', 'creator']
+
+    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
+    login_display = serializers.CharField(read_only=True, source='get_login_type_display')
