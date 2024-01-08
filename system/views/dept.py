@@ -10,7 +10,7 @@ from django_filters import rest_framework as filters
 
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet
-from common.core.pagination import MenuPageNumber
+from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from system.models import DeptInfo
 from system.utils.modelset import ChangeRolePermissionAction
@@ -32,7 +32,7 @@ class DeptFilter(filters.FilterSet):
 class DeptView(BaseModelSet, ChangeRolePermissionAction):
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
-    pagination_class = MenuPageNumber
+    pagination_class = DynamicPageNumber(1000)
 
     ordering_fields = ['created_time', 'rank']
     filterset_class = DeptFilter

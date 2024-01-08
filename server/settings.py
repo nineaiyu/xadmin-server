@@ -543,7 +543,7 @@ PERMISSION_DATA_AUTH_APPS = [
 ]
 
 API_LOG_ENABLE = True
-API_LOG_METHODS = ["POST", "DELETE", "PUT"]  # 'ALL'
+API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
 
 # 在操作日志中详细记录的请求模块映射
 API_MODEL_MAP = {

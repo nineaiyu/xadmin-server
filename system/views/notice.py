@@ -140,10 +140,10 @@ class UserNoticeMessage(OnlyListModelSet):
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
-        unread_count = self.get_queryset().filter(get_user_unread_q(self.request.user)).count()
+        unread_count = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).count()
         q = get_users_notice_q(request.user)
         q |= Q(notice_type__in=NoticeMessage.user_choices, notice_user=request.user)
-        self.queryset = self.get_queryset().filter(q)
+        self.queryset = self.filter_queryset(self.get_queryset()).filter(q)
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, unread_count=unread_count,
                            level_choices=get_choices_dict(NoticeMessage.LevelChoices.choices),
@@ -156,8 +156,8 @@ class UserNoticeMessage(OnlyListModelSet):
     @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
-        notice_queryset = self.get_queryset().filter(get_user_unread_q2(request.user))
-        announce_queryset = self.get_queryset().filter(get_user_unread_q1(request.user))
+        notice_queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q2(request.user))
+        announce_queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q1(request.user))
         results = [
             {
                 "key": "1",
@@ -187,5 +187,6 @@ class UserNoticeMessage(OnlyListModelSet):
 
     @action(methods=['put'], detail=False)
     def read_all(self, request, *args, **kwargs):
-        pks = self.get_queryset().filter(get_user_unread_q(self.request.user)).values_list('pk', flat=True).distinct()
+        pks = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).values_list('pk',
+                                                                                                                 flat=True).distinct()
         return self.read_message(pks, request)

@@ -6,15 +6,10 @@
 # date : 6/16/2023
 import logging
 
-from django.apps import apps
-from django.conf import settings
 from django_filters import rest_framework as filters
-from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
-from common.core.models import DbAuditModel
 from common.core.modelset import BaseModelSet
-from common.core.pagination import MenuPageNumber
 from common.core.response import ApiResponse
 from system.models import DataPermission
 from system.utils.serializer import DataPermissionSerializer
@@ -35,7 +30,6 @@ class DataPermissionFilter(filters.FilterSet):
 class DataPermissionView(BaseModelSet):
     queryset = DataPermission.objects.all()
     serializer_class = DataPermissionSerializer
-    pagination_class = MenuPageNumber
 
     ordering_fields = ['created_time']
     filterset_class = DataPermissionFilter
@@ -43,53 +37,3 @@ class DataPermissionView(BaseModelSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(DataPermission.ModeChoices.choices))
-
-    @action(methods=['get'], detail=False)
-    def fields(self, request, *args, **kwargs):
-        results = [{
-            'value': '*',
-            'model_fields': [],
-            'name': f"全部表-*"
-        }]
-        for app in apps.get_models():
-            if app._meta.app_label not in settings.PERMISSION_DATA_AUTH_APPS:
-                continue
-            model_fields = []
-            for field in app._meta.fields:
-                model_fields.append({'value': field.name, 'name': f"{field.verbose_name}_{field.name}"})
-            if not results[0].get('model_fields') and app._meta.model_name == 'userinfo':
-                results[0]['model_fields'].append({
-                    'value': '*',
-                    'name': f"全部字段-*"
-                })
-                for rule in model_fields:
-                    if rule.get('value') in [x.name for x in DbAuditModel._meta.fields]:
-                        results[0]['model_fields'].append(rule)
-            results.append({
-                'value': f"{app._meta.app_label}.{app._meta.model_name}",
-                'model_fields': model_fields,
-                'name': f"{app._meta.verbose_name}-{app._meta.app_label}.{app._meta.model_name}"
-            })
-
-        disabled_choices = [
-            DataPermission.FieldKeyChoices.TEXT,
-            DataPermission.FieldKeyChoices.JSON,
-            DataPermission.FieldKeyChoices.DATE,
-            DataPermission.FieldKeyChoices.DEPARTMENTS
-        ]
-        return ApiResponse(data={'results': results, 'values': get_choices_dict(DataPermission.FieldKeyChoices.choices,
-                                                                                disabled_choices=disabled_choices)})
-
-    @action(methods=['get'], detail=False)
-    def lookups(self, request, *args, **kwargs):
-        table = request.query_params.get('table')
-        field = request.query_params.get('field')
-        if table and field:
-            if table == '*':
-                table = 'system.userinfo'
-            mt = apps.get_model(table)
-            if mt:
-                mf = mt._meta.get_field(field)
-                if mf:
-                    return ApiResponse(data={'results': mf.get_class_lookups().keys()})
-        return ApiResponse(code=1001, detail="查询失败")

@@ -6,25 +6,29 @@
 # date : 6/2/2023
 import json
 
-from django.conf import settings
 from django.db.models import FileField
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
+from common.core.config import SysConfig
 from common.core.response import ApiResponse
 
 
 class UploadFileAction(object):
     FILE_UPLOAD_TYPE = ['png', 'jpeg', 'jpg', 'gif']
     FILE_UPLOAD_FIELD = 'avatar'
-    FILE_UPLOAD_SIZE = settings.PICTURE_UPLOAD_SIZE
+    FILE_UPLOAD_SIZE = SysConfig.PICTURE_UPLOAD_SIZE
+
+    def get_upload_size(self):
+        return SysConfig.PICTURE_UPLOAD_SIZE
 
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
     @action(methods=['post'], detail=True)
     def upload(self, request, *args, **kwargs):
+        self.FILE_UPLOAD_SIZE = self.get_upload_size()
         files = request.FILES.getlist('file', [])
         instance = self.get_object()
         file_obj = files[0]
@@ -58,7 +62,7 @@ class RankAction(object):
         pks = request.data.get('pks', [])
         rank = 1
         for pk in pks:
-            self.get_queryset().filter(pk=pk).update(rank=rank)
+            self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail='顺序保存成功')
 
@@ -93,8 +97,8 @@ class BaseAction(object):
             return ApiResponse(code=1003, detail="数据异常，批量操作id不存在")
         pks = json.loads(pks)
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
-        for instance in self.get_queryset().filter(pk__in=pks):
-            instance.delete()
+        for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+            self.perform_destroy(instance)
         return ApiResponse(detail=f"批量操作成功")
 
 

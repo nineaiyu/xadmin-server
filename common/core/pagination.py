@@ -28,5 +28,13 @@ class PageNumber(PageNumberPagination):
         ]))
 
 
-class MenuPageNumber(PageNumber):
-    max_page_size = 500  # 返回最大数据条数
+class DynamicPageNumber(object):
+    def __init__(self, max_page_size=100, page_size=20):
+        self.max_page_size = max_page_size
+        self.page_size = page_size
+
+    def __call__(self, *args, **kwargs):
+        instance = PageNumber()
+        instance.max_page_size = self.max_page_size
+        instance.page_size = self.page_size
+        return instance

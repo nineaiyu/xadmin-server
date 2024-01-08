@@ -14,7 +14,7 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
 from common.core.db.utils import RelatedManager
-from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo
+from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None)
             obj.mode_type = ModeTypeAbstract.ModeChoices.OR
         for rule in obj.rules:
             if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
-                if rule.get('type') == DataPermission.FieldKeyChoices.ALL:
+                if rule.get('type') == ModelLabelField.KeyChoices.ALL:
                     if obj.mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
                         continue
                     else:  # 或模式，存在* 则该规则表仅*生效
@@ -44,43 +44,43 @@ def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None)
     for result in results:
         for rule in result.get('rules'):
             f_type = rule.get('type')
-            if f_type == DataPermission.FieldKeyChoices.OWNER:
+            if f_type == ModelLabelField.KeyChoices.OWNER:
                 if user_obj:
                     rule['value'] = user_obj.id
                 else:
                     rule['value'] = '0'
-            elif f_type == DataPermission.FieldKeyChoices.OWNER_DEPARTMENT:
+            elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENT:
                 if user_obj:
                     rule['value'] = user_obj.dept_id
                 else:
                     rule['value'] = '0'
-            elif f_type == DataPermission.FieldKeyChoices.OWNER_DEPARTMENTS:
+            elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENTS:
                 rule['match'] = 'in'
                 if dept_obj:
                     rule['value'] = DeptInfo.recursion_dept_info(dept_obj.pk)
                 else:
                     rule['value'] = []
-            elif f_type == DataPermission.FieldKeyChoices.DEPARTMENTS:
+            elif f_type == ModelLabelField.KeyChoices.DEPARTMENTS:
                 rule['match'] = 'in'
                 if dept_obj:
                     rule['value'] = DeptInfo.recursion_dept_info(json.loads(rule['value']))
                 else:
                     rule['value'] = []
-            elif f_type == DataPermission.FieldKeyChoices.ALL:
+            elif f_type == ModelLabelField.KeyChoices.ALL:
                 rule['match'] = 'all'
                 if ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                     if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
                         logger.warning(f"{app_label}.{model_name} : all queryset")
                         return queryset  # 全部数据直接返回 queryset
-            elif f_type == DataPermission.FieldKeyChoices.DATE:
+            elif f_type == ModelLabelField.KeyChoices.DATE:
                 val = json.loads(rule['value'])
                 if val < 0:
                     rule['value'] = timezone.now() - datetime.timedelta(seconds=-val)
                 else:
                     rule['value'] = timezone.now() + datetime.timedelta(seconds=val)
-            elif f_type in [DataPermission.FieldKeyChoices.JSON, DataPermission.FieldKeyChoices.TABLE_USER,
-                            DataPermission.FieldKeyChoices.TABLE_MENU, DataPermission.FieldKeyChoices.TABLE_ROLE,
-                            DataPermission.FieldKeyChoices.TABLE_DEPT]:
+            elif f_type in [ModelLabelField.KeyChoices.JSON, ModelLabelField.KeyChoices.TABLE_USER,
+                            ModelLabelField.KeyChoices.TABLE_MENU, ModelLabelField.KeyChoices.TABLE_ROLE,
+                            ModelLabelField.KeyChoices.TABLE_DEPT]:
                 rule['value'] = json.loads(rule['value'])
             rule.pop('type', None)
 
@@ -132,6 +132,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     """
 
     if user_obj.is_superuser:
+        logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.model_name}")
         return queryset
 
     # table = f'*'

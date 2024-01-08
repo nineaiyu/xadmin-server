@@ -77,8 +77,8 @@ class RelatedManager:
                     q = Q(**{lookup: val})
                 except re.error:
                     q = Q(pk__isnull=True)
-            elif match == "not":
-                q = ~Q(**{name: val})
+            # elif match == "not":
+            #     q = ~Q(**{name: val})
             elif match.startswith('m2m'):
                 if not isinstance(val, list):
                     val = [val]
@@ -94,5 +94,7 @@ class RelatedManager:
                 q = Q() if '*' in val else Q(**{"{}__in".format(name): val})
             else:
                 q = Q() if val == '*' else Q(**{name: val})
+            if attr.get('exclude'):
+                q = ~q
             filters.append(q)
         return filters

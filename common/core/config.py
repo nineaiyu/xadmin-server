@@ -15,6 +15,7 @@ from django.template.base import VariableNode
 from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
+from server import settings
 from system.models import SystemConfig, UserPersonalConfig
 
 logger = logging.getLogger(__name__)
@@ -147,11 +148,11 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def FILE_UPLOAD_SIZE(self):
-        return self.get_value('FILE_UPLOAD_SIZE', 1024 * 1024 * 10)
+        return self.get_value('FILE_UPLOAD_SIZE', settings.FILE_UPLOAD_SIZE)
 
     @property
     def PICTURE_UPLOAD_SIZE(self):
-        return self.get_value('PICTURE_UPLOAD_SIZE', 1024 * 1024 * 0.5)
+        return self.get_value('PICTURE_UPLOAD_SIZE', settings.PICTURE_UPLOAD_SIZE)
 
 
 class ConfigCache(BaseConfCache):

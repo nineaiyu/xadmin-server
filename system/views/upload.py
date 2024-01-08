@@ -6,9 +6,9 @@
 # date : 6/26/2023
 import logging
 
-from django.conf import settings
 from rest_framework.views import APIView
 
+from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from system.models import UploadFile
@@ -35,8 +35,8 @@ class UploadView(APIView):
                 # if file_type not in ['png', 'jpeg', 'jpg', 'gif']:
                 #     logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
                 #     raise
-                if file_obj.size > settings.FILE_UPLOAD_SIZE:
-                    return ApiResponse(code=1003, detail=f"文件大小不能超过 {settings.FILE_UPLOAD_SIZE}")
+                if file_obj.size > SysConfig.FILE_UPLOAD_SIZE:
+                    return ApiResponse(code=1003, detail=f"文件大小不能超过 {SysConfig.FILE_UPLOAD_SIZE}")
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
                 return ApiResponse(code=1002, detail="错误的文件类型")

@@ -4,12 +4,14 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from django.utils import timezone
 from rest_framework.fields import empty
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
 from common.core.filter import get_filter_queryset
+from system.models import ModelLabelField
 
 
 class BasePrimaryKeyRelatedField(PrimaryKeyRelatedField):
@@ -30,15 +32,42 @@ class BaseModelSerializer(ModelSerializer):
     class Meta:
         model = None
 
-    def __init__(self, instance=None, data=empty, request=None, fields=None, **kwargs):
+    def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs):
+        """
+        # 该方法是为了让继承BaseModelSerializer的方法，增加request传参,例如下面，为meta这个字段的序列化增加request参数
+        class MenuSerializer(BaseModelSerializer):
+            meta = MenuMetaSerializer()
+        """
+        for field_name in declared_fields:
+            if declared_fields[field_name] and isinstance(declared_fields[field_name], BaseModelSerializer):
+                obj = declared_fields[field_name]
+                declared_fields[field_name] = obj.__class__(*obj._args, **obj._kwargs, request=self.request)
+
+        extra_kwargs, hidden_fields = super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
+        return super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
+
+    def __init__(self, instance=None, data=empty, request=None, fields=None, init=False, **kwargs):
         super().__init__(instance, data, **kwargs)
         self.request: Request = request or self.context.get("request", None)
-
+        if init:
+            return
+        allowed = allowed2 = allowed1 = set()
         if fields is not None:
-            allowed = set(fields)
-            existing = set(self.fields)
-            for field_name in existing - allowed:
-                self.fields.pop(field_name)
+            allowed = allowed1 = set(fields)
+        if self.request and hasattr(self.request, "fields"):
+            model_field = f"{self.Meta.model._meta.app_label}.{self.Meta.model._meta.model_name}"
+            if self.request.fields and isinstance(self.request.fields, dict):
+                allowed = allowed2 = set(self.request.fields.get(model_field, []))
+
+        if self.request and hasattr(self.request, "user") and self.request.user.is_superuser:
+            allowed = allowed2 = set(self.fields)
+
+        if allowed2 and allowed1:
+            allowed = allowed1 & allowed2
+
+        existing = set(self.fields)
+        for field_name in existing - allowed:
+            self.fields.pop(field_name)
 
     def create(self, validated_data):
         if self.request:
@@ -57,3 +86,36 @@ class BaseModelSerializer(ModelSerializer):
                 if hasattr(self.instance, 'modifier'):
                     validated_data["modifier"] = user
         return super().update(instance, validated_data)
+
+
+def get_sub_serializer_fields():
+    cls_list = []
+
+    def get_all_subclass(base_cls):
+        if base_cls.__subclasses__():
+            for cls in base_cls.__subclasses__():
+                cls_list.append(cls)
+                get_all_subclass(cls)
+
+    get_all_subclass(BaseModelSerializer)
+
+    delete = False
+    now = timezone.now()
+    field_type = ModelLabelField.FieldChoices.ROLE
+    for cls in cls_list:
+        instance = cls(init=True)
+        model = instance.Meta.model
+        if not model:
+            continue
+        app_label = model._meta.app_label
+        delete = True
+        model_name = model._meta.model_name
+        verbose_name = model._meta.verbose_name
+        obj, _ = ModelLabelField.objects.update_or_create(name=f"{app_label}.{model_name}", field_type=field_type,
+                                                          parent=None, defaults={'label': verbose_name})
+        for name, field in instance.fields.items():
+            ModelLabelField.objects.update_or_create(name=name, parent=obj, field_type=field_type,
+                                                     defaults={'label': field.label})
+
+    if delete:
+        ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()

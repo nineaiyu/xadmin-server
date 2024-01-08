@@ -18,6 +18,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from user_agents import parse
 
 from common.cache.storage import BlackAccessTokenCache
+from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.utils.request import get_request_ip, get_browser, get_os
@@ -85,6 +86,9 @@ class RegisterView(APIView):
         username = data.get('username')
         password = data.get('password')
         channel = data.get('channel', 'default')
+        if not SysConfig.REGISTER:
+            return ApiResponse(code=1001, detail='禁止注册')
+
         if verify_token(token, client_id, success_once=True) and username and password:
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
@@ -117,6 +121,9 @@ class RegisterView(APIView):
 class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
+        if not SysConfig.LOGIN:
+            return ApiResponse(code=1001, detail='禁止登录')
+
         client_id = get_request_ident(request)
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')

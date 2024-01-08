@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from common.base.magic import cache_response
 from common.base.utils import menu_list_to_tree, get_choices_dict, format_menu_data
 from common.core.modelset import BaseModelSet, RankAction
-from common.core.pagination import MenuPageNumber
+from common.core.pagination import DynamicPageNumber
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
@@ -23,7 +23,7 @@ from system.utils.serializer import MenuSerializer, RouteSerializer
 class MenuFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     component = filters.CharFilter(field_name='component', lookup_expr='icontains')
-    title = filters.CharFilter(field_name='title', lookup_expr='icontains')
+    title = filters.CharFilter(field_name='meta__title', lookup_expr='icontains')
     path = filters.CharFilter(field_name='path', lookup_expr='icontains')
 
     class Meta:
@@ -34,7 +34,7 @@ class MenuFilter(filters.FilterSet):
 class MenuView(BaseModelSet, RankAction):
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
-    pagination_class = MenuPageNumber
+    pagination_class = DynamicPageNumber(1000)
 
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
@@ -49,7 +49,6 @@ class MenuView(BaseModelSet, RankAction):
         return ApiResponse(**data, choices_dict=get_choices_dict(Menu.MethodChoices.choices),
                            menu_choices=get_choices_dict(Menu.MenuChoices.choices), api_url_list=get_all_url_dict(''))
 
-
 class UserRoutesView(APIView):
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
@@ -63,7 +62,7 @@ class UserRoutesView(APIView):
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
             menu_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
-                                        many=True, context={'user': request.user}).data
+                                        many=True, context={'user': request.user}, init=True).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))
         else:
@@ -71,6 +70,6 @@ class UserRoutesView(APIView):
             if menu_queryset:
                 menu_list = RouteSerializer(
                     menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
-                    context={'user': request.user}).data
+                    context={'user': request.user}, init=True).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))

@@ -7,13 +7,48 @@
 
 import logging
 
-from django.db.models.signals import post_save, pre_delete, m2m_changed
+from django.conf import settings
+from django.db.models.signals import post_save, pre_delete, m2m_changed, post_migrate
 from django.dispatch import receiver
+from django.utils import timezone
 
 from common.base.magic import cache_response, MagicCacheData
-from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission
+from common.core.config import SysConfig
+from common.core.models import DbAuditModel
+from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission, \
+    SystemConfig, ModelLabelField
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_migrate)
+def post_migrate_handler(sender, **kwargs):
+    label = sender.label
+    delete = False
+    now = timezone.now()
+    field_type = ModelLabelField.FieldChoices.DATA
+    obj, _ = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, defaults={'label': "全部表"},
+                                                      parent=None)
+    ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, parent=obj,
+                                             defaults={'label': "全部字段"})
+    for field in DbAuditModel._meta.fields:
+        ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
+                                                 defaults={'label': field.verbose_name})
+    if label in settings.PERMISSION_DATA_AUTH_APPS:
+        for model in sender.models.values():
+            delete = True
+            model_name = model._meta.model_name
+            verbose_name = model._meta.verbose_name
+            if 'relationship' in verbose_name and '_' in model_name:
+                continue
+            obj, _ = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
+                                                              parent=None, defaults={'label': verbose_name})
+            for field in model._meta.fields:
+                ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
+                                                         defaults={'label': field.verbose_name})
+    if delete:
+        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
+        logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
 
 
 @receiver(m2m_changed)
@@ -118,6 +153,9 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, NoticeUserRead):
         invalid_notify_cache(instance.owner.pk)
+
+    if issubclass(sender, SystemConfig):
+        SysConfig.invalid_config_cache(instance.key)
 
 
 @receiver([pre_delete])

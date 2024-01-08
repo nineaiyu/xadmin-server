@@ -4,23 +4,79 @@
 # filename : serializer
 # author : ly_13
 # date : 6/6/2023
+import json
 import os.path
 
 from django.conf import settings
 from rest_framework import serializers
 
+from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system import models
 
 
+class ModelLabelFieldSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.ModelLabelField
+        fields = ['pk', 'name', 'label', 'parent']
+        read_only_fields = ['pk', 'name', 'label', 'parent']
+
+
+class FieldPermissionSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.FieldPermission
+        fields = ['pk', 'role', 'menu', 'field']
+        read_only_fields = ['pk']
+
+
 class RoleSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time']
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'field', 'fields']
         read_only_fields = ['pk']
 
+    field = serializers.SerializerMethodField(read_only=True)
+    fields = serializers.ListField(write_only=True)
+
+    def get_field(self, obj):
+        results = FieldPermissionSerializer(
+            get_filter_queryset(models.FieldPermission.objects.filter(role=obj), self.request.user), many=True,
+            request=self.request, ).data
+        data = []
+        for res in results:
+            data.extend([f"{res.get('menu')}-{i}" for i in res.get('field', [])])
+        return data
+
+    def save_fields(self, field, instance):
+        field_dict = {}
+        for f in field:
+            d = f.split('-')
+            s = field_dict.get(d[0], [])
+            if s:
+                s.append(d[1])
+            else:
+                field_dict[d[0]] = [d[1]]
+        for k, v in field_dict.items():
+            serializer = FieldPermissionSerializer(data={'role': instance.pk, 'menu': k, 'field': v},
+                                                   request=self.request)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+    def update(self, instance, validated_data):
+        field = validated_data.pop('fields')
+        instance = super().update(instance, validated_data)
+        get_filter_queryset(models.FieldPermission.objects.filter(role=instance), self.request.user).delete()
+        self.save_fields(field, instance)
+
+        return instance
+
+    def create(self, validated_data):
+        field = validated_data.pop('fields')
+        instance = super().create(validated_data)
+        self.save_fields(field, instance)
+        return instance
 
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
@@ -51,7 +107,7 @@ class DeptSerializer(BaseRoleRuleInfo):
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
-    parent = serializers.PrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
+    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
 
     def validate(self, attrs):
         parent = attrs.get('parent')
@@ -75,7 +131,7 @@ class UserSerializer(BaseRoleRuleInfo):
         # extra_kwargs = {'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    dept_info = DeptSerializer(fields=['name'], read_only=True, source='dept', many=False)
+    dept_info = DeptSerializer(fields=['name'], read_only=True, source='dept')
     gender_display = serializers.CharField(read_only=True, source='get_gender_display')
 
 
@@ -141,28 +197,29 @@ class MenuSerializer(BaseModelSerializer):
     class Meta:
         model = models.Menu
         fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
-                  'menu_type_display']
+                  'menu_type_display', 'model', 'field']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
     menu_type_display = serializers.CharField(source='get_menu_type_display', read_only=True)
+    field = serializers.ListField(default=[], read_only=True)
 
     def update(self, instance, validated_data):
         serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
-                                        context=self.context)
+                                        context=self.context, request=self.request)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context)
+        serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context, request=self.request)
         serializer.is_valid(raise_exception=True)
         validated_data['meta'] = serializer.save()
         return super().create(validated_data)
 
 
 class RouteSerializer(MenuSerializer):
-    meta = RouteMetaSerializer()
+    meta = RouteMetaSerializer(init=True)  # 用于前端菜单渲染
 
 
 class OperationLogSerializer(BaseModelSerializer):
@@ -319,8 +376,45 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
 class SystemConfigSerializer(BaseModelSerializer):
     class Meta:
         model = models.SystemConfig
-        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description']
+        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value']
         read_only_fields = ['pk']
+
+    cache_value = serializers.SerializerMethodField(read_only=True)
+
+    def get_cache_value(self, obj):
+        val = SysConfig.get_value(obj.key)
+        if isinstance(val, dict):
+            val = json.dumps(val)
+        return val
+
+
+class UserPersonalConfigSerializer(SystemConfigSerializer):
+    class Meta:
+        model = models.UserPersonalConfig
+        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner',
+                  'owner_info', 'config_user']
+        read_only_fields = ['pk', 'owner']
+
+    owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner')
+    config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects)
+
+    def create(self, validated_data):
+        config_user = validated_data.pop('config_user')
+        instance = None
+        for owner in config_user:
+            validated_data['owner'] = owner
+            instance = super().create(validated_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        validated_data.pop('config_user')
+        return super().update(instance, validated_data)
+
+    def get_cache_value(self, obj):
+        val = UserConfig(obj.owner).get_value(obj.key)
+        if isinstance(val, dict):
+            val = json.dumps(val)
+        return val
 
 
 class UserLoginLogSerializer(BaseModelSerializer):

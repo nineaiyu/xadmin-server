@@ -8,10 +8,11 @@ from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
-from system.views.config import SystemConfigView
+from system.views.config import SystemConfigView, UserPersonalConfigView
 from system.views.dept import DeptView
 from system.views.loginlog import UserLoginLogView
 from system.views.menu import UserRoutesView, MenuView
+from system.views.modelfield import ModelLabelFieldView
 from system.views.notice import NoticeUserReadMessageView, NoticeMessageView, UserNoticeMessage
 from system.views.operationlog import OperationLogView
 from system.views.permission import DataPermissionView
@@ -50,7 +51,9 @@ router.register('dept', DeptView, basename='dept')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
 router.register('permission', DataPermissionView, basename='permission')
+router.register('field', ModelLabelFieldView, basename='model_label_field')
 router.register('config/system', SystemConfigView, basename='sysconfig')
+router.register('config/user', UserPersonalConfigView, basename='userconfig')
 router.register('logs/operation', OperationLogView, basename='operation_log')
 router.register('logs/login', UserLoginLogView, basename='login_log')
 
