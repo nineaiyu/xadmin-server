@@ -15,6 +15,7 @@ from django.utils import timezone
 from common.base.magic import cache_response, MagicCacheData
 from common.core.config import SysConfig
 from common.core.models import DbAuditModel
+from common.core.serializers import get_sub_serializer_fields
 from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission, \
     SystemConfig, ModelLabelField
 
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 @receiver(post_migrate)
 def post_migrate_handler(sender, **kwargs):
+    if UserInfo.objects.count() == 0:
+        return
     label = sender.label
     delete = False
     now = timezone.now()
@@ -50,6 +53,11 @@ def post_migrate_handler(sender, **kwargs):
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
         logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
 
+    if label == settings.PERMISSION_DATA_AUTH_APPS[0]:
+        try:
+            get_sub_serializer_fields()
+        except Exception as e:
+            logger.error(f"auto get sub serializer fields failed. {e}")
 
 @receiver(m2m_changed)
 def clean_m2m_cache_handler(sender, instance, **kwargs):

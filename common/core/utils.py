@@ -14,7 +14,6 @@ from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
 
 from common.base.magic import import_from_string
-from common.core.serializers import get_sub_serializer_fields
 
 logger = logging.getLogger(__name__)
 
@@ -95,5 +94,3 @@ def auto_register_app_url(urlpatterns):
                 settings.PERMISSION_WHITE_URL.extend(urls)
         except Exception as e:
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
-
-    get_sub_serializer_fields()

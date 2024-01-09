@@ -1,2 +1,62 @@
 [
+  {
+    "model": "system.systemconfig",
+    "pk": 1,
+    "fields": {
+      "created_time": "2024-01-04T05:12:59.068Z",
+      "updated_time": "2024-01-04T05:19:42.306Z",
+      "description": "登录",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "value": "True",
+      "is_active": true,
+      "key": "LOGIN"
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": 2,
+    "fields": {
+      "created_time": "2024-01-05T09:44:28.864Z",
+      "updated_time": "2024-01-05T09:44:28.864Z",
+      "description": "注册",
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "value": "True",
+      "is_active": true,
+      "key": "REGISTER"
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": 3,
+    "fields": {
+      "created_time": "2024-01-08T09:34:10.182Z",
+      "updated_time": "2024-01-08T09:38:18.570Z",
+      "description": "文件上传大小限制,默认10兆",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "value": "10485760",
+      "is_active": true,
+      "key": "FILE_UPLOAD_SIZE"
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": 4,
+    "fields": {
+      "created_time": "2024-01-08T09:40:40.434Z",
+      "updated_time": "2024-01-08T09:40:40.434Z",
+      "description": "图片上传大小，默认为500kb",
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "value": "524288",
+      "is_active": true,
+      "key": "PICTURE_UPLOAD_SIZE"
+    }
+  }
 ]

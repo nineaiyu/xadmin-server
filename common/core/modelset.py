@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import json
 
+from django.conf import settings
 from django.db.models import FileField
 from rest_framework import mixins
 from rest_framework.decorators import action
@@ -18,7 +19,7 @@ from common.core.response import ApiResponse
 class UploadFileAction(object):
     FILE_UPLOAD_TYPE = ['png', 'jpeg', 'jpg', 'gif']
     FILE_UPLOAD_FIELD = 'avatar'
-    FILE_UPLOAD_SIZE = SysConfig.PICTURE_UPLOAD_SIZE
+    FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
 
     def get_upload_size(self):
         return SysConfig.PICTURE_UPLOAD_SIZE

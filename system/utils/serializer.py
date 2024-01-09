@@ -20,8 +20,10 @@ from system import models
 class ModelLabelFieldSerializer(BaseModelSerializer):
     class Meta:
         model = models.ModelLabelField
-        fields = ['pk', 'name', 'label', 'parent']
-        read_only_fields = ['pk', 'name', 'label', 'parent']
+        fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type_display']
+        read_only_fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time']
+
+    field_type_display = serializers.CharField(source='get_field_type_display', read_only=True)
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -52,6 +54,8 @@ class RoleSerializer(BaseModelSerializer):
     def save_fields(self, field, instance):
         field_dict = {}
         for f in field:
+            if not isinstance(f, str):
+                continue
             d = f.split('-')
             s = field_dict.get(d[0], [])
             if s:
@@ -103,7 +107,7 @@ class DeptSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display', 'rules_info', 'auto_bind']
+                  'mode_type', 'mode_display', 'rules_info', 'auto_bind', 'description']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)

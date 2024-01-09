@@ -15,7 +15,7 @@ from system.models import *
 
 class Command(BaseCommand):
     help = 'dump init json data'
-    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission]
+    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField]
 
     def save_json(self, queryset, filename):
         stream = open(filename, 'w', encoding='utf8')

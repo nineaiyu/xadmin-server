@@ -152,7 +152,7 @@
     "pk": 6,
     "fields": {
       "created_time": "2023-12-28T07:02:00.398Z",
-      "updated_time": "2024-01-03T07:33:24.552Z",
+      "updated_time": "2024-01-07T07:58:59.936Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -166,6 +166,14 @@
           "match": "in",
           "type": "value.table.menu.ids",
           "value": "[2,3,9,6,23,7,8,14,47,145,146,147,148,149,150,151,5,19,166,4,13,10,11,12,15,152,153,154,155,156,157,158,159,48,55,49,53,52,51,50,63,64,65,66,67,72,28,29,30,68,69,70,73,75,76,74,22,1,161,24,26,25,27,162,163,164,165]"
+        },
+        {
+          "table": "system.fieldpermission",
+          "field": "id",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.all",
+          "value": "1"
         }
       ],
       "is_active": true
@@ -176,7 +184,7 @@
     "pk": 8,
     "fields": {
       "created_time": "2023-12-29T07:36:08.620Z",
-      "updated_time": "2023-12-29T10:11:50.313Z",
+      "updated_time": "2024-01-09T08:54:21.022Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -188,6 +196,7 @@
           "table": "*",
           "field": "dept_belong",
           "match": "exact",
+          "exclude": false,
           "type": "value.user.dept.ids",
           "value": ""
         },
@@ -195,6 +204,7 @@
           "table": "*",
           "field": "dept_belong",
           "match": "in",
+          "exclude": false,
           "type": "value.table.dept.ids",
           "value": "[4]"
         }

@@ -1,6 +1,421 @@
 [
   {
     "model": "system.menu",
+    "pk": 185,
+    "fields": {
+      "created_time": "2024-01-09T07:40:32.518Z",
+      "updated_time": "2024-01-09T07:40:32.518Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": 176,
+      "menu_type": 2,
+      "name": "sync:systemModelField",
+      "rank": 56,
+      "path": "api/system/field/sync$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 189,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 184,
+    "fields": {
+      "created_time": "2024-01-08T08:45:30.892Z",
+      "updated_time": "2024-01-08T08:45:39.734Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "invalid:systemUserConfig",
+      "rank": 39,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 188,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 183,
+    "fields": {
+      "created_time": "2024-01-08T08:45:07.367Z",
+      "updated_time": "2024-01-08T08:45:07.367Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "manyDelete:systemUserConfig",
+      "rank": 38,
+      "path": "api/system/config/user/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 187,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 182,
+    "fields": {
+      "created_time": "2024-01-08T08:44:38.531Z",
+      "updated_time": "2024-01-09T09:09:01.880Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "update:systemUserConfig",
+      "rank": 37,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 186,
+      "model": [
+        379
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 181,
+    "fields": {
+      "created_time": "2024-01-08T08:44:09.428Z",
+      "updated_time": "2024-01-08T08:44:09.428Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "delete:systemUserConfig",
+      "rank": 36,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 185,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 180,
+    "fields": {
+      "created_time": "2024-01-08T08:43:31.003Z",
+      "updated_time": "2024-01-09T09:08:55.679Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "create:systemUserConfig",
+      "rank": 35,
+      "path": "api/system/config/user$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 184,
+      "model": [
+        379
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 179,
+    "fields": {
+      "created_time": "2024-01-08T08:43:01.660Z",
+      "updated_time": "2024-01-09T09:08:49.437Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 169,
+      "menu_type": 2,
+      "name": "list:systemUserConfig",
+      "rank": 34,
+      "path": "api/system/config/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 183,
+      "model": [
+        379
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 178,
+    "fields": {
+      "created_time": "2024-01-05T08:22:25.606Z",
+      "updated_time": "2024-01-09T09:11:03.568Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 176,
+      "menu_type": 2,
+      "name": "list:systemModelFieldLookups",
+      "rank": 55,
+      "path": "api/system/field/lookups$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 182,
+      "model": [
+        220
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 177,
+    "fields": {
+      "created_time": "2024-01-05T08:19:43.413Z",
+      "updated_time": "2024-01-09T09:10:45.140Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 176,
+      "menu_type": 2,
+      "name": "list:systemModelField",
+      "rank": 54,
+      "path": "api/system/field$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 181,
+      "model": [
+        220
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 176,
+    "fields": {
+      "created_time": "2024-01-05T08:18:35.325Z",
+      "updated_time": "2024-01-09T08:06:23.066Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 166,
+      "menu_type": 1,
+      "name": "modelLabelField",
+      "rank": 53,
+      "path": "/system/field/index",
+      "component": "system/field/index",
+      "is_active": true,
+      "meta": 180,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 175,
+    "fields": {
+      "created_time": "2024-01-04T03:20:41.638Z",
+      "updated_time": "2024-01-08T08:45:48.488Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "invalid:systemSystemConfig",
+      "rank": 32,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 179,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 174,
+    "fields": {
+      "created_time": "2024-01-04T02:48:18.480Z",
+      "updated_time": "2024-01-04T02:51:23.506Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "manyDelete:systemSystemConfig",
+      "rank": 31,
+      "path": "api/system/config/system/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 178,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 173,
+    "fields": {
+      "created_time": "2024-01-04T02:47:53.679Z",
+      "updated_time": "2024-01-09T09:08:42.032Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "update:systemSystemConfig",
+      "rank": 30,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": 177,
+      "model": [
+        371
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 172,
+    "fields": {
+      "created_time": "2024-01-04T02:47:26.606Z",
+      "updated_time": "2024-01-04T02:51:15.070Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "delete:systemSystemConfig",
+      "rank": 29,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": 176,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 171,
+    "fields": {
+      "created_time": "2024-01-04T02:47:05.286Z",
+      "updated_time": "2024-01-09T09:08:36.106Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "create:systemSystemConfig",
+      "rank": 28,
+      "path": "api/system/config/system$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 175,
+      "model": [
+        371
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 170,
+    "fields": {
+      "created_time": "2024-01-04T02:46:31.035Z",
+      "updated_time": "2024-01-09T09:08:25.762Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 168,
+      "menu_type": 2,
+      "name": "list:systemSystemConfig",
+      "rank": 27,
+      "path": "api/system/config/system$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 174,
+      "model": [
+        371
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 169,
+    "fields": {
+      "created_time": "2024-01-04T02:46:05.656Z",
+      "updated_time": "2024-01-04T02:46:05.656Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "parent": 167,
+      "menu_type": 1,
+      "name": "userConfig",
+      "rank": 33,
+      "path": "/system/config/user/index",
+      "component": "system/config/user/index",
+      "is_active": true,
+      "meta": 173,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 168,
+    "fields": {
+      "created_time": "2024-01-04T02:45:13.935Z",
+      "updated_time": "2024-01-04T02:45:13.935Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "parent": 167,
+      "menu_type": 1,
+      "name": "systemConfig",
+      "rank": 26,
+      "path": "/system/config/system/index",
+      "component": "system/config/system/index",
+      "is_active": true,
+      "meta": 172,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 167,
+    "fields": {
+      "created_time": "2024-01-04T02:43:54.737Z",
+      "updated_time": "2024-01-04T02:49:22.588Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "parent": 2,
+      "menu_type": 0,
+      "name": "config",
+      "rank": 25,
+      "path": "/system/configs",
+      "component": "",
+      "is_active": true,
+      "meta": 171,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": 166,
     "fields": {
       "created_time": "2024-01-03T05:47:43.727Z",
@@ -12,11 +427,12 @@
       "parent": 2,
       "menu_type": 0,
       "name": "permissions",
-      "rank": 25,
+      "rank": 40,
       "path": "/system/permissions",
       "component": "",
       "is_active": true,
-      "meta": 170
+      "meta": 170,
+      "model": []
     }
   },
   {
@@ -32,11 +448,12 @@
       "parent": 162,
       "menu_type": 2,
       "name": "manyDelete:systemLoginLog",
-      "rank": 48,
+      "rank": 65,
       "path": "api/system/logs/login/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 169
+      "meta": 169,
+      "model": []
     }
   },
   {
@@ -52,11 +469,12 @@
       "parent": 162,
       "menu_type": 2,
       "name": "delete:systemLoginLog",
-      "rank": 47,
+      "rank": 64,
       "path": "api/system/logs/login/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 168
+      "meta": 168,
+      "model": []
     }
   },
   {
@@ -64,7 +482,7 @@
     "pk": 163,
     "fields": {
       "created_time": "2024-01-03T05:39:40.483Z",
-      "updated_time": "2024-01-03T05:41:01.689Z",
+      "updated_time": "2024-01-09T09:12:00.081Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -72,11 +490,15 @@
       "parent": 162,
       "menu_type": 2,
       "name": "list:systemLoginLog",
-      "rank": 46,
+      "rank": 63,
       "path": "api/system/logs/login$",
       "component": "GET",
       "is_active": true,
-      "meta": 167
+      "meta": 167,
+      "model": [
+        267,
+        390
+      ]
     }
   },
   {
@@ -92,11 +514,12 @@
       "parent": 161,
       "menu_type": 1,
       "name": "systemLoginLog",
-      "rank": 45,
+      "rank": 62,
       "path": "/system/logs/login/index",
       "component": "system/logs/login/index",
       "is_active": true,
-      "meta": 166
+      "meta": 166,
+      "model": []
     }
   },
   {
@@ -112,11 +535,12 @@
       "parent": 2,
       "menu_type": 0,
       "name": "logs",
-      "rank": 40,
+      "rank": 57,
       "path": "/system/logs",
       "component": "",
       "is_active": true,
-      "meta": 165
+      "meta": 165,
+      "model": []
     }
   },
   {
@@ -124,7 +548,7 @@
     "pk": 160,
     "fields": {
       "created_time": "2023-12-29T08:05:39.814Z",
-      "updated_time": "2023-12-29T09:02:07.361Z",
+      "updated_time": "2024-01-09T09:14:00.796Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -132,51 +556,14 @@
       "parent": 55,
       "menu_type": 2,
       "name": "create:systemAnnouncement",
-      "rank": 54,
+      "rank": 71,
       "path": "api/system/message/notice/announcement$",
       "component": "POST",
       "is_active": true,
-      "meta": 164
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 159,
-    "fields": {
-      "created_time": "2023-12-24T00:32:44.921Z",
-      "updated_time": "2023-12-24T01:57:07.240Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "list:systemDataPermissionFields",
-      "rank": 39,
-      "path": "api/system/permission/fields$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 163
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 158,
-    "fields": {
-      "created_time": "2023-12-22T06:31:39.876Z",
-      "updated_time": "2023-12-24T01:57:12.202Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "list:systemDataPermissionLookups",
-      "rank": 38,
-      "path": "api/system/permission/lookups$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 162
+      "meta": 164,
+      "model": [
+        348
+      ]
     }
   },
   {
@@ -192,11 +579,12 @@
       "parent": 152,
       "menu_type": 2,
       "name": "manyDelete:systemDataPermission",
-      "rank": 37,
+      "rank": 52,
       "path": "api/system/permission/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 161
+      "meta": 161,
+      "model": []
     }
   },
   {
@@ -204,7 +592,7 @@
     "pk": 156,
     "fields": {
       "created_time": "2023-12-22T05:42:01.680Z",
-      "updated_time": "2023-12-22T09:43:51.584Z",
+      "updated_time": "2024-01-09T09:10:28.578Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -212,11 +600,14 @@
       "parent": 152,
       "menu_type": 2,
       "name": "update:systemDataPermission",
-      "rank": 36,
+      "rank": 51,
       "path": "api/system/permission/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 160
+      "meta": 160,
+      "model": [
+        243
+      ]
     }
   },
   {
@@ -232,11 +623,12 @@
       "parent": 152,
       "menu_type": 2,
       "name": "delete:systemDataPermission",
-      "rank": 35,
+      "rank": 50,
       "path": "api/system/permission/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 159
+      "meta": 159,
+      "model": []
     }
   },
   {
@@ -244,7 +636,7 @@
     "pk": 154,
     "fields": {
       "created_time": "2023-12-22T05:41:18.770Z",
-      "updated_time": "2023-12-22T09:43:22.663Z",
+      "updated_time": "2024-01-09T09:10:23.565Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -252,11 +644,14 @@
       "parent": 152,
       "menu_type": 2,
       "name": "create:systemDataPermission",
-      "rank": 34,
+      "rank": 49,
       "path": "api/system/permission$",
       "component": "POST",
       "is_active": true,
-      "meta": 158
+      "meta": 158,
+      "model": [
+        243
+      ]
     }
   },
   {
@@ -264,7 +659,7 @@
     "pk": 153,
     "fields": {
       "created_time": "2023-12-22T05:40:49.354Z",
-      "updated_time": "2023-12-22T09:43:10.594Z",
+      "updated_time": "2024-01-09T09:10:17.094Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -272,11 +667,14 @@
       "parent": 152,
       "menu_type": 2,
       "name": "list:systemDataPermission",
-      "rank": 33,
+      "rank": 48,
       "path": "api/system/permission$",
       "component": "GET",
       "is_active": true,
-      "meta": 157
+      "meta": 157,
+      "model": [
+        243
+      ]
     }
   },
   {
@@ -292,11 +690,12 @@
       "parent": 166,
       "menu_type": 1,
       "name": "systemDataPermission",
-      "rank": 32,
+      "rank": 47,
       "path": "/system/permission/index",
       "component": "system/permission/index",
       "is_active": true,
-      "meta": 156
+      "meta": 156,
+      "model": []
     }
   },
   {
@@ -316,7 +715,8 @@
       "path": "api/system/dept/(?P<pk>[^/.]+)/empower$",
       "component": "POST",
       "is_active": true,
-      "meta": 155
+      "meta": 155,
+      "model": []
     }
   },
   {
@@ -336,7 +736,8 @@
       "path": "api/system/dept/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 154
+      "meta": 154,
+      "model": []
     }
   },
   {
@@ -344,7 +745,7 @@
     "pk": 149,
     "fields": {
       "created_time": "2023-12-19T06:58:58.110Z",
-      "updated_time": "2023-12-21T02:18:08.216Z",
+      "updated_time": "2024-01-09T09:06:06.336Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -356,7 +757,10 @@
       "path": "api/system/dept/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 153
+      "meta": 153,
+      "model": [
+        252
+      ]
     }
   },
   {
@@ -376,7 +780,8 @@
       "path": "api/system/dept/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 152
+      "meta": 152,
+      "model": []
     }
   },
   {
@@ -384,7 +789,7 @@
     "pk": 147,
     "fields": {
       "created_time": "2023-12-19T06:58:12.378Z",
-      "updated_time": "2023-12-21T02:17:46.308Z",
+      "updated_time": "2024-01-09T09:05:28.902Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -396,7 +801,10 @@
       "path": "api/system/dept$",
       "component": "POST",
       "is_active": true,
-      "meta": 151
+      "meta": 151,
+      "model": [
+        252
+      ]
     }
   },
   {
@@ -404,7 +812,7 @@
     "pk": 146,
     "fields": {
       "created_time": "2023-12-19T06:57:48.572Z",
-      "updated_time": "2023-12-21T02:17:33.200Z",
+      "updated_time": "2024-01-09T09:05:20.331Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -416,7 +824,12 @@
       "path": "api/system/dept$",
       "component": "GET",
       "is_active": true,
-      "meta": 150
+      "meta": 150,
+      "model": [
+        233,
+        243,
+        252
+      ]
     }
   },
   {
@@ -436,7 +849,8 @@
       "path": "/system/dept/index",
       "component": "system/dept/index",
       "is_active": true,
-      "meta": 149
+      "meta": 149,
+      "model": []
     }
   },
   {
@@ -452,11 +866,12 @@
       "parent": 73,
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
-      "rank": 72,
+      "rank": 89,
       "path": "api/system/notice/read_all$",
       "component": "PUT",
       "is_active": true,
-      "meta": 80
+      "meta": 80,
+      "model": []
     }
   },
   {
@@ -472,11 +887,12 @@
       "parent": 73,
       "menu_type": 2,
       "name": "update:userNoticeRead",
-      "rank": 71,
+      "rank": 88,
       "path": "api/system/notice/read$",
       "component": "PUT",
       "is_active": true,
-      "meta": 79
+      "meta": 79,
+      "model": []
     }
   },
   {
@@ -484,7 +900,7 @@
     "pk": 74,
     "fields": {
       "created_time": "2023-09-15T13:31:24.794Z",
-      "updated_time": "2023-11-16T03:41:58.922Z",
+      "updated_time": "2024-01-09T09:17:29.660Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -492,11 +908,14 @@
       "parent": 73,
       "menu_type": 2,
       "name": "list:userNotice",
-      "rank": 73,
+      "rank": 90,
       "path": "api/system/notice$",
       "component": "GET",
       "is_active": true,
-      "meta": 78
+      "meta": 78,
+      "model": [
+        348
+      ]
     }
   },
   {
@@ -512,11 +931,12 @@
       "parent": null,
       "menu_type": 1,
       "name": "userNotice",
-      "rank": 70,
+      "rank": 87,
       "path": "/user/notice/index",
       "component": "user/notice/index",
       "is_active": true,
-      "meta": 77
+      "meta": 77,
+      "model": []
     }
   },
   {
@@ -532,11 +952,12 @@
       "parent": 64,
       "menu_type": 2,
       "name": "update:systemNoticeReadState",
-      "rank": 62,
+      "rank": 79,
       "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
       "component": "PUT",
       "is_active": true,
-      "meta": 76
+      "meta": 76,
+      "model": []
     }
   },
   {
@@ -552,11 +973,12 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfoPassword",
-      "rank": 69,
+      "rank": 86,
       "path": "api/system/userinfo/reset_password$",
       "component": "POST",
       "is_active": true,
-      "meta": 75
+      "meta": 75,
+      "model": []
     }
   },
   {
@@ -572,11 +994,12 @@
       "parent": 68,
       "menu_type": 2,
       "name": "upload:UserInfoAvatar",
-      "rank": 68,
+      "rank": 85,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
-      "meta": 74
+      "meta": 74,
+      "model": []
     }
   },
   {
@@ -584,7 +1007,7 @@
     "pk": 69,
     "fields": {
       "created_time": "2023-09-14T08:02:14.194Z",
-      "updated_time": "2023-09-14T13:24:19.371Z",
+      "updated_time": "2024-01-09T09:16:19.106Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -592,11 +1015,14 @@
       "parent": 68,
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 67,
+      "rank": 84,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 73
+      "meta": 73,
+      "model": [
+        267
+      ]
     }
   },
   {
@@ -612,11 +1038,12 @@
       "parent": null,
       "menu_type": 1,
       "name": "userInfo",
-      "rank": 66,
+      "rank": 83,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
-      "meta": 72
+      "meta": 72,
+      "model": []
     }
   },
   {
@@ -632,11 +1059,12 @@
       "parent": 64,
       "menu_type": 2,
       "name": "manyDelete:systemNoticeRead",
-      "rank": 61,
+      "rank": 78,
       "path": "api/system/message/read/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 71
+      "meta": 71,
+      "model": []
     }
   },
   {
@@ -652,11 +1080,12 @@
       "parent": 64,
       "menu_type": 2,
       "name": "delete:systemNoticeRead",
-      "rank": 60,
+      "rank": 77,
       "path": "api/system/message/read/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 70
+      "meta": 70,
+      "model": []
     }
   },
   {
@@ -664,7 +1093,7 @@
     "pk": 65,
     "fields": {
       "created_time": "2023-09-13T10:01:21.158Z",
-      "updated_time": "2023-09-15T09:18:24.640Z",
+      "updated_time": "2024-01-09T09:14:22.347Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -672,11 +1101,14 @@
       "parent": 64,
       "menu_type": 2,
       "name": "list:systemNoticeRead",
-      "rank": 59,
+      "rank": 76,
       "path": "api/system/message/read$",
       "component": "GET",
       "is_active": true,
-      "meta": 69
+      "meta": 69,
+      "model": [
+        365
+      ]
     }
   },
   {
@@ -684,7 +1116,7 @@
     "pk": 64,
     "fields": {
       "created_time": "2023-09-13T09:58:45.921Z",
-      "updated_time": "2023-09-15T07:53:10.396Z",
+      "updated_time": "2024-01-09T03:30:07.265Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -692,11 +1124,12 @@
       "parent": 48,
       "menu_type": 1,
       "name": "systemNoticeRead",
-      "rank": 58,
+      "rank": 75,
       "path": "/system/notice/read/list",
       "component": "system/notice/read/list",
       "is_active": true,
-      "meta": 68
+      "meta": 68,
+      "model": []
     }
   },
   {
@@ -712,11 +1145,12 @@
       "parent": 55,
       "menu_type": 2,
       "name": "update:systemNoticePublish",
-      "rank": 57,
+      "rank": 74,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
       "component": "PUT",
       "is_active": true,
-      "meta": 67
+      "meta": 67,
+      "model": []
     }
   },
   {
@@ -732,11 +1166,12 @@
       "parent": 48,
       "menu_type": 1,
       "name": "systemNotice",
-      "rank": 50,
+      "rank": 67,
       "path": "/system/notice/index",
       "component": "system/notice/index",
       "is_active": true,
-      "meta": 59
+      "meta": 59,
+      "model": []
     }
   },
   {
@@ -744,7 +1179,7 @@
     "pk": 53,
     "fields": {
       "created_time": "2023-09-11T08:19:33.343Z",
-      "updated_time": "2023-09-15T09:17:44.018Z",
+      "updated_time": "2024-01-09T09:13:51.549Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -752,11 +1187,14 @@
       "parent": 55,
       "menu_type": 2,
       "name": "update:systemNotice",
-      "rank": 52,
+      "rank": 69,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 57
+      "meta": 57,
+      "model": [
+        348
+      ]
     }
   },
   {
@@ -772,11 +1210,12 @@
       "parent": 55,
       "menu_type": 2,
       "name": "create:systemNotice",
-      "rank": 53,
+      "rank": 70,
       "path": "api/system/message/notice$",
       "component": "POST",
       "is_active": true,
-      "meta": 56
+      "meta": 56,
+      "model": []
     }
   },
   {
@@ -792,11 +1231,12 @@
       "parent": 55,
       "menu_type": 2,
       "name": "manyDelete:systemNotice",
-      "rank": 55,
+      "rank": 72,
       "path": "api/system/message/notice/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 55
+      "meta": 55,
+      "model": []
     }
   },
   {
@@ -812,11 +1252,12 @@
       "parent": 55,
       "menu_type": 2,
       "name": "delete:systemNotice",
-      "rank": 56,
+      "rank": 73,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 54
+      "meta": 54,
+      "model": []
     }
   },
   {
@@ -824,7 +1265,7 @@
     "pk": 49,
     "fields": {
       "created_time": "2023-09-11T06:53:54.361Z",
-      "updated_time": "2023-09-15T09:17:27.911Z",
+      "updated_time": "2024-01-09T09:13:42.329Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -832,11 +1273,14 @@
       "parent": 55,
       "menu_type": 2,
       "name": "list:systemNotice",
-      "rank": 51,
+      "rank": 68,
       "path": "api/system/message/notice$",
       "component": "GET",
       "is_active": true,
-      "meta": 53
+      "meta": 53,
+      "model": [
+        348
+      ]
     }
   },
   {
@@ -852,11 +1296,12 @@
       "parent": 2,
       "menu_type": 0,
       "name": "systemNoticeDir",
-      "rank": 49,
+      "rank": 66,
       "path": "/system/notice/",
       "component": "system/notify/index",
       "is_active": true,
-      "meta": 52
+      "meta": 52,
+      "model": []
     }
   },
   {
@@ -876,7 +1321,8 @@
       "path": "api/system/user/(?P<pk>[^/.]+)/reset_password$",
       "component": "POST",
       "is_active": true,
-      "meta": 51
+      "meta": 51,
+      "model": []
     }
   },
   {
@@ -896,7 +1342,8 @@
       "path": "api/system/user/(?P<pk>[^/.]+)/empower$",
       "component": "POST",
       "is_active": true,
-      "meta": 50
+      "meta": 50,
+      "model": []
     }
   },
   {
@@ -912,11 +1359,12 @@
       "parent": 28,
       "menu_type": 2,
       "name": "update:systemFlower",
-      "rank": 65,
+      "rank": 82,
       "path": "api/flower/(?P<path>.*)",
       "component": "POST",
       "is_active": true,
-      "meta": 30
+      "meta": 30,
+      "model": []
     }
   },
   {
@@ -932,11 +1380,12 @@
       "parent": 28,
       "menu_type": 2,
       "name": "list:systemFlower",
-      "rank": 64,
+      "rank": 81,
       "path": "api/flower/(?P<path>.*)",
       "component": "GET",
       "is_active": true,
-      "meta": 29
+      "meta": 29,
+      "model": []
     }
   },
   {
@@ -952,11 +1401,12 @@
       "parent": 2,
       "menu_type": 0,
       "name": "systemFlower",
-      "rank": 63,
+      "rank": 80,
       "path": "/system/flower",
       "component": "",
       "is_active": true,
-      "meta": 28
+      "meta": 28,
+      "model": []
     }
   },
   {
@@ -972,11 +1422,12 @@
       "parent": 24,
       "menu_type": 2,
       "name": "manyDelete:systemOperationLog",
-      "rank": 44,
+      "rank": 61,
       "path": "api/system/logs/operation/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 27
+      "meta": 27,
+      "model": []
     }
   },
   {
@@ -984,7 +1435,7 @@
     "pk": 26,
     "fields": {
       "created_time": "2023-06-28T02:36:33.480Z",
-      "updated_time": "2024-01-03T05:31:14.478Z",
+      "updated_time": "2024-01-09T09:11:43.479Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -992,11 +1443,15 @@
       "parent": 24,
       "menu_type": 2,
       "name": "list:systemOperationLog",
-      "rank": 42,
+      "rank": 59,
       "path": "api/system/logs/operation$",
       "component": "GET",
       "is_active": true,
-      "meta": 26
+      "meta": 26,
+      "model": [
+        267,
+        329
+      ]
     }
   },
   {
@@ -1012,11 +1467,12 @@
       "parent": 24,
       "menu_type": 2,
       "name": "delete:systemOperationLog",
-      "rank": 43,
+      "rank": 60,
       "path": "api/system/logs/operation/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 25
+      "meta": 25,
+      "model": []
     }
   },
   {
@@ -1032,11 +1488,12 @@
       "parent": 161,
       "menu_type": 1,
       "name": "systemOperationLog",
-      "rank": 41,
+      "rank": 58,
       "path": "/system/logs/operation/index",
       "component": "system/logs/operation/index",
       "is_active": true,
-      "meta": 24
+      "meta": 24,
+      "model": []
     }
   },
   {
@@ -1056,7 +1513,8 @@
       "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
-      "meta": 23
+      "meta": 23,
+      "model": []
     }
   },
   {
@@ -1072,11 +1530,12 @@
       "parent": null,
       "menu_type": 1,
       "name": "chat",
-      "rank": 74,
+      "rank": 91,
       "path": "/chat/index",
       "component": "chat/index",
       "is_active": false,
-      "meta": 22
+      "meta": 22,
+      "model": []
     }
   },
   {
@@ -1096,7 +1555,8 @@
       "path": "api/system/menu/action_rank$",
       "component": "POST",
       "is_active": true,
-      "meta": 21
+      "meta": 21,
+      "model": []
     }
   },
   {
@@ -1116,7 +1576,8 @@
       "path": "api/system/menu/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 20
+      "meta": 20,
+      "model": []
     }
   },
   {
@@ -1124,7 +1585,7 @@
     "pk": 19,
     "fields": {
       "created_time": "2023-06-23T10:01:51.633Z",
-      "updated_time": "2023-07-01T12:13:20.957Z",
+      "updated_time": "2024-01-09T09:07:44.530Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1136,7 +1597,11 @@
       "path": "api/system/menu$",
       "component": "GET",
       "is_active": true,
-      "meta": 19
+      "meta": 19,
+      "model": [
+        288,
+        316
+      ]
     }
   },
   {
@@ -1144,7 +1609,7 @@
     "pk": 18,
     "fields": {
       "created_time": "2023-06-23T10:01:13.877Z",
-      "updated_time": "2023-07-01T12:11:27.225Z",
+      "updated_time": "2024-01-09T09:08:02.395Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1156,7 +1621,11 @@
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 18
+      "meta": 18,
+      "model": [
+        288,
+        316
+      ]
     }
   },
   {
@@ -1176,7 +1645,8 @@
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 17
+      "meta": 17,
+      "model": []
     }
   },
   {
@@ -1184,7 +1654,7 @@
     "pk": 16,
     "fields": {
       "created_time": "2023-06-23T10:00:17.848Z",
-      "updated_time": "2023-07-01T12:11:24.442Z",
+      "updated_time": "2024-01-09T09:07:53.497Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1196,7 +1666,11 @@
       "path": "api/system/menu$",
       "component": "POST",
       "is_active": true,
-      "meta": 16
+      "meta": 16,
+      "model": [
+        288,
+        316
+      ]
     }
   },
   {
@@ -1212,11 +1686,12 @@
       "parent": 4,
       "menu_type": 2,
       "name": "manyDelete:systemRole",
-      "rank": 31,
+      "rank": 46,
       "path": "api/system/role/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 15
+      "meta": 15,
+      "model": []
     }
   },
   {
@@ -1236,7 +1711,8 @@
       "path": "api/system/user/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 14
+      "meta": 14,
+      "model": []
     }
   },
   {
@@ -1244,7 +1720,7 @@
     "pk": 13,
     "fields": {
       "created_time": "2023-06-23T09:57:26.880Z",
-      "updated_time": "2023-07-01T12:13:17.599Z",
+      "updated_time": "2024-01-09T09:09:32.706Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1252,11 +1728,14 @@
       "parent": 4,
       "menu_type": 2,
       "name": "list:systemRole",
-      "rank": 27,
+      "rank": 42,
       "path": "api/system/role$",
       "component": "GET",
       "is_active": true,
-      "meta": 13
+      "meta": 13,
+      "model": [
+        233
+      ]
     }
   },
   {
@@ -1264,7 +1743,7 @@
     "pk": 12,
     "fields": {
       "created_time": "2023-06-23T09:57:02.365Z",
-      "updated_time": "2023-07-01T12:11:16.842Z",
+      "updated_time": "2024-01-09T09:09:44.786Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1272,11 +1751,14 @@
       "parent": 4,
       "menu_type": 2,
       "name": "update:systemRole",
-      "rank": 30,
+      "rank": 45,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 12
+      "meta": 12,
+      "model": [
+        233
+      ]
     }
   },
   {
@@ -1292,11 +1774,12 @@
       "parent": 4,
       "menu_type": 2,
       "name": "delete:systemRole",
-      "rank": 29,
+      "rank": 44,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 11
+      "meta": 11,
+      "model": []
     }
   },
   {
@@ -1304,7 +1787,7 @@
     "pk": 10,
     "fields": {
       "created_time": "2023-06-23T09:56:13.561Z",
-      "updated_time": "2023-07-01T12:11:13.734Z",
+      "updated_time": "2024-01-09T09:09:39.150Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1312,11 +1795,14 @@
       "parent": 4,
       "menu_type": 2,
       "name": "create:systemRole",
-      "rank": 28,
+      "rank": 43,
       "path": "api/system/role$",
       "component": "POST",
       "is_active": true,
-      "meta": 10
+      "meta": 10,
+      "model": [
+        233
+      ]
     }
   },
   {
@@ -1324,7 +1810,7 @@
     "pk": 9,
     "fields": {
       "created_time": "2023-06-23T09:37:13.092Z",
-      "updated_time": "2023-07-01T12:13:14.399Z",
+      "updated_time": "2024-01-09T08:40:36.235Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1336,7 +1822,13 @@
       "path": "api/system/user$",
       "component": "GET",
       "is_active": true,
-      "meta": 9
+      "meta": 9,
+      "model": [
+        233,
+        243,
+        252,
+        267
+      ]
     }
   },
   {
@@ -1344,7 +1836,7 @@
     "pk": 8,
     "fields": {
       "created_time": "2023-06-23T09:36:43.861Z",
-      "updated_time": "2023-11-17T02:33:22.683Z",
+      "updated_time": "2024-01-09T08:46:01.512Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1356,7 +1848,10 @@
       "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 8
+      "meta": 8,
+      "model": [
+        267
+      ]
     }
   },
   {
@@ -1376,7 +1871,8 @@
       "path": "api/system/user/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 7
+      "meta": 7,
+      "model": []
     }
   },
   {
@@ -1384,7 +1880,7 @@
     "pk": 6,
     "fields": {
       "created_time": "2023-06-23T09:35:44.175Z",
-      "updated_time": "2023-07-01T12:11:00.152Z",
+      "updated_time": "2024-01-09T08:43:20.740Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1396,7 +1892,10 @@
       "path": "api/system/user$",
       "component": "POST",
       "is_active": true,
-      "meta": 6
+      "meta": 6,
+      "model": [
+        267
+      ]
     }
   },
   {
@@ -1416,7 +1915,8 @@
       "path": "/system/menu/index",
       "component": "system/menu/index",
       "is_active": true,
-      "meta": 5
+      "meta": 5,
+      "model": []
     }
   },
   {
@@ -1432,11 +1932,12 @@
       "parent": 166,
       "menu_type": 1,
       "name": "systemRole",
-      "rank": 26,
+      "rank": 41,
       "path": "/system/role/index",
       "component": "system/role/index",
       "is_active": true,
-      "meta": 4
+      "meta": 4,
+      "model": []
     }
   },
   {
@@ -1456,7 +1957,8 @@
       "path": "/system/user/index",
       "component": "system/user/index",
       "is_active": true,
-      "meta": 3
+      "meta": 3,
+      "model": []
     }
   },
   {
@@ -1476,7 +1978,8 @@
       "path": "/system",
       "component": "",
       "is_active": true,
-      "meta": 2
+      "meta": 2,
+      "model": []
     }
   },
   {
@@ -1484,7 +1987,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-06-20T09:29:57.857Z",
-      "updated_time": "2024-01-03T05:43:57.736Z",
+      "updated_time": "2024-01-04T02:49:37.414Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1492,11 +1995,12 @@
       "parent": null,
       "menu_type": 1,
       "name": "about",
-      "rank": 75,
+      "rank": 92,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
-      "meta": 1
+      "meta": 1,
+      "model": []
     }
   }
 ]

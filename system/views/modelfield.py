@@ -15,6 +15,7 @@ from common.base.utils import get_choices_dict
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
+from common.core.serializers import get_sub_serializer_fields
 from system.models import ModelLabelField
 from system.utils.serializer import ModelLabelFieldSerializer
 
@@ -43,7 +44,7 @@ class ModelLabelFieldView(OnlyListModelSet):
     serializer_class = ModelLabelFieldSerializer
     pagination_class = DynamicPageNumber(1000)
 
-    ordering_fields = ['created_time']
+    ordering_fields = ['created_time', 'updated_time']
     filterset_class = ModelLabelFieldFilter
 
     def list(self, request, *args, **kwargs):
@@ -73,3 +74,8 @@ class ModelLabelFieldView(OnlyListModelSet):
                     if mf:
                         return ApiResponse(data={'results': mf.get_class_lookups().keys()})
         return ApiResponse(code=1001, detail="查询失败")
+
+    @action(methods=['get'], detail=False)
+    def sync(self, request, *args, **kwargs):
+        get_sub_serializer_fields()
+        return ApiResponse()

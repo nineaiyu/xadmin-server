@@ -197,13 +197,13 @@ class FieldPermission(DbAuditModel):
 
 
 class DeptInfo(DbAuditModel, ModeTypeAbstract):
-    name = models.CharField(verbose_name="用户组名称", max_length=128)
-    code = models.CharField(max_length=128, verbose_name="组标识", unique=True)
+    name = models.CharField(verbose_name="部门名称", max_length=128)
+    code = models.CharField(max_length=128, verbose_name="部门标识", unique=True)
     parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    rank = models.IntegerField(verbose_name="组顺序", default=99)
+    rank = models.IntegerField(verbose_name="顺序", default=99)
     auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
