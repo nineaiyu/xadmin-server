@@ -30,8 +30,8 @@ class ModelLabelField(DbAuditModel):
     field_type = models.SmallIntegerField(choices=FieldChoices.choices, default=FieldChoices.DATA,
                                           verbose_name="字段类型")
     parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(_('Name'), max_length=128)
-    label = models.CharField(_('Label'), max_length=128)
+    name = models.CharField(verbose_name="模型/字段数值", max_length=128)
+    label = models.CharField(verbose_name="模型/字段名称", max_length=128)
 
     class Meta:
         unique_together = ('name', 'parent')
@@ -87,8 +87,8 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
 class MenuMeta(DbAuditModel):
     title = models.CharField(verbose_name="菜单名称", max_length=256, null=True, blank=True)
     icon = models.CharField(verbose_name="菜单图标", max_length=256, null=True, blank=True)
-    r_svg_name = models.CharField(verbose_name="菜单右侧额外图标iconfont名称，目前只支持iconfont", max_length=256,
-                                  null=True, blank=True)
+    r_svg_name = models.CharField(verbose_name="菜单右侧额外图标", max_length=256, null=True, blank=True,
+                                  help_text='菜单右侧额外图标iconfont名称，目前只支持iconfont')
     is_show_menu = models.BooleanField(verbose_name="是否显示该菜单", default=True)
     is_show_parent = models.BooleanField(verbose_name="是否显示父级菜单", default=False)
     is_keepalive = models.BooleanField(verbose_name="是否开启页面缓存", default=False,

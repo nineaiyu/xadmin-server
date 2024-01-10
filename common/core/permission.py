@@ -12,6 +12,7 @@ from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from common.core.config import SysConfig
 from common.core.filter import get_filter_queryset
 from system.models import Menu, FieldPermission
 
@@ -27,7 +28,9 @@ def get_user_menu_queryset(user_obj):
         q |= (Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True))
         has_role = True
     if has_role:
-        return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
+        # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
+        # 菜单通过角色控制，就不用再次通过数据权限过滤了，要不然还得两个地方都得配置
+        return Menu.objects.filter(is_active=True).filter(q)
 
 
 @MagicCacheData.make_cache(timeout=30, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
@@ -75,12 +78,14 @@ class IsAuthenticated(BasePermission):
             url = request.path_info
             for w_url in settings.PERMISSION_WHITE_URL:
                 if re.match(w_url, url):
+                    request.all_fields = True
                     return True
             permission_data = get_user_permission(request.user)
             for p_data in permission_data:
                 if p_data.get('component') == request.method and re.match(f"/{p_data.get('path')}", url):
                     request.user.menu = p_data.get('path')
-                    request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
+                    if SysConfig.PERMISSION_FIELD:
+                        request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True
             raise PermissionDenied('权限不足')
         else:

@@ -10,6 +10,7 @@ from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
+from common.core.config import SysConfig
 from common.core.filter import get_filter_queryset
 from system.models import ModelLabelField
 
@@ -51,19 +52,32 @@ class BaseModelSerializer(ModelSerializer):
         self.request: Request = request or self.context.get("request", None)
         if init:
             return
-        allowed = allowed2 = allowed1 = set()
+        allowed = set()
+        allowed2 = allowed1 = None
         if fields is not None:
-            allowed = allowed1 = set(fields)
-        if self.request and hasattr(self.request, "fields"):
-            model_field = f"{self.Meta.model._meta.app_label}.{self.Meta.model._meta.model_name}"
-            if self.request.fields and isinstance(self.request.fields, dict):
-                allowed = allowed2 = set(self.request.fields.get(model_field, []))
+            allowed1 = set(fields)
+        if self.request and SysConfig.PERMISSION_FIELD:
+            if hasattr(self.request, "fields"):
+                if self.request.fields and isinstance(self.request.fields, dict):
+                    model_field = f"{self.Meta.model._meta.app_label}.{self.Meta.model._meta.model_name}"
+                    allowed2 = set(self.request.fields.get(model_field, []))
 
-        if self.request and hasattr(self.request, "user") and self.request.user.is_superuser:
-            allowed = allowed2 = set(self.fields)
+            if hasattr(self.request, "user") and self.request.user.is_superuser:
+                allowed2 = set(self.fields)
+        else:
+            allowed2 = set(self.fields)
 
-        if allowed2 and allowed1:
+        if self.request and hasattr(self.request, "all_fields"):
+            allowed2 = set(self.fields)
+
+        if allowed2 is not None and allowed1 is not None:
             allowed = allowed1 & allowed2
+
+        if allowed2 and allowed1 is None:
+            allowed = allowed2
+
+        if allowed1 and allowed2 is None:
+            allowed = allowed1
 
         existing = set(self.fields)
         for field_name in existing - allowed:

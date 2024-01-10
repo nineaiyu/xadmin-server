@@ -198,8 +198,9 @@ class MagicCacheData(object):
     @staticmethod
     def invalid_cache(key):
         cache_key = f'magic_cache_data_{key}'
-        res = cache.delete(cache_key)
-        logger.warning(f"invalid_cache cache_key:{cache_key} result:{res}")
+        for delete_key in cache.iter_keys(cache_key):
+            cache.delete(delete_key)
+        logger.warning(f"invalid_cache cache_key:{cache_key}")
 
 
 class MagicCacheResponse(object):

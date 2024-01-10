@@ -104,8 +104,9 @@ def invalid_user_cache(user_pk):
     cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
     cache_response.invalid_cache(f'UserRoutesView_get_{user_pk}')
     MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
+    MagicCacheData.invalid_cache(f'get_user_field_queryset_{user_pk}')  # 清理权限
     cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
-
+    invalid_notify_cache(user_pk)
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')
@@ -164,6 +165,8 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, SystemConfig):
         SysConfig.invalid_config_cache(instance.key)
+        if instance.key in ['PERMISSION_DATA', 'PERMISSION_FIELD']:
+            invalid_user_cache('*')
 
 
 @receiver([pre_delete])

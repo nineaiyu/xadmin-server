@@ -4,7 +4,7 @@
     "pk": 4,
     "fields": {
       "created_time": "2023-12-28T06:35:35.711Z",
-      "updated_time": "2024-01-09T08:55:20.935Z",
+      "updated_time": "2024-01-10T08:42:07.776Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -13,6 +13,9 @@
       "code": "demo",
       "is_active": true,
       "menu": [
+        178,
+        177,
+        176,
         166,
         165,
         164,
@@ -86,7 +89,7 @@
     "pk": 2,
     "fields": {
       "created_time": "2023-12-24T06:21:34.842Z",
-      "updated_time": "2024-01-08T03:56:30.682Z",
+      "updated_time": "2024-01-10T07:55:54.614Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -106,7 +109,6 @@
         69,
         68,
         22,
-        9,
         1
       ]
     }
@@ -116,7 +118,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-12-24T06:07:33.236Z",
-      "updated_time": "2024-01-09T09:28:35.049Z",
+      "updated_time": "2024-01-10T08:40:47.924Z",
       "description": "",
       "creator": 1,
       "modifier": 1,

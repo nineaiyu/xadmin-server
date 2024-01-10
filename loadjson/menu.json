@@ -134,7 +134,7 @@
     "pk": 179,
     "fields": {
       "created_time": "2024-01-08T08:43:01.660Z",
-      "updated_time": "2024-01-09T09:08:49.437Z",
+      "updated_time": "2024-01-10T05:51:46.672Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -148,6 +148,7 @@
       "is_active": true,
       "meta": 183,
       "model": [
+        267,
         379
       ]
     }
@@ -1007,7 +1008,7 @@
     "pk": 69,
     "fields": {
       "created_time": "2023-09-14T08:02:14.194Z",
-      "updated_time": "2024-01-09T09:16:19.106Z",
+      "updated_time": "2024-01-10T07:12:45.963Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1020,9 +1021,7 @@
       "component": "PUT",
       "is_active": true,
       "meta": 73,
-      "model": [
-        267
-      ]
+      "model": []
     }
   },
   {
@@ -1093,7 +1092,7 @@
     "pk": 65,
     "fields": {
       "created_time": "2023-09-13T10:01:21.158Z",
-      "updated_time": "2024-01-09T09:14:22.347Z",
+      "updated_time": "2024-01-10T07:27:10.650Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1107,6 +1106,8 @@
       "is_active": true,
       "meta": 69,
       "model": [
+        267,
+        348,
         365
       ]
     }
@@ -1202,7 +1203,7 @@
     "pk": 52,
     "fields": {
       "created_time": "2023-09-11T08:18:20.950Z",
-      "updated_time": "2023-09-15T09:17:53.442Z",
+      "updated_time": "2024-01-10T08:40:36.728Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1215,7 +1216,9 @@
       "component": "POST",
       "is_active": true,
       "meta": 56,
-      "model": []
+      "model": [
+        348
+      ]
     }
   },
   {

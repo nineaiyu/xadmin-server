@@ -13,15 +13,16 @@ from django.utils import timezone
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
+from common.core.config import SysConfig
 from common.core.db.utils import RelatedManager
 from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
 
 logger = logging.getLogger(__name__)
 
 
-def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None):
-    app_label = queryset.model._meta.app_label
-    model_name = queryset.model._meta.model_name
+def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
+    app_label = model._meta.app_label
+    model_name = model._meta.model_name
     results = []
     for obj in permission:
         rules = []
@@ -40,7 +41,7 @@ def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None)
             results.append({'mode': obj.mode_type, 'rules': rules})
     or_qs = []
     if not results:
-        return queryset.none()
+        return Q(id=0)
     for result in results:
         for rule in result.get('rules'):
             f_type = rule.get('type')
@@ -71,7 +72,7 @@ def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None)
                 if ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                     if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
                         logger.warning(f"{app_label}.{model_name} : all queryset")
-                        return queryset  # 全部数据直接返回 queryset
+                        return Q()  # 全部数据直接返回 queryset
             elif f_type == ModelLabelField.KeyChoices.DATE:
                 val = json.loads(rule['value'])
                 if val < 0:
@@ -111,12 +112,12 @@ def get_filter_queryset_base(queryset, permission, user_obj=None, dept_obj=None)
                 q1 &= q
             else:
                 if q == Q():
-                    return queryset
+                    return q
                 q1 |= q
         if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
-            return queryset.none()
+            return Q(id=0)
     logger.warning(f"{app_label}.{model_name} : {q1}")
-    return queryset.filter(q1)
+    return q1
 
 
 def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
@@ -130,6 +131,8 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         若模式为或模式，并存在全部数据，则直接返回queryset
         若模式为且模式，则 返回queryset.filter(规则)
     """
+    if not SysConfig.PERMISSION_DATA:
+        return queryset
 
     if user_obj.is_superuser:
         logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.model_name}")
@@ -137,17 +140,25 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
 
     # table = f'*'
     dept_obj = user_obj.dept
-    q = Q(userinfo=user_obj)
+    q = Q()
+    has_dept = False
     if dept_obj:
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
             permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj)
-            queryset &= get_filter_queryset_base(queryset, permission, user_obj, dept_obj)
-
-    permission = DataPermission.objects.filter(is_active=True).filter(q)
+            q &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+            has_dept = True
+        if not has_dept and q == Q():
+            q = Q(id=0)
+    permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj)
     if not permission.count():
-        return queryset
-    return get_filter_queryset_base(queryset, permission, user_obj, dept_obj)
+        return queryset.filter(q)
+    q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+    if q1 == Q():
+        q = q1
+    else:
+        q |= q1
+    return queryset.filter(q)
 
 
 class OwnerUserFilter(BaseFilterBackend):
