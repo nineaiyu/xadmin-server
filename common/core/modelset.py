@@ -70,6 +70,13 @@ class RankAction(object):
 
 class BaseAction(object):
 
+    def get_serializer_class(self):
+        action_serializer_name = f"{self.action}_serializer_class"
+        action_serializer_class = getattr(self, action_serializer_name, None)
+        if action_serializer_class:
+            return action_serializer_class
+        return super().get_serializer_class()
+
     def create(self, request, *args, **kwargs):
         data = super().create(request, *args, **kwargs).data
         return ApiResponse(data=data)

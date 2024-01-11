@@ -8,6 +8,7 @@ import json
 import os.path
 
 from django.conf import settings
+from django.db import transaction
 from rest_framework import serializers
 
 from common.core.config import SysConfig, UserConfig
@@ -43,9 +44,8 @@ class RoleSerializer(BaseModelSerializer):
     fields = serializers.ListField(write_only=True)
 
     def get_field(self, obj):
-        results = FieldPermissionSerializer(
-            get_filter_queryset(models.FieldPermission.objects.filter(role=obj), self.request.user), many=True,
-            request=self.request, ).data
+        results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
+                                            request=self.request, init=True).data
         data = []
         for res in results:
             data.extend([f"{res.get('menu')}-{i}" for i in res.get('field', [])])
@@ -64,23 +64,38 @@ class RoleSerializer(BaseModelSerializer):
                 field_dict[d[0]] = [d[1]]
         for k, v in field_dict.items():
             serializer = FieldPermissionSerializer(data={'role': instance.pk, 'menu': k, 'field': v},
-                                                   request=self.request)
+                                                   request=self.request, init=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
     def update(self, instance, validated_data):
         field = validated_data.pop('fields')
-        instance = super().update(instance, validated_data)
-        get_filter_queryset(models.FieldPermission.objects.filter(role=instance), self.request.user).delete()
-        self.save_fields(field, instance)
-
+        with transaction.atomic():
+            instance = super().update(instance, validated_data)
+            models.FieldPermission.objects.filter(role=instance).delete()
+            self.save_fields(field, instance)
         return instance
 
     def create(self, validated_data):
         field = validated_data.pop('fields')
-        instance = super().create(validated_data)
-        self.save_fields(field, instance)
+        with transaction.atomic():
+            instance = super().create(validated_data)
+            self.save_fields(field, instance)
         return instance
+
+
+class ListRoleSerializer(RoleSerializer):
+    class Meta:
+        model = models.UserRole
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'field', 'fields']
+        read_only_fields = ['pk']
+
+    field = serializers.ListField(default=[], read_only=True)
+    menu = serializers.SerializerMethodField(read_only=True)
+
+    def get_menu(self, instance):
+        return []
+
 
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
@@ -209,17 +224,19 @@ class MenuSerializer(BaseModelSerializer):
     field = serializers.ListField(default=[], read_only=True)
 
     def update(self, instance, validated_data):
-        serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
-                                        context=self.context, request=self.request)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return super().update(instance, validated_data)
+        with transaction.atomic():
+            serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
+                                            context=self.context, request=self.request)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context, request=self.request)
-        serializer.is_valid(raise_exception=True)
-        validated_data['meta'] = serializer.save()
-        return super().create(validated_data)
+        with transaction.atomic():
+            serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context, request=self.request)
+            serializer.is_valid(raise_exception=True)
+            validated_data['meta'] = serializer.save()
+            return super().create(validated_data)
 
 
 class RouteSerializer(MenuSerializer):
@@ -318,9 +335,10 @@ class NoticeMessageSerializer(BaseModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
-        instance.file.filter(is_tmp=True).update(is_tmp=False)
-        return instance
+        with transaction.atomic():
+            instance = super().create(validated_data)
+            instance.file.filter(is_tmp=True).update(is_tmp=False)
+            return instance
 
     def update(self, instance, validated_data):
         validated_data.pop('notice_type')  # 不能修改消息类型

@@ -4,7 +4,7 @@
     "pk": 4,
     "fields": {
       "created_time": "2023-12-28T06:35:35.711Z",
-      "updated_time": "2024-01-10T08:42:07.776Z",
+      "updated_time": "2024-01-11T08:23:24.863Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -13,6 +13,7 @@
       "code": "demo",
       "is_active": true,
       "menu": [
+        186,
         178,
         177,
         176,
@@ -118,7 +119,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-12-24T06:07:33.236Z",
-      "updated_time": "2024-01-10T08:40:47.924Z",
+      "updated_time": "2024-01-11T08:22:59.409Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -127,6 +128,7 @@
       "code": "admin",
       "is_active": true,
       "menu": [
+        186,
         185,
         184,
         183,

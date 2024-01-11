@@ -10,7 +10,7 @@ from django_filters import rest_framework as filters
 
 from common.core.modelset import BaseModelSet
 from system.models import UserRole
-from system.utils.serializer import RoleSerializer
+from system.utils.serializer import RoleSerializer, ListRoleSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class RoleFilter(filters.FilterSet):
 class RoleView(BaseModelSet):
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
+    list_serializer_class = ListRoleSerializer
 
     ordering_fields = ['updated_time', 'name', 'created_time', 'pk']
     filterset_class = RoleFilter
