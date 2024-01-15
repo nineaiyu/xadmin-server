@@ -83,7 +83,7 @@ class IsAuthenticated(BasePermission):
             permission_data = get_user_permission(request.user)
             for p_data in permission_data:
                 if p_data.get('component') == request.method and re.match(f"/{p_data.get('path')}", url):
-                    request.user.menu = p_data.get('path')
+                    request.user.menu = p_data.get('pk')
                     if SysConfig.PERMISSION_FIELD:
                         request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True

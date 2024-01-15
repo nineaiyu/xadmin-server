@@ -6,7 +6,9 @@
 # date : 6/6/2023
 from hashlib import md5
 
+from django.db.models import Q
 from django_filters import rest_framework as filters
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 
 from common.base.magic import cache_response
@@ -17,7 +19,7 @@ from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
 from system.models import Menu
-from system.utils.serializer import MenuSerializer, RouteSerializer
+from system.utils.serializer import MenuSerializer, RouteSerializer, MenuPermissionSerializer
 
 
 class MenuFilter(filters.FilterSet):
@@ -34,6 +36,7 @@ class MenuFilter(filters.FilterSet):
 class MenuView(BaseModelSet, RankAction):
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
+    permissions_serializer_class = MenuPermissionSerializer
     pagination_class = DynamicPageNumber(1000)
 
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
@@ -48,6 +51,17 @@ class MenuView(BaseModelSet, RankAction):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(Menu.MethodChoices.choices),
                            menu_choices=get_choices_dict(Menu.MenuChoices.choices), api_url_list=get_all_url_dict(''))
+
+    @action(methods=['get'], detail=False)
+    def permissions(self, request, *args, **kwargs):
+        def get_queryset():
+            pks = self.filter_queryset(self.queryset).filter(menu_type=Menu.MenuChoices.PERMISSION).values_list(
+                'parent', flat=True)
+            return self.filter_queryset(self.queryset).filter(
+                Q(menu_type=Menu.MenuChoices.PERMISSION) | Q(id__in=pks))
+
+        self.get_queryset = get_queryset
+        return super().list(request, *args, **kwargs)
 
 class UserRoutesView(APIView):
 

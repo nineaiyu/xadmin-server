@@ -141,16 +141,17 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     # table = f'*'
     dept_obj = user_obj.dept
     q = Q()
+    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu'))
     has_dept = False
     if dept_obj:
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
-            permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj)
+            permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj).filter(dq)
             q &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
             has_dept = True
         if not has_dept and q == Q():
             q = Q(id=0)
-    permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj)
+    permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     if not permission.count():
         return queryset.filter(q)
     q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)

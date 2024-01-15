@@ -100,7 +100,8 @@ class ListRoleSerializer(RoleSerializer):
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
         model = models.DataPermission
-        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "mode_display"]
+        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "mode_display",
+                  "menu"]
         read_only_fields = ['pk']
 
     mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
@@ -238,6 +239,15 @@ class MenuSerializer(BaseModelSerializer):
             validated_data['meta'] = serializer.save()
             return super().create(validated_data)
 
+
+class MenuPermissionSerializer(MenuSerializer):
+    class Meta:
+        model = models.Menu
+        fields = ['pk', 'name', 'rank', 'path', 'component', 'title', 'parent', 'menu_type']
+        read_only_fields = ['pk']
+        extra_kwargs = {'rank': {'read_only': True}}
+
+    title = serializers.CharField(source='meta.title', read_only=True)
 
 class RouteSerializer(MenuSerializer):
     meta = RouteMetaSerializer(init=True)  # 用于前端菜单渲染

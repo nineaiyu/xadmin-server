@@ -157,6 +157,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract):
     name = models.CharField(verbose_name="数据权限名称", max_length=256, unique=True)
     rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    menu = models.ManyToManyField(to=Menu, verbose_name="权限菜单", null=True, blank=True)
 
     class Meta:
         verbose_name = "数据权限"

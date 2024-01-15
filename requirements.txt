@@ -4,7 +4,7 @@ django-cors-headers==4.3.1
 django-filter==23.5
 mysqlclient==2.2.1
 django-redis==5.4.0
-pycryptodomex==3.19.1
+pycryptodomex==3.20.0
 djangorestframework-simplejwt==5.3.1
 celery==5.3.6
 django-celery-results==2.5.1
@@ -17,7 +17,7 @@ psutil==5.9.7
 uvicorn==0.25.0
 daphne==4.0.0
 channels==4.0.0
-channels-redis==4.1.0
+channels-redis==4.2.0
 django-simple-captcha==0.6.0
 user-agents==2.2.0
 aiofiles==23.2.1
