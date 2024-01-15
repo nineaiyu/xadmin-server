@@ -7,6 +7,7 @@
 from logging import getLogger
 
 from django.db.models import ProtectedError, RestrictedError
+from django.http import Http404
 from rest_framework.exceptions import Throttled, APIException
 from rest_framework.views import exception_handler
 from rest_framework.views import set_rollback
@@ -37,6 +38,10 @@ def common_exception_handler(exc, context):
         else:
             ret.data = {'detail': exc.detail}
         set_rollback()
+
+    elif isinstance(exc, Http404):
+        ret.status_code = 400
+        ret.data = {'detail': "请求地址不正确或数据权限不允许"}
 
     elif isinstance(exc, (ProtectedError, RestrictedError)):
         set_rollback()
