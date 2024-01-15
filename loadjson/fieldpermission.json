@@ -1,10 +1,10 @@
 [
   {
     "model": "system.fieldpermission",
-    "pk": 623,
+    "pk": 682,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.195Z",
-      "updated_time": "2024-01-11T08:23:25.195Z",
+      "created_time": "2024-01-15T07:38:49.007Z",
+      "updated_time": "2024-01-15T07:38:49.007Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -33,10 +33,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 622,
+    "pk": 681,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.181Z",
-      "updated_time": "2024-01-11T08:23:25.181Z",
+      "created_time": "2024-01-15T07:38:48.993Z",
+      "updated_time": "2024-01-15T07:38:48.993Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -73,10 +73,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 621,
+    "pk": 680,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.163Z",
-      "updated_time": "2024-01-11T08:23:25.163Z",
+      "created_time": "2024-01-15T07:38:48.974Z",
+      "updated_time": "2024-01-15T07:38:48.974Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -105,10 +105,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 620,
+    "pk": 679,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.149Z",
-      "updated_time": "2024-01-11T08:23:25.149Z",
+      "created_time": "2024-01-15T07:38:48.960Z",
+      "updated_time": "2024-01-15T07:38:48.960Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -137,10 +137,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 619,
+    "pk": 678,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.136Z",
-      "updated_time": "2024-01-11T08:23:25.136Z",
+      "created_time": "2024-01-15T07:38:48.945Z",
+      "updated_time": "2024-01-15T07:38:48.945Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -169,10 +169,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 618,
+    "pk": 677,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.122Z",
-      "updated_time": "2024-01-11T08:23:25.122Z",
+      "created_time": "2024-01-15T07:38:48.931Z",
+      "updated_time": "2024-01-15T07:38:48.931Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -197,10 +197,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 617,
+    "pk": 676,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.110Z",
-      "updated_time": "2024-01-11T08:23:25.110Z",
+      "created_time": "2024-01-15T07:38:48.919Z",
+      "updated_time": "2024-01-15T07:38:48.919Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -229,10 +229,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 616,
+    "pk": 675,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.096Z",
-      "updated_time": "2024-01-11T08:23:25.096Z",
+      "created_time": "2024-01-15T07:38:48.905Z",
+      "updated_time": "2024-01-15T07:38:48.905Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -252,10 +252,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 615,
+    "pk": 674,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.087Z",
-      "updated_time": "2024-01-11T08:23:25.087Z",
+      "created_time": "2024-01-15T07:38:48.896Z",
+      "updated_time": "2024-01-15T07:38:48.896Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -275,10 +275,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 614,
+    "pk": 673,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.078Z",
-      "updated_time": "2024-01-11T08:23:25.078Z",
+      "created_time": "2024-01-15T07:38:48.886Z",
+      "updated_time": "2024-01-15T07:38:48.886Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -299,10 +299,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 613,
+    "pk": 672,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.069Z",
-      "updated_time": "2024-01-11T08:23:25.069Z",
+      "created_time": "2024-01-15T07:38:48.876Z",
+      "updated_time": "2024-01-15T07:38:48.876Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -323,10 +323,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 612,
+    "pk": 671,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.059Z",
-      "updated_time": "2024-01-11T08:23:25.059Z",
+      "created_time": "2024-01-15T07:38:48.867Z",
+      "updated_time": "2024-01-15T07:38:48.867Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -347,10 +347,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 611,
+    "pk": 670,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.050Z",
-      "updated_time": "2024-01-11T08:23:25.050Z",
+      "created_time": "2024-01-15T07:38:48.857Z",
+      "updated_time": "2024-01-15T07:38:48.857Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -372,10 +372,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 610,
+    "pk": 669,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.040Z",
-      "updated_time": "2024-01-11T08:23:25.040Z",
+      "created_time": "2024-01-15T07:38:48.847Z",
+      "updated_time": "2024-01-15T07:38:48.847Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -397,10 +397,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 609,
+    "pk": 668,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.030Z",
-      "updated_time": "2024-01-11T08:23:25.030Z",
+      "created_time": "2024-01-15T07:38:48.837Z",
+      "updated_time": "2024-01-15T07:38:48.837Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -420,10 +420,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 608,
+    "pk": 667,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.021Z",
-      "updated_time": "2024-01-11T08:23:25.021Z",
+      "created_time": "2024-01-15T07:38:48.828Z",
+      "updated_time": "2024-01-15T07:38:48.828Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -445,10 +445,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 607,
+    "pk": 666,
     "fields": {
-      "created_time": "2024-01-11T08:23:25.010Z",
-      "updated_time": "2024-01-11T08:23:25.010Z",
+      "created_time": "2024-01-15T07:38:48.818Z",
+      "updated_time": "2024-01-15T07:38:48.818Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -474,10 +474,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 606,
+    "pk": 665,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.998Z",
-      "updated_time": "2024-01-11T08:23:24.998Z",
+      "created_time": "2024-01-15T07:38:48.805Z",
+      "updated_time": "2024-01-15T07:38:48.806Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -497,10 +497,31 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 605,
+    "pk": 664,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.988Z",
-      "updated_time": "2024-01-11T08:23:24.988Z",
+      "created_time": "2024-01-15T07:38:48.796Z",
+      "updated_time": "2024-01-15T07:38:48.796Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "role": 4,
+      "menu": 187,
+      "field": [
+        317,
+        318,
+        320,
+        323,
+        402
+      ]
+    }
+  },
+  {
+    "model": "system.fieldpermission",
+    "pk": 663,
+    "fields": {
+      "created_time": "2024-01-15T07:38:48.787Z",
+      "updated_time": "2024-01-15T07:38:48.787Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -552,10 +573,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 604,
+    "pk": 662,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.961Z",
-      "updated_time": "2024-01-11T08:23:24.961Z",
+      "created_time": "2024-01-15T07:38:48.760Z",
+      "updated_time": "2024-01-15T07:38:48.760Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -582,10 +603,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 603,
+    "pk": 661,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.948Z",
-      "updated_time": "2024-01-11T08:23:24.948Z",
+      "created_time": "2024-01-15T07:38:48.747Z",
+      "updated_time": "2024-01-15T07:38:48.747Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -612,10 +633,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 602,
+    "pk": 660,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.935Z",
-      "updated_time": "2024-01-11T08:23:24.935Z",
+      "created_time": "2024-01-15T07:38:48.733Z",
+      "updated_time": "2024-01-15T07:38:48.734Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -646,10 +667,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 601,
+    "pk": 659,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.920Z",
-      "updated_time": "2024-01-11T08:23:24.920Z",
+      "created_time": "2024-01-15T07:38:48.718Z",
+      "updated_time": "2024-01-15T07:38:48.718Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -672,10 +693,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 600,
+    "pk": 658,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.909Z",
-      "updated_time": "2024-01-11T08:23:24.909Z",
+      "created_time": "2024-01-15T07:38:48.707Z",
+      "updated_time": "2024-01-15T07:38:48.707Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -708,10 +729,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 599,
+    "pk": 657,
     "fields": {
-      "created_time": "2024-01-11T08:23:24.892Z",
-      "updated_time": "2024-01-11T08:23:24.892Z",
+      "created_time": "2024-01-15T07:38:48.690Z",
+      "updated_time": "2024-01-15T07:38:48.690Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -748,10 +769,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 598,
+    "pk": 656,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.157Z",
-      "updated_time": "2024-01-11T08:23:00.157Z",
+      "created_time": "2024-01-15T07:34:21.017Z",
+      "updated_time": "2024-01-15T07:34:21.017Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -780,10 +801,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 597,
+    "pk": 655,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.138Z",
-      "updated_time": "2024-01-11T08:23:00.138Z",
+      "created_time": "2024-01-15T07:34:21.002Z",
+      "updated_time": "2024-01-15T07:34:21.002Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -837,10 +858,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 596,
+    "pk": 654,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.103Z",
-      "updated_time": "2024-01-11T08:23:00.103Z",
+      "created_time": "2024-01-15T07:34:20.974Z",
+      "updated_time": "2024-01-15T07:34:20.974Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -869,10 +890,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 595,
+    "pk": 653,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.086Z",
-      "updated_time": "2024-01-11T08:23:00.086Z",
+      "created_time": "2024-01-15T07:34:20.959Z",
+      "updated_time": "2024-01-15T07:34:20.960Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -901,10 +922,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 594,
+    "pk": 652,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.068Z",
-      "updated_time": "2024-01-11T08:23:00.068Z",
+      "created_time": "2024-01-15T07:34:20.946Z",
+      "updated_time": "2024-01-15T07:34:20.946Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -933,10 +954,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 593,
+    "pk": 651,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.051Z",
-      "updated_time": "2024-01-11T08:23:00.051Z",
+      "created_time": "2024-01-15T07:34:20.931Z",
+      "updated_time": "2024-01-15T07:34:20.931Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -965,10 +986,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 592,
+    "pk": 650,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.033Z",
-      "updated_time": "2024-01-11T08:23:00.033Z",
+      "created_time": "2024-01-15T07:34:20.916Z",
+      "updated_time": "2024-01-15T07:34:20.916Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1010,10 +1031,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 591,
+    "pk": 649,
     "fields": {
-      "created_time": "2024-01-11T08:23:00.005Z",
-      "updated_time": "2024-01-11T08:23:00.005Z",
+      "created_time": "2024-01-15T07:34:20.894Z",
+      "updated_time": "2024-01-15T07:34:20.894Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1059,10 +1080,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 590,
+    "pk": 648,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.978Z",
-      "updated_time": "2024-01-11T08:22:59.978Z",
+      "created_time": "2024-01-15T07:34:20.871Z",
+      "updated_time": "2024-01-15T07:34:20.871Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1082,10 +1103,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 589,
+    "pk": 647,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.968Z",
-      "updated_time": "2024-01-11T08:22:59.968Z",
+      "created_time": "2024-01-15T07:34:20.862Z",
+      "updated_time": "2024-01-15T07:34:20.862Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1105,10 +1126,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 588,
+    "pk": 646,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.958Z",
-      "updated_time": "2024-01-11T08:22:59.958Z",
+      "created_time": "2024-01-15T07:34:20.853Z",
+      "updated_time": "2024-01-15T07:34:20.853Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1129,10 +1150,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 587,
+    "pk": 645,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.947Z",
-      "updated_time": "2024-01-11T08:22:59.947Z",
+      "created_time": "2024-01-15T07:34:20.843Z",
+      "updated_time": "2024-01-15T07:34:20.843Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1153,10 +1174,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 586,
+    "pk": 644,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.936Z",
-      "updated_time": "2024-01-11T08:22:59.936Z",
+      "created_time": "2024-01-15T07:34:20.834Z",
+      "updated_time": "2024-01-15T07:34:20.834Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1177,10 +1198,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 585,
+    "pk": 643,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.924Z",
-      "updated_time": "2024-01-11T08:22:59.924Z",
+      "created_time": "2024-01-15T07:34:20.825Z",
+      "updated_time": "2024-01-15T07:34:20.825Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1202,10 +1223,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 584,
+    "pk": 642,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.914Z",
-      "updated_time": "2024-01-11T08:22:59.914Z",
+      "created_time": "2024-01-15T07:34:20.814Z",
+      "updated_time": "2024-01-15T07:34:20.814Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1227,10 +1248,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 583,
+    "pk": 641,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.904Z",
-      "updated_time": "2024-01-11T08:22:59.904Z",
+      "created_time": "2024-01-15T07:34:20.804Z",
+      "updated_time": "2024-01-15T07:34:20.805Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1252,10 +1273,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 582,
+    "pk": 640,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.894Z",
-      "updated_time": "2024-01-11T08:22:59.894Z",
+      "created_time": "2024-01-15T07:34:20.794Z",
+      "updated_time": "2024-01-15T07:34:20.794Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1277,10 +1298,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 581,
+    "pk": 639,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.884Z",
-      "updated_time": "2024-01-11T08:22:59.884Z",
+      "created_time": "2024-01-15T07:34:20.784Z",
+      "updated_time": "2024-01-15T07:34:20.784Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1303,10 +1324,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 580,
+    "pk": 638,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.874Z",
-      "updated_time": "2024-01-11T08:22:59.874Z",
+      "created_time": "2024-01-15T07:34:20.774Z",
+      "updated_time": "2024-01-15T07:34:20.774Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1329,10 +1350,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 579,
+    "pk": 637,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.863Z",
-      "updated_time": "2024-01-11T08:22:59.863Z",
+      "created_time": "2024-01-15T07:34:20.762Z",
+      "updated_time": "2024-01-15T07:34:20.762Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1375,10 +1396,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 578,
+    "pk": 636,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.842Z",
-      "updated_time": "2024-01-11T08:22:59.842Z",
+      "created_time": "2024-01-15T07:34:20.740Z",
+      "updated_time": "2024-01-15T07:34:20.740Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1398,10 +1419,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 577,
+    "pk": 635,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.833Z",
-      "updated_time": "2024-01-11T08:22:59.833Z",
+      "created_time": "2024-01-15T07:34:20.731Z",
+      "updated_time": "2024-01-15T07:34:20.731Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1421,10 +1442,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 576,
+    "pk": 634,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.824Z",
-      "updated_time": "2024-01-11T08:22:59.824Z",
+      "created_time": "2024-01-15T07:34:20.722Z",
+      "updated_time": "2024-01-15T07:34:20.722Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1444,10 +1465,65 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 575,
+    "pk": 633,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.811Z",
-      "updated_time": "2024-01-11T08:22:59.811Z",
+      "created_time": "2024-01-15T07:34:20.712Z",
+      "updated_time": "2024-01-15T07:34:20.712Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": 1,
+      "role": 1,
+      "menu": 187,
+      "field": [
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304,
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        317,
+        318,
+        319,
+        320,
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328
+      ]
+    }
+  },
+  {
+    "model": "system.fieldpermission",
+    "pk": 632,
+    "fields": {
+      "created_time": "2024-01-15T07:34:20.684Z",
+      "updated_time": "2024-01-15T07:34:20.684Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1499,10 +1575,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 574,
+    "pk": 631,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.769Z",
-      "updated_time": "2024-01-11T08:22:59.769Z",
+      "created_time": "2024-01-15T07:34:20.657Z",
+      "updated_time": "2024-01-15T07:34:20.657Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1554,10 +1630,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 573,
+    "pk": 630,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.726Z",
-      "updated_time": "2024-01-11T08:22:59.726Z",
+      "created_time": "2024-01-15T07:34:20.629Z",
+      "updated_time": "2024-01-15T07:34:20.629Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1609,10 +1685,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 572,
+    "pk": 629,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.680Z",
-      "updated_time": "2024-01-11T08:22:59.680Z",
+      "created_time": "2024-01-15T07:34:20.601Z",
+      "updated_time": "2024-01-15T07:34:20.601Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1640,10 +1716,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 571,
+    "pk": 628,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.657Z",
-      "updated_time": "2024-01-11T08:22:59.657Z",
+      "created_time": "2024-01-15T07:34:20.587Z",
+      "updated_time": "2024-01-15T07:34:20.587Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1671,10 +1747,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 570,
+    "pk": 627,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.631Z",
-      "updated_time": "2024-01-11T08:22:59.631Z",
+      "created_time": "2024-01-15T07:34:20.567Z",
+      "updated_time": "2024-01-15T07:34:20.567Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1719,10 +1795,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 569,
+    "pk": 626,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.591Z",
-      "updated_time": "2024-01-11T08:22:59.591Z",
+      "created_time": "2024-01-15T07:34:20.538Z",
+      "updated_time": "2024-01-15T07:34:20.538Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1755,10 +1831,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 568,
+    "pk": 625,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.568Z",
-      "updated_time": "2024-01-11T08:22:59.568Z",
+      "created_time": "2024-01-15T07:34:20.516Z",
+      "updated_time": "2024-01-15T07:34:20.517Z",
       "description": null,
       "creator": 1,
       "modifier": null,
@@ -1791,10 +1867,10 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": 567,
+    "pk": 624,
     "fields": {
-      "created_time": "2024-01-11T08:22:59.548Z",
-      "updated_time": "2024-01-11T08:22:59.548Z",
+      "created_time": "2024-01-15T07:34:20.496Z",
+      "updated_time": "2024-01-15T07:34:20.496Z",
       "description": null,
       "creator": 1,
       "modifier": null,

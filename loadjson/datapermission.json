@@ -4,7 +4,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-12-24T06:09:48.598Z",
-      "updated_time": "2023-12-25T12:57:34.024Z",
+      "updated_time": "2024-01-15T07:39:05.041Z",
       "description": "全部数据",
       "creator": 1,
       "modifier": 1,
@@ -20,7 +20,8 @@
           "value": "*"
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -51,7 +52,8 @@
           "value": ""
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -75,7 +77,8 @@
           "value": ""
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -106,7 +109,8 @@
           "value": ""
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -144,7 +148,8 @@
           "value": ""
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -176,7 +181,8 @@
           "value": "1"
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   },
   {
@@ -217,7 +223,8 @@
           "value": ""
         }
       ],
-      "is_active": true
+      "is_active": true,
+      "menu": []
     }
   }
 ]

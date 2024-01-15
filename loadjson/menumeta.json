@@ -1,6 +1,30 @@
 [
   {
     "model": "system.menumeta",
+    "pk": 191,
+    "fields": {
+      "created_time": "2024-01-15T06:48:01.805Z",
+      "updated_time": "2024-01-15T07:37:25.390Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": 1,
+      "title": "查询菜单权限",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": 190,
     "fields": {
       "created_time": "2024-01-11T07:51:08.641Z",
