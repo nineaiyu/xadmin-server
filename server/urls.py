@@ -17,10 +17,10 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include, re_path
-from django.views.static import serve
 
 from common.celery.flower import CeleryFlowerView
 from common.core.utils import auto_register_app_url
+from common.utils.media import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),

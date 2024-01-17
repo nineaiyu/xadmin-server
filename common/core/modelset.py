@@ -7,7 +7,6 @@
 import json
 
 from django.conf import settings
-from django.db.models import FileField
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
@@ -49,7 +48,8 @@ class UploadFileAction(object):
         instance.modifier = request.user
         instance.save(update_fields=[self.FILE_UPLOAD_FIELD, 'modifier'])
         if delete_file_name:
-            FileField(name=delete_file_name).storage.delete(delete_file_name)
+            file_instance.name = delete_file_name
+            file_instance.delete(save=False)
         return ApiResponse()
 
 

@@ -4,6 +4,7 @@
 # filename : models
 # author : ly_13
 # date : 12/20/2023
+import os
 import time
 import uuid
 
@@ -33,8 +34,8 @@ class DbAuditModel(DbBaseModel):
 
 
 def upload_directory_path(instance, filename):
-    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     prefix = filename.split('.')[-1]
     tmp_name = f"{filename}_{time.time()}"
     new_filename = f"{uuid.uuid5(uuid.NAMESPACE_DNS, tmp_name).__str__().replace('-', '')}.{prefix}"
-    return time.strftime(f"{instance.__class__.__name__.lower()}/{instance.pk}/%Y_%m_%d_%S_{new_filename}")
+    labels = instance._meta.label_lower.split('.')
+    return os.path.join(labels[0], labels[1], str(instance.pk), new_filename)

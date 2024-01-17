@@ -4,8 +4,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from pilkit.processors import ResizeToFill
 
 from common.core.models import upload_directory_path, DbAuditModel
+from common.fields.image import ProcessedImageField
 
 
 class ModelLabelField(DbAuditModel):
@@ -60,7 +62,12 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
         MALE = 1, _("男")
         FEMALE = 2, _("女")
 
-    avatar = models.FileField(verbose_name="用户头像", null=True, blank=True, upload_to=upload_directory_path)
+    avatar = ProcessedImageField(verbose_name="用户头像", null=True, blank=True,
+                                 upload_to=upload_directory_path,
+                                 processors=[ResizeToFill(512, 512)],  # 默认存储像素大小
+                                 scales=[1, 2, 3, 4],  # 缩略图可缩小倍数，
+                                 format='png')
+
     nickname = models.CharField(verbose_name="昵称", max_length=150, blank=True)
     gender = models.IntegerField(choices=GenderChoices.choices, default=GenderChoices.UNKNOWN, verbose_name="性别")
     mobile = models.CharField(verbose_name="手机号", max_length=16, default='', blank=True)
