@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/2/2023
 import json
+from typing import Callable
 
 from django.conf import settings
 from rest_framework import mixins
@@ -54,9 +55,8 @@ class UploadFileAction(object):
 
 
 class RankAction(object):
-
-    def get_queryset(self):
-        raise NotImplementedError('get_queryset must be overridden')
+    filter_queryset: Callable
+    get_queryset: Callable
 
     @action(methods=['post'], detail=False)
     def action_rank(self, request, *args, **kwargs):
@@ -69,6 +69,11 @@ class RankAction(object):
 
 
 class BaseAction(object):
+    perform_destroy: Callable
+    filter_queryset: Callable
+    get_queryset: Callable
+    get_object: Callable
+    action: Callable
 
     def get_serializer_class(self):
         action_serializer_name = f"{self.action}_serializer_class"

@@ -59,8 +59,7 @@ class BaseModelSerializer(ModelSerializer):
         if self.request and SysConfig.PERMISSION_FIELD:
             if hasattr(self.request, "fields"):
                 if self.request.fields and isinstance(self.request.fields, dict):
-                    model_field = f"{self.Meta.model._meta.app_label}.{self.Meta.model._meta.model_name}"
-                    allowed2 = set(self.request.fields.get(model_field, []))
+                    allowed2 = set(self.request.fields.get(self.Meta.model._meta.label_lower, []))
 
             if hasattr(self.request, "user") and self.request.user.is_superuser:
                 allowed2 = set(self.fields)
@@ -121,12 +120,9 @@ def get_sub_serializer_fields():
         model = instance.Meta.model
         if not model:
             continue
-        app_label = model._meta.app_label
         delete = True
-        model_name = model._meta.model_name
-        verbose_name = model._meta.verbose_name
-        obj, _ = ModelLabelField.objects.update_or_create(name=f"{app_label}.{model_name}", field_type=field_type,
-                                                          parent=None, defaults={'label': verbose_name})
+        obj, _ = ModelLabelField.objects.update_or_create(name=model._meta.label_lower, field_type=field_type,
+                                                          parent=None, defaults={'label': model._meta.verbose_name})
         for name, field in instance.fields.items():
             ModelLabelField.objects.update_or_create(name=name, parent=obj, field_type=field_type,
                                                      defaults={'label': field.label})

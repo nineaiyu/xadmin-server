@@ -21,15 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
-    app_label = model._meta.app_label
-    model_name = model._meta.model_name
     results = []
     for obj in permission:
         rules = []
         if len(obj.rules) == 1:
             obj.mode_type = ModeTypeAbstract.ModeChoices.OR
         for rule in obj.rules:
-            if rule.get('table') in [f"{app_label}.{model_name}", "*"]:
+            if rule.get('table') in [model._meta.label_lower, "*"]:
                 if rule.get('type') == ModelLabelField.KeyChoices.ALL:
                     if obj.mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
                         continue
@@ -71,7 +69,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 rule['match'] = 'all'
                 if ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                     if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
-                        logger.warning(f"{app_label}.{model_name} : all queryset")
+                        logger.warning(f"{model._meta.label_lower} : all queryset")
                         return Q()  # 全部数据直接返回 queryset
             elif f_type == ModelLabelField.KeyChoices.DATE:
                 val = json.loads(rule['value'])
@@ -116,7 +114,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 q1 |= q
         if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
             return Q(id=0)
-    logger.warning(f"{app_label}.{model_name} : {q1}")
+    logger.warning(f"{model._meta.label_lower} : {q1}")
     return q1
 
 
@@ -135,7 +133,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         return queryset
 
     if user_obj.is_superuser:
-        logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.model_name}")
+        logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
     # table = f'*'
