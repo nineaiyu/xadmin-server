@@ -17,10 +17,11 @@ from common.base.magic import cache_response
 from common.core.filter import OwnerUserFilter
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
-from movies.h5.serializer import H5FilmInfoSerializer, H5WatchHistorySerializer, H5ActorInfoSerializer
-from movies.models import FilmInfo, SwipeInfo, Category, WatchHistory, EpisodeInfo, ActorInfo
+from movies.h5.serializer import H5FilmInfoSerializer, H5WatchHistorySerializer, H5ActorWhoSerializer, \
+    H5ActorInfoSerializer
+from movies.models import FilmInfo, SwipeInfo, Category, WatchHistory, EpisodeInfo, ActorShip
 from movies.utils.serializer import SwipeInfoSerializer, CategoryListSerializer, \
-    AliyunFileSerializer, FilmInfoSerializer, EpisodeInfoSerializer, ActorInfoSerializer
+    AliyunFileSerializer, FilmInfoSerializer, EpisodeInfoSerializer
 from movies.utils.storage import get_video_preview, get_download_url
 from movies.views.film import WatchHistoryView
 
@@ -76,13 +77,12 @@ class FilmFilter(filters.FilterSet):
     def name_filter(self, queryset, name, value):
         if value:
             return queryset.filter(
-                Q(name__icontains=value) | Q(title__icontains=value) | Q(director__name__icontains=value) | Q(
-                    starring__name__icontains=value)).distinct()
+                Q(name__icontains=value) | Q(title__icontains=value) | Q(starring__name__icontains=value)).distinct()
         return queryset
 
     def actor_filter(self, queryset, name, value):
         if value:
-            return queryset.filter(Q(director__id=value) | Q(starring__id=value)).distinct()
+            return queryset.filter(starring__id=value).distinct()
         return queryset
 
     def release_date_filter(self, queryset, name, value):
@@ -181,9 +181,9 @@ class H5FilmDetailView(APIView):
             film_info = FilmInfoSerializer(film_obj).data
             episode_info = EpisodeInfoSerializer(EpisodeInfo.objects.filter(film=film_obj).order_by('rank').all(),
                                                  many=True).data
-            director = H5ActorInfoSerializer(film_obj.director, many=True).data
-            starring = H5ActorInfoSerializer(film_obj.starring, many=True).data
-            return ApiResponse(film=film_info, episode=episode_info, director=director, starring=starring)
+            starring = H5ActorWhoSerializer(ActorShip.objects.filter(film=film_obj).order_by('actor_type'),
+                                            many=True).data
+            return ApiResponse(film=film_info, episode=episode_info, starring=starring)
         return ApiResponse()
 
 
@@ -247,8 +247,8 @@ class H5FilmActorDetailView(APIView):
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def get(self, request, pk):
-        actor_obj = ActorInfo.objects.filter(pk=pk).first()
-        if actor_obj:
-            actor = ActorInfoSerializer(actor_obj).data
+        ship_obj = ActorShip.objects.filter(pk=pk).first()
+        if ship_obj:
+            actor = H5ActorInfoSerializer(ship_obj).data
             return ApiResponse(data={'results': [actor]})
         return ApiResponse()

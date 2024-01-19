@@ -16,6 +16,8 @@ from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet, UploadFileAction, RankAction
 from common.core.response import ApiResponse
 from movies.models import FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
+from movies.tasks import sync_douban_movie
+from movies.utils.douban.search import search_from_douban
 from movies.utils.serializer import FilmInfoSerializer, CategorySerializer, EpisodeInfoSerializer, \
     CategoryListSerializer, WatchHistorySerializer, SwipeInfoSerializer, ActorInfoSerializer
 
@@ -25,9 +27,7 @@ logger = logging.getLogger(__file__)
 class FilmFilter(filters.FilterSet):
     language = filters.NumberFilter(field_name='language')
     channel = filters.NumberFilter(field_name='channel')
-    subtitle = filters.NumberFilter(field_name='subtitle')
     region = filters.NumberFilter(field_name='region')
-    director = filters.CharFilter(field_name='director__name', lookup_expr='icontains')
     starring = filters.CharFilter(field_name='starring__name', lookup_expr='icontains')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
     enable = filters.BooleanFilter(field_name='enable')
@@ -68,9 +68,22 @@ class FilmInfoView(BaseModelSet, UploadFileAction):
             'region': CategoryListSerializer(Category.get_region_category(), many=True).data,
             'category': CategoryListSerializer(Category.get_video_category(), many=True).data,
             'language': CategoryListSerializer(Category.get_language_category(), many=True).data,
-            'subtitle': CategoryListSerializer(Category.get_subtitle_category(), many=True).data,
         }
         return ApiResponse(**data, **category_result)
+
+    @action(methods=['get'], detail=False)
+    def search_douban(self, request, *args, **kwargs):
+        key = request.query_params.get('key')
+        results = search_from_douban(key)
+        return ApiResponse(data={'results': results})
+
+    @action(methods=['post'], detail=False)
+    def add_douban(self, request, *args, **kwargs):
+        movie_url = request.data.get('movie')
+        # get_film_info(movie_url.split('subject/')[-1].replace('/',''))
+        c_task = sync_douban_movie.apply_async(args=(str(movie_url),))
+        logger.info(f'{movie_url} delay exec {c_task}')
+        return ApiResponse()
 
 
 class EpisodeInfoFilter(filters.FilterSet):

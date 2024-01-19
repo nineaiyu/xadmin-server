@@ -12,6 +12,7 @@ from celery import shared_task
 
 from common.base.magic import MagicCacheData
 from movies.models import AliyunDrive
+from movies.utils.douban.spider import get_film_info
 from movies.utils.storage import get_aliyun_drive
 from server.celery import app
 
@@ -58,6 +59,11 @@ def batch_sync_drive_size(batch=100):
         batch_pks = drive_pks[index * batch:(index + 1) * batch]
         if batch_pks:
             sync_drive_size.apply_async(args=(batch_pks,))
+
+
+@shared_task
+def sync_douban_movie(movie_id):
+    get_film_info(movie_id.split('subject/')[-1].replace('/', ''))
 
 # @shared_task
 # def refresh_home_cache():

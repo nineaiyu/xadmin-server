@@ -50,19 +50,23 @@ class CategoryListSerializer(serializers.ModelSerializer):
 class FilmInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FilmInfo
-        fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'subtitle', 'director', 'channel',
+        fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'channel', 'running',
                   'starring', 'times', 'views', 'rate', 'description', 'enable', 'created_time', 'updated_time',
-                  'category_info', 'release_date', 'region_info', 'language_info', 'channel_info', 'subtitle_info',
-                  'director_info', 'introduction', 'episode_count']
+                  'category_info', 'release_date', 'region_info', 'language_info', 'channel_info', 'douban',
+                  'introduction', 'episode_count']
         extra_kwargs = {'pk': {'read_only': True}, 'poster': {'read_only': True}}
 
     category_info = serializers.SerializerMethodField(read_only=True)
     region_info = serializers.SerializerMethodField(read_only=True)
     language_info = serializers.SerializerMethodField(read_only=True)
     channel_info = serializers.SerializerMethodField(read_only=True)
-    subtitle_info = serializers.SerializerMethodField(read_only=True)
-    director_info = serializers.SerializerMethodField(read_only=True)
     episode_count = serializers.SerializerMethodField(read_only=True)
+    poster = serializers.SerializerMethodField()
+
+    def get_poster(self, obj):
+        if obj.poster.name.startswith('http'):
+            return obj.poster.name
+        return obj.poster.url
 
     def get_category_info(self, obj):
         return CategoryListSerializer(obj.category, many=True).data
@@ -75,13 +79,6 @@ class FilmInfoSerializer(serializers.ModelSerializer):
 
     def get_channel_info(self, obj):
         return CategoryListSerializer(obj.channel, many=True).data
-
-    def get_subtitle_info(self, obj):
-        return CategoryListSerializer(obj.subtitle, many=True).data
-
-    def get_director_info(self, obj):
-        return CategoryListSerializer(obj.director, many=True).data
-
 
     def get_episode_count(self, obj):
         return obj.episodeinfo_set.count()
@@ -160,5 +157,5 @@ class ActorInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActorInfo
         fields = ['pk', 'name', 'foreign_name', 'enable', 'created_time', 'description', 'sex', 'birthday',
-                  'introduction', 'avatar']
+                  'introduction', 'avatar', 'birthplace', 'profession']
         read_only_fields = ['pk', 'avatar', 'created_time']

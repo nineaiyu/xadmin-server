@@ -9,7 +9,7 @@ import logging
 
 from rest_framework import serializers
 
-from movies.models import FilmInfo, WatchHistory, ActorInfo
+from movies.models import FilmInfo, WatchHistory, ActorShip
 from movies.utils.serializer import FilmInfoSerializer, ActorInfoSerializer
 
 logger = logging.getLogger(__file__)
@@ -38,7 +38,19 @@ class H5WatchHistorySerializer(serializers.ModelSerializer):
         return H5FilmInfoSerializer(obj.episode.film).data
 
 
-class H5ActorInfoSerializer(ActorInfoSerializer):
+class H5ActorWhoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ActorInfo
-        fields = ['pk', 'name', 'foreign_name', 'avatar']
+        model = ActorShip
+        fields = ['pk', 'name', 'foreign_name', 'avatar', 'who']
+
+    name = serializers.CharField(source='actor.name', read_only=True)
+    foreign_name = serializers.CharField(source='actor.foreign_name', read_only=True)
+    avatar = serializers.CharField(source='actor.avatar.url', read_only=True)
+
+
+class H5ActorInfoSerializer(H5ActorWhoSerializer):
+    actor = ActorInfoSerializer()
+
+    class Meta:
+        model = ActorShip
+        fields = ['pk', 'who', 'actor']

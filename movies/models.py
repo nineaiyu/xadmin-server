@@ -59,7 +59,7 @@ class AliyunFile(DbBaseModel):
 
 class Category(DbBaseModel):
     name = models.CharField(max_length=64, verbose_name="类别")
-    category_type_choices = ((1, '视频渠道'), (2, '地区国家'), (3, '视频类型'), (4, '视频语言'), (5, '视频字幕'))
+    category_type_choices = ((1, '视频渠道'), (2, '地区国家'), (3, '视频类型'), (4, '视频语言'))
     category_type = models.SmallIntegerField(verbose_name="类型", choices=category_type_choices, default=1)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
     rank = models.IntegerField(verbose_name="展示顺序", default=999)
@@ -86,19 +86,19 @@ class Category(DbBaseModel):
     def get_language_category(cls):
         return cls.objects.filter(category_type=4, enable=True).all()
 
-    @classmethod
-    def get_subtitle_category(cls):
-        return cls.objects.filter(category_type=5, enable=True).all()
-
 
 class ActorInfo(DbBaseModel):
-    name = models.CharField(max_length=64, verbose_name="演员名字", unique=True)
+    name = models.CharField(max_length=128, verbose_name="演员名字")
     foreign_name = models.CharField(max_length=64, verbose_name="外文")
-    avatar = models.FileField(verbose_name="头像", null=True, blank=True, upload_to=upload_directory_path)
+    avatar = models.FileField(verbose_name="头像", null=True, blank=True, upload_to=upload_directory_path,
+                              max_length=256)
     sex = models.SmallIntegerField(verbose_name="性别", default=0, help_text='0：男 1：女 2：保密')
     birthday = models.DateField(verbose_name="出生日期")
     introduction = models.TextField(verbose_name="简介", null=True, blank=True)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
+    douban = models.BigIntegerField(verbose_name="豆瓣ID", null=True, blank=True, default=0)
+    birthplace = models.CharField(max_length=128, verbose_name="出生地", null=True, blank=True)
+    profession = models.CharField(max_length=128, verbose_name="职位", null=True, blank=True)
 
     class Meta:
         verbose_name = '演员'
@@ -111,8 +111,8 @@ class ActorInfo(DbBaseModel):
 
 
 class FilmInfo(DbBaseModel):
-    name = models.CharField(max_length=64, verbose_name="电影片名")
-    title = models.CharField(max_length=64, verbose_name="电影译名")
+    name = models.CharField(max_length=128, verbose_name="电影片名")
+    title = models.CharField(max_length=256, verbose_name="电影译名")
     poster = models.FileField(verbose_name="海报", null=True, blank=True, upload_to=upload_directory_path)
     channel = models.ManyToManyField(to=Category, verbose_name="频道，电影，电视，综艺等分类",
                                      related_name='channel_category')
@@ -122,17 +122,16 @@ class FilmInfo(DbBaseModel):
                                     related_name='region_category')
     language = models.ManyToManyField(to=Category, verbose_name="语言，中文，英语，韩语等",
                                       related_name='language_category')
-    subtitle = models.ManyToManyField(to=Category, verbose_name="字幕，中英对照",
-                                      related_name='subtitle_category')
-
-    director = models.ManyToManyField(to=ActorInfo, verbose_name="导演", related_name='director_actor')
-    starring = models.ManyToManyField(to=ActorInfo, verbose_name="演员", related_name='starring_actor')
+    starring = models.ManyToManyField(to=ActorInfo, verbose_name="演员", related_name='starring_actor',
+                                      through='ActorShip')
     times = models.IntegerField(verbose_name="片长，分钟", default=90)
     rate = models.DecimalField(verbose_name="评分", max_digits=5, decimal_places=1, default=5)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
     views = models.BigIntegerField(verbose_name="观看次数", default=0)
     release_date = models.DateField(verbose_name="上映时间")
     introduction = models.TextField(verbose_name="剧情", null=True, blank=True)
+    douban = models.BigIntegerField(verbose_name="豆瓣ID", null=True, blank=True, default=0)
+    running = models.BooleanField(default=False, verbose_name="任务运行状态")
 
     class Meta:
         verbose_name = '影片信息'
@@ -145,6 +144,21 @@ class FilmInfo(DbBaseModel):
 
     def __str__(self):
         return f"文件名:{self.name}-观看次数:{self.views}-片长:{self.times}"
+
+
+class ActorShip(DbBaseModel):
+    actor = models.ForeignKey(ActorInfo, on_delete=models.CASCADE)
+    film = models.ForeignKey(FilmInfo, on_delete=models.CASCADE)
+    who = models.CharField(max_length=256, verbose_name="饰演", null=True, blank=True)
+    actor_type_choices = ((1, '导演'), (2, '编剧'), (3, '演员'))
+    actor_type = models.SmallIntegerField(verbose_name="类型", choices=actor_type_choices, default=3)
+
+    class Meta:
+        verbose_name = '演员饰演中间表'
+        verbose_name_plural = "演员饰演中间表"
+
+    def __str__(self):
+        return f"{self.actor.name}-{self.who}"
 
 
 class EpisodeInfo(DbBaseModel):

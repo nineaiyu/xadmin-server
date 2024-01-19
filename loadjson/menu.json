@@ -3024,6 +3024,48 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 149,
+    "fields": {
+      "created_time": "2024-01-19T08:14:48.307Z",
+      "updated_time": "2024-01-19T08:14:48.307Z",
+      "description": null,
+      "title": "豆瓣电影搜索",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": 150,
+    "fields": {
+      "created_time": "2024-01-19T08:15:37.924Z",
+      "updated_time": "2024-01-19T08:15:37.924Z",
+      "description": null,
+      "title": "豆瓣电影添加",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
@@ -5061,6 +5103,40 @@
       "component": "POST",
       "is_active": true,
       "meta": 148
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 145,
+    "fields": {
+      "created_time": "2024-01-19T08:14:48.310Z",
+      "updated_time": "2024-01-19T08:14:48.310Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "search:MoviesDoubanFilm",
+      "rank": 9999,
+      "path": "api/movies/film/search_douban$",
+      "component": "GET",
+      "is_active": true,
+      "meta": 149
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 146,
+    "fields": {
+      "created_time": "2024-01-19T08:15:37.926Z",
+      "updated_time": "2024-01-19T08:15:37.926Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "create:MoviesDoubanFilm",
+      "rank": 9999,
+      "path": "api/movies/film/add_douban$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 150
     }
   }
 ]
