@@ -173,7 +173,7 @@ def search_from_douban(key):
                         else:
                             info['actor'] = s
 
-            if info:
+            if info and info['title'] and info['url']:
                 results.append(dict(info.items()))
         except:
             pass
