@@ -26,3 +26,4 @@ requests==2.31.0
 datclass==0.2.27
 xxhash==3.4.1
 beautifulsoup4==4.12.3
+lxml==5.1.0
