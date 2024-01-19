@@ -205,7 +205,7 @@ def get_film_info(movie_id):
         'title': ",".join(movie_info['other_names']),
         'running': True,
         'times': re.search('\d+', movie_info['durations'][0]).group() if len(movie_info['durations']) > 0 else 0,
-        'rate': movie_info['rating']['average'],
+        'rate': movie_info['rating']['average'] if movie_info['rating']['average'] else 5,
         'release_date': datetime.strptime(movie_info['pubdates'][0].split('(')[0], '%Y-%m-%d') if len(
             movie_info['pubdates']) > 0 else datetime.now(),
         'introduction': movie_info['summary'],

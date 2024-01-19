@@ -135,6 +135,7 @@ def search_from_douban(key):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
     }
     res = requests.get(url, headers=headers)
+    print(f"search douban url: {res.status_code} {res.content}")
     data = re.search(r'window.__DATA__ = "(.+?)"', res.text, flags=re.DOTALL).group(1)
     # print(data)
     i = 16
@@ -157,7 +158,7 @@ def search_from_douban(key):
         # print(1111, type(x), x)
         try:
             data = x.get(b'k')
-            info = {}
+            info = {'title': '', 'info': '', 'actor': '', 'url': ''}
             for s in data:
                 if isinstance(s, str):
                     if 's_ratio_poster' in s and s.startswith('https://img'):
@@ -180,4 +181,4 @@ def search_from_douban(key):
 
 
 if __name__ == '__main__':
-    print(search_from_douban('闪电侠'))
+    print(search_from_douban('前任'))
