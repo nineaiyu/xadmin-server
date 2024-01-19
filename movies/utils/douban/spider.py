@@ -199,10 +199,10 @@ def get_film_info(movie_id):
     for region in movie_info['genres']:
         reg, _ = Category.objects.update_or_create(category_type=3, name=region)
         video_list.append(reg)
-
+    title = ",".join(movie_info['other_names'])
     data = {
         'name': movie_info['name'],
-        'title': ",".join(movie_info['other_names']),
+        'title': title if title else movie_info['name'],
         'running': True,
         'times': re.search('\d+', movie_info['durations'][0]).group() if len(movie_info['durations']) > 0 else 0,
         'rate': movie_info['rating']['average'] if movie_info['rating']['average'] else 5,
