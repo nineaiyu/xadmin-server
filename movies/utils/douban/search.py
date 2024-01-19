@@ -153,13 +153,20 @@ def search_from_douban(key):
     pb_results = plistlib.loads(rc4_bytes, fmt=FMT_BINARY)
     results = []
     # print("最终结果为：")
-    # pprint(pb_results)
+    # print(pb_results)
     for x in pb_results:
         # print(1111, type(x), x)
         try:
             data = x.get(b'k')
             info = {'title': '', 'info': '', 'actor': '', 'url': ''}
             for s in data:
+                if isinstance(s, list) and len(s) > 0 and s[0]['title']:
+                    results = []
+                    for x in s:
+                        results.append({'title': x['title'].replace('\u200e', '').strip(),
+                                        'info': x.get('abstract'),
+                                        'actor': x.get('abstract_2'), 'url': x.get('url')})
+                    return results
                 if isinstance(s, str):
                     if 's_ratio_poster' in s and s.startswith('https://img'):
                         info['s_ratio_poster'] = s
@@ -175,10 +182,10 @@ def search_from_douban(key):
 
             if info and info['title'] and info['url']:
                 results.append(dict(info.items()))
-        except:
+        except Exception as e:
             pass
     return results
 
 
 if __name__ == '__main__':
-    print(search_from_douban('前任'))
+    print(search_from_douban('流浪地球'))
