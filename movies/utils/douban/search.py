@@ -160,13 +160,13 @@ def search_from_douban(key):
             data = x.get(b'k')
             info = {'title': '', 'info': '', 'actor': '', 'url': ''}
             for s in data:
-                if isinstance(s, list) and len(s) > 0 and s[0]['title']:
-                    results = []
+                if isinstance(s, list) and len(s) > 0 and s[0].get('title'):
+                    # results = []
                     for x in s:
                         results.append({'title': x['title'].replace('\u200e', '').strip(),
                                         'info': x.get('abstract'),
                                         'actor': x.get('abstract_2'), 'url': x.get('url')})
-                    return results
+                    # return results
                 if isinstance(s, str):
                     if 's_ratio_poster' in s and s.startswith('https://img'):
                         info['s_ratio_poster'] = s
@@ -181,7 +181,7 @@ def search_from_douban(key):
                             info['actor'] = s
 
             if info and info['title'] and info['url']:
-                results.append(dict(info.items()))
+                results.insert(0, dict(info.items()))
         except Exception as e:
             pass
     return results
