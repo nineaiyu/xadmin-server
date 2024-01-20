@@ -27,7 +27,7 @@ def eta_second(second):
 
 
 @shared_task
-def sync_drive_size(batch_pks):
+def sync_drive_size(batch_pks, timing=False):
     for drive_obj in AliyunDrive.objects.filter(pk__in=batch_pks).all():
         try:
             ali_obj = get_aliyun_drive(drive_obj)
@@ -37,7 +37,8 @@ def sync_drive_size(batch_pks):
             drive_obj.active = True
             drive_obj.save(update_fields=['total_size', 'used_size', 'active', 'updated_time'])
             logger.info(f'{drive_obj} update size success')
-            aliyun_sign(ali_obj)
+            if timing:
+                aliyun_sign(ali_obj)
         except Exception as e:
             logger.warning(f'{drive_obj} update drive size failed:{e}')
 
@@ -59,7 +60,7 @@ def batch_sync_drive_size(batch=100):
     for index in range(int(len(drive_pks) / batch) + 1):
         batch_pks = drive_pks[index * batch:(index + 1) * batch]
         if batch_pks:
-            sync_drive_size.apply_async(args=(batch_pks,))
+            sync_drive_size.apply_async(args=(batch_pks, True))
 
 
 @shared_task
