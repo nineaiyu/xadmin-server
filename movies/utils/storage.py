@@ -247,3 +247,16 @@ def save_views(instance):
     film = episode.film
     film.views = F('views') + 1
     film.save(update_fields=['views'])
+
+def aliyun_sign(aliyun):
+    # 获取签到列表
+    sign_in_list = aliyun.sign_in_list()
+    logger.info('本月签到次数: %d', sign_in_list.result.signInCount)
+
+    # 签到
+    for i in sign_in_list.result.signInLogs:
+        if i.isReward:
+            continue
+        if i.status == 'normal':
+            sign_in_reward = aliyun.sign_in_reward(i.day)
+            logger.info('签到成功: %s', sign_in_reward.result.notice)

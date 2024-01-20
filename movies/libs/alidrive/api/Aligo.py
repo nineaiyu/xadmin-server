@@ -8,6 +8,7 @@ from .Download import Download
 from .File import File
 from .Recyclebin import Recyclebin
 from .Video import Video
+from .Sign import Sign
 
 
 class Aligo(
@@ -15,7 +16,8 @@ class Aligo(
     Download,
     File,
     Recyclebin,
-    Video
+    Video,
+    Sign
 ):
     """阿里云盘"""
 

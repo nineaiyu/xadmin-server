@@ -141,7 +141,7 @@ class DouBanMovieSpider:
             'profession': actor_info.get('profession')
         }
         if not data['name']:
-            return 
+            return
         instance, _ = ActorInfo.objects.update_or_create(douban=person['id'], defaults=data)
         if not instance.avatar:
             instance.avatar.save('', self.get_image_content(actor_info['image_url']))

@@ -13,7 +13,7 @@ from celery import shared_task
 from common.base.magic import MagicCacheData
 from movies.models import AliyunDrive
 from movies.utils.douban.spider import get_film_info
-from movies.utils.storage import get_aliyun_drive
+from movies.utils.storage import get_aliyun_drive, aliyun_sign
 from server.celery import app
 
 logger = logging.getLogger(__file__)
@@ -37,6 +37,7 @@ def sync_drive_size(batch_pks):
             drive_obj.active = True
             drive_obj.save(update_fields=['total_size', 'used_size', 'active', 'updated_time'])
             logger.info(f'{drive_obj} update size success')
+            aliyun_sign(ali_obj)
         except Exception as e:
             logger.warning(f'{drive_obj} update drive size failed:{e}')
 
