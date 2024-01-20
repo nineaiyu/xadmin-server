@@ -140,6 +140,8 @@ class DouBanMovieSpider:
             'birthplace': actor_info.get('birthplace'),
             'profession': actor_info.get('profession')
         }
+        if not data['name']:
+            return 
         instance, _ = ActorInfo.objects.update_or_create(douban=person['id'], defaults=data)
         if not instance.avatar:
             instance.avatar.save('', self.get_image_content(actor_info['image_url']))
@@ -169,6 +171,8 @@ def get_film_info(movie_id):
         return
     # 获取电影信息
     movie_info = spider.get_movie_info(movie_id)
+    if not movie_info['name']:
+        return
     """
     person: {'id': '1276086', 'name': '郭帆 Frant Gwo', 'role': '导演 Director'}
     actor_info: {
