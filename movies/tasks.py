@@ -56,7 +56,7 @@ def batch_sync_drive_size(batch=100):
     :return:
     主要用户阿里网盘token刷新，并获取磁盘空间大小，每天凌晨2点执行
     """
-    drive_pks = AliyunDrive.objects.filter(active=True, enable=True).values('pk').all()
+    drive_pks = AliyunDrive.objects.filter(active=True, enable=True).values_list('pk', flat=True).all()
     for index in range(int(len(drive_pks) / batch) + 1):
         batch_pks = drive_pks[index * batch:(index + 1) * batch]
         if batch_pks:
