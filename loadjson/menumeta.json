@@ -268,7 +268,7 @@
     "pk": 180,
     "fields": {
       "created_time": "2024-01-05T08:18:35.321Z",
-      "updated_time": "2024-01-09T08:06:23.062Z",
+      "updated_time": "2024-01-22T05:41:11.285Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -436,10 +436,10 @@
     "pk": 173,
     "fields": {
       "created_time": "2024-01-04T02:46:05.651Z",
-      "updated_time": "2024-01-04T02:46:05.651Z",
+      "updated_time": "2024-01-22T05:40:09.130Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": 1,
       "title": "menus.hsUserConfig",
       "icon": "ep:data-line",
@@ -460,10 +460,10 @@
     "pk": 172,
     "fields": {
       "created_time": "2024-01-04T02:45:13.931Z",
-      "updated_time": "2024-01-04T02:45:13.931Z",
+      "updated_time": "2024-01-22T05:39:53.415Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": 1,
       "title": "menus.hsSystemConfig",
       "icon": "ep:data-analysis",
@@ -604,10 +604,10 @@
     "pk": 166,
     "fields": {
       "created_time": "2024-01-03T05:39:13.465Z",
-      "updated_time": "2024-01-03T05:39:13.465Z",
+      "updated_time": "2024-01-22T05:43:21.170Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": 1,
       "title": "menus.hsLoginLog",
       "icon": "ep:cellphone",
@@ -796,7 +796,7 @@
     "pk": 156,
     "fields": {
       "created_time": "2023-12-22T05:39:57.818Z",
-      "updated_time": "2024-01-03T05:48:03.033Z",
+      "updated_time": "2024-01-22T05:41:00.090Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -964,7 +964,7 @@
     "pk": 149,
     "fields": {
       "created_time": "2023-12-19T06:56:52.630Z",
-      "updated_time": "2023-12-24T01:59:01.489Z",
+      "updated_time": "2024-01-22T05:39:17.265Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1060,7 +1060,7 @@
     "pk": 77,
     "fields": {
       "created_time": "2023-09-15T13:30:38.523Z",
-      "updated_time": "2023-12-15T07:51:59.044Z",
+      "updated_time": "2024-01-22T05:49:12.057Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1180,7 +1180,7 @@
     "pk": 72,
     "fields": {
       "created_time": "2023-09-14T06:39:53.237Z",
-      "updated_time": "2023-09-14T06:40:11.270Z",
+      "updated_time": "2024-01-22T05:49:18.717Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1276,7 +1276,7 @@
     "pk": 68,
     "fields": {
       "created_time": "2023-09-13T09:58:45.861Z",
-      "updated_time": "2024-01-09T03:30:07.259Z",
+      "updated_time": "2024-01-22T05:44:08.556Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1492,7 +1492,7 @@
     "pk": 59,
     "fields": {
       "created_time": "2023-09-13T06:36:12.437Z",
-      "updated_time": "2023-09-15T07:50:21.410Z",
+      "updated_time": "2024-01-22T05:43:36.892Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2020,7 +2020,7 @@
     "pk": 24,
     "fields": {
       "created_time": "2023-06-28T02:15:48.301Z",
-      "updated_time": "2024-01-03T05:36:44.022Z",
+      "updated_time": "2024-01-22T05:42:24.087Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2116,7 +2116,7 @@
     "pk": 22,
     "fields": {
       "created_time": "2023-06-25T08:45:24.976Z",
-      "updated_time": "2024-01-03T02:17:15.385Z",
+      "updated_time": "2024-01-22T05:45:46.862Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2716,7 +2716,7 @@
     "pk": 5,
     "fields": {
       "created_time": "2023-06-23T09:34:25.879Z",
-      "updated_time": "2024-01-03T05:48:50.710Z",
+      "updated_time": "2024-01-22T05:39:33.868Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2740,7 +2740,7 @@
     "pk": 4,
     "fields": {
       "created_time": "2023-06-23T09:33:45.874Z",
-      "updated_time": "2024-01-03T05:47:54.893Z",
+      "updated_time": "2024-01-22T05:40:51.480Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2764,7 +2764,7 @@
     "pk": 3,
     "fields": {
       "created_time": "2023-06-23T09:32:26.032Z",
-      "updated_time": "2023-07-18T06:42:42.683Z",
+      "updated_time": "2024-01-22T05:38:45.451Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2812,7 +2812,7 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-06-20T09:25:08.529Z",
-      "updated_time": "2024-01-04T02:49:37.410Z",
+      "updated_time": "2024-01-22T05:45:53.808Z",
       "description": "",
       "creator": 1,
       "modifier": 1,

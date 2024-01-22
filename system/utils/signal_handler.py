@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 @receiver(post_migrate)
 def post_migrate_handler(sender, **kwargs):
-    if UserInfo.objects.count() == 0:
+    if not UserInfo.objects.filter(pk=1).first():
         return
     label = sender.label
     delete = False

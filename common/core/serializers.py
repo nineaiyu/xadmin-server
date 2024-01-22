@@ -29,6 +29,7 @@ class BasePrimaryKeyRelatedField(PrimaryKeyRelatedField):
 
 class BaseModelSerializer(ModelSerializer):
     serializer_related_field = BasePrimaryKeyRelatedField
+    ignore_field_permission = False  # 忽略字段权限
 
     class Meta:
         model = None
@@ -56,7 +57,7 @@ class BaseModelSerializer(ModelSerializer):
         allowed2 = allowed1 = None
         if fields is not None:
             allowed1 = set(fields)
-        if self.request and SysConfig.PERMISSION_FIELD:
+        if self.request and SysConfig.PERMISSION_FIELD and not self.ignore_field_permission:
             if hasattr(self.request, "fields"):
                 if self.request.fields and isinstance(self.request.fields, dict):
                     allowed2 = set(self.request.fields.get(self.Meta.model._meta.label_lower, []))

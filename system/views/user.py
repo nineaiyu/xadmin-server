@@ -8,6 +8,7 @@ import logging
 
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from common.base.utils import get_choices_dict
 from common.core.filter import get_filter_queryset
@@ -60,7 +61,8 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             if dept:
                 valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user).first()
             else:
-                valid_data['dept'] = request.user.dept
+                raise ValidationError('部门必须选择')
+                # valid_data['dept'] = request.user.dept
             user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
                                                 dept_belong=request.user.dept)
             if user:

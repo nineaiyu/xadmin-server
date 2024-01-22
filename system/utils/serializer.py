@@ -376,6 +376,7 @@ class AnnouncementSerializer(NoticeMessageSerializer):
 
 
 class UserNoticeSerializer(BaseModelSerializer):
+    ignore_field_permission = True
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", 'notice_type_display', 'unread']
