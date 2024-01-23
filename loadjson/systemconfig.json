@@ -1,14 +1,14 @@
 [
   {
     "model": "system.systemconfig",
-    "pk": 1,
+    "pk": "932fc8a6-97ee-404c-a77f-f269fba4c951",
     "fields": {
       "created_time": "2024-01-04T05:12:59.068Z",
       "updated_time": "2024-01-10T01:44:11.005Z",
       "description": "登录",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "true",
       "is_active": true,
       "key": "LOGIN"
@@ -16,14 +16,14 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": 2,
+    "pk": "6a53d866-da52-4f5c-a754-b757784e4e87",
     "fields": {
       "created_time": "2024-01-08T09:44:28.864Z",
       "updated_time": "2024-01-10T01:44:15.800Z",
       "description": "注册",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "true",
       "is_active": true,
       "key": "REGISTER"
@@ -31,14 +31,14 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": 3,
+    "pk": "79f49339-bd81-42c1-95ca-a7032f540d57",
     "fields": {
       "created_time": "2024-01-08T09:34:10.182Z",
       "updated_time": "2024-01-08T09:38:18.570Z",
       "description": "文件上传大小限制,默认10兆",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "10485760",
       "is_active": true,
       "key": "FILE_UPLOAD_SIZE"
@@ -46,14 +46,14 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": 4,
+    "pk": "0c2be308-7fce-4bf1-ad72-1d55f3262345",
     "fields": {
       "created_time": "2024-01-08T09:40:40.434Z",
       "updated_time": "2024-01-08T09:40:40.434Z",
       "description": "图片上传大小，默认为500kb",
       "creator": 1,
       "modifier": null,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "524288",
       "is_active": true,
       "key": "PICTURE_UPLOAD_SIZE"
@@ -61,14 +61,14 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": 5,
+    "pk": "dd9dcb49-07b3-43e6-8893-cf093762b9cb",
     "fields": {
       "created_time": "2024-01-10T01:35:44.713Z",
       "updated_time": "2024-01-10T02:29:15.944Z",
       "description": "数据权限控制",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "true",
       "is_active": true,
       "key": "PERMISSION_DATA"
@@ -76,14 +76,14 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": 6,
+    "pk": "3451e8e0-f9f5-4216-ac74-65aa323865f0",
     "fields": {
       "created_time": "2024-01-10T01:37:12.011Z",
       "updated_time": "2024-01-10T02:16:29.865Z",
       "description": "字段权限控制",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "value": "true",
       "is_active": true,
       "key": "PERMISSION_FIELD"

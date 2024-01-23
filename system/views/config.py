@@ -20,7 +20,7 @@ class SystemConfigFilter(filters.FilterSet):
     key = filters.CharFilter(field_name='key', lookup_expr='icontains')
     value = filters.CharFilter(field_name='value', lookup_expr='icontains')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
-    pk = filters.NumberFilter(field_name='id')
+    pk = filters.CharFilter(field_name='id')
 
     class Meta:
         model = SystemConfig

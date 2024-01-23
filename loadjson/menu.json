@@ -1,2021 +1,31 @@
 [
   {
     "model": "system.menu",
-    "pk": 187,
+    "pk": "5f1217a4-79d4-4692-9d12-9f7c8627012e",
     "fields": {
-      "created_time": "2024-01-15T06:48:01.807Z",
-      "updated_time": "2024-01-15T07:37:25.392Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "list:systemMenuPermission",
-      "rank": 20,
-      "path": "api/system/menu/permissions$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 191,
-      "model": [
-        316
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 186,
-    "fields": {
-      "created_time": "2024-01-11T07:51:08.642Z",
-      "updated_time": "2024-01-11T07:51:31.251Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "detail:systemRole",
-      "rank": 44,
-      "path": "api/system/role/(?P<pk>[^/.]+)$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 190,
-      "model": [
-        233
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 185,
-    "fields": {
-      "created_time": "2024-01-09T07:40:32.518Z",
-      "updated_time": "2024-01-09T07:40:32.518Z",
+      "created_time": "2024-01-22T09:32:15.840Z",
+      "updated_time": "2024-01-23T07:56:42.771Z",
       "description": null,
       "creator": 1,
       "modifier": null,
-      "dept_belong": null,
-      "parent": 176,
-      "menu_type": 2,
-      "name": "sync:systemModelField",
-      "rank": 58,
-      "path": "api/system/field/sync$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 189,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 184,
-    "fields": {
-      "created_time": "2024-01-08T08:45:30.892Z",
-      "updated_time": "2024-01-08T08:45:39.734Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "invalid:systemUserConfig",
-      "rank": 40,
-      "path": "api/system/config/user/(?P<pk>[^/.]+)/invalid$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 188,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 183,
-    "fields": {
-      "created_time": "2024-01-08T08:45:07.367Z",
-      "updated_time": "2024-01-08T08:45:07.367Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "manyDelete:systemUserConfig",
-      "rank": 39,
-      "path": "api/system/config/user/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 187,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 182,
-    "fields": {
-      "created_time": "2024-01-08T08:44:38.531Z",
-      "updated_time": "2024-01-09T09:09:01.880Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "update:systemUserConfig",
-      "rank": 38,
-      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 186,
-      "model": [
-        379
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 181,
-    "fields": {
-      "created_time": "2024-01-08T08:44:09.428Z",
-      "updated_time": "2024-01-08T08:44:09.428Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "delete:systemUserConfig",
-      "rank": 37,
-      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 185,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 180,
-    "fields": {
-      "created_time": "2024-01-08T08:43:31.003Z",
-      "updated_time": "2024-01-09T09:08:55.679Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "create:systemUserConfig",
-      "rank": 36,
-      "path": "api/system/config/user$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 184,
-      "model": [
-        379
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 179,
-    "fields": {
-      "created_time": "2024-01-08T08:43:01.660Z",
-      "updated_time": "2024-01-10T05:51:46.672Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 169,
-      "menu_type": 2,
-      "name": "list:systemUserConfig",
-      "rank": 35,
-      "path": "api/system/config/user$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 183,
-      "model": [
-        267,
-        379
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 178,
-    "fields": {
-      "created_time": "2024-01-05T08:22:25.606Z",
-      "updated_time": "2024-01-09T09:11:03.568Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 176,
-      "menu_type": 2,
-      "name": "list:systemModelFieldLookups",
-      "rank": 57,
-      "path": "api/system/field/lookups$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 182,
-      "model": [
-        220
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 177,
-    "fields": {
-      "created_time": "2024-01-05T08:19:43.413Z",
-      "updated_time": "2024-01-09T09:10:45.140Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 176,
-      "menu_type": 2,
-      "name": "list:systemModelField",
-      "rank": 56,
-      "path": "api/system/field$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 181,
-      "model": [
-        220
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 176,
-    "fields": {
-      "created_time": "2024-01-05T08:18:35.325Z",
-      "updated_time": "2024-01-22T05:41:11.287Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 166,
-      "menu_type": 1,
-      "name": "SystemModelLabelField",
-      "rank": 55,
-      "path": "/system/field/index",
-      "component": "system/field/index",
-      "is_active": true,
-      "meta": 180,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 175,
-    "fields": {
-      "created_time": "2024-01-04T03:20:41.638Z",
-      "updated_time": "2024-01-08T08:45:48.488Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "invalid:systemSystemConfig",
-      "rank": 33,
-      "path": "api/system/config/system/(?P<pk>[^/.]+)/invalid$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 179,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 174,
-    "fields": {
-      "created_time": "2024-01-04T02:48:18.480Z",
-      "updated_time": "2024-01-04T02:51:23.506Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "manyDelete:systemSystemConfig",
-      "rank": 32,
-      "path": "api/system/config/system/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 178,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 173,
-    "fields": {
-      "created_time": "2024-01-04T02:47:53.679Z",
-      "updated_time": "2024-01-09T09:08:42.032Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "update:systemSystemConfig",
-      "rank": 31,
-      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 177,
-      "model": [
-        371
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 172,
-    "fields": {
-      "created_time": "2024-01-04T02:47:26.606Z",
-      "updated_time": "2024-01-04T02:51:15.070Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "delete:systemSystemConfig",
-      "rank": 30,
-      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 176,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 171,
-    "fields": {
-      "created_time": "2024-01-04T02:47:05.286Z",
-      "updated_time": "2024-01-09T09:08:36.106Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "create:systemSystemConfig",
-      "rank": 29,
-      "path": "api/system/config/system$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 175,
-      "model": [
-        371
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 170,
-    "fields": {
-      "created_time": "2024-01-04T02:46:31.035Z",
-      "updated_time": "2024-01-09T09:08:25.762Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 168,
-      "menu_type": 2,
-      "name": "list:systemSystemConfig",
-      "rank": 28,
-      "path": "api/system/config/system$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 174,
-      "model": [
-        371
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 169,
-    "fields": {
-      "created_time": "2024-01-04T02:46:05.656Z",
-      "updated_time": "2024-01-22T05:40:09.131Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 167,
-      "menu_type": 1,
-      "name": "SystemUserConfig",
-      "rank": 34,
-      "path": "/system/config/user/index",
-      "component": "system/config/user/index",
-      "is_active": true,
-      "meta": 173,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 168,
-    "fields": {
-      "created_time": "2024-01-04T02:45:13.935Z",
-      "updated_time": "2024-01-22T05:39:53.416Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 167,
-      "menu_type": 1,
-      "name": "SystemConfig",
-      "rank": 27,
-      "path": "/system/config/system/index",
-      "component": "system/config/system/index",
-      "is_active": true,
-      "meta": 172,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 167,
-    "fields": {
-      "created_time": "2024-01-04T02:43:54.737Z",
-      "updated_time": "2024-01-04T02:49:22.588Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 2,
-      "menu_type": 0,
-      "name": "config",
-      "rank": 26,
-      "path": "/system/configs",
-      "component": "",
-      "is_active": true,
-      "meta": 171,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 166,
-    "fields": {
-      "created_time": "2024-01-03T05:47:43.727Z",
-      "updated_time": "2024-01-03T05:47:58.479Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 2,
-      "menu_type": 0,
-      "name": "permissions",
-      "rank": 41,
-      "path": "/system/permissions",
-      "component": "",
-      "is_active": true,
-      "meta": 170,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 165,
-    "fields": {
-      "created_time": "2024-01-03T05:40:46.922Z",
-      "updated_time": "2024-01-03T05:40:46.922Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": 1,
-      "parent": 162,
-      "menu_type": 2,
-      "name": "manyDelete:systemLoginLog",
-      "rank": 67,
-      "path": "api/system/logs/login/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 169,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 164,
-    "fields": {
-      "created_time": "2024-01-03T05:40:11.773Z",
-      "updated_time": "2024-01-03T05:40:55.784Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 162,
-      "menu_type": 2,
-      "name": "delete:systemLoginLog",
-      "rank": 66,
-      "path": "api/system/logs/login/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 168,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 163,
-    "fields": {
-      "created_time": "2024-01-03T05:39:40.483Z",
-      "updated_time": "2024-01-09T09:12:00.081Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 162,
-      "menu_type": 2,
-      "name": "list:systemLoginLog",
-      "rank": 65,
-      "path": "api/system/logs/login$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 167,
-      "model": [
-        267,
-        390
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 162,
-    "fields": {
-      "created_time": "2024-01-03T05:39:13.469Z",
-      "updated_time": "2024-01-22T05:43:21.172Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 161,
-      "menu_type": 1,
-      "name": "SystemUserLoginLog",
-      "rank": 64,
-      "path": "/system/logs/login/index",
-      "component": "system/logs/login/index",
-      "is_active": true,
-      "meta": 166,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 161,
-    "fields": {
-      "created_time": "2024-01-03T05:36:28.034Z",
-      "updated_time": "2024-01-03T05:44:41.260Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 2,
-      "menu_type": 0,
-      "name": "logs",
-      "rank": 59,
-      "path": "/system/logs",
-      "component": "",
-      "is_active": true,
-      "meta": 165,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 160,
-    "fields": {
-      "created_time": "2023-12-29T08:05:39.814Z",
-      "updated_time": "2024-01-09T09:14:00.796Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": 1,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "create:systemAnnouncement",
-      "rank": 73,
-      "path": "api/system/message/notice/announcement$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 164,
-      "model": [
-        348
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 157,
-    "fields": {
-      "created_time": "2023-12-22T05:42:23.536Z",
-      "updated_time": "2023-12-22T09:44:00.327Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "manyDelete:systemDataPermission",
-      "rank": 54,
-      "path": "api/system/permission/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 161,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 156,
-    "fields": {
-      "created_time": "2023-12-22T05:42:01.680Z",
-      "updated_time": "2024-01-09T09:10:28.578Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "update:systemDataPermission",
-      "rank": 53,
-      "path": "api/system/permission/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 160,
-      "model": [
-        243
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 155,
-    "fields": {
-      "created_time": "2023-12-22T05:41:42.225Z",
-      "updated_time": "2023-12-22T09:43:42.706Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "delete:systemDataPermission",
-      "rank": 52,
-      "path": "api/system/permission/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 159,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 154,
-    "fields": {
-      "created_time": "2023-12-22T05:41:18.770Z",
-      "updated_time": "2024-01-09T09:10:23.565Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "create:systemDataPermission",
-      "rank": 51,
-      "path": "api/system/permission$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 158,
-      "model": [
-        243
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 153,
-    "fields": {
-      "created_time": "2023-12-22T05:40:49.354Z",
-      "updated_time": "2024-01-09T09:10:17.094Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 152,
-      "menu_type": 2,
-      "name": "list:systemDataPermission",
-      "rank": 50,
-      "path": "api/system/permission$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 157,
-      "model": [
-        243
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 152,
-    "fields": {
-      "created_time": "2023-12-22T05:39:57.822Z",
-      "updated_time": "2024-01-22T05:41:00.092Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 166,
-      "menu_type": 1,
-      "name": "SystemDataPermission",
-      "rank": 49,
-      "path": "/system/permission/index",
-      "component": "system/permission/index",
-      "is_active": true,
-      "meta": 156,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 151,
-    "fields": {
-      "created_time": "2023-12-19T07:00:18.375Z",
-      "updated_time": "2023-12-24T01:56:34.724Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "empower:systemDeptRole",
-      "rank": 17,
-      "path": "api/system/dept/(?P<pk>[^/.]+)/empower$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 155,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 150,
-    "fields": {
-      "created_time": "2023-12-19T06:59:40.686Z",
-      "updated_time": "2023-12-21T02:18:18.108Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "manyDelete:systemDept",
-      "rank": 16,
-      "path": "api/system/dept/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 154,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 149,
-    "fields": {
-      "created_time": "2023-12-19T06:58:58.110Z",
-      "updated_time": "2024-01-09T09:06:06.336Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "update:systemDept",
-      "rank": 15,
-      "path": "api/system/dept/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 153,
-      "model": [
-        252
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 148,
-    "fields": {
-      "created_time": "2023-12-19T06:58:37.314Z",
-      "updated_time": "2023-12-21T02:17:58.098Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "delete:systemDept",
-      "rank": 14,
-      "path": "api/system/dept/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 152,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 147,
-    "fields": {
-      "created_time": "2023-12-19T06:58:12.378Z",
-      "updated_time": "2024-01-09T09:05:28.902Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "create:systemDept",
-      "rank": 13,
-      "path": "api/system/dept$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 151,
-      "model": [
-        252
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 146,
-    "fields": {
-      "created_time": "2023-12-19T06:57:48.572Z",
-      "updated_time": "2024-01-09T09:05:20.331Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 145,
-      "menu_type": 2,
-      "name": "list:systemDept",
-      "rank": 12,
-      "path": "api/system/dept$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 150,
-      "model": [
-        233,
-        243,
-        252
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 145,
-    "fields": {
-      "created_time": "2023-12-19T06:56:52.633Z",
-      "updated_time": "2024-01-22T05:39:17.267Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 2,
-      "menu_type": 1,
-      "name": "SystemDept",
-      "rank": 11,
-      "path": "/system/dept/index",
-      "component": "system/dept/index",
-      "is_active": true,
-      "meta": 149,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 76,
-    "fields": {
-      "created_time": "2023-09-16T02:48:15.769Z",
-      "updated_time": "2023-09-16T02:56:56.066Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 73,
-      "menu_type": 2,
-      "name": "update:userNoticeReadAll",
-      "rank": 91,
-      "path": "api/system/notice/read_all$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 80,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 75,
-    "fields": {
-      "created_time": "2023-09-15T14:08:33.755Z",
-      "updated_time": "2023-12-15T07:48:19.859Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 73,
-      "menu_type": 2,
-      "name": "update:userNoticeRead",
-      "rank": 90,
-      "path": "api/system/notice/read$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 79,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 74,
-    "fields": {
-      "created_time": "2023-09-15T13:31:24.794Z",
-      "updated_time": "2024-01-09T09:17:29.660Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 73,
-      "menu_type": 2,
-      "name": "list:userNotice",
-      "rank": 92,
-      "path": "api/system/notice$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 78,
-      "model": [
-        348
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 73,
-    "fields": {
-      "created_time": "2023-09-15T13:30:38.584Z",
-      "updated_time": "2024-01-22T05:49:12.060Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
       "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "UserNotice",
-      "rank": 89,
-      "path": "/user/notice/index",
-      "component": "user/notice/index",
+      "name": "About",
+      "rank": 94,
+      "path": "/about/index",
+      "component": "about/index",
       "is_active": true,
-      "meta": 77,
+      "meta": "b9ea02a8-4781-46ea-ba66-80cf08737f0f",
       "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 72,
+    "pk": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
     "fields": {
-      "created_time": "2023-09-15T10:17:08.911Z",
-      "updated_time": "2023-09-15T10:20:32.660Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 64,
-      "menu_type": 2,
-      "name": "update:systemNoticeReadState",
-      "rank": 81,
-      "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 76,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 71,
-    "fields": {
-      "created_time": "2023-09-14T13:24:01.954Z",
-      "updated_time": "2023-09-14T13:24:01.954Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 68,
-      "menu_type": 2,
-      "name": "update:UserInfoPassword",
-      "rank": 88,
-      "path": "api/system/userinfo/reset_password$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 75,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 70,
-    "fields": {
-      "created_time": "2023-09-14T13:08:02.555Z",
-      "updated_time": "2023-09-14T13:24:31.562Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 68,
-      "menu_type": 2,
-      "name": "upload:UserInfoAvatar",
-      "rank": 87,
-      "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 74,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 69,
-    "fields": {
-      "created_time": "2023-09-14T08:02:14.194Z",
-      "updated_time": "2024-01-10T07:12:45.963Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 68,
-      "menu_type": 2,
-      "name": "update:UserInfo",
-      "rank": 86,
-      "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 73,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 68,
-    "fields": {
-      "created_time": "2023-09-14T06:39:53.290Z",
-      "updated_time": "2024-01-22T05:49:18.719Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": null,
-      "menu_type": 1,
-      "name": "UserInfo",
-      "rank": 85,
-      "path": "/user/info/index",
-      "component": "user/info/index",
-      "is_active": true,
-      "meta": 72,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 67,
-    "fields": {
-      "created_time": "2023-09-13T10:03:20.565Z",
-      "updated_time": "2023-09-15T09:18:35.714Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 64,
-      "menu_type": 2,
-      "name": "manyDelete:systemNoticeRead",
-      "rank": 80,
-      "path": "api/system/message/read/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 71,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 66,
-    "fields": {
-      "created_time": "2023-09-13T10:02:21.046Z",
-      "updated_time": "2023-09-15T09:18:30.881Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 64,
-      "menu_type": 2,
-      "name": "delete:systemNoticeRead",
-      "rank": 79,
-      "path": "api/system/message/read/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 70,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 65,
-    "fields": {
-      "created_time": "2023-09-13T10:01:21.158Z",
-      "updated_time": "2024-01-10T07:27:10.650Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 64,
-      "menu_type": 2,
-      "name": "list:systemNoticeRead",
-      "rank": 78,
-      "path": "api/system/message/read$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 69,
-      "model": [
-        267,
-        348,
-        365
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 64,
-    "fields": {
-      "created_time": "2023-09-13T09:58:45.921Z",
-      "updated_time": "2024-01-22T05:44:08.558Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 48,
-      "menu_type": 1,
-      "name": "SystemNoticeRead",
-      "rank": 77,
-      "path": "/system/notice/read/list",
-      "component": "system/notice/read/list",
-      "is_active": true,
-      "meta": 68,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 63,
-    "fields": {
-      "created_time": "2023-09-13T08:21:00.547Z",
-      "updated_time": "2023-09-15T09:18:12.324Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "update:systemNoticePublish",
-      "rank": 76,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 67,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 55,
-    "fields": {
-      "created_time": "2023-09-13T06:36:12.497Z",
-      "updated_time": "2024-01-22T05:43:36.894Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 48,
-      "menu_type": 1,
-      "name": "SystemNotice",
-      "rank": 69,
-      "path": "/system/notice/index",
-      "component": "system/notice/index",
-      "is_active": true,
-      "meta": 59,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 53,
-    "fields": {
-      "created_time": "2023-09-11T08:19:33.343Z",
-      "updated_time": "2024-01-09T09:13:51.549Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "update:systemNotice",
-      "rank": 71,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 57,
-      "model": [
-        348
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 52,
-    "fields": {
-      "created_time": "2023-09-11T08:18:20.950Z",
-      "updated_time": "2024-01-10T08:40:36.728Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "create:systemNotice",
-      "rank": 72,
-      "path": "api/system/message/notice$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 56,
-      "model": [
-        348
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 51,
-    "fields": {
-      "created_time": "2023-09-11T06:55:18.120Z",
-      "updated_time": "2023-09-15T09:18:00.384Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "manyDelete:systemNotice",
-      "rank": 74,
-      "path": "api/system/message/notice/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 55,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 50,
-    "fields": {
-      "created_time": "2023-09-11T06:54:38.682Z",
-      "updated_time": "2023-09-15T09:18:07.125Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "delete:systemNotice",
-      "rank": 75,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 54,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 49,
-    "fields": {
-      "created_time": "2023-09-11T06:53:54.361Z",
-      "updated_time": "2024-01-09T09:13:42.329Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 55,
-      "menu_type": 2,
-      "name": "list:systemNotice",
-      "rank": 70,
-      "path": "api/system/message/notice$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 53,
-      "model": [
-        348
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 48,
-    "fields": {
-      "created_time": "2023-09-11T06:50:39.036Z",
-      "updated_time": "2023-09-15T10:31:23.762Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 2,
-      "menu_type": 0,
-      "name": "systemNoticeDir",
-      "rank": 68,
-      "path": "/system/notice/",
-      "component": "system/notify/index",
-      "is_active": true,
-      "meta": 52,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 47,
-    "fields": {
-      "created_time": "2023-09-05T03:09:34.188Z",
-      "updated_time": "2023-12-21T09:31:06.426Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "update:systemUserPwd",
-      "rank": 10,
-      "path": "api/system/user/(?P<pk>[^/.]+)/reset_password$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 51,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 46,
-    "fields": {
-      "created_time": "2023-09-05T02:33:18.251Z",
-      "updated_time": "2023-12-24T01:56:23.154Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "empower:systemUserRole",
-      "rank": 9,
-      "path": "api/system/user/(?P<pk>[^/.]+)/empower$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 50,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 30,
-    "fields": {
-      "created_time": "2023-07-01T01:04:51.593Z",
-      "updated_time": "2023-07-01T12:11:43.607Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 28,
-      "menu_type": 2,
-      "name": "update:systemFlower",
-      "rank": 84,
-      "path": "api/flower/(?P<path>.*)",
-      "component": "POST",
-      "is_active": true,
-      "meta": 30,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 29,
-    "fields": {
-      "created_time": "2023-07-01T01:04:16.321Z",
-      "updated_time": "2023-07-01T12:13:29.448Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 28,
-      "menu_type": 2,
-      "name": "list:systemFlower",
-      "rank": 83,
-      "path": "api/flower/(?P<path>.*)",
-      "component": "GET",
-      "is_active": true,
-      "meta": 29,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 28,
-    "fields": {
-      "created_time": "2023-06-29T08:12:07.911Z",
-      "updated_time": "2024-01-03T05:52:13.852Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 2,
-      "menu_type": 0,
-      "name": "systemFlower",
-      "rank": 82,
-      "path": "/system/flower",
-      "component": "",
-      "is_active": true,
-      "meta": 28,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 27,
-    "fields": {
-      "created_time": "2023-06-28T02:37:06.461Z",
-      "updated_time": "2024-01-03T05:31:30.950Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 24,
-      "menu_type": 2,
-      "name": "manyDelete:systemOperationLog",
-      "rank": 63,
-      "path": "api/system/logs/operation/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 27,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 26,
-    "fields": {
-      "created_time": "2023-06-28T02:36:33.480Z",
-      "updated_time": "2024-01-09T09:11:43.479Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 24,
-      "menu_type": 2,
-      "name": "list:systemOperationLog",
-      "rank": 61,
-      "path": "api/system/logs/operation$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 26,
-      "model": [
-        267,
-        329
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 25,
-    "fields": {
-      "created_time": "2023-06-28T02:36:02.766Z",
-      "updated_time": "2024-01-03T05:31:23.750Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 24,
-      "menu_type": 2,
-      "name": "delete:systemOperationLog",
-      "rank": 62,
-      "path": "api/system/logs/operation/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 25,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 24,
-    "fields": {
-      "created_time": "2023-06-28T02:15:48.304Z",
-      "updated_time": "2024-01-22T05:42:24.089Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 161,
-      "menu_type": 1,
-      "name": "SystemOperationLog",
-      "rank": 60,
-      "path": "/system/logs/operation/index",
-      "component": "system/logs/operation/index",
-      "is_active": true,
-      "meta": 24,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 23,
-    "fields": {
-      "created_time": "2023-06-26T10:29:57.567Z",
-      "updated_time": "2023-09-05T02:11:41.679Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "upload:systemAvatar",
-      "rank": 5,
-      "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 23,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 22,
-    "fields": {
-      "created_time": "2023-06-25T08:45:24.985Z",
-      "updated_time": "2024-01-22T05:45:46.864Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": null,
-      "menu_type": 1,
-      "name": "Chat",
-      "rank": 93,
-      "path": "/chat/index",
-      "component": "chat/index",
-      "is_active": false,
-      "meta": 22,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 21,
-    "fields": {
-      "created_time": "2023-06-23T10:02:49.285Z",
-      "updated_time": "2023-07-01T12:11:32.092Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "rank:systemMenu",
-      "rank": 25,
-      "path": "api/system/menu/action_rank$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 21,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 20,
-    "fields": {
-      "created_time": "2023-06-23T10:02:18.521Z",
-      "updated_time": "2023-07-01T12:11:30.317Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "manyDelete:systemMenu",
-      "rank": 24,
-      "path": "api/system/menu/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 20,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 19,
-    "fields": {
-      "created_time": "2023-06-23T10:01:51.633Z",
-      "updated_time": "2024-01-09T09:07:44.530Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "list:systemMenu",
-      "rank": 19,
-      "path": "api/system/menu$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 19,
-      "model": [
-        288,
-        316
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 18,
-    "fields": {
-      "created_time": "2023-06-23T10:01:13.877Z",
-      "updated_time": "2024-01-09T09:08:02.395Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "update:systemMenu",
-      "rank": 23,
-      "path": "api/system/menu/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 18,
-      "model": [
-        288,
-        316
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 17,
-    "fields": {
-      "created_time": "2023-06-23T10:00:47.779Z",
-      "updated_time": "2023-07-01T12:11:25.933Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "delete:systemMenu",
-      "rank": 22,
-      "path": "api/system/menu/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 17,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 16,
-    "fields": {
-      "created_time": "2023-06-23T10:00:17.848Z",
-      "updated_time": "2024-01-09T09:07:53.497Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 5,
-      "menu_type": 2,
-      "name": "create:systemMenu",
-      "rank": 21,
-      "path": "api/system/menu$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 16,
-      "model": [
-        288,
-        316
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 15,
-    "fields": {
-      "created_time": "2023-06-23T09:58:28.908Z",
-      "updated_time": "2023-07-01T12:11:20.234Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "manyDelete:systemRole",
-      "rank": 48,
-      "path": "api/system/role/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 15,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 14,
-    "fields": {
-      "created_time": "2023-06-23T09:58:07.584Z",
-      "updated_time": "2023-07-01T12:11:11.643Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "manyDelete:systemUser",
-      "rank": 8,
-      "path": "api/system/user/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 14,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 13,
-    "fields": {
-      "created_time": "2023-06-23T09:57:26.880Z",
-      "updated_time": "2024-01-09T09:09:32.706Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "list:systemRole",
-      "rank": 43,
-      "path": "api/system/role$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 13,
-      "model": [
-        233
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 12,
-    "fields": {
-      "created_time": "2023-06-23T09:57:02.365Z",
-      "updated_time": "2024-01-09T09:09:44.786Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "update:systemRole",
-      "rank": 47,
-      "path": "api/system/role/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 12,
-      "model": [
-        233
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 11,
-    "fields": {
-      "created_time": "2023-06-23T09:56:37.325Z",
-      "updated_time": "2023-07-01T12:11:15.309Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "delete:systemRole",
-      "rank": 46,
-      "path": "api/system/role/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 11,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 10,
-    "fields": {
-      "created_time": "2023-06-23T09:56:13.561Z",
-      "updated_time": "2024-01-09T09:09:39.150Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 4,
-      "menu_type": 2,
-      "name": "create:systemRole",
-      "rank": 45,
-      "path": "api/system/role$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 10,
-      "model": [
-        233
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 9,
-    "fields": {
-      "created_time": "2023-06-23T09:37:13.092Z",
-      "updated_time": "2024-01-09T08:40:36.235Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "list:systemUser",
-      "rank": 3,
-      "path": "api/system/user$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 9,
-      "model": [
-        233,
-        243,
-        252,
-        267
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 8,
-    "fields": {
-      "created_time": "2023-06-23T09:36:43.861Z",
-      "updated_time": "2024-01-09T08:46:01.512Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "update:systemUser",
-      "rank": 7,
-      "path": "api/system/user/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 8,
-      "model": [
-        267
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 7,
-    "fields": {
-      "created_time": "2023-06-23T09:36:13.739Z",
-      "updated_time": "2023-07-01T12:11:05.543Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "delete:systemUser",
-      "rank": 6,
-      "path": "api/system/user/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 7,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 6,
-    "fields": {
-      "created_time": "2023-06-23T09:35:44.175Z",
-      "updated_time": "2024-01-09T08:43:20.740Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "create:systemUser",
-      "rank": 4,
-      "path": "api/system/user$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 6,
-      "model": [
-        267
-      ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 5,
-    "fields": {
-      "created_time": "2023-06-23T09:34:25.890Z",
-      "updated_time": "2024-01-22T05:39:33.870Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 2,
-      "menu_type": 1,
-      "name": "SystemMenu",
-      "rank": 18,
-      "path": "/system/menu/index",
-      "component": "system/menu/index",
-      "is_active": true,
-      "meta": 5,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 4,
-    "fields": {
-      "created_time": "2023-06-23T09:33:45.885Z",
-      "updated_time": "2024-01-22T05:40:51.482Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 166,
-      "menu_type": 1,
-      "name": "SystemRole",
-      "rank": 42,
-      "path": "/system/role/index",
-      "component": "system/role/index",
-      "is_active": true,
-      "meta": 4,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 3,
-    "fields": {
-      "created_time": "2023-06-23T09:32:26.041Z",
-      "updated_time": "2024-01-22T05:38:45.453Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": 2,
-      "menu_type": 1,
-      "name": "SystemUser",
-      "rank": 2,
-      "path": "/system/user/index",
-      "component": "system/user/index",
-      "is_active": true,
-      "meta": 3,
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 2,
-    "fields": {
-      "created_time": "2023-06-23T09:20:19.836Z",
-      "updated_time": "2023-09-13T02:16:34.548Z",
+      "created_time": "2024-01-22T09:32:15.632Z",
+      "updated_time": "2024-01-22T09:32:15.632Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2027,29 +37,2019 @@
       "path": "/system",
       "component": "",
       "is_active": true,
-      "meta": 2,
+      "meta": "6dd4f8ec-1c42-40e8-9984-ce4da30ee38a",
       "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 1,
+    "pk": "4f9726d3-3796-4602-a716-1337ee2a168e",
     "fields": {
-      "created_time": "2023-06-20T09:29:57.857Z",
-      "updated_time": "2024-01-22T05:45:53.810Z",
+      "created_time": "2024-01-22T09:32:15.422Z",
+      "updated_time": "2024-01-22T09:32:15.422Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemUser",
+      "rank": 2,
+      "path": "/system/user/index",
+      "component": "system/user/index",
+      "is_active": true,
+      "meta": "6f544438-96eb-4db7-ab8d-52f06b28442f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b5f6aa93-62dd-433f-9759-2f542baae423",
+    "fields": {
+      "created_time": "2024-01-22T09:32:15.209Z",
+      "updated_time": "2024-01-22T09:32:15.209Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
+      "menu_type": 1,
+      "name": "SystemRole",
+      "rank": 42,
+      "path": "/system/role/index",
+      "component": "system/role/index",
+      "is_active": true,
+      "meta": "6ffdd515-54f9-48d6-bfc5-f65ff46bbe07",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4f569df2-6149-462f-ad50-27f24370f5e2",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.999Z",
+      "updated_time": "2024-01-22T09:32:14.999Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemMenu",
+      "rank": 18,
+      "path": "/system/menu/index",
+      "component": "system/menu/index",
+      "is_active": true,
+      "meta": "766fe243-248c-4384-9575-977a2c4bba27",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.788Z",
+      "updated_time": "2024-01-22T10:16:47.292Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "create:systemUser",
+      "rank": 4,
+      "path": "api/system/user$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "7fa734bc-75b5-4ab5-a916-927f266c6209",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2118f861-8c58-4685-839e-57afbea60644",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.578Z",
+      "updated_time": "2024-01-22T09:32:14.578Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "delete:systemUser",
+      "rank": 6,
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "31ff5762-5c3f-4657-916f-a1dd8aee146c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "7595b222-e832-48ad-b91f-234b20043fb3",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.369Z",
+      "updated_time": "2024-01-23T03:26:05.293Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "update:systemUser",
+      "rank": 7,
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "8fdc9ab8-ae75-4340-8ea7-1b4746b08ad3",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.159Z",
+      "updated_time": "2024-01-22T10:16:37.180Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "list:systemUser",
+      "rank": 3,
+      "path": "api/system/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "a5a7ac51-b584-437a-a806-9ccaa8f2a588",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7",
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "16a823b0-c4fb-40cd-af63-9aed309823aa",
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d64cc8bd-f860-47e3-8abd-6950953cb072",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.949Z",
+      "updated_time": "2024-01-22T10:20:39.549Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "create:systemRole",
+      "rank": 45,
+      "path": "api/system/role$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "35410095-e55b-4aab-af7a-52254d83c351",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "85929fd1-128c-4035-8204-20c53068b490",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.739Z",
+      "updated_time": "2024-01-22T09:32:13.739Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "delete:systemRole",
+      "rank": 46,
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "05521e4a-2851-4933-b6d2-98e81838ca30",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.529Z",
+      "updated_time": "2024-01-22T10:20:47.045Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "update:systemRole",
+      "rank": 47,
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "e3b9d2b2-2f64-4de1-a1a1-5f6ac904e5c7",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.320Z",
+      "updated_time": "2024-01-22T10:20:23.998Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "list:systemRole",
+      "rank": 43,
+      "path": "api/system/role$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "2baf638d-9bd2-42a9-92a0-f4f384250b20",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e6148cc0-9078-4cc2-9c3d-b359f9b26c34",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.111Z",
+      "updated_time": "2024-01-22T09:32:13.111Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "manyDelete:systemUser",
+      "rank": 8,
+      "path": "api/system/user/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "ec44fc3f-1d9d-40be-a670-dc12107642ba",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "20df8641-ae58-42e7-b95d-49096a186eb6",
+    "fields": {
+      "created_time": "2024-01-22T09:32:12.901Z",
+      "updated_time": "2024-01-22T09:32:12.901Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "manyDelete:systemRole",
+      "rank": 48,
+      "path": "api/system/role/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "34198314-c91a-42ca-9e70-e17066676f2b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "053ade04-8753-4934-9e4d-8ce0adc9e561",
+    "fields": {
+      "created_time": "2024-01-22T09:32:12.689Z",
+      "updated_time": "2024-01-22T10:18:19.925Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "create:systemMenu",
+      "rank": 21,
+      "path": "api/system/menu$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "e89fb42e-db1e-4a73-8bf9-711c797967da",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6ceed95d-f143-4c4d-8a22-71310e0d5f75",
+    "fields": {
+      "created_time": "2024-01-22T09:32:12.480Z",
+      "updated_time": "2024-01-22T09:32:12.480Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "delete:systemMenu",
+      "rank": 22,
+      "path": "api/system/menu/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "903fe28a-9e1d-45ec-8041-54aa6b902d3c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "891b8e29-f612-4c01-9a5d-f989f0225cd7",
+    "fields": {
+      "created_time": "2024-01-22T09:32:12.270Z",
+      "updated_time": "2024-01-22T10:18:27.909Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "update:systemMenu",
+      "rank": 23,
+      "path": "api/system/menu/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "5532c083-062b-440b-9090-1c709246a287",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:12.061Z",
+      "updated_time": "2024-01-22T10:17:53.485Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "list:systemMenu",
+      "rank": 19,
+      "path": "api/system/menu$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "476d5cfc-4ca7-4b79-a24e-e53764c83868",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6b2eb293-0461-45ef-ad87-00462e92b515",
+    "fields": {
+      "created_time": "2024-01-22T09:32:11.852Z",
+      "updated_time": "2024-01-22T09:32:11.852Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "manyDelete:systemMenu",
+      "rank": 24,
+      "path": "api/system/menu/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "25958fbe-8a8f-43be-a7be-d3348379fe05",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0fe217d1-190f-4565-8258-ed8ef2913cc1",
+    "fields": {
+      "created_time": "2024-01-22T09:32:11.642Z",
+      "updated_time": "2024-01-22T09:32:11.642Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "rank:systemMenu",
+      "rank": 25,
+      "path": "api/system/menu/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "54269c6d-601c-4574-9500-8a69e0bef8f4",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+    "fields": {
+      "created_time": "2024-01-22T09:32:11.433Z",
+      "updated_time": "2024-01-22T09:32:11.433Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "About",
-      "rank": 94,
-      "path": "/about/index",
-      "component": "about/index",
-      "is_active": true,
-      "meta": 1,
+      "name": "Chat",
+      "rank": 93,
+      "path": "/chat/index",
+      "component": "chat/index",
+      "is_active": false,
+      "meta": "d95d4ae2-749c-4bc1-8c19-f5a1d04642f5",
       "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2bc5d8ee-add8-4c95-a845-2bcd4fd86122",
+    "fields": {
+      "created_time": "2024-01-22T09:32:11.223Z",
+      "updated_time": "2024-01-22T09:32:11.223Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "upload:systemAvatar",
+      "rank": 5,
+      "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "ebd2d441-c438-4ec2-916d-1aa247a2f8c6",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "33662086-715b-4478-b60d-a346c8c4f66b",
+    "fields": {
+      "created_time": "2024-01-22T09:32:11.012Z",
+      "updated_time": "2024-01-22T09:32:11.012Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "74defdba-9645-439a-bf36-c0545bb9cda1",
+      "menu_type": 1,
+      "name": "SystemOperationLog",
+      "rank": 60,
+      "path": "/system/logs/operation/index",
+      "component": "system/logs/operation/index",
+      "is_active": true,
+      "meta": "2d69434f-b44f-4bf2-b383-0674fa295134",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4a4ee30a-523b-4a1e-a9c1-6097a26f1979",
+    "fields": {
+      "created_time": "2024-01-22T09:32:10.798Z",
+      "updated_time": "2024-01-22T09:32:10.798Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
+      "menu_type": 2,
+      "name": "delete:systemOperationLog",
+      "rank": 62,
+      "path": "api/system/logs/operation/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "66cc6396-6fb7-4356-85e5-43e24940a25f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
+    "fields": {
+      "created_time": "2024-01-22T09:32:10.589Z",
+      "updated_time": "2024-01-22T10:22:02.403Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
+      "menu_type": 2,
+      "name": "list:systemOperationLog",
+      "rank": 61,
+      "path": "api/system/logs/operation$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "a8e990a8-8a78-411e-9dca-7ade4e688634",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "66aa0535-a958-4bc0-9667-8b49004d90a5",
+    "fields": {
+      "created_time": "2024-01-22T09:32:10.378Z",
+      "updated_time": "2024-01-22T09:32:10.378Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
+      "menu_type": 2,
+      "name": "manyDelete:systemOperationLog",
+      "rank": 63,
+      "path": "api/system/logs/operation/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "22b683f4-6fae-4a4f-b2a0-b853f459cfaf",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b1a01bd0-e437-4397-8e26-d532a0c04293",
+    "fields": {
+      "created_time": "2024-01-22T09:32:10.169Z",
+      "updated_time": "2024-01-22T09:32:10.169Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "systemFlower",
+      "rank": 82,
+      "path": "/system/flower",
+      "component": "",
+      "is_active": true,
+      "meta": "5a3f1636-c7c1-4d07-bd66-c589202d3f8e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "14622100-4732-4f48-ae6f-7189a3407c89",
+    "fields": {
+      "created_time": "2024-01-22T09:32:09.958Z",
+      "updated_time": "2024-01-22T09:32:09.958Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b1a01bd0-e437-4397-8e26-d532a0c04293",
+      "menu_type": 2,
+      "name": "list:systemFlower",
+      "rank": 83,
+      "path": "api/flower/(?P<path>.*)",
+      "component": "GET",
+      "is_active": true,
+      "meta": "2dd7b851-5b34-4241-881d-814a60521407",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "de81c3f5-9e75-447c-ba0d-5d4a638859d4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:09.749Z",
+      "updated_time": "2024-01-22T09:32:09.749Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b1a01bd0-e437-4397-8e26-d532a0c04293",
+      "menu_type": 2,
+      "name": "update:systemFlower",
+      "rank": 84,
+      "path": "api/flower/(?P<path>.*)",
+      "component": "POST",
+      "is_active": true,
+      "meta": "dd5f1eb7-cd6a-4315-ab6d-dcb4241a9cdb",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "bed0a74c-f35e-4d66-bd6d-650c705f5af1",
+    "fields": {
+      "created_time": "2024-01-22T09:32:09.538Z",
+      "updated_time": "2024-01-22T09:32:09.538Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "empower:systemUserRole",
+      "rank": 9,
+      "path": "api/system/user/(?P<pk>[^/.]+)/empower$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "8793961d-35f1-427d-85a5-d576a47ec7d8",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0e5b8019-f4df-4dd4-a635-8ee198c196a3",
+    "fields": {
+      "created_time": "2024-01-22T09:32:09.329Z",
+      "updated_time": "2024-01-22T09:32:09.329Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "update:systemUserPwd",
+      "rank": 10,
+      "path": "api/system/user/(?P<pk>[^/.]+)/reset_password$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "6da80515-8092-4836-853d-768b66c8ba75",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
+    "fields": {
+      "created_time": "2024-01-22T09:32:09.119Z",
+      "updated_time": "2024-01-22T09:32:09.119Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "systemNoticeDir",
+      "rank": 68,
+      "path": "/system/notice/",
+      "component": "system/notify/index",
+      "is_active": true,
+      "meta": "010423b5-c1c5-4a31-bdaa-980f7545e6ce",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "24244ee6-cf54-4900-94b1-717a7317af04",
+    "fields": {
+      "created_time": "2024-01-22T09:32:08.910Z",
+      "updated_time": "2024-01-22T10:22:36.195Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "list:systemNotice",
+      "rank": 70,
+      "path": "api/system/message/notice$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "555c4963-7e46-435c-b112-95c2635c625c",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2ef524c5-3a70-4950-9f11-31f3f4f8c321",
+    "fields": {
+      "created_time": "2024-01-22T09:32:08.700Z",
+      "updated_time": "2024-01-22T09:32:08.700Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "delete:systemNotice",
+      "rank": 75,
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "9357e3b2-6714-44b5-a719-9c5701de1233",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f",
+    "fields": {
+      "created_time": "2024-01-22T09:32:08.489Z",
+      "updated_time": "2024-01-22T09:32:08.490Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "manyDelete:systemNotice",
+      "rank": 74,
+      "path": "api/system/message/notice/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "62981476-34e9-4ddf-ac0a-9248f205596f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
+    "fields": {
+      "created_time": "2024-01-22T09:32:08.275Z",
+      "updated_time": "2024-01-22T10:22:53.038Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "create:systemNotice",
+      "rank": 72,
+      "path": "api/system/message/notice$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "c02abdfc-1dd5-4e83-9db7-2b6e08dda7f7",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c2e45d75-1270-474b-bf0c-03475ecb8b60",
+    "fields": {
+      "created_time": "2024-01-22T09:32:08.066Z",
+      "updated_time": "2024-01-22T10:22:47.279Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "update:systemNotice",
+      "rank": 71,
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "ad7d1868-0846-4fa8-b81b-2d116e807284",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+    "fields": {
+      "created_time": "2024-01-22T09:32:07.856Z",
+      "updated_time": "2024-01-22T09:32:07.856Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
+      "menu_type": 1,
+      "name": "SystemNotice",
+      "rank": 69,
+      "path": "/system/notice/index",
+      "component": "system/notice/index",
+      "is_active": true,
+      "meta": "ebb88c83-3762-478e-ae30-04eb9d455e72",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8f3eef4e-c88b-415a-a467-b0ebf7144b73",
+    "fields": {
+      "created_time": "2024-01-22T09:32:07.646Z",
+      "updated_time": "2024-01-22T09:32:07.646Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "update:systemNoticePublish",
+      "rank": 76,
+      "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "096c6aa9-299d-4f14-9158-2ea4661fed51",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b8664880-b2dd-48d9-ad88-c79258156084",
+    "fields": {
+      "created_time": "2024-01-22T09:32:07.436Z",
+      "updated_time": "2024-01-22T09:32:07.436Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
+      "menu_type": 1,
+      "name": "SystemNoticeRead",
+      "rank": 77,
+      "path": "/system/notice/read/list",
+      "component": "system/notice/read/list",
+      "is_active": true,
+      "meta": "0b3782d6-2f34-4473-8755-144a5fa8bdff",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
+    "fields": {
+      "created_time": "2024-01-22T09:32:07.225Z",
+      "updated_time": "2024-01-22T10:23:36.325Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
+      "menu_type": 2,
+      "name": "list:systemNoticeRead",
+      "rank": 78,
+      "path": "api/system/message/read$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "9a2c5255-72a9-4608-b15b-696148d4de5a",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "1ad2fb4d-b834-4099-bdc0-152028da06c9",
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b6a0ed04-ac8d-4e24-ad61-3d11e4e72260",
+    "fields": {
+      "created_time": "2024-01-22T09:32:07.013Z",
+      "updated_time": "2024-01-22T09:32:07.013Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
+      "menu_type": 2,
+      "name": "delete:systemNoticeRead",
+      "rank": 79,
+      "path": "api/system/message/read/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "6f88698a-734d-4dfc-b11e-6bf47f1cf4ff",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5efb38e7-830b-41ac-8130-f2a7e2061ce9",
+    "fields": {
+      "created_time": "2024-01-22T09:32:06.803Z",
+      "updated_time": "2024-01-22T09:32:06.803Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
+      "menu_type": 2,
+      "name": "manyDelete:systemNoticeRead",
+      "rank": 80,
+      "path": "api/system/message/read/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "9c5caa19-dd95-4ab7-8141-137c69b0e43c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+    "fields": {
+      "created_time": "2024-01-22T09:32:06.591Z",
+      "updated_time": "2024-01-22T09:32:06.591Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "menu_type": 1,
+      "name": "UserInfo",
+      "rank": 85,
+      "path": "/user/info/index",
+      "component": "user/info/index",
+      "is_active": true,
+      "meta": "3fa471d6-8523-4ab4-afd6-673bf020c0d6",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c9843844-f855-42a7-90ad-18b94862a3da",
+    "fields": {
+      "created_time": "2024-01-22T09:32:06.381Z",
+      "updated_time": "2024-01-22T09:32:06.381Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+      "menu_type": 2,
+      "name": "update:UserInfo",
+      "rank": 86,
+      "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "adf68ee6-c0b7-44b8-b753-a1ecedc25a3d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "05920c01-b31e-42a1-9dfd-d1e0b176e55f",
+    "fields": {
+      "created_time": "2024-01-22T09:32:06.170Z",
+      "updated_time": "2024-01-22T09:32:06.170Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+      "menu_type": 2,
+      "name": "upload:UserInfoAvatar",
+      "rank": 87,
+      "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "8474c28c-0509-4ed1-a96d-9f74a11f0b95",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "af3ad441-2f48-4d74-b99a-370eb047f669",
+    "fields": {
+      "created_time": "2024-01-22T09:32:05.961Z",
+      "updated_time": "2024-01-22T09:32:05.961Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+      "menu_type": 2,
+      "name": "update:UserInfoPassword",
+      "rank": 88,
+      "path": "api/system/userinfo/reset_password$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "3c2cb988-773a-409b-b374-77677476cdb8",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "602e20d6-9893-44ae-876a-443cbfa90703",
+    "fields": {
+      "created_time": "2024-01-22T09:32:05.751Z",
+      "updated_time": "2024-01-22T09:32:05.751Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
+      "menu_type": 2,
+      "name": "update:systemNoticeReadState",
+      "rank": 81,
+      "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "aef28ddd-f962-47e4-9970-6a55f21e5b7b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
+    "fields": {
+      "created_time": "2024-01-22T09:32:05.540Z",
+      "updated_time": "2024-01-22T09:32:05.540Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "menu_type": 1,
+      "name": "UserNotice",
+      "rank": 89,
+      "path": "/user/notice/index",
+      "component": "user/notice/index",
+      "is_active": true,
+      "meta": "76dc656f-61bf-4039-a93b-7763e5ba812b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
+    "fields": {
+      "created_time": "2024-01-22T09:32:05.331Z",
+      "updated_time": "2024-01-22T10:24:20.418Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
+      "menu_type": 2,
+      "name": "list:userNotice",
+      "rank": 90,
+      "path": "api/system/notice$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "fea8d5b7-c9ae-497f-af19-ef06bafd583e",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6fbc9578-58a1-4d28-8339-6a3742b30461",
+    "fields": {
+      "created_time": "2024-01-22T09:32:05.121Z",
+      "updated_time": "2024-01-22T09:32:05.121Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
+      "menu_type": 2,
+      "name": "update:userNoticeRead",
+      "rank": 91,
+      "path": "api/system/notice/read$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "c715a80d-4a9f-4d48-b801-f217591d5483",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4e4eb5b1-3b37-4090-ae19-f470e172c6fd",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.910Z",
+      "updated_time": "2024-01-22T09:32:04.910Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
+      "menu_type": 2,
+      "name": "update:userNoticeReadAll",
+      "rank": 92,
+      "path": "api/system/notice/read_all$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "20d5ae2d-ebda-4da0-bcf8-95ac59491951",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.697Z",
+      "updated_time": "2024-01-22T09:32:04.697Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemDept",
+      "rank": 11,
+      "path": "/system/dept/index",
+      "component": "system/dept/index",
+      "is_active": true,
+      "meta": "7fe14904-73fa-4914-9ab1-c3311311ab8b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.487Z",
+      "updated_time": "2024-01-22T10:17:19.918Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "list:systemDept",
+      "rank": 12,
+      "path": "api/system/dept$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "5f11083e-7d25-4857-ba39-1484cdb549af",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7",
+        "16a823b0-c4fb-40cd-af63-9aed309823aa",
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2cd3ca25-e606-4e46-983e-7aef573ef713",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.277Z",
+      "updated_time": "2024-01-22T10:17:30.465Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "create:systemDept",
+      "rank": 13,
+      "path": "api/system/dept$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "7d066265-94d6-4965-ab57-363b43f71a50",
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2fc6ed05-aaa5-4098-983b-f4c2a1e9108a",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.069Z",
+      "updated_time": "2024-01-22T09:32:04.069Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "delete:systemDept",
+      "rank": 14,
+      "path": "api/system/dept/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "bcde3468-f9e0-4526-b092-d5c0d9aa4e6f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "13a2e23f-6cfb-4992-948b-3477b96591d4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.860Z",
+      "updated_time": "2024-01-22T10:17:36.121Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "update:systemDept",
+      "rank": 15,
+      "path": "api/system/dept/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "13deb802-8227-4dce-badb-9d1f15856914",
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5c53c6d2-ccdd-410f-8ef2-d20653fb31b5",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.651Z",
+      "updated_time": "2024-01-22T09:32:03.651Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "manyDelete:systemDept",
+      "rank": 16,
+      "path": "api/system/dept/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "90f07296-98af-411e-ac04-9681d416ccc3",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "432d5df8-a0b8-4042-83b9-580027b1e236",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.442Z",
+      "updated_time": "2024-01-22T09:32:03.442Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "empower:systemDeptRole",
+      "rank": 17,
+      "path": "api/system/dept/(?P<pk>[^/.]+)/empower$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "9a787898-7db7-48cf-987e-d08af7df2c73",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0678cc57-f292-4287-887b-ffade834dde1",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.232Z",
+      "updated_time": "2024-01-22T09:32:03.232Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
+      "menu_type": 1,
+      "name": "SystemDataPermission",
+      "rank": 49,
+      "path": "/system/permission/index",
+      "component": "system/permission/index",
+      "is_active": true,
+      "meta": "7a4cf50f-0c9f-4b46-bf6f-a7c9f8c052ea",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "60a0d029-75ae-4314-b5c7-bbd8d642847d",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.022Z",
+      "updated_time": "2024-01-22T10:21:07.208Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+      "menu_type": 2,
+      "name": "list:systemDataPermission",
+      "rank": 50,
+      "path": "api/system/permission$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "eaeab52f-c12b-423d-96ac-5ac858bcfe73",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859",
+    "fields": {
+      "created_time": "2024-01-22T09:32:02.813Z",
+      "updated_time": "2024-01-22T10:21:13.433Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+      "menu_type": 2,
+      "name": "create:systemDataPermission",
+      "rank": 51,
+      "path": "api/system/permission$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "e7a1b123-6d3e-47f8-80f2-530fdd1f5453",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "44b8aaf4-dd2f-4da5-b329-c3bc367d5789",
+    "fields": {
+      "created_time": "2024-01-22T09:32:02.602Z",
+      "updated_time": "2024-01-22T09:32:02.602Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+      "menu_type": 2,
+      "name": "delete:systemDataPermission",
+      "rank": 52,
+      "path": "api/system/permission/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "bacdcd28-4e73-41a3-ace6-a98226c5124c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb",
+    "fields": {
+      "created_time": "2024-01-22T09:32:02.391Z",
+      "updated_time": "2024-01-22T10:21:18.198Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+      "menu_type": 2,
+      "name": "update:systemDataPermission",
+      "rank": 53,
+      "path": "api/system/permission/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "f29a9c84-b453-4a23-819c-31bb822f4587",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a85ac0ec-8cda-4ac1-b38f-492388648253",
+    "fields": {
+      "created_time": "2024-01-22T09:32:02.182Z",
+      "updated_time": "2024-01-22T09:32:02.182Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+      "menu_type": 2,
+      "name": "manyDelete:systemDataPermission",
+      "rank": 54,
+      "path": "api/system/permission/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "face1737-fa76-4e6e-964b-8c76fd31f17d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5c71e14d-1a3d-4dc3-9cc5-1a1f4eb1c44a",
+    "fields": {
+      "created_time": "2024-01-22T09:32:01.972Z",
+      "updated_time": "2024-01-22T10:23:02.043Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
+      "menu_type": 2,
+      "name": "create:systemAnnouncement",
+      "rank": 73,
+      "path": "api/system/message/notice/announcement$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "99511cb8-8bda-4bed-a709-86db08f62dde",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "74defdba-9645-439a-bf36-c0545bb9cda1",
+    "fields": {
+      "created_time": "2024-01-22T09:32:01.747Z",
+      "updated_time": "2024-01-22T09:32:01.747Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "logs",
+      "rank": 59,
+      "path": "/system/logs",
+      "component": "",
+      "is_active": true,
+      "meta": "fa4e8021-d69a-4d1c-bfeb-8b5f24dd7407",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+    "fields": {
+      "created_time": "2024-01-22T09:32:01.526Z",
+      "updated_time": "2024-01-22T09:32:01.526Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "74defdba-9645-439a-bf36-c0545bb9cda1",
+      "menu_type": 1,
+      "name": "SystemUserLoginLog",
+      "rank": 64,
+      "path": "/system/logs/login/index",
+      "component": "system/logs/login/index",
+      "is_active": true,
+      "meta": "f06236b5-e3fb-48fa-bfe3-4f0e87eaab47",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "47dc29c2-202b-4837-be9c-db4607924416",
+    "fields": {
+      "created_time": "2024-01-22T09:32:01.317Z",
+      "updated_time": "2024-01-22T10:22:18.654Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+      "menu_type": 2,
+      "name": "list:systemLoginLog",
+      "rank": 65,
+      "path": "api/system/logs/login$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "1518b086-e261-4d27-b72f-9b3fc867860a",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "585d2a2a-1c9b-42de-9b69-113e150da4a2"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c20ef280-7894-493c-b14a-1646fc5ce73b",
+    "fields": {
+      "created_time": "2024-01-22T09:32:01.107Z",
+      "updated_time": "2024-01-22T09:32:01.107Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+      "menu_type": 2,
+      "name": "delete:systemLoginLog",
+      "rank": 66,
+      "path": "api/system/logs/login/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "b8a953ca-1c74-492b-ab28-6e4c2304ad26",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3946ac20-1dd1-4fce-aa6f-3372694024ac",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.898Z",
+      "updated_time": "2024-01-22T09:32:00.898Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+      "menu_type": 2,
+      "name": "manyDelete:systemLoginLog",
+      "rank": 67,
+      "path": "api/system/logs/login/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "cdcf0871-bca0-491c-a364-32ea3aa02613",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "96772790-53e4-4113-b1d1-10998fe2f616",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.688Z",
+      "updated_time": "2024-01-22T09:32:00.688Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "permissions",
+      "rank": 41,
+      "path": "/system/permissions",
+      "component": "",
+      "is_active": true,
+      "meta": "5ec1915f-bfd3-43d0-9908-5dc217c01330",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.478Z",
+      "updated_time": "2024-01-22T09:32:00.478Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "config",
+      "rank": 26,
+      "path": "/system/configs",
+      "component": "",
+      "is_active": true,
+      "meta": "9f9d09c6-2974-480f-aae2-7cfb495d25f8",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.269Z",
+      "updated_time": "2024-01-22T09:32:00.269Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+      "menu_type": 1,
+      "name": "SystemConfig",
+      "rank": 27,
+      "path": "/system/config/system/index",
+      "component": "system/config/system/index",
+      "is_active": true,
+      "meta": "5b58e480-5fe6-4d24-b10f-b58c8f0a56f4",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "09523de8-58de-4aa3-8732-a30da14443d4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.055Z",
+      "updated_time": "2024-01-22T09:32:00.055Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+      "menu_type": 1,
+      "name": "SystemUserConfig",
+      "rank": 34,
+      "path": "/system/config/user/index",
+      "component": "system/config/user/index",
+      "is_active": true,
+      "meta": "32ddcdd0-a076-4b4e-a3d4-bd99138a6a6a",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e374f3ef-7326-475a-8b0a-5e082e695144",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.845Z",
+      "updated_time": "2024-01-22T10:18:48.844Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "list:systemSystemConfig",
+      "rank": 28,
+      "path": "api/system/config/system$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "00fd4ca8-93e8-4816-bec9-a458850446f6",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f242d7f1-0956-4def-ad07-3f825f9aa215",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.634Z",
+      "updated_time": "2024-01-22T10:18:55.167Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "create:systemSystemConfig",
+      "rank": 29,
+      "path": "api/system/config/system$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "9c13c2f8-c45b-4f28-a1f4-de1083662f79",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "dd51290c-33c3-4f1a-b20b-efac77789054",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.423Z",
+      "updated_time": "2024-01-22T09:31:59.423Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "delete:systemSystemConfig",
+      "rank": 30,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "9a2cdc2e-4acd-4e0d-ad36-70a502534291",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0bdc3ab5-112d-406e-a7c8-dba377ebf3b0",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.214Z",
+      "updated_time": "2024-01-22T10:19:00.979Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "update:systemSystemConfig",
+      "rank": 31,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "ec92010b-30e0-4efd-99f1-9fc8f3a5c327",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "242c7eaa-906d-4e20-96b7-863bcea09616",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.005Z",
+      "updated_time": "2024-01-22T09:31:59.005Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "manyDelete:systemSystemConfig",
+      "rank": 32,
+      "path": "api/system/config/system/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "d9f05097-0198-4945-8315-716ac0ee3d55",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f14ccc13-1caa-4641-a3d1-aba14f1fa329",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.795Z",
+      "updated_time": "2024-01-22T09:31:58.795Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "invalid:systemSystemConfig",
+      "rank": 33,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "a2eb6111-5912-4daa-ba28-0df1a509ab71",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.584Z",
+      "updated_time": "2024-01-22T09:31:58.584Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
+      "menu_type": 1,
+      "name": "SystemModelLabelField",
+      "rank": 55,
+      "path": "/system/field/index",
+      "component": "system/field/index",
+      "is_active": true,
+      "meta": "aee40d3b-d02a-48c5-a9a5-7e646724c57d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f25f86f8-c676-43b7-b650-b2410f5b1447",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.373Z",
+      "updated_time": "2024-01-22T10:21:37.188Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "list:systemModelField",
+      "rank": 56,
+      "path": "api/system/field$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "57db5937-080f-493f-b6e8-242db2cda57c",
+      "model": [
+        "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "00d7809c-0a74-4e80-9730-239b882f9cfa",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.164Z",
+      "updated_time": "2024-01-22T10:21:42.975Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "list:systemModelFieldLookups",
+      "rank": 57,
+      "path": "api/system/field/lookups$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "ba2ae663-7352-45eb-91e5-41bd60a85467",
+      "model": [
+        "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c876c6be-1e45-4b05-bd51-68071a2878d9",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.955Z",
+      "updated_time": "2024-01-22T10:19:34.449Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "list:systemUserConfig",
+      "rank": 35,
+      "path": "api/system/config/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "967a66cb-74a3-4e64-9609-5e0a32b83101",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "168ac361-7d7d-45ac-9b4c-7f431059f991",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.746Z",
+      "updated_time": "2024-01-22T10:19:45.545Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "create:systemUserConfig",
+      "rank": 36,
+      "path": "api/system/config/user$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "3a702dc5-41da-4307-8f35-d8c11363146f",
+      "model": [
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "63b5cf81-6241-4826-9c97-b9619497cd80",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.533Z",
+      "updated_time": "2024-01-22T09:31:57.533Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "delete:systemUserConfig",
+      "rank": 37,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "e47927ae-bace-4bfb-9cf1-1bb5bdf2bc1e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d5c467d6-d72c-4d42-b66b-d354ea249691",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.323Z",
+      "updated_time": "2024-01-22T10:20:02.819Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "update:systemUserConfig",
+      "rank": 38,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "82d413ba-d270-4898-8156-2d82cd22e105",
+      "model": [
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4f0b83ff-49f8-4921-b8de-4a71579cfa63",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.113Z",
+      "updated_time": "2024-01-22T09:31:57.113Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "manyDelete:systemUserConfig",
+      "rank": 39,
+      "path": "api/system/config/user/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "3bb1be01-be2e-41be-bafd-436a07093928",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f7bee55a-bd44-4829-9747-139799d840e7",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.904Z",
+      "updated_time": "2024-01-22T09:31:56.904Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "invalid:systemUserConfig",
+      "rank": 40,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "99f09a50-4d72-4ec2-9b08-43ef47224c18",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "472f4d8e-290b-4190-b05d-3634dac30608",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.695Z",
+      "updated_time": "2024-01-22T09:31:56.695Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "sync:systemModelField",
+      "rank": 58,
+      "path": "api/system/field/sync$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "68c37f98-233c-487d-9877-5cf20bfca5f2",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.485Z",
+      "updated_time": "2024-01-22T10:20:31.959Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "detail:systemRole",
+      "rank": 44,
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "908ac2b0-7a4c-46b6-b3f8-ef15b0c0583f",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b6cff395-8aa4-4337-9c1b-e5ad94a9f5bd",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.275Z",
+      "updated_time": "2024-01-22T10:18:11.612Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "list:systemMenuPermission",
+      "rank": 20,
+      "path": "api/system/menu/permissions$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "5cc85860-41bd-40f5-bb09-db1aaae0887a",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a"
+      ]
     }
   }
 ]

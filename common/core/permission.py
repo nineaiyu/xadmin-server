@@ -13,7 +13,6 @@ from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
 from common.core.config import SysConfig
-from common.core.filter import get_filter_queryset
 from system.models import Menu, FieldPermission
 
 
@@ -45,7 +44,8 @@ def get_user_field_queryset(user_obj, menu):
         q |= (Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True))
         has_q = True
     if has_q:
-        queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
+        # queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
+        queryset = FieldPermission.objects.filter(q).filter(menu=menu)  # 用户查询用户权限，无需使用权限过滤
         for val in queryset.values_list('field__parent__name', 'field__name').distinct():
             info = data.get(val[0], set())
             if info:

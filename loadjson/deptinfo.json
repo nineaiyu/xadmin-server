@@ -1,84 +1,65 @@
 [
   {
     "model": "system.deptinfo",
-    "pk": 4,
+    "pk": "93b4c4df-f65b-4347-9d20-4785b09a9ca3",
     "fields": {
-      "created_time": "2023-12-28T06:57:51.754Z",
-      "updated_time": "2023-12-28T06:57:51.754Z",
-      "description": null,
+      "created_time": "2024-01-23T07:23:51.484Z",
+      "updated_time": "2024-01-23T07:23:51.484Z",
+      "description": "",
       "creator": 1,
       "modifier": 1,
-      "dept_belong": 1,
+      "dept_belong": null,
       "mode_type": 0,
       "name": "演示部门",
       "code": "demo",
-      "parent": 1,
-      "rank": 99,
+      "parent": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "rank": 3,
       "auto_bind": false,
       "is_active": true,
       "roles": [
-        4
+        "9be1b2f6-405c-4978-8bca-093f566b8d3c"
       ],
       "rules": [
-        6,
-        8
+        "33d4fd9d-89e0-4d49-9993-0c35fe15cb4b",
+        "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+        "899d2d18-1085-4904-bf59-c87994033ac5",
+        "db58769c-040f-41f2-874e-9be9fbd93790"
       ]
     }
   },
   {
     "model": "system.deptinfo",
-    "pk": 3,
+    "pk": "979446a6-f03d-433b-91cc-c9b3903d0b9b",
     "fields": {
-      "created_time": "2023-12-24T06:14:46.829Z",
-      "updated_time": "2023-12-29T07:08:57.346Z",
-      "description": null,
+      "created_time": "2024-01-23T03:31:42.774Z",
+      "updated_time": "2024-01-23T03:31:42.774Z",
+      "description": "",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "mode_type": 0,
       "name": "默认部门",
       "code": "default",
-      "parent": 1,
-      "rank": 3,
+      "parent": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "rank": 2,
       "auto_bind": true,
       "is_active": true,
       "roles": [
-        2
+        "852a242e-e976-4475-8a25-7116087f4c78"
       ],
       "rules": [
-        3,
-        5
+        "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+        "fc8f9238-32b6-415c-bb12-c39bc9883ea0"
       ]
     }
   },
   {
     "model": "system.deptinfo",
-    "pk": 2,
+    "pk": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
     "fields": {
-      "created_time": "2023-12-24T06:14:02.544Z",
-      "updated_time": "2023-12-24T06:22:10.476Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "mode_type": 0,
-      "name": "测试部门",
-      "code": "test",
-      "parent": 1,
-      "rank": 2,
-      "auto_bind": false,
-      "is_active": true,
-      "roles": [],
-      "rules": []
-    }
-  },
-  {
-    "model": "system.deptinfo",
-    "pk": 1,
-    "fields": {
-      "created_time": "2023-12-24T06:09:00.563Z",
-      "updated_time": "2023-12-24T06:09:00.563Z",
-      "description": null,
+      "created_time": "2024-01-23T03:30:24.152Z",
+      "updated_time": "2024-01-23T03:30:24.152Z",
+      "description": "",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -90,10 +71,10 @@
       "auto_bind": false,
       "is_active": true,
       "roles": [
-        1
+        "069ea080-66b5-4ce3-9047-e3044ee98f30"
       ],
       "rules": [
-        1
+        "9d737343-0034-4a08-985e-af41bf184699"
       ]
     }
   }

@@ -12,6 +12,13 @@ from django.conf import settings
 from django.db import models
 
 
+class DbUuidModel(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, )
+
+    class Meta:
+        abstract = True
+
+
 class DbBaseModel(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="添加时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
@@ -26,7 +33,7 @@ class DbAuditModel(DbBaseModel):
                                 verbose_name='创建人', on_delete=models.SET_NULL, related_name='+')
     modifier = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='modifier_query', null=True,
                                  blank=True, verbose_name='修改人', on_delete=models.SET_NULL, related_name='+')
-    dept_belong = models.ForeignKey(to="DeptInfo", related_query_name='dept_belong_query', null=True, blank=True,
+    dept_belong = models.ForeignKey(to="system.DeptInfo", related_query_name='dept_belong_query', null=True, blank=True,
                                     verbose_name='数据归属部门', on_delete=models.SET_NULL, related_name='+')
 
     class Meta:

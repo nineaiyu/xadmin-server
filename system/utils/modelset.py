@@ -29,7 +29,9 @@ class ChangeRolePermissionAction(object):
                 instance.mode_type = mode_type
                 instance.modifier = request.user
                 instance.save(update_fields=['mode_type', 'modifier'])
-                instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
+                # instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
+                # 数据权限是部门进行并查询过滤，可以直接进行查询
+                instance.rules.set(DataPermission.objects.filter(pk__in=rules).all())
             return ApiResponse(detail="操作成功")
         return ApiResponse(code=1004, detail="数据异常")
 

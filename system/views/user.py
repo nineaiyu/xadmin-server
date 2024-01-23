@@ -27,11 +27,10 @@ class UserFilter(filters.FilterSet):
     nickname = filters.CharFilter(field_name='nickname', lookup_expr='icontains')
     mobile = filters.CharFilter(field_name='mobile', lookup_expr='icontains')
     pk = filters.NumberFilter(field_name='id')
-    dept = filters.NumberFilter(field_name='dept')
 
     class Meta:
         model = UserInfo
-        fields = ['email', 'is_active', 'gender', 'pk', 'mode_type']
+        fields = ['email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
 class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):

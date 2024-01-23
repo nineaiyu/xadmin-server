@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class DeptFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
-    pk = filters.NumberFilter(field_name='id')
+    pk = filters.CharFilter(field_name='id')
 
     class Meta:
         model = DeptInfo

@@ -6,11 +6,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
-from common.core.models import upload_directory_path, DbAuditModel
+from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel
 from common.fields.image import ProcessedImageField
 
 
-class ModelLabelField(DbAuditModel):
+class ModelLabelField(DbAuditModel, DbUuidModel):
     class KeyChoices(models.TextChoices):
         TEXT = 'value.text', _('文本格式')
         JSON = 'value.json', _('json格式')
@@ -91,7 +91,7 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
         return f"{self.username}"
 
 
-class MenuMeta(DbAuditModel):
+class MenuMeta(DbAuditModel, DbUuidModel):
     title = models.CharField(verbose_name="菜单名称", max_length=256, null=True, blank=True)
     icon = models.CharField(verbose_name="菜单图标", max_length=256, null=True, blank=True)
     r_svg_name = models.CharField(verbose_name="菜单右侧额外图标", max_length=256, null=True, blank=True,
@@ -118,7 +118,7 @@ class MenuMeta(DbAuditModel):
         return f"{self.title}-{self.description}"
 
 
-class Menu(DbAuditModel):
+class Menu(DbAuditModel, DbUuidModel):
     class MenuChoices(models.IntegerChoices):
         DIRECTORY = 0, _("目录")
         MENU = 1, _("菜单")
@@ -160,7 +160,7 @@ class Menu(DbAuditModel):
         return f"{self.name}-{self.menu_type}-{self.meta.title}"
 
 
-class DataPermission(DbAuditModel, ModeTypeAbstract):
+class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="数据权限名称", max_length=256, unique=True)
     rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
@@ -174,7 +174,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract):
         return f"{self.name}-{self.is_active}"
 
 
-class UserRole(DbAuditModel):
+class UserRole(DbAuditModel, DbUuidModel):
     name = models.CharField(max_length=128, verbose_name="角色名称", unique=True)
     code = models.CharField(max_length=128, verbose_name="角色标识", unique=True)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
@@ -189,7 +189,7 @@ class UserRole(DbAuditModel):
         return f"{self.name}-{self.created_time}"
 
 
-class FieldPermission(DbAuditModel):
+class FieldPermission(DbAuditModel, DbUuidModel):
     role = models.ForeignKey(UserRole, on_delete=models.CASCADE, verbose_name="角色")
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE, verbose_name="菜单")
     field = models.ManyToManyField(ModelLabelField, verbose_name="字段", null=True, blank=True)
@@ -204,7 +204,7 @@ class FieldPermission(DbAuditModel):
         return f"{self.pk}-{self.role.name}-{self.created_time}"
 
 
-class DeptInfo(DbAuditModel, ModeTypeAbstract):
+class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="部门名称", max_length=128)
     code = models.CharField(max_length=128, verbose_name="部门标识", unique=True)
     parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
@@ -236,6 +236,24 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract):
         verbose_name = "部门信息"
         verbose_name_plural = "部门信息"
         ordering = ("-rank", "-created_time",)
+
+
+class UserLoginLog(DbAuditModel):
+    class LoginTypeChoices(models.IntegerChoices):
+        USERNAME = 0, _("用户密码登录")
+        SMS = 1, _("短信验证登录")
+        WECHAT = 2, _("微信扫码登录")
+
+    ipaddress = models.GenericIPAddressField(verbose_name="登录ip地址", null=True, blank=True)
+    browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
+    system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
+    agent = models.CharField(max_length=128, verbose_name="agent信息", null=True, blank=True)
+    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices.choices,
+                                          verbose_name="登录类型")
+
+    class Meta:
+        verbose_name = "登录日志"
+        verbose_name_plural = "登录日志"
 
 
 class OperationLog(DbAuditModel):
@@ -358,7 +376,7 @@ class BaseConfig(DbAuditModel):
         abstract = True
 
 
-class SystemConfig(BaseConfig):
+class SystemConfig(BaseConfig, DbUuidModel):
     key = models.CharField(max_length=256, unique=True, verbose_name="配置名称")
 
     class Meta:
@@ -381,20 +399,3 @@ class UserPersonalConfig(BaseConfig):
     def __str__(self):
         return "%s-%s" % (self.key, self.description)
 
-
-class UserLoginLog(DbAuditModel):
-    class LoginTypeChoices(models.IntegerChoices):
-        USERNAME = 0, _("用户密码登录")
-        SMS = 1, _("短信验证登录")
-        WECHAT = 2, _("微信扫码登录")
-
-    ipaddress = models.GenericIPAddressField(verbose_name="登录ip地址", null=True, blank=True)
-    browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
-    system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
-    agent = models.CharField(max_length=128, verbose_name="agent信息", null=True, blank=True)
-    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices.choices,
-                                          verbose_name="登录类型")
-
-    class Meta:
-        verbose_name = "登录日志"
-        verbose_name_plural = "登录日志"

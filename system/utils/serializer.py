@@ -41,46 +41,36 @@ class RoleSerializer(BaseModelSerializer):
         read_only_fields = ['pk']
 
     field = serializers.SerializerMethodField(read_only=True)
-    fields = serializers.ListField(write_only=True)
+    fields = serializers.DictField(write_only=True)
 
     def get_field(self, obj):
         results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
                                             request=self.request, init=True).data
-        data = []
+        data = {}
         for res in results:
-            data.extend([f"{res.get('menu')}-{i}" for i in res.get('field', [])])
+            data[str(res.get('menu'))] = res.get('field', [])
         return data
 
-    def save_fields(self, field, instance):
-        field_dict = {}
-        for f in field:
-            if not isinstance(f, str):
-                continue
-            d = f.split('-')
-            s = field_dict.get(d[0], [])
-            if s:
-                s.append(d[1])
-            else:
-                field_dict[d[0]] = [d[1]]
-        for k, v in field_dict.items():
+    def save_fields(self, fields, instance):
+        for k, v in fields.items():
             serializer = FieldPermissionSerializer(data={'role': instance.pk, 'menu': k, 'field': v},
                                                    request=self.request, init=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
     def update(self, instance, validated_data):
-        field = validated_data.pop('fields')
+        fields = validated_data.pop('fields')
         with transaction.atomic():
             instance = super().update(instance, validated_data)
             models.FieldPermission.objects.filter(role=instance).delete()
-            self.save_fields(field, instance)
+            self.save_fields(fields, instance)
         return instance
 
     def create(self, validated_data):
-        field = validated_data.pop('fields')
+        fields = validated_data.pop('fields')
         with transaction.atomic():
             instance = super().create(validated_data)
-            self.save_fields(field, instance)
+            self.save_fields(fields, instance)
         return instance
 
 
@@ -208,7 +198,7 @@ class MenuMetaSerializer(BaseModelSerializer):
     class Meta:
         model = models.MenuMeta
         exclude = ['creator', 'modifier']
-        read_only_fields = ['creator', 'modifier', 'pk', 'dept_belong']
+        read_only_fields = ['creator', 'modifier', 'dept_belong', 'id']
 
 
 class MenuSerializer(BaseModelSerializer):

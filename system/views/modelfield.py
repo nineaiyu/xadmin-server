@@ -26,11 +26,11 @@ class ModelLabelFieldFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     label = filters.CharFilter(field_name='label', lookup_expr='icontains')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
-    pk = filters.NumberFilter(field_name='id')
-    parent = filters.NumberFilter(field_name='parent', method='get_parent')
+    pk = filters.CharFilter(field_name='id')
+    parent = filters.CharFilter(field_name='parent', method='get_parent')
 
     def get_parent(self, queryset, name, value):
-        if value == 0:
+        if value == "0":
             return queryset.filter(parent=None)
         return queryset.filter(parent__id=value)
 

@@ -98,22 +98,15 @@ def menu_list_to_tree(data: list, root_field: str = 'parent') -> list:
     """
     将权限菜单转换为树状结构
     """
-    mapping: dict = dict(zip([i['pk'] for i in data], data))
+    mapping: dict = dict(zip([str(i['pk']) for i in data], data))
 
     # 树容器
     container: list = []
 
     for d in data:
         # 如果找不到父级项，则是根节点
-        parent: dict = mapping.get(d.get(root_field))
+        parent: dict = mapping.get(str(d.get(root_field)))
         if parent is None:
-            # route = {
-            #     'path': d.get('path'),
-            #     'title': d.get('title'),
-            #     'meta': {'title': d.get('meta', {}).get('title', '')},
-            #     'children': [d]
-            # }
-            # container.append(route)
             container.append(d)
         else:
             children: list = parent.get('children')
