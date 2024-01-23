@@ -10,6 +10,7 @@ import os.path
 from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
@@ -125,6 +126,12 @@ class DeptSerializer(BaseRoleRuleInfo):
             attrs['parent'] = self.request.user.dept
         return attrs
 
+    def update(self, instance, validated_data):
+        parent = validated_data.get('parent')
+        if parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
+            raise ValidationError('Parent not in children')
+        return super().update(instance, validated_data)
+
     def get_user_count(self, obj):
         return obj.userinfo_set.count()
 
@@ -239,6 +246,7 @@ class MenuPermissionSerializer(MenuSerializer):
 
     title = serializers.CharField(source='meta.title', read_only=True)
 
+
 class RouteSerializer(MenuSerializer):
     meta = RouteMetaSerializer(init=True)  # 用于前端菜单渲染
 
@@ -302,7 +310,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     def validate_notice_type(self, val):
         if models.NoticeMessage.NoticeChoices.NOTICE == val:
-            raise PermissionError('参数有误')
+            raise ValidationError('参数有误')
         return val
 
     def validate(self, attrs):
@@ -312,19 +320,19 @@ class NoticeMessageSerializer(BaseModelSerializer):
             attrs.pop('notice_dept', None)
             attrs.pop('notice_user', None)
             if not attrs.get('notice_role'):
-                raise Exception('消息通知缺少角色')
+                raise ValidationError('消息通知缺少角色')
 
         if notice_type == models.NoticeMessage.NoticeChoices.DEPT:
             attrs.pop('notice_user', None)
             attrs.pop('notice_role', None)
             if not attrs.get('notice_dept'):
-                raise Exception('消息通知缺少部门')
+                raise ValidationError('消息通知缺少部门')
 
         if notice_type == models.NoticeMessage.NoticeChoices.USER:
             attrs.pop('notice_role', None)
             attrs.pop('notice_dept', None)
             if not attrs.get('notice_user'):
-                raise Exception('消息通知缺少用户')
+                raise ValidationError('消息通知缺少用户')
 
         files = attrs.get('files')
         if files is not None:
@@ -362,11 +370,12 @@ class AnnouncementSerializer(NoticeMessageSerializer):
     def validate_notice_type(self, val):
         if models.NoticeMessage.NoticeChoices.NOTICE == val:
             return val
-        raise PermissionError('参数有误')
+        raise ValidationError('参数有误')
 
 
 class UserNoticeSerializer(BaseModelSerializer):
     ignore_field_permission = True
+
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", 'notice_type_display', 'unread']
