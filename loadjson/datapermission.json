@@ -202,7 +202,7 @@
     "pk": "899d2d18-1085-4904-bf59-c87994033ac5",
     "fields": {
       "created_time": "2024-01-23T07:30:17.572Z",
-      "updated_time": "2024-01-23T07:59:32.302Z",
+      "updated_time": "2024-01-23T09:15:31.702Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -241,11 +241,21 @@
           "exclude": false,
           "type": "value.all",
           "value": ""
+        },
+        {
+          "table": "system.deptinfo",
+          "field": "id",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.dept.id",
+          "value": ""
         }
       ],
       "is_active": true,
       "menu": [
         "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+        "2cd3ca25-e606-4e46-983e-7aef573ef713",
         "60a0d029-75ae-4314-b5c7-bbd8d642847d",
         "e374f3ef-7326-475a-8b0a-5e082e695144",
         "f25f86f8-c676-43b7-b650-b2410f5b1447",
