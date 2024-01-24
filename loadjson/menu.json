@@ -1,6 +1,1477 @@
 [
   {
     "model": "system.menu",
+    "pk": "7a505716-4092-41f5-b747-f662818e637e",
+    "fields": {
+      "created_time": "2024-01-23T12:49:22.988Z",
+      "updated_time": "2024-01-23T12:49:22.989Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": null,
+      "menu_type": 0,
+      "name": "movies",
+      "rank": 46,
+      "path": "/movies",
+      "component": "",
+      "is_active": true,
+      "meta": "44cd3eb9-3453-43f5-a763-fe5733e1cb3b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+    "fields": {
+      "created_time": "2024-01-23T12:49:22.783Z",
+      "updated_time": "2024-01-23T12:49:22.783Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "287543c6-ab2f-4463-996f-ff46e0f01b24",
+      "menu_type": 1,
+      "name": "MoviesDrive",
+      "rank": 48,
+      "path": "/movies/drive/index",
+      "component": "movies/drive/index",
+      "is_active": true,
+      "meta": "dabf685d-5e15-4c8a-b77f-48a8bfa3700e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d69ff77f-8675-4227-ac00-22db8337542a",
+    "fields": {
+      "created_time": "2024-01-23T12:49:22.577Z",
+      "updated_time": "2024-01-24T02:41:13.491Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "list:MoviesDrive",
+      "rank": 49,
+      "path": "api/movies/drive$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "78e6e804-2591-40b6-b9cc-ae08cae92851",
+      "model": [
+        "c214298e-6881-4521-9467-565f22e75421"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5f40451b-2c6b-4da0-be51-69f1c8e93aed",
+    "fields": {
+      "created_time": "2024-01-23T12:49:22.371Z",
+      "updated_time": "2024-01-23T12:49:22.371Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "delete:MoviesDrive",
+      "rank": 50,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "69764339-56e2-4a7b-92d7-884893aa8285",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0d8ad4b3-bf16-4ed9-99f7-e0543115807f",
+    "fields": {
+      "created_time": "2024-01-23T12:49:22.164Z",
+      "updated_time": "2024-01-24T02:41:22.926Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "update:MoviesDrive",
+      "rank": 51,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "5b1cd8a9-4b24-4fd0-87ec-42951aff1e6f",
+      "model": [
+        "c214298e-6881-4521-9467-565f22e75421"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "45d09f41-28c6-45cb-84ca-f3b778dec3ba",
+    "fields": {
+      "created_time": "2024-01-23T12:49:21.958Z",
+      "updated_time": "2024-01-23T12:49:21.958Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "get:MoviesDriveQrCode",
+      "rank": 52,
+      "path": "api/movies/qrcode-drive",
+      "component": "GET",
+      "is_active": true,
+      "meta": "7677d03f-3dd7-42d5-8ec8-4eee47f661d6",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c978f5ec-0d56-41ee-868d-62df7fda0bf2",
+    "fields": {
+      "created_time": "2024-01-23T12:49:21.752Z",
+      "updated_time": "2024-01-23T12:49:21.752Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "check:MoviesDriveQrCode",
+      "rank": 53,
+      "path": "api/movies/qrcode-drive",
+      "component": "POST",
+      "is_active": true,
+      "meta": "f9b990bb-1273-4949-863a-58788be6f7e5",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e36cafb3-1633-4670-ad7f-b762b89e3887",
+    "fields": {
+      "created_time": "2024-01-23T12:49:21.546Z",
+      "updated_time": "2024-01-23T12:49:21.546Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "clean:MoviesDrive",
+      "rank": 54,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)/clean$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "84742532-8cc2-493b-9dc6-5dbfc4bf0a2e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5e0d8373-9119-419b-9149-6d8d9448e076",
+    "fields": {
+      "created_time": "2024-01-23T12:49:21.340Z",
+      "updated_time": "2024-01-23T12:49:21.340Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesDrive",
+      "rank": 55,
+      "path": "api/movies/drive/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "39a815ff-004b-4642-9d8e-296c63fcf37d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+    "fields": {
+      "created_time": "2024-01-23T12:49:21.135Z",
+      "updated_time": "2024-01-23T12:49:21.135Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesFilm",
+      "rank": 83,
+      "path": "/movies/film/index",
+      "component": "movies/film/index",
+      "is_active": true,
+      "meta": "e6a72bab-6a9d-491d-9bfb-32fc05c1c035",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8345488d-5747-4c13-a50b-14baab5f58a8",
+    "fields": {
+      "created_time": "2024-01-23T12:49:20.928Z",
+      "updated_time": "2024-01-24T02:56:34.620Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "list:MoviesFilm",
+      "rank": 84,
+      "path": "api/movies/film$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "a4aaaa50-f451-4e40-8870-6e7c78811109",
+      "model": [
+        "9f64b0d5-d170-4b33-8fad-8ad0855570ee",
+        "b1d2a2bf-4bf2-4efb-aee1-2ddafb238bd8"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "08a913ff-17eb-4d1a-b9fa-dafcd22764a3",
+    "fields": {
+      "created_time": "2024-01-23T12:49:20.722Z",
+      "updated_time": "2024-01-23T12:49:20.722Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "delete:MoviesFilm",
+      "rank": 85,
+      "path": "api/movies/film/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "24689c7e-fbed-410b-a694-6e63aa141728",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9dba9280-7ce4-4e00-baa7-0e205528d1f7",
+    "fields": {
+      "created_time": "2024-01-23T12:49:20.516Z",
+      "updated_time": "2024-01-24T03:02:58.210Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "update:MoviesFilm",
+      "rank": 86,
+      "path": "api/movies/film/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "d58142b3-1d59-40e8-be90-1b1f42b7961b",
+      "model": [
+        "b1d2a2bf-4bf2-4efb-aee1-2ddafb238bd8"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "1c86c01a-c961-4c54-ada8-084c0b03a8aa",
+    "fields": {
+      "created_time": "2024-01-23T12:49:20.310Z",
+      "updated_time": "2024-01-23T12:49:20.310Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesFilm",
+      "rank": 87,
+      "path": "api/movies/film/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "04072cef-d065-458e-9e21-75e1343c8701",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a15fe7d4-31c1-48ba-a138-d0615b658800",
+    "fields": {
+      "created_time": "2024-01-23T12:49:20.104Z",
+      "updated_time": "2024-01-24T03:03:12.076Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "create:MoviesFilm",
+      "rank": 88,
+      "path": "api/movies/film$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "f4cbcb6b-f654-4151-b463-ea0a0eef1529",
+      "model": [
+        "b1d2a2bf-4bf2-4efb-aee1-2ddafb238bd8"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3c6bfbf4-05e3-479c-9ffa-fa70df64fc7f",
+    "fields": {
+      "created_time": "2024-01-23T12:49:19.898Z",
+      "updated_time": "2024-01-23T12:49:19.898Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "upload:MoviesFilmPoster",
+      "rank": 89,
+      "path": "api/movies/film/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "cdc08171-8f23-465c-8382-87f200d1162a",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+    "fields": {
+      "created_time": "2024-01-23T12:49:19.691Z",
+      "updated_time": "2024-01-23T12:49:19.692Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesEpisode",
+      "rank": 90,
+      "path": "/movies/episode/index",
+      "component": "movies/episode/index",
+      "is_active": true,
+      "meta": "158b8e2e-c245-4bcd-8420-d7e98e5894fa",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "aec3a147-c2b4-495d-864c-94ee9c272fef",
+    "fields": {
+      "created_time": "2024-01-23T12:49:19.485Z",
+      "updated_time": "2024-01-24T03:06:22.530Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "list:MoviesEpisode",
+      "rank": 93,
+      "path": "api/movies/episode$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "f874bf48-51a5-47eb-9f4b-dbca8fab27a6",
+      "model": [
+        "e1143f0b-d8c8-46b2-948c-d7bd09b62895"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4aaa6bc1-32e8-4b68-84b6-42c06a26db90",
+    "fields": {
+      "created_time": "2024-01-23T12:49:19.279Z",
+      "updated_time": "2024-01-23T12:49:19.279Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "delete:MoviesEpisode",
+      "rank": 94,
+      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "eeb2a07b-c6f8-48a7-bddd-a5d44ac9e04b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "12490684-e531-47af-a24e-d1858d3e0432",
+    "fields": {
+      "created_time": "2024-01-23T12:49:19.072Z",
+      "updated_time": "2024-01-24T03:05:43.476Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "update:MoviesEpisode",
+      "rank": 91,
+      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "15b5d1db-87bb-4ff5-9382-82a48d7e882d",
+      "model": [
+        "e1143f0b-d8c8-46b2-948c-d7bd09b62895"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8aaa26a3-2bef-46aa-9999-4ac39ad40be4",
+    "fields": {
+      "created_time": "2024-01-23T12:49:18.866Z",
+      "updated_time": "2024-01-23T12:49:18.866Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "rank:MoviesEpisode",
+      "rank": 95,
+      "path": "api/movies/episode/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "9f4f41d5-a340-4739-a88e-9622df8e12bc",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b47276bc-b275-4999-aab6-a8c7c3d6ff28",
+    "fields": {
+      "created_time": "2024-01-23T12:49:18.659Z",
+      "updated_time": "2024-01-24T03:05:50.452Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "create:MoviesEpisode",
+      "rank": 92,
+      "path": "api/movies/episode$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "25e1f8c8-75ba-44e0-9a53-ac8e3740be01",
+      "model": [
+        "e1143f0b-d8c8-46b2-948c-d7bd09b62895"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "41304bc8-3591-47e2-8eac-499c97e2c1e2",
+    "fields": {
+      "created_time": "2024-01-23T12:49:18.453Z",
+      "updated_time": "2024-01-23T12:49:18.453Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "e1c5e87e-3500-4d82-bb2e-09b6e7ca0d1a",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesEpisode",
+      "rank": 96,
+      "path": "api/movies/episode/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "62866641-ab91-47c1-a4ed-4a94e5670c08",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cc268d6f-51b0-4c4d-bb8a-533af81f2b35",
+    "fields": {
+      "created_time": "2024-01-23T12:49:18.244Z",
+      "updated_time": "2024-01-23T12:49:18.244Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodePreHash",
+      "rank": 65,
+      "path": "api/movies/episode/pre_hash$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "6abd5038-5d48-451f-910a-1cd12be804da",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "89ba1170-8e3e-45c4-ab0e-8f15419a778b",
+    "fields": {
+      "created_time": "2024-01-23T12:49:18.038Z",
+      "updated_time": "2024-01-23T12:49:18.038Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeContentHash",
+      "rank": 66,
+      "path": "api/movies/episode/content_hash$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "f1e71366-dc5d-4a3b-8804-e8c70b72124d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "91f35a57-f380-4015-81c3-57445d50b5b3",
+    "fields": {
+      "created_time": "2024-01-23T12:49:17.831Z",
+      "updated_time": "2024-01-23T12:49:17.831Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeComplete",
+      "rank": 67,
+      "path": "api/movies/episode/upload_complete$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "5456cdb4-55c1-4add-8450-e4d099c0e8cb",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c6d1cbde-7992-484e-bd03-8d7da58ea221",
+    "fields": {
+      "created_time": "2024-01-23T12:49:17.624Z",
+      "updated_time": "2024-01-23T12:49:17.624Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "upload:MoviesEpisodeAuthSid",
+      "rank": 68,
+      "path": "api/movies/episode/auth_sid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "a43bfbc8-cca0-4e56-8e5e-c1154e4d6b2b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "287543c6-ab2f-4463-996f-ff46e0f01b24",
+    "fields": {
+      "created_time": "2024-01-23T12:49:17.417Z",
+      "updated_time": "2024-01-23T12:49:17.417Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 0,
+      "name": "storage",
+      "rank": 47,
+      "path": "/movies/storage",
+      "component": "",
+      "is_active": true,
+      "meta": "d546457d-3a1b-4ade-8658-279982e9fbba",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+    "fields": {
+      "created_time": "2024-01-23T12:49:17.210Z",
+      "updated_time": "2024-01-23T12:49:17.210Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "287543c6-ab2f-4463-996f-ff46e0f01b24",
+      "menu_type": 1,
+      "name": "MoviesFile",
+      "rank": 56,
+      "path": "/movies/file/index",
+      "component": "movies/file/index",
+      "is_active": true,
+      "meta": "fd0b4a80-28b8-49bb-9372-6aaa3da0290e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6b0ca134-3ae8-48ec-a296-282c0fa5ba1d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:17.003Z",
+      "updated_time": "2024-01-24T02:45:01.591Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "list:MoviesFile",
+      "rank": 57,
+      "path": "api/movies/file$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "522cd006-9be4-462b-9ea2-b58f6f60e658",
+      "model": [
+        "422330f4-c73c-41b2-b3ec-60dee3959ed3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ab0c16f5-c79b-48ec-981d-fc5287405d7b",
+    "fields": {
+      "created_time": "2024-01-23T12:49:16.797Z",
+      "updated_time": "2024-01-23T12:49:16.797Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "delete:MoviesFile",
+      "rank": 58,
+      "path": "api/movies/file/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "66e7e2c9-262a-4587-ba56-080ddff6b47f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3f2a5bf6-a87a-408d-b91b-0e8704c31e7c",
+    "fields": {
+      "created_time": "2024-01-23T12:49:16.591Z",
+      "updated_time": "2024-01-23T12:49:16.591Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesFile",
+      "rank": 59,
+      "path": "api/movies/file/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "a17fd746-ab3d-49c9-ba41-1c85a246d21d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2e093d12-f74f-4e40-8573-1479a817be2d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:16.384Z",
+      "updated_time": "2024-01-23T12:49:16.384Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "manyDownload:MoviesFile",
+      "rank": 60,
+      "path": "api/movies/file/many-download$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "8bc3df36-6444-454a-8adf-8eb1f44165f0",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "628610bc-6aa8-4ece-801b-5aac7c805a6d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:16.178Z",
+      "updated_time": "2024-01-23T12:49:16.178Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "get:MoviesFileDownloadUrl",
+      "rank": 61,
+      "path": "api/movies/file/(?P<pk>[^/.]+)/download-url$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "13d4d7ae-97e5-4218-8a9d-354381b8d7ac",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "83b9b5f3-842c-4434-a202-4218cba8a199",
+    "fields": {
+      "created_time": "2024-01-23T12:49:15.972Z",
+      "updated_time": "2024-01-24T02:47:25.115Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "get:MoviesFilePreviewUrl",
+      "rank": 62,
+      "path": "api/movies/file/(?P<pk>[^/.]+)/preview$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "b0ceab04-475b-45a0-8787-0e539838cb64",
+      "model": [
+        "422330f4-c73c-41b2-b3ec-60dee3959ed3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6e2a666b-9a6b-4d3a-ad4d-8a0772603116",
+    "fields": {
+      "created_time": "2024-01-23T12:49:15.765Z",
+      "updated_time": "2024-01-24T02:47:59.580Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "update:MoviesFile",
+      "rank": 63,
+      "path": "api/movies/file/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "27e69919-e200-43b4-8e7c-738ebb067819",
+      "model": [
+        "422330f4-c73c-41b2-b3ec-60dee3959ed3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+    "fields": {
+      "created_time": "2024-01-23T12:49:15.558Z",
+      "updated_time": "2024-01-23T12:49:15.558Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesCategory",
+      "rank": 69,
+      "path": "/movies/category/index",
+      "component": "movies/category/index",
+      "is_active": true,
+      "meta": "c8a8aff1-1163-4a86-9633-93d05507e55d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "80a91852-dfaa-4053-82a0-b139d9cbbb16",
+    "fields": {
+      "created_time": "2024-01-23T12:49:15.352Z",
+      "updated_time": "2024-01-24T02:54:15.459Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "create:MoviesCategory",
+      "rank": 70,
+      "path": "api/movies/category$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "0c670dd5-b368-411a-a046-32d42cbd9e5b",
+      "model": [
+        "9f64b0d5-d170-4b33-8fad-8ad0855570ee"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f6b6a57a-f0b5-4613-b072-7e13f4b9f11e",
+    "fields": {
+      "created_time": "2024-01-23T12:49:15.146Z",
+      "updated_time": "2024-01-23T12:49:15.146Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "delete:MoviesCategory",
+      "rank": 71,
+      "path": "api/movies/category/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "798c8b75-f37b-492e-aabe-3d3475877bab",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cefaf90a-f051-4a1e-8932-0e37a0dad83d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:14.938Z",
+      "updated_time": "2024-01-24T02:54:23.551Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "update:MoviesCategory",
+      "rank": 72,
+      "path": "api/movies/category/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "934acbe9-61b1-49ea-a829-182733a1d1cf",
+      "model": [
+        "9f64b0d5-d170-4b33-8fad-8ad0855570ee"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6957b02a-8dc3-4076-a0c5-2717b3dddeb5",
+    "fields": {
+      "created_time": "2024-01-23T12:49:14.732Z",
+      "updated_time": "2024-01-24T02:54:39.251Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "list:MoviesCategory",
+      "rank": 73,
+      "path": "api/movies/category$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "65ff5553-0399-482b-ab9f-17252bb74451",
+      "model": [
+        "9f64b0d5-d170-4b33-8fad-8ad0855570ee"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b23e8f8e-6d41-4f39-b07b-b39f3bc13348",
+    "fields": {
+      "created_time": "2024-01-23T12:49:14.525Z",
+      "updated_time": "2024-01-23T12:49:14.525Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesCategory",
+      "rank": 74,
+      "path": "api/movies/category/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "378aec72-97f2-4392-aa63-2eb0936aaea5",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d1792f55-5d23-4c49-8182-f7b85aaf8280",
+    "fields": {
+      "created_time": "2024-01-23T12:49:14.319Z",
+      "updated_time": "2024-01-23T12:49:14.319Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesWatchHistory",
+      "rank": 97,
+      "path": "/movies/history/index",
+      "component": "movies/history/index",
+      "is_active": true,
+      "meta": "1e7a1e61-be85-4fb1-b2db-1c4b88e8947f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "043dd5f1-ffe4-427b-8a66-b375e9fffcd9",
+    "fields": {
+      "created_time": "2024-01-23T12:49:14.113Z",
+      "updated_time": "2024-01-23T12:49:14.113Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d1792f55-5d23-4c49-8182-f7b85aaf8280",
+      "menu_type": 2,
+      "name": "delete:MoviesWatchHistory",
+      "rank": 98,
+      "path": "api/movies/history/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "946b6ad7-26be-488a-accc-71a229f69ae5",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d27e0cd4-3287-4262-8f33-378b873ad0c2",
+    "fields": {
+      "created_time": "2024-01-23T12:49:13.907Z",
+      "updated_time": "2024-01-23T12:49:13.907Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d1792f55-5d23-4c49-8182-f7b85aaf8280",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesWatchHistory",
+      "rank": 99,
+      "path": "api/movies/history/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "8518da81-8b79-4803-b274-91046f201706",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5c6ce841-3398-43fe-beea-af78a783493e",
+    "fields": {
+      "created_time": "2024-01-23T12:49:13.700Z",
+      "updated_time": "2024-01-24T03:12:31.732Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "d1792f55-5d23-4c49-8182-f7b85aaf8280",
+      "menu_type": 2,
+      "name": "list:MoviesWatchHistory",
+      "rank": 100,
+      "path": "api/movies/history$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "40851ca4-ceed-4f83-8e40-1ebaec015234",
+      "model": [
+        "f472c4ae-37ea-442f-a764-76a0cd5ff85c"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cdf75eb7-7983-4a28-b0a2-521f294f4212",
+    "fields": {
+      "created_time": "2024-01-23T12:49:13.494Z",
+      "updated_time": "2024-01-23T12:49:13.494Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d1792f55-5d23-4c49-8182-f7b85aaf8280",
+      "menu_type": 2,
+      "name": "update:MoviesWatchTimes",
+      "rank": 101,
+      "path": "api/movies/history/times$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "9266b74d-9f7c-404a-b724-f3b52c946662",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+    "fields": {
+      "created_time": "2024-01-23T12:49:13.289Z",
+      "updated_time": "2024-01-23T12:49:13.289Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesSwipe",
+      "rank": 102,
+      "path": "/movies/swipe/index",
+      "component": "movies/swipe/index",
+      "is_active": true,
+      "meta": "1f335e0b-92fa-4717-88ea-ca5acfbf1b21",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "05993763-478a-4e29-84fc-1d9acd20ae30",
+    "fields": {
+      "created_time": "2024-01-23T12:49:13.083Z",
+      "updated_time": "2024-01-24T03:12:39.317Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "create:MoviesSwipe",
+      "rank": 103,
+      "path": "api/movies/swipe$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "270ffc15-79bf-4f9c-9d81-29a9e5bc4686",
+      "model": [
+        "9eb51785-f121-4107-ab7e-d0a1ed100fe3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ddf0bec4-c38d-4e93-9a1c-52e461207244",
+    "fields": {
+      "created_time": "2024-01-23T12:49:12.877Z",
+      "updated_time": "2024-01-23T12:49:12.877Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "delete:MoviesSwipe",
+      "rank": 104,
+      "path": "api/movies/swipe/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "ce8451d2-2d9f-4c43-b8c5-f48c8306f8b3",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a0d07150-a28c-4345-ae16-2c3c9665675d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:12.671Z",
+      "updated_time": "2024-01-24T03:12:44.808Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "update:MoviesSwipe",
+      "rank": 105,
+      "path": "api/movies/swipe/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "703c1c4a-b239-456c-9ac7-2139b138e1ed",
+      "model": [
+        "9eb51785-f121-4107-ab7e-d0a1ed100fe3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "10261fd2-023d-4675-823f-c95a9c2177c5",
+    "fields": {
+      "created_time": "2024-01-23T12:49:12.464Z",
+      "updated_time": "2024-01-23T12:49:12.464Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "list:MoviesSwipe",
+      "rank": 106,
+      "path": "api/movies/swipe$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "54bba8c4-f65b-4870-9030-78d845ada6b7",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5714cc6c-eef0-48c8-b5b1-5dcb82503f95",
+    "fields": {
+      "created_time": "2024-01-23T12:49:12.258Z",
+      "updated_time": "2024-01-23T12:49:12.258Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesSwipe",
+      "rank": 107,
+      "path": "api/movies/swipe/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "7f59d780-9164-46cd-9c83-db56e8b5f04b",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2109eee5-cb69-4317-9863-263eb08a3c0d",
+    "fields": {
+      "created_time": "2024-01-23T12:49:12.051Z",
+      "updated_time": "2024-01-24T03:12:50.037Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "upload:MoviesSwipePicture",
+      "rank": 108,
+      "path": "api/movies/swipe/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "ab8aeef9-cd98-4a84-9c94-b602cebfdd60",
+      "model": [
+        "9eb51785-f121-4107-ab7e-d0a1ed100fe3"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "77e7aad1-9d7c-41d9-9d1d-e7e5628adcc4",
+    "fields": {
+      "created_time": "2024-01-23T12:49:11.843Z",
+      "updated_time": "2024-01-23T12:49:11.843Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "a45e4128-78e7-41d0-89d1-82e7e1eddd10",
+      "menu_type": 2,
+      "name": "rank:MoviesSwipe",
+      "rank": 109,
+      "path": "api/movies/swipe/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "f8ec79c9-db74-4803-91db-72911e6ac21f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+    "fields": {
+      "created_time": "2024-01-23T12:49:11.637Z",
+      "updated_time": "2024-01-23T12:49:11.637Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7a505716-4092-41f5-b747-f662818e637e",
+      "menu_type": 1,
+      "name": "MoviesActor",
+      "rank": 76,
+      "path": "/movies/actor/index",
+      "component": "/movies/actor/index",
+      "is_active": true,
+      "meta": "275dd1b7-6f70-4201-8d10-fde4246aa3cd",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "73683af5-fc84-42f4-9c15-dca77ff3f1fc",
+    "fields": {
+      "created_time": "2024-01-23T12:49:11.430Z",
+      "updated_time": "2024-01-24T02:54:49.651Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "create:MoviesActor",
+      "rank": 77,
+      "path": "api/movies/actor$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "a9d120ac-35a0-4996-a935-5889cf1f2e35",
+      "model": [
+        "86efb795-f068-463a-a8df-c6191f07715b"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "678bcf67-d49b-4ae2-bdf5-69c429aab8d3",
+    "fields": {
+      "created_time": "2024-01-23T12:49:11.224Z",
+      "updated_time": "2024-01-23T12:49:11.224Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "delete:MoviesActor",
+      "rank": 78,
+      "path": "api/movies/actor/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "05bca07a-34e8-4837-b5a1-37807c295399",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "1cdc80f5-4c85-47b7-affa-4b3d219858e5",
+    "fields": {
+      "created_time": "2024-01-23T12:49:11.017Z",
+      "updated_time": "2024-01-24T02:54:54.993Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "update:MoviesActor",
+      "rank": 79,
+      "path": "api/movies/actor/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "c6cce2dc-1bac-4557-903a-493f1b961816",
+      "model": [
+        "86efb795-f068-463a-a8df-c6191f07715b"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9eb88808-4498-48af-b783-cb71e2fe6582",
+    "fields": {
+      "created_time": "2024-01-23T12:49:10.811Z",
+      "updated_time": "2024-01-24T02:55:03.397Z",
+      "description": null,
+      "creator": null,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "list:MoviesActor",
+      "rank": 80,
+      "path": "api/movies/actor$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "a5e27109-12a9-4bb7-b2b4-9341691babed",
+      "model": [
+        "86efb795-f068-463a-a8df-c6191f07715b"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "70f6b7c7-e6bc-4bc2-99a0-ac738161e026",
+    "fields": {
+      "created_time": "2024-01-23T12:49:10.604Z",
+      "updated_time": "2024-01-23T12:49:10.604Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "manyDelete:MoviesActor",
+      "rank": 81,
+      "path": "api/movies/actor/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "ffd6fa58-2c2c-48b7-881b-3ad005e9b93e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4d717372-ef7b-41b0-a63b-e889a03e67cf",
+    "fields": {
+      "created_time": "2024-01-23T12:49:10.398Z",
+      "updated_time": "2024-01-23T12:49:10.398Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "d8d78f36-1a6d-41cc-8716-bf58a697ec24",
+      "menu_type": 2,
+      "name": "upload:MoviesActorAvatar",
+      "rank": 82,
+      "path": "api/movies/actor/(?P<pk>[^/.]+)/upload$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "4e52f5a7-a226-4a71-9fc4-fefed654cba4",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b5604b9e-41d7-4c06-8933-8984d14313f2",
+    "fields": {
+      "created_time": "2024-01-23T12:49:10.191Z",
+      "updated_time": "2024-01-23T12:49:10.191Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "da5b29a2-47af-4a5a-87a6-e1f3b87ede73",
+      "menu_type": 2,
+      "name": "rank:MoviesCategory",
+      "rank": 75,
+      "path": "api/movies/category/action_rank$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "8f9ac3bc-6986-4b93-a00f-c38e5debbe30",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "39ed6e5e-698c-41d9-b1bc-7870fb7ebcb4",
+    "fields": {
+      "created_time": "2024-01-23T12:49:09.984Z",
+      "updated_time": "2024-01-23T12:49:09.984Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "07f3ccff-747b-494a-8738-e85f3b3df96a",
+      "menu_type": 2,
+      "name": "sync:MoviesFileInfo",
+      "rank": 64,
+      "path": "api/movies/file/(?P<pk>[^/.]+)/sync$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "5cca26e7-a090-4b2c-8d43-202a5a87b292",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "aa5c6c5c-1efc-4126-a52b-519e5fe49483",
+    "fields": {
+      "created_time": "2024-01-23T12:49:09.776Z",
+      "updated_time": "2024-01-23T12:49:09.776Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "list:MoviesDriveByFileId",
+      "rank": 9999,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)/get_files$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "d5e5508d-6d54-4a8a-b9d3-c7822e19a7f1",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ecd4f857-633e-4f95-91f8-acc6be834689",
+    "fields": {
+      "created_time": "2024-01-23T12:49:09.569Z",
+      "updated_time": "2024-01-23T12:49:09.569Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "32576645-53ad-4ac2-923e-b85b2c2a5622",
+      "menu_type": 2,
+      "name": "create:MoviesDriveByFileId",
+      "rank": 9999,
+      "path": "api/movies/drive/(?P<pk>[^/.]+)/import_files$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "f22e0798-dd1e-4134-ada9-89088c65412c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "88298e25-cf76-4a1b-a5ed-feb8ad882dde",
+    "fields": {
+      "created_time": "2024-01-23T12:49:09.362Z",
+      "updated_time": "2024-01-23T12:49:09.362Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "search:MoviesDoubanFilm",
+      "rank": 9999,
+      "path": "api/movies/film/search_douban$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "6d7a8000-08d5-46dc-8279-0f456d769739",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "dc929800-8928-44cc-bf1a-1129e62b8e15",
+    "fields": {
+      "created_time": "2024-01-23T12:49:09.156Z",
+      "updated_time": "2024-01-23T12:49:09.156Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "7674ea63-4c3c-4049-b944-a5d1003f47d9",
+      "menu_type": 2,
+      "name": "create:MoviesDoubanFilm",
+      "rank": 9999,
+      "path": "api/movies/film/add_douban$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "cdb3ea14-ef9b-4b5d-81fc-0fd1ef9f84ca",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "5f1217a4-79d4-4692-9d12-9f7c8627012e",
     "fields": {
       "created_time": "2024-01-22T09:32:15.840Z",

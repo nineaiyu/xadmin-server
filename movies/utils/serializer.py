@@ -11,6 +11,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from movies.models import AliyunDrive, AliyunFile, FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
+from system.utils.serializer import UserInfoSerializer
 
 logger = logging.getLogger(__file__)
 
@@ -57,29 +58,11 @@ class FilmInfoSerializer(BaseModelSerializer):
                   'introduction', 'episode_count']
         extra_kwargs = {'pk': {'read_only': True}, 'poster': {'read_only': True}}
 
-    category_info = serializers.SerializerMethodField(read_only=True)
-    region_info = serializers.SerializerMethodField(read_only=True)
-    language_info = serializers.SerializerMethodField(read_only=True)
-    channel_info = serializers.SerializerMethodField(read_only=True)
+    category_info = CategoryListSerializer(fields=['value', 'label'], many=True, read_only=True, source='category')
+    region_info = CategoryListSerializer(fields=['value', 'label'], many=True, read_only=True, source='region')
+    language_info = CategoryListSerializer(fields=['value', 'label'], many=True, read_only=True, source='language')
+    channel_info = CategoryListSerializer(fields=['value', 'label'], many=True, read_only=True, source='channel')
     episode_count = serializers.SerializerMethodField(read_only=True)
-    poster = serializers.SerializerMethodField()
-
-    def get_poster(self, obj):
-        if obj.poster.name.startswith('http'):
-            return obj.poster.name
-        return obj.poster.url
-
-    def get_category_info(self, obj):
-        return CategoryListSerializer(obj.category, many=True).data
-
-    def get_region_info(self, obj):
-        return CategoryListSerializer(obj.region, many=True).data
-
-    def get_language_info(self, obj):
-        return CategoryListSerializer(obj.language, many=True).data
-
-    def get_channel_info(self, obj):
-        return CategoryListSerializer(obj.channel, many=True).data
 
     def get_episode_count(self, obj):
         return obj.episodeinfo_set.count()
@@ -102,6 +85,7 @@ class EpisodeInfoSerializer(BaseModelSerializer):
         read_only_fields = ("pk", "files", "rank")
 
     file_id = serializers.CharField(write_only=True)
+    files = AliyunFileSerializer(fields=['pk', 'file_id', 'name', 'duration', 'size'], read_only=True, source='files')
 
     def validate(self, attrs):
         ali_file = AliyunFile.objects.filter(file_id=attrs.pop('file_id')).first()
@@ -110,11 +94,6 @@ class EpisodeInfoSerializer(BaseModelSerializer):
             attrs['name'] = ali_file.name
         return attrs
 
-    files = serializers.SerializerMethodField()
-
-    def get_files(self, obj):
-        return {'pk': obj.files.pk, 'file_id': obj.files.file_id, 'name': obj.files.name,
-                'duration': obj.files.duration, 'size': obj.files.size}
 
 
 class CategorySerializer(BaseModelSerializer):
@@ -135,11 +114,9 @@ class WatchHistorySerializer(BaseModelSerializer):
         model = WatchHistory
         fields = ['created_time', 'pk', 'times', 'owner', 'episode', 'updated_time']
 
-    owner = serializers.SerializerMethodField()
+    owner = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
     episode = serializers.SerializerMethodField()
 
-    def get_owner(self, obj):
-        return {'pk': obj.owner.pk, 'username': obj.owner.username}
 
     def get_episode(self, obj):
         times = obj.episode.files.duration if obj.episode.files.duration else obj.episode.film.times

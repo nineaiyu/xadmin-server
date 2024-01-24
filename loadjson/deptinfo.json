@@ -1,6 +1,33 @@
 [
   {
     "model": "system.deptinfo",
+    "pk": "24516628-abad-4c86-82aa-4cb4daab5aa3",
+    "fields": {
+      "created_time": "2024-01-24T02:38:06.773Z",
+      "updated_time": "2024-01-24T02:38:06.773Z",
+      "description": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "影视部门",
+      "code": "movies",
+      "parent": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "rank": 99,
+      "auto_bind": false,
+      "is_active": true,
+      "roles": [
+        "a5d16db5-2188-4a1e-8c5c-55af132dc949"
+      ],
+      "rules": [
+        "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+        "db58769c-040f-41f2-874e-9be9fbd93790",
+        "fc8f9238-32b6-415c-bb12-c39bc9883ea0"
+      ]
+    }
+  },
+  {
+    "model": "system.deptinfo",
     "pk": "93b4c4df-f65b-4347-9d20-4785b09a9ca3",
     "fields": {
       "created_time": "2024-01-23T07:23:51.484Z",

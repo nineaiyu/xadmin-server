@@ -112,7 +112,7 @@ class AliyunFileView(BaseModelSet):
     @action(methods=['get'], detail=True)
     def preview(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = AliyunFileSerializer(instance)
+        serializer = self.get_serializer(instance)
         data = serializer.data
         data['preview_url'] = get_video_preview(instance)
         obj = WatchHistory.objects.filter(owner=request.user, episode__files=instance).first()
