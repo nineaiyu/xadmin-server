@@ -106,7 +106,16 @@ class CategorySerializer(BaseModelSerializer):
     category_display = serializers.CharField(source='get_category_type_display', read_only=True)
 
     def get_count(self, obj):
-        return obj.film_category.count()
+        if obj.category_type == 1:
+            return obj.channel_category.count()
+        elif obj.category_type == 2:
+            return obj.region_category.count()
+        elif obj.category_type == 3:
+            return obj.film_category.count()
+        elif obj.category_type == 4:
+            return obj.language_category.count()
+        else:
+            return 0
 
 
 class WatchHistorySerializer(BaseModelSerializer):
