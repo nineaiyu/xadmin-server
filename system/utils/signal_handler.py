@@ -50,7 +50,8 @@ def post_migrate_handler(sender, **kwargs):
                 ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
                                                          defaults={'label': field.verbose_name})
     if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
+        deleted, _rows_count = ModelLabelField.objects.filter(name__startswith=label, field_type=field_type,
+                                                              updated_time__lt=now).delete()
         logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
 
     if label == settings.PERMISSION_DATA_AUTH_APPS[0]:
