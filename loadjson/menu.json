@@ -1,5142 +1,2055 @@
 [
   {
-    "model": "system.menumeta",
-    "pk": 1,
-    "fields": {
-      "created_time": "2023-06-20T09:25:08.529Z",
-      "updated_time": "2023-12-04T07:05:25.439Z",
-      "description": "",
-      "title": "menus.hsAbout",
-      "icon": "ep:info-filled",
-      "r_svg_name": null,
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": null,
-      "frame_loading": false,
-      "transition_enter": "flip",
-      "transition_leave": "rubberBand",
-      "is_hidden_tag": false,
-      "dynamic_level": 1
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 2,
-    "fields": {
-      "created_time": "2023-06-23T09:20:19.830Z",
-      "updated_time": "2023-09-13T02:16:34.479Z",
-      "description": null,
-      "title": "menus.hssysManagement",
-      "icon": "ep:setting",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 3,
-    "fields": {
-      "created_time": "2023-06-23T09:32:26.032Z",
-      "updated_time": "2023-07-18T06:42:42.683Z",
-      "description": null,
-      "title": "menus.hsUser",
-      "icon": "ep:user",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 4,
-    "fields": {
-      "created_time": "2023-06-23T09:33:45.874Z",
-      "updated_time": "2023-06-23T09:33:45.874Z",
-      "description": null,
-      "title": "menus.hsRole",
-      "icon": "ep:scale-to-original",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 5,
-    "fields": {
-      "created_time": "2023-06-23T09:34:25.879Z",
-      "updated_time": "2023-07-08T07:14:57.091Z",
-      "description": null,
-      "title": "menus.hsMenu",
-      "icon": "ep:menu",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 6,
-    "fields": {
-      "created_time": "2023-06-23T09:35:44.168Z",
-      "updated_time": "2023-07-10T04:19:31.479Z",
-      "description": null,
-      "title": "创建用户",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 7,
-    "fields": {
-      "created_time": "2023-06-23T09:36:13.730Z",
-      "updated_time": "2023-07-10T04:18:39.909Z",
-      "description": null,
-      "title": "删除用户",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 8,
-    "fields": {
-      "created_time": "2023-06-23T09:36:43.857Z",
-      "updated_time": "2023-11-17T02:33:22.680Z",
-      "description": null,
-      "title": "更新用户",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 9,
-    "fields": {
-      "created_time": "2023-06-23T09:37:13.088Z",
-      "updated_time": "2023-07-10T04:17:23.770Z",
-      "description": null,
-      "title": "查询用户",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 10,
-    "fields": {
-      "created_time": "2023-06-23T09:56:13.555Z",
-      "updated_time": "2023-07-01T12:11:13.724Z",
-      "description": null,
-      "title": "创建角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 11,
-    "fields": {
-      "created_time": "2023-06-23T09:56:37.319Z",
-      "updated_time": "2023-07-01T12:11:15.299Z",
-      "description": null,
-      "title": "删除角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 12,
-    "fields": {
-      "created_time": "2023-06-23T09:57:02.355Z",
-      "updated_time": "2023-07-01T12:11:16.833Z",
-      "description": null,
-      "title": "更新角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 13,
-    "fields": {
-      "created_time": "2023-06-23T09:57:26.869Z",
-      "updated_time": "2023-07-01T12:13:17.590Z",
-      "description": null,
-      "title": "查询角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 14,
-    "fields": {
-      "created_time": "2023-06-23T09:58:07.581Z",
-      "updated_time": "2023-07-01T12:11:11.633Z",
-      "description": null,
-      "title": "批量删除用户",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 15,
-    "fields": {
-      "created_time": "2023-06-23T09:58:28.889Z",
-      "updated_time": "2023-07-01T12:11:20.224Z",
-      "description": null,
-      "title": "批量删除角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 16,
-    "fields": {
-      "created_time": "2023-06-23T10:00:17.839Z",
-      "updated_time": "2023-07-01T12:11:24.433Z",
-      "description": null,
-      "title": "创建菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 17,
-    "fields": {
-      "created_time": "2023-06-23T10:00:47.772Z",
-      "updated_time": "2023-07-01T12:11:25.924Z",
-      "description": null,
-      "title": "删除菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 18,
-    "fields": {
-      "created_time": "2023-06-23T10:01:13.868Z",
-      "updated_time": "2023-07-01T12:11:27.216Z",
-      "description": null,
-      "title": "更新菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 19,
-    "fields": {
-      "created_time": "2023-06-23T10:01:51.613Z",
-      "updated_time": "2023-07-13T07:51:45.046Z",
-      "description": null,
-      "title": "查询菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 20,
-    "fields": {
-      "created_time": "2023-06-23T10:02:18.519Z",
-      "updated_time": "2023-07-01T12:11:30.306Z",
-      "description": null,
-      "title": "批量删除菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 21,
-    "fields": {
-      "created_time": "2023-06-23T10:02:49.282Z",
-      "updated_time": "2023-07-01T12:11:32.082Z",
-      "description": null,
-      "title": "菜单拖拽排序",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 22,
-    "fields": {
-      "created_time": "2023-06-25T08:45:24.976Z",
-      "updated_time": "2023-09-16T02:59:15.911Z",
-      "description": null,
-      "title": "menus.chat",
-      "icon": "ep:chat-line-square",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 23,
-    "fields": {
-      "created_time": "2023-06-26T10:29:57.563Z",
-      "updated_time": "2023-09-05T02:11:41.627Z",
-      "description": null,
-      "title": "上传头像",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 24,
-    "fields": {
-      "created_time": "2023-06-28T02:15:48.301Z",
-      "updated_time": "2023-09-13T02:18:10.737Z",
-      "description": null,
-      "title": "menus.hsOperationLog",
-      "icon": "ep:document",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 25,
-    "fields": {
-      "created_time": "2023-06-28T02:36:02.763Z",
-      "updated_time": "2023-07-01T12:11:50.206Z",
-      "description": null,
-      "title": "删除日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 26,
-    "fields": {
-      "created_time": "2023-06-28T02:36:33.478Z",
-      "updated_time": "2023-07-01T12:13:24.990Z",
-      "description": null,
-      "title": "查询日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 27,
-    "fields": {
-      "created_time": "2023-06-28T02:37:06.458Z",
-      "updated_time": "2023-07-01T12:11:53.838Z",
-      "description": null,
-      "title": "批量删除日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 28,
-    "fields": {
-      "created_time": "2023-06-29T08:12:07.906Z",
-      "updated_time": "2023-07-01T12:12:01.737Z",
-      "description": null,
-      "title": "menus.timingTask",
-      "icon": "ep:box",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "/api/flower/",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 29,
-    "fields": {
-      "created_time": "2023-07-01T01:04:16.316Z",
-      "updated_time": "2023-07-01T12:13:29.439Z",
-      "description": null,
-      "title": "查询任务日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 30,
-    "fields": {
-      "created_time": "2023-07-01T01:04:51.590Z",
-      "updated_time": "2023-07-01T12:11:43.597Z",
-      "description": null,
-      "title": "操作任务日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 31,
-    "fields": {
-      "created_time": "2023-06-23T09:58:28.889Z",
-      "updated_time": "2023-06-23T09:58:28.889Z",
-      "description": null,
-      "title": "批量删除角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 32,
-    "fields": {
-      "created_time": "2023-06-23T10:00:17.839Z",
-      "updated_time": "2023-06-23T10:00:17.839Z",
-      "description": null,
-      "title": "创建菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 33,
-    "fields": {
-      "created_time": "2023-06-23T10:00:47.772Z",
-      "updated_time": "2023-06-23T10:00:47.772Z",
-      "description": null,
-      "title": "删除菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 34,
-    "fields": {
-      "created_time": "2023-06-23T10:01:13.868Z",
-      "updated_time": "2023-06-23T10:01:13.868Z",
-      "description": null,
-      "title": "更新菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 35,
-    "fields": {
-      "created_time": "2023-06-23T10:01:51.613Z",
-      "updated_time": "2023-06-23T10:01:51.613Z",
-      "description": null,
-      "title": "查询菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 36,
-    "fields": {
-      "created_time": "2023-06-23T10:02:18.519Z",
-      "updated_time": "2023-06-23T10:02:18.519Z",
-      "description": null,
-      "title": "批量删除菜单",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 37,
-    "fields": {
-      "created_time": "2023-06-23T10:02:49.282Z",
-      "updated_time": "2023-06-23T10:02:49.282Z",
-      "description": null,
-      "title": "菜单拖拽排序",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 38,
-    "fields": {
-      "created_time": "2023-06-25T08:45:24.976Z",
-      "updated_time": "2023-06-28T10:06:12.273Z",
-      "description": null,
-      "title": "menus.chat",
-      "icon": "ep:chat-line-square",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 39,
-    "fields": {
-      "created_time": "2023-06-26T10:29:57.563Z",
-      "updated_time": "2023-06-26T10:31:21.330Z",
-      "description": null,
-      "title": "上传头像",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 40,
-    "fields": {
-      "created_time": "2023-06-28T02:15:48.301Z",
-      "updated_time": "2023-06-28T03:22:42.209Z",
-      "description": null,
-      "title": "menus.hsOperationLog",
-      "icon": "ep:document",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 41,
-    "fields": {
-      "created_time": "2023-06-28T02:36:02.763Z",
-      "updated_time": "2023-06-28T02:36:02.763Z",
-      "description": null,
-      "title": "删除日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 42,
-    "fields": {
-      "created_time": "2023-06-28T02:36:33.478Z",
-      "updated_time": "2023-06-28T02:36:33.478Z",
-      "description": null,
-      "title": "查询日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 43,
-    "fields": {
-      "created_time": "2023-06-28T02:37:06.458Z",
-      "updated_time": "2023-06-28T02:37:06.458Z",
-      "description": null,
-      "title": "批量删除日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 44,
-    "fields": {
-      "created_time": "2023-06-29T08:12:07.906Z",
-      "updated_time": "2023-07-01T10:44:32.908Z",
-      "description": null,
-      "title": "menus.timingTask",
-      "icon": "ep:box",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "/api/flower/",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 45,
-    "fields": {
-      "created_time": "2023-07-01T01:04:16.316Z",
-      "updated_time": "2023-07-01T01:04:16.316Z",
-      "description": null,
-      "title": "查询任务日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 46,
-    "fields": {
-      "created_time": "2023-07-01T01:04:51.590Z",
-      "updated_time": "2023-07-01T01:05:03.709Z",
-      "description": null,
-      "title": "操作任务日志",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 47,
-    "fields": {
-      "created_time": "2023-07-01T14:50:52.709Z",
-      "updated_time": "2023-07-01T15:01:43.185Z",
-      "description": null,
-      "title": "哈哈",
-      "icon": "ep:avatar",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 50,
-    "fields": {
-      "created_time": "2023-09-05T02:33:18.188Z",
-      "updated_time": "2023-09-05T02:35:33.443Z",
-      "description": null,
-      "title": "分配角色",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 51,
-    "fields": {
-      "created_time": "2023-09-05T03:09:34.124Z",
-      "updated_time": "2023-09-05T03:09:34.124Z",
-      "description": null,
-      "title": "重置密码",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 52,
-    "fields": {
-      "created_time": "2023-09-11T06:50:38.982Z",
-      "updated_time": "2023-09-15T10:31:23.714Z",
-      "description": null,
-      "title": "menus.noticeAndAnnouncement",
-      "icon": "ep:copy-document",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 53,
-    "fields": {
-      "created_time": "2023-09-11T06:53:54.292Z",
-      "updated_time": "2023-09-15T09:17:27.835Z",
-      "description": null,
-      "title": "查询消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 54,
-    "fields": {
-      "created_time": "2023-09-11T06:54:38.614Z",
-      "updated_time": "2023-09-15T09:18:07.066Z",
-      "description": null,
-      "title": "删除消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 55,
-    "fields": {
-      "created_time": "2023-09-11T06:55:18.052Z",
-      "updated_time": "2023-09-15T09:18:00.324Z",
-      "description": null,
-      "title": "批量删除消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 56,
-    "fields": {
-      "created_time": "2023-09-11T08:18:20.894Z",
-      "updated_time": "2023-09-15T09:17:53.383Z",
-      "description": null,
-      "title": "添加消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 57,
-    "fields": {
-      "created_time": "2023-09-11T08:19:33.283Z",
-      "updated_time": "2023-09-15T09:17:43.960Z",
-      "description": null,
-      "title": "修改消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 58,
-    "fields": {
-      "created_time": "2023-09-12T09:29:25.855Z",
-      "updated_time": "2023-09-12T09:29:25.855Z",
-      "description": null,
-      "title": "批量发送消息通知",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 59,
-    "fields": {
-      "created_time": "2023-09-13T06:36:12.437Z",
-      "updated_time": "2023-09-15T07:50:21.410Z",
-      "description": null,
-      "title": "menus.newsAndAnnouncement",
-      "icon": "ep:message",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 60,
-    "fields": {
-      "created_time": "2023-09-13T06:38:50.256Z",
-      "updated_time": "2023-09-15T07:54:50.419Z",
-      "description": null,
-      "title": "系统公告",
-      "icon": "ep:message-box",
-      "r_svg_name": "",
-      "is_show_menu": false,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 61,
-    "fields": {
-      "created_time": "2023-09-13T07:05:39.066Z",
-      "updated_time": "2023-09-13T07:05:39.066Z",
-      "description": null,
-      "title": "查询公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 62,
-    "fields": {
-      "created_time": "2023-09-13T07:06:15.230Z",
-      "updated_time": "2023-09-13T07:06:15.230Z",
-      "description": null,
-      "title": "修改公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 63,
-    "fields": {
-      "created_time": "2023-09-13T07:07:06.118Z",
-      "updated_time": "2023-09-13T07:07:06.118Z",
-      "description": null,
-      "title": "添加公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 64,
-    "fields": {
-      "created_time": "2023-09-13T07:07:42.481Z",
-      "updated_time": "2023-09-13T07:07:42.481Z",
-      "description": null,
-      "title": "批量删除公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 65,
-    "fields": {
-      "created_time": "2023-09-13T07:08:11.387Z",
-      "updated_time": "2023-09-13T07:08:11.387Z",
-      "description": null,
-      "title": "删除公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 66,
-    "fields": {
-      "created_time": "2023-09-13T08:19:50.684Z",
-      "updated_time": "2023-09-13T08:19:50.684Z",
-      "description": null,
-      "title": "公告是否发布",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 67,
-    "fields": {
-      "created_time": "2023-09-13T08:21:00.478Z",
-      "updated_time": "2023-09-15T09:18:12.264Z",
-      "description": null,
-      "title": "消息是否发布",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 68,
-    "fields": {
-      "created_time": "2023-09-13T09:58:45.861Z",
-      "updated_time": "2023-09-15T07:53:10.343Z",
-      "description": null,
-      "title": "menus.readNotice",
-      "icon": "ep:cellphone",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 69,
-    "fields": {
-      "created_time": "2023-09-13T10:01:21.097Z",
-      "updated_time": "2023-09-15T09:18:24.582Z",
-      "description": null,
-      "title": "查询用户已读公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 70,
-    "fields": {
-      "created_time": "2023-09-13T10:02:20.984Z",
-      "updated_time": "2023-09-15T09:18:30.822Z",
-      "description": null,
-      "title": "删除用户已读公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 71,
-    "fields": {
-      "created_time": "2023-09-13T10:03:20.504Z",
-      "updated_time": "2023-09-15T09:18:35.654Z",
-      "description": null,
-      "title": "批量删除用户已读公告",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 72,
-    "fields": {
-      "created_time": "2023-09-14T06:39:53.237Z",
-      "updated_time": "2023-09-14T06:40:11.270Z",
-      "description": null,
-      "title": "menus.personalCenter",
-      "icon": "ep:avatar",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 73,
-    "fields": {
-      "created_time": "2023-09-14T08:02:14.124Z",
-      "updated_time": "2023-09-14T13:24:19.311Z",
-      "description": null,
-      "title": "修改个人信息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 74,
-    "fields": {
-      "created_time": "2023-09-14T13:08:02.493Z",
-      "updated_time": "2023-09-14T13:24:31.501Z",
-      "description": null,
-      "title": "修改个人头像",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 75,
-    "fields": {
-      "created_time": "2023-09-14T13:24:01.886Z",
-      "updated_time": "2023-09-14T13:24:01.886Z",
-      "description": null,
-      "title": "修改个人密码",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 76,
-    "fields": {
-      "created_time": "2023-09-15T10:17:08.859Z",
-      "updated_time": "2023-09-15T10:20:32.609Z",
-      "description": null,
-      "title": "修改用户已读状态",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 77,
-    "fields": {
-      "created_time": "2023-09-15T13:30:38.523Z",
-      "updated_time": "2023-09-15T13:31:29.362Z",
-      "description": null,
-      "title": "menus.messageCenter",
-      "icon": "ep:notification",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 78,
-    "fields": {
-      "created_time": "2023-09-15T13:31:24.727Z",
-      "updated_time": "2023-11-16T03:41:58.919Z",
-      "description": null,
-      "title": "获取个人消息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 79,
-    "fields": {
-      "created_time": "2023-09-15T14:08:33.694Z",
-      "updated_time": "2023-09-15T14:08:33.694Z",
-      "description": null,
-      "title": "个人消息已读",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 80,
-    "fields": {
-      "created_time": "2023-09-16T02:48:15.709Z",
-      "updated_time": "2023-09-16T02:56:56.008Z",
-      "description": null,
-      "title": "个人消息全部已读",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 83,
-    "fields": {
-      "created_time": "2023-11-17T09:34:44.026Z",
-      "updated_time": "2023-11-28T10:08:49.548Z",
-      "description": null,
-      "title": "爱看电影",
-      "icon": "ep:video-camera",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 84,
-    "fields": {
-      "created_time": "2023-11-17T09:37:11.734Z",
-      "updated_time": "2023-11-22T02:36:25.443Z",
-      "description": null,
-      "title": "阿里云盘",
-      "icon": "ri:cloud-line",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 85,
-    "fields": {
-      "created_time": "2023-11-17T09:43:21.965Z",
-      "updated_time": "2023-11-19T05:52:43.603Z",
-      "description": null,
-      "title": "查询阿里云盘",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 86,
-    "fields": {
-      "created_time": "2023-11-17T09:47:29.610Z",
-      "updated_time": "2023-11-19T05:53:35.080Z",
-      "description": null,
-      "title": "删除阿里云盘",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 87,
-    "fields": {
-      "created_time": "2023-11-17T09:55:37.798Z",
-      "updated_time": "2023-11-19T05:53:48.050Z",
-      "description": null,
-      "title": "更新阿里云盘",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 88,
-    "fields": {
-      "created_time": "2023-11-17T09:57:21.309Z",
-      "updated_time": "2023-11-19T05:54:02.144Z",
-      "description": null,
-      "title": "添加云盘-获取二维码",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 89,
-    "fields": {
-      "created_time": "2023-11-17T09:58:36.385Z",
-      "updated_time": "2023-11-19T05:54:09.930Z",
-      "description": null,
-      "title": "检查云盘状态",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 90,
-    "fields": {
-      "created_time": "2023-11-17T10:05:36.609Z",
-      "updated_time": "2023-11-19T05:54:20.372Z",
-      "description": null,
-      "title": "清理云盘数据",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 91,
-    "fields": {
-      "created_time": "2023-11-19T08:32:30.521Z",
-      "updated_time": "2023-11-19T08:32:30.521Z",
-      "description": null,
-      "title": "批量删除阿里云盘",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 92,
-    "fields": {
-      "created_time": "2023-11-20T07:52:43.697Z",
-      "updated_time": "2023-11-20T08:07:18.565Z",
-      "description": null,
-      "title": "影视管理",
-      "icon": "ep:video-camera",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 93,
-    "fields": {
-      "created_time": "2023-11-20T07:54:32.889Z",
-      "updated_time": "2023-11-20T07:54:32.889Z",
-      "description": null,
-      "title": "查询影视",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 94,
-    "fields": {
-      "created_time": "2023-11-20T07:55:02.424Z",
-      "updated_time": "2023-11-20T07:55:02.424Z",
-      "description": null,
-      "title": "删除影视",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 95,
-    "fields": {
-      "created_time": "2023-11-20T07:55:28.935Z",
-      "updated_time": "2023-11-20T07:55:28.935Z",
-      "description": null,
-      "title": "更新影视",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 96,
-    "fields": {
-      "created_time": "2023-11-20T07:56:07.310Z",
-      "updated_time": "2023-11-20T07:56:07.310Z",
-      "description": null,
-      "title": "批量删除影视",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 97,
-    "fields": {
-      "created_time": "2023-11-20T07:56:54.057Z",
-      "updated_time": "2023-11-20T07:56:54.057Z",
-      "description": null,
-      "title": "添加影视",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 98,
-    "fields": {
-      "created_time": "2023-11-20T09:58:41.232Z",
-      "updated_time": "2023-11-20T09:58:41.232Z",
-      "description": null,
-      "title": "上传影视海报",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 99,
-    "fields": {
-      "created_time": "2023-11-21T05:48:06.350Z",
-      "updated_time": "2023-11-23T06:22:55.807Z",
-      "description": null,
-      "title": "单集管理",
-      "icon": "ep:video-camera-filled",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": true,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 100,
-    "fields": {
-      "created_time": "2023-11-21T05:49:23.430Z",
-      "updated_time": "2023-11-23T06:23:03.661Z",
-      "description": null,
-      "title": "查询单集视频",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 101,
-    "fields": {
-      "created_time": "2023-11-21T05:49:59.580Z",
-      "updated_time": "2023-11-23T06:23:11.320Z",
-      "description": null,
-      "title": "删除单集视频",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 102,
-    "fields": {
-      "created_time": "2023-11-21T05:50:53.849Z",
-      "updated_time": "2023-11-23T06:23:30.129Z",
-      "description": null,
-      "title": "更新单集视频",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 103,
-    "fields": {
-      "created_time": "2023-11-21T05:52:37.472Z",
-      "updated_time": "2023-11-23T06:23:17.066Z",
-      "description": null,
-      "title": "单集视频拖拽排序",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 104,
-    "fields": {
-      "created_time": "2023-11-21T05:54:26.524Z",
-      "updated_time": "2023-11-23T06:23:32.289Z",
-      "description": null,
-      "title": "添加单集视频",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 105,
-    "fields": {
-      "created_time": "2023-11-21T05:55:10.963Z",
-      "updated_time": "2023-11-23T06:23:25.953Z",
-      "description": null,
-      "title": "批量删除单集视频",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 106,
-    "fields": {
-      "created_time": "2023-11-21T07:02:07.478Z",
-      "updated_time": "2023-11-27T03:34:46.800Z",
-      "description": null,
-      "title": "上传云盘-检查是否可以秒传",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 107,
-    "fields": {
-      "created_time": "2023-11-21T07:03:29.293Z",
-      "updated_time": "2023-11-27T03:34:50.735Z",
-      "description": null,
-      "title": "上传云盘-分片上传数据",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 108,
-    "fields": {
-      "created_time": "2023-11-21T07:04:17.497Z",
-      "updated_time": "2023-11-27T03:34:54.064Z",
-      "description": null,
-      "title": "上传云盘-上传完成回调",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 109,
-    "fields": {
-      "created_time": "2023-11-21T07:04:49.660Z",
-      "updated_time": "2023-11-27T03:34:57.059Z",
-      "description": null,
-      "title": "上传云盘-获取上传授权",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 110,
-    "fields": {
-      "created_time": "2023-11-22T02:36:18.833Z",
-      "updated_time": "2023-11-22T02:36:28.914Z",
-      "description": null,
-      "title": "存储管理",
-      "icon": "ep:mostly-cloudy",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 111,
-    "fields": {
-      "created_time": "2023-11-22T02:37:40.748Z",
-      "updated_time": "2023-11-22T02:37:40.748Z",
-      "description": null,
-      "title": "文件管理",
-      "icon": "ep:files",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 112,
-    "fields": {
-      "created_time": "2023-11-22T02:38:31.864Z",
-      "updated_time": "2023-11-22T02:38:31.864Z",
-      "description": null,
-      "title": "查询云盘文件",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 113,
-    "fields": {
-      "created_time": "2023-11-22T02:39:10.192Z",
-      "updated_time": "2023-11-22T02:39:10.192Z",
-      "description": null,
-      "title": "删除云盘文件",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 114,
-    "fields": {
-      "created_time": "2023-11-22T02:39:48.234Z",
-      "updated_time": "2023-11-22T02:39:48.234Z",
-      "description": null,
-      "title": "批量删除云盘文件",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 115,
-    "fields": {
-      "created_time": "2023-11-22T02:42:02.066Z",
-      "updated_time": "2023-11-22T02:42:02.066Z",
-      "description": null,
-      "title": "批量下载云盘文件",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 116,
-    "fields": {
-      "created_time": "2023-11-22T02:43:23.562Z",
-      "updated_time": "2023-11-22T07:11:50.578Z",
-      "description": null,
-      "title": "获取文件下载连接",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 117,
-    "fields": {
-      "created_time": "2023-11-22T02:45:23.293Z",
-      "updated_time": "2023-11-22T02:45:23.293Z",
-      "description": null,
-      "title": "获取视频预览连接",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 118,
-    "fields": {
-      "created_time": "2023-11-22T07:02:25.216Z",
-      "updated_time": "2023-11-22T07:02:25.216Z",
-      "description": null,
-      "title": "更新云盘文件描述",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 119,
-    "fields": {
-      "created_time": "2023-11-27T08:19:33.457Z",
-      "updated_time": "2023-11-30T10:21:37.058Z",
-      "description": null,
-      "title": "分类管理",
-      "icon": "ep:scale-to-original",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 120,
-    "fields": {
-      "created_time": "2023-11-27T08:20:23.173Z",
-      "updated_time": "2023-11-30T10:21:43.173Z",
-      "description": null,
-      "title": "添加分类",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 121,
-    "fields": {
-      "created_time": "2023-11-27T08:21:01.828Z",
-      "updated_time": "2023-11-30T10:21:47.883Z",
-      "description": null,
-      "title": "删除分类",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 122,
-    "fields": {
-      "created_time": "2023-11-27T08:21:33.912Z",
-      "updated_time": "2023-11-30T10:21:52.780Z",
-      "description": null,
-      "title": "更新分类",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 123,
-    "fields": {
-      "created_time": "2023-11-27T08:22:16.657Z",
-      "updated_time": "2023-11-30T10:21:57.216Z",
-      "description": null,
-      "title": "查询分类",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 124,
-    "fields": {
-      "created_time": "2023-11-27T08:22:44.679Z",
-      "updated_time": "2023-11-30T10:22:02.403Z",
-      "description": null,
-      "title": "批量删除分类",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 125,
-    "fields": {
-      "created_time": "2023-11-28T07:01:32.034Z",
-      "updated_time": "2023-11-28T07:01:32.034Z",
-      "description": null,
-      "title": "观看历史",
-      "icon": "ep:document-copy",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 126,
-    "fields": {
-      "created_time": "2023-11-28T07:02:22.503Z",
-      "updated_time": "2023-11-28T07:02:22.503Z",
-      "description": null,
-      "title": "删除观看历史",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 127,
-    "fields": {
-      "created_time": "2023-11-28T07:03:04.483Z",
-      "updated_time": "2023-11-28T07:03:04.483Z",
-      "description": null,
-      "title": "批量删除观看历史",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 128,
-    "fields": {
-      "created_time": "2023-11-28T07:03:51.809Z",
-      "updated_time": "2023-11-28T07:03:51.809Z",
-      "description": null,
-      "title": "查询观看历史",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 129,
-    "fields": {
-      "created_time": "2023-11-28T07:21:20.600Z",
-      "updated_time": "2023-11-28T07:21:20.600Z",
-      "description": null,
-      "title": "更新播放时间",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 130,
-    "fields": {
-      "created_time": "2023-11-30T06:38:40.791Z",
-      "updated_time": "2023-11-30T06:42:33.396Z",
-      "description": null,
-      "title": "轮播图管理",
-      "icon": "ep:picture",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 131,
-    "fields": {
-      "created_time": "2023-11-30T06:39:10.193Z",
-      "updated_time": "2023-11-30T06:39:10.193Z",
-      "description": null,
-      "title": "添加轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 132,
-    "fields": {
-      "created_time": "2023-11-30T06:39:36.789Z",
-      "updated_time": "2023-11-30T06:39:36.789Z",
-      "description": null,
-      "title": "删除轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 133,
-    "fields": {
-      "created_time": "2023-11-30T06:40:01.116Z",
-      "updated_time": "2023-11-30T06:40:01.116Z",
-      "description": null,
-      "title": "更新轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 134,
-    "fields": {
-      "created_time": "2023-11-30T06:40:34.589Z",
-      "updated_time": "2023-11-30T06:40:34.589Z",
-      "description": null,
-      "title": "获取轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 135,
-    "fields": {
-      "created_time": "2023-11-30T06:41:00.470Z",
-      "updated_time": "2023-11-30T06:41:00.470Z",
-      "description": null,
-      "title": "批量删除轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 136,
-    "fields": {
-      "created_time": "2023-11-30T06:42:02.231Z",
-      "updated_time": "2023-11-30T06:42:02.231Z",
-      "description": null,
-      "title": "上传轮播图",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 137,
-    "fields": {
-      "created_time": "2023-11-30T07:02:02.649Z",
-      "updated_time": "2023-11-30T07:02:13.661Z",
-      "description": null,
-      "title": "轮播图拖拽排序",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 138,
-    "fields": {
-      "created_time": "2023-11-30T09:27:32.906Z",
-      "updated_time": "2023-11-30T09:30:23.008Z",
-      "description": null,
-      "title": "演员管理",
-      "icon": "ep:user",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 139,
-    "fields": {
-      "created_time": "2023-11-30T09:27:59.623Z",
-      "updated_time": "2023-11-30T09:27:59.623Z",
-      "description": null,
-      "title": "添加演员",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 140,
-    "fields": {
-      "created_time": "2023-11-30T09:28:28.904Z",
-      "updated_time": "2023-11-30T09:28:28.904Z",
-      "description": null,
-      "title": "删除演员",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 141,
-    "fields": {
-      "created_time": "2023-11-30T09:28:52.501Z",
-      "updated_time": "2023-11-30T09:28:52.501Z",
-      "description": null,
-      "title": "更新演员信息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 142,
-    "fields": {
-      "created_time": "2023-11-30T09:29:16.953Z",
-      "updated_time": "2023-12-04T07:05:04.681Z",
-      "description": null,
-      "title": "获取演员信息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 143,
-    "fields": {
-      "created_time": "2023-11-30T09:29:43.239Z",
-      "updated_time": "2023-12-04T07:05:01.772Z",
-      "description": null,
-      "title": "批量删除演员",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 144,
-    "fields": {
-      "created_time": "2023-11-30T09:30:12.348Z",
-      "updated_time": "2023-11-30T09:30:12.348Z",
-      "description": null,
-      "title": "上传演员头像",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 145,
-    "fields": {
-      "created_time": "2023-12-04T06:58:38.806Z",
-      "updated_time": "2023-12-04T06:58:38.806Z",
-      "description": null,
-      "title": "分类拖拽排序",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 146,
-    "fields": {
-      "created_time": "2023-12-08T08:16:38.219Z",
-      "updated_time": "2023-12-08T08:18:30.586Z",
-      "description": null,
-      "title": "同步文件信息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 147,
-    "fields": {
-      "created_time": "2023-12-08T08:47:02.358Z",
-      "updated_time": "2023-12-08T08:47:02.358Z",
-      "description": null,
-      "title": "通过目录ID获取云盘文件列表",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 148,
-    "fields": {
-      "created_time": "2023-12-08T08:49:02.163Z",
-      "updated_time": "2023-12-08T08:49:02.163Z",
-      "description": null,
-      "title": "通过文件ID导入云盘文件信息",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 149,
-    "fields": {
-      "created_time": "2024-01-19T08:14:48.307Z",
-      "updated_time": "2024-01-19T08:14:48.307Z",
-      "description": null,
-      "title": "豆瓣电影搜索",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": 150,
-    "fields": {
-      "created_time": "2024-01-19T08:15:37.924Z",
-      "updated_time": "2024-01-19T08:15:37.924Z",
-      "description": null,
-      "title": "豆瓣电影添加",
-      "icon": "",
-      "r_svg_name": "",
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": false,
-      "frame_url": "",
-      "frame_loading": false,
-      "transition_enter": "",
-      "transition_leave": "",
-      "is_hidden_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
     "model": "system.menu",
-    "pk": 1,
+    "pk": "5f1217a4-79d4-4692-9d12-9f7c8627012e",
     "fields": {
-      "created_time": "2023-06-20T09:29:57.857Z",
-      "updated_time": "2023-12-04T07:05:25.443Z",
+      "created_time": "2024-01-22T09:32:15.840Z",
+      "updated_time": "2024-01-23T07:56:42.771Z",
       "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "about",
-      "rank": 118,
+      "name": "About",
+      "rank": 94,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
-      "meta": 1
+      "meta": "b9ea02a8-4781-46ea-ba66-80cf08737f0f",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 2,
+    "pk": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
     "fields": {
-      "created_time": "2023-06-23T09:20:19.836Z",
-      "updated_time": "2023-09-13T02:16:34.548Z",
+      "created_time": "2024-01-22T09:32:15.632Z",
+      "updated_time": "2024-01-22T09:32:15.632Z",
       "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
       "parent": null,
       "menu_type": 0,
       "name": "system",
-      "rank": 2,
+      "rank": 1,
       "path": "/system",
       "component": "",
       "is_active": true,
-      "meta": 2
+      "meta": "6dd4f8ec-1c42-40e8-9984-ce4da30ee38a",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 3,
+    "pk": "4f9726d3-3796-4602-a716-1337ee2a168e",
     "fields": {
-      "created_time": "2023-06-23T09:32:26.041Z",
-      "updated_time": "2023-06-23T09:32:26.041Z",
+      "created_time": "2024-01-22T09:32:15.422Z",
+      "updated_time": "2024-01-22T09:32:15.422Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 1,
-      "name": "systemUser",
-      "rank": 3,
+      "name": "SystemUser",
+      "rank": 2,
       "path": "/system/user/index",
       "component": "system/user/index",
       "is_active": true,
-      "meta": 3
+      "meta": "6f544438-96eb-4db7-ab8d-52f06b28442f",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 4,
+    "pk": "b5f6aa93-62dd-433f-9759-2f542baae423",
     "fields": {
-      "created_time": "2023-06-23T09:33:45.885Z",
-      "updated_time": "2023-06-23T09:33:45.885Z",
+      "created_time": "2024-01-22T09:32:15.209Z",
+      "updated_time": "2024-01-22T09:32:15.209Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
       "menu_type": 1,
-      "name": "systemRole",
-      "rank": 13,
+      "name": "SystemRole",
+      "rank": 42,
       "path": "/system/role/index",
       "component": "system/role/index",
       "is_active": true,
-      "meta": 4
+      "meta": "6ffdd515-54f9-48d6-bfc5-f65ff46bbe07",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 5,
+    "pk": "4f569df2-6149-462f-ad50-27f24370f5e2",
     "fields": {
-      "created_time": "2023-06-23T09:34:25.890Z",
-      "updated_time": "2023-06-23T09:34:25.890Z",
+      "created_time": "2024-01-22T09:32:14.999Z",
+      "updated_time": "2024-01-22T09:32:14.999Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 1,
-      "name": "systemMenu",
-      "rank": 19,
+      "name": "SystemMenu",
+      "rank": 18,
       "path": "/system/menu/index",
       "component": "system/menu/index",
       "is_active": true,
-      "meta": 5
+      "meta": "766fe243-248c-4384-9575-977a2c4bba27",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 6,
+    "pk": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
     "fields": {
-      "created_time": "2023-06-23T09:35:44.175Z",
-      "updated_time": "2023-07-01T12:11:00.152Z",
+      "created_time": "2024-01-22T09:32:14.788Z",
+      "updated_time": "2024-01-22T10:16:47.292Z",
       "description": null,
-      "parent": 3,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
       "name": "create:systemUser",
-      "rank": 5,
-      "path": "api/system/user$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 6
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 7,
-    "fields": {
-      "created_time": "2023-06-23T09:36:13.739Z",
-      "updated_time": "2023-07-01T12:11:05.543Z",
-      "description": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "delete:systemUser",
-      "rank": 7,
-      "path": "api/system/user/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 7
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 8,
-    "fields": {
-      "created_time": "2023-06-23T09:36:43.861Z",
-      "updated_time": "2023-11-17T02:33:22.683Z",
-      "description": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "update:systemUser",
-      "rank": 8,
-      "path": "api/system/user/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 8
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 9,
-    "fields": {
-      "created_time": "2023-06-23T09:37:13.092Z",
-      "updated_time": "2023-07-01T12:13:14.399Z",
-      "description": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "list:systemUser",
       "rank": 4,
       "path": "api/system/user$",
-      "component": "GET",
+      "component": "POST",
       "is_active": true,
-      "meta": 9
+      "meta": "7fa734bc-75b5-4ab5-a916-927f266c6209",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 10,
+    "pk": "2118f861-8c58-4685-839e-57afbea60644",
     "fields": {
-      "created_time": "2023-06-23T09:56:13.561Z",
-      "updated_time": "2023-07-01T12:11:13.734Z",
+      "created_time": "2024-01-22T09:32:14.578Z",
+      "updated_time": "2024-01-22T09:32:14.578Z",
       "description": null,
-      "parent": 4,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "delete:systemUser",
+      "rank": 6,
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "31ff5762-5c3f-4657-916f-a1dd8aee146c",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "7595b222-e832-48ad-b91f-234b20043fb3",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.369Z",
+      "updated_time": "2024-01-23T03:26:05.293Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "update:systemUser",
+      "rank": 7,
+      "path": "api/system/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "8fdc9ab8-ae75-4340-8ea7-1b4746b08ad3",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+    "fields": {
+      "created_time": "2024-01-22T09:32:14.159Z",
+      "updated_time": "2024-01-22T10:16:37.180Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "list:systemUser",
+      "rank": 3,
+      "path": "api/system/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "a5a7ac51-b584-437a-a806-9ccaa8f2a588",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7",
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "16a823b0-c4fb-40cd-af63-9aed309823aa",
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d64cc8bd-f860-47e3-8abd-6950953cb072",
+    "fields": {
+      "created_time": "2024-01-22T09:32:13.949Z",
+      "updated_time": "2024-01-22T10:20:39.549Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
       "menu_type": 2,
       "name": "create:systemRole",
-      "rank": 15,
+      "rank": 45,
       "path": "api/system/role$",
       "component": "POST",
       "is_active": true,
-      "meta": 10
+      "meta": "35410095-e55b-4aab-af7a-52254d83c351",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 11,
+    "pk": "85929fd1-128c-4035-8204-20c53068b490",
     "fields": {
-      "created_time": "2023-06-23T09:56:37.325Z",
-      "updated_time": "2023-07-01T12:11:15.309Z",
+      "created_time": "2024-01-22T09:32:13.739Z",
+      "updated_time": "2024-01-22T09:32:13.739Z",
       "description": null,
-      "parent": 4,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
       "menu_type": 2,
       "name": "delete:systemRole",
-      "rank": 16,
+      "rank": 46,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 11
+      "meta": "05521e4a-2851-4933-b6d2-98e81838ca30",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 12,
+    "pk": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
     "fields": {
-      "created_time": "2023-06-23T09:57:02.365Z",
-      "updated_time": "2023-07-01T12:11:16.842Z",
+      "created_time": "2024-01-22T09:32:13.529Z",
+      "updated_time": "2024-01-22T10:20:47.045Z",
       "description": null,
-      "parent": 4,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
       "menu_type": 2,
       "name": "update:systemRole",
-      "rank": 17,
+      "rank": 47,
       "path": "api/system/role/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 12
+      "meta": "e3b9d2b2-2f64-4de1-a1a1-5f6ac904e5c7",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 13,
+    "pk": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
     "fields": {
-      "created_time": "2023-06-23T09:57:26.880Z",
-      "updated_time": "2023-07-01T12:13:17.599Z",
+      "created_time": "2024-01-22T09:32:13.320Z",
+      "updated_time": "2024-01-22T10:20:23.998Z",
       "description": null,
-      "parent": 4,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
       "menu_type": 2,
       "name": "list:systemRole",
-      "rank": 14,
+      "rank": 43,
       "path": "api/system/role$",
       "component": "GET",
       "is_active": true,
-      "meta": 13
+      "meta": "2baf638d-9bd2-42a9-92a0-f4f384250b20",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 14,
+    "pk": "e6148cc0-9078-4cc2-9c3d-b359f9b26c34",
     "fields": {
-      "created_time": "2023-06-23T09:58:07.584Z",
-      "updated_time": "2023-07-01T12:11:11.643Z",
+      "created_time": "2024-01-22T09:32:13.111Z",
+      "updated_time": "2024-01-22T09:32:13.111Z",
       "description": null,
-      "parent": 3,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
       "name": "manyDelete:systemUser",
-      "rank": 9,
+      "rank": 8,
       "path": "api/system/user/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 14
+      "meta": "ec44fc3f-1d9d-40be-a670-dc12107642ba",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 15,
+    "pk": "20df8641-ae58-42e7-b95d-49096a186eb6",
     "fields": {
-      "created_time": "2023-06-23T09:58:28.908Z",
-      "updated_time": "2023-07-01T12:11:20.234Z",
+      "created_time": "2024-01-22T09:32:12.901Z",
+      "updated_time": "2024-01-22T09:32:12.901Z",
       "description": null,
-      "parent": 4,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
       "menu_type": 2,
       "name": "manyDelete:systemRole",
-      "rank": 18,
+      "rank": 48,
       "path": "api/system/role/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 15
+      "meta": "34198314-c91a-42ca-9e70-e17066676f2b",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 16,
+    "pk": "053ade04-8753-4934-9e4d-8ce0adc9e561",
     "fields": {
-      "created_time": "2023-06-23T10:00:17.848Z",
-      "updated_time": "2023-07-01T12:11:24.442Z",
+      "created_time": "2024-01-22T09:32:12.689Z",
+      "updated_time": "2024-01-22T10:18:19.925Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "create:systemMenu",
       "rank": 21,
       "path": "api/system/menu$",
       "component": "POST",
       "is_active": true,
-      "meta": 16
+      "meta": "e89fb42e-db1e-4a73-8bf9-711c797967da",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 17,
+    "pk": "6ceed95d-f143-4c4d-8a22-71310e0d5f75",
     "fields": {
-      "created_time": "2023-06-23T10:00:47.779Z",
-      "updated_time": "2023-07-01T12:11:25.933Z",
+      "created_time": "2024-01-22T09:32:12.480Z",
+      "updated_time": "2024-01-22T09:32:12.480Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "delete:systemMenu",
       "rank": 22,
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 17
+      "meta": "903fe28a-9e1d-45ec-8041-54aa6b902d3c",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 18,
+    "pk": "891b8e29-f612-4c01-9a5d-f989f0225cd7",
     "fields": {
-      "created_time": "2023-06-23T10:01:13.877Z",
-      "updated_time": "2023-07-01T12:11:27.225Z",
+      "created_time": "2024-01-22T09:32:12.270Z",
+      "updated_time": "2024-01-22T10:18:27.909Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "update:systemMenu",
       "rank": 23,
       "path": "api/system/menu/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 18
+      "meta": "5532c083-062b-440b-9090-1c709246a287",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 19,
+    "pk": "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
     "fields": {
-      "created_time": "2023-06-23T10:01:51.633Z",
-      "updated_time": "2023-07-01T12:13:20.957Z",
+      "created_time": "2024-01-22T09:32:12.061Z",
+      "updated_time": "2024-01-22T10:17:53.485Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "list:systemMenu",
-      "rank": 20,
+      "rank": 19,
       "path": "api/system/menu$",
       "component": "GET",
       "is_active": true,
-      "meta": 19
+      "meta": "476d5cfc-4ca7-4b79-a24e-e53764c83868",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 20,
+    "pk": "6b2eb293-0461-45ef-ad87-00462e92b515",
     "fields": {
-      "created_time": "2023-06-23T10:02:18.521Z",
-      "updated_time": "2023-07-01T12:11:30.317Z",
+      "created_time": "2024-01-22T09:32:11.852Z",
+      "updated_time": "2024-01-22T09:32:11.852Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "manyDelete:systemMenu",
       "rank": 24,
       "path": "api/system/menu/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 20
+      "meta": "25958fbe-8a8f-43be-a7be-d3348379fe05",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 21,
+    "pk": "0fe217d1-190f-4565-8258-ed8ef2913cc1",
     "fields": {
-      "created_time": "2023-06-23T10:02:49.285Z",
-      "updated_time": "2023-07-01T12:11:32.092Z",
+      "created_time": "2024-01-22T09:32:11.642Z",
+      "updated_time": "2024-01-22T09:32:11.642Z",
       "description": null,
-      "parent": 5,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
       "menu_type": 2,
       "name": "rank:systemMenu",
       "rank": 25,
       "path": "api/system/menu/action_rank$",
       "component": "POST",
       "is_active": true,
-      "meta": 21
+      "meta": "54269c6d-601c-4574-9500-8a69e0bef8f4",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 22,
+    "pk": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
     "fields": {
-      "created_time": "2023-06-25T08:45:24.985Z",
-      "updated_time": "2023-09-16T02:59:15.970Z",
+      "created_time": "2024-01-22T09:32:11.433Z",
+      "updated_time": "2024-01-22T09:32:11.433Z",
       "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "chat",
-      "rank": 1,
+      "name": "Chat",
+      "rank": 93,
       "path": "/chat/index",
       "component": "chat/index",
-      "is_active": true,
-      "meta": 22
+      "is_active": false,
+      "meta": "d95d4ae2-749c-4bc1-8c19-f5a1d04642f5",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 23,
+    "pk": "2bc5d8ee-add8-4c95-a845-2bcd4fd86122",
     "fields": {
-      "created_time": "2023-06-26T10:29:57.567Z",
-      "updated_time": "2023-09-05T02:11:41.679Z",
+      "created_time": "2024-01-22T09:32:11.223Z",
+      "updated_time": "2024-01-22T09:32:11.223Z",
       "description": null,
-      "parent": 3,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
       "name": "upload:systemAvatar",
-      "rank": 6,
+      "rank": 5,
       "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
-      "meta": 23
+      "meta": "ebd2d441-c438-4ec2-916d-1aa247a2f8c6",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 24,
+    "pk": "33662086-715b-4478-b60d-a346c8c4f66b",
     "fields": {
-      "created_time": "2023-06-28T02:15:48.304Z",
-      "updated_time": "2023-09-13T02:18:10.806Z",
+      "created_time": "2024-01-22T09:32:11.012Z",
+      "updated_time": "2024-01-22T09:32:11.012Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "74defdba-9645-439a-bf36-c0545bb9cda1",
       "menu_type": 1,
-      "name": "systemOperationLog",
-      "rank": 26,
-      "path": "/system/operation/index",
-      "component": "system/operation-log/index",
+      "name": "SystemOperationLog",
+      "rank": 60,
+      "path": "/system/logs/operation/index",
+      "component": "system/logs/operation/index",
       "is_active": true,
-      "meta": 24
+      "meta": "2d69434f-b44f-4bf2-b383-0674fa295134",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 25,
+    "pk": "4a4ee30a-523b-4a1e-a9c1-6097a26f1979",
     "fields": {
-      "created_time": "2023-06-28T02:36:02.766Z",
-      "updated_time": "2023-07-01T12:11:50.215Z",
+      "created_time": "2024-01-22T09:32:10.798Z",
+      "updated_time": "2024-01-22T09:32:10.798Z",
       "description": null,
-      "parent": 24,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
       "menu_type": 2,
       "name": "delete:systemOperationLog",
-      "rank": 28,
-      "path": "api/system/operation-log/(?P<pk>[^/.]+)$",
+      "rank": 62,
+      "path": "api/system/logs/operation/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 25
+      "meta": "66cc6396-6fb7-4356-85e5-43e24940a25f",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 26,
+    "pk": "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
     "fields": {
-      "created_time": "2023-06-28T02:36:33.480Z",
-      "updated_time": "2023-07-01T12:13:24.999Z",
+      "created_time": "2024-01-22T09:32:10.589Z",
+      "updated_time": "2024-01-22T10:22:02.403Z",
       "description": null,
-      "parent": 24,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
       "menu_type": 2,
       "name": "list:systemOperationLog",
-      "rank": 27,
-      "path": "api/system/operation$",
+      "rank": 61,
+      "path": "api/system/logs/operation$",
       "component": "GET",
       "is_active": true,
-      "meta": 26
+      "meta": "a8e990a8-8a78-411e-9dca-7ade4e688634",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 27,
+    "pk": "66aa0535-a958-4bc0-9667-8b49004d90a5",
     "fields": {
-      "created_time": "2023-06-28T02:37:06.461Z",
-      "updated_time": "2023-07-01T12:11:53.848Z",
+      "created_time": "2024-01-22T09:32:10.378Z",
+      "updated_time": "2024-01-22T09:32:10.378Z",
       "description": null,
-      "parent": 24,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
       "menu_type": 2,
       "name": "manyDelete:systemOperationLog",
-      "rank": 29,
-      "path": "api/system/operation-log/many-delete$",
+      "rank": 63,
+      "path": "api/system/logs/operation/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 27
+      "meta": "22b683f4-6fae-4a4f-b2a0-b853f459cfaf",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 28,
+    "pk": "b1a01bd0-e437-4397-8e26-d532a0c04293",
     "fields": {
-      "created_time": "2023-06-29T08:12:07.911Z",
-      "updated_time": "2023-07-01T12:12:01.747Z",
+      "created_time": "2024-01-22T09:32:10.169Z",
+      "updated_time": "2024-01-22T09:32:10.169Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 0,
       "name": "systemFlower",
-      "rank": 43,
+      "rank": 82,
       "path": "/system/flower",
       "component": "",
       "is_active": true,
-      "meta": 28
+      "meta": "5a3f1636-c7c1-4d07-bd66-c589202d3f8e",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 29,
+    "pk": "14622100-4732-4f48-ae6f-7189a3407c89",
     "fields": {
-      "created_time": "2023-07-01T01:04:16.321Z",
-      "updated_time": "2023-07-01T12:13:29.448Z",
+      "created_time": "2024-01-22T09:32:09.958Z",
+      "updated_time": "2024-01-22T09:32:09.958Z",
       "description": null,
-      "parent": 28,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b1a01bd0-e437-4397-8e26-d532a0c04293",
       "menu_type": 2,
       "name": "list:systemFlower",
-      "rank": 44,
+      "rank": 83,
       "path": "api/flower/(?P<path>.*)",
       "component": "GET",
       "is_active": true,
-      "meta": 29
+      "meta": "2dd7b851-5b34-4241-881d-814a60521407",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 30,
+    "pk": "de81c3f5-9e75-447c-ba0d-5d4a638859d4",
     "fields": {
-      "created_time": "2023-07-01T01:04:51.593Z",
-      "updated_time": "2023-07-01T12:11:43.607Z",
+      "created_time": "2024-01-22T09:32:09.749Z",
+      "updated_time": "2024-01-22T09:32:09.749Z",
       "description": null,
-      "parent": 28,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b1a01bd0-e437-4397-8e26-d532a0c04293",
       "menu_type": 2,
       "name": "update:systemFlower",
-      "rank": 45,
+      "rank": 84,
       "path": "api/flower/(?P<path>.*)",
       "component": "POST",
       "is_active": true,
-      "meta": 30
+      "meta": "dd5f1eb7-cd6a-4315-ab6d-dcb4241a9cdb",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 46,
+    "pk": "bed0a74c-f35e-4d66-bd6d-650c705f5af1",
     "fields": {
-      "created_time": "2023-09-05T02:33:18.251Z",
-      "updated_time": "2023-09-05T02:35:33.505Z",
+      "created_time": "2024-01-22T09:32:09.538Z",
+      "updated_time": "2024-01-22T09:32:09.538Z",
       "description": null,
-      "parent": 3,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
-      "name": "empower:systemRole",
-      "rank": 10,
-      "path": "api/system/role/empower$",
+      "name": "empower:systemUserRole",
+      "rank": 9,
+      "path": "api/system/user/(?P<pk>[^/.]+)/empower$",
       "component": "POST",
       "is_active": true,
-      "meta": 50
+      "meta": "8793961d-35f1-427d-85a5-d576a47ec7d8",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 47,
+    "pk": "0e5b8019-f4df-4dd4-a635-8ee198c196a3",
     "fields": {
-      "created_time": "2023-09-05T03:09:34.188Z",
-      "updated_time": "2023-09-05T03:09:34.188Z",
+      "created_time": "2024-01-22T09:32:09.329Z",
+      "updated_time": "2024-01-22T09:32:09.329Z",
       "description": null,
-      "parent": 3,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
       "name": "update:systemUserPwd",
-      "rank": 11,
-      "path": "api/system/user/reset_password$",
+      "rank": 10,
+      "path": "api/system/user/(?P<pk>[^/.]+)/reset_password$",
       "component": "POST",
       "is_active": true,
-      "meta": 51
+      "meta": "6da80515-8092-4836-853d-768b66c8ba75",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 48,
+    "pk": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
     "fields": {
-      "created_time": "2023-09-11T06:50:39.036Z",
-      "updated_time": "2023-09-15T10:31:23.762Z",
+      "created_time": "2024-01-22T09:32:09.119Z",
+      "updated_time": "2024-01-22T09:32:09.119Z",
       "description": null,
-      "parent": 2,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 0,
       "name": "systemNoticeDir",
-      "rank": 30,
+      "rank": 68,
       "path": "/system/notice/",
       "component": "system/notify/index",
       "is_active": true,
-      "meta": 52
+      "meta": "010423b5-c1c5-4a31-bdaa-980f7545e6ce",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 49,
+    "pk": "24244ee6-cf54-4900-94b1-717a7317af04",
     "fields": {
-      "created_time": "2023-09-11T06:53:54.361Z",
-      "updated_time": "2023-09-15T09:17:27.911Z",
+      "created_time": "2024-01-22T09:32:08.910Z",
+      "updated_time": "2024-01-22T10:22:36.195Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "list:systemNotice",
-      "rank": 32,
+      "rank": 70,
       "path": "api/system/message/notice$",
       "component": "GET",
       "is_active": true,
-      "meta": 53
+      "meta": "555c4963-7e46-435c-b112-95c2635c625c",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 50,
+    "pk": "2ef524c5-3a70-4950-9f11-31f3f4f8c321",
     "fields": {
-      "created_time": "2023-09-11T06:54:38.682Z",
-      "updated_time": "2023-09-15T09:18:07.125Z",
+      "created_time": "2024-01-22T09:32:08.700Z",
+      "updated_time": "2024-01-22T09:32:08.700Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "delete:systemNotice",
-      "rank": 36,
+      "rank": 75,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 54
+      "meta": "9357e3b2-6714-44b5-a719-9c5701de1233",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 51,
+    "pk": "9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f",
     "fields": {
-      "created_time": "2023-09-11T06:55:18.120Z",
-      "updated_time": "2023-09-15T09:18:00.384Z",
+      "created_time": "2024-01-22T09:32:08.489Z",
+      "updated_time": "2024-01-22T09:32:08.490Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "manyDelete:systemNotice",
-      "rank": 35,
+      "rank": 74,
       "path": "api/system/message/notice/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 55
+      "meta": "62981476-34e9-4ddf-ac0a-9248f205596f",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 52,
+    "pk": "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
     "fields": {
-      "created_time": "2023-09-11T08:18:20.950Z",
-      "updated_time": "2023-09-15T09:17:53.442Z",
+      "created_time": "2024-01-22T09:32:08.275Z",
+      "updated_time": "2024-01-22T10:22:53.038Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "create:systemNotice",
-      "rank": 34,
+      "rank": 72,
       "path": "api/system/message/notice$",
       "component": "POST",
       "is_active": true,
-      "meta": 56
+      "meta": "c02abdfc-1dd5-4e83-9db7-2b6e08dda7f7",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 53,
+    "pk": "c2e45d75-1270-474b-bf0c-03475ecb8b60",
     "fields": {
-      "created_time": "2023-09-11T08:19:33.343Z",
-      "updated_time": "2023-09-15T09:17:44.018Z",
+      "created_time": "2024-01-22T09:32:08.066Z",
+      "updated_time": "2024-01-22T10:22:47.279Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "update:systemNotice",
-      "rank": 33,
+      "rank": 71,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 57
+      "meta": "ad7d1868-0846-4fa8-b81b-2d116e807284",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 54,
+    "pk": "7008bb48-18b1-4bc1-a2ea-c22998024721",
     "fields": {
-      "created_time": "2023-09-12T09:29:25.917Z",
-      "updated_time": "2023-09-12T09:29:25.917Z",
+      "created_time": "2024-01-22T09:32:07.856Z",
+      "updated_time": "2024-01-22T09:32:07.856Z",
       "description": null,
-      "parent": 3,
-      "menu_type": 2,
-      "name": "send:systemNotify",
-      "rank": 12,
-      "path": "#",
-      "component": "GET",
-      "is_active": true,
-      "meta": 58
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 55,
-    "fields": {
-      "created_time": "2023-09-13T06:36:12.497Z",
-      "updated_time": "2023-09-15T07:50:21.460Z",
-      "description": null,
-      "parent": 48,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
       "menu_type": 1,
-      "name": "systemNotice",
-      "rank": 31,
+      "name": "SystemNotice",
+      "rank": 69,
       "path": "/system/notice/index",
       "component": "system/notice/index",
       "is_active": true,
-      "meta": 59
+      "meta": "ebb88c83-3762-478e-ae30-04eb9d455e72",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 63,
+    "pk": "8f3eef4e-c88b-415a-a467-b0ebf7144b73",
     "fields": {
-      "created_time": "2023-09-13T08:21:00.547Z",
-      "updated_time": "2023-09-15T09:18:12.324Z",
+      "created_time": "2024-01-22T09:32:07.646Z",
+      "updated_time": "2024-01-22T09:32:07.646Z",
       "description": null,
-      "parent": 55,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
       "name": "update:systemNoticePublish",
-      "rank": 37,
+      "rank": 76,
       "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
       "component": "PUT",
       "is_active": true,
-      "meta": 67
+      "meta": "096c6aa9-299d-4f14-9158-2ea4661fed51",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 64,
+    "pk": "b8664880-b2dd-48d9-ad88-c79258156084",
     "fields": {
-      "created_time": "2023-09-13T09:58:45.921Z",
-      "updated_time": "2023-09-15T07:53:10.396Z",
+      "created_time": "2024-01-22T09:32:07.436Z",
+      "updated_time": "2024-01-22T09:32:07.436Z",
       "description": null,
-      "parent": 48,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "864eba5d-f793-4a9c-b7eb-cdb227a9d221",
       "menu_type": 1,
-      "name": "systemNoticeRead",
-      "rank": 38,
+      "name": "SystemNoticeRead",
+      "rank": 77,
       "path": "/system/notice/read/list",
       "component": "system/notice/read/list",
       "is_active": true,
-      "meta": 68
+      "meta": "0b3782d6-2f34-4473-8755-144a5fa8bdff",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 65,
+    "pk": "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
     "fields": {
-      "created_time": "2023-09-13T10:01:21.158Z",
-      "updated_time": "2023-09-15T09:18:24.640Z",
+      "created_time": "2024-01-22T09:32:07.225Z",
+      "updated_time": "2024-01-22T10:23:36.325Z",
       "description": null,
-      "parent": 64,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
       "menu_type": 2,
       "name": "list:systemNoticeRead",
-      "rank": 39,
+      "rank": 78,
       "path": "api/system/message/read$",
       "component": "GET",
       "is_active": true,
-      "meta": 69
+      "meta": "9a2c5255-72a9-4608-b15b-696148d4de5a",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "1ad2fb4d-b834-4099-bdc0-152028da06c9",
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 66,
+    "pk": "b6a0ed04-ac8d-4e24-ad61-3d11e4e72260",
     "fields": {
-      "created_time": "2023-09-13T10:02:21.046Z",
-      "updated_time": "2023-09-15T09:18:30.881Z",
+      "created_time": "2024-01-22T09:32:07.013Z",
+      "updated_time": "2024-01-22T09:32:07.013Z",
       "description": null,
-      "parent": 64,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
       "menu_type": 2,
       "name": "delete:systemNoticeRead",
-      "rank": 40,
+      "rank": 79,
       "path": "api/system/message/read/(?P<pk>[^/.]+)$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 70
+      "meta": "6f88698a-734d-4dfc-b11e-6bf47f1cf4ff",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 67,
+    "pk": "5efb38e7-830b-41ac-8130-f2a7e2061ce9",
     "fields": {
-      "created_time": "2023-09-13T10:03:20.565Z",
-      "updated_time": "2023-09-15T09:18:35.714Z",
+      "created_time": "2024-01-22T09:32:06.803Z",
+      "updated_time": "2024-01-22T09:32:06.803Z",
       "description": null,
-      "parent": 64,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
       "menu_type": 2,
       "name": "manyDelete:systemNoticeRead",
-      "rank": 41,
+      "rank": 80,
       "path": "api/system/message/read/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 71
+      "meta": "9c5caa19-dd95-4ab7-8141-137c69b0e43c",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 68,
+    "pk": "6997ffe2-8246-401d-8800-248ecbc2dd83",
     "fields": {
-      "created_time": "2023-09-14T06:39:53.290Z",
-      "updated_time": "2023-09-14T06:40:11.321Z",
+      "created_time": "2024-01-22T09:32:06.591Z",
+      "updated_time": "2024-01-22T09:32:06.591Z",
       "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "userInfo",
-      "rank": 110,
+      "name": "UserInfo",
+      "rank": 85,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
-      "meta": 72
+      "meta": "3fa471d6-8523-4ab4-afd6-673bf020c0d6",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 69,
+    "pk": "c9843844-f855-42a7-90ad-18b94862a3da",
     "fields": {
-      "created_time": "2023-09-14T08:02:14.194Z",
-      "updated_time": "2023-09-14T13:24:19.371Z",
+      "created_time": "2024-01-22T09:32:06.381Z",
+      "updated_time": "2024-01-22T09:32:06.381Z",
       "description": null,
-      "parent": 68,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 111,
+      "rank": 86,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
-      "meta": 73
+      "meta": "adf68ee6-c0b7-44b8-b753-a1ecedc25a3d",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 70,
+    "pk": "05920c01-b31e-42a1-9dfd-d1e0b176e55f",
     "fields": {
-      "created_time": "2023-09-14T13:08:02.555Z",
-      "updated_time": "2023-09-14T13:24:31.562Z",
+      "created_time": "2024-01-22T09:32:06.170Z",
+      "updated_time": "2024-01-22T09:32:06.170Z",
       "description": null,
-      "parent": 68,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "upload:UserInfoAvatar",
-      "rank": 112,
+      "rank": 87,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
-      "meta": 74
+      "meta": "8474c28c-0509-4ed1-a96d-9f74a11f0b95",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 71,
+    "pk": "af3ad441-2f48-4d74-b99a-370eb047f669",
     "fields": {
-      "created_time": "2023-09-14T13:24:01.954Z",
-      "updated_time": "2023-09-14T13:24:01.954Z",
+      "created_time": "2024-01-22T09:32:05.961Z",
+      "updated_time": "2024-01-22T09:32:05.961Z",
       "description": null,
-      "parent": 68,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "update:UserInfoPassword",
-      "rank": 113,
+      "rank": 88,
       "path": "api/system/userinfo/reset_password$",
       "component": "POST",
       "is_active": true,
-      "meta": 75
+      "meta": "3c2cb988-773a-409b-b374-77677476cdb8",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 72,
+    "pk": "602e20d6-9893-44ae-876a-443cbfa90703",
     "fields": {
-      "created_time": "2023-09-15T10:17:08.911Z",
-      "updated_time": "2023-09-15T10:20:32.660Z",
+      "created_time": "2024-01-22T09:32:05.751Z",
+      "updated_time": "2024-01-22T09:32:05.751Z",
       "description": null,
-      "parent": 64,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b8664880-b2dd-48d9-ad88-c79258156084",
       "menu_type": 2,
       "name": "update:systemNoticeReadState",
-      "rank": 42,
+      "rank": 81,
       "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
       "component": "PUT",
       "is_active": true,
-      "meta": 76
+      "meta": "aef28ddd-f962-47e4-9970-6a55f21e5b7b",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 73,
+    "pk": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
     "fields": {
-      "created_time": "2023-09-15T13:30:38.584Z",
-      "updated_time": "2023-09-15T13:31:29.421Z",
+      "created_time": "2024-01-22T09:32:05.540Z",
+      "updated_time": "2024-01-22T09:32:05.540Z",
       "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
       "parent": null,
       "menu_type": 1,
-      "name": "userNotice",
-      "rank": 114,
+      "name": "UserNotice",
+      "rank": 89,
       "path": "/user/notice/index",
       "component": "user/notice/index",
       "is_active": true,
-      "meta": 77
+      "meta": "76dc656f-61bf-4039-a93b-7763e5ba812b",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 74,
+    "pk": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
     "fields": {
-      "created_time": "2023-09-15T13:31:24.794Z",
-      "updated_time": "2023-11-16T03:41:58.922Z",
+      "created_time": "2024-01-22T09:32:05.331Z",
+      "updated_time": "2024-01-22T10:24:20.418Z",
       "description": null,
-      "parent": 73,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "list:userNotice",
-      "rank": 117,
+      "rank": 90,
       "path": "api/system/notice$",
       "component": "GET",
       "is_active": true,
-      "meta": 78
+      "meta": "fea8d5b7-c9ae-497f-af19-ef06bafd583e",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 75,
+    "pk": "6fbc9578-58a1-4d28-8339-6a3742b30461",
     "fields": {
-      "created_time": "2023-09-15T14:08:33.755Z",
-      "updated_time": "2023-09-15T14:08:33.755Z",
+      "created_time": "2024-01-22T09:32:05.121Z",
+      "updated_time": "2024-01-22T09:32:05.121Z",
       "description": null,
-      "parent": 73,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeRead",
-      "rank": 115,
+      "rank": 91,
       "path": "api/system/notice/read$",
       "component": "PUT",
       "is_active": true,
-      "meta": 79
+      "meta": "c715a80d-4a9f-4d48-b801-f217591d5483",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 76,
+    "pk": "4e4eb5b1-3b37-4090-ae19-f470e172c6fd",
     "fields": {
-      "created_time": "2023-09-16T02:48:15.769Z",
-      "updated_time": "2023-09-16T02:56:56.066Z",
+      "created_time": "2024-01-22T09:32:04.910Z",
+      "updated_time": "2024-01-22T09:32:04.910Z",
       "description": null,
-      "parent": 73,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
-      "rank": 116,
+      "rank": 92,
       "path": "api/system/notice/read_all$",
       "component": "PUT",
       "is_active": true,
-      "meta": 80
+      "meta": "20d5ae2d-ebda-4da0-bcf8-95ac59491951",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 79,
+    "pk": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
     "fields": {
-      "created_time": "2023-11-17T09:34:44.030Z",
-      "updated_time": "2023-11-28T10:08:49.552Z",
+      "created_time": "2024-01-22T09:32:04.697Z",
+      "updated_time": "2024-01-22T09:32:04.697Z",
       "description": null,
-      "parent": null,
-      "menu_type": 0,
-      "name": "movies",
-      "rank": 46,
-      "path": "/movies",
-      "component": "",
-      "is_active": true,
-      "meta": 83
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 80,
-    "fields": {
-      "created_time": "2023-11-17T09:37:11.738Z",
-      "updated_time": "2023-11-22T02:36:25.447Z",
-      "description": null,
-      "parent": 106,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 1,
-      "name": "MoviesDrive",
-      "rank": 48,
-      "path": "/movies/drive/index",
-      "component": "movies/drive/index",
+      "name": "SystemDept",
+      "rank": 11,
+      "path": "/system/dept/index",
+      "component": "system/dept/index",
       "is_active": true,
-      "meta": 84
+      "meta": "7fe14904-73fa-4914-9ab1-c3311311ab8b",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 81,
+    "pk": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
     "fields": {
-      "created_time": "2023-11-17T09:43:21.968Z",
-      "updated_time": "2023-11-19T05:52:43.606Z",
+      "created_time": "2024-01-22T09:32:04.487Z",
+      "updated_time": "2024-01-22T10:17:19.918Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
       "menu_type": 2,
-      "name": "list:MoviesDrive",
+      "name": "list:systemDept",
+      "rank": 12,
+      "path": "api/system/dept$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "5f11083e-7d25-4857-ba39-1484cdb549af",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7",
+        "16a823b0-c4fb-40cd-af63-9aed309823aa",
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2cd3ca25-e606-4e46-983e-7aef573ef713",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.277Z",
+      "updated_time": "2024-01-22T10:17:30.465Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "create:systemDept",
+      "rank": 13,
+      "path": "api/system/dept$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "7d066265-94d6-4965-ab57-363b43f71a50",
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2fc6ed05-aaa5-4098-983b-f4c2a1e9108a",
+    "fields": {
+      "created_time": "2024-01-22T09:32:04.069Z",
+      "updated_time": "2024-01-22T09:32:04.069Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "delete:systemDept",
+      "rank": 14,
+      "path": "api/system/dept/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "bcde3468-f9e0-4526-b092-d5c0d9aa4e6f",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "13a2e23f-6cfb-4992-948b-3477b96591d4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.860Z",
+      "updated_time": "2024-01-22T10:17:36.121Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "update:systemDept",
+      "rank": 15,
+      "path": "api/system/dept/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "13deb802-8227-4dce-badb-9d1f15856914",
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5c53c6d2-ccdd-410f-8ef2-d20653fb31b5",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.651Z",
+      "updated_time": "2024-01-22T09:32:03.651Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "manyDelete:systemDept",
+      "rank": 16,
+      "path": "api/system/dept/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "90f07296-98af-411e-ac04-9681d416ccc3",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "432d5df8-a0b8-4042-83b9-580027b1e236",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.442Z",
+      "updated_time": "2024-01-22T09:32:03.442Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+      "menu_type": 2,
+      "name": "empower:systemDeptRole",
+      "rank": 17,
+      "path": "api/system/dept/(?P<pk>[^/.]+)/empower$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "9a787898-7db7-48cf-987e-d08af7df2c73",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0678cc57-f292-4287-887b-ffade834dde1",
+    "fields": {
+      "created_time": "2024-01-22T09:32:03.232Z",
+      "updated_time": "2024-01-22T09:32:03.232Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
+      "menu_type": 1,
+      "name": "SystemDataPermission",
       "rank": 49,
-      "path": "api/movies/drive$",
-      "component": "GET",
+      "path": "/system/permission/index",
+      "component": "system/permission/index",
       "is_active": true,
-      "meta": 85
+      "meta": "7a4cf50f-0c9f-4b46-bf6f-a7c9f8c052ea",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 82,
+    "pk": "60a0d029-75ae-4314-b5c7-bbd8d642847d",
     "fields": {
-      "created_time": "2023-11-17T09:47:29.614Z",
-      "updated_time": "2023-11-19T05:53:35.084Z",
+      "created_time": "2024-01-22T09:32:03.022Z",
+      "updated_time": "2024-01-22T10:21:07.208Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
       "menu_type": 2,
-      "name": "delete:MoviesDrive",
+      "name": "list:systemDataPermission",
       "rank": 50,
-      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
+      "path": "api/system/permission$",
+      "component": "GET",
       "is_active": true,
-      "meta": 86
+      "meta": "eaeab52f-c12b-423d-96ac-5ac858bcfe73",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 83,
+    "pk": "bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859",
     "fields": {
-      "created_time": "2023-11-17T09:55:37.801Z",
-      "updated_time": "2023-11-19T05:53:48.053Z",
+      "created_time": "2024-01-22T09:32:02.813Z",
+      "updated_time": "2024-01-22T10:21:13.433Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
       "menu_type": 2,
-      "name": "update:MoviesDrive",
+      "name": "create:systemDataPermission",
       "rank": 51,
-      "path": "api/movies/drive/(?P<pk>[^/.]+)$",
-      "component": "PUT",
+      "path": "api/system/permission$",
+      "component": "POST",
       "is_active": true,
-      "meta": 87
+      "meta": "e7a1b123-6d3e-47f8-80f2-530fdd1f5453",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 84,
+    "pk": "44b8aaf4-dd2f-4da5-b329-c3bc367d5789",
     "fields": {
-      "created_time": "2023-11-17T09:57:21.312Z",
-      "updated_time": "2023-11-19T05:54:02.147Z",
+      "created_time": "2024-01-22T09:32:02.602Z",
+      "updated_time": "2024-01-22T09:32:02.602Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
       "menu_type": 2,
-      "name": "get:MoviesDriveQrCode",
+      "name": "delete:systemDataPermission",
       "rank": 52,
-      "path": "api/movies/qrcode-drive",
-      "component": "GET",
+      "path": "api/system/permission/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
       "is_active": true,
-      "meta": 88
+      "meta": "bacdcd28-4e73-41a3-ace6-a98226c5124c",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 85,
+    "pk": "07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb",
     "fields": {
-      "created_time": "2023-11-17T09:58:36.389Z",
-      "updated_time": "2023-11-19T05:54:09.933Z",
+      "created_time": "2024-01-22T09:32:02.391Z",
+      "updated_time": "2024-01-22T10:21:18.198Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
       "menu_type": 2,
-      "name": "check:MoviesDriveQrCode",
+      "name": "update:systemDataPermission",
       "rank": 53,
-      "path": "api/movies/qrcode-drive",
-      "component": "POST",
+      "path": "api/system/permission/(?P<pk>[^/.]+)$",
+      "component": "PUT",
       "is_active": true,
-      "meta": 89
+      "meta": "f29a9c84-b453-4a23-819c-31bb822f4587",
+      "model": [
+        "16a823b0-c4fb-40cd-af63-9aed309823aa"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 86,
+    "pk": "a85ac0ec-8cda-4ac1-b38f-492388648253",
     "fields": {
-      "created_time": "2023-11-17T10:05:36.612Z",
-      "updated_time": "2023-11-19T05:54:20.375Z",
+      "created_time": "2024-01-22T09:32:02.182Z",
+      "updated_time": "2024-01-22T09:32:02.182Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "0678cc57-f292-4287-887b-ffade834dde1",
       "menu_type": 2,
-      "name": "clean:MoviesDrive",
+      "name": "manyDelete:systemDataPermission",
       "rank": 54,
-      "path": "api/movies/drive/(?P<pk>[^/.]+)/clean$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 90
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 87,
-    "fields": {
-      "created_time": "2023-11-19T08:32:30.524Z",
-      "updated_time": "2023-11-19T08:32:30.524Z",
-      "description": null,
-      "parent": 80,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesDrive",
-      "rank": 55,
-      "path": "api/movies/drive/many-delete$",
+      "path": "api/system/permission/many-delete$",
       "component": "DELETE",
       "is_active": true,
-      "meta": 91
+      "meta": "face1737-fa76-4e6e-964b-8c76fd31f17d",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 88,
+    "pk": "5c71e14d-1a3d-4dc3-9cc5-1a1f4eb1c44a",
     "fields": {
-      "created_time": "2023-11-20T07:52:43.757Z",
-      "updated_time": "2023-11-20T08:07:18.568Z",
+      "created_time": "2024-01-22T09:32:01.972Z",
+      "updated_time": "2024-01-22T10:23:02.043Z",
       "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesFilm",
-      "rank": 83,
-      "path": "/movies/film/index",
-      "component": "movies/film/index",
-      "is_active": true,
-      "meta": 92
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 89,
-    "fields": {
-      "created_time": "2023-11-20T07:54:32.892Z",
-      "updated_time": "2023-11-20T07:54:32.892Z",
-      "description": null,
-      "parent": 88,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7008bb48-18b1-4bc1-a2ea-c22998024721",
       "menu_type": 2,
-      "name": "list:MoviesFilm",
-      "rank": 84,
-      "path": "api/movies/film$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 93
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 90,
-    "fields": {
-      "created_time": "2023-11-20T07:55:02.427Z",
-      "updated_time": "2023-11-20T07:55:02.427Z",
-      "description": null,
-      "parent": 88,
-      "menu_type": 2,
-      "name": "delete:MoviesFilm",
-      "rank": 85,
-      "path": "api/movies/film/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 94
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 91,
-    "fields": {
-      "created_time": "2023-11-20T07:55:28.938Z",
-      "updated_time": "2023-11-20T07:55:28.938Z",
-      "description": null,
-      "parent": 88,
-      "menu_type": 2,
-      "name": "update:MoviesFilm",
-      "rank": 86,
-      "path": "api/movies/film/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 95
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 92,
-    "fields": {
-      "created_time": "2023-11-20T07:56:07.312Z",
-      "updated_time": "2023-11-20T07:56:07.312Z",
-      "description": null,
-      "parent": 88,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesFilm",
-      "rank": 87,
-      "path": "api/movies/film/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 96
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 93,
-    "fields": {
-      "created_time": "2023-11-20T07:56:54.060Z",
-      "updated_time": "2023-11-20T07:56:54.060Z",
-      "description": null,
-      "parent": 88,
-      "menu_type": 2,
-      "name": "create:MoviesFilm",
-      "rank": 88,
-      "path": "api/movies/film$",
+      "name": "create:systemAnnouncement",
+      "rank": 73,
+      "path": "api/system/message/notice/announcement$",
       "component": "POST",
       "is_active": true,
-      "meta": 97
+      "meta": "99511cb8-8bda-4bed-a709-86db08f62dde",
+      "model": [
+        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 94,
+    "pk": "74defdba-9645-439a-bf36-c0545bb9cda1",
     "fields": {
-      "created_time": "2023-11-20T09:58:41.235Z",
-      "updated_time": "2023-11-20T09:58:41.236Z",
+      "created_time": "2024-01-22T09:32:01.747Z",
+      "updated_time": "2024-01-22T09:32:01.747Z",
       "description": null,
-      "parent": 88,
-      "menu_type": 2,
-      "name": "upload:MoviesFilmPoster",
-      "rank": 89,
-      "path": "api/movies/film/(?P<pk>[^/.]+)/upload$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 98
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 95,
-    "fields": {
-      "created_time": "2023-11-21T05:48:06.353Z",
-      "updated_time": "2023-11-23T06:22:55.810Z",
-      "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesEpisode",
-      "rank": 90,
-      "path": "/movies/episode/index",
-      "component": "movies/episode/index",
-      "is_active": true,
-      "meta": 99
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 96,
-    "fields": {
-      "created_time": "2023-11-21T05:49:23.434Z",
-      "updated_time": "2023-11-23T06:23:03.664Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "list:MoviesEpisode",
-      "rank": 93,
-      "path": "api/movies/episode$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 100
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 97,
-    "fields": {
-      "created_time": "2023-11-21T05:49:59.584Z",
-      "updated_time": "2023-11-23T06:23:11.324Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "delete:MoviesEpisode",
-      "rank": 94,
-      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 101
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 98,
-    "fields": {
-      "created_time": "2023-11-21T05:50:53.852Z",
-      "updated_time": "2023-11-23T06:23:30.132Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "update:MoviesEpisode",
-      "rank": 91,
-      "path": "api/movies/episode/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 102
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 99,
-    "fields": {
-      "created_time": "2023-11-21T05:52:37.477Z",
-      "updated_time": "2023-11-23T06:23:17.069Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "rank:MoviesEpisode",
-      "rank": 95,
-      "path": "api/movies/episode/action_rank$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 103
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 100,
-    "fields": {
-      "created_time": "2023-11-21T05:54:26.528Z",
-      "updated_time": "2023-11-23T06:23:32.292Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "create:MoviesEpisode",
-      "rank": 92,
-      "path": "api/movies/episode$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 104
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 101,
-    "fields": {
-      "created_time": "2023-11-21T05:55:10.966Z",
-      "updated_time": "2023-11-23T06:23:25.956Z",
-      "description": null,
-      "parent": 95,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesEpisode",
-      "rank": 96,
-      "path": "api/movies/episode/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 105
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 102,
-    "fields": {
-      "created_time": "2023-11-21T07:02:07.482Z",
-      "updated_time": "2023-11-27T03:34:46.804Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "upload:MoviesEpisodePreHash",
-      "rank": 65,
-      "path": "api/movies/episode/pre_hash$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 106
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 103,
-    "fields": {
-      "created_time": "2023-11-21T07:03:29.296Z",
-      "updated_time": "2023-11-27T03:34:50.738Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "upload:MoviesEpisodeContentHash",
-      "rank": 66,
-      "path": "api/movies/episode/content_hash$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 107
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 104,
-    "fields": {
-      "created_time": "2023-11-21T07:04:17.500Z",
-      "updated_time": "2023-11-27T03:34:54.066Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "upload:MoviesEpisodeComplete",
-      "rank": 67,
-      "path": "api/movies/episode/upload_complete$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 108
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 105,
-    "fields": {
-      "created_time": "2023-11-21T07:04:49.663Z",
-      "updated_time": "2023-11-27T03:34:57.062Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "upload:MoviesEpisodeAuthSid",
-      "rank": 68,
-      "path": "api/movies/episode/auth_sid$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 109
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 106,
-    "fields": {
-      "created_time": "2023-11-22T02:36:18.836Z",
-      "updated_time": "2023-11-22T02:36:28.917Z",
-      "description": null,
-      "parent": 79,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
       "menu_type": 0,
-      "name": "storage",
-      "rank": 47,
-      "path": "/movies/storage",
+      "name": "logs",
+      "rank": 59,
+      "path": "/system/logs",
       "component": "",
       "is_active": true,
-      "meta": 110
+      "meta": "fa4e8021-d69a-4d1c-bfeb-8b5f24dd7407",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 107,
+    "pk": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
     "fields": {
-      "created_time": "2023-11-22T02:37:40.751Z",
-      "updated_time": "2023-11-22T02:37:40.751Z",
+      "created_time": "2024-01-22T09:32:01.526Z",
+      "updated_time": "2024-01-22T09:32:01.526Z",
       "description": null,
-      "parent": 106,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "74defdba-9645-439a-bf36-c0545bb9cda1",
       "menu_type": 1,
-      "name": "MoviesFile",
-      "rank": 56,
-      "path": "/movies/file/index",
-      "component": "movies/file/index",
-      "is_active": true,
-      "meta": 111
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 108,
-    "fields": {
-      "created_time": "2023-11-22T02:38:31.881Z",
-      "updated_time": "2023-11-22T02:38:31.881Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "list:MoviesFile",
-      "rank": 57,
-      "path": "api/movies/file$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 112
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 109,
-    "fields": {
-      "created_time": "2023-11-22T02:39:10.195Z",
-      "updated_time": "2023-11-22T02:39:10.195Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "delete:MoviesFile",
-      "rank": 58,
-      "path": "api/movies/file/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 113
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 110,
-    "fields": {
-      "created_time": "2023-11-22T02:39:48.237Z",
-      "updated_time": "2023-11-22T02:39:48.237Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesFile",
-      "rank": 59,
-      "path": "api/movies/file/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 114
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 111,
-    "fields": {
-      "created_time": "2023-11-22T02:42:02.069Z",
-      "updated_time": "2023-11-22T02:42:02.069Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "manyDownload:MoviesFile",
-      "rank": 60,
-      "path": "api/movies/file/many-download$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 115
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 112,
-    "fields": {
-      "created_time": "2023-11-22T02:43:23.566Z",
-      "updated_time": "2023-11-22T07:11:50.581Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "get:MoviesFileDownloadUrl",
-      "rank": 61,
-      "path": "api/movies/file/(?P<pk>[^/.]+)/download-url$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 116
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 113,
-    "fields": {
-      "created_time": "2023-11-22T02:45:23.296Z",
-      "updated_time": "2023-11-22T02:45:23.296Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "get:MoviesFilePreviewUrl",
-      "rank": 62,
-      "path": "api/movies/file/(?P<pk>[^/.]+)/preview$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 117
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 114,
-    "fields": {
-      "created_time": "2023-11-22T07:02:25.220Z",
-      "updated_time": "2023-11-22T07:02:25.220Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "update:MoviesFile",
-      "rank": 63,
-      "path": "api/movies/file/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 118
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 115,
-    "fields": {
-      "created_time": "2023-11-27T08:19:33.461Z",
-      "updated_time": "2023-11-30T10:21:37.061Z",
-      "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesCategory",
-      "rank": 69,
-      "path": "/movies/category/index",
-      "component": "movies/category/index",
-      "is_active": true,
-      "meta": 119
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 116,
-    "fields": {
-      "created_time": "2023-11-27T08:20:23.176Z",
-      "updated_time": "2023-11-30T10:21:43.176Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "create:MoviesCategory",
-      "rank": 70,
-      "path": "api/movies/category$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 120
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 117,
-    "fields": {
-      "created_time": "2023-11-27T08:21:01.832Z",
-      "updated_time": "2023-11-30T10:21:47.887Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "delete:MoviesCategory",
-      "rank": 71,
-      "path": "api/movies/category/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 121
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 118,
-    "fields": {
-      "created_time": "2023-11-27T08:21:33.914Z",
-      "updated_time": "2023-11-30T10:21:52.783Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "update:MoviesCategory",
-      "rank": 72,
-      "path": "api/movies/category/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 122
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 119,
-    "fields": {
-      "created_time": "2023-11-27T08:22:16.660Z",
-      "updated_time": "2023-11-30T10:21:57.219Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "list:MoviesCategory",
-      "rank": 73,
-      "path": "api/movies/category$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 123
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 120,
-    "fields": {
-      "created_time": "2023-11-27T08:22:44.682Z",
-      "updated_time": "2023-11-30T10:22:02.406Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesCategory",
-      "rank": 74,
-      "path": "api/movies/category/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 124
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 121,
-    "fields": {
-      "created_time": "2023-11-28T07:01:32.038Z",
-      "updated_time": "2023-11-28T07:01:32.038Z",
-      "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesWatchHistory",
-      "rank": 97,
-      "path": "/movies/history/index",
-      "component": "movies/history/index",
-      "is_active": true,
-      "meta": 125
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 122,
-    "fields": {
-      "created_time": "2023-11-28T07:02:22.506Z",
-      "updated_time": "2023-11-28T07:02:22.506Z",
-      "description": null,
-      "parent": 121,
-      "menu_type": 2,
-      "name": "delete:MoviesWatchHistory",
-      "rank": 98,
-      "path": "api/movies/history/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 126
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 123,
-    "fields": {
-      "created_time": "2023-11-28T07:03:04.486Z",
-      "updated_time": "2023-11-28T07:03:04.486Z",
-      "description": null,
-      "parent": 121,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesWatchHistory",
-      "rank": 99,
-      "path": "api/movies/history/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 127
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 124,
-    "fields": {
-      "created_time": "2023-11-28T07:03:51.812Z",
-      "updated_time": "2023-11-28T07:03:51.812Z",
-      "description": null,
-      "parent": 121,
-      "menu_type": 2,
-      "name": "list:MoviesWatchHistory",
-      "rank": 100,
-      "path": "api/movies/history$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 128
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 125,
-    "fields": {
-      "created_time": "2023-11-28T07:21:20.604Z",
-      "updated_time": "2023-11-28T07:21:20.604Z",
-      "description": null,
-      "parent": 121,
-      "menu_type": 2,
-      "name": "update:MoviesWatchTimes",
-      "rank": 101,
-      "path": "api/movies/history/times$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 129
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 126,
-    "fields": {
-      "created_time": "2023-11-30T06:38:40.794Z",
-      "updated_time": "2023-11-30T06:42:33.399Z",
-      "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesSwipe",
-      "rank": 102,
-      "path": "/movies/swipe/index",
-      "component": "movies/swipe/index",
-      "is_active": true,
-      "meta": 130
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 127,
-    "fields": {
-      "created_time": "2023-11-30T06:39:10.196Z",
-      "updated_time": "2023-11-30T06:39:10.196Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "create:MoviesSwipe",
-      "rank": 103,
-      "path": "api/movies/swipe$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 131
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 128,
-    "fields": {
-      "created_time": "2023-11-30T06:39:36.792Z",
-      "updated_time": "2023-11-30T06:39:36.792Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "delete:MoviesSwipe",
-      "rank": 104,
-      "path": "api/movies/swipe/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 132
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 129,
-    "fields": {
-      "created_time": "2023-11-30T06:40:01.119Z",
-      "updated_time": "2023-11-30T06:40:01.119Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "update:MoviesSwipe",
-      "rank": 105,
-      "path": "api/movies/swipe/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 133
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 130,
-    "fields": {
-      "created_time": "2023-11-30T06:40:34.592Z",
-      "updated_time": "2023-11-30T06:40:34.592Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "list:MoviesSwipe",
-      "rank": 106,
-      "path": "api/movies/swipe$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 134
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 131,
-    "fields": {
-      "created_time": "2023-11-30T06:41:00.473Z",
-      "updated_time": "2023-11-30T06:41:00.473Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesSwipe",
-      "rank": 107,
-      "path": "api/movies/swipe/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 135
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 132,
-    "fields": {
-      "created_time": "2023-11-30T06:42:02.234Z",
-      "updated_time": "2023-11-30T06:42:02.234Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "upload:MoviesSwipePicture",
-      "rank": 108,
-      "path": "api/movies/swipe/(?P<pk>[^/.]+)/upload$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 136
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 133,
-    "fields": {
-      "created_time": "2023-11-30T07:02:02.652Z",
-      "updated_time": "2023-11-30T07:02:13.664Z",
-      "description": null,
-      "parent": 126,
-      "menu_type": 2,
-      "name": "rank:MoviesSwipe",
-      "rank": 109,
-      "path": "api/movies/swipe/action_rank$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 137
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 134,
-    "fields": {
-      "created_time": "2023-11-30T09:27:32.909Z",
-      "updated_time": "2023-11-30T09:30:23.011Z",
-      "description": null,
-      "parent": 79,
-      "menu_type": 1,
-      "name": "MoviesActor",
-      "rank": 76,
-      "path": "/movies/actor/index",
-      "component": "/movies/actor/index",
-      "is_active": true,
-      "meta": 138
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 135,
-    "fields": {
-      "created_time": "2023-11-30T09:27:59.626Z",
-      "updated_time": "2023-11-30T09:27:59.626Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "create:MoviesActor",
-      "rank": 77,
-      "path": "api/movies/actor$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 139
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 136,
-    "fields": {
-      "created_time": "2023-11-30T09:28:28.907Z",
-      "updated_time": "2023-11-30T09:28:28.907Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "delete:MoviesActor",
-      "rank": 78,
-      "path": "api/movies/actor/(?P<pk>[^/.]+)$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 140
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 137,
-    "fields": {
-      "created_time": "2023-11-30T09:28:52.503Z",
-      "updated_time": "2023-11-30T09:28:52.503Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "update:MoviesActor",
-      "rank": 79,
-      "path": "api/movies/actor/(?P<pk>[^/.]+)$",
-      "component": "PUT",
-      "is_active": true,
-      "meta": 141
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 138,
-    "fields": {
-      "created_time": "2023-11-30T09:29:16.956Z",
-      "updated_time": "2023-12-04T07:05:04.684Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "list:MoviesActor",
-      "rank": 80,
-      "path": "api/movies/actor$",
-      "component": "GET",
-      "is_active": true,
-      "meta": 142
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 139,
-    "fields": {
-      "created_time": "2023-11-30T09:29:43.242Z",
-      "updated_time": "2023-12-04T07:05:01.776Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "manyDelete:MoviesActor",
-      "rank": 81,
-      "path": "api/movies/actor/many-delete$",
-      "component": "DELETE",
-      "is_active": true,
-      "meta": 143
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 140,
-    "fields": {
-      "created_time": "2023-11-30T09:30:12.352Z",
-      "updated_time": "2023-11-30T09:30:12.352Z",
-      "description": null,
-      "parent": 134,
-      "menu_type": 2,
-      "name": "upload:MoviesActorAvatar",
-      "rank": 82,
-      "path": "api/movies/actor/(?P<pk>[^/.]+)/upload$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 144
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 141,
-    "fields": {
-      "created_time": "2023-12-04T06:58:38.809Z",
-      "updated_time": "2023-12-04T06:58:38.810Z",
-      "description": null,
-      "parent": 115,
-      "menu_type": 2,
-      "name": "rank:MoviesCategory",
-      "rank": 75,
-      "path": "api/movies/category/action_rank$",
-      "component": "POST",
-      "is_active": true,
-      "meta": 145
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": 142,
-    "fields": {
-      "created_time": "2023-12-08T08:16:38.222Z",
-      "updated_time": "2023-12-08T08:18:30.590Z",
-      "description": null,
-      "parent": 107,
-      "menu_type": 2,
-      "name": "sync:MoviesFileInfo",
+      "name": "SystemUserLoginLog",
       "rank": 64,
-      "path": "api/movies/file/(?P<pk>[^/.]+)/sync$",
-      "component": "POST",
+      "path": "/system/logs/login/index",
+      "component": "system/logs/login/index",
       "is_active": true,
-      "meta": 146
+      "meta": "f06236b5-e3fb-48fa-bfe3-4f0e87eaab47",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 143,
+    "pk": "47dc29c2-202b-4837-be9c-db4607924416",
     "fields": {
-      "created_time": "2023-12-08T08:47:02.361Z",
-      "updated_time": "2023-12-08T08:47:02.361Z",
+      "created_time": "2024-01-22T09:32:01.317Z",
+      "updated_time": "2024-01-22T10:22:18.654Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
       "menu_type": 2,
-      "name": "list:MoviesDriveByFileId",
-      "rank": 9999,
-      "path": "api/movies/drive/(?P<pk>[^/.]+)/get_files$",
+      "name": "list:systemLoginLog",
+      "rank": 65,
+      "path": "api/system/logs/login$",
       "component": "GET",
       "is_active": true,
-      "meta": 147
+      "meta": "1518b086-e261-4d27-b72f-9b3fc867860a",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "585d2a2a-1c9b-42de-9b69-113e150da4a2"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 144,
+    "pk": "c20ef280-7894-493c-b14a-1646fc5ce73b",
     "fields": {
-      "created_time": "2023-12-08T08:49:02.167Z",
-      "updated_time": "2023-12-08T08:49:02.167Z",
+      "created_time": "2024-01-22T09:32:01.107Z",
+      "updated_time": "2024-01-22T09:32:01.107Z",
       "description": null,
-      "parent": 80,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
       "menu_type": 2,
-      "name": "create:MoviesDriveByFileId",
-      "rank": 9999,
-      "path": "api/movies/drive/(?P<pk>[^/.]+)/import_files$",
-      "component": "POST",
+      "name": "delete:systemLoginLog",
+      "rank": 66,
+      "path": "api/system/logs/login/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
       "is_active": true,
-      "meta": 148
+      "meta": "b8a953ca-1c74-492b-ab28-6e4c2304ad26",
+      "model": []
     }
   },
   {
     "model": "system.menu",
-    "pk": 145,
+    "pk": "3946ac20-1dd1-4fce-aa6f-3372694024ac",
     "fields": {
-      "created_time": "2024-01-19T08:14:48.310Z",
-      "updated_time": "2024-01-19T08:14:48.310Z",
+      "created_time": "2024-01-22T09:32:00.898Z",
+      "updated_time": "2024-01-22T09:32:00.898Z",
       "description": null,
-      "parent": 88,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
       "menu_type": 2,
-      "name": "search:MoviesDoubanFilm",
-      "rank": 9999,
-      "path": "api/movies/film/search_douban$",
+      "name": "manyDelete:systemLoginLog",
+      "rank": 67,
+      "path": "api/system/logs/login/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "cdcf0871-bca0-491c-a364-32ea3aa02613",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "96772790-53e4-4113-b1d1-10998fe2f616",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.688Z",
+      "updated_time": "2024-01-22T09:32:00.688Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "permissions",
+      "rank": 41,
+      "path": "/system/permissions",
+      "component": "",
+      "is_active": true,
+      "meta": "5ec1915f-bfd3-43d0-9908-5dc217c01330",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.478Z",
+      "updated_time": "2024-01-22T09:32:00.478Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "config",
+      "rank": 26,
+      "path": "/system/configs",
+      "component": "",
+      "is_active": true,
+      "meta": "9f9d09c6-2974-480f-aae2-7cfb495d25f8",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.269Z",
+      "updated_time": "2024-01-22T09:32:00.269Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+      "menu_type": 1,
+      "name": "SystemConfig",
+      "rank": 27,
+      "path": "/system/config/system/index",
+      "component": "system/config/system/index",
+      "is_active": true,
+      "meta": "5b58e480-5fe6-4d24-b10f-b58c8f0a56f4",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "09523de8-58de-4aa3-8732-a30da14443d4",
+    "fields": {
+      "created_time": "2024-01-22T09:32:00.055Z",
+      "updated_time": "2024-01-22T09:32:00.055Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "1e11bae7-8002-4e92-a215-9eb4d3e8876c",
+      "menu_type": 1,
+      "name": "SystemUserConfig",
+      "rank": 34,
+      "path": "/system/config/user/index",
+      "component": "system/config/user/index",
+      "is_active": true,
+      "meta": "32ddcdd0-a076-4b4e-a3d4-bd99138a6a6a",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e374f3ef-7326-475a-8b0a-5e082e695144",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.845Z",
+      "updated_time": "2024-01-22T10:18:48.844Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "list:systemSystemConfig",
+      "rank": 28,
+      "path": "api/system/config/system$",
       "component": "GET",
       "is_active": true,
-      "meta": 149
+      "meta": "00fd4ca8-93e8-4816-bec9-a458850446f6",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
     }
   },
   {
     "model": "system.menu",
-    "pk": 146,
+    "pk": "f242d7f1-0956-4def-ad07-3f825f9aa215",
     "fields": {
-      "created_time": "2024-01-19T08:15:37.926Z",
-      "updated_time": "2024-01-19T08:15:37.926Z",
+      "created_time": "2024-01-22T09:31:59.634Z",
+      "updated_time": "2024-01-22T10:18:55.167Z",
       "description": null,
-      "parent": 88,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
       "menu_type": 2,
-      "name": "create:MoviesDoubanFilm",
-      "rank": 9999,
-      "path": "api/movies/film/add_douban$",
+      "name": "create:systemSystemConfig",
+      "rank": 29,
+      "path": "api/system/config/system$",
       "component": "POST",
       "is_active": true,
-      "meta": 150
+      "meta": "9c13c2f8-c45b-4f28-a1f4-de1083662f79",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "dd51290c-33c3-4f1a-b20b-efac77789054",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.423Z",
+      "updated_time": "2024-01-22T09:31:59.423Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "delete:systemSystemConfig",
+      "rank": 30,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "9a2cdc2e-4acd-4e0d-ad36-70a502534291",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "0bdc3ab5-112d-406e-a7c8-dba377ebf3b0",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.214Z",
+      "updated_time": "2024-01-22T10:19:00.979Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "update:systemSystemConfig",
+      "rank": 31,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "ec92010b-30e0-4efd-99f1-9fc8f3a5c327",
+      "model": [
+        "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "242c7eaa-906d-4e20-96b7-863bcea09616",
+    "fields": {
+      "created_time": "2024-01-22T09:31:59.005Z",
+      "updated_time": "2024-01-22T09:31:59.005Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "manyDelete:systemSystemConfig",
+      "rank": 32,
+      "path": "api/system/config/system/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "d9f05097-0198-4945-8315-716ac0ee3d55",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f14ccc13-1caa-4641-a3d1-aba14f1fa329",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.795Z",
+      "updated_time": "2024-01-22T09:31:58.795Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+      "menu_type": 2,
+      "name": "invalid:systemSystemConfig",
+      "rank": 33,
+      "path": "api/system/config/system/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "a2eb6111-5912-4daa-ba28-0df1a509ab71",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.584Z",
+      "updated_time": "2024-01-22T09:31:58.584Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "96772790-53e4-4113-b1d1-10998fe2f616",
+      "menu_type": 1,
+      "name": "SystemModelLabelField",
+      "rank": 55,
+      "path": "/system/field/index",
+      "component": "system/field/index",
+      "is_active": true,
+      "meta": "aee40d3b-d02a-48c5-a9a5-7e646724c57d",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f25f86f8-c676-43b7-b650-b2410f5b1447",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.373Z",
+      "updated_time": "2024-01-22T10:21:37.188Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "list:systemModelField",
+      "rank": 56,
+      "path": "api/system/field$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "57db5937-080f-493f-b6e8-242db2cda57c",
+      "model": [
+        "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "00d7809c-0a74-4e80-9730-239b882f9cfa",
+    "fields": {
+      "created_time": "2024-01-22T09:31:58.164Z",
+      "updated_time": "2024-01-22T10:21:42.975Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "list:systemModelFieldLookups",
+      "rank": 57,
+      "path": "api/system/field/lookups$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "ba2ae663-7352-45eb-91e5-41bd60a85467",
+      "model": [
+        "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c876c6be-1e45-4b05-bd51-68071a2878d9",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.955Z",
+      "updated_time": "2024-01-22T10:19:34.449Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "list:systemUserConfig",
+      "rank": 35,
+      "path": "api/system/config/user$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "967a66cb-74a3-4e64-9609-5e0a32b83101",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284",
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "168ac361-7d7d-45ac-9b4c-7f431059f991",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.746Z",
+      "updated_time": "2024-01-22T10:19:45.545Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "create:systemUserConfig",
+      "rank": 36,
+      "path": "api/system/config/user$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "3a702dc5-41da-4307-8f35-d8c11363146f",
+      "model": [
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "63b5cf81-6241-4826-9c97-b9619497cd80",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.533Z",
+      "updated_time": "2024-01-22T09:31:57.533Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "delete:systemUserConfig",
+      "rank": 37,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "e47927ae-bace-4bfb-9cf1-1bb5bdf2bc1e",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d5c467d6-d72c-4d42-b66b-d354ea249691",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.323Z",
+      "updated_time": "2024-01-22T10:20:02.819Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "update:systemUserConfig",
+      "rank": 38,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)$",
+      "component": "PUT",
+      "is_active": true,
+      "meta": "82d413ba-d270-4898-8156-2d82cd22e105",
+      "model": [
+        "ab6ae020-1de6-4695-925b-56456769b7aa"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4f0b83ff-49f8-4921-b8de-4a71579cfa63",
+    "fields": {
+      "created_time": "2024-01-22T09:31:57.113Z",
+      "updated_time": "2024-01-22T09:31:57.113Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "manyDelete:systemUserConfig",
+      "rank": 39,
+      "path": "api/system/config/user/many-delete$",
+      "component": "DELETE",
+      "is_active": true,
+      "meta": "3bb1be01-be2e-41be-bafd-436a07093928",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f7bee55a-bd44-4829-9747-139799d840e7",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.904Z",
+      "updated_time": "2024-01-22T09:31:56.904Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+      "menu_type": 2,
+      "name": "invalid:systemUserConfig",
+      "rank": 40,
+      "path": "api/system/config/user/(?P<pk>[^/.]+)/invalid$",
+      "component": "POST",
+      "is_active": true,
+      "meta": "99f09a50-4d72-4ec2-9b08-43ef47224c18",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "472f4d8e-290b-4190-b05d-3634dac30608",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.695Z",
+      "updated_time": "2024-01-22T09:31:56.695Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+      "menu_type": 2,
+      "name": "sync:systemModelField",
+      "rank": 58,
+      "path": "api/system/field/sync$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "68c37f98-233c-487d-9877-5cf20bfca5f2",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.485Z",
+      "updated_time": "2024-01-22T10:20:31.959Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "menu_type": 2,
+      "name": "detail:systemRole",
+      "rank": 44,
+      "path": "api/system/role/(?P<pk>[^/.]+)$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "908ac2b0-7a4c-46b6-b3f8-ef15b0c0583f",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b6cff395-8aa4-4337-9c1b-e5ad94a9f5bd",
+    "fields": {
+      "created_time": "2024-01-22T09:31:56.275Z",
+      "updated_time": "2024-01-22T10:18:11.612Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+      "menu_type": 2,
+      "name": "list:systemMenuPermission",
+      "rank": 20,
+      "path": "api/system/menu/permissions$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "5cc85860-41bd-40f5-bb09-db1aaae0887a",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a"
+      ]
     }
   }
 ]

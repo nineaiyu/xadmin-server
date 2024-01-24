@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'django_filters',
     'django_celery_results',
     'django_celery_beat',
+    'imagekit',
     'movies.apps.MoviesConfig',
 ]
 
@@ -139,6 +140,18 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+# https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
+# 读写分离 可能会出现 the current database router prevents this relation.
+# 1.项目设置了router读写分离，且在ORM create()方法中，使用了前边filter()方法得到的数据，
+# 2.由于django是惰性查询，前边的filter()并没有立即查询，而是在create()中引用了filter()的数据时，执行了filter()，
+# 3.此时写操作的db指针指向write_db，filter()的db指针指向read_db，两者发生冲突，导致服务禁止了此次与mysql的交互
+# 解决办法：
+# 在前边filter()方法中，使用using()方法，使filter()方法立即与数据库交互，查出数据。
+# Author.objects.using("default")
+# >>> p = Person(name="Fred")
+# >>> p.save(using="second")  # (statement 2)
+
+DATABASE_ROUTERS = ['common.core.db.router.DBRouter']
 
 CHANNEL_LAYERS = {
     "default": {
@@ -226,9 +239,11 @@ REST_FRAMEWORK = {
         # 'rest_framework.permissions.IsAuthenticated',
         'common.core.permission.IsAuthenticated',
     ],
-    # 'DEFAULT_FILTER_BACKENDS': (
-    #     'django_filters.rest_framework.DjangoFilterBackend',
-    # ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'common.core.filter.DataPermissionFilter'
+    ),
 }
 
 # DRF扩展缓存时间
@@ -418,9 +433,10 @@ LOGGING = {
 }
 
 CACHE_KEY_TEMPLATE = {
-    'pending_state_key': 'pending_state',
+    'config_key': 'config',
     'make_token_key': 'make_token',
     'download_url_key': 'download_url',
+    'pending_state_key': 'pending_state',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
 }
@@ -513,6 +529,8 @@ HTTP_LISTEN_PORT = 8896
 CELERY_FLOWER_PORT = 5566
 CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
+
+# 访问白名单配置
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/logout$",
@@ -521,19 +539,24 @@ PERMISSION_WHITE_URL = [
     "^/api/system/routes$",
 ]
 
+# 访问权限配置
 PERMISSION_SHOW_PREFIX = [
     'api/system',
     'api/flower',
 ]
+# 数据权限配置
+PERMISSION_DATA_AUTH_APPS = [
+    'system'
+]
 
-API_LOG_ENABLE = locals().get("API_LOG_ENABLE", True)
-API_LOG_METHODS = locals().get("API_LOG_METHODS", ["POST", "DELETE", "PUT"])  # 'ALL'
+API_LOG_ENABLE = True
+API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
 
 # 在操作日志中详细记录的请求模块映射
-API_MODEL_MAP = locals().get("API_MODEL_MAP", {
+API_MODEL_MAP = {
     "/api/system/refresh": "Token刷新",
     "/api/system/upload": "文件上传",
     "/api/system/login": "用户登录",
     "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
-})
+}

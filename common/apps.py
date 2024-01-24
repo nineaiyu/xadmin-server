@@ -6,5 +6,5 @@ class CommonConfig(AppConfig):
     name = 'common'
 
     def ready(self):
-        from .utils import signal_handler
+        from .utils import signal_handler  # noqa
         super().ready()

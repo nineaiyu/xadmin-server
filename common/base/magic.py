@@ -172,7 +172,7 @@ class MagicCacheData(object):
                         res = cache.get(cache_key)
                 with cache.lock(f"locker_{cache_key}", timeout=cache_time - invalid_time):
                     if res and n_time - res.get('c_time', n_time) < cache_time - invalid_time:
-                        logger.info(
+                        logger.debug(
                             f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist result:{res}")
                         return res['data']
                     else:
@@ -180,7 +180,7 @@ class MagicCacheData(object):
                         cache.set(cache_key, res, cache_time)
                         try:
                             res['data'] = func(*args, **kwargs)
-                            logger.info(
+                            logger.debug(
                                 f"exec {func} finished. time:{time.time() - n_time} cache_time:{cache_time} cache_key:{cache_key} result:{res}")
                         except Exception as e:
                             logger.error(
@@ -198,8 +198,9 @@ class MagicCacheData(object):
     @staticmethod
     def invalid_cache(key):
         cache_key = f'magic_cache_data_{key}'
-        res = cache.delete(cache_key)
-        logger.warning(f"invalid_cache cache_key:{cache_key} result:{res}")
+        for delete_key in cache.iter_keys(cache_key):
+            cache.delete(delete_key)
+        logger.warning(f"invalid_cache cache_key:{cache_key}")
 
 
 class MagicCacheResponse(object):

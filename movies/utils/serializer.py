@@ -9,12 +9,13 @@ import logging
 
 from rest_framework import serializers
 
+from common.core.serializers import BaseModelSerializer
 from movies.models import AliyunDrive, AliyunFile, FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
 
 logger = logging.getLogger(__file__)
 
 
-class AliyunDriveSerializer(serializers.ModelSerializer):
+class AliyunDriveSerializer(BaseModelSerializer):
     class Meta:
         model = AliyunDrive
         fields = ['pk', 'owner', 'user_name', 'nick_name', 'user_id', 'default_drive_id', 'default_sbox_drive_id',
@@ -24,7 +25,7 @@ class AliyunDriveSerializer(serializers.ModelSerializer):
             set([x.name for x in AliyunDrive._meta.fields]) - {"enable", "private", "description"})
 
 
-class AliyunFileSerializer(serializers.ModelSerializer):
+class AliyunFileSerializer(BaseModelSerializer):
     class Meta:
         model = AliyunFile
         fields = ['pk', 'aliyun_drive', 'name', 'file_id', 'created_time', 'size', 'content_type', 'category',
@@ -37,7 +38,7 @@ class AliyunFileSerializer(serializers.ModelSerializer):
         return hasattr(obj, 'episodeinfo')
 
 
-class CategoryListSerializer(serializers.ModelSerializer):
+class CategoryListSerializer(BaseModelSerializer):
     class Meta:
         model = Category
         fields = ['value', 'label']
@@ -47,7 +48,7 @@ class CategoryListSerializer(serializers.ModelSerializer):
     label = serializers.CharField(source='name')
 
 
-class FilmInfoSerializer(serializers.ModelSerializer):
+class FilmInfoSerializer(BaseModelSerializer):
     class Meta:
         model = FilmInfo
         fields = ['pk', 'name', 'title', 'poster', 'category', 'region', 'language', 'channel', 'running',
@@ -93,7 +94,7 @@ class FilmInfoSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class EpisodeInfoSerializer(serializers.ModelSerializer):
+class EpisodeInfoSerializer(BaseModelSerializer):
     class Meta:
         model = EpisodeInfo
         fields = ['pk', 'name', 'files', 'enable', 'created_time', 'updated_time', 'file_id', 'film', 'views', "rank"]
@@ -116,7 +117,7 @@ class EpisodeInfoSerializer(serializers.ModelSerializer):
                 'duration': obj.files.duration, 'size': obj.files.size}
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(BaseModelSerializer):
     class Meta:
         model = Category
         fields = ['name', 'created_time', 'pk', 'description', 'enable', 'count', 'category_type', 'category_display',
@@ -129,7 +130,7 @@ class CategorySerializer(serializers.ModelSerializer):
         return obj.film_category.count()
 
 
-class WatchHistorySerializer(serializers.ModelSerializer):
+class WatchHistorySerializer(BaseModelSerializer):
     class Meta:
         model = WatchHistory
         fields = ['created_time', 'pk', 'times', 'owner', 'episode', 'updated_time']
@@ -146,14 +147,14 @@ class WatchHistorySerializer(serializers.ModelSerializer):
                 'times': times, 'film_pk': obj.episode.film.pk}
 
 
-class SwipeInfoSerializer(serializers.ModelSerializer):
+class SwipeInfoSerializer(BaseModelSerializer):
     class Meta:
         model = SwipeInfo
         fields = ['pk', 'name', 'rank', 'picture', 'enable', 'created_time', 'description', 'route']
         read_only_fields = ['pk', 'picture', 'created_time']
 
 
-class ActorInfoSerializer(serializers.ModelSerializer):
+class ActorInfoSerializer(BaseModelSerializer):
     class Meta:
         model = ActorInfo
         fields = ['pk', 'name', 'foreign_name', 'enable', 'created_time', 'description', 'sex', 'birthday',

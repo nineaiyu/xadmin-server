@@ -11,6 +11,8 @@ from django.db.models import QuerySet
 
 from system.models import NoticeMessage
 
+SYSTEM = NoticeMessage.NoticeChoices.SYSTEM
+
 
 def base_notify(users: List | QuerySet, title: str, message: str, notice_type: int,
                 level: Optional[Literal['success', '', 'warning', 'error']], extra_json: Dict = None):
@@ -26,21 +28,23 @@ def base_notify(users: List | QuerySet, title: str, message: str, notice_type: i
         notice_type=notice_type,
         extra_json=extra_json
     )
-    notify_obj.owner.set(recipients)
+    notify_obj.notice_user.set(recipients)
     return notify_obj
 
 
-def notify_success(users: List | QuerySet, title: str, message: str, notice_type: int = 0, extra_json: Dict = None):
+def notify_success(users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM,
+                   extra_json: Dict = None):
     return base_notify(users, title, message, notice_type, 'success', extra_json)
 
 
-def notify_info(users: List | QuerySet, title: str, message: str, notice_type: int = 0, extra_json: Dict = None):
+def notify_info(users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: Dict = None):
     return base_notify(users, title, message, notice_type, '', extra_json)
 
 
-def notify_warning(users: List | QuerySet, title: str, message: str, notice_type: int = 0, extra_json: Dict = None):
+def notify_warning(users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM,
+                   extra_json: Dict = None):
     return base_notify(users, title, message, notice_type, 'warning', extra_json)
 
 
-def notify_error(users: List | QuerySet, title: str, message: str, notice_type: int = 0, extra_json: Dict = None):
+def notify_error(users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: Dict = None):
     return base_notify(users, title, message, notice_type, 'error', extra_json)

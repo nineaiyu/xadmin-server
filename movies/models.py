@@ -1,13 +1,13 @@
 from django.conf import settings
 from django.db import models
 
-from common.base.daobase import AESCharField
-from system.models import upload_directory_path, DbBaseModel
+from common.core.models import DbAuditModel, upload_directory_path
+from common.fields.char import AESCharField
 
 
 # Create your models here.
 
-class AliyunDrive(DbBaseModel):
+class AliyunDrive(DbAuditModel):
     owner = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="所属用户")
     user_name = models.CharField(max_length=128, verbose_name="用户名")
     nick_name = models.CharField(max_length=128, verbose_name="昵称")
@@ -34,7 +34,7 @@ class AliyunDrive(DbBaseModel):
         return f"所属用户:{self.owner}-网盘用户名:{self.user_name}-网盘昵称:{self.nick_name}-是否启用:{self.enable}"
 
 
-class AliyunFile(DbBaseModel):
+class AliyunFile(DbAuditModel):
     owner = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="所属用户")
     aliyun_drive = models.ForeignKey(to=AliyunDrive, on_delete=models.CASCADE, verbose_name="所属阿里云盘")
     name = models.CharField(max_length=256, verbose_name="文件名字")
@@ -57,7 +57,7 @@ class AliyunFile(DbBaseModel):
         return f"所属用户:{self.owner}-文件名:{self.name}-下载次数:{self.downloads}-文件大小:{self.size}"
 
 
-class Category(DbBaseModel):
+class Category(DbAuditModel):
     name = models.CharField(max_length=64, verbose_name="类别")
     category_type_choices = ((1, '视频渠道'), (2, '地区国家'), (3, '视频类型'), (4, '视频语言'))
     category_type = models.SmallIntegerField(verbose_name="类型", choices=category_type_choices, default=1)
@@ -87,7 +87,7 @@ class Category(DbBaseModel):
         return cls.objects.filter(category_type=4, enable=True).all()
 
 
-class ActorInfo(DbBaseModel):
+class ActorInfo(DbAuditModel):
     name = models.CharField(max_length=128, verbose_name="演员名字")
     foreign_name = models.CharField(max_length=64, verbose_name="外文")
     avatar = models.FileField(verbose_name="头像", null=True, blank=True, upload_to=upload_directory_path,
@@ -110,7 +110,7 @@ class ActorInfo(DbBaseModel):
         return super().delete(using, keep_parents)
 
 
-class FilmInfo(DbBaseModel):
+class FilmInfo(DbAuditModel):
     name = models.CharField(max_length=128, verbose_name="电影片名")
     title = models.CharField(max_length=256, verbose_name="电影译名")
     poster = models.FileField(verbose_name="海报", null=True, blank=True, upload_to=upload_directory_path)
@@ -146,7 +146,7 @@ class FilmInfo(DbBaseModel):
         return f"文件名:{self.name}-观看次数:{self.views}-片长:{self.times}"
 
 
-class ActorShip(DbBaseModel):
+class ActorShip(DbAuditModel):
     actor = models.ForeignKey(ActorInfo, on_delete=models.CASCADE)
     film = models.ForeignKey(FilmInfo, on_delete=models.CASCADE)
     who = models.CharField(max_length=256, verbose_name="饰演", null=True, blank=True)
@@ -161,7 +161,7 @@ class ActorShip(DbBaseModel):
         return f"{self.actor.name}-{self.who}"
 
 
-class EpisodeInfo(DbBaseModel):
+class EpisodeInfo(DbAuditModel):
     rank = models.IntegerField(verbose_name="多级电影顺序", default=999)
     name = models.CharField(max_length=64, verbose_name="电影单集名称", null=True, blank=True)
     files = models.OneToOneField(to=AliyunFile, verbose_name="视频文件", on_delete=models.CASCADE)
@@ -178,7 +178,7 @@ class EpisodeInfo(DbBaseModel):
         return f"单集文件名:{self.name}"
 
 
-class WatchHistory(DbBaseModel):
+class WatchHistory(DbAuditModel):
     owner = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='history_query', null=True, blank=True,
                               verbose_name='创建人', on_delete=models.CASCADE)
     film = models.ForeignKey(to=FilmInfo, verbose_name="视频", on_delete=models.CASCADE)
@@ -194,7 +194,7 @@ class WatchHistory(DbBaseModel):
         return f"播放历史:{self.episode} {self.owner}"
 
 
-class SwipeInfo(DbBaseModel):
+class SwipeInfo(DbAuditModel):
     name = models.CharField(max_length=64, verbose_name="轮播名称", null=True, blank=True)
     picture = models.FileField(verbose_name="轮播图片", null=True, blank=True, upload_to=upload_directory_path)
     route = models.CharField(max_length=128, verbose_name="前端路由地址", null=True, blank=True)

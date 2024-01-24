@@ -91,3 +91,9 @@ class BlackAccessTokenCache(RedisCacheBase):
     def __init__(self, user_id, access_key):
         self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('black_access_token_key')}_{user_id}_{access_key}"
         super().__init__(self.cache_key)
+
+
+class UserSystemConfigCache(RedisCacheBase):
+    def __init__(self, prefix_key):
+        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('config_key')}_{prefix_key}"
+        super().__init__(self.cache_key)

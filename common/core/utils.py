@@ -83,6 +83,7 @@ def auto_register_app_url(urlpatterns):
                 urlpatterns.extend(urls)
                 for url in urls:
                     settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
+                settings.PERMISSION_DATA_AUTH_APPS.append(name)
         except Exception as e:
             logger.warning(f"auto register {name} url failed. {e}")
             continue

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# project : server
-# filename : daobase
+# project : xadmin-server
+# filename : aes
 # author : ly_13
-# date : 6/2/2023
+# date : 1/17/2024
+
 from django.conf import settings
 from django.db import models
 

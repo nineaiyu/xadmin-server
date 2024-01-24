@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : server
-# filename : system
+# filename : auth
 # author : ly_13
 # date : 6/6/2023
 import base64
@@ -15,14 +15,30 @@ from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from user_agents import parse
 
 from common.cache.storage import BlackAccessTokenCache
+from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
+from common.utils.request import get_request_ip, get_browser, get_os
 from common.utils.token import make_token, verify_token
-from system.models import UserInfo, UserRole
+from system.models import UserInfo, DeptInfo, UserLoginLog
 from system.utils.captcha import CaptchaAuth
+from system.utils.serializer import UserLoginLogSerializer
 
+
+def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+    data = {
+        'ipaddress': get_request_ip(request),
+        'browser': get_browser(request),
+        'system': get_os(request),
+        'agent': str(parse(request.META['HTTP_USER_AGENT'])),
+        'login_type': login_type
+    }
+    serializer = UserLoginLogSerializer(data=data, request=request, init=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
 
 def get_token_lifetime(user_obj):
     access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
@@ -69,18 +85,23 @@ class RegisterView(APIView):
         token = data.get('token')
         username = data.get('username')
         password = data.get('password')
-        channel = data.get('channel')
+        channel = data.get('channel', 'default')
+        if not SysConfig.REGISTER:
+            return ApiResponse(code=1001, detail='禁止注册')
+
         if verify_token(token, client_id, success_once=True) and username and password:
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
 
             user = auth.authenticate(username=username, password=password)
+            update_fields = ['last_login']
             if not user:
                 user = UserInfo.objects.create_user(username=username, password=password, first_name=username)
                 if channel and user:
-                    roles = UserRole.objects.filter(is_active=True, auto_bind=True, code=channel)
-                    if roles:
-                        user.roles.set(roles)
+                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
+                    if dept:
+                        user.dept = dept
+                        update_fields.append('dept')
 
             if user.is_active:
                 refresh = RefreshToken.for_user(user)
@@ -89,8 +110,10 @@ class RegisterView(APIView):
                     'access': str(refresh.access_token),
                 }
                 user.last_login = timezone.now()
-                user.save(update_fields=["last_login"])
+                user.save(update_fields=update_fields)
                 result.update(**get_token_lifetime(user))
+                request.user = user
+                save_login_log(request)
                 return ApiResponse(data=result)
         return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')
 
@@ -98,6 +121,9 @@ class RegisterView(APIView):
 class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
+        if not SysConfig.LOGIN:
+            return ApiResponse(code=1001, detail='禁止登录')
+
         client_id = get_request_ident(request)
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')
@@ -112,7 +138,8 @@ class LoginView(TokenObtainPairView):
                     return ApiResponse(code=9999, detail=e.args[0])
                 data = serializer.validated_data
                 data.update(get_token_lifetime(serializer.user))
-
+                request.user = serializer.user
+                save_login_log(request)
                 return ApiResponse(data=data)
             else:
                 return ApiResponse(code=9999, detail='验证码不正确，请重新输入')
