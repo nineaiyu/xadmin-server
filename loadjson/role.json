@@ -4,13 +4,14 @@
     "pk": 1,
     "fields": {
       "created_time": "2023-07-01T02:02:21.972Z",
-      "updated_time": "2024-01-19T08:35:36.017Z",
+      "updated_time": "2024-01-30T09:01:35.474Z",
       "description": "",
       "name": "管理员",
       "code": "admin",
       "is_active": true,
       "auto_bind": false,
       "menu": [
+        147,
         146,
         145,
         144,

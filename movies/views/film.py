@@ -15,7 +15,7 @@ from rest_framework.filters import OrderingFilter
 from common.base.utils import get_choices_dict
 from common.core.modelset import BaseModelSet, UploadFileAction, RankAction
 from common.core.response import ApiResponse
-from movies.models import FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo
+from movies.models import FilmInfo, Category, EpisodeInfo, WatchHistory, SwipeInfo, ActorInfo, AliyunFile
 from movies.tasks import sync_douban_movie
 from movies.utils.douban.search import search_from_douban
 from movies.utils.serializer import FilmInfoSerializer, CategorySerializer, EpisodeInfoSerializer, \
@@ -83,6 +83,14 @@ class FilmInfoView(BaseModelSet, UploadFileAction):
         # get_film_info(movie_url.split('subject/')[-1].replace('/',''))
         c_task = sync_douban_movie.apply_async(args=(str(movie_url),))
         logger.info(f'{movie_url} delay exec {c_task}')
+        return ApiResponse()
+
+    @action(methods=['post'], detail=True, url_path='batch/files')
+    def batch(self, request, *args, **kwargs):
+        file_ids = request.data.get('file_ids')
+        if file_ids:
+            for file_obj in AliyunFile.objects.filter(pk__in=file_ids).all():
+                EpisodeInfo.objects.create(name=file_obj.name, files=file_obj, film=self.get_object())
         return ApiResponse()
 
 

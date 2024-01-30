@@ -3066,6 +3066,27 @@
     }
   },
   {
+    "model": "system.menumeta",
+    "pk": 151,
+    "fields": {
+      "created_time": "2024-01-30T08:57:16.825Z",
+      "updated_time": "2024-01-30T08:57:16.825Z",
+      "description": null,
+      "title": "批量关联视频文件",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
     "model": "system.menu",
     "pk": 1,
     "fields": {
@@ -5137,6 +5158,23 @@
       "component": "POST",
       "is_active": true,
       "meta": 150
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": 147,
+    "fields": {
+      "created_time": "2024-01-30T08:57:16.828Z",
+      "updated_time": "2024-01-30T08:57:16.828Z",
+      "description": null,
+      "parent": 88,
+      "menu_type": 2,
+      "name": "batch:MoviesFileToFilm",
+      "rank": 9999,
+      "path": "api/movies/film/(?P<pk>[^/.]+)/batch/files$",
+      "component": "POST",
+      "is_active": true,
+      "meta": 151
     }
   }
 ]
