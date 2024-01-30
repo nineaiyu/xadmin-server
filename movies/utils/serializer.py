@@ -98,7 +98,7 @@ class EpisodeInfoSerializer(serializers.ModelSerializer):
         model = EpisodeInfo
         fields = ['pk', 'name', 'files', 'enable', 'created_time', 'updated_time', 'file_id', 'film', 'views', "rank"]
         extra_kwargs = {'pk': {'read_only': True}, 'files': {'read_only': True}}
-        read_only_fields = ("pk", "files", "rank")
+        read_only_fields = ("pk", "files")
 
     file_id = serializers.CharField(write_only=True)
 
