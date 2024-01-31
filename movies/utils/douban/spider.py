@@ -204,14 +204,17 @@ def get_film_info(movie_id):
         reg, _ = Category.objects.update_or_create(category_type=3, name=region)
         video_list.append(reg)
     title = ",".join(movie_info['other_names'])
+    try:
+        release_date = datetime.strptime(movie_info['pubdates'][0].split('(')[0], '%Y-%m-%d')
+    except:
+        release_date = datetime.now()
     data = {
         'name': movie_info['name'],
         'title': title if title else movie_info['name'],
         'running': True,
         'times': re.search('\d+', movie_info['durations'][0]).group() if len(movie_info['durations']) > 0 else 0,
         'rate': movie_info['rating']['average'] if movie_info['rating']['average'] else 5,
-        'release_date': datetime.strptime(movie_info['pubdates'][0].split('(')[0], '%Y-%m-%d') if len(
-            movie_info['pubdates']) > 0 else datetime.now(),
+        'release_date': release_date,
         'introduction': movie_info['summary'],
     }
 
