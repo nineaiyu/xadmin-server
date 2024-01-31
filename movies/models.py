@@ -88,8 +88,8 @@ class Category(DbBaseModel):
 
 
 class ActorInfo(DbBaseModel):
-    name = models.CharField(max_length=128, verbose_name="演员名字")
-    foreign_name = models.CharField(max_length=64, verbose_name="外文")
+    name = models.CharField(max_length=256, verbose_name="演员名字")
+    foreign_name = models.CharField(max_length=256, verbose_name="外文")
     avatar = models.FileField(verbose_name="头像", null=True, blank=True, upload_to=upload_directory_path,
                               max_length=256)
     sex = models.SmallIntegerField(verbose_name="性别", default=0, help_text='0：男 1：女 2：保密')
@@ -97,8 +97,8 @@ class ActorInfo(DbBaseModel):
     introduction = models.TextField(verbose_name="简介", null=True, blank=True)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
     douban = models.BigIntegerField(verbose_name="豆瓣ID", null=True, blank=True, default=0)
-    birthplace = models.CharField(max_length=128, verbose_name="出生地", null=True, blank=True)
-    profession = models.CharField(max_length=128, verbose_name="职位", null=True, blank=True)
+    birthplace = models.CharField(max_length=256, verbose_name="出生地", null=True, blank=True)
+    profession = models.CharField(max_length=256, verbose_name="职位", null=True, blank=True)
 
     class Meta:
         verbose_name = '演员'
@@ -111,7 +111,7 @@ class ActorInfo(DbBaseModel):
 
 
 class FilmInfo(DbBaseModel):
-    name = models.CharField(max_length=128, verbose_name="电影片名")
+    name = models.CharField(max_length=256, verbose_name="电影片名")
     title = models.CharField(max_length=256, verbose_name="电影译名")
     poster = models.FileField(verbose_name="海报", null=True, blank=True, upload_to=upload_directory_path)
     channel = models.ManyToManyField(to=Category, verbose_name="频道，电影，电视，综艺等分类",
@@ -163,7 +163,7 @@ class ActorShip(DbBaseModel):
 
 class EpisodeInfo(DbBaseModel):
     rank = models.IntegerField(verbose_name="多级电影顺序", default=999)
-    name = models.CharField(max_length=64, verbose_name="电影单集名称", null=True, blank=True)
+    name = models.CharField(max_length=256, verbose_name="电影单集名称", null=True, blank=True)
     files = models.OneToOneField(to=AliyunFile, verbose_name="视频文件", on_delete=models.CASCADE)
     extra_info = models.JSONField(verbose_name="额外信息", null=True, blank=True)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
@@ -195,9 +195,9 @@ class WatchHistory(DbBaseModel):
 
 
 class SwipeInfo(DbBaseModel):
-    name = models.CharField(max_length=64, verbose_name="轮播名称", null=True, blank=True)
+    name = models.CharField(max_length=256, verbose_name="轮播名称", null=True, blank=True)
     picture = models.FileField(verbose_name="轮播图片", null=True, blank=True, upload_to=upload_directory_path)
-    route = models.CharField(max_length=128, verbose_name="前端路由地址", null=True, blank=True)
+    route = models.CharField(max_length=256, verbose_name="前端路由地址", null=True, blank=True)
     rank = models.IntegerField(verbose_name="轮播图片顺序", default=999)
     enable = models.BooleanField(default=True, verbose_name="是否启用")
 
