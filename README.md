@@ -42,6 +42,41 @@ docker compose up -d
 python manage.py load_init_json
 ```
 
+## 新应用开发流程
+
+#### 1.通过命令创建应用一个movies的应用
+
+```shell
+python manage.py startapp movies
+```
+
+#### 2.在应用目录下添加应用配置 ```config.py```，用与系统自动读取配置
+
+```python
+from django.urls import path, include
+
+# 路由配置，当添加APP完成时候，会自动注入路由到总服务
+URLPATTERNS = [
+    path('api/movies/', include('movies.urls')),
+]
+
+# 请求白名单，支持正则表达式，可参考settings.py里面的 PERMISSION_WHITE_URL
+PERMISSION_WHITE_REURL = []
+
+```
+
+#### 3，若要使用字段权限，则需要继承 ```BaseModelSerializer``` 参考 ```system/utils/serializer.py```
+
+```python
+class ModelLabelFieldSerializer(BaseModelSerializer):
+    class Meta:
+        model = models.ModelLabelField
+        fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type_display']
+        read_only_fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time']
+
+    field_type_display = serializers.CharField(source='get_field_type_display', read_only=True)
+```
+
 # 附录
 
 ### 容器部署

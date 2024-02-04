@@ -29,8 +29,7 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         ROLE = 0, _("角色权限")
         DATA = 1, _("数据权限")
 
-    field_type = models.SmallIntegerField(choices=FieldChoices.choices, default=FieldChoices.DATA,
-                                          verbose_name="字段类型")
+    field_type = models.SmallIntegerField(choices=FieldChoices, default=FieldChoices.DATA, verbose_name="字段类型")
     parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(verbose_name="模型/字段数值", max_length=128)
     label = models.CharField(verbose_name="模型/字段名称", max_length=128)
@@ -49,8 +48,7 @@ class ModeTypeAbstract(models.Model):
         OR = 0, _("或模式")
         AND = 1, _("且模式")
 
-    mode_type = models.SmallIntegerField(choices=ModeChoices.choices, default=ModeChoices.OR,
-                                         verbose_name="数据权限模式")
+    mode_type = models.SmallIntegerField(choices=ModeChoices, default=ModeChoices.OR, verbose_name="数据权限模式")
 
     class Meta:
         abstract = True
@@ -69,7 +67,7 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
                                  format='png')
 
     nickname = models.CharField(verbose_name="昵称", max_length=150, blank=True)
-    gender = models.IntegerField(choices=GenderChoices.choices, default=GenderChoices.UNKNOWN, verbose_name="性别")
+    gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name="性别")
     mobile = models.CharField(verbose_name="手机号", max_length=16, default='', blank=True)
 
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
@@ -132,8 +130,7 @@ class Menu(DbAuditModel, DbUuidModel):
         PATCH = 'PATCH', _("PATCH")
 
     parent = models.ForeignKey(to='Menu', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True)
-    menu_type = models.SmallIntegerField(choices=MenuChoices.choices, default=MenuChoices.DIRECTORY,
-                                         verbose_name="节点类型")
+    menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY, verbose_name="节点类型")
     name = models.CharField(verbose_name="组件英文名称", max_length=128, unique=True)
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
     path = models.CharField(verbose_name="路由地址", max_length=256, help_text='权限类型时，该参数为请求的URL')
@@ -248,7 +245,7 @@ class UserLoginLog(DbAuditModel):
     browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
     agent = models.CharField(max_length=128, verbose_name="agent信息", null=True, blank=True)
-    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices.choices,
+    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices,
                                           verbose_name="登录类型")
 
     class Meta:
@@ -318,10 +315,9 @@ class NoticeMessage(DbAuditModel):
                                          through_fields=('notice', 'owner'), verbose_name="通知的人")
     notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的人部门")
     notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的人角色")
-    level = models.CharField(verbose_name='消息级别', choices=LevelChoices.choices, default=LevelChoices.DEFAULT,
+    level = models.CharField(verbose_name='消息级别', choices=LevelChoices, default=LevelChoices.DEFAULT,
                              max_length=20)
-    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices.choices,
-                                           default=NoticeChoices.USER)
+    notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=NoticeChoices.USER)
     title = models.CharField(verbose_name='消息标题', max_length=255)
     message = models.TextField(verbose_name='具体信息内容', blank=True, null=True)
     extra_json = models.JSONField(verbose_name="额外的json数据", blank=True, null=True)
