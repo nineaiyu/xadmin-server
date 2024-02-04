@@ -8,7 +8,8 @@ pycryptodomex==3.20.0
 djangorestframework-simplejwt==5.3.1
 celery==5.4.0rc1
 django-celery-results==2.5.1
-django-celery-beat==2.5.0
+#django-celery-beat==2.5.0
+django-celery-beat @ git+https://github.com/celery/django-celery-beat@f66796b9c5c9e47d118cb5b41d970f07cce72bbe
 flower==2.0.1
 python-daemon==3.0.1
 gunicorn==21.2.0

@@ -1,9 +1,9 @@
-FROM python:3.11.4-slim
+FROM python:3.12.1-slim
 
 # Fixes some weird terminal issues such as broken clear / CTRL+L
 ARG PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple
 
-RUN apt update && apt-get install libmariadb-dev g++ pkg-config -y && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt-get install libmariadb-dev g++ pkg-config git -y && rm -rf /var/lib/apt/lists/*
 
 # install pip
 COPY requirements.txt /opt/requirements.txt
