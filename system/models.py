@@ -139,6 +139,7 @@ class Menu(DbAuditModel, DbUuidModel):
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
     model = models.ManyToManyField(to=ModelLabelField, verbose_name="绑定模型", null=True, blank=True)
+
     # permission_marking = models.CharField(verbose_name="权限标识", max_length=256)
     # api_route = models.CharField(max_length=256, verbose_name="后端权限路由")
     # method = models.CharField(choices=MethodChoices, default='GET', verbose_name="请求方式", max_length=10)
@@ -394,4 +395,3 @@ class UserPersonalConfig(BaseConfig):
 
     def __str__(self):
         return "%s-%s" % (self.key, self.description)
-

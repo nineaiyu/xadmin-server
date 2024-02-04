@@ -60,6 +60,7 @@ def post_migrate_handler(sender, **kwargs):
         except Exception as e:
             logger.error(f"auto get sub serializer fields failed. {e}")
 
+
 @receiver(m2m_changed)
 def clean_m2m_cache_handler(sender, instance, **kwargs):
     if kwargs.get('action') in ['post_add', 'pre_remove']:
@@ -88,6 +89,7 @@ def invalid_dept_caches(instance):
         if dept.userinfo_set.count():
             invalid_roles_cache(dept)
 
+
 def invalid_notify_caches(instance, pk_set):
     pks = []
     if instance.notice_type == NoticeMessage.NoticeChoices.USER:
@@ -108,6 +110,7 @@ def invalid_user_cache(user_pk):
     MagicCacheData.invalid_cache(f'get_user_field_queryset_{user_pk}')  # 清理权限
     cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
     invalid_notify_cache(user_pk)
+
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')

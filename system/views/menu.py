@@ -63,6 +63,7 @@ class MenuView(BaseModelSet, RankAction):
         self.get_queryset = get_queryset
         return super().list(request, *args, **kwargs)
 
+
 class UserRoutesView(APIView):
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):

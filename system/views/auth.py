@@ -40,6 +40,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
+
 def get_token_lifetime(user_obj):
     access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
     refresh_token_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME')
