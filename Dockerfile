@@ -1,4 +1,4 @@
-FROM python:3.12.1-slim
+FROM python:3.12.2-slim
 
 # Fixes some weird terminal issues such as broken clear / CTRL+L
 ARG PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple
