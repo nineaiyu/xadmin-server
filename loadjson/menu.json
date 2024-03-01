@@ -1,6 +1,120 @@
 [
   {
     "model": "system.menu",
+    "pk": "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
+    "fields": {
+      "created_time": "2024-03-01T03:40:43.752Z",
+      "updated_time": "2024-03-01T04:13:00.063Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
+      "menu_type": 2,
+      "name": "list:systemSearchMenus",
+      "rank": 9999,
+      "path": "api/system/search/menus$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "93ce783f-1cce-40c8-afaf-e9be50ab6fe6",
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+        "c19100c5-725c-4a81-a1f1-1209f757d693"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
+    "fields": {
+      "created_time": "2024-03-01T03:36:18.247Z",
+      "updated_time": "2024-03-01T05:46:35.133Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 0,
+      "name": "search",
+      "rank": 85,
+      "path": "/system/search",
+      "component": "",
+      "is_active": false,
+      "meta": "b2ee64d0-091f-4eed-a205-01b8161a4326",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+    "fields": {
+      "created_time": "2024-03-01T02:44:22.415Z",
+      "updated_time": "2024-03-01T04:12:35.528Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
+      "menu_type": 2,
+      "name": "list:systemSearchRoles",
+      "rank": 86,
+      "path": "api/system/search/roles$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "9777ba02-b707-4a77-8d27-6f08e285c8e0",
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f2107787-4453-4bc3-898c-a1449e39bf67",
+    "fields": {
+      "created_time": "2024-03-01T02:43:16.147Z",
+      "updated_time": "2024-03-01T04:12:54.719Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
+      "menu_type": 2,
+      "name": "list:systemSearchDepts",
+      "rank": 88,
+      "path": "api/system/search/depts$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "c3e221a1-91f4-4ee2-91a3-0e33ca39fa11",
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6fc056af-acd8-48dd-91cf-e34053014997",
+    "fields": {
+      "created_time": "2024-03-01T02:42:41.841Z",
+      "updated_time": "2024-03-01T04:12:48.751Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
+      "menu_type": 2,
+      "name": "list:systemSearchUsers",
+      "rank": 87,
+      "path": "api/system/search/users$",
+      "component": "GET",
+      "is_active": true,
+      "meta": "aea8a63d-3ab6-40db-b365-893b50e69cec",
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "5f1217a4-79d4-4692-9d12-9f7c8627012e",
     "fields": {
       "created_time": "2024-01-22T09:32:15.840Z",
@@ -12,7 +126,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "About",
-      "rank": 94,
+      "rank": 98,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
@@ -477,7 +591,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "Chat",
-      "rank": 93,
+      "rank": 97,
       "path": "/chat/index",
       "component": "chat/index",
       "is_active": false,
@@ -973,7 +1087,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "UserInfo",
-      "rank": 85,
+      "rank": 89,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
@@ -994,7 +1108,7 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 86,
+      "rank": 90,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": "PUT",
       "is_active": true,
@@ -1015,7 +1129,7 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "upload:UserInfoAvatar",
-      "rank": 87,
+      "rank": 91,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
       "component": "POST",
       "is_active": true,
@@ -1036,7 +1150,7 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "update:UserInfoPassword",
-      "rank": 88,
+      "rank": 92,
       "path": "api/system/userinfo/reset_password$",
       "component": "POST",
       "is_active": true,
@@ -1078,7 +1192,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "UserNotice",
-      "rank": 89,
+      "rank": 93,
       "path": "/user/notice/index",
       "component": "user/notice/index",
       "is_active": true,
@@ -1099,7 +1213,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "list:userNotice",
-      "rank": 90,
+      "rank": 94,
       "path": "api/system/notice$",
       "component": "GET",
       "is_active": true,
@@ -1122,7 +1236,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeRead",
-      "rank": 91,
+      "rank": 95,
       "path": "api/system/notice/read$",
       "component": "PUT",
       "is_active": true,
@@ -1143,7 +1257,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
-      "rank": 92,
+      "rank": 96,
       "path": "api/system/notice/read_all$",
       "component": "PUT",
       "is_active": true,

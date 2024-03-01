@@ -17,6 +17,7 @@ from system.views.notice import NoticeUserReadMessageView, NoticeMessageView, Us
 from system.views.operationlog import OperationLogView
 from system.views.permission import DataPermissionView
 from system.views.role import RoleView
+from system.views.search import SearchDataView
 from system.views.upload import UploadView
 from system.views.user import UserView
 from system.views.userinfo import UserInfoView
@@ -50,6 +51,7 @@ router.register('user', UserView, basename='user')
 router.register('dept', DeptView, basename='dept')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
+router.register('search', SearchDataView, basename='search')
 router.register('permission', DataPermissionView, basename='permission')
 router.register('field', ModelLabelFieldView, basename='model_label_field')
 router.register('config/system', SystemConfigView, basename='sysconfig')
