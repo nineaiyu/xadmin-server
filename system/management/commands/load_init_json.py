@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
-# filename : dump_init_json
+# filename : load_init_json
 # author : ly_13
 # date : 12/25/2023
 import os.path

@@ -26,6 +26,7 @@ class Command(BaseCommand):
                 indent=4,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
+                fields=[x.name for x in queryset.model._meta.get_fields() if x.name not in ['updated_time']]
             )
         except Exception as e:
             print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
@@ -36,4 +37,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file_root = os.path.join(settings.BASE_DIR, "loadjson")
         for model in self.model_names:
-            self.save_json(model.objects.all(), os.path.join(file_root, f"{model._meta.model_name}.json"))
+            self.save_json(model.objects.all().order_by('created_time'),
+                           os.path.join(file_root, f"{model._meta.model_name}.json"))

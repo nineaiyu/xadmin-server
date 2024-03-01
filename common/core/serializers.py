@@ -4,6 +4,7 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.fields import empty
 from rest_framework.relations import PrimaryKeyRelatedField
@@ -102,6 +103,7 @@ class BaseModelSerializer(ModelSerializer):
         return super().update(instance, validated_data)
 
 
+@transaction.atomic
 def get_sub_serializer_fields():
     cls_list = []
 

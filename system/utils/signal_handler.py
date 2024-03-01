@@ -4,10 +4,10 @@
 # filename : signal_handler.py
 # author : ly_13
 # date : 12/15/2023
-
 import logging
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.signals import post_save, pre_delete, m2m_changed, post_migrate
 from django.dispatch import receiver
 from django.utils import timezone
@@ -23,12 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 @receiver(post_migrate)
+@transaction.atomic
 def post_migrate_handler(sender, **kwargs):
     if not UserInfo.objects.filter(pk=1).first():
         return
     label = sender.label
     delete = False
     now = timezone.now()
+    if label not in settings.PERMISSION_DATA_AUTH_APPS:
+        return
     field_type = ModelLabelField.FieldChoices.DATA
     obj, _ = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, defaults={'label': "全部表"},
                                                       parent=None)
@@ -36,22 +39,22 @@ def post_migrate_handler(sender, **kwargs):
                                              defaults={'label': "全部字段"})
     for field in DbAuditModel._meta.fields:
         ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
-                                                 defaults={'label': field.verbose_name})
-    if label in settings.PERMISSION_DATA_AUTH_APPS:
-        for model in sender.models.values():
-            delete = True
-            model_name = model._meta.model_name
-            verbose_name = model._meta.verbose_name
-            if 'relationship' in verbose_name and '_' in model_name:
-                continue
-            obj, _ = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
-                                                              parent=None, defaults={'label': verbose_name})
-            for field in model._meta.fields:
-                ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
-                                                         defaults={'label': field.verbose_name})
+                                                 defaults={'label': getattr(field, 'verbose_name', field.name)})
+    for model in sender.models.values():
+        delete = True
+        model_name = model._meta.model_name
+        verbose_name = model._meta.verbose_name
+        if 'relationship' in verbose_name and '_' in model_name:
+            continue
+        obj, _ = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
+                                                          parent=None, defaults={'label': verbose_name})
+        # for field in model._meta.get_fields():
+        for field in model._meta.fields:
+            ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
+                                                     defaults={'label': field.verbose_name})
+            # defaults={'label': getattr(field, 'verbose_name', field.through._meta.verbose_name)})
     if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(name__startswith=label, field_type=field_type,
-                                                              updated_time__lt=now).delete()
+        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
         logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
 
     if label == settings.PERMISSION_DATA_AUTH_APPS[0]:

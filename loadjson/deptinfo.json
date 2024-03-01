@@ -1,29 +1,25 @@
 [
   {
     "model": "system.deptinfo",
-    "pk": "93b4c4df-f65b-4347-9d20-4785b09a9ca3",
+    "pk": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
     "fields": {
-      "created_time": "2024-01-23T07:23:51.484Z",
-      "updated_time": "2024-01-23T07:23:51.484Z",
+      "created_time": "2024-01-23T03:30:24.152Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "mode_type": 0,
-      "name": "演示部门",
-      "code": "demo",
-      "parent": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
-      "rank": 3,
+      "name": "xAdmin管理团队",
+      "code": "xadmin",
+      "parent": null,
+      "rank": 1,
       "auto_bind": false,
       "is_active": true,
       "roles": [
-        "9be1b2f6-405c-4978-8bca-093f566b8d3c"
+        "069ea080-66b5-4ce3-9047-e3044ee98f30"
       ],
       "rules": [
-        "33d4fd9d-89e0-4d49-9993-0c35fe15cb4b",
-        "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
-        "899d2d18-1085-4904-bf59-c87994033ac5",
-        "db58769c-040f-41f2-874e-9be9fbd93790"
+        "9d737343-0034-4a08-985e-af41bf184699"
       ]
     }
   },
@@ -32,7 +28,6 @@
     "pk": "979446a6-f03d-433b-91cc-c9b3903d0b9b",
     "fields": {
       "created_time": "2024-01-23T03:31:42.774Z",
-      "updated_time": "2024-01-23T03:31:42.774Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -55,26 +50,28 @@
   },
   {
     "model": "system.deptinfo",
-    "pk": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+    "pk": "93b4c4df-f65b-4347-9d20-4785b09a9ca3",
     "fields": {
-      "created_time": "2024-01-23T03:30:24.152Z",
-      "updated_time": "2024-01-23T03:30:24.152Z",
+      "created_time": "2024-01-23T07:23:51.484Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "mode_type": 0,
-      "name": "xAdmin管理团队",
-      "code": "xadmin",
-      "parent": null,
-      "rank": 1,
+      "name": "演示部门",
+      "code": "demo",
+      "parent": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "rank": 3,
       "auto_bind": false,
       "is_active": true,
       "roles": [
-        "069ea080-66b5-4ce3-9047-e3044ee98f30"
+        "9be1b2f6-405c-4978-8bca-093f566b8d3c"
       ],
       "rules": [
-        "9d737343-0034-4a08-985e-af41bf184699"
+        "33d4fd9d-89e0-4d49-9993-0c35fe15cb4b",
+        "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+        "899d2d18-1085-4904-bf59-c87994033ac5",
+        "db58769c-040f-41f2-874e-9be9fbd93790"
       ]
     }
   }
