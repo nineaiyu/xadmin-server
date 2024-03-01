@@ -26,7 +26,7 @@ class Command(BaseCommand):
                 indent=4,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
-                fields=[x.name for x in queryset.model._meta.get_fields() if x.name not in ['updated_time']]
+                # fields=[x.name for x in queryset.model._meta.get_fields() if x.name not in ['updated_time']]
             )
         except Exception as e:
             print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
