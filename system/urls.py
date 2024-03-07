@@ -7,20 +7,22 @@
 from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
+from system.views.admin.config import SystemConfigView, UserPersonalConfigView
+from system.views.admin.dept import DeptView
+from system.views.admin.loginlog import UserLoginLogView
+from system.views.admin.menu import UserRoutesView, MenuView
+from system.views.admin.modelfield import ModelLabelFieldView
+from system.views.admin.notice import NoticeUserReadMessageView, NoticeMessageView
+from system.views.admin.operationlog import OperationLogView
+from system.views.admin.permission import DataPermissionView
+from system.views.admin.role import RoleView
+from system.views.admin.search import SearchDataView
+from system.views.admin.user import UserView
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
-from system.views.config import SystemConfigView, UserPersonalConfigView
-from system.views.dept import DeptView
-from system.views.loginlog import UserLoginLogView
-from system.views.menu import UserRoutesView, MenuView
-from system.views.modelfield import ModelLabelFieldView
-from system.views.notice import NoticeUserReadMessageView, NoticeMessageView, UserNoticeMessage
-from system.views.operationlog import OperationLogView
-from system.views.permission import DataPermissionView
-from system.views.role import RoleView
-from system.views.search import SearchDataView
 from system.views.upload import UploadView
-from system.views.user import UserView
-from system.views.userinfo import UserInfoView
+from system.views.user.config import UserConfigView
+from system.views.user.notice import UserNoticeMessage
+from system.views.user.userinfo import UserInfoView
 
 router = SimpleRouter(False)
 
@@ -44,7 +46,8 @@ menu_url = [
 
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
-router.register('notice', UserNoticeMessage, basename='user_notice')
+router.register('user/notice', UserNoticeMessage, basename='user_notice')
+router.register('user/config', UserConfigView, basename='user_config')
 
 # 系统设置相关路由
 router.register('user', UserView, basename='user')

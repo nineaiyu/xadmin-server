@@ -164,7 +164,15 @@ class OwnerUserFilter(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         if request.user and request.user.is_authenticated:
-            return queryset.filter(creator_id=request.user)
+            return queryset.filter(owner=request.user)
+        raise NotAuthenticated('未授权认证')
+
+
+class CreatorUserFilter(BaseFilterBackend):
+
+    def filter_queryset(self, request, queryset, view):
+        if request.user and request.user.is_authenticated:
+            return queryset.filter(creator=request.user)
         raise NotAuthenticated('未授权认证')
 
 

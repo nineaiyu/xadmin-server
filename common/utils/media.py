@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 1/17/2024
 import mimetypes
+import os
 import posixpath
 from pathlib import Path
 
@@ -34,9 +35,10 @@ def get_media_path(path):
             obj = model.objects.filter(pk=path_list[2]).first()
             if obj:
                 pic = getattr(obj, field)
-                index = pic_names[1].split('.')
-                if pic and len(index) > 0:
-                    return get_thumbnail(pic, int(index[0]))
+                if os.path.isfile(pic.path):
+                    index = pic_names[1].split('.')
+                    if pic and len(index) > 0:
+                        return get_thumbnail(pic, int(index[0]))
 
 
 def serve(request, path, document_root=None, show_indexes=False):

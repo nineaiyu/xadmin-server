@@ -6,10 +6,10 @@
 # date : 12/24/2023
 from rest_framework.decorators import action
 
-from common.core.config import SysConfig
+from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
-from system.models import UserRole, DataPermission
+from system.models import UserRole, DataPermission, SystemConfig
 
 
 class ChangeRolePermissionAction(object):
@@ -43,5 +43,11 @@ class InvalidConfigCacheAction(object):
     @action(methods=['post'], detail=True)
     def invalid(self, request, *args, **kwargs):
         instance = self.get_object()
-        SysConfig.invalid_config_cache(key=instance.key)
+
+        if isinstance(instance, SystemConfig):
+            SysConfig.invalid_config_cache(key=instance.key)
+            owner = '*'
+        else:
+            owner = instance.owner
+        UserConfig(owner).invalid_config_cache(key=instance.key)
         return ApiResponse(detail="操作成功")

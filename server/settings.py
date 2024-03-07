@@ -436,6 +436,7 @@ CACHE_KEY_TEMPLATE = {
     'make_token_key': 'make_token',
     'download_url_key': 'download_url',
     'pending_state_key': 'pending_state',
+    'user_websocket_key': 'user_websocket',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
 }
@@ -531,7 +532,7 @@ PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/logout$",
     "^/api/system/userinfo/self$",
-    "^/api/system/notice/unread$",
+    "^/api/system/user/notice/unread$",
     "^/api/system/routes$",
 ]
 

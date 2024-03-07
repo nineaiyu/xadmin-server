@@ -180,7 +180,11 @@ class UserConfigSerializer(serializers.ModelSerializer):
 class UserPersonalConfigCache(ConfigCache):
     def __init__(self, user_obj):
         self.user_obj = user_obj
-        super().__init__(f'user_{user_obj.pk}', UserPersonalConfig, UserSystemConfigCache, UserConfigSerializer)
+        if isinstance(user_obj, str):
+            key = user_obj
+        else:
+            key = user_obj.pk
+        super().__init__(f'user_{key}', UserPersonalConfig, UserSystemConfigCache, UserConfigSerializer)
 
     def get_default_data(self, key, default_data):
         n_data = getattr(SysConfig, key)

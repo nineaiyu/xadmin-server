@@ -11,10 +11,10 @@ from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from system.models import UserInfo, UserRole, DeptInfo, Menu
 from system.utils.serializer import UserSerializer, ListRoleSerializer, DeptSerializer, MenuSerializer
-from system.views.dept import DeptFilter
-from system.views.menu import MenuFilter
-from system.views.role import RoleFilter
-from system.views.user import UserFilter
+from system.views.admin.dept import DeptFilter
+from system.views.admin.menu import MenuFilter
+from system.views.admin.role import RoleFilter
+from system.views.admin.user import UserFilter
 
 
 class SearchDataView(OnlyListModelSet):
