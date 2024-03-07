@@ -18,7 +18,7 @@ class UserConfigView(OwnerModelSet):
     queryset = UserPersonalConfig.objects.filter(is_active=True)
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ['created_time']
-    filterset_class = OwnerUserFilter
+    filter_backends = [OwnerUserFilter]
     lookup_field = 'key'
 
     def list(self, request, *args, **kwargs):
