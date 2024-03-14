@@ -19,8 +19,9 @@ from system.views.admin.role import RoleView
 from system.views.admin.search import SearchDataView
 from system.views.admin.user import UserView
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
+from system.views.configs import ConfigsView
+from system.views.dashboard import DashboardView
 from system.views.upload import UploadView
-from system.views.user.config import UserConfigView
 from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
 
@@ -47,7 +48,6 @@ menu_url = [
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
 router.register('user/notice', UserNoticeMessage, basename='user_notice')
-router.register('user/config', UserConfigView, basename='user_config')
 
 # 系统设置相关路由
 router.register('user', UserView, basename='user')
@@ -55,6 +55,8 @@ router.register('dept', DeptView, basename='dept')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
 router.register('search', SearchDataView, basename='search')
+router.register('configs', ConfigsView, basename='configs')
+router.register('dashboard', DashboardView, basename='dashboard')
 router.register('permission', DataPermissionView, basename='permission')
 router.register('field', ModelLabelFieldView, basename='model_label_field')
 router.register('config/system', SystemConfigView, basename='sysconfig')

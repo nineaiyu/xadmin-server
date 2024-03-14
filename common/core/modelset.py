@@ -74,6 +74,17 @@ class BaseAction(object):
     get_queryset: Callable
     get_object: Callable
     action: Callable
+    extra_filter_class = []
+
+    def filter_queryset(self, queryset):
+        for backend in set(set(self.filter_backends) | set(self.extra_filter_class or [])):
+            queryset = backend().filter_queryset(self.request, queryset, self)
+        return queryset
+
+    def get_queryset(self):
+        if getattr(self, 'values_queryset', None):
+            return self.values_queryset
+        return super().get_queryset()
 
     def get_serializer_class(self):
         action_serializer_name = f"{self.action}_serializer_class"

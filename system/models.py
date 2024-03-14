@@ -242,6 +242,7 @@ class UserLoginLog(DbAuditModel):
         SMS = 1, _("短信验证登录")
         WECHAT = 2, _("微信扫码登录")
 
+    status = models.BooleanField(default=True, verbose_name="是否登录成功")
     ipaddress = models.GenericIPAddressField(verbose_name="登录ip地址", null=True, blank=True)
     browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
@@ -366,6 +367,7 @@ class NoticeUserRead(DbAuditModel):
 class BaseConfig(DbAuditModel):
     value = models.TextField(max_length=10240, verbose_name="配置值")
     is_active = models.BooleanField(default=True, verbose_name="是否启用该配置项")
+    access = models.BooleanField(default=False, verbose_name="允许api访问该配置")
 
     class Meta:
         verbose_name = '基础配置'
@@ -375,6 +377,7 @@ class BaseConfig(DbAuditModel):
 
 class SystemConfig(BaseConfig, DbUuidModel):
     key = models.CharField(max_length=256, unique=True, verbose_name="配置名称")
+    inherit = models.BooleanField(default=False, verbose_name="允许用户继承该配置")
 
     class Meta:
         verbose_name = '系统配置项'

@@ -408,7 +408,7 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
 class SystemConfigSerializer(BaseModelSerializer):
     class Meta:
         model = models.SystemConfig
-        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value']
+        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'inherit', 'access']
         read_only_fields = ['pk']
 
     cache_value = serializers.SerializerMethodField(read_only=True)
@@ -424,7 +424,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
     class Meta:
         model = models.UserPersonalConfig
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner',
-                  'owner_info', 'config_user']
+                  'owner_info', 'config_user', 'access']
         read_only_fields = ['pk', 'owner']
 
     owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner')
@@ -453,7 +453,7 @@ class UserLoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserLoginLog
         fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time',
-                  'login_display']
+                  'login_display', 'status']
         read_only_fields = ['pk', 'creator']
 
     creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)

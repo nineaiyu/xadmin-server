@@ -139,7 +139,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     # table = f'*'
     dept_obj = user_obj.dept
     q = Q()
-    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu'))
+    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))
     has_dept = False
     if dept_obj:
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
@@ -179,3 +179,32 @@ class CreatorUserFilter(BaseFilterBackend):
 class DataPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         return get_filter_queryset(queryset, request.user)
+
+
+class BaseModelFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        created_time_after = request.query_params.get('created_time_after', None)
+        created_time_before = request.query_params.get('created_time_before', None)
+        updated_time_after = request.query_params.get('updated_time_after', None)
+        updated_time_before = request.query_params.get('updated_time_after', None)
+        if any([created_time_after, created_time_before, updated_time_after, updated_time_before]):
+            created_time_filter = Q()
+            if created_time_after and created_time_before:
+                created_time_filter &= Q(created_time__gte=created_time_after) & Q(
+                    created_time__lte=created_time_before)
+            elif created_time_after:
+                created_time_filter &= Q(created_time__gte=created_time_after)
+            elif created_time_before:
+                created_time_filter &= Q(created_time__lte=created_time_before)
+
+            updated_time_filter = Q()
+            if updated_time_after and updated_time_before:
+                updated_time_filter &= Q(updated_time__gte=updated_time_after) & Q(
+                    updated_time__lte=updated_time_before)
+            elif updated_time_after:
+                updated_time_filter &= Q(updated_time__gte=updated_time_after)
+            elif updated_time_before:
+                updated_time_filter &= Q(updated_time__lte=updated_time_before)
+            queryset = queryset.filter(created_time_filter & updated_time_filter)
+            return queryset
+        return queryset

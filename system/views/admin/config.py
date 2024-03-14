@@ -24,7 +24,7 @@ class SystemConfigFilter(filters.FilterSet):
 
     class Meta:
         model = SystemConfig
-        fields = ['pk', 'is_active', 'key']
+        fields = ['pk', 'is_active', 'key', 'inherit', 'access']
 
 
 class SystemConfigView(BaseModelSet, InvalidConfigCacheAction):
@@ -40,7 +40,7 @@ class UserPersonalConfigFilter(SystemConfigFilter):
 
     class Meta:
         model = UserPersonalConfig
-        fields = ['pk', 'is_active', 'key']
+        fields = ['pk', 'is_active', 'key', 'access']
 
 
 class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction):

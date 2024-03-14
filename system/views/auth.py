@@ -11,10 +11,12 @@ import time
 from django.conf import settings
 from django.contrib import auth
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView, TokenViewBase
 from user_agents import parse
 
 from common.cache.storage import BlackAccessTokenCache
@@ -28,11 +30,12 @@ from system.utils.captcha import CaptchaAuth
 from system.utils.serializer import UserLoginLogSerializer
 
 
-def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
     data = {
         'ipaddress': get_request_ip(request),
         'browser': get_browser(request),
         'system': get_os(request),
+        'status': status,
         'agent': str(parse(request.META['HTTP_USER_AGENT'])),
         'login_type': login_type
     }
@@ -119,7 +122,12 @@ class RegisterView(APIView):
         return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')
 
 
-class LoginView(TokenObtainPairView):
+class AuthTokenSerializer(TokenObtainPairSerializer):
+    default_error_messages = {"no_active_account": _("登录失败，账号或密码错误")}
+
+
+class LoginView(TokenViewBase):
+    serializer_class = AuthTokenSerializer
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:
@@ -136,6 +144,7 @@ class LoginView(TokenObtainPairView):
                 try:
                     serializer.is_valid(raise_exception=True)
                 except Exception as e:
+                    save_login_log(request, status=False)
                     return ApiResponse(code=9999, detail=e.args[0])
                 data = serializer.validated_data
                 data.update(get_token_lifetime(serializer.user))

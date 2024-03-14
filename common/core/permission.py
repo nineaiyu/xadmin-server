@@ -81,10 +81,11 @@ class IsAuthenticated(BasePermission):
                     request.all_fields = True
                     return True
             permission_data = get_user_permission(request.user)
+            permission_field = SysConfig.PERMISSION_FIELD
             for p_data in permission_data:
                 if p_data.get('component') == request.method and re.match(f"/{p_data.get('path')}", url):
                     request.user.menu = p_data.get('pk')
-                    if SysConfig.PERMISSION_FIELD:
+                    if permission_field:
                         request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True
             raise PermissionDenied('权限不足')

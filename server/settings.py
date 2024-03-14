@@ -241,7 +241,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
-        'common.core.filter.DataPermissionFilter'
+        'common.core.filter.DataPermissionFilter',
+        'common.core.filter.BaseModelFilter',
     ),
 }
 
@@ -534,6 +535,7 @@ PERMISSION_WHITE_URL = [
     "^/api/system/userinfo/self$",
     "^/api/system/user/notice/unread$",
     "^/api/system/routes$",
+    "^/api/system/dashboard/",
 ]
 
 # 访问权限配置

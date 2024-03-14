@@ -95,20 +95,29 @@ class ConfigCacheBase(object):
             default_data = {}
         return default_data
 
-    def get_value(self, key, data=None):
-        data = self.get_default_data(key, data)
+    def get_value(self, key, default_data=None, ignore_access=True):
+        data = self.get_data(key, default_data, ignore_access)
+        if data:
+            return data.get('value')
+        return data
+
+    def get_data(self, key, default_data=None, ignore_access=True):
         cache = self.cache(f'{self.px}_{key}')
         cache_data = cache.get_storage_cache()
         if cache_data is not None and cache_data.get('key', '') == key:
-            return cache_data.get('value')
+            if ignore_access or cache_data.get('access'):
+                return cache_data
         db_data = self.get_value_from_db(key)
         d_key = db_data.get('key', '')
+        data = self.get_default_data(key, default_data)
         if d_key != key and data is not None:
             db_data['value'] = json.dumps(data)
             db_data['key'] = key
         db_data['value'] = self.get_render_value(db_data['value'])
         cache.set_storage_cache(db_data, timeout=self.timeout)
-        return db_data.get('value')
+        if ignore_access or db_data.get('access'):
+            return db_data
+        return {}
 
     def save_db(self, key, value, is_active, description, **kwargs):
         defaults = {'value': value}
@@ -116,19 +125,20 @@ class ConfigCacheBase(object):
             defaults['is_active'] = is_active
         if description is not None:
             defaults['description'] = description
-        self.model.objects.update_or_create(key=key, defaults=defaults, **kwargs)
+        return self.model.objects.update_or_create(key=key, defaults=defaults, **kwargs)
 
     def delete_db(self, key, **kwargs):
-        self.model.objects.filter(key=key, **kwargs).delete()
+        return self.model.objects.filter(key=key, **kwargs).delete()
 
     def set_value(self, key, value, is_active=None, description=None, **kwargs):
         if not isinstance(value, str):
             value = json.dumps(value)
-        self.save_db(key, value, is_active, description, **kwargs)
+        obj = self.save_db(key, value, is_active, description, **kwargs)
         self.cache(f'{self.px}_{key}').del_storage_cache()
+        return obj
 
     def set_default_value(self, key, **kwargs):
-        self.set_value(key, self.get_value(key, None), **kwargs)
+        return self.set_value(key, self.get_value(key, None), **kwargs)
 
     def del_value(self, key, **kwargs):
         self.delete_db(key, **kwargs)
@@ -187,19 +197,20 @@ class UserPersonalConfigCache(ConfigCache):
         super().__init__(f'user_{key}', UserPersonalConfig, UserSystemConfigCache, UserConfigSerializer)
 
     def get_default_data(self, key, default_data):
-        n_data = getattr(SysConfig, key)
-        if n_data is None:
-            n_data = {}
-        return n_data
+        data = SysConfig.get_data(key, default_data)
+        if data and data.get('inherit'):
+            return data.get('value')
+        return {}
 
     def delete_db(self, key, **kwargs):
-        super(UserPersonalConfigCache, self).delete_db(key, owner=self.user_obj)
+        return super(UserPersonalConfigCache, self).delete_db(key, owner=self.user_obj)
 
     def save_db(self, key, value, is_active=None, description=None, **kwargs):
-        super(UserPersonalConfigCache, self).save_db(key, value, is_active, description, owner=self.user_obj)
+        return super(UserPersonalConfigCache, self).save_db(key, value, is_active, description, owner=self.user_obj,
+                                                            **kwargs)
 
     def set_default_value(self, key, **kwargs):
-        super(UserPersonalConfigCache, self).set_default_value(key, owner=self.user_obj)
+        return super(UserPersonalConfigCache, self).set_default_value(key, owner=self.user_obj)
 
 
 UserConfig = UserPersonalConfigCache

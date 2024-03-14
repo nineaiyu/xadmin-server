@@ -1571,7 +1571,7 @@
     "pk": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
     "fields": {
       "created_time": "2024-01-22T09:32:11.433Z",
-      "updated_time": "2024-03-01T09:15:23.713Z",
+      "updated_time": "2024-03-06T07:49:18.564Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1582,7 +1582,7 @@
       "rank": 98,
       "path": "/chat/index",
       "component": "chat/index",
-      "is_active": false,
+      "is_active": true,
       "meta": "d95d4ae2-749c-4bc1-8c19-f5a1d04642f5",
       "model": []
     }

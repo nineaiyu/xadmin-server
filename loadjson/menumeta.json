@@ -1732,7 +1732,7 @@
     "pk": "d95d4ae2-749c-4bc1-8c19-f5a1d04642f5",
     "fields": {
       "created_time": "2024-01-22T09:32:11.429Z",
-      "updated_time": "2024-03-01T09:15:23.711Z",
+      "updated_time": "2024-03-06T07:49:18.562Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1740,7 +1740,7 @@
       "title": "menus.chat",
       "icon": "ep:chat-line-square",
       "r_svg_name": "",
-      "is_show_menu": false,
+      "is_show_menu": true,
       "is_show_parent": false,
       "is_keepalive": false,
       "frame_url": "",

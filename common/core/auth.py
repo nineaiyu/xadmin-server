@@ -7,11 +7,21 @@
 import hashlib
 
 from django.http.cookie import parse_cookie
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from common.cache.storage import BlackAccessTokenCache
+
+
+def auth_required(view_func):
+    def wrapper(view, request, *args, **kwargs):
+        if request.user and request.user.is_authenticated:
+            return view_func(request, *args, **kwargs)
+        raise NotAuthenticated('未授权认证')
+
+    return wrapper
 
 
 class ServerAccessToken(AccessToken):

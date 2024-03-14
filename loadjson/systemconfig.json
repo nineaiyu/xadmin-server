@@ -11,7 +11,9 @@
       "dept_belong": null,
       "value": "true",
       "is_active": true,
-      "key": "LOGIN"
+      "access": false,
+      "key": "LOGIN",
+      "inherit": false
     }
   },
   {
@@ -26,7 +28,9 @@
       "dept_belong": null,
       "value": "10485760",
       "is_active": true,
-      "key": "FILE_UPLOAD_SIZE"
+      "access": false,
+      "key": "FILE_UPLOAD_SIZE",
+      "inherit": false
     }
   },
   {
@@ -41,7 +45,9 @@
       "dept_belong": null,
       "value": "524288",
       "is_active": true,
-      "key": "PICTURE_UPLOAD_SIZE"
+      "access": false,
+      "key": "PICTURE_UPLOAD_SIZE",
+      "inherit": false
     }
   },
   {
@@ -56,7 +62,9 @@
       "dept_belong": null,
       "value": "true",
       "is_active": true,
-      "key": "REGISTER"
+      "access": false,
+      "key": "REGISTER",
+      "inherit": false
     }
   },
   {
@@ -71,7 +79,9 @@
       "dept_belong": null,
       "value": "true",
       "is_active": true,
-      "key": "PERMISSION_DATA"
+      "access": false,
+      "key": "PERMISSION_DATA",
+      "inherit": false
     }
   },
   {
@@ -86,7 +96,9 @@
       "dept_belong": null,
       "value": "true",
       "is_active": true,
-      "key": "PERMISSION_FIELD"
+      "access": false,
+      "key": "PERMISSION_FIELD",
+      "inherit": false
     }
   }
 ]

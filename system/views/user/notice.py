@@ -13,6 +13,7 @@ from rest_framework.filters import OrderingFilter
 
 from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
+from common.core.filter import BaseModelFilter
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
@@ -60,6 +61,7 @@ class UserNoticeMessage(OnlyListModelSet):
     queryset = NoticeMessage.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
+    extra_filter_class = [BaseModelFilter]
     ordering_fields = ['created_time', 'pk']
     filterset_class = UserNoticeMessageFilter
 
