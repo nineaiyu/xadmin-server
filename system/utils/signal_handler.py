@@ -114,6 +114,9 @@ def invalid_user_cache(user_pk):
     cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
     invalid_notify_cache(user_pk)
 
+def invalid_superuser_cache():
+    for pk in UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True):
+        invalid_user_cache(pk)
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')
@@ -130,6 +133,7 @@ def clean_cache_handler(sender, instance, **kwargs):
     if issubclass(sender, Menu):
         cache_response.invalid_cache('MenuView_list_*')
         queryset = instance.userrole_set.values_list('userinfo', flat=True)
+        invalid_superuser_cache()
         if queryset.count() > 100:
             cache_response.invalid_cache('UserRoutesView_get_*')
         else:
