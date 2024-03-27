@@ -144,6 +144,7 @@ class LoginView(TokenViewBase):
                 try:
                     serializer.is_valid(raise_exception=True)
                 except Exception as e:
+                    request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
                     save_login_log(request, status=False)
                     return ApiResponse(code=9999, detail=e.args[0])
                 data = serializer.validated_data

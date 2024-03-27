@@ -24,7 +24,7 @@ class DataPermissionFilter(filters.FilterSet):
 
     class Meta:
         model = DataPermission
-        fields = ['pk', 'mode_type']
+        fields = ['pk', 'mode_type', 'is_active']
 
 
 class DataPermissionView(BaseModelSet):
