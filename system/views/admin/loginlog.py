@@ -8,14 +8,13 @@
 
 from django_filters import rest_framework as filters
 
-from common.base.utils import get_choices_dict
+from common.core.filter import BaseFilterSet
 from common.core.modelset import ListDeleteModelSet
-from common.core.response import ApiResponse
 from system.models import UserLoginLog
 from system.utils.serializer import UserLoginLogSerializer
 
 
-class UserLoginLogFilter(filters.FilterSet):
+class UserLoginLogFilter(BaseFilterSet):
     ipaddress = filters.CharFilter(field_name='ipaddress', lookup_expr='icontains')
     system = filters.CharFilter(field_name='system', lookup_expr='icontains')
     browser = filters.CharFilter(field_name='browser', lookup_expr='icontains')
@@ -24,7 +23,7 @@ class UserLoginLogFilter(filters.FilterSet):
 
     class Meta:
         model = UserLoginLog
-        fields = ['creator_id', 'login_type']
+        fields = ['creator_id', 'login_type', 'ipaddress', 'system', 'browser', 'agent', 'created_time']
 
 
 class UserLoginLogView(ListDeleteModelSet):
@@ -34,6 +33,3 @@ class UserLoginLogView(ListDeleteModelSet):
     ordering_fields = ['created_time']
     filterset_class = UserLoginLogFilter
 
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(UserLoginLog.LoginTypeChoices.choices))

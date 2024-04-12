@@ -10,6 +10,7 @@ import logging
 
 from django.db.models import Q, QuerySet
 from django.utils import timezone
+from django_filters import rest_framework as filters
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
@@ -181,30 +182,11 @@ class DataPermissionFilter(BaseFilterBackend):
         return get_filter_queryset(queryset, request.user)
 
 
-class BaseModelFilter(BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        created_time_after = request.query_params.get('created_time_after', None)
-        created_time_before = request.query_params.get('created_time_before', None)
-        updated_time_after = request.query_params.get('updated_time_after', None)
-        updated_time_before = request.query_params.get('updated_time_after', None)
-        if any([created_time_after, created_time_before, updated_time_after, updated_time_before]):
-            created_time_filter = Q()
-            if created_time_after and created_time_before:
-                created_time_filter &= Q(created_time__gte=created_time_after) & Q(
-                    created_time__lte=created_time_before)
-            elif created_time_after:
-                created_time_filter &= Q(created_time__gte=created_time_after)
-            elif created_time_before:
-                created_time_filter &= Q(created_time__lte=created_time_before)
-
-            updated_time_filter = Q()
-            if updated_time_after and updated_time_before:
-                updated_time_filter &= Q(updated_time__gte=updated_time_after) & Q(
-                    updated_time__lte=updated_time_before)
-            elif updated_time_after:
-                updated_time_filter &= Q(updated_time__gte=updated_time_after)
-            elif updated_time_before:
-                updated_time_filter &= Q(updated_time__lte=updated_time_before)
-            queryset = queryset.filter(created_time_filter & updated_time_filter)
-            return queryset
-        return queryset
+class BaseFilterSet(filters.FilterSet):
+    pk = filters.NumberFilter(field_name='id')
+    creator = filters.NumberFilter(field_name='creator')
+    modifier = filters.NumberFilter(field_name='modifier')
+    dept_belong = filters.UUIDFilter(field_name='dept_belong')
+    created_time = filters.DateTimeFromToRangeFilter(field_name='created_time')
+    updated_time = filters.DateTimeFromToRangeFilter(field_name='updated_time')
+    description = filters.CharFilter(field_name='description', lookup_expr='icontains')

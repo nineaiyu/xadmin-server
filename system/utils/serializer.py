@@ -99,6 +99,8 @@ class DataPermissionSerializer(BaseModelSerializer):
 
     def validate(self, attrs):
         rules = attrs.get('rules', [])
+        if not rules:
+            raise ValidationError('规则不能为空')
         if len(rules) < 2:
             attrs['mode_type'] = models.DataPermission.ModeChoices.OR
         return attrs
@@ -114,7 +116,7 @@ class DeptSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display', 'rules_info', 'auto_bind', 'description']
+                  'mode_type', 'mode_display', 'rules_info', 'auto_bind', 'description', 'created_time']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
@@ -128,7 +130,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 
     def update(self, instance, validated_data):
         parent = validated_data.get('parent')
-        if parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
+        if parent and parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
             raise ValidationError('Parent not in children')
         return super().update(instance, validated_data)
 
@@ -166,7 +168,7 @@ class RouteMetaSerializer(BaseModelSerializer):
     class Meta:
         model = models.MenuMeta
         fields = ['title', 'icon', 'showParent', 'showLink', 'extraIcon', 'keepAlive', 'frameSrc', 'frameLoading',
-                  'transition', 'hiddenTag', 'dynamicLevel', 'auths']
+                  'transition', 'hiddenTag', 'dynamicLevel', 'fixedTag', 'auths']
 
     showParent = serializers.BooleanField(source='is_show_parent', read_only=True)
     showLink = serializers.BooleanField(source='is_show_menu', read_only=True)
@@ -184,6 +186,7 @@ class RouteMetaSerializer(BaseModelSerializer):
         }
 
     hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True)
+    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True)
     dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True)
 
     auths = serializers.SerializerMethodField()
@@ -214,7 +217,7 @@ class MenuSerializer(BaseModelSerializer):
     class Meta:
         model = models.Menu
         fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
-                  'menu_type_display', 'model', 'field']
+                  'menu_type_display', 'model', 'field', 'method']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
@@ -240,7 +243,7 @@ class MenuSerializer(BaseModelSerializer):
 class MenuPermissionSerializer(MenuSerializer):
     class Meta:
         model = models.Menu
-        fields = ['pk', 'name', 'rank', 'path', 'component', 'title', 'parent', 'menu_type']
+        fields = ['pk', 'title', 'parent', 'menu_type']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
@@ -308,10 +311,10 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return models.UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
         return obj.notice_user.count()
 
-    def validate_notice_type(self, val):
-        if models.NoticeMessage.NoticeChoices.NOTICE == val:
-            raise ValidationError('参数有误')
-        return val
+    # def validate_notice_type(self, val):
+    #     if models.NoticeMessage.NoticeChoices.NOTICE == val:
+    #         raise ValidationError('参数有误')
+    #     return val
 
     def validate(self, attrs):
         notice_type = attrs.get('notice_type')
@@ -433,6 +436,8 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
     def create(self, validated_data):
         config_user = validated_data.pop('config_user')
         instance = None
+        if not config_user:
+            raise ValidationError('用户ID不能为空')
         for owner in config_user:
             validated_data['owner'] = owner
             instance = super().create(validated_data)

@@ -11,12 +11,10 @@ import time
 from django.conf import settings
 from django.contrib import auth
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenRefreshView, TokenViewBase
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 from user_agents import parse
 
 from common.cache.storage import BlackAccessTokenCache
@@ -122,12 +120,7 @@ class RegisterView(APIView):
         return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')
 
 
-class AuthTokenSerializer(TokenObtainPairSerializer):
-    default_error_messages = {"no_active_account": _("登录失败，账号或密码错误")}
-
-
-class LoginView(TokenViewBase):
-    serializer_class = AuthTokenSerializer
+class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:

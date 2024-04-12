@@ -10,7 +10,7 @@ from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 
-from common.base.utils import get_choices_dict
+from common.core.filter import BaseFilterSet
 from common.core.filter import get_filter_queryset
 from common.core.modelset import BaseModelSet, UploadFileAction
 from common.core.response import ApiResponse
@@ -22,15 +22,14 @@ from system.utils.serializer import UserSerializer
 logger = logging.getLogger(__name__)
 
 
-class UserFilter(filters.FilterSet):
+class UserFilter(BaseFilterSet):
     username = filters.CharFilter(field_name='username', lookup_expr='icontains')
     nickname = filters.CharFilter(field_name='nickname', lookup_expr='icontains')
     mobile = filters.CharFilter(field_name='mobile', lookup_expr='icontains')
-    pk = filters.NumberFilter(field_name='id')
 
     class Meta:
         model = UserInfo
-        fields = ['email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
+        fields = ['username', 'nickname', 'mobile', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
 class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
@@ -41,10 +40,6 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     ordering_fields = ['date_joined', 'last_login', 'created_time']
     filterset_class = UserFilter
 
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices),
-                           mode_choices=get_choices_dict(DeptInfo.ModeChoices.choices))
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -52,7 +47,6 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
         password = request.data.get('password')
         if password:
             valid_data = serializer.data
-            # roles = valid_data.pop('roles')
             valid_data.pop('roles_info', None)
             valid_data.pop('rules_info', None)
             valid_data.pop('dept_info', None)
@@ -61,7 +55,6 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
                 valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user).first()
             else:
                 raise ValidationError('部门必须选择')
-                # valid_data['dept'] = request.user.dept
             user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
                                                 dept_belong=request.user.dept)
             if user:
@@ -73,12 +66,12 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             raise Exception("超级管理员禁止删除")
         instance.delete()
 
-    @action(methods=['delete'], detail=False, url_path='many-delete')
-    def many_delete(self, request, *args, **kwargs):
+    @action(methods=['delete'], detail=False, url_path='batch-delete')
+    def batch_delete(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(is_superuser=False)
-        return super().many_delete(request, *args, **kwargs)
+        return super().batch_delete(request, *args, **kwargs)
 
-    @action(methods=['post'], detail=True)
+    @action(methods=['post'], detail=True, url_path='reset-password')
     def reset_password(self, request, *args, **kwargs):
         instance = self.get_object()
         password = request.data.get('password')

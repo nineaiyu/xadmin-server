@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -242,7 +243,6 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
         'common.core.filter.DataPermissionFilter',
-        'common.core.filter.BaseModelFilter',
     ),
 }
 
@@ -528,6 +528,10 @@ CELERY_FLOWER_PORT = 5566
 CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
 
+CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles', 'common',
+                      'system', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha', 'corsheaders',
+                      'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat', 'imagekit']
+
 # 访问白名单配置
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
@@ -536,6 +540,8 @@ PERMISSION_WHITE_URL = [
     "^/api/system/user/notice/unread$",
     "^/api/system/routes$",
     "^/api/system/dashboard/",
+    "^/api/system/.*choices$",
+    "^/api/system/.*search-fields$",
 ]
 
 # 访问权限配置

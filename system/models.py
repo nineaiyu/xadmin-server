@@ -105,6 +105,7 @@ class MenuMeta(DbAuditModel, DbUuidModel):
     transition_leave = models.CharField(verbose_name="当前页面离场动画", max_length=256, null=True, blank=True)
 
     is_hidden_tag = models.BooleanField(verbose_name="当前菜单名称或自定义信息禁止添加到标签页", default=False)
+    fixed_tag = models.BooleanField(verbose_name="当前菜单名称是否固定显示在标签页且不可关闭", default=False)
     dynamic_level = models.IntegerField(verbose_name="显示标签页最大数量", default=1)
 
     class Meta:
@@ -131,18 +132,19 @@ class Menu(DbAuditModel, DbUuidModel):
 
     parent = models.ForeignKey(to='Menu', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True)
     menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY, verbose_name="节点类型")
-    name = models.CharField(verbose_name="组件英文名称", max_length=128, unique=True)
+    name = models.CharField(verbose_name="组件英文名称 或 权限标识", max_length=128, unique=True)
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
-    path = models.CharField(verbose_name="路由地址", max_length=256, help_text='权限类型时，该参数为请求的URL')
-    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True,
-                                 help_text='权限类型时，该参数为请求方式')
+    path = models.CharField(verbose_name="路由地址 或 后端权限路由", max_length=256)
+    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True)
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
     model = models.ManyToManyField(to=ModelLabelField, verbose_name="绑定模型", null=True, blank=True)
 
     # permission_marking = models.CharField(verbose_name="权限标识", max_length=256)
-    # api_route = models.CharField(max_length=256, verbose_name="后端权限路由")
-    # method = models.CharField(choices=MethodChoices, default='GET', verbose_name="请求方式", max_length=10)
+    # api_route = models.CharField(verbose_name="后端权限路由", max_length=256, null=True, blank=True)
+    method = models.CharField(choices=MethodChoices, null=True, blank=True, verbose_name="请求方式", max_length=10)
+
+    # api_auth_access = models.BooleanField(verbose_name="是否授权访问，否的话可以匿名访问后端路由", default=True)
 
     def delete(self, using=None, keep_parents=False):
         if self.meta:
@@ -308,7 +310,7 @@ class NoticeMessage(DbAuditModel):
         ROLE = 4, _("角色通知")
 
     class LevelChoices(models.TextChoices):
-        DEFAULT = '', _("普通通知")
+        DEFAULT = 'info', _("普通通知")
         PRIMARY = 'primary', _("一般通知")
         SUCCESS = 'success', _("成功通知")
         DANGER = 'danger', _("重要通知")

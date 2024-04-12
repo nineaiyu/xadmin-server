@@ -25,6 +25,9 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
     def get_object(self):
         return self.request.user
 
+    def get_queryset(self):
+        return UserInfo.objects.filter(pk=self.request.user.pk)
+
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
         return f"{func_name}_{request.user.pk}"
@@ -34,7 +37,7 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
         data = super().retrieve(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices))
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['post'], detail=False, url_path='reset-password')
     def reset_password(self, request, *args, **kwargs):
         old_password = request.data.get('old_password')
         sure_password = request.data.get('sure_password')

@@ -8,6 +8,7 @@ import logging
 
 from django_filters import rest_framework as filters
 
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from system.models import UserRole
 from system.utils.serializer import RoleSerializer, ListRoleSerializer
@@ -15,14 +16,13 @@ from system.utils.serializer import RoleSerializer, ListRoleSerializer
 logger = logging.getLogger(__name__)
 
 
-class RoleFilter(filters.FilterSet):
+class RoleFilter(BaseFilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
-    description = filters.CharFilter(field_name='description', lookup_expr='icontains')
     code = filters.CharFilter(field_name='code', lookup_expr='icontains')
 
     class Meta:
         model = UserRole
-        fields = ['name', 'is_active']
+        fields = ['name', 'code', 'is_active', 'description']
 
 
 class RoleView(BaseModelSet):
@@ -30,5 +30,5 @@ class RoleView(BaseModelSet):
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer
 
-    ordering_fields = ['updated_time', 'name', 'created_time', 'pk']
+    ordering_fields = ['updated_time', 'name', 'created_time']
     filterset_class = RoleFilter

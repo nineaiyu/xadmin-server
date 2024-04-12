@@ -12,8 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.base.magic import cache_response
-from common.base.utils import get_choices_dict
-from common.core.filter import BaseModelFilter
+from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
@@ -40,10 +39,9 @@ def get_user_unread_q(user_obj):
     return get_user_unread_q1(user_obj) | get_user_unread_q2(user_obj)
 
 
-class UserNoticeMessageFilter(filters.FilterSet):
+class UserNoticeMessageFilter(BaseFilterSet):
     message = filters.CharFilter(field_name='message', lookup_expr='icontains')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
-    pk = filters.NumberFilter(field_name='id')
     unread = filters.BooleanFilter(field_name='unread', method='unread_filter')
 
     def unread_filter(self, queryset, name, value):
@@ -54,15 +52,14 @@ class UserNoticeMessageFilter(filters.FilterSet):
 
     class Meta:
         model = NoticeMessage
-        fields = ['notice_type', 'level']
+        fields = ['title', 'message', 'pk', 'notice_type', 'unread', 'level']
 
 
 class UserNoticeMessage(OnlyListModelSet):
     queryset = NoticeMessage.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
-    extra_filter_class = [BaseModelFilter]
-    ordering_fields = ['created_time', 'pk']
+    ordering_fields = ['created_time']
     filterset_class = UserNoticeMessageFilter
 
     @cache_response(timeout=600, key_func='get_cache_key')
@@ -72,9 +69,7 @@ class UserNoticeMessage(OnlyListModelSet):
         q |= Q(notice_type__in=NoticeMessage.user_choices, notice_user=request.user)
         self.queryset = self.filter_queryset(self.get_queryset()).filter(q)
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, unread_count=unread_count,
-                           level_choices=get_choices_dict(NoticeMessage.LevelChoices.choices),
-                           notice_type_choices=get_choices_dict(NoticeMessage.NoticeChoices.choices))
+        return ApiResponse(**data, unread_count=unread_count)
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
@@ -112,7 +107,7 @@ class UserNoticeMessage(OnlyListModelSet):
         pks = request.data.get('pks', [])
         return self.read_message(pks, request)
 
-    @action(methods=['put'], detail=False)
+    @action(methods=['put'], detail=False, url_path='read-all')
     def read_all(self, request, *args, **kwargs):
         pks = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).values_list('pk',
                                                                                                                  flat=True).distinct()

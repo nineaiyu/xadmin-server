@@ -7,12 +7,13 @@
 
 from django_filters import rest_framework as filters
 
+from common.core.filter import BaseFilterSet
 from common.core.modelset import ListDeleteModelSet
 from system.models import OperationLog
 from system.utils.serializer import OperationLogSerializer
 
 
-class OperationLogFilter(filters.FilterSet):
+class OperationLogFilter(BaseFilterSet):
     ipaddress = filters.CharFilter(field_name='ipaddress', lookup_expr='icontains')
     system = filters.CharFilter(field_name='system', lookup_expr='icontains')
     browser = filters.CharFilter(field_name='browser', lookup_expr='icontains')
@@ -21,12 +22,12 @@ class OperationLogFilter(filters.FilterSet):
 
     class Meta:
         model = OperationLog
-        fields = ['module', 'creator_id']
+        fields = ['module', 'creator_id', 'ipaddress', 'system', 'browser', 'path', 'created_time']
 
 
 class OperationLogView(ListDeleteModelSet):
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
 
-    ordering_fields = ['updated_time', 'created_time', 'pk']
+    ordering_fields = ['created_time', 'updated_time']
     filterset_class = OperationLogFilter

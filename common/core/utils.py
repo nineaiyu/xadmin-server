@@ -76,17 +76,18 @@ def get_all_url_dict(pre_url='/'):
 
 def auto_register_app_url(urlpatterns):
     for name, value in apps.app_configs.items():
-        try:
-            urls = import_from_string(f"{name}.config.URLPATTERNS")
-            logger.info(f"auto register {name} url success")
-            if urls:
-                urlpatterns.extend(urls)
-                for url in urls:
-                    settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
-                settings.PERMISSION_DATA_AUTH_APPS.append(name)
-        except Exception as e:
-            logger.warning(f"auto register {name} url failed. {e}")
-            continue
+        if name in settings.CONFIG_IGNORE_APPS: continue
+        # try:
+        urls = import_from_string(f"{name}.config.URLPATTERNS")
+        logger.info(f"auto register {name} url success")
+        if urls:
+            urlpatterns.extend(urls)
+            for url in urls:
+                settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
+            settings.PERMISSION_DATA_AUTH_APPS.append(name)
+        # except Exception as e:
+        #     logger.warning(f"auto register {name} url failed. {e}")
+        #     continue
 
         try:
             urls = import_from_string(f"{name}.config.PERMISSION_WHITE_REURL")

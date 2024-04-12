@@ -4,14 +4,16 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
-import json
 from typing import Callable
 
 from django.conf import settings
+from django.forms.widgets import SelectMultiple, DateTimeInput
+from django_filters.widgets import DateRangeWidget
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
+from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
 
@@ -58,7 +60,7 @@ class RankAction(object):
     filter_queryset: Callable
     get_queryset: Callable
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['post'], detail=False, url_path='rank')
     def action_rank(self, request, *args, **kwargs):
         pks = request.data.get('pks', [])
         rank = 1
@@ -70,10 +72,12 @@ class RankAction(object):
 
 class BaseAction(object):
     perform_destroy: Callable
+    filterset_class: Callable
     filter_queryset: Callable
     get_queryset: Callable
     get_object: Callable
     action: Callable
+    choices_models: []
     extra_filter_class = []
 
     def filter_queryset(self, queryset):
@@ -114,12 +118,63 @@ class BaseAction(object):
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
-    @action(methods=['delete'], detail=False, url_path='many-delete')
-    def many_delete(self, request, *args, **kwargs):
-        pks = request.query_params.get('pks', None)
+    @action(methods=['get'], detail=False, url_path='choices')
+    def choices_dict(self, request, *args, **kwargs):
+        result = {}
+        models = getattr(self, 'choices_models', None)
+        if not models:
+            models = [self.queryset.model]
+        for model in models:
+            for field in model._meta.fields:
+                choices = field.choices
+                if choices:
+                    result[field.name] = get_choices_dict(choices)
+        return ApiResponse(choices_dict=result)
+
+    @action(methods=['get'], detail=False, url_path='search-fields')
+    def search_fields(self, request, *args, **kwargs):
+        results = []
+        try:
+            filterset_class = self.filterset_class.get_filters()
+            filter_fields = self.filterset_class.get_fields().keys()
+            for key, value in filterset_class.items():
+                if key not in filter_fields: continue
+                widget = value.field.widget
+                if isinstance(widget, SelectMultiple):
+                    value.field.widget.input_type = 'select-multiple'
+                if isinstance(widget, DateRangeWidget):
+                    value.field.widget.input_type = 'datetimerange'
+                if isinstance(widget, DateTimeInput):
+                    value.field.widget.input_type = 'datetime'
+                if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
+                    value.field.widget.input_type = 'text'
+                    value.field.widget.choices = []
+                choices = list(getattr(value.field.widget, 'choices', []))
+                if choices and len(choices) > 0 and choices[0][0] == "":
+                    choices.pop(0)
+                results.append({
+                    'key': key,
+                    'input_type': value.field.widget.input_type,
+                    'choices': get_choices_dict(choices)
+                })
+            order_choices = []
+            for choice in list(getattr(self, 'ordering_fields', [])):
+                order_choices.extend([(f"-{choice}", f"{choice} descending"), (choice, f"{choice} ascending")])
+
+            results.append({
+                'key': "ordering",
+                'input_type': 'select-ordering',
+                'choices': get_choices_dict(order_choices)
+            })
+        except Exception as e:
+            pass
+        return ApiResponse(data={'results': results})
+
+    @action(methods=['post'], detail=False, url_path='batch-delete')
+    def batch_delete(self, request, *args, **kwargs):
+        pks = request.data.get('pks', None)
         if not pks:
             return ApiResponse(code=1003, detail="数据异常，批量操作id不存在")
-        pks = json.loads(pks)
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
         for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
             self.perform_destroy(instance)

@@ -64,7 +64,7 @@ def get_choices_dict(choices, disabled_choices=None):
     result = []
     choices_org_list = list(choices)
     for choice in choices_org_list:
-        val = {'key': choice[0], 'label': choice[1], 'disabled': False}
+        val = {'key': choice[0], 'label': choice[1]}
         if disabled_choices and isinstance(disabled_choices, list) and choice[0] in disabled_choices:
             val['disabled'] = True
         result.append(val)
@@ -117,6 +117,13 @@ def menu_list_to_tree(data: list, root_field: str = 'parent') -> list:
     return container
 
 
+def format_menu_meta(meta: dict) -> dict:
+    new_meta = {}
+    for key in ['icon', 'title', 'rank', 'showLink']:
+        new_meta[key] = meta.get(key)
+    return new_meta
+
+
 def format_menu_data(data):
     new_result = []
     for d in data:
@@ -124,7 +131,7 @@ def format_menu_data(data):
             route = {
                 'path': f"/default{d.get('path')}",
                 'title': d.get('title'),
-                'meta': {**d.get('meta', {})},
+                'meta': format_menu_meta(d.get('meta', {})),
                 'children': [d]
             }
         else:

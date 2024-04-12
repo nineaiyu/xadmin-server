@@ -63,7 +63,7 @@ class BaseModelSerializer(ModelSerializer):
                 if self.request.fields and isinstance(self.request.fields, dict):
                     allowed2 = set(self.request.fields.get(self.Meta.model._meta.label_lower, []))
 
-            if hasattr(self.request, "user") and self.request.user.is_superuser:
+            if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allowed2 = set(self.fields)
         else:
             allowed2 = set(self.fields)

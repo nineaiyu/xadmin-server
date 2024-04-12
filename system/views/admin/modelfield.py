@@ -12,6 +12,7 @@ from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
+from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
@@ -22,11 +23,9 @@ from system.utils.serializer import ModelLabelFieldSerializer
 logger = logging.getLogger(__name__)
 
 
-class ModelLabelFieldFilter(filters.FilterSet):
+class ModelLabelFieldFilter(BaseFilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     label = filters.CharFilter(field_name='label', lookup_expr='icontains')
-    description = filters.CharFilter(field_name='description', lookup_expr='icontains')
-    pk = filters.CharFilter(field_name='id')
     parent = filters.CharFilter(field_name='parent', method='get_parent')
 
     def get_parent(self, queryset, name, value):
@@ -36,7 +35,7 @@ class ModelLabelFieldFilter(filters.FilterSet):
 
     class Meta:
         model = ModelLabelField
-        fields = ['pk', 'label', 'field_type']
+        fields = ['pk', 'name', 'label', 'parent', 'field_type']
 
 
 class ModelLabelFieldView(OnlyListModelSet):

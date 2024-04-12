@@ -12,7 +12,8 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 
 from common.base.magic import cache_response
-from common.base.utils import menu_list_to_tree, get_choices_dict, format_menu_data
+from common.base.utils import menu_list_to_tree, format_menu_data
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, RankAction
 from common.core.pagination import DynamicPageNumber
 from common.core.permission import get_user_menu_queryset
@@ -22,7 +23,7 @@ from system.models import Menu
 from system.utils.serializer import MenuSerializer, RouteSerializer, MenuPermissionSerializer
 
 
-class MenuFilter(filters.FilterSet):
+class MenuFilter(BaseFilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     component = filters.CharFilter(field_name='component', lookup_expr='icontains')
     title = filters.CharFilter(field_name='meta__title', lookup_expr='icontains')
@@ -38,7 +39,6 @@ class MenuView(BaseModelSet, RankAction):
     serializer_class = MenuSerializer
     permissions_serializer_class = MenuPermissionSerializer
     pagination_class = DynamicPageNumber(1000)
-
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
 
@@ -49,8 +49,7 @@ class MenuView(BaseModelSet, RankAction):
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(Menu.MethodChoices.choices),
-                           menu_choices=get_choices_dict(Menu.MenuChoices.choices), api_url_list=get_all_url_dict(''))
+        return ApiResponse(**data)
 
     @action(methods=['get'], detail=False)
     def permissions(self, request, *args, **kwargs):
@@ -63,6 +62,9 @@ class MenuView(BaseModelSet, RankAction):
         self.get_queryset = get_queryset
         return super().list(request, *args, **kwargs)
 
+    @action(methods=['get'], detail=False, url_path='api-url')
+    def api_url(self, request, *args, **kwargs):
+        return ApiResponse(results=get_all_url_dict(''))
 
 class UserRoutesView(APIView):
 
