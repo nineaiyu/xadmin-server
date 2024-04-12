@@ -38,7 +38,7 @@ class FieldPermissionSerializer(BaseModelSerializer):
 class RoleSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'field', 'fields']
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'updated_time', 'field', 'fields']
         read_only_fields = ['pk']
 
     field = serializers.SerializerMethodField(read_only=True)
@@ -78,7 +78,7 @@ class RoleSerializer(BaseModelSerializer):
 class ListRoleSerializer(RoleSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'created_time', 'field', 'fields']
+        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'updated_time', 'field', 'fields']
         read_only_fields = ['pk']
 
     field = serializers.ListField(default=[], read_only=True)
