@@ -1628,7 +1628,7 @@
       "dept_belong": null,
       "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
       "menu_type": 2,
-      "name": "upload:systemAvatar",
+      "name": "upload:systemUser",
       "rank": 8,
       "path": "api/system/user/(?P<pk>[^/.]+)/upload$",
       "component": null,
