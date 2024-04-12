@@ -64,7 +64,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             room_name = self.scope["url_route"]["kwargs"].get('room_name')
             username = self.scope["url_route"]["kwargs"].get('username')
             # # data = verify_token(token, room_name, success_once=True)
-            if username and room_name and username != self.user_obj.username and False:
+            if username and room_name and username != self.user_obj.username:
                 self.disconnected = False
                 self.room_group_name = "message_system_default"
                 # self.room_group_name = f"message_{room_name}"
