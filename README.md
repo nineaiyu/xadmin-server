@@ -9,6 +9,45 @@ xadmin-基于Django+vue3的rbac权限管理系统
 [https://xadmin.dvcloud.xin/](https://xadmin.dvcloud.xin/)
 账号密码：admin/admin123
 
+## 本地环境运行 必须先配置好```redis```服务
+
+#### 数据库默认使用的是sqlite3
+
+## redis 配置
+
+#### 打开配置文件```server/settings.py```,修改为自己的redis服务配置
+
+```python
+REDIS_PASSWORD = "nineven"
+REDIS_HOST = "redis"
+REDIS_PORT = 6379
+```
+
+## 数据库配置（开发环境默认使用的是sqlite3），正式环境建议使用MySQL或者postgresql
+
+#### 打开配置文件```server/settings.py```,修改为自己的mysql服务配置
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'xadmin',
+        'USER': 'server',
+        'PASSWORD': 'KGzKjZpWBp4R4RSa',
+        'HOST': 'mariadb',
+        'PORT': 3306,
+        'CONN_MAX_AGE': 600,
+        # 设置MySQL的驱动
+        # 'OPTIONS': {'init_command': 'SET storage_engine=INNODB'},
+        'OPTIONS': {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4'}
+    },
+    # "default": {
+    #     "ENGINE": "django.db.backends.sqlite3",
+    #     "NAME": BASE_DIR / "db.sqlite3",
+    # }
+}
+```
+
 ### 生成数据表并迁移
 
 ```shell
@@ -24,13 +63,22 @@ python manage.py createsuperuser
 
 ### 启动程序
 
-##### a.本地环境直接启动
+##### a.Linux 环境直接启动
 
 ```shell
 python manage.py start all
 ```
 
-##### b.容器化启动
+##### b.Windows 环境直接启动
+
+```shell
+python manage.py runserver 0.0.0.0:8896
+python -m celery -A server flower -logging=info --url_prefix=/api/flower --auto_refresh=False  --address=127.0.0.1 --port=5566
+python -m celery -A server beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler --max-interval 60
+python -m celery -A server worker -P prefork -l INFO --autoscale 10,3 -Q celery --heartbeat-interval 10 -n celery@%h --without-mingle
+```
+
+##### c.容器化启动
 
 ```shell
 docker compose up -d
