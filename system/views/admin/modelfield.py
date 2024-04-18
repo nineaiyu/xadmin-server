@@ -46,16 +46,16 @@ class ModelLabelFieldView(OnlyListModelSet):
     ordering_fields = ['created_time', 'updated_time']
     filterset_class = ModelLabelFieldFilter
 
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
+    @action(methods=['get'], detail=False, url_path='choices')
+    def choices_dict(self, request, *args, **kwargs):
         disabled_choices = [
             ModelLabelField.KeyChoices.TEXT,
             ModelLabelField.KeyChoices.JSON,
             ModelLabelField.KeyChoices.DATE,
             ModelLabelField.KeyChoices.DEPARTMENTS
         ]
-        return ApiResponse(**data, choices_dict=get_choices_dict(ModelLabelField.KeyChoices.choices,
-                                                                 disabled_choices=disabled_choices))
+        result = get_choices_dict(ModelLabelField.KeyChoices.choices, disabled_choices=disabled_choices)
+        return ApiResponse(choices_dict={'choices': result})
 
     @action(methods=['get'], detail=False, queryset=ModelLabelField.objects, filterset_class=None)
     def lookups(self, request, *args, **kwargs):

@@ -4,7 +4,7 @@
     "pk": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
     "fields": {
       "created_time": "2024-01-22T09:54:39.957Z",
-      "updated_time": "2024-04-12T03:17:43.987Z",
+      "updated_time": "2024-04-18T07:17:23.357Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -20,7 +20,7 @@
     "pk": "eed9a255-0336-43c4-8fcf-5cead30dc30a",
     "fields": {
       "created_time": "2024-01-22T09:54:39.962Z",
-      "updated_time": "2024-04-12T03:17:43.990Z",
+      "updated_time": "2024-04-18T07:17:23.360Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -36,7 +36,7 @@
     "pk": "d229404a-7ead-4f50-aa3c-272b43baee60",
     "fields": {
       "created_time": "2024-01-22T09:54:39.967Z",
-      "updated_time": "2024-04-12T03:17:43.991Z",
+      "updated_time": "2024-04-18T07:17:23.362Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -52,7 +52,7 @@
     "pk": "a5b48a20-c7b1-4f19-b1e2-de01791c52a3",
     "fields": {
       "created_time": "2024-01-22T09:54:39.972Z",
-      "updated_time": "2024-04-12T03:17:43.993Z",
+      "updated_time": "2024-04-18T07:17:23.363Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -68,7 +68,7 @@
     "pk": "5d8b84a7-9d83-4e6b-be30-37edc354767b",
     "fields": {
       "created_time": "2024-01-22T09:54:39.981Z",
-      "updated_time": "2024-04-12T03:17:43.995Z",
+      "updated_time": "2024-04-18T07:17:23.365Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -84,7 +84,7 @@
     "pk": "4f686fe8-944a-46a0-99e9-6a678846d75d",
     "fields": {
       "created_time": "2024-01-22T09:54:39.986Z",
-      "updated_time": "2024-04-12T03:17:43.996Z",
+      "updated_time": "2024-04-18T07:17:23.366Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -100,7 +100,7 @@
     "pk": "e0ecaaf6-de51-4cd0-8a20-f8a1e422baa8",
     "fields": {
       "created_time": "2024-01-22T09:54:39.990Z",
-      "updated_time": "2024-04-12T03:17:43.998Z",
+      "updated_time": "2024-04-18T07:17:23.368Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -113,26 +113,10 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "9a490ac5-20e8-492e-8412-2665e56ffcab",
-    "fields": {
-      "created_time": "2024-01-22T09:54:39.996Z",
-      "updated_time": "2024-04-12T03:17:44.000Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
-      "name": "field_type_display",
-      "label": "Field type display"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "f6089e4d-25c7-4593-8cd4-975e4f3c181c",
     "fields": {
       "created_time": "2024-01-22T09:54:40Z",
-      "updated_time": "2024-04-12T03:17:44.001Z",
+      "updated_time": "2024-04-18T07:17:23.373Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -148,7 +132,7 @@
     "pk": "361c4dd0-9bc2-4b01-9e31-a5742fa1e13b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.006Z",
-      "updated_time": "2024-04-12T03:17:44.004Z",
+      "updated_time": "2024-04-18T07:17:23.375Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -164,7 +148,7 @@
     "pk": "b80aea01-268d-4973-b598-8c4e4e1c14b5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.010Z",
-      "updated_time": "2024-04-12T03:17:44.006Z",
+      "updated_time": "2024-04-18T07:17:23.376Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -180,7 +164,7 @@
     "pk": "020802dc-cf0f-4fa8-bb68-f9effe6a5854",
     "fields": {
       "created_time": "2024-01-22T09:54:40.015Z",
-      "updated_time": "2024-04-12T03:17:44.007Z",
+      "updated_time": "2024-04-18T07:17:23.378Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -196,7 +180,7 @@
     "pk": "242f682b-596b-4276-a926-9876cc75a348",
     "fields": {
       "created_time": "2024-01-22T09:54:40.020Z",
-      "updated_time": "2024-04-12T03:17:44.009Z",
+      "updated_time": "2024-04-18T07:17:23.379Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -212,7 +196,7 @@
     "pk": "11ad085f-8749-4098-be4c-9ca685fd21b7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.024Z",
-      "updated_time": "2024-04-12T03:17:44.027Z",
+      "updated_time": "2024-04-18T07:17:23.396Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -228,7 +212,7 @@
     "pk": "97117860-e8dc-4d34-964f-6bd86d5a7a8b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.030Z",
-      "updated_time": "2024-04-12T03:17:44.029Z",
+      "updated_time": "2024-04-18T07:17:23.398Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -244,7 +228,7 @@
     "pk": "65f92651-4105-4727-a2ee-44bbe0512d40",
     "fields": {
       "created_time": "2024-01-22T09:54:40.035Z",
-      "updated_time": "2024-04-12T03:17:44.031Z",
+      "updated_time": "2024-04-18T07:17:23.400Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -260,7 +244,7 @@
     "pk": "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
     "fields": {
       "created_time": "2024-01-22T09:54:40.041Z",
-      "updated_time": "2024-04-12T03:17:44.032Z",
+      "updated_time": "2024-04-18T07:17:23.401Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -276,7 +260,7 @@
     "pk": "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.045Z",
-      "updated_time": "2024-04-12T03:17:44.034Z",
+      "updated_time": "2024-04-18T07:17:23.403Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -292,7 +276,7 @@
     "pk": "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.051Z",
-      "updated_time": "2024-04-12T03:17:44.035Z",
+      "updated_time": "2024-04-18T07:17:23.404Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -308,7 +292,7 @@
     "pk": "9db6397a-b0be-4871-80af-e3520b92c67a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.056Z",
-      "updated_time": "2024-04-12T03:17:44.037Z",
+      "updated_time": "2024-04-18T07:17:23.406Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -324,7 +308,7 @@
     "pk": "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
     "fields": {
       "created_time": "2024-01-22T09:54:40.065Z",
-      "updated_time": "2024-04-12T03:17:44.040Z",
+      "updated_time": "2024-04-18T07:17:23.409Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -340,7 +324,7 @@
     "pk": "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
     "fields": {
       "created_time": "2024-01-22T09:54:40.070Z",
-      "updated_time": "2024-04-12T03:17:44.042Z",
+      "updated_time": "2024-04-18T07:17:23.410Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -356,7 +340,7 @@
     "pk": "16a823b0-c4fb-40cd-af63-9aed309823aa",
     "fields": {
       "created_time": "2024-01-22T09:54:40.121Z",
-      "updated_time": "2024-04-12T03:17:44.043Z",
+      "updated_time": "2024-04-18T07:17:23.412Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -372,7 +356,7 @@
     "pk": "c4443e4a-937c-476c-a7cb-776952c8bdef",
     "fields": {
       "created_time": "2024-01-22T09:54:40.126Z",
-      "updated_time": "2024-04-12T03:17:44.045Z",
+      "updated_time": "2024-04-18T07:17:23.414Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -388,7 +372,7 @@
     "pk": "af40a41b-d543-4dc7-adf1-b4f6fed66039",
     "fields": {
       "created_time": "2024-01-22T09:54:40.131Z",
-      "updated_time": "2024-04-12T03:17:44.047Z",
+      "updated_time": "2024-04-18T07:17:23.415Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -404,7 +388,7 @@
     "pk": "021005df-4170-4d0a-a63f-3cb24a8cd962",
     "fields": {
       "created_time": "2024-01-22T09:54:40.136Z",
-      "updated_time": "2024-04-12T03:17:44.049Z",
+      "updated_time": "2024-04-18T07:17:23.417Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -420,7 +404,7 @@
     "pk": "27d3a5fa-0280-4117-b5fa-9623d47e7cb7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.141Z",
-      "updated_time": "2024-04-12T03:17:44.050Z",
+      "updated_time": "2024-04-18T07:17:23.418Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -436,7 +420,7 @@
     "pk": "53f442dc-883d-4c3e-bef3-5fab15b60f60",
     "fields": {
       "created_time": "2024-01-22T09:54:40.147Z",
-      "updated_time": "2024-04-12T03:17:44.052Z",
+      "updated_time": "2024-04-18T07:17:23.420Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -452,7 +436,7 @@
     "pk": "33ae5985-4d20-45af-8c05-dd7bb4c2cb5e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.151Z",
-      "updated_time": "2024-04-12T03:17:44.053Z",
+      "updated_time": "2024-04-18T07:17:23.421Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -468,7 +452,7 @@
     "pk": "27ec7332-34e0-4463-a160-8c53ae1b1685",
     "fields": {
       "created_time": "2024-01-22T09:54:40.156Z",
-      "updated_time": "2024-04-12T03:17:44.055Z",
+      "updated_time": "2024-04-18T07:17:23.423Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -476,23 +460,7 @@
       "field_type": 0,
       "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
       "name": "mode_type",
-      "label": "数据权限模式"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "f6350896-9cc8-49c9-b955-6a219e561e12",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.161Z",
-      "updated_time": "2024-04-12T03:17:44.056Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
-      "name": "mode_display",
-      "label": "Mode display"
+      "label": "Mode type"
     }
   },
   {
@@ -500,7 +468,7 @@
     "pk": "34fd5418-834d-4103-88f8-9bc08042745a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.165Z",
-      "updated_time": "2024-04-12T03:17:44.058Z",
+      "updated_time": "2024-04-18T07:17:23.424Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -516,7 +484,7 @@
     "pk": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
     "fields": {
       "created_time": "2024-01-22T09:54:40.170Z",
-      "updated_time": "2024-04-12T03:17:44.059Z",
+      "updated_time": "2024-04-18T07:17:23.426Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -532,7 +500,7 @@
     "pk": "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.177Z",
-      "updated_time": "2024-04-12T03:17:44.063Z",
+      "updated_time": "2024-04-18T07:17:23.431Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -548,7 +516,7 @@
     "pk": "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.181Z",
-      "updated_time": "2024-04-12T03:17:44.065Z",
+      "updated_time": "2024-04-18T07:17:23.433Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -564,7 +532,7 @@
     "pk": "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
     "fields": {
       "created_time": "2024-01-22T09:54:40.186Z",
-      "updated_time": "2024-04-12T03:17:44.066Z",
+      "updated_time": "2024-04-18T07:17:23.435Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -580,7 +548,7 @@
     "pk": "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
     "fields": {
       "created_time": "2024-01-22T09:54:40.190Z",
-      "updated_time": "2024-04-12T03:17:44.068Z",
+      "updated_time": "2024-04-18T07:17:23.437Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -596,7 +564,7 @@
     "pk": "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
     "fields": {
       "created_time": "2024-01-22T09:54:40.195Z",
-      "updated_time": "2024-04-12T03:17:44.069Z",
+      "updated_time": "2024-04-18T07:17:23.439Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -612,7 +580,7 @@
     "pk": "a906331b-3235-49f2-a520-5f13280d585a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.200Z",
-      "updated_time": "2024-04-12T03:17:44.071Z",
+      "updated_time": "2024-04-18T07:17:23.441Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -628,7 +596,7 @@
     "pk": "987f7dd8-d6c0-41a9-9097-aea116562c95",
     "fields": {
       "created_time": "2024-01-22T09:54:40.205Z",
-      "updated_time": "2024-04-12T03:17:44.073Z",
+      "updated_time": "2024-04-18T07:17:23.443Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -644,7 +612,7 @@
     "pk": "bb021337-12c3-4834-837d-59fe4f746bfb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.211Z",
-      "updated_time": "2024-04-12T03:17:44.074Z",
+      "updated_time": "2024-04-18T07:17:23.445Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -660,7 +628,7 @@
     "pk": "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
     "fields": {
       "created_time": "2024-01-22T09:54:40.229Z",
-      "updated_time": "2024-04-12T03:17:44.076Z",
+      "updated_time": "2024-04-18T07:17:23.447Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -676,7 +644,7 @@
     "pk": "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.236Z",
-      "updated_time": "2024-04-12T03:17:44.077Z",
+      "updated_time": "2024-04-18T07:17:23.449Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -692,7 +660,7 @@
     "pk": "b6e0d458-cda3-458c-8b02-2fed016d5ff6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.246Z",
-      "updated_time": "2024-04-12T03:17:44.079Z",
+      "updated_time": "2024-04-18T07:17:23.451Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -700,23 +668,7 @@
       "field_type": 0,
       "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
       "name": "mode_type",
-      "label": "数据权限模式"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "2526abbc-17bb-410c-8690-44aad98f9da1",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.251Z",
-      "updated_time": "2024-04-12T03:17:44.080Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
-      "name": "mode_display",
-      "label": "Mode display"
+      "label": "Mode type"
     }
   },
   {
@@ -724,7 +676,7 @@
     "pk": "41abb4ca-d1d4-407f-986b-105f6bb5583c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.256Z",
-      "updated_time": "2024-04-12T03:17:44.082Z",
+      "updated_time": "2024-04-18T07:17:23.453Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -740,7 +692,7 @@
     "pk": "47c3bf6c-58b3-4e9e-8553-9319e526a734",
     "fields": {
       "created_time": "2024-01-22T09:54:40.261Z",
-      "updated_time": "2024-04-12T03:17:44.083Z",
+      "updated_time": "2024-04-18T07:17:23.454Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -756,7 +708,7 @@
     "pk": "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
     "fields": {
       "created_time": "2024-01-22T09:54:40.266Z",
-      "updated_time": "2024-04-12T03:17:44.085Z",
+      "updated_time": "2024-04-18T07:17:23.456Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -772,7 +724,7 @@
     "pk": "14071ee3-6725-4fcc-962d-ad7898efa284",
     "fields": {
       "created_time": "2024-01-22T09:54:40.271Z",
-      "updated_time": "2024-04-12T03:17:44.127Z",
+      "updated_time": "2024-04-18T07:17:23.493Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -788,7 +740,7 @@
     "pk": "b578ab7e-7920-4567-975a-b0f88feaac84",
     "fields": {
       "created_time": "2024-01-22T09:54:40.284Z",
-      "updated_time": "2024-04-12T03:17:44.135Z",
+      "updated_time": "2024-04-18T07:17:23.501Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -804,7 +756,7 @@
     "pk": "e8907d07-b7b6-4866-903b-5f9c5771701d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.290Z",
-      "updated_time": "2024-04-12T03:17:44.136Z",
+      "updated_time": "2024-04-18T07:17:23.502Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -820,7 +772,7 @@
     "pk": "120a1853-c039-486f-ba71-4916502ef84a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.295Z",
-      "updated_time": "2024-04-12T03:17:44.138Z",
+      "updated_time": "2024-04-18T07:17:23.504Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -836,7 +788,7 @@
     "pk": "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.300Z",
-      "updated_time": "2024-04-12T03:17:44.140Z",
+      "updated_time": "2024-04-18T07:17:23.505Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -852,7 +804,7 @@
     "pk": "58e25471-4562-4b26-a7de-a0e4618ee83a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.305Z",
-      "updated_time": "2024-04-12T03:17:44.141Z",
+      "updated_time": "2024-04-18T07:17:23.507Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -860,7 +812,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "gender",
-      "label": "性别"
+      "label": "Gender"
     }
   },
   {
@@ -868,7 +820,7 @@
     "pk": "eadf1a93-9212-415b-baa4-e6afb668337a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.314Z",
-      "updated_time": "2024-04-12T03:17:44.149Z",
+      "updated_time": "2024-04-18T07:17:23.514Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -884,7 +836,7 @@
     "pk": "191c005e-ee6c-4262-825d-27c88ef23970",
     "fields": {
       "created_time": "2024-01-22T09:54:40.318Z",
-      "updated_time": "2024-04-12T03:17:44.143Z",
+      "updated_time": "2024-04-18T07:17:23.508Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -900,7 +852,7 @@
     "pk": "d1107479-6fe0-48bd-ba16-a364776766a0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.323Z",
-      "updated_time": "2024-04-12T03:17:44.107Z",
+      "updated_time": "2024-04-18T07:17:23.476Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -916,7 +868,7 @@
     "pk": "f834b87b-a1eb-42b2-b108-de040442ef4a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.328Z",
-      "updated_time": "2024-04-12T03:17:44.109Z",
+      "updated_time": "2024-04-18T07:17:23.477Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -932,7 +884,7 @@
     "pk": "2dd244f1-3273-4e01-856f-56587b59b7c4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.334Z",
-      "updated_time": "2024-04-12T03:17:44.110Z",
+      "updated_time": "2024-04-18T07:17:23.482Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -948,7 +900,7 @@
     "pk": "3e6f1a9c-4657-4f2a-a976-6efd41859639",
     "fields": {
       "created_time": "2024-01-22T09:54:40.339Z",
-      "updated_time": "2024-04-12T03:17:44.112Z",
+      "updated_time": "2024-04-18T07:17:23.479Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -964,7 +916,7 @@
     "pk": "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
     "fields": {
       "created_time": "2024-01-22T09:54:40.344Z",
-      "updated_time": "2024-04-12T03:17:44.144Z",
+      "updated_time": "2024-04-18T07:17:23.510Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -980,7 +932,7 @@
     "pk": "4c84374a-431a-4bcb-9338-a7da1beecca9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.349Z",
-      "updated_time": "2024-04-12T03:17:44.146Z",
+      "updated_time": "2024-04-18T07:17:23.511Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -996,7 +948,7 @@
     "pk": "320a993e-a500-448f-bfdd-cbb4720dcc21",
     "fields": {
       "created_time": "2024-01-22T09:54:40.353Z",
-      "updated_time": "2024-04-12T03:17:44.147Z",
+      "updated_time": "2024-04-18T07:17:23.513Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1012,7 +964,7 @@
     "pk": "aaaae515-1739-4d73-9302-2f182f4b6fcc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.358Z",
-      "updated_time": "2024-04-12T03:17:44.118Z",
+      "updated_time": "2024-04-18T07:17:23.487Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1028,7 +980,7 @@
     "pk": "d79f1411-eff9-4cc2-b93a-80e269bb98c8",
     "fields": {
       "created_time": "2024-01-22T09:54:40.363Z",
-      "updated_time": "2024-04-12T03:17:44.156Z",
+      "updated_time": "2024-04-18T07:17:23.516Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1041,26 +993,10 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "45e553ac-292f-40a3-b522-a7f0e75b22ac",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.368Z",
-      "updated_time": "2024-04-12T03:17:44.152Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
-      "name": "gender_display",
-      "label": "Gender display"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "c7960488-5584-4861-8943-cc69abc34adc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.374Z",
-      "updated_time": "2024-04-12T03:17:44.123Z",
+      "updated_time": "2024-04-18T07:17:23.490Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1076,7 +1012,7 @@
     "pk": "aa6d2bba-632b-4335-94f8-61c4899d252c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.378Z",
-      "updated_time": "2024-04-12T03:17:44.124Z",
+      "updated_time": "2024-04-18T07:17:23.492Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1084,23 +1020,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "mode_type",
-      "label": "数据权限模式"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "c2732a19-a30e-4d8d-8d80-0e32fba748f7",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.383Z",
-      "updated_time": "2024-04-12T03:17:44.126Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
-      "name": "mode_display",
-      "label": "Mode display"
+      "label": "Mode type"
     }
   },
   {
@@ -1108,7 +1028,7 @@
     "pk": "c19100c5-725c-4a81-a1f1-1209f757d693",
     "fields": {
       "created_time": "2024-01-22T09:54:40.450Z",
-      "updated_time": "2024-04-12T03:17:44.198Z",
+      "updated_time": "2024-04-18T07:17:23.539Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1124,7 +1044,7 @@
     "pk": "7d459195-c448-4da9-82ff-3742fd4ac0b6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.455Z",
-      "updated_time": "2024-04-12T03:17:44.214Z",
+      "updated_time": "2024-04-18T07:17:23.547Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1140,7 +1060,7 @@
     "pk": "b367257e-2e5a-4195-b241-8d3679c4ca2c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.460Z",
-      "updated_time": "2024-04-12T03:17:44.217Z",
+      "updated_time": "2024-04-18T07:17:23.549Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1156,7 +1076,7 @@
     "pk": "ecc80219-b1fe-43fb-a19b-9d6b874dcb03",
     "fields": {
       "created_time": "2024-01-22T09:54:40.465Z",
-      "updated_time": "2024-04-12T03:17:44.168Z",
+      "updated_time": "2024-04-18T07:17:23.522Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1172,7 +1092,7 @@
     "pk": "f1d667ef-ec40-4ab1-b581-16b51db120f3",
     "fields": {
       "created_time": "2024-01-22T09:54:40.470Z",
-      "updated_time": "2024-04-12T03:17:44.170Z",
+      "updated_time": "2024-04-18T07:17:23.524Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1188,7 +1108,7 @@
     "pk": "7bd02e2f-0ef1-4d15-8981-8fafa7d717af",
     "fields": {
       "created_time": "2024-01-22T09:54:40.476Z",
-      "updated_time": "2024-04-12T03:17:44.173Z",
+      "updated_time": "2024-04-18T07:17:23.525Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1204,7 +1124,7 @@
     "pk": "923044d6-4a79-412e-bdc0-57ea232e62a2",
     "fields": {
       "created_time": "2024-01-22T09:54:40.481Z",
-      "updated_time": "2024-04-12T03:17:44.176Z",
+      "updated_time": "2024-04-18T07:17:23.527Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1220,7 +1140,7 @@
     "pk": "0c06399c-211b-4661-9705-e919da08da92",
     "fields": {
       "created_time": "2024-01-22T09:54:40.485Z",
-      "updated_time": "2024-04-12T03:17:44.178Z",
+      "updated_time": "2024-04-18T07:17:23.529Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1236,7 +1156,7 @@
     "pk": "90da2f13-847f-40e5-9244-73bd165e5bc6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.490Z",
-      "updated_time": "2024-04-12T03:17:44.181Z",
+      "updated_time": "2024-04-18T07:17:23.530Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1252,7 +1172,7 @@
     "pk": "54329800-f36c-4065-b136-085a156f18f7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.496Z",
-      "updated_time": "2024-04-12T03:17:44.184Z",
+      "updated_time": "2024-04-18T07:17:23.532Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1268,7 +1188,7 @@
     "pk": "d4e67737-c92f-4c84-a0dd-e6bdbf479451",
     "fields": {
       "created_time": "2024-01-22T09:54:40.501Z",
-      "updated_time": "2024-04-12T03:17:44.187Z",
+      "updated_time": "2024-04-18T07:17:23.533Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1284,7 +1204,7 @@
     "pk": "43380d74-2ca0-4258-8165-e856d59c9566",
     "fields": {
       "created_time": "2024-01-22T09:54:40.506Z",
-      "updated_time": "2024-04-12T03:17:44.190Z",
+      "updated_time": "2024-04-18T07:17:23.535Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1300,7 +1220,7 @@
     "pk": "2d3fdcef-9181-47bc-81a8-93eec47c7a1f",
     "fields": {
       "created_time": "2024-01-22T09:54:40.512Z",
-      "updated_time": "2024-04-12T03:17:44.195Z",
+      "updated_time": "2024-04-18T07:17:23.537Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1316,7 +1236,7 @@
     "pk": "ee04afbf-9acd-4abf-8ea1-4df523c570cc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.521Z",
-      "updated_time": "2024-04-12T03:17:44.202Z",
+      "updated_time": "2024-04-18T07:17:23.541Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1332,7 +1252,7 @@
     "pk": "6cf414ac-c810-4d05-ae80-fb80d115e36b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.526Z",
-      "updated_time": "2024-04-12T03:17:44.205Z",
+      "updated_time": "2024-04-18T07:17:23.543Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1348,7 +1268,7 @@
     "pk": "959d9b7a-8a0a-4de5-98fd-089c7153c1ec",
     "fields": {
       "created_time": "2024-01-22T09:54:40.531Z",
-      "updated_time": "2024-04-12T03:17:44.208Z",
+      "updated_time": "2024-04-18T07:17:23.544Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1364,7 +1284,7 @@
     "pk": "b9a4d2d6-3eb6-4aeb-8261-41df537bccae",
     "fields": {
       "created_time": "2024-01-22T09:54:40.536Z",
-      "updated_time": "2024-04-12T03:17:44.211Z",
+      "updated_time": "2024-04-18T07:17:23.546Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1380,7 +1300,7 @@
     "pk": "e9eff87a-dcea-4a1e-86df-57df45d74f09",
     "fields": {
       "created_time": "2024-01-22T09:54:40.550Z",
-      "updated_time": "2024-04-12T03:17:44.220Z",
+      "updated_time": "2024-04-18T07:17:23.550Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1396,7 +1316,7 @@
     "pk": "7989c8c6-bb7d-43ff-8a17-074033dd035e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.554Z",
-      "updated_time": "2024-04-12T03:17:44.223Z",
+      "updated_time": "2024-04-18T07:17:23.552Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1412,7 +1332,7 @@
     "pk": "474ed01d-0fbc-4660-b177-27d1ddc7d771",
     "fields": {
       "created_time": "2024-01-22T09:54:40.559Z",
-      "updated_time": "2024-04-12T03:17:44.225Z",
+      "updated_time": "2024-04-18T07:17:23.554Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1428,7 +1348,7 @@
     "pk": "2cad37ad-b1bd-40c9-b6e5-f825bcb88049",
     "fields": {
       "created_time": "2024-01-22T09:54:40.564Z",
-      "updated_time": "2024-04-12T03:17:44.228Z",
+      "updated_time": "2024-04-18T07:17:23.555Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1444,7 +1364,7 @@
     "pk": "0712272b-d21c-4c74-bb46-3105bc24b17c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.569Z",
-      "updated_time": "2024-04-12T03:17:44.231Z",
+      "updated_time": "2024-04-18T07:17:23.557Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1460,7 +1380,7 @@
     "pk": "86fb9749-4817-491a-9dab-90dede4d2418",
     "fields": {
       "created_time": "2024-01-22T09:54:40.573Z",
-      "updated_time": "2024-04-12T03:17:44.234Z",
+      "updated_time": "2024-04-18T07:17:23.558Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1476,7 +1396,7 @@
     "pk": "3e802012-2f8d-4c08-acdb-b4d227f923cb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.578Z",
-      "updated_time": "2024-04-12T03:17:44.239Z",
+      "updated_time": "2024-04-18T07:17:23.560Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1492,7 +1412,7 @@
     "pk": "7473045d-0d65-4c60-8577-81b22becdc71",
     "fields": {
       "created_time": "2024-01-22T09:54:40.584Z",
-      "updated_time": "2024-04-12T03:17:44.242Z",
+      "updated_time": "2024-04-18T07:17:23.561Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1508,7 +1428,7 @@
     "pk": "0ff5a025-03b1-4850-b547-b2c07aa1d5f0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.590Z",
-      "updated_time": "2024-04-12T03:17:44.244Z",
+      "updated_time": "2024-04-18T07:17:23.563Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1524,7 +1444,7 @@
     "pk": "6cf37da8-b2a3-4666-a9d4-c02c078e9990",
     "fields": {
       "created_time": "2024-01-22T09:54:40.595Z",
-      "updated_time": "2024-04-12T03:17:44.254Z",
+      "updated_time": "2024-04-18T07:17:23.566Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1540,7 +1460,7 @@
     "pk": "49de999a-32e8-4a83-932f-05cb2a289440",
     "fields": {
       "created_time": "2024-01-22T09:54:40.601Z",
-      "updated_time": "2024-04-12T03:17:44.259Z",
+      "updated_time": "2024-04-18T07:17:23.568Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1556,7 +1476,7 @@
     "pk": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.607Z",
-      "updated_time": "2024-04-12T03:17:44.294Z",
+      "updated_time": "2024-04-18T07:17:23.600Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1572,7 +1492,7 @@
     "pk": "5a5d282c-d4c1-49d6-adb9-4fac702b7784",
     "fields": {
       "created_time": "2024-01-22T09:54:40.614Z",
-      "updated_time": "2024-04-12T03:17:44.296Z",
+      "updated_time": "2024-04-18T07:17:23.603Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1588,7 +1508,7 @@
     "pk": "6f7e977e-1904-423d-8f5c-98bf7fe32723",
     "fields": {
       "created_time": "2024-01-22T09:54:40.619Z",
-      "updated_time": "2024-04-12T03:17:44.298Z",
+      "updated_time": "2024-04-18T07:17:23.604Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1604,7 +1524,7 @@
     "pk": "b05e87e2-b62b-4964-9530-b8e1ca97f9d5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.624Z",
-      "updated_time": "2024-04-12T03:17:44.299Z",
+      "updated_time": "2024-04-18T07:17:23.606Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1620,7 +1540,7 @@
     "pk": "393f7c7f-4c44-4d17-b4c4-ecc019072da6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.629Z",
-      "updated_time": "2024-04-12T03:17:44.301Z",
+      "updated_time": "2024-04-18T07:17:23.607Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1636,7 +1556,7 @@
     "pk": "91378f2f-e94c-457d-8b24-044203e6975a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.634Z",
-      "updated_time": "2024-04-12T03:17:44.302Z",
+      "updated_time": "2024-04-18T07:17:23.609Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1652,7 +1572,7 @@
     "pk": "1d711d31-a6b2-4fe2-acc2-264553b8f5ad",
     "fields": {
       "created_time": "2024-01-22T09:54:40.639Z",
-      "updated_time": "2024-04-12T03:17:44.304Z",
+      "updated_time": "2024-04-18T07:17:23.610Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1668,7 +1588,7 @@
     "pk": "c27bb96a-78f1-4c3b-a975-3eae7ba2cb29",
     "fields": {
       "created_time": "2024-01-22T09:54:40.644Z",
-      "updated_time": "2024-04-12T03:17:44.305Z",
+      "updated_time": "2024-04-18T07:17:23.612Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1684,7 +1604,7 @@
     "pk": "f86dc3f5-0103-40e3-a305-95b7951cce0d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.649Z",
-      "updated_time": "2024-04-12T03:17:44.307Z",
+      "updated_time": "2024-04-18T07:17:23.613Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1700,7 +1620,7 @@
     "pk": "98d2c9ba-63e3-445e-af15-5b23216f8bf9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.654Z",
-      "updated_time": "2024-04-12T03:17:44.308Z",
+      "updated_time": "2024-04-18T07:17:23.615Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1716,7 +1636,7 @@
     "pk": "fb22a744-fa9a-44c9-bbc5-8a4d4068e01d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.659Z",
-      "updated_time": "2024-04-12T03:17:44.310Z",
+      "updated_time": "2024-04-18T07:17:23.616Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1732,7 +1652,7 @@
     "pk": "10b50426-1cae-46da-a8ec-5d2df367a8c7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.664Z",
-      "updated_time": "2024-04-12T03:17:44.311Z",
+      "updated_time": "2024-04-18T07:17:23.618Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1745,26 +1665,10 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "7b9236c7-bbe8-4952-a8ad-c290da50cb88",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.669Z",
-      "updated_time": "2024-04-12T03:17:44.313Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-      "name": "field",
-      "label": "Field"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "decca9e4-dac5-4412-ae6d-e28fc94faf1b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.704Z",
-      "updated_time": "2024-04-12T03:17:44.289Z",
+      "updated_time": "2024-04-18T07:17:23.596Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1780,7 +1684,7 @@
     "pk": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
     "fields": {
       "created_time": "2024-01-22T09:54:40.773Z",
-      "updated_time": "2024-04-12T03:17:44.316Z",
+      "updated_time": "2024-04-18T07:17:23.621Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1796,7 +1700,7 @@
     "pk": "2f6d79c3-ed81-4f0b-9d53-cdf2bc0e87c5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.794Z",
-      "updated_time": "2024-04-12T03:17:44.329Z",
+      "updated_time": "2024-04-18T07:17:23.635Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1812,7 +1716,7 @@
     "pk": "28d2bb94-3d49-4e06-9fb1-5da912623523",
     "fields": {
       "created_time": "2024-01-22T09:54:40.800Z",
-      "updated_time": "2024-04-12T03:17:44.331Z",
+      "updated_time": "2024-04-18T07:17:23.637Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1828,7 +1732,7 @@
     "pk": "0e4c444b-8ed1-4ae2-aba8-2691580f565e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.805Z",
-      "updated_time": "2024-04-12T03:17:44.332Z",
+      "updated_time": "2024-04-18T07:17:23.639Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1844,7 +1748,7 @@
     "pk": "f99be548-31d6-4e5d-8005-2eb82dabe9f1",
     "fields": {
       "created_time": "2024-01-22T09:54:40.810Z",
-      "updated_time": "2024-04-12T03:17:44.334Z",
+      "updated_time": "2024-04-18T07:17:23.641Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1860,7 +1764,7 @@
     "pk": "7e534905-0e28-47da-9596-be04a13741dc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.816Z",
-      "updated_time": "2024-04-12T03:17:44.335Z",
+      "updated_time": "2024-04-18T07:17:23.643Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1876,7 +1780,7 @@
     "pk": "0e5e0318-87f5-48e7-900d-3ba0eb7dfaf0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.821Z",
-      "updated_time": "2024-04-12T03:17:44.337Z",
+      "updated_time": "2024-04-18T07:17:23.645Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1892,7 +1796,7 @@
     "pk": "0c15186d-11dd-466f-9a5c-4dc44263b32d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.826Z",
-      "updated_time": "2024-04-12T03:17:44.338Z",
+      "updated_time": "2024-04-18T07:17:23.647Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1908,7 +1812,7 @@
     "pk": "a90b1918-74f5-45d3-9305-25b7e7ff9e56",
     "fields": {
       "created_time": "2024-01-22T09:54:40.831Z",
-      "updated_time": "2024-04-12T03:17:44.340Z",
+      "updated_time": "2024-04-18T07:17:23.649Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1924,7 +1828,7 @@
     "pk": "53bb41c4-6183-4156-9ba7-6ab69a7e42e5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.837Z",
-      "updated_time": "2024-04-12T03:17:44.341Z",
+      "updated_time": "2024-04-18T07:17:23.651Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1940,7 +1844,7 @@
     "pk": "afee08eb-9581-4eb3-bdc4-446729d2cdc9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.842Z",
-      "updated_time": "2024-04-12T03:17:44.343Z",
+      "updated_time": "2024-04-18T07:17:23.652Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1956,7 +1860,7 @@
     "pk": "de4f5ac0-4182-4cec-8013-9403d1fc97fb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.846Z",
-      "updated_time": "2024-04-12T03:17:44.344Z",
+      "updated_time": "2024-04-18T07:17:23.654Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1972,7 +1876,7 @@
     "pk": "b8c9c617-7021-4ee1-aa1f-5fb0e8d79a8a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.852Z",
-      "updated_time": "2024-04-12T03:17:44.346Z",
+      "updated_time": "2024-04-18T07:17:23.656Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1988,7 +1892,7 @@
     "pk": "cbf8c6ad-6bf6-4a88-bda1-10e20ab6b709",
     "fields": {
       "created_time": "2024-01-22T09:54:40.857Z",
-      "updated_time": "2024-04-12T03:17:44.347Z",
+      "updated_time": "2024-04-18T07:17:23.658Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2004,7 +1908,7 @@
     "pk": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
     "fields": {
       "created_time": "2024-01-22T09:54:40.862Z",
-      "updated_time": "2024-04-12T03:17:44.349Z",
+      "updated_time": "2024-04-18T07:17:23.660Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2020,7 +1924,7 @@
     "pk": "7e370824-a5d4-4d9a-94fb-bcbe2dac84e9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.867Z",
-      "updated_time": "2024-04-12T03:17:44.351Z",
+      "updated_time": "2024-04-18T07:17:23.663Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2036,7 +1940,7 @@
     "pk": "fe6510d7-9d66-4b1b-9daf-f4bec12349c3",
     "fields": {
       "created_time": "2024-01-22T09:54:40.872Z",
-      "updated_time": "2024-04-12T03:17:44.353Z",
+      "updated_time": "2024-04-18T07:17:23.665Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2052,7 +1956,7 @@
     "pk": "9d132e73-6e0f-407d-a198-0872108f6862",
     "fields": {
       "created_time": "2024-01-22T09:54:40.878Z",
-      "updated_time": "2024-04-12T03:17:44.354Z",
+      "updated_time": "2024-04-18T07:17:23.667Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2068,7 +1972,7 @@
     "pk": "21b85978-b7d4-4dab-a5f0-9d605617fed4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.883Z",
-      "updated_time": "2024-04-12T03:17:44.356Z",
+      "updated_time": "2024-04-18T07:17:23.669Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2084,7 +1988,7 @@
     "pk": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.889Z",
-      "updated_time": "2024-04-12T03:17:44.409Z",
+      "updated_time": "2024-04-18T07:17:23.757Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2100,7 +2004,7 @@
     "pk": "33696c5c-dd4e-487e-959b-202ef5ee121f",
     "fields": {
       "created_time": "2024-01-22T09:54:40.895Z",
-      "updated_time": "2024-04-12T03:17:44.411Z",
+      "updated_time": "2024-04-18T07:17:23.760Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2116,7 +2020,7 @@
     "pk": "a81db04a-6b5a-4dbd-ab7f-b4e0f545d1da",
     "fields": {
       "created_time": "2024-01-22T09:54:40.900Z",
-      "updated_time": "2024-04-12T03:17:44.413Z",
+      "updated_time": "2024-04-18T07:17:23.762Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2132,7 +2036,7 @@
     "pk": "d630dad7-3638-4835-a815-be281346139c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.907Z",
-      "updated_time": "2024-04-12T03:17:44.414Z",
+      "updated_time": "2024-04-18T07:17:23.764Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2148,7 +2052,7 @@
     "pk": "b02f13d0-9574-4e85-a682-ffeee9a5d9c9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.912Z",
-      "updated_time": "2024-04-12T03:17:44.416Z",
+      "updated_time": "2024-04-18T07:17:23.767Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2164,7 +2068,7 @@
     "pk": "d6b2167e-eae3-4e8e-bc3a-40fc191c3cf4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.917Z",
-      "updated_time": "2024-04-12T03:17:44.418Z",
+      "updated_time": "2024-04-18T07:17:23.770Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2180,7 +2084,7 @@
     "pk": "16ec7416-cd25-4e4f-bd5c-004fce44dc1e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.922Z",
-      "updated_time": "2024-04-12T03:17:44.392Z",
+      "updated_time": "2024-04-18T07:17:23.723Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2196,7 +2100,7 @@
     "pk": "70477a27-77aa-4bf8-8648-0be2c17c29f7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.926Z",
-      "updated_time": "2024-04-12T03:17:44.394Z",
+      "updated_time": "2024-04-18T07:17:23.726Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2212,7 +2116,7 @@
     "pk": "3008ab7d-932d-442e-b708-76b9315b4ca8",
     "fields": {
       "created_time": "2024-01-22T09:54:40.931Z",
-      "updated_time": "2024-04-12T03:17:44.396Z",
+      "updated_time": "2024-04-18T07:17:23.729Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2228,7 +2132,7 @@
     "pk": "c2e630ee-ca4e-4e43-ac52-8406e3006c4c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.936Z",
-      "updated_time": "2024-04-12T03:17:44.397Z",
+      "updated_time": "2024-04-18T07:17:23.775Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2236,7 +2140,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "notice_type",
-      "label": "消息类型"
+      "label": "Notice type"
     }
   },
   {
@@ -2244,7 +2148,7 @@
     "pk": "7619962e-822a-440d-9976-5f7ce7f66588",
     "fields": {
       "created_time": "2024-01-22T09:54:40.941Z",
-      "updated_time": "2024-04-12T03:17:44.399Z",
+      "updated_time": "2024-04-18T07:17:23.736Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2260,7 +2164,7 @@
     "pk": "7298cb71-e517-4589-9697-e578ce3d5a64",
     "fields": {
       "created_time": "2024-01-22T09:54:40.946Z",
-      "updated_time": "2024-04-12T03:17:44.401Z",
+      "updated_time": "2024-04-18T07:17:23.739Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2273,26 +2177,10 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "367f1d00-9d81-4b99-8206-e2a6970a67f0",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.952Z",
-      "updated_time": "2024-04-12T03:17:44.419Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
-      "name": "notice_type_display",
-      "label": "Notice type display"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "d8acdc9f-0eee-4a21-b858-c9ad369576b4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.957Z",
-      "updated_time": "2024-04-12T03:17:44.404Z",
+      "updated_time": "2024-04-18T07:17:23.742Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2308,7 +2196,7 @@
     "pk": "50c6f6aa-90ff-4192-800c-e5aa8997444e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.961Z",
-      "updated_time": "2024-04-12T03:17:44.406Z",
+      "updated_time": "2024-04-18T07:17:23.747Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2324,7 +2212,7 @@
     "pk": "9f945b6a-244a-4536-afde-1f8caa25048a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.966Z",
-      "updated_time": "2024-04-12T03:17:44.407Z",
+      "updated_time": "2024-04-18T07:17:23.750Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2340,7 +2228,7 @@
     "pk": "c78c8642-e276-4517-891c-b635efd78f45",
     "fields": {
       "created_time": "2024-01-22T09:54:41.076Z",
-      "updated_time": "2024-04-12T03:17:44.420Z",
+      "updated_time": "2024-04-18T07:17:23.773Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2356,7 +2244,7 @@
     "pk": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
     "fields": {
       "created_time": "2024-01-22T09:54:41.081Z",
-      "updated_time": "2024-04-12T03:17:44.422Z",
+      "updated_time": "2024-04-18T07:17:23.778Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2372,7 +2260,7 @@
     "pk": "b8006a79-eb2b-4deb-a411-5683ca43e4c7",
     "fields": {
       "created_time": "2024-01-22T09:54:41.105Z",
-      "updated_time": "2024-04-12T03:17:44.440Z",
+      "updated_time": "2024-04-18T07:17:23.796Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2388,7 +2276,7 @@
     "pk": "48acbc6a-e3f4-4f0f-8319-58bb63abbd27",
     "fields": {
       "created_time": "2024-01-22T09:54:41.110Z",
-      "updated_time": "2024-04-12T03:17:44.442Z",
+      "updated_time": "2024-04-18T07:17:23.799Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2404,7 +2292,7 @@
     "pk": "8e93658d-4e52-4d47-a251-e140dcd0752f",
     "fields": {
       "created_time": "2024-01-22T09:54:41.116Z",
-      "updated_time": "2024-04-12T03:17:44.444Z",
+      "updated_time": "2024-04-18T07:17:23.802Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2420,7 +2308,7 @@
     "pk": "9f824ca6-9c9b-4544-8d5a-29613fa26248",
     "fields": {
       "created_time": "2024-01-22T09:54:41.120Z",
-      "updated_time": "2024-04-12T03:17:44.446Z",
+      "updated_time": "2024-04-18T07:17:23.812Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2436,7 +2324,7 @@
     "pk": "d7d8ef03-06a8-4b86-bceb-e07b90548ccb",
     "fields": {
       "created_time": "2024-01-22T09:54:41.125Z",
-      "updated_time": "2024-04-12T03:17:44.447Z",
+      "updated_time": "2024-04-18T07:17:23.815Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2452,7 +2340,7 @@
     "pk": "0f57a580-952e-4751-a110-9e447a08768d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.130Z",
-      "updated_time": "2024-04-12T03:17:44.449Z",
+      "updated_time": "2024-04-18T07:17:23.818Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2468,7 +2356,7 @@
     "pk": "70af3e63-e2f6-45b9-8ebe-b39d607d939d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.135Z",
-      "updated_time": "2024-04-12T03:17:44.451Z",
+      "updated_time": "2024-04-18T07:17:23.823Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2484,7 +2372,7 @@
     "pk": "ede07ad9-7682-4b3b-b80e-5d60cb106a99",
     "fields": {
       "created_time": "2024-01-22T09:54:41.141Z",
-      "updated_time": "2024-04-12T03:17:44.452Z",
+      "updated_time": "2024-04-18T07:17:23.825Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2500,7 +2388,7 @@
     "pk": "6f11e549-10d3-45b3-a005-b475f35b04bd",
     "fields": {
       "created_time": "2024-01-22T09:54:41.147Z",
-      "updated_time": "2024-04-12T03:17:44.454Z",
+      "updated_time": "2024-04-18T07:17:23.827Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2516,7 +2404,7 @@
     "pk": "2b2e3042-931f-4554-953e-91f9b69630f7",
     "fields": {
       "created_time": "2024-01-22T09:54:41.152Z",
-      "updated_time": "2024-04-12T03:17:44.456Z",
+      "updated_time": "2024-04-18T07:17:23.828Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2532,7 +2420,7 @@
     "pk": "d70666f8-a893-4283-856a-eebe3ae8ad25",
     "fields": {
       "created_time": "2024-01-22T09:54:41.157Z",
-      "updated_time": "2024-04-12T03:17:44.457Z",
+      "updated_time": "2024-04-18T07:17:23.830Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2548,7 +2436,7 @@
     "pk": "e96348f4-28e4-4dfb-acdd-89b137112708",
     "fields": {
       "created_time": "2024-01-22T09:54:41.162Z",
-      "updated_time": "2024-04-12T03:17:44.459Z",
+      "updated_time": "2024-04-18T07:17:23.831Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2564,7 +2452,7 @@
     "pk": "43b0ae8f-d37f-452b-b559-f7167dfe95d5",
     "fields": {
       "created_time": "2024-01-22T09:54:41.167Z",
-      "updated_time": "2024-04-12T03:17:44.461Z",
+      "updated_time": "2024-04-18T07:17:23.833Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2580,7 +2468,7 @@
     "pk": "ab6ae020-1de6-4695-925b-56456769b7aa",
     "fields": {
       "created_time": "2024-01-22T09:54:41.173Z",
-      "updated_time": "2024-04-12T03:17:44.465Z",
+      "updated_time": "2024-04-18T07:17:23.841Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2596,7 +2484,7 @@
     "pk": "e009b297-7162-4cf2-9702-6c4682300d52",
     "fields": {
       "created_time": "2024-01-22T09:54:41.191Z",
-      "updated_time": "2024-04-12T03:17:44.479Z",
+      "updated_time": "2024-04-18T07:17:23.856Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2612,7 +2500,7 @@
     "pk": "3f574633-bc9c-48a0-a0aa-a5878f97d609",
     "fields": {
       "created_time": "2024-01-22T09:54:41.196Z",
-      "updated_time": "2024-04-12T03:17:44.481Z",
+      "updated_time": "2024-04-18T07:17:23.858Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2628,7 +2516,7 @@
     "pk": "27003d7d-5a03-4540-b0f1-b60eb9d2b221",
     "fields": {
       "created_time": "2024-01-22T09:54:41.201Z",
-      "updated_time": "2024-04-12T03:17:44.482Z",
+      "updated_time": "2024-04-18T07:17:23.861Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2644,7 +2532,7 @@
     "pk": "3f70a855-d6db-4442-9d1a-1501e0b368ff",
     "fields": {
       "created_time": "2024-01-22T09:54:41.206Z",
-      "updated_time": "2024-04-12T03:17:44.484Z",
+      "updated_time": "2024-04-18T07:17:23.864Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2660,7 +2548,7 @@
     "pk": "25802e70-5d51-4ce4-aaba-fe394377e295",
     "fields": {
       "created_time": "2024-01-22T09:54:41.211Z",
-      "updated_time": "2024-04-12T03:17:44.485Z",
+      "updated_time": "2024-04-18T07:17:23.867Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2676,7 +2564,7 @@
     "pk": "ab0aad4f-1682-411c-b832-02ac0ce4ae50",
     "fields": {
       "created_time": "2024-01-22T09:54:41.216Z",
-      "updated_time": "2024-04-12T03:17:44.487Z",
+      "updated_time": "2024-04-18T07:17:23.870Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2692,7 +2580,7 @@
     "pk": "3b797186-5c25-4075-8b37-2fd453b2a3e4",
     "fields": {
       "created_time": "2024-01-22T09:54:41.220Z",
-      "updated_time": "2024-04-12T03:17:44.489Z",
+      "updated_time": "2024-04-18T07:17:23.873Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2708,7 +2596,7 @@
     "pk": "867ac6e2-927d-4704-b12b-d629e3285b5b",
     "fields": {
       "created_time": "2024-01-22T09:54:41.225Z",
-      "updated_time": "2024-04-12T03:17:44.490Z",
+      "updated_time": "2024-04-18T07:17:23.875Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2724,7 +2612,7 @@
     "pk": "0a212613-34e7-44bf-9a71-1f5333a73bca",
     "fields": {
       "created_time": "2024-01-22T09:54:41.230Z",
-      "updated_time": "2024-04-12T03:17:44.492Z",
+      "updated_time": "2024-04-18T07:17:23.877Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2740,7 +2628,7 @@
     "pk": "9d85cc96-e59a-44f9-9bec-42597c650f0e",
     "fields": {
       "created_time": "2024-01-22T09:54:41.235Z",
-      "updated_time": "2024-04-12T03:17:44.493Z",
+      "updated_time": "2024-04-18T07:17:23.879Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2756,7 +2644,7 @@
     "pk": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
     "fields": {
       "created_time": "2024-01-22T09:54:41.240Z",
-      "updated_time": "2024-04-12T03:17:44.497Z",
+      "updated_time": "2024-04-18T07:17:23.885Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2772,7 +2660,7 @@
     "pk": "67a78e3b-0d19-441c-8c7b-47199cfd92e5",
     "fields": {
       "created_time": "2024-01-22T09:54:41.261Z",
-      "updated_time": "2024-04-12T03:17:44.513Z",
+      "updated_time": "2024-04-18T07:17:23.899Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2788,7 +2676,7 @@
     "pk": "4d866db7-51b5-44ce-8560-2af30839ee88",
     "fields": {
       "created_time": "2024-01-22T09:54:41.280Z",
-      "updated_time": "2024-04-12T03:17:44.515Z",
+      "updated_time": "2024-04-18T07:17:23.900Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2804,7 +2692,7 @@
     "pk": "0dbf7997-739c-4f61-88f7-1708b81a660d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.292Z",
-      "updated_time": "2024-04-12T03:17:44.517Z",
+      "updated_time": "2024-04-18T07:17:23.902Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2820,7 +2708,7 @@
     "pk": "91318412-c10a-4434-8c37-063c40182ea1",
     "fields": {
       "created_time": "2024-01-22T09:54:41.299Z",
-      "updated_time": "2024-04-12T03:17:44.518Z",
+      "updated_time": "2024-04-18T07:17:23.903Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2836,7 +2724,7 @@
     "pk": "e70d84a3-2219-414d-8b97-e49786e9ca7c",
     "fields": {
       "created_time": "2024-01-22T09:54:41.304Z",
-      "updated_time": "2024-04-12T03:17:44.520Z",
+      "updated_time": "2024-04-18T07:17:23.905Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2852,7 +2740,7 @@
     "pk": "6428079d-ae5a-4d0b-a040-f78bb164e611",
     "fields": {
       "created_time": "2024-01-22T09:54:41.309Z",
-      "updated_time": "2024-04-12T03:17:44.521Z",
+      "updated_time": "2024-04-18T07:17:23.906Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2860,7 +2748,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "login_type",
-      "label": "登录类型"
+      "label": "Login type"
     }
   },
   {
@@ -2868,7 +2756,7 @@
     "pk": "8d375222-e072-4d98-902e-ce1cf9b646cf",
     "fields": {
       "created_time": "2024-01-22T09:54:41.314Z",
-      "updated_time": "2024-04-12T03:17:44.523Z",
+      "updated_time": "2024-04-18T07:17:23.908Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2884,7 +2772,7 @@
     "pk": "5ff959e4-d5e0-4ece-850d-e6402aacf113",
     "fields": {
       "created_time": "2024-01-22T09:54:41.319Z",
-      "updated_time": "2024-04-12T03:17:44.524Z",
+      "updated_time": "2024-04-18T07:17:23.909Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2893,22 +2781,6 @@
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "created_time",
       "label": "添加时间"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "274da3e1-233f-4eb4-9a2f-414f794450e3",
-    "fields": {
-      "created_time": "2024-01-22T09:54:41.324Z",
-      "updated_time": "2024-04-12T03:17:44.526Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
-      "name": "login_display",
-      "label": "Login display"
     }
   },
   {
@@ -6436,7 +6308,7 @@
     "pk": "271d4b5a-06dc-4735-9f1c-436b7d88b35b",
     "fields": {
       "created_time": "2024-03-14T06:50:11.614Z",
-      "updated_time": "2024-04-12T03:17:44.527Z",
+      "updated_time": "2024-04-18T07:17:23.911Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6500,7 +6372,7 @@
     "pk": "4082dbf4-0743-4e17-a90c-049593d0a9ed",
     "fields": {
       "created_time": "2024-03-14T10:38:12.344Z",
-      "updated_time": "2024-04-12T03:17:44.462Z",
+      "updated_time": "2024-04-18T07:17:23.835Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6516,7 +6388,7 @@
     "pk": "6379c286-ab97-4194-9434-d35b1221d62a",
     "fields": {
       "created_time": "2024-03-14T10:38:12.346Z",
-      "updated_time": "2024-04-12T03:17:44.464Z",
+      "updated_time": "2024-04-18T07:17:23.838Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6532,7 +6404,7 @@
     "pk": "867ce4b6-52a3-4369-b127-4fecc7d1fcb0",
     "fields": {
       "created_time": "2024-03-14T10:38:12.376Z",
-      "updated_time": "2024-04-12T03:17:44.495Z",
+      "updated_time": "2024-04-18T07:17:23.882Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6564,7 +6436,7 @@
     "pk": "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
     "fields": {
       "created_time": "2024-04-09T07:35:57.841Z",
-      "updated_time": "2024-04-12T03:17:44.087Z",
+      "updated_time": "2024-04-18T07:17:23.457Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6580,7 +6452,7 @@
     "pk": "8961cab0-6dca-437b-a16d-8112f67108e1",
     "fields": {
       "created_time": "2024-04-09T07:35:57.975Z",
-      "updated_time": "2024-04-12T03:17:44.314Z",
+      "updated_time": "2024-04-18T07:17:23.619Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6612,7 +6484,7 @@
     "pk": "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
     "fields": {
       "created_time": "2024-04-12T03:17:37.447Z",
-      "updated_time": "2024-04-12T03:17:44.039Z",
+      "updated_time": "2024-04-18T07:17:23.407Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6628,7 +6500,7 @@
     "pk": "e5d1046e-0c59-43de-99a7-52fbf861df40",
     "fields": {
       "created_time": "2024-04-12T03:17:37.594Z",
-      "updated_time": "2024-04-12T03:17:44.192Z",
+      "updated_time": "2024-04-18T07:17:23.536Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6644,7 +6516,7 @@
     "pk": "b0289c95-810e-4119-95ae-2b49d48398ab",
     "fields": {
       "created_time": "2024-04-12T03:17:37.622Z",
-      "updated_time": "2024-04-12T03:17:44.250Z",
+      "updated_time": "2024-04-18T07:17:23.565Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6653,6 +6525,22 @@
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "fixed_tag",
       "label": "当前菜单名称是否固定显示在标签页且不可关闭"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "b864f819-2b1d-4d04-b64d-cb278607092e",
+    "fields": {
+      "created_time": "2024-04-18T07:17:23.370Z",
+      "updated_time": "2024-04-18T07:17:23.370Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "field_type": 0,
+      "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
+      "name": "field_type",
+      "label": "Field type"
     }
   }
 ]

@@ -15,17 +15,17 @@ from rest_framework.exceptions import ValidationError
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
-from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
+from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
 from system import models
 
 
 class ModelLabelFieldSerializer(BaseModelSerializer):
     class Meta:
         model = models.ModelLabelField
-        fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type_display']
-        read_only_fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time']
+        fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type']
+        read_only_fields = [x.name for x in models.ModelLabelField._meta.fields]
 
-    field_type_display = serializers.CharField(source='get_field_type_display', read_only=True)
+    field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices)
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -91,11 +91,9 @@ class ListRoleSerializer(RoleSerializer):
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
         model = models.DataPermission
-        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "mode_display",
-                  "menu"]
-        read_only_fields = ['pk']
+        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "menu"]
 
-    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+    mode_type = LabeledChoiceField(choices=models.DataPermission.ModeChoices.choices)
 
     def validate(self, attrs):
         rules = attrs.get('rules', [])
@@ -109,14 +107,14 @@ class DataPermissionSerializer(BaseModelSerializer):
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles_info = RoleSerializer(fields=['pk', 'name'], many=True, read_only=True, source='roles')
     rules_info = DataPermissionSerializer(fields=['pk', 'name'], many=True, read_only=True, source='rules')
-    mode_display = serializers.CharField(read_only=True, source='get_mode_type_display')
+    mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices)
 
 
 class DeptSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'mode_display', 'rules_info', 'auto_bind', 'description', 'created_time']
+                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
@@ -141,24 +139,23 @@ class DeptSerializer(BaseRoleRuleInfo):
 class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
-        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'pk', 'roles', 'rules',
-                  'dept', 'is_active', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'gender_display',
-                  'rules_info', 'mode_type', 'mode_display']
+        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
+                  'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}}
         # extra_kwargs = {'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    dept_info = DeptSerializer(fields=['name'], read_only=True, source='dept')
-    gender_display = serializers.CharField(read_only=True, source='get_gender_display')
+    dept_info = DeptSerializer(fields=['name', 'pk'], read_only=True, source='dept')
+    gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices)
 
 
 class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'mobile', 'avatar', 'roles_info',
-                  'date_joined', 'gender_display', 'dept_info']
+                  'date_joined', 'dept_info']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'pk': {'read_only': True}, 'avatar': {'read_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
@@ -212,17 +209,16 @@ class MenuMetaSerializer(BaseModelSerializer):
 
 
 class MenuSerializer(BaseModelSerializer):
-    meta = MenuMetaSerializer()
+    meta = MenuMetaSerializer(label='菜单元属性')
 
     class Meta:
         model = models.Menu
         fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
-                  'menu_type_display', 'model', 'field', 'method']
+                  'menu_type_display', 'model', 'method']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
     menu_type_display = serializers.CharField(source='get_menu_type_display', read_only=True)
-    field = serializers.ListField(default=[], read_only=True)
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -284,15 +280,14 @@ class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", "user_count", "read_user_count", 'extra_json',
-                  'notice_type', "files", "publish", 'notice_type_display', "notice_user", 'notice_dept', 'notice_role']
+                  'notice_type', "files", "publish", "notice_user", 'notice_dept', 'notice_role']
         # extra_kwargs = {'notice_user': {'read_only': False}}
 
     notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects)
-    notice_type_display = serializers.CharField(source="get_notice_type_display", read_only=True)
     files = serializers.JSONField(write_only=True)
-
     user_count = serializers.SerializerMethodField(read_only=True)
     read_user_count = serializers.SerializerMethodField(read_only=True)
+    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices)
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
@@ -381,10 +376,10 @@ class UserNoticeSerializer(BaseModelSerializer):
 
     class Meta:
         model = models.NoticeMessage
-        fields = ['pk', 'level', 'title', 'message', "created_time", 'notice_type_display', 'unread']
-        read_only_fields = ['pk', 'notice_user']
+        fields = ['pk', 'level', 'title', 'message', "created_time", 'unread', 'notice_type']
+        read_only_fields = ['pk', 'notice_user', 'notice_type']
 
-    notice_type_display = serializers.CharField(source="get_notice_type_display", read_only=True)
+    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices)
     unread = serializers.SerializerMethodField()
 
     def get_unread(self, obj):
@@ -404,7 +399,7 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
         # depth = 1
 
     owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner')
-    notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type_display', 'message', 'publish'],
+    notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
                                           read_only=True, source='notice')
 
 
@@ -457,9 +452,8 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 class UserLoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserLoginLog
-        fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time',
-                  'login_display', 'status']
+        fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time', 'status']
         read_only_fields = ['pk', 'creator']
 
     creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
-    login_display = serializers.CharField(read_only=True, source='get_login_type_display')
+    login_type = LabeledChoiceField(choices=models.UserLoginLog.LoginTypeChoices.choices)

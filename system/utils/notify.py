@@ -33,7 +33,7 @@ def base_notify(users: List | QuerySet, title: str, message: str, notice_type: i
     )
     notify_obj.notice_user.set(recipients)
     notice_message = NoticeMessageSerializer(
-        fields=['level', 'title', 'notice_type_display', 'message'],
+        fields=['level', 'title', 'notice_type', 'message'],
         instance=notify_obj).data
     for user in recipients:
         push_message(user, notice_message)

@@ -64,7 +64,7 @@ def get_choices_dict(choices, disabled_choices=None):
     result = []
     choices_org_list = list(choices)
     for choice in choices_org_list:
-        val = {'key': choice[0], 'label': choice[1]}
+        val = {'value': choice[0], 'label': choice[1]}
         if disabled_choices and isinstance(disabled_choices, list) and choice[0] in disabled_choices:
             val['disabled'] = True
         result.append(val)

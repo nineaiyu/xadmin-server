@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import asyncio
 import datetime
+import json
 import logging
 import os
 import time
@@ -15,6 +16,7 @@ from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
 from django.utils.module_loading import import_string
+from rest_framework.utils import encoders
 from rest_framework_simplejwt.exceptions import TokenError
 
 from common.base.magic import MagicCacheData
@@ -87,6 +89,10 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         logger.info(f"{self.user_obj} disconnect")
+
+    @classmethod
+    async def encode_json(cls, content):
+        return json.dumps(content, cls=encoders.JSONEncoder, ensure_ascii=False)
 
     # Receive message from WebSocket
     async def receive_json(self, content, **kwargs):

@@ -4,16 +4,74 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import Model
 from django.utils import timezone
-from rest_framework.fields import empty
+from django.utils.translation import gettext_lazy as _
+from rest_framework.fields import empty, ChoiceField
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.request import Request
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, RelatedField
 
 from common.core.config import SysConfig
 from common.core.filter import get_filter_queryset
 from system.models import ModelLabelField
+
+
+class LabeledChoiceField(ChoiceField):
+    def to_representation(self, key):
+        if key is None:
+            return key
+        label = self.choices.get(key, key)
+        return {"value": key, "label": label}
+
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.get("value")
+        if isinstance(data, str) and "(" in data and data.endswith(")"):
+            data = data.strip(")").split('(')[-1]
+        return super(LabeledChoiceField, self).to_internal_value(data)
+
+
+class ObjectRelatedField(RelatedField):
+    default_error_messages = {
+        "required": _("This field is required."),
+        "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
+        "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
+    }
+
+    def __init__(self, **kwargs):
+        self.attrs = kwargs.pop("attrs", None) or ("id", "name")
+        self.many = kwargs.get("many", False)
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        data = {}
+        for attr in self.attrs:
+            if not hasattr(value, attr):
+                continue
+            data[attr] = getattr(value, attr)
+        return data
+
+    def to_internal_value(self, data):
+        queryset = self.get_queryset()
+        if isinstance(data, Model):
+            return queryset.get(pk=data.pk)
+
+        if not isinstance(data, dict):
+            pk = data
+        else:
+            pk = data.get("id") or data.get("pk") or data.get(self.attrs[0])
+
+        try:
+            if isinstance(data, bool):
+                raise TypeError
+            return queryset.get(pk=pk)
+        except ObjectDoesNotExist:
+            self.fail("does_not_exist", pk_value=pk)
+        except (TypeError, ValueError):
+            self.fail("incorrect_type", data_type=type(pk).__name__)
 
 
 class BasePrimaryKeyRelatedField(PrimaryKeyRelatedField):

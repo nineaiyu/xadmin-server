@@ -143,7 +143,7 @@ python manage.py dump_init_json
 
 ```shell
     location /ws/message {
-        proxy_pass http://127.0.0.1:28896;
+        proxy_pass http://127.0.0.1:8896;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -156,7 +156,7 @@ python manage.py dump_init_json
     }
 
     location ~ ^/(api|flower|media) {
-        proxy_pass http://127.0.0.1:28896;
+        proxy_pass http://127.0.0.1:8896;
         proxy_send_timeout 180;
         proxy_connect_timeout 180;
         proxy_read_timeout 180;
