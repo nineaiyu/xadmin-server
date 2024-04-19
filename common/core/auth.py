@@ -18,7 +18,7 @@ from common.cache.storage import BlackAccessTokenCache
 def auth_required(view_func):
     def wrapper(view, request, *args, **kwargs):
         if request.user and request.user.is_authenticated:
-            return view_func(request, *args, **kwargs)
+            return view_func(view, request, *args, **kwargs)
         raise NotAuthenticated('未授权认证')
 
     return wrapper
