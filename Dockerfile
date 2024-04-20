@@ -1,8 +1,10 @@
 FROM python:3.12.3-slim
 
-# Fixes some weird terminal issues such as broken clear / CTRL+L
-ARG PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple
+# add pip cn mirrors
+ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
 
+# set apt cn mirrors
+RUN sed -i s@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@ /etc/apt/sources.list.d/debian.sources
 RUN apt update && apt-get install libmariadb-dev g++ pkg-config -y && rm -rf /var/lib/apt/lists/*
 
 # install pip
