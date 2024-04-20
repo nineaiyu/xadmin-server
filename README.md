@@ -63,22 +63,22 @@ python manage.py createsuperuser
 
 ### 启动程序
 
-##### a.Linux 环境直接启动
+##### a.Linux 环境命令一键启动api服务
 
 ```shell
 python manage.py start all
 ```
 
-##### b.Windows 环境直接启动
-
+##### b.Windows或Linux 环境通过命令启动api服务
+⚠️ Windows上面无法正常运行celery flower，导致任务监控无法正常使用，请使用Linux环境开发部署
 ```shell
 python manage.py runserver 0.0.0.0:8896
-python -m celery -A server flower -logging=info --url_prefix=/api/flower --auto_refresh=False  --address=127.0.0.1 --port=5566
+python -m celery -A server flower --debug --url_prefix=api/flower --auto_refresh=False  --address=0.0.0.0 --port=5566
 python -m celery -A server beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler --max-interval 60
 python -m celery -A server worker -P prefork -l INFO --autoscale 10,3 -Q celery --heartbeat-interval 10 -n celery@%h --without-mingle
 ```
 
-##### c.容器化启动
+##### c.容器化启动api服务
 
 ```shell
 docker compose up -d

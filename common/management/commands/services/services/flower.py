@@ -5,7 +5,7 @@ __all__ = ['FlowerService']
 
 
 class FlowerService(BaseService):
-
+    # https://flower.readthedocs.io/en/latest/man.html?highlight=pool#description
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -24,7 +24,7 @@ class FlowerService(BaseService):
             '-A', 'server',
             'flower',
             '-logging=info',
-            '--url_prefix=/api/flower',
+            '--url_prefix=api/flower',
             '--auto_refresh=False',
             '--max_tasks=1000',
             '--persistent=True',
@@ -35,6 +35,8 @@ class FlowerService(BaseService):
             f'--address={CELERY_FLOWER_HOST}',
             f'--port={CELERY_FLOWER_PORT}',
         ]
+        if settings.DEBUG:
+            cmd += ['--debug']
         return cmd
 
     @property
