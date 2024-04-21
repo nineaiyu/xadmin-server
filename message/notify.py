@@ -21,6 +21,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from common.base.magic import MagicCacheData
 from common.celery.utils import get_celery_task_log_path
+from message.utils import async_push_message
+from system.models import UserInfo
 from system.utils.serializer import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
@@ -31,6 +33,13 @@ logger = logging.getLogger(__name__)
 def get_userinfo(user_obj):
     return UserInfoSerializer(instance=user_obj).data
 
+
+@sync_to_async
+def get_user_pk(username):
+    try:
+        return UserInfo.objects.filter(username=username, is_active=True).values_list('pk', flat=True).first()
+    except UserInfo.DoesNotExist:
+        return
 
 @sync_to_async
 def token_auth(scope):
@@ -107,6 +116,24 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.room_group_name, {"type": "chat_message", "data": data}
             )
+            text = data.get('text')
+            if text.startswith('@'):
+                target = text.split(' ')[0].split('@')
+                if len(target) > 1:
+                    target = target[1]
+                    try:
+                        pk = await get_user_pk(target)
+                        if pk:
+                            push_message = {
+                                'title': f"用户 {self.user_obj.username} 发来一条消息",
+                                'message': text,
+                                'level': 'info',
+                                'notice_type': {'label': '聊天室', 'value': 0},
+                                'message_type': 'chat_message',
+                            }
+                            await async_push_message(pk, push_message)
+                    except Exception as e:
+                        logger.error(e)
         else:
             await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
 

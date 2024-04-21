@@ -79,7 +79,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
             instance.set_password(password)
             instance.modifier = request.user
             instance.save(update_fields=['password', 'modifier'])
-            notify.notify_info(users=instance, title="密码重置成功",
+            notify.notify_error(users=instance, title="密码重置成功",
                                message="密码被管理员重置成功")
             return ApiResponse()
         return ApiResponse(code=1001, detail='修改失败')
