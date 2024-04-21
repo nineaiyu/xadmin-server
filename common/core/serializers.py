@@ -107,10 +107,10 @@ class BaseModelSerializer(ModelSerializer):
         extra_kwargs, hidden_fields = super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
         return super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
 
-    def __init__(self, instance=None, data=empty, request=None, fields=None, init=False, **kwargs):
+    def __init__(self, instance=None, data=empty, request=None, fields=None, all_fields=False, **kwargs):
         super().__init__(instance, data, **kwargs)
         self.request: Request = request or self.context.get("request", None)
-        if init:
+        if all_fields:
             return
         allowed = set()
         allowed2 = allowed1 = None
@@ -177,7 +177,7 @@ def get_sub_serializer_fields():
     now = timezone.now()
     field_type = ModelLabelField.FieldChoices.ROLE
     for cls in cls_list:
-        instance = cls(init=True)
+        instance = cls(all_fields=True)
         model = instance.Meta.model
         if not model:
             continue

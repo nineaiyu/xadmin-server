@@ -177,7 +177,7 @@ class CreatorUserFilter(BaseFilterBackend):
         raise NotAuthenticated('未授权认证')
 
 
-class DataPermissionFilter(BaseFilterBackend):
+class BaseDataPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         return get_filter_queryset(queryset, request.user)
 

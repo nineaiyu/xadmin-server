@@ -46,7 +46,7 @@ class RoleSerializer(BaseModelSerializer):
 
     def get_field(self, obj):
         results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
-                                            request=self.request, init=True).data
+                                            request=self.request, all_fields=True).data
         data = {}
         for res in results:
             data[str(res.get('menu'))] = res.get('field', [])
@@ -55,7 +55,7 @@ class RoleSerializer(BaseModelSerializer):
     def save_fields(self, fields, instance):
         for k, v in fields.items():
             serializer = FieldPermissionSerializer(data={'role': instance.pk, 'menu': k, 'field': v},
-                                                   request=self.request, init=True)
+                                                   request=self.request, all_fields=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -247,7 +247,7 @@ class MenuPermissionSerializer(MenuSerializer):
 
 
 class RouteSerializer(MenuSerializer):
-    meta = RouteMetaSerializer(init=True)  # 用于前端菜单渲染
+    meta = RouteMetaSerializer(all_fields=True)  # 用于前端菜单渲染
 
 
 class OperationLogSerializer(BaseModelSerializer):

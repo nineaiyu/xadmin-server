@@ -79,7 +79,7 @@ class UserRoutesView(APIView):
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
             menu_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
-                                        many=True, context={'user': request.user}, init=True).data
+                                        many=True, context={'user': request.user}, all_fields=True).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))
         else:
@@ -87,6 +87,6 @@ class UserRoutesView(APIView):
             if menu_queryset:
                 menu_list = RouteSerializer(
                     menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
-                    context={'user': request.user}, init=True).data
+                    context={'user': request.user}, all_fields=True).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(menu_list)))

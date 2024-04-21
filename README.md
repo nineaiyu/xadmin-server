@@ -89,6 +89,8 @@ docker compose up -d
 ```shell
 python manage.py load_init_json
 ```
+## [点击查看字段权限文档](docs/field-permission.md)
+## [点击查看数据权限文档](docs/data-permission.md)
 
 ## 新应用开发流程
 

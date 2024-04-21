@@ -37,7 +37,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         'agent': str(parse(request.META['HTTP_USER_AGENT'])),
         'login_type': login_type
     }
-    serializer = UserLoginLogSerializer(data=data, request=request, init=True)
+    serializer = UserLoginLogSerializer(data=data, request=request, all_fields=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
