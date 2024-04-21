@@ -93,7 +93,12 @@ class RelatedManager:
                     val = [val]
                 q = Q() if '*' in val else Q(**{"{}__in".format(name): val})
             else:
-                q = Q() if val == '*' else Q(**{name: val})
+                # q = Q() if val == '*' else Q(**{name: val})
+                if val == '*':
+                    q = Q()
+                else:
+                    lookup = "{}__{}".format(name, match)
+                    q = Q(**{lookup: val})
             if attr.get('exclude'):
                 q = ~q
             filters.append(q)

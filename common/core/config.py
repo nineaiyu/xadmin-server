@@ -176,6 +176,10 @@ class BaseConfCache(ConfigCacheBase):
     def PERMISSION_DATA(self):
         return self.get_value('PERMISSION_DATA', True)
 
+    @property
+    def LOGIN(self):
+        return self.get_value('LOGIN', True)
+
 
 class ConfigCache(BaseConfCache):
     def __init__(self, *args, **kwargs):

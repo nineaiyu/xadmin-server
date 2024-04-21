@@ -10,7 +10,7 @@ from rest_framework.routers import SimpleRouter
 from system.views.admin.config import SystemConfigView, UserPersonalConfigView
 from system.views.admin.dept import DeptView
 from system.views.admin.loginlog import UserLoginLogView
-from system.views.admin.menu import UserRoutesView, MenuView
+from system.views.admin.menu import MenuView
 from system.views.admin.modelfield import ModelLabelFieldView
 from system.views.admin.notice import NoticeUserReadMessageView, NoticeMessageView
 from system.views.admin.operationlog import OperationLogView
@@ -21,6 +21,7 @@ from system.views.admin.user import UserView
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
+from system.views.routes import UserRoutesView
 from system.views.upload import UploadView
 from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
@@ -41,7 +42,7 @@ auth_url = [
     re_path('^upload$', UploadView.as_view(), name='upload'),
 ]
 
-menu_url = [
+router_url = [
     re_path('^routes$', UserRoutesView.as_view(), name='user_routes'),
 ]
 
@@ -68,4 +69,4 @@ router.register('logs/login', UserLoginLogView, basename='login_log')
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 
-urlpatterns = no_auth_url + auth_url + menu_url + router.get_urls()
+urlpatterns = no_auth_url + auth_url + router_url + router.get_urls()

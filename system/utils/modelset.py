@@ -21,7 +21,9 @@ class ChangeRolePermissionAction(object):
         instance = self.get_object()
         roles = request.data.get('roles')
         rules = request.data.get('rules')
-        mode_type = request.data.get('mode_type')
+        mode_type = request.data.get('mode_type', instance.mode_type)
+        if isinstance(mode_type, dict):
+            mode_type = mode_type.get('value')
         if roles is not None or rules is not None:
             if roles is not None:
                 instance.roles.set(get_filter_queryset(UserRole.objects.filter(pk__in=roles), request.user).all())

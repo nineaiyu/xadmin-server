@@ -130,6 +130,7 @@ def invalid_roles_cache(instance):
 
 @receiver([post_save, pre_delete])
 def clean_cache_handler(sender, instance, **kwargs):
+    update_fields = kwargs.get('update_fields', [])
     if issubclass(sender, Menu):
         cache_response.invalid_cache('MenuView_list_*')
         queryset = instance.userrole_set.values_list('userinfo', flat=True)
@@ -168,7 +169,10 @@ def clean_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserInfo):
-        invalid_user_cache(instance.pk)
+        if {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
+            invalid_user_cache(instance.pk)
+        else:
+            cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, NoticeUserRead):

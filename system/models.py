@@ -15,6 +15,8 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         TEXT = 'value.text', _('文本格式')
         JSON = 'value.json', _('json格式')
         ALL = 'value.all', _('全部数据')
+        DATETIME = 'value.datetime', _('日期时间')
+        DATETIME_RANGE = 'value.datetime.range', _('日期时间区间选择器')
         DATE = 'value.date', _('距离当前时间多少秒')
         OWNER = 'value.user.id', _('本人ID')
         OWNER_DEPARTMENT = 'value.user.dept.id', _('本部门ID')

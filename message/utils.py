@@ -4,10 +4,12 @@
 # filename : utils
 # author : ly_13
 # date : 3/6/2024
+import json
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
+from rest_framework.utils import encoders
 
 
 @async_to_sync
@@ -16,7 +18,8 @@ async def push_message(user_obj, message):
     channel_layer = get_channel_layer()
     await channel_layer.group_send(room_group_name, {
         'type': 'push_message',
-        'data': message
+        'data': message if not isinstance(message, dict) else json.dumps(message, cls=encoders.JSONEncoder,
+                                                                         ensure_ascii=False)
     })
 @async_to_sync
 async def check_message(user_obj, message):

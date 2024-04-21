@@ -9,7 +9,9 @@ import json
 import logging
 
 from django.db.models import Q, QuerySet
+from django.forms.utils import from_current_timezone
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django_filters import rest_framework as filters
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
@@ -78,6 +80,13 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                     rule['value'] = timezone.now() - datetime.timedelta(seconds=-val)
                 else:
                     rule['value'] = timezone.now() + datetime.timedelta(seconds=val)
+            elif f_type == ModelLabelField.KeyChoices.DATETIME_RANGE:
+                if isinstance(rule['value'], list) and len(rule['value']) == 2:
+                    rule['value'] = [from_current_timezone(parse_datetime(rule['value'][0])),
+                                     from_current_timezone(parse_datetime(rule['value'][1]))]
+            elif f_type == ModelLabelField.KeyChoices.DATETIME:
+                if isinstance(rule['value'], str):
+                    rule['value'] = from_current_timezone(parse_datetime(rule['value']))
             elif f_type in [ModelLabelField.KeyChoices.JSON, ModelLabelField.KeyChoices.TABLE_USER,
                             ModelLabelField.KeyChoices.TABLE_MENU, ModelLabelField.KeyChoices.TABLE_ROLE,
                             ModelLabelField.KeyChoices.TABLE_DEPT]:
