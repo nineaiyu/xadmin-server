@@ -18,6 +18,7 @@ from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
 from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission, \
     SystemConfig, ModelLabelField
+from system.utils.notify import push_notice_messages
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,8 @@ def invalid_notify_caches(instance, pk_set):
     if instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
         pks = UserInfo.objects.filter(dept__in=pk_set).values_list('pk', flat=True)
     if pks:
+        if instance.publish:
+            push_notice_messages(instance, set(pks))
         for pk in set(pks):
             invalid_notify_cache(pk)
 
@@ -158,6 +161,8 @@ def clean_cache_handler(sender, instance, **kwargs):
         pk_set = None
         if instance.notice_type == NoticeMessage.NoticeChoices.NOTICE:
             invalid_notify_cache('*')
+            if instance.publish:
+                push_notice_messages(instance, UserInfo.objects.values_list('pk', flat=True))
         elif instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
             pk_set = instance.notice_dept.values_list('pk', flat=True)
         elif instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
