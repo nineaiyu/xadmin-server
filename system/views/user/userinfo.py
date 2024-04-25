@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class UserInfoView(OwnerModelSet, UploadFileAction):
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
+    choices_models = [UserInfo]
 
     def get_object(self):
         return self.request.user

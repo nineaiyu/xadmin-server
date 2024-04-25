@@ -174,7 +174,7 @@ def clean_cache_handler(sender, instance, **kwargs):
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, UserInfo):
-        if {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
+        if update_fields is None or {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
             invalid_user_cache(instance.pk)
         else:
             cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
