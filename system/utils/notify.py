@@ -9,6 +9,7 @@ from typing import List, Dict
 
 from django.db.models import QuerySet
 
+from common.core.config import UserConfig
 from message.utils import push_message
 from system.models import NoticeMessage
 from system.utils.serializer import NoticeMessageSerializer
@@ -22,7 +23,8 @@ def push_notice_messages(notify_obj, pks):
         instance=notify_obj).data
     notice_message['message_type'] = 'notify_message'
     for pk in pks:
-        push_message(pk, notice_message)
+        if UserConfig(pk).PUSH_MESSAGE_NOTICE:
+            push_message(pk, notice_message)
     return notify_obj
 
 def base_notify(users: List | QuerySet, title: str, message: str, notice_type: int,

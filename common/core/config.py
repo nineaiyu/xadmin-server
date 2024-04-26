@@ -181,7 +181,20 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value('LOGIN', True)
 
 
-class ConfigCache(BaseConfCache):
+class MessagePushConfCache(ConfigCacheBase):
+    def __init__(self, *args, **kwargs):
+        super(MessagePushConfCache, self).__init__(*args, **kwargs)
+
+    @property
+    def PUSH_MESSAGE_NOTICE(self):
+        return self.get_value('PUSH_MESSAGE_NOTICE', True)
+
+    @property
+    def PUSH_CHAT_MESSAGE(self):
+        return self.get_value('PUSH_CHAT_MESSAGE', True)
+
+
+class ConfigCache(BaseConfCache, MessagePushConfCache):
     def __init__(self, *args, **kwargs):
         super(ConfigCache, self).__init__(*args, **kwargs)
 
@@ -199,8 +212,9 @@ class UserPersonalConfigCache(ConfigCache):
     def __init__(self, user_obj):
         self.user_obj = user_obj
         self.filter_kwargs = {'owner': self.user_obj}
-        if isinstance(user_obj, str):
+        if isinstance(user_obj, (str, int)):
             key = user_obj
+            self.filter_kwargs = {'owner_id': self.user_obj}
         else:
             key = user_obj.pk
         super().__init__(f'user_{key}', UserPersonalConfig, UserSystemConfigCache, UserConfigSerializer,

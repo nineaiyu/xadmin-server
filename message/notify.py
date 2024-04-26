@@ -21,6 +21,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 
 from common.base.magic import MagicCacheData
 from common.celery.utils import get_celery_task_log_path
+from common.core.config import UserConfig
 from message.utils import async_push_message
 from system.models import UserInfo
 from system.utils.serializer import UserInfoSerializer
@@ -123,7 +124,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                     target = target[1]
                     try:
                         pk = await get_user_pk(target)
-                        if pk:
+                        if pk and UserConfig(pk).PUSH_CHAT_MESSAGE:
                             push_message = {
                                 'title': f"用户 {self.user_obj.username} 发来一条消息",
                                 'message': text,

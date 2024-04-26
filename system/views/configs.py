@@ -30,13 +30,13 @@ class ConfigsView(OwnerModelSet):
         value_key = self.kwargs[self.lookup_field]
         if value_key:
             if request.user and request.user.is_authenticated:
-                site_config = UserConfig(request.user).get_value(value_key, ignore_access=False)
+                config = UserConfig(request.user).get_value(value_key, ignore_access=False)
             else:
-                site_config = SysConfig.get_value(value_key, ignore_access=False)
-            if site_config:
-                if not isinstance(site_config, dict):
-                    site_config = {'value': site_config, 'key': self.kwargs[self.lookup_field]}
-                return ApiResponse(config=site_config, auth=f"{request.user}")
+                config = SysConfig.get_value(value_key, ignore_access=False)
+            if config is not None:
+                if not isinstance(config, dict):
+                    config = {'value': config, 'key': self.kwargs[self.lookup_field]}
+                return ApiResponse(config=config, auth=f"{request.user}")
         return ApiResponse(config={}, auth=f"{request.user}")
 
     @auth_required
@@ -44,8 +44,11 @@ class ConfigsView(OwnerModelSet):
         value_key = self.kwargs[self.lookup_field]
         if value_key:
             config = UserConfig(request.user).get_value(value_key, ignore_access=False)
-            if config:
-                config.update({key: request.data.get(key, value) for key, value in config.items()})
+            if config is not None:
+                if isinstance(config, dict):
+                    config.update({key: request.data.get(key, value) for key, value in config.items()})
+                else:
+                    config = request.data
                 UserConfig(request.user).set_value(value_key, config, is_active=True, access=True)
         return self.retrieve(request, *args, **kwargs)
 
