@@ -8,6 +8,7 @@ import json
 import os.path
 
 from django.conf import settings
+from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -25,7 +26,8 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
         fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type']
         read_only_fields = [x.name for x in models.ModelLabelField._meta.fields]
 
-    field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices)
+    field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices,
+                                    default=models.ModelLabelField.FieldChoices.DATA)
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -93,7 +95,8 @@ class DataPermissionSerializer(BaseModelSerializer):
         model = models.DataPermission
         fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "menu"]
 
-    mode_type = LabeledChoiceField(choices=models.DataPermission.ModeChoices.choices)
+    mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
+                                   default=models.ModeTypeAbstract.ModeChoices.OR)
 
     def validate(self, attrs):
         rules = attrs.get('rules', [])
@@ -107,7 +110,8 @@ class DataPermissionSerializer(BaseModelSerializer):
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles_info = RoleSerializer(fields=['pk', 'name'], many=True, read_only=True, source='roles')
     rules_info = DataPermissionSerializer(fields=['pk', 'name'], many=True, read_only=True, source='rules')
-    mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices)
+    mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
+                                   default=models.ModeTypeAbstract.ModeChoices.OR.value)
 
 
 class DeptSerializer(BaseRoleRuleInfo):
@@ -140,16 +144,22 @@ class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
-                  'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type']
+                  'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type',
+                  'password']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
-                        'roles': {'read_only': True}}
-        # extra_kwargs = {'password': {'write_only': True}}
+                        'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
     dept_info = DeptSerializer(fields=['name', 'pk'], read_only=True, source='dept')
-    gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices)
+    gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
+                                default=models.UserInfo.GenderChoices.UNKNOWN)
 
+    def validate_password(self, value):
+        # md5 = hashlib.md5()
+        # md5.update(value.encode('utf-8'))
+        # md5_password = md5.hexdigest()
+        return make_password(value)
 
 class UserInfoSerializer(UserSerializer):
     class Meta:
@@ -287,7 +297,8 @@ class NoticeMessageSerializer(BaseModelSerializer):
     files = serializers.JSONField(write_only=True)
     user_count = serializers.SerializerMethodField(read_only=True)
     read_user_count = serializers.SerializerMethodField(read_only=True)
-    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices)
+    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
+                                     default=models.NoticeMessage.NoticeChoices.USER)
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
@@ -379,7 +390,8 @@ class UserNoticeSerializer(BaseModelSerializer):
         fields = ['pk', 'level', 'title', 'message', "created_time", 'unread', 'notice_type']
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
-    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices)
+    notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
+                                     default=models.NoticeMessage.NoticeChoices.USER)
     unread = serializers.SerializerMethodField()
 
     def get_unread(self, obj):
@@ -456,4 +468,5 @@ class UserLoginLogSerializer(BaseModelSerializer):
         read_only_fields = ['pk', 'creator']
 
     creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
-    login_type = LabeledChoiceField(choices=models.UserLoginLog.LoginTypeChoices.choices)
+    login_type = LabeledChoiceField(choices=models.UserLoginLog.LoginTypeChoices.choices,
+                                    default=models.UserLoginLog.LoginTypeChoices.USERNAME)

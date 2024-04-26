@@ -8,13 +8,11 @@ import logging
 
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 
 from common.core.filter import BaseFilterSet
-from common.core.filter import get_filter_queryset
 from common.core.modelset import BaseModelSet, UploadFileAction
 from common.core.response import ApiResponse
-from system.models import UserInfo, DeptInfo
+from system.models import UserInfo
 from system.utils import notify
 from system.utils.modelset import ChangeRolePermissionAction
 from system.utils.serializer import UserSerializer
@@ -40,26 +38,6 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     ordering_fields = ['date_joined', 'last_login', 'created_time']
     filterset_class = UserFilter
 
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        password = request.data.get('password')
-        if password:
-            valid_data = serializer.data
-            valid_data.pop('roles_info', None)
-            valid_data.pop('rules_info', None)
-            valid_data.pop('dept_info', None)
-            dept = valid_data.pop('dept', None)
-            if dept:
-                valid_data['dept'] = get_filter_queryset(DeptInfo.objects.filter(pk=dept), request.user).first()
-            else:
-                raise ValidationError('部门必须选择')
-            user = UserInfo.objects.create_user(**valid_data, password=password, creator=request.user,
-                                                dept_belong=request.user.dept)
-            if user:
-                return ApiResponse(detail=f"用户{user.username}添加成功", data=self.get_serializer(user).data)
-        return ApiResponse(code=1003, detail="数据异常，用户创建失败")
 
     def perform_destroy(self, instance):
         if instance.is_superuser:

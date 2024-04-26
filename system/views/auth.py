@@ -98,7 +98,8 @@ class RegisterView(APIView):
             user = auth.authenticate(username=username, password=password)
             update_fields = ['last_login']
             if not user:
-                user = UserInfo.objects.create_user(username=username, password=password, first_name=username)
+                user = UserInfo.objects.create_user(username=username, password=password, first_name=username,
+                                                    nickname=username)
                 if channel and user:
                     dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
                     if not dept:
