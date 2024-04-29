@@ -172,7 +172,7 @@ def get_download_url(file_obj: AliyunFile, download=False) -> dict:
                 download_url = result.url
             else:
                 result = ali_obj.get_file(file_id=file_obj.file_id, drive_id=file_obj.drive_id)
-                download_url = result.download_url
+                download_url = result.download_url or result.url
                 parse_data = parse_qs(download_url)
                 expired = parse_data.get('x-oss-expires')
                 if expired and len(expired) == 1:
@@ -208,7 +208,7 @@ def batch_get_download_url(file_obj_list: [AliyunFile]) -> list:
             ali_obj = get_aliyun_drive(drive_obj)
             result_list = ali_obj.batch_get_files(file_info_list)
             for result in result_list:
-                download_url = result.download_url
+                download_url = result.download_url or result.url
                 parse_data = parse_qs(download_url)
                 expired = parse_data.get('x-oss-expires')
                 if expired and len(expired) == 1:
