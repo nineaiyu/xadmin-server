@@ -110,7 +110,7 @@ class BaseModelSerializer(ModelSerializer):
     def __init__(self, instance=None, data=empty, request=None, fields=None, all_fields=False, **kwargs):
         super().__init__(instance, data, **kwargs)
         self.request: Request = request or self.context.get("request", None)
-        if all_fields:
+        if all_fields or request is None or getattr(self.request, 'all_fields', None) is not None:
             return
         allowed = set()
         allowed2 = allowed1 = None

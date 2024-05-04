@@ -26,6 +26,7 @@ class OperationLogFilter(BaseFilterSet):
 
 
 class OperationLogView(ListDeleteModelSet):
+    """用户操作日志"""
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
 

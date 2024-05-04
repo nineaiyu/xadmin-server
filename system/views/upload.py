@@ -6,6 +6,9 @@
 # date : 6/26/2023
 import logging
 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 
 from common.core.config import SysConfig
@@ -18,13 +21,19 @@ logger = logging.getLogger(__file__)
 
 
 class UploadView(APIView):
+    """本地上传文件接口"""
     throttle_classes = [UploadThrottle]
+    parser_classes = (MultiPartParser,)
 
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            'file', in_=openapi.IN_FORM, type=openapi.TYPE_FILE,
+            description='待上传的文件', required=True
+        ),
+    ], operation_description='文件上传')
     def post(self, request):
         """
-        该方法 主要是本地上传文件接口
-        :param request:
-        :return:
+        本地上传文件接口
         """
         # 获取多个file
         files = request.FILES.getlist('file', [])

@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'imagekit',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -197,7 +198,8 @@ AUTH_USER_MODEL = "system.UserInfo"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/api/static/'
+STATIC_ROOT = 'static'
 
 # Media配置
 MEDIA_URL = "media/"
@@ -220,6 +222,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
+        "rest_framework.authentication.SessionAuthentication",
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
@@ -530,7 +533,8 @@ CELERY_FLOWER_AUTH = 'flower:flower123.'
 
 CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles', 'common',
                       'system', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha', 'corsheaders',
-                      'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat', 'imagekit']
+                      'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat', 'imagekit',
+                      'drf_yasg']
 
 # 访问白名单配置
 PERMISSION_WHITE_URL = [
@@ -546,8 +550,9 @@ PERMISSION_WHITE_URL = [
 
 # 访问权限配置
 PERMISSION_SHOW_PREFIX = [
-    'api/system',
-    'api/flower',
+    r'api/system',
+    r'api/flower',
+    r'api-docs',
 ]
 # 数据权限配置
 PERMISSION_DATA_AUTH_APPS = [
@@ -564,4 +569,23 @@ API_MODEL_MAP = {
     "/api/system/login": "用户登录",
     "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
+}
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": True,
+    "SECURITY_DEFINITIONS": {"Bearer": {"type": "apiKey", 'in': 'header', 'name': 'Authorization'}},
+    'LOGIN_URL': '/api-docs/login/',
+    'LOGOUT_URL': '/api-docs/logout/',
+    # 'DOC_EXPANSION': None,
+    # 'SHOW_REQUEST_HEADERS':True,
+    # 'DOC_EXPANSION': 'list',
+    # 接口文档中方法列表以首字母升序排列
+    "APIS_SORTER": "alpha",
+    # 如果支持json提交, 则接口文档中包含json输入框
+    "JSON_EDITOR": True,
+    # 方法列表字母排序
+    "OPERATIONS_SORTER": "alpha",
+    "VALIDATOR_URL": None,
+    "AUTO_SCHEMA_TYPE": 2,  # 分组根据url层级分，0、1 或 2 层
+    "DEFAULT_AUTO_SCHEMA_CLASS": "common.utils.swagger.CustomSwaggerAutoSchema",
 }

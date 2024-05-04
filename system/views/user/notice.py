@@ -8,6 +8,8 @@ from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
@@ -56,6 +58,7 @@ class UserNoticeMessageFilter(BaseFilterSet):
 
 
 class UserNoticeMessage(OnlyListModelSet):
+    """用户个人通知公告管理"""
     queryset = NoticeMessage.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
@@ -75,6 +78,7 @@ class UserNoticeMessage(OnlyListModelSet):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
         return f"{func_name}_{request.user.pk}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
 
+    @swagger_auto_schema(ignore_params=True)
     @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
@@ -102,13 +106,19 @@ class UserNoticeMessage(OnlyListModelSet):
                 NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
         return ApiResponse(detail="操作成功")
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['pks'],
+        properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
+                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
+    ), operation_description='批量已读消息')
     @action(methods=['put'], detail=False)
     def read(self, request, *args, **kwargs):
         pks = request.data.get('pks', [])
         return self.read_message(pks, request)
 
+    @swagger_auto_schema(ignore_params=True)
     @action(methods=['put'], detail=False, url_path='read-all')
     def read_all(self, request, *args, **kwargs):
-        pks = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).values_list('pk',
-                                                                                                                 flat=True).distinct()
-        return self.read_message(pks, request)
+        queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user))
+        return self.read_message(queryset.values_list('pk', flat=True).distinct(), request)

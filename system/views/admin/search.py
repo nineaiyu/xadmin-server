@@ -4,12 +4,13 @@
 # filename : search
 # author : ly_13
 # date : 3/1/2024
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
-from system.models import UserInfo, UserRole, DeptInfo, Menu
+from system.models import UserInfo, UserRole, DeptInfo, Menu, OperationLog
 from system.utils.serializer import UserSerializer, ListRoleSerializer, DeptSerializer, MenuSerializer
 from system.views.admin.dept import DeptFilter
 from system.views.admin.menu import MenuFilter
@@ -18,10 +19,13 @@ from system.views.admin.user import UserFilter
 
 
 class SearchDataView(OnlyListModelSet):
+    """简易搜索数据"""
     serializer_class = UserSerializer
-    filterset_class = []
+    queryset = OperationLog.objects.none()
+    filterset_class = None
     ordering_fields = ['updated_time', 'created_time']
 
+    @swagger_auto_schema(auto_schema=None)
     def list(self, request, *args, **kwargs):
         return ApiResponse(code=1001)
 

@@ -4,18 +4,30 @@
 # filename : modelset
 # author : ly_13
 # date : 12/24/2023
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
-from system.models import UserRole, DataPermission, SystemConfig
+from system.models import UserRole, DataPermission, SystemConfig, ModeTypeAbstract
 
 
 class ChangeRolePermissionAction(object):
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['roles', 'rules', 'mode_type'],
+        properties={'roles': openapi.Schema(description='角色信息', type=openapi.TYPE_ARRAY,
+                                            items=openapi.Schema(type=openapi.TYPE_STRING, )),
+                    'rules': openapi.Schema(description='数据权限', type=openapi.TYPE_ARRAY,
+                                            items=openapi.Schema(type=openapi.TYPE_STRING, )),
+                    'mode_type': openapi.Schema(description='权限模式', type=openapi.TYPE_NUMBER,
+                                                default=ModeTypeAbstract.ModeChoices.OR)}
+    ), operation_description='分配角色-数据权限')
     @action(methods=['post'], detail=True)
     def empower(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -42,6 +54,7 @@ class InvalidConfigCacheAction(object):
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
+    @swagger_auto_schema(operation_description="使配置值缓存失效", ignore_params=True)
     @action(methods=['post'], detail=True)
     def invalid(self, request, *args, **kwargs):
         instance = self.get_object()

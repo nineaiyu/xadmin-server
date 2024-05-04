@@ -27,9 +27,11 @@ class DeptFilter(BaseFilterSet):
 
 
 class DeptView(BaseModelSet, ChangeRolePermissionAction):
+    """
+    部门信息
+    """
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
     pagination_class = DynamicPageNumber(1000)
-
     ordering_fields = ['created_time', 'rank']
     filterset_class = DeptFilter

@@ -6,6 +6,8 @@
 # date : 6/16/2023
 import logging
 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.base.magic import cache_response
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserInfoView(OwnerModelSet, UploadFileAction):
+    """用户个人信息管理"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
     choices_models = [UserInfo]
@@ -38,6 +41,12 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
         data = super().retrieve(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices))
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['old_password', 'sure_password'],
+        properties={'old_password': openapi.Schema(description='旧密码', type=openapi.TYPE_STRING),
+                    'sure_password': openapi.Schema(description='新密码', type=openapi.TYPE_STRING)}
+    ), operation_description='修改个人密码')
     @action(methods=['post'], detail=False, url_path='reset-password')
     def reset_password(self, request, *args, **kwargs):
         old_password = request.data.get('old_password')

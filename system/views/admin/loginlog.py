@@ -27,6 +27,7 @@ class UserLoginLogFilter(BaseFilterSet):
 
 
 class UserLoginLogView(ListDeleteModelSet):
+    """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
 

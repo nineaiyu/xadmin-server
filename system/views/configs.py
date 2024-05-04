@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 3/14/2024
 
-
 from common.core.auth import auth_required
 from common.core.config import UserConfig, SysConfig
 from common.core.filter import OwnerUserFilter
@@ -16,15 +15,13 @@ from system.utils.serializer import UserPersonalConfigSerializer
 
 
 class ConfigsView(OwnerModelSet):
+    """配置信息"""
     queryset = UserPersonalConfig.objects.filter(is_active=True)
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ['created_time']
     lookup_field = 'key'
     permission_classes = []
     filter_backends = [OwnerUserFilter]
-
-    def list(self, request, *args, **kwargs):
-        return ApiResponse()
 
     def retrieve(self, request, *args, **kwargs):
         value_key = self.kwargs[self.lookup_field]

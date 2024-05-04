@@ -9,6 +9,8 @@ import logging
 
 from django.apps import apps
 from django_filters import rest_framework as filters
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
@@ -39,6 +41,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
 
 
 class ModelLabelFieldView(OnlyListModelSet):
+    """模型字段管理"""
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer
     pagination_class = DynamicPageNumber(1000)
@@ -46,6 +49,7 @@ class ModelLabelFieldView(OnlyListModelSet):
     ordering_fields = ['created_time', 'updated_time']
     filterset_class = ModelLabelFieldFilter
 
+    @swagger_auto_schema(ignore_params=True)
     @action(methods=['get'], detail=False, url_path='choices')
     def choices_dict(self, request, *args, **kwargs):
         disabled_choices = [
@@ -57,6 +61,15 @@ class ModelLabelFieldView(OnlyListModelSet):
         result = get_choices_dict(ModelLabelField.KeyChoices.choices, disabled_choices=disabled_choices)
         return ApiResponse(choices_dict={'choices': result})
 
+    @swagger_auto_schema(ignore_body_params=True, manual_parameters=[
+        openapi.Parameter(
+            'table', in_=openapi.IN_QUERY, type=openapi.TYPE_STRING,
+            description='表名', required=True
+        ), openapi.Parameter(
+            'field', in_=openapi.IN_QUERY, type=openapi.TYPE_STRING,
+            description='字段名', required=True
+        ),
+    ], )
     @action(methods=['get'], detail=False, queryset=ModelLabelField.objects, filterset_class=None)
     def lookups(self, request, *args, **kwargs):
         table = request.query_params.get('table')
@@ -74,6 +87,7 @@ class ModelLabelFieldView(OnlyListModelSet):
                         return ApiResponse(data={'results': mf.get_class_lookups().keys()})
         return ApiResponse(code=1001, detail="查询失败")
 
+    @swagger_auto_schema(ignore_params=True)
     @action(methods=['get'], detail=False)
     def sync(self, request, *args, **kwargs):
         get_sub_serializer_fields()

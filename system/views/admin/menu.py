@@ -8,6 +8,7 @@ from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.base.magic import cache_response
@@ -32,6 +33,7 @@ class MenuFilter(BaseFilterSet):
 
 
 class MenuView(BaseModelSet, RankAction):
+    """菜单管理"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
     permissions_serializer_class = MenuPermissionSerializer
@@ -59,6 +61,7 @@ class MenuView(BaseModelSet, RankAction):
         self.get_queryset = get_queryset
         return super().list(request, *args, **kwargs)
 
+    @swagger_auto_schema(ignore_params=True)
     @action(methods=['get'], detail=False, url_path='api-url')
     def api_url(self, request, *args, **kwargs):
         return ApiResponse(results=get_all_url_dict(''))

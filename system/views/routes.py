@@ -16,6 +16,7 @@ from system.utils.serializer import RouteSerializer
 
 
 class UserRoutesView(APIView):
+    """获取菜单路由"""
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'

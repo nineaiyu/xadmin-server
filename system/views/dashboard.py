@@ -10,8 +10,8 @@ from django.db.models import Count
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet
 
-from common.core.modelset import OwnerModelSet
 from common.core.response import ApiResponse
 from system.models import UserLoginLog, UserInfo, OperationLog
 from system.utils.serializer import UserLoginLogSerializer
@@ -38,7 +38,8 @@ def trend_info(queryset, limit_day=30):
     return results, percent, queryset.count()
 
 
-class DashboardView(OwnerModelSet):
+class DashboardView(GenericViewSet):
+    """面板统计信息"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
     ordering_fields = ['created_time']

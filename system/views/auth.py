@@ -60,6 +60,7 @@ def get_request_ident(request):
 
 
 class TempTokenView(APIView):
+    """获取临时token"""
     permission_classes = []
     authentication_classes = []
 
@@ -69,6 +70,7 @@ class TempTokenView(APIView):
 
 
 class CaptchaView(APIView):
+    """获取验证码"""
     permission_classes = []
     authentication_classes = []
 
@@ -77,6 +79,7 @@ class CaptchaView(APIView):
 
 
 class RegisterView(APIView):
+    """用户注册"""
     permission_classes = []
     authentication_classes = []
     throttle_classes = [RegisterThrottle]
@@ -124,6 +127,7 @@ class RegisterView(APIView):
 
 
 class LoginView(TokenObtainPairView):
+    """用户登录"""
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:
@@ -155,6 +159,8 @@ class LoginView(TokenObtainPairView):
 
 
 class RefreshTokenView(TokenRefreshView):
+    """刷新Token"""
+
     def post(self, request, *args, **kwargs):
         data = super().post(request, *args, **kwargs).data
         data.update(get_token_lifetime(request.user))
@@ -162,12 +168,11 @@ class RefreshTokenView(TokenRefreshView):
 
 
 class LogoutView(APIView):
+    """用户登出"""
 
     def post(self, request):
         """
         登出账户，并且将账户的access 和 refresh token 加入黑名单
-        :param request:
-        :return:
         """
         payload = request.auth.payload
         exp = payload.get('exp')

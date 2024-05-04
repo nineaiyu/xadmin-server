@@ -26,9 +26,9 @@ class RoleFilter(BaseFilterSet):
 
 
 class RoleView(BaseModelSet):
+    """角色管理"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer
-
     ordering_fields = ['updated_time', 'name', 'created_time']
     filterset_class = RoleFilter

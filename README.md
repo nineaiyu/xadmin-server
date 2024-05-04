@@ -157,7 +157,7 @@ python manage.py dump_init_json
         proxy_set_header X-Forwarded-Proto https; # https代理需求添加该参数
     }
 
-    location ~ ^/(api|flower|media) {
+    location ~ ^/(api|flower|media|api-docs) {
         proxy_pass http://127.0.0.1:8896;
         proxy_send_timeout 180;
         proxy_connect_timeout 180;

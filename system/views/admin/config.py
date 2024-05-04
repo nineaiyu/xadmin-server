@@ -27,6 +27,9 @@ class SystemConfigFilter(BaseFilterSet):
 
 
 class SystemConfigView(BaseModelSet, InvalidConfigCacheAction):
+    """
+    系统配置管理
+    """
     queryset = SystemConfig.objects.all()
     serializer_class = SystemConfigSerializer
     ordering_fields = ['created_time']
@@ -43,6 +46,9 @@ class UserPersonalConfigFilter(SystemConfigFilter):
 
 
 class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction):
+    """
+    用户配置管理
+    """
     queryset = UserPersonalConfig.objects.all()
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ['created_time']
