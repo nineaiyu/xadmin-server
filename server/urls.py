@@ -16,14 +16,15 @@ Including another URLconf
 """
 from django.conf import settings
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import include, re_path
 from django.views.decorators.clickjacking import xframe_options_exempt
+from django.views.static import serve as static_serve
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 
 from common.celery.flower import CeleryFlowerView
 from common.core.utils import auto_register_app_url
-from common.utils.media import serve
+from common.utils.media import media_serve
 from common.utils.swagger import CustomOpenAPISchemaGenerator, ApiLogin, ApiLogout
 
 schema_view = get_schema_view(
@@ -52,11 +53,12 @@ swagger_apis = [
 ]
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/system/', include('system.urls')),
+    re_path('^admin/', admin.site.urls),
+    re_path('^api/system/', include('system.urls')),
     re_path('^api/flower/(?P<path>.*)$', CeleryFlowerView.as_view(), name='flower-view'),
     # media路径配置 开发环境可以启动下面配置，正式环境需要让nginx读取资源，无需进行转发
-    re_path('^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path('^media/(?P<path>.*)$', media_serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path('^api/static/(?P<path>.*)$', static_serve, {'document_root': settings.STATIC_ROOT})
 ]
 
 urlpatterns = swagger_apis + urlpatterns

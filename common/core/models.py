@@ -13,7 +13,14 @@ from django.db import models
 
 
 class DbUuidModel(models.Model):
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, )
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, verbose_name="主键ID")
+
+    class Meta:
+        abstract = True
+
+
+class DbCharModel(models.Model):
+    id = models.CharField(primary_key=True, max_length=128, verbose_name="主键ID")
 
     class Meta:
         abstract = True

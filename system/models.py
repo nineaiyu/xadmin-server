@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
-from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel
+from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
 from common.fields.image import ProcessedImageField
 
 
@@ -191,7 +191,7 @@ class UserRole(DbAuditModel, DbUuidModel):
         return f"{self.name}-{self.created_time}"
 
 
-class FieldPermission(DbAuditModel, DbUuidModel):
+class FieldPermission(DbAuditModel, DbCharModel):
     role = models.ForeignKey(UserRole, on_delete=models.CASCADE, verbose_name="角色")
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE, verbose_name="菜单")
     field = models.ManyToManyField(ModelLabelField, verbose_name="字段", null=True, blank=True)
@@ -201,6 +201,10 @@ class FieldPermission(DbAuditModel, DbUuidModel):
         verbose_name_plural = "字段权限表"
         ordering = ("-created_time",)
         unique_together = ("role", "menu")
+
+    def save(self, *args, **kwargs):
+        self.id = f"{self.role.pk}-{self.menu.pk}"
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.pk}-{self.role.name}-{self.created_time}"

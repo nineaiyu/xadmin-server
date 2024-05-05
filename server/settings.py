@@ -198,8 +198,16 @@ AUTH_USER_MODEL = "system.UserInfo"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = '/api/static/'
-STATIC_ROOT = 'static'
+STATIC_URL = 'api/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+# STATICFILES_FINDERS = (
+#     "django.contrib.staticfiles.finders.FileSystemFinder",
+#     "django.contrib.staticfiles.finders.AppDirectoriesFinder"
+# )
+# 收集静态文件
+# python manage.py collectstatic
+
 
 # Media配置
 MEDIA_URL = "media/"

@@ -41,7 +41,7 @@ def get_media_path(path):
                         return get_thumbnail(pic, int(index[0]))
 
 
-def serve(request, path, document_root=None, show_indexes=False):
+def media_serve(request, path, document_root=None, show_indexes=False):
     path = posixpath.normpath(path).lstrip("/")
     fullpath = Path(safe_join(document_root, path))
     if fullpath.is_dir():
