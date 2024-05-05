@@ -46,8 +46,8 @@ schema_view = get_schema_view(
 schema_view.get = xframe_options_exempt(schema_view.get)
 
 swagger_apis = [
-    re_path('^api-docs/swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path('^api-docs/redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    re_path('^api-docs/swagger/$', schema_view.with_ui('swagger', cache_timeout=60), name='schema-swagger-ui'),
+    re_path('^api-docs/redoc/$', schema_view.with_ui('redoc', cache_timeout=60), name='schema-redoc'),
     re_path('^api-docs/login/$', ApiLogin.as_view(), name='api-docs-login'),
     re_path('^api-docs/logout/$', ApiLogout.as_view(), name='api-docs-logout'),
 ]
