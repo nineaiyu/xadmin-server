@@ -109,7 +109,8 @@ class RegisterView(APIView):
                         dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
                     if dept:
                         user.dept = dept
-                        update_fields.append('dept')
+                        user.dept_belong = dept
+                        update_fields.extend(['dept_belong', 'dept'])
 
             if user.is_active:
                 refresh = RefreshToken.for_user(user)

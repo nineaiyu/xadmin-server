@@ -117,9 +117,11 @@ def invalid_user_cache(user_pk):
     cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
     invalid_notify_cache(user_pk)
 
+
 def invalid_superuser_cache():
     for pk in UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True):
         invalid_user_cache(pk)
+
 
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')

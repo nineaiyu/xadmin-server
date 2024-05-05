@@ -42,6 +42,7 @@ def get_user_pk(username):
     except UserInfo.DoesNotExist:
         return
 
+
 @sync_to_async
 def token_auth(scope):
     cookies = scope.get('cookies')

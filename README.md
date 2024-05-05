@@ -70,7 +70,9 @@ python manage.py start all
 ```
 
 ##### b.Windows或Linux 环境通过命令启动api服务
+
 ⚠️ Windows上面无法正常运行celery flower，导致任务监控无法正常使用，请使用Linux环境开发部署
+
 ```shell
 python manage.py runserver 0.0.0.0:8896
 python -m celery -A server flower --debug --url_prefix=api/flower --auto_refresh=False  --address=0.0.0.0 --port=5566
@@ -89,7 +91,9 @@ docker compose up -d
 ```shell
 python manage.py load_init_json
 ```
+
 ## [点击查看字段权限文档](docs/field-permission.md)
+
 ## [点击查看数据权限文档](docs/data-permission.md)
 
 ## 新应用开发流程

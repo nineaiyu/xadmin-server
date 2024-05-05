@@ -20,6 +20,8 @@ async def async_push_message(user_pk: str | int, message: Dict, message_type='pu
         'type': message_type,
         'data': json.dumps(message, cls=encoders.JSONEncoder, ensure_ascii=False)
     })
+
+
 @async_to_sync
 async def push_message(user_pk: str | int, message: Dict, message_type='push_message'):
     return await async_push_message(user_pk, message, message_type)
@@ -31,4 +33,4 @@ async def check_message(user_obj, message):
     channel_layer = get_channel_layer()
     group_channel = channel_layer._get_group_channel_name(room_group_name)
     group_channels = channel_layer.groups.get(group_channel, set())
-    print(group_channels,group_channel)
+    print(group_channels, group_channel)

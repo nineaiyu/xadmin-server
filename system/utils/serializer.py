@@ -161,6 +161,7 @@ class UserSerializer(BaseRoleRuleInfo):
         # md5_password = md5.hexdigest()
         return make_password(value)
 
+
 class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo

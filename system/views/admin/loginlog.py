@@ -33,4 +33,3 @@ class UserLoginLogView(ListDeleteModelSet):
 
     ordering_fields = ['created_time']
     filterset_class = UserLoginLogFilter
-

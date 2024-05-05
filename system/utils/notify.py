@@ -27,6 +27,7 @@ def push_notice_messages(notify_obj, pks):
             push_message(pk, notice_message)
     return notify_obj
 
+
 def base_notify(users: List | QuerySet, title: str, message: str, notice_type: int,
                 level: NoticeMessage.LevelChoices, extra_json: Dict = None):
     if isinstance(users, (QuerySet, list)):

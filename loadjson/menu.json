@@ -183,7 +183,7 @@
       "component": null,
       "is_active": true,
       "meta": "f29a9c84-b453-4a23-819c-31bb822f4587",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "16a823b0-c4fb-40cd-af63-9aed309823aa"
       ]
@@ -229,7 +229,7 @@
       "component": null,
       "is_active": true,
       "meta": "ec92010b-30e0-4efd-99f1-9fc8f3a5c327",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "0f57a580-952e-4751-a110-9e447a08768d"
       ]
@@ -297,7 +297,7 @@
       "component": null,
       "is_active": true,
       "meta": "13deb802-8227-4dce-badb-9d1f15856914",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "6a242e6a-abde-4e56-93e1-da841cbab5bf"
       ]
@@ -708,7 +708,7 @@
       "component": null,
       "is_active": true,
       "meta": "e3b9d2b2-2f64-4de1-a1a1-5f6ac904e5c7",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "11ad085f-8749-4098-be4c-9ca685fd21b7"
       ]
@@ -1430,7 +1430,7 @@
       "component": null,
       "is_active": true,
       "meta": "8fdc9ab8-ae75-4340-8ea7-1b4746b08ad3",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "14071ee3-6725-4fcc-962d-ad7898efa284"
       ]
@@ -1498,7 +1498,7 @@
       "component": null,
       "is_active": true,
       "meta": "5532c083-062b-440b-9090-1c709246a287",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
         "c19100c5-725c-4a81-a1f1-1209f757d693"
@@ -1931,7 +1931,7 @@
       "component": null,
       "is_active": true,
       "meta": "ad7d1868-0846-4fa8-b81b-2d116e807284",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
       ]
@@ -1980,7 +1980,7 @@
       "component": null,
       "is_active": true,
       "meta": "adf68ee6-c0b7-44b8-b753-a1ecedc25a3d",
-      "method": "PUT",
+      "method": "PATCH",
       "model": []
     }
   },
@@ -2002,7 +2002,7 @@
       "component": null,
       "is_active": true,
       "meta": "82d413ba-d270-4898-8156-2d82cd22e105",
-      "method": "PUT",
+      "method": "PATCH",
       "model": [
         "ab6ae020-1de6-4695-925b-56456769b7aa"
       ]
