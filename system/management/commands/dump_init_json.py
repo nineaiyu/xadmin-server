@@ -23,7 +23,7 @@ class Command(BaseCommand):
             serializers.serialize(
                 'json',
                 queryset,
-                indent=4,
+                indent=2,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
                 # fields=[x.name for x in queryset.model._meta.get_fields() if x.name not in ['updated_time']]
