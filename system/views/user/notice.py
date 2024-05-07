@@ -87,12 +87,12 @@ class UserNoticeMessage(OnlyListModelSet):
         results = [
             {
                 "key": "1",
-                "name": "消息通知",
+                "name": "layout.notice",
                 "list": self.serializer_class(notice_queryset[:10], many=True, context={'request': request}).data
             },
             {
                 "key": "2",
-                "name": "系统公告",
+                "name": "layout.announcement",
                 "list": self.serializer_class(announce_queryset[:10], many=True, context={'request': request}).data
             }
         ]
