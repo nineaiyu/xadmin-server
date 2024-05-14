@@ -14,9 +14,15 @@ RUN cd /opt/ && pip install -U setuptools pip -i ${PIP_MIRROR} --ignore-installe
 #RUN rm -rf /var/cache/yum/
 
 WORKDIR /data/xadmin-server/
+
+COPY . /data/xadmin-server
+
 RUN addgroup --system --gid 1001 nginx \
     && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
+    
+VOLUME /data/xadmin-server/upload
 
+EXPOSE 8896
 
 #ENTRYPOINT ["python", "manage.py", "start", "all","-u","nginx"]
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
