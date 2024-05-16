@@ -11,7 +11,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
 from common.base.magic import cache_response
-from common.base.utils import get_choices_dict
+from common.base.utils import get_choices_dict, AESCipherV2
 from common.core.modelset import OwnerModelSet, UploadFileAction
 from common.core.response import ApiResponse
 from system.models import UserInfo
@@ -53,6 +53,8 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
         sure_password = request.data.get('sure_password')
         if old_password and sure_password:
             instance = self.get_object()
+            sure_password = AESCipherV2(instance.username).decrypt(sure_password)
+            old_password = AESCipherV2(instance.username).decrypt(old_password)
             if not instance.check_password(old_password):
                 return ApiResponse(code=1001, detail='旧密码校验失败')
             instance.set_password(sure_password)
