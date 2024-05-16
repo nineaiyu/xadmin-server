@@ -13,6 +13,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from common.base.utils import AESCipherV2
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
@@ -155,12 +156,14 @@ class UserSerializer(BaseRoleRuleInfo):
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
                                 default=models.UserInfo.GenderChoices.UNKNOWN)
 
-    def validate_password(self, value):
-        # md5 = hashlib.md5()
-        # md5.update(value.encode('utf-8'))
-        # md5_password = md5.hexdigest()
-        return make_password(value)
-
+    def validate(self, attrs):
+        password = attrs.get('password')
+        if password:
+            if self.request.method == 'POST':
+                attrs['password'] = make_password(AESCipherV2(attrs.get('username')).decrypt(password))
+            else:
+                raise ValidationError("参数有误")
+        return attrs
 
 class UserInfoSerializer(UserSerializer):
     class Meta:

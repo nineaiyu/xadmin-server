@@ -133,6 +133,7 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
 
 # 附录
 
+### docker 环境安装， [官方文档](https://docs.docker.com/engine/install/)
 ### 容器部署
 
 ```shell

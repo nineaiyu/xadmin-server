@@ -17,6 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 from user_agents import parse
 
+from common.base.utils import AESCipherV2
 from common.cache.storage import BlackAccessTokenCache
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
@@ -95,6 +96,8 @@ class RegisterView(APIView):
             return ApiResponse(code=1001, detail='禁止注册')
 
         if verify_token(token, client_id, success_once=True) and username and password:
+            username = AESCipherV2(token).decrypt(username)
+            password = AESCipherV2(token).decrypt(password)
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
 
@@ -141,7 +144,9 @@ class LoginView(TokenObtainPairView):
         if client_id and token and captcha_key and verify_token(token, client_id, success_once=True):
             is_valid = CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)
             if is_valid:
-                serializer = self.get_serializer(data=request.data)
+                username = AESCipherV2(token).decrypt(request.data.get('username'))
+                password = AESCipherV2(token).decrypt(request.data.get('password'))
+                serializer = self.get_serializer(data={'username': username, 'password': password})
                 try:
                     serializer.is_valid(raise_exception=True)
                 except Exception as e:

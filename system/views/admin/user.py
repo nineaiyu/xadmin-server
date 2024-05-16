@@ -11,6 +11,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
+from common.base.utils import AESCipherV2
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction
 from common.core.response import ApiResponse
@@ -66,6 +67,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     def reset_password(self, request, *args, **kwargs):
         instance = self.get_object()
         password = request.data.get('password')
+        password = AESCipherV2(instance.username).decrypt(password)
         if instance and password:
             instance.set_password(password)
             instance.modifier = request.user
