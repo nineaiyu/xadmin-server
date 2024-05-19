@@ -45,7 +45,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
     def perform_destroy(self, instance):
         if instance.is_superuser:
             raise Exception("超级管理员禁止删除")
-        return instance.delete()
+        return instance.delete(rename_fields=['username'], update_dict={'modifier': self.request.user})
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,

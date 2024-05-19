@@ -1,12 +1,13 @@
 import datetime
 
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
-from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
+from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel, SoftDeleteModel, \
+    SoftDeleteManager
 from common.fields.image import ProcessedImageField
 
 
@@ -56,7 +57,17 @@ class ModeTypeAbstract(models.Model):
         abstract = True
 
 
-class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
+class CustomUserManager(SoftDeleteManager, UserManager):
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields['nickname'] = extra_fields['username']
+        super(CustomUserManager, self).create_superuser(username, email, password, **extra_fields)
+
+
+class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, SoftDeleteModel):
+    # 仅用于展示删除标识
+    show_delete_fields = ['nickname', 'username']
+
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("保密")
         MALE = 1, _("男")
@@ -77,15 +88,16 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
     dept = models.ForeignKey(to="DeptInfo", verbose_name="所属部门", on_delete=models.PROTECT, blank=True, null=True,
                              related_query_name="dept_query")
 
+    objects = CustomUserManager()
     class Meta:
         verbose_name = "用户信息"
         verbose_name_plural = "用户信息"
         ordering = ("-date_joined",)
 
-    def delete(self, using=None, keep_parents=False):
-        if self.avatar:
-            self.avatar.delete()  # 删除存储的头像文件
-        return super().delete(using, keep_parents)
+    # def delete(self, using=None, keep_parents=False):
+    #     if self.avatar:
+    #         self.avatar.delete()  # 删除存储的头像文件
+    #     return super().delete(using, keep_parents)
 
     def __str__(self):
         return f"{self.username}"
@@ -210,13 +222,17 @@ class FieldPermission(DbAuditModel, DbCharModel):
         return f"{self.pk}-{self.role.name}-{self.created_time}"
 
 
-class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
+class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
+    # 仅用于展示删除标识
+    show_delete_fields = ['name']
+
     name = models.CharField(verbose_name="部门名称", max_length=128)
     code = models.CharField(max_length=128, verbose_name="部门标识", unique=True)
     parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
+    # manager = models.ManyToManyField(to="UserInfo", verbose_name="部门负责人", blank=True, null=True)
     rank = models.IntegerField(verbose_name="顺序", default=99)
     auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)

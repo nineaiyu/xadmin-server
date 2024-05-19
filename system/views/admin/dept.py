@@ -35,3 +35,6 @@ class DeptView(BaseModelSet, ChangeRolePermissionAction):
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ['created_time', 'rank']
     filterset_class = DeptFilter
+
+    def perform_destroy(self, instance):
+        return instance.delete(update_dict={'modifier': self.request.user})
