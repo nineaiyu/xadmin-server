@@ -63,11 +63,12 @@ class RoleSerializer(BaseModelSerializer):
             serializer.save()
 
     def update(self, instance, validated_data):
-        fields = validated_data.pop('fields')
+        fields = validated_data.pop('fields', None)
         with transaction.atomic():
             instance = super().update(instance, validated_data)
-            models.FieldPermission.objects.filter(role=instance).delete()
-            self.save_fields(fields, instance)
+            if fields:
+                models.FieldPermission.objects.filter(role=instance).delete()
+                self.save_fields(fields, instance)
         return instance
 
     def create(self, validated_data):
@@ -100,7 +101,7 @@ class DataPermissionSerializer(BaseModelSerializer):
                                    default=models.ModeTypeAbstract.ModeChoices.OR)
 
     def validate(self, attrs):
-        rules = attrs.get('rules', [])
+        rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
         if not rules:
             raise ValidationError('规则不能为空')
         if len(rules) < 2:
@@ -123,7 +124,7 @@ class DeptSerializer(BaseRoleRuleInfo):
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
-    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
+    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
 
     def validate(self, attrs):
         parent = attrs.get('parent')
