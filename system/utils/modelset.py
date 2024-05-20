@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
-from system.models import UserRole, DataPermission, SystemConfig, ModeTypeAbstract
+from system.models import UserRole, DataPermission, SystemConfig, ModeTypeAbstract, UserInfo
 
 
 class ChangeRolePermissionAction(object):
@@ -66,3 +66,23 @@ class InvalidConfigCacheAction(object):
             owner = instance.owner
         UserConfig(owner).invalid_config_cache(key=instance.key)
         return ApiResponse(detail="操作成功")
+
+
+class ChangeDeptLeaderAction(object):
+    def get_object(self):
+        raise NotImplementedError('get_object must be overridden')
+
+    @swagger_auto_schema(request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['users'],
+        properties={'users': openapi.Schema(description='用户信息', type=openapi.TYPE_ARRAY,
+                                            items=openapi.Schema(type=openapi.TYPE_STRING, ))}
+    ), operation_description='设置部门负责人')
+    @action(methods=['post'], detail=True)
+    def leader(self, request, *args, **kwargs):
+        instance = self.get_object()
+        leaders = request.data.get('leaders')
+        if leaders:
+            instance.leaders.set(get_filter_queryset(UserInfo.objects.filter(pk__in=leaders), request.user).all())
+            return ApiResponse(detail="操作成功")
+        return ApiResponse(code=1004, detail="数据异常")

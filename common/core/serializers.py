@@ -16,7 +16,7 @@ from rest_framework.serializers import ModelSerializer, RelatedField
 
 from common.core.config import SysConfig
 from common.core.filter import get_filter_queryset
-from system.models import ModelLabelField
+from system.models import ModelLabelField, DeptInfo
 
 
 class LabeledChoiceField(ChoiceField):
@@ -150,8 +150,12 @@ class BaseModelSerializer(ModelSerializer):
             if user and user.is_authenticated:
                 if hasattr(self.Meta.model, 'creator') or hasattr(self.instance, 'creator'):
                     validated_data["creator"] = user
-                if hasattr(self.Meta.model, 'dept_belong') or hasattr(self.instance, 'dept_belong'):
-                    validated_data["dept_belong"] = user.dept
+                dept_belong = validated_data.get('dept_belong', None)
+                if not dept_belong:
+                    if hasattr(self.Meta.model, 'dept_belong') or hasattr(self.instance, 'dept_belong'):
+                        dept_belong = DeptInfo.objects.filter(userdeptship__is_master=True, userdeptship__to_user_info=user).filter()
+                if dept_belong:
+                    validated_data["dept_belong"] = dept_belong
         return super().create(validated_data)
 
     def update(self, instance, validated_data):

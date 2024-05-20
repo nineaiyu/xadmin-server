@@ -63,11 +63,12 @@ class RoleSerializer(BaseModelSerializer):
             serializer.save()
 
     def update(self, instance, validated_data):
-        fields = validated_data.pop('fields')
+        fields = validated_data.pop('fields', None)
         with transaction.atomic():
             instance = super().update(instance, validated_data)
-            models.FieldPermission.objects.filter(role=instance).delete()
-            self.save_fields(fields, instance)
+            if fields:
+                models.FieldPermission.objects.filter(role=instance).delete()
+                self.save_fields(fields, instance)
         return instance
 
     def create(self, validated_data):
@@ -100,7 +101,7 @@ class DataPermissionSerializer(BaseModelSerializer):
                                    default=models.ModeTypeAbstract.ModeChoices.OR)
 
     def validate(self, attrs):
-        rules = attrs.get('rules', [])
+        rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
         if not rules:
             raise ValidationError('规则不能为空')
         if len(rules) < 2:
@@ -119,16 +120,21 @@ class DeptSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time']
-        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
+                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time', 'leaders', 'is_master']
+        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True},
+                        'leaders': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
-    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True)
+    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
+    is_master = serializers.SerializerMethodField(read_only=True)
+
+    def get_is_master(self, obj):
+        return obj.userdeptship_set.filter(is_master=True).count() > 0
 
     def validate(self, attrs):
         parent = attrs.get('parent')
         if not parent:
-            attrs['parent'] = self.request.user.dept
+            attrs['parent'] = models.DeptInfo.objects.filter(userdeptship__is_master=True, userdeptship__to_user_info=self.request.user).first()
         return attrs
 
     def update(self, instance, validated_data):
@@ -146,13 +152,16 @@ class UserSerializer(BaseRoleRuleInfo):
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
                   'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type',
-                  'password']
+                  'password', 'main_dept']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    dept_info = DeptSerializer(fields=['name', 'pk'], read_only=True, source='dept')
+    dept_info = DeptSerializer(fields=['name', 'pk', 'is_master'], read_only=True, source='dept', many=True)
+    dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, required=True, many=True)
+    main_dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, required=True, write_only=True)
+
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
                                 default=models.UserInfo.GenderChoices.UNKNOWN)
 
@@ -164,6 +173,29 @@ class UserSerializer(BaseRoleRuleInfo):
             else:
                 raise ValidationError("参数有误")
         return attrs
+
+    def save_dept_ship(self, instance, validated_data):
+        dept = validated_data.pop('dept', None)
+        main_dept = validated_data.pop('main_dept', None)
+        if dept and main_dept and main_dept in dept:
+            with transaction.atomic():
+                instance.dept.clear()
+                instance.dept.add(*[dep for dep in dept if dep.pk != main_dept.pk])
+                instance.dept.add(main_dept, through_defaults={'is_master': True})
+
+    def update(self, instance, validated_data):
+        self.save_dept_ship(instance, validated_data)
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        validated_data2 = {
+            'dept': validated_data.pop('dept', None),
+            'main_dept': validated_data.pop('main_dept', None),
+        }
+        instance = super().create(validated_data)
+        self.save_dept_ship(instance, validated_data2)
+        return instance
+
 
 class UserInfoSerializer(UserSerializer):
     class Meta:

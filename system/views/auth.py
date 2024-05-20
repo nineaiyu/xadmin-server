@@ -111,7 +111,7 @@ class RegisterView(APIView):
                     if not dept:
                         dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
                     if dept:
-                        user.dept = dept
+                        user.dept.add(dept)
                         user.dept_belong = dept
                         update_fields.extend(['dept_belong', 'dept'])
 

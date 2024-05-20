@@ -12,7 +12,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.pagination import DynamicPageNumber
 from system.models import DeptInfo
-from system.utils.modelset import ChangeRolePermissionAction
+from system.utils.modelset import ChangeRolePermissionAction, ChangeDeptLeaderAction
 from system.utils.serializer import DeptSerializer
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class DeptFilter(BaseFilterSet):
         fields = ['pk', 'is_active', 'code', 'mode_type', 'auto_bind', 'name', 'description']
 
 
-class DeptView(BaseModelSet, ChangeRolePermissionAction):
+class DeptView(BaseModelSet, ChangeRolePermissionAction, ChangeDeptLeaderAction):
     """
     部门信息
     """

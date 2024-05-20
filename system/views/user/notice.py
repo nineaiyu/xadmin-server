@@ -24,7 +24,8 @@ from system.utils.serializer import UserNoticeSerializer
 def get_users_notice_q(user_obj):
     q = Q()
     q |= Q(notice_type=NoticeMessage.NoticeChoices.NOTICE)
-    q |= Q(notice_type=NoticeMessage.NoticeChoices.DEPT, notice_dept=user_obj.dept)
+    q |= Q(notice_type=NoticeMessage.NoticeChoices.DEPT, notice_dept__in=user_obj.dept.all())
+    q |= Q(notice_type=NoticeMessage.NoticeChoices.DEPT, notice_dept__in=user_obj.deptinfo_set.all())
     q |= Q(notice_type=NoticeMessage.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
     return q
 

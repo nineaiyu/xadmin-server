@@ -60,7 +60,7 @@ class ModeTypeAbstract(models.Model):
 class CustomUserManager(SoftDeleteManager, UserManager):
 
     def create_superuser(self, username, email=None, password=None, **extra_fields):
-        extra_fields['nickname'] = extra_fields['username']
+        extra_fields['nickname'] = username
         super(CustomUserManager, self).create_superuser(username, email, password, **extra_fields)
 
 
@@ -85,8 +85,11 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, SoftDeleteModel):
 
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    dept = models.ForeignKey(to="DeptInfo", verbose_name="所属部门", on_delete=models.PROTECT, blank=True, null=True,
-                             related_query_name="dept_query")
+    # dept = models.ForeignKey(to="DeptInfo", verbose_name="所属部门", on_delete=models.PROTECT, blank=True, null=True,
+    #                          related_query_name="dept_query")
+
+    dept = models.ManyToManyField(to="DeptInfo", verbose_name="所属部门", blank=True, null=True, through="UserDeptShip",
+                                  through_fields=("to_user_info", "to_dept_info"))
 
     objects = CustomUserManager()
     class Meta:
@@ -101,6 +104,18 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, SoftDeleteModel):
 
     def __str__(self):
         return f"{self.username}"
+
+
+class UserDeptShip(DbAuditModel):
+    to_user_info = models.ForeignKey(to='UserInfo', on_delete=models.CASCADE, verbose_name="用户信息")
+    to_dept_info = models.ForeignKey(to='DeptInfo', on_delete=models.CASCADE, verbose_name="部门信息")
+    is_master = models.BooleanField(verbose_name="是否主部门", default=False, help_text="用于获取默认部门")
+
+    class Meta:
+        verbose_name = "用户所属部门"
+        verbose_name_plural = verbose_name
+        ordering = ("-created_time",)
+        unique_together = ('to_user_info', 'to_dept_info', 'is_master')
 
 
 class MenuMeta(DbAuditModel, DbUuidModel):
@@ -232,7 +247,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    # manager = models.ManyToManyField(to="UserInfo", verbose_name="部门负责人", blank=True, null=True)
+    leaders = models.ManyToManyField(to="UserInfo", verbose_name="部门负责人", blank=True, null=True)
     rank = models.IntegerField(verbose_name="顺序", default=99)
     auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
@@ -259,6 +274,8 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
         verbose_name_plural = "部门信息"
         ordering = ("-rank", "-created_time",)
 
+    def __str__(self):
+        return f"{self.pk}-{self.name}-{self.code}-{self.created_time}"
 
 class UserLoginLog(DbAuditModel):
     class LoginTypeChoices(models.IntegerChoices):
