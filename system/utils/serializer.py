@@ -128,7 +128,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 
     def validate(self, attrs):
         parent = attrs.get('parent')
-        if not parent:
+        if not parent and not self.partial:
             attrs['parent'] = self.request.user.dept
         return attrs
 
@@ -446,7 +446,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects)
 
     def create(self, validated_data):
-        config_user = validated_data.pop('config_user')
+        config_user = validated_data.pop('config_user', None)
         instance = None
         if not config_user:
             raise ValidationError('用户ID不能为空')
@@ -456,7 +456,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        validated_data.pop('config_user')
+        validated_data.pop('config_user', None)
         return super().update(instance, validated_data)
 
     def get_cache_value(self, obj):
