@@ -6,6 +6,7 @@
 # date : 6/16/2023
 import logging
 
+from django.db.models import Q
 from django_filters import rest_framework as filters
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -27,6 +28,12 @@ class UserFilter(BaseFilterSet):
     username = filters.CharFilter(field_name='username', lookup_expr='icontains')
     nickname = filters.CharFilter(field_name='nickname', lookup_expr='icontains')
     mobile = filters.CharFilter(field_name='mobile', lookup_expr='icontains')
+    dept = filters.CharFilter(field_name='dept', method='get_dept')
+
+    def get_dept(self, queryset, name, value):
+        if value:
+            return queryset.filter(Q(dept=value) | Q(leaders_dept=value)).distinct()
+        return queryset.distinct()
 
     class Meta:
         model = UserInfo

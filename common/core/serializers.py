@@ -153,7 +153,8 @@ class BaseModelSerializer(ModelSerializer):
                 dept_belong = validated_data.get('dept_belong', None)
                 if not dept_belong:
                     if hasattr(self.Meta.model, 'dept_belong') or hasattr(self.instance, 'dept_belong'):
-                        dept_belong = DeptInfo.objects.filter(userdeptship__is_master=True, userdeptship__to_user_info=user).filter()
+                        dept_belong = DeptInfo.objects.filter(userdeptship__is_master=True,
+                                                              userdeptship__to_user_info=user).first()
                 if dept_belong:
                     validated_data["dept_belong"] = dept_belong
         return super().create(validated_data)
@@ -185,7 +186,7 @@ def get_sub_serializer_fields():
     for cls in cls_list:
         instance = cls(all_fields=True)
         model = instance.Meta.model
-        if not model:
+        if not model or instance.ignore_field_permission:
             continue
         delete = True
         obj, _ = ModelLabelField.objects.update_or_create(name=model._meta.label_lower, field_type=field_type,

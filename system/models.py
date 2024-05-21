@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
@@ -247,13 +248,14 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    leaders = models.ManyToManyField(to="UserInfo", verbose_name="部门负责人", blank=True, null=True)
+    leaders = models.ManyToManyField(to="UserInfo", verbose_name="部门负责人", blank=True, null=True,
+                                     related_query_name="leaders_dept")
     rank = models.IntegerField(verbose_name="顺序", default=99)
     auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
     @classmethod
-    def recursion_dept_info(cls, dept_id: int, dept_all_list=None, dept_list=None, is_parent=False):
+    def recursion_dept_info(cls, dept_id: str, dept_all_list=None, dept_list=None, is_parent=False):
         parent = 'parent'
         pk = 'pk'
         if is_parent:
@@ -268,6 +270,11 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
                     dept_list.append(dept.get(pk))
                     cls.recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
         return list(set(dept_list))
+
+    @classmethod
+    def get_user_dept(cls, user_obj):
+        return DeptInfo.objects.filter(Q(userdeptship__to_user_info=user_obj) | Q(leaders=user_obj)).filter(
+            is_active=True).all()
 
     class Meta:
         verbose_name = "部门信息"

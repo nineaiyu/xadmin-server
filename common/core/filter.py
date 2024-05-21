@@ -7,6 +7,7 @@
 import datetime
 import json
 import logging
+import time
 
 from django.db.models import Q, QuerySet
 from django.forms.utils import from_current_timezone
@@ -23,14 +24,15 @@ from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, 
 logger = logging.getLogger(__name__)
 
 
-def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
+def get_filter_q_base(model, permission, user_obj=None, dept_obj=None, dept_queryset=None):
     results = []
+    label = model._meta.label_lower
     for obj in permission:
         rules = []
         if len(obj.rules) == 1:
             obj.mode_type = ModeTypeAbstract.ModeChoices.OR
         for rule in obj.rules:
-            if rule.get('table') in [model._meta.label_lower, "*"]:
+            if rule.get('table') in [label, "*"]:
                 if rule.get('type') == ModelLabelField.KeyChoices.ALL:
                     if obj.mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
                         continue
@@ -52,8 +54,9 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 else:
                     rule['value'] = '0'
             elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENT:
-                if user_obj:
-                    rule['value'] = user_obj.dept_id
+                if dept_obj:
+                    # rule['value'] = [str(pk) for pk in dept_queryset.values_list('pk',flat=True)]
+                    rule['value'] = dept_obj.pk
                 else:
                     rule['value'] = '0'
             elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENTS:
@@ -72,7 +75,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 rule['match'] = 'all'
                 if ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                     if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
-                        logger.warning(f"{model._meta.label_lower} : all queryset")
+                        logger.warning(f"{label} : all queryset")
                         return Q()  # 全部数据直接返回 queryset
             elif f_type == ModelLabelField.KeyChoices.DATE:
                 val = json.loads(rule['value'])
@@ -124,7 +127,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 q1 |= q
         if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
             return Q(id=0)
-    logger.warning(f"{model._meta.label_lower} : {q1}")
+    logger.warning(f"{label} : {q1}")
     return q1
 
 
@@ -145,32 +148,40 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     if user_obj.is_superuser:
         logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
-
+    start_time = time.time()
     # table = f'*'
-    dept_obj = user_obj.dept
+    dept_queryset = DeptInfo.get_user_dept(user_obj)
     q = Q()
+
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))
     has_dept = False
-    if dept_obj:
+
+    for dept_obj in dept_queryset:
+        q1 = Q()
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
             permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj).filter(dq)
-            q &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+            q1 &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj, dept_queryset)
             has_dept = True
-        if not has_dept and q == Q():
-            q = Q(id=0)
-
+        if not has_dept and q1 == Q():
+            q1 = Q(id=0)
+        q |= q1
     # 获取个人数据权限
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     if not permission.count():
+        logger.debug(f"{user_obj.username}.time:{time.time() - start_time} return filter {q}")
         return queryset.filter(q)
-    q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+
+    q1 = Q()
+    for dept_obj in dept_queryset:
+        q1 |= get_filter_q_base(queryset.model, permission, user_obj, dept_obj, dept_queryset)
 
     # 个人数据权限和 部门 权限取 或
     if q1 == Q():
         q = q1
     else:
         q |= q1
+    logger.debug(f"{user_obj.username}.time:{time.time() - start_time} return filter {q}")
     return queryset.filter(q)
 
 

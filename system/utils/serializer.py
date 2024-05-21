@@ -10,6 +10,7 @@ import os.path
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -117,35 +118,15 @@ class BaseRoleRuleInfo(BaseModelSerializer):
                                    default=models.ModeTypeAbstract.ModeChoices.OR.value)
 
 
-class DeptSerializer(BaseRoleRuleInfo):
+class UserDeptShipSerializer(BaseModelSerializer):
+    ignore_field_permission = True
+
     class Meta:
-        model = models.DeptInfo
-        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time', 'leaders', 'is_master']
-        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True},
-                        'leaders': {'read_only': True}}
+        model = models.UserDeptShip
+        fields = ["pk", "name", "is_master"]
 
-    user_count = serializers.SerializerMethodField(read_only=True)
-    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
-    is_master = serializers.SerializerMethodField(read_only=True)
-
-    def get_is_master(self, obj):
-        return obj.userdeptship_set.filter(is_master=True).count() > 0
-
-    def validate(self, attrs):
-        parent = attrs.get('parent', self.instance.parent if self.instance else None)
-        if not parent:
-            attrs['parent'] = models.DeptInfo.objects.filter(userdeptship__is_master=True, userdeptship__to_user_info=self.request.user).first()
-        return attrs
-
-    def update(self, instance, validated_data):
-        parent = validated_data.get('parent')
-        if parent and parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
-            raise ValidationError('Parent not in children')
-        return super().update(instance, validated_data)
-
-    def get_user_count(self, obj):
-        return obj.userinfo_set.count()
+    pk = serializers.CharField(source='to_dept_info.pk', read_only=True)
+    name = serializers.CharField(source='to_dept_info.name', read_only=True)
 
 
 class UserSerializer(BaseRoleRuleInfo):
@@ -159,7 +140,7 @@ class UserSerializer(BaseRoleRuleInfo):
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    dept_info = DeptSerializer(fields=['name', 'pk', 'is_master'], read_only=True, source='dept', many=True)
+    dept_info = UserDeptShipSerializer(read_only=True, source='userdeptship_set', many=True)
     dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, required=True, many=True)
     main_dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, required=True, write_only=True)
 
@@ -196,6 +177,34 @@ class UserSerializer(BaseRoleRuleInfo):
         instance = super().create(validated_data)
         self.save_dept_ship(instance, validated_data2)
         return instance
+
+
+class DeptSerializer(BaseRoleRuleInfo):
+    class Meta:
+        model = models.DeptInfo
+        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
+                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time', 'leaders']
+        extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True},
+                        'leaders': {'read_only': True}}
+
+    user_count = serializers.SerializerMethodField(read_only=True)
+    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
+
+    def validate(self, attrs):
+        parent = attrs.get('parent', self.instance.parent if self.instance else None)
+        if not parent:
+            attrs['parent'] = models.DeptInfo.objects.filter(userdeptship__is_master=True,
+                                                             userdeptship__to_user_info=self.request.user).first()
+        return attrs
+
+    def update(self, instance, validated_data):
+        parent = validated_data.get('parent')
+        if parent and parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
+            raise ValidationError('Parent not in children')
+        return super().update(instance, validated_data)
+
+    def get_user_count(self, obj):
+        return models.UserInfo.objects.filter(Q(dept=obj) | Q(leaders_dept=obj)).distinct().count()
 
 
 class UserInfoSerializer(UserSerializer):

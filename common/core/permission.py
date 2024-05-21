@@ -13,18 +13,19 @@ from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
 from common.core.config import SysConfig
-from system.models import Menu, FieldPermission
+from system.models import Menu, FieldPermission, DeptInfo
 
 
 @MagicCacheData.make_cache(timeout=5, key_func=lambda x: x.pk)
 def get_user_menu_queryset(user_obj):
+    dept_queryset = DeptInfo.get_user_dept(user_obj)
     q = Q()
     has_role = False
     if user_obj.roles.count():
         q |= (Q(userrole__in=user_obj.roles.all()) & Q(userrole__is_active=True))
         has_role = True
-    if user_obj.dept:
-        q |= (Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True))
+    if dept_queryset.count():
+        q |= (Q(userrole__deptinfo__in=dept_queryset) & Q(userrole__deptinfo__is_active=True))
         has_role = True
     if has_role:
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
@@ -34,14 +35,15 @@ def get_user_menu_queryset(user_obj):
 
 @MagicCacheData.make_cache(timeout=30, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
 def get_user_field_queryset(user_obj, menu):
+    dept_queryset = DeptInfo.get_user_dept(user_obj)
     q = Q()
     data = {}
     has_q = False
     if user_obj.roles.count():
         q |= (Q(role__in=user_obj.roles.all()) & Q(role__is_active=True))
         has_q = True
-    if user_obj.dept:
-        q |= (Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True))
+    if dept_queryset.count():
+        q |= (Q(role__deptinfo__in=dept_queryset) & Q(role__deptinfo__is_active=True))
         has_q = True
     if has_q:
         # queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
