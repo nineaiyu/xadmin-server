@@ -127,8 +127,9 @@ class DeptSerializer(BaseRoleRuleInfo):
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
 
     def validate(self, attrs):
-        parent = attrs.get('parent')
-        if not parent and not self.partial:
+        # 上级部门必须存在，否则会出现数据权限问题
+        parent = attrs.get('parent', self.instance.parent if self.instance else None)
+        if not parent:
             attrs['parent'] = self.request.user.dept
         return attrs
 
@@ -165,6 +166,7 @@ class UserSerializer(BaseRoleRuleInfo):
             else:
                 raise ValidationError("参数有误")
         return attrs
+
 
 class UserInfoSerializer(UserSerializer):
     class Meta:
