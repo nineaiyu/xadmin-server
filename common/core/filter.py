@@ -159,10 +159,14 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
             has_dept = True
         if not has_dept and q == Q():
             q = Q(id=0)
+
+    # 获取个人数据权限
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     if not permission.count():
         return queryset.filter(q)
     q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+
+    # 个人数据权限和 部门 权限取 或
     if q1 == Q():
         q = q1
     else:

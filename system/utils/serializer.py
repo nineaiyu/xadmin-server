@@ -72,10 +72,11 @@ class RoleSerializer(BaseModelSerializer):
         return instance
 
     def create(self, validated_data):
-        fields = validated_data.pop('fields')
+        fields = validated_data.pop('fields', None)
         with transaction.atomic():
             instance = super().create(validated_data)
-            self.save_fields(fields, instance)
+            if fields:
+                self.save_fields(fields, instance)
         return instance
 
 
@@ -101,7 +102,7 @@ class DataPermissionSerializer(BaseModelSerializer):
                                    default=models.ModeTypeAbstract.ModeChoices.OR)
 
     def validate(self, attrs):
-        rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
+        rules = attrs.get('rules', self.instance.rules if self.instance else [])
         if not rules:
             raise ValidationError('规则不能为空')
         if len(rules) < 2:
@@ -132,7 +133,7 @@ class DeptSerializer(BaseRoleRuleInfo):
         return obj.userdeptship_set.filter(is_master=True).count() > 0
 
     def validate(self, attrs):
-        parent = attrs.get('parent')
+        parent = attrs.get('parent', self.instance.parent if self.instance else None)
         if not parent:
             attrs['parent'] = models.DeptInfo.objects.filter(userdeptship__is_master=True, userdeptship__to_user_info=self.request.user).first()
         return attrs
@@ -477,7 +478,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects)
 
     def create(self, validated_data):
-        config_user = validated_data.pop('config_user')
+        config_user = validated_data.pop('config_user', None)
         instance = None
         if not config_user:
             raise ValidationError('用户ID不能为空')
@@ -487,7 +488,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         return instance
 
     def update(self, instance, validated_data):
-        validated_data.pop('config_user')
+        validated_data.pop('config_user', None)
         return super().update(instance, validated_data)
 
     def get_cache_value(self, obj):

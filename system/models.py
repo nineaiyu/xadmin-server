@@ -103,7 +103,7 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, SoftDeleteModel):
     #     return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"{self.username}"
+        return f"{self.username}-{self.nickname}"
 
 
 class UserDeptShip(DbAuditModel):
@@ -215,7 +215,7 @@ class UserRole(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
 
     def __str__(self):
-        return f"{self.name}-{self.created_time}"
+        return f"{self.name}-{self.code}"
 
 
 class FieldPermission(DbAuditModel, DbCharModel):
@@ -275,7 +275,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel, SoftDeleteModel):
         ordering = ("-rank", "-created_time",)
 
     def __str__(self):
-        return f"{self.pk}-{self.name}-{self.code}-{self.created_time}"
+        return f"{self.pk}-{self.name}-{self.code}"
 
 class UserLoginLog(DbAuditModel):
     class LoginTypeChoices(models.IntegerChoices):
