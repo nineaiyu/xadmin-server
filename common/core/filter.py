@@ -24,7 +24,7 @@ from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, 
 logger = logging.getLogger(__name__)
 
 
-def get_filter_q_base(model, permission, user_obj=None, dept_obj=None, dept_queryset=None):
+def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
     results = []
     label = model._meta.label_lower
     for obj in permission:
@@ -149,8 +149,11 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
     start_time = time.time()
+    # 部门负责人 默认拥有该部门的所有权限，但不包含下级部门权限， 如果需要下级部门，需要单独设置权限给该用户
+
     # table = f'*'
     dept_queryset = DeptInfo.get_user_dept(user_obj)
+    # dept_queryset = user_obj.dept.filter(is_active=True).all()
     q = Q()
 
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))
@@ -161,7 +164,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
             permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj).filter(dq)
-            q1 &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj, dept_queryset)
+            q1 &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
             has_dept = True
         if not has_dept and q1 == Q():
             q1 = Q(id=0)
@@ -174,7 +177,10 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
 
     q1 = Q()
     for dept_obj in dept_queryset:
-        q1 |= get_filter_q_base(queryset.model, permission, user_obj, dept_obj, dept_queryset)
+        q1 |= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+
+    if not dept_queryset:
+        q1 = get_filter_q_base(queryset.model, permission, user_obj, None)
 
     # 个人数据权限和 部门 权限取 或
     if q1 == Q():
