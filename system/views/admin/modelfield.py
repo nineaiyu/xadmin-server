@@ -84,7 +84,7 @@ class ModelLabelFieldView(OnlyListModelSet):
                 if mt:
                     mf = mt._meta.get_field(field)
                     if mf:
-                        return ApiResponse(data={'results': mf.get_class_lookups().keys()})
+                        return ApiResponse(data=mf.get_class_lookups().keys())
         return ApiResponse(code=1001, detail="查询失败")
 
     @swagger_auto_schema(ignore_params=True)

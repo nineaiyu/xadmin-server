@@ -56,11 +56,11 @@ class DashboardView(GenericViewSet):
 
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-registered-trend')
     def user_registered_trend(self, request, *args, **kwargs):
-        return ApiResponse(results=trend_info(self.filter_queryset(self.get_queryset()))[0])
+        return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
     @action(methods=['GET'], detail=False, url_path='user-login-trend')
     def user_login_trend(self, request, *args, **kwargs):
-        return ApiResponse(results=trend_info(self.filter_queryset(self.get_queryset()))[0])
+        return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
     @action(methods=['GET'], detail=False, queryset=OperationLog.objects.all(), url_path='today-operate-total')
     def today_operate_total(self, request, *args, **kwargs):
@@ -80,4 +80,4 @@ class DashboardView(GenericViewSet):
             x_day_active_user = queryset.filter(last_login__gte=x_day).values('last_login').annotate(
                 count=Count('pk', distinct=True)).count()
             results.append([date, x_day_register_user, x_day_active_user])
-        return ApiResponse(results=results)
+        return ApiResponse(data=results)

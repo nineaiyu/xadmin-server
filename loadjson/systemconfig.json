@@ -94,7 +94,7 @@
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
-      "value": "{\n  \"Version\": \"2.1.0\",\n  \"Title\": \"xAdmin\",\n  \"FixedHeader\": true,\n  \"HiddenSideBar\": false,\n  \"MultiTagsCache\": false,\n  \"KeepAlive\": true,\n  \"Locale\": \"zh\",\n  \"Layout\": \"vertical\",\n  \"Theme\": \"light\",\n  \"DarkMode\": false,\n  \"OverallStyle\": \"light\",\n  \"Grey\": false,\n  \"Weak\": false,\n  \"HideTabs\": false,\n  \"HideFooter\": false,\n  \"Stretch\": false,\n  \"SidebarStatus\": true,\n  \"EpThemeColor\": \"#409EFF\",\n  \"ShowLogo\": true,\n  \"ShowModel\": \"smart\",\n  \"MenuArrowIconNoTransition\": false,\n  \"CachingAsyncRoutes\": false,\n  \"TooltipEffect\": \"light\",\n  \"ResponsiveStorageNameSpace\": \"responsive-\",\n  \"MenuSearchHistory\": 6\n}",
+      "value": "{\n  \"Version\": \"2.2.0\",\n  \"Title\": \"xAdmin\",\n  \"FixedHeader\": true,\n  \"HiddenSideBar\": false,\n  \"MultiTagsCache\": false,\n  \"KeepAlive\": true,\n  \"Locale\": \"zh\",\n  \"Layout\": \"vertical\",\n  \"Theme\": \"light\",\n  \"DarkMode\": false,\n  \"OverallStyle\": \"light\",\n  \"Grey\": false,\n  \"Weak\": false,\n  \"HideTabs\": false,\n  \"HideFooter\": false,\n  \"Stretch\": false,\n  \"SidebarStatus\": true,\n  \"EpThemeColor\": \"#409EFF\",\n  \"ShowLogo\": true,\n  \"ShowModel\": \"smart\",\n  \"MenuArrowIconNoTransition\": false,\n  \"CachingAsyncRoutes\": false,\n  \"TooltipEffect\": \"light\",\n  \"ResponsiveStorageNameSpace\": \"responsive-\",\n  \"MenuSearchHistory\": 6\n}",
       "is_active": true,
       "access": true,
       "key": "WEB_SITE_CONFIG",

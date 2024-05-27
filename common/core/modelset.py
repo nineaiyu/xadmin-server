@@ -183,7 +183,7 @@ class SearchFieldsAction(object):
             })
         except Exception as e:
             pass
-        return ApiResponse(data={'results': results})
+        return ApiResponse(data=results)
 
 
 class BaseModelAction(object):
