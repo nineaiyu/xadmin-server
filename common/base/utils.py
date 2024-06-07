@@ -105,7 +105,10 @@ def menu_list_to_tree(data: list, root_field: str = 'parent') -> list:
 
     for d in data:
         # 如果找不到父级项，则是根节点
-        parent: dict = mapping.get(str(d.get(root_field)))
+        parent = d.get(root_field)
+        if isinstance(parent, dict) and 'pk' in parent:
+            parent = parent.get('pk')
+        parent: dict = mapping.get(str(parent))
         if parent is None:
             container.append(d)
         else:
