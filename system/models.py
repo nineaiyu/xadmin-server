@@ -42,7 +42,7 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         verbose_name_plural = "模型字段"
 
     def __str__(self):
-        return f"{self.name} {self.label}"
+        return f"{self.label}({self.name})"
 
 
 class ModeTypeAbstract(models.Model):
@@ -88,7 +88,7 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"{self.username}"
+        return f"{self.nickname}({self.username})"
 
 
 class MenuMeta(DbAuditModel, DbUuidModel):
@@ -159,7 +159,7 @@ class Menu(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
 
     def __str__(self):
-        return f"{self.name}-{self.menu_type}-{self.meta.title}"
+        return f"{self.meta.title}-{self.get_menu_type_display()}({self.name})"
 
 
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
@@ -173,7 +173,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         verbose_name_plural = "数据权限"
 
     def __str__(self):
-        return f"{self.name}-{self.is_active}"
+        return f"{self.name}"
 
 
 class UserRole(DbAuditModel, DbUuidModel):
@@ -188,7 +188,7 @@ class UserRole(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
 
     def __str__(self):
-        return f"{self.name}-{self.created_time}"
+        return f"{self.name}({self.code})"
 
 
 class FieldPermission(DbAuditModel, DbCharModel):
@@ -242,6 +242,9 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         verbose_name = "部门信息"
         verbose_name_plural = "部门信息"
         ordering = ("-rank", "-created_time",)
+
+    def __str__(self):
+        return f"{self.name}({self.pk})"
 
 
 class UserLoginLog(DbAuditModel):
@@ -306,6 +309,9 @@ class UploadFile(DbAuditModel):
         verbose_name = "上传的文件"
         verbose_name_plural = "上传的文件"
 
+    def __str__(self):
+        return f"{self.filename}"
+
 
 class NoticeMessage(DbAuditModel):
     class NoticeChoices(models.IntegerChoices):
@@ -356,7 +362,7 @@ class NoticeMessage(DbAuditModel):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"{self.title}-{self.created_time}-{self.get_notice_type_display()}"
+        return f"{self.title}-{self.get_notice_type_display()}"
 
 
 class NoticeUserRead(DbAuditModel):

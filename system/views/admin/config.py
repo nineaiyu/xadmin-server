@@ -9,10 +9,11 @@ import logging
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import SystemConfig, UserPersonalConfig
 from system.utils.modelset import InvalidConfigCacheAction
-from system.utils.serializer import SystemConfigSerializer, UserPersonalConfigSerializer
+from system.utils.serializer import SystemConfigSerializer, UserPersonalConfigSerializer, \
+    UserPersonalConfigExportImportSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class SystemConfigFilter(BaseFilterSet):
         fields = ['pk', 'is_active', 'key', 'inherit', 'access', 'value', 'description']
 
 
-class SystemConfigView(BaseModelSet, InvalidConfigCacheAction):
+class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
     """
     系统配置管理
     """
@@ -45,7 +46,7 @@ class UserPersonalConfigFilter(SystemConfigFilter):
         fields = ['pk', 'is_active', 'key', 'access', 'username', 'owner_id', 'value', 'description']
 
 
-class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction):
+class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
     """
     用户配置管理
     """
@@ -53,3 +54,5 @@ class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction):
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ['created_time']
     filterset_class = UserPersonalConfigFilter
+    import_data_serializer_class = UserPersonalConfigExportImportSerializer
+    export_data_serializer_class = UserPersonalConfigExportImportSerializer

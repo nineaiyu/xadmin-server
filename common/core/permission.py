@@ -64,6 +64,15 @@ def get_user_permission(user_obj):
     return menu
 
 
+def get_import_export_permission(permission_data, url, request):
+    match_group = re.match("(?P<url>.*)/(export|import)-data$", url)
+    if match_group:
+        url = match_group.group('url')
+        for p_data in permission_data:
+            if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
+                return p_data
+
+
 class IsAuthenticated(BasePermission):
     """
     Allows access only to authenticated users.
@@ -85,7 +94,11 @@ class IsAuthenticated(BasePermission):
                 if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
                     request.user.menu = p_data.get('pk')
                     if permission_field:
-                        request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
+                        if url.endswith('import-data') or url.endswith('export-data'):
+                            p_data = get_import_export_permission(permission_data, url, request)
+                        if p_data:
+                            request.user.menu = p_data.get('pk')
+                            request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True
             raise PermissionDenied('权限不足')
         else:

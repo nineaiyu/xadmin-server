@@ -64,4 +64,4 @@ class MenuView(BaseModelSet, RankAction):
     @swagger_auto_schema(ignore_params=True)
     @action(methods=['get'], detail=False, url_path='api-url')
     def api_url(self, request, *args, **kwargs):
-        return ApiResponse(results=get_all_url_dict(''))
+        return ApiResponse(data=get_all_url_dict(''))

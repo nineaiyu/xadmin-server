@@ -16,6 +16,7 @@ from django_filters import rest_framework as filters
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
+from common.cache.storage import CommonResourceIDsCache
 from common.core.config import SysConfig
 from common.core.db.utils import RelatedManager
 from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
@@ -193,9 +194,16 @@ class BaseDataPermissionFilter(BaseFilterBackend):
 
 class BaseFilterSet(filters.FilterSet):
     pk = filters.NumberFilter(field_name='id')
+    spm = filters.CharFilter(field_name='spm', method='get_spm_filter')
     creator = filters.NumberFilter(field_name='creator')
     modifier = filters.NumberFilter(field_name='modifier')
     dept_belong = filters.UUIDFilter(field_name='dept_belong')
     created_time = filters.DateTimeFromToRangeFilter(field_name='created_time')
     updated_time = filters.DateTimeFromToRangeFilter(field_name='updated_time')
     description = filters.CharFilter(field_name='description', lookup_expr='icontains')
+
+    def get_spm_filter(self, queryset, name, value):
+        pks = CommonResourceIDsCache(value).get_storage_cache()
+        if pks:
+            return queryset.filter(pk__in=pks)
+        return queryset

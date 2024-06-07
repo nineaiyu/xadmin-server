@@ -7,6 +7,7 @@
 from typing import Callable
 
 from django.conf import settings
+from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
@@ -19,6 +20,8 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelV
 from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
+from common.drf.renders.csv import CSVFileRenderer
+from common.drf.renders.excel import ExcelFileRenderer
 
 
 class UploadFileAction(object):
@@ -83,6 +86,46 @@ class RankAction(object):
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail='顺序保存成功')
+
+
+class OnlyExportDataAction(object):
+    @action(methods=['get'], detail=False, url_path='export-data')
+    def export_data(self, request, *args, **kwargs):
+        self.format_kwarg = request.query_params.get('type', 'xlsx')
+        data = self.list(request, *args, **kwargs)
+        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
+        request.accepted_renderer = None
+        return data
+
+
+class ImportExportDataAction(OnlyExportDataAction):
+    filter_queryset: Callable
+    get_queryset: Callable
+    get_serializer: Callable
+    perform_create: Callable
+    perform_update: Callable
+
+    @action(methods=['post'], detail=False, url_path='import-data')
+    @transaction.atomic
+    def import_data(self, request, *args, **kwargs):
+        act = request.query_params.get('action')
+        if act and request.data:
+            if act == 'create':
+                for data in request.data:
+                    serializer = self.get_serializer(data=data)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_create(serializer)
+            elif act == 'update':
+                queryset = self.get_queryset()
+                for data in request.data:
+                    instance = queryset.get(pk=data.get('pk'))
+                    if getattr(instance, 'is_superuser', None):
+                        continue
+                    serializer = self.get_serializer(instance, data=data, partial=True)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_update(serializer)
+            return ApiResponse(detail="操作成功")
+        return ApiResponse(detail='数据异常', code=1001)
 
 
 class ChoicesAction(object):
@@ -206,6 +249,12 @@ class BaseModelAction(object):
         if getattr(self, 'values_queryset', None):
             return self.values_queryset
         return super().get_queryset()
+
+    def paginate_queryset(self, queryset):
+        # 文件导出的时候，忽略 paginate_queryset
+        if self.request.query_params.get('type') in ['csv', 'xlsx'] and self.request.path_info.endswith('export-data'):
+            return None
+        return super().paginate_queryset(queryset)
 
     def get_serializer_class(self):
         action_serializer_name = f"{self.action}_serializer_class"

@@ -180,6 +180,10 @@ class BaseConfCache(ConfigCacheBase):
     def LOGIN(self):
         return self.get_value('LOGIN', True)
 
+    @property
+    def EXPORT_MAX_LIMIT(self):
+        return self.get_value('EXPORT_MAX_LIMIT', 20000)
+
 
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):

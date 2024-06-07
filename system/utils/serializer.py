@@ -97,8 +97,9 @@ class DataPermissionSerializer(BaseModelSerializer):
         model = models.DataPermission
         fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "menu"]
 
+    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'])
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR)
+                                   default=models.ModeTypeAbstract.ModeChoices.OR, label="权限模式")
 
     def validate(self, attrs):
         rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
@@ -110,21 +111,24 @@ class DataPermissionSerializer(BaseModelSerializer):
 
 
 class BaseRoleRuleInfo(BaseModelSerializer):
-    roles_info = RoleSerializer(fields=['pk', 'name'], many=True, read_only=True, source='roles')
-    rules_info = DataPermissionSerializer(fields=['pk', 'name'], many=True, read_only=True, source='rules')
+    roles = BasePrimaryKeyRelatedField(queryset=models.UserRole.objects, allow_null=True, required=False,
+                                       attrs=['pk', 'name'], label='角色', many=True)
+    rules = BasePrimaryKeyRelatedField(queryset=models.DataPermission.objects, allow_null=True, required=False,
+                                       attrs=['pk', 'name'], label='数据权限', many=True)
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR.value)
+                                   default=models.ModeTypeAbstract.ModeChoices.OR.value, label="权限模式")
 
 
 class DeptSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.DeptInfo
-        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'roles_info', 'user_count', 'rules',
-                  'mode_type', 'rules_info', 'auto_bind', 'description', 'created_time']
+        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'user_count', 'rules',
+                  'mode_type', 'auto_bind', 'description', 'created_time']
         extra_kwargs = {'pk': {'read_only': True}, 'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True)
-    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False)
+    parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
+                                        label="上级部门", attrs=['pk', 'name'], )
 
     def validate(self, attrs):
         # 上级部门必须存在，否则会出现数据权限问题
@@ -147,16 +151,16 @@ class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
-                  'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type',
-                  'password']
+                  'pk', 'dept', 'mobile', 'avatar', 'description', 'mode_type', 'password']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-    dept_info = DeptSerializer(fields=['name', 'pk'], read_only=True, source='dept')
+    dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
+                                      attrs=['pk', 'name'], label='部门')
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
-                                default=models.UserInfo.GenderChoices.UNKNOWN)
+                                default=models.UserInfo.GenderChoices.UNKNOWN, label='性别')
 
     def validate(self, attrs):
         password = attrs.get('password')
@@ -171,8 +175,8 @@ class UserSerializer(BaseRoleRuleInfo):
 class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo
-        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'mobile', 'avatar', 'roles_info',
-                  'date_joined', 'dept_info']
+        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'mobile', 'avatar', 'roles',
+                  'date_joined', 'dept']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'pk': {'read_only': True}, 'avatar': {'read_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
@@ -235,6 +239,7 @@ class MenuSerializer(BaseModelSerializer):
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
+    parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False)
     menu_type_display = serializers.CharField(source='get_menu_type_display', read_only=True)
 
     def update(self, instance, validated_data):
@@ -275,7 +280,7 @@ class OperationLogSerializer(BaseModelSerializer):
                   "response_result", "status_code", "created_time"]
         read_only_fields = ["pk"] + list(set([x.name for x in models.OperationLog._meta.fields]))
 
-    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
+    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True, label="操作用户")
     module = serializers.SerializerMethodField()
 
     def get_module(self, obj):
@@ -300,7 +305,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
                   'notice_type', "files", "publish", "notice_user", 'notice_dept', 'notice_role']
         # extra_kwargs = {'notice_user': {'read_only': False}}
 
-    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects)
+    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户')
     files = serializers.JSONField(write_only=True)
     user_count = serializers.SerializerMethodField(read_only=True)
     read_user_count = serializers.SerializerMethodField(read_only=True)
@@ -398,7 +403,7 @@ class UserNoticeSerializer(BaseModelSerializer):
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER)
+                                     default=models.NoticeMessage.NoticeChoices.USER, label='消息类型')
     unread = serializers.SerializerMethodField()
 
     def get_unread(self, obj):
@@ -427,6 +432,7 @@ class SystemConfigSerializer(BaseModelSerializer):
         model = models.SystemConfig
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'inherit', 'access']
         read_only_fields = ['pk']
+        fields_unexport = ['cache_value']  # 导入导出文件时，忽略该字段
 
     cache_value = serializers.SerializerMethodField(read_only=True)
 
@@ -437,21 +443,34 @@ class SystemConfigSerializer(BaseModelSerializer):
         return val
 
 
+class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
+    class Meta:
+        model = models.UserPersonalConfig
+        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner', 'access']
+        read_only_fields = ['pk']
+
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", queryset=models.UserInfo.objects,
+                                       required=True)
+
+
 class UserPersonalConfigSerializer(SystemConfigSerializer):
     class Meta:
         model = models.UserPersonalConfig
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner',
-                  'owner_info', 'config_user', 'access']
+                  'config_user', 'access']
         read_only_fields = ['pk', 'owner']
 
-    owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner')
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True)
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects)
 
     def create(self, validated_data):
-        config_user = validated_data.pop('config_user', None)
+        config_user = validated_data.pop('config_user', [])
+        owner = validated_data.pop('owner', None)
         instance = None
-        if not config_user:
+        if not config_user and not owner:
             raise ValidationError('用户ID不能为空')
+        if owner:
+            config_user.append(owner)
         for owner in config_user:
             validated_data['owner'] = owner
             instance = super().create(validated_data)
@@ -474,6 +493,6 @@ class UserLoginLogSerializer(BaseModelSerializer):
         fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time', 'status']
         read_only_fields = ['pk', 'creator']
 
-    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
+    creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label="操作用户")
     login_type = LabeledChoiceField(choices=models.UserLoginLog.LoginTypeChoices.choices,
                                     default=models.UserLoginLog.LoginTypeChoices.USERNAME)
