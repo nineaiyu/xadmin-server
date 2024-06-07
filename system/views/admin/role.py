@@ -9,7 +9,7 @@ import logging
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import UserRole
 from system.utils.serializer import RoleSerializer, ListRoleSerializer
 
@@ -25,7 +25,7 @@ class RoleFilter(BaseFilterSet):
         fields = ['name', 'code', 'is_active', 'description']
 
 
-class RoleView(BaseModelSet):
+class RoleView(BaseModelSet, ImportExportDataAction):
     """角色管理"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer

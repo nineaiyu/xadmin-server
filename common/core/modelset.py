@@ -92,9 +92,10 @@ class OnlyExportDataAction(object):
     @action(methods=['get'], detail=False, url_path='export-data')
     def export_data(self, request, *args, **kwargs):
         self.format_kwarg = request.query_params.get('type', 'xlsx')
-        data = self.list(request, *args, **kwargs)
+        request.no_cache = True  # 防止自定义缓存数据
         self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
         request.accepted_renderer = None
+        data = self.list(request, *args, **kwargs)
         return data
 
 

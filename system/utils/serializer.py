@@ -28,7 +28,7 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in models.ModelLabelField._meta.fields]
 
     field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices,
-                                    default=models.ModelLabelField.FieldChoices.DATA)
+                                    default=models.ModelLabelField.FieldChoices.DATA, label="字段类型")
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -44,8 +44,11 @@ class RoleSerializer(BaseModelSerializer):
         fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'updated_time', 'field', 'fields']
         read_only_fields = ['pk']
 
-    field = serializers.SerializerMethodField(read_only=True)
-    fields = serializers.DictField(write_only=True)
+    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'])
+
+    # field和fields 设置两个相同的label，可以进行文件导入导出
+    field = serializers.SerializerMethodField(read_only=True, label="Fields")
+    fields = serializers.DictField(write_only=True, label="Fields")
 
     def get_field(self, obj):
         results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
@@ -128,7 +131,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 
     user_count = serializers.SerializerMethodField(read_only=True)
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                        label="上级部门", attrs=['pk', 'name'], )
+                                        label="上级部门", attrs=['pk', 'name'])
 
     def validate(self, attrs):
         # 上级部门必须存在，否则会出现数据权限问题
@@ -225,9 +228,10 @@ class RouteMetaSerializer(BaseModelSerializer):
 class MenuMetaSerializer(BaseModelSerializer):
     class Meta:
         model = models.MenuMeta
-        exclude = ['creator', 'modifier']
+        exclude = ['creator', 'modifier', 'id']
         read_only_fields = ['creator', 'modifier', 'dept_belong', 'id']
 
+    pk = serializers.IntegerField(source='id', read_only=True)
 
 class MenuSerializer(BaseModelSerializer):
     meta = MenuMetaSerializer(label='菜单元属性')
@@ -235,12 +239,17 @@ class MenuSerializer(BaseModelSerializer):
     class Meta:
         model = models.Menu
         fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
-                  'menu_type_display', 'model', 'method']
+                  'model', 'method']
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
-    parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False)
-    menu_type_display = serializers.CharField(source='get_menu_type_display', read_only=True)
+    parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False, label="上级菜单",
+                                        attrs=['pk', 'name'])
+    model = BasePrimaryKeyRelatedField(queryset=models.ModelLabelField.objects, allow_null=True, required=False,
+                                       label="绑定模型", attrs=['pk', 'name'], many=True)
+
+    menu_type = LabeledChoiceField(choices=models.Menu.MenuChoices.choices,
+                                   default=models.Menu.MenuChoices.DIRECTORY, label='菜单类型')
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -310,7 +319,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True)
     read_user_count = serializers.SerializerMethodField(read_only=True)
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER)
+                                     default=models.NoticeMessage.NoticeChoices.USER, label="消息类型")
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
