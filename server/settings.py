@@ -227,6 +227,15 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
+        # 'common.drf.renders.CSVFileRenderer',
+        # 'common.drf.renders.ExcelFileRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+        'common.drf.parsers.CSVFileParser',
+        'common.drf.parsers.ExcelFileParser',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
@@ -451,6 +460,7 @@ CACHE_KEY_TEMPLATE = {
     'user_websocket_key': 'user_websocket',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
+    'common_resource_ids_key': 'common_resource_ids',
 }
 
 # Celery Configuration Options

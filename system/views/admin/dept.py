@@ -9,7 +9,7 @@ import logging
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
 from system.models import DeptInfo
 from system.utils.modelset import ChangeRolePermissionAction
@@ -26,7 +26,7 @@ class DeptFilter(BaseFilterSet):
         fields = ['pk', 'is_active', 'code', 'mode_type', 'auto_bind', 'name', 'description']
 
 
-class DeptView(BaseModelSet, ChangeRolePermissionAction):
+class DeptView(BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
     """
     部门信息
     """

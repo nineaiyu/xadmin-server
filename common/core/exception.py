@@ -11,6 +11,7 @@ from django.http import Http404
 from rest_framework.exceptions import Throttled, APIException
 from rest_framework.views import exception_handler
 from rest_framework.views import set_rollback
+from rest_framework_simplejwt.exceptions import InvalidToken
 
 from common.core.response import ApiResponse
 
@@ -32,6 +33,13 @@ def common_exception_handler(exc, context):
         }
 
     elif isinstance(exc, APIException):
+
+        if isinstance(exc, InvalidToken):
+            if isinstance(exc.detail, dict) and 'messages' in exc.detail:
+                ret.code = 40001  # access token 失效或者过期
+                del exc.detail['messages']
+            else:
+                ret.code = 40002  # refresh token 失效或者过期
 
         if isinstance(exc.detail, (list, dict)):
             ret.data = exc.detail
@@ -57,5 +65,5 @@ def common_exception_handler(exc, context):
         if not ret.data.get('detail'):
             ret.data['detail'] = str(exc)
         ret.data['status'] = ret.status_code
-        ret.data['code'] = ret.status_code
+        ret.data['code'] = ret.code if hasattr(ret, 'code') else ret.status_code
         return ApiResponse(**ret.data)

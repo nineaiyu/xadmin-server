@@ -9,7 +9,7 @@ import logging
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import DataPermission
 from system.utils.serializer import DataPermissionSerializer
 
@@ -24,7 +24,7 @@ class DataPermissionFilter(BaseFilterSet):
         fields = ['pk', 'name', 'mode_type', 'is_active', 'description']
 
 
-class DataPermissionView(BaseModelSet):
+class DataPermissionView(BaseModelSet, ImportExportDataAction):
     """数据权限管理"""
     queryset = DataPermission.objects.all()
     serializer_class = DataPermissionSerializer

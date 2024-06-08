@@ -9,7 +9,7 @@
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ListDeleteModelSet
+from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from system.models import UserLoginLog
 from system.utils.serializer import UserLoginLogSerializer
 
@@ -26,7 +26,7 @@ class UserLoginLogFilter(BaseFilterSet):
         fields = ['creator_id', 'login_type', 'ipaddress', 'system', 'browser', 'agent', 'created_time']
 
 
-class UserLoginLogView(ListDeleteModelSet):
+class UserLoginLogView(ListDeleteModelSet, OnlyExportDataAction):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

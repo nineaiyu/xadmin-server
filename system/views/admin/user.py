@@ -13,7 +13,7 @@ from rest_framework.decorators import action
 
 from common.base.utils import AESCipherV2
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, UploadFileAction
+from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
 from common.core.response import ApiResponse
 from system.models import UserInfo
 from system.utils import notify
@@ -33,7 +33,7 @@ class UserFilter(BaseFilterSet):
         fields = ['username', 'nickname', 'mobile', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
-class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
+class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
     """用户管理"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
@@ -53,7 +53,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction):
         properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
                                           items=openapi.Schema(type=openapi.TYPE_STRING))}
     ), operation_description='批量删除')
-    @action(methods=['delete'], detail=False, url_path='batch-delete')
+    @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_delete(request, *args, **kwargs)

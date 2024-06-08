@@ -1,10 +1,12 @@
 import datetime
+import json
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
+from rest_framework.utils import encoders
 
 from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
 from common.fields.image import ProcessedImageField
@@ -32,7 +34,8 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         DATA = 1, _("数据权限")
 
     field_type = models.SmallIntegerField(choices=FieldChoices, default=FieldChoices.DATA, verbose_name="字段类型")
-    parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True)
+    parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True,
+                               verbose_name="上级节点")
     name = models.CharField(verbose_name="模型/字段数值", max_length=128)
     label = models.CharField(verbose_name="模型/字段名称", max_length=128)
 
@@ -42,7 +45,7 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         verbose_name_plural = "模型字段"
 
     def __str__(self):
-        return f"{self.name} {self.label}"
+        return f"{self.label}({self.name})"
 
 
 class ModeTypeAbstract(models.Model):
@@ -88,7 +91,7 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"{self.username}"
+        return f"{self.nickname}({self.username})"
 
 
 class MenuMeta(DbAuditModel, DbUuidModel):
@@ -159,7 +162,7 @@ class Menu(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
 
     def __str__(self):
-        return f"{self.name}-{self.menu_type}-{self.meta.title}"
+        return f"{self.meta.title}-{self.get_menu_type_display()}({self.name})"
 
 
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
@@ -173,7 +176,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         verbose_name_plural = "数据权限"
 
     def __str__(self):
-        return f"{self.name}-{self.is_active}"
+        return f"{self.name}"
 
 
 class UserRole(DbAuditModel, DbUuidModel):
@@ -188,7 +191,7 @@ class UserRole(DbAuditModel, DbUuidModel):
         ordering = ("-created_time",)
 
     def __str__(self):
-        return f"{self.name}-{self.created_time}"
+        return f"{self.name}({self.code})"
 
 
 class FieldPermission(DbAuditModel, DbCharModel):
@@ -213,7 +216,7 @@ class FieldPermission(DbAuditModel, DbCharModel):
 class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="部门名称", max_length=128)
     code = models.CharField(max_length=128, verbose_name="部门标识", unique=True)
-    parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
+    parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="上级部门", null=True, blank=True,
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
@@ -236,12 +239,15 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
                 if dept.get(pk):
                     dept_list.append(dept.get(pk))
                     cls.recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
-        return list(set(dept_list))
+        return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
 
     class Meta:
         verbose_name = "部门信息"
         verbose_name_plural = "部门信息"
         ordering = ("-rank", "-created_time",)
+
+    def __str__(self):
+        return f"{self.name}({self.pk})"
 
 
 class UserLoginLog(DbAuditModel):
@@ -306,6 +312,9 @@ class UploadFile(DbAuditModel):
         verbose_name = "上传的文件"
         verbose_name_plural = "上传的文件"
 
+    def __str__(self):
+        return f"{self.filename}"
+
 
 class NoticeMessage(DbAuditModel):
     class NoticeChoices(models.IntegerChoices):
@@ -322,9 +331,9 @@ class NoticeMessage(DbAuditModel):
         DANGER = 'danger', _("重要通知")
 
     notice_user = models.ManyToManyField(to=UserInfo, through="NoticeUserRead", null=True, blank=True,
-                                         through_fields=('notice', 'owner'), verbose_name="通知的人")
-    notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的人部门")
-    notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的人角色")
+                                         through_fields=('notice', 'owner'), verbose_name="通知的用户")
+    notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的部门")
+    notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的角色")
     level = models.CharField(verbose_name='消息级别', choices=LevelChoices, default=LevelChoices.DEFAULT,
                              max_length=20)
     notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=NoticeChoices.USER)
@@ -356,12 +365,12 @@ class NoticeMessage(DbAuditModel):
         return super().delete(using, keep_parents)
 
     def __str__(self):
-        return f"{self.title}-{self.created_time}-{self.get_notice_type_display()}"
+        return f"{self.title}-{self.get_notice_type_display()}"
 
 
 class NoticeUserRead(DbAuditModel):
-    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE)
-    notice = models.ForeignKey(NoticeMessage, on_delete=models.CASCADE)
+    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE, verbose_name="用户")
+    notice = models.ForeignKey(NoticeMessage, on_delete=models.CASCADE, verbose_name="消息公告")
     unread = models.BooleanField(verbose_name='是否未读', default=True, blank=False, db_index=True)
 
     class Meta:
