@@ -53,7 +53,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
         properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
                                           items=openapi.Schema(type=openapi.TYPE_STRING))}
     ), operation_description='批量删除')
-    @action(methods=['delete'], detail=False, url_path='batch-delete')
+    @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_delete(request, *args, **kwargs)

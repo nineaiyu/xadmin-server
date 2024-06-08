@@ -162,12 +162,14 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
             q = Q(id=0)
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     if not permission.count():
+        logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
         return queryset.filter(q)
     q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
     if q1 == Q():
         q = q1
     else:
         q |= q1
+    logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
     return queryset.filter(q)
 
 
