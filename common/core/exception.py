@@ -36,10 +36,10 @@ def common_exception_handler(exc, context):
 
         if isinstance(exc, InvalidToken):
             if isinstance(exc.detail, dict) and 'messages' in exc.detail:
-                ret.code=40001 # access token 失效或者过期
+                ret.code = 40001  # access token 失效或者过期
                 del exc.detail['messages']
             else:
-                ret.code=40002 # refresh token 失效或者过期
+                ret.code = 40002  # refresh token 失效或者过期
 
         if isinstance(exc.detail, (list, dict)):
             ret.data = exc.detail

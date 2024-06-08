@@ -88,9 +88,12 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
             elif f_type == ModelLabelField.KeyChoices.DATETIME:
                 if isinstance(rule['value'], str):
                     rule['value'] = from_current_timezone(parse_datetime(rule['value']))
-            elif f_type in [ModelLabelField.KeyChoices.JSON, ModelLabelField.KeyChoices.TABLE_USER,
+            elif f_type in [ModelLabelField.KeyChoices.TABLE_USER,
                             ModelLabelField.KeyChoices.TABLE_MENU, ModelLabelField.KeyChoices.TABLE_ROLE,
                             ModelLabelField.KeyChoices.TABLE_DEPT]:
+                rule['value'] = json.loads(rule['value'])
+                rule['value'] = [item.get('pk') for item in rule['value'] if 'pk' in item]
+            elif f_type == ModelLabelField.KeyChoices.JSON:
                 rule['value'] = json.loads(rule['value'])
             rule.pop('type', None)
 

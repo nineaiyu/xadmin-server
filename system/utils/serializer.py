@@ -314,10 +314,17 @@ class NoticeMessageSerializer(BaseModelSerializer):
                   'notice_type', "files", "publish", "notice_user", 'notice_dept', 'notice_role']
         # extra_kwargs = {'notice_user': {'read_only': False}}
 
-    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户')
+    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户',
+                                             attrs=['pk', 'username'])
+    notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, label='被通知的部门',
+                                             attrs=['pk', 'name'])
+    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label='被通知的角色',
+                                             attrs=['pk', 'name'])
+
     files = serializers.JSONField(write_only=True, label="上传文件")
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
     read_user_count = serializers.SerializerMethodField(read_only=True, label="消息已读用户数量")
+
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
                                      default=models.NoticeMessage.NoticeChoices.USER, label="消息类型")
 

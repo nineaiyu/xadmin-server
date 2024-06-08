@@ -329,9 +329,9 @@ class NoticeMessage(DbAuditModel):
         DANGER = 'danger', _("重要通知")
 
     notice_user = models.ManyToManyField(to=UserInfo, through="NoticeUserRead", null=True, blank=True,
-                                         through_fields=('notice', 'owner'), verbose_name="通知的人")
-    notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的人部门")
-    notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的人角色")
+                                         through_fields=('notice', 'owner'), verbose_name="通知的用户")
+    notice_dept = models.ManyToManyField(to=DeptInfo, null=True, blank=True, verbose_name="通知的部门")
+    notice_role = models.ManyToManyField(to=UserRole, null=True, blank=True, verbose_name="通知的角色")
     level = models.CharField(verbose_name='消息级别', choices=LevelChoices, default=LevelChoices.DEFAULT,
                              max_length=20)
     notice_type = models.SmallIntegerField(verbose_name="消息类型", choices=NoticeChoices, default=NoticeChoices.USER)
