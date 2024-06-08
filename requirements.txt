@@ -27,3 +27,6 @@ pilkit==3.0
 drf-yasg==1.21.7
 openpyxl==3.2.0b1
 pyzipper==0.3.6
+unicodecsv==0.14.1
+chardet==5.2.0
+pyexcel==0.7.0
