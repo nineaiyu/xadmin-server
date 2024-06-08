@@ -138,6 +138,9 @@ class BaseFileParser(BaseParser):
             value = [self.parse_value(field.child_relation, v) for v in value]
         elif isinstance(field, serializers.ListField):
             value = [self.parse_value(field.child, v) for v in value]
+        elif isinstance(field, serializers.CharField):
+            if not isinstance(value, str):
+                value = json.dumps(value)
 
         return value
 

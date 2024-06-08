@@ -32,7 +32,8 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         DATA = 1, _("数据权限")
 
     field_type = models.SmallIntegerField(choices=FieldChoices, default=FieldChoices.DATA, verbose_name="字段类型")
-    parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True)
+    parent = models.ForeignKey(to='ModelLabelField', on_delete=models.CASCADE, null=True, blank=True,
+                               verbose_name="上级节点")
     name = models.CharField(verbose_name="模型/字段数值", max_length=128)
     label = models.CharField(verbose_name="模型/字段名称", max_length=128)
 
@@ -213,7 +214,7 @@ class FieldPermission(DbAuditModel, DbCharModel):
 class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="部门名称", max_length=128)
     code = models.CharField(max_length=128, verbose_name="部门标识", unique=True)
-    parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="父节点", null=True, blank=True,
+    parent = models.ForeignKey(to='DeptInfo', on_delete=models.SET_NULL, verbose_name="上级部门", null=True, blank=True,
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
@@ -366,8 +367,8 @@ class NoticeMessage(DbAuditModel):
 
 
 class NoticeUserRead(DbAuditModel):
-    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE)
-    notice = models.ForeignKey(NoticeMessage, on_delete=models.CASCADE)
+    owner = models.ForeignKey(to=UserInfo, on_delete=models.CASCADE, verbose_name="用户")
+    notice = models.ForeignKey(NoticeMessage, on_delete=models.CASCADE, verbose_name="消息公告")
     unread = models.BooleanField(verbose_name='是否未读', default=True, blank=False, db_index=True)
 
     class Meta:

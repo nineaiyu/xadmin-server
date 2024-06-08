@@ -55,7 +55,6 @@ class BaseFileRenderer(BaseRenderer):
         else:
             fields = [v for k, v in fields.items() if not v.write_only and k not in ['id', 'pk']]
             if pk_field:
-                pk_field.label = "主键"
                 fields.insert(0, pk_field)
 
         meta = getattr(self.serializer, 'Meta', None)
