@@ -54,7 +54,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                     rule['value'] = '0'
             elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENT:
                 if user_obj:
-                    rule['value'] = user_obj.dept_id
+                    rule['value'] = str(user_obj.dept_id)
                 else:
                     rule['value'] = '0'
             elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENTS:
@@ -91,8 +91,13 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
             elif f_type in [ModelLabelField.KeyChoices.TABLE_USER,
                             ModelLabelField.KeyChoices.TABLE_MENU, ModelLabelField.KeyChoices.TABLE_ROLE,
                             ModelLabelField.KeyChoices.TABLE_DEPT]:
-                rule['value'] = json.loads(rule['value'])
-                rule['value'] = [item.get('pk') for item in rule['value'] if 'pk' in item]
+                value = []
+                for item in json.loads(rule['value']):
+                    if isinstance(item, dict) and 'pk' in item:
+                        value.append(item['pk'])
+                    else:
+                        value.append(item)
+                rule['value'] = value
             elif f_type == ModelLabelField.KeyChoices.JSON:
                 rule['value'] = json.loads(rule['value'])
             rule.pop('type', None)
@@ -163,6 +168,8 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
             has_dept = True
         if not has_dept and q == Q():
             q = Q(id=0)
+        if has_dept and q == Q():
+            return queryset
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     if not permission.count():
         logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")

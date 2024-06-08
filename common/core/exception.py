@@ -65,5 +65,5 @@ def common_exception_handler(exc, context):
         if not ret.data.get('detail'):
             ret.data['detail'] = str(exc)
         ret.data['status'] = ret.status_code
-        ret.data['code'] = ret.code if ret.code else ret.status_code
+        ret.data['code'] = ret.code if hasattr(ret, 'code') else ret.status_code
         return ApiResponse(**ret.data)

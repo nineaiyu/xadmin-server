@@ -4,7 +4,7 @@
     "pk": "33d4fd9d-89e0-4d49-9993-0c35fe15cb4b",
     "fields": {
       "created_time": "2023-12-28T07:02:00.398Z",
-      "updated_time": "2024-06-08T05:41:42.946Z",
+      "updated_time": "2024-06-08T14:38:19.253Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -31,6 +31,37 @@
       ],
       "is_active": true,
       "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "541738f4-be19-4ef7-9d39-38178caaae20",
+    "fields": {
+      "created_time": "2024-06-08T14:39:23.163Z",
+      "updated_time": "2024-06-08T14:40:49.024Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "测试部门只读权限",
+      "rules": [
+        {
+          "table": "system.deptinfo",
+          "field": "id",
+          "match": "in",
+          "exclude": false,
+          "type": "value.table.dept.ids",
+          "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"name\":\"测试部门\"}]"
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+        "7595b222-e832-48ad-b91f-234b20043fb3",
+        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9"
+      ]
     }
   },
   {
@@ -88,7 +119,7 @@
     "pk": "899d2d18-1085-4904-bf59-c87994033ac5",
     "fields": {
       "created_time": "2024-01-23T07:30:17.572Z",
-      "updated_time": "2024-01-23T09:23:39.518Z",
+      "updated_time": "2024-06-08T06:31:58.850Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -96,14 +127,6 @@
       "mode_type": 0,
       "name": "仅查询数据",
       "rules": [
-        {
-          "table": "system.userinfo",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.all",
-          "value": ""
-        },
         {
           "table": "system.systemconfig",
           "field": "id",
@@ -127,22 +150,10 @@
           "exclude": false,
           "type": "value.all",
           "value": ""
-        },
-        {
-          "table": "system.deptinfo",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
         }
       ],
       "is_active": true,
       "menu": [
-        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
-        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
-        "2cd3ca25-e606-4e46-983e-7aef573ef713",
-        "13a2e23f-6cfb-4992-948b-3477b96591d4",
         "60a0d029-75ae-4314-b5c7-bbd8d642847d",
         "e374f3ef-7326-475a-8b0a-5e082e695144",
         "f25f86f8-c676-43b7-b650-b2410f5b1447",
@@ -205,6 +216,62 @@
       ],
       "is_active": true,
       "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "d2f7df24-e469-462f-896b-26629a8edf24",
+    "fields": {
+      "created_time": "2024-06-08T14:51:41.608Z",
+      "updated_time": "2024-06-08T14:51:41.608Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "mode_type": 0,
+      "name": "本部门只读权限",
+      "rules": [
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.dept.id",
+          "value": ""
+        },
+        {
+          "table": "system.userinfo",
+          "field": "dept",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.dept.id",
+          "value": ""
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "a53bfa34-4225-4214-98b8-91b2dc29bd93",
+        "54f3dbcf-4600-49e4-8e3c-dee3350b2d06",
+        "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
+        "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+        "f2107787-4453-4bc3-898c-a1449e39bf67",
+        "6fc056af-acd8-48dd-91cf-e34053014997",
+        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+        "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+        "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
+        "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
+        "14622100-4732-4f48-ae6f-7189a3407c89",
+        "24244ee6-cf54-4900-94b1-717a7317af04",
+        "8f3eef4e-c88b-415a-a467-b0ebf7144b73",
+        "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+        "60a0d029-75ae-4314-b5c7-bbd8d642847d",
+        "47dc29c2-202b-4837-be9c-db4607924416",
+        "e374f3ef-7326-475a-8b0a-5e082e695144",
+        "f25f86f8-c676-43b7-b650-b2410f5b1447",
+        "00d7809c-0a74-4e80-9730-239b882f9cfa",
+        "c876c6be-1e45-4b05-bd51-68071a2878d9"
+      ]
     }
   },
   {

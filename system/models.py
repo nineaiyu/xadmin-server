@@ -1,10 +1,12 @@
 import datetime
+import json
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
+from rest_framework.utils import encoders
 
 from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
 from common.fields.image import ProcessedImageField
@@ -237,7 +239,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
                 if dept.get(pk):
                     dept_list.append(dept.get(pk))
                     cls.recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
-        return list(set(dept_list))
+        return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
 
     class Meta:
         verbose_name = "部门信息"
