@@ -208,6 +208,7 @@ class SearchFieldsAction(object):
                 if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
                     value.field.widget.input_type = 'text'
                     value.field.widget.choices = []
+                if hasattr(value, 'input_type'): value.field.widget.input_type = value.input_type
                 choices = list(getattr(value.field.widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)

@@ -8,11 +8,13 @@ import datetime
 import json
 import logging
 
+from django.core.exceptions import ValidationError
 from django.db.models import Q, QuerySet
 from django.forms.utils import from_current_timezone
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django_filters import rest_framework as filters
+from django_filters.fields import MultipleChoiceField
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
@@ -219,3 +221,21 @@ class BaseFilterSet(filters.FilterSet):
         if pks:
             return queryset.filter(pk__in=pks)
         return queryset
+
+
+class PkMultipleChoiceField(MultipleChoiceField):
+    def validate(self, value):
+        if self.required and not value:
+            raise ValidationError(self.error_messages["required"], code="required")
+
+
+class PkMultipleFilter(filters.MultipleChoiceFilter):
+    """
+    通过 input_type 来自定义前端展示类型
+    """
+
+    field_class = PkMultipleChoiceField
+
+    def __init__(self, **kwargs):
+        self.input_type = kwargs.pop('input_type', None)
+        super().__init__(**kwargs)

@@ -10,7 +10,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
-from common.core.filter import BaseFilterSet
+from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ListDeleteModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
@@ -54,14 +54,14 @@ class NoticeUserReadMessageFilter(BaseFilterSet):
     message = filters.CharFilter(field_name='notice__message', lookup_expr='icontains', label='Message')
     title = filters.CharFilter(field_name='notice__title', lookup_expr='icontains')
     username = filters.CharFilter(field_name='owner__username')
-    owner_id = filters.NumberFilter(field_name='owner__pk')
     notice_id = filters.NumberFilter(field_name='notice__pk')
     notice_type = filters.ChoiceFilter(field_name='notice__notice_type', choices=NoticeMessage.NoticeChoices.choices)
     level = filters.MultipleChoiceFilter(field_name='notice__level', choices=NoticeMessage.LevelChoices)
+    owner_id = PkMultipleFilter(input_type='search-users')
 
     class Meta:
         model = NoticeUserRead
-        fields = ['title', 'username', 'owner_id', 'notice_id', 'notice_type', 'unread', 'level', 'message']
+        fields = ['notice_id', 'title', 'username', 'owner_id', 'notice_type', 'unread', 'level', 'message']
 
 
 class NoticeUserReadMessageView(ListDeleteModelSet):

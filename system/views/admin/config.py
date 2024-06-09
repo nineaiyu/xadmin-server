@@ -8,7 +8,7 @@ import logging
 
 from django_filters import rest_framework as filters
 
-from common.core.filter import BaseFilterSet
+from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import SystemConfig, UserPersonalConfig
 from system.utils.modelset import InvalidConfigCacheAction
@@ -39,7 +39,7 @@ class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataA
 
 class UserPersonalConfigFilter(SystemConfigFilter):
     username = filters.CharFilter(field_name='owner__username')
-    owner_id = filters.NumberFilter(field_name='owner__pk')
+    owner_id = PkMultipleFilter(input_type='search-users')
 
     class Meta:
         model = UserPersonalConfig
