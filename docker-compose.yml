@@ -1,4 +1,3 @@
-
 services:
   xadmin-redis:
     image: 'bitnami/redis:7.2.4'
