@@ -59,6 +59,10 @@ def token_auth(scope):
     return False, False
 
 
+@sync_to_async
+def get_can_push_message(pk):
+    return UserConfig(pk).PUSH_CHAT_MESSAGE
+
 class MessageNotify(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
@@ -74,10 +78,10 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             await self.close(4401)
         else:
             logger.info(f"{self.user_obj} connect success")
-            room_name = self.scope["url_route"]["kwargs"].get('room_name')
+            group_name = self.scope["url_route"]["kwargs"].get('group_name')
             username = self.scope["url_route"]["kwargs"].get('username')
             # # data = verify_token(token, room_name, success_once=True)
-            if username and room_name and username != self.user_obj.username:
+            if username and group_name and username != self.user_obj.username:
                 self.disconnected = False
                 self.room_group_name = "message_system_default"
                 # self.room_group_name = f"message_{room_name}"
@@ -125,7 +129,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                     target = target[1]
                     try:
                         pk = await get_user_pk(target)
-                        if pk and UserConfig(pk).PUSH_CHAT_MESSAGE:
+                        if pk and await(get_can_push_message(pk)):
                             push_message = {
                                 'title': f"用户 {self.user_obj.username} 发来一条消息",
                                 'message': text,
