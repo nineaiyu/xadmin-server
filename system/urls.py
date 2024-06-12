@@ -69,4 +69,4 @@ router.register('logs/login', UserLoginLogView, basename='login_log')
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 
-urlpatterns = no_auth_url + auth_url + router_url + router.get_urls()
+urlpatterns = no_auth_url + auth_url + router_url + router.urls

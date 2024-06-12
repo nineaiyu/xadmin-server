@@ -55,10 +55,11 @@ def post_migrate_handler(sender, **kwargs):
                                                      defaults={'label': field.verbose_name})
             # defaults={'label': getattr(field, 'verbose_name', field.through._meta.verbose_name)})
     if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
+        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now,
+                                                              name__startswith=f"{label}.").delete()
         logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
 
-    if label == settings.PERMISSION_DATA_AUTH_APPS[0]:
+    if label == settings.PERMISSION_DATA_AUTH_APPS[-1]:
         try:
             get_sub_serializer_fields()
         except Exception as e:
