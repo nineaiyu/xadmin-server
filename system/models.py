@@ -95,19 +95,19 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
 
 
 class MenuMeta(DbAuditModel, DbUuidModel):
-    title = models.CharField(verbose_name="菜单名称", max_length=256, null=True, blank=True)
-    icon = models.CharField(verbose_name="菜单图标", max_length=256, null=True, blank=True)
-    r_svg_name = models.CharField(verbose_name="菜单右侧额外图标", max_length=256, null=True, blank=True,
+    title = models.CharField(verbose_name="菜单名称", max_length=255, null=True, blank=True)
+    icon = models.CharField(verbose_name="菜单图标", max_length=255, null=True, blank=True)
+    r_svg_name = models.CharField(verbose_name="菜单右侧额外图标", max_length=255, null=True, blank=True,
                                   help_text='菜单右侧额外图标iconfont名称，目前只支持iconfont')
     is_show_menu = models.BooleanField(verbose_name="是否显示该菜单", default=True)
     is_show_parent = models.BooleanField(verbose_name="是否显示父级菜单", default=False)
     is_keepalive = models.BooleanField(verbose_name="是否开启页面缓存", default=False,
                                        help_text='开启后，会保存该页面的整体状态，刷新后会清空状态')
-    frame_url = models.CharField(verbose_name="内嵌的iframe链接地址", max_length=256, null=True, blank=True)
+    frame_url = models.CharField(verbose_name="内嵌的iframe链接地址", max_length=255, null=True, blank=True)
     frame_loading = models.BooleanField(verbose_name="内嵌的iframe页面是否开启首次加载动画", default=False)
 
-    transition_enter = models.CharField(verbose_name="当前页面进场动画", max_length=256, null=True, blank=True)
-    transition_leave = models.CharField(verbose_name="当前页面离场动画", max_length=256, null=True, blank=True)
+    transition_enter = models.CharField(verbose_name="当前页面进场动画", max_length=255, null=True, blank=True)
+    transition_leave = models.CharField(verbose_name="当前页面离场动画", max_length=255, null=True, blank=True)
 
     is_hidden_tag = models.BooleanField(verbose_name="当前菜单名称或自定义信息禁止添加到标签页", default=False)
     fixed_tag = models.BooleanField(verbose_name="当前菜单名称是否固定显示在标签页且不可关闭", default=False)
@@ -139,14 +139,14 @@ class Menu(DbAuditModel, DbUuidModel):
     menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY, verbose_name="节点类型")
     name = models.CharField(verbose_name="组件英文名称 或 权限标识", max_length=128, unique=True)
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
-    path = models.CharField(verbose_name="路由地址 或 后端权限路由", max_length=256)
-    component = models.CharField(verbose_name="组件地址", max_length=256, null=True, blank=True)
+    path = models.CharField(verbose_name="路由地址 或 后端权限路由", max_length=255)
+    component = models.CharField(verbose_name="组件地址", max_length=255, null=True, blank=True)
     is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
     model = models.ManyToManyField(to=ModelLabelField, verbose_name="绑定模型", null=True, blank=True)
 
-    # permission_marking = models.CharField(verbose_name="权限标识", max_length=256)
-    # api_route = models.CharField(verbose_name="后端权限路由", max_length=256, null=True, blank=True)
+    # permission_marking = models.CharField(verbose_name="权限标识", max_length=255)
+    # api_route = models.CharField(verbose_name="后端权限路由", max_length=255, null=True, blank=True)
     method = models.CharField(choices=MethodChoices, null=True, blank=True, verbose_name="请求方式", max_length=10)
 
     # api_auth_access = models.BooleanField(verbose_name="是否授权访问，否的话可以匿名访问后端路由", default=True)
@@ -166,7 +166,7 @@ class Menu(DbAuditModel, DbUuidModel):
 
 
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
-    name = models.CharField(verbose_name="数据权限名称", max_length=256, unique=True)
+    name = models.CharField(verbose_name="数据权限名称", max_length=255, unique=True)
     rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
     menu = models.ManyToManyField(to=Menu, verbose_name="权限菜单", null=True, blank=True)
@@ -393,7 +393,7 @@ class BaseConfig(DbAuditModel):
 
 
 class SystemConfig(BaseConfig, DbUuidModel):
-    key = models.CharField(max_length=256, unique=True, verbose_name="配置名称")
+    key = models.CharField(max_length=255, unique=True, verbose_name="配置名称")
     inherit = models.BooleanField(default=False, verbose_name="允许用户继承该配置")
 
     class Meta:
@@ -406,7 +406,7 @@ class SystemConfig(BaseConfig, DbUuidModel):
 
 class UserPersonalConfig(BaseConfig):
     owner = models.ForeignKey(to=UserInfo, verbose_name="用户ID", on_delete=models.CASCADE)
-    key = models.CharField(max_length=256, verbose_name="配置名称")
+    key = models.CharField(max_length=255, verbose_name="配置名称")
 
     class Meta:
         verbose_name = '个人配置项'

@@ -1,0 +1,64 @@
+networks:
+  net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.196.0/24
+
+services:
+  xadmin-mariadb:
+    image: bitnami/mariadb:10.11.8
+    container_name: xadmin-mariadb
+    restart: always
+    environment:
+      - MARIADB_DATABASE=xadmin
+      - MARIADB_USER=server
+      - MARIADB_PASSWORD=KGzKjZpWBp4R4RSa
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_SKIP_TEST_DB=yes
+      - MARIADB_ENABLE_SLOW_QUERY=1
+      - MARIADB_LONG_QUERY_TIME=3
+      - MARIADB_EXTRA_FLAGS=--max-connect-errors=3000 --max_connections=30000
+    #ports:
+    #  - 3306:3306
+    networks:
+      - net
+    volumes:
+      - ../mariadb/data:/bitnami/mariadb/data
+      - ../mariadb/logs:/opt/bitnami/mariadb/logs
+
+  xadmin-redis:
+    image: 'bitnami/redis:7.2.4'
+    container_name: xadmin-redis
+    restart: always
+    networks:
+      - net
+    environment:
+      - REDIS_PASSWORD=nineven
+
+  xadmin-server:
+    container_name: xadmin-server
+    restart: always
+    image: 'xadmin-server'
+    build:
+      context: system
+      dockerfile: Dockerfile
+    working_dir: /data/xadmin-server
+    networks:
+      - net
+    volumes:
+      - ./:/data/xadmin-server
+    external_links:
+      - xadmin-mariadb:mariadb
+      - xadmin-redis:redis
+    #extra_hosts:
+    # - "mariadb:192.168.196.1"
+    sysctls:
+      - net.core.somaxconn=4096
+    ports:
+      - "8896:8896"
+    depends_on:
+      - xadmin-redis
+      - xadmin-mariadb
+
