@@ -22,7 +22,7 @@ class ResourcesIDCacheApi(APIView):
         type=openapi.TYPE_OBJECT,
         required=['resources'],
         properties={'resources': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
+                                                items=openapi.Schema(type=openapi.TYPE_STRING))}
     ), operation_description='将资源数据临时保存到服务器')
     def post(self, request, *args, **kwargs):
         spm = str(uuid.uuid4())

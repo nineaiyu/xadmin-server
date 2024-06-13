@@ -233,6 +233,7 @@ class MenuMetaSerializer(BaseModelSerializer):
 
     pk = serializers.IntegerField(source='id', read_only=True)
 
+
 class MenuSerializer(BaseModelSerializer):
     meta = MenuMetaSerializer(label='菜单元属性')
 

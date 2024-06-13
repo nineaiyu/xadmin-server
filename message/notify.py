@@ -63,6 +63,7 @@ def token_auth(scope):
 def get_can_push_message(pk):
     return UserConfig(pk).PUSH_CHAT_MESSAGE
 
+
 class MessageNotify(AsyncJsonWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
