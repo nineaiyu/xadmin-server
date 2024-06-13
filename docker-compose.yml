@@ -1,8 +1,19 @@
+networks:
+  net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.196.0/24
+
+
 services:
   xadmin-redis:
     image: 'bitnami/redis:7.2.4'
     container_name: xadmin-redis
     restart: always
+    networks:
+      - net
     environment:
       - REDIS_PASSWORD=nineven
 
@@ -14,13 +25,15 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /data/xadmin-server
+    networks:
+      - net
     volumes:
       - ./:/data/xadmin-server
     external_links:
       #        - mariadb:mariadb
       - xadmin-redis:redis
-    #    extra_hosts:
-    #        - "mariadb:172.31.32.1"
+    extra_hosts:
+      - "mariadb:192.168.196.1"
     sysctls:
       - net.core.somaxconn=4096
     ports:
