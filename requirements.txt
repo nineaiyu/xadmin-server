@@ -30,3 +30,5 @@ pyzipper==0.3.6
 unicodecsv==0.14.1
 chardet==5.2.0
 pyexcel==0.7.0
+pyexcel-io==0.6.6
+pyexcel-xlsx==0.6.0
