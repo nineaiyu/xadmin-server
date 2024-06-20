@@ -57,7 +57,7 @@ class NoticeUserReadMessageFilter(BaseFilterSet):
     notice_id = filters.NumberFilter(field_name='notice__pk')
     notice_type = filters.ChoiceFilter(field_name='notice__notice_type', choices=NoticeMessage.NoticeChoices.choices)
     level = filters.MultipleChoiceFilter(field_name='notice__level', choices=NoticeMessage.LevelChoices)
-    owner_id = PkMultipleFilter(input_type='search-users')
+    owner_id = PkMultipleFilter(input_type='api-search-users')
 
     class Meta:
         model = NoticeUserRead

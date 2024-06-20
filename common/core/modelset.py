@@ -4,11 +4,13 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
+import logging
 from typing import Callable
 
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
+from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -20,8 +22,11 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelV
 from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
+from common.core.serializers import BasePrimaryKeyRelatedField
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
+
+logger = logging.getLogger(__name__)
 
 
 class UploadFileAction(object):
@@ -196,8 +201,8 @@ class SearchFieldsAction(object):
         try:
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
-            for key, value in filterset_class.items():
-                if key not in filter_fields: continue
+            for field_name, value in filterset_class.items():
+                if field_name not in filter_fields: continue
                 widget = value.field.widget
                 if isinstance(widget, SelectMultiple):
                     value.field.widget.input_type = 'select-multiple'
@@ -205,15 +210,18 @@ class SearchFieldsAction(object):
                     value.field.widget.input_type = 'datetimerange'
                 if isinstance(widget, DateTimeInput):
                     value.field.widget.input_type = 'datetime'
-                if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
-                    value.field.widget.input_type = 'text'
-                    value.field.widget.choices = []
+                # if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
+                #     value.field.widget.input_type = 'text'
+                #     value.field.widget.choices = []
                 if hasattr(value, 'input_type'): value.field.widget.input_type = value.input_type
                 choices = list(getattr(value.field.widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
+                field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append({
-                    'key': key,
+                    'key': field_name,
+                    'label': value.label if value.label else (
+                        getattr(field, 'verbose_name', field.name) if field else field_name),
                     'input_type': value.field.widget.input_type,
                     'choices': get_choices_dict(choices)
                 })
@@ -227,9 +235,35 @@ class SearchFieldsAction(object):
                 'choices': get_choices_dict(order_choices)
             })
         except Exception as e:
-            pass
+            logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)
 
+    @action(methods=['get'], detail=False, url_path='search-columns')
+    def search_columns(self, request, *args, **kwargs):
+        results = []
+
+        def get_input_type(value, info):
+            if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
+                info['multiple'] = True
+                tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
+            else:
+                tp = info['type']
+            if tp and tp.endswith('related_field'):
+                info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
+            return tp
+
+        metadata_class = self.metadata_class()
+        fields = self.get_serializer().fields
+        for key, value in fields.items():
+            info = metadata_class.get_field_info(value)
+            info['key'] = key
+            if value.style.get('base_template', '') == 'textarea.html':
+                info['input_type'] = 'textarea'
+            else:
+                info['input_type'] = get_input_type(value, info)
+            del info['type']
+            results.append(info)
+        return ApiResponse(data=results)
 
 class BaseModelAction(object):
     filterset_class: Callable

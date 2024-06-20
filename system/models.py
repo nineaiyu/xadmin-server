@@ -1,4 +1,5 @@
 import datetime
+import hashlib
 import json
 
 from django.contrib.auth.models import AbstractUser
@@ -220,8 +221,8 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
                                related_query_name="parent_query")
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
-    rank = models.IntegerField(verbose_name="顺序", default=99)
-    auto_bind = models.BooleanField(verbose_name="是否绑定该部门", default=False)
+    rank = models.IntegerField(verbose_name="排序", default=99)
+    auto_bind = models.BooleanField(verbose_name="自动绑定", default=False)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
     @classmethod
@@ -256,11 +257,11 @@ class UserLoginLog(DbAuditModel):
         SMS = 1, _("短信验证登录")
         WECHAT = 2, _("微信扫码登录")
 
-    status = models.BooleanField(default=True, verbose_name="是否登录成功")
-    ipaddress = models.GenericIPAddressField(verbose_name="登录ip地址", null=True, blank=True)
+    status = models.BooleanField(default=True, verbose_name="成功登录")
+    ipaddress = models.GenericIPAddressField(verbose_name="IP地址", null=True, blank=True)
     browser = models.CharField(max_length=64, verbose_name="登录浏览器", null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
-    agent = models.CharField(max_length=128, verbose_name="agent信息", null=True, blank=True)
+    agent = models.CharField(max_length=128, verbose_name="Agent信息", null=True, blank=True)
     login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices,
                                           verbose_name="登录类型")
 
@@ -274,9 +275,9 @@ class OperationLog(DbAuditModel):
     path = models.CharField(max_length=400, verbose_name="请求地址", null=True, blank=True)
     body = models.TextField(verbose_name="请求参数", null=True, blank=True)
     method = models.CharField(max_length=8, verbose_name="请求方式", null=True, blank=True)
-    ipaddress = models.GenericIPAddressField(verbose_name="请求ip地址", null=True, blank=True)
-    browser = models.CharField(max_length=64, verbose_name="请求浏览器", null=True, blank=True)
-    system = models.CharField(max_length=64, verbose_name="请求操作系统", null=True, blank=True)
+    ipaddress = models.GenericIPAddressField(verbose_name="IP地址", null=True, blank=True)
+    browser = models.CharField(max_length=64, verbose_name="浏览器", null=True, blank=True)
+    system = models.CharField(max_length=64, verbose_name="操作系统", null=True, blank=True)
     response_code = models.IntegerField(verbose_name="响应状态码", null=True, blank=True)
     response_result = models.TextField(verbose_name="响应数据", null=True, blank=True)
     status_code = models.IntegerField(verbose_name="请求状态码", null=True, blank=True)
@@ -295,12 +296,19 @@ class OperationLog(DbAuditModel):
 
 class UploadFile(DbAuditModel):
     filepath = models.FileField(verbose_name="文件存储", null=True, blank=True, upload_to=upload_directory_path)
-    filename = models.CharField(verbose_name="文件原始名称", max_length=150)
+    filename = models.CharField(verbose_name="文件名", max_length=255)
     filesize = models.IntegerField(verbose_name="文件大小")
-    is_tmp = models.BooleanField(verbose_name="是否临时文件", default=True)
+    mime_type = models.CharField(max_length=255, blank=True, verbose_name="MIME类型")
+    md5sum = models.CharField(max_length=36, blank=True, verbose_name="文件MD5")
+    is_tmp = models.BooleanField(verbose_name="临时文件", default=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.filename = self.filename[:120]
+        self.filename = self.filename[:255]
+        if not self.md5sum:
+            md5 = hashlib.md5()
+            for chunk in self.filepath.chunks():
+                md5.update(chunk)
+            self.md5sum = md5.hexdigest()
         return super().save(force_insert, force_update, using, update_fields)
 
     def delete(self, using=None, keep_parents=False):
@@ -383,8 +391,8 @@ class NoticeUserRead(DbAuditModel):
 
 class BaseConfig(DbAuditModel):
     value = models.TextField(max_length=10240, verbose_name="配置值")
-    is_active = models.BooleanField(default=True, verbose_name="是否启用该配置项")
-    access = models.BooleanField(default=False, verbose_name="允许api访问该配置")
+    is_active = models.BooleanField(default=True, verbose_name="是否启用")
+    access = models.BooleanField(default=False, verbose_name="允许API访问")
 
     class Meta:
         verbose_name = '基础配置'
@@ -394,7 +402,7 @@ class BaseConfig(DbAuditModel):
 
 class SystemConfig(BaseConfig, DbUuidModel):
     key = models.CharField(max_length=255, unique=True, verbose_name="配置名称")
-    inherit = models.BooleanField(default=False, verbose_name="允许用户继承该配置")
+    inherit = models.BooleanField(default=False, verbose_name="允许用户继承")
 
     class Meta:
         verbose_name = '系统配置项'

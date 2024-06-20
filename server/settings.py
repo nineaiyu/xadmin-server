@@ -248,6 +248,7 @@ REST_FRAMEWORK = {
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
+    'DEFAULT_METADATA_CLASS': 'common.drf.metadata.SimpleMetadataWithFilters',
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
     ],
@@ -572,6 +573,7 @@ PERMISSION_WHITE_URL = [
     "^/api/system/dashboard/",
     "^/api/system/.*choices$",
     "^/api/system/.*search-fields$",
+    "^/api/system/.*search-columns$",
 ]
 
 # 访问权限配置

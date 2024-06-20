@@ -7,7 +7,9 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Model
+from django.db.models.fields import NOT_PROVIDED
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework.fields import empty, ChoiceField
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer, RelatedField, MultipleChoiceField
@@ -58,8 +60,14 @@ class LabeledMultipleChoiceField(MultipleChoiceField):
 
 
 class BasePrimaryKeyRelatedField(RelatedField):
+    default_error_messages = {
+        "required": _("This field is required."),
+        "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
+        "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
+    }
     def __init__(self, **kwargs):
         self.attrs = kwargs.pop("attrs", [])
+        self.input_type = kwargs.pop("input_type", '')
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
         self.request: Request = self.context.get("request", None)
@@ -183,6 +191,14 @@ class BaseModelSerializer(ModelSerializer):
         existing = set(self.fields)
         for field_name in existing - allowed:
             self.fields.pop(field_name)
+
+    def build_standard_field(self, field_name, model_field):
+        field_class, field_kwargs = super().build_standard_field(field_name, model_field)
+        default = getattr(model_field, 'default', NOT_PROVIDED)
+        if default != NOT_PROVIDED:
+            # 将model中的默认值同步到序列化中
+            field_kwargs.setdefault("default", default)
+        return field_class, field_kwargs
 
     def create(self, validated_data):
         if self.request:

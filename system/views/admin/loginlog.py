@@ -19,7 +19,7 @@ class UserLoginLogFilter(BaseFilterSet):
     system = filters.CharFilter(field_name='system', lookup_expr='icontains')
     browser = filters.CharFilter(field_name='browser', lookup_expr='icontains')
     agent = filters.CharFilter(field_name='agent', lookup_expr='icontains')
-    creator_id = PkMultipleFilter(input_type='search-users')
+    creator_id = PkMultipleFilter(input_type='api-search-users')
 
     class Meta:
         model = UserLoginLog
