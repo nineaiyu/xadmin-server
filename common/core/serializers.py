@@ -4,6 +4,8 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from inspect import isfunction
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Model
@@ -197,6 +199,8 @@ class BaseModelSerializer(ModelSerializer):
         default = getattr(model_field, 'default', NOT_PROVIDED)
         if default != NOT_PROVIDED:
             # 将model中的默认值同步到序列化中
+            if isfunction(default):
+                default = default()
             field_kwargs.setdefault("default", default)
         return field_class, field_kwargs
 

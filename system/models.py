@@ -308,6 +308,8 @@ class UploadFile(DbAuditModel):
             md5 = hashlib.md5()
             for chunk in self.filepath.chunks():
                 md5.update(chunk)
+            if not self.filesize:
+                self.filesize = self.filepath.size
             self.md5sum = md5.hexdigest()
         return super().save(force_insert, force_update, using, update_fields)
 
