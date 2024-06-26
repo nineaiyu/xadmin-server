@@ -7,13 +7,14 @@
 import re
 
 from django.conf import settings
+from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import BaseParser, DataAndFiles
 
 
-def format_data(data: dict):
+def format_data(data: QueryDict | dict):
     """
     axios 配置如下：
 
@@ -63,6 +64,11 @@ def format_data(data: dict):
         key_split = key.split('.')
         if len(key_split) == 1:  # 直接key
             new_data[key_split[0]] = value
+            if key_split[0] == 'pks':  # 用于批量操作
+                try:
+                    new_data[key_split[0]] = data.getlist(key_split[0])
+                except:
+                    new_data[key_split[0]] = data.get(key_split[0])
         else:
             if re.match(r'\d+', key_split[1]):  # 列表
                 info: list = new_data.get(key_split[0])

@@ -232,7 +232,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
-        # 'common.drf.renders.CSVFileRenderer',
+        # 'common.drf.renders.CSVFileRenderer', # 为什么注释：因为导入导出需要权限判断，在导入导出功能中再次自定义解析数据
         # 'common.drf.renders.ExcelFileRenderer',
     ),
     'DEFAULT_PARSER_CLASSES': (
