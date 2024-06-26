@@ -222,18 +222,22 @@ class SearchFieldsAction(object):
                     'key': field_name,
                     'label': value.label if value.label else (
                         getattr(field, 'verbose_name', field.name) if field else field_name),
+                    'help_text': value.field.help_text if value.field.help_text else getattr(field, 'help_text', None),
                     'input_type': value.field.widget.input_type,
                     'choices': get_choices_dict(choices)
                 })
             order_choices = []
-            for choice in list(getattr(self, 'ordering_fields', [])):
+            ordering_fields = list(getattr(self, 'ordering_fields', []))
+            for choice in ordering_fields:
                 order_choices.extend([(f"-{choice}", f"{choice} descending"), (choice, f"{choice} ascending")])
-
-            results.append({
-                'key': "ordering",
-                'input_type': 'select-ordering',
-                'choices': get_choices_dict(order_choices)
-            })
+            if order_choices:
+                results.append({
+                    'label': 'ordering',
+                    'key': "ordering",
+                    'input_type': 'select-ordering',
+                    'choices': get_choices_dict(order_choices),
+                    'default': order_choices[0][0]
+                })
         except Exception as e:
             logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)

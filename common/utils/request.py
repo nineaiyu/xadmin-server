@@ -67,6 +67,9 @@ def get_request_data(request):
     request_data = getattr(request, 'request_data', None)
     if request_data:
         return request_data
+    if request.META.get('CONTENT_TYPE', '').startswith("multipart/"):
+        # 避免字段检查直接报错，axios中form-data数据字段和json字段不统一
+        return 'multipart/form-data'
     data: dict = {**request.GET.dict(), **request.POST.dict()}
     if not data:
         try:
