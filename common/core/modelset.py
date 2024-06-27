@@ -10,6 +10,7 @@ from typing import Callable
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
+from django.http import QueryDict
 from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
@@ -317,7 +318,10 @@ class BatchDeleteAction(object):
     ), operation_description='批量删除')
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
-        pks = request.data.get('pks', None)
+        if isinstance(request.data, QueryDict):
+            pks = request.data.getlist('pks', None)
+        else:
+            pks = request.data.get('pks', None)
         if not pks:
             return ApiResponse(code=1003, detail="数据异常，批量操作主键列表不存在")
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除

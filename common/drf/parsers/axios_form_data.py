@@ -64,11 +64,6 @@ def format_data(data: QueryDict | dict):
         key_split = key.split('.')
         if len(key_split) == 1:  # 直接key
             new_data[key_split[0]] = value
-            if key_split[0] == 'pks':  # 用于批量操作
-                try:
-                    new_data[key_split[0]] = data.getlist(key_split[0])
-                except:
-                    new_data[key_split[0]] = data.get(key_split[0])
         else:
             if re.match(r'\d+', key_split[1]):  # 列表
                 info: list = new_data.get(key_split[0])
@@ -117,6 +112,12 @@ class AxiosMultiPartParser(BaseParser):
         try:
             parser = DjangoMultiPartParser(meta, stream, upload_handlers, encoding)
             data, files = parser.parse()
-            return DataAndFiles(format_data(data), files)
+            new_data = QueryDict('', mutable=True)
+            for key, value in format_data(data).items():
+                if isinstance(value, list):  # list一般为manytomany, 需要通过setlist进行设置
+                    new_data.setlist(key, value)
+                else:
+                    new_data[key] = value
+            return DataAndFiles(new_data, files)
         except MultiPartParserError as exc:
             raise ParseError('Multipart form parse error - %s' % str(exc))
