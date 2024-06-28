@@ -10,7 +10,6 @@ from typing import Callable
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
-from django.http import QueryDict
 from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
@@ -24,6 +23,7 @@ from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
+from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 
@@ -79,9 +79,8 @@ class RankAction(object):
     ), operation_description='根据主键顺序，进行从小到大进行排序')
     @action(methods=['post'], detail=False, url_path='rank')
     def action_rank(self, request, *args, **kwargs):
-        pks = request.data.get('pks', [])
         rank = 1
-        for pk in pks:
+        for pk in get_query_post_pks(request):
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail='顺序保存成功')
@@ -311,10 +310,7 @@ class BatchDeleteAction(object):
     ), operation_description='批量删除')
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
-        if isinstance(request.data, QueryDict):
-            pks = request.data.getlist('pks', None)
-        else:
-            pks = request.data.get('pks', None)
+        pks = get_query_post_pks(request)
         if not pks:
             return ApiResponse(code=1003, detail="数据异常，批量操作主键列表不存在")
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除

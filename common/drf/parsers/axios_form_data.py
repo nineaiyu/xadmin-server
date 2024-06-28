@@ -63,6 +63,11 @@ def format_data(data: QueryDict | dict):
     for key, value in data.items():
         key_split = key.split('.')
         if len(key_split) == 1:  # 直接key
+            if key_split[0] == 'pks':  # 用于批量操作
+                try:
+                    value = data.getlist(key_split[0])
+                except:
+                    value = data.get(key_split[0])
             new_data[key_split[0]] = value
         else:
             if re.match(r'\d+', key_split[1]):  # 列表

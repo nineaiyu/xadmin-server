@@ -146,6 +146,14 @@ class BaseModelSerializer(ModelSerializer):
     class Meta:
         model = None
 
+    def get_value(self, dictionary):
+        # We override the default field access in order to support
+        # nested HTML forms.
+        # 下面两行注释是因为已经在前面处理过form-data，这里无需再次处理
+        # if html.is_html_input(dictionary):
+        #     return html.parse_html_dict(dictionary, prefix=self.field_name) or empty
+        return dictionary.get(self.field_name, empty)
+
     def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs):
         """
         # 该方法是为了让继承BaseModelSerializer的方法，增加request传参,例如下面，为meta这个字段的序列化增加request参数
