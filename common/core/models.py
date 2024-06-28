@@ -34,9 +34,12 @@ class DbBaseModel(models.Model):
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
     description = models.CharField(max_length=256, verbose_name="描述信息", null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
-        result = super().save(*args, **kwargs)
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if force_insert:
+            filelist = []
+        else:
+            filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
+        result = super().save(force_insert, force_update, using, update_fields)
         self.__delete_file(filelist, True)
         return result
 
@@ -68,6 +71,7 @@ class DbBaseModel(models.Model):
                 if file_obj:
                     filelist.append((field.name, file_obj.name, file_obj))
         return filelist
+
     class Meta:
         abstract = True
 
