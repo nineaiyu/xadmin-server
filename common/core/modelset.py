@@ -61,16 +61,9 @@ class UploadFileAction(object):
                 return ApiResponse(code=1003, detail=f"图片大小不能超过 {self.FILE_UPLOAD_SIZE}")
         except Exception as e:
             return ApiResponse(code=1002, detail=f"错误的图片类型, 类型应该为 {','.join(self.FILE_UPLOAD_TYPE)}")
-        delete_file_name = None
-        file_instance = getattr(instance, self.FILE_UPLOAD_FIELD)
-        if file_instance:
-            delete_file_name = file_instance.name
         setattr(instance, self.FILE_UPLOAD_FIELD, file_obj)
         instance.modifier = request.user
         instance.save(update_fields=[self.FILE_UPLOAD_FIELD, 'modifier'])
-        if delete_file_name:
-            file_instance.name = delete_file_name
-            file_instance.delete(save=False)
         return ApiResponse()
 
 

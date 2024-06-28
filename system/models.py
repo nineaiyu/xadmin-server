@@ -86,11 +86,6 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
         verbose_name_plural = "用户信息"
         ordering = ("-date_joined",)
 
-    def delete(self, using=None, keep_parents=False):
-        if self.avatar:
-            self.avatar.delete()  # 删除存储的头像文件
-        return super().delete(using, keep_parents)
-
     def __str__(self):
         return f"{self.nickname}({self.username})"
 
@@ -312,11 +307,6 @@ class UploadFile(DbAuditModel):
                 self.filesize = self.filepath.size
             self.md5sum = md5.hexdigest()
         return super().save(force_insert, force_update, using, update_fields)
-
-    def delete(self, using=None, keep_parents=False):
-        if self.filepath:
-            self.filepath.delete()  # 删除存储的文件
-        return super().delete(using, keep_parents)
 
     class Meta:
         verbose_name = "上传的文件"
