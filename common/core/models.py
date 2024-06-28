@@ -37,7 +37,7 @@ class DbBaseModel(models.Model):
     def save(self, *args, **kwargs):
         filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
         result = super().save(*args, **kwargs)
-        self.__delete_file(filelist)
+        self.__delete_file(filelist, True)
         return result
 
     def delete(self, *args, **kwargs):
@@ -46,11 +46,15 @@ class DbBaseModel(models.Model):
         self.__delete_file(filelist)
         return result
 
-    def __delete_file(self, filelist):
+    def __delete_file(self, filelist, is_save=False):
         try:
             for item in filelist:
-                item[1].name = item[0]
-                item[1].delete(save=False)
+                if is_save:
+                    file = getattr(self, item[0], None)
+                    if file and file.name == item[1]:
+                        continue
+                item[2].name = item[1]
+                item[2].delete(save=False)
         except Exception as e:
             logger.warning(f"remove {self} old file {filelist} failed, {e}")
 
@@ -62,7 +66,7 @@ class DbBaseModel(models.Model):
             if isinstance(field, (models.ImageField, models.FileField)) and hasattr(obj, field.name):
                 file_obj = getattr(obj, field.name, None)
                 if file_obj:
-                    filelist.append((file_obj.name, file_obj))
+                    filelist.append((field.name, file_obj.name, file_obj))
         return filelist
     class Meta:
         abstract = True
