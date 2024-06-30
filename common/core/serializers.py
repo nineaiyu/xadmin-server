@@ -145,6 +145,7 @@ class BaseModelSerializer(ModelSerializer):
 
     class Meta:
         model = None
+        table_fields = []  # 用于控制前端table的字段展示
 
     def get_value(self, dictionary):
         # We override the default field access in order to support

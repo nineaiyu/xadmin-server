@@ -250,7 +250,9 @@ class SearchFieldsAction(object):
             return tp
 
         metadata_class = self.metadata_class()
-        fields = self.get_serializer().fields
+        serializer = self.get_serializer()
+        fields = getattr(serializer, 'fields', [])
+        table_fields = getattr(serializer.Meta, 'table_fields', [])
         for key, value in fields.items():
             info = metadata_class.get_field_info(value)
             info['key'] = key
@@ -259,6 +261,8 @@ class SearchFieldsAction(object):
             else:
                 info['input_type'] = get_input_type(value, info)
             del info['type']
+            if table_fields == [] or key in table_fields:
+                info['table_show'] = True
             results.append(info)
         return ApiResponse(data=results)
 
