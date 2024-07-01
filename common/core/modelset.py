@@ -198,16 +198,16 @@ class SearchFieldsAction(object):
                 if field_name not in filter_fields: continue
                 widget = value.field.widget
                 if isinstance(widget, SelectMultiple):
-                    value.field.widget.input_type = 'select-multiple'
+                    widget.input_type = 'select-multiple'
                 if isinstance(widget, DateRangeWidget):
-                    value.field.widget.input_type = 'datetimerange'
+                    widget.input_type = 'datetimerange'
                 if isinstance(widget, DateTimeInput):
-                    value.field.widget.input_type = 'datetime'
+                    widget.input_type = 'datetime'
                 # if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
-                #     value.field.widget.input_type = 'text'
-                #     value.field.widget.choices = []
-                if hasattr(value, 'input_type'): value.field.widget.input_type = value.input_type
-                choices = list(getattr(value.field.widget, 'choices', []))
+                #     widget.input_type = 'text'
+                #     widget.choices = []
+                if hasattr(value, 'input_type'): widget.input_type = value.input_type
+                choices = list(getattr(widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
                 field = get_model_field(self.filterset_class._meta.model, value.field_name)
@@ -216,8 +216,9 @@ class SearchFieldsAction(object):
                     'label': value.label if value.label else (
                         getattr(field, 'verbose_name', field.name) if field else field_name),
                     'help_text': value.field.help_text if value.field.help_text else getattr(field, 'help_text', None),
-                    'input_type': value.field.widget.input_type,
-                    'choices': get_choices_dict(choices)
+                    'input_type': widget.input_type,
+                    'choices': get_choices_dict(choices),
+                    'default': [] if 'multiple' in widget.input_type else ""
                 })
             order_choices = []
             ordering_fields = list(getattr(self, 'ordering_fields', []))
