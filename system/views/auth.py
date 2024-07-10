@@ -152,6 +152,7 @@ class RegisterView(APIView):
 
     def get(self, request, *args, **kwargs):
         config = {
+            'access': SysConfig.REGISTER,
             'captcha': SysConfig.NEED_REGISTER_CAPTCHA,
             'token': SysConfig.NEED_REGISTER_TOKEN,
             'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,
@@ -190,6 +191,7 @@ class LoginView(TokenObtainPairView):
 
     def get(self, request, *args, **kwargs):
         config = {
+            'access': SysConfig.LOGIN,
             'captcha': SysConfig.NEED_LOGIN_CAPTCHA,
             'token': SysConfig.NEED_LOGIN_TOKEN,
             'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,

@@ -178,10 +178,6 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value('PERMISSION_DATA', True)
 
     @property
-    def LOGIN(self):
-        return self.get_value('LOGIN', True)
-
-    @property
     def EXPORT_MAX_LIMIT(self):
         return self.get_value('EXPORT_MAX_LIMIT', 20000)
 
@@ -189,6 +185,10 @@ class BaseConfCache(ConfigCacheBase):
 class AuthConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):
         super(AuthConfCache, self).__init__(*args, **kwargs)
+
+    @property
+    def LOGIN(self):
+        return self.get_value('LOGIN', True)
 
     @property
     def NEED_LOGIN_TOKEN(self):
@@ -201,6 +201,10 @@ class AuthConfCache(ConfigCacheBase):
     @property
     def NEED_LOGIN_ENCRYPTED(self):
         return self.get_value('NEED_LOGIN_ENCRYPTED', True)
+
+    @property
+    def REGISTER(self):
+        return self.get_value('REGISTER', True)
 
     @property
     def NEED_REGISTER_TOKEN(self):

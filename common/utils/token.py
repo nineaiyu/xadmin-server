@@ -25,7 +25,7 @@ def make_token(key, time_limit=60, prefix='', force_new=False, ext_data=None):
         random_str = uuid.uuid1().__str__().split("-")[0:-1]
         user_ran_str = uuid.uuid5(uuid.NAMESPACE_DNS, key).__str__().split("-")
         user_ran_str.extend(random_str)
-        token = "".join(user_ran_str)
+        token = f"tmp_token_{''.join(user_ran_str)}"
 
         token_cache.set_storage_cache({
             "atime": time.time() + time_limit,
