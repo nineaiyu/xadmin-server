@@ -304,7 +304,7 @@ class OperationLogSerializer(BaseModelSerializer):
 class UploadFileSerializer(BaseModelSerializer):
     class Meta:
         model = models.UploadFile
-        fields = ['pk', 'filepath', 'filename', 'filesize']
+        fields = ['pk', 'filepath', 'filename', 'filesize', 'mime_type', 'md5sum']
         read_only_fields = [x.name for x in models.UploadFile._meta.fields]
 
 
@@ -479,7 +479,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 
     owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True)
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects,
-                                             label="多个用户")
+                                             label="多个用户", input_type='api-search-users')
 
     def create(self, validated_data):
         config_user = validated_data.pop('config_user', [])

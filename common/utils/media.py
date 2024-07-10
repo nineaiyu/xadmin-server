@@ -26,15 +26,19 @@ def get_media_path(path):
         if len(pic_names) != 2:
             return
         model = apps.get_model(path_list[0], path_list[1])
-        field = ''
+        field = None
         for i in model._meta.fields:
             if isinstance(i, ProcessedImageField):
-                field = i.name
+                field = i
                 break
         if field:
-            obj = model.objects.filter(pk=path_list[2]).first()
+            pk = path_list[2]
+            fw = {"pk": pk}
+            if pk == "None":  # 通过form-data增加数据的时候，由于instance还未创建，pk不存在
+                fw = {field.name: path.replace(f"_{pic_names[1]}", f".{field.format}")}
+            obj = model.objects.filter(**fw).first()
             if obj:
-                pic = getattr(obj, field)
+                pic = getattr(obj, field.name)
                 if os.path.isfile(pic.path):
                     index = pic_names[1].split('.')
                     if pic and len(index) > 0:

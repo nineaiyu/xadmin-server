@@ -4,11 +4,11 @@ from common.cache.storage import RedisCacheBase
 
 
 class Command(BaseCommand):
-    help = 'Expire caches'
+    help = 'Expire Caches'
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "args", metavar="cache key", nargs="+", help="please input cache key"
+            "args", metavar="cache key", nargs="+", help="please input cache key or '*' for delete all keys"
         )
 
     def handle(self, *args, **options):

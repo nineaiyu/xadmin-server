@@ -10,6 +10,7 @@ from collections import OrderedDict
 
 from django.apps import apps
 from django.conf import settings
+from django.http import QueryDict
 from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
 
@@ -95,3 +96,11 @@ def auto_register_app_url(urlpatterns):
                 settings.PERMISSION_WHITE_URL.extend(urls)
         except Exception as e:
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
+
+
+def get_query_post_pks(request):
+    if isinstance(request.data, QueryDict):
+        pks = request.data.getlist('pks', [])
+    else:
+        pks = request.data.get('pks', [])
+    return pks

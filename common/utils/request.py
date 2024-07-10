@@ -67,6 +67,9 @@ def get_request_data(request):
     request_data = getattr(request, 'request_data', None)
     if request_data:
         return request_data
+    if request.META.get('CONTENT_TYPE', '').startswith("multipart/"):
+        # 避免字段检查直接报错，axios中form-data数据字段和json字段不统一
+        return 'multipart/form-data'
     data: dict = {**request.GET.dict(), **request.POST.dict()}
     if not data:
         try:
@@ -168,12 +171,13 @@ def get_verbose_name(queryset=None, view=None, model=None):
         elif view and hasattr(view.get_serializer(), 'Meta') and hasattr(view.get_serializer().Meta, 'model'):
             model = view.get_serializer().Meta.model
         if model:
-            return getattr(model, '_meta').verbose_name
+            verbose_name = getattr(model, '_meta').verbose_name
         else:
-            model = queryset.model._meta.verbose_name
+            verbose_name = ""
     except Exception as e:
+        verbose_name = ""
         pass
-    return model if model else ""
+    return model, verbose_name
 
 
 def get_ip_analysis(ip):

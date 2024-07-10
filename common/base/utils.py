@@ -11,6 +11,7 @@ import os
 
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
+from django.forms.models import ModelChoiceIteratorValue
 
 logger = logging.getLogger(__file__)
 
@@ -64,7 +65,10 @@ def get_choices_dict(choices, disabled_choices=None):
     result = []
     choices_org_list = list(choices)
     for choice in choices_org_list:
-        val = {'value': choice[0], 'label': choice[1]}
+        c0 = choice[0]
+        if isinstance(c0, ModelChoiceIteratorValue):
+            c0 = str(c0)
+        val = {'value': c0, 'label': choice[1]}
         if disabled_choices and isinstance(disabled_choices, list) and choice[0] in disabled_choices:
             val['disabled'] = True
         result.append(val)

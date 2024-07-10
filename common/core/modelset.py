@@ -4,11 +4,13 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
+import logging
 from typing import Callable
 
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
+from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -20,8 +22,12 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelV
 from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
+from common.core.serializers import BasePrimaryKeyRelatedField
+from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
+
+logger = logging.getLogger(__name__)
 
 
 class UploadFileAction(object):
@@ -55,16 +61,9 @@ class UploadFileAction(object):
                 return ApiResponse(code=1003, detail=f"图片大小不能超过 {self.FILE_UPLOAD_SIZE}")
         except Exception as e:
             return ApiResponse(code=1002, detail=f"错误的图片类型, 类型应该为 {','.join(self.FILE_UPLOAD_TYPE)}")
-        delete_file_name = None
-        file_instance = getattr(instance, self.FILE_UPLOAD_FIELD)
-        if file_instance:
-            delete_file_name = file_instance.name
         setattr(instance, self.FILE_UPLOAD_FIELD, file_obj)
         instance.modifier = request.user
         instance.save(update_fields=[self.FILE_UPLOAD_FIELD, 'modifier'])
-        if delete_file_name:
-            file_instance.name = delete_file_name
-            file_instance.delete(save=False)
         return ApiResponse()
 
 
@@ -80,9 +79,8 @@ class RankAction(object):
     ), operation_description='根据主键顺序，进行从小到大进行排序')
     @action(methods=['post'], detail=False, url_path='rank')
     def action_rank(self, request, *args, **kwargs):
-        pks = request.data.get('pks', [])
         rank = 1
-        for pk in pks:
+        for pk in get_query_post_pks(request):
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail='顺序保存成功')
@@ -196,40 +194,78 @@ class SearchFieldsAction(object):
         try:
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
-            for key, value in filterset_class.items():
-                if key not in filter_fields: continue
+            for field_name, value in filterset_class.items():
+                if field_name not in filter_fields: continue
                 widget = value.field.widget
                 if isinstance(widget, SelectMultiple):
-                    value.field.widget.input_type = 'select-multiple'
+                    widget.input_type = 'select-multiple'
                 if isinstance(widget, DateRangeWidget):
-                    value.field.widget.input_type = 'datetimerange'
+                    widget.input_type = 'datetimerange'
                 if isinstance(widget, DateTimeInput):
-                    value.field.widget.input_type = 'datetime'
-                if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
-                    value.field.widget.input_type = 'text'
-                    value.field.widget.choices = []
-                if hasattr(value, 'input_type'): value.field.widget.input_type = value.input_type
-                choices = list(getattr(value.field.widget, 'choices', []))
+                    widget.input_type = 'datetime'
+                # if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
+                #     widget.input_type = 'text'
+                #     widget.choices = []
+                if hasattr(value, 'input_type'): widget.input_type = value.input_type
+                choices = list(getattr(widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
+                field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append({
-                    'key': key,
-                    'input_type': value.field.widget.input_type,
-                    'choices': get_choices_dict(choices)
+                    'key': field_name,
+                    'label': value.label if value.label else (
+                        getattr(field, 'verbose_name', field.name) if field else field_name),
+                    'help_text': value.field.help_text if value.field.help_text else getattr(field, 'help_text', None),
+                    'input_type': widget.input_type,
+                    'choices': get_choices_dict(choices),
+                    'default': [] if 'multiple' in widget.input_type else ""
                 })
             order_choices = []
-            for choice in list(getattr(self, 'ordering_fields', [])):
+            ordering_fields = list(getattr(self, 'ordering_fields', []))
+            for choice in ordering_fields:
                 order_choices.extend([(f"-{choice}", f"{choice} descending"), (choice, f"{choice} ascending")])
-
-            results.append({
-                'key': "ordering",
-                'input_type': 'select-ordering',
-                'choices': get_choices_dict(order_choices)
-            })
+            if order_choices:
+                results.append({
+                    'label': 'ordering',
+                    'key': "ordering",
+                    'input_type': 'select-ordering',
+                    'choices': get_choices_dict(order_choices),
+                    'default': order_choices[0][0]
+                })
         except Exception as e:
-            pass
+            logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)
 
+    @action(methods=['get'], detail=False, url_path='search-columns')
+    def search_columns(self, request, *args, **kwargs):
+        results = []
+
+        def get_input_type(value, info):
+            if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
+                info['multiple'] = True
+                tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
+            else:
+                tp = info['type']
+            if tp and tp.endswith('related_field'):
+                info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
+            return tp
+
+        metadata_class = self.metadata_class()
+        serializer = self.get_serializer()
+        fields = getattr(serializer, 'fields', [])
+        table_fields = getattr(serializer.Meta, 'table_fields', [])
+        for key, value in fields.items():
+            info = metadata_class.get_field_info(value)
+            info['key'] = key
+            if value.style.get('base_template', '') == 'textarea.html':
+                info['input_type'] = 'textarea'
+            else:
+                info['input_type'] = get_input_type(value, info)
+            del info['type']
+            if table_fields == [] or key in table_fields:
+                info['table_show'] = True
+            results.append(info)
+        return ApiResponse(data=results)
 
 class BaseModelAction(object):
     filterset_class: Callable
@@ -279,7 +315,7 @@ class BatchDeleteAction(object):
     ), operation_description='批量删除')
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
-        pks = request.data.get('pks', None)
+        pks = get_query_post_pks(request)
         if not pks:
             return ApiResponse(code=1003, detail="数据异常，批量操作主键列表不存在")
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除

@@ -94,8 +94,9 @@ class ProcessedImageField(models.ImageField, SpecHostField):
             autoconvert = True
 
         self.scales = scales if scales is not None else [1]
+        self.format = format if format else 'png'
 
-        SpecHost.__init__(self, processors=processors, format=format,
+        SpecHost.__init__(self, processors=processors, format=self.format,
                           options=options, autoconvert=autoconvert, spec=spec,
                           spec_id=spec_id)
         models.ImageField.__init__(self, verbose_name, name, width_field,

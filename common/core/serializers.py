@@ -4,10 +4,14 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from inspect import isfunction
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Model
+from django.db.models.fields import NOT_PROVIDED
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework.fields import empty, ChoiceField
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer, RelatedField, MultipleChoiceField
@@ -58,8 +62,15 @@ class LabeledMultipleChoiceField(MultipleChoiceField):
 
 
 class BasePrimaryKeyRelatedField(RelatedField):
+    default_error_messages = {
+        "required": _("This field is required."),
+        "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
+        "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
+    }
     def __init__(self, **kwargs):
         self.attrs = kwargs.pop("attrs", [])
+        self.label_format = kwargs.pop("format", "{pk}")
+        self.input_type = kwargs.pop("input_type", '')
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
         self.request: Request = self.context.get("request", None)
@@ -104,6 +115,8 @@ class BasePrimaryKeyRelatedField(RelatedField):
             if not hasattr(value, attr):
                 continue
             data[attr] = getattr(value, attr)
+        if data and self.label_format:
+            data["label"] = self.label_format.format(**data)
         return data
 
     def to_internal_value(self, data):
@@ -132,6 +145,15 @@ class BaseModelSerializer(ModelSerializer):
 
     class Meta:
         model = None
+        table_fields = []  # 用于控制前端table的字段展示
+
+    def get_value(self, dictionary):
+        # We override the default field access in order to support
+        # nested HTML forms.
+        # 下面两行注释是因为已经在前面处理过form-data，这里无需再次处理
+        # if html.is_html_input(dictionary):
+        #     return html.parse_html_dict(dictionary, prefix=self.field_name) or empty
+        return dictionary.get(self.field_name, empty)
 
     def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs):
         """
@@ -183,6 +205,16 @@ class BaseModelSerializer(ModelSerializer):
         existing = set(self.fields)
         for field_name in existing - allowed:
             self.fields.pop(field_name)
+
+    def build_standard_field(self, field_name, model_field):
+        field_class, field_kwargs = super().build_standard_field(field_name, model_field)
+        default = getattr(model_field, 'default', NOT_PROVIDED)
+        if default != NOT_PROVIDED:
+            # 将model中的默认值同步到序列化中
+            if isfunction(default):
+                default = default()
+            field_kwargs.setdefault("default", default)
+        return field_class, field_kwargs
 
     def create(self, validated_data):
         if self.request:

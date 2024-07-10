@@ -4,12 +4,15 @@
 # filename : models
 # author : ly_13
 # date : 12/20/2023
+import logging
 import os
 import time
 import uuid
 
 from django.conf import settings
 from django.db import models
+
+logger = logging.getLogger(__name__)
 
 
 class DbUuidModel(models.Model):
@@ -30,6 +33,44 @@ class DbBaseModel(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name="添加时间")
     updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
     description = models.CharField(max_length=256, verbose_name="描述信息", null=True, blank=True)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if force_insert:
+            filelist = []
+        else:
+            filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
+        result = super().save(force_insert, force_update, using, update_fields)
+        self.__delete_file(filelist, True)
+        return result
+
+    def delete(self, *args, **kwargs):
+        filelist = self.__get_filelist()
+        result = super().delete(*args, **kwargs)
+        self.__delete_file(filelist)
+        return result
+
+    def __delete_file(self, filelist, is_save=False):
+        try:
+            for item in filelist:
+                if is_save:
+                    file = getattr(self, item[0], None)
+                    if file and file.name == item[1]:
+                        continue
+                item[2].name = item[1]
+                item[2].delete(save=False)
+        except Exception as e:
+            logger.warning(f"remove {self} old file {filelist} failed, {e}")
+
+    def __get_filelist(self, obj=None):
+        filelist = []
+        if obj is None:
+            obj = self
+        for field in obj._meta.fields:
+            if isinstance(field, (models.ImageField, models.FileField)) and hasattr(obj, field.name):
+                file_obj = getattr(obj, field.name, None)
+                if file_obj:
+                    filelist.append((field.name, file_obj.name, file_obj))
+        return filelist
 
     class Meta:
         abstract = True

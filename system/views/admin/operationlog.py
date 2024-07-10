@@ -20,7 +20,7 @@ class OperationLogFilter(BaseFilterSet):
     path = filters.CharFilter(field_name='path', lookup_expr='icontains')
 
     # 自定义的搜索模板，需要前端同时添加 userinfo 类型
-    creator_id = PkMultipleFilter(input_type='search-users')
+    creator_id = PkMultipleFilter(input_type='api-search-users')
 
     class Meta:
         model = OperationLog

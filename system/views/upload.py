@@ -50,6 +50,6 @@ class UploadView(APIView):
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
                 return ApiResponse(code=1002, detail="错误的文件类型")
             obj = UploadFile.objects.create(creator=request.user, filename=file_obj.name, filesize=file_obj.size,
-                                            filepath=file_obj)
+                                            filepath=file_obj, mime_type=file_obj.content_type)
             result.append(obj)
         return ApiResponse(data=UploadFileSerializer(result, many=True).data)
