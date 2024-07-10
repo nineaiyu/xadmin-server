@@ -22,7 +22,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         super().__init__(get_response)
         self.enable = getattr(settings, 'API_LOG_ENABLE', None) or False
         self.methods = getattr(settings, 'API_LOG_METHODS', None) or set()
-        self.operation_log_id = None
+        self.ignores = getattr(settings, 'API_LOG_IGNORE', None) or {}
+        self.operation_log_id = '__operation_log_id'
 
     @classmethod
     def __handle_request(cls, request):
@@ -31,6 +32,13 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         request.request_path = get_request_path(request)
 
     def __handle_response(self, request, response):
+        # 判断有无log_id属性，使用All记录时，会出现此情况
+        if request.request_data.get(self.operation_log_id, None) is None:
+            return
+
+        # 移除log_id，不记录此ID
+        operation_log_id = request.request_data.pop(self.operation_log_id)
+
         body = getattr(request, 'request_data', {})
         # 请求含有password则用*替换掉(暂时先用于所有接口的password请求参数)
         if isinstance(body, dict) and body.get('password', ''):
@@ -39,7 +47,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             response.data = {}
         try:
             if not response.data and response.content:
-                content = json.loads(response.content.decode())
+                content = json.loads(response.content.decode().replace('\\', ''))
                 response.data = content if isinstance(content, dict) else {}
         except Exception:
             return
@@ -58,7 +66,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             'response_result': {"code": response.data.get('code'), "data": response.data.get('data'),
                                 "detail": response.data.get('detail')},
         }
-        operation_log, creat = OperationLog.objects.update_or_create(defaults=info, id=self.operation_log_id)
+        operation_log, creat = OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
         module_name = settings.API_MODEL_MAP.get(request.request_path, None)
         if module_name:
             operation_log.module = module_name
@@ -68,9 +76,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):
             if self.enable:
                 if self.methods == 'ALL' or request.method in self.methods:
-                    log = OperationLog(module=get_verbose_name(view_func.cls.queryset))
+                    model, v = get_verbose_name(view_func.cls.queryset)
+                    if model and request.method in self.ignores.get(model._meta.label, []):
+                        return
+                    log = OperationLog(module=v)
                     log.save()
-                    self.operation_log_id = log.id
+                    request.request_data[self.operation_log_id] = log.id
 
         return
 

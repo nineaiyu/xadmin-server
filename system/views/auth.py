@@ -21,7 +21,7 @@ from common.base.utils import AESCipherV2
 from common.cache.storage import BlackAccessTokenCache
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
-from common.core.throttle import RegisterThrottle
+from common.core.throttle import RegisterThrottle, LoginThrottle
 from common.utils.request import get_request_ip, get_browser, get_os
 from common.utils.token import make_token, verify_token
 from system.models import UserInfo, DeptInfo, UserLoginLog
@@ -49,7 +49,7 @@ def get_token_lifetime(user_obj):
     return {
         'access_token_lifetime': int(access_token_lifetime.total_seconds()),
         'refresh_token_lifetime': int(refresh_token_lifetime.total_seconds()),
-        'username': user_obj.username
+        # 'username': user_obj.username
     }
 
 
@@ -60,6 +60,27 @@ def get_request_ident(request):
     return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode("utf-8")).decode('utf-8')
 
 
+def check_captcha(need, captcha_key, captcha_code):
+    if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
+        return True
+    # raise Exception("验证码输入有误,请重新输入")
+
+
+def check_tmp_token(need, token, client_id, success_once=True):
+    if not need or (client_id and token and verify_token(token, client_id, success_once)):
+        return True
+    # raise Exception("临时Token校验失败,请刷新页面重试")
+
+
+def get_username_password(need, request, token):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    if need:
+        username = AESCipherV2(token).decrypt(username)
+        password = AESCipherV2(token).decrypt(password)
+    return username, password
+
+
 class TempTokenView(APIView):
     """获取临时token"""
     permission_classes = []
@@ -67,7 +88,7 @@ class TempTokenView(APIView):
 
     def get(self, request):
         token = make_token(get_request_ident(request), time_limit=600, force_new=True).encode('utf-8')
-        return ApiResponse(token=token, lifetime=settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days)
+        return ApiResponse(token=token)
 
 
 class CaptchaView(APIView):
@@ -86,18 +107,18 @@ class RegisterView(APIView):
     throttle_classes = [RegisterThrottle]
 
     def post(self, request, *args, **kwargs):
-        data = request.data
-        client_id = get_request_ident(request)
-        token = data.get('token')
-        username = data.get('username')
-        password = data.get('password')
-        channel = data.get('channel', 'default')
         if not SysConfig.REGISTER:
             return ApiResponse(code=1001, detail='禁止注册')
 
-        if verify_token(token, client_id, success_once=True) and username and password:
-            username = AESCipherV2(token).decrypt(username)
-            password = AESCipherV2(token).decrypt(password)
+        client_id = get_request_ident(request)
+        token = request.data.get('token')
+        captcha_key = request.data.get('captcha_key')
+        captcha_code = request.data.get('captcha_code')
+
+        if check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id) and check_captcha(SysConfig.NEED_LOGIN_CAPTCHA,
+                                                                                           captcha_key, captcha_code):
+            channel = request.data.get('channel', 'default')
+            username, password = get_username_password(SysConfig.NEED_REGISTER_ENCRYPTED, request, token)
             if UserInfo.objects.filter(username=username).count():
                 return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
 
@@ -127,11 +148,19 @@ class RegisterView(APIView):
                 request.user = user
                 save_login_log(request)
                 return ApiResponse(data=result)
-        return ApiResponse(code=1001, detail='token校验失败,请刷新页面重试')
+        return ApiResponse(code=9999, detail='验证码或临时Token校验失败,请重试')
 
+    def get(self, request, *args, **kwargs):
+        config = {
+            'captcha': SysConfig.NEED_REGISTER_CAPTCHA,
+            'token': SysConfig.NEED_REGISTER_TOKEN,
+            'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,
+        }
+        return ApiResponse(data=config)
 
 class LoginView(TokenObtainPairView):
     """用户登录"""
+    throttle_classes = [LoginThrottle]
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:
@@ -141,28 +170,32 @@ class LoginView(TokenObtainPairView):
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')
         captcha_code = request.data.get('captcha_code')
-        if client_id and token and captcha_key and verify_token(token, client_id, success_once=True):
-            is_valid = CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)
-            if is_valid:
-                username = AESCipherV2(token).decrypt(request.data.get('username'))
-                password = AESCipherV2(token).decrypt(request.data.get('password'))
-                serializer = self.get_serializer(data={'username': username, 'password': password})
-                try:
-                    serializer.is_valid(raise_exception=True)
-                except Exception as e:
-                    request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
-                    save_login_log(request, status=False)
-                    return ApiResponse(code=9999, detail=e.args[0])
-                data = serializer.validated_data
-                data.update(get_token_lifetime(serializer.user))
-                request.user = serializer.user
-                save_login_log(request)
-                return ApiResponse(data=data)
-            else:
-                return ApiResponse(code=9999, detail='验证码不正确，请重新输入')
+        if check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id) and check_captcha(SysConfig.NEED_LOGIN_CAPTCHA,
+                                                                                           captcha_key, captcha_code):
+            username, password = get_username_password(SysConfig.NEED_LOGIN_ENCRYPTED, request, token)
+            serializer = self.get_serializer(data={'username': username, 'password': password})
+            try:
+                serializer.is_valid(raise_exception=True)
+            except Exception as e:
+                request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
+                save_login_log(request, status=False)
+                return ApiResponse(code=9999, detail=e.args[0])
+            data = serializer.validated_data
+            data.update(get_token_lifetime(serializer.user))
+            request.user = serializer.user
+            save_login_log(request)
+            return ApiResponse(data=data)
 
-        return ApiResponse(code=9999, detail='token校验失败,请刷新页面重试')
+        return ApiResponse(code=9999, detail='验证码或临时Token校验失败,请重试')
 
+    def get(self, request, *args, **kwargs):
+        config = {
+            'captcha': SysConfig.NEED_LOGIN_CAPTCHA,
+            'token': SysConfig.NEED_LOGIN_TOKEN,
+            'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,
+            'lifetime': settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days
+        }
+        return ApiResponse(data=config)
 
 class RefreshTokenView(TokenRefreshView):
     """刷新Token"""

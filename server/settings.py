@@ -245,7 +245,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
         "rest_framework.authentication.SessionAuthentication",
-        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
+        "rest_framework.authentication.BasicAuthentication",  # 允许basic授权，方便调试使用
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
     'DEFAULT_METADATA_CLASS': 'common.drf.metadata.SimpleMetadataWithFilters',
@@ -259,6 +259,7 @@ REST_FRAMEWORK = {
         'download1': '10/m',
         'download2': '100/h',
         'register': '10/d',
+        'login': '10/h',
         **locals().get('DEFAULT_THROTTLE_RATES', {})
     },
     'DEFAULT_PAGINATION_CLASS': 'common.core.pagination.PageNumber',
@@ -589,6 +590,11 @@ PERMISSION_DATA_AUTH_APPS = [
 
 API_LOG_ENABLE = True
 API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
+
+# 忽略日志记录
+API_LOG_IGNORE = {
+    'system.OperationLog': ['GET']
+}
 
 # 在操作日志中详细记录的请求模块映射
 API_MODEL_MAP = {

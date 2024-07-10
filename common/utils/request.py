@@ -171,12 +171,13 @@ def get_verbose_name(queryset=None, view=None, model=None):
         elif view and hasattr(view.get_serializer(), 'Meta') and hasattr(view.get_serializer().Meta, 'model'):
             model = view.get_serializer().Meta.model
         if model:
-            return getattr(model, '_meta').verbose_name
+            verbose_name = getattr(model, '_meta').verbose_name
         else:
-            model = queryset.model._meta.verbose_name
+            verbose_name = ""
     except Exception as e:
+        verbose_name = ""
         pass
-    return model if model else ""
+    return model, verbose_name
 
 
 def get_ip_analysis(ip):

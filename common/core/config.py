@@ -4,6 +4,7 @@
 # filename : config
 # author : ly_13
 # date : 12/15/2023
+# 修改下面配置之后，记得清理一下redis缓存： python manage.py expire_caches '*'
 
 
 import json
@@ -185,6 +186,35 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value('EXPORT_MAX_LIMIT', 20000)
 
 
+class AuthConfCache(ConfigCacheBase):
+    def __init__(self, *args, **kwargs):
+        super(AuthConfCache, self).__init__(*args, **kwargs)
+
+    @property
+    def NEED_LOGIN_TOKEN(self):
+        return self.get_value('NEED_LOGIN_TOKEN', True)
+
+    @property
+    def NEED_LOGIN_CAPTCHA(self):
+        return self.get_value('NEED_LOGIN_CAPTCHA', True)
+
+    @property
+    def NEED_LOGIN_ENCRYPTED(self):
+        return self.get_value('NEED_LOGIN_ENCRYPTED', True)
+
+    @property
+    def NEED_REGISTER_TOKEN(self):
+        return self.get_value('NEED_REGISTER_TOKEN', True)
+
+    @property
+    def NEED_REGISTER_CAPTCHA(self):
+        return self.get_value('NEED_REGISTER_CAPTCHA', True)
+
+    @property
+    def NEED_REGISTER_ENCRYPTED(self):
+        return self.get_value('NEED_REGISTER_ENCRYPTED', True)
+
+
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):
         super(MessagePushConfCache, self).__init__(*args, **kwargs)
@@ -198,7 +228,7 @@ class MessagePushConfCache(ConfigCacheBase):
         return self.get_value('PUSH_CHAT_MESSAGE', True)
 
 
-class ConfigCache(BaseConfCache, MessagePushConfCache):
+class ConfigCache(BaseConfCache, MessagePushConfCache, AuthConfCache):
     def __init__(self, *args, **kwargs):
         super(ConfigCache, self).__init__(*args, **kwargs)
 
