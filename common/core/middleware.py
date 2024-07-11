@@ -33,11 +33,9 @@ class ApiLoggingMiddleware(MiddlewareMixin):
 
     def __handle_response(self, request, response):
         # 判断有无log_id属性，使用All记录时，会出现此情况
-        if request.request_data.get(self.operation_log_id, None) is None:
+        operation_log_id = getattr(request, self.operation_log_id, None)
+        if operation_log_id is None:
             return
-
-        # 移除log_id，不记录此ID
-        operation_log_id = request.request_data.pop(self.operation_log_id)
 
         body = getattr(request, 'request_data', {})
         # 请求含有password则用*替换掉(暂时先用于所有接口的password请求参数)
@@ -81,7 +79,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                         return
                     log = OperationLog(module=v)
                     log.save()
-                    request.request_data[self.operation_log_id] = log.id
+                    setattr(request, self.operation_log_id, log.id)
 
         return
 
