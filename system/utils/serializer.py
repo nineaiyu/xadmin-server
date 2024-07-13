@@ -447,7 +447,7 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
 class SystemConfigSerializer(BaseModelSerializer):
     class Meta:
         model = models.SystemConfig
-        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'inherit', 'access']
+        fields = ['pk', 'key', 'value', 'cache_value', 'is_active', 'inherit', 'access', 'description', 'created_time']
         read_only_fields = ['pk']
         fields_unexport = ['cache_value']  # 导入导出文件时，忽略该字段
 
@@ -456,8 +456,8 @@ class SystemConfigSerializer(BaseModelSerializer):
     def get_cache_value(self, obj):
         val = SysConfig.get_value(obj.key)
         if isinstance(val, dict):
-            val = json.dumps(val)
-        return val
+            return json.dumps(val)
+        return json.dumps(val)
 
 
 class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
@@ -473,8 +473,9 @@ class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
 class UserPersonalConfigSerializer(SystemConfigSerializer):
     class Meta:
         model = models.UserPersonalConfig
-        fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner',
-                  'config_user', 'access']
+        fields = ['pk', 'config_user', 'owner', 'key', 'value', 'cache_value', 'is_active', 'access', 'description',
+                  'created_time']
+
         read_only_fields = ['pk', 'owner']
 
     owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True)

@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class SystemConfigFilter(BaseFilterSet):
+    pk = filters.UUIDFilter(field_name='id')
     key = filters.CharFilter(field_name='key', lookup_expr='icontains')
     value = filters.CharFilter(field_name='value', lookup_expr='icontains')
 
@@ -38,6 +39,7 @@ class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataA
 
 
 class UserPersonalConfigFilter(SystemConfigFilter):
+    pk = filters.UUIDFilter(field_name='id')
     username = filters.CharFilter(field_name='owner__username')
     owner_id = PkMultipleFilter(input_type='api-search-users')
 

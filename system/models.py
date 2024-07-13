@@ -384,7 +384,7 @@ class NoticeUserRead(DbAuditModel):
 class BaseConfig(DbAuditModel):
     value = models.TextField(max_length=10240, verbose_name="配置值")
     is_active = models.BooleanField(default=True, verbose_name="是否启用")
-    access = models.BooleanField(default=False, verbose_name="允许API访问")
+    access = models.BooleanField(default=False, verbose_name="接口访问", help_text='允许API接口访问该配置')
 
     class Meta:
         verbose_name = '基础配置'
@@ -394,7 +394,7 @@ class BaseConfig(DbAuditModel):
 
 class SystemConfig(BaseConfig, DbUuidModel):
     key = models.CharField(max_length=255, unique=True, verbose_name="配置名称")
-    inherit = models.BooleanField(default=False, verbose_name="允许用户继承")
+    inherit = models.BooleanField(default=False, verbose_name="用户继承", help_text='允许用户继承该配置')
 
     class Meta:
         verbose_name = '系统配置项'

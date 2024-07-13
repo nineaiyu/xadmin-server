@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class DeptFilter(BaseFilterSet):
+    pk = filters.UUIDFilter(field_name='id')
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
 
     class Meta:
