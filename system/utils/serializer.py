@@ -24,9 +24,10 @@ from system import models
 class ModelLabelFieldSerializer(BaseModelSerializer):
     class Meta:
         model = models.ModelLabelField
-        fields = ['pk', 'name', 'label', 'parent', 'created_time', 'updated_time', 'field_type']
+        fields = ['pk', 'name', 'label', 'parent', 'field_type', 'created_time', 'updated_time']
         read_only_fields = [x.name for x in models.ModelLabelField._meta.fields]
 
+    parent = BasePrimaryKeyRelatedField(read_only=True, attrs=['pk', 'name'])
     field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices,
                                     default=models.ModelLabelField.FieldChoices.DATA, label="字段类型")
 
@@ -294,9 +295,11 @@ class RouteSerializer(MenuSerializer):
 class OperationLogSerializer(BaseModelSerializer):
     class Meta:
         model = models.OperationLog
-        fields = ["pk", "creator", "module", "path", "body", "method", "ipaddress", "browser", "system",
-                  "response_code",
-                  "response_result", "status_code", "created_time"]
+        fields = ["pk", "module", "creator", "ipaddress", "path", "method", "body", "browser", "system",
+                  "response_code", "response_result", "status_code", "created_time"]
+
+        table_fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system",
+                        "status_code", "created_time"]
         read_only_fields = ["pk"] + list(set([x.name for x in models.OperationLog._meta.fields]))
 
     creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True, label="操作用户")
@@ -518,7 +521,8 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 class UserLoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserLoginLog
-        fields = ['pk', 'ipaddress', 'browser', 'system', 'agent', 'login_type', 'creator', 'created_time', 'status']
+        fields = ['pk', 'creator', 'ipaddress', 'login_type', 'browser', 'system', 'agent', 'status', 'created_time']
+        table_fields = ['pk', 'creator', 'ipaddress', 'login_type', 'browser', 'system', 'status', 'created_time']
         read_only_fields = ['pk', 'creator']
 
     creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label="操作用户")
