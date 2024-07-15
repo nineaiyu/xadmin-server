@@ -115,9 +115,10 @@ class DataPermissionSerializer(BaseModelSerializer):
 
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles = BasePrimaryKeyRelatedField(queryset=models.UserRole.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name'], label='角色', many=True)
+                                       attrs=['pk', 'name', 'code'], label='角色', many=True, format="{name}")
     rules = BasePrimaryKeyRelatedField(queryset=models.DataPermission.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name'], label='数据权限', many=True)
+                                       attrs=['pk', 'name', 'get_mode_type_display'], label='数据权限', many=True,
+                                       format="{name}")
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
                                    default=models.ModeTypeAbstract.ModeChoices.OR.value, label="权限模式")
 
@@ -127,13 +128,21 @@ class DeptSerializer(BaseRoleRuleInfo):
         model = models.DeptInfo
         fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'user_count', 'rules',
                   'mode_type', 'auto_bind', 'description', 'created_time']
+
+        table_fields = ['name', 'pk', 'code', 'user_count', 'rank', 'mode_type', 'auto_bind', 'is_active', 'roles',
+                        'rules', 'created_time']
+
         extra_kwargs = {'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                        label="上级部门", attrs=['pk', 'name'])
+                                        label="上级部门", attrs=['pk', 'name', 'parent_id', 'code'])
 
     def validate(self, attrs):
+        # 权限需要其他接口设置，下面三个参数忽略
+        attrs.pop('rules', None)
+        attrs.pop('roles', None)
+        attrs.pop('mode_type', None)
         # 上级部门必须存在，否则会出现数据权限问题
         parent = attrs.get('parent', self.instance.parent if self.instance else None)
         if not parent:

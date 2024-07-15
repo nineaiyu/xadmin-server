@@ -4,6 +4,7 @@
 # filename : serializers
 # author : ly_13
 # date : 12/21/2023
+from functools import partial
 from inspect import isfunction
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -90,21 +91,29 @@ class BasePrimaryKeyRelatedField(RelatedField):
 
     def get_choices(self, cutoff=None):
         # 用于获取可选
+        is_column = getattr(self, 'is_column', False)
         queryset = self.get_queryset()
         if queryset is None:
             # Ensure that field.choices returns something sensible
             # even when accessed with a read-only field.
-            return {}
+            return [] if is_column else {}
 
         if cutoff is not None:
             queryset = queryset[:cutoff]
 
-        result = {}
-        for item in queryset:
-            key = self.to_representation(item)
-            if isinstance(key, dict):
-                key = key.get("pk")
-            result[key] = self.display_value(item)
+        if is_column:
+            result = []
+            for item in queryset:
+                data = self.to_representation(item)
+                data['value'] = data.get("pk")
+                result.append(data)
+        else:
+            result = {}
+            for item in queryset:
+                key = self.to_representation(item)
+                if isinstance(key, dict):
+                    key = key.get("pk")
+                result[key] = self.display_value(item)
         return result
 
     def to_representation(self, value):
@@ -115,6 +124,8 @@ class BasePrimaryKeyRelatedField(RelatedField):
             if not hasattr(value, attr):
                 continue
             data[attr] = getattr(value, attr)
+            if isinstance(data[attr], partial):
+                data[attr] = data[attr]()
         if data and self.label_format:
             data["label"] = self.label_format.format(**data)
         return data

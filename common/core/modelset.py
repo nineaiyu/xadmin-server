@@ -4,6 +4,7 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
+import json
 import logging
 from typing import Callable
 
@@ -17,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
+from rest_framework.utils import encoders
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from common.base.utils import get_choices_dict
@@ -243,11 +245,14 @@ class SearchFieldsAction(object):
         def get_input_type(value, info):
             if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info['multiple'] = True
+                setattr(value.child_relation, 'is_column', True)
                 tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
             else:
                 tp = info['type']
             if tp and tp.endswith('related_field'):
-                info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
+                setattr(value, 'is_column', True)
+                info['choices'] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
+                # info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
             return tp
 
         metadata_class = self.metadata_class()
