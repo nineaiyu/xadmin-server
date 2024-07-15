@@ -262,8 +262,10 @@ class SearchFieldsAction(object):
             else:
                 info['input_type'] = get_input_type(value, info)
             del info['type']
-            if table_fields == [] or key in table_fields:
-                info['table_show'] = True
+            if not table_fields:
+                info['table_show'] = 1
+            if  key in table_fields:
+                info['table_show'] = (table_fields.index(key)) + 1
             results.append(info)
         return ApiResponse(data=results)
 
