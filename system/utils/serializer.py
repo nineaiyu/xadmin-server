@@ -323,16 +323,18 @@ class UploadFileSerializer(BaseModelSerializer):
 class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
         model = models.NoticeMessage
-        fields = ['pk', 'level', 'title', 'message', "created_time", "user_count", "read_user_count", 'extra_json',
-                  'notice_type', "files", "publish", "notice_user", 'notice_dept', 'notice_role']
-        # extra_kwargs = {'notice_user': {'read_only': False}}
+        fields = ['pk', 'title', 'level', "publish", 'notice_type', "notice_user", 'notice_dept', 'notice_role',
+                  'message', "created_time", "user_count", "read_user_count", 'extra_json', "files"]
+
+        table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
+        extra_kwargs = {'extra_json': {'read_only': True}}
 
     notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户',
-                                             attrs=['pk', 'username'])
+                                             attrs=['pk', 'username'], input_type='api-search-users')
     notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, label='被通知的部门',
-                                             attrs=['pk', 'name'])
+                                             attrs=['pk', 'name'], input_type='api-search-depts')
     notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label='被通知的角色',
-                                             attrs=['pk', 'name'])
+                                             attrs=['pk', 'name'], input_type='api-search-roles')
 
     files = serializers.JSONField(write_only=True, label="上传文件")
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
@@ -340,6 +342,8 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
                                      default=models.NoticeMessage.NoticeChoices.USER, label="消息类型")
+    level = LabeledChoiceField(choices=models.NoticeMessage.LevelChoices.choices,
+                               default=models.NoticeMessage.LevelChoices.DEFAULT, label="消息级别")
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
@@ -399,7 +403,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return instance
 
     def update(self, instance, validated_data):
-        validated_data.pop('notice_type')  # 不能修改消息类型
+        validated_data.pop('notice_type', None)  # 不能修改消息类型
         o_files = instance.file.all().values_list('pk', flat=True)
         n_files = []
         if validated_data.get('file'):
@@ -447,10 +451,11 @@ class UserNoticeSerializer(BaseModelSerializer):
 class NoticeUserReadMessageSerializer(BaseModelSerializer):
     class Meta:
         model = models.NoticeUserRead
-        fields = ['pk', 'owner_info', 'notice_info', "updated_time", "unread"]
+        fields = ['pk', 'notice_info', 'notice_type', 'owner_info', "unread", "updated_time"]
         read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
+    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True)
     owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner', label="已读用户")
     notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
                                           read_only=True, source='notice', label="消息公告")
