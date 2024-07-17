@@ -10,6 +10,7 @@ import os.path
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -96,12 +97,21 @@ class ListRoleSerializer(RoleSerializer):
         return []
 
 
+def get_menu_queryset():
+    queryset = models.Menu.objects
+    pks = queryset.filter(menu_type=models.Menu.MenuChoices.PERMISSION).values_list(
+        'parent', flat=True)
+    return queryset.filter(Q(menu_type=models.Menu.MenuChoices.PERMISSION) | Q(id__in=pks)).order_by('rank')
+
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
         model = models.DataPermission
-        fields = ['pk', 'name', 'rules', "description", "is_active", "created_time", "mode_type", "menu"]
+        fields = ['pk', 'name', "is_active", "mode_type", "menu", "description", 'rules', "created_time"]
+        table_fields = ['pk', 'name', "mode_type", "is_active", "description", "created_time"]
+        # extra_kwargs = {'rules': {'required': True}}
 
-    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'])
+    menu = BasePrimaryKeyRelatedField(queryset=get_menu_queryset(), many=True, label="菜单", required=False,
+                                      attrs=['pk', 'name', 'parent_id', 'meta__title'])
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
                                    default=models.ModeTypeAbstract.ModeChoices.OR, label="权限模式")
 

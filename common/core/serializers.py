@@ -22,6 +22,17 @@ from common.core.filter import get_filter_queryset
 from system.models import ModelLabelField
 
 
+def attr_get(obj, attr, sp='.'):
+    names = attr.split(sp)
+
+    def func(obj):
+        for name in names:
+            obj = getattr(obj, name)
+        return obj
+
+    return func(obj)
+
+
 class LabeledChoiceField(ChoiceField):
     def to_representation(self, key):
         if key is None:
@@ -121,9 +132,13 @@ class BasePrimaryKeyRelatedField(RelatedField):
             return value.pk
         data = {}
         for attr in self.attrs:
-            if not hasattr(value, attr):
+            # if not hasattr(value, attr):
+            #     continue
+            # data[attr] = getattr(value, attr)
+            try:
+                data[attr] = attr_get(value, attr, '__')
+            except:
                 continue
-            data[attr] = getattr(value, attr)
             if isinstance(data[attr], partial):
                 data[attr] = data[attr]()
         if data and self.label_format:

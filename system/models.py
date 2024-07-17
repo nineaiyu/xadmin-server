@@ -163,7 +163,7 @@ class Menu(DbAuditModel, DbUuidModel):
 
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="数据权限名称", max_length=255, unique=True)
-    rules = models.JSONField(verbose_name="规则", max_length=512, default=list)
+    rules = models.JSONField(verbose_name="规则", max_length=512)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
     menu = models.ManyToManyField(to=Menu, verbose_name="权限菜单", null=True, blank=True)
 
