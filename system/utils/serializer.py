@@ -43,10 +43,12 @@ class FieldPermissionSerializer(BaseModelSerializer):
 class RoleSerializer(BaseModelSerializer):
     class Meta:
         model = models.UserRole
-        fields = ['pk', 'name', 'is_active', 'code', 'menu', 'description', 'updated_time', 'field', 'fields']
+        fields = ['pk', 'name', 'code', 'is_active', 'description', 'menu', 'updated_time', 'field', 'fields']
+        table_fields = ['pk', 'name', 'code', 'is_active', 'description', 'updated_time']
         read_only_fields = ['pk']
 
-    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'])
+    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'],
+                                      input_type="input")
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
     field = serializers.SerializerMethodField(read_only=True, label="Fields")
@@ -147,7 +149,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                        label="上级部门", attrs=['pk', 'name', 'parent_id', 'code'])
+                                        label="上级部门", attrs=['pk', 'name', 'parent_id'])
 
     def validate(self, attrs):
         # 权限需要其他接口设置，下面三个参数忽略
@@ -173,15 +175,19 @@ class DeptSerializer(BaseRoleRuleInfo):
 class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
-        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
-                  'pk', 'dept', 'mobile', 'avatar', 'description', 'mode_type', 'password']
+        fields = ['username', 'nickname', 'mobile', 'email', 'gender', 'is_active', 'password', 'dept', 'description',
+                  'last_login', 'date_joined', 'roles', 'rules', 'pk', 'avatar', 'mode_type']
+
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
+        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'is_active', 'dept', 'mobile',
+                        'last_login', 'date_joined', 'roles', 'rules']
+
     dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                      attrs=['pk', 'name'], label='部门')
+                                      attrs=['pk', 'name', 'parent_id'], label='部门', format="{name}")
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
                                 default=models.UserInfo.GenderChoices.UNKNOWN, label='性别')
 
