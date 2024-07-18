@@ -449,6 +449,7 @@ class UserNoticeSerializer(BaseModelSerializer):
     class Meta:
         model = models.NoticeMessage
         fields = ['pk', 'level', 'title', 'message', "created_time", 'unread', 'notice_type']
+        table_fields = ['pk', 'title', 'unread', 'notice_type', "created_time"]
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
@@ -471,7 +472,7 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
-    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True)
+    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label="消息类型")
     owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner', label="已读用户")
     notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
                                           read_only=True, source='notice', label="消息公告")
