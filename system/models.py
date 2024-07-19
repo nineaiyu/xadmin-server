@@ -54,7 +54,8 @@ class ModeTypeAbstract(models.Model):
         OR = 0, _("或模式")
         AND = 1, _("且模式")
 
-    mode_type = models.SmallIntegerField(choices=ModeChoices, default=ModeChoices.OR, verbose_name="数据权限模式")
+    mode_type = models.SmallIntegerField(choices=ModeChoices, default=ModeChoices.OR, verbose_name="数据权限模式",
+                                         help_text="权限模式, 且模式表示数据需要同时满足规则列表中的每条规则，或模式即满足任意一条规则即可")
 
     class Meta:
         abstract = True
@@ -137,7 +138,7 @@ class Menu(DbAuditModel, DbUuidModel):
     rank = models.IntegerField(verbose_name="菜单顺序", default=9999)
     path = models.CharField(verbose_name="路由地址 或 后端权限路由", max_length=255)
     component = models.CharField(verbose_name="组件地址", max_length=255, null=True, blank=True)
-    is_active = models.BooleanField(verbose_name="是否启用该菜单", default=True)
+    is_active = models.BooleanField(verbose_name="状态", default=True)
     meta = models.OneToOneField(to=MenuMeta, on_delete=models.CASCADE, verbose_name="菜单元数据")
     model = models.ManyToManyField(to=ModelLabelField, verbose_name="绑定模型", null=True, blank=True)
 
@@ -164,8 +165,9 @@ class Menu(DbAuditModel, DbUuidModel):
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name="数据权限名称", max_length=255, unique=True)
     rules = models.JSONField(verbose_name="规则", max_length=512)
-    is_active = models.BooleanField(verbose_name="是否启用", default=True)
-    menu = models.ManyToManyField(to=Menu, verbose_name="权限菜单", null=True, blank=True)
+    is_active = models.BooleanField(verbose_name="状态", default=True)
+    menu = models.ManyToManyField(to=Menu, verbose_name="权限菜单", null=True, blank=True,
+                                  help_text="若存在菜单权限，则该权限仅针对所选择的菜单权限生效")
 
     class Meta:
         verbose_name = "数据权限"
@@ -178,7 +180,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
 class UserRole(DbAuditModel, DbUuidModel):
     name = models.CharField(max_length=128, verbose_name="角色名称", unique=True)
     code = models.CharField(max_length=128, verbose_name="角色标识", unique=True)
-    is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    is_active = models.BooleanField(verbose_name="状态", default=True)
     menu = models.ManyToManyField(to='Menu', verbose_name="菜单权限", null=True, blank=True)
 
     class Meta:
@@ -217,8 +219,9 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     roles = models.ManyToManyField(to="UserRole", verbose_name="角色", blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name="数据权限", blank=True, null=True)
     rank = models.IntegerField(verbose_name="排序", default=99)
-    auto_bind = models.BooleanField(verbose_name="自动绑定", default=False)
-    is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    auto_bind = models.BooleanField(verbose_name="自动绑定", default=False,
+                                    help_text="注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定")
+    is_active = models.BooleanField(verbose_name="状态", default=True)
 
     @classmethod
     def recursion_dept_info(cls, dept_id: int, dept_all_list=None, dept_list=None, is_parent=False):
@@ -383,7 +386,7 @@ class NoticeUserRead(DbAuditModel):
 
 class BaseConfig(DbAuditModel):
     value = models.TextField(max_length=10240, verbose_name="配置值")
-    is_active = models.BooleanField(default=True, verbose_name="是否启用")
+    is_active = models.BooleanField(default=True, verbose_name="状态")
     access = models.BooleanField(default=False, verbose_name="接口访问", help_text='允许API接口访问该配置')
 
     class Meta:

@@ -261,7 +261,15 @@ class SearchFieldsAction(object):
         table_fields = getattr(serializer.Meta, 'table_fields', [])
         for key, value in fields.items():
             info = metadata_class.get_field_info(value)
+            field = get_model_field(value.parent.Meta.model, value.source)
+
             info['key'] = key
+            if info.get("help_text", None) is None and hasattr(field, 'help_text'):
+                info['help_text'] = field.help_text
+
+            if value.field_name.replace('_', ' ').capitalize() == info['label'] and hasattr(field, 'verbose_name'):
+                info['label'] = field.verbose_name
+
             if value.style.get('base_template', '') == 'textarea.html':
                 info['input_type'] = 'textarea'
             else:

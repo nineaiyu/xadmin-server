@@ -175,8 +175,8 @@ class DeptSerializer(BaseRoleRuleInfo):
 class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
-        fields = ['username', 'nickname', 'mobile', 'email', 'gender', 'is_active', 'password', 'dept', 'description',
-                  'last_login', 'date_joined', 'roles', 'rules', 'pk', 'avatar', 'mode_type']
+        fields = ['pk', 'avatar', 'username', 'nickname', 'mobile', 'email', 'gender', 'is_active', 'password', 'dept',
+                  'description', 'last_login', 'date_joined', 'roles', 'rules', 'mode_type']
 
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
@@ -378,10 +378,10 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return models.UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
         return obj.notice_user.count()
 
-    # def validate_notice_type(self, val):
-    #     if models.NoticeMessage.NoticeChoices.NOTICE == val:
-    #         raise ValidationError('参数有误')
-    #     return val
+    def validate_notice_type(self, val):
+        if models.NoticeMessage.NoticeChoices.NOTICE == val and self.request.method == 'POST':
+            raise ValidationError('参数有误，不支持创建系统公告')
+        return val
 
     def validate(self, attrs):
         notice_type = attrs.get('notice_type')
