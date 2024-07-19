@@ -150,7 +150,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         若模式为或模式，并存在全部数据，则直接返回queryset
         若模式为且模式，则 返回queryset.filter(规则)
     """
-    if not SysConfig.PERMISSION_DATA:
+    if not SysConfig.PERMISSION_DATA or queryset is None:
         return queryset
 
     if user_obj.is_superuser:

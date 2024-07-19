@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelLabelFieldFilter(BaseFilterSet):
+    pk = filters.UUIDFilter(field_name='id')
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     label = filters.CharFilter(field_name='label', lookup_expr='icontains')
     parent = filters.CharFilter(field_name='parent', method='get_parent')

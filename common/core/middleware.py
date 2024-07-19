@@ -10,6 +10,7 @@ import json
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.utils.deprecation import MiddlewareMixin
+from rest_framework.utils import encoders
 
 from common.utils.request import get_request_user, get_request_ip, get_request_data, get_request_path, get_os, \
     get_browser, get_verbose_name
@@ -56,13 +57,13 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             'ipaddress': getattr(request, 'request_ip'),
             'method': request.method,
             'path': request.request_path,
-            'body': body,
+            'body': json.dumps(body) if isinstance(body, dict) else body,
             'response_code': response.status_code,
             'system': get_os(request),
             'browser': get_browser(request),
             'status_code': response.data.get('code'),
-            'response_result': {"code": response.data.get('code'), "data": response.data.get('data'),
-                                "detail": response.data.get('detail')},
+            'response_result': json.dumps({"code": response.data.get('code'), "data": response.data.get('data'),
+                                           "detail": response.data.get('detail')}, cls=encoders.JSONEncoder),
         }
         operation_log, creat = OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
         module_name = settings.API_MODEL_MAP.get(request.request_path, None)

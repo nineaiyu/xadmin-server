@@ -4,6 +4,7 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
+import json
 import logging
 from typing import Callable
 
@@ -17,6 +18,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
+from rest_framework.utils import encoders
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
 from common.base.utils import get_choices_dict
@@ -173,6 +175,9 @@ class SearchFieldsAction(object):
                     'results': openapi.Schema(type=openapi.TYPE_ARRAY,
                                               items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
                                                   'key': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
                                                   'input_type': openapi.Schema(type=openapi.TYPE_STRING),
                                                   'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
                                                                             items=openapi.Schema(
@@ -236,6 +241,40 @@ class SearchFieldsAction(object):
             logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)
 
+    @swagger_auto_schema(operation_description='获取列表和创建更新字段', ignore_params=True, responses={
+        200: openapi.Response('列表和创建更新字段结果', openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'code': openapi.Schema(type=openapi.TYPE_NUMBER, default=1000),
+                'detail': openapi.Schema(type=openapi.TYPE_STRING, default='success'),
+                'data': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                    'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                              items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                                                  'key': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'required': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'read_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'write_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'multiple': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'max_length': openapi.Schema(type=openapi.TYPE_NUMBER),
+                                                  'table_show': openapi.Schema(type=openapi.TYPE_NUMBER),
+                                                  'input_type': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                                            items=openapi.Schema(
+                                                                                type=openapi.TYPE_OBJECT, properties={
+                                                                                    'value': openapi.Schema(
+                                                                                        type=openapi.TYPE_STRING),
+                                                                                    'label': openapi.Schema(
+                                                                                        type=openapi.TYPE_STRING),
+                                                                                })),
+                                              })),
+                })
+
+            }
+        ))
+    })
     @action(methods=['get'], detail=False, url_path='search-columns')
     def search_columns(self, request, *args, **kwargs):
         results = []
@@ -243,11 +282,14 @@ class SearchFieldsAction(object):
         def get_input_type(value, info):
             if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info['multiple'] = True
+                setattr(value.child_relation, 'is_column', True)
                 tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
             else:
                 tp = info['type']
             if tp and tp.endswith('related_field'):
-                info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
+                setattr(value, 'is_column', True)
+                info['choices'] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
+                # info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
             return tp
 
         metadata_class = self.metadata_class()
@@ -256,14 +298,24 @@ class SearchFieldsAction(object):
         table_fields = getattr(serializer.Meta, 'table_fields', [])
         for key, value in fields.items():
             info = metadata_class.get_field_info(value)
+            field = get_model_field(value.parent.Meta.model, value.source)
+
             info['key'] = key
+            if info.get("help_text", None) is None and hasattr(field, 'help_text'):
+                info['help_text'] = field.help_text
+
+            if value.field_name.replace('_', ' ').capitalize() == info['label'] and hasattr(field, 'verbose_name'):
+                info['label'] = field.verbose_name
+
             if value.style.get('base_template', '') == 'textarea.html':
                 info['input_type'] = 'textarea'
             else:
                 info['input_type'] = get_input_type(value, info)
             del info['type']
-            if table_fields == [] or key in table_fields:
-                info['table_show'] = True
+            if not table_fields:
+                info['table_show'] = 1
+            if key in table_fields:
+                info['table_show'] = (table_fields.index(key)) + 1
             results.append(info)
         return ApiResponse(data=results)
 

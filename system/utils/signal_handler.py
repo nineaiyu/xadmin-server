@@ -160,22 +160,6 @@ def clean_cache_handler(sender, instance, **kwargs):
         invalid_roles_cache(instance)
         logger.info(f"invalid cache {sender}")
 
-    if issubclass(sender, NoticeMessage):
-        pk_set = None
-        if instance.notice_type == NoticeMessage.NoticeChoices.NOTICE:
-            invalid_notify_cache('*')
-            if instance.publish:
-                push_notice_messages(instance, UserInfo.objects.values_list('pk', flat=True))
-        elif instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
-            pk_set = instance.notice_dept.values_list('pk', flat=True)
-        elif instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
-            pk_set = instance.notice_role.values_list('pk', flat=True)
-        else:
-            pk_set = instance.notice_user.values_list('pk', flat=True)
-        if pk_set:
-            invalid_notify_caches(instance, pk_set)
-        logger.info(f"invalid cache {sender}")
-
     if issubclass(sender, UserInfo):
         if update_fields is None or {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
             invalid_user_cache(instance.pk)
@@ -191,6 +175,24 @@ def clean_cache_handler(sender, instance, **kwargs):
         if instance.key in ['PERMISSION_DATA', 'PERMISSION_FIELD']:
             invalid_user_cache('*')
 
+
+@receiver([post_save])
+def clean_cache_handler_post_save(sender, instance, **kwargs):
+    if issubclass(sender, NoticeMessage):
+        pk_set = None
+        if instance.notice_type == NoticeMessage.NoticeChoices.NOTICE:
+            invalid_notify_cache('*')
+            if instance.publish:
+                push_notice_messages(instance, UserInfo.objects.values_list('pk', flat=True))
+        elif instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
+            pk_set = instance.notice_dept.values_list('pk', flat=True)
+        elif instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
+            pk_set = instance.notice_role.values_list('pk', flat=True)
+        else:
+            pk_set = instance.notice_user.values_list('pk', flat=True)
+        if pk_set:
+            invalid_notify_caches(instance, pk_set)
+        logger.info(f"invalid cache {sender}")
 
 @receiver([pre_delete])
 def clean_cache_handler_pre_delete(sender, instance, **kwargs):

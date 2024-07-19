@@ -38,14 +38,16 @@ class ChangeRolePermissionAction(object):
             mode_type = mode_type.get('value')
         if roles is not None or rules is not None:
             if roles is not None:
-                instance.roles.set(get_filter_queryset(UserRole.objects.filter(pk__in=roles), request.user).all())
+                instance.roles.set(
+                    get_filter_queryset(UserRole.objects.filter(pk__in=[role.get('pk') for role in roles]),
+                                        request.user).all())
             if rules is not None:
                 instance.mode_type = mode_type
                 instance.modifier = request.user
                 instance.save(update_fields=['mode_type', 'modifier'])
                 # instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
                 # 数据权限是部门进行并查询过滤，可以直接进行查询
-                instance.rules.set(DataPermission.objects.filter(pk__in=rules).all())
+                instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get('pk') for rule in rules]).all())
             return ApiResponse(detail="操作成功")
         return ApiResponse(code=1004, detail="数据异常")
 

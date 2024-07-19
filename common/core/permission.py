@@ -91,9 +91,15 @@ class IsAuthenticated(BasePermission):
             permission_data = get_user_permission(request.user)
             permission_field = SysConfig.PERMISSION_FIELD
             for p_data in permission_data:
+                # 处理search-columns字段权限和list权限一致
+                match_group = re.match("(?P<url>.*)/search-columns$", url)
+                if match_group:
+                    url = match_group.group('url')
+
                 if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
                     request.user.menu = p_data.get('pk')
                     if permission_field:
+                        # 为了使导入导出字段权限和list, create同步
                         if url.endswith('import-data') or url.endswith('export-data'):
                             p_data = get_import_export_permission(permission_data, url, request)
                         if p_data:
