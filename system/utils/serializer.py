@@ -420,11 +420,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop('notice_type', None)  # 不能修改消息类型
-        o_files = instance.file.all().values_list('pk', flat=True)
+        o_files = list(instance.file.all().values_list('pk', flat=True))  # 加上list，否则删除文件不会清理底层资源
         n_files = []
-        if validated_data.get('file'):
+        if validated_data.get('file', None) is not None:
             n_files = validated_data.get('file').values_list('pk', flat=True)
-
+        else:
+            o_files = []
         instance = super().update(instance, validated_data)
         if instance:
             instance.file.filter(is_tmp=True).update(is_tmp=False)
