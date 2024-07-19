@@ -311,8 +311,8 @@ class RouteSerializer(MenuSerializer):
 class OperationLogSerializer(BaseModelSerializer):
     class Meta:
         model = models.OperationLog
-        fields = ["pk", "module", "creator", "ipaddress", "path", "method", "body", "browser", "system",
-                  "response_code", "response_result", "status_code", "created_time"]
+        fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system",
+                  "response_code", "status_code", "body", "response_result", "created_time"]
 
         table_fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system",
                         "status_code", "created_time"]
