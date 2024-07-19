@@ -574,7 +574,6 @@ PERMISSION_WHITE_URL = [
     "^/api/system/dashboard/",
     "^/api/system/.*choices$",
     "^/api/system/.*search-fields$",
-    "^/api/system/.*search-columns$",
 ]
 
 # 访问权限配置

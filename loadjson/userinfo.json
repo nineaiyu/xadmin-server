@@ -1,0 +1,69 @@
+[
+  {
+    "model": "system.userinfo",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$Do0cosVxbLzxwVi3I5HEwF$zdwmPpcZg9Frj8Df6sVkPx6ECus6mWaEF3Lt25hglTs=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "isummer",
+      "first_name": "",
+      "last_name": "",
+      "email": "nineven@qq.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2024-07-19T05:33:55.341Z",
+      "created_time": "2024-07-19T05:33:55.758Z",
+      "updated_time": "2024-07-19T05:33:55.758Z",
+      "description": null,
+      "creator": null,
+      "modifier": null,
+      "dept_belong": null,
+      "mode_type": 0,
+      "avatar": "",
+      "nickname": "",
+      "gender": 0,
+      "mobile": "",
+      "dept": null,
+      "groups": [],
+      "user_permissions": [],
+      "roles": [],
+      "rules": []
+    }
+  },
+  {
+    "model": "system.userinfo",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$Jit275P4xwt3isqGjNaFNU$SntnpI6m0NGVGC+cljtFxp2XU+EYYJ5K4XA4OcvhlH4=",
+      "last_login": "2024-07-19T05:52:30.014Z",
+      "is_superuser": false,
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2024-07-19T05:40:43.121Z",
+      "created_time": "2024-07-19T05:40:43.121Z",
+      "updated_time": "2024-07-19T05:52:26.638Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "mode_type": 0,
+      "avatar": "",
+      "nickname": "",
+      "gender": 0,
+      "mobile": "",
+      "dept": "93b4c4df-f65b-4347-9d20-4785b09a9ca3",
+      "groups": [],
+      "user_permissions": [],
+      "roles": [],
+      "rules": [
+        "541738f4-be19-4ef7-9d39-38178caaae20",
+        "db58769c-040f-41f2-874e-9be9fbd93790"
+      ]
+    }
+  }
+]

@@ -175,6 +175,9 @@ class SearchFieldsAction(object):
                     'results': openapi.Schema(type=openapi.TYPE_ARRAY,
                                               items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
                                                   'key': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
                                                   'input_type': openapi.Schema(type=openapi.TYPE_STRING),
                                                   'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
                                                                             items=openapi.Schema(
@@ -238,6 +241,40 @@ class SearchFieldsAction(object):
             logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)
 
+    @swagger_auto_schema(operation_description='获取列表和创建更新字段', ignore_params=True, responses={
+        200: openapi.Response('列表和创建更新字段结果', openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'code': openapi.Schema(type=openapi.TYPE_NUMBER, default=1000),
+                'detail': openapi.Schema(type=openapi.TYPE_STRING, default='success'),
+                'data': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                    'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                              items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                                                  'key': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'required': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'read_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'write_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'multiple': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                                  'max_length': openapi.Schema(type=openapi.TYPE_NUMBER),
+                                                  'table_show': openapi.Schema(type=openapi.TYPE_NUMBER),
+                                                  'input_type': openapi.Schema(type=openapi.TYPE_STRING),
+                                                  'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                                            items=openapi.Schema(
+                                                                                type=openapi.TYPE_OBJECT, properties={
+                                                                                    'value': openapi.Schema(
+                                                                                        type=openapi.TYPE_STRING),
+                                                                                    'label': openapi.Schema(
+                                                                                        type=openapi.TYPE_STRING),
+                                                                                })),
+                                              })),
+                })
+
+            }
+        ))
+    })
     @action(methods=['get'], detail=False, url_path='search-columns')
     def search_columns(self, request, *args, **kwargs):
         results = []
