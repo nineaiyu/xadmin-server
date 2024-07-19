@@ -258,8 +258,8 @@ REST_FRAMEWORK = {
         'upload': '100/m',
         'download1': '10/m',
         'download2': '100/h',
-        'register': '10/d',
-        'login': '10/h',
+        'register': '50/d',
+        'login': '50/h',
         **locals().get('DEFAULT_THROTTLE_RATES', {})
     },
     'DEFAULT_PAGINATION_CLASS': 'common.core.pagination.PageNumber',
