@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/6/2023
 import json
+import logging
 import os.path
 
 from django.conf import settings
@@ -20,6 +21,8 @@ from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
 from system import models
+
+logger = logging.getLogger(__name__)
 
 
 class ModelLabelFieldSerializer(BaseModelSerializer):
@@ -195,7 +198,11 @@ class UserSerializer(BaseRoleRuleInfo):
         password = attrs.get('password')
         if password:
             if self.request.method == 'POST':
-                attrs['password'] = make_password(AESCipherV2(attrs.get('username')).decrypt(password))
+                try:
+                    attrs['password'] = make_password(AESCipherV2(attrs.get('username')).decrypt(password))
+                except Exception as e:
+                    attrs['password'] = make_password(attrs.get('password'))
+                    logger.warning(f"create user and set password failed:{e}. so set default password")
             else:
                 raise ValidationError("参数有误")
         return attrs
