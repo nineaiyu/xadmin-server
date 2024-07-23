@@ -228,7 +228,15 @@ class SearchFieldsAction(object):
             order_choices = []
             ordering_fields = list(getattr(self, 'ordering_fields', []))
             for choice in ordering_fields:
-                order_choices.extend([(f"-{choice}", f"{choice} descending"), (choice, f"{choice} ascending")])
+                is_des = False
+                if choice.startswith('-'):
+                    choice = choice[1:]
+                    is_des = True
+                des = (f"-{choice}", f"{choice} descending")
+                ase = (choice, f"{choice} ascending")
+                if is_des:
+                    des, ase = ase, des
+                order_choices.extend([des, ase])
             if order_choices:
                 results.append({
                     'label': 'ordering',

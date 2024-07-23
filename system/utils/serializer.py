@@ -353,11 +353,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
         extra_kwargs = {'extra_json': {'read_only': True}}
 
     notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户',
-                                             attrs=['pk', 'username'], input_type='api-search-users')
+                                             attrs=['pk', 'username'], input_type='api-search-user',
+                                             format='{username}')
     notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, label='被通知的部门',
-                                             attrs=['pk', 'name'], input_type='api-search-depts')
+                                             attrs=['pk', 'name'], input_type='api-search-dept', format='{name}')
     notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label='被通知的角色',
-                                             attrs=['pk', 'name'], input_type='api-search-roles')
+                                             attrs=['pk', 'name'], input_type='api-search-role', format='{name}')
 
     files = serializers.JSONField(write_only=True, label="上传文件")
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
@@ -520,9 +521,9 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 
         read_only_fields = ['pk', 'owner']
 
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True)
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True, format='{username}')
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects,
-                                             label="多个用户", input_type='api-search-users')
+                                             label="多个用户", input_type='api-search-user')
 
     def create(self, validated_data):
         config_user = validated_data.pop('config_user', [])
