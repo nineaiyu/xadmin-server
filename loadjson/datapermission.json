@@ -69,7 +69,7 @@
     "pk": "5fb63591-6c46-470f-a04d-2d97cc579306",
     "fields": {
       "created_time": "2024-07-19T05:56:34.670Z",
-      "updated_time": "2024-07-23T07:14:23.980Z",
+      "updated_time": "2024-07-23T09:47:09.597Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -89,7 +89,8 @@
       "is_active": true,
       "menu": [
         "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
-        "168ac361-7d7d-45ac-9b4c-7f431059f991"
+        "168ac361-7d7d-45ac-9b4c-7f431059f991",
+        "d5c467d6-d72c-4d42-b66b-d354ea249691"
       ]
     }
   },
