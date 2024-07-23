@@ -146,23 +146,21 @@
     "pk": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
     "fields": {
       "created_time": "2024-03-01T02:44:22.415Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-07-23T07:03:05.293Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
       "menu_type": 2,
-      "name": "list:systemSearchRoles",
+      "name": "list:systemSearchRole",
       "rank": 103,
-      "path": "api/system/search/roles$",
+      "path": "api/system/search/role$",
       "component": null,
       "is_active": true,
       "meta": "9777ba02-b707-4a77-8d27-6f08e285c8e0",
       "method": "GET",
-      "model": [
-        "11ad085f-8749-4098-be4c-9ca685fd21b7"
-      ]
+      "model": []
     }
   },
   {
@@ -354,24 +352,21 @@
     "pk": "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
     "fields": {
       "created_time": "2024-03-01T03:40:43.752Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-07-23T07:03:46.040Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
       "menu_type": 2,
-      "name": "list:systemSearchMenus",
+      "name": "list:systemSearchMenu",
       "rank": 106,
-      "path": "api/system/search/menus$",
+      "path": "api/system/search/menu$",
       "component": null,
       "is_active": true,
       "meta": "93ce783f-1cce-40c8-afaf-e9be50ab6fe6",
       "method": "GET",
-      "model": [
-        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-        "c19100c5-725c-4a81-a1f1-1209f757d693"
-      ]
+      "model": []
     }
   },
   {
@@ -1393,23 +1388,21 @@
     "pk": "6fc056af-acd8-48dd-91cf-e34053014997",
     "fields": {
       "created_time": "2024-03-01T02:42:41.841Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-07-23T07:03:22.506Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
       "menu_type": 2,
-      "name": "list:systemSearchUsers",
+      "name": "list:systemSearchUser",
       "rank": 104,
-      "path": "api/system/search/users$",
+      "path": "api/system/search/user$",
       "component": null,
       "is_active": true,
       "meta": "aea8a63d-3ab6-40db-b365-893b50e69cec",
       "method": "GET",
-      "model": [
-        "14071ee3-6725-4fcc-962d-ad7898efa284"
-      ]
+      "model": []
     }
   },
   {
@@ -2526,23 +2519,21 @@
     "pk": "f2107787-4453-4bc3-898c-a1449e39bf67",
     "fields": {
       "created_time": "2024-03-01T02:43:16.147Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-07-23T07:03:33.803Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
       "menu_type": 2,
-      "name": "list:systemSearchDepts",
+      "name": "list:systemSearchDept",
       "rank": 105,
-      "path": "api/system/search/depts$",
+      "path": "api/system/search/dept$",
       "component": null,
       "is_active": true,
       "meta": "c3e221a1-91f4-4ee2-91a3-0e33ca39fa11",
       "method": "GET",
-      "model": [
-        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
-      ]
+      "model": []
     }
   },
   {

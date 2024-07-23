@@ -16,12 +16,15 @@ from system.views.admin.notice import NoticeUserReadMessageView, NoticeMessageVi
 from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
-from system.views.admin.search import SearchDataView
 from system.views.admin.user import UserView
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
 from system.views.routes import UserRoutesView
+from system.views.search.dept import SearchDeptView
+from system.views.search.menu import SearchMenuView
+from system.views.search.role import SearchRoleView
+from system.views.search.user import SearchUserView
 from system.views.upload import UploadView
 from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
@@ -46,6 +49,12 @@ router_url = [
     re_path('^routes$', UserRoutesView.as_view(), name='user_routes'),
 ]
 
+# 仅数据搜索
+router.register('search/user', SearchUserView, basename='SearchUser')
+router.register('search/role', SearchRoleView, basename='SearchRole')
+router.register('search/dept', SearchDeptView, basename='SearchDept')
+router.register('search/menu', SearchMenuView, basename='SearchMenu')
+
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
 router.register('user/notice', UserNoticeMessage, basename='user_notice')
@@ -55,7 +64,6 @@ router.register('user', UserView, basename='user')
 router.register('dept', DeptView, basename='dept')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
-router.register('search', SearchDataView, basename='search')
 router.register('configs', ConfigsView, basename='configs')
 router.register('dashboard', DashboardView, basename='dashboard')
 router.register('permission', DataPermissionView, basename='permission')

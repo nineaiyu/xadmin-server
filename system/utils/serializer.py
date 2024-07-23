@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/6/2023
 import json
+import logging
 import os.path
 
 from django.conf import settings
@@ -20,6 +21,8 @@ from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
 from system import models
+
+logger = logging.getLogger(__name__)
 
 
 class ModelLabelFieldSerializer(BaseModelSerializer):
@@ -195,7 +198,11 @@ class UserSerializer(BaseRoleRuleInfo):
         password = attrs.get('password')
         if password:
             if self.request.method == 'POST':
-                attrs['password'] = make_password(AESCipherV2(attrs.get('username')).decrypt(password))
+                try:
+                    attrs['password'] = make_password(AESCipherV2(attrs.get('username')).decrypt(password))
+                except Exception as e:
+                    attrs['password'] = make_password(attrs.get('password'))
+                    logger.warning(f"create user and set password failed:{e}. so set default password")
             else:
                 raise ValidationError("参数有误")
         return attrs
@@ -346,11 +353,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
         extra_kwargs = {'extra_json': {'read_only': True}}
 
     notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户',
-                                             attrs=['pk', 'username'], input_type='api-search-users')
+                                             attrs=['pk', 'username'], input_type='api-search-user',
+                                             format='{username}')
     notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, label='被通知的部门',
-                                             attrs=['pk', 'name'], input_type='api-search-depts')
+                                             attrs=['pk', 'name'], input_type='api-search-dept', format='{name}')
     notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label='被通知的角色',
-                                             attrs=['pk', 'name'], input_type='api-search-roles')
+                                             attrs=['pk', 'name'], input_type='api-search-role', format='{name}')
 
     files = serializers.JSONField(write_only=True, label="上传文件")
     user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
@@ -513,9 +521,9 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 
         read_only_fields = ['pk', 'owner']
 
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True)
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True, format='{username}')
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects,
-                                             label="多个用户", input_type='api-search-users')
+                                             label="多个用户", input_type='api-search-user')
 
     def create(self, validated_data):
         config_user = validated_data.pop('config_user', [])

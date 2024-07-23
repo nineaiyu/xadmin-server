@@ -41,7 +41,7 @@ class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataA
 class UserPersonalConfigFilter(SystemConfigFilter):
     pk = filters.UUIDFilter(field_name='id')
     username = filters.CharFilter(field_name='owner__username')
-    owner_id = PkMultipleFilter(input_type='api-search-users')
+    owner_id = PkMultipleFilter(input_type='api-search-user')
 
     class Meta:
         model = UserPersonalConfig
