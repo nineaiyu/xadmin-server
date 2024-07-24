@@ -163,24 +163,32 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))
     has_dept = False
     if dept_obj:
+        # 存在部门，递归获取部门，类似树结构，部门权限需要且模式，将获取到的所有部门的数据规则通过且操作
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
+            # 获取对应的数据权限
             permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj).filter(dq)
+            # 将数据权限且操作
             q &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
             has_dept = True
         if not has_dept and q == Q():
             q = Q(id=0)
         if has_dept and q == Q():
             return queryset
+    # 获取个人单独授权规则
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
+    # 不存在个人单独授权，则返回部门规则授权
     if not permission.count():
         logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
-        return queryset.filter(q)
+        if has_dept:
+            return queryset.filter(q)
+        else:
+            return queryset.none()  # 没有任何授权，返回 none
     q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
     if q1 == Q():
         q = q1
     else:
-        q |= q1
+        q |= q1  # 存在部门规则和个人规则，或操作
     logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
     return queryset.filter(q)
 
