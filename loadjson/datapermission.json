@@ -149,7 +149,7 @@
     "pk": "899d2d18-1085-4904-bf59-c87994033ac5",
     "fields": {
       "created_time": "2024-01-23T07:30:17.572Z",
-      "updated_time": "2024-06-08T06:31:58.850Z",
+      "updated_time": "2024-07-25T10:04:34.231Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -180,10 +180,19 @@
           "exclude": false,
           "type": "value.all",
           "value": ""
+        },
+        {
+          "table": "system.uploadfile",
+          "field": "id",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.all",
+          "value": ""
         }
       ],
       "is_active": true,
       "menu": [
+        "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
         "60a0d029-75ae-4314-b5c7-bbd8d642847d",
         "e374f3ef-7326-475a-8b0a-5e082e695144",
         "f25f86f8-c676-43b7-b650-b2410f5b1447",

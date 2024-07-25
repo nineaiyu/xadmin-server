@@ -9,6 +9,7 @@ from rest_framework.routers import SimpleRouter
 
 from system.views.admin.config import SystemConfigView, UserPersonalConfigView
 from system.views.admin.dept import DeptView
+from system.views.admin.file import UploadFileView
 from system.views.admin.loginlog import UserLoginLogView
 from system.views.admin.menu import MenuView
 from system.views.admin.modelfield import ModelLabelFieldView
@@ -48,6 +49,8 @@ auth_url = [
 router_url = [
     re_path('^routes$', UserRoutesView.as_view(), name='user_routes'),
 ]
+# 面板信息
+router.register('dashboard', DashboardView, basename='dashboard')
 
 # 仅数据搜索
 router.register('search/user', SearchUserView, basename='SearchUser')
@@ -58,23 +61,29 @@ router.register('search/menu', SearchMenuView, basename='SearchMenu')
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
 router.register('user/notice', UserNoticeMessage, basename='user_notice')
+router.register('configs', ConfigsView, basename='configs')
 
 # 系统设置相关路由
 router.register('user', UserView, basename='user')
 router.register('dept', DeptView, basename='dept')
 router.register('menu', MenuView, basename='menu')
 router.register('role', RoleView, basename='role')
-router.register('configs', ConfigsView, basename='configs')
-router.register('dashboard', DashboardView, basename='dashboard')
 router.register('permission', DataPermissionView, basename='permission')
 router.register('field', ModelLabelFieldView, basename='model_label_field')
+
+# 配置相关
 router.register('config/system', SystemConfigView, basename='sysconfig')
 router.register('config/user', UserPersonalConfigView, basename='userconfig')
+
+# 日志相关
 router.register('logs/operation', OperationLogView, basename='operation_log')
 router.register('logs/login', UserLoginLogView, basename='login_log')
 
 # 消息通知路由
 router.register('message/notice', NoticeMessageView, basename='message_notice')
 router.register('message/read', NoticeUserReadMessageView, basename='message_read')
+
+# 文件管理
+router.register('file', UploadFileView, basename='file')
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls
