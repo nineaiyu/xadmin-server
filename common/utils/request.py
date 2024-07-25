@@ -7,11 +7,9 @@
 
 import json
 
-import requests
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.models import AnonymousUser
-from django.urls.resolvers import ResolverMatch
 from django.utils.module_loading import import_string
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from user_agents import parse
@@ -112,29 +110,7 @@ def get_request_path(request, *args, **kwargs):
     return path
 
 
-def get_request_canonical_path(request, ):
-    """
-    获取请求路径
-    :param request:
-    :return:
-    """
-    request_path = getattr(request, 'request_canonical_path', None)
-    if request_path:
-        return request_path
-    path: str = request.path
-    resolver_match: ResolverMatch = request.resolver_match
-    for value in resolver_match.args:
-        path = path.replace(f"/{value}", "/{id}")
-    for key, value in resolver_match.kwargs.items():
-        if key == 'pk':
-            path = path.replace(f"/{value}", f"/{{id}}")
-            continue
-        path = path.replace(f"/{value}", f"/{{{key}}}")
-
-    return path
-
-
-def get_browser(request, ):
+def get_browser(request):
     """
     获取浏览器名
     :param request:
@@ -145,7 +121,7 @@ def get_browser(request, ):
     return user_agent.get_browser()
 
 
-def get_os(request, ):
+def get_os(request):
     """
     获取操作系统
     :param request:
@@ -178,36 +154,3 @@ def get_verbose_name(queryset=None, view=None, model=None):
         verbose_name = ""
         pass
     return model, verbose_name
-
-
-def get_ip_analysis(ip):
-    """
-    获取ip详细概略
-    :param ip: ip地址
-    :return:
-    """
-    data = {
-        "continent": "",
-        "country": "",
-        "province": "",
-        "city": "",
-        "district": "",
-        "isp": "",
-        "area_code": "",
-        "country_english": "",
-        "country_code": "",
-        "longitude": "",
-        "latitude": ""
-    }
-    if ip != 'unknown' and ip:
-        if getattr(settings, 'ENABLE_LOGIN_ANALYSIS_LOG', True):
-            try:
-                res = requests.get(url='https://ip.django-vue-admin.com/ip/analysis', params={"ip": ip}, timeout=5)
-                if res.status_code == 200:
-                    res_data = res.json()
-                    if res_data.get('code') == 0:
-                        data = res_data.get('data')
-                return data
-            except Exception as e:
-                print(e)
-    return data

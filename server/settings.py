@@ -564,7 +564,7 @@ CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'me
                       'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat', 'imagekit',
                       'drf_yasg']
 
-# 访问白名单配置
+# 访问白名单配置，无需权限配置
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/logout$",
@@ -574,6 +574,13 @@ PERMISSION_WHITE_URL = [
     "^/api/system/dashboard/",
     "^/api/system/.*choices$",
     "^/api/system/.*search-fields$",
+]
+
+# 前端权限路由 忽略配置
+ROUTE_IGNORE_URL = [
+    "^/api/system/.*choices$",  # 每个方法都有该路由，则忽略即可
+    "^/api/system/.*search-fields$",  # 每个方法都有该路由，则忽略即可
+    "^/api/system/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
 ]
 
 # 访问权限配置

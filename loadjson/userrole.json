@@ -4,7 +4,7 @@
     "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30",
     "fields": {
       "created_time": "2024-01-23T02:37:09.032Z",
-      "updated_time": "2024-06-08T03:56:55.607Z",
+      "updated_time": "2024-07-25T10:01:35.921Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -13,6 +13,14 @@
       "code": "admin",
       "is_active": true,
       "menu": [
+        "14340eec-daf5-43b8-973c-837a7b8040f0",
+        "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
+        "7c1218e9-2048-41af-a935-45c9589dd8a7",
+        "6842305a-c3a5-4506-a2cc-29a45cb74de7",
+        "5d04d779-39c6-4278-8f26-48642793aa2b",
+        "3400d5fa-7540-4262-a9fe-675fc1b3a8b9",
+        "1805d840-9fab-41c7-992a-7c84e8b4ce50",
+        "56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3",
         "b43940ae-3fa2-4bc8-8aac-de057df544b7",
         "7fdee495-3d72-4c16-ac36-a097d09aa1c4",
         "b988dcf2-e1aa-4d1b-86db-b9094401b3a0",
@@ -294,7 +302,7 @@
     "pk": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
     "fields": {
       "created_time": "2024-01-23T07:21:46.437Z",
-      "updated_time": "2024-06-08T05:42:35.683Z",
+      "updated_time": "2024-07-25T09:33:05.577Z",
       "description": "",
       "creator": 1,
       "modifier": 1,
@@ -303,6 +311,8 @@
       "code": "demo",
       "is_active": true,
       "menu": [
+        "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
+        "56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3",
         "7fdee495-3d72-4c16-ac36-a097d09aa1c4",
         "b988dcf2-e1aa-4d1b-86db-b9094401b3a0",
         "ebf23aac-ded5-4eff-a6ed-28f5211e5fd8",

@@ -25,6 +25,12 @@ def check_show_url(url):
             return True
 
 
+def ignore_white_url(url):
+    for prefix in settings.ROUTE_IGNORE_URL:
+        if re.match(prefix, f"/{url.replace('$', '')}"):
+            return True
+
+
 def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
     """递归去获取URL
     :param pre_namespace: namespace前缀，以后用户拼接name
@@ -46,7 +52,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
             url = pre_url + item.pattern.regex.pattern.lstrip('^')
             # url = url.replace('^', '').replace('$', '')
 
-            if check_show_url(url):
+            if check_show_url(url) and not ignore_white_url(url):
                 url_ordered_dict[name] = {'name': name, 'url': url}
 
         elif isinstance(item, URLResolver):  # 路由分发，递归操作

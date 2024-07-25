@@ -123,7 +123,7 @@
     "pk": "79f49339-bd81-42c1-95ca-a7032f540d57",
     "fields": {
       "created_time": "2024-01-08T09:34:10.182Z",
-      "updated_time": "2024-01-08T09:38:18.570Z",
+      "updated_time": "2024-07-25T10:15:42.914Z",
       "description": "文件上传大小限制,默认10兆",
       "creator": 1,
       "modifier": 1,
@@ -132,7 +132,7 @@
       "is_active": true,
       "access": false,
       "key": "FILE_UPLOAD_SIZE",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -179,7 +179,7 @@
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
-      "value": "{\n  \"Version\": \"3.1.0\",\n  \"Title\": \"xAdmin\",\n  \"FixedHeader\": true,\n  \"HiddenSideBar\": false,\n  \"MultiTagsCache\": false,\n  \"KeepAlive\": true,\n  \"Locale\": \"zh\",\n  \"Layout\": \"vertical\",\n  \"Theme\": \"light\",\n  \"DarkMode\": false,\n  \"OverallStyle\": \"light\",\n  \"Grey\": false,\n  \"Weak\": false,\n  \"HideTabs\": false,\n  \"HideFooter\": false,\n  \"Stretch\": false,\n  \"SidebarStatus\": true,\n  \"EpThemeColor\": \"#409EFF\",\n  \"ShowLogo\": true,\n  \"ShowModel\": \"smart\",\n  \"MenuArrowIconNoTransition\": false,\n  \"CachingAsyncRoutes\": false,\n  \"TooltipEffect\": \"light\",\n  \"ResponsiveStorageNameSpace\": \"responsive-\",\n  \"MenuSearchHistory\": 6\n}",
+      "value": "{\n  \"Version\": \"3.1.1\",\n  \"Title\": \"xAdmin\",\n  \"FixedHeader\": true,\n  \"HiddenSideBar\": false,\n  \"MultiTagsCache\": false,\n  \"KeepAlive\": true,\n  \"Locale\": \"zh\",\n  \"Layout\": \"vertical\",\n  \"Theme\": \"light\",\n  \"DarkMode\": false,\n  \"OverallStyle\": \"light\",\n  \"Grey\": false,\n  \"Weak\": false,\n  \"HideTabs\": false,\n  \"HideFooter\": false,\n  \"Stretch\": false,\n  \"SidebarStatus\": true,\n  \"EpThemeColor\": \"#409EFF\",\n  \"ShowLogo\": true,\n  \"ShowModel\": \"smart\",\n  \"MenuArrowIconNoTransition\": false,\n  \"CachingAsyncRoutes\": false,\n  \"TooltipEffect\": \"light\",\n  \"ResponsiveStorageNameSpace\": \"responsive-\",\n  \"MenuSearchHistory\": 6\n}",
       "is_active": true,
       "access": true,
       "key": "WEB_SITE_CONFIG",

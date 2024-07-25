@@ -20,6 +20,7 @@ from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
+from common.fields.utils import get_file_absolute_uri
 from system import models
 
 logger = logging.getLogger(__name__)
@@ -339,8 +340,24 @@ class OperationLogSerializer(BaseModelSerializer):
 class UploadFileSerializer(BaseModelSerializer):
     class Meta:
         model = models.UploadFile
-        fields = ['pk', 'filepath', 'filename', 'filesize', 'mime_type', 'md5sum']
-        read_only_fields = [x.name for x in models.UploadFile._meta.fields]
+        fields = ['pk', 'filename', 'filesize', 'mime_type', 'md5sum', 'file_url', 'access_url', 'is_tmp', 'is_upload']
+        read_only_fields = ["pk", "is_upload"]
+        table_fields = ['pk', 'filename', 'filesize', 'mime_type', 'access_url', 'is_tmp', 'is_upload', 'md5sum']
+
+    access_url = serializers.SerializerMethodField(label="访问URL")
+
+    def get_access_url(self, obj):
+        return obj.file_url if obj.file_url else get_file_absolute_uri(obj.filepath, self.context.get('request', None))
+
+    def create(self, validated_data):
+        if not validated_data.get('file_url'):
+            raise ValidationError('外部地址必须存在')
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if not validated_data.get('file_url') and not instance.is_upload:
+            raise ValidationError('外部地址必须存在')
+        return super().update(instance, validated_data)
 
 
 class NoticeMessageSerializer(BaseModelSerializer):

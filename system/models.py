@@ -294,15 +294,18 @@ class OperationLog(DbAuditModel):
 
 class UploadFile(DbAuditModel):
     filepath = models.FileField(verbose_name="文件存储", null=True, blank=True, upload_to=upload_directory_path)
+    file_url = models.URLField(verbose_name="外部地址", max_length=255, blank=True, null=True,
+                               help_text="一般为外部互联网可以访问的地址")
     filename = models.CharField(verbose_name="文件名", max_length=255)
     filesize = models.IntegerField(verbose_name="文件大小")
-    mime_type = models.CharField(max_length=255, blank=True, verbose_name="MIME类型")
-    md5sum = models.CharField(max_length=36, blank=True, verbose_name="文件MD5")
-    is_tmp = models.BooleanField(verbose_name="临时文件", default=True)
+    mime_type = models.CharField(max_length=255, verbose_name="MIME类型")
+    md5sum = models.CharField(max_length=36, verbose_name="文件MD5")
+    is_tmp = models.BooleanField(verbose_name="临时文件", default=False, help_text="临时文件会被定时任务自动清理")
+    is_upload = models.BooleanField(verbose_name="上传文件", default=False)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         self.filename = self.filename[:255]
-        if not self.md5sum:
+        if not self.md5sum and not self.file_url:
             md5 = hashlib.md5()
             for chunk in self.filepath.chunks():
                 md5.update(chunk)
