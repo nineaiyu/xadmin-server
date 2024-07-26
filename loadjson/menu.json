@@ -146,7 +146,7 @@
     "pk": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
     "fields": {
       "created_time": "2024-03-01T02:44:22.415Z",
-      "updated_time": "2024-07-23T07:03:05.293Z",
+      "updated_time": "2024-07-26T08:11:03.740Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -160,7 +160,9 @@
       "is_active": true,
       "meta": "9777ba02-b707-4a77-8d27-6f08e285c8e0",
       "method": "GET",
-      "model": []
+      "model": [
+        "11ad085f-8749-4098-be4c-9ca685fd21b7"
+      ]
     }
   },
   {
@@ -398,7 +400,7 @@
     "pk": "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
     "fields": {
       "created_time": "2024-03-01T03:40:43.752Z",
-      "updated_time": "2024-07-23T07:03:46.040Z",
+      "updated_time": "2024-07-26T08:11:28.609Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -412,7 +414,9 @@
       "is_active": true,
       "meta": "93ce783f-1cce-40c8-afaf-e9be50ab6fe6",
       "method": "GET",
-      "model": []
+      "model": [
+        "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a"
+      ]
     }
   },
   {
@@ -1524,7 +1528,7 @@
     "pk": "6fc056af-acd8-48dd-91cf-e34053014997",
     "fields": {
       "created_time": "2024-03-01T02:42:41.841Z",
-      "updated_time": "2024-07-23T07:03:22.506Z",
+      "updated_time": "2024-07-26T08:11:13.335Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1538,7 +1542,9 @@
       "is_active": true,
       "meta": "aea8a63d-3ab6-40db-b365-893b50e69cec",
       "method": "GET",
-      "model": []
+      "model": [
+        "14071ee3-6725-4fcc-962d-ad7898efa284"
+      ]
     }
   },
   {
@@ -2701,7 +2707,7 @@
     "pk": "f2107787-4453-4bc3-898c-a1449e39bf67",
     "fields": {
       "created_time": "2024-03-01T02:43:16.147Z",
-      "updated_time": "2024-07-23T07:03:33.803Z",
+      "updated_time": "2024-07-26T08:11:19.870Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2715,7 +2721,9 @@
       "is_active": true,
       "meta": "c3e221a1-91f4-4ee2-91a3-0e33ca39fa11",
       "method": "GET",
-      "model": []
+      "model": [
+        "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+      ]
     }
   },
   {

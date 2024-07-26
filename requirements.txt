@@ -1,6 +1,6 @@
-django==5.0.6
-djangorestframework==3.15.1
-django-cors-headers==4.3.1
+django==5.0.7
+djangorestframework==3.15.2
+django-cors-headers==4.4.0
 django-filter==24.2
 mysqlclient==2.2.4
 django-redis==5.4.0
@@ -14,13 +14,13 @@ python-daemon==3.0.1
 gunicorn==22.0.0
 django-proxy==1.3.0
 psutil==5.9.8
-uvicorn==0.30.1
+uvicorn==0.30.3
 daphne==4.1.2
 channels==4.1.0
 channels-redis==4.2.0
 django-simple-captcha==0.6.0
 user-agents==2.2.0
-aiofiles==23.2.1
+aiofiles==24.1.0
 websockets==12.0
 django-imagekit==5.0.0
 pilkit==3.0
