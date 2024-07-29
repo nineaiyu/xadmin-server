@@ -16,6 +16,7 @@ from common.base.magic import cache_response, MagicCacheData
 from common.core.config import SysConfig
 from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
+from common.core.utils import PrintLogFormat
 from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission, \
     SystemConfig, ModelLabelField
 from system.utils.notify import push_notice_messages
@@ -33,6 +34,7 @@ def post_migrate_handler(sender, **kwargs):
     now = timezone.now()
     if label not in settings.PERMISSION_DATA_AUTH_APPS:
         return
+    plf = PrintLogFormat(f"App:({label})")
     field_type = ModelLabelField.FieldChoices.DATA
     obj, _ = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, defaults={'label': "全部表"},
                                                       parent=None)
@@ -42,28 +44,32 @@ def post_migrate_handler(sender, **kwargs):
         ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
                                                  defaults={'label': getattr(field, 'verbose_name', field.name)})
     for model in sender.models.values():
+        count = [0, 0]
         delete = True
         model_name = model._meta.model_name
         verbose_name = model._meta.verbose_name
         if 'relationship' in verbose_name and '_' in model_name:
             continue
-        obj, _ = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
+        obj, created = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
                                                           parent=None, defaults={'label': verbose_name})
+        count[int(not created)] += 1
         # for field in model._meta.get_fields():
         for field in model._meta.fields:
-            ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
+            _, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
                                                      defaults={'label': field.verbose_name})
+            count[int(not created)] += 1
+        PrintLogFormat(f"Model:({label}.{model_name})").warning(
+            f"update_or_create data permission, created:{count[0]} updated:{count[1]}")
             # defaults={'label': getattr(field, 'verbose_name', field.through._meta.verbose_name)})
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now,
                                                               name__startswith=f"{label}.").delete()
-        logger.warning(f"auto upsert deleted {deleted} row_count {_rows_count}")
-
+        plf.info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
     if label == settings.PERMISSION_DATA_AUTH_APPS[-1]:
         try:
             get_sub_serializer_fields()
         except Exception as e:
-            logger.error(f"auto get sub serializer fields failed. {e}")
+            plf.error(f"auto get sub serializer fields failed. {e}")
 
 
 @receiver(m2m_changed)
