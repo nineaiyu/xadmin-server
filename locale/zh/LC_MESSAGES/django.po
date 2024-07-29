@@ -1,0 +1,877 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-29 18:28+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: common/celery/flower.py:39
+msgid ""
+"<h3>Celery flower service unavailable. Please contact the administrator</h3>"
+msgstr "任务监控系统不可用，请联系管理员"
+
+#: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
+#: common/core/permission.py:112
+msgid "Unauthorized Authentication"
+msgstr "未授权"
+
+#: common/core/auth.py:36
+msgid "Token is invalid or expired"
+msgstr "令牌无效或过期"
+
+#: common/core/exception.py:29
+msgid "Your visit is too fast, please visit again later"
+msgstr "您的手速太快啦，请稍后再访问"
+
+#: common/core/exception.py:31
+msgid "Your visit is too fast, please visit again in {} seconds"
+msgstr "您的手速太快啦，请 {} 秒后再次访问"
+
+#: common/core/exception.py:54
+msgid ""
+"The requested address is incorrect or the data permission is not allowed"
+msgstr "请求地址不正确或数据权限不允许"
+
+#: common/core/exception.py:58
+msgid "This data with other data binding"
+msgstr "该条数据与其他数据有绑定"
+
+#: common/core/models.py:20 common/core/models.py:27
+msgid "ID"
+msgstr "主键ID"
+
+#: common/core/models.py:34
+msgid "Created Time"
+msgstr "创建时间"
+
+#: common/core/models.py:35
+msgid "Updated Time"
+msgstr "更新时间"
+
+#: common/core/models.py:36
+msgid "Description"
+msgstr "描述"
+
+#: common/core/models.py:82
+msgid "Creator"
+msgstr "创建人"
+
+#: common/core/models.py:84
+msgid "Modifier"
+msgstr "修改人"
+
+#: common/core/models.py:86
+msgid "Data ownership department"
+msgstr "数据归属部门"
+
+#: common/core/modelset.py:64
+msgid "Image size cannot exceed {}"
+msgstr "图片大小不能超过 {}"
+
+#: common/core/modelset.py:67
+msgid "Wrong image type, the type should be {}"
+msgstr "错误的图片类型, 类型应该为 {}"
+
+#: common/core/modelset.py:91
+msgid "Sorting saved successfully"
+msgstr "排序保存成功"
+
+#: common/core/modelset.py:132 system/utils/modelset.py:53
+msgid "Operation failed. Abnormal data"
+msgstr "操作失败，数据异常"
+
+#: common/core/modelset.py:383
+msgid "Operation failed. Primary key list does not exist"
+msgstr "操作失败，主键列表不存在"
+
+#: common/core/modelset.py:393
+msgid "Operation successful. Batch deleted {} data"
+msgstr "操作成功，批量删除 {} 条数据"
+
+#: common/core/permission.py:110
+msgid "Permission Denied"
+msgstr "权限拒绝"
+
+#: common/core/response.py:16
+msgid "Operation successful"
+msgstr "操作成功"
+
+#: common/core/response.py:16
+msgid "Operation failed"
+msgstr "操作失败"
+
+#: common/core/serializers.py:79
+msgid "This field is required."
+msgstr "该字段不可为空"
+
+#: common/core/serializers.py:80
+#, python-brace-format
+msgid "Invalid pk \"{pk_value}\" - object does not exist."
+msgstr ""
+
+#: common/core/serializers.py:81
+#, python-brace-format
+msgid "Incorrect type. Expected pk value, received {data_type}."
+msgstr ""
+
+#: common/drf/parsers/axios_form_data.py:129
+msgid "Multipart form parse error - {}"
+msgstr "表单数据解析异常 - {}"
+
+#: common/drf/parsers/base.py:21
+msgid "The file content overflowed (The maximum length `{}` bytes)"
+msgstr ""
+
+#: common/drf/parsers/base.py:182
+msgid "The resource does not support imports!"
+msgstr "该资源不支持导入"
+
+#: common/drf/parsers/base.py:202
+msgid "Parse file error: {}"
+msgstr "文件解析失败 {}"
+
+#: common/drf/parsers/excel.py:14
+msgid "Invalid excel file {}"
+msgstr "错误的Excel文件 {}"
+
+#: common/drf/renders/base.py:218
+msgid ""
+"{} - The encryption password has not been set - please go to personal "
+"information -> file encryption password to set the encryption password"
+msgstr ""
+
+#: common/fields/char.py:59
+msgid "{} is not a valid value for AESCharField"
+msgstr "{} 不支持的AES加密类型"
+
+#: common/utils/media.py:54
+msgid "Directory indexes are not allowed here."
+msgstr "目录索引不被允许"
+
+#: common/utils/media.py:60
+#, python-format
+msgid "“%(path)s” does not exist"
+msgstr ""
+
+#: common/utils/swagger.py:33
+msgid "Incorrect username/password"
+msgstr "用户名或密码错误"
+
+#: common/utils/swagger.py:40
+msgid "Please enter your account information to log in"
+msgstr "请输入用户信息进行登录"
+
+#: system/models.py:18
+msgid "Text"
+msgstr "文本"
+
+#: system/models.py:19
+msgid "Json"
+msgstr "Json"
+
+#: system/models.py:20
+msgid "All data"
+msgstr "所有数据"
+
+#: system/models.py:21
+msgid "Datetime"
+msgstr "日期时间"
+
+#: system/models.py:22
+msgid "Datetime range selector"
+msgstr "日期时间区间选择器"
+
+#: system/models.py:23
+msgid "Seconds to the current time"
+msgstr "距离当前时间多少秒"
+
+#: system/models.py:24
+msgid "My ID"
+msgstr "本人ID"
+
+#: system/models.py:25
+msgid "My department ID"
+msgstr "本部门ID"
+
+#: system/models.py:26
+msgid "My department ID and data below the department"
+msgstr "本部门ID及部门以下数据"
+
+#: system/models.py:27
+msgid "Department ID and data below the department"
+msgstr "部门ID及部门以下数据"
+
+#: system/models.py:28
+msgid "Select the user ID"
+msgstr "选择用户ID"
+
+#: system/models.py:29
+msgid "Select menu ID"
+msgstr "选择菜单ID"
+
+#: system/models.py:30
+msgid "Select role ID"
+msgstr "选择角色ID"
+
+#: system/models.py:31
+msgid "Select department ID"
+msgstr "选择部门ID"
+
+#: system/models.py:34 system/models.py:82 system/models.py:229
+#: system/utils/serializer.py:136
+msgid "Role Permission"
+msgstr "角色权限"
+
+#: system/models.py:35 system/models.py:83 system/models.py:183
+#: system/models.py:230 system/utils/serializer.py:139
+msgid "Data Permission"
+msgstr "数据权限"
+
+#: system/models.py:37 system/utils/serializer.py:38
+msgid "Field Type"
+msgstr "字段类型"
+
+#: system/models.py:39
+msgid "Parent node"
+msgstr "上级节点"
+
+#: system/models.py:40
+msgid "Model/Field name"
+msgstr "模型/字段数值"
+
+#: system/models.py:41
+msgid "Model/Field label"
+msgstr "模型/字段数值"
+
+#: system/models.py:45
+msgid "Model Label Field"
+msgstr "模型/字段名称"
+
+#: system/models.py:54
+msgid "Or Mode"
+msgstr "或 (or) 模式"
+
+#: system/models.py:55
+msgid "And Mode"
+msgstr "且 (and) 模式"
+
+#: system/models.py:58
+msgid "Data Permission Mode"
+msgstr "数据权限模式"
+
+#: system/models.py:60
+msgid ""
+"Permission mode, and the mode indicates that the data needs to satisfy each "
+"rule in the rule list at the same time, or the mode satisfies any rule"
+msgstr ""
+"权限模式, 且模式表示数据需要同时满足规则列表中的每条规则，或模式即满足任意一"
+"条规则即可"
+
+#: system/models.py:68
+msgid "Unknown"
+msgstr "未知"
+
+#: system/models.py:69
+msgid "Male"
+msgstr "男性"
+
+#: system/models.py:70
+msgid "Female"
+msgstr "女性"
+
+#: system/models.py:72
+msgid "Avatar"
+msgstr "头像"
+
+#: system/models.py:78
+msgid "Nickname"
+msgstr "昵称"
+
+#: system/models.py:79 system/utils/serializer.py:199
+msgid "Gender"
+msgstr "性别"
+
+#: system/models.py:80
+msgid "Mobile"
+msgstr "手机"
+
+#: system/models.py:84 system/models.py:255 system/utils/serializer.py:197
+msgid "Department"
+msgstr "部门"
+
+#: system/models.py:89
+msgid "Userinfo"
+msgstr "用户信息"
+
+#: system/models.py:98 system/utils/serializer.py:315
+msgid "Menu Title"
+msgstr "菜单名称"
+
+#: system/models.py:99
+msgid "Left Icon"
+msgstr "菜单左图标"
+
+#: system/models.py:100 system/utils/serializer.py:233
+msgid "Right Icon"
+msgstr "菜单右图标"
+
+#: system/models.py:101
+msgid "Additional icon to the right of menu name"
+msgstr "菜单右侧额外图标"
+
+#: system/models.py:102 system/utils/serializer.py:232
+msgid "Show Menu"
+msgstr "显示菜单"
+
+#: system/models.py:103 system/utils/serializer.py:231
+msgid "Show Parent Menu"
+msgstr "显示父级菜单"
+
+#: system/models.py:104 system/utils/serializer.py:234
+msgid "Keepalive"
+msgstr "页面缓存"
+
+#: system/models.py:106
+msgid ""
+"When enabled, the entire state of the page is saved, and when refreshed, the "
+"state is cleared"
+msgstr "开启后，会保存该页面的整体状态，刷新后会清空状态"
+
+#: system/models.py:107 system/utils/serializer.py:235
+msgid "Iframe URL"
+msgstr "Iframe地址"
+
+#: system/models.py:108
+msgid "The embedded iframe link address"
+msgstr "内嵌的Iframe地址"
+
+#: system/models.py:109 system/utils/serializer.py:236
+msgid "Iframe Loading"
+msgstr "Iframe页面加载动画"
+
+#: system/models.py:111
+msgid "Enter Animation"
+msgstr "页面进场动画"
+
+#: system/models.py:112
+msgid "Leave Animation"
+msgstr "页面离场动画"
+
+#: system/models.py:114 system/utils/serializer.py:246
+msgid "Hidden Tag"
+msgstr "隐藏标签"
+
+#: system/models.py:115
+msgid ""
+"The current menu name or custom information is prohibited from being added "
+"to the TAB"
+msgstr "当前菜单名称或自定义信息禁止添加到标签页"
+
+#: system/models.py:116 system/utils/serializer.py:247
+msgid "Fixed Tag"
+msgstr "固定标签"
+
+#: system/models.py:117
+msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
+msgstr "当前菜单名称是否固定显示在标签页且不可关闭"
+
+#: system/models.py:118 system/utils/serializer.py:248
+msgid "Dynamic Level"
+msgstr "标签显示数量"
+
+#: system/models.py:119
+msgid "Maximum number of dynamic routes that can be opened"
+msgstr "显示已打开标签页最大数量"
+
+#: system/models.py:122 system/models.py:152 system/utils/serializer.py:275
+#: system/utils/serializer.py:319
+msgid "Menu Meta"
+msgstr "菜单元数据"
+
+#: system/models.py:132
+msgid "Directory"
+msgstr "目录"
+
+#: system/models.py:133 system/models.py:167 system/models.py:179
+#: system/models.py:194 system/models.py:207 system/utils/serializer.py:55
+#: system/utils/serializer.py:120
+msgid "Menu"
+msgstr "菜单"
+
+#: system/models.py:134
+msgid "Permission"
+msgstr "权限"
+
+#: system/models.py:137
+msgid "GET"
+msgstr ""
+
+#: system/models.py:138
+msgid "POST"
+msgstr ""
+
+#: system/models.py:139
+msgid "PUT"
+msgstr ""
+
+#: system/models.py:140
+msgid "DELETE"
+msgstr ""
+
+#: system/models.py:141
+msgid "PATCH"
+msgstr ""
+
+#: system/models.py:143 system/utils/serializer.py:285
+msgid "Parent Menu"
+msgstr "上级菜单"
+
+#: system/models.py:146 system/utils/serializer.py:290
+msgid "Menu Type"
+msgstr "菜单类型"
+
+#: system/models.py:147
+msgid "Component Name Or Permission Code"
+msgstr "组件英文名称 或 权限标识"
+
+#: system/models.py:148 system/models.py:231
+msgid "Rank"
+msgstr "排序"
+
+#: system/models.py:149
+msgid "Route Path Or Api Path"
+msgstr "路由地址 或 后端权限路由"
+
+#: system/models.py:150
+msgid "Component Path"
+msgstr "组件地址"
+
+#: system/models.py:151 system/models.py:178 system/models.py:193
+#: system/models.py:235 system/models.py:405
+msgid "Is Active"
+msgstr "激活状态"
+
+#: system/models.py:153 system/utils/serializer.py:287
+msgid "Model"
+msgstr "模型"
+
+#: system/models.py:157
+msgid "Method"
+msgstr "请求方式"
+
+#: system/models.py:176
+msgid "Name"
+msgstr "名称"
+
+#: system/models.py:177
+msgid "Rules"
+msgstr "规则"
+
+#: system/models.py:180
+msgid "If a menu exists, it only applies to the selected menu permission"
+msgstr "若存在菜单权限，则该权限仅针对所选择的菜单权限生效"
+
+#: system/models.py:191
+msgid "Role Name"
+msgstr "角色名称"
+
+#: system/models.py:192
+msgid "Role Code"
+msgstr "角色标识"
+
+#: system/models.py:197
+msgid "User Role"
+msgstr "用户角色"
+
+#: system/models.py:206
+msgid "Role"
+msgstr "角色"
+
+#: system/models.py:208
+msgid "Field"
+msgstr "字段"
+
+#: system/models.py:211
+msgid "Field Permission"
+msgstr "字段权限"
+
+#: system/models.py:225
+msgid "Department Name"
+msgstr "部门名称"
+
+#: system/models.py:226
+msgid "Department Code"
+msgstr "部门标识"
+
+#: system/models.py:227 system/utils/serializer.py:159
+msgid "Superior Department"
+msgstr "上级部门"
+
+#: system/models.py:232
+msgid "Auto Bind"
+msgstr "自动绑定"
+
+#: system/models.py:234
+msgid ""
+"If the value of the registration parameter channel is consistent with the "
+"department code, the user is automatically bound to the department"
+msgstr "注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定"
+
+#: system/models.py:265
+msgid "Username And Password"
+msgstr "用户名和密码"
+
+#: system/models.py:266
+msgid "SMS Verification Code"
+msgstr "短信验证"
+
+#: system/models.py:267
+msgid "Wechat Scan Code"
+msgstr "微信扫码"
+
+#: system/models.py:269
+msgid "Login Status"
+msgstr "登录状态"
+
+#: system/models.py:270 system/models.py:287
+msgid "IpAddress"
+msgstr "IP地址"
+
+#: system/models.py:271 system/models.py:288
+msgid "Browser"
+msgstr "浏览器"
+
+#: system/models.py:272 system/models.py:289
+msgid "System"
+msgstr "操作系统"
+
+#: system/models.py:273
+msgid "Agent"
+msgstr "Agent信息"
+
+#: system/models.py:275
+msgid "Login Type"
+msgstr "登录类型"
+
+#: system/models.py:278
+msgid "User Login Log"
+msgstr "用户登录日志"
+
+#: system/models.py:283 system/utils/serializer.py:333
+msgid "Module"
+msgstr "模块"
+
+#: system/models.py:284
+msgid "URL Path"
+msgstr "访问路径"
+
+#: system/models.py:285
+msgid "Request Body"
+msgstr "请求参数"
+
+#: system/models.py:286
+msgid "Request Method"
+msgstr "请求方式"
+
+#: system/models.py:290
+msgid "Response Code"
+msgstr "响应码"
+
+#: system/models.py:291
+msgid "Response Result"
+msgstr "响应内容"
+
+#: system/models.py:292
+msgid "Status Code"
+msgstr "状态码"
+
+#: system/models.py:295
+msgid "Operation Log"
+msgstr "操作日志"
+
+#: system/models.py:307
+msgid "FilePath"
+msgstr "文件路径"
+
+#: system/models.py:308
+msgid "Internet URL"
+msgstr "网络地址"
+
+#: system/models.py:309
+msgid "Usually an address accessible to the outside Internet"
+msgstr "一般为外部互联网可以访问的地址"
+
+#: system/models.py:310
+msgid "Filename"
+msgstr "文件名称"
+
+#: system/models.py:311
+msgid "Filesize"
+msgstr "文件大小"
+
+#: system/models.py:312
+msgid "Mime Type"
+msgstr "文件类型"
+
+#: system/models.py:313
+msgid "File Md5sum"
+msgstr "文件MD5"
+
+#: system/models.py:314
+msgid "Tmp File"
+msgstr "临时文件"
+
+#: system/models.py:315
+msgid "Temporary files are automatically cleared by scheduled tasks"
+msgstr "临时文件会被定时任务自动清理"
+
+#: system/models.py:316 system/models.py:330
+msgid "Upload File"
+msgstr "上传文件"
+
+#: system/models.py:339
+msgid "System Notification"
+msgstr "系统通知"
+
+#: system/models.py:340
+msgid "System Announcement"
+msgstr "系统公告"
+
+#: system/models.py:341
+msgid "User Notification"
+msgstr "用户通知"
+
+#: system/models.py:342
+msgid "Department Notification"
+msgstr "部门通知"
+
+#: system/models.py:343
+msgid "Role Notification"
+msgstr "角色通知"
+
+#: system/models.py:346
+msgid "Ordinary Notices"
+msgstr "普遍通知"
+
+#: system/models.py:347
+msgid "General Notices"
+msgstr "一般通知"
+
+#: system/models.py:348
+msgid "Success Notices"
+msgstr "成功通知"
+
+#: system/models.py:349
+msgid "Important Notices"
+msgstr "重要通知"
+
+#: system/models.py:352 system/utils/serializer.py:375
+msgid "The Notified User"
+msgstr "被通知用户"
+
+#: system/models.py:353 system/utils/serializer.py:379
+msgid "The Notified Department"
+msgstr "被通知部门"
+
+#: system/models.py:354 system/utils/serializer.py:380
+msgid "The Notified Role"
+msgstr "被通知角色"
+
+#: system/models.py:355 system/utils/serializer.py:390
+msgid "Notice Level"
+msgstr "通知级别"
+
+#: system/models.py:357 system/utils/serializer.py:388
+#: system/utils/serializer.py:485 system/utils/serializer.py:504
+msgid "Notice Type"
+msgstr "通知类型"
+
+#: system/models.py:359
+msgid "Notice Title"
+msgstr "通知标题"
+
+#: system/models.py:360 system/models.py:376 system/utils/serializer.py:507
+msgid "Notice Message"
+msgstr "通知内容"
+
+#: system/models.py:361
+msgid "Additional Json Data"
+msgstr "额外的Json数据"
+
+#: system/models.py:362 system/utils/serializer.py:383
+msgid "Uploaded Attachments"
+msgstr "上传的附件"
+
+#: system/models.py:363
+msgid "Publish"
+msgstr "发布"
+
+#: system/models.py:391 system/models.py:427 system/utils/serializer.py:505
+#: system/utils/serializer.py:532 system/utils/serializer.py:544
+#: system/utils/serializer.py:579
+msgid "User"
+msgstr "用户"
+
+#: system/models.py:392
+msgid "Notice"
+msgstr "通知"
+
+#: system/models.py:393 system/utils/serializer.py:486
+msgid "Unread"
+msgstr "未读"
+
+#: system/models.py:397
+msgid "User has read the message"
+msgstr "用户已读通知"
+
+#: system/models.py:404
+msgid "Config Value"
+msgstr "配置数值"
+
+#: system/models.py:406
+msgid "API Access"
+msgstr "接口访问"
+
+#: system/models.py:407
+msgid "Allows API interfaces to access this config"
+msgstr "允许API接口访问该配置"
+
+#: system/models.py:414 system/models.py:428
+msgid "Config Name"
+msgstr "配置名称"
+
+#: system/models.py:415
+msgid "User Inherit"
+msgstr "用户继承"
+
+#: system/models.py:416
+msgid "Allows users to inherit this config"
+msgstr "允许用户继承该配置"
+
+#: system/models.py:419
+msgid "System Config"
+msgstr "系统配置"
+
+#: system/models.py:431
+msgid "User Config"
+msgstr "用户配置"
+
+#: system/utils/serializer.py:123 system/utils/serializer.py:143
+msgid "Mode Type"
+msgstr "权限模式"
+
+#: system/utils/serializer.py:128
+msgid "The rule cannot be null"
+msgstr "权限规则不能为空"
+
+#: system/utils/serializer.py:157 system/utils/serializer.py:384
+msgid "User Count"
+msgstr "用户数量"
+
+#: system/utils/serializer.py:175
+msgid "The superior department cannot be its own subordinate department"
+msgstr "上级部门不能是自己的下级部门"
+
+#: system/utils/serializer.py:211
+msgid "Abnormal password field"
+msgstr "密码字段异常"
+
+#: system/utils/serializer.py:350
+msgid "Access URL"
+msgstr "访问地址"
+
+#: system/utils/serializer.py:357
+msgid "Internet url cannot be null"
+msgstr "网络地址不能为空"
+
+#: system/utils/serializer.py:385
+msgid "Read User Count"
+msgstr "已读用户数量"
+
+#: system/utils/serializer.py:411
+msgid "Parameter error. System announcement cannot be created"
+msgstr "参数有误，不支持创建系统公告"
+
+#: system/utils/serializer.py:421
+msgid "The notice role cannot be null"
+msgstr "被通知角色不能为空"
+
+#: system/utils/serializer.py:427
+msgid "The notice department cannot be null"
+msgstr "被通知部门不能为空"
+
+#: system/utils/serializer.py:433
+msgid "The notice user cannot be null"
+msgstr "被通知用户不能为空"
+
+#: system/utils/serializer.py:472
+msgid "Parameter error"
+msgstr "参与有误"
+
+#: system/utils/serializer.py:517
+msgid "Config Cache Value"
+msgstr "配置缓存数值"
+
+#: system/utils/serializer.py:546
+msgid "Users"
+msgstr "多个用户"
+
+#: system/utils/serializer.py:553
+msgid "User cannot be null"
+msgstr "用户不能为空"
+
+#: system/utils/signal_handler.py:42
+msgid "All Tables"
+msgstr "全部表"
+
+#: system/utils/signal_handler.py:45
+msgid "All Fields"
+msgstr "全部字段"
+
+#: system/views/admin/user.py:48
+msgid "The super administrator disallows deletion"
+msgstr "超级管理员禁止删除"
+
+#: system/views/auth.py:112
+msgid "Registration Forbidden"
+msgstr "禁止注册"
+
+#: system/views/auth.py:120 system/views/auth.py:177
+msgid "Temporary Token validation failed. Please try again"
+msgstr "临时Token校验失败，请稍后重试"
+
+#: system/views/auth.py:122 system/views/auth.py:179
+msgid "Captcha validation failed. Please try again"
+msgstr "验证码校验失败，请稍后重试"
+
+#: system/views/auth.py:126
+msgid "The username already exists, please try another one"
+msgstr "用户名已经存在，请换个试试"
+
+#: system/views/auth.py:169
+msgid "Login Forbidden"
+msgstr "禁止登录"
+
+#: system/views/upload.py:53
+msgid "upload file size cannot exceed {}"
+msgstr "文件大小不能超过 {}"
+
+#: system/views/upload.py:56
+msgid "Wrong upload file type"
+msgstr "错误的文件类型"
+
+#: system/views/user/userinfo.py:60
+msgid "Old password verification failed"
+msgstr "旧密码校验失败"

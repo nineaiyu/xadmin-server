@@ -11,6 +11,8 @@ from django.db import transaction
 from django.db.models.signals import post_save, pre_delete, m2m_changed, post_migrate
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.translation import activate
+from django.utils.translation import gettext_lazy as _
 
 from common.base.magic import cache_response, MagicCacheData
 from common.core.config import SysConfig
@@ -35,11 +37,12 @@ def post_migrate_handler(sender, **kwargs):
     if label not in settings.PERMISSION_DATA_AUTH_APPS:
         return
     plf = PrintLogFormat(f"App:({label})")
+    activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
     field_type = ModelLabelField.FieldChoices.DATA
-    obj, _ = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, defaults={'label': "全部表"},
-                                                      parent=None)
+    obj, created = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type,
+                                                            defaults={'label': _("All Tables")}, parent=None)
     ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, parent=obj,
-                                             defaults={'label': "全部字段"})
+                                             defaults={'label': _("All Fields")})
     for field in DbAuditModel._meta.fields:
         ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
                                                  defaults={'label': getattr(field, 'verbose_name', field.name)})
@@ -55,7 +58,7 @@ def post_migrate_handler(sender, **kwargs):
         count[int(not created)] += 1
         # for field in model._meta.get_fields():
         for field in model._meta.fields:
-            _, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
+            _obj, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
                                                      defaults={'label': field.verbose_name})
             count[int(not created)] += 1
         PrintLogFormat(f"Model:({label}.{model_name})").warning(

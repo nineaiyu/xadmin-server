@@ -7,6 +7,7 @@
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.shortcuts import redirect
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
@@ -29,14 +30,14 @@ class ApiLogin(TokenObtainPairView):
             serializer.is_valid(raise_exception=True)
             login(request, serializer.user)
         except Exception as e:
-            return ApiResponse(detail="账号/密码错误")
+            return ApiResponse(detail=_("Incorrect username/password"))
         response = redirect(request.query_params.get("next", "/api-docs/swagger/"))
         return response
 
     @swagger_auto_schema(auto_schema=None)
     @xframe_options_exempt
     def get(self, request, *args, **kwargs):
-        return ApiResponse(detail="请输入账号信息进行登录")
+        return ApiResponse(detail=_("Please enter your account information to log in"))
 
 
 class ApiLogout(APIView):

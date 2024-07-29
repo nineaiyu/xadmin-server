@@ -5,14 +5,15 @@
 # author : ly_13
 # date : 6/2/2023
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
 
 
 class ApiResponse(Response):
-    def __init__(self, code=1000, detail='success', data=None, status=None, headers=None, content_type=None, **kwargs):
+    def __init__(self, code=1000, detail=None, data=None, status=None, headers=None, content_type=None, **kwargs):
         dic = {
             'code': code,
-            'detail': detail
+            'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
         }
         if data is not None:
             dic['data'] = data

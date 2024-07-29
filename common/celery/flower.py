@@ -9,7 +9,7 @@ import logging
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_yasg.utils import swagger_auto_schema
 from proxy.views import proxy_view
@@ -36,7 +36,7 @@ class CeleryFlowerView(APIView):
             })
         except Exception as e:
             logger.warning(f"celery flower service unavailable. {e}")
-            msg = _("<h3>服务不在线，请联系管理员</h3>")
+            msg = _("<h3>Celery flower service unavailable. Please contact the administrator</h3>")
             response = HttpResponse(msg)
         return response
 

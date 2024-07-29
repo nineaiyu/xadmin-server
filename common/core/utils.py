@@ -48,8 +48,6 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 name = "%s:%s" % (pre_namespace, item.name)
             else:
                 name = item.name
-            if not item.name:
-                raise Exception('URL路由中必须设置name属性')
             url = pre_url + item.pattern.regex.pattern.lstrip('^')
             # url = url.replace('^', '').replace('$', '')
 

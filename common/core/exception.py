@@ -8,6 +8,7 @@ from logging import getLogger
 
 from django.db.models import ProtectedError, RestrictedError
 from django.http import Http404
+from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import Throttled, APIException
 from rest_framework.views import exception_handler
 from rest_framework.views import set_rollback
@@ -24,12 +25,13 @@ def common_exception_handler(exc, context):
     ret = exception_handler(exc, context)  # 是Response对象，它内部有个data
     logger.error(f'{context["view"].__class__.__name__} ERROR: {exc} ret:{ret}')
     if isinstance(exc, Throttled):
-        second = f' {exc.wait} 秒之后'
         if not exc.wait:
-            second = '稍后'
+            detail = _("Your visit is too fast, please visit again later")
+        else:
+            detail = _("Your visit is too fast, please visit again in {} seconds").format(exc.wait)
         ret.data = {
             'code': 999,
-            'detail': f'您手速太快啦，请{second}再次访问',
+            'detail': detail
         }
 
     elif isinstance(exc, APIException):
@@ -49,11 +51,11 @@ def common_exception_handler(exc, context):
 
     elif isinstance(exc, Http404):
         ret.status_code = 400
-        ret.data = {'detail': "请求地址不正确或数据权限不允许"}
+        ret.data = {'detail': _("The requested address is incorrect or the data permission is not allowed")}
 
     elif isinstance(exc, (ProtectedError, RestrictedError)):
         set_rollback()
-        return ApiResponse(code=998, detail='该条数据与其他数据有绑定')
+        return ApiResponse(code=998, detail=_("This data with other data binding"))
     else:
         unexpected_exception_logger.exception('')
 

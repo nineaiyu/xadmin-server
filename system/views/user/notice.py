@@ -104,7 +104,7 @@ class UserNoticeMessage(OnlyListModelSet):
             NoticeUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
             for pk in pks:
                 NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
-        return ApiResponse(detail="操作成功")
+        return ApiResponse()
 
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,

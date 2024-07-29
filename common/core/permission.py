@@ -8,6 +8,7 @@ import re
 
 from django.conf import settings
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
@@ -20,7 +21,7 @@ from system.models import Menu, FieldPermission
 def get_user_menu_queryset(user_obj):
     q = Q()
     has_role = False
-    if user_obj.roles.count():
+    if user_obj.roles.exists():
         q |= (Q(userrole__in=user_obj.roles.all()) & Q(userrole__is_active=True))
         has_role = True
     if user_obj.dept:
@@ -106,6 +107,6 @@ class IsAuthenticated(BasePermission):
                             request.user.menu = p_data.get('pk')
                             request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True
-            raise PermissionDenied('权限不足')
+            raise PermissionDenied(_("Permission Denied"))
         else:
-            raise NotAuthenticated('未授权认证')
+            raise NotAuthenticated(_("Unauthorized Authentication"))

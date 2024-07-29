@@ -4,6 +4,7 @@
 # filename : modelset
 # author : ly_13
 # date : 12/24/2023
+from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
@@ -48,8 +49,8 @@ class ChangeRolePermissionAction(object):
                 # instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
                 # 数据权限是部门进行并查询过滤，可以直接进行查询
                 instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get('pk') for rule in rules]).all())
-            return ApiResponse(detail="操作成功")
-        return ApiResponse(code=1004, detail="数据异常")
+            return ApiResponse()
+        return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
 
 class InvalidConfigCacheAction(object):
@@ -67,4 +68,4 @@ class InvalidConfigCacheAction(object):
         else:
             owner = instance.owner
         UserConfig(owner).invalid_config_cache(key=instance.key)
-        return ApiResponse(detail="操作成功")
+        return ApiResponse()

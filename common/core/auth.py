@@ -7,6 +7,7 @@
 import hashlib
 
 from django.http.cookie import parse_cookie
+from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
@@ -19,7 +20,7 @@ def auth_required(view_func):
     def wrapper(view, request, *args, **kwargs):
         if request.user and request.user.is_authenticated:
             return view_func(view, request, *args, **kwargs)
-        raise NotAuthenticated('未授权认证')
+        raise NotAuthenticated(_("Unauthorized Authentication"))
 
     return wrapper
 
@@ -32,7 +33,7 @@ class ServerAccessToken(AccessToken):
     def verify(self):
         user_id = self.payload.get('user_id')
         if BlackAccessTokenCache(user_id, hashlib.md5(self.token).hexdigest()).get_storage_cache():
-            raise TokenError('Token is invalid or expired')
+            raise TokenError(_("Token is invalid or expired"))
         super().verify()
 
 

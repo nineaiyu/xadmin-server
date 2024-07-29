@@ -7,12 +7,13 @@
 from functools import partial
 from inspect import isfunction
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Model
 from django.db.models.fields import NOT_PROVIDED
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _, activate
 from rest_framework.fields import empty, ChoiceField
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer, RelatedField, MultipleChoiceField
@@ -265,6 +266,7 @@ class BaseModelSerializer(ModelSerializer):
 @transaction.atomic
 def get_sub_serializer_fields():
     cls_list = []
+    activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
 
     def get_all_subclass(base_cls):
         if base_cls.__subclasses__():

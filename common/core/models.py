@@ -11,28 +11,29 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
 
 
 class DbUuidModel(models.Model):
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, verbose_name="主键ID")
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, verbose_name=_("ID"))
 
     class Meta:
         abstract = True
 
 
 class DbCharModel(models.Model):
-    id = models.CharField(primary_key=True, max_length=128, verbose_name="主键ID")
+    id = models.CharField(primary_key=True, max_length=128, verbose_name=_("ID"))
 
     class Meta:
         abstract = True
 
 
 class DbBaseModel(models.Model):
-    created_time = models.DateTimeField(auto_now_add=True, verbose_name="添加时间")
-    updated_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-    description = models.CharField(max_length=256, verbose_name="描述信息", null=True, blank=True)
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created Time"))
+    updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated Time"))
+    description = models.CharField(max_length=256, verbose_name=_("Description"), null=True, blank=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if force_insert:
@@ -78,11 +79,12 @@ class DbBaseModel(models.Model):
 
 class DbAuditModel(DbBaseModel):
     creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='creator_query', null=True, blank=True,
-                                verbose_name='创建人', on_delete=models.SET_NULL, related_name='+')
+                                verbose_name=_("Creator"), on_delete=models.SET_NULL, related_name='+')
     modifier = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='modifier_query', null=True,
-                                 blank=True, verbose_name='修改人', on_delete=models.SET_NULL, related_name='+')
+                                 blank=True, verbose_name=_("Modifier"), on_delete=models.SET_NULL, related_name='+')
     dept_belong = models.ForeignKey(to="system.DeptInfo", related_query_name='dept_belong_query', null=True, blank=True,
-                                    verbose_name='数据归属部门', on_delete=models.SET_NULL, related_name='+')
+                                    verbose_name=_("Data ownership department"), on_delete=models.SET_NULL,
+                                    related_name='+')
 
     class Meta:
         abstract = True

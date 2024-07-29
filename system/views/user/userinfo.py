@@ -6,6 +6,7 @@
 # date : 6/16/2023
 import logging
 
+from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
@@ -56,9 +57,9 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
             sure_password = AESCipherV2(instance.username).decrypt(sure_password)
             old_password = AESCipherV2(instance.username).decrypt(old_password)
             if not instance.check_password(old_password):
-                return ApiResponse(code=1001, detail='旧密码校验失败')
+                return ApiResponse(code=1001, detail=_("Old password verification failed"))
             instance.set_password(sure_password)
             instance.modifier = request.user
             instance.save(update_fields=['password', 'modifier'])
             return ApiResponse()
-        return ApiResponse(code=1001, detail='修改失败')
+        return ApiResponse(code=1001)

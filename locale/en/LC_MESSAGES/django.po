@@ -1,0 +1,876 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-29 18:28+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: common/celery/flower.py:39
+msgid ""
+"<h3>Celery flower service unavailable. Please contact the administrator</h3>"
+msgstr ""
+
+#: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
+#: common/core/permission.py:112
+msgid "Unauthorized Authentication"
+msgstr ""
+
+#: common/core/auth.py:36
+msgid "Token is invalid or expired"
+msgstr ""
+
+#: common/core/exception.py:29
+msgid "Your visit is too fast, please visit again later"
+msgstr ""
+
+#: common/core/exception.py:31
+msgid "Your visit is too fast, please visit again in {} seconds"
+msgstr ""
+
+#: common/core/exception.py:54
+msgid ""
+"The requested address is incorrect or the data permission is not allowed"
+msgstr ""
+
+#: common/core/exception.py:58
+msgid "This data with other data binding"
+msgstr ""
+
+#: common/core/models.py:20 common/core/models.py:27
+msgid "ID"
+msgstr ""
+
+#: common/core/models.py:34
+msgid "Created Time"
+msgstr ""
+
+#: common/core/models.py:35
+msgid "Updated Time"
+msgstr ""
+
+#: common/core/models.py:36
+msgid "Description"
+msgstr ""
+
+#: common/core/models.py:82
+msgid "Creator"
+msgstr ""
+
+#: common/core/models.py:84
+msgid "Modifier"
+msgstr ""
+
+#: common/core/models.py:86
+msgid "Data ownership department"
+msgstr ""
+
+#: common/core/modelset.py:64
+msgid "Image size cannot exceed {}"
+msgstr ""
+
+#: common/core/modelset.py:67
+msgid "Wrong image type, the type should be {}"
+msgstr ""
+
+#: common/core/modelset.py:91
+msgid "Sorting saved successfully"
+msgstr ""
+
+#: common/core/modelset.py:132 system/utils/modelset.py:53
+msgid "Operation failed. Abnormal data"
+msgstr ""
+
+#: common/core/modelset.py:383
+msgid "Operation failed. Primary key list does not exist"
+msgstr ""
+
+#: common/core/modelset.py:393
+msgid "Operation successful. Batch deleted {} data"
+msgstr ""
+
+#: common/core/permission.py:110
+msgid "Permission Denied"
+msgstr ""
+
+#: common/core/response.py:16
+msgid "Operation successful"
+msgstr ""
+
+#: common/core/response.py:16
+msgid "Operation failed"
+msgstr ""
+
+#: common/core/serializers.py:79
+msgid "This field is required."
+msgstr ""
+
+#: common/core/serializers.py:80
+#, python-brace-format
+msgid "Invalid pk \"{pk_value}\" - object does not exist."
+msgstr ""
+
+#: common/core/serializers.py:81
+#, python-brace-format
+msgid "Incorrect type. Expected pk value, received {data_type}."
+msgstr ""
+
+#: common/drf/parsers/axios_form_data.py:129
+msgid "Multipart form parse error - {}"
+msgstr ""
+
+#: common/drf/parsers/base.py:21
+msgid "The file content overflowed (The maximum length `{}` bytes)"
+msgstr ""
+
+#: common/drf/parsers/base.py:182
+msgid "The resource does not support imports!"
+msgstr ""
+
+#: common/drf/parsers/base.py:202
+msgid "Parse file error: {}"
+msgstr ""
+
+#: common/drf/parsers/excel.py:14
+msgid "Invalid excel file {}"
+msgstr ""
+
+#: common/drf/renders/base.py:218
+msgid ""
+"{} - The encryption password has not been set - please go to personal "
+"information -> file encryption password to set the encryption password"
+msgstr ""
+
+#: common/fields/char.py:59
+msgid "{} is not a valid value for AESCharField"
+msgstr ""
+
+#: common/utils/media.py:54
+msgid "Directory indexes are not allowed here."
+msgstr ""
+
+#: common/utils/media.py:60
+#, python-format
+msgid "“%(path)s” does not exist"
+msgstr ""
+
+#: common/utils/swagger.py:33
+msgid "Incorrect username/password"
+msgstr ""
+
+#: common/utils/swagger.py:40
+msgid "Please enter your account information to log in"
+msgstr ""
+
+#: system/models.py:18
+msgid "Text"
+msgstr ""
+
+#: system/models.py:19
+msgid "Json"
+msgstr ""
+
+#: system/models.py:20
+msgid "All data"
+msgstr ""
+
+#: system/models.py:21
+msgid "Datetime"
+msgstr ""
+
+#: system/models.py:22
+msgid "Datetime range selector"
+msgstr ""
+
+#: system/models.py:23
+msgid "Seconds to the current time"
+msgstr ""
+
+#: system/models.py:24
+msgid "My ID"
+msgstr ""
+
+#: system/models.py:25
+msgid "My department ID"
+msgstr ""
+
+#: system/models.py:26
+msgid "My department ID and data below the department"
+msgstr ""
+
+#: system/models.py:27
+msgid "Department ID and data below the department"
+msgstr ""
+
+#: system/models.py:28
+msgid "Select the user ID"
+msgstr ""
+
+#: system/models.py:29
+msgid "Select menu ID"
+msgstr ""
+
+#: system/models.py:30
+msgid "Select role ID"
+msgstr ""
+
+#: system/models.py:31
+msgid "Select department ID"
+msgstr ""
+
+#: system/models.py:34 system/models.py:82 system/models.py:229
+#: system/utils/serializer.py:136
+msgid "Role Permission"
+msgstr ""
+
+#: system/models.py:35 system/models.py:83 system/models.py:183
+#: system/models.py:230 system/utils/serializer.py:139
+msgid "Data Permission"
+msgstr ""
+
+#: system/models.py:37 system/utils/serializer.py:38
+msgid "Field Type"
+msgstr ""
+
+#: system/models.py:39
+msgid "Parent node"
+msgstr ""
+
+#: system/models.py:40
+msgid "Model/Field name"
+msgstr ""
+
+#: system/models.py:41
+msgid "Model/Field label"
+msgstr ""
+
+#: system/models.py:45
+msgid "Model Label Field"
+msgstr ""
+
+#: system/models.py:54
+msgid "Or Mode"
+msgstr ""
+
+#: system/models.py:55
+msgid "And Mode"
+msgstr ""
+
+#: system/models.py:58
+msgid "Data Permission Mode"
+msgstr ""
+
+#: system/models.py:60
+msgid ""
+"Permission mode, and the mode indicates that the data needs to satisfy each "
+"rule in the rule list at the same time, or the mode satisfies any rule"
+msgstr ""
+
+#: system/models.py:68
+msgid "Unknown"
+msgstr ""
+
+#: system/models.py:69
+msgid "Male"
+msgstr ""
+
+#: system/models.py:70
+msgid "Female"
+msgstr ""
+
+#: system/models.py:72
+msgid "Avatar"
+msgstr ""
+
+#: system/models.py:78
+msgid "Nickname"
+msgstr ""
+
+#: system/models.py:79 system/utils/serializer.py:199
+msgid "Gender"
+msgstr ""
+
+#: system/models.py:80
+msgid "Mobile"
+msgstr ""
+
+#: system/models.py:84 system/models.py:255 system/utils/serializer.py:197
+msgid "Department"
+msgstr ""
+
+#: system/models.py:89
+msgid "Userinfo"
+msgstr ""
+
+#: system/models.py:98 system/utils/serializer.py:315
+msgid "Menu Title"
+msgstr ""
+
+#: system/models.py:99
+msgid "Left Icon"
+msgstr ""
+
+#: system/models.py:100 system/utils/serializer.py:233
+msgid "Right Icon"
+msgstr ""
+
+#: system/models.py:101
+msgid "Additional icon to the right of menu name"
+msgstr ""
+
+#: system/models.py:102 system/utils/serializer.py:232
+msgid "Show Menu"
+msgstr ""
+
+#: system/models.py:103 system/utils/serializer.py:231
+msgid "Show Parent Menu"
+msgstr ""
+
+#: system/models.py:104 system/utils/serializer.py:234
+msgid "Keepalive"
+msgstr ""
+
+#: system/models.py:106
+msgid ""
+"When enabled, the entire state of the page is saved, and when refreshed, the "
+"state is cleared"
+msgstr ""
+
+#: system/models.py:107 system/utils/serializer.py:235
+msgid "Iframe URL"
+msgstr ""
+
+#: system/models.py:108
+msgid "The embedded iframe link address"
+msgstr ""
+
+#: system/models.py:109 system/utils/serializer.py:236
+msgid "Iframe Loading"
+msgstr ""
+
+#: system/models.py:111
+msgid "Enter Animation"
+msgstr ""
+
+#: system/models.py:112
+msgid "Leave Animation"
+msgstr ""
+
+#: system/models.py:114 system/utils/serializer.py:246
+msgid "Hidden Tag"
+msgstr ""
+
+#: system/models.py:115
+msgid ""
+"The current menu name or custom information is prohibited from being added "
+"to the TAB"
+msgstr ""
+
+#: system/models.py:116 system/utils/serializer.py:247
+msgid "Fixed Tag"
+msgstr ""
+
+#: system/models.py:117
+msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
+msgstr ""
+
+#: system/models.py:118 system/utils/serializer.py:248
+msgid "Dynamic Level"
+msgstr ""
+
+#: system/models.py:119
+msgid "Maximum number of dynamic routes that can be opened"
+msgstr ""
+
+#: system/models.py:122 system/models.py:152 system/utils/serializer.py:275
+#: system/utils/serializer.py:319
+msgid "Menu Meta"
+msgstr ""
+
+#: system/models.py:132
+msgid "Directory"
+msgstr ""
+
+#: system/models.py:133 system/models.py:167 system/models.py:179
+#: system/models.py:194 system/models.py:207 system/utils/serializer.py:55
+#: system/utils/serializer.py:120
+msgid "Menu"
+msgstr ""
+
+#: system/models.py:134
+msgid "Permission"
+msgstr ""
+
+#: system/models.py:137
+msgid "GET"
+msgstr ""
+
+#: system/models.py:138
+msgid "POST"
+msgstr ""
+
+#: system/models.py:139
+msgid "PUT"
+msgstr ""
+
+#: system/models.py:140
+msgid "DELETE"
+msgstr ""
+
+#: system/models.py:141
+msgid "PATCH"
+msgstr ""
+
+#: system/models.py:143 system/utils/serializer.py:285
+msgid "Parent Menu"
+msgstr ""
+
+#: system/models.py:146 system/utils/serializer.py:290
+msgid "Menu Type"
+msgstr ""
+
+#: system/models.py:147
+msgid "Component Name Or Permission Code"
+msgstr ""
+
+#: system/models.py:148 system/models.py:231
+msgid "Rank"
+msgstr ""
+
+#: system/models.py:149
+msgid "Route Path Or Api Path"
+msgstr ""
+
+#: system/models.py:150
+msgid "Component Path"
+msgstr ""
+
+#: system/models.py:151 system/models.py:178 system/models.py:193
+#: system/models.py:235 system/models.py:405
+msgid "Is Active"
+msgstr ""
+
+#: system/models.py:153 system/utils/serializer.py:287
+msgid "Model"
+msgstr ""
+
+#: system/models.py:157
+msgid "Method"
+msgstr ""
+
+#: system/models.py:176
+msgid "Name"
+msgstr ""
+
+#: system/models.py:177
+msgid "Rules"
+msgstr ""
+
+#: system/models.py:180
+msgid "If a menu exists, it only applies to the selected menu permission"
+msgstr ""
+
+#: system/models.py:191
+msgid "Role Name"
+msgstr ""
+
+#: system/models.py:192
+msgid "Role Code"
+msgstr ""
+
+#: system/models.py:197
+msgid "User Role"
+msgstr ""
+
+#: system/models.py:206
+msgid "Role"
+msgstr ""
+
+#: system/models.py:208
+msgid "Field"
+msgstr ""
+
+#: system/models.py:211
+msgid "Field Permission"
+msgstr ""
+
+#: system/models.py:225
+msgid "Department Name"
+msgstr ""
+
+#: system/models.py:226
+msgid "Department Code"
+msgstr ""
+
+#: system/models.py:227 system/utils/serializer.py:159
+msgid "Superior Department"
+msgstr ""
+
+#: system/models.py:232
+msgid "Auto Bind"
+msgstr ""
+
+#: system/models.py:234
+msgid ""
+"If the value of the registration parameter channel is consistent with the "
+"department code, the user is automatically bound to the department"
+msgstr ""
+
+#: system/models.py:265
+msgid "Username And Password"
+msgstr ""
+
+#: system/models.py:266
+msgid "SMS Verification Code"
+msgstr ""
+
+#: system/models.py:267
+msgid "Wechat Scan Code"
+msgstr ""
+
+#: system/models.py:269
+msgid "Login Status"
+msgstr ""
+
+#: system/models.py:270 system/models.py:287
+msgid "IpAddress"
+msgstr ""
+
+#: system/models.py:271 system/models.py:288
+msgid "Browser"
+msgstr ""
+
+#: system/models.py:272 system/models.py:289
+msgid "System"
+msgstr ""
+
+#: system/models.py:273
+msgid "Agent"
+msgstr ""
+
+#: system/models.py:275
+msgid "Login Type"
+msgstr ""
+
+#: system/models.py:278
+msgid "User Login Log"
+msgstr ""
+
+#: system/models.py:283 system/utils/serializer.py:333
+msgid "Module"
+msgstr ""
+
+#: system/models.py:284
+msgid "URL Path"
+msgstr ""
+
+#: system/models.py:285
+msgid "Request Body"
+msgstr ""
+
+#: system/models.py:286
+msgid "Request Method"
+msgstr ""
+
+#: system/models.py:290
+msgid "Response Code"
+msgstr ""
+
+#: system/models.py:291
+msgid "Response Result"
+msgstr ""
+
+#: system/models.py:292
+msgid "Status Code"
+msgstr ""
+
+#: system/models.py:295
+msgid "Operation Log"
+msgstr ""
+
+#: system/models.py:307
+msgid "FilePath"
+msgstr ""
+
+#: system/models.py:308
+msgid "Internet URL"
+msgstr ""
+
+#: system/models.py:309
+msgid "Usually an address accessible to the outside Internet"
+msgstr ""
+
+#: system/models.py:310
+msgid "Filename"
+msgstr ""
+
+#: system/models.py:311
+msgid "Filesize"
+msgstr ""
+
+#: system/models.py:312
+msgid "Mime Type"
+msgstr ""
+
+#: system/models.py:313
+msgid "File Md5sum"
+msgstr ""
+
+#: system/models.py:314
+msgid "Tmp File"
+msgstr ""
+
+#: system/models.py:315
+msgid "Temporary files are automatically cleared by scheduled tasks"
+msgstr ""
+
+#: system/models.py:316 system/models.py:330
+msgid "Upload File"
+msgstr ""
+
+#: system/models.py:339
+msgid "System Notification"
+msgstr ""
+
+#: system/models.py:340
+msgid "System Announcement"
+msgstr ""
+
+#: system/models.py:341
+msgid "User Notification"
+msgstr ""
+
+#: system/models.py:342
+msgid "Department Notification"
+msgstr ""
+
+#: system/models.py:343
+msgid "Role Notification"
+msgstr ""
+
+#: system/models.py:346
+msgid "Ordinary Notices"
+msgstr ""
+
+#: system/models.py:347
+msgid "General Notices"
+msgstr ""
+
+#: system/models.py:348
+msgid "Success Notices"
+msgstr ""
+
+#: system/models.py:349
+msgid "Important Notices"
+msgstr ""
+
+#: system/models.py:352 system/utils/serializer.py:375
+msgid "The Notified User"
+msgstr ""
+
+#: system/models.py:353 system/utils/serializer.py:379
+msgid "The Notified Department"
+msgstr ""
+
+#: system/models.py:354 system/utils/serializer.py:380
+msgid "The Notified Role"
+msgstr ""
+
+#: system/models.py:355 system/utils/serializer.py:390
+msgid "Notice Level"
+msgstr ""
+
+#: system/models.py:357 system/utils/serializer.py:388
+#: system/utils/serializer.py:485 system/utils/serializer.py:504
+msgid "Notice Type"
+msgstr ""
+
+#: system/models.py:359
+msgid "Notice Title"
+msgstr ""
+
+#: system/models.py:360 system/models.py:376 system/utils/serializer.py:507
+msgid "Notice Message"
+msgstr ""
+
+#: system/models.py:361
+msgid "Additional Json Data"
+msgstr ""
+
+#: system/models.py:362 system/utils/serializer.py:383
+msgid "Uploaded Attachments"
+msgstr ""
+
+#: system/models.py:363
+msgid "Publish"
+msgstr ""
+
+#: system/models.py:391 system/models.py:427 system/utils/serializer.py:505
+#: system/utils/serializer.py:532 system/utils/serializer.py:544
+#: system/utils/serializer.py:579
+msgid "User"
+msgstr ""
+
+#: system/models.py:392
+msgid "Notice"
+msgstr ""
+
+#: system/models.py:393 system/utils/serializer.py:486
+msgid "Unread"
+msgstr ""
+
+#: system/models.py:397
+msgid "User has read the message"
+msgstr ""
+
+#: system/models.py:404
+msgid "Config Value"
+msgstr ""
+
+#: system/models.py:406
+msgid "API Access"
+msgstr ""
+
+#: system/models.py:407
+msgid "Allows API interfaces to access this config"
+msgstr ""
+
+#: system/models.py:414 system/models.py:428
+msgid "Config Name"
+msgstr ""
+
+#: system/models.py:415
+msgid "User Inherit"
+msgstr ""
+
+#: system/models.py:416
+msgid "Allows users to inherit this config"
+msgstr ""
+
+#: system/models.py:419
+msgid "System Config"
+msgstr ""
+
+#: system/models.py:431
+msgid "User Config"
+msgstr ""
+
+#: system/utils/serializer.py:123 system/utils/serializer.py:143
+msgid "Mode Type"
+msgstr ""
+
+#: system/utils/serializer.py:128
+msgid "The rule cannot be null"
+msgstr ""
+
+#: system/utils/serializer.py:157 system/utils/serializer.py:384
+msgid "User Count"
+msgstr ""
+
+#: system/utils/serializer.py:175
+msgid "The superior department cannot be its own subordinate department"
+msgstr ""
+
+#: system/utils/serializer.py:211
+msgid "Abnormal password field"
+msgstr ""
+
+#: system/utils/serializer.py:350
+msgid "Access URL"
+msgstr ""
+
+#: system/utils/serializer.py:357
+msgid "Internet url cannot be null"
+msgstr ""
+
+#: system/utils/serializer.py:385
+msgid "Read User Count"
+msgstr ""
+
+#: system/utils/serializer.py:411
+msgid "Parameter error. System announcement cannot be created"
+msgstr ""
+
+#: system/utils/serializer.py:421
+msgid "The notice role cannot be null"
+msgstr ""
+
+#: system/utils/serializer.py:427
+msgid "The notice department cannot be null"
+msgstr ""
+
+#: system/utils/serializer.py:433
+msgid "The notice user cannot be null"
+msgstr ""
+
+#: system/utils/serializer.py:472
+msgid "Parameter error"
+msgstr ""
+
+#: system/utils/serializer.py:517
+msgid "Config Cache Value"
+msgstr ""
+
+#: system/utils/serializer.py:546
+msgid "Users"
+msgstr ""
+
+#: system/utils/serializer.py:553
+msgid "User cannot be null"
+msgstr ""
+
+#: system/utils/signal_handler.py:42
+msgid "All Tables"
+msgstr ""
+
+#: system/utils/signal_handler.py:45
+msgid "All Fields"
+msgstr ""
+
+#: system/views/admin/user.py:48
+msgid "The super administrator disallows deletion"
+msgstr ""
+
+#: system/views/auth.py:112
+msgid "Registration Forbidden"
+msgstr ""
+
+#: system/views/auth.py:120 system/views/auth.py:177
+msgid "Temporary Token validation failed. Please try again"
+msgstr ""
+
+#: system/views/auth.py:122 system/views/auth.py:179
+msgid "Captcha validation failed. Please try again"
+msgstr ""
+
+#: system/views/auth.py:126
+msgid "The username already exists, please try another one"
+msgstr ""
+
+#: system/views/auth.py:169
+msgid "Login Forbidden"
+msgstr ""
+
+#: system/views/upload.py:53
+msgid "upload file size cannot exceed {}"
+msgstr ""
+
+#: system/views/upload.py:56
+msgid "Wrong upload file type"
+msgstr ""
+
+#: system/views/user/userinfo.py:60
+msgid "Old password verification failed"
+msgstr ""

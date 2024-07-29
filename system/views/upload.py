@@ -6,6 +6,7 @@
 # date : 6/26/2023
 import logging
 
+from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.parsers import MultiPartParser
@@ -48,10 +49,11 @@ class UploadView(APIView):
                 #     logger.error(f"user:{request.user} upload file type error file:{file_obj.name}")
                 #     raise
                 if file_obj.size > file_upload_max_size:
-                    return ApiResponse(code=1003, detail=f"文件大小不能超过 {file_upload_max_size}")
+                    return ApiResponse(code=1003,
+                                       detail=_("upload file size cannot exceed {}").format(file_upload_max_size))
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
-                return ApiResponse(code=1002, detail="错误的文件类型")
+                return ApiResponse(code=1002, detail=_("Wrong upload file type"))
             obj = UploadFile.objects.create(creator=request.user, filename=file_obj.name, is_upload=True, is_tmp=True,
                                             filepath=file_obj, mime_type=file_obj.content_type, filesize=file_obj.size)
             result.append(obj)

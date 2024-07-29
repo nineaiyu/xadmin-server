@@ -13,7 +13,7 @@ from django.apps import apps
 from django.http import FileResponse, Http404, HttpResponseNotModified
 from django.utils._os import safe_join
 from django.utils.http import http_date
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from django.views.static import directory_index, was_modified_since
 
 from common.fields.image import ProcessedImageField, get_thumbnail
