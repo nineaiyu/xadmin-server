@@ -109,7 +109,7 @@ class RegisterView(APIView):
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.REGISTER:
-            return ApiResponse(code=1001, detail=_("Registration Forbidden"))
+            return ApiResponse(code=1001, detail=_("Registration forbidden"))
 
         client_id = get_request_ident(request)
         token = request.data.get('token')
@@ -166,7 +166,7 @@ class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:
-            return ApiResponse(code=1001, detail=_("Login Forbidden"))
+            return ApiResponse(code=1001, detail=_("Login forbidden"))
 
         client_id = get_request_ident(request)
         token = request.data.get('token')

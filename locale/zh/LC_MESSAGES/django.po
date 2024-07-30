@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-29 18:28+0800\n"
+"POT-Creation-Date: 2024-07-30 14:05+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,7 +24,7 @@ msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
 #: common/core/permission.py:112
-msgid "Unauthorized Authentication"
+msgid "Unauthorized authentication"
 msgstr "未授权"
 
 #: common/core/auth.py:36
@@ -53,11 +53,11 @@ msgid "ID"
 msgstr "主键ID"
 
 #: common/core/models.py:34
-msgid "Created Time"
+msgid "Created time"
 msgstr "创建时间"
 
 #: common/core/models.py:35
-msgid "Updated Time"
+msgid "Updated time"
 msgstr "更新时间"
 
 #: common/core/models.py:36
@@ -101,7 +101,7 @@ msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
 #: common/core/permission.py:110
-msgid "Permission Denied"
+msgid "Permission denied"
 msgstr "权限拒绝"
 
 #: common/core/response.py:16
@@ -112,16 +112,16 @@ msgstr "操作成功"
 msgid "Operation failed"
 msgstr "操作失败"
 
-#: common/core/serializers.py:79
+#: common/core/serializers.py:80
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/serializers.py:80
+#: common/core/serializers.py:81
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr ""
 
-#: common/core/serializers.py:81
+#: common/core/serializers.py:82
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
@@ -231,16 +231,16 @@ msgstr "选择部门ID"
 
 #: system/models.py:34 system/models.py:82 system/models.py:229
 #: system/utils/serializer.py:136
-msgid "Role Permission"
+msgid "Role permission"
 msgstr "角色权限"
 
 #: system/models.py:35 system/models.py:83 system/models.py:183
 #: system/models.py:230 system/utils/serializer.py:139
-msgid "Data Permission"
+msgid "Data permission"
 msgstr "数据权限"
 
 #: system/models.py:37 system/utils/serializer.py:38
-msgid "Field Type"
+msgid "Field type"
 msgstr "字段类型"
 
 #: system/models.py:39
@@ -256,19 +256,19 @@ msgid "Model/Field label"
 msgstr "模型/字段数值"
 
 #: system/models.py:45
-msgid "Model Label Field"
+msgid "Model label field"
 msgstr "模型/字段名称"
 
 #: system/models.py:54
-msgid "Or Mode"
+msgid "Or mode"
 msgstr "或 (or) 模式"
 
 #: system/models.py:55
-msgid "And Mode"
+msgid "And mode"
 msgstr "且 (and) 模式"
 
 #: system/models.py:58
-msgid "Data Permission Mode"
+msgid "Data permission mode"
 msgstr "数据权限模式"
 
 #: system/models.py:60
@@ -299,7 +299,7 @@ msgstr "头像"
 msgid "Nickname"
 msgstr "昵称"
 
-#: system/models.py:79 system/utils/serializer.py:199
+#: system/models.py:79 system/utils/serializer.py:198
 msgid "Gender"
 msgstr "性别"
 
@@ -307,7 +307,7 @@ msgstr "性别"
 msgid "Mobile"
 msgstr "手机"
 
-#: system/models.py:84 system/models.py:255 system/utils/serializer.py:197
+#: system/models.py:84 system/models.py:255 system/utils/serializer.py:196
 msgid "Department"
 msgstr "部门"
 
@@ -315,31 +315,31 @@ msgstr "部门"
 msgid "Userinfo"
 msgstr "用户信息"
 
-#: system/models.py:98 system/utils/serializer.py:315
-msgid "Menu Title"
+#: system/models.py:98 system/utils/serializer.py:314
+msgid "Menu title"
 msgstr "菜单名称"
 
 #: system/models.py:99
-msgid "Left Icon"
+msgid "Left icon"
 msgstr "菜单左图标"
 
-#: system/models.py:100 system/utils/serializer.py:233
-msgid "Right Icon"
+#: system/models.py:100 system/utils/serializer.py:232
+msgid "Right icon"
 msgstr "菜单右图标"
 
 #: system/models.py:101
 msgid "Additional icon to the right of menu name"
 msgstr "菜单右侧额外图标"
 
-#: system/models.py:102 system/utils/serializer.py:232
-msgid "Show Menu"
+#: system/models.py:102 system/utils/serializer.py:231
+msgid "Show menu"
 msgstr "显示菜单"
 
-#: system/models.py:103 system/utils/serializer.py:231
-msgid "Show Parent Menu"
+#: system/models.py:103 system/utils/serializer.py:230
+msgid "Show parent menu"
 msgstr "显示父级菜单"
 
-#: system/models.py:104 system/utils/serializer.py:234
+#: system/models.py:104 system/utils/serializer.py:233
 msgid "Keepalive"
 msgstr "页面缓存"
 
@@ -349,7 +349,7 @@ msgid ""
 "state is cleared"
 msgstr "开启后，会保存该页面的整体状态，刷新后会清空状态"
 
-#: system/models.py:107 system/utils/serializer.py:235
+#: system/models.py:107 system/utils/serializer.py:234
 msgid "Iframe URL"
 msgstr "Iframe地址"
 
@@ -357,20 +357,20 @@ msgstr "Iframe地址"
 msgid "The embedded iframe link address"
 msgstr "内嵌的Iframe地址"
 
-#: system/models.py:109 system/utils/serializer.py:236
-msgid "Iframe Loading"
+#: system/models.py:109 system/utils/serializer.py:235
+msgid "Iframe loading"
 msgstr "Iframe页面加载动画"
 
 #: system/models.py:111
-msgid "Enter Animation"
+msgid "Enter animation"
 msgstr "页面进场动画"
 
 #: system/models.py:112
-msgid "Leave Animation"
+msgid "Leave animation"
 msgstr "页面离场动画"
 
-#: system/models.py:114 system/utils/serializer.py:246
-msgid "Hidden Tag"
+#: system/models.py:114 system/utils/serializer.py:245
+msgid "Hidden tag"
 msgstr "隐藏标签"
 
 #: system/models.py:115
@@ -379,25 +379,25 @@ msgid ""
 "to the TAB"
 msgstr "当前菜单名称或自定义信息禁止添加到标签页"
 
-#: system/models.py:116 system/utils/serializer.py:247
-msgid "Fixed Tag"
+#: system/models.py:116 system/utils/serializer.py:246
+msgid "Fixed tag"
 msgstr "固定标签"
 
 #: system/models.py:117
 msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
 msgstr "当前菜单名称是否固定显示在标签页且不可关闭"
 
-#: system/models.py:118 system/utils/serializer.py:248
-msgid "Dynamic Level"
+#: system/models.py:118 system/utils/serializer.py:247
+msgid "Dynamic level"
 msgstr "标签显示数量"
 
 #: system/models.py:119
 msgid "Maximum number of dynamic routes that can be opened"
 msgstr "显示已打开标签页最大数量"
 
-#: system/models.py:122 system/models.py:152 system/utils/serializer.py:275
-#: system/utils/serializer.py:319
-msgid "Menu Meta"
+#: system/models.py:122 system/models.py:152 system/utils/serializer.py:274
+#: system/utils/serializer.py:318
+msgid "Menu meta"
 msgstr "菜单元数据"
 
 #: system/models.py:132
@@ -434,16 +434,16 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models.py:143 system/utils/serializer.py:285
-msgid "Parent Menu"
+#: system/models.py:143 system/utils/serializer.py:284
+msgid "Parent menu"
 msgstr "上级菜单"
 
-#: system/models.py:146 system/utils/serializer.py:290
-msgid "Menu Type"
+#: system/models.py:146 system/utils/serializer.py:289
+msgid "Menu type"
 msgstr "菜单类型"
 
 #: system/models.py:147
-msgid "Component Name Or Permission Code"
+msgid "Component name or permission code"
 msgstr "组件英文名称 或 权限标识"
 
 #: system/models.py:148 system/models.py:231
@@ -451,19 +451,19 @@ msgid "Rank"
 msgstr "排序"
 
 #: system/models.py:149
-msgid "Route Path Or Api Path"
+msgid "Route path or api path"
 msgstr "路由地址 或 后端权限路由"
 
 #: system/models.py:150
-msgid "Component Path"
+msgid "Component path"
 msgstr "组件地址"
 
 #: system/models.py:151 system/models.py:178 system/models.py:193
 #: system/models.py:235 system/models.py:405
-msgid "Is Active"
+msgid "Is active"
 msgstr "激活状态"
 
-#: system/models.py:153 system/utils/serializer.py:287
+#: system/models.py:153 system/utils/serializer.py:286
 msgid "Model"
 msgstr "模型"
 
@@ -484,15 +484,15 @@ msgid "If a menu exists, it only applies to the selected menu permission"
 msgstr "若存在菜单权限，则该权限仅针对所选择的菜单权限生效"
 
 #: system/models.py:191
-msgid "Role Name"
+msgid "Role name"
 msgstr "角色名称"
 
 #: system/models.py:192
-msgid "Role Code"
+msgid "Role code"
 msgstr "角色标识"
 
 #: system/models.py:197
-msgid "User Role"
+msgid "User role"
 msgstr "用户角色"
 
 #: system/models.py:206
@@ -504,23 +504,23 @@ msgid "Field"
 msgstr "字段"
 
 #: system/models.py:211
-msgid "Field Permission"
+msgid "Field permission"
 msgstr "字段权限"
 
 #: system/models.py:225
-msgid "Department Name"
+msgid "Department name"
 msgstr "部门名称"
 
 #: system/models.py:226
-msgid "Department Code"
+msgid "Department code"
 msgstr "部门标识"
 
-#: system/models.py:227 system/utils/serializer.py:159
-msgid "Superior Department"
+#: system/models.py:227 system/utils/serializer.py:158
+msgid "Superior department"
 msgstr "上级部门"
 
 #: system/models.py:232
-msgid "Auto Bind"
+msgid "Auto bind"
 msgstr "自动绑定"
 
 #: system/models.py:234
@@ -530,19 +530,19 @@ msgid ""
 msgstr "注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定"
 
 #: system/models.py:265
-msgid "Username And Password"
+msgid "Username and password"
 msgstr "用户名和密码"
 
 #: system/models.py:266
-msgid "SMS Verification Code"
+msgid "SMS verification code"
 msgstr "短信验证"
 
 #: system/models.py:267
-msgid "Wechat Scan Code"
+msgid "Wechat scan code"
 msgstr "微信扫码"
 
 #: system/models.py:269
-msgid "Login Status"
+msgid "Login status"
 msgstr "登录状态"
 
 #: system/models.py:270 system/models.py:287
@@ -562,47 +562,47 @@ msgid "Agent"
 msgstr "Agent信息"
 
 #: system/models.py:275
-msgid "Login Type"
+msgid "Login type"
 msgstr "登录类型"
 
 #: system/models.py:278
-msgid "User Login Log"
+msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models.py:283 system/utils/serializer.py:333
+#: system/models.py:283 system/utils/serializer.py:332
 msgid "Module"
 msgstr "模块"
 
 #: system/models.py:284
-msgid "URL Path"
+msgid "URL path"
 msgstr "访问路径"
 
 #: system/models.py:285
-msgid "Request Body"
+msgid "Request body"
 msgstr "请求参数"
 
 #: system/models.py:286
-msgid "Request Method"
+msgid "Request method"
 msgstr "请求方式"
 
 #: system/models.py:290
-msgid "Response Code"
+msgid "Response code"
 msgstr "响应码"
 
 #: system/models.py:291
-msgid "Response Result"
+msgid "Response result"
 msgstr "响应内容"
 
 #: system/models.py:292
-msgid "Status Code"
+msgid "Status code"
 msgstr "状态码"
 
 #: system/models.py:295
-msgid "Operation Log"
+msgid "Operation log"
 msgstr "操作日志"
 
 #: system/models.py:307
-msgid "FilePath"
+msgid "Filepath"
 msgstr "文件路径"
 
 #: system/models.py:308
@@ -622,15 +622,15 @@ msgid "Filesize"
 msgstr "文件大小"
 
 #: system/models.py:312
-msgid "Mime Type"
+msgid "Mime type"
 msgstr "文件类型"
 
 #: system/models.py:313
-msgid "File Md5sum"
+msgid "File md5sum"
 msgstr "文件MD5"
 
 #: system/models.py:314
-msgid "Tmp File"
+msgid "Tmp file"
 msgstr "临时文件"
 
 #: system/models.py:315
@@ -638,89 +638,89 @@ msgid "Temporary files are automatically cleared by scheduled tasks"
 msgstr "临时文件会被定时任务自动清理"
 
 #: system/models.py:316 system/models.py:330
-msgid "Upload File"
+msgid "Upload file"
 msgstr "上传文件"
 
 #: system/models.py:339
-msgid "System Notification"
+msgid "System notification"
 msgstr "系统通知"
 
 #: system/models.py:340
-msgid "System Announcement"
+msgid "System announcement"
 msgstr "系统公告"
 
 #: system/models.py:341
-msgid "User Notification"
+msgid "User notification"
 msgstr "用户通知"
 
 #: system/models.py:342
-msgid "Department Notification"
+msgid "Department notification"
 msgstr "部门通知"
 
 #: system/models.py:343
-msgid "Role Notification"
+msgid "Role notification"
 msgstr "角色通知"
 
 #: system/models.py:346
-msgid "Ordinary Notices"
+msgid "Ordinary notices"
 msgstr "普遍通知"
 
 #: system/models.py:347
-msgid "General Notices"
+msgid "General notices"
 msgstr "一般通知"
 
 #: system/models.py:348
-msgid "Success Notices"
+msgid "Success notices"
 msgstr "成功通知"
 
 #: system/models.py:349
-msgid "Important Notices"
+msgid "Important notices"
 msgstr "重要通知"
 
-#: system/models.py:352 system/utils/serializer.py:375
-msgid "The Notified User"
+#: system/models.py:352 system/utils/serializer.py:374
+msgid "The notified user"
 msgstr "被通知用户"
 
-#: system/models.py:353 system/utils/serializer.py:379
-msgid "The Notified Department"
+#: system/models.py:353 system/utils/serializer.py:378
+msgid "The notified department"
 msgstr "被通知部门"
 
-#: system/models.py:354 system/utils/serializer.py:380
-msgid "The Notified Role"
+#: system/models.py:354 system/utils/serializer.py:379
+msgid "The notified role"
 msgstr "被通知角色"
 
-#: system/models.py:355 system/utils/serializer.py:390
-msgid "Notice Level"
+#: system/models.py:355 system/utils/serializer.py:389
+msgid "Notice level"
 msgstr "通知级别"
 
-#: system/models.py:357 system/utils/serializer.py:388
-#: system/utils/serializer.py:485 system/utils/serializer.py:504
-msgid "Notice Type"
+#: system/models.py:357 system/utils/serializer.py:387
+#: system/utils/serializer.py:484 system/utils/serializer.py:503
+msgid "Notice type"
 msgstr "通知类型"
 
 #: system/models.py:359
-msgid "Notice Title"
+msgid "Notice title"
 msgstr "通知标题"
 
-#: system/models.py:360 system/models.py:376 system/utils/serializer.py:507
-msgid "Notice Message"
+#: system/models.py:360 system/models.py:376 system/utils/serializer.py:506
+msgid "Notice message"
 msgstr "通知内容"
 
 #: system/models.py:361
-msgid "Additional Json Data"
+msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: system/models.py:362 system/utils/serializer.py:383
-msgid "Uploaded Attachments"
+#: system/models.py:362 system/utils/serializer.py:382
+msgid "Uploaded attachments"
 msgstr "上传的附件"
 
 #: system/models.py:363
 msgid "Publish"
 msgstr "发布"
 
-#: system/models.py:391 system/models.py:427 system/utils/serializer.py:505
-#: system/utils/serializer.py:532 system/utils/serializer.py:544
-#: system/utils/serializer.py:579
+#: system/models.py:391 system/models.py:427 system/utils/serializer.py:504
+#: system/utils/serializer.py:531 system/utils/serializer.py:543
+#: system/utils/serializer.py:578
 msgid "User"
 msgstr "用户"
 
@@ -728,7 +728,7 @@ msgstr "用户"
 msgid "Notice"
 msgstr "通知"
 
-#: system/models.py:393 system/utils/serializer.py:486
+#: system/models.py:393 system/utils/serializer.py:485
 msgid "Unread"
 msgstr "未读"
 
@@ -737,11 +737,11 @@ msgid "User has read the message"
 msgstr "用户已读通知"
 
 #: system/models.py:404
-msgid "Config Value"
+msgid "Config value"
 msgstr "配置数值"
 
 #: system/models.py:406
-msgid "API Access"
+msgid "API access"
 msgstr "接口访问"
 
 #: system/models.py:407
@@ -749,11 +749,11 @@ msgid "Allows API interfaces to access this config"
 msgstr "允许API接口访问该配置"
 
 #: system/models.py:414 system/models.py:428
-msgid "Config Name"
+msgid "Config name"
 msgstr "配置名称"
 
 #: system/models.py:415
-msgid "User Inherit"
+msgid "User inherit"
 msgstr "用户继承"
 
 #: system/models.py:416
@@ -761,83 +761,87 @@ msgid "Allows users to inherit this config"
 msgstr "允许用户继承该配置"
 
 #: system/models.py:419
-msgid "System Config"
+msgid "System config"
 msgstr "系统配置"
 
 #: system/models.py:431
-msgid "User Config"
+msgid "User config"
 msgstr "用户配置"
 
-#: system/utils/serializer.py:123 system/utils/serializer.py:143
-msgid "Mode Type"
+#: system/utils/serializer.py:59 system/utils/serializer.py:60
+msgid "Fields"
+msgstr "字段"
+
+#: system/utils/serializer.py:123 system/utils/serializer.py:142
+msgid "Mode type"
 msgstr "权限模式"
 
 #: system/utils/serializer.py:128
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
 
-#: system/utils/serializer.py:157 system/utils/serializer.py:384
-msgid "User Count"
+#: system/utils/serializer.py:156 system/utils/serializer.py:383
+msgid "User count"
 msgstr "用户数量"
 
-#: system/utils/serializer.py:175
+#: system/utils/serializer.py:174
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/utils/serializer.py:211
+#: system/utils/serializer.py:210
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
-#: system/utils/serializer.py:350
+#: system/utils/serializer.py:349
 msgid "Access URL"
 msgstr "访问地址"
 
-#: system/utils/serializer.py:357
+#: system/utils/serializer.py:356
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/utils/serializer.py:385
-msgid "Read User Count"
+#: system/utils/serializer.py:384
+msgid "Read user count"
 msgstr "已读用户数量"
 
-#: system/utils/serializer.py:411
+#: system/utils/serializer.py:410
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: system/utils/serializer.py:421
+#: system/utils/serializer.py:420
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: system/utils/serializer.py:427
+#: system/utils/serializer.py:426
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: system/utils/serializer.py:433
+#: system/utils/serializer.py:432
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: system/utils/serializer.py:472
+#: system/utils/serializer.py:471
 msgid "Parameter error"
 msgstr "参与有误"
 
-#: system/utils/serializer.py:517
-msgid "Config Cache Value"
+#: system/utils/serializer.py:516
+msgid "Config cache value"
 msgstr "配置缓存数值"
 
-#: system/utils/serializer.py:546
+#: system/utils/serializer.py:545
 msgid "Users"
 msgstr "多个用户"
 
-#: system/utils/serializer.py:553
+#: system/utils/serializer.py:552
 msgid "User cannot be null"
 msgstr "用户不能为空"
 
-#: system/utils/signal_handler.py:42
-msgid "All Tables"
+#: system/utils/signal_handler.py:43
+msgid "All tables"
 msgstr "全部表"
 
 #: system/utils/signal_handler.py:45
-msgid "All Fields"
+msgid "All fields"
 msgstr "全部字段"
 
 #: system/views/admin/user.py:48
@@ -845,7 +849,7 @@ msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
 #: system/views/auth.py:112
-msgid "Registration Forbidden"
+msgid "Registration forbidden"
 msgstr "禁止注册"
 
 #: system/views/auth.py:120 system/views/auth.py:177
@@ -861,7 +865,7 @@ msgid "The username already exists, please try another one"
 msgstr "用户名已经存在，请换个试试"
 
 #: system/views/auth.py:169
-msgid "Login Forbidden"
+msgid "Login forbidden"
 msgstr "禁止登录"
 
 #: system/views/upload.py:53

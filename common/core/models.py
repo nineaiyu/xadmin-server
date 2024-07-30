@@ -31,8 +31,8 @@ class DbCharModel(models.Model):
 
 
 class DbBaseModel(models.Model):
-    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created Time"))
-    updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated Time"))
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"))
+    updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated time"))
     description = models.CharField(max_length=256, verbose_name=_("Description"), null=True, blank=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):

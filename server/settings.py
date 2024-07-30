@@ -345,7 +345,7 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 
-# 用于生成权限字段 label
+# I18N 用于生成权限字段 label
 PERMISSION_FIELD_LANGUAGE_CODE = 'zh'
 
 BASE_LOG_DIR = os.path.join(BASE_DIR, "logs", "api")

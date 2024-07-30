@@ -40,9 +40,9 @@ def post_migrate_handler(sender, **kwargs):
     activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
     field_type = ModelLabelField.FieldChoices.DATA
     obj, created = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type,
-                                                            defaults={'label': _("All Tables")}, parent=None)
+                                                            defaults={'label': _("All tables")}, parent=None)
     ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, parent=obj,
-                                             defaults={'label': _("All Fields")})
+                                             defaults={'label': _("All fields")})
     for field in DbAuditModel._meta.fields:
         ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
                                                  defaults={'label': getattr(field, 'verbose_name', field.name)})

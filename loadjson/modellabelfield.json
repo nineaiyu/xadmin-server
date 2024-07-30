@@ -4,7 +4,7 @@
     "pk": "00747b5a-89f1-43c6-8158-fba7e4438e27",
     "fields": {
       "created_time": "2024-01-22T09:56:44.400Z",
-      "updated_time": "2024-07-25T09:31:12.325Z",
+      "updated_time": "2024-07-30T06:22:38.766Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -20,7 +20,7 @@
     "pk": "00e18e22-ee52-4db7-9763-3cd494784d9b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.616Z",
-      "updated_time": "2024-07-25T09:31:12.484Z",
+      "updated_time": "2024-07-30T06:22:38.892Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -28,7 +28,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "icon",
-      "label": "菜单图标"
+      "label": "菜单左图标"
     }
   },
   {
@@ -36,7 +36,7 @@
     "pk": "020802dc-cf0f-4fa8-bb68-f9effe6a5854",
     "fields": {
       "created_time": "2024-01-22T09:54:40.015Z",
-      "updated_time": "2024-07-26T08:11:39.907Z",
+      "updated_time": "2024-07-30T06:22:39.391Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -52,7 +52,7 @@
     "pk": "021005df-4170-4d0a-a63f-3cb24a8cd962",
     "fields": {
       "created_time": "2024-01-22T09:54:40.136Z",
-      "updated_time": "2024-07-26T08:11:39.998Z",
+      "updated_time": "2024-07-30T06:22:39.492Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -68,7 +68,7 @@
     "pk": "0341ed1f-9a86-4753-a012-66d9a30cbc72",
     "fields": {
       "created_time": "2024-01-22T09:56:44.663Z",
-      "updated_time": "2024-07-25T09:31:12.516Z",
+      "updated_time": "2024-07-30T06:22:38.916Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -76,7 +76,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "is_hidden_tag",
-      "label": "当前菜单名称或自定义信息禁止添加到标签页"
+      "label": "隐藏标签"
     }
   },
   {
@@ -84,7 +84,7 @@
     "pk": "03e7f513-3313-4f57-a717-447e6b4f625d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.713Z",
-      "updated_time": "2024-07-25T09:31:12.556Z",
+      "updated_time": "2024-07-30T06:22:38.945Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -92,7 +92,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "parent",
-      "label": "父节点"
+      "label": "上级菜单"
     }
   },
   {
@@ -100,7 +100,7 @@
     "pk": "04e625c5-c047-4bd7-9f06-a80e8ea49d4a",
     "fields": {
       "created_time": "2024-01-22T09:56:44.154Z",
-      "updated_time": "2024-07-25T09:31:12.315Z",
+      "updated_time": "2024-07-30T06:22:38.757Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -116,7 +116,7 @@
     "pk": "055d22de-4551-4e1e-8d7d-2f3fada2fe4b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.048Z",
-      "updated_time": "2024-07-25T09:31:12.778Z",
+      "updated_time": "2024-07-30T06:22:39.147Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -132,7 +132,7 @@
     "pk": "05d599d4-1846-445d-a996-51251913a23a",
     "fields": {
       "created_time": "2024-01-22T09:56:45.283Z",
-      "updated_time": "2024-07-25T09:31:12.933Z",
+      "updated_time": "2024-07-30T06:22:39.274Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -148,7 +148,7 @@
     "pk": "065f4be4-588a-4a67-bd4b-d02207f8c496",
     "fields": {
       "created_time": "2024-01-22T09:56:44.373Z",
-      "updated_time": "2024-07-25T09:31:12.333Z",
+      "updated_time": "2024-07-30T06:22:38.772Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -164,7 +164,7 @@
     "pk": "070f4031-0dac-44f3-ae2d-e53ea8ddbd0f",
     "fields": {
       "created_time": "2024-01-22T09:56:44.896Z",
-      "updated_time": "2024-07-25T09:31:12.655Z",
+      "updated_time": "2024-07-30T06:22:39.038Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -180,7 +180,7 @@
     "pk": "0712272b-d21c-4c74-bb46-3105bc24b17c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.569Z",
-      "updated_time": "2024-07-26T08:11:40.290Z",
+      "updated_time": "2024-07-30T06:22:39.754Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -188,7 +188,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "frame_url",
-      "label": "内嵌的iframe链接地址"
+      "label": "Iframe地址"
     }
   },
   {
@@ -196,7 +196,7 @@
     "pk": "07c6501b-8da1-40bb-b91f-43a071faed96",
     "fields": {
       "created_time": "2024-01-22T09:56:44.668Z",
-      "updated_time": "2024-07-25T09:31:12.524Z",
+      "updated_time": "2024-07-30T06:22:38.921Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -204,7 +204,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "dynamic_level",
-      "label": "显示标签页最大数量"
+      "label": "标签显示数量"
     }
   },
   {
@@ -212,7 +212,7 @@
     "pk": "07cac267-cff6-414a-b607-042f420d2dbb",
     "fields": {
       "created_time": "2024-01-22T09:56:44.905Z",
-      "updated_time": "2024-07-25T09:31:12.660Z",
+      "updated_time": "2024-07-30T06:22:39.043Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -228,7 +228,7 @@
     "pk": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.607Z",
-      "updated_time": "2024-07-26T08:11:40.420Z",
+      "updated_time": "2024-07-30T06:22:39.857Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -236,7 +236,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.menu",
-      "label": "菜单信息"
+      "label": "菜单"
     }
   },
   {
@@ -244,7 +244,7 @@
     "pk": "095484da-d5f4-4e4f-9178-905ca9fb7e44",
     "fields": {
       "created_time": "2024-01-22T09:56:45.340Z",
-      "updated_time": "2024-07-25T09:31:12.962Z",
+      "updated_time": "2024-07-30T06:22:39.303Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -260,7 +260,7 @@
     "pk": "0c06399c-211b-4661-9705-e919da08da92",
     "fields": {
       "created_time": "2024-01-22T09:54:40.485Z",
-      "updated_time": "2024-07-26T08:11:40.227Z",
+      "updated_time": "2024-07-30T06:22:39.704Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -268,7 +268,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "frameSrc",
-      "label": "Framesrc"
+      "label": "Iframe地址"
     }
   },
   {
@@ -276,7 +276,7 @@
     "pk": "0c15186d-11dd-466f-9a5c-4dc44263b32d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.826Z",
-      "updated_time": "2024-07-26T08:11:40.462Z",
+      "updated_time": "2024-07-30T06:22:39.898Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -292,7 +292,7 @@
     "pk": "0c7fe015-de88-409c-acc8-0fac4b64367e",
     "fields": {
       "created_time": "2024-01-22T09:56:44.378Z",
-      "updated_time": "2024-07-25T09:31:12.336Z",
+      "updated_time": "2024-07-30T06:22:38.775Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -300,7 +300,7 @@
       "field_type": 1,
       "parent": "738ac5ed-c2fa-4ca2-984c-e74a9eb00f38",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -308,7 +308,7 @@
     "pk": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
     "fields": {
       "created_time": "2024-01-22T09:54:39.957Z",
-      "updated_time": "2024-07-26T08:11:39.875Z",
+      "updated_time": "2024-07-30T06:22:39.359Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -316,7 +316,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.modellabelfield",
-      "label": "模型字段"
+      "label": "模型/字段名称"
     }
   },
   {
@@ -324,7 +324,7 @@
     "pk": "0dbf7997-739c-4f61-88f7-1708b81a660d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.292Z",
-      "updated_time": "2024-07-26T08:11:40.815Z",
+      "updated_time": "2024-07-30T06:22:40.204Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -332,7 +332,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "browser",
-      "label": "登录浏览器"
+      "label": "浏览器"
     }
   },
   {
@@ -340,7 +340,7 @@
     "pk": "0e4c444b-8ed1-4ae2-aba8-2691580f565e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.805Z",
-      "updated_time": "2024-07-26T08:11:40.457Z",
+      "updated_time": "2024-07-30T06:22:39.893Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -348,7 +348,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "module",
-      "label": "访问模块"
+      "label": "模块"
     }
   },
   {
@@ -356,7 +356,7 @@
     "pk": "0e59abba-0206-42ce-b538-570c8714d6d9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.426Z",
-      "updated_time": "2024-07-25T09:31:12.364Z",
+      "updated_time": "2024-07-30T06:22:38.798Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -372,7 +372,7 @@
     "pk": "0e5e0318-87f5-48e7-900d-3ba0eb7dfaf0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.821Z",
-      "updated_time": "2024-07-26T08:11:40.467Z",
+      "updated_time": "2024-07-30T06:22:39.904Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -388,7 +388,7 @@
     "pk": "0eab869c-54f6-4373-9f3c-48ea3883d4a5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.770Z",
-      "updated_time": "2024-07-25T09:31:12.595Z",
+      "updated_time": "2024-07-30T06:22:38.977Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -404,7 +404,7 @@
     "pk": "0f57a580-952e-4751-a110-9e447a08768d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.130Z",
-      "updated_time": "2024-07-26T08:11:40.674Z",
+      "updated_time": "2024-07-30T06:22:40.091Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -412,7 +412,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.systemconfig",
-      "label": "系统配置项"
+      "label": "系统配置"
     }
   },
   {
@@ -420,7 +420,7 @@
     "pk": "0f75bfbe-1f54-4a3c-a028-b3506dcab0e6",
     "fields": {
       "created_time": "2024-01-22T09:56:45.438Z",
-      "updated_time": "2024-07-25T09:31:12.717Z",
+      "updated_time": "2024-07-30T06:22:39.102Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -428,7 +428,7 @@
       "field_type": 1,
       "parent": "1ea46b0b-c317-4692-83a0-220498450c55",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -436,7 +436,7 @@
     "pk": "0ff5a025-03b1-4850-b547-b2c07aa1d5f0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.590Z",
-      "updated_time": "2024-07-26T08:11:40.303Z",
+      "updated_time": "2024-07-30T06:22:39.765Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -444,7 +444,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "is_hidden_tag",
-      "label": "当前菜单名称或自定义信息禁止添加到标签页"
+      "label": "隐藏标签"
     }
   },
   {
@@ -452,7 +452,7 @@
     "pk": "10b50426-1cae-46da-a8ec-5d2df367a8c7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.664Z",
-      "updated_time": "2024-07-26T08:11:40.414Z",
+      "updated_time": "2024-07-30T06:22:39.851Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -460,7 +460,7 @@
       "field_type": 0,
       "parent": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
       "name": "model",
-      "label": "绑定模型"
+      "label": "模型"
     }
   },
   {
@@ -468,7 +468,7 @@
     "pk": "11ad085f-8749-4098-be4c-9ca685fd21b7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.024Z",
-      "updated_time": "2024-07-26T08:11:39.962Z",
+      "updated_time": "2024-07-30T06:22:39.452Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -476,7 +476,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.userrole",
-      "label": "角色信息"
+      "label": "用户角色"
     }
   },
   {
@@ -484,7 +484,7 @@
     "pk": "11dcc6f1-4a0a-4166-8781-dfa69b6d0347",
     "fields": {
       "created_time": "2024-01-22T09:56:45.457Z",
-      "updated_time": "2024-07-25T09:31:12.731Z",
+      "updated_time": "2024-07-30T06:22:39.112Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -500,7 +500,7 @@
     "pk": "120a1853-c039-486f-ba71-4916502ef84a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.295Z",
-      "updated_time": "2024-07-26T08:11:40.162Z",
+      "updated_time": "2024-07-30T06:22:39.664Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -508,7 +508,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "email",
-      "label": "电子邮件地址"
+      "label": "Email address"
     }
   },
   {
@@ -516,7 +516,7 @@
     "pk": "123b0630-5ac3-4fb1-a293-4f26d5a24acc",
     "fields": {
       "created_time": "2024-01-22T09:56:45.053Z",
-      "updated_time": "2024-07-25T09:31:12.781Z",
+      "updated_time": "2024-07-30T06:22:39.150Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -532,7 +532,7 @@
     "pk": "14071ee3-6725-4fcc-962d-ad7898efa284",
     "fields": {
       "created_time": "2024-01-22T09:54:40.271Z",
-      "updated_time": "2024-07-26T08:11:40.146Z",
+      "updated_time": "2024-07-30T06:22:39.646Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -548,7 +548,7 @@
     "pk": "16a823b0-c4fb-40cd-af63-9aed309823aa",
     "fields": {
       "created_time": "2024-01-22T09:54:40.121Z",
-      "updated_time": "2024-07-26T08:11:39.980Z",
+      "updated_time": "2024-07-30T06:22:39.472Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -564,7 +564,7 @@
     "pk": "16bffeda-e6a5-403a-8932-813f00de057b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.412Z",
-      "updated_time": "2024-07-25T09:31:13.018Z",
+      "updated_time": "2024-07-30T06:22:39.346Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -572,7 +572,7 @@
       "field_type": 1,
       "parent": "efa1bda3-4815-4013-90e2-50469cddbf90",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -580,7 +580,7 @@
     "pk": "16ec7416-cd25-4e4f-bd5c-004fce44dc1e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.922Z",
-      "updated_time": "2024-07-26T08:11:40.592Z",
+      "updated_time": "2024-07-30T06:22:40.027Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -596,7 +596,7 @@
     "pk": "176dd846-68b4-4def-be89-120a1b8817a9",
     "fields": {
       "created_time": "2024-01-22T09:56:45.313Z",
-      "updated_time": "2024-07-25T09:31:12.948Z",
+      "updated_time": "2024-07-30T06:22:39.290Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -612,7 +612,7 @@
     "pk": "185158c7-b4ec-4476-a688-b4e8eb935f8b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.729Z",
-      "updated_time": "2024-07-25T09:31:12.567Z",
+      "updated_time": "2024-07-30T06:22:38.953Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -620,7 +620,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "rank",
-      "label": "菜单顺序"
+      "label": "排序"
     }
   },
   {
@@ -628,7 +628,7 @@
     "pk": "1867117f-7c71-4c51-ac05-b8fe1399c36c",
     "fields": {
       "created_time": "2024-01-22T09:56:44.611Z",
-      "updated_time": "2024-07-25T09:31:12.480Z",
+      "updated_time": "2024-07-30T06:22:38.889Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -644,7 +644,7 @@
     "pk": "191c005e-ee6c-4262-825d-27c88ef23970",
     "fields": {
       "created_time": "2024-01-22T09:54:40.318Z",
-      "updated_time": "2024-07-26T08:11:40.150Z",
+      "updated_time": "2024-07-30T06:22:39.650Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -660,7 +660,7 @@
     "pk": "19746813-de9b-41ce-b55e-f4e8759bfa90",
     "fields": {
       "created_time": "2024-01-22T09:56:44.795Z",
-      "updated_time": "2024-07-25T09:31:12.608Z",
+      "updated_time": "2024-07-30T06:22:38.990Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -676,7 +676,7 @@
     "pk": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
     "fields": {
       "created_time": "2024-01-22T09:54:41.081Z",
-      "updated_time": "2024-07-26T08:11:40.633Z",
+      "updated_time": "2024-07-30T06:22:40.067Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -684,7 +684,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.noticeuserread",
-      "label": "用户已读消息"
+      "label": "用户已读通知"
     }
   },
   {
@@ -692,7 +692,7 @@
     "pk": "1b17baf4-4a1e-47c8-a92c-2b1073132102",
     "fields": {
       "created_time": "2024-01-22T09:56:45.143Z",
-      "updated_time": "2024-07-25T09:31:12.842Z",
+      "updated_time": "2024-07-30T06:22:39.194Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -708,7 +708,7 @@
     "pk": "1b205136-18bf-43bc-94d6-9d7b0b40e90d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.627Z",
-      "updated_time": "2024-07-25T09:31:12.491Z",
+      "updated_time": "2024-07-30T06:22:38.897Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -716,7 +716,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "is_show_menu",
-      "label": "是否显示该菜单"
+      "label": "显示菜单"
     }
   },
   {
@@ -724,7 +724,7 @@
     "pk": "1d711d31-a6b2-4fe2-acc2-264553b8f5ad",
     "fields": {
       "created_time": "2024-01-22T09:54:40.639Z",
-      "updated_time": "2024-07-26T08:11:40.400Z",
+      "updated_time": "2024-07-30T06:22:39.841Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -732,7 +732,7 @@
       "field_type": 0,
       "parent": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
       "name": "meta",
-      "label": "菜单元属性"
+      "label": "菜单元数据"
     }
   },
   {
@@ -740,7 +740,7 @@
     "pk": "1e1aecc0-1a61-4f92-96b0-19494febd7fe",
     "fields": {
       "created_time": "2024-06-08T03:43:50.637Z",
-      "updated_time": "2024-07-26T08:11:40.256Z",
+      "updated_time": "2024-07-30T06:22:39.727Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -756,7 +756,7 @@
     "pk": "1ea46b0b-c317-4692-83a0-220498450c55",
     "fields": {
       "created_time": "2024-01-22T09:56:45.427Z",
-      "updated_time": "2024-07-25T09:31:12.712Z",
+      "updated_time": "2024-07-30T06:22:39.096Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -764,7 +764,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.userloginlog",
-      "label": "登录日志"
+      "label": "用户登录日志"
     }
   },
   {
@@ -772,7 +772,7 @@
     "pk": "217bf8e4-ecf7-4bca-b1c5-f3871e24205c",
     "fields": {
       "created_time": "2024-01-22T09:56:45.064Z",
-      "updated_time": "2024-07-25T09:31:12.788Z",
+      "updated_time": "2024-07-30T06:22:39.155Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -780,7 +780,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "module",
-      "label": "请求模块"
+      "label": "模块"
     }
   },
   {
@@ -788,7 +788,7 @@
     "pk": "21b85978-b7d4-4dab-a5f0-9d605617fed4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.883Z",
-      "updated_time": "2024-07-26T08:11:40.494Z",
+      "updated_time": "2024-07-30T06:22:39.934Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -804,7 +804,7 @@
     "pk": "224f5c13-4ac0-487c-8ba7-157f5ce2505d",
     "fields": {
       "created_time": "2024-01-22T09:56:45.345Z",
-      "updated_time": "2024-07-25T09:31:12.966Z",
+      "updated_time": "2024-07-30T06:22:39.306Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -820,7 +820,7 @@
     "pk": "227673d8-d20a-4f6e-b601-460179813a6f",
     "fields": {
       "created_time": "2024-01-22T09:56:44.683Z",
-      "updated_time": "2024-07-25T09:31:12.538Z",
+      "updated_time": "2024-07-30T06:22:38.932Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -836,7 +836,7 @@
     "pk": "23d59527-83a9-4804-834e-7a0bdcfed144",
     "fields": {
       "created_time": "2024-01-22T09:56:44.947Z",
-      "updated_time": "2024-07-25T09:31:12.681Z",
+      "updated_time": "2024-07-30T06:22:39.064Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -852,7 +852,7 @@
     "pk": "242f682b-596b-4276-a926-9876cc75a348",
     "fields": {
       "created_time": "2024-01-22T09:54:40.020Z",
-      "updated_time": "2024-07-26T08:11:39.909Z",
+      "updated_time": "2024-07-30T06:22:39.393Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -868,7 +868,7 @@
     "pk": "244951ec-7a21-4547-8017-ff8e4799fc65",
     "fields": {
       "created_time": "2024-01-22T09:56:44.964Z",
-      "updated_time": "2024-07-25T09:31:12.688Z",
+      "updated_time": "2024-07-30T06:22:39.072Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -884,7 +884,7 @@
     "pk": "24b13fbf-b204-4b5b-b729-cd5b09df11aa",
     "fields": {
       "created_time": "2024-01-22T09:56:44.552Z",
-      "updated_time": "2024-07-25T09:31:12.447Z",
+      "updated_time": "2024-07-30T06:22:38.864Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -892,7 +892,7 @@
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "dept",
-      "label": "所属部门"
+      "label": "部门"
     }
   },
   {
@@ -900,7 +900,7 @@
     "pk": "25802e70-5d51-4ce4-aaba-fe394377e295",
     "fields": {
       "created_time": "2024-01-22T09:54:41.211Z",
-      "updated_time": "2024-07-26T08:11:40.799Z",
+      "updated_time": "2024-07-30T06:22:40.185Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -908,7 +908,7 @@
       "field_type": 0,
       "parent": "ab6ae020-1de6-4695-925b-56456769b7aa",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -916,7 +916,7 @@
     "pk": "261b8e2f-ad99-4d09-84f9-bfdbdfa9ff11",
     "fields": {
       "created_time": "2024-04-12T03:17:37.447Z",
-      "updated_time": "2024-07-26T08:11:39.978Z",
+      "updated_time": "2024-07-30T06:22:39.469Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -932,7 +932,7 @@
     "pk": "27003d7d-5a03-4540-b0f1-b60eb9d2b221",
     "fields": {
       "created_time": "2024-01-22T09:54:41.201Z",
-      "updated_time": "2024-07-26T08:11:40.784Z",
+      "updated_time": "2024-07-30T06:22:40.165Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -948,7 +948,7 @@
     "pk": "271d4b5a-06dc-4735-9f1c-436b7d88b35b",
     "fields": {
       "created_time": "2024-03-14T06:50:11.614Z",
-      "updated_time": "2024-07-26T08:11:40.822Z",
+      "updated_time": "2024-07-30T06:22:40.214Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -956,7 +956,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "status",
-      "label": "成功登录"
+      "label": "登录状态"
     }
   },
   {
@@ -964,7 +964,7 @@
     "pk": "27d3a5fa-0280-4117-b5fa-9623d47e7cb7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.141Z",
-      "updated_time": "2024-07-26T08:11:39.996Z",
+      "updated_time": "2024-07-30T06:22:39.489Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -972,7 +972,7 @@
       "field_type": 0,
       "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -980,7 +980,7 @@
     "pk": "27ec7332-34e0-4463-a160-8c53ae1b1685",
     "fields": {
       "created_time": "2024-01-22T09:54:40.156Z",
-      "updated_time": "2024-07-26T08:11:39.991Z",
+      "updated_time": "2024-07-30T06:22:39.483Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -996,7 +996,7 @@
     "pk": "280b0790-a109-4a9d-9155-82f9b8b283b9",
     "fields": {
       "created_time": "2024-01-22T09:56:45.318Z",
-      "updated_time": "2024-07-25T09:31:12.951Z",
+      "updated_time": "2024-07-30T06:22:39.293Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1004,7 +1004,7 @@
       "field_type": 1,
       "parent": "638c82f1-60ad-4192-92fc-b4b1e88960a8",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1012,7 +1012,7 @@
     "pk": "28d2bb94-3d49-4e06-9fb1-5da912623523",
     "fields": {
       "created_time": "2024-01-22T09:54:40.800Z",
-      "updated_time": "2024-07-26T08:11:40.460Z",
+      "updated_time": "2024-07-30T06:22:39.896Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1020,7 +1020,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "creator",
-      "label": "操作用户"
+      "label": "Creator"
     }
   },
   {
@@ -1028,7 +1028,7 @@
     "pk": "2b2e3042-931f-4554-953e-91f9b69630f7",
     "fields": {
       "created_time": "2024-01-22T09:54:41.152Z",
-      "updated_time": "2024-07-26T08:11:40.705Z",
+      "updated_time": "2024-07-30T06:22:40.106Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1036,7 +1036,7 @@
       "field_type": 0,
       "parent": "0f57a580-952e-4751-a110-9e447a08768d",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -1044,7 +1044,7 @@
     "pk": "2b6ee5f1-c227-4fad-a265-30db5d24cd3b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.079Z",
-      "updated_time": "2024-07-25T09:31:12.799Z",
+      "updated_time": "2024-07-30T06:22:39.163Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1060,7 +1060,7 @@
     "pk": "2b90f6c8-5292-4004-9005-3fe8f1c1b998",
     "fields": {
       "created_time": "2024-01-22T09:54:40.041Z",
-      "updated_time": "2024-07-26T08:11:39.973Z",
+      "updated_time": "2024-07-30T06:22:39.463Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1068,7 +1068,7 @@
       "field_type": 0,
       "parent": "11ad085f-8749-4098-be4c-9ca685fd21b7",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -1076,7 +1076,7 @@
     "pk": "2cad37ad-b1bd-40c9-b6e5-f825bcb88049",
     "fields": {
       "created_time": "2024-01-22T09:54:40.564Z",
-      "updated_time": "2024-07-26T08:11:40.286Z",
+      "updated_time": "2024-07-30T06:22:39.751Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1084,7 +1084,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "is_keepalive",
-      "label": "是否开启页面缓存"
+      "label": "页面缓存"
     }
   },
   {
@@ -1092,7 +1092,7 @@
     "pk": "2d2de203-3066-45b3-8a42-5d1fe35f87eb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.236Z",
-      "updated_time": "2024-07-26T08:11:40.035Z",
+      "updated_time": "2024-07-30T06:22:39.524Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1108,7 +1108,7 @@
     "pk": "2d3fdcef-9181-47bc-81a8-93eec47c7a1f",
     "fields": {
       "created_time": "2024-01-22T09:54:40.512Z",
-      "updated_time": "2024-07-26T08:11:40.247Z",
+      "updated_time": "2024-07-30T06:22:39.720Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1124,7 +1124,7 @@
     "pk": "2dd244f1-3273-4e01-856f-56587b59b7c4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.334Z",
-      "updated_time": "2024-07-26T08:11:40.183Z",
+      "updated_time": "2024-07-30T06:22:39.674Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1140,7 +1140,7 @@
     "pk": "2ebc076e-18b9-43f0-b346-9a7794d472ea",
     "fields": {
       "created_time": "2024-01-22T09:56:45.098Z",
-      "updated_time": "2024-07-25T09:31:12.814Z",
+      "updated_time": "2024-07-30T06:22:39.173Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1148,7 +1148,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "response_code",
-      "label": "响应状态码"
+      "label": "响应码"
     }
   },
   {
@@ -1156,7 +1156,7 @@
     "pk": "2efd722a-01d8-4f77-9338-81d84afa21a9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.546Z",
-      "updated_time": "2024-07-25T09:31:12.443Z",
+      "updated_time": "2024-07-30T06:22:38.861Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1164,7 +1164,7 @@
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "mobile",
-      "label": "手机号"
+      "label": "手机"
     }
   },
   {
@@ -1172,7 +1172,7 @@
     "pk": "2f6d79c3-ed81-4f0b-9d53-cdf2bc0e87c5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.794Z",
-      "updated_time": "2024-07-26T08:11:40.455Z",
+      "updated_time": "2024-07-30T06:22:39.890Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1188,7 +1188,7 @@
     "pk": "2fdcf5d2-546b-4dec-8eaa-3d2e04d02a58",
     "fields": {
       "created_time": "2024-01-22T09:56:44.692Z",
-      "updated_time": "2024-07-25T09:31:12.546Z",
+      "updated_time": "2024-07-30T06:22:38.937Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1204,7 +1204,7 @@
     "pk": "3008ab7d-932d-442e-b708-76b9315b4ca8",
     "fields": {
       "created_time": "2024-01-22T09:54:40.931Z",
-      "updated_time": "2024-07-26T08:11:40.598Z",
+      "updated_time": "2024-07-30T06:22:40.032Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1212,7 +1212,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "extra_json",
-      "label": "额外的json数据"
+      "label": "额外的Json数据"
     }
   },
   {
@@ -1220,7 +1220,7 @@
     "pk": "31cd2f26-6683-490f-aced-9f75069f4995",
     "fields": {
       "created_time": "2024-01-22T09:56:44.432Z",
-      "updated_time": "2024-07-25T09:31:12.367Z",
+      "updated_time": "2024-07-30T06:22:38.801Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1236,7 +1236,7 @@
     "pk": "322e697c-60ed-41b9-9a78-c58c87042d69",
     "fields": {
       "created_time": "2024-01-22T09:56:44.574Z",
-      "updated_time": "2024-07-25T09:31:12.465Z",
+      "updated_time": "2024-07-30T06:22:38.878Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1244,7 +1244,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -1252,7 +1252,7 @@
     "pk": "324754a3-1ad5-4051-80ed-3373f577ba73",
     "fields": {
       "created_time": "2024-01-22T09:56:44.448Z",
-      "updated_time": "2024-07-25T09:31:12.378Z",
+      "updated_time": "2024-07-30T06:22:38.810Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1268,7 +1268,7 @@
     "pk": "33696c5c-dd4e-487e-959b-202ef5ee121f",
     "fields": {
       "created_time": "2024-01-22T09:54:40.895Z",
-      "updated_time": "2024-07-26T08:11:40.609Z",
+      "updated_time": "2024-07-30T06:22:40.045Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1284,7 +1284,7 @@
     "pk": "33ae5985-4d20-45af-8c05-dd7bb4c2cb5e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.151Z",
-      "updated_time": "2024-07-26T08:11:40.003Z",
+      "updated_time": "2024-07-30T06:22:39.495Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1292,7 +1292,7 @@
       "field_type": 0,
       "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1300,7 +1300,7 @@
     "pk": "34429c87-d72c-4a51-9087-e74185c97dc4",
     "fields": {
       "created_time": "2024-01-22T09:56:44.519Z",
-      "updated_time": "2024-07-25T09:31:12.425Z",
+      "updated_time": "2024-07-30T06:22:38.847Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1316,7 +1316,7 @@
     "pk": "34b8d105-5b02-419f-bc3f-736452d6a6f9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.470Z",
-      "updated_time": "2024-07-25T09:31:12.393Z",
+      "updated_time": "2024-07-30T06:22:38.821Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1332,7 +1332,7 @@
     "pk": "34c6e0d3-ff7d-492c-a566-56e85384c62f",
     "fields": {
       "created_time": "2024-01-22T09:56:45.191Z",
-      "updated_time": "2024-07-25T09:31:12.885Z",
+      "updated_time": "2024-07-30T06:22:39.228Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1340,7 +1340,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1348,7 +1348,7 @@
     "pk": "34fd5418-834d-4103-88f8-9bc08042745a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.165Z",
-      "updated_time": "2024-07-26T08:11:39.993Z",
+      "updated_time": "2024-07-30T06:22:39.486Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1364,7 +1364,7 @@
     "pk": "3585c4cc-896e-49e8-8f95-e44f7a7e6c42",
     "fields": {
       "created_time": "2024-01-22T09:56:44.475Z",
-      "updated_time": "2024-07-25T09:31:12.396Z",
+      "updated_time": "2024-07-30T06:22:38.824Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1380,7 +1380,7 @@
     "pk": "3597871b-4ee2-4c94-a1d7-cbb2d51035e4",
     "fields": {
       "created_time": "2024-01-22T09:56:44.464Z",
-      "updated_time": "2024-07-25T09:31:12.389Z",
+      "updated_time": "2024-07-30T06:22:38.818Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1396,7 +1396,7 @@
     "pk": "359d0b67-63d9-49ee-90cf-b9eb6971e1b0",
     "fields": {
       "created_time": "2024-01-22T09:56:44.389Z",
-      "updated_time": "2024-07-25T09:31:12.343Z",
+      "updated_time": "2024-07-30T06:22:38.780Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1412,7 +1412,7 @@
     "pk": "361c4dd0-9bc2-4b01-9e31-a5742fa1e13b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.006Z",
-      "updated_time": "2024-07-26T08:11:39.902Z",
+      "updated_time": "2024-07-30T06:22:39.385Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1428,7 +1428,7 @@
     "pk": "3654f48b-7aed-4d74-9146-e960bbac5bcb",
     "fields": {
       "created_time": "2024-05-05T06:00:29.470Z",
-      "updated_time": "2024-07-26T08:11:40.169Z",
+      "updated_time": "2024-07-30T06:22:39.672Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1436,7 +1436,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "password",
-      "label": "密码"
+      "label": "Password"
     }
   },
   {
@@ -1444,7 +1444,7 @@
     "pk": "36ca7aa2-5351-4ea5-8311-08ce0088c067",
     "fields": {
       "created_time": "2024-01-22T09:56:44.739Z",
-      "updated_time": "2024-07-25T09:31:12.575Z",
+      "updated_time": "2024-07-30T06:22:38.958Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1460,7 +1460,7 @@
     "pk": "393f7c7f-4c44-4d17-b4c4-ecc019072da6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.629Z",
-      "updated_time": "2024-07-26T08:11:40.435Z",
+      "updated_time": "2024-07-30T06:22:39.868Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1476,7 +1476,7 @@
     "pk": "3a85499f-53c8-4cab-9d2a-307ed6fcd002",
     "fields": {
       "created_time": "2024-01-22T09:56:45.031Z",
-      "updated_time": "2024-07-25T09:31:12.767Z",
+      "updated_time": "2024-07-30T06:22:39.139Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1484,7 +1484,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1492,7 +1492,7 @@
     "pk": "3b14ace1-64d5-41d1-bd28-c202b99947b9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.119Z",
-      "updated_time": "2024-07-25T09:31:12.293Z",
+      "updated_time": "2024-07-30T06:22:38.739Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1508,7 +1508,7 @@
     "pk": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
     "fields": {
       "created_time": "2024-01-22T09:56:45.019Z",
-      "updated_time": "2024-07-25T09:31:12.760Z",
+      "updated_time": "2024-07-30T06:22:39.134Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1524,7 +1524,7 @@
     "pk": "3b60516d-176a-47a9-a7ea-e6d2e8253887",
     "fields": {
       "created_time": "2024-01-22T09:56:44.535Z",
-      "updated_time": "2024-07-25T09:31:12.436Z",
+      "updated_time": "2024-07-30T06:22:38.856Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1540,7 +1540,7 @@
     "pk": "3b797186-5c25-4075-8b37-2fd453b2a3e4",
     "fields": {
       "created_time": "2024-01-22T09:54:41.220Z",
-      "updated_time": "2024-07-26T08:11:40.789Z",
+      "updated_time": "2024-07-30T06:22:40.170Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1548,7 +1548,7 @@
       "field_type": 0,
       "parent": "ab6ae020-1de6-4695-925b-56456769b7aa",
       "name": "cache_value",
-      "label": "配置缓存数据"
+      "label": "配置缓存数值"
     }
   },
   {
@@ -1556,7 +1556,7 @@
     "pk": "3c7939c2-d827-45c4-b854-5816a83d6a0b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.832Z",
-      "updated_time": "2024-07-25T09:31:12.624Z",
+      "updated_time": "2024-07-30T06:22:39.006Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1564,7 +1564,7 @@
       "field_type": 1,
       "parent": "4ce233dd-6ac0-4f14-8c19-c3fbf5d9d12e",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1572,7 +1572,7 @@
     "pk": "3d77998e-429f-4fd4-8670-1573aaa794f0",
     "fields": {
       "created_time": "2024-01-22T09:56:44.420Z",
-      "updated_time": "2024-07-25T09:31:12.360Z",
+      "updated_time": "2024-07-30T06:22:38.795Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1580,7 +1580,7 @@
       "field_type": 1,
       "parent": "738ac5ed-c2fa-4ca2-984c-e74a9eb00f38",
       "name": "label",
-      "label": "模型/字段名称"
+      "label": "模型/字段数值"
     }
   },
   {
@@ -1588,7 +1588,7 @@
     "pk": "3da95ceb-b60b-4d80-a760-ab79a0fb4bf7",
     "fields": {
       "created_time": "2024-01-22T09:56:45.432Z",
-      "updated_time": "2024-07-25T09:31:12.714Z",
+      "updated_time": "2024-07-30T06:22:39.099Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1604,7 +1604,7 @@
     "pk": "3e6f1a9c-4657-4f2a-a976-6efd41859639",
     "fields": {
       "created_time": "2024-01-22T09:54:40.339Z",
-      "updated_time": "2024-07-26T08:11:40.167Z",
+      "updated_time": "2024-07-30T06:22:39.669Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1612,7 +1612,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "is_active",
-      "label": "有效"
+      "label": "Active"
     }
   },
   {
@@ -1620,7 +1620,7 @@
     "pk": "3e802012-2f8d-4c08-acdb-b4d227f923cb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.578Z",
-      "updated_time": "2024-07-26T08:11:40.296Z",
+      "updated_time": "2024-07-30T06:22:39.759Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1628,7 +1628,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "transition_enter",
-      "label": "当前页面进场动画"
+      "label": "页面进场动画"
     }
   },
   {
@@ -1636,7 +1636,7 @@
     "pk": "3f574633-bc9c-48a0-a0aa-a5878f97d609",
     "fields": {
       "created_time": "2024-01-22T09:54:41.196Z",
-      "updated_time": "2024-07-26T08:11:40.786Z",
+      "updated_time": "2024-07-30T06:22:40.168Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1644,7 +1644,7 @@
       "field_type": 0,
       "parent": "ab6ae020-1de6-4695-925b-56456769b7aa",
       "name": "value",
-      "label": "配置值"
+      "label": "配置数值"
     }
   },
   {
@@ -1652,7 +1652,7 @@
     "pk": "3f70a855-d6db-4442-9d1a-1501e0b368ff",
     "fields": {
       "created_time": "2024-01-22T09:54:41.206Z",
-      "updated_time": "2024-07-26T08:11:40.791Z",
+      "updated_time": "2024-07-30T06:22:40.174Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1660,7 +1660,7 @@
       "field_type": 0,
       "parent": "ab6ae020-1de6-4695-925b-56456769b7aa",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -1668,7 +1668,7 @@
     "pk": "3fa68890-edf3-4037-b277-80f07dc9c273",
     "fields": {
       "created_time": "2024-01-22T09:56:44.925Z",
-      "updated_time": "2024-07-25T09:31:12.670Z",
+      "updated_time": "2024-07-30T06:22:39.054Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1684,7 +1684,7 @@
     "pk": "3fdaaaac-f2f7-4d9d-94db-03d6c6504b06",
     "fields": {
       "created_time": "2024-01-22T09:54:40.190Z",
-      "updated_time": "2024-07-26T08:11:40.058Z",
+      "updated_time": "2024-07-30T06:22:39.549Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1700,7 +1700,7 @@
     "pk": "406f191e-7a4f-4d25-ac34-3b59b42a1cb3",
     "fields": {
       "created_time": "2024-01-22T09:56:45.329Z",
-      "updated_time": "2024-07-25T09:31:12.956Z",
+      "updated_time": "2024-07-30T06:22:39.298Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1708,7 +1708,7 @@
       "field_type": 1,
       "parent": "638c82f1-60ad-4192-92fc-b4b1e88960a8",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -1716,7 +1716,7 @@
     "pk": "4082dbf4-0743-4e17-a90c-049593d0a9ed",
     "fields": {
       "created_time": "2024-03-14T10:38:12.344Z",
-      "updated_time": "2024-07-26T08:11:40.709Z",
+      "updated_time": "2024-07-30T06:22:40.109Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1732,7 +1732,7 @@
     "pk": "41f781b8-2619-4b5b-9e24-015ef12964f5",
     "fields": {
       "created_time": "2024-01-22T09:56:45.355Z",
-      "updated_time": "2024-07-25T09:31:12.973Z",
+      "updated_time": "2024-07-30T06:22:39.311Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1740,7 +1740,7 @@
       "field_type": 1,
       "parent": "638c82f1-60ad-4192-92fc-b4b1e88960a8",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -1748,7 +1748,7 @@
     "pk": "43283d05-b8a3-4906-a7a4-787cd49c26fa",
     "fields": {
       "created_time": "2024-01-22T09:56:44.900Z",
-      "updated_time": "2024-07-25T09:31:12.657Z",
+      "updated_time": "2024-07-30T06:22:39.040Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1756,7 +1756,7 @@
       "field_type": 1,
       "parent": "c77a1832-d839-4a31-a562-c37aa11ccd53",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -1764,7 +1764,7 @@
     "pk": "43380d74-2ca0-4258-8165-e856d59c9566",
     "fields": {
       "created_time": "2024-01-22T09:54:40.506Z",
-      "updated_time": "2024-07-26T08:11:40.240Z",
+      "updated_time": "2024-07-30T06:22:39.715Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1772,7 +1772,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "dynamicLevel",
-      "label": "Dynamiclevel"
+      "label": "标签显示数量"
     }
   },
   {
@@ -1780,7 +1780,7 @@
     "pk": "433cccbd-a974-47b8-bd01-c20340973105",
     "fields": {
       "created_time": "2024-01-22T09:56:44.415Z",
-      "updated_time": "2024-07-25T09:31:12.357Z",
+      "updated_time": "2024-07-30T06:22:38.792Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1796,7 +1796,7 @@
     "pk": "439a3546-00ca-4203-90e9-54ac3c7e3950",
     "fields": {
       "created_time": "2024-01-22T09:56:44.501Z",
-      "updated_time": "2024-07-25T09:31:12.415Z",
+      "updated_time": "2024-07-30T06:22:38.839Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1804,7 +1804,7 @@
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -1812,7 +1812,7 @@
     "pk": "43b0ae8f-d37f-452b-b559-f7167dfe95d5",
     "fields": {
       "created_time": "2024-01-22T09:54:41.167Z",
-      "updated_time": "2024-07-26T08:11:40.702Z",
+      "updated_time": "2024-07-30T06:22:40.103Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1820,7 +1820,7 @@
       "field_type": 0,
       "parent": "0f57a580-952e-4751-a110-9e447a08768d",
       "name": "cache_value",
-      "label": "配置缓存数据"
+      "label": "配置缓存数值"
     }
   },
   {
@@ -1828,7 +1828,7 @@
     "pk": "4428bb39-9d23-4cd2-a3c7-e0584ea3c3fe",
     "fields": {
       "created_time": "2024-01-22T09:56:44.859Z",
-      "updated_time": "2024-07-25T09:31:12.636Z",
+      "updated_time": "2024-07-30T06:22:39.019Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1844,7 +1844,7 @@
     "pk": "455c2d7f-14e6-469a-908e-206a6fa76255",
     "fields": {
       "created_time": "2024-01-22T09:56:44.853Z",
-      "updated_time": "2024-07-25T09:31:12.634Z",
+      "updated_time": "2024-07-30T06:22:39.016Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1860,7 +1860,7 @@
     "pk": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.673Z",
-      "updated_time": "2024-07-25T09:31:12.527Z",
+      "updated_time": "2024-07-30T06:22:38.924Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1868,7 +1868,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.menu",
-      "label": "菜单信息"
+      "label": "菜单"
     }
   },
   {
@@ -1876,7 +1876,7 @@
     "pk": "474ed01d-0fbc-4660-b177-27d1ddc7d771",
     "fields": {
       "created_time": "2024-01-22T09:54:40.559Z",
-      "updated_time": "2024-07-26T08:11:40.282Z",
+      "updated_time": "2024-07-30T06:22:39.749Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1884,7 +1884,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "is_show_parent",
-      "label": "是否显示父级菜单"
+      "label": "显示父级菜单"
     }
   },
   {
@@ -1892,7 +1892,7 @@
     "pk": "479711a0-2cb4-4108-82f6-8fd81901d0d1",
     "fields": {
       "created_time": "2024-01-22T09:56:44.130Z",
-      "updated_time": "2024-07-25T09:31:12.300Z",
+      "updated_time": "2024-07-30T06:22:38.745Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1900,7 +1900,7 @@
       "field_type": 1,
       "parent": "3b14ace1-64d5-41d1-bd28-c202b99947b9",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -1908,7 +1908,7 @@
     "pk": "47c3bf6c-58b3-4e9e-8553-9319e526a734",
     "fields": {
       "created_time": "2024-01-22T09:54:40.261Z",
-      "updated_time": "2024-07-26T08:11:40.066Z",
+      "updated_time": "2024-07-30T06:22:39.557Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1924,7 +1924,7 @@
     "pk": "48acbc6a-e3f4-4f0f-8319-58bb63abbd27",
     "fields": {
       "created_time": "2024-01-22T09:54:41.110Z",
-      "updated_time": "2024-07-26T08:11:40.655Z",
+      "updated_time": "2024-07-30T06:22:40.082Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1932,7 +1932,7 @@
       "field_type": 0,
       "parent": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
       "name": "owner_info",
-      "label": "已读用户"
+      "label": "用户"
     }
   },
   {
@@ -1940,7 +1940,7 @@
     "pk": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.889Z",
-      "updated_time": "2024-07-26T08:11:40.605Z",
+      "updated_time": "2024-07-30T06:22:40.040Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1948,7 +1948,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.noticemessage",
-      "label": "消息通知"
+      "label": "通知内容"
     }
   },
   {
@@ -1956,7 +1956,7 @@
     "pk": "49de999a-32e8-4a83-932f-05cb2a289440",
     "fields": {
       "created_time": "2024-01-22T09:54:40.601Z",
-      "updated_time": "2024-07-26T08:11:40.314Z",
+      "updated_time": "2024-07-30T06:22:39.772Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1972,7 +1972,7 @@
     "pk": "4a28ff2e-7ad9-47f8-adaa-354e7f2aea68",
     "fields": {
       "created_time": "2024-01-22T09:56:45.372Z",
-      "updated_time": "2024-07-25T09:31:12.991Z",
+      "updated_time": "2024-07-30T06:22:39.324Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -1988,7 +1988,7 @@
     "pk": "4bf81612-e1a5-4a0b-9944-1c54542f2491",
     "fields": {
       "created_time": "2024-01-22T09:56:45.479Z",
-      "updated_time": "2024-07-25T09:31:12.749Z",
+      "updated_time": "2024-07-30T06:22:39.126Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2004,7 +2004,7 @@
     "pk": "4c7ce7d6-018a-4890-b673-b44de26b17ed",
     "fields": {
       "created_time": "2024-01-22T09:56:45.219Z",
-      "updated_time": "2024-07-25T09:31:12.901Z",
+      "updated_time": "2024-07-30T06:22:39.243Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2012,7 +2012,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "level",
-      "label": "消息级别"
+      "label": "通知级别"
     }
   },
   {
@@ -2020,7 +2020,7 @@
     "pk": "4c84374a-431a-4bcb-9338-a7da1beecca9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.349Z",
-      "updated_time": "2024-07-26T08:11:40.153Z",
+      "updated_time": "2024-07-30T06:22:39.652Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2028,7 +2028,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "avatar",
-      "label": "用户头像"
+      "label": "头像"
     }
   },
   {
@@ -2036,7 +2036,7 @@
     "pk": "4ce233dd-6ac0-4f14-8c19-c3fbf5d9d12e",
     "fields": {
       "created_time": "2024-01-22T09:56:44.821Z",
-      "updated_time": "2024-07-25T09:31:12.618Z",
+      "updated_time": "2024-07-30T06:22:39.001Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2044,7 +2044,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.userrole",
-      "label": "角色信息"
+      "label": "用户角色"
     }
   },
   {
@@ -2052,7 +2052,7 @@
     "pk": "4d866db7-51b5-44ce-8560-2af30839ee88",
     "fields": {
       "created_time": "2024-01-22T09:54:41.280Z",
-      "updated_time": "2024-07-26T08:11:40.810Z",
+      "updated_time": "2024-07-30T06:22:40.198Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2068,7 +2068,7 @@
     "pk": "4e01b6f5-8690-48c7-8ad6-cfebfeab845d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.886Z",
-      "updated_time": "2024-07-25T09:31:12.649Z",
+      "updated_time": "2024-07-30T06:22:39.033Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2084,7 +2084,7 @@
     "pk": "4e2538fa-26f2-47c0-849d-27b49463f5ee",
     "fields": {
       "created_time": "2024-01-22T09:56:45.119Z",
-      "updated_time": "2024-07-25T09:31:12.828Z",
+      "updated_time": "2024-07-30T06:22:39.184Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2100,7 +2100,7 @@
     "pk": "4e8f50cb-543a-489a-abd2-197531ae0b32",
     "fields": {
       "created_time": "2024-01-22T09:56:45.268Z",
-      "updated_time": "2024-07-25T09:31:12.925Z",
+      "updated_time": "2024-07-30T06:22:39.267Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2116,7 +2116,7 @@
     "pk": "4f686fe8-944a-46a0-99e9-6a678846d75d",
     "fields": {
       "created_time": "2024-01-22T09:54:39.986Z",
-      "updated_time": "2024-07-26T08:11:39.891Z",
+      "updated_time": "2024-07-30T06:22:39.376Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2124,7 +2124,7 @@
       "field_type": 0,
       "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -2132,7 +2132,7 @@
     "pk": "50c6f6aa-90ff-4192-800c-e5aa8997444e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.961Z",
-      "updated_time": "2024-07-26T08:11:40.578Z",
+      "updated_time": "2024-07-30T06:22:40.015Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2140,7 +2140,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "notice_dept",
-      "label": "被通知的部门"
+      "label": "被通知部门"
     }
   },
   {
@@ -2148,7 +2148,7 @@
     "pk": "51056898-6d38-4caf-8b5d-24d71df8fb3d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.642Z",
-      "updated_time": "2024-07-25T09:31:12.502Z",
+      "updated_time": "2024-07-30T06:22:38.905Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2156,7 +2156,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "frame_url",
-      "label": "内嵌的iframe链接地址"
+      "label": "Iframe地址"
     }
   },
   {
@@ -2164,7 +2164,7 @@
     "pk": "51bbc1a2-b7d7-4527-9cbf-335fe658f1cc",
     "fields": {
       "created_time": "2024-01-22T09:56:45.214Z",
-      "updated_time": "2024-07-25T09:31:12.898Z",
+      "updated_time": "2024-07-30T06:22:39.241Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2180,7 +2180,7 @@
     "pk": "51e9e8d6-bde8-4d76-a1e6-52f0139c3628",
     "fields": {
       "created_time": "2024-01-22T09:54:40.229Z",
-      "updated_time": "2024-07-26T08:11:40.063Z",
+      "updated_time": "2024-07-30T06:22:39.555Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2196,7 +2196,7 @@
     "pk": "52c5ea82-e814-4dea-af84-d88a7f585be4",
     "fields": {
       "created_time": "2024-01-22T09:56:45.166Z",
-      "updated_time": "2024-07-25T09:31:12.860Z",
+      "updated_time": "2024-07-30T06:22:39.207Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2204,7 +2204,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "filename",
-      "label": "文件名"
+      "label": "文件名称"
     }
   },
   {
@@ -2212,7 +2212,7 @@
     "pk": "52dec320-69f6-4ffd-9d28-8b438cd54d2e",
     "fields": {
       "created_time": "2024-06-20T03:25:33.327Z",
-      "updated_time": "2024-07-26T08:11:40.499Z",
+      "updated_time": "2024-07-30T06:22:39.940Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2228,7 +2228,7 @@
     "pk": "53bb41c4-6183-4156-9ba7-6ab69a7e42e5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.837Z",
-      "updated_time": "2024-07-26T08:11:40.471Z",
+      "updated_time": "2024-07-30T06:22:39.909Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2244,7 +2244,7 @@
     "pk": "53f442dc-883d-4c3e-bef3-5fab15b60f60",
     "fields": {
       "created_time": "2024-01-22T09:54:40.147Z",
-      "updated_time": "2024-07-26T08:11:39.989Z",
+      "updated_time": "2024-07-30T06:22:39.481Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2252,7 +2252,7 @@
       "field_type": 0,
       "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -2260,7 +2260,7 @@
     "pk": "541e3cb7-495d-4927-ae57-4efdf45b31dc",
     "fields": {
       "created_time": "2024-01-22T09:56:44.875Z",
-      "updated_time": "2024-07-25T09:31:12.644Z",
+      "updated_time": "2024-07-30T06:22:39.027Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2268,7 +2268,7 @@
       "field_type": 1,
       "parent": "4ce233dd-6ac0-4f14-8c19-c3fbf5d9d12e",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -2276,7 +2276,7 @@
     "pk": "5420f960-a6d9-4476-9d22-e95e3552d875",
     "fields": {
       "created_time": "2024-01-22T09:56:44.652Z",
-      "updated_time": "2024-07-25T09:31:12.509Z",
+      "updated_time": "2024-07-30T06:22:38.911Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2284,7 +2284,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "transition_enter",
-      "label": "当前页面进场动画"
+      "label": "页面进场动画"
     }
   },
   {
@@ -2292,7 +2292,7 @@
     "pk": "54329800-f36c-4065-b136-085a156f18f7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.496Z",
-      "updated_time": "2024-07-26T08:11:40.234Z",
+      "updated_time": "2024-07-30T06:22:39.710Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2308,7 +2308,7 @@
     "pk": "54626fce-409b-49e6-9617-72d1cf7ef18f",
     "fields": {
       "created_time": "2024-01-22T09:56:44.496Z",
-      "updated_time": "2024-07-25T09:31:12.411Z",
+      "updated_time": "2024-07-30T06:22:38.836Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2324,7 +2324,7 @@
     "pk": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.930Z",
-      "updated_time": "2024-07-25T09:31:12.673Z",
+      "updated_time": "2024-07-30T06:22:39.056Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2332,7 +2332,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.deptinfo",
-      "label": "部门信息"
+      "label": "部门"
     }
   },
   {
@@ -2340,7 +2340,7 @@
     "pk": "5854ca91-dfeb-439b-b6d0-eaca6fb12737",
     "fields": {
       "created_time": "2024-01-22T09:56:44.481Z",
-      "updated_time": "2024-07-25T09:31:12.400Z",
+      "updated_time": "2024-07-30T06:22:38.827Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2356,7 +2356,7 @@
     "pk": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
     "fields": {
       "created_time": "2024-01-22T09:54:41.240Z",
-      "updated_time": "2024-07-26T08:11:40.801Z",
+      "updated_time": "2024-07-30T06:22:40.188Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2364,7 +2364,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.userloginlog",
-      "label": "登录日志"
+      "label": "用户登录日志"
     }
   },
   {
@@ -2372,7 +2372,7 @@
     "pk": "58e25471-4562-4b26-a7de-a0e4618ee83a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.305Z",
-      "updated_time": "2024-07-26T08:11:40.165Z",
+      "updated_time": "2024-07-30T06:22:39.667Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2388,7 +2388,7 @@
     "pk": "5a5d282c-d4c1-49d6-adb9-4fac702b7784",
     "fields": {
       "created_time": "2024-01-22T09:54:40.614Z",
-      "updated_time": "2024-07-26T08:11:40.428Z",
+      "updated_time": "2024-07-30T06:22:39.863Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2404,7 +2404,7 @@
     "pk": "5a9378ea-0a75-4b43-bd38-2085cf4ff823",
     "fields": {
       "created_time": "2024-01-22T09:56:45.036Z",
-      "updated_time": "2024-07-25T09:31:12.771Z",
+      "updated_time": "2024-07-30T06:22:39.142Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2420,7 +2420,7 @@
     "pk": "5d8b84a7-9d83-4e6b-be30-37edc354767b",
     "fields": {
       "created_time": "2024-01-22T09:54:39.981Z",
-      "updated_time": "2024-07-26T08:11:39.886Z",
+      "updated_time": "2024-07-30T06:22:39.371Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2436,7 +2436,7 @@
     "pk": "5e198fdc-1600-4f02-a056-7304815a6126",
     "fields": {
       "created_time": "2024-06-20T03:25:32.861Z",
-      "updated_time": "2024-07-25T09:31:12.867Z",
+      "updated_time": "2024-07-30T06:22:39.212Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2444,7 +2444,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "mime_type",
-      "label": "MIME类型"
+      "label": "文件类型"
     }
   },
   {
@@ -2452,7 +2452,7 @@
     "pk": "5f52546a-ec28-42e4-b71a-f7f34e3a249a",
     "fields": {
       "created_time": "2024-07-25T09:31:12.877Z",
-      "updated_time": "2024-07-25T09:31:12.877Z",
+      "updated_time": "2024-07-30T06:22:39.220Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2468,7 +2468,7 @@
     "pk": "5ff959e4-d5e0-4ece-850d-e6402aacf113",
     "fields": {
       "created_time": "2024-01-22T09:54:41.319Z",
-      "updated_time": "2024-07-26T08:11:40.825Z",
+      "updated_time": "2024-07-30T06:22:40.217Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2476,7 +2476,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -2484,7 +2484,7 @@
     "pk": "622ff593-a071-4f12-80f2-609cf73db1f3",
     "fields": {
       "created_time": "2024-01-22T09:56:44.369Z",
-      "updated_time": "2024-07-25T09:31:12.329Z",
+      "updated_time": "2024-07-30T06:22:38.769Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2492,7 +2492,7 @@
       "field_type": 1,
       "parent": "738ac5ed-c2fa-4ca2-984c-e74a9eb00f38",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -2500,7 +2500,7 @@
     "pk": "6379c286-ab97-4194-9434-d35b1221d62a",
     "fields": {
       "created_time": "2024-03-14T10:38:12.346Z",
-      "updated_time": "2024-07-26T08:11:40.712Z",
+      "updated_time": "2024-07-30T06:22:40.112Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2516,7 +2516,7 @@
     "pk": "638c82f1-60ad-4192-92fc-b4b1e88960a8",
     "fields": {
       "created_time": "2024-01-22T09:56:45.307Z",
-      "updated_time": "2024-07-25T09:31:12.945Z",
+      "updated_time": "2024-07-30T06:22:39.287Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2524,7 +2524,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.systemconfig",
-      "label": "系统配置项"
+      "label": "系统配置"
     }
   },
   {
@@ -2532,7 +2532,7 @@
     "pk": "6428079d-ae5a-4d0b-a040-f78bb164e611",
     "fields": {
       "created_time": "2024-01-22T09:54:41.309Z",
-      "updated_time": "2024-07-26T08:11:40.812Z",
+      "updated_time": "2024-07-30T06:22:40.202Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2548,7 +2548,7 @@
     "pk": "6439380c-647c-4843-ab5f-60f7b2770634",
     "fields": {
       "created_time": "2024-04-09T07:35:57.527Z",
-      "updated_time": "2024-07-25T09:31:12.585Z",
+      "updated_time": "2024-07-30T06:22:38.966Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2564,7 +2564,7 @@
     "pk": "65f92651-4105-4727-a2ee-44bbe0512d40",
     "fields": {
       "created_time": "2024-01-22T09:54:40.035Z",
-      "updated_time": "2024-07-26T08:11:39.968Z",
+      "updated_time": "2024-07-30T06:22:39.458Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2580,7 +2580,7 @@
     "pk": "67a78e3b-0d19-441c-8c7b-47199cfd92e5",
     "fields": {
       "created_time": "2024-01-22T09:54:41.261Z",
-      "updated_time": "2024-07-26T08:11:40.805Z",
+      "updated_time": "2024-07-30T06:22:40.193Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2596,7 +2596,7 @@
     "pk": "67e561d0-ad6b-4fde-be5e-75467c16fb11",
     "fields": {
       "created_time": "2024-01-22T09:56:45.069Z",
-      "updated_time": "2024-07-25T09:31:12.792Z",
+      "updated_time": "2024-07-30T06:22:39.158Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2604,7 +2604,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "path",
-      "label": "请求地址"
+      "label": "访问路径"
     }
   },
   {
@@ -2612,7 +2612,7 @@
     "pk": "682f6628-7e40-44bb-8ee7-bbc6f3778038",
     "fields": {
       "created_time": "2024-01-22T09:56:44.724Z",
-      "updated_time": "2024-07-25T09:31:12.564Z",
+      "updated_time": "2024-07-30T06:22:38.951Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2628,7 +2628,7 @@
     "pk": "6860827b-4e4f-4c09-8aee-ec9602be3cf6",
     "fields": {
       "created_time": "2024-01-22T09:56:45.229Z",
-      "updated_time": "2024-07-25T09:31:12.906Z",
+      "updated_time": "2024-07-30T06:22:39.248Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2636,7 +2636,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "title",
-      "label": "消息标题"
+      "label": "通知标题"
     }
   },
   {
@@ -2644,7 +2644,7 @@
     "pk": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
     "fields": {
       "created_time": "2024-01-22T09:54:40.170Z",
-      "updated_time": "2024-07-26T08:11:40.047Z",
+      "updated_time": "2024-07-30T06:22:39.538Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2652,7 +2652,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.deptinfo",
-      "label": "部门信息"
+      "label": "部门"
     }
   },
   {
@@ -2660,7 +2660,7 @@
     "pk": "6a81ed90-de36-4b25-9b29-fa03cbd1958a",
     "fields": {
       "created_time": "2024-01-22T09:56:44.969Z",
-      "updated_time": "2024-07-25T09:31:12.691Z",
+      "updated_time": "2024-07-30T06:22:39.075Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2676,7 +2676,7 @@
     "pk": "6b416661-0a37-48ff-81ba-e31641a84a23",
     "fields": {
       "created_time": "2024-01-22T09:56:44.920Z",
-      "updated_time": "2024-07-25T09:31:12.668Z",
+      "updated_time": "2024-07-30T06:22:39.051Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2692,7 +2692,7 @@
     "pk": "6ce1ed69-8a35-4184-bbb6-83e350931dcb",
     "fields": {
       "created_time": "2024-01-22T09:56:44.142Z",
-      "updated_time": "2024-07-25T09:31:12.307Z",
+      "updated_time": "2024-07-30T06:22:38.752Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2700,7 +2700,7 @@
       "field_type": 1,
       "parent": "3b14ace1-64d5-41d1-bd28-c202b99947b9",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -2708,7 +2708,7 @@
     "pk": "6cf37da8-b2a3-4666-a9d4-c02c078e9990",
     "fields": {
       "created_time": "2024-01-22T09:54:40.595Z",
-      "updated_time": "2024-07-26T08:11:40.310Z",
+      "updated_time": "2024-07-30T06:22:39.770Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2716,7 +2716,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "dynamic_level",
-      "label": "显示标签页最大数量"
+      "label": "标签显示数量"
     }
   },
   {
@@ -2724,7 +2724,7 @@
     "pk": "6cf414ac-c810-4d05-ae80-fb80d115e36b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.526Z",
-      "updated_time": "2024-07-26T08:11:40.259Z",
+      "updated_time": "2024-07-30T06:22:39.730Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2732,7 +2732,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -2740,7 +2740,7 @@
     "pk": "6d1cc67b-de72-4af9-8839-3feb477d24e9",
     "fields": {
       "created_time": "2024-06-20T03:25:33.325Z",
-      "updated_time": "2024-07-26T08:11:40.496Z",
+      "updated_time": "2024-07-30T06:22:39.937Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2748,7 +2748,7 @@
       "field_type": 0,
       "parent": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
       "name": "mime_type",
-      "label": "MIME类型"
+      "label": "文件类型"
     }
   },
   {
@@ -2756,7 +2756,7 @@
     "pk": "6d30ce71-9d84-49ee-938f-dc6b0746fe5e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.177Z",
-      "updated_time": "2024-07-25T09:31:12.874Z",
+      "updated_time": "2024-07-30T06:22:39.217Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2772,7 +2772,7 @@
     "pk": "6d7f40fe-265b-4375-94d9-fc7f3a659874",
     "fields": {
       "created_time": "2024-07-25T09:31:00.430Z",
-      "updated_time": "2024-07-26T08:11:40.501Z",
+      "updated_time": "2024-07-30T06:22:39.942Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2780,7 +2780,7 @@
       "field_type": 0,
       "parent": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
       "name": "file_url",
-      "label": "外部地址"
+      "label": "网络地址"
     }
   },
   {
@@ -2788,7 +2788,7 @@
     "pk": "6dd92387-552c-4120-ac56-9e52b43b6758",
     "fields": {
       "created_time": "2024-01-22T09:56:45.293Z",
-      "updated_time": "2024-07-25T09:31:12.938Z",
+      "updated_time": "2024-07-30T06:22:39.279Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2804,7 +2804,7 @@
     "pk": "6e47db3e-e899-4121-be70-4e27a5ec03c3",
     "fields": {
       "created_time": "2024-01-22T09:56:44.541Z",
-      "updated_time": "2024-07-25T09:31:12.440Z",
+      "updated_time": "2024-07-30T06:22:38.859Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2820,7 +2820,7 @@
     "pk": "6f11e549-10d3-45b3-a005-b475f35b04bd",
     "fields": {
       "created_time": "2024-01-22T09:54:41.147Z",
-      "updated_time": "2024-07-26T08:11:40.688Z",
+      "updated_time": "2024-07-30T06:22:40.097Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2836,7 +2836,7 @@
     "pk": "6f7e977e-1904-423d-8f5c-98bf7fe32723",
     "fields": {
       "created_time": "2024-01-22T09:54:40.619Z",
-      "updated_time": "2024-07-26T08:11:40.387Z",
+      "updated_time": "2024-07-30T06:22:39.830Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2852,7 +2852,7 @@
     "pk": "6f9dfdae-b9e0-417c-ae4e-98459a17e91d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.637Z",
-      "updated_time": "2024-07-25T09:31:12.498Z",
+      "updated_time": "2024-07-30T06:22:38.903Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2860,7 +2860,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "is_keepalive",
-      "label": "是否开启页面缓存"
+      "label": "页面缓存"
     }
   },
   {
@@ -2868,7 +2868,7 @@
     "pk": "703d0485-2daf-4243-8c2b-847eb98a4458",
     "fields": {
       "created_time": "2024-01-22T09:56:45.447Z",
-      "updated_time": "2024-07-25T09:31:12.724Z",
+      "updated_time": "2024-07-30T06:22:39.107Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2876,7 +2876,7 @@
       "field_type": 1,
       "parent": "1ea46b0b-c317-4692-83a0-220498450c55",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -2884,7 +2884,7 @@
     "pk": "70477a27-77aa-4bf8-8648-0be2c17c29f7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.926Z",
-      "updated_time": "2024-07-26T08:11:40.595Z",
+      "updated_time": "2024-07-30T06:22:40.030Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2892,7 +2892,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "read_user_count",
-      "label": "消息已读用户数量"
+      "label": "已读用户数量"
     }
   },
   {
@@ -2900,7 +2900,7 @@
     "pk": "704bf944-d6fe-4e47-9869-68a26c62a097",
     "fields": {
       "created_time": "2024-01-22T09:56:45.402Z",
-      "updated_time": "2024-07-25T09:31:13.012Z",
+      "updated_time": "2024-07-30T06:22:39.340Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2916,7 +2916,7 @@
     "pk": "70723d70-3a87-49ea-9a3e-0767aafd4837",
     "fields": {
       "created_time": "2024-01-22T09:56:45.391Z",
-      "updated_time": "2024-07-25T09:31:13.005Z",
+      "updated_time": "2024-07-30T06:22:39.335Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2932,7 +2932,7 @@
     "pk": "708c8fb7-4fa9-4558-88af-703a1d9c7323",
     "fields": {
       "created_time": "2024-01-22T09:56:44.843Z",
-      "updated_time": "2024-07-25T09:31:12.629Z",
+      "updated_time": "2024-07-30T06:22:39.011Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2940,7 +2940,7 @@
       "field_type": 1,
       "parent": "4ce233dd-6ac0-4f14-8c19-c3fbf5d9d12e",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -2948,7 +2948,7 @@
     "pk": "70af3e63-e2f6-45b9-8ebe-b39d607d939d",
     "fields": {
       "created_time": "2024-01-22T09:54:41.135Z",
-      "updated_time": "2024-07-26T08:11:40.685Z",
+      "updated_time": "2024-07-30T06:22:40.095Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2964,7 +2964,7 @@
     "pk": "7298cb71-e517-4589-9697-e578ce3d5a64",
     "fields": {
       "created_time": "2024-01-22T09:54:40.946Z",
-      "updated_time": "2024-07-26T08:11:40.566Z",
+      "updated_time": "2024-07-30T06:22:40.006Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2972,7 +2972,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "publish",
-      "label": "是否发布"
+      "label": "发布"
     }
   },
   {
@@ -2980,7 +2980,7 @@
     "pk": "72fed491-5761-4d25-96a2-68a665e6d56b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.486Z",
-      "updated_time": "2024-07-25T09:31:12.404Z",
+      "updated_time": "2024-07-30T06:22:38.830Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -2996,7 +2996,7 @@
     "pk": "7315f282-6bbc-4a78-97c1-acb9e0c6ed33",
     "fields": {
       "created_time": "2024-01-22T09:54:40.266Z",
-      "updated_time": "2024-07-26T08:11:40.068Z",
+      "updated_time": "2024-07-30T06:22:39.560Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3004,7 +3004,7 @@
       "field_type": 0,
       "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -3012,7 +3012,7 @@
     "pk": "738ac5ed-c2fa-4ca2-984c-e74a9eb00f38",
     "fields": {
       "created_time": "2024-01-22T09:56:44.364Z",
-      "updated_time": "2024-07-25T09:31:12.322Z",
+      "updated_time": "2024-07-30T06:22:38.763Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3020,7 +3020,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.modellabelfield",
-      "label": "模型字段"
+      "label": "模型/字段名称"
     }
   },
   {
@@ -3028,7 +3028,7 @@
     "pk": "74463919-778b-4701-b191-5d2ef92e3a1c",
     "fields": {
       "created_time": "2024-01-22T09:56:44.647Z",
-      "updated_time": "2024-07-25T09:31:12.505Z",
+      "updated_time": "2024-07-30T06:22:38.908Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3036,7 +3036,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "frame_loading",
-      "label": "内嵌的iframe页面是否开启首次加载动画"
+      "label": "Iframe页面加载动画"
     }
   },
   {
@@ -3044,7 +3044,7 @@
     "pk": "7473045d-0d65-4c60-8577-81b22becdc71",
     "fields": {
       "created_time": "2024-01-22T09:54:40.584Z",
-      "updated_time": "2024-07-26T08:11:40.300Z",
+      "updated_time": "2024-07-30T06:22:39.762Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3052,7 +3052,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "transition_leave",
-      "label": "当前页面离场动画"
+      "label": "页面离场动画"
     }
   },
   {
@@ -3060,7 +3060,7 @@
     "pk": "7506b2df-974c-4188-8102-47ab12ee9b9b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.273Z",
-      "updated_time": "2024-07-25T09:31:12.927Z",
+      "updated_time": "2024-07-30T06:22:39.269Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3068,7 +3068,7 @@
       "field_type": 1,
       "parent": "b28b2e50-6af3-45ac-b973-022055929852",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -3076,7 +3076,7 @@
     "pk": "7515d23c-18b9-4c46-ae86-8457761c3e17",
     "fields": {
       "created_time": "2024-03-14T07:34:09.568Z",
-      "updated_time": "2024-07-25T09:31:12.977Z",
+      "updated_time": "2024-07-30T06:22:39.314Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3092,7 +3092,7 @@
     "pk": "75d1a6fb-3a94-4c3f-9d9d-e9891747bc22",
     "fields": {
       "created_time": "2024-01-22T09:56:44.870Z",
-      "updated_time": "2024-07-25T09:31:12.642Z",
+      "updated_time": "2024-07-30T06:22:39.024Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3108,7 +3108,7 @@
     "pk": "7619962e-822a-440d-9976-5f7ce7f66588",
     "fields": {
       "created_time": "2024-01-22T09:54:40.941Z",
-      "updated_time": "2024-07-26T08:11:40.602Z",
+      "updated_time": "2024-07-30T06:22:40.036Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3116,7 +3116,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "files",
-      "label": "上传文件"
+      "label": "上传的附件"
     }
   },
   {
@@ -3124,7 +3124,7 @@
     "pk": "770b3f54-48b2-40e9-a7c9-e617ffbf79fb",
     "fields": {
       "created_time": "2024-04-09T07:35:57.841Z",
-      "updated_time": "2024-07-26T08:11:40.071Z",
+      "updated_time": "2024-07-30T06:22:39.563Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3132,7 +3132,7 @@
       "field_type": 0,
       "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -3140,7 +3140,7 @@
     "pk": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
     "fields": {
       "created_time": "2024-01-22T09:54:40.862Z",
-      "updated_time": "2024-07-26T08:11:40.486Z",
+      "updated_time": "2024-07-30T06:22:39.925Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3148,7 +3148,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.uploadfile",
-      "label": "上传的文件"
+      "label": "上传文件"
     }
   },
   {
@@ -3156,7 +3156,7 @@
     "pk": "793c14cf-a072-403f-b9d2-c50d6fc2d6e3",
     "fields": {
       "created_time": "2024-01-22T09:56:45.246Z",
-      "updated_time": "2024-07-25T09:31:12.914Z",
+      "updated_time": "2024-07-30T06:22:39.256Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3164,7 +3164,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "publish",
-      "label": "是否发布"
+      "label": "发布"
     }
   },
   {
@@ -3172,7 +3172,7 @@
     "pk": "7989c8c6-bb7d-43ff-8a17-074033dd035e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.554Z",
-      "updated_time": "2024-07-26T08:11:40.279Z",
+      "updated_time": "2024-07-30T06:22:39.746Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3180,7 +3180,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "is_show_menu",
-      "label": "是否显示该菜单"
+      "label": "显示菜单"
     }
   },
   {
@@ -3188,7 +3188,7 @@
     "pk": "79a35703-b9a8-4075-9872-7a71c41e867c",
     "fields": {
       "created_time": "2024-01-22T09:56:45.001Z",
-      "updated_time": "2024-07-25T09:31:12.707Z",
+      "updated_time": "2024-07-30T06:22:39.091Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3204,7 +3204,7 @@
     "pk": "7a5d8a42-18eb-4c6f-919f-5acafcbcbb7e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.014Z",
-      "updated_time": "2024-07-25T09:31:12.709Z",
+      "updated_time": "2024-07-30T06:22:39.094Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3212,7 +3212,7 @@
       "field_type": 1,
       "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -3220,7 +3220,7 @@
     "pk": "7a64ad64-1790-4e92-8d79-edd6776b4e71",
     "fields": {
       "created_time": "2024-01-22T09:56:45.210Z",
-      "updated_time": "2024-07-25T09:31:12.896Z",
+      "updated_time": "2024-07-30T06:22:39.238Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3236,7 +3236,7 @@
     "pk": "7ae2281a-cd61-4899-ab3c-5a68f3b9f179",
     "fields": {
       "created_time": "2024-01-22T09:56:45.133Z",
-      "updated_time": "2024-07-25T09:31:12.835Z",
+      "updated_time": "2024-07-30T06:22:39.189Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3252,7 +3252,7 @@
     "pk": "7bd02e2f-0ef1-4d15-8981-8fafa7d717af",
     "fields": {
       "created_time": "2024-01-22T09:54:40.476Z",
-      "updated_time": "2024-07-26T08:11:40.220Z",
+      "updated_time": "2024-07-30T06:22:39.699Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3260,7 +3260,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "extraIcon",
-      "label": "Extraicon"
+      "label": "菜单右图标"
     }
   },
   {
@@ -3268,7 +3268,7 @@
     "pk": "7c636b1c-da1b-4fdd-add2-5cd1c6135403",
     "fields": {
       "created_time": "2024-01-22T09:56:45.239Z",
-      "updated_time": "2024-07-25T09:31:12.912Z",
+      "updated_time": "2024-07-30T06:22:39.254Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3276,7 +3276,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "extra_json",
-      "label": "额外的json数据"
+      "label": "额外的Json数据"
     }
   },
   {
@@ -3284,7 +3284,7 @@
     "pk": "7d1e5f62-c4d4-49f2-8d3f-69582827628e",
     "fields": {
       "created_time": "2024-01-22T09:54:40.181Z",
-      "updated_time": "2024-07-26T08:11:40.051Z",
+      "updated_time": "2024-07-30T06:22:39.542Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3300,7 +3300,7 @@
     "pk": "7d459195-c448-4da9-82ff-3742fd4ac0b6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.455Z",
-      "updated_time": "2024-07-26T08:11:40.269Z",
+      "updated_time": "2024-07-30T06:22:39.738Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3316,7 +3316,7 @@
     "pk": "7e1bc41e-58f4-433c-b6b2-e42ce9e01b4b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.108Z",
-      "updated_time": "2024-07-25T09:31:12.821Z",
+      "updated_time": "2024-07-30T06:22:39.178Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3324,7 +3324,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "status_code",
-      "label": "请求状态码"
+      "label": "状态码"
     }
   },
   {
@@ -3332,7 +3332,7 @@
     "pk": "7e370824-a5d4-4d9a-94fb-bcbe2dac84e9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.867Z",
-      "updated_time": "2024-07-26T08:11:40.489Z",
+      "updated_time": "2024-07-30T06:22:39.929Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3348,7 +3348,7 @@
     "pk": "7e534905-0e28-47da-9596-be04a13741dc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.816Z",
-      "updated_time": "2024-07-26T08:11:40.479Z",
+      "updated_time": "2024-07-30T06:22:39.917Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3364,7 +3364,7 @@
     "pk": "7e5fd515-b437-4738-b5e5-52e48b9cc109",
     "fields": {
       "created_time": "2024-01-22T09:56:44.953Z",
-      "updated_time": "2024-07-25T09:31:12.683Z",
+      "updated_time": "2024-07-30T06:22:39.067Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3372,7 +3372,7 @@
       "field_type": 1,
       "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -3380,7 +3380,7 @@
     "pk": "7e779af5-d138-4303-a7b7-96502a2be326",
     "fields": {
       "created_time": "2024-01-22T09:56:45.278Z",
-      "updated_time": "2024-07-25T09:31:12.930Z",
+      "updated_time": "2024-07-30T06:22:39.272Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3396,7 +3396,7 @@
     "pk": "80152f7a-0999-426f-8b27-74db4042ecc0",
     "fields": {
       "created_time": "2024-01-22T09:56:45.361Z",
-      "updated_time": "2024-07-25T09:31:12.980Z",
+      "updated_time": "2024-07-30T06:22:39.316Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3412,7 +3412,7 @@
     "pk": "80d81487-281d-4e7b-8bf1-66c2c123b8cd",
     "fields": {
       "created_time": "2024-01-22T09:56:44.529Z",
-      "updated_time": "2024-07-25T09:31:12.433Z",
+      "updated_time": "2024-07-30T06:22:38.853Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3420,7 +3420,7 @@
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "avatar",
-      "label": "用户头像"
+      "label": "头像"
     }
   },
   {
@@ -3428,7 +3428,7 @@
     "pk": "825d283d-7d5a-4210-8b9f-ab2b1c30be52",
     "fields": {
       "created_time": "2024-01-22T09:56:44.827Z",
-      "updated_time": "2024-07-25T09:31:12.621Z",
+      "updated_time": "2024-07-30T06:22:39.003Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3444,7 +3444,7 @@
     "pk": "82da2e58-eadd-4383-8e03-371e890706ee",
     "fields": {
       "created_time": "2024-01-22T09:56:45.397Z",
-      "updated_time": "2024-07-25T09:31:13.009Z",
+      "updated_time": "2024-07-30T06:22:39.337Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3460,7 +3460,7 @@
     "pk": "840bb647-d078-4cd9-9a45-aac2e88ed587",
     "fields": {
       "created_time": "2024-01-22T09:56:44.599Z",
-      "updated_time": "2024-07-25T09:31:12.476Z",
+      "updated_time": "2024-07-30T06:22:38.886Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3476,7 +3476,7 @@
     "pk": "859fa4b0-99c9-4f6a-a245-5eb7c2a00e6b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.804Z",
-      "updated_time": "2024-07-25T09:31:12.611Z",
+      "updated_time": "2024-07-30T06:22:38.993Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3484,7 +3484,7 @@
       "field_type": 1,
       "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
       "name": "name",
-      "label": "数据权限名称"
+      "label": "名称"
     }
   },
   {
@@ -3492,7 +3492,7 @@
     "pk": "867ac6e2-927d-4704-b12b-d629e3285b5b",
     "fields": {
       "created_time": "2024-01-22T09:54:41.225Z",
-      "updated_time": "2024-07-26T08:11:40.781Z",
+      "updated_time": "2024-07-30T06:22:40.162Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3508,7 +3508,7 @@
     "pk": "867ce4b6-52a3-4369-b127-4fecc7d1fcb0",
     "fields": {
       "created_time": "2024-03-14T10:38:12.376Z",
-      "updated_time": "2024-07-26T08:11:40.794Z",
+      "updated_time": "2024-07-30T06:22:40.178Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3524,7 +3524,7 @@
     "pk": "86bc58cc-a5b0-44fe-8895-5f9e74e900fc",
     "fields": {
       "created_time": "2024-01-22T09:56:44.734Z",
-      "updated_time": "2024-07-25T09:31:12.571Z",
+      "updated_time": "2024-07-30T06:22:38.956Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3540,7 +3540,7 @@
     "pk": "86fb9749-4817-491a-9dab-90dede4d2418",
     "fields": {
       "created_time": "2024-01-22T09:54:40.573Z",
-      "updated_time": "2024-07-26T08:11:40.293Z",
+      "updated_time": "2024-07-30T06:22:39.757Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3548,7 +3548,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "frame_loading",
-      "label": "内嵌的iframe页面是否开启首次加载动画"
+      "label": "Iframe页面加载动画"
     }
   },
   {
@@ -3556,7 +3556,7 @@
     "pk": "886d1ea8-d816-423b-b908-e20b2dfa869b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.677Z",
-      "updated_time": "2024-07-25T09:31:12.535Z",
+      "updated_time": "2024-07-30T06:22:38.929Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3564,7 +3564,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -3572,7 +3572,7 @@
     "pk": "8961cab0-6dca-437b-a16d-8112f67108e1",
     "fields": {
       "created_time": "2024-04-09T07:35:57.975Z",
-      "updated_time": "2024-07-26T08:11:40.447Z",
+      "updated_time": "2024-07-30T06:22:39.881Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3588,7 +3588,7 @@
     "pk": "8ab38e8c-dad9-4d24-a8eb-57e2e893bac5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.785Z",
-      "updated_time": "2024-07-25T09:31:12.603Z",
+      "updated_time": "2024-07-30T06:22:38.985Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3604,7 +3604,7 @@
     "pk": "8b207f1b-d054-45b0-b48c-31ab1b8f0783",
     "fields": {
       "created_time": "2024-01-22T09:56:45.148Z",
-      "updated_time": "2024-07-25T09:31:12.846Z",
+      "updated_time": "2024-07-30T06:22:39.197Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3620,7 +3620,7 @@
     "pk": "8bf50060-80a2-4af5-904e-3ead0b75f29e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.186Z",
-      "updated_time": "2024-07-25T09:31:12.882Z",
+      "updated_time": "2024-07-30T06:22:39.225Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3636,7 +3636,7 @@
     "pk": "8c947358-2761-4213-95e3-7af0bea83d3a",
     "fields": {
       "created_time": "2024-01-22T09:56:45.350Z",
-      "updated_time": "2024-07-25T09:31:12.969Z",
+      "updated_time": "2024-07-30T06:22:39.308Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3644,7 +3644,7 @@
       "field_type": 1,
       "parent": "638c82f1-60ad-4192-92fc-b4b1e88960a8",
       "name": "value",
-      "label": "配置值"
+      "label": "配置数值"
     }
   },
   {
@@ -3652,7 +3652,7 @@
     "pk": "8d375222-e072-4d98-902e-ce1cf9b646cf",
     "fields": {
       "created_time": "2024-01-22T09:54:41.314Z",
-      "updated_time": "2024-07-26T08:11:40.807Z",
+      "updated_time": "2024-07-30T06:22:40.196Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3660,7 +3660,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "creator",
-      "label": "操作用户"
+      "label": "用户"
     }
   },
   {
@@ -3668,7 +3668,7 @@
     "pk": "8de7d82f-628a-4230-9de9-3e6d59f38c9f",
     "fields": {
       "created_time": "2024-01-22T09:56:44.458Z",
-      "updated_time": "2024-07-25T09:31:12.385Z",
+      "updated_time": "2024-07-30T06:22:38.816Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3684,7 +3684,7 @@
     "pk": "8df19163-fc6d-4710-a437-89b943cf1f1d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.442Z",
-      "updated_time": "2024-07-25T09:31:12.374Z",
+      "updated_time": "2024-07-30T06:22:38.807Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3700,7 +3700,7 @@
     "pk": "8e7632cb-f4a8-42a5-aa58-5a26d83a918b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.051Z",
-      "updated_time": "2024-07-26T08:11:39.950Z",
+      "updated_time": "2024-07-30T06:22:39.438Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3716,7 +3716,7 @@
     "pk": "8e93658d-4e52-4d47-a251-e140dcd0752f",
     "fields": {
       "created_time": "2024-01-22T09:54:41.116Z",
-      "updated_time": "2024-07-26T08:11:40.645Z",
+      "updated_time": "2024-07-30T06:22:40.077Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3724,7 +3724,7 @@
       "field_type": 0,
       "parent": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
       "name": "notice_info",
-      "label": "消息公告"
+      "label": "通知内容"
     }
   },
   {
@@ -3732,7 +3732,7 @@
     "pk": "8f1893fa-9865-44e2-a74a-f977bd363afe",
     "fields": {
       "created_time": "2024-07-19T05:34:11.854Z",
-      "updated_time": "2024-07-26T08:11:40.649Z",
+      "updated_time": "2024-07-30T06:22:40.079Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3740,7 +3740,7 @@
       "field_type": 0,
       "parent": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
       "name": "notice_type",
-      "label": "消息类型"
+      "label": "通知类型"
     }
   },
   {
@@ -3748,7 +3748,7 @@
     "pk": "90565d35-1160-4389-8d54-d35cfb5e5b8e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.298Z",
-      "updated_time": "2024-07-25T09:31:12.940Z",
+      "updated_time": "2024-07-30T06:22:39.282Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3756,7 +3756,7 @@
       "field_type": 1,
       "parent": "b28b2e50-6af3-45ac-b973-022055929852",
       "name": "notice",
-      "label": "消息公告"
+      "label": "通知"
     }
   },
   {
@@ -3764,7 +3764,7 @@
     "pk": "90da2f13-847f-40e5-9244-73bd165e5bc6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.490Z",
-      "updated_time": "2024-07-26T08:11:40.231Z",
+      "updated_time": "2024-07-30T06:22:39.707Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3772,7 +3772,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "frameLoading",
-      "label": "Frameloading"
+      "label": "Iframe页面加载动画"
     }
   },
   {
@@ -3780,7 +3780,7 @@
     "pk": "91318412-c10a-4434-8c37-063c40182ea1",
     "fields": {
       "created_time": "2024-01-22T09:54:41.299Z",
-      "updated_time": "2024-07-26T08:11:40.817Z",
+      "updated_time": "2024-07-30T06:22:40.208Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3796,7 +3796,7 @@
     "pk": "91378f2f-e94c-457d-8b24-044203e6975a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.634Z",
-      "updated_time": "2024-07-26T08:11:40.438Z",
+      "updated_time": "2024-07-30T06:22:39.871Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3812,7 +3812,7 @@
     "pk": "91e119c0-6181-4c92-ac9b-d7d6394d51c8",
     "fields": {
       "created_time": "2024-01-22T09:56:44.995Z",
-      "updated_time": "2024-07-25T09:31:12.704Z",
+      "updated_time": "2024-07-30T06:22:39.088Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3828,7 +3828,7 @@
     "pk": "923044d6-4a79-412e-bdc0-57ea232e62a2",
     "fields": {
       "created_time": "2024-01-22T09:54:40.481Z",
-      "updated_time": "2024-07-26T08:11:40.223Z",
+      "updated_time": "2024-07-30T06:22:39.702Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3836,7 +3836,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "keepAlive",
-      "label": "Keepalive"
+      "label": "页面缓存"
     }
   },
   {
@@ -3844,7 +3844,7 @@
     "pk": "92c593fb-177c-4603-bb6f-643631ffcdef",
     "fields": {
       "created_time": "2024-01-22T09:56:45.171Z",
-      "updated_time": "2024-07-25T09:31:12.863Z",
+      "updated_time": "2024-07-30T06:22:39.210Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3860,7 +3860,7 @@
     "pk": "9350999c-9ac8-4fbc-83f3-b45a3fdc6db9",
     "fields": {
       "created_time": "2024-01-22T09:56:45.074Z",
-      "updated_time": "2024-07-25T09:31:12.796Z",
+      "updated_time": "2024-07-30T06:22:39.160Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3876,7 +3876,7 @@
     "pk": "9563899c-1dc5-4100-9bf9-cfc023130d4e",
     "fields": {
       "created_time": "2024-01-22T09:56:44.593Z",
-      "updated_time": "2024-07-25T09:31:12.472Z",
+      "updated_time": "2024-07-30T06:22:38.884Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3892,7 +3892,7 @@
     "pk": "959d9b7a-8a0a-4de5-98fd-089c7153c1ec",
     "fields": {
       "created_time": "2024-01-22T09:54:40.531Z",
-      "updated_time": "2024-07-26T08:11:40.262Z",
+      "updated_time": "2024-07-30T06:22:39.733Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3908,7 +3908,7 @@
     "pk": "960f6c5d-c1e7-47be-b906-b303d1c8c286",
     "fields": {
       "created_time": "2024-01-22T09:56:44.605Z",
-      "updated_time": "2024-07-25T09:31:12.454Z",
+      "updated_time": "2024-07-30T06:22:38.870Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3924,7 +3924,7 @@
     "pk": "97117860-e8dc-4d34-964f-6bd86d5a7a8b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.030Z",
-      "updated_time": "2024-07-26T08:11:39.966Z",
+      "updated_time": "2024-07-30T06:22:39.455Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3940,7 +3940,7 @@
     "pk": "97158d3d-d129-403e-a26d-24d7df9b06e7",
     "fields": {
       "created_time": "2024-01-22T09:56:45.442Z",
-      "updated_time": "2024-07-25T09:31:12.720Z",
+      "updated_time": "2024-07-30T06:22:39.104Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3956,7 +3956,7 @@
     "pk": "97a0a533-a0e0-43e8-96f0-7aabcab34b39",
     "fields": {
       "created_time": "2024-01-22T09:54:40.070Z",
-      "updated_time": "2024-07-26T08:11:39.960Z",
+      "updated_time": "2024-07-30T06:22:39.449Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3964,7 +3964,7 @@
       "field_type": 0,
       "parent": "11ad085f-8749-4098-be4c-9ca685fd21b7",
       "name": "fields",
-      "label": "Fields"
+      "label": "字段"
     }
   },
   {
@@ -3972,7 +3972,7 @@
     "pk": "97b079be-ad7a-4377-ad19-2690ab7f4b26",
     "fields": {
       "created_time": "2024-06-20T03:25:32.863Z",
-      "updated_time": "2024-07-25T09:31:12.871Z",
+      "updated_time": "2024-07-30T06:22:39.215Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3988,7 +3988,7 @@
     "pk": "987f7dd8-d6c0-41a9-9097-aea116562c95",
     "fields": {
       "created_time": "2024-01-22T09:54:40.205Z",
-      "updated_time": "2024-07-26T08:11:40.027Z",
+      "updated_time": "2024-07-30T06:22:39.519Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -3996,7 +3996,7 @@
       "field_type": 0,
       "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
       "name": "roles",
-      "label": "角色"
+      "label": "角色权限"
     }
   },
   {
@@ -4004,7 +4004,7 @@
     "pk": "98ac03f2-18d9-4104-8189-853d4395fc64",
     "fields": {
       "created_time": "2024-07-25T09:31:00.434Z",
-      "updated_time": "2024-07-26T08:11:40.506Z",
+      "updated_time": "2024-07-30T06:22:39.948Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4020,7 +4020,7 @@
     "pk": "98d2c9ba-63e3-445e-af15-5b23216f8bf9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.654Z",
-      "updated_time": "2024-07-26T08:11:40.445Z",
+      "updated_time": "2024-07-30T06:22:39.879Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4028,7 +4028,7 @@
       "field_type": 0,
       "parent": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -4036,7 +4036,7 @@
     "pk": "99471d41-86a6-4980-ab31-7ebd8737cc29",
     "fields": {
       "created_time": "2024-01-22T09:56:45.114Z",
-      "updated_time": "2024-07-25T09:31:12.824Z",
+      "updated_time": "2024-07-30T06:22:39.181Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4044,7 +4044,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.uploadfile",
-      "label": "上传的文件"
+      "label": "上传文件"
     }
   },
   {
@@ -4052,7 +4052,7 @@
     "pk": "9a596cdb-ddbc-45d0-8b6c-8aa7e45bcdd6",
     "fields": {
       "created_time": "2024-01-22T09:56:44.816Z",
-      "updated_time": "2024-07-25T09:31:12.616Z",
+      "updated_time": "2024-07-30T06:22:38.998Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4060,7 +4060,7 @@
       "field_type": 1,
       "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -4068,7 +4068,7 @@
     "pk": "9a86c847-4efe-4961-8b12-5a8049ead1ea",
     "fields": {
       "created_time": "2024-01-22T09:56:44.765Z",
-      "updated_time": "2024-07-25T09:31:12.593Z",
+      "updated_time": "2024-07-30T06:22:38.974Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4076,7 +4076,7 @@
       "field_type": 1,
       "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -4084,7 +4084,7 @@
     "pk": "9ab42f45-120a-4018-bade-797ab6adccd7",
     "fields": {
       "created_time": "2024-01-22T09:56:44.633Z",
-      "updated_time": "2024-07-25T09:31:12.495Z",
+      "updated_time": "2024-07-30T06:22:38.900Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4092,7 +4092,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "is_show_parent",
-      "label": "是否显示父级菜单"
+      "label": "显示父级菜单"
     }
   },
   {
@@ -4100,7 +4100,7 @@
     "pk": "9b19737a-beed-4a38-9e35-451d8ef6922a",
     "fields": {
       "created_time": "2024-01-22T09:56:44.135Z",
-      "updated_time": "2024-07-25T09:31:12.304Z",
+      "updated_time": "2024-07-30T06:22:38.748Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4116,7 +4116,7 @@
     "pk": "9c383f8f-3201-492c-b740-38566fbec02a",
     "fields": {
       "created_time": "2024-01-22T09:56:45.262Z",
-      "updated_time": "2024-07-25T09:31:12.922Z",
+      "updated_time": "2024-07-30T06:22:39.264Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4124,7 +4124,7 @@
       "field_type": 1,
       "parent": "b28b2e50-6af3-45ac-b973-022055929852",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -4132,7 +4132,7 @@
     "pk": "9d132e73-6e0f-407d-a198-0872108f6862",
     "fields": {
       "created_time": "2024-01-22T09:54:40.878Z",
-      "updated_time": "2024-07-26T08:11:40.492Z",
+      "updated_time": "2024-07-30T06:22:39.932Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4140,7 +4140,7 @@
       "field_type": 0,
       "parent": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
       "name": "filename",
-      "label": "文件名"
+      "label": "文件名称"
     }
   },
   {
@@ -4148,7 +4148,7 @@
     "pk": "9d85cc96-e59a-44f9-9bec-42597c650f0e",
     "fields": {
       "created_time": "2024-01-22T09:54:41.235Z",
-      "updated_time": "2024-07-26T08:11:40.778Z",
+      "updated_time": "2024-07-30T06:22:40.160Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4164,7 +4164,7 @@
     "pk": "9db6397a-b0be-4871-80af-e3520b92c67a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.056Z",
-      "updated_time": "2024-07-26T08:11:39.975Z",
+      "updated_time": "2024-07-30T06:22:39.466Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4172,7 +4172,7 @@
       "field_type": 0,
       "parent": "11ad085f-8749-4098-be4c-9ca685fd21b7",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -4180,7 +4180,7 @@
     "pk": "9e5fc433-3b03-481a-9807-1da32e521303",
     "fields": {
       "created_time": "2024-01-22T09:56:44.383Z",
-      "updated_time": "2024-07-25T09:31:12.340Z",
+      "updated_time": "2024-07-30T06:22:38.778Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4196,7 +4196,7 @@
     "pk": "9e736734-94a3-4018-ab48-dbe6131837b8",
     "fields": {
       "created_time": "2024-01-22T09:56:45.088Z",
-      "updated_time": "2024-07-25T09:31:12.806Z",
+      "updated_time": "2024-07-30T06:22:39.168Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4212,7 +4212,7 @@
     "pk": "9f824ca6-9c9b-4544-8d5a-29613fa26248",
     "fields": {
       "created_time": "2024-01-22T09:54:41.120Z",
-      "updated_time": "2024-07-26T08:11:40.670Z",
+      "updated_time": "2024-07-30T06:22:40.088Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4228,7 +4228,7 @@
     "pk": "9f945b6a-244a-4536-afde-1f8caa25048a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.966Z",
-      "updated_time": "2024-07-26T08:11:40.582Z",
+      "updated_time": "2024-07-30T06:22:40.019Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4236,7 +4236,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "notice_role",
-      "label": "被通知的角色"
+      "label": "被通知角色"
     }
   },
   {
@@ -4244,7 +4244,7 @@
     "pk": "a1b222e7-b6c5-4e87-b7dd-2a74b843718c",
     "fields": {
       "created_time": "2024-01-22T09:56:44.984Z",
-      "updated_time": "2024-07-25T09:31:12.699Z",
+      "updated_time": "2024-07-30T06:22:39.083Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4260,7 +4260,7 @@
     "pk": "a21997b7-bab5-468f-a4e4-18edf910a665",
     "fields": {
       "created_time": "2024-01-22T09:56:44.582Z",
-      "updated_time": "2024-07-25T09:31:12.469Z",
+      "updated_time": "2024-07-30T06:22:38.881Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4276,7 +4276,7 @@
     "pk": "a57bf614-8963-40f9-9978-522ea9dcdc68",
     "fields": {
       "created_time": "2024-01-22T09:56:45.026Z",
-      "updated_time": "2024-07-25T09:31:12.764Z",
+      "updated_time": "2024-07-30T06:22:39.137Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4292,7 +4292,7 @@
     "pk": "a584eca1-63ce-4e99-8af0-f3e78f1431a4",
     "fields": {
       "created_time": "2024-01-22T09:56:44.910Z",
-      "updated_time": "2024-07-25T09:31:12.662Z",
+      "updated_time": "2024-07-30T06:22:39.046Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4308,7 +4308,7 @@
     "pk": "a5b48a20-c7b1-4f19-b1e2-de01791c52a3",
     "fields": {
       "created_time": "2024-01-22T09:54:39.972Z",
-      "updated_time": "2024-07-26T08:11:39.884Z",
+      "updated_time": "2024-07-30T06:22:39.368Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4316,7 +4316,7 @@
       "field_type": 0,
       "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
       "name": "label",
-      "label": "模型/字段名称"
+      "label": "模型/字段数值"
     }
   },
   {
@@ -4324,7 +4324,7 @@
     "pk": "a6ada332-4abd-4acc-9e5c-19d7978da7a8",
     "fields": {
       "created_time": "2024-01-22T09:56:44.790Z",
-      "updated_time": "2024-07-25T09:31:12.605Z",
+      "updated_time": "2024-07-30T06:22:38.987Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4340,7 +4340,7 @@
     "pk": "a81db04a-6b5a-4dbd-ab7f-b4e0f545d1da",
     "fields": {
       "created_time": "2024-01-22T09:54:40.900Z",
-      "updated_time": "2024-07-26T08:11:40.613Z",
+      "updated_time": "2024-07-30T06:22:40.048Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4348,7 +4348,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "level",
-      "label": "消息级别"
+      "label": "通知级别"
     }
   },
   {
@@ -4356,7 +4356,7 @@
     "pk": "a906331b-3235-49f2-a520-5f13280d585a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.200Z",
-      "updated_time": "2024-07-26T08:11:40.061Z",
+      "updated_time": "2024-07-30T06:22:39.552Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4364,7 +4364,7 @@
       "field_type": 0,
       "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -4372,7 +4372,7 @@
     "pk": "a90b1918-74f5-45d3-9305-25b7e7ff9e56",
     "fields": {
       "created_time": "2024-01-22T09:54:40.831Z",
-      "updated_time": "2024-07-26T08:11:40.469Z",
+      "updated_time": "2024-07-30T06:22:39.906Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4388,7 +4388,7 @@
     "pk": "a974f1d5-628a-4f07-87b7-aba72cda315e",
     "fields": {
       "created_time": "2024-01-22T09:56:44.979Z",
-      "updated_time": "2024-07-25T09:31:12.696Z",
+      "updated_time": "2024-07-30T06:22:39.080Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4404,7 +4404,7 @@
     "pk": "a9fdacc8-b791-47d5-8b0c-f544a49d88db",
     "fields": {
       "created_time": "2024-01-22T09:56:44.810Z",
-      "updated_time": "2024-07-25T09:31:12.613Z",
+      "updated_time": "2024-07-30T06:22:38.995Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4420,7 +4420,7 @@
     "pk": "aa13a952-14e4-46d9-be2d-bd794a960a44",
     "fields": {
       "created_time": "2024-01-22T09:56:45.324Z",
-      "updated_time": "2024-07-25T09:31:12.953Z",
+      "updated_time": "2024-07-30T06:22:39.295Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4436,7 +4436,7 @@
     "pk": "aa6d2bba-632b-4335-94f8-61c4899d252c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.378Z",
-      "updated_time": "2024-07-26T08:11:40.113Z",
+      "updated_time": "2024-07-30T06:22:39.609Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4452,7 +4452,7 @@
     "pk": "aaaae515-1739-4d73-9302-2f182f4b6fcc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.358Z",
-      "updated_time": "2024-07-26T08:11:40.187Z",
+      "updated_time": "2024-07-30T06:22:39.677Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4460,7 +4460,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -4468,7 +4468,7 @@
     "pk": "aab8e975-dfe9-4907-8038-e0efad730825",
     "fields": {
       "created_time": "2024-01-22T09:56:45.234Z",
-      "updated_time": "2024-07-25T09:31:12.909Z",
+      "updated_time": "2024-07-30T06:22:39.251Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4476,7 +4476,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "message",
-      "label": "具体信息内容"
+      "label": "通知内容"
     }
   },
   {
@@ -4484,7 +4484,7 @@
     "pk": "aae33f08-463d-4a2f-9f12-173c6ef88030",
     "fields": {
       "created_time": "2024-01-22T09:56:44.775Z",
-      "updated_time": "2024-07-25T09:31:12.598Z",
+      "updated_time": "2024-07-30T06:22:38.979Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4492,7 +4492,7 @@
       "field_type": 1,
       "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -4500,7 +4500,7 @@
     "pk": "aaf353fa-2e0b-4cad-aa46-b0c17d2d61d6",
     "fields": {
       "created_time": "2024-01-22T09:56:44.159Z",
-      "updated_time": "2024-07-25T09:31:12.318Z",
+      "updated_time": "2024-07-30T06:22:38.760Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4516,7 +4516,7 @@
     "pk": "ab0aad4f-1682-411c-b832-02ac0ce4ae50",
     "fields": {
       "created_time": "2024-01-22T09:54:41.216Z",
-      "updated_time": "2024-07-26T08:11:40.796Z",
+      "updated_time": "2024-07-30T06:22:40.181Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4524,7 +4524,7 @@
       "field_type": 0,
       "parent": "ab6ae020-1de6-4695-925b-56456769b7aa",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -4532,7 +4532,7 @@
     "pk": "ab2764a5-b019-4680-887a-802be81bc36f",
     "fields": {
       "created_time": "2024-03-14T07:34:09.572Z",
-      "updated_time": "2024-07-25T09:31:12.984Z",
+      "updated_time": "2024-07-30T06:22:39.319Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4548,7 +4548,7 @@
     "pk": "ab6ae020-1de6-4695-925b-56456769b7aa",
     "fields": {
       "created_time": "2024-01-22T09:54:41.173Z",
-      "updated_time": "2024-07-26T08:11:40.773Z",
+      "updated_time": "2024-07-30T06:22:40.153Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4556,7 +4556,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.userpersonalconfig",
-      "label": "个人配置项"
+      "label": "用户配置"
     }
   },
   {
@@ -4564,7 +4564,7 @@
     "pk": "ac17facf-270c-42ca-95a0-b823a2ee1ae3",
     "fields": {
       "created_time": "2024-01-22T09:56:45.154Z",
-      "updated_time": "2024-07-25T09:31:12.850Z",
+      "updated_time": "2024-07-30T06:22:39.199Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4580,7 +4580,7 @@
     "pk": "ac951639-b4ed-4cb3-8f55-81e7409b43a4",
     "fields": {
       "created_time": "2024-01-22T09:56:44.697Z",
-      "updated_time": "2024-07-25T09:31:12.549Z",
+      "updated_time": "2024-07-30T06:22:38.940Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4596,7 +4596,7 @@
     "pk": "aca12fce-7a08-4495-ab22-0d6064af1f92",
     "fields": {
       "created_time": "2024-01-22T09:56:44.524Z",
-      "updated_time": "2024-07-25T09:31:12.429Z",
+      "updated_time": "2024-07-30T06:22:38.850Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4612,7 +4612,7 @@
     "pk": "adf9660e-8e94-4f4f-8754-20cd1cc72a07",
     "fields": {
       "created_time": "2024-01-22T09:54:40.186Z",
-      "updated_time": "2024-07-26T08:11:40.056Z",
+      "updated_time": "2024-07-30T06:22:39.547Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4628,7 +4628,7 @@
     "pk": "af219c0d-c976-45e3-8e66-3a1ff0f3f141",
     "fields": {
       "created_time": "2024-01-22T09:54:40.344Z",
-      "updated_time": "2024-07-26T08:11:40.160Z",
+      "updated_time": "2024-07-30T06:22:39.661Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4636,7 +4636,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "mobile",
-      "label": "手机号"
+      "label": "手机"
     }
   },
   {
@@ -4644,7 +4644,7 @@
     "pk": "af40a41b-d543-4dc7-adf1-b4f6fed66039",
     "fields": {
       "created_time": "2024-01-22T09:54:40.131Z",
-      "updated_time": "2024-07-26T08:11:39.986Z",
+      "updated_time": "2024-07-30T06:22:39.478Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4652,7 +4652,7 @@
       "field_type": 0,
       "parent": "16a823b0-c4fb-40cd-af63-9aed309823aa",
       "name": "name",
-      "label": "数据权限名称"
+      "label": "名称"
     }
   },
   {
@@ -4660,7 +4660,7 @@
     "pk": "af6048a2-0649-4c93-b3f4-a78ebdf5eaa4",
     "fields": {
       "created_time": "2024-01-22T09:56:45.225Z",
-      "updated_time": "2024-07-25T09:31:12.904Z",
+      "updated_time": "2024-07-30T06:22:39.246Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4668,7 +4668,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "notice_type",
-      "label": "消息类型"
+      "label": "通知类型"
     }
   },
   {
@@ -4676,7 +4676,7 @@
     "pk": "afb9bb1c-1e95-4c09-9ebe-a171915646a5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.405Z",
-      "updated_time": "2024-07-25T09:31:12.350Z",
+      "updated_time": "2024-07-30T06:22:38.786Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4692,7 +4692,7 @@
     "pk": "afe5d607-fa82-4203-b13b-7d8be388b6c6",
     "fields": {
       "created_time": "2024-01-22T09:56:45.484Z",
-      "updated_time": "2024-07-25T09:31:12.753Z",
+      "updated_time": "2024-07-30T06:22:39.128Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4708,7 +4708,7 @@
     "pk": "afee08eb-9581-4eb3-bdc4-446729d2cdc9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.842Z",
-      "updated_time": "2024-07-26T08:11:40.474Z",
+      "updated_time": "2024-07-30T06:22:39.912Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4716,7 +4716,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "response_code",
-      "label": "响应状态码"
+      "label": "响应码"
     }
   },
   {
@@ -4724,7 +4724,7 @@
     "pk": "b0289c95-810e-4119-95ae-2b49d48398ab",
     "fields": {
       "created_time": "2024-04-12T03:17:37.622Z",
-      "updated_time": "2024-07-26T08:11:40.307Z",
+      "updated_time": "2024-07-30T06:22:39.767Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4732,7 +4732,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "fixed_tag",
-      "label": "当前菜单名称是否固定显示在标签页且不可关闭"
+      "label": "固定标签"
     }
   },
   {
@@ -4740,7 +4740,7 @@
     "pk": "b02f13d0-9574-4e85-a682-ffeee9a5d9c9",
     "fields": {
       "created_time": "2024-01-22T09:54:40.912Z",
-      "updated_time": "2024-07-26T08:11:40.619Z",
+      "updated_time": "2024-07-30T06:22:40.055Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4748,7 +4748,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "message",
-      "label": "具体信息内容"
+      "label": "通知内容"
     }
   },
   {
@@ -4756,7 +4756,7 @@
     "pk": "b05e87e2-b62b-4964-9530-b8e1ca97f9d5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.624Z",
-      "updated_time": "2024-07-26T08:11:40.432Z",
+      "updated_time": "2024-07-30T06:22:39.866Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4764,7 +4764,7 @@
       "field_type": 0,
       "parent": "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
       "name": "rank",
-      "label": "菜单顺序"
+      "label": "排序"
     }
   },
   {
@@ -4772,7 +4772,7 @@
     "pk": "b07f6945-4a15-4d15-9e76-f6ed7df1a7cc",
     "fields": {
       "created_time": "2024-01-22T09:56:44.990Z",
-      "updated_time": "2024-07-25T09:31:12.701Z",
+      "updated_time": "2024-07-30T06:22:39.085Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4788,7 +4788,7 @@
     "pk": "b13bcdfc-d920-4e02-ba46-7bdb2a340359",
     "fields": {
       "created_time": "2024-01-22T09:56:45.083Z",
-      "updated_time": "2024-07-25T09:31:12.803Z",
+      "updated_time": "2024-07-30T06:22:39.165Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4804,7 +4804,7 @@
     "pk": "b15993d1-9945-4e2e-b17c-44c95f5016ea",
     "fields": {
       "created_time": "2024-01-22T09:56:44.563Z",
-      "updated_time": "2024-07-25T09:31:12.458Z",
+      "updated_time": "2024-07-30T06:22:38.873Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4812,7 +4812,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -4820,7 +4820,7 @@
     "pk": "b1cda480-1d16-4777-9526-24f417a5292e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.386Z",
-      "updated_time": "2024-07-25T09:31:13.002Z",
+      "updated_time": "2024-07-30T06:22:39.332Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4828,7 +4828,7 @@
       "field_type": 1,
       "parent": "efa1bda3-4815-4013-90e2-50469cddbf90",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -4836,7 +4836,7 @@
     "pk": "b28b2e50-6af3-45ac-b973-022055929852",
     "fields": {
       "created_time": "2024-01-22T09:56:45.252Z",
-      "updated_time": "2024-07-25T09:31:12.917Z",
+      "updated_time": "2024-07-30T06:22:39.259Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4844,7 +4844,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.noticeuserread",
-      "label": "用户已读消息"
+      "label": "用户已读通知"
     }
   },
   {
@@ -4852,7 +4852,7 @@
     "pk": "b2928ed7-1aad-4f13-a182-f45e382373a4",
     "fields": {
       "created_time": "2024-01-22T09:56:45.473Z",
-      "updated_time": "2024-07-25T09:31:12.745Z",
+      "updated_time": "2024-07-30T06:22:39.123Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4860,7 +4860,7 @@
       "field_type": 1,
       "parent": "1ea46b0b-c317-4692-83a0-220498450c55",
       "name": "browser",
-      "label": "登录浏览器"
+      "label": "浏览器"
     }
   },
   {
@@ -4868,7 +4868,7 @@
     "pk": "b35b80e4-ae6a-4ae3-b410-f215cd404f6b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.780Z",
-      "updated_time": "2024-07-25T09:31:12.600Z",
+      "updated_time": "2024-07-30T06:22:38.982Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4884,7 +4884,7 @@
     "pk": "b367257e-2e5a-4195-b241-8d3679c4ca2c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.460Z",
-      "updated_time": "2024-07-26T08:11:40.272Z",
+      "updated_time": "2024-07-30T06:22:39.741Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4892,7 +4892,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "icon",
-      "label": "菜单图标"
+      "label": "菜单左图标"
     }
   },
   {
@@ -4900,7 +4900,7 @@
     "pk": "b578ab7e-7920-4567-975a-b0f88feaac84",
     "fields": {
       "created_time": "2024-01-22T09:54:40.284Z",
-      "updated_time": "2024-07-26T08:11:40.155Z",
+      "updated_time": "2024-07-30T06:22:39.656Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4908,7 +4908,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "username",
-      "label": "用户名"
+      "label": "Username"
     }
   },
   {
@@ -4916,7 +4916,7 @@
     "pk": "b5d9bf8e-440f-48d8-b115-f4289316d776",
     "fields": {
       "created_time": "2024-01-22T09:56:45.257Z",
-      "updated_time": "2024-07-25T09:31:12.920Z",
+      "updated_time": "2024-07-30T06:22:39.261Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4932,7 +4932,7 @@
     "pk": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
     "fields": {
       "created_time": "2024-01-22T09:54:40.773Z",
-      "updated_time": "2024-07-26T08:11:40.450Z",
+      "updated_time": "2024-07-30T06:22:39.884Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4948,7 +4948,7 @@
     "pk": "b6e0d458-cda3-458c-8b02-2fed016d5ff6",
     "fields": {
       "created_time": "2024-01-22T09:54:40.246Z",
-      "updated_time": "2024-07-26T08:11:40.037Z",
+      "updated_time": "2024-07-30T06:22:39.527Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4964,7 +4964,7 @@
     "pk": "b8006a79-eb2b-4deb-a411-5683ca43e4c7",
     "fields": {
       "created_time": "2024-01-22T09:54:41.105Z",
-      "updated_time": "2024-07-26T08:11:40.641Z",
+      "updated_time": "2024-07-30T06:22:40.074Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4980,7 +4980,7 @@
     "pk": "b80aea01-268d-4973-b598-8c4e4e1c14b5",
     "fields": {
       "created_time": "2024-01-22T09:54:40.010Z",
-      "updated_time": "2024-07-26T08:11:39.904Z",
+      "updated_time": "2024-07-30T06:22:39.388Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -4996,7 +4996,7 @@
     "pk": "b864f819-2b1d-4d04-b64d-cb278607092e",
     "fields": {
       "created_time": "2024-04-18T07:17:23.370Z",
-      "updated_time": "2024-07-26T08:11:39.888Z",
+      "updated_time": "2024-07-30T06:22:39.374Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5012,7 +5012,7 @@
     "pk": "b8c9c617-7021-4ee1-aa1f-5fb0e8d79a8a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.852Z",
-      "updated_time": "2024-07-26T08:11:40.477Z",
+      "updated_time": "2024-07-30T06:22:39.915Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5020,7 +5020,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "status_code",
-      "label": "请求状态码"
+      "label": "状态码"
     }
   },
   {
@@ -5028,7 +5028,7 @@
     "pk": "b97abe34-fbc6-49f5-95a5-283ccc10942b",
     "fields": {
       "created_time": "2024-03-14T06:50:10.970Z",
-      "updated_time": "2024-07-25T09:31:12.738Z",
+      "updated_time": "2024-07-30T06:22:39.118Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5036,7 +5036,7 @@
       "field_type": 1,
       "parent": "1ea46b0b-c317-4692-83a0-220498450c55",
       "name": "status",
-      "label": "成功登录"
+      "label": "登录状态"
     }
   },
   {
@@ -5044,7 +5044,7 @@
     "pk": "b9a4d2d6-3eb6-4aeb-8261-41df537bccae",
     "fields": {
       "created_time": "2024-01-22T09:54:40.536Z",
-      "updated_time": "2024-07-26T08:11:40.265Z",
+      "updated_time": "2024-07-30T06:22:39.735Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5052,7 +5052,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -5060,7 +5060,7 @@
     "pk": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
     "fields": {
       "created_time": "2024-01-22T09:56:45.182Z",
-      "updated_time": "2024-07-25T09:31:12.880Z",
+      "updated_time": "2024-07-30T06:22:39.223Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5068,7 +5068,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.noticemessage",
-      "label": "消息通知"
+      "label": "通知内容"
     }
   },
   {
@@ -5076,7 +5076,7 @@
     "pk": "bad54d98-e887-4f62-842f-c1417abc16f8",
     "fields": {
       "created_time": "2024-01-22T09:56:45.102Z",
-      "updated_time": "2024-07-25T09:31:12.817Z",
+      "updated_time": "2024-07-30T06:22:39.176Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5084,7 +5084,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "response_result",
-      "label": "响应数据"
+      "label": "响应内容"
     }
   },
   {
@@ -5092,7 +5092,7 @@
     "pk": "bc1b5572-577b-422b-84ce-1b3b27ca83c5",
     "fields": {
       "created_time": "2024-01-22T09:56:45.452Z",
-      "updated_time": "2024-07-25T09:31:12.727Z",
+      "updated_time": "2024-07-30T06:22:39.110Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5108,7 +5108,7 @@
     "pk": "bc28561c-657d-40f8-80cc-f2390121999b",
     "fields": {
       "created_time": "2024-01-22T09:56:45.302Z",
-      "updated_time": "2024-07-25T09:31:12.943Z",
+      "updated_time": "2024-07-30T06:22:39.285Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5116,7 +5116,7 @@
       "field_type": 1,
       "parent": "b28b2e50-6af3-45ac-b973-022055929852",
       "name": "unread",
-      "label": "是否未读"
+      "label": "未读"
     }
   },
   {
@@ -5124,7 +5124,7 @@
     "pk": "bd591d33-97e0-41fa-858f-3a1f781990aa",
     "fields": {
       "created_time": "2024-01-22T09:56:44.837Z",
-      "updated_time": "2024-07-25T09:31:12.626Z",
+      "updated_time": "2024-07-30T06:22:39.008Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5140,7 +5140,7 @@
     "pk": "c0012b56-cce7-44b9-8ce9-b9a71c0495bf",
     "fields": {
       "created_time": "2024-01-22T09:56:44.410Z",
-      "updated_time": "2024-07-25T09:31:12.353Z",
+      "updated_time": "2024-07-30T06:22:38.789Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5156,7 +5156,7 @@
     "pk": "c0962c53-57ff-430e-bb59-c06312c8e50f",
     "fields": {
       "created_time": "2024-01-22T09:56:44.148Z",
-      "updated_time": "2024-07-25T09:31:12.311Z",
+      "updated_time": "2024-07-30T06:22:38.755Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5172,7 +5172,7 @@
     "pk": "c19100c5-725c-4a81-a1f1-1209f757d693",
     "fields": {
       "created_time": "2024-01-22T09:54:40.450Z",
-      "updated_time": "2024-07-26T08:11:40.251Z",
+      "updated_time": "2024-07-30T06:22:39.723Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5188,7 +5188,7 @@
     "pk": "c2725507-ed53-43d9-9792-4ae2fffd41bd",
     "fields": {
       "created_time": "2024-01-22T09:56:45.417Z",
-      "updated_time": "2024-07-25T09:31:13.026Z",
+      "updated_time": "2024-07-30T06:22:39.352Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5196,7 +5196,7 @@
       "field_type": 1,
       "parent": "efa1bda3-4815-4013-90e2-50469cddbf90",
       "name": "owner",
-      "label": "用户ID"
+      "label": "用户"
     }
   },
   {
@@ -5204,7 +5204,7 @@
     "pk": "c27bb96a-78f1-4c3b-a975-3eae7ba2cb29",
     "fields": {
       "created_time": "2024-01-22T09:54:40.644Z",
-      "updated_time": "2024-07-26T08:11:40.440Z",
+      "updated_time": "2024-07-30T06:22:39.874Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5220,7 +5220,7 @@
     "pk": "c2933737-4ef7-4360-b204-768491a7c079",
     "fields": {
       "created_time": "2024-01-22T09:56:44.622Z",
-      "updated_time": "2024-07-25T09:31:12.487Z",
+      "updated_time": "2024-07-30T06:22:38.895Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5228,7 +5228,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "r_svg_name",
-      "label": "菜单右侧额外图标"
+      "label": "菜单右图标"
     }
   },
   {
@@ -5236,7 +5236,7 @@
     "pk": "c2e630ee-ca4e-4e43-ac52-8406e3006c4c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.936Z",
-      "updated_time": "2024-07-26T08:11:40.629Z",
+      "updated_time": "2024-07-30T06:22:40.063Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5244,7 +5244,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "notice_type",
-      "label": "消息类型"
+      "label": "通知类型"
     }
   },
   {
@@ -5252,7 +5252,7 @@
     "pk": "c30a73d4-618e-49bc-bff6-796c1a8f28b7",
     "fields": {
       "created_time": "2024-01-22T09:56:44.891Z",
-      "updated_time": "2024-07-25T09:31:12.652Z",
+      "updated_time": "2024-07-30T06:22:39.035Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5260,7 +5260,7 @@
       "field_type": 1,
       "parent": "c77a1832-d839-4a31-a562-c37aa11ccd53",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5268,7 +5268,7 @@
     "pk": "c4443e4a-937c-476c-a7cb-776952c8bdef",
     "fields": {
       "created_time": "2024-01-22T09:54:40.126Z",
-      "updated_time": "2024-07-26T08:11:39.984Z",
+      "updated_time": "2024-07-30T06:22:39.475Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5284,7 +5284,7 @@
     "pk": "c47ec442-1533-49ff-8ce5-405763ec250f",
     "fields": {
       "created_time": "2024-01-22T09:56:45.377Z",
-      "updated_time": "2024-07-25T09:31:12.995Z",
+      "updated_time": "2024-07-30T06:22:39.327Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5292,7 +5292,7 @@
       "field_type": 1,
       "parent": "efa1bda3-4815-4013-90e2-50469cddbf90",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5300,7 +5300,7 @@
     "pk": "c51d55d2-a263-48e3-bdb0-2602d2027d6b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.300Z",
-      "updated_time": "2024-07-26T08:11:40.191Z",
+      "updated_time": "2024-07-30T06:22:39.680Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5308,7 +5308,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "last_login",
-      "label": "上次登录"
+      "label": "Last login"
     }
   },
   {
@@ -5316,7 +5316,7 @@
     "pk": "c5debc13-c58c-451b-a573-06f8b002a837",
     "fields": {
       "created_time": "2024-01-22T09:56:45.335Z",
-      "updated_time": "2024-07-25T09:31:12.959Z",
+      "updated_time": "2024-07-30T06:22:39.300Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5332,7 +5332,7 @@
     "pk": "c692ba71-d81d-49cd-a3ff-687303f37a7c",
     "fields": {
       "created_time": "2024-01-22T09:56:45.042Z",
-      "updated_time": "2024-07-25T09:31:12.774Z",
+      "updated_time": "2024-07-30T06:22:39.145Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5340,7 +5340,7 @@
       "field_type": 1,
       "parent": "3b21a613-85f9-4f0c-a9ae-98371ec662b2",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -5348,7 +5348,7 @@
     "pk": "c77a1832-d839-4a31-a562-c37aa11ccd53",
     "fields": {
       "created_time": "2024-01-22T09:56:44.881Z",
-      "updated_time": "2024-07-25T09:31:12.647Z",
+      "updated_time": "2024-07-30T06:22:39.030Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5356,7 +5356,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.fieldpermission",
-      "label": "字段权限表"
+      "label": "字段权限"
     }
   },
   {
@@ -5364,7 +5364,7 @@
     "pk": "c78c8642-e276-4517-891c-b635efd78f45",
     "fields": {
       "created_time": "2024-01-22T09:54:41.076Z",
-      "updated_time": "2024-07-26T08:11:40.626Z",
+      "updated_time": "2024-07-30T06:22:40.060Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5372,7 +5372,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "unread",
-      "label": "消息是否未读"
+      "label": "未读"
     }
   },
   {
@@ -5380,7 +5380,7 @@
     "pk": "c7a63d49-e900-4374-8621-0c7bc07db470",
     "fields": {
       "created_time": "2024-01-22T09:56:45.196Z",
-      "updated_time": "2024-07-25T09:31:12.888Z",
+      "updated_time": "2024-07-30T06:22:39.230Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5396,7 +5396,7 @@
     "pk": "c9215c67-8ef7-430d-b365-2414972ff653",
     "fields": {
       "created_time": "2024-03-14T07:34:09.590Z",
-      "updated_time": "2024-07-25T09:31:13.020Z",
+      "updated_time": "2024-07-30T06:22:39.349Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5412,7 +5412,7 @@
     "pk": "c9434f47-f8f6-4bb9-8d62-f82330fa4c73",
     "fields": {
       "created_time": "2024-01-22T09:54:40.195Z",
-      "updated_time": "2024-07-26T08:11:40.022Z",
+      "updated_time": "2024-07-30T06:22:39.513Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5428,7 +5428,7 @@
     "pk": "ca788866-80ae-452e-ae94-18c959e9d999",
     "fields": {
       "created_time": "2024-01-22T09:56:45.467Z",
-      "updated_time": "2024-07-25T09:31:12.742Z",
+      "updated_time": "2024-07-30T06:22:39.120Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5444,7 +5444,7 @@
     "pk": "cbf8c6ad-6bf6-4a88-bda1-10e20ab6b709",
     "fields": {
       "created_time": "2024-01-22T09:54:40.857Z",
-      "updated_time": "2024-07-26T08:11:40.484Z",
+      "updated_time": "2024-07-30T06:22:39.923Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5452,7 +5452,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5460,7 +5460,7 @@
     "pk": "ccb5215d-7f49-4f56-9627-8aba9b604758",
     "fields": {
       "created_time": "2024-01-22T09:56:44.915Z",
-      "updated_time": "2024-07-25T09:31:12.665Z",
+      "updated_time": "2024-07-30T06:22:39.048Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5476,7 +5476,7 @@
     "pk": "ccf91d1d-e87a-40ab-8303-b27c1b722fee",
     "fields": {
       "created_time": "2024-01-22T09:56:45.462Z",
-      "updated_time": "2024-07-25T09:31:12.735Z",
+      "updated_time": "2024-07-30T06:22:39.115Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5492,7 +5492,7 @@
     "pk": "cd468b6c-1fc4-425d-ab38-edda69746af5",
     "fields": {
       "created_time": "2024-01-22T09:56:45.488Z",
-      "updated_time": "2024-07-25T09:31:12.756Z",
+      "updated_time": "2024-07-30T06:22:39.131Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5508,7 +5508,7 @@
     "pk": "cd95ebdb-1e40-4626-8e0a-55e6d7c4e954",
     "fields": {
       "created_time": "2024-01-22T09:56:45.138Z",
-      "updated_time": "2024-07-25T09:31:12.839Z",
+      "updated_time": "2024-07-30T06:22:39.191Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5516,7 +5516,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -5524,7 +5524,7 @@
     "pk": "cdbef1ff-6f5d-4557-bdea-c6113b622b5e",
     "fields": {
       "created_time": "2024-01-22T09:56:45.423Z",
-      "updated_time": "2024-07-25T09:31:13.030Z",
+      "updated_time": "2024-07-30T06:22:39.355Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5540,7 +5540,7 @@
     "pk": "ce3a7728-2355-4515-aa14-aa9b29afe191",
     "fields": {
       "created_time": "2024-01-22T09:56:44.569Z",
-      "updated_time": "2024-07-25T09:31:12.461Z",
+      "updated_time": "2024-07-30T06:22:38.876Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5556,7 +5556,7 @@
     "pk": "ce6d68c3-635e-4f57-8cce-8b9755f7615e",
     "fields": {
       "created_time": "2024-01-22T09:56:44.688Z",
-      "updated_time": "2024-07-25T09:31:12.542Z",
+      "updated_time": "2024-07-30T06:22:38.935Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5564,7 +5564,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -5572,7 +5572,7 @@
     "pk": "d1107479-6fe0-48bd-ba16-a364776766a0",
     "fields": {
       "created_time": "2024-01-22T09:54:40.323Z",
-      "updated_time": "2024-07-26T08:11:40.139Z",
+      "updated_time": "2024-07-30T06:22:39.638Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5580,7 +5580,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "roles",
-      "label": "角色"
+      "label": "角色权限"
     }
   },
   {
@@ -5588,7 +5588,7 @@
     "pk": "d1545d0c-8add-4284-976b-cd256b102c89",
     "fields": {
       "created_time": "2024-01-22T09:56:44.558Z",
-      "updated_time": "2024-07-25T09:31:12.450Z",
+      "updated_time": "2024-07-30T06:22:38.867Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5604,7 +5604,7 @@
     "pk": "d1551b21-5318-47bf-b214-52dff0463fc5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.453Z",
-      "updated_time": "2024-07-25T09:31:12.382Z",
+      "updated_time": "2024-07-30T06:22:38.813Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5620,7 +5620,7 @@
     "pk": "d2126ef2-3876-416b-8b7b-fb6aa370c5d4",
     "fields": {
       "created_time": "2024-07-25T09:31:00.436Z",
-      "updated_time": "2024-07-26T08:11:40.508Z",
+      "updated_time": "2024-07-30T06:22:39.951Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5636,7 +5636,7 @@
     "pk": "d229404a-7ead-4f50-aa3c-272b43baee60",
     "fields": {
       "created_time": "2024-01-22T09:54:39.967Z",
-      "updated_time": "2024-07-26T08:11:39.881Z",
+      "updated_time": "2024-07-30T06:22:39.366Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5652,7 +5652,7 @@
     "pk": "d4596fcc-279d-4270-b9e5-a11a3c76e7be",
     "fields": {
       "created_time": "2024-01-22T09:56:45.200Z",
-      "updated_time": "2024-07-25T09:31:12.891Z",
+      "updated_time": "2024-07-30T06:22:39.233Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5660,7 +5660,7 @@
       "field_type": 1,
       "parent": "b9a8c405-29b5-48d5-96f2-716a1c77851a",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -5668,7 +5668,7 @@
     "pk": "d4e67737-c92f-4c84-a0dd-e6bdbf479451",
     "fields": {
       "created_time": "2024-01-22T09:54:40.501Z",
-      "updated_time": "2024-07-26T08:11:40.237Z",
+      "updated_time": "2024-07-30T06:22:39.712Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5676,7 +5676,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "hiddenTag",
-      "label": "Hiddentag"
+      "label": "隐藏标签"
     }
   },
   {
@@ -5684,7 +5684,7 @@
     "pk": "d4e7f68c-42c5-4e52-9df7-788b70ada28c",
     "fields": {
       "created_time": "2024-07-25T09:31:00.432Z",
-      "updated_time": "2024-07-26T08:11:40.503Z",
+      "updated_time": "2024-07-30T06:22:39.945Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5692,7 +5692,7 @@
       "field_type": 0,
       "parent": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
       "name": "access_url",
-      "label": "访问URL"
+      "label": "访问地址"
     }
   },
   {
@@ -5700,7 +5700,7 @@
     "pk": "d5ec43ba-0b92-4e2d-bd9d-5cf947589cc7",
     "fields": {
       "created_time": "2024-01-22T09:56:45.382Z",
-      "updated_time": "2024-07-25T09:31:12.998Z",
+      "updated_time": "2024-07-30T06:22:39.329Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5716,7 +5716,7 @@
     "pk": "d630dad7-3638-4835-a815-be281346139c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.907Z",
-      "updated_time": "2024-07-26T08:11:40.616Z",
+      "updated_time": "2024-07-30T06:22:40.051Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5724,7 +5724,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "title",
-      "label": "消息标题"
+      "label": "通知标题"
     }
   },
   {
@@ -5732,7 +5732,7 @@
     "pk": "d6b2167e-eae3-4e8e-bc3a-40fc191c3cf4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.917Z",
-      "updated_time": "2024-07-26T08:11:40.622Z",
+      "updated_time": "2024-07-30T06:22:40.057Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5740,7 +5740,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5748,7 +5748,7 @@
     "pk": "d70666f8-a893-4283-856a-eebe3ae8ad25",
     "fields": {
       "created_time": "2024-01-22T09:54:41.157Z",
-      "updated_time": "2024-07-26T08:11:40.720Z",
+      "updated_time": "2024-07-30T06:22:40.118Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5756,7 +5756,7 @@
       "field_type": 0,
       "parent": "0f57a580-952e-4751-a110-9e447a08768d",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5764,7 +5764,7 @@
     "pk": "d7cf752b-bed2-4d43-bf43-5ee4a621d5ae",
     "fields": {
       "created_time": "2024-04-11T10:01:00.789Z",
-      "updated_time": "2024-07-25T09:31:12.520Z",
+      "updated_time": "2024-07-30T06:22:38.919Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5772,7 +5772,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "fixed_tag",
-      "label": "当前菜单名称是否固定显示在标签页且不可关闭"
+      "label": "固定标签"
     }
   },
   {
@@ -5780,7 +5780,7 @@
     "pk": "d7d8ef03-06a8-4b86-bceb-e07b90548ccb",
     "fields": {
       "created_time": "2024-01-22T09:54:41.125Z",
-      "updated_time": "2024-07-26T08:11:40.660Z",
+      "updated_time": "2024-07-30T06:22:40.085Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5788,7 +5788,7 @@
       "field_type": 0,
       "parent": "1ad2fb4d-b834-4099-bdc0-152028da06c9",
       "name": "unread",
-      "label": "是否未读"
+      "label": "未读"
     }
   },
   {
@@ -5796,7 +5796,7 @@
     "pk": "d8acdc9f-0eee-4a21-b858-c9ad369576b4",
     "fields": {
       "created_time": "2024-01-22T09:54:40.957Z",
-      "updated_time": "2024-07-26T08:11:40.575Z",
+      "updated_time": "2024-07-30T06:22:40.012Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5804,7 +5804,7 @@
       "field_type": 0,
       "parent": "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc",
       "name": "notice_user",
-      "label": "被通知的用户"
+      "label": "被通知用户"
     }
   },
   {
@@ -5812,7 +5812,7 @@
     "pk": "d925442e-bd97-4039-8115-a593ce5842ed",
     "fields": {
       "created_time": "2024-01-22T09:56:45.161Z",
-      "updated_time": "2024-07-25T09:31:12.853Z",
+      "updated_time": "2024-07-30T06:22:39.202Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5820,7 +5820,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "filepath",
-      "label": "文件存储"
+      "label": "文件路径"
     }
   },
   {
@@ -5828,7 +5828,7 @@
     "pk": "daccf50c-7634-4960-9e61-8cd9bfda4b9d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.941Z",
-      "updated_time": "2024-07-25T09:31:12.678Z",
+      "updated_time": "2024-07-30T06:22:39.062Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5836,7 +5836,7 @@
       "field_type": 1,
       "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -5844,7 +5844,7 @@
     "pk": "db9ecfd8-4661-474d-8e0b-8cea2a0767a7",
     "fields": {
       "created_time": "2024-01-22T09:56:44.761Z",
-      "updated_time": "2024-07-25T09:31:12.590Z",
+      "updated_time": "2024-07-30T06:22:38.972Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5860,7 +5860,7 @@
     "pk": "dba7c191-cb74-4164-9d49-bf781184904c",
     "fields": {
       "created_time": "2024-01-22T09:56:44.507Z",
-      "updated_time": "2024-07-25T09:31:12.418Z",
+      "updated_time": "2024-07-30T06:22:38.842Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5876,7 +5876,7 @@
     "pk": "dcda5cf0-2a84-4611-a5af-1f3ab85a3b3a",
     "fields": {
       "created_time": "2024-01-22T09:56:45.058Z",
-      "updated_time": "2024-07-25T09:31:12.785Z",
+      "updated_time": "2024-07-30T06:22:39.152Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5892,7 +5892,7 @@
     "pk": "dd4eac4e-8c23-4b8d-ac57-3d65b0142fd5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.864Z",
-      "updated_time": "2024-07-25T09:31:12.639Z",
+      "updated_time": "2024-07-30T06:22:39.022Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5908,7 +5908,7 @@
     "pk": "de4f5ac0-4182-4cec-8013-9403d1fc97fb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.846Z",
-      "updated_time": "2024-07-26T08:11:40.481Z",
+      "updated_time": "2024-07-30T06:22:39.920Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5916,7 +5916,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "response_result",
-      "label": "响应数据"
+      "label": "响应内容"
     }
   },
   {
@@ -5924,7 +5924,7 @@
     "pk": "decca9e4-dac5-4412-ae6d-e28fc94faf1b",
     "fields": {
       "created_time": "2024-01-22T09:54:40.704Z",
-      "updated_time": "2024-07-26T08:11:40.425Z",
+      "updated_time": "2024-07-30T06:22:39.861Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5940,7 +5940,7 @@
     "pk": "dfcbff22-bba2-4102-9b74-23071aa91f84",
     "fields": {
       "created_time": "2024-01-22T09:56:44.437Z",
-      "updated_time": "2024-07-25T09:31:12.371Z",
+      "updated_time": "2024-07-30T06:22:38.804Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5956,7 +5956,7 @@
     "pk": "dfe6c88f-9554-4f72-8ed9-04f3f499a2d7",
     "fields": {
       "created_time": "2024-01-22T09:54:40.177Z",
-      "updated_time": "2024-07-26T08:11:40.053Z",
+      "updated_time": "2024-07-30T06:22:39.544Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5972,7 +5972,7 @@
     "pk": "e009b297-7162-4cf2-9702-6c4682300d52",
     "fields": {
       "created_time": "2024-01-22T09:54:41.191Z",
-      "updated_time": "2024-07-26T08:11:40.776Z",
+      "updated_time": "2024-07-30T06:22:40.157Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5988,7 +5988,7 @@
     "pk": "e0ab8a79-6e5f-4002-91d9-ac8beb254e53",
     "fields": {
       "created_time": "2024-01-22T09:56:44.745Z",
-      "updated_time": "2024-07-25T09:31:12.578Z",
+      "updated_time": "2024-07-30T06:22:38.961Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -5996,7 +5996,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "is_active",
-      "label": "状态"
+      "label": "激活状态"
     }
   },
   {
@@ -6004,7 +6004,7 @@
     "pk": "e0ecaaf6-de51-4cd0-8a20-f8a1e422baa8",
     "fields": {
       "created_time": "2024-01-22T09:54:39.990Z",
-      "updated_time": "2024-07-26T08:11:39.893Z",
+      "updated_time": "2024-07-30T06:22:39.379Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6020,7 +6020,7 @@
     "pk": "e188c294-f9b7-4e4a-b66a-ec2845d5da9b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.658Z",
-      "updated_time": "2024-07-25T09:31:12.513Z",
+      "updated_time": "2024-07-30T06:22:38.913Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6028,7 +6028,7 @@
       "field_type": 1,
       "parent": "d1545d0c-8add-4284-976b-cd256b102c89",
       "name": "transition_leave",
-      "label": "当前页面离场动画"
+      "label": "页面离场动画"
     }
   },
   {
@@ -6036,7 +6036,7 @@
     "pk": "e53d0176-cf9f-4411-9cce-12aec4b6cfc0",
     "fields": {
       "created_time": "2024-01-22T09:56:44.958Z",
-      "updated_time": "2024-07-25T09:31:12.686Z",
+      "updated_time": "2024-07-30T06:22:39.070Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6052,7 +6052,7 @@
     "pk": "e5d1046e-0c59-43de-99a7-52fbf861df40",
     "fields": {
       "created_time": "2024-04-12T03:17:37.594Z",
-      "updated_time": "2024-07-26T08:11:40.244Z",
+      "updated_time": "2024-07-30T06:22:39.718Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6060,7 +6060,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "fixedTag",
-      "label": "Fixedtag"
+      "label": "固定标签"
     }
   },
   {
@@ -6068,7 +6068,7 @@
     "pk": "e5e7a13f-a5e4-41a9-a408-2d52132d776c",
     "fields": {
       "created_time": "2024-01-22T09:56:44.124Z",
-      "updated_time": "2024-07-25T09:31:12.297Z",
+      "updated_time": "2024-07-30T06:22:38.742Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6084,7 +6084,7 @@
     "pk": "e70d84a3-2219-414d-8b97-e49786e9ca7c",
     "fields": {
       "created_time": "2024-01-22T09:54:41.304Z",
-      "updated_time": "2024-07-26T08:11:40.820Z",
+      "updated_time": "2024-07-30T06:22:40.211Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6100,7 +6100,7 @@
     "pk": "e79b4f9a-be14-4b30-b81d-105c7e35b80c",
     "fields": {
       "created_time": "2024-01-22T09:54:40.045Z",
-      "updated_time": "2024-07-26T08:11:39.971Z",
+      "updated_time": "2024-07-30T06:22:39.461Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6116,7 +6116,7 @@
     "pk": "e8907d07-b7b6-4866-903b-5f9c5771701d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.290Z",
-      "updated_time": "2024-07-26T08:11:40.157Z",
+      "updated_time": "2024-07-30T06:22:39.658Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6132,7 +6132,7 @@
     "pk": "e96348f4-28e4-4dfb-acdd-89b137112708",
     "fields": {
       "created_time": "2024-01-22T09:54:41.162Z",
-      "updated_time": "2024-07-26T08:11:40.716Z",
+      "updated_time": "2024-07-30T06:22:40.115Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6140,7 +6140,7 @@
       "field_type": 0,
       "parent": "0f57a580-952e-4751-a110-9e447a08768d",
       "name": "description",
-      "label": "描述信息"
+      "label": "描述"
     }
   },
   {
@@ -6148,7 +6148,7 @@
     "pk": "e972b86e-f514-4724-b572-90822252589c",
     "fields": {
       "created_time": "2024-01-22T09:56:45.205Z",
-      "updated_time": "2024-07-25T09:31:12.893Z",
+      "updated_time": "2024-07-30T06:22:39.235Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6164,7 +6164,7 @@
     "pk": "e9a98b6d-57e5-4a7e-a447-a87d31e69807",
     "fields": {
       "created_time": "2024-01-22T09:54:40.065Z",
-      "updated_time": "2024-07-26T08:11:39.958Z",
+      "updated_time": "2024-07-30T06:22:39.446Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6180,7 +6180,7 @@
     "pk": "e9eff87a-dcea-4a1e-86df-57df45d74f09",
     "fields": {
       "created_time": "2024-01-22T09:54:40.550Z",
-      "updated_time": "2024-07-26T08:11:40.275Z",
+      "updated_time": "2024-07-30T06:22:39.743Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6188,7 +6188,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "r_svg_name",
-      "label": "菜单右侧额外图标"
+      "label": "菜单右图标"
     }
   },
   {
@@ -6196,7 +6196,7 @@
     "pk": "ea20d797-51f3-421b-8f87-04703e8d0866",
     "fields": {
       "created_time": "2024-01-22T09:56:44.751Z",
-      "updated_time": "2024-07-25T09:31:12.582Z",
+      "updated_time": "2024-07-30T06:22:38.964Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6212,7 +6212,7 @@
     "pk": "ea703817-00b5-4cc9-89fa-b716a257a49d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.718Z",
-      "updated_time": "2024-07-25T09:31:12.560Z",
+      "updated_time": "2024-07-30T06:22:38.948Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6220,7 +6220,7 @@
       "field_type": 1,
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "menu_type",
-      "label": "节点类型"
+      "label": "菜单类型"
     }
   },
   {
@@ -6228,7 +6228,7 @@
     "pk": "eadf1a93-9212-415b-baa4-e6afb668337a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.314Z",
-      "updated_time": "2024-07-26T08:11:40.195Z",
+      "updated_time": "2024-07-30T06:22:39.682Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6236,7 +6236,7 @@
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
       "name": "date_joined",
-      "label": "加入日期"
+      "label": "Date joined"
     }
   },
   {
@@ -6244,7 +6244,7 @@
     "pk": "eb098cad-d513-4a68-b50a-2fc79f7e6f15",
     "fields": {
       "created_time": "2024-01-22T09:56:44.702Z",
-      "updated_time": "2024-07-25T09:31:12.553Z",
+      "updated_time": "2024-07-30T06:22:38.943Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6260,7 +6260,7 @@
     "pk": "eb1d5ac3-a276-493f-8c8c-7b9efcfcac71",
     "fields": {
       "created_time": "2024-01-22T09:56:44.491Z",
-      "updated_time": "2024-07-25T09:31:12.407Z",
+      "updated_time": "2024-07-30T06:22:38.833Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6268,7 +6268,7 @@
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -6276,7 +6276,7 @@
     "pk": "ebe10b1f-b882-4009-a433-89dd611b79c4",
     "fields": {
       "created_time": "2024-01-22T09:56:45.092Z",
-      "updated_time": "2024-07-25T09:31:12.810Z",
+      "updated_time": "2024-07-30T06:22:39.171Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6292,7 +6292,7 @@
     "pk": "ecc80219-b1fe-43fb-a19b-9d6b874dcb03",
     "fields": {
       "created_time": "2024-01-22T09:54:40.465Z",
-      "updated_time": "2024-07-26T08:11:40.213Z",
+      "updated_time": "2024-07-30T06:22:39.694Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6300,7 +6300,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "showParent",
-      "label": "Showparent"
+      "label": "显示父级菜单"
     }
   },
   {
@@ -6308,7 +6308,7 @@
     "pk": "ede07ad9-7682-4b3b-b80e-5d60cb106a99",
     "fields": {
       "created_time": "2024-01-22T09:54:41.141Z",
-      "updated_time": "2024-07-26T08:11:40.698Z",
+      "updated_time": "2024-07-30T06:22:40.100Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6316,7 +6316,7 @@
       "field_type": 0,
       "parent": "0f57a580-952e-4751-a110-9e447a08768d",
       "name": "value",
-      "label": "配置值"
+      "label": "配置数值"
     }
   },
   {
@@ -6324,7 +6324,7 @@
     "pk": "eed9a255-0336-43c4-8fcf-5cead30dc30a",
     "fields": {
       "created_time": "2024-01-22T09:54:39.962Z",
-      "updated_time": "2024-07-26T08:11:39.878Z",
+      "updated_time": "2024-07-30T06:22:39.363Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6340,7 +6340,7 @@
     "pk": "ef71ceaf-b6f5-4f22-b2cb-d16ecf4ef47c",
     "fields": {
       "created_time": "2024-01-22T09:56:45.288Z",
-      "updated_time": "2024-07-25T09:31:12.935Z",
+      "updated_time": "2024-07-30T06:22:39.277Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6356,7 +6356,7 @@
     "pk": "efa1bda3-4815-4013-90e2-50469cddbf90",
     "fields": {
       "created_time": "2024-01-22T09:56:45.366Z",
-      "updated_time": "2024-07-25T09:31:12.987Z",
+      "updated_time": "2024-07-30T06:22:39.321Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6364,7 +6364,7 @@
       "field_type": 1,
       "parent": null,
       "name": "system.userpersonalconfig",
-      "label": "个人配置项"
+      "label": "用户配置"
     }
   },
   {
@@ -6372,7 +6372,7 @@
     "pk": "efc81f71-6c8e-4d93-9e60-0dac9e3ff4d6",
     "fields": {
       "created_time": "2024-01-22T09:56:45.126Z",
-      "updated_time": "2024-07-25T09:31:12.832Z",
+      "updated_time": "2024-07-30T06:22:39.186Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6380,7 +6380,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "created_time",
-      "label": "添加时间"
+      "label": "创建时间"
     }
   },
   {
@@ -6388,7 +6388,7 @@
     "pk": "f058d7c7-678c-4e3f-becb-1597ee8fe5e5",
     "fields": {
       "created_time": "2024-01-22T09:56:44.513Z",
-      "updated_time": "2024-07-25T09:31:12.422Z",
+      "updated_time": "2024-07-30T06:22:38.844Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6404,7 +6404,7 @@
     "pk": "f1d667ef-ec40-4ab1-b581-16b51db120f3",
     "fields": {
       "created_time": "2024-01-22T09:54:40.470Z",
-      "updated_time": "2024-07-26T08:11:40.216Z",
+      "updated_time": "2024-07-30T06:22:39.696Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6412,7 +6412,7 @@
       "field_type": 0,
       "parent": "c19100c5-725c-4a81-a1f1-1209f757d693",
       "name": "showLink",
-      "label": "Showlink"
+      "label": "显示菜单"
     }
   },
   {
@@ -6420,7 +6420,7 @@
     "pk": "f24aac91-3863-486d-9531-d5f12c75db25",
     "fields": {
       "created_time": "2024-01-22T09:56:45.407Z",
-      "updated_time": "2024-07-25T09:31:13.015Z",
+      "updated_time": "2024-07-30T06:22:39.343Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6428,7 +6428,7 @@
       "field_type": 1,
       "parent": "efa1bda3-4815-4013-90e2-50469cddbf90",
       "name": "value",
-      "label": "配置值"
+      "label": "配置数值"
     }
   },
   {
@@ -6436,7 +6436,7 @@
     "pk": "f2c15c2c-22f0-48b5-a3cf-69f793994b20",
     "fields": {
       "created_time": "2024-01-22T09:56:44.706Z",
-      "updated_time": "2024-07-25T09:31:12.531Z",
+      "updated_time": "2024-07-30T06:22:38.927Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6452,7 +6452,7 @@
     "pk": "f3441b0e-1b62-48df-aa64-43f0bb0c2d50",
     "fields": {
       "created_time": "2024-01-22T09:56:44.936Z",
-      "updated_time": "2024-07-25T09:31:12.675Z",
+      "updated_time": "2024-07-30T06:22:39.059Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6468,7 +6468,7 @@
     "pk": "f6089e4d-25c7-4593-8cd4-975e4f3c181c",
     "fields": {
       "created_time": "2024-01-22T09:54:40Z",
-      "updated_time": "2024-07-26T08:11:39.896Z",
+      "updated_time": "2024-07-30T06:22:39.382Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6476,7 +6476,7 @@
       "field_type": 0,
       "parent": null,
       "name": "system.fieldpermission",
-      "label": "字段权限表"
+      "label": "字段权限"
     }
   },
   {
@@ -6484,7 +6484,7 @@
     "pk": "f76e8076-61bc-4dae-b8dd-2350593c4aa2",
     "fields": {
       "created_time": "2024-07-25T09:31:12.856Z",
-      "updated_time": "2024-07-25T09:31:12.856Z",
+      "updated_time": "2024-07-30T06:22:39.204Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6492,7 +6492,7 @@
       "field_type": 1,
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "file_url",
-      "label": "外部地址"
+      "label": "网络地址"
     }
   },
   {
@@ -6500,7 +6500,7 @@
     "pk": "f834b87b-a1eb-42b2-b108-de040442ef4a",
     "fields": {
       "created_time": "2024-01-22T09:54:40.328Z",
-      "updated_time": "2024-07-26T08:11:40.111Z",
+      "updated_time": "2024-07-30T06:22:39.607Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6516,7 +6516,7 @@
     "pk": "f86dc3f5-0103-40e3-a305-95b7951cce0d",
     "fields": {
       "created_time": "2024-01-22T09:54:40.649Z",
-      "updated_time": "2024-07-26T08:11:40.443Z",
+      "updated_time": "2024-07-30T06:22:39.876Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6532,7 +6532,7 @@
     "pk": "f8bd5752-f499-4b0e-80ce-12ecb87ed749",
     "fields": {
       "created_time": "2024-01-22T09:56:44.974Z",
-      "updated_time": "2024-07-25T09:31:12.694Z",
+      "updated_time": "2024-07-30T06:22:39.077Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6548,7 +6548,7 @@
     "pk": "f99be548-31d6-4e5d-8005-2eb82dabe9f1",
     "fields": {
       "created_time": "2024-01-22T09:54:40.810Z",
-      "updated_time": "2024-07-26T08:11:40.464Z",
+      "updated_time": "2024-07-30T06:22:39.901Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6556,7 +6556,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "path",
-      "label": "请求地址"
+      "label": "访问路径"
     }
   },
   {
@@ -6564,7 +6564,7 @@
     "pk": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
     "fields": {
       "created_time": "2024-01-22T09:56:44.756Z",
-      "updated_time": "2024-07-25T09:31:12.587Z",
+      "updated_time": "2024-07-30T06:22:38.969Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6580,7 +6580,7 @@
     "pk": "fb7638d5-a090-4dc5-b1fc-947d104cacca",
     "fields": {
       "created_time": "2024-01-22T09:56:44.848Z",
-      "updated_time": "2024-07-25T09:31:12.631Z",
+      "updated_time": "2024-07-30T06:22:39.014Z",
       "description": null,
       "creator": null,
       "modifier": null,
@@ -6596,7 +6596,7 @@
     "pk": "ffab3a03-4a4c-4d53-95aa-023f1f54061b",
     "fields": {
       "created_time": "2024-01-22T09:56:44.394Z",
-      "updated_time": "2024-07-25T09:31:12.347Z",
+      "updated_time": "2024-07-30T06:22:38.783Z",
       "description": null,
       "creator": null,
       "modifier": null,

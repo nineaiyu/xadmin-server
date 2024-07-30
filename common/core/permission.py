@@ -107,6 +107,6 @@ class IsAuthenticated(BasePermission):
                             request.user.menu = p_data.get('pk')
                             request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
                     return True
-            raise PermissionDenied(_("Permission Denied"))
+            raise PermissionDenied(_("Permission denied"))
         else:
-            raise NotAuthenticated(_("Unauthorized Authentication"))
+            raise NotAuthenticated(_("Unauthorized authentication"))

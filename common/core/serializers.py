@@ -299,4 +299,4 @@ def get_sub_serializer_fields():
 
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat(f"Sync Role Permission End").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
+        PrintLogFormat(f"Sync Role permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")

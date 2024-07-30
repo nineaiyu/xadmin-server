@@ -199,7 +199,7 @@ class OwnerUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if request.user and request.user.is_authenticated:
             return queryset.filter(owner=request.user)
-        raise NotAuthenticated(_("Unauthorized Authentication"))
+        raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class CreatorUserFilter(BaseFilterBackend):
@@ -207,7 +207,7 @@ class CreatorUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if request.user and request.user.is_authenticated:
             return queryset.filter(creator=request.user)
-        raise NotAuthenticated(_("Unauthorized Authentication"))
+        raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class BaseDataPermissionFilter(BaseFilterBackend):

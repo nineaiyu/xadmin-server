@@ -35,7 +35,7 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
 
     parent = BasePrimaryKeyRelatedField(read_only=True, attrs=['pk', 'name'])
     field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices,
-                                    default=models.ModelLabelField.FieldChoices.DATA, label=_("Field Type"))
+                                    default=models.ModelLabelField.FieldChoices.DATA, label=_("Field type"))
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -56,8 +56,8 @@ class RoleSerializer(BaseModelSerializer):
                                       input_type="input")
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
-    field = serializers.SerializerMethodField(read_only=True, label="Fields")
-    fields = serializers.DictField(write_only=True, label="Fields")
+    field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
+    fields = serializers.DictField(write_only=True, label=_("Fields"))
 
     def get_field(self, obj):
         results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
@@ -120,7 +120,7 @@ class DataPermissionSerializer(BaseModelSerializer):
     menu = BasePrimaryKeyRelatedField(queryset=get_menu_queryset(), many=True, label=_("Menu"), required=False,
                                       attrs=['pk', 'name', 'parent_id', 'meta__title'])
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR, label=_("Mode Type"))
+                                   default=models.ModeTypeAbstract.ModeChoices.OR, label=_("Mode type"))
 
     def validate(self, attrs):
         rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
@@ -133,14 +133,13 @@ class DataPermissionSerializer(BaseModelSerializer):
 
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles = BasePrimaryKeyRelatedField(queryset=models.UserRole.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name', 'code'], label=_("Role Permission"), many=True,
+                                       attrs=['pk', 'name', 'code'], label=_("Role permission"), many=True,
                                        format="{name}")
     rules = BasePrimaryKeyRelatedField(queryset=models.DataPermission.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name', 'get_mode_type_display'], label=_("Data Permission"),
-                                       many=True,
-                                       format="{name}")
+                                       attrs=['pk', 'name', 'get_mode_type_display'], label=_("Data permission"),
+                                       many=True, format="{name}")
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR.value, label=_("Mode Type"))
+                                   default=models.ModeTypeAbstract.ModeChoices.OR.value, label=_("Mode type"))
 
 
 class DeptSerializer(BaseRoleRuleInfo):
@@ -154,9 +153,9 @@ class DeptSerializer(BaseRoleRuleInfo):
 
         extra_kwargs = {'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
-    user_count = serializers.SerializerMethodField(read_only=True, label=_("User Count"))
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                        label=_("Superior Department"), attrs=['pk', 'name', 'parent_id'])
+                                        label=_("Superior department"), attrs=['pk', 'name', 'parent_id'])
 
     def validate(self, attrs):
         # 权限需要其他接口设置，下面三个参数忽略
@@ -228,12 +227,12 @@ class RouteMetaSerializer(BaseModelSerializer):
         fields = ['title', 'icon', 'showParent', 'showLink', 'extraIcon', 'keepAlive', 'frameSrc', 'frameLoading',
                   'transition', 'hiddenTag', 'dynamicLevel', 'fixedTag', 'auths']
 
-    showParent = serializers.BooleanField(source='is_show_parent', read_only=True, label=_("Show Parent Menu"))
-    showLink = serializers.BooleanField(source='is_show_menu', read_only=True, label=_("Show Menu"))
-    extraIcon = serializers.CharField(source='r_svg_name', read_only=True, label=_("Right Icon"))
+    showParent = serializers.BooleanField(source='is_show_parent', read_only=True, label=_("Show parent menu"))
+    showLink = serializers.BooleanField(source='is_show_menu', read_only=True, label=_("Show menu"))
+    extraIcon = serializers.CharField(source='r_svg_name', read_only=True, label=_("Right icon"))
     keepAlive = serializers.BooleanField(source='is_keepalive', read_only=True, label=_("Keepalive"))
     frameSrc = serializers.CharField(source='frame_url', read_only=True, label=_("Iframe URL"))
-    frameLoading = serializers.BooleanField(source='frame_loading', read_only=True, label=_("Iframe Loading"))
+    frameLoading = serializers.BooleanField(source='frame_loading', read_only=True, label=_("Iframe loading"))
 
     transition = serializers.SerializerMethodField()
 
@@ -243,9 +242,9 @@ class RouteMetaSerializer(BaseModelSerializer):
             'leaveTransition': obj.transition_leave,
         }
 
-    hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True, label=_("Hidden Tag"))
-    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True, label=_("Fixed Tag"))
-    dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True, label=_("Dynamic Level"))
+    hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True, label=_("Hidden tag"))
+    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True, label=_("Fixed tag"))
+    dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True, label=_("Dynamic level"))
 
     auths = serializers.SerializerMethodField()
 
@@ -272,7 +271,7 @@ class MenuMetaSerializer(BaseModelSerializer):
 
 
 class MenuSerializer(BaseModelSerializer):
-    meta = MenuMetaSerializer(label=_("Menu Meta"))
+    meta = MenuMetaSerializer(label=_("Menu meta"))
 
     class Meta:
         model = models.Menu
@@ -282,12 +281,12 @@ class MenuSerializer(BaseModelSerializer):
         extra_kwargs = {'rank': {'read_only': True}}
 
     parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False,
-                                        label=_("Parent Menu"), attrs=['pk', 'name'])
+                                        label=_("Parent menu"), attrs=['pk', 'name'])
     model = BasePrimaryKeyRelatedField(queryset=models.ModelLabelField.objects, allow_null=True, required=False,
                                        label=_("Model"), attrs=['pk', 'name'], many=True)
 
     menu_type = LabeledChoiceField(choices=models.Menu.MenuChoices.choices,
-                                   default=models.Menu.MenuChoices.DIRECTORY, label=_("Menu Type"))
+                                   default=models.Menu.MenuChoices.DIRECTORY, label=_("Menu type"))
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -312,11 +311,11 @@ class MenuPermissionSerializer(MenuSerializer):
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
-    title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu Title"))
+    title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu title"))
 
 
 class RouteSerializer(MenuSerializer):
-    meta = RouteMetaSerializer(all_fields=True, label=_("Menu Meta"))  # 用于前端菜单渲染
+    meta = RouteMetaSerializer(all_fields=True, label=_("Menu meta"))  # 用于前端菜单渲染
 
 
 class OperationLogSerializer(BaseModelSerializer):
@@ -372,22 +371,22 @@ class NoticeMessageSerializer(BaseModelSerializer):
         table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
         extra_kwargs = {'extra_json': {'read_only': True}}
 
-    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label=_("The Notified User"),
+    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label=_("The notified user"),
                                              attrs=['pk', 'username'], input_type='api-search-user',
                                              format='{username}')
     notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, input_type='api-search-dept',
-                                             label=_("The Notified Department"), attrs=['pk', 'name'], format='{name}')
-    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label=_("The Notified Role"),
+                                             label=_("The notified department"), attrs=['pk', 'name'], format='{name}')
+    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label=_("The notified role"),
                                              attrs=['pk', 'name'], input_type='api-search-role', format='{name}')
 
-    files = serializers.JSONField(write_only=True, label=_("Uploaded Attachments"))
-    user_count = serializers.SerializerMethodField(read_only=True, label=_("User Count"))
-    read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read User Count"))
+    files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
+    read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice Type"))
+                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
     level = LabeledChoiceField(choices=models.NoticeMessage.LevelChoices.choices,
-                               default=models.NoticeMessage.LevelChoices.DEFAULT, label=_("Notice Level"))
+                               default=models.NoticeMessage.LevelChoices.DEFAULT, label=_("Notice level"))
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
@@ -482,7 +481,7 @@ class UserNoticeSerializer(BaseModelSerializer):
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice Type"))
+                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
     def get_unread(self, obj):
@@ -501,10 +500,10 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
-    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice Type"))
+    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice type"))
     owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner', label=_("User"))
     notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
-                                          read_only=True, source='notice', label=_("Notice Message"))
+                                          read_only=True, source='notice', label=_("Notice message"))
 
 
 class SystemConfigSerializer(BaseModelSerializer):
@@ -514,7 +513,7 @@ class SystemConfigSerializer(BaseModelSerializer):
         read_only_fields = ['pk']
         fields_unexport = ['cache_value']  # 导入导出文件时，忽略该字段
 
-    cache_value = serializers.SerializerMethodField(read_only=True, label=_("Config Cache Value"))
+    cache_value = serializers.SerializerMethodField(read_only=True, label=_("Config cache value"))
 
     def get_cache_value(self, obj):
         val = SysConfig.get_value(obj.key)
