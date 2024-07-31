@@ -57,7 +57,7 @@ def compile_i18n_file():
     if os.path.exists(django_mo_file):
         return
     os.chdir(os.path.join(BASE_DIR))
-    management.call_command('compilemessages', verbosity=0, interactive=False)
+    management.call_command('compilemessages', verbosity=0)
     print("Compile i18n files done")
 
 def prepare():
