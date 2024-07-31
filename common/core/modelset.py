@@ -11,6 +11,7 @@ from typing import Callable
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
+from django.utils.translation import gettext_lazy as _
 from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_yasg import openapi
@@ -60,9 +61,11 @@ class UploadFileAction(object):
             if file_type not in self.FILE_UPLOAD_TYPE:
                 raise
             if file_obj.size > self.FILE_UPLOAD_SIZE:
-                return ApiResponse(code=1003, detail=f"图片大小不能超过 {self.FILE_UPLOAD_SIZE}")
+                return ApiResponse(code=1003, detail=_("Image size cannot exceed {}").format(self.FILE_UPLOAD_SIZE))
         except Exception as e:
-            return ApiResponse(code=1002, detail=f"错误的图片类型, 类型应该为 {','.join(self.FILE_UPLOAD_TYPE)}")
+            return ApiResponse(code=1002,
+                               detail=_("Wrong image type, the type should be {}").format(
+                                   ','.join(self.FILE_UPLOAD_TYPE)))
         setattr(instance, self.FILE_UPLOAD_FIELD, file_obj)
         instance.modifier = request.user
         instance.save(update_fields=[self.FILE_UPLOAD_FIELD, 'modifier'])
@@ -85,7 +88,7 @@ class RankAction(object):
         for pk in get_query_post_pks(request):
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
-        return ApiResponse(detail='顺序保存成功')
+        return ApiResponse(detail=_("Sorting saved successfully"))
 
 
 class OnlyExportDataAction(object):
@@ -125,8 +128,8 @@ class ImportExportDataAction(OnlyExportDataAction):
                     serializer = self.get_serializer(instance, data=data, partial=True)
                     serializer.is_valid(raise_exception=True)
                     self.perform_update(serializer)
-            return ApiResponse(detail="操作成功")
-        return ApiResponse(detail='数据异常', code=1001)
+            return ApiResponse()
+        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
 
 
 class ChoicesAction(object):
@@ -377,7 +380,7 @@ class BatchDeleteAction(object):
     def batch_delete(self, request, *args, **kwargs):
         pks = get_query_post_pks(request)
         if not pks:
-            return ApiResponse(code=1003, detail="数据异常，批量操作主键列表不存在")
+            return ApiResponse(code=1003, detail=_("Operation failed. Primary key list does not exist"))
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
         count = 0
         for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
@@ -387,7 +390,7 @@ class BatchDeleteAction(object):
                     count += 1
             except Exception:
                 pass
-        return ApiResponse(detail=f"操作成功，批量删除{count}条数据")
+        return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
 
 
 class BaseAction(BaseModelAction, ChoicesAction, SearchFieldsAction, BatchDeleteAction):

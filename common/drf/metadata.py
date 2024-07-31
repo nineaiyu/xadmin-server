@@ -8,7 +8,6 @@ from collections import OrderedDict
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.utils.encoding import force_str
-from django.utils.translation import gettext_lazy as _
 from rest_framework import exceptions, serializers
 from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
@@ -117,8 +116,6 @@ class SimpleMetadataWithFilters(SimpleMetadata):
 
         if field.field_name == 'id':
             field_info['label'] = 'ID'
-        if field.field_name == 'org_id':
-            field_info['label'] = _('Organization ID')
 
         return field_info
 

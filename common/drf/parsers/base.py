@@ -179,7 +179,7 @@ class BaseFileParser(BaseParser):
             self.serializer_fields = self.serializer_cls().fields
         except Exception as e:
             logger.debug(e, exc_info=True)
-            raise ParseError('The resource does not support imports!')
+            raise ParseError(_("The resource does not support imports!"))
 
         self.check_content_length(meta)
         try:
@@ -199,4 +199,4 @@ class BaseFileParser(BaseParser):
             return data
         except Exception as e:
             logger.error(e, exc_info=True)
-            raise ParseError(_('Parse file error: {}').format(e))
+            raise ParseError(_("Parse file error: {}").format(str(e)))

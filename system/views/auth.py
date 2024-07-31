@@ -11,6 +11,7 @@ import time
 from django.conf import settings
 from django.contrib import auth
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -108,47 +109,47 @@ class RegisterView(APIView):
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.REGISTER:
-            return ApiResponse(code=1001, detail='禁止注册')
+            return ApiResponse(code=1001, detail=_("Registration forbidden"))
 
         client_id = get_request_ident(request)
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')
         captcha_code = request.data.get('captcha_code')
 
-        if check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id) and check_captcha(SysConfig.NEED_LOGIN_CAPTCHA,
-                                                                                           captcha_key, captcha_code):
-            channel = request.data.get('channel', 'default')
-            username, password = get_username_password(SysConfig.NEED_REGISTER_ENCRYPTED, request, token)
-            if UserInfo.objects.filter(username=username).count():
-                return ApiResponse(code=1001, detail='用户名已经存在，请换个试试')
+        if not check_tmp_token(SysConfig.NEED_REGISTER_TOKEN, token, client_id):
+            return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
+        if not check_captcha(SysConfig.NEED_REGISTER_CAPTCHA, captcha_key, captcha_code):
+            return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
+        channel = request.data.get('channel', 'default')
+        username, password = get_username_password(SysConfig.NEED_REGISTER_ENCRYPTED, request, token)
+        if UserInfo.objects.filter(username=username).count():
+            return ApiResponse(code=1001, detail=_("The username already exists, please try another one"))
 
-            user = auth.authenticate(username=username, password=password)
-            update_fields = ['last_login']
-            if not user:
-                user = UserInfo.objects.create_user(username=username, password=password, first_name=username,
-                                                    nickname=username)
-                if channel and user:
-                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
-                    if not dept:
-                        dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
-                    if dept:
-                        user.dept = dept
-                        user.dept_belong = dept
-                        update_fields.extend(['dept_belong', 'dept'])
+        user = auth.authenticate(username=username, password=password)
+        update_fields = ['last_login']
+        if not user:
+            user = UserInfo.objects.create_user(username=username, password=password, first_name=username,
+                                                nickname=username)
+            if channel and user:
+                dept = DeptInfo.objects.filter(is_active=True, auto_bind=True, code=channel).first()
+                if not dept:
+                    dept = DeptInfo.objects.filter(is_active=True, auto_bind=True).first()
+                if dept:
+                    user.dept = dept
+                    user.dept_belong = dept
+                    update_fields.extend(['dept_belong', 'dept'])
 
-            if user.is_active:
-                refresh = RefreshToken.for_user(user)
-                result = {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-                user.last_login = timezone.now()
-                user.save(update_fields=update_fields)
-                result.update(**get_token_lifetime(user))
-                request.user = user
-                save_login_log(request)
-                return ApiResponse(data=result)
-        return ApiResponse(code=9999, detail='验证码或临时Token校验失败,请重试')
+        refresh = RefreshToken.for_user(user)
+        result = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+        user.last_login = timezone.now()
+        user.save(update_fields=update_fields)
+        result.update(**get_token_lifetime(user))
+        request.user = user
+        save_login_log(request)
+        return ApiResponse(data=result)
 
     def get(self, request, *args, **kwargs):
         config = {
@@ -165,29 +166,31 @@ class LoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         if not SysConfig.LOGIN:
-            return ApiResponse(code=1001, detail='禁止登录')
+            return ApiResponse(code=1001, detail=_("Login forbidden"))
 
         client_id = get_request_ident(request)
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')
         captcha_code = request.data.get('captcha_code')
-        if check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id) and check_captcha(SysConfig.NEED_LOGIN_CAPTCHA,
-                                                                                           captcha_key, captcha_code):
-            username, password = get_username_password(SysConfig.NEED_LOGIN_ENCRYPTED, request, token)
-            serializer = self.get_serializer(data={'username': username, 'password': password})
-            try:
-                serializer.is_valid(raise_exception=True)
-            except Exception as e:
-                request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
-                save_login_log(request, status=False)
-                return ApiResponse(code=9999, detail=e.args[0])
-            data = serializer.validated_data
-            data.update(get_token_lifetime(serializer.user))
-            request.user = serializer.user
-            save_login_log(request)
-            return ApiResponse(data=data)
 
-        return ApiResponse(code=9999, detail='验证码或临时Token校验失败,请重试')
+        if not check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id):
+            return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
+        if not check_captcha(SysConfig.NEED_LOGIN_CAPTCHA, captcha_key, captcha_code):
+            return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
+
+        username, password = get_username_password(SysConfig.NEED_LOGIN_ENCRYPTED, request, token)
+        serializer = self.get_serializer(data={'username': username, 'password': password})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
+            save_login_log(request, status=False)
+            return ApiResponse(code=9999, detail=e.args[0])
+        data = serializer.validated_data
+        data.update(get_token_lifetime(serializer.user))
+        request.user = serializer.user
+        save_login_log(request)
+        return ApiResponse(data=data)
 
     def get(self, request, *args, **kwargs):
         config = {

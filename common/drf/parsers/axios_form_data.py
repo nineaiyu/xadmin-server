@@ -10,6 +10,7 @@ from django.conf import settings
 from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError
+from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ParseError
 from rest_framework.parsers import BaseParser, DataAndFiles
 
@@ -125,4 +126,4 @@ class AxiosMultiPartParser(BaseParser):
                     new_data[key] = value
             return DataAndFiles(new_data, files)
         except MultiPartParserError as exc:
-            raise ParseError('Multipart form parse error - %s' % str(exc))
+            raise ParseError(_("Multipart form parse error - {}").format(str(exc)))

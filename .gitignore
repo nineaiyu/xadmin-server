@@ -1,2 +1,3 @@
 .idea/
 server/__pycache__/
+*.mo

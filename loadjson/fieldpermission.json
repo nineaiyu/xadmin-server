@@ -481,8 +481,8 @@
     "model": "system.fieldpermission",
     "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
     "fields": {
-      "created_time": "2024-07-26T08:13:38.000Z",
-      "updated_time": "2024-07-26T08:13:38.000Z",
+      "created_time": "2024-07-26T08:13:38Z",
+      "updated_time": "2024-07-26T08:13:38Z",
       "description": null,
       "creator": 1,
       "modifier": null,

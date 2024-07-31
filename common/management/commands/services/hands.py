@@ -52,7 +52,16 @@ def collect_static():
         pass
 
 
+def compile_i18n_file():
+    django_mo_file = os.path.join(BASE_DIR, 'locale', 'zh', 'LC_MESSAGES', 'django.mo')
+    if os.path.exists(django_mo_file):
+        return
+    os.chdir(os.path.join(BASE_DIR))
+    management.call_command('compilemessages', verbosity=0, interactive=False)
+    print("Compile i18n files done")
+
 def prepare():
     check_database_connection()
     collect_static()
+    compile_i18n_file()
     perform_db_migrate()

@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -34,7 +35,7 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
 
     parent = BasePrimaryKeyRelatedField(read_only=True, attrs=['pk', 'name'])
     field_type = LabeledChoiceField(choices=models.ModelLabelField.FieldChoices.choices,
-                                    default=models.ModelLabelField.FieldChoices.DATA, label="字段类型")
+                                    default=models.ModelLabelField.FieldChoices.DATA, label=_("Field type"))
 
 
 class FieldPermissionSerializer(BaseModelSerializer):
@@ -51,12 +52,12 @@ class RoleSerializer(BaseModelSerializer):
         table_fields = ['pk', 'name', 'code', 'is_active', 'description', 'updated_time']
         read_only_fields = ['pk']
 
-    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label="菜单", attrs=['pk', 'name'],
+    menu = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, many=True, label=_("Menu"), attrs=['pk', 'name'],
                                       input_type="input")
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
-    field = serializers.SerializerMethodField(read_only=True, label="Fields")
-    fields = serializers.DictField(write_only=True, label="Fields")
+    field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
+    fields = serializers.DictField(write_only=True, label=_("Fields"))
 
     def get_field(self, obj):
         results = FieldPermissionSerializer(models.FieldPermission.objects.filter(role=obj), many=True,
@@ -116,15 +117,15 @@ class DataPermissionSerializer(BaseModelSerializer):
         table_fields = ['pk', 'name', "mode_type", "is_active", "description", "created_time"]
         # extra_kwargs = {'rules': {'required': True}}
 
-    menu = BasePrimaryKeyRelatedField(queryset=get_menu_queryset(), many=True, label="菜单", required=False,
+    menu = BasePrimaryKeyRelatedField(queryset=get_menu_queryset(), many=True, label=_("Menu"), required=False,
                                       attrs=['pk', 'name', 'parent_id', 'meta__title'])
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR, label="权限模式")
+                                   default=models.ModeTypeAbstract.ModeChoices.OR, label=_("Mode type"))
 
     def validate(self, attrs):
         rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
         if not rules:
-            raise ValidationError('规则不能为空')
+            raise ValidationError(_("The rule cannot be null"))
         if len(rules) < 2:
             attrs['mode_type'] = models.DataPermission.ModeChoices.OR
         return attrs
@@ -132,12 +133,13 @@ class DataPermissionSerializer(BaseModelSerializer):
 
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles = BasePrimaryKeyRelatedField(queryset=models.UserRole.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name', 'code'], label='角色', many=True, format="{name}")
-    rules = BasePrimaryKeyRelatedField(queryset=models.DataPermission.objects, allow_null=True, required=False,
-                                       attrs=['pk', 'name', 'get_mode_type_display'], label='数据权限', many=True,
+                                       attrs=['pk', 'name', 'code'], label=_("Role permission"), many=True,
                                        format="{name}")
+    rules = BasePrimaryKeyRelatedField(queryset=models.DataPermission.objects, allow_null=True, required=False,
+                                       attrs=['pk', 'name', 'get_mode_type_display'], label=_("Data permission"),
+                                       many=True, format="{name}")
     mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices,
-                                   default=models.ModeTypeAbstract.ModeChoices.OR.value, label="权限模式")
+                                   default=models.ModeTypeAbstract.ModeChoices.OR.value, label=_("Mode type"))
 
 
 class DeptSerializer(BaseRoleRuleInfo):
@@ -151,9 +153,9 @@ class DeptSerializer(BaseRoleRuleInfo):
 
         extra_kwargs = {'roles': {'read_only': True}, 'rules': {'read_only': True}}
 
-    user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     parent = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                        label="上级部门", attrs=['pk', 'name', 'parent_id'])
+                                        label=_("Superior department"), attrs=['pk', 'name', 'parent_id'])
 
     def validate(self, attrs):
         # 权限需要其他接口设置，下面三个参数忽略
@@ -169,7 +171,7 @@ class DeptSerializer(BaseRoleRuleInfo):
     def update(self, instance, validated_data):
         parent = validated_data.get('parent')
         if parent and parent.pk in models.DeptInfo.recursion_dept_info(dept_id=instance.pk):
-            raise ValidationError('Parent not in children')
+            raise ValidationError(_("The superior department cannot be its own subordinate department"))
         return super().update(instance, validated_data)
 
     def get_user_count(self, obj):
@@ -191,9 +193,9 @@ class UserSerializer(BaseRoleRuleInfo):
                         'last_login', 'date_joined', 'roles', 'rules']
 
     dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
-                                      attrs=['pk', 'name', 'parent_id'], label='部门', format="{name}")
+                                      attrs=['pk', 'name', 'parent_id'], label=_("Department"), format="{name}")
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
-                                default=models.UserInfo.GenderChoices.UNKNOWN, label='性别')
+                                default=models.UserInfo.GenderChoices.UNKNOWN, label=_("Gender"))
 
     def validate(self, attrs):
         password = attrs.get('password')
@@ -205,7 +207,7 @@ class UserSerializer(BaseRoleRuleInfo):
                     attrs['password'] = make_password(attrs.get('password'))
                     logger.warning(f"create user and set password failed:{e}. so set default password")
             else:
-                raise ValidationError("参数有误")
+                raise ValidationError(_("Abnormal password field"))
         return attrs
 
 
@@ -225,12 +227,12 @@ class RouteMetaSerializer(BaseModelSerializer):
         fields = ['title', 'icon', 'showParent', 'showLink', 'extraIcon', 'keepAlive', 'frameSrc', 'frameLoading',
                   'transition', 'hiddenTag', 'dynamicLevel', 'fixedTag', 'auths']
 
-    showParent = serializers.BooleanField(source='is_show_parent', read_only=True)
-    showLink = serializers.BooleanField(source='is_show_menu', read_only=True)
-    extraIcon = serializers.CharField(source='r_svg_name', read_only=True)
-    keepAlive = serializers.BooleanField(source='is_keepalive', read_only=True)
-    frameSrc = serializers.CharField(source='frame_url', read_only=True)
-    frameLoading = serializers.BooleanField(source='frame_loading', read_only=True)
+    showParent = serializers.BooleanField(source='is_show_parent', read_only=True, label=_("Show parent menu"))
+    showLink = serializers.BooleanField(source='is_show_menu', read_only=True, label=_("Show menu"))
+    extraIcon = serializers.CharField(source='r_svg_name', read_only=True, label=_("Right icon"))
+    keepAlive = serializers.BooleanField(source='is_keepalive', read_only=True, label=_("Keepalive"))
+    frameSrc = serializers.CharField(source='frame_url', read_only=True, label=_("Iframe URL"))
+    frameLoading = serializers.BooleanField(source='frame_loading', read_only=True, label=_("Iframe loading"))
 
     transition = serializers.SerializerMethodField()
 
@@ -240,9 +242,9 @@ class RouteMetaSerializer(BaseModelSerializer):
             'leaveTransition': obj.transition_leave,
         }
 
-    hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True)
-    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True)
-    dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True)
+    hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True, label=_("Hidden tag"))
+    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True, label=_("Fixed tag"))
+    dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True, label=_("Dynamic level"))
 
     auths = serializers.SerializerMethodField()
 
@@ -252,7 +254,7 @@ class RouteMetaSerializer(BaseModelSerializer):
             menu_obj = models.Menu.objects.filter(is_active=True)
         else:
             menu_obj = get_user_menu_queryset(user)
-        if menu_obj:
+        if menu_obj.exists():
             return menu_obj.filter(menu_type=models.Menu.MenuChoices.PERMISSION, parent=obj.menu).values_list('name',
                                                                                                               flat=True).distinct()
         else:
@@ -269,7 +271,7 @@ class MenuMetaSerializer(BaseModelSerializer):
 
 
 class MenuSerializer(BaseModelSerializer):
-    meta = MenuMetaSerializer(label='菜单元属性')
+    meta = MenuMetaSerializer(label=_("Menu meta"))
 
     class Meta:
         model = models.Menu
@@ -278,13 +280,13 @@ class MenuSerializer(BaseModelSerializer):
         # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
         extra_kwargs = {'rank': {'read_only': True}}
 
-    parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False, label="上级菜单",
-                                        attrs=['pk', 'name'])
+    parent = BasePrimaryKeyRelatedField(queryset=models.Menu.objects, allow_null=True, required=False,
+                                        label=_("Parent menu"), attrs=['pk', 'name'])
     model = BasePrimaryKeyRelatedField(queryset=models.ModelLabelField.objects, allow_null=True, required=False,
-                                       label="绑定模型", attrs=['pk', 'name'], many=True)
+                                       label=_("Model"), attrs=['pk', 'name'], many=True)
 
     menu_type = LabeledChoiceField(choices=models.Menu.MenuChoices.choices,
-                                   default=models.Menu.MenuChoices.DIRECTORY, label='菜单类型')
+                                   default=models.Menu.MenuChoices.DIRECTORY, label=_("Menu type"))
 
     def update(self, instance, validated_data):
         with transaction.atomic():
@@ -309,11 +311,11 @@ class MenuPermissionSerializer(MenuSerializer):
         read_only_fields = ['pk']
         extra_kwargs = {'rank': {'read_only': True}}
 
-    title = serializers.CharField(source='meta.title', read_only=True, label="菜单名称")
+    title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu title"))
 
 
 class RouteSerializer(MenuSerializer):
-    meta = RouteMetaSerializer(all_fields=True, label="菜单元属性")  # 用于前端菜单渲染
+    meta = RouteMetaSerializer(all_fields=True, label=_("Menu meta"))  # 用于前端菜单渲染
 
 
 class OperationLogSerializer(BaseModelSerializer):
@@ -326,8 +328,8 @@ class OperationLogSerializer(BaseModelSerializer):
                         "status_code", "created_time"]
         read_only_fields = ["pk"] + list(set([x.name for x in models.OperationLog._meta.fields]))
 
-    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True, label="操作用户")
-    module = serializers.SerializerMethodField(label="访问模块")
+    creator = UserInfoSerializer(fields=['pk', 'username'], read_only=True)
+    module = serializers.SerializerMethodField(label=_("Module"))
 
     def get_module(self, obj):
         module_name = obj.module
@@ -344,19 +346,19 @@ class UploadFileSerializer(BaseModelSerializer):
         read_only_fields = ["pk", "is_upload"]
         table_fields = ['pk', 'filename', 'filesize', 'mime_type', 'access_url', 'is_tmp', 'is_upload', 'md5sum']
 
-    access_url = serializers.SerializerMethodField(label="访问URL")
+    access_url = serializers.SerializerMethodField(label=_("Access URL"))
 
     def get_access_url(self, obj):
         return obj.file_url if obj.file_url else get_file_absolute_uri(obj.filepath, self.context.get('request', None))
 
     def create(self, validated_data):
         if not validated_data.get('file_url'):
-            raise ValidationError('外部地址必须存在')
+            raise ValidationError(_("Internet url cannot be null"))
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         if not validated_data.get('file_url') and not instance.is_upload:
-            raise ValidationError('外部地址必须存在')
+            raise ValidationError('Internet url cannot be null')
         return super().update(instance, validated_data)
 
 
@@ -369,22 +371,22 @@ class NoticeMessageSerializer(BaseModelSerializer):
         table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
         extra_kwargs = {'extra_json': {'read_only': True}}
 
-    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label='被通知的用户',
+    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=models.UserInfo.objects, label=_("The notified user"),
                                              attrs=['pk', 'username'], input_type='api-search-user',
                                              format='{username}')
-    notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, label='被通知的部门',
-                                             attrs=['pk', 'name'], input_type='api-search-dept', format='{name}')
-    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label='被通知的角色',
+    notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=models.DeptInfo.objects, input_type='api-search-dept',
+                                             label=_("The notified department"), attrs=['pk', 'name'], format='{name}')
+    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=models.UserRole.objects, label=_("The notified role"),
                                              attrs=['pk', 'name'], input_type='api-search-role', format='{name}')
 
-    files = serializers.JSONField(write_only=True, label="上传文件")
-    user_count = serializers.SerializerMethodField(read_only=True, label="用户数量")
-    read_user_count = serializers.SerializerMethodField(read_only=True, label="消息已读用户数量")
+    files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
+    read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER, label="消息类型")
+                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
     level = LabeledChoiceField(choices=models.NoticeMessage.LevelChoices.choices,
-                               default=models.NoticeMessage.LevelChoices.DEFAULT, label="消息级别")
+                               default=models.NoticeMessage.LevelChoices.DEFAULT, label=_("Notice level"))
 
     def get_read_user_count(self, obj):
         if obj.notice_type in models.NoticeMessage.user_choices:
@@ -405,7 +407,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     def validate_notice_type(self, val):
         if models.NoticeMessage.NoticeChoices.NOTICE == val and self.request.method == 'POST':
-            raise ValidationError('参数有误，不支持创建系统公告')
+            raise ValidationError(_("Parameter error. System announcement cannot be created"))
         return val
 
     def validate(self, attrs):
@@ -415,19 +417,19 @@ class NoticeMessageSerializer(BaseModelSerializer):
             attrs.pop('notice_dept', None)
             attrs.pop('notice_user', None)
             if not attrs.get('notice_role'):
-                raise ValidationError('消息通知缺少角色')
+                raise ValidationError(_("The notice role cannot be null"))
 
         if notice_type == models.NoticeMessage.NoticeChoices.DEPT:
             attrs.pop('notice_user', None)
             attrs.pop('notice_role', None)
             if not attrs.get('notice_dept'):
-                raise ValidationError('消息通知缺少部门')
+                raise ValidationError(_("The notice department cannot be null"))
 
         if notice_type == models.NoticeMessage.NoticeChoices.USER:
             attrs.pop('notice_role', None)
             attrs.pop('notice_dept', None)
             if not attrs.get('notice_user'):
-                raise ValidationError('消息通知缺少用户')
+                raise ValidationError(_("The notice user cannot be null"))
 
         files = attrs.get('files')
         if files is not None:
@@ -466,7 +468,7 @@ class AnnouncementSerializer(NoticeMessageSerializer):
     def validate_notice_type(self, val):
         if models.NoticeMessage.NoticeChoices.NOTICE == val:
             return val
-        raise ValidationError('参数有误')
+        raise ValidationError(_("Parameter error"))
 
 
 class UserNoticeSerializer(BaseModelSerializer):
@@ -479,8 +481,8 @@ class UserNoticeSerializer(BaseModelSerializer):
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
     notice_type = LabeledChoiceField(choices=models.NoticeMessage.NoticeChoices.choices,
-                                     default=models.NoticeMessage.NoticeChoices.USER, label='消息类型')
-    unread = serializers.SerializerMethodField(label="消息是否未读")
+                                     default=models.NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
+    unread = serializers.SerializerMethodField(label=_("Unread"))
 
     def get_unread(self, obj):
         queryset = models.NoticeUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
@@ -498,10 +500,10 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in models.NoticeUserRead._meta.fields]
         # depth = 1
 
-    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label="消息类型")
-    owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner', label="已读用户")
+    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice type"))
+    owner_info = UserInfoSerializer(fields=['pk', 'username'], read_only=True, source='owner', label=_("User"))
     notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
-                                          read_only=True, source='notice', label="消息公告")
+                                          read_only=True, source='notice', label=_("Notice message"))
 
 
 class SystemConfigSerializer(BaseModelSerializer):
@@ -511,7 +513,7 @@ class SystemConfigSerializer(BaseModelSerializer):
         read_only_fields = ['pk']
         fields_unexport = ['cache_value']  # 导入导出文件时，忽略该字段
 
-    cache_value = serializers.SerializerMethodField(read_only=True, label="配置缓存数据")
+    cache_value = serializers.SerializerMethodField(read_only=True, label=_("Config cache value"))
 
     def get_cache_value(self, obj):
         val = SysConfig.get_value(obj.key)
@@ -526,7 +528,7 @@ class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner', 'access']
         read_only_fields = ['pk']
 
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", queryset=models.UserInfo.objects,
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label=_("User"), queryset=models.UserInfo.objects,
                                        required=True)
 
 
@@ -538,16 +540,16 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
 
         read_only_fields = ['pk', 'owner']
 
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label="用户", read_only=True, format='{username}')
+    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label=_("User"), read_only=True, format='{username}')
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=models.UserInfo.objects,
-                                             label="多个用户", input_type='api-search-user')
+                                             label=_("Users"), input_type='api-search-user')
 
     def create(self, validated_data):
         config_user = validated_data.pop('config_user', [])
         owner = validated_data.pop('owner', None)
         instance = None
         if not config_user and not owner:
-            raise ValidationError('用户ID不能为空')
+            raise ValidationError(_("User cannot be null"))
         if owner:
             config_user.append(owner)
         for owner in config_user:
@@ -573,6 +575,6 @@ class UserLoginLogSerializer(BaseModelSerializer):
         table_fields = ['pk', 'creator', 'ipaddress', 'login_type', 'browser', 'system', 'status', 'created_time']
         read_only_fields = ['pk', 'creator']
 
-    creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label="操作用户")
+    creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label=_("User"))
     login_type = LabeledChoiceField(choices=models.UserLoginLog.LoginTypeChoices.choices,
                                     default=models.UserLoginLog.LoginTypeChoices.USERNAME)

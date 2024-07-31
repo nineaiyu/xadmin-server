@@ -6,6 +6,7 @@
 # date : 6/16/2023
 import logging
 
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -44,7 +45,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
 
     def perform_destroy(self, instance):
         if instance.is_superuser:
-            raise Exception("超级管理员禁止删除")
+            raise Exception(_("The super administrator disallows deletion"))
         return instance.delete()
 
     @swagger_auto_schema(request_body=openapi.Schema(
@@ -75,4 +76,4 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
             notify.notify_error(users=instance, title="密码重置成功",
                                 message="密码被管理员重置成功")
             return ApiResponse()
-        return ApiResponse(code=1001, detail='修改失败')
+        return ApiResponse(code=1001)

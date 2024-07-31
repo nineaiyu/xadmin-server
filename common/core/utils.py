@@ -13,6 +13,7 @@ from django.conf import settings
 from django.http import QueryDict
 from django.urls import URLPattern, URLResolver
 from django.utils.module_loading import import_string
+from django.utils.termcolors import make_style
 
 from common.base.magic import import_from_string
 
@@ -47,8 +48,6 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 name = "%s:%s" % (pre_namespace, item.name)
             else:
                 name = item.name
-            if not item.name:
-                raise Exception('URL路由中必须设置name属性')
             url = pre_url + item.pattern.regex.pattern.lstrip('^')
             # url = url.replace('^', '').replace('$', '')
 
@@ -110,3 +109,33 @@ def get_query_post_pks(request):
     else:
         pks = request.data.get('pks', [])
     return pks
+
+
+class PrintLogFormat(object):
+    def __init__(self, base_str=''):
+        self.base_str = base_str
+        self.bold_error = make_style(opts=('bold',), fg='magenta')
+        self._info = make_style(fg='green')
+        self._error = make_style(fg='red')
+        self._warning = make_style(fg='yellow')
+        self._debug = make_style(fg='blue')
+
+    def info(self, msg, *args, **kwargs):
+        logger.info(f"{self.base_str} {msg}", *args, **kwargs)
+        if logger.isEnabledFor(logging.INFO):
+            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._info(msg)))
+
+    def error(self, msg, *args, **kwargs):
+        logger.error(f"{self.base_str} {msg}", *args, **kwargs)
+        if logger.isEnabledFor(logging.ERROR):
+            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._error(msg)))
+
+    def debug(self, msg, *args, **kwargs):
+        logger.debug(f"{self.base_str} {msg}", *args, **kwargs)
+        if logger.isEnabledFor(logging.DEBUG):
+            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._debug(msg)))
+
+    def warning(self, msg, *args, **kwargs):
+        logger.warning(f"{self.base_str} {msg}", *args, **kwargs)
+        if logger.isEnabledFor(logging.WARNING):
+            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._warning(msg)))

@@ -7,6 +7,7 @@
 
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import AESCipher
 
@@ -55,5 +56,5 @@ class AESCharField(models.CharField):
             value = self.cipher.encrypt(value)
             value = self.prefix + value.decode('utf-8')
         elif value is not None:
-            raise TypeError(str(value) + " is not a valid value for AESCharField")
+            raise TypeError(_("{} is not a valid value for AESCharField").format(value))
         return value

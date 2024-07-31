@@ -13,6 +13,7 @@ from django.db.models import Q, QuerySet
 from django.forms.utils import from_current_timezone
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
 from rest_framework.exceptions import NotAuthenticated
@@ -198,7 +199,7 @@ class OwnerUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if request.user and request.user.is_authenticated:
             return queryset.filter(owner=request.user)
-        raise NotAuthenticated('未授权认证')
+        raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class CreatorUserFilter(BaseFilterBackend):
@@ -206,7 +207,7 @@ class CreatorUserFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         if request.user and request.user.is_authenticated:
             return queryset.filter(creator=request.user)
-        raise NotAuthenticated('未授权认证')
+        raise NotAuthenticated(_("Unauthorized authentication"))
 
 
 class BaseDataPermissionFilter(BaseFilterBackend):
