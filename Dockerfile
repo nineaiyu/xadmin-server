@@ -5,7 +5,7 @@ ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # set apt cn mirrors
 RUN sed -i s@deb.debian.org@mirrors.tuna.tsinghua.edu.cn@ /etc/apt/sources.list.d/debian.sources
-RUN apt update && apt-get install libmariadb-dev g++ pkg-config -y && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt-get install gettext libmariadb-dev g++ pkg-config -y && rm -rf /var/lib/apt/lists/*
 
 # install pip
 COPY requirements.txt /opt/requirements.txt
