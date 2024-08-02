@@ -20,13 +20,13 @@ from user_agents import parse
 
 from common.base.utils import AESCipherV2
 from common.cache.storage import BlackAccessTokenCache
-from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle, LoginThrottle
 from common.utils.request import get_request_ip, get_browser, get_os
 from common.utils.token import make_token, verify_token
 from system.models import UserInfo, DeptInfo, UserLoginLog
 from system.utils.captcha import CaptchaAuth
+from system.utils.security import check_password_rules, LoginBlockUtil, LoginIpBlockUtil
 from system.utils.serializer import UserLoginLogSerializer
 
 
@@ -108,7 +108,7 @@ class RegisterView(APIView):
     throttle_classes = [RegisterThrottle]
 
     def post(self, request, *args, **kwargs):
-        if not SysConfig.REGISTER:
+        if not settings.SECURITY_REGISTER_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Registration forbidden"))
 
         client_id = get_request_ident(request)
@@ -116,14 +116,16 @@ class RegisterView(APIView):
         captcha_key = request.data.get('captcha_key')
         captcha_code = request.data.get('captcha_code')
 
-        if not check_tmp_token(SysConfig.NEED_REGISTER_TOKEN, token, client_id):
+        if not check_tmp_token(settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED, token, client_id):
             return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
-        if not check_captcha(SysConfig.NEED_REGISTER_CAPTCHA, captcha_key, captcha_code):
+        if not check_captcha(settings.SECURITY_REGISTER_CAPTCHA_ENABLED, captcha_key, captcha_code):
             return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
         channel = request.data.get('channel', 'default')
-        username, password = get_username_password(SysConfig.NEED_REGISTER_ENCRYPTED, request, token)
+        username, password = get_username_password(settings.SECURITY_REGISTER_ENCRYPTED_ENABLED, request, token)
+        if not check_password_rules(password):
+            return ApiResponse(code=1001, detail=_("Password does not match security rules"))
         if UserInfo.objects.filter(username=username).count():
-            return ApiResponse(code=1001, detail=_("The username already exists, please try another one"))
+            return ApiResponse(code=1002, detail=_("The username already exists, please try another one"))
 
         user = auth.authenticate(username=username, password=password)
         update_fields = ['last_login']
@@ -153,10 +155,10 @@ class RegisterView(APIView):
 
     def get(self, request, *args, **kwargs):
         config = {
-            'access': SysConfig.REGISTER,
-            'captcha': SysConfig.NEED_REGISTER_CAPTCHA,
-            'token': SysConfig.NEED_REGISTER_TOKEN,
-            'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,
+            'access': settings.SECURITY_REGISTER_ACCESS_ENABLED,
+            'captcha': settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
+            'token': settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
+            'encrypted': settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
         }
         return ApiResponse(data=config)
 
@@ -164,40 +166,79 @@ class LoginView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 
+    def check_is_block(self, username, ipaddr):
+        if LoginIpBlockUtil(ipaddr).is_block():
+            LoginIpBlockUtil(ipaddr).set_block_if_need()
+            return False, _("The address has been locked (please contact admin to unlock it or try"
+                            " again after {} minutes)").format(settings.SECURITY_LOGIN_IP_LIMIT_TIME)
+
+        is_block = LoginBlockUtil(username, ipaddr).is_block()
+        if is_block:
+            return False, _("The account has been locked (please contact admin to unlock it or try"
+                            " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
+        return True, True
+
     def post(self, request, *args, **kwargs):
-        if not SysConfig.LOGIN:
+        if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
 
         client_id = get_request_ident(request)
         token = request.data.get('token')
         captcha_key = request.data.get('captcha_key')
         captcha_code = request.data.get('captcha_code')
+        ipaddr = get_request_ip(request)
 
-        if not check_tmp_token(SysConfig.NEED_LOGIN_TOKEN, token, client_id):
+        if not check_tmp_token(settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED, token, client_id):
             return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
-        if not check_captcha(SysConfig.NEED_LOGIN_CAPTCHA, captcha_key, captcha_code):
+        if not check_captcha(settings.SECURITY_LOGIN_CAPTCHA_ENABLED, captcha_key, captcha_code):
             return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
 
-        username, password = get_username_password(SysConfig.NEED_LOGIN_ENCRYPTED, request, token)
+        username, password = get_username_password(settings.SECURITY_LOGIN_ENCRYPTED_ENABLED, request, token)
+
+        status, msg = self.check_is_block(username, ipaddr)
+        if not status:
+            return ApiResponse(code=9999, detail=msg)
+
+        login_block_util = LoginBlockUtil(username, ipaddr)
+        login_ip_block = LoginIpBlockUtil(ipaddr)
+
         serializer = self.get_serializer(data={'username': username, 'password': password})
         try:
             serializer.is_valid(raise_exception=True)
         except Exception as e:
             request.user = UserInfo.objects.filter(username=request.data.get('username')).first()
             save_login_log(request, status=False)
-            return ApiResponse(code=9999, detail=e.args[0])
+            login_block_util.incr_failed_count()
+            login_ip_block.set_block_if_need()
+
+            times_remainder = login_block_util.get_remainder_times()
+            if times_remainder > 0:
+                detail = _(
+                    "The username or password you entered is incorrect, "
+                    "please enter it again. "
+                    "You can also try {times_try} times "
+                    "(The account will be temporarily locked for {block_time} minutes)"
+                ).format(times_try=times_remainder, block_time=settings.SECURITY_LOGIN_LIMIT_TIME)
+            else:
+                detail = _("The account has been locked (please contact admin to unlock it or try"
+                           " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
+            return ApiResponse(code=9999, detail=detail)
         data = serializer.validated_data
         data.update(get_token_lifetime(serializer.user))
         request.user = serializer.user
         save_login_log(request)
+
+        login_block_util.clean_failed_count()
+        login_ip_block.clean_block_if_need()
+
         return ApiResponse(data=data)
 
     def get(self, request, *args, **kwargs):
         config = {
-            'access': SysConfig.LOGIN,
-            'captcha': SysConfig.NEED_LOGIN_CAPTCHA,
-            'token': SysConfig.NEED_LOGIN_TOKEN,
-            'encrypted': SysConfig.NEED_LOGIN_ENCRYPTED,
+            'access': settings.SECURITY_LOGIN_ACCESS_ENABLED,
+            'captcha': settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
+            'token': settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
+            'encrypted': settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
             'lifetime': settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days
         }
         return ApiResponse(data=config)

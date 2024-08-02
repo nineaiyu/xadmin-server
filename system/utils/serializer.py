@@ -21,8 +21,9 @@ from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
-from common.fields.utils import get_file_absolute_uri
+from common.fields.utils import get_file_absolute_uri, input_wrapper
 from system import models
+from system.utils.security import LoginBlockUtil, check_password_rules
 
 logger = logging.getLogger(__name__)
 
@@ -181,21 +182,27 @@ class DeptSerializer(BaseRoleRuleInfo):
 class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
-        fields = ['pk', 'avatar', 'username', 'nickname', 'mobile', 'email', 'gender', 'is_active', 'password', 'dept',
-                  'description', 'last_login', 'date_joined', 'roles', 'rules', 'mode_type']
+        fields = ['pk', 'avatar', 'username', 'nickname', 'mobile', 'email', 'gender', 'block', 'is_active',
+                  'password', 'dept', 'description', 'last_login', 'date_joined', 'roles', 'rules', 'mode_type']
 
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'is_active', 'dept', 'mobile',
+        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'block', 'is_active', 'dept', 'mobile',
                         'last_login', 'date_joined', 'roles', 'rules']
 
     dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
                                       attrs=['pk', 'name', 'parent_id'], label=_("Department"), format="{name}")
     gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices,
                                 default=models.UserInfo.GenderChoices.UNKNOWN, label=_("Gender"))
+
+    block = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='boolean',
+                                                             label=_("Login blocked"))
+
+    def get_block(self, obj):
+        return LoginBlockUtil.is_user_block(obj.username)
 
     def validate(self, attrs):
         password = attrs.get('password')
@@ -206,6 +213,8 @@ class UserSerializer(BaseRoleRuleInfo):
                 except Exception as e:
                     attrs['password'] = make_password(attrs.get('password'))
                     logger.warning(f"create user and set password failed:{e}. so set default password")
+                if not check_password_rules(password):
+                    raise ValidationError(_('Password does not match security rules'))
             else:
                 raise ValidationError(_("Abnormal password field"))
         return attrs

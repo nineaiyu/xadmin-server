@@ -252,6 +252,10 @@ class SearchFieldsAction(object):
             logger.error(f"get search-field failed {e}")
         return ApiResponse(data=results)
 
+
+class SearchColumnsAction(object):
+    filterset_class: Callable
+
     @swagger_auto_schema(operation_description='获取列表和创建更新字段', ignore_params=True, responses={
         200: openapi.Response('列表和创建更新字段结果', openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -306,11 +310,14 @@ class SearchFieldsAction(object):
         metadata_class = self.metadata_class()
         serializer = self.get_serializer()
         fields = getattr(serializer, 'fields', [])
-        table_fields = getattr(serializer.Meta, 'table_fields', [])
+        meta = getattr(serializer, 'Meta', {})
+        table_fields = getattr(meta, 'table_fields', [])
         for key, value in fields.items():
             info = metadata_class.get_field_info(value)
-            field = get_model_field(value.parent.Meta.model, value.source)
-
+            if hasattr(meta, 'model'):
+                field = get_model_field(meta.model, value.source)
+            else:
+                field = None
             info['key'] = key
             if info.get("help_text", None) is None and hasattr(field, 'help_text'):
                 info['help_text'] = field.help_text
@@ -393,7 +400,7 @@ class BatchDeleteAction(object):
         return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
 
 
-class BaseAction(BaseModelAction, ChoicesAction, SearchFieldsAction, BatchDeleteAction):
+class BaseAction(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction):
 
     def create(self, request, *args, **kwargs):
         data = super().create(request, *args, **kwargs).data
@@ -427,7 +434,8 @@ class OwnerModelSet(BaseModelAction, ChoicesAction, mixins.RetrieveModelMixin, m
         return ApiResponse(data=data)
 
 
-class OnlyListModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, mixins.ListModelMixin, GenericViewSet):
+class OnlyListModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, mixins.ListModelMixin,
+                       GenericViewSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(data=data)
@@ -438,7 +446,7 @@ class BaseModelSet(BaseAction, ModelViewSet):
 
 
 # 只允许读和删除，不允许创建和修改
-class ListDeleteModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, BatchDeleteAction,
+class ListDeleteModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction,
                          mixins.DestroyModelMixin, ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         data = super().retrieve(request, *args, **kwargs).data
@@ -452,3 +460,14 @@ class ListDeleteModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, Bat
         instance = self.get_object()
         self.perform_destroy(instance)
         return ApiResponse()
+
+
+class NoDetailModelSet(BaseModelAction, SearchColumnsAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin,
+                       GenericViewSet):
+    def update(self, request, *args, **kwargs):
+        data = super().update(request, *args, **kwargs).data
+        return ApiResponse(data=data)
+
+    def retrieve(self, request, *args, **kwargs):
+        data = super().retrieve(request, *args, **kwargs).data
+        return ApiResponse(data=data)

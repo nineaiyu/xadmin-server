@@ -6,7 +6,9 @@
 # date : 12/18/2023
 import ipaddress
 import re
+from contextlib import contextmanager
 
+from django.db import connections, transaction
 from django.db.models import Q
 
 
@@ -103,3 +105,26 @@ class RelatedManager:
                 q = ~q
             filters.append(q)
         return filters
+
+
+def close_old_connections():
+    for conn in connections.all():
+        conn.close_if_unusable_or_obsolete()
+
+
+@contextmanager
+def safe_db_connection():
+    close_old_connections()
+    yield
+    close_old_connections()
+
+
+@contextmanager
+def open_db_connection(alias='default'):
+    connection = transaction.get_connection(alias)
+    try:
+        connection.connect()
+        with transaction.atomic():
+            yield connection
+    finally:
+        connection.close()

@@ -16,6 +16,7 @@ from common.base.utils import get_choices_dict, AESCipherV2
 from common.core.modelset import OwnerModelSet, UploadFileAction
 from common.core.response import ApiResponse
 from system.models import UserInfo
+from system.utils.security import check_password_rules
 from system.utils.serializer import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
@@ -58,8 +59,10 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
             old_password = AESCipherV2(instance.username).decrypt(old_password)
             if not instance.check_password(old_password):
                 return ApiResponse(code=1001, detail=_("Old password verification failed"))
+            if not check_password_rules(sure_password, instance.is_superuser):
+                return ApiResponse(code=1002, detail=_('Password does not match security rules'))
             instance.set_password(sure_password)
             instance.modifier = request.user
             instance.save(update_fields=['password', 'modifier'])
             return ApiResponse()
-        return ApiResponse(code=1001)
+        return ApiResponse(code=1003)

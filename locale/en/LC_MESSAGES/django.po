@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-30 14:05+0800\n"
+"POT-Creation-Date: 2024-08-02 16:58+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -93,11 +93,11 @@ msgstr ""
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/modelset.py:383
+#: common/core/modelset.py:390
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:393
+#: common/core/modelset.py:400
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
@@ -157,6 +157,27 @@ msgstr ""
 msgid "{} is not a valid value for AESCharField"
 msgstr ""
 
+#: common/tasks.py:27
+msgid "Send email"
+msgstr ""
+
+#: common/tasks.py:54
+msgid "Send email attachment"
+msgstr ""
+
+#: common/utils/ip/geoip/utils.py:24
+msgid "LAN"
+msgstr ""
+
+#: common/utils/ip/geoip/utils.py:26
+msgid "Invalid ip"
+msgstr ""
+
+#: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
+#: system/models.py:68
+msgid "Unknown"
+msgstr ""
+
 #: common/utils/media.py:54
 msgid "Directory indexes are not allowed here."
 msgstr ""
@@ -172,6 +193,241 @@ msgstr ""
 
 #: common/utils/swagger.py:40
 msgid "Please enter your account information to log in"
+msgstr ""
+
+#: settings/models.py:16 system/models.py:176
+msgid "Name"
+msgstr ""
+
+#: settings/models.py:17
+msgid "Value"
+msgstr ""
+
+#: settings/models.py:18
+msgid "Category"
+msgstr ""
+
+#: settings/models.py:19
+msgid "Encrypted"
+msgstr ""
+
+#: settings/models.py:20 system/models.py:151 system/models.py:178
+#: system/models.py:193 system/models.py:235 system/models.py:405
+msgid "Is active"
+msgstr ""
+
+#: settings/models.py:96
+msgid "System setting"
+msgstr ""
+
+#: settings/serializers/basic.py:13
+msgid "Site URL"
+msgstr ""
+
+#: settings/serializers/basic.py:15
+msgid ""
+"Site URL is the externally accessible address of the current product service "
+"and is usually used in links in system emails"
+msgstr ""
+
+#: settings/serializers/email.py:13 settings/utils/serializer.py:32
+msgid "Recipient"
+msgstr ""
+
+#: settings/serializers/email.py:14 settings/utils/serializer.py:33
+msgid "The recipient is used for testing the email server's connectivity"
+msgstr ""
+
+#: settings/serializers/email.py:19 settings/utils/serializer.py:16
+msgid "Host"
+msgstr ""
+
+#: settings/serializers/email.py:20 settings/utils/serializer.py:17
+msgid "Port"
+msgstr ""
+
+#: settings/serializers/email.py:22 settings/utils/serializer.py:19
+msgid "Account"
+msgstr ""
+
+#: settings/serializers/email.py:23 settings/utils/serializer.py:20
+msgid "The user to be used for email server authentication"
+msgstr ""
+
+#: settings/serializers/email.py:26 settings/utils/serializer.py:23
+msgid "Password"
+msgstr ""
+
+#: settings/serializers/email.py:28 settings/utils/serializer.py:25
+msgid ""
+"Password to use for the email server. It is used in conjunction with `User` "
+"when authenticating to the email server"
+msgstr ""
+
+#: settings/serializers/email.py:31 settings/utils/serializer.py:28
+msgid "Sender"
+msgstr ""
+
+#: settings/serializers/email.py:32 settings/utils/serializer.py:29
+msgid "Sender email address (default to using the `User`)"
+msgstr ""
+
+#: settings/serializers/email.py:36 settings/utils/serializer.py:36
+msgid "Subject prefix"
+msgstr ""
+
+#: settings/serializers/email.py:37 settings/utils/serializer.py:37
+msgid "The subject line prefix of the sent email"
+msgstr ""
+
+#: settings/serializers/email.py:40 settings/utils/serializer.py:40
+msgid "Use SSL"
+msgstr ""
+
+#: settings/serializers/email.py:42 settings/utils/serializer.py:42
+msgid ""
+"Whether to use an implicit TLS (secure) connection when talking to the SMTP "
+"server. In most email documentation this type of TLS connection is referred "
+"to as SSL. It is generally used on port 465"
+msgstr ""
+
+#: settings/serializers/email.py:45 settings/utils/serializer.py:45
+msgid "Use TLS"
+msgstr ""
+
+#: settings/serializers/email.py:47 settings/utils/serializer.py:47
+msgid ""
+"Whether to use a TLS (secure) connection when talking to the SMTP server. "
+"This is used for explicit TLS connections, generally on port 587"
+msgstr ""
+
+#: settings/serializers/security.py:17
+msgid "Minimum length (User)"
+msgstr ""
+
+#: settings/serializers/security.py:21
+msgid "Minimum length (Admin)"
+msgstr ""
+
+#: settings/serializers/security.py:24
+msgid "Uppercase"
+msgstr ""
+
+#: settings/serializers/security.py:27
+msgid "Lowercase"
+msgstr ""
+
+#: settings/serializers/security.py:30
+msgid "Digits"
+msgstr ""
+
+#: settings/serializers/security.py:33
+msgid "Special characters"
+msgstr ""
+
+#: settings/serializers/security.py:38
+msgid ""
+"If the user has failed to log in for a limited number of times, no login is "
+"allowed during this time interval."
+msgstr ""
+
+#: settings/serializers/security.py:43
+msgid ""
+"With * indicating a match all. Such as: 192.168.10.1, 192.168.1.0/24, "
+"10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64 "
+msgstr ""
+
+#: settings/serializers/security.py:55
+msgid "IP address invalid: `{}`"
+msgstr ""
+
+#: settings/serializers/security.py:62
+msgid "User login failures count"
+msgstr ""
+
+#: settings/serializers/security.py:66
+msgid "User login failure period (minute)"
+msgstr ""
+
+#: settings/serializers/security.py:72
+msgid "IP login failures count"
+msgstr ""
+
+#: settings/serializers/security.py:76
+msgid "IP login failure period (minute)"
+msgstr ""
+
+#: settings/serializers/security.py:80
+msgid "Login IP whitelist"
+msgstr ""
+
+#: settings/serializers/security.py:85
+msgid "Login IP blacklist"
+msgstr ""
+
+#: settings/serializers/security.py:93
+msgid "Login enabled"
+msgstr ""
+
+#: settings/serializers/security.py:94
+msgid "Enable login for user"
+msgstr ""
+
+#: settings/serializers/security.py:98
+msgid "Login captcha"
+msgstr ""
+
+#: settings/serializers/security.py:99
+msgid "Enable captcha to prevent robot authentication"
+msgstr ""
+
+#: settings/serializers/security.py:103
+msgid "Login encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:104 settings/serializers/security.py:125
+msgid "Enable encryption to prevent information leakage"
+msgstr ""
+
+#: settings/serializers/security.py:108
+msgid "Login temp token"
+msgstr ""
+
+#: settings/serializers/security.py:109 settings/serializers/security.py:130
+msgid "Enable temporary tokens to prevent attacks"
+msgstr ""
+
+#: settings/serializers/security.py:115
+msgid "Register enable"
+msgstr ""
+
+#: settings/serializers/security.py:116
+msgid "Enable register for user"
+msgstr ""
+
+#: settings/serializers/security.py:119
+msgid "Register captcha"
+msgstr ""
+
+#: settings/serializers/security.py:120
+msgid "Enable captcha to prevent robot register"
+msgstr ""
+
+#: settings/serializers/security.py:124
+msgid "Register encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:129
+msgid "Register temp token"
+msgstr ""
+
+#: settings/views.py:91 settings/views/email.py:45
+#: system/views/admin/settings.py:37
+msgid "Test smtp setting"
+msgstr ""
+
+#: settings/views/email.py:70 system/views/admin/settings.py:12
+msgid "Test mail sent to {}, please check"
 msgstr ""
 
 #: system/models.py:18
@@ -231,16 +487,16 @@ msgid "Select department ID"
 msgstr ""
 
 #: system/models.py:34 system/models.py:82 system/models.py:229
-#: system/utils/serializer.py:136
+#: system/utils/serializer.py:137
 msgid "Role permission"
 msgstr ""
 
 #: system/models.py:35 system/models.py:83 system/models.py:183
-#: system/models.py:230 system/utils/serializer.py:139
+#: system/models.py:230 system/utils/serializer.py:140
 msgid "Data permission"
 msgstr ""
 
-#: system/models.py:37 system/utils/serializer.py:38
+#: system/models.py:37 system/utils/serializer.py:39
 msgid "Field type"
 msgstr ""
 
@@ -278,10 +534,6 @@ msgid ""
 "rule in the rule list at the same time, or the mode satisfies any rule"
 msgstr ""
 
-#: system/models.py:68
-msgid "Unknown"
-msgstr ""
-
 #: system/models.py:69
 msgid "Male"
 msgstr ""
@@ -298,7 +550,7 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
-#: system/models.py:79 system/utils/serializer.py:198
+#: system/models.py:79 system/utils/serializer.py:199
 msgid "Gender"
 msgstr ""
 
@@ -306,7 +558,7 @@ msgstr ""
 msgid "Mobile"
 msgstr ""
 
-#: system/models.py:84 system/models.py:255 system/utils/serializer.py:196
+#: system/models.py:84 system/models.py:255 system/utils/serializer.py:197
 msgid "Department"
 msgstr ""
 
@@ -314,7 +566,7 @@ msgstr ""
 msgid "Userinfo"
 msgstr ""
 
-#: system/models.py:98 system/utils/serializer.py:314
+#: system/models.py:98 system/utils/serializer.py:323
 msgid "Menu title"
 msgstr ""
 
@@ -322,7 +574,7 @@ msgstr ""
 msgid "Left icon"
 msgstr ""
 
-#: system/models.py:100 system/utils/serializer.py:232
+#: system/models.py:100 system/utils/serializer.py:241
 msgid "Right icon"
 msgstr ""
 
@@ -330,15 +582,15 @@ msgstr ""
 msgid "Additional icon to the right of menu name"
 msgstr ""
 
-#: system/models.py:102 system/utils/serializer.py:231
+#: system/models.py:102 system/utils/serializer.py:240
 msgid "Show menu"
 msgstr ""
 
-#: system/models.py:103 system/utils/serializer.py:230
+#: system/models.py:103 system/utils/serializer.py:239
 msgid "Show parent menu"
 msgstr ""
 
-#: system/models.py:104 system/utils/serializer.py:233
+#: system/models.py:104 system/utils/serializer.py:242
 msgid "Keepalive"
 msgstr ""
 
@@ -348,7 +600,7 @@ msgid ""
 "state is cleared"
 msgstr ""
 
-#: system/models.py:107 system/utils/serializer.py:234
+#: system/models.py:107 system/utils/serializer.py:243
 msgid "Iframe URL"
 msgstr ""
 
@@ -356,7 +608,7 @@ msgstr ""
 msgid "The embedded iframe link address"
 msgstr ""
 
-#: system/models.py:109 system/utils/serializer.py:235
+#: system/models.py:109 system/utils/serializer.py:244
 msgid "Iframe loading"
 msgstr ""
 
@@ -368,7 +620,7 @@ msgstr ""
 msgid "Leave animation"
 msgstr ""
 
-#: system/models.py:114 system/utils/serializer.py:245
+#: system/models.py:114 system/utils/serializer.py:254
 msgid "Hidden tag"
 msgstr ""
 
@@ -378,7 +630,7 @@ msgid ""
 "to the TAB"
 msgstr ""
 
-#: system/models.py:116 system/utils/serializer.py:246
+#: system/models.py:116 system/utils/serializer.py:255
 msgid "Fixed tag"
 msgstr ""
 
@@ -386,7 +638,7 @@ msgstr ""
 msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
 msgstr ""
 
-#: system/models.py:118 system/utils/serializer.py:247
+#: system/models.py:118 system/utils/serializer.py:256
 msgid "Dynamic level"
 msgstr ""
 
@@ -394,8 +646,8 @@ msgstr ""
 msgid "Maximum number of dynamic routes that can be opened"
 msgstr ""
 
-#: system/models.py:122 system/models.py:152 system/utils/serializer.py:274
-#: system/utils/serializer.py:318
+#: system/models.py:122 system/models.py:152 system/utils/serializer.py:283
+#: system/utils/serializer.py:327
 msgid "Menu meta"
 msgstr ""
 
@@ -404,8 +656,8 @@ msgid "Directory"
 msgstr ""
 
 #: system/models.py:133 system/models.py:167 system/models.py:179
-#: system/models.py:194 system/models.py:207 system/utils/serializer.py:55
-#: system/utils/serializer.py:120
+#: system/models.py:194 system/models.py:207 system/utils/serializer.py:56
+#: system/utils/serializer.py:121
 msgid "Menu"
 msgstr ""
 
@@ -433,11 +685,11 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models.py:143 system/utils/serializer.py:284
+#: system/models.py:143 system/utils/serializer.py:293
 msgid "Parent menu"
 msgstr ""
 
-#: system/models.py:146 system/utils/serializer.py:289
+#: system/models.py:146 system/utils/serializer.py:298
 msgid "Menu type"
 msgstr ""
 
@@ -457,21 +709,12 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models.py:151 system/models.py:178 system/models.py:193
-#: system/models.py:235 system/models.py:405
-msgid "Is active"
-msgstr ""
-
-#: system/models.py:153 system/utils/serializer.py:286
+#: system/models.py:153 system/utils/serializer.py:295
 msgid "Model"
 msgstr ""
 
 #: system/models.py:157
 msgid "Method"
-msgstr ""
-
-#: system/models.py:176
-msgid "Name"
 msgstr ""
 
 #: system/models.py:177
@@ -514,7 +757,7 @@ msgstr ""
 msgid "Department code"
 msgstr ""
 
-#: system/models.py:227 system/utils/serializer.py:158
+#: system/models.py:227 system/utils/serializer.py:159
 msgid "Superior department"
 msgstr ""
 
@@ -568,7 +811,7 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models.py:283 system/utils/serializer.py:332
+#: system/models.py:283 system/utils/serializer.py:341
 msgid "Module"
 msgstr ""
 
@@ -676,24 +919,24 @@ msgstr ""
 msgid "Important notices"
 msgstr ""
 
-#: system/models.py:352 system/utils/serializer.py:374
+#: system/models.py:352 system/utils/serializer.py:383
 msgid "The notified user"
 msgstr ""
 
-#: system/models.py:353 system/utils/serializer.py:378
+#: system/models.py:353 system/utils/serializer.py:387
 msgid "The notified department"
 msgstr ""
 
-#: system/models.py:354 system/utils/serializer.py:379
+#: system/models.py:354 system/utils/serializer.py:388
 msgid "The notified role"
 msgstr ""
 
-#: system/models.py:355 system/utils/serializer.py:389
+#: system/models.py:355 system/utils/serializer.py:398
 msgid "Notice level"
 msgstr ""
 
-#: system/models.py:357 system/utils/serializer.py:387
-#: system/utils/serializer.py:484 system/utils/serializer.py:503
+#: system/models.py:357 system/utils/serializer.py:396
+#: system/utils/serializer.py:493 system/utils/serializer.py:512
 msgid "Notice type"
 msgstr ""
 
@@ -701,7 +944,7 @@ msgstr ""
 msgid "Notice title"
 msgstr ""
 
-#: system/models.py:360 system/models.py:376 system/utils/serializer.py:506
+#: system/models.py:360 system/models.py:376 system/utils/serializer.py:515
 msgid "Notice message"
 msgstr ""
 
@@ -709,7 +952,7 @@ msgstr ""
 msgid "Additional json data"
 msgstr ""
 
-#: system/models.py:362 system/utils/serializer.py:382
+#: system/models.py:362 system/utils/serializer.py:391
 msgid "Uploaded attachments"
 msgstr ""
 
@@ -717,9 +960,9 @@ msgstr ""
 msgid "Publish"
 msgstr ""
 
-#: system/models.py:391 system/models.py:427 system/utils/serializer.py:504
-#: system/utils/serializer.py:531 system/utils/serializer.py:543
-#: system/utils/serializer.py:578
+#: system/models.py:391 system/models.py:427 system/utils/serializer.py:513
+#: system/utils/serializer.py:540 system/utils/serializer.py:552
+#: system/utils/serializer.py:587
 msgid "User"
 msgstr ""
 
@@ -727,7 +970,7 @@ msgstr ""
 msgid "Notice"
 msgstr ""
 
-#: system/models.py:393 system/utils/serializer.py:485
+#: system/models.py:393 system/utils/serializer.py:494
 msgid "Unread"
 msgstr ""
 
@@ -767,71 +1010,80 @@ msgstr ""
 msgid "User config"
 msgstr ""
 
-#: system/utils/serializer.py:59 system/utils/serializer.py:60
+#: system/utils/serializer.py:60 system/utils/serializer.py:61
 msgid "Fields"
 msgstr ""
 
-#: system/utils/serializer.py:123 system/utils/serializer.py:142
+#: system/utils/serializer.py:124 system/utils/serializer.py:143
 msgid "Mode type"
 msgstr ""
 
-#: system/utils/serializer.py:128
+#: system/utils/serializer.py:129
 msgid "The rule cannot be null"
 msgstr ""
 
-#: system/utils/serializer.py:156 system/utils/serializer.py:383
+#: system/utils/serializer.py:157 system/utils/serializer.py:392
 msgid "User count"
 msgstr ""
 
-#: system/utils/serializer.py:174
+#: system/utils/serializer.py:175
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/utils/serializer.py:210
+#: system/utils/serializer.py:202
+msgid "Login blocked"
+msgstr ""
+
+#: system/utils/serializer.py:217 system/views/admin/user.py:74
+#: system/views/auth.py:126 system/views/user/userinfo.py:63
+msgid "Password does not match security rules"
+msgstr ""
+
+#: system/utils/serializer.py:219
 msgid "Abnormal password field"
 msgstr ""
 
-#: system/utils/serializer.py:349
+#: system/utils/serializer.py:358
 msgid "Access URL"
 msgstr ""
 
-#: system/utils/serializer.py:356
+#: system/utils/serializer.py:365
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/utils/serializer.py:384
+#: system/utils/serializer.py:393
 msgid "Read user count"
 msgstr ""
 
-#: system/utils/serializer.py:410
+#: system/utils/serializer.py:419
 msgid "Parameter error. System announcement cannot be created"
 msgstr ""
 
-#: system/utils/serializer.py:420
+#: system/utils/serializer.py:429
 msgid "The notice role cannot be null"
 msgstr ""
 
-#: system/utils/serializer.py:426
+#: system/utils/serializer.py:435
 msgid "The notice department cannot be null"
 msgstr ""
 
-#: system/utils/serializer.py:432
+#: system/utils/serializer.py:441
 msgid "The notice user cannot be null"
 msgstr ""
 
-#: system/utils/serializer.py:471
+#: system/utils/serializer.py:480
 msgid "Parameter error"
 msgstr ""
 
-#: system/utils/serializer.py:516
+#: system/utils/serializer.py:525
 msgid "Config cache value"
 msgstr ""
 
-#: system/utils/serializer.py:545
+#: system/utils/serializer.py:554
 msgid "Users"
 msgstr ""
 
-#: system/utils/serializer.py:552
+#: system/utils/serializer.py:561
 msgid "User cannot be null"
 msgstr ""
 
@@ -843,7 +1095,7 @@ msgstr ""
 msgid "All fields"
 msgstr ""
 
-#: system/views/admin/user.py:48
+#: system/views/admin/user.py:49
 msgid "The super administrator disallows deletion"
 msgstr ""
 
@@ -851,20 +1103,40 @@ msgstr ""
 msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/auth.py:120 system/views/auth.py:177
+#: system/views/auth.py:120 system/views/auth.py:192
 msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/views/auth.py:122 system/views/auth.py:179
+#: system/views/auth.py:122 system/views/auth.py:194
 msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/views/auth.py:126
+#: system/views/auth.py:128
 msgid "The username already exists, please try another one"
 msgstr ""
 
-#: system/views/auth.py:169
+#: system/views/auth.py:172
+msgid ""
+"The address has been locked (please contact admin to unlock it or try again "
+"after {} minutes)"
+msgstr ""
+
+#: system/views/auth.py:177 system/views/auth.py:223
+msgid ""
+"The account has been locked (please contact admin to unlock it or try again "
+"after {} minutes)"
+msgstr ""
+
+#: system/views/auth.py:183
 msgid "Login forbidden"
+msgstr ""
+
+#: system/views/auth.py:217
+#, python-brace-format
+msgid ""
+"The username or password you entered is incorrect, please enter it again. "
+"You can also try {times_try} times (The account will be temporarily locked "
+"for {block_time} minutes)"
 msgstr ""
 
 #: system/views/upload.py:53
@@ -875,6 +1147,6 @@ msgstr ""
 msgid "Wrong upload file type"
 msgstr ""
 
-#: system/views/user/userinfo.py:60
+#: system/views/user/userinfo.py:61
 msgid "Old password verification failed"
 msgstr ""

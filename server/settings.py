@@ -48,8 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'common.apps.CommonConfig',
     'system.apps.SystemConfig',
+    'settings.apps.SettingsConfig',
     'message.apps.MessageConfig',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -61,7 +61,8 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'imagekit',
     'drf_yasg',
-    *locals().get("XADMIN_APPS", [])
+    *locals().get("XADMIN_APPS", []),
+    'common.apps.CommonConfig',  # 这个放到最后, django ready
 ]
 
 MIDDLEWARE = [
@@ -568,9 +569,9 @@ CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
 
 CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles', 'common',
-                      'system', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha', 'corsheaders',
-                      'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat', 'imagekit',
-                      'drf_yasg']
+                      'system', 'settings', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha',
+                      'corsheaders', 'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat',
+                      'imagekit', 'drf_yasg']
 
 # 访问白名单配置，无需权限配置
 PERMISSION_WHITE_URL = [
@@ -589,17 +590,20 @@ ROUTE_IGNORE_URL = [
     "^/api/system/.*choices$",  # 每个方法都有该路由，则忽略即可
     "^/api/system/.*search-fields$",  # 每个方法都有该路由，则忽略即可
     "^/api/system/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
+    "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
 ]
 
 # 访问权限配置
 PERMISSION_SHOW_PREFIX = [
     r'api/system',
+    r'api/settings',
     r'api/flower',
     r'api-docs',
 ]
 # 数据权限配置
 PERMISSION_DATA_AUTH_APPS = [
-    'system'
+    'system',
+    'settings'
 ]
 
 API_LOG_ENABLE = True
@@ -637,3 +641,37 @@ SWAGGER_SETTINGS = {
     "AUTO_SCHEMA_TYPE": 2,  # 分组根据url层级分，0、1 或 2 层
     "DEFAULT_AUTO_SCHEMA_CLASS": "common.utils.swagger.CustomSwaggerAutoSchema",
 }
+
+# 密码安全配置
+SECURITY_PASSWORD_MIN_LENGTH = 8
+SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH = 8
+SECURITY_PASSWORD_UPPER_CASE = False
+SECURITY_PASSWORD_LOWER_CASE = False
+SECURITY_PASSWORD_NUMBER = False
+SECURITY_PASSWORD_SPECIAL_CHAR = False
+SECURITY_PASSWORD_RULES = [
+    'SECURITY_PASSWORD_MIN_LENGTH',
+    'SECURITY_PASSWORD_UPPER_CASE',
+    'SECURITY_PASSWORD_LOWER_CASE',
+    'SECURITY_PASSWORD_NUMBER',
+    'SECURITY_PASSWORD_SPECIAL_CHAR'
+]
+
+# 用户登录限制的规则
+SECURITY_LOGIN_LIMIT_COUNT = 7
+SECURITY_LOGIN_LIMIT_TIME = 30  # Unit: minute
+# 登录IP限制的规则
+SECURITY_LOGIN_IP_BLACK_LIST = []
+SECURITY_LOGIN_IP_WHITE_LIST = []
+SECURITY_LOGIN_IP_LIMIT_COUNT = 99999
+SECURITY_LOGIN_IP_LIMIT_TIME = 30
+
+# 登陆注册规则
+SECURITY_LOGIN_ACCESS_ENABLED = True
+SECURITY_LOGIN_CAPTCHA_ENABLED = True
+SECURITY_LOGIN_ENCRYPTED_ENABLED = True
+SECURITY_LOGIN_TEMP_TOKEN_ENABLED = True
+SECURITY_REGISTER_ACCESS_ENABLED = True
+SECURITY_REGISTER_CAPTCHA_ENABLED = True
+SECURITY_REGISTER_ENCRYPTED_ENABLED = True
+SECURITY_REGISTER_TEMP_TOKEN_ENABLED = True

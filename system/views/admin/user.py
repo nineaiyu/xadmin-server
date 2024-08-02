@@ -19,6 +19,7 @@ from common.core.response import ApiResponse
 from system.models import UserInfo
 from system.utils import notify
 from system.utils.modelset import ChangeRolePermissionAction
+from system.utils.security import check_password_rules, LoginBlockUtil
 from system.utils.serializer import UserSerializer
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,8 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
         instance = self.get_object()
         password = request.data.get('password')
         password = AESCipherV2(instance.username).decrypt(password)
+        if not check_password_rules(password, instance.is_superuser):
+            return ApiResponse(code=1001, detail=_('Password does not match security rules'))
         if instance and password:
             instance.set_password(password)
             instance.modifier = request.user
@@ -76,4 +79,10 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
             notify.notify_error(users=instance, title="密码重置成功",
                                 message="密码被管理员重置成功")
             return ApiResponse()
-        return ApiResponse(code=1001)
+        return ApiResponse(code=1002)
+
+    @action(methods=["post"], detail=True)
+    def unblock(self, request, *args, **kwargs):
+        instance = self.get_object()
+        LoginBlockUtil.unblock_user(instance.username)
+        return ApiResponse()
