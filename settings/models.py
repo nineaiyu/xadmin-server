@@ -72,7 +72,7 @@ class Setting(DbAuditModel, DbUuidModel):
         return url
 
     @classmethod
-    def update_or_create(cls, name='', value='', encrypted=False, category=''):
+    def update_or_create(cls, name='', value='', encrypted=False, category='', user=None):
         """
         不能使用 Model 提供的，update_or_create 因为这里有 encrypted 和 cleaned_value
         :return: (changed, instance)
@@ -80,7 +80,7 @@ class Setting(DbAuditModel, DbUuidModel):
         setting = cls.objects.filter(name=name).first()
         changed = False
         if not setting:
-            setting = Setting(name=name, encrypted=encrypted, category=category)
+            setting = Setting(name=name, encrypted=encrypted, category=category, modifier=user, creator=user)
 
         if isinstance(value, InMemoryUploadedFile):
             value = cls.save_to_file(value)
@@ -88,6 +88,7 @@ class Setting(DbAuditModel, DbUuidModel):
         if setting.cleaned_value != value:
             setting.encrypted = encrypted
             setting.cleaned_value = value
+            setting.modifier = user
             setting.save()
             changed = True
         return changed, setting
