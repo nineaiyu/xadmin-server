@@ -13,18 +13,10 @@ from django.conf import settings
 from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
 from django.utils.translation import gettext_lazy as _
 
-from system.models import UserInfo
-
 logger = get_task_logger(__name__)
 
 
-def task_activity_callback(self, subject, message, recipient_list, *args, **kwargs):
-    email_list = recipient_list
-    resource_ids = list(UserInfo.objects.filter(email__in=email_list).values_list('id', flat=True))
-    return resource_ids,
-
-
-@shared_task(verbose_name=_("Send email"), activity_callback=task_activity_callback)
+@shared_task(verbose_name=_("Send email"))
 def send_mail_async(*args, **kwargs):
     """ Using celery to send email async
 
@@ -51,7 +43,7 @@ def send_mail_async(*args, **kwargs):
         logger.error("Sending mail error: {}".format(e))
 
 
-@shared_task(verbose_name=_("Send email attachment"), activity_callback=task_activity_callback)
+@shared_task(verbose_name=_("Send email attachment"))
 def send_mail_attachment_async(subject, message, recipient_list, attachment_list=None):
     if attachment_list is None:
         attachment_list = []

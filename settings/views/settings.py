@@ -20,6 +20,14 @@ class BaseSettingView(NoDetailModelSet):
     queryset = Setting.objects.all()
     serializer_class = BasicSettingSerializer
     category = "basic"
+    serializer_class_mapper = {}
+
+    def get_serializer_class(self):
+        if not self.serializer_class_mapper:
+            return super().get_serializer_class()
+        self.category = self.request.query_params.get('category', 'basic')
+        cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
+        return cls
 
     def get_fields(self):
         serializer = self.get_serializer_class()()
@@ -53,8 +61,15 @@ class BaseSettingView(NoDetailModelSet):
     def perform_update(self, serializer):
         post_data_names = list(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
+        serializer_data = getattr(serializer, 'data', {})
 
         for item in settings_items:
             if item['name'] not in post_data_names:
                 continue
-            Setting.update_or_create(**item, user=self.request.user)
+            changed, setting = Setting.update_or_create(**item, user=self.request.user)
+            if not changed:
+                continue
+            serializer_data[setting.name] = setting.cleaned_value
+        setattr(serializer, '_data', serializer_data)
+        if hasattr(serializer, 'post_save'):
+            serializer.post_save()

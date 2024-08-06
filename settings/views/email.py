@@ -27,7 +27,7 @@ class EmailTestSettingView(BaseSettingView):
     serializer_class = EmailTestSerializer
     category = "email"
 
-    def update(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 

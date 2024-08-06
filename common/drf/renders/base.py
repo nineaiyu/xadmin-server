@@ -11,7 +11,7 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.utils import encoders, json
 
 from common.core.config import SysConfig
-from common.core.serializers import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
 
 logger = logging.getLogger(__file__)
 

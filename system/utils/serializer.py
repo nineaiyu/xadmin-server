@@ -18,9 +18,10 @@ from rest_framework.exceptions import ValidationError
 
 from common.base.utils import AESCipherV2
 from common.core.config import SysConfig, UserConfig
+from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
-from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField, LabeledChoiceField
+from common.core.serializers import BaseModelSerializer
 from common.fields.utils import get_file_absolute_uri, input_wrapper
 from system import models
 from system.utils.security import LoginBlockUtil, check_password_rules

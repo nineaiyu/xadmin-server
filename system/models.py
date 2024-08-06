@@ -11,6 +11,7 @@ from rest_framework.utils import encoders
 
 from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
 from common.fields.image import ProcessedImageField
+from system.utils.mixins import ResetPasswordMixin
 
 
 class ModelLabelField(DbAuditModel, DbUuidModel):
@@ -63,7 +64,7 @@ class ModeTypeAbstract(models.Model):
         abstract = True
 
 
-class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
+class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, ResetPasswordMixin):
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("Unknown")
         MALE = 1, _("Male")

@@ -11,6 +11,7 @@ from settings.views.basic import BasicSettingView
 from settings.views.email import EmailServerSettingView, EmailTestSettingView
 from settings.views.security import SecurityPasswordRuleView, SecurityLoginLimitView, \
     SecurityLoginAuthView, SecurityRegisterAuthView
+from settings.views.sms import SMSBackendView, SmsSettingView, SmsConfigView
 
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)
@@ -27,4 +28,9 @@ no_detail_router.register('login/auth', SecurityLoginAuthView, basename='securit
 
 no_detail_router.register('register/auth', SecurityRegisterAuthView, basename='security-register-auth')
 
-urlpatterns = no_detail_router.urls
+no_detail_router.register('sms', SmsSettingView, basename='sms-settings')
+
+router.register('sms/backend', SMSBackendView, basename='sms-backend')
+no_detail_router.register('sms/config', SmsConfigView, basename='sms-config')
+
+urlpatterns = no_detail_router.urls + router.urls

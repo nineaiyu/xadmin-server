@@ -9,6 +9,12 @@ from rest_framework import serializers
 
 
 class BasicSettingSerializer(serializers.Serializer):
+    VERIFY_CODE_TTL = serializers.IntegerField(
+        min_value=5, max_value=60 * 60 * 10,
+        label=_("Verify code TTL (second)"),
+        help_text=_("Verify code expiration time")
+    )
+
     SITE_URL = serializers.URLField(
         required=True, label=_("Site URL"),
         help_text=_(

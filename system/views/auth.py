@@ -4,7 +4,6 @@
 # filename : auth
 # author : ly_13
 # date : 6/6/2023
-import base64
 import hashlib
 import time
 
@@ -12,22 +11,22 @@ from django.conf import settings
 from django.contrib import auth
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from rest_framework.throttling import BaseThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 from user_agents import parse
 
-from common.base.utils import AESCipherV2
 from common.cache.storage import BlackAccessTokenCache
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle, LoginThrottle
 from common.utils.request import get_request_ip, get_browser, get_os
-from common.utils.token import make_token, verify_token
+from common.utils.token import make_token
 from system.models import UserInfo, DeptInfo, UserLoginLog
 from system.utils.captcha import CaptchaAuth
 from system.utils.security import check_password_rules, LoginBlockUtil, LoginIpBlockUtil
 from system.utils.serializer import UserLoginLogSerializer
+from system.utils.view import get_request_ident, check_tmp_token, check_captcha, get_username_password, \
+    get_token_lifetime
 
 
 def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
@@ -42,44 +41,6 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
     serializer = UserLoginLogSerializer(data=data, request=request, all_fields=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
-
-
-def get_token_lifetime(user_obj):
-    access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
-    refresh_token_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME')
-    return {
-        'access_token_lifetime': int(access_token_lifetime.total_seconds()),
-        'refresh_token_lifetime': int(refresh_token_lifetime.total_seconds()),
-        # 'username': user_obj.username
-    }
-
-
-def get_request_ident(request):
-    http_user_agent = request.META.get('HTTP_USER_AGENT')
-    http_accept = request.META.get('HTTP_ACCEPT')
-    remote_addr = BaseThrottle().get_ident(request)
-    return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode("utf-8")).decode('utf-8')
-
-
-def check_captcha(need, captcha_key, captcha_code):
-    if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
-        return True
-    # raise Exception("验证码输入有误,请重新输入")
-
-
-def check_tmp_token(need, token, client_id, success_once=True):
-    if not need or (client_id and token and verify_token(token, client_id, success_once)):
-        return True
-    # raise Exception("临时Token校验失败,请刷新页面重试")
-
-
-def get_username_password(need, request, token):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    if need:
-        username = AESCipherV2(token).decrypt(username)
-        password = AESCipherV2(token).decrypt(password)
-    return username, password
 
 
 class TempTokenView(APIView):

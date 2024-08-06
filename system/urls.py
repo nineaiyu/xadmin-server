@@ -21,6 +21,7 @@ from system.views.admin.user import UserView
 from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
+from system.views.password import ResetPasswordView
 from system.views.routes import UserRoutesView
 from system.views.search.dept import SearchDeptView
 from system.views.search.menu import SearchMenuView
@@ -38,6 +39,7 @@ no_auth_url = [
     re_path('^auth/token$', TempTokenView.as_view(), name='temp_token'),
     re_path('^auth/captcha$', CaptchaView.as_view(), name='captcha'),
     re_path('^captcha/', include('captcha.urls')),
+    re_path('^password/reset', ResetPasswordView.as_view(), name='password_reset'),
 ]
 
 auth_url = [
