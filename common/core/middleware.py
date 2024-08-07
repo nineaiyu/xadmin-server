@@ -65,11 +65,10 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             'response_result': json.dumps({"code": response.data.get('code'), "data": response.data.get('data'),
                                            "detail": response.data.get('detail')}, cls=encoders.JSONEncoder),
         }
-        operation_log, creat = OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
-        module_name = settings.API_MODEL_MAP.get(request.request_path, None)
-        if module_name:
-            operation_log.module = module_name
-            operation_log.save(update_fields=['module'])
+        try:
+            OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
+        except Exception:
+            pass
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):
@@ -78,6 +77,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                     model, v = get_verbose_name(view_func.cls.queryset)
                     if model and request.method in self.ignores.get(model._meta.label, []):
                         return
+                    if not v:
+                        v = settings.API_MODEL_MAP.get(request.request_path, v)
                     log = OperationLog(module=v)
                     log.save()
                     setattr(request, self.operation_log_id, log.id)

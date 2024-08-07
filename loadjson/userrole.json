@@ -13,8 +13,6 @@
       "code": "admin",
       "is_active": true,
       "menu": [
-        "17c4ff2a-258b-4745-bd99-f4cad7f9b000",
-        "c9e0dfda-9830-4cf3-8fe5-9afcc0a8a435",
         "0c53c28f-7691-433f-99d2-77afdd17ae2c",
         "796496b4-1073-489b-80ac-6c0180051e4c",
         "4a47822c-cc5c-4b57-80b1-de023d3ba090",
@@ -332,8 +330,6 @@
       "code": "demo",
       "is_active": true,
       "menu": [
-        "17c4ff2a-258b-4745-bd99-f4cad7f9b000",
-        "c9e0dfda-9830-4cf3-8fe5-9afcc0a8a435",
         "796496b4-1073-489b-80ac-6c0180051e4c",
         "6e118748-9450-4107-9b96-cd7dc384f42a",
         "f2b7cee9-1aa1-4105-a90a-3fa50e855156",

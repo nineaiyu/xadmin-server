@@ -110,7 +110,7 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "upload:UserInfo",
-      "rank": 138,
+      "rank": 150,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)/upload$",
       "component": null,
       "is_active": true,
@@ -240,16 +240,16 @@
     "pk": "0c53c28f-7691-433f-99d2-77afdd17ae2c",
     "fields": {
       "created_time": "2024-08-02T07:55:31.325Z",
-      "updated_time": "2024-08-02T07:55:31.325Z",
+      "updated_time": "2024-08-07T03:00:36.656Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "parent": "9b620250-71f2-4b36-8de6-55ac3ae2ad5e",
       "menu_type": 2,
-      "name": "update:SettingEmailServer",
-      "rank": 132,
-      "path": "api/settings/email/server$",
+      "name": "update:SettingEmail",
+      "rank": 133,
+      "path": "api/settings/email$",
       "component": "",
       "is_active": true,
       "meta": "dbefc186-f3f3-49a1-85c6-1120e7d07162",
@@ -297,6 +297,28 @@
       "component": null,
       "is_active": true,
       "meta": "54269c6d-601c-4574-9500-8a69e0bef8f4",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "11e5878a-90b3-4697-9917-a1b1d6a24d2f",
+    "fields": {
+      "created_time": "2024-08-06T07:26:16.418Z",
+      "updated_time": "2024-08-07T03:01:01.140Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "9b620250-71f2-4b36-8de6-55ac3ae2ad5e",
+      "menu_type": 2,
+      "name": "test:SettingEmail",
+      "rank": 134,
+      "path": "api/settings/email$",
+      "component": "",
+      "is_active": true,
+      "meta": "220c4ab8-f15e-401f-9aea-47b7d5703a4c",
       "method": "POST",
       "model": []
     }
@@ -391,28 +413,6 @@
       "model": [
         "ab6ae020-1de6-4695-925b-56456769b7aa"
       ]
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": "17c4ff2a-258b-4745-bd99-f4cad7f9b000",
-    "fields": {
-      "created_time": "2024-08-02T07:59:05.457Z",
-      "updated_time": "2024-08-02T07:59:05.457Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": null,
-      "parent": "9b620250-71f2-4b36-8de6-55ac3ae2ad5e",
-      "menu_type": 2,
-      "name": "update:SettingEmailTest",
-      "rank": 133,
-      "path": "api/settings/email/test$",
-      "component": "",
-      "is_active": true,
-      "meta": "038f6f4d-5279-4a13-a975-2262b7ad38c4",
-      "method": "PATCH",
-      "model": []
     }
   },
   {
@@ -838,7 +838,7 @@
       "parent": null,
       "menu_type": 0,
       "name": "swaggerApiDocs",
-      "rank": 145,
+      "rank": 157,
       "path": "/swagger/docs",
       "component": "",
       "is_active": true,
@@ -882,7 +882,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "Chat",
-      "rank": 144,
+      "rank": 156,
       "path": "/chat/index",
       "component": "chat/index",
       "is_active": true,
@@ -1199,7 +1199,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
-      "rank": 143,
+      "rank": 155,
       "path": "api/system/user/notice/read-all$",
       "component": null,
       "is_active": true,
@@ -1276,6 +1276,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "50604e97-75dd-431d-a25b-e450f1e052c0",
+    "fields": {
+      "created_time": "2024-08-06T09:28:05.709Z",
+      "updated_time": "2024-08-06T09:28:05.709Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "detail:SettingSmsConfig",
+      "rank": 139,
+      "path": "api/settings/sms/config$",
+      "component": "",
+      "is_active": true,
+      "meta": "3b7e061d-64ab-4a0a-adb6-3aa43472a2c9",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "53e1896e-dbf1-49aa-85b3-1711e27477ee",
     "fields": {
       "created_time": "2024-03-01T03:36:18.247Z",
@@ -1309,12 +1331,34 @@
       "parent": "3896fdff-a39c-4919-8b04-3cab771abe4a",
       "menu_type": 2,
       "name": "detail:apiDocs",
-      "rank": 146,
+      "rank": 158,
       "path": "api-docs/swagger/$",
       "component": "",
       "is_active": true,
       "meta": "67b8d06e-1923-4ae3-9a2e-f70418d8481c",
       "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "55a70142-5f7c-4d35-97b0-b7e09c6d4e42",
+    "fields": {
+      "created_time": "2024-08-07T05:28:46.802Z",
+      "updated_time": "2024-08-07T11:10:25.046Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+      "menu_type": 1,
+      "name": "SettingReset",
+      "rank": 142,
+      "path": "/settings/reset",
+      "component": "settings/reset",
+      "is_active": true,
+      "meta": "8414638f-ef4b-47cd-a9d8-389f4a609976",
+      "method": "",
       "model": []
     }
   },
@@ -1443,7 +1487,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "About",
-      "rank": 148,
+      "rank": 160,
       "path": "/about/index",
       "component": "about/index",
       "is_active": true,
@@ -1602,7 +1646,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "UserInfo",
-      "rank": 136,
+      "rank": 148,
       "path": "/user/info/index",
       "component": "user/info/index",
       "is_active": true,
@@ -1712,7 +1756,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "update:userNoticeRead",
-      "rank": 142,
+      "rank": 154,
       "path": "api/system/user/notice/read$",
       "component": null,
       "is_active": true,
@@ -1815,6 +1859,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "772071fa-7053-447b-b86d-8c91a76a0e94",
+    "fields": {
+      "created_time": "2024-08-06T03:36:57.509Z",
+      "updated_time": "2024-08-06T09:35:40.119Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+      "menu_type": 1,
+      "name": "SettingSms",
+      "rank": 135,
+      "path": "/settings/sms",
+      "component": "settings/sms",
+      "is_active": true,
+      "meta": "770e67d6-a742-47b5-bec4-6ed97c99c795",
+      "method": "",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "7850416a-7c4d-424d-935b-226bf0ee5d45",
     "fields": {
       "created_time": "2024-08-01T08:52:31.118Z",
@@ -1840,16 +1906,16 @@
     "pk": "796496b4-1073-489b-80ac-6c0180051e4c",
     "fields": {
       "created_time": "2024-08-02T07:55:05.036Z",
-      "updated_time": "2024-08-02T07:55:05.036Z",
+      "updated_time": "2024-08-07T03:00:26.065Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "parent": "9b620250-71f2-4b36-8de6-55ac3ae2ad5e",
       "menu_type": 2,
-      "name": "detail:SettingEmailServer",
-      "rank": 134,
-      "path": "api/settings/email/server$",
+      "name": "detail:SettingEmail",
+      "rank": 132,
+      "path": "api/settings/email$",
       "component": "",
       "is_active": true,
       "meta": "a7869338-9e3f-43de-a729-6a30374bd2ce",
@@ -1903,6 +1969,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "8266eae3-a25e-4007-93d8-48c5feb031c0",
+    "fields": {
+      "created_time": "2024-08-06T09:28:33.868Z",
+      "updated_time": "2024-08-06T09:28:33.868Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "update:SettingSmsConfig",
+      "rank": 140,
+      "path": "api/settings/sms/config$",
+      "component": "",
+      "is_active": true,
+      "meta": "584d947e-3d3d-4eb6-a654-249658bd0936",
+      "method": "PATCH",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "85929fd1-128c-4035-8204-20c53068b490",
     "fields": {
       "created_time": "2024-01-22T09:32:13.739Z",
@@ -1942,6 +2030,50 @@
       "is_active": true,
       "meta": "010423b5-c1c5-4a31-bdaa-980f7545e6ce",
       "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8875abd9-241b-4ac6-8616-24c8378d6037",
+    "fields": {
+      "created_time": "2024-08-07T02:41:56.381Z",
+      "updated_time": "2024-08-07T02:41:56.381Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+      "menu_type": 1,
+      "name": "SettingVerify",
+      "rank": 145,
+      "path": "/settings/verify",
+      "component": "settings/verify",
+      "is_active": true,
+      "meta": "ef9f1aa0-fbd5-4883-a6f4-ad74f23810d3",
+      "method": "",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "88f88db1-d154-4558-99f3-d1bf4d6a193a",
+    "fields": {
+      "created_time": "2024-08-07T02:42:59.957Z",
+      "updated_time": "2024-08-07T02:42:59.957Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "8875abd9-241b-4ac6-8616-24c8378d6037",
+      "menu_type": 2,
+      "name": "update:SettingVerify",
+      "rank": 147,
+      "path": "api/settings/verify$",
+      "component": "",
+      "is_active": true,
+      "meta": "543cb85c-9e0b-4c9d-afd2-3fd0ff1dd993",
+      "method": "PATCH",
       "model": []
     }
   },
@@ -2198,6 +2330,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "9d8e6b3b-7d91-4150-85a9-b56a8252c7ca",
+    "fields": {
+      "created_time": "2024-08-06T09:27:15.193Z",
+      "updated_time": "2024-08-06T09:27:15.193Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "list:SettingSmsBackends",
+      "rank": 138,
+      "path": "api/settings/sms/backend$",
+      "component": "",
+      "is_active": true,
+      "meta": "31cb60ea-4d22-401e-8d39-c42ba366aa2f",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f",
     "fields": {
       "created_time": "2024-01-22T09:32:08.489Z",
@@ -2231,7 +2385,7 @@
       "parent": "3896fdff-a39c-4919-8b04-3cab771abe4a",
       "menu_type": 2,
       "name": "redoc:apiDocs",
-      "rank": 147,
+      "rank": 159,
       "path": "api-docs/redoc/$",
       "component": "",
       "is_active": true,
@@ -2310,6 +2464,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "a9d71c74-5c94-4ae2-a85e-4ee89125d888",
+    "fields": {
+      "created_time": "2024-08-07T05:30:40.277Z",
+      "updated_time": "2024-08-07T05:30:40.277Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "55a70142-5f7c-4d35-97b0-b7e09c6d4e42",
+      "menu_type": 2,
+      "name": "update:SettingReset",
+      "rank": 144,
+      "path": "api/settings/reset/auth$",
+      "component": "",
+      "is_active": true,
+      "meta": "e529c39d-5728-44ab-baa1-415308739f2f",
+      "method": "PATCH",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
     "fields": {
       "created_time": "2024-01-22T09:32:05.331Z",
@@ -2321,7 +2497,7 @@
       "parent": "e9e2e5c4-3735-4219-af09-1e0f3e5118d8",
       "menu_type": 2,
       "name": "list:userNotice",
-      "rank": 141,
+      "rank": 153,
       "path": "api/system/user/notice$",
       "component": null,
       "is_active": true,
@@ -2345,7 +2521,7 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "reset:UserInfo",
-      "rank": 139,
+      "rank": 151,
       "path": "api/system/userinfo/reset-password$",
       "component": null,
       "is_active": true,
@@ -2389,7 +2565,7 @@
       "parent": "4101963c-050f-4ee6-bd59-e9ec0c0fb98b",
       "menu_type": 2,
       "name": "update:SettingRegisterAuth",
-      "rank": 126,
+      "rank": 127,
       "path": "api/settings/register/auth$",
       "component": "",
       "is_active": true,
@@ -2648,6 +2824,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "c4145d16-6ed6-4433-b25b-61c91d15555a",
+    "fields": {
+      "created_time": "2024-08-07T05:29:53.344Z",
+      "updated_time": "2024-08-07T05:29:53.344Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "55a70142-5f7c-4d35-97b0-b7e09c6d4e42",
+      "menu_type": 2,
+      "name": "detail:SettingReset",
+      "rank": 143,
+      "path": "api/settings/reset/auth$",
+      "component": "",
+      "is_active": true,
+      "meta": "750c6ae7-16bb-4c20-a07c-5b7944a1cd79",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "c8268327-efb7-45ca-8759-2298828a8dd0",
     "fields": {
       "created_time": "2024-06-07T09:42:25.098Z",
@@ -2706,34 +2904,12 @@
       "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
       "menu_type": 2,
       "name": "update:UserInfo",
-      "rank": 137,
+      "rank": 149,
       "path": "api/system/userinfo/(?P<pk>[^/.]+)$",
       "component": null,
       "is_active": true,
       "meta": "adf68ee6-c0b7-44b8-b753-a1ecedc25a3d",
       "method": "PATCH",
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": "c9e0dfda-9830-4cf3-8fe5-9afcc0a8a435",
-    "fields": {
-      "created_time": "2024-08-02T07:56:30.698Z",
-      "updated_time": "2024-08-02T07:56:30.698Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": null,
-      "parent": "9b620250-71f2-4b36-8de6-55ac3ae2ad5e",
-      "menu_type": 2,
-      "name": "detail:SettingEmailTest",
-      "rank": 135,
-      "path": "api/settings/email/test$",
-      "component": "",
-      "is_active": true,
-      "meta": "f17cfe18-104a-447c-8e87-33a6d415dc39",
-      "method": "GET",
       "model": []
     }
   },
@@ -2755,6 +2931,28 @@
       "component": "",
       "is_active": true,
       "meta": "565bc20b-86e6-4151-8127-964ed984aeac",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cff86838-562c-4758-a9d7-bc763debd77a",
+    "fields": {
+      "created_time": "2024-08-06T03:38:19.970Z",
+      "updated_time": "2024-08-06T06:26:51.338Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "detail:SettingSms",
+      "rank": 136,
+      "path": "api/settings/sms$",
+      "component": "",
+      "is_active": true,
+      "meta": "32fce787-49c9-4608-800d-22d201714643",
       "method": "GET",
       "model": []
     }
@@ -2827,6 +3025,28 @@
       "model": [
         "11ad085f-8749-4098-be4c-9ca685fd21b7"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d9a9aac2-f173-4d45-8a68-fbc6e050bed6",
+    "fields": {
+      "created_time": "2024-08-07T02:42:36.194Z",
+      "updated_time": "2024-08-07T02:42:36.194Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "8875abd9-241b-4ac6-8616-24c8378d6037",
+      "menu_type": 2,
+      "name": "detail:SettingVerify",
+      "rank": 146,
+      "path": "api/settings/verify$",
+      "component": "",
+      "is_active": true,
+      "meta": "1d23d59d-abe5-4e49-b620-98d7487bf0a0",
+      "method": "GET",
+      "model": []
     }
   },
   {
@@ -3020,7 +3240,7 @@
       "parent": null,
       "menu_type": 1,
       "name": "UserNotice",
-      "rank": 140,
+      "rank": 152,
       "path": "/user/notice/index",
       "component": "user/notice/index",
       "is_active": true,
@@ -3070,6 +3290,28 @@
       "is_active": true,
       "meta": "b1799d6a-318a-49da-b1f4-ef572e1c0b7f",
       "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ecb08a78-54b8-4350-b65f-f36287a73b91",
+    "fields": {
+      "created_time": "2024-08-06T09:29:04.893Z",
+      "updated_time": "2024-08-06T09:29:04.893Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "test:SettingSmsConfig",
+      "rank": 141,
+      "path": "api/settings/sms/config$",
+      "component": "",
+      "is_active": true,
+      "meta": "3abdf90f-88c6-447f-ac15-85c7967d43cc",
+      "method": "POST",
       "model": []
     }
   },
@@ -3219,15 +3461,15 @@
     "pk": "f2b7cee9-1aa1-4105-a90a-3fa50e855156",
     "fields": {
       "created_time": "2024-08-02T07:52:32.244Z",
-      "updated_time": "2024-08-02T07:52:32.244Z",
+      "updated_time": "2024-08-07T05:28:58.203Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "parent": "4101963c-050f-4ee6-bd59-e9ec0c0fb98b",
       "menu_type": 2,
       "name": "detail:SettingRegisterAuth",
-      "rank": 127,
+      "rank": 126,
       "path": "api/settings/register/auth$",
       "component": "",
       "is_active": true,
@@ -3301,6 +3543,28 @@
       "is_active": true,
       "meta": "84791fb4-c1c2-49cc-8d8b-73022132ceae",
       "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "fd19d955-1b8c-4646-aa32-1c4b4d8ccb75",
+    "fields": {
+      "created_time": "2024-08-06T03:38:43.426Z",
+      "updated_time": "2024-08-06T06:27:02.086Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "772071fa-7053-447b-b86d-8c91a76a0e94",
+      "menu_type": 2,
+      "name": "update:SettingSms",
+      "rank": 137,
+      "path": "api/settings/sms$",
+      "component": "",
+      "is_active": true,
+      "meta": "db6da8cf-4a76-4942-967b-5d27a8e38a42",
+      "method": "PATCH",
       "model": []
     }
   },

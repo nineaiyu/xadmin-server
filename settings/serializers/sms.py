@@ -5,8 +5,8 @@
 # author : ly_13
 # date : 8/6/2024
 import phonenumbers
-from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
 
 from common.core.fields import PhoneField, LabeledChoiceField
 from common.core.validators import PhoneValidator
@@ -21,10 +21,6 @@ class SMSSettingSerializer(serializers.Serializer):
         choices=BACKENDS.choices, default=BACKENDS.ALIBABA, label=_('Provider'),
         help_text=_('Short Message Service (SMS) provider or protocol')
     )
-    SMS_CODE_LENGTH = serializers.IntegerField(
-        default=6, min_value=4, max_value=16, label=_('Code length'),
-        help_text=_('Length of the sent verification code')
-    )
 
 
 class BaseSMSSettingSerializer(serializers.Serializer):
@@ -32,7 +28,7 @@ class BaseSMSSettingSerializer(serializers.Serializer):
 
     SMS_TEST_PHONE = PhoneField(
         validators=[PhoneValidator()], required=False, allow_blank=True, allow_null=True,
-        label=_('Phone')
+        label=_('Phone'), help_text=_("The phone is used for testing the SMS server's connectivity")
     )
     def post_save(self):
         value = self._data['SMS_TEST_PHONE']

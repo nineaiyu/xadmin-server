@@ -18,7 +18,8 @@ from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
 from system.views.admin.user import UserView
-from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView
+from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView, \
+    PasswordRulesView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
 from system.views.password import ResetPasswordView
@@ -39,14 +40,16 @@ no_auth_url = [
     re_path('^auth/token$', TempTokenView.as_view(), name='temp_token'),
     re_path('^auth/captcha$', CaptchaView.as_view(), name='captcha'),
     re_path('^captcha/', include('captcha.urls')),
-    re_path('^password/reset', ResetPasswordView.as_view(), name='password_reset'),
 ]
 
 auth_url = [
     re_path('^logout$', LogoutView.as_view(), name='logout'),
     re_path('^refresh$', RefreshTokenView.as_view(), name='refresh'),
     re_path('^upload$', UploadView.as_view(), name='upload'),
+    re_path('^rules/password$', PasswordRulesView.as_view(), name='password-rules'),
 ]
+# 忘记密码
+router.register('password', ResetPasswordView, basename='password_reset')
 
 router_url = [
     re_path('^routes$', UserRoutesView.as_view(), name='user_routes'),

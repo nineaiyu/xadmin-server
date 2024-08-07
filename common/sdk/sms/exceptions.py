@@ -25,3 +25,11 @@ class CodeSendTooFrequently(APIException):
 
     def __init__(self, ttl):
         super().__init__(detail=self.default_detail.format(ttl))
+
+
+class CodeSendOverRate(APIException):
+    default_code = 'code_send_over_rate'
+    default_detail = _('Please wait {} seconds before sending')
+
+    def __init__(self, ttl):
+        super().__init__(detail=self.default_detail.format(ttl))

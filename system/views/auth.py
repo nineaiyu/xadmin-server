@@ -23,10 +23,10 @@ from common.utils.request import get_request_ip, get_browser, get_os
 from common.utils.token import make_token
 from system.models import UserInfo, DeptInfo, UserLoginLog
 from system.utils.captcha import CaptchaAuth
-from system.utils.security import check_password_rules, LoginBlockUtil, LoginIpBlockUtil
+from system.utils.security import check_password_rules, LoginBlockUtil, LoginIpBlockUtil, get_password_check_rules
 from system.utils.serializer import UserLoginLogSerializer
-from system.utils.view import get_request_ident, check_tmp_token, check_captcha, get_username_password, \
-    get_token_lifetime
+from system.utils.view import get_request_ident, get_username_password, \
+    get_token_lifetime, check_is_block, check_token_and_captcha
 
 
 def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
@@ -72,15 +72,9 @@ class RegisterView(APIView):
         if not settings.SECURITY_REGISTER_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Registration forbidden"))
 
-        client_id = get_request_ident(request)
-        token = request.data.get('token')
-        captcha_key = request.data.get('captcha_key')
-        captcha_code = request.data.get('captcha_code')
+        client_id, token = check_token_and_captcha(request, settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
+                                                   settings.SECURITY_REGISTER_CAPTCHA_ENABLED)
 
-        if not check_tmp_token(settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED, token, client_id):
-            return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
-        if not check_captcha(settings.SECURITY_REGISTER_CAPTCHA_ENABLED, captcha_key, captcha_code):
-            return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
         channel = request.data.get('channel', 'default')
         username, password = get_username_password(settings.SECURITY_REGISTER_ENCRYPTED_ENABLED, request, token)
         if not check_password_rules(password):
@@ -120,6 +114,7 @@ class RegisterView(APIView):
             'captcha': settings.SECURITY_REGISTER_CAPTCHA_ENABLED,
             'token': settings.SECURITY_REGISTER_TEMP_TOKEN_ENABLED,
             'encrypted': settings.SECURITY_REGISTER_ENCRYPTED_ENABLED,
+            'password': get_password_check_rules(request.user)
         }
         return ApiResponse(data=config)
 
@@ -127,38 +122,17 @@ class LoginView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 
-    def check_is_block(self, username, ipaddr):
-        if LoginIpBlockUtil(ipaddr).is_block():
-            LoginIpBlockUtil(ipaddr).set_block_if_need()
-            return False, _("The address has been locked (please contact admin to unlock it or try"
-                            " again after {} minutes)").format(settings.SECURITY_LOGIN_IP_LIMIT_TIME)
-
-        is_block = LoginBlockUtil(username, ipaddr).is_block()
-        if is_block:
-            return False, _("The account has been locked (please contact admin to unlock it or try"
-                            " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
-        return True, True
-
     def post(self, request, *args, **kwargs):
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
 
-        client_id = get_request_ident(request)
-        token = request.data.get('token')
-        captcha_key = request.data.get('captcha_key')
-        captcha_code = request.data.get('captcha_code')
         ipaddr = get_request_ip(request)
-
-        if not check_tmp_token(settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED, token, client_id):
-            return ApiResponse(code=9999, detail=_("Temporary Token validation failed. Please try again"))
-        if not check_captcha(settings.SECURITY_LOGIN_CAPTCHA_ENABLED, captcha_key, captcha_code):
-            return ApiResponse(code=9999, detail=_("Captcha validation failed. Please try again"))
+        client_id, token = check_token_and_captcha(request, settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
+                                                   settings.SECURITY_LOGIN_CAPTCHA_ENABLED)
 
         username, password = get_username_password(settings.SECURITY_LOGIN_ENCRYPTED_ENABLED, request, token)
 
-        status, msg = self.check_is_block(username, ipaddr)
-        if not status:
-            return ApiResponse(code=9999, detail=msg)
+        check_is_block(username, ipaddr)
 
         login_block_util = LoginBlockUtil(username, ipaddr)
         login_ip_block = LoginIpBlockUtil(ipaddr)
@@ -200,7 +174,8 @@ class LoginView(TokenObtainPairView):
             'captcha': settings.SECURITY_LOGIN_CAPTCHA_ENABLED,
             'token': settings.SECURITY_LOGIN_TEMP_TOKEN_ENABLED,
             'encrypted': settings.SECURITY_LOGIN_ENCRYPTED_ENABLED,
-            'lifetime': settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days
+            'lifetime': settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME').days,
+            'reset': settings.SECURITY_RESET_PASSWORD_ACCESS_ENABLED
         }
         return ApiResponse(data=config)
 
@@ -232,3 +207,10 @@ class LogoutView(APIView):
             except Exception as e:
                 pass
         return ApiResponse()
+
+
+class PasswordRulesView(APIView):
+    permission_classes = []
+
+    def get(self, request):
+        return ApiResponse(data={"password_rules": get_password_check_rules(request.user)})

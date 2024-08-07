@@ -131,6 +131,37 @@ class SecurityRegisterAuthSerializer(serializers.Serializer):
     )
 
 
+class SecurityResetPasswordAuthSerializer(serializers.Serializer):
+    SECURITY_RESET_PASSWORD_ACCESS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password enable"),
+        help_text=_("Enable reset password for user")
+    )
+    SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password captcha"),
+        help_text=_("Enable captcha to prevent robot reset password")
+    )
+
+    SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password encrypted"),
+        help_text=_("Enable encryption to prevent information leakage")
+    )
+
+    SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password temp token"),
+        help_text=_("Enable temporary tokens to prevent attacks")
+    )
+
+    SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password by email"),
+        help_text=_("Enable send email verify code to user")
+    )
+
+    SECURITY_RESET_PASSWORD_BY_SMS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Reset password by sms"),
+        help_text=_("Enable send sms verify code to user")
+    )
+
+
 class SecurityBlockIPSerializer(serializers.Serializer):
     id = serializers.UUIDField(required=False)
     ip = serializers.CharField(max_length=1024, required=False, allow_blank=True)

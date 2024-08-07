@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
-from settings.serializers.email import EmailSettingSerializer, EmailTestSerializer
+from settings.serializers.email import EmailSettingSerializer
 from settings.views.settings import BaseSettingView
 
 logger = get_logger(__file__)
@@ -20,11 +20,6 @@ logger = get_logger(__file__)
 
 class EmailServerSettingView(BaseSettingView):
     serializer_class = EmailSettingSerializer
-    category = "email"
-
-
-class EmailTestSettingView(BaseSettingView):
-    serializer_class = EmailTestSerializer
     category = "email"
 
     def create(self, request, *args, **kwargs):

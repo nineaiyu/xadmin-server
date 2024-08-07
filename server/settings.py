@@ -260,6 +260,7 @@ REST_FRAMEWORK = {
         'download1': '10/m',
         'download2': '100/h',
         'register': '50/d',
+        'reset_password': '50/d',
         'login': '50/h',
         **locals().get('DEFAULT_THROTTLE_RATES', {})
     },
@@ -621,6 +622,7 @@ API_MODEL_MAP = {
     "/api/system/login": "用户登录",
     "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
+    "/api/system/password/send": "重置密码",
 }
 
 SWAGGER_SETTINGS = {
@@ -682,12 +684,21 @@ SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = True
 SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = True
 SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = True
 SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
-# SECURITY_RESET_PASSWORD_BY_SMS_ENABLED = False
+SECURITY_RESET_PASSWORD_BY_SMS_ENABLED = True
 
 # 基本配置
 SITE_URL = 'http://127.0.0.1:8000'
-VERIFY_CODE_TTL = 60
+
+# 验证码配置
+VERIFY_CODE_TTL = 5 * 60  # Unit: second
+VERIFY_CODE_LIMIT = 60
+VERIFY_CODE_LENGTH = 6
+VERIFY_CODE_LOWER_CASE = False
+VERIFY_CODE_UPPER_CASE = False
+VERIFY_CODE_DIGIT_CASE = True
+
 # 邮件配置
+EMAIL_ENABLED = True
 EMAIL_HOST = ""
 EMAIL_PORT = 465
 EMAIL_HOST_USER = ""
@@ -699,10 +710,10 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 
 # 短信配置
-SMS_ENABLED = False
+SMS_ENABLED = True
 SMS_BACKEND = ''
-SMS_CODE_LENGTH = 6
 SMS_TEST_PHONE = ''
+
 # 阿里云短信配置
 ALIBABA_ACCESS_KEY_ID = ''
 ALIBABA_ACCESS_KEY_SECRET = ''

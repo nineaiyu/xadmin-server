@@ -7,15 +7,10 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-
-class EmailTestSerializer(serializers.Serializer):
-    EMAIL_RECIPIENT = serializers.EmailField(
-        max_length=128, allow_blank=True, required=False, label=_('Recipient'),
-        help_text=_("The recipient is used for testing the email server's connectivity")
-    )
-
-
 class EmailSettingSerializer(serializers.Serializer):
+    EMAIL_ENABLED = serializers.BooleanField(
+        default=False, label=_('EMAIL'), help_text=_('Enable Email Service (Email)')
+    )
     EMAIL_HOST = serializers.CharField(max_length=1024, required=True, label=_("Host"))
     EMAIL_PORT = serializers.CharField(max_length=5, required=True, label=_("Port"))
     EMAIL_HOST_USER = serializers.CharField(
@@ -45,4 +40,9 @@ class EmailSettingSerializer(serializers.Serializer):
         required=False, label=_("Use TLS"),
         help_text=_(
             'Whether to use a TLS (secure) connection when talking to the SMTP server. This is used for explicit TLS connections, generally on port 587')
+    )
+
+    EMAIL_RECIPIENT = serializers.EmailField(
+        max_length=128, allow_blank=True, required=False, label=_('Recipient'),
+        help_text=_("The recipient is used for testing the email server's connectivity")
     )

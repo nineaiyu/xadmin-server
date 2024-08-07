@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
 from common.sdk.sms.endpoint import SMS
-from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendTooFrequently
+from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from common.tasks import send_mail_async
 from common.utils import get_logger
 from common.utils.token import random_string
@@ -26,27 +26,26 @@ def send_sms_async(target, code):
 
 class SendAndVerifyCodeUtil(object):
     KEY_TMPL = 'auth_verify_code_{}'
+    RATE_KEY_TMPL = 'auth_verify_code_send_at_{}'
 
-    def __init__(self, target, code=None, key=None, backend='email', timeout=None, **kwargs):
+    def __init__(self, target, code=None, key=None, backend='email', timeout=None, limit=None, **kwargs):
         self.code = code
         self.target = target
         self.backend = backend
         self.key = key or self.KEY_TMPL.format(target)
         self.timeout = settings.VERIFY_CODE_TTL if timeout is None else timeout
+        self.limit = settings.VERIFY_CODE_LIMIT if limit is None else limit
+        self.limit_key = self.RATE_KEY_TMPL.format(target)
         self.other_args = kwargs
 
     def gen_and_send_async(self):
-        ttl = self.__ttl()
-        if ttl > 0:
-            logger.warning('Send sms too frequently, delay {}'.format(ttl))
-            raise CodeSendTooFrequently(ttl)
-
+        self.__rata()
         return self.gen_and_send()
 
     def gen_and_send(self):
         try:
             if not self.code:
-                self.code = self.__generate()
+                self.__generate()
             self.__send()
         except Exception as e:
             self.__clear()
@@ -65,15 +64,22 @@ class SendAndVerifyCodeUtil(object):
 
     def __clear(self):
         cache.delete(self.key)
+        cache.delete(self.limit_key)
 
     def __ttl(self):
         return cache.ttl(self.key)
+
+    def __rata(self):
+        token_send_at = cache.get(self.limit_key, 0)
+        if token_send_at:
+            raise CodeSendOverRate(cache.ttl(self.limit_key))
 
     def __get_code(self):
         return cache.get(self.key)
 
     def __generate(self):
-        code = random_string(settings.SMS_CODE_LENGTH, lower=False, upper=False)
+        code = random_string(settings.VERIFY_CODE_LENGTH, lower=settings.VERIFY_CODE_LOWER_CASE,
+                             upper=settings.VERIFY_CODE_UPPER_CASE, digit=settings.VERIFY_CODE_DIGIT_CASE)
         self.code = code
         return code
 
@@ -98,4 +104,5 @@ class SendAndVerifyCodeUtil(object):
             self.__send_with_email()
 
         cache.set(self.key, self.code, self.timeout)
+        cache.set(self.limit_key, self.code, self.limit)
         logger.debug(f'Send verify code to {self.target}')

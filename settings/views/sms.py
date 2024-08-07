@@ -7,6 +7,7 @@
 import importlib
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.mixins import ListModelMixin
@@ -19,7 +20,6 @@ from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer, SMSBackendSerializer
 from settings.views.settings import BaseSettingView
-from django.utils.translation import gettext_lazy as _
 
 logger = get_logger(__file__)
 
@@ -43,7 +43,7 @@ class SmsConfigView(BaseSettingView):
 
     @property
     def test_code(self):
-        return '6' * settings.SMS_CODE_LENGTH
+        return '6' * settings.VERIFY_CODE_LENGTH
 
     @staticmethod
     def get_or_from_setting(key, value=''):

@@ -15,13 +15,12 @@ from common.utils import ip
 def get_password_check_rules(user):
     check_rules = []
     for rule in settings.SECURITY_PASSWORD_RULES:
-        key = "id_{}".format(rule.lower())
-        if user.is_org_admin and rule == 'SECURITY_PASSWORD_MIN_LENGTH':
+        if user.is_superuser and rule == 'SECURITY_PASSWORD_MIN_LENGTH':
             rule = 'SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH'
         value = getattr(settings, rule)
         if not value:
             continue
-        check_rules.append({'key': key, 'value': int(value)})
+        check_rules.append({'key': rule, 'value': int(value)})
     return check_rules
 
 
@@ -158,6 +157,10 @@ class LoginBlockUtil(BlockUtilBase):
     LIMIT_KEY_TMPL = "_LOGIN_LIMIT_{}_{}"
     BLOCK_KEY_TMPL = "_LOGIN_BLOCK_{}"
 
+
+class ResetBlockUtil(BlockUtilBase):
+    LIMIT_KEY_TMPL = "_RESET_LIMIT_{}_{}"
+    BLOCK_KEY_TMPL = "_RESET_BLOCK_{}"
 
 class MFABlockUtils(BlockUtilBase):
     LIMIT_KEY_TMPL = "_MFA_LIMIT_{}_{}"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-06 17:55+0800\n"
+"POT-Creation-Date: 2024-08-07 19:25+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36
+#: common/core/auth.py:36 system/views/password.py:124
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -104,6 +104,7 @@ msgid "Sorting saved successfully"
 msgstr ""
 
 #: common/core/modelset.py:132 system/utils/modelset.py:53
+#: system/views/password.py:50 system/views/password.py:88
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -177,6 +178,18 @@ msgstr ""
 msgid "SMS verification code signature or template invalid"
 msgstr ""
 
+#: common/sdk/sms/exceptions.py:14
+msgid "The verification code has expired. Please resend it"
+msgstr ""
+
+#: common/sdk/sms/exceptions.py:19
+msgid "The verification code is incorrect"
+msgstr ""
+
+#: common/sdk/sms/exceptions.py:24 common/sdk/sms/exceptions.py:32
+msgid "Please wait {} seconds before sending"
+msgstr ""
+
 #: common/tasks.py:19
 msgid "Send email"
 msgstr ""
@@ -219,7 +232,11 @@ msgstr ""
 msgid "Please enter your account information to log in"
 msgstr ""
 
-#: settings/models.py:16 settings/serializers/sms.py:59 system/models.py:177
+#: common/utils/verify_code.py:22
+msgid "Send SMS code"
+msgstr ""
+
+#: settings/models.py:16 settings/serializers/sms.py:55 system/models.py:177
 msgid "Name"
 msgstr ""
 
@@ -244,85 +261,93 @@ msgstr ""
 msgid "System setting"
 msgstr ""
 
-#: settings/serializers/basic.py:13
+#: settings/serializers/basic.py:14
 msgid "Site URL"
 msgstr ""
 
-#: settings/serializers/basic.py:15
+#: settings/serializers/basic.py:16
 msgid ""
 "Site URL is the externally accessible address of the current product service "
 "and is usually used in links in system emails"
 msgstr ""
 
-#: settings/serializers/email.py:13 settings/utils/serializer.py:32
-msgid "Recipient"
+#: settings/serializers/email.py:12
+msgid "EMAIL"
 msgstr ""
 
-#: settings/serializers/email.py:14 settings/utils/serializer.py:33
-msgid "The recipient is used for testing the email server's connectivity"
+#: settings/serializers/email.py:12
+msgid "Enable Email Service (Email)"
 msgstr ""
 
-#: settings/serializers/email.py:19 settings/utils/serializer.py:16
+#: settings/serializers/email.py:14 settings/utils/serializer.py:16
 msgid "Host"
 msgstr ""
 
-#: settings/serializers/email.py:20 settings/utils/serializer.py:17
+#: settings/serializers/email.py:15 settings/utils/serializer.py:17
 msgid "Port"
 msgstr ""
 
-#: settings/serializers/email.py:22 settings/utils/serializer.py:19
+#: settings/serializers/email.py:17 settings/utils/serializer.py:19
 msgid "Account"
 msgstr ""
 
-#: settings/serializers/email.py:23 settings/utils/serializer.py:20
+#: settings/serializers/email.py:18 settings/utils/serializer.py:20
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:26 settings/utils/serializer.py:23
+#: settings/serializers/email.py:21 settings/utils/serializer.py:23
 msgid "Password"
 msgstr ""
 
-#: settings/serializers/email.py:28 settings/utils/serializer.py:25
+#: settings/serializers/email.py:23 settings/utils/serializer.py:25
 msgid ""
 "Password to use for the email server. It is used in conjunction with `User` "
 "when authenticating to the email server"
 msgstr ""
 
-#: settings/serializers/email.py:31 settings/utils/serializer.py:28
+#: settings/serializers/email.py:26 settings/utils/serializer.py:28
 msgid "Sender"
 msgstr ""
 
-#: settings/serializers/email.py:32 settings/utils/serializer.py:29
+#: settings/serializers/email.py:27 settings/utils/serializer.py:29
 msgid "Sender email address (default to using the `User`)"
 msgstr ""
 
-#: settings/serializers/email.py:36 settings/utils/serializer.py:36
+#: settings/serializers/email.py:31 settings/utils/serializer.py:36
 msgid "Subject prefix"
 msgstr ""
 
-#: settings/serializers/email.py:37 settings/utils/serializer.py:37
+#: settings/serializers/email.py:32 settings/utils/serializer.py:37
 msgid "The subject line prefix of the sent email"
 msgstr ""
 
-#: settings/serializers/email.py:40 settings/utils/serializer.py:40
+#: settings/serializers/email.py:35 settings/utils/serializer.py:40
 msgid "Use SSL"
 msgstr ""
 
-#: settings/serializers/email.py:42 settings/utils/serializer.py:42
+#: settings/serializers/email.py:37 settings/utils/serializer.py:42
 msgid ""
 "Whether to use an implicit TLS (secure) connection when talking to the SMTP "
 "server. In most email documentation this type of TLS connection is referred "
 "to as SSL. It is generally used on port 465"
 msgstr ""
 
-#: settings/serializers/email.py:45 settings/utils/serializer.py:45
+#: settings/serializers/email.py:40 settings/utils/serializer.py:45
 msgid "Use TLS"
 msgstr ""
 
-#: settings/serializers/email.py:47 settings/utils/serializer.py:47
+#: settings/serializers/email.py:42 settings/utils/serializer.py:47
 msgid ""
 "Whether to use a TLS (secure) connection when talking to the SMTP server. "
 "This is used for explicit TLS connections, generally on port 587"
+msgstr ""
+
+#: settings/serializers/email.py:46 settings/utils/serializer.py:32
+msgid "Recipient"
+msgstr ""
+
+#: settings/serializers/email.py:47 settings/utils/serializer.py:33
+msgid "The recipient is used for testing the email server's connectivity"
 msgstr ""
 
 #: settings/serializers/security.py:17
@@ -333,15 +358,15 @@ msgstr ""
 msgid "Minimum length (Admin)"
 msgstr ""
 
-#: settings/serializers/security.py:24
+#: settings/serializers/security.py:24 settings/serializers/verify.py:31
 msgid "Uppercase"
 msgstr ""
 
-#: settings/serializers/security.py:27
+#: settings/serializers/security.py:27 settings/serializers/verify.py:35
 msgid "Lowercase"
 msgstr ""
 
-#: settings/serializers/security.py:30
+#: settings/serializers/security.py:30 settings/serializers/verify.py:39
 msgid "Digits"
 msgstr ""
 
@@ -410,6 +435,7 @@ msgid "Login encrypted"
 msgstr ""
 
 #: settings/serializers/security.py:104 settings/serializers/security.py:125
+#: settings/serializers/security.py:146
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
@@ -418,6 +444,7 @@ msgid "Login temp token"
 msgstr ""
 
 #: settings/serializers/security.py:109 settings/serializers/security.py:130
+#: settings/serializers/security.py:151
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
@@ -445,7 +472,47 @@ msgstr ""
 msgid "Register temp token"
 msgstr ""
 
-#: settings/serializers/sms.py:18 settings/serializers/sms.py:31
+#: settings/serializers/security.py:136
+msgid "Reset password enable"
+msgstr ""
+
+#: settings/serializers/security.py:137
+msgid "Enable reset password for user"
+msgstr ""
+
+#: settings/serializers/security.py:140
+msgid "Reset password captcha"
+msgstr ""
+
+#: settings/serializers/security.py:141
+msgid "Enable captcha to prevent robot reset password"
+msgstr ""
+
+#: settings/serializers/security.py:145
+msgid "Reset password encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:150
+msgid "Reset password temp token"
+msgstr ""
+
+#: settings/serializers/security.py:155
+msgid "Reset password by email"
+msgstr ""
+
+#: settings/serializers/security.py:156
+msgid "Enable send email verify code to user"
+msgstr ""
+
+#: settings/serializers/security.py:160
+msgid "Reset password by sms"
+msgstr ""
+
+#: settings/serializers/security.py:161
+msgid "Enable send sms verify code to user"
+msgstr ""
+
+#: settings/serializers/sms.py:18 settings/serializers/sms.py:27
 msgid "SMS"
 msgstr ""
 
@@ -461,37 +528,56 @@ msgstr ""
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr ""
 
-#: settings/serializers/sms.py:25
-msgid "Code length"
-msgstr ""
-
-#: settings/serializers/sms.py:26
-msgid "Length of the sent verification code"
-msgstr ""
-
-#: settings/serializers/sms.py:35
+#: settings/serializers/sms.py:31
 msgid "Phone"
 msgstr ""
 
-#: settings/serializers/sms.py:54
+#: settings/serializers/sms.py:31
+msgid "The phone is used for testing the SMS server's connectivity"
+msgstr ""
+
+#: settings/serializers/sms.py:50
 msgid "Signature"
 msgstr ""
 
-#: settings/serializers/sms.py:55
+#: settings/serializers/sms.py:51
 msgid "Template code"
 msgstr ""
 
-#: settings/serializers/sms.py:60
+#: settings/serializers/sms.py:56
 msgid "Label"
 msgstr ""
 
-#: settings/views.py:91 settings/views/email.py:45
+#: settings/serializers/verify.py:15
+msgid "Verify code TTL (second)"
+msgstr ""
+
+#: settings/serializers/verify.py:16
+msgid "Verify code expiration time"
+msgstr ""
+
+#: settings/serializers/verify.py:21
+msgid "Verify code rate (second)"
+msgstr ""
+
+#: settings/serializers/verify.py:22
+msgid "Verify code send rate limit"
+msgstr ""
+
+#: settings/serializers/verify.py:26
+msgid "Code length"
+msgstr ""
+
+#: settings/serializers/verify.py:27
+msgid "Length of the sent verification code"
+msgstr ""
+
+#: settings/views.py:91 settings/views/email.py:40
 #: system/views/admin/settings.py:37
 msgid "Test smtp setting"
 msgstr ""
 
-#: settings/views/email.py:70 system/views/admin/settings.py:12
-#: system/views/auth.py:304
+#: settings/views/email.py:65 system/views/admin/settings.py:12
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
@@ -1097,7 +1183,11 @@ msgid ""
 msgstr ""
 
 #: system/templates/msg_reset_password_code.html:18
-msgid "The validity period of the verification code is five minute"
+msgid "The validity period of the verification code is"
+msgstr ""
+
+#: system/templates/msg_reset_password_code.html:18
+msgid "seconds"
 msgstr ""
 
 #: system/templates/msg_reset_password_code.html:21
@@ -1129,7 +1219,8 @@ msgid "Login blocked"
 msgstr ""
 
 #: system/utils/serializer.py:218 system/views/admin/user.py:74
-#: system/views/auth.py:129 system/views/user/userinfo.py:63
+#: system/views/auth.py:81 system/views/password.py:126
+#: system/views/user/userinfo.py:63
 msgid "Password does not match security rules"
 msgstr ""
 
@@ -1189,43 +1280,44 @@ msgstr ""
 msgid "All fields"
 msgstr ""
 
-#: system/views/admin/user.py:49
-msgid "The super administrator disallows deletion"
-msgstr ""
-
-#: system/views/auth.py:115
-msgid "Registration forbidden"
-msgstr ""
-
-#: system/views/auth.py:123 system/views/auth.py:195
-msgid "Temporary Token validation failed. Please try again"
-msgstr ""
-
-#: system/views/auth.py:125 system/views/auth.py:197
+#: system/utils/view.py:41
 msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/views/auth.py:131
-msgid "The username already exists, please try another one"
+#: system/utils/view.py:47
+msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/views/auth.py:175
+#: system/utils/view.py:72
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/views/auth.py:180 system/views/auth.py:226
+#: system/utils/view.py:76 system/views/auth.py:158
+#: system/views/password.py:117
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/views/auth.py:186
+#: system/views/admin/user.py:49
+msgid "The super administrator disallows deletion"
+msgstr ""
+
+#: system/views/auth.py:73
+msgid "Registration forbidden"
+msgstr ""
+
+#: system/views/auth.py:83
+msgid "The username already exists, please try another one"
+msgstr ""
+
+#: system/views/auth.py:127
 msgid "Login forbidden"
 msgstr ""
 
-#: system/views/auth.py:220
+#: system/views/auth.py:152
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1233,35 +1325,34 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/auth.py:288
+#: system/views/password.py:32
+msgid "Forgot password"
+msgstr ""
+
+#: system/views/password.py:45
+msgid "Reset password forbidden"
+msgstr ""
+
+#: system/views/password.py:61
+msgid "Phone does not exist"
+msgstr ""
+
+#: system/views/password.py:64
 msgid "Email does not exist"
 msgstr ""
 
-#: system/views/auth.py:290
-msgid "Reset password"
+#: system/views/password.py:77
+msgid "The verification code has been sent"
 msgstr ""
 
-#: system/views/reset.py:26 system/views/reset.py:37
-msgid "Token invalid or expired"
+#: system/views/password.py:112
+#, python-brace-format
+msgid ""
+"{error} please enter it again. You can also try {times_try} times (The "
+"account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
-#: system/views/reset.py:42
-msgid "User auth from {}, go there change password"
-msgstr ""
-
-#: system/views/reset.py:49
-msgid "* Your password does not meet the requirements"
-msgstr ""
-
-#: system/views/reset.py:55
-msgid "* The new password cannot be the last {} passwords"
-msgstr ""
-
-#: system/views/reset.py:71
-msgid "Reset password success"
-msgstr ""
-
-#: system/views/reset.py:72
+#: system/views/password.py:131
 msgid "Reset password success, return to login page"
 msgstr ""
 
