@@ -162,6 +162,17 @@ class ResetBlockUtil(BlockUtilBase):
     LIMIT_KEY_TMPL = "_RESET_LIMIT_{}_{}"
     BLOCK_KEY_TMPL = "_RESET_BLOCK_{}"
 
+
+class RegisterBlockUtil(BlockUtilBase):
+    LIMIT_KEY_TMPL = "_REGISTER_LIMIT_{}_{}"
+    BLOCK_KEY_TMPL = "_REGISTER_BLOCK_{}"
+
+
+class SendVerifyCodeBlockUtil(BlockUtilBase):
+    LIMIT_KEY_TMPL = "_SEND_VERIFY_CODE_LIMIT_{}_{}"
+    BLOCK_KEY_TMPL = "_SEND_VERIFY_CODE_BLOCK_{}"
+
+
 class MFABlockUtils(BlockUtilBase):
     LIMIT_KEY_TMPL = "_MFA_LIMIT_{}_{}"
     BLOCK_KEY_TMPL = "_MFA_BLOCK_{}"

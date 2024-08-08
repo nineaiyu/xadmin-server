@@ -56,7 +56,7 @@ class SmsConfigView(BaseSettingView):
 
     def get_alibaba_params(self, data):
         init_params = {
-            'access_key_id': settings.ALIBABA_ACCESS_KEY_ID,
+            'access_key_id': data['ALIBABA_ACCESS_KEY_ID'],
             'access_key_secret': self.get_or_from_setting(
                 'ALIBABA_ACCESS_KEY_SECRET', data.get('ALIBABA_ACCESS_KEY_SECRET')
             )

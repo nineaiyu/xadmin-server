@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-07 19:25+0800\n"
+"POT-Creation-Date: 2024-08-08 19:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/views/password.py:124
+#: common/core/auth.py:36 system/utils/view.py:108 system/utils/view.py:138
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -104,7 +104,8 @@ msgid "Sorting saved successfully"
 msgstr ""
 
 #: common/core/modelset.py:132 system/utils/modelset.py:53
-#: system/views/password.py:50 system/views/password.py:88
+#: system/utils/view.py:104 system/views/auth.py:34 system/views/auth.py:178
+#: system/views/register.py:38
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -198,7 +199,7 @@ msgstr ""
 msgid "Send email attachment"
 msgstr ""
 
-#: common/utils/country.py:40
+#: common/utils/country.py:48
 msgid "China"
 msgstr ""
 
@@ -232,7 +233,7 @@ msgstr ""
 msgid "Please enter your account information to log in"
 msgstr ""
 
-#: common/utils/verify_code.py:22
+#: common/utils/verify_code.py:23
 msgid "Send SMS code"
 msgstr ""
 
@@ -358,15 +359,15 @@ msgstr ""
 msgid "Minimum length (Admin)"
 msgstr ""
 
-#: settings/serializers/security.py:24 settings/serializers/verify.py:31
+#: settings/serializers/security.py:24 settings/serializers/verify.py:33
 msgid "Uppercase"
 msgstr ""
 
-#: settings/serializers/security.py:27 settings/serializers/verify.py:35
+#: settings/serializers/security.py:27 settings/serializers/verify.py:37
 msgid "Lowercase"
 msgstr ""
 
-#: settings/serializers/security.py:30 settings/serializers/verify.py:39
+#: settings/serializers/security.py:30 settings/serializers/verify.py:41
 msgid "Digits"
 msgstr ""
 
@@ -434,8 +435,8 @@ msgstr ""
 msgid "Login encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:104 settings/serializers/security.py:125
-#: settings/serializers/security.py:146
+#: settings/serializers/security.py:104 settings/serializers/security.py:140
+#: settings/serializers/security.py:170
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
@@ -443,73 +444,99 @@ msgstr ""
 msgid "Login temp token"
 msgstr ""
 
-#: settings/serializers/security.py:109 settings/serializers/security.py:130
-#: settings/serializers/security.py:151
+#: settings/serializers/security.py:109 settings/serializers/security.py:145
+#: settings/serializers/security.py:175
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
-#: settings/serializers/security.py:115
-msgid "Register enable"
+#: settings/serializers/security.py:113
+msgid "Login by email"
 msgstr ""
 
-#: settings/serializers/security.py:116
-msgid "Enable register for user"
-msgstr ""
-
-#: settings/serializers/security.py:119
-msgid "Register captcha"
-msgstr ""
-
-#: settings/serializers/security.py:120
-msgid "Enable captcha to prevent robot register"
-msgstr ""
-
-#: settings/serializers/security.py:124
-msgid "Register encrypted"
-msgstr ""
-
-#: settings/serializers/security.py:129
-msgid "Register temp token"
-msgstr ""
-
-#: settings/serializers/security.py:136
-msgid "Reset password enable"
-msgstr ""
-
-#: settings/serializers/security.py:137
-msgid "Enable reset password for user"
-msgstr ""
-
-#: settings/serializers/security.py:140
-msgid "Reset password captcha"
-msgstr ""
-
-#: settings/serializers/security.py:141
-msgid "Enable captcha to prevent robot reset password"
-msgstr ""
-
-#: settings/serializers/security.py:145
-msgid "Reset password encrypted"
-msgstr ""
-
-#: settings/serializers/security.py:150
-msgid "Reset password temp token"
-msgstr ""
-
-#: settings/serializers/security.py:155
-msgid "Reset password by email"
-msgstr ""
-
-#: settings/serializers/security.py:156
+#: settings/serializers/security.py:114 settings/serializers/security.py:150
+#: settings/serializers/security.py:180
 msgid "Enable send email verify code to user"
 msgstr ""
 
+#: settings/serializers/security.py:118
+msgid "Login by sms"
+msgstr ""
+
+#: settings/serializers/security.py:119 settings/serializers/security.py:155
+#: settings/serializers/security.py:185
+msgid "Enable send sms verify code to user"
+msgstr ""
+
+#: settings/serializers/security.py:123
+msgid "Login by basic"
+msgstr ""
+
+#: settings/serializers/security.py:124
+msgid "Enable basic verify to user"
+msgstr ""
+
+#: settings/serializers/security.py:130
+msgid "Register enable"
+msgstr ""
+
+#: settings/serializers/security.py:131
+msgid "Enable register for user"
+msgstr ""
+
+#: settings/serializers/security.py:134
+msgid "Register captcha"
+msgstr ""
+
+#: settings/serializers/security.py:135
+msgid "Enable captcha to prevent robot register"
+msgstr ""
+
+#: settings/serializers/security.py:139
+msgid "Register encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:144
+msgid "Register temp token"
+msgstr ""
+
+#: settings/serializers/security.py:149
+msgid "Register by email"
+msgstr ""
+
+#: settings/serializers/security.py:154
+msgid "Register by sms"
+msgstr ""
+
 #: settings/serializers/security.py:160
-msgid "Reset password by sms"
+msgid "Reset password enable"
 msgstr ""
 
 #: settings/serializers/security.py:161
-msgid "Enable send sms verify code to user"
+msgid "Enable reset password for user"
+msgstr ""
+
+#: settings/serializers/security.py:164
+msgid "Reset password captcha"
+msgstr ""
+
+#: settings/serializers/security.py:165
+msgid "Enable captcha to prevent robot reset password"
+msgstr ""
+
+#: settings/serializers/security.py:169
+msgid "Reset password encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:174
+msgid "Reset password temp token"
+msgstr ""
+
+#: settings/serializers/security.py:179
+msgid "Reset password by email"
+msgstr ""
+
+#: settings/serializers/security.py:184
+msgid "Reset password by sms"
 msgstr ""
 
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:27
@@ -548,36 +575,75 @@ msgstr ""
 msgid "Label"
 msgstr ""
 
-#: settings/serializers/verify.py:15
+#: settings/serializers/verify.py:17
 msgid "Verify code TTL (second)"
 msgstr ""
 
-#: settings/serializers/verify.py:16
+#: settings/serializers/verify.py:18
 msgid "Verify code expiration time"
 msgstr ""
 
-#: settings/serializers/verify.py:21
+#: settings/serializers/verify.py:23
 msgid "Verify code rate (second)"
 msgstr ""
 
-#: settings/serializers/verify.py:22
+#: settings/serializers/verify.py:24
 msgid "Verify code send rate limit"
 msgstr ""
 
-#: settings/serializers/verify.py:26
+#: settings/serializers/verify.py:28
 msgid "Code length"
 msgstr ""
 
-#: settings/serializers/verify.py:27
+#: settings/serializers/verify.py:29
 msgid "Length of the sent verification code"
 msgstr ""
 
+#: settings/serializers/verify.py:47
+msgid "Random char"
+msgstr ""
+
+#: settings/serializers/verify.py:48
+msgid "Math challenge"
+msgstr ""
+
+#: settings/serializers/verify.py:51
+msgid "Challenge generator"
+msgstr ""
+
+#: settings/serializers/verify.py:52
+msgid "Image verification code generation mode"
+msgstr ""
+
+#: settings/serializers/verify.py:56
+msgid "Captcha code length"
+msgstr ""
+
+#: settings/serializers/verify.py:57
+msgid "Length of the captcha code"
+msgstr ""
+
+#: settings/serializers/verify.py:61
+msgid "Captcha timeout (minute)"
+msgstr ""
+
+#: settings/serializers/verify.py:62
+msgid "Captcha code expiration time"
+msgstr ""
+
+#: settings/serializers/verify.py:66
+msgid "Noise function arcs"
+msgstr ""
+
+#: settings/serializers/verify.py:70
+msgid "Noise function dots"
+msgstr ""
+
 #: settings/views.py:91 settings/views/email.py:40
-#: system/views/admin/settings.py:37
 msgid "Test smtp setting"
 msgstr ""
 
-#: settings/views/email.py:65 system/views/admin/settings.py:12
+#: settings/views/email.py:65
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
@@ -1169,28 +1235,23 @@ msgstr ""
 msgid "User config"
 msgstr ""
 
-#: system/templates/msg_reset_password_code.html:9
+#: system/templates/msg_verify_code.html:9
 msgid "Hello"
 msgstr ""
 
-#: system/templates/msg_reset_password_code.html:12
+#: system/templates/msg_verify_code.html:12 system/views/auth.py:154
 msgid "Verify code"
 msgstr ""
 
-#: system/templates/msg_reset_password_code.html:15
-msgid ""
-"Copy the verification code to the Reset Password page to reset the password."
-msgstr ""
-
-#: system/templates/msg_reset_password_code.html:18
+#: system/templates/msg_verify_code.html:15
 msgid "The validity period of the verification code is"
 msgstr ""
 
-#: system/templates/msg_reset_password_code.html:18
+#: system/templates/msg_verify_code.html:15
 msgid "seconds"
 msgstr ""
 
-#: system/templates/msg_reset_password_code.html:21
+#: system/templates/msg_verify_code.html:18
 msgid "If you have any questions, you can contact the administrator"
 msgstr ""
 
@@ -1219,7 +1280,7 @@ msgid "Login blocked"
 msgstr ""
 
 #: system/utils/serializer.py:218 system/views/admin/user.py:74
-#: system/views/auth.py:81 system/views/password.py:126
+#: system/views/auth.py:41 system/views/register.py:44
 #: system/views/user/userinfo.py:63
 msgid "Password does not match security rules"
 msgstr ""
@@ -1280,44 +1341,70 @@ msgstr ""
 msgid "All fields"
 msgstr ""
 
-#: system/utils/view.py:41
+#: system/utils/view.py:46
 msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/utils/view.py:47
+#: system/utils/view.py:52
 msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/utils/view.py:72
+#: system/utils/view.py:77
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/view.py:76 system/views/auth.py:158
-#: system/views/password.py:117
+#: system/utils/view.py:81 system/utils/view.py:131 system/views/login.py:60
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
+msgstr ""
+
+#: system/utils/view.py:126
+#, python-brace-format
+msgid ""
+"{error} please enter it again. You can also try {times_try} times (The "
+"account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
 #: system/views/admin/user.py:49
 msgid "The super administrator disallows deletion"
 msgstr ""
 
-#: system/views/auth.py:73
-msgid "Registration forbidden"
+#: system/views/auth.py:46
+msgid "Reset password success, return to login page"
 msgstr ""
 
-#: system/views/auth.py:83
-msgid "The username already exists, please try another one"
+#: system/views/auth.py:128
+msgid "Phone already exist"
 msgstr ""
 
-#: system/views/auth.py:127
+#: system/views/auth.py:130
+msgid "Email already exist"
+msgstr ""
+
+#: system/views/auth.py:140
+msgid "Phone does not exist"
+msgstr ""
+
+#: system/views/auth.py:142
+msgid "Email does not exist"
+msgstr ""
+
+#: system/views/auth.py:173
+msgid "Forbidden send verification code"
+msgstr ""
+
+#: system/views/auth.py:211
+msgid "The verification code has been sent"
+msgstr ""
+
+#: system/views/login.py:29 system/views/login.py:91
 msgid "Login forbidden"
 msgstr ""
 
-#: system/views/auth.py:152
+#: system/views/login.py:54
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1325,35 +1412,12 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/password.py:32
-msgid "Forgot password"
+#: system/views/register.py:31
+msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/password.py:45
-msgid "Reset password forbidden"
-msgstr ""
-
-#: system/views/password.py:61
-msgid "Phone does not exist"
-msgstr ""
-
-#: system/views/password.py:64
-msgid "Email does not exist"
-msgstr ""
-
-#: system/views/password.py:77
-msgid "The verification code has been sent"
-msgstr ""
-
-#: system/views/password.py:112
-#, python-brace-format
-msgid ""
-"{error} please enter it again. You can also try {times_try} times (The "
-"account will be temporarily locked for {block_time} minutes)"
-msgstr ""
-
-#: system/views/password.py:131
-msgid "Reset password success, return to login page"
+#: system/views/register.py:47
+msgid "The account already exists, please try another one"
 msgstr ""
 
 #: system/views/upload.py:53
@@ -1366,4 +1430,8 @@ msgstr ""
 
 #: system/views/user/userinfo.py:61
 msgid "Old password verification failed"
+msgstr ""
+
+#: tests.py:31
+msgid "Germany"
 msgstr ""

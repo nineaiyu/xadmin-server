@@ -6,13 +6,14 @@
 # date : 6/7/2024
 import uuid
 
+from django.utils import translation
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
 
 from common.cache.storage import CommonResourceIDsCache
 from common.core.response import ApiResponse
-from common.utils.country import COUNTRY_CALLING_CODES
+from common.utils.country import COUNTRY_CALLING_CODES, COUNTRY_CALLING_CODES_ZH
 
 
 class ResourcesIDCacheApi(APIView):
@@ -38,4 +39,8 @@ class CountryListApi(APIView):
     permission_classes = []
 
     def get(self, request, *args, **kwargs):
-        return ApiResponse(data=COUNTRY_CALLING_CODES)
+        current_lang = translation.get_language()
+        if current_lang == 'zh-hans':
+            return ApiResponse(data=COUNTRY_CALLING_CODES_ZH)
+        else:
+            return ApiResponse(data=COUNTRY_CALLING_CODES)

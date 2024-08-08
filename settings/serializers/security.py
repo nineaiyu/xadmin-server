@@ -109,6 +109,21 @@ class SecurityLoginAuthSerializer(serializers.Serializer):
         help_text=_("Enable temporary tokens to prevent attacks")
     )
 
+    SECURITY_LOGIN_BY_EMAIL_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Login by email"),
+        help_text=_("Enable send email verify code to user")
+    )
+
+    SECURITY_LOGIN_BY_SMS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Login by sms"),
+        help_text=_("Enable send sms verify code to user")
+    )
+
+    SECURITY_LOGIN_BY_BASIC_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Login by basic"),
+        help_text=_("Enable basic verify to user")
+    )
+
 
 class SecurityRegisterAuthSerializer(serializers.Serializer):
     SECURITY_REGISTER_ACCESS_ENABLED = serializers.BooleanField(
@@ -130,6 +145,15 @@ class SecurityRegisterAuthSerializer(serializers.Serializer):
         help_text=_("Enable temporary tokens to prevent attacks")
     )
 
+    SECURITY_REGISTER_BY_EMAIL_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Register by email"),
+        help_text=_("Enable send email verify code to user")
+    )
+
+    SECURITY_REGISTER_BY_SMS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Register by sms"),
+        help_text=_("Enable send sms verify code to user")
+    )
 
 class SecurityResetPasswordAuthSerializer(serializers.Serializer):
     SECURITY_RESET_PASSWORD_ACCESS_ENABLED = serializers.BooleanField(

@@ -12,7 +12,7 @@ from settings.views.email import EmailServerSettingView
 from settings.views.security import SecurityPasswordRuleView, SecurityLoginLimitView, \
     SecurityLoginAuthView, SecurityRegisterAuthView, SecurityResetPasswordAuthView
 from settings.views.sms import SMSBackendView, SmsSettingView, SmsConfigView
-from settings.views.verify import VerifyCodeSettingView
+from settings.views.verify import VerifyCodeSettingView, CaptchaSettingView
 
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)
@@ -23,6 +23,7 @@ no_detail_router.register('email', EmailServerSettingView, basename='email-serve
 no_detail_router.register('basic', BasicSettingView, basename='basic')
 no_detail_router.register('password', SecurityPasswordRuleView, basename='security-password')
 no_detail_router.register('verify', VerifyCodeSettingView, basename='verify-code')
+no_detail_router.register('captcha', CaptchaSettingView, basename='captcha-code')
 
 no_detail_router.register('login/limit', SecurityLoginLimitView, basename='security-login-limit')
 no_detail_router.register('login/auth', SecurityLoginAuthView, basename='security-login-auth')

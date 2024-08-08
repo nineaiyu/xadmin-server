@@ -16,7 +16,7 @@ from common.cache.storage import TokenManagerCache, RedisCacheBase
 logger = logging.getLogger(__name__)
 
 
-def make_token(key, time_limit=60, prefix='', force_new=False, ext_data=None):
+def make_token_cache(key, time_limit=60, prefix='', force_new=False, ext_data=None):
     token_cache = TokenManagerCache(prefix, key)
     token_key, token = token_cache.get_storage_key_and_cache()
     if token and not force_new:
@@ -42,7 +42,7 @@ def make_token(key, time_limit=60, prefix='', force_new=False, ext_data=None):
         return token
 
 
-def verify_token(token, key, success_once=False):
+def verify_token_cache(token, key, success_once=False):
     try:
         token_cache = RedisCacheBase(token)
         token, values = token_cache.get_storage_key_and_cache()

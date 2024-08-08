@@ -548,17 +548,20 @@ CELERY_BEAT_SCHEDULE = {
 
 # 字母验证码
 CAPTCHA_IMAGE_SIZE = (120, 40)  # 设置 captcha 图片大小
-CAPTCHA_LENGTH = 6  # 字符个数
+CAPTCHA_LENGTH = 4  # 字符个数
 CAPTCHA_TIMEOUT = 1  # 超时(minutes)
-
+CAPTCHA_NOISE_FUNCTION_ARCS = True
+CAPTCHA_NOISE_FUNCTION_DOTS = True
 # 加减乘除验证码
 CAPTCHA_OUTPUT_FORMAT = '%(image)s %(text_field)s %(hidden_field)s '
-CAPTCHA_NOISE_FUNCTIONS = ('captcha.helpers.noise_null',
-                           'captcha.helpers.noise_arcs',  # 线
-                           'captcha.helpers.noise_dots',  # 点
-                           )
+CAPTCHA_NOISE_FUNCTIONS = ['captcha.helpers.noise_null']
+if CAPTCHA_NOISE_FUNCTION_ARCS:
+    CAPTCHA_NOISE_FUNCTIONS.append('captcha.helpers.noise_arcs')
+if CAPTCHA_NOISE_FUNCTION_DOTS:
+    CAPTCHA_NOISE_FUNCTIONS.append('captcha.helpers.noise_dots')
+
 # CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'
-# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
+CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
 
 APPEND_SLASH = False
 
@@ -673,11 +676,17 @@ SECURITY_LOGIN_ACCESS_ENABLED = True
 SECURITY_LOGIN_CAPTCHA_ENABLED = True
 SECURITY_LOGIN_ENCRYPTED_ENABLED = True
 SECURITY_LOGIN_TEMP_TOKEN_ENABLED = True
-# 登陆规则
+SECURITY_LOGIN_BY_EMAIL_ENABLED = True
+SECURITY_LOGIN_BY_SMS_ENABLED = True
+SECURITY_LOGIN_BY_BASIC_ENABLED = True
+
+# 注册规则
 SECURITY_REGISTER_ACCESS_ENABLED = True
 SECURITY_REGISTER_CAPTCHA_ENABLED = True
 SECURITY_REGISTER_ENCRYPTED_ENABLED = True
 SECURITY_REGISTER_TEMP_TOKEN_ENABLED = True
+SECURITY_REGISTER_BY_EMAIL_ENABLED = True
+SECURITY_REGISTER_BY_SMS_ENABLED = True
 # 忘记密码规则
 SECURITY_RESET_PASSWORD_ACCESS_ENABLED = True
 SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = True

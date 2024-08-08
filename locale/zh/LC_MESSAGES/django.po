@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-07 19:25+0800\n"
+"POT-Creation-Date: 2024-08-08 19:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "任务监控系统不可用，请联系管理员"
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
-#: common/core/auth.py:36 system/views/password.py:124
+#: common/core/auth.py:36 system/utils/view.py:108 system/utils/view.py:138
 msgid "Token is invalid or expired"
 msgstr "令牌无效或过期"
 
@@ -103,7 +103,8 @@ msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
 #: common/core/modelset.py:132 system/utils/modelset.py:53
-#: system/views/password.py:50 system/views/password.py:88
+#: system/utils/view.py:104 system/views/auth.py:34 system/views/auth.py:178
+#: system/views/register.py:38
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
@@ -197,7 +198,7 @@ msgstr "发件邮件"
 msgid "Send email attachment"
 msgstr "发送邮件附件"
 
-#: common/utils/country.py:40
+#: common/utils/country.py:48
 msgid "China"
 msgstr "中国"
 
@@ -231,7 +232,7 @@ msgstr "用户名或密码错误"
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
-#: common/utils/verify_code.py:22
+#: common/utils/verify_code.py:23
 msgid "Send SMS code"
 msgstr "发送短信验证码"
 
@@ -361,15 +362,15 @@ msgstr "密码最小长度"
 msgid "Minimum length (Admin)"
 msgstr "管理员密码最小长度"
 
-#: settings/serializers/security.py:24 settings/serializers/verify.py:31
+#: settings/serializers/security.py:24 settings/serializers/verify.py:33
 msgid "Uppercase"
 msgstr "大写字母"
 
-#: settings/serializers/security.py:27 settings/serializers/verify.py:35
+#: settings/serializers/security.py:27 settings/serializers/verify.py:37
 msgid "Lowercase"
 msgstr "小写字母"
 
-#: settings/serializers/security.py:30 settings/serializers/verify.py:39
+#: settings/serializers/security.py:30 settings/serializers/verify.py:41
 msgid "Digits"
 msgstr "数字"
 
@@ -429,18 +430,18 @@ msgstr "允许用户进行登录"
 
 #: settings/serializers/security.py:98
 msgid "Login captcha"
-msgstr "登录验证码"
+msgstr "登录图片验证码"
 
 #: settings/serializers/security.py:99
 msgid "Enable captcha to prevent robot authentication"
-msgstr "开启验证码，防止机器人登录"
+msgstr "开启图片验证码，防止机器人登录"
 
 #: settings/serializers/security.py:103
 msgid "Login encrypted"
 msgstr "登录信息加密"
 
-#: settings/serializers/security.py:104 settings/serializers/security.py:125
-#: settings/serializers/security.py:146
+#: settings/serializers/security.py:104 settings/serializers/security.py:140
+#: settings/serializers/security.py:170
 msgid "Enable encryption to prevent information leakage"
 msgstr "开启敏感信息加密，防止数据泄露"
 
@@ -448,74 +449,100 @@ msgstr "开启敏感信息加密，防止数据泄露"
 msgid "Login temp token"
 msgstr "登录临时令牌"
 
-#: settings/serializers/security.py:109 settings/serializers/security.py:130
-#: settings/serializers/security.py:151
+#: settings/serializers/security.py:109 settings/serializers/security.py:145
+#: settings/serializers/security.py:175
 msgid "Enable temporary tokens to prevent attacks"
 msgstr "开启临时令牌，防止被攻击"
 
-#: settings/serializers/security.py:115
-msgid "Register enable"
-msgstr "允许注册"
+#: settings/serializers/security.py:113
+msgid "Login by email"
+msgstr "通过邮件登录"
 
-#: settings/serializers/security.py:116
-msgid "Enable register for user"
-msgstr "允许用户进行注册"
-
-#: settings/serializers/security.py:119
-msgid "Register captcha"
-msgstr "注册验证码"
-
-#: settings/serializers/security.py:120
-msgid "Enable captcha to prevent robot register"
-msgstr "开启验证码，防止机器人注册"
-
-#: settings/serializers/security.py:124
-msgid "Register encrypted"
-msgstr "注册信息加密"
-
-#: settings/serializers/security.py:129
-msgid "Register temp token"
-msgstr "注册临时令牌"
-
-#: settings/serializers/security.py:136
-msgid "Reset password enable"
-msgstr "允许重置密码"
-
-#: settings/serializers/security.py:137
-msgid "Enable reset password for user"
-msgstr "允许用户重置密码"
-
-#: settings/serializers/security.py:140
-msgid "Reset password captcha"
-msgstr "重置密码验证码"
-
-#: settings/serializers/security.py:141
-msgid "Enable captcha to prevent robot reset password"
-msgstr "开启验证码，防止机器人重置密码"
-
-#: settings/serializers/security.py:145
-msgid "Reset password encrypted"
-msgstr "重置密码信息加密"
-
-#: settings/serializers/security.py:150
-msgid "Reset password temp token"
-msgstr "重置密码临时令牌"
-
-#: settings/serializers/security.py:155
-msgid "Reset password by email"
-msgstr "通过邮件重置密码"
-
-#: settings/serializers/security.py:156
+#: settings/serializers/security.py:114 settings/serializers/security.py:150
+#: settings/serializers/security.py:180
 msgid "Enable send email verify code to user"
 msgstr "允许用户通过发送邮件验证码"
 
-#: settings/serializers/security.py:160
-msgid "Reset password by sms"
-msgstr "通过短信重置密码"
+#: settings/serializers/security.py:118
+msgid "Login by sms"
+msgstr "通过手机登录"
 
-#: settings/serializers/security.py:161
+#: settings/serializers/security.py:119 settings/serializers/security.py:155
+#: settings/serializers/security.py:185
 msgid "Enable send sms verify code to user"
 msgstr "允许用户通过发送短信验证码"
+
+#: settings/serializers/security.py:123
+msgid "Login by basic"
+msgstr "通过用户名密码登录"
+
+#: settings/serializers/security.py:124
+msgid "Enable basic verify to user"
+msgstr "允许用户通过用户名密码登录"
+
+#: settings/serializers/security.py:130
+msgid "Register enable"
+msgstr "允许注册"
+
+#: settings/serializers/security.py:131
+msgid "Enable register for user"
+msgstr "允许用户进行注册"
+
+#: settings/serializers/security.py:134
+msgid "Register captcha"
+msgstr "注册图片验证码"
+
+#: settings/serializers/security.py:135
+msgid "Enable captcha to prevent robot register"
+msgstr "开启图片验证码，防止机器人注册"
+
+#: settings/serializers/security.py:139
+msgid "Register encrypted"
+msgstr "注册信息加密"
+
+#: settings/serializers/security.py:144
+msgid "Register temp token"
+msgstr "注册临时令牌"
+
+#: settings/serializers/security.py:149
+msgid "Register by email"
+msgstr "通过邮件注册"
+
+#: settings/serializers/security.py:154
+msgid "Register by sms"
+msgstr "通过手机注册"
+
+#: settings/serializers/security.py:160
+msgid "Reset password enable"
+msgstr "允许重置密码"
+
+#: settings/serializers/security.py:161
+msgid "Enable reset password for user"
+msgstr "允许用户重置密码"
+
+#: settings/serializers/security.py:164
+msgid "Reset password captcha"
+msgstr "重置密码图片验证码"
+
+#: settings/serializers/security.py:165
+msgid "Enable captcha to prevent robot reset password"
+msgstr "开启图片验证码，防止机器人重置密码"
+
+#: settings/serializers/security.py:169
+msgid "Reset password encrypted"
+msgstr "重置密码信息加密"
+
+#: settings/serializers/security.py:174
+msgid "Reset password temp token"
+msgstr "重置密码临时令牌"
+
+#: settings/serializers/security.py:179
+msgid "Reset password by email"
+msgstr "通过邮件重置密码"
+
+#: settings/serializers/security.py:184
+msgid "Reset password by sms"
+msgstr "通过短信重置密码"
 
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:27
 msgid "SMS"
@@ -553,36 +580,75 @@ msgstr "模板"
 msgid "Label"
 msgstr "标签"
 
-#: settings/serializers/verify.py:15
+#: settings/serializers/verify.py:17
 msgid "Verify code TTL (second)"
 msgstr "验证码有效时间 (秒)"
 
-#: settings/serializers/verify.py:16
+#: settings/serializers/verify.py:18
 msgid "Verify code expiration time"
 msgstr "验证码过期时间"
 
-#: settings/serializers/verify.py:21
+#: settings/serializers/verify.py:23
 msgid "Verify code rate (second)"
 msgstr "验证码速率限制 (秒)"
 
-#: settings/serializers/verify.py:22
+#: settings/serializers/verify.py:24
 msgid "Verify code send rate limit"
 msgstr "验证码发送速率限制"
 
-#: settings/serializers/verify.py:26
+#: settings/serializers/verify.py:28
 msgid "Code length"
 msgstr "验证码长度"
 
-#: settings/serializers/verify.py:27
+#: settings/serializers/verify.py:29
 msgid "Length of the sent verification code"
 msgstr "发送验证码的长度"
 
+#: settings/serializers/verify.py:47
+msgid "Random char"
+msgstr "随机字符串"
+
+#: settings/serializers/verify.py:48
+msgid "Math challenge"
+msgstr "数学运算"
+
+#: settings/serializers/verify.py:51
+msgid "Challenge generator"
+msgstr "图片算法模式"
+
+#: settings/serializers/verify.py:52
+msgid "Image verification code generation mode"
+msgstr "图片验证码生成的算法模式"
+
+#: settings/serializers/verify.py:56
+msgid "Captcha code length"
+msgstr "验证码长度"
+
+#: settings/serializers/verify.py:57
+msgid "Length of the captcha code"
+msgstr "图片验证码长度"
+
+#: settings/serializers/verify.py:61
+msgid "Captcha timeout (minute)"
+msgstr "验证码过期时间 (分)"
+
+#: settings/serializers/verify.py:62
+msgid "Captcha code expiration time"
+msgstr "图片验证码过期时间"
+
+#: settings/serializers/verify.py:66
+msgid "Noise function arcs"
+msgstr "噪声函数弧"
+
+#: settings/serializers/verify.py:70
+msgid "Noise function dots"
+msgstr "噪声函数点"
+
 #: settings/views.py:91 settings/views/email.py:40
-#: system/views/admin/settings.py:37
 msgid "Test smtp setting"
 msgstr "测试 smtp 设置"
 
-#: settings/views/email.py:65 system/views/admin/settings.py:12
+#: settings/views/email.py:65
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
 
@@ -1176,28 +1242,23 @@ msgstr "系统配置"
 msgid "User config"
 msgstr "用户配置"
 
-#: system/templates/msg_reset_password_code.html:9
+#: system/templates/msg_verify_code.html:9
 msgid "Hello"
 msgstr "你好"
 
-#: system/templates/msg_reset_password_code.html:12
+#: system/templates/msg_verify_code.html:12 system/views/auth.py:154
 msgid "Verify code"
 msgstr "验证码"
 
-#: system/templates/msg_reset_password_code.html:15
-msgid ""
-"Copy the verification code to the Reset Password page to reset the password."
-msgstr "将验证码复制到重置密码页面，重置密码。"
-
-#: system/templates/msg_reset_password_code.html:18
+#: system/templates/msg_verify_code.html:15
 msgid "The validity period of the verification code is"
 msgstr "验证码有效期为"
 
-#: system/templates/msg_reset_password_code.html:18
+#: system/templates/msg_verify_code.html:15
 msgid "seconds"
 msgstr "秒"
 
-#: system/templates/msg_reset_password_code.html:21
+#: system/templates/msg_verify_code.html:18
 msgid "If you have any questions, you can contact the administrator"
 msgstr "如果有疑问或需求，请联系系统管理员"
 
@@ -1226,7 +1287,7 @@ msgid "Login blocked"
 msgstr "登录被锁定"
 
 #: system/utils/serializer.py:218 system/views/admin/user.py:74
-#: system/views/auth.py:81 system/views/password.py:126
+#: system/views/auth.py:41 system/views/register.py:44
 #: system/views/user/userinfo.py:63
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
@@ -1287,44 +1348,72 @@ msgstr "全部表"
 msgid "All fields"
 msgstr "全部字段"
 
-#: system/utils/view.py:41
+#: system/utils/view.py:46
 msgid "Captcha validation failed. Please try again"
-msgstr "验证码校验失败，请稍后重试"
+msgstr "图片验证码校验失败，请稍后重试"
 
-#: system/utils/view.py:47
+#: system/utils/view.py:52
 msgid "Temporary Token validation failed. Please try again"
 msgstr "临时Token校验失败，请稍后重试"
 
-#: system/utils/view.py:72
+#: system/utils/view.py:77
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
-#: system/utils/view.py:76 system/views/auth.py:158
-#: system/views/password.py:117
+#: system/utils/view.py:81 system/utils/view.py:131 system/views/login.py:60
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 
+#: system/utils/view.py:126
+#, fuzzy, python-brace-format
+msgid ""
+"{error} please enter it again. You can also try {times_try} times (The "
+"account will be temporarily locked for {block_time} minutes)"
+msgstr ""
+"{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
+"{block_time} 分钟)"
+
 #: system/views/admin/user.py:49
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
-#: system/views/auth.py:73
-msgid "Registration forbidden"
-msgstr "禁止注册"
+#: system/views/auth.py:46
+msgid "Reset password success, return to login page"
+msgstr "重置密码成功，返回到登录页面"
 
-#: system/views/auth.py:83
-msgid "The username already exists, please try another one"
-msgstr "用户名已经存在，请换个试试"
+#: system/views/auth.py:128
+msgid "Phone already exist"
+msgstr "手机号已经存在"
 
-#: system/views/auth.py:127
+#: system/views/auth.py:130
+msgid "Email already exist"
+msgstr "邮件已经存在"
+
+#: system/views/auth.py:140
+msgid "Phone does not exist"
+msgstr "手机号不存在"
+
+#: system/views/auth.py:142
+msgid "Email does not exist"
+msgstr "邮件不存在"
+
+#: system/views/auth.py:173
+msgid "Forbidden send verification code"
+msgstr "禁止发送验证码"
+
+#: system/views/auth.py:211
+msgid "The verification code has been sent"
+msgstr "验证码已发送"
+
+#: system/views/login.py:29 system/views/login.py:91
 msgid "Login forbidden"
 msgstr "禁止登录"
 
-#: system/views/auth.py:152
+#: system/views/login.py:54
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1334,38 +1423,13 @@ msgstr ""
 "您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
 "被临时 锁定 {block_time} 分钟)"
 
-#: system/views/password.py:32
-msgid "Forgot password"
-msgstr "忘记密码"
+#: system/views/register.py:31
+msgid "Registration forbidden"
+msgstr "禁止注册"
 
-#: system/views/password.py:45
-msgid "Reset password forbidden"
-msgstr "禁止重置密码"
-
-#: system/views/password.py:61
-msgid "Phone does not exist"
-msgstr "手机号不存在"
-
-#: system/views/password.py:64
-msgid "Email does not exist"
-msgstr "邮件不存在"
-
-#: system/views/password.py:77
-msgid "The verification code has been sent"
-msgstr "验证码已发送"
-
-#: system/views/password.py:112
-#, fuzzy, python-brace-format
-msgid ""
-"{error} please enter it again. You can also try {times_try} times (The "
-"account will be temporarily locked for {block_time} minutes)"
-msgstr ""
-"{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
-"{block_time} 分钟)"
-
-#: system/views/password.py:131
-msgid "Reset password success, return to login page"
-msgstr "重置密码成功，返回到登录页面"
+#: system/views/register.py:47
+msgid "The account already exists, please try another one"
+msgstr "用户已经存在，请换个试试"
 
 #: system/views/upload.py:53
 msgid "upload file size cannot exceed {}"
@@ -1378,3 +1442,7 @@ msgstr "错误的文件类型"
 #: system/views/user/userinfo.py:61
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
+
+#: tests.py:31
+msgid "Germany"
+msgstr ""

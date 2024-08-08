@@ -8,30 +8,20 @@ import logging
 
 from captcha.helpers import captcha_image_url
 from captcha.models import CaptchaStore
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 class CaptchaAuth(object):
-    def __init__(self, captcha_key='', g_type=2):
-        self.g_type = g_type
+    def __init__(self, captcha_key=''):
         self.captcha_key = captcha_key
-        self.random_char_fun = self.__generator()
-
-    def __generator(self):
-        if self.g_type == 1:
-            # 随机字符串
-            return 'captcha.helpers.random_char_challenge'
-        elif self.g_type == 2:
-            # 数学运算
-            return 'captcha.helpers.math_challenge'
-        return None
 
     def __get_captcha_obj(self):
         return CaptchaStore.objects.filter(hashkey=self.captcha_key).first()
 
     def generate(self):
-        self.captcha_key = CaptchaStore.generate_key(self.random_char_fun)
+        self.captcha_key = CaptchaStore.generate_key(settings.CAPTCHA_CHALLENGE_FUNCT)
         captcha_image = captcha_image_url(self.captcha_key)
         captcha_obj = self.__get_captcha_obj()
         code_length = 0

@@ -11,11 +11,16 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 from rest_framework.throttling import BaseThrottle
+from user_agents import parse
 
 from common.base.utils import AESCipherV2
-from common.utils.token import verify_token
+from common.utils.request import get_request_ip, get_browser, get_os
+from common.utils.token import verify_token_cache
+from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
+from system.models import UserLoginLog
 from system.utils.captcha import CaptchaAuth
 from system.utils.security import LoginIpBlockUtil, LoginBlockUtil
+from system.utils.serializer import UserLoginLogSerializer
 
 
 def get_token_lifetime(user_obj):
@@ -42,7 +47,7 @@ def check_captcha(need, captcha_key, captcha_code):
 
 
 def check_tmp_token(need, token, client_id, success_once=True):
-    if not need or (client_id and token and verify_token(token, client_id, success_once)):
+    if not need or (client_id and token and verify_token_cache(token, client_id, success_once)):
         return True
     raise APIException(_("Temporary Token validation failed. Please try again"))
 
@@ -75,3 +80,60 @@ def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=Logi
     if login_block and login_block(username, ipaddr).is_block():
         raise APIException(_("The account has been locked (please contact admin to unlock it or try"
                              " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME))
+
+
+def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
+    data = {
+        'ipaddress': get_request_ip(request),
+        'browser': get_browser(request),
+        'system': get_os(request),
+        'status': status,
+        'agent': str(parse(request.META['HTTP_USER_AGENT'])),
+        'login_type': login_type
+    }
+    serializer = UserLoginLogSerializer(data=data, request=request, all_fields=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+
+def verify_sms_email_code(request, block_utils):
+    verify_token = request.data.get('verify_token')
+    verify_code = request.data.get('verify_code')
+
+    if not verify_token or not verify_code:
+        raise APIException(_("Operation failed. Abnormal data"))
+
+    data = TokenTempCache.validate_reset_password_token(verify_token)
+    if not data:
+        raise APIException(_('Token is invalid or expired'))
+
+    target = data.get('target')
+    query_key = data.get('query_key')
+    ipaddr = get_request_ip(request)
+    check_is_block(target, ipaddr, login_block=block_utils)
+    ip_block = LoginIpBlockUtil(ipaddr)
+    block_util = block_utils(target, ipaddr)
+
+    try:
+        SendAndVerifyCodeUtil(target).verify(verify_code)
+    except Exception as e:
+        block_util.incr_failed_count()
+        ip_block.set_block_if_need()
+
+        times_remainder = block_util.get_remainder_times()
+        if times_remainder > 0:
+            detail = _(
+                "{error} please enter it again. "
+                "You can also try {times_try} times "
+                "(The account will be temporarily locked for {block_time} minutes)"
+            ).format(times_try=times_remainder, block_time=settings.SECURITY_LOGIN_LIMIT_TIME, error=str(e))
+        else:
+            detail = _("The account has been locked (please contact admin to unlock it or try"
+                       " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
+
+        raise APIException(detail)
+
+    data = TokenTempCache.validate_reset_password_token(verify_token)
+    if not data:
+        raise APIException(_('Token is invalid or expired'))
+    return query_key, target, verify_token

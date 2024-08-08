@@ -4,6 +4,7 @@
 # filename : verify_code
 # author : ly_13
 # date : 8/6/2024
+import time
 
 from celery import shared_task
 from django.conf import settings
@@ -106,3 +107,33 @@ class SendAndVerifyCodeUtil(object):
         cache.set(self.key, self.code, self.timeout)
         cache.set(self.limit_key, self.code, self.limit)
         logger.debug(f'Send verify code to {self.target}')
+
+
+class TokenTempCache(object):
+    CACHE_KEY_TOKEN_TEMP_PREFIX = "_KEY_TOKEN_TEMP_CACHE_{}"
+
+    @classmethod
+    def generate_reset_token(cls, timeout=3600, data=None):
+        token = random_string(50)
+        key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
+        cache.set(key, {"time": time.time(), 'data': data}, timeout)
+        return token
+
+    @classmethod
+    def validate_reset_password_token(cls, token):
+        if not token:
+            return None
+        key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
+        value = cache.get(key)
+        if not value:
+            return None
+        try:
+            return value.get('data', None)
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            return None
+
+    @classmethod
+    def expired_reset_password_token(cls, token):
+        key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
+        cache.delete(key)

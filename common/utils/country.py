@@ -4,10 +4,12 @@
 # filename : country
 # author : ly_13
 # date : 8/6/2024
+import gettext
+
 import phonenumbers
 import pycountry
-from phonenumbers import PhoneMetadata
 from django.utils.translation import gettext_lazy as _
+from phonenumbers import PhoneMetadata
 
 
 def get_country_phone_codes():
@@ -26,9 +28,15 @@ def get_country(region_code):
     else:
         return None
 
-def get_country_phone_choices():
+
+def get_country_phone_choices(locales=None):
     codes = get_country_phone_codes()
     choices = []
+    german = None
+    if locales:
+        german = gettext.translation(
+            "iso3166-1", pycountry.LOCALES_DIR, languages=[locales]
+        )
     for code, phone in codes:
         country = get_country(code)
         if not country:
@@ -43,7 +51,7 @@ def get_country_phone_choices():
             country_name = 'Taiwan'
             flag = get_country('CN').flag
         choices.append({
-            'name': country_name,
+            'name': german.gettext(country_name) if german else country_name,
             'phone_code': f'+{phone}',
             'flag': flag,
             'code': code,
@@ -55,3 +63,4 @@ def get_country_phone_choices():
 
 
 COUNTRY_CALLING_CODES = get_country_phone_choices()
+COUNTRY_CALLING_CODES_ZH = get_country_phone_choices("zh")

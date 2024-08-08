@@ -18,11 +18,12 @@ from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
 from system.views.admin.user import UserView
-from system.views.auth import TempTokenView, RegisterView, LoginView, LogoutView, RefreshTokenView, CaptchaView, \
-    PasswordRulesView
+from system.views.auth import TempTokenView, CaptchaView, PasswordRulesView, SendVerifyCodeView, ResetPasswordView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
-from system.views.password import ResetPasswordView
+from system.views.login import LoginView, RefreshTokenView, LoginByVerifyCode
+from system.views.logout import LogoutView
+from system.views.register import RegisterView
 from system.views.routes import UserRoutesView
 from system.views.search.dept import SearchDeptView
 from system.views.search.menu import SearchMenuView
@@ -35,11 +36,15 @@ from system.views.user.userinfo import UserInfoView
 router = SimpleRouter(False)
 
 no_auth_url = [
-    re_path('^register$', RegisterView.as_view(), name='register'),
-    re_path('^login$', LoginView.as_view(), name='login'),
-    re_path('^auth/token$', TempTokenView.as_view(), name='temp_token'),
-    re_path('^auth/captcha$', CaptchaView.as_view(), name='captcha'),
     re_path('^captcha/', include('captcha.urls')),
+    re_path('^login/basic$', LoginView.as_view(), name='login-by-basic'),
+    re_path('^login/code$', LoginByVerifyCode.as_view(), name='login-by-code'),
+    re_path('^register$', RegisterView.as_view(), name='register'),
+    re_path('^auth/captcha$', CaptchaView.as_view(), name='captcha'),
+    re_path('^auth/token$', TempTokenView.as_view(), name='temp_token'),
+    re_path('^auth/verify$', SendVerifyCodeView.as_view(), name='send-verify-code'),
+    re_path('^auth/reset$', ResetPasswordView.as_view(), name='reset-password'),
+
 ]
 
 auth_url = [
@@ -48,8 +53,6 @@ auth_url = [
     re_path('^upload$', UploadView.as_view(), name='upload'),
     re_path('^rules/password$', PasswordRulesView.as_view(), name='password-rules'),
 ]
-# 忘记密码
-router.register('password', ResetPasswordView, basename='password_reset')
 
 router_url = [
     re_path('^routes$', UserRoutesView.as_view(), name='user_routes'),
