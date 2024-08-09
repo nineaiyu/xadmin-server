@@ -112,6 +112,7 @@ def get_menu_queryset():
         'parent', flat=True)
     return queryset.filter(Q(menu_type=models.Menu.MenuChoices.PERMISSION) | Q(id__in=pks)).order_by('rank')
 
+
 class DataPermissionSerializer(BaseModelSerializer):
     class Meta:
         model = models.DataPermission

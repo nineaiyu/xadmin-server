@@ -337,6 +337,7 @@ class SearchColumnsAction(object):
             results.append(info)
         return ApiResponse(data=results)
 
+
 class BaseModelAction(object):
     filterset_class: Callable
     filter_queryset: Callable

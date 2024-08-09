@@ -61,6 +61,5 @@ def get_country_phone_choices(locales=None):
     return choices
 
 
-
 COUNTRY_CALLING_CODES = get_country_phone_choices()
 COUNTRY_CALLING_CODES_ZH = get_country_phone_choices("zh")

@@ -8,7 +8,7 @@ from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField, LabeledMultipleChoiceField, ColorPickerField
+from common.core.fields import LabeledChoiceField, LabeledMultipleChoiceField, ColorField
 
 
 class VerifyCodeSettingSerializer(serializers.Serializer):
@@ -72,8 +72,8 @@ class CaptchaSettingSerializer(serializers.Serializer):
         help_text=_("Captcha code expiration time")
     )
 
-    CAPTCHA_BACKGROUND_COLOR = ColorPickerField(max_length=256, required=True, label=_('Captcha background color'))
-    CAPTCHA_FOREGROUND_COLOR = ColorPickerField(max_length=256, required=True, label=_('Captcha foreground color'))
+    CAPTCHA_BACKGROUND_COLOR = ColorField(max_length=256, required=True, label=_('Captcha background color'))
+    CAPTCHA_FOREGROUND_COLOR = ColorField(max_length=256, required=True, label=_('Captcha foreground color'))
 
     CAPTCHA_NOISE_FUNCTIONS = LabeledMultipleChoiceField(label=_('Noise functions'),
                                                          default=NoiseFunctionsChoices.FUNCTION_NULL,

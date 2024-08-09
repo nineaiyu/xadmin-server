@@ -60,6 +60,7 @@ def compile_i18n_file():
     management.call_command('compilemessages', verbosity=0)
     print("Compile i18n files done")
 
+
 def prepare():
     check_database_connection()
     collect_static()

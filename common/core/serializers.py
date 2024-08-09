@@ -142,7 +142,8 @@ def get_sub_serializer_fields():
 
         delete = True
         obj, created = ModelLabelField.objects.update_or_create(name=model._meta.label_lower, field_type=field_type,
-                                                          parent=None, defaults={'label': model._meta.verbose_name})
+                                                                parent=None,
+                                                                defaults={'label': model._meta.verbose_name})
         count[int(not created)] += 1
         for name, field in instance.fields.items():
             _, created = ModelLabelField.objects.update_or_create(name=name, parent=obj, field_type=field_type,

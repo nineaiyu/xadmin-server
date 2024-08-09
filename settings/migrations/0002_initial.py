@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -19,16 +18,22 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='setting',
             name='creator',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', related_query_name='creator_query', to=settings.AUTH_USER_MODEL, verbose_name='Creator'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='+', related_query_name='creator_query', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Creator'),
         ),
         migrations.AddField(
             model_name='setting',
             name='dept_belong',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', related_query_name='dept_belong_query', to='system.deptinfo', verbose_name='Data ownership department'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='+', related_query_name='dept_belong_query', to='system.deptinfo',
+                                    verbose_name='Data ownership department'),
         ),
         migrations.AddField(
             model_name='setting',
             name='modifier',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', related_query_name='modifier_query', to=settings.AUTH_USER_MODEL, verbose_name='Modifier'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='+', related_query_name='modifier_query', to=settings.AUTH_USER_MODEL,
+                                    verbose_name='Modifier'),
         ),
     ]

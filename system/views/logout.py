@@ -33,4 +33,3 @@ class LogoutView(APIView):
             except Exception as e:
                 pass
         return ApiResponse()
-

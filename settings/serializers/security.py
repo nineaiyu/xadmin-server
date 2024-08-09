@@ -155,6 +155,7 @@ class SecurityRegisterAuthSerializer(serializers.Serializer):
         help_text=_("Enable send sms verify code to user")
     )
 
+
 class SecurityResetPasswordAuthSerializer(serializers.Serializer):
     SECURITY_RESET_PASSWORD_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Reset password enable"),

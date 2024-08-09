@@ -54,16 +54,16 @@ def post_migrate_handler(sender, **kwargs):
         if 'relationship' in verbose_name and '_' in model_name:
             continue
         obj, created = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
-                                                          parent=None, defaults={'label': verbose_name})
+                                                                parent=None, defaults={'label': verbose_name})
         count[int(not created)] += 1
         # for field in model._meta.get_fields():
         for field in model._meta.fields:
             _obj, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj, field_type=field_type,
-                                                     defaults={'label': field.verbose_name})
+                                                                     defaults={'label': field.verbose_name})
             count[int(not created)] += 1
         PrintLogFormat(f"Model:({label}.{model_name})").warning(
             f"update_or_create data permission, created:{count[0]} updated:{count[1]}")
-            # defaults={'label': getattr(field, 'verbose_name', field.through._meta.verbose_name)})
+        # defaults={'label': getattr(field, 'verbose_name', field.through._meta.verbose_name)})
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now,
                                                               name__startswith=f"{label}.").delete()
@@ -202,6 +202,7 @@ def clean_cache_handler_post_save(sender, instance, **kwargs):
         if pk_set:
             invalid_notify_caches(instance, pk_set)
         logger.info(f"invalid cache {sender}")
+
 
 @receiver([pre_delete])
 def clean_cache_handler_pre_delete(sender, instance, **kwargs):

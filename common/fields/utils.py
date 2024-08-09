@@ -9,7 +9,7 @@ from functools import wraps
 from django.db.models.fields.files import FieldFile
 
 
-def get_file_absolute_uri(value:FieldFile, request=None, use_url=True):
+def get_file_absolute_uri(value: FieldFile, request=None, use_url=True):
     if not value:
         return None
 

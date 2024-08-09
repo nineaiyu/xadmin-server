@@ -86,6 +86,7 @@ class LoginView(TokenObtainPairView):
 class LoginByVerifyCode(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
+
     def post(self, request, *args, **kwargs):
         if not settings.SECURITY_LOGIN_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Login forbidden"))
@@ -114,4 +115,3 @@ class RefreshTokenView(TokenRefreshView):
         data = super().post(request, *args, **kwargs).data
         data.update(get_token_lifetime(request.user))
         return ApiResponse(data=data)
-

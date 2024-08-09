@@ -20,8 +20,10 @@ from system.utils.serializer import UploadFileSerializer
 
 logger = logging.getLogger(__file__)
 
+
 def get_upload_max_size(user_obj):
     return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
+
 
 class UploadView(APIView):
     """本地上传文件接口"""
@@ -61,4 +63,3 @@ class UploadView(APIView):
 
     def get(self, request):
         return ApiResponse(data={'file_upload_size': get_upload_max_size(request.user)})
-

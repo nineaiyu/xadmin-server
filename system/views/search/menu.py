@@ -12,7 +12,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from system.models import Menu
-from system.utils.serializer import MenuSerializer, MenuPermissionSerializer
+from system.utils.serializer import MenuSerializer
 
 
 class SearchMenuFilter(BaseFilterSet):
@@ -24,16 +24,18 @@ class SearchMenuFilter(BaseFilterSet):
         model = Menu
         fields = ['title', 'path', 'component']
 
+
 class SearchMenuSerializer(MenuSerializer):
     # meta = MenuMetaSerializer(label='菜单元属性')
 
     class Meta:
         model = Menu
-        fields = ['title', 'pk', 'rank','path', 'component', 'parent', 'menu_type', 'is_active', 'method']
+        fields = ['title', 'pk', 'rank', 'path', 'component', 'parent', 'menu_type', 'is_active', 'method']
         table_fields = ['title', 'menu_type', 'path', 'component', 'is_active', 'method']
         read_only_fields = [x.name for x in Menu._meta.fields]
 
     title = serializers.CharField(source='meta.title', read_only=True)
+
 
 class SearchMenuView(OnlyListModelSet):
     """菜单管理"""

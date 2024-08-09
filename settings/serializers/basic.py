@@ -9,7 +9,6 @@ from rest_framework import serializers
 
 
 class BasicSettingSerializer(serializers.Serializer):
-
     SITE_URL = serializers.URLField(
         required=True, label=_("Site URL"),
         help_text=_(

@@ -75,6 +75,7 @@ class BasePrimaryKeyRelatedField(RelatedField):
         "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
         "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
     }
+
     def __init__(self, **kwargs):
         self.attrs = kwargs.pop("attrs", [])
         self.label_format = kwargs.pop("format", "{pk}")
@@ -194,7 +195,7 @@ class PhoneField(serializers.CharField):
         return value
 
 
-class ColorPickerField(serializers.CharField):
+class ColorField(serializers.CharField):
 
     def __init__(self, **kwargs):
         self.input_type = 'color'

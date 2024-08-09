@@ -7,6 +7,7 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+
 class EmailSettingSerializer(serializers.Serializer):
     EMAIL_ENABLED = serializers.BooleanField(
         default=False, label=_('Email'), help_text=_('Enable Email Service (Email)')

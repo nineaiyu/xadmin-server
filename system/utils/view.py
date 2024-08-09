@@ -62,6 +62,7 @@ def check_token_and_captcha(request, token_enable, captcha_enable, success_once=
     check_captcha(captcha_enable, captcha_key, captcha_code)
     return client_id, token
 
+
 def get_username_password(need, request, token):
     username = request.data.get('username')
     password = request.data.get('password')

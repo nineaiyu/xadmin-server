@@ -68,7 +68,6 @@ class SmsConfigView(BaseSettingView):
         }
         return init_params, send_sms_params
 
-
     def get_params_by_backend(self, backend, data):
         """
         返回两部分参数
@@ -77,7 +76,6 @@ class SmsConfigView(BaseSettingView):
         """
         get_params_func = getattr(self, 'get_%s_params' % backend)
         return get_params_func(data)
-
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer_class()(data=request.data)
@@ -103,7 +101,7 @@ class SmsConfigView(BaseSettingView):
             except:
                 error = e.detail
             status_code = status.HTTP_400_BAD_REQUEST
-            detail =  error
+            detail = error
         except Exception as e:
             status_code = status.HTTP_400_BAD_REQUEST
             detail = str(e)

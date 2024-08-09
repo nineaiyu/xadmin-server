@@ -30,6 +30,7 @@ class BaseSMSSettingSerializer(serializers.Serializer):
         validators=[PhoneValidator()], required=False, allow_blank=True, allow_null=True,
         label=_('Phone'), help_text=_("The phone is used for testing the SMS server's connectivity")
     )
+
     def post_save(self):
         value = self._data['SMS_TEST_PHONE']
         if isinstance(value, dict):

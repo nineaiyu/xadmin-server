@@ -21,6 +21,7 @@ logger = get_logger(__name__)
 class BACKENDS(TextChoices):
     ALIBABA = 'alibaba', _('Alibaba cloud')
 
+
 class SMS:
     client: BaseSMSClient
 
