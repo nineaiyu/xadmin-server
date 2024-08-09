@@ -100,19 +100,20 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
 def verify_sms_email_code(request, block_utils):
     verify_token = request.data.get('verify_token')
     verify_code = request.data.get('verify_code')
+    ipaddr = get_request_ip(request)
+    ip_block = LoginIpBlockUtil(ipaddr)
 
     if not verify_token or not verify_code:
         raise APIException(_("Operation failed. Abnormal data"))
 
-    data = TokenTempCache.validate_reset_password_token(verify_token)
+    data = TokenTempCache.validate_cache_token(verify_token)
     if not data:
+        ip_block.set_block_if_need()
         raise APIException(_('Token is invalid or expired'))
 
     target = data.get('target')
     query_key = data.get('query_key')
-    ipaddr = get_request_ip(request)
     check_is_block(target, ipaddr, login_block=block_utils)
-    ip_block = LoginIpBlockUtil(ipaddr)
     block_util = block_utils(target, ipaddr)
 
     try:
@@ -134,7 +135,4 @@ def verify_sms_email_code(request, block_utils):
 
         raise APIException(detail)
 
-    data = TokenTempCache.validate_reset_password_token(verify_token)
-    if not data:
-        raise APIException(_('Token is invalid or expired'))
     return query_key, target, verify_token

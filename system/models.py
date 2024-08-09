@@ -77,8 +77,8 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
 
     nickname = models.CharField(verbose_name=_("Nickname"), max_length=150, blank=True)
     gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name=_("Gender"))
-    phone = models.CharField(verbose_name=_("Phone"), max_length=16, default='', blank=True, unique=True)
-    email = models.EmailField(verbose_name=_("Email"), default='', blank=True, unique=True)
+    phone = models.CharField(verbose_name=_("Phone"), max_length=16, default='', blank=True, db_index=True)
+    email = models.EmailField(verbose_name=_("Email"), default='', blank=True, db_index=True)
 
     roles = models.ManyToManyField(to="UserRole", verbose_name=_("Role permission"), blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name=_("Data permission"), blank=True, null=True)

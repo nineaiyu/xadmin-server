@@ -45,8 +45,11 @@ class RegisterView(APIView):
         if UserInfo.objects.filter(**{query_key: target}).exists():
             return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
         username = target
-        user = UserInfo.objects.create_user(username=username, password=password, first_name=username,
-                                            nickname=username, **{query_key: target})
+        default = {query_key: target}
+        if query_key == 'username':
+            default = {}
+
+        user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
 
         update_fields = ['last_login']
 

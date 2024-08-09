@@ -29,10 +29,11 @@ class SendAndVerifyCodeUtil(object):
     KEY_TMPL = 'auth_verify_code_{}'
     RATE_KEY_TMPL = 'auth_verify_code_send_at_{}'
 
-    def __init__(self, target, code=None, key=None, backend='email', timeout=None, limit=None, **kwargs):
+    def __init__(self, target, code=None, key=None, backend='email', timeout=None, limit=None, dryrun=False, **kwargs):
         self.code = code
         self.target = target
         self.backend = backend
+        self.dryrun = dryrun
         self.key = key or self.KEY_TMPL.format(target)
         self.timeout = settings.VERIFY_CODE_TTL if timeout is None else timeout
         self.limit = settings.VERIFY_CODE_LIMIT if limit is None else limit
@@ -99,10 +100,11 @@ class SendAndVerifyCodeUtil(object):
         """
         发送信息的方法，如果有错误直接抛出 api 异常
         """
-        if self.backend == 'sms':
-            self.__send_with_sms()
-        else:
-            self.__send_with_email()
+        if not self.dryrun:
+            if self.backend == 'sms':
+                self.__send_with_sms()
+            else:
+                self.__send_with_email()
 
         cache.set(self.key, self.code, self.timeout)
         cache.set(self.limit_key, self.code, self.limit)
@@ -113,14 +115,14 @@ class TokenTempCache(object):
     CACHE_KEY_TOKEN_TEMP_PREFIX = "_KEY_TOKEN_TEMP_CACHE_{}"
 
     @classmethod
-    def generate_reset_token(cls, timeout=3600, data=None):
+    def generate_cache_token(cls, timeout=3600, data=None):
         token = random_string(50)
         key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
         cache.set(key, {"time": time.time(), 'data': data}, timeout)
         return token
 
     @classmethod
-    def validate_reset_password_token(cls, token):
+    def validate_cache_token(cls, token):
         if not token:
             return None
         key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
@@ -134,6 +136,6 @@ class TokenTempCache(object):
             return None
 
     @classmethod
-    def expired_reset_password_token(cls, token):
+    def expired_cache_token(cls, token):
         key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
         cache.delete(key)

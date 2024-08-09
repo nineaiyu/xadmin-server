@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-09 14:45+0800\n"
+"POT-Creation-Date: 2024-08-09 18:59+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -32,7 +32,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/utils/view.py:109 system/utils/view.py:139
+#: common/core/auth.py:36 system/utils/view.py:112
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -108,7 +108,7 @@ msgid "Sorting saved successfully"
 msgstr ""
 
 #: common/core/modelset.py:132 system/utils/modelset.py:53
-#: system/utils/view.py:105 system/views/auth.py:34 system/views/auth.py:178
+#: system/utils/view.py:107 system/views/auth.py:34 system/views/auth.py:188
 #: system/views/register.py:37
 msgid "Operation failed. Abnormal data"
 msgstr ""
@@ -440,7 +440,7 @@ msgid "Login encrypted"
 msgstr ""
 
 #: settings/serializers/security.py:104 settings/serializers/security.py:140
-#: settings/serializers/security.py:171
+#: settings/serializers/security.py:176
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
@@ -449,7 +449,7 @@ msgid "Login temp token"
 msgstr ""
 
 #: settings/serializers/security.py:109 settings/serializers/security.py:145
-#: settings/serializers/security.py:176
+#: settings/serializers/security.py:181
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
@@ -458,7 +458,7 @@ msgid "Login by email"
 msgstr ""
 
 #: settings/serializers/security.py:114 settings/serializers/security.py:150
-#: settings/serializers/security.py:181
+#: settings/serializers/security.py:186
 msgid "Enable send email verify code to user"
 msgstr ""
 
@@ -467,7 +467,7 @@ msgid "Login by sms"
 msgstr ""
 
 #: settings/serializers/security.py:119 settings/serializers/security.py:155
-#: settings/serializers/security.py:186
+#: settings/serializers/security.py:191
 msgid "Enable send sms verify code to user"
 msgstr ""
 
@@ -476,7 +476,7 @@ msgid "Login by basic"
 msgstr ""
 
 #: settings/serializers/security.py:124
-msgid "Enable basic verify to user"
+msgid "Enable basic verify to user login"
 msgstr ""
 
 #: settings/serializers/security.py:130
@@ -511,35 +511,43 @@ msgstr ""
 msgid "Register by sms"
 msgstr ""
 
-#: settings/serializers/security.py:161
-msgid "Reset password enable"
+#: settings/serializers/security.py:159
+msgid "Register by basic"
 msgstr ""
 
-#: settings/serializers/security.py:162
-msgid "Enable reset password for user"
-msgstr ""
-
-#: settings/serializers/security.py:165
-msgid "Reset password captcha"
+#: settings/serializers/security.py:160
+msgid "Enable basic verify to user register"
 msgstr ""
 
 #: settings/serializers/security.py:166
-msgid "Enable captcha to prevent robot reset password"
+msgid "Reset password enable"
+msgstr ""
+
+#: settings/serializers/security.py:167
+msgid "Enable reset password for user"
 msgstr ""
 
 #: settings/serializers/security.py:170
-msgid "Reset password encrypted"
+msgid "Reset password captcha"
+msgstr ""
+
+#: settings/serializers/security.py:171
+msgid "Enable captcha to prevent robot reset password"
 msgstr ""
 
 #: settings/serializers/security.py:175
-msgid "Reset password temp token"
+msgid "Reset password encrypted"
 msgstr ""
 
 #: settings/serializers/security.py:180
-msgid "Reset password by email"
+msgid "Reset password temp token"
 msgstr ""
 
 #: settings/serializers/security.py:185
+msgid "Reset password by email"
+msgstr ""
+
+#: settings/serializers/security.py:190
 msgid "Reset password by sms"
 msgstr ""
 
@@ -1263,7 +1271,7 @@ msgstr ""
 msgid "Hello"
 msgstr ""
 
-#: system/templates/msg_verify_code.html:12 system/views/auth.py:154
+#: system/templates/msg_verify_code.html:12 system/views/auth.py:155
 msgid "Verify code"
 msgstr ""
 
@@ -1379,13 +1387,13 @@ msgid ""
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/view.py:82 system/utils/view.py:132 system/views/login.py:60
+#: system/utils/view.py:82 system/utils/view.py:133 system/views/login.py:60
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/view.py:127
+#: system/utils/view.py:128
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -1400,27 +1408,27 @@ msgstr ""
 msgid "Reset password success, return to login page"
 msgstr ""
 
-#: system/views/auth.py:128
+#: system/views/auth.py:129
 msgid "Phone already exist"
 msgstr ""
 
-#: system/views/auth.py:130
+#: system/views/auth.py:131
 msgid "Email already exist"
 msgstr ""
 
-#: system/views/auth.py:140
+#: system/views/auth.py:141
 msgid "Phone does not exist"
 msgstr ""
 
-#: system/views/auth.py:142
+#: system/views/auth.py:143
 msgid "Email does not exist"
 msgstr ""
 
-#: system/views/auth.py:173
+#: system/views/auth.py:174
 msgid "Forbidden send verification code"
 msgstr ""
 
-#: system/views/auth.py:209
+#: system/views/auth.py:225
 msgid "The verification code has been sent"
 msgstr ""
 

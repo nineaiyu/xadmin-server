@@ -42,7 +42,7 @@ class ResetPasswordView(APIView):
         instance.set_password(password)
         instance.modifier = instance
         instance.save(update_fields=['password', 'modifier'])
-        TokenTempCache.expired_reset_password_token(verify_token)
+        TokenTempCache.expired_cache_token(verify_token)
         return ApiResponse(detail=_("Reset password success, return to login page"))
 
 
@@ -87,6 +87,7 @@ class SendVerifyCodeView(APIView):
             'email': settings.SECURITY_REGISTER_BY_EMAIL_ENABLED and settings.EMAIL_ENABLED,
             'sms': settings.SECURITY_REGISTER_BY_SMS_ENABLED and settings.SMS_ENABLED,
             'rate': settings.VERIFY_CODE_LIMIT,
+            'basic': settings.SECURITY_REGISTER_BY_BASIC_ENABLED,
             'password': get_password_check_rules(request.user)
         }
         return config
@@ -174,7 +175,16 @@ class SendVerifyCodeView(APIView):
 
         form_type = request.data.get('form_type')
         target = request.data.get('target')
-        if not target or form_type not in ['email', 'phone']:
+
+        form_types = []
+        if config.get("sms"):
+            form_types.append("phone")
+        if config.get("basic"):
+            form_types.append("username")
+        if config.get('email'):
+            form_types.append("email")
+
+        if not target or form_type not in form_types:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
         client_id, token = check_token_and_captcha(request, config.get("token"), config.get("captcha"))
@@ -198,12 +208,18 @@ class SendVerifyCodeView(APIView):
             LoginIpBlockUtil(ipaddr).set_block_if_need()
             return ApiResponse(code=1001, detail=str(e))
 
+        dryrun = form_type == 'username'
         try:
             content, code = self.prepare_code_data(username)
-            SendAndVerifyCodeUtil(target, code, backend=form_type, **content).gen_and_send_async()
+            SendAndVerifyCodeUtil(target, code, backend=form_type, dryrun=dryrun, **content).gen_and_send_async()
         except ValueError as e:
             return ApiResponse(code=1002, detail=str(e))
-        verify_token = TokenTempCache.generate_reset_token(settings.VERIFY_CODE_TTL,
+
+        verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL,
                                                            {"target": target, "form_type": form_type,
                                                             "query_key": query_key})
-        return ApiResponse(data={'verify_token': verify_token}, detail=_("The verification code has been sent"))
+        data = {'verify_token': verify_token}
+        if dryrun:
+            data['verify_code'] = code
+
+        return ApiResponse(data=data, detail=_("The verification code has been sent"))

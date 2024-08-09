@@ -121,7 +121,7 @@ class SecurityLoginAuthSerializer(serializers.Serializer):
 
     SECURITY_LOGIN_BY_BASIC_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Login by basic"),
-        help_text=_("Enable basic verify to user")
+        help_text=_("Enable basic verify to user login")
     )
 
 
@@ -153,6 +153,11 @@ class SecurityRegisterAuthSerializer(serializers.Serializer):
     SECURITY_REGISTER_BY_SMS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Register by sms"),
         help_text=_("Enable send sms verify code to user")
+    )
+
+    SECURITY_REGISTER_BY_BASIC_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Register by basic"),
+        help_text=_("Enable basic verify to user register")
     )
 
 
