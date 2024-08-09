@@ -15,6 +15,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 from common.base.utils import AESCipherV2
 from common.core.config import SysConfig, UserConfig
@@ -189,7 +190,10 @@ class UserSerializer(BaseRoleRuleInfo):
 
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
-                        'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
+                        'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True},
+                        'email': {'validators': [UniqueValidator(queryset=models.UserInfo.objects.all())]},
+                        'phone': {'validators': [UniqueValidator(queryset=models.UserInfo.objects.all())]},
+                        }
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
         table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'block', 'is_active', 'dept', 'phone',
@@ -228,7 +232,10 @@ class UserInfoSerializer(UserSerializer):
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'phone', 'avatar', 'roles',
                   'date_joined', 'dept']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
-                        'pk': {'read_only': True}, 'avatar': {'read_only': True}}
+                        'pk': {'read_only': True}, 'avatar': {'read_only': True},
+                        'email': {'validators': [UniqueValidator(queryset=models.UserInfo.objects.all())]},
+                        'phone': {'validators': [UniqueValidator(queryset=models.UserInfo.objects.all())]},
+                        }
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
 

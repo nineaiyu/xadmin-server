@@ -6,6 +6,7 @@
 # date : 8/8/2024
 
 from django.conf import settings
+from django.core.cache import cache
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework.views import APIView
@@ -42,14 +43,15 @@ class RegisterView(APIView):
         if not check_password_rules(password):
             return ApiResponse(code=1001, detail=_("Password does not match security rules"))
 
-        if UserInfo.objects.filter(**{query_key: target}).exists():
-            return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
         username = target
         default = {query_key: target}
         if query_key == 'username':
             default = {}
 
-        user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
+        with cache.lock(f"_LOCKER_REGISTER_USER", timeout=10): # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
+            if UserInfo.objects.filter(**{query_key: target}).exists():
+                return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
+            user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
 
         update_fields = ['last_login']
 
