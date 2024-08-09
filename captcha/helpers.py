@@ -75,7 +75,7 @@ def makeimg(size, color):
         if color.lower().startswith("rgba"):
             image = Image.new("RGBA", size, get_format_color(color))
         else:
-            image = Image.new("RGB", color)
+            image = Image.new("RGB", size, color)
     return image
 
 

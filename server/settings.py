@@ -690,7 +690,7 @@ VERIFY_CODE_UPPER_CASE = False
 VERIFY_CODE_DIGIT_CASE = True
 
 # 邮件配置
-EMAIL_ENABLED = True
+EMAIL_ENABLED = False
 EMAIL_HOST = ""
 EMAIL_PORT = 465
 EMAIL_HOST_USER = ""
@@ -702,8 +702,8 @@ EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 
 # 短信配置
-SMS_ENABLED = True
-SMS_BACKEND = ''
+SMS_ENABLED = False
+SMS_BACKEND = 'alibaba'
 SMS_TEST_PHONE = ''
 
 # 阿里云短信配置
@@ -720,7 +720,7 @@ CAPTCHA_TIMEOUT = 1  # 超时(minutes)
 CAPTCHA_FONT_SIZE = 22
 CAPTCHA_BACKGROUND_COLOR = "#ffffff"
 CAPTCHA_FOREGROUND_COLOR = "#001100"
-CAPTCHA_NOISE_FUNCTIONS = ['captcha.helpers.noise_null']
+CAPTCHA_NOISE_FUNCTIONS = ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots")
 
 # 下面图片验证码 默认配置
 CAPTCHA_OUTPUT_FORMAT = '%(image)s %(text_field)s %(hidden_field)s '
