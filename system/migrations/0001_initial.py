@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 ('nickname', models.CharField(blank=True, max_length=150, verbose_name='Nickname')),
                 ('gender', models.IntegerField(choices=[(0, 'Unknown'), (1, 'Male'), (2, 'Female')], default=0,
                                                verbose_name='Gender')),
-                ('mobile', models.CharField(blank=True, default='', max_length=16, unique=True, verbose_name='Mobile')),
+                ('phone', models.CharField(blank=True, default='', max_length=16, unique=True, verbose_name='Phone')),
                 ('email', models.EmailField(blank=True, default='', max_length=254, unique=True, verbose_name='Email')),
                 ('creator', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                               related_name='+', related_query_name='creator_query',

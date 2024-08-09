@@ -13,11 +13,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
-from common.core.throttle import RegisterThrottle, ResetPasswordThrottle
-from common.utils.verify_code import TokenTempCache
+from common.core.throttle import RegisterThrottle
 from system.models import UserInfo, DeptInfo
-from system.utils.security import check_password_rules, ResetBlockUtil,  RegisterBlockUtil
-from system.utils.view import get_token_lifetime, save_login_log,  verify_sms_email_code
+from system.utils.security import check_password_rules, RegisterBlockUtil
+from system.utils.view import get_token_lifetime, save_login_log, verify_sms_email_code
 
 
 class RegisterView(APIView):

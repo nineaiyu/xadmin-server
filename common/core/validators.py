@@ -11,7 +11,7 @@ from rest_framework import serializers
 
 
 class PhoneValidator:
-    message = _('The mobile phone number format is incorrect')
+    message = _('The phone number format is incorrect')
 
     def __call__(self, value):
         if not value:

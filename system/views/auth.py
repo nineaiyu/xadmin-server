@@ -182,11 +182,9 @@ class SendVerifyCodeView(APIView):
         if config.get("encrypted"):
             target = AESCipherV2(token).decrypt(target)
 
+        query_key = form_type
         if form_type == 'phone':
             form_type = 'sms'
-            query_key = 'mobile'
-        else:
-            query_key = 'email'
 
         ipaddr = get_request_ip(request)
 

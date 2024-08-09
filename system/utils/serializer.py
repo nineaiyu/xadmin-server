@@ -183,7 +183,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
-        fields = ['pk', 'avatar', 'username', 'nickname', 'mobile', 'email', 'gender', 'block', 'is_active',
+        fields = ['pk', 'avatar', 'username', 'nickname', 'phone', 'email', 'gender', 'block', 'is_active',
                   'password', 'dept', 'description', 'last_login', 'date_joined', 'roles', 'rules', 'mode_type']
 
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
@@ -191,7 +191,7 @@ class UserSerializer(BaseRoleRuleInfo):
                         'roles': {'read_only': True}, 'dept': {'required': True}, 'password': {'write_only': True}}
         read_only_fields = ['pk'] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
 
-        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'block', 'is_active', 'dept', 'mobile',
+        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'block', 'is_active', 'dept', 'phone',
                         'last_login', 'date_joined', 'roles', 'rules']
 
     dept = BasePrimaryKeyRelatedField(queryset=models.DeptInfo.objects, allow_null=True, required=False,
@@ -224,7 +224,7 @@ class UserSerializer(BaseRoleRuleInfo):
 class UserInfoSerializer(UserSerializer):
     class Meta:
         model = models.UserInfo
-        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'mobile', 'avatar', 'roles',
+        fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'pk', 'phone', 'avatar', 'roles',
                   'date_joined', 'dept']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'pk': {'read_only': True}, 'avatar': {'read_only': True}}

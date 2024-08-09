@@ -1211,7 +1211,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
-      "name": "mobile",
+      "name": "phone",
       "label": "手机"
     }
   },
@@ -4811,7 +4811,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
-      "name": "mobile",
+      "name": "phone",
       "label": "手机"
     }
   },

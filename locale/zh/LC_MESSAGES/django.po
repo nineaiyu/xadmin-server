@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-09 13:18+0800\n"
+"POT-Creation-Date: 2024-08-09 14:39+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -109,8 +109,8 @@ msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
 #: common/core/modelset.py:132 system/utils/modelset.py:53
-#: system/utils/view.py:104 system/views/auth.py:34 system/views/auth.py:178
-#: system/views/register.py:38
+#: system/utils/view.py:104 system/views/auth.py:34 system/views/auth.py:179
+#: system/views/register.py:37
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
@@ -135,7 +135,7 @@ msgid "Operation failed"
 msgstr "操作失败"
 
 #: common/core/validators.py:14
-msgid "The mobile phone number format is incorrect"
+msgid "The phone number format is incorrect"
 msgstr "手机号格式不正确"
 
 #: common/drf/parsers/axios_form_data.py:129
@@ -566,7 +566,7 @@ msgstr "提供商"
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr "短信服务 (SMS) 提供商或协议"
 
-#: settings/serializers/sms.py:31
+#: settings/serializers/sms.py:31 system/models.py:80
 msgid "Phone"
 msgstr "手机"
 
@@ -815,10 +815,6 @@ msgstr "昵称"
 #: system/models.py:79 system/utils/serializer.py:200
 msgid "Gender"
 msgstr "性别"
-
-#: system/models.py:80
-msgid "Mobile"
-msgstr "手机"
 
 #: system/models.py:85 system/models.py:255 system/utils/serializer.py:198
 msgid "Department"
@@ -1276,7 +1272,7 @@ msgstr "用户配置"
 msgid "Hello"
 msgstr "你好"
 
-#: system/templates/msg_verify_code.html:12 system/views/auth.py:154
+#: system/templates/msg_verify_code.html:12 system/views/auth.py:155
 msgid "Verify code"
 msgstr "验证码"
 
@@ -1317,7 +1313,7 @@ msgid "Login blocked"
 msgstr "登录被锁定"
 
 #: system/utils/serializer.py:218 system/views/admin/user.py:74
-#: system/views/auth.py:41 system/views/register.py:44
+#: system/views/auth.py:41 system/views/register.py:43
 #: system/views/user/userinfo.py:63
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
@@ -1415,27 +1411,27 @@ msgstr "超级管理员禁止删除"
 msgid "Reset password success, return to login page"
 msgstr "重置密码成功，返回到登录页面"
 
-#: system/views/auth.py:128
+#: system/views/auth.py:129
 msgid "Phone already exist"
 msgstr "手机号已经存在"
 
-#: system/views/auth.py:130
+#: system/views/auth.py:131
 msgid "Email already exist"
 msgstr "邮件已经存在"
 
-#: system/views/auth.py:140
+#: system/views/auth.py:141
 msgid "Phone does not exist"
 msgstr "手机号不存在"
 
-#: system/views/auth.py:142
+#: system/views/auth.py:143
 msgid "Email does not exist"
 msgstr "邮件不存在"
 
-#: system/views/auth.py:173
+#: system/views/auth.py:174
 msgid "Forbidden send verification code"
 msgstr "禁止发送验证码"
 
-#: system/views/auth.py:211
+#: system/views/auth.py:210
 msgid "The verification code has been sent"
 msgstr "验证码已发送"
 
@@ -1453,11 +1449,11 @@ msgstr ""
 "您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
 "被临时 锁定 {block_time} 分钟)"
 
-#: system/views/register.py:31
+#: system/views/register.py:30
 msgid "Registration forbidden"
 msgstr "禁止注册"
 
-#: system/views/register.py:47
+#: system/views/register.py:46
 msgid "The account already exists, please try another one"
 msgstr "用户已经存在，请换个试试"
 
