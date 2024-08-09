@@ -9,7 +9,7 @@ from rest_framework import serializers
 
 class EmailSettingSerializer(serializers.Serializer):
     EMAIL_ENABLED = serializers.BooleanField(
-        default=False, label=_('EMAIL'), help_text=_('Enable Email Service (Email)')
+        default=False, label=_('Email'), help_text=_('Enable Email Service (Email)')
     )
     EMAIL_HOST = serializers.CharField(max_length=1024, required=True, label=_("Host"))
     EMAIL_PORT = serializers.CharField(max_length=5, required=True, label=_("Port"))

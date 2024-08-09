@@ -11,7 +11,6 @@ from rest_framework.utils import encoders
 
 from common.core.models import upload_directory_path, DbAuditModel, DbUuidModel, DbCharModel
 from common.fields.image import ProcessedImageField
-from system.utils.mixins import ResetPasswordMixin
 
 
 class ModelLabelField(DbAuditModel, DbUuidModel):
@@ -64,7 +63,7 @@ class ModeTypeAbstract(models.Model):
         abstract = True
 
 
-class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, ResetPasswordMixin):
+class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("Unknown")
         MALE = 1, _("Male")
@@ -78,13 +77,13 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract, ResetPasswordMixin)
 
     nickname = models.CharField(verbose_name=_("Nickname"), max_length=150, blank=True)
     gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name=_("Gender"))
-    mobile = models.CharField(verbose_name=_("Mobile"), max_length=16, default='', blank=True)
+    mobile = models.CharField(verbose_name=_("Mobile"), max_length=16, default='', blank=True, unique=True)
+    email = models.EmailField(verbose_name=_("Email"), default='', blank=True, unique=True)
 
     roles = models.ManyToManyField(to="UserRole", verbose_name=_("Role permission"), blank=True, null=True)
     rules = models.ManyToManyField(to="DataPermission", verbose_name=_("Data permission"), blank=True, null=True)
     dept = models.ForeignKey(to="DeptInfo", verbose_name=_("Department"), on_delete=models.PROTECT, blank=True,
-                             null=True,
-                             related_query_name="dept_query")
+                             null=True, related_query_name="dept_query")
 
     class Meta:
         verbose_name = _("Userinfo")
