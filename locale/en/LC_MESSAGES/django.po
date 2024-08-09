@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-08 19:00+0800\n"
+"POT-Creation-Date: 2024-08-09 12:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,10 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: captcha/fields.py:155 captcha/fields.py:196
+msgid "Invalid CAPTCHA"
+msgstr ""
 
 #: common/celery/flower.py:39
 msgid ""
@@ -608,35 +612,59 @@ msgid "Math challenge"
 msgstr ""
 
 #: settings/serializers/verify.py:51
-msgid "Challenge generator"
+msgid "Noise function null"
 msgstr ""
 
 #: settings/serializers/verify.py:52
-msgid "Image verification code generation mode"
-msgstr ""
-
-#: settings/serializers/verify.py:56
-msgid "Captcha code length"
-msgstr ""
-
-#: settings/serializers/verify.py:57
-msgid "Length of the captcha code"
-msgstr ""
-
-#: settings/serializers/verify.py:61
-msgid "Captcha timeout (minute)"
-msgstr ""
-
-#: settings/serializers/verify.py:62
-msgid "Captcha code expiration time"
-msgstr ""
-
-#: settings/serializers/verify.py:66
 msgid "Noise function arcs"
 msgstr ""
 
-#: settings/serializers/verify.py:70
+#: settings/serializers/verify.py:53
 msgid "Noise function dots"
+msgstr ""
+
+#: settings/serializers/verify.py:56
+msgid "Challenge generator"
+msgstr ""
+
+#: settings/serializers/verify.py:57
+msgid "Image verification code generation mode"
+msgstr ""
+
+#: settings/serializers/verify.py:61
+msgid "Captcha code length"
+msgstr ""
+
+#: settings/serializers/verify.py:62
+msgid "Length of the captcha code"
+msgstr ""
+
+#: settings/serializers/verify.py:66
+msgid "Captcha font size"
+msgstr ""
+
+#: settings/serializers/verify.py:67
+msgid "Font size of the captcha code"
+msgstr ""
+
+#: settings/serializers/verify.py:71
+msgid "Captcha timeout (minute)"
+msgstr ""
+
+#: settings/serializers/verify.py:72
+msgid "Captcha code expiration time"
+msgstr ""
+
+#: settings/serializers/verify.py:75
+msgid "Captcha background color"
+msgstr ""
+
+#: settings/serializers/verify.py:76
+msgid "Captcha foreground color"
+msgstr ""
+
+#: settings/serializers/verify.py:78
+msgid "Noise functions"
 msgstr ""
 
 #: settings/views.py:91 settings/views/email.py:40
@@ -1430,8 +1458,4 @@ msgstr ""
 
 #: system/views/user/userinfo.py:61
 msgid "Old password verification failed"
-msgstr ""
-
-#: tests.py:31
-msgid "Germany"
 msgstr ""

@@ -50,10 +50,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'system.apps.SystemConfig',
     'settings.apps.SettingsConfig',
+    'captcha.apps.CaptchaConfig',
     'message.apps.MessageConfig',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'captcha',
     'corsheaders',
     'rest_framework',
     'django_filters',
@@ -546,23 +546,6 @@ CELERY_BEAT_SCHEDULE = {
     **locals().get('CELERY_BEAT_SCHEDULE', {})
 }
 
-# 字母验证码
-CAPTCHA_IMAGE_SIZE = (120, 40)  # 设置 captcha 图片大小
-CAPTCHA_LENGTH = 4  # 字符个数
-CAPTCHA_TIMEOUT = 1  # 超时(minutes)
-CAPTCHA_NOISE_FUNCTION_ARCS = True
-CAPTCHA_NOISE_FUNCTION_DOTS = True
-# 加减乘除验证码
-CAPTCHA_OUTPUT_FORMAT = '%(image)s %(text_field)s %(hidden_field)s '
-CAPTCHA_NOISE_FUNCTIONS = ['captcha.helpers.noise_null']
-if CAPTCHA_NOISE_FUNCTION_ARCS:
-    CAPTCHA_NOISE_FUNCTIONS.append('captcha.helpers.noise_arcs')
-if CAPTCHA_NOISE_FUNCTION_DOTS:
-    CAPTCHA_NOISE_FUNCTIONS.append('captcha.helpers.noise_dots')
-
-# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'
-CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
-
 APPEND_SLASH = False
 
 HTTP_BIND_HOST = '0.0.0.0'
@@ -728,3 +711,28 @@ ALIBABA_ACCESS_KEY_ID = ''
 ALIBABA_ACCESS_KEY_SECRET = ''
 ALIBABA_VERIFY_SIGN_NAME = ''
 ALIBABA_VERIFY_TEMPLATE_CODE = ''
+
+# 图片验证码
+CAPTCHA_IMAGE_SIZE = (120, 40)  # 设置 captcha 图片大小
+CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
+CAPTCHA_LENGTH = 4  # 字符个数,仅针对随机字符串生效
+CAPTCHA_TIMEOUT = 1  # 超时(minutes)
+CAPTCHA_FONT_SIZE = 22
+CAPTCHA_BACKGROUND_COLOR = "#ffffff"
+CAPTCHA_FOREGROUND_COLOR = "#001100"
+CAPTCHA_NOISE_FUNCTIONS = ['captcha.helpers.noise_null']
+
+# 下面图片验证码 默认配置
+CAPTCHA_OUTPUT_FORMAT = '%(image)s %(text_field)s %(hidden_field)s '
+# CAPTCHA_NOISE_FUNCTIONS = ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots")
+# CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.random_char_challenge'
+CAPTCHA_FONT_PATH = os.path.join(BASE_DIR, "captcha", "fonts", "Vera.ttf")
+CAPTCHA_LETTER_ROTATION = (-35, 35)
+CAPTCHA_FILTER_FUNCTIONS = ("captcha.helpers.post_smooth",)
+CAPTCHA_PUNCTUATION = """_"',.;:-"""
+CAPTCHA_FLITE_PATH = None
+CAPTCHA_SOX_PATH = None
+CAPTCHA_MATH_CHALLENGE_OPERATOR = "*"
+CAPTCHA_GET_FROM_POOL = False
+CAPTCHA_GET_FROM_POOL_TIMEOUT = 5
+CAPTCHA_2X_IMAGE = True

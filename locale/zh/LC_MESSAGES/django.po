@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-08 19:00+0800\n"
+"POT-Creation-Date: 2024-08-09 12:37+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,12 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: captcha/fields.py:155 captcha/fields.py:196
+#, fuzzy
+#| msgid "Invalid ip"
+msgid "Invalid CAPTCHA"
+msgstr "无效 IP"
 
 #: common/celery/flower.py:39
 msgid ""
@@ -613,36 +619,60 @@ msgid "Math challenge"
 msgstr "数学运算"
 
 #: settings/serializers/verify.py:51
+msgid "Noise function null"
+msgstr "无噪声函数"
+
+#: settings/serializers/verify.py:52
+msgid "Noise function arcs"
+msgstr "弧噪声函数"
+
+#: settings/serializers/verify.py:53
+msgid "Noise function dots"
+msgstr "点噪声函数"
+
+#: settings/serializers/verify.py:56
 msgid "Challenge generator"
 msgstr "图片算法模式"
 
-#: settings/serializers/verify.py:52
+#: settings/serializers/verify.py:57
 msgid "Image verification code generation mode"
 msgstr "图片验证码生成的算法模式"
 
-#: settings/serializers/verify.py:56
+#: settings/serializers/verify.py:61
 msgid "Captcha code length"
 msgstr "验证码长度"
 
-#: settings/serializers/verify.py:57
+#: settings/serializers/verify.py:62
 msgid "Length of the captcha code"
 msgstr "图片验证码长度"
 
-#: settings/serializers/verify.py:61
+#: settings/serializers/verify.py:66
+msgid "Captcha font size"
+msgstr "验证码字体大小"
+
+#: settings/serializers/verify.py:67
+msgid "Font size of the captcha code"
+msgstr "图片验证码字体大小"
+
+#: settings/serializers/verify.py:71
 msgid "Captcha timeout (minute)"
 msgstr "验证码过期时间 (分)"
 
-#: settings/serializers/verify.py:62
+#: settings/serializers/verify.py:72
 msgid "Captcha code expiration time"
 msgstr "图片验证码过期时间"
 
-#: settings/serializers/verify.py:66
-msgid "Noise function arcs"
-msgstr "噪声函数弧"
+#: settings/serializers/verify.py:75
+msgid "Captcha background color"
+msgstr "验证码背景色"
 
-#: settings/serializers/verify.py:70
-msgid "Noise function dots"
-msgstr "噪声函数点"
+#: settings/serializers/verify.py:76
+msgid "Captcha foreground color"
+msgstr "验证码字体色"
+
+#: settings/serializers/verify.py:78
+msgid "Noise functions"
+msgstr "噪声函数"
 
 #: settings/views.py:91 settings/views/email.py:40
 msgid "Test smtp setting"
@@ -1442,7 +1472,3 @@ msgstr "错误的文件类型"
 #: system/views/user/userinfo.py:61
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
-
-#: tests.py:31
-msgid "Germany"
-msgstr ""

@@ -8,7 +8,7 @@ from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField
+from common.core.fields import LabeledChoiceField, LabeledMultipleChoiceField, ColorPickerField
 
 
 class VerifyCodeSettingSerializer(serializers.Serializer):
@@ -43,12 +43,17 @@ class VerifyCodeSettingSerializer(serializers.Serializer):
 
 
 class CaptchaSettingSerializer(serializers.Serializer):
-    class CHALLENGE(TextChoices):
+    class ChallengeChoices(TextChoices):
         RANDOM_CHAR = 'captcha.helpers.random_char_challenge', _('Random char')
         MATH_CHALLENGE = 'captcha.helpers.math_challenge', _('Math challenge')
 
+    class NoiseFunctionsChoices(TextChoices):
+        FUNCTION_NULL = 'captcha.helpers.noise_null', _('Noise function null')
+        FUNCTION_ARCS = 'captcha.helpers.noise_arcs', _('Noise function arcs')
+        FUNCTION_DOTS = 'captcha.helpers.noise_dots', _('Noise function dots')
+
     CAPTCHA_CHALLENGE_FUNCT = LabeledChoiceField(
-        choices=CHALLENGE.choices, default=CHALLENGE.MATH_CHALLENGE, label=_('Challenge generator'),
+        choices=ChallengeChoices.choices, default=ChallengeChoices.MATH_CHALLENGE, label=_('Challenge generator'),
         help_text=_('Image verification code generation mode')
     )
 
@@ -57,24 +62,19 @@ class CaptchaSettingSerializer(serializers.Serializer):
         help_text=_('Length of the captcha code')
     )
 
+    CAPTCHA_FONT_SIZE = serializers.IntegerField(
+        default=22, min_value=10, max_value=50, label=_('Captcha font size'),
+        help_text=_('Font size of the captcha code')
+    )
+
     CAPTCHA_TIMEOUT = serializers.IntegerField(
         min_value=1, max_value=60 * 24 * 7, label=_('Captcha timeout (minute)'),
         help_text=_("Captcha code expiration time")
     )
 
-    CAPTCHA_NOISE_FUNCTION_ARCS = serializers.BooleanField(
-        required=True, label=_('Noise function arcs'),
-    )
+    CAPTCHA_BACKGROUND_COLOR = ColorPickerField(max_length=256, required=True, label=_('Captcha background color'))
+    CAPTCHA_FOREGROUND_COLOR = ColorPickerField(max_length=256, required=True, label=_('Captcha foreground color'))
 
-    CAPTCHA_NOISE_FUNCTION_DOTS = serializers.BooleanField(
-        required=True, label=_('Noise function dots')
-    )
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['CAPTCHA_NOISE_FUNCTIONS'] = ['captcha.helpers.noise_null']
-        if data['CAPTCHA_NOISE_FUNCTION_ARCS']:
-            data['CAPTCHA_NOISE_FUNCTIONS'].append('captcha.helpers.noise_arcs')
-        if data['CAPTCHA_NOISE_FUNCTION_DOTS']:
-            data['CAPTCHA_NOISE_FUNCTIONS'].append('captcha.helpers.noise_dots')
-        return data
+    CAPTCHA_NOISE_FUNCTIONS = LabeledMultipleChoiceField(label=_('Noise functions'),
+                                                         default=NoiseFunctionsChoices.FUNCTION_NULL,
+                                                         choices=NoiseFunctionsChoices.choices)

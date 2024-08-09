@@ -194,3 +194,8 @@ class PhoneField(serializers.CharField):
         return value
 
 
+class ColorPickerField(serializers.CharField):
+
+    def __init__(self, **kwargs):
+        self.input_type = 'color'
+        super().__init__(**kwargs)

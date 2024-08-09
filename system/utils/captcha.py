@@ -8,7 +8,6 @@ import logging
 
 from captcha.helpers import captcha_image_url
 from captcha.models import CaptchaStore
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ class CaptchaAuth(object):
         return CaptchaStore.objects.filter(hashkey=self.captcha_key).first()
 
     def generate(self):
-        self.captcha_key = CaptchaStore.generate_key(settings.CAPTCHA_CHALLENGE_FUNCT)
+        self.captcha_key = CaptchaStore.generate_key()
         captcha_image = captcha_image_url(self.captcha_key)
         captcha_obj = self.__get_captcha_obj()
         code_length = 0

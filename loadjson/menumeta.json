@@ -2476,6 +2476,31 @@
   },
   {
     "model": "system.menumeta",
+    "pk": "9ea27d25-9b09-4773-9e7e-d9c6d8b2c439",
+    "fields": {
+      "created_time": "2024-08-09T04:49:00.971Z",
+      "updated_time": "2024-08-09T04:49:00.971Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "title": "获取图片验证码配置",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": "9f9d09c6-2974-480f-aae2-7cfb495d25f8",
     "fields": {
       "created_time": "2024-01-22T09:32:00.474Z",
@@ -3060,6 +3085,31 @@
       "modifier": 1,
       "dept_belong": null,
       "title": "个人消息已读",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c732a6ae-c03e-4c56-9092-c7b42b9b870a",
+    "fields": {
+      "created_time": "2024-08-09T04:49:26.895Z",
+      "updated_time": "2024-08-09T04:49:32.061Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "更新图片验证码配置",
       "icon": "",
       "r_svg_name": "",
       "is_show_menu": true,
