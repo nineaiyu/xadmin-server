@@ -11,7 +11,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from system.models import UploadFile
-from system.utils.serializer import UploadFileSerializer
+from system.serializers.upload import UploadFileSerializer
 
 logger = logging.getLogger(__name__)
 

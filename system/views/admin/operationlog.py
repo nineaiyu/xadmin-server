@@ -10,7 +10,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from system.models import OperationLog
-from system.utils.serializer import OperationLogSerializer
+from system.serializers.log import OperationLogSerializer
 
 
 class OperationLogFilter(BaseFilterSet):

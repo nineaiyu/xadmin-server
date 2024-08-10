@@ -48,10 +48,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'system.apps.SystemConfig',
-    'settings.apps.SettingsConfig',
-    'captcha.apps.CaptchaConfig',
-    'message.apps.MessageConfig',
+    'system.apps.SystemConfig',  # 系统管理
+    'settings.apps.SettingsConfig',  # 设置相关
+    'captcha.apps.CaptchaConfig',  # 图片验证码
+    'message.apps.MessageConfig',  # websocket 消息
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -717,7 +717,7 @@ ALIBABA_VERIFY_TEMPLATE_CODE = ''
 CAPTCHA_IMAGE_SIZE = (120, 40)  # 设置 captcha 图片大小
 CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
 CAPTCHA_LENGTH = 4  # 字符个数,仅针对随机字符串生效
-CAPTCHA_TIMEOUT = 1  # 超时(minutes)
+CAPTCHA_TIMEOUT = 5  # 超时(minutes)
 CAPTCHA_FONT_SIZE = 22
 CAPTCHA_BACKGROUND_COLOR = "#ffffff"
 CAPTCHA_FOREGROUND_COLOR = "#001100"

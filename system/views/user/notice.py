@@ -18,7 +18,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
-from system.utils.serializer import UserNoticeSerializer
+from system.serializers.notice import UserNoticeSerializer
 
 
 def get_users_notice_q(user_obj):

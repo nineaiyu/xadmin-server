@@ -11,7 +11,7 @@ from common.core.filter import OwnerUserFilter
 from common.core.modelset import OwnerModelSet
 from common.core.response import ApiResponse
 from system.models import UserPersonalConfig
-from system.utils.serializer import UserPersonalConfigSerializer
+from system.serializers.config import UserPersonalConfigSerializer
 
 
 class ConfigsView(OwnerModelSet):

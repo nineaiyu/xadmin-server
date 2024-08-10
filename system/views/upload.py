@@ -16,7 +16,7 @@ from common.core.config import SysConfig, UserConfig
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from system.models import UploadFile
-from system.utils.serializer import UploadFileSerializer
+from system.serializers.upload import UploadFileSerializer
 
 logger = logging.getLogger(__file__)
 

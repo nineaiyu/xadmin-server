@@ -15,9 +15,9 @@ from common.base.magic import cache_response
 from common.base.utils import get_choices_dict, AESCipherV2
 from common.core.modelset import OwnerModelSet, UploadFileAction
 from common.core.response import ApiResponse
+from settings.utils.password import check_password_rules
 from system.models import UserInfo
-from system.utils.security import check_password_rules
-from system.utils.serializer import UserInfoSerializer
+from system.serializers.userinfo import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
 

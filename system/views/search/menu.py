@@ -12,7 +12,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from system.models import Menu
-from system.utils.serializer import MenuSerializer
+from system.serializers.menu import MenuSerializer
 
 
 class SearchMenuFilter(BaseFilterSet):

@@ -20,7 +20,7 @@ from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.serializers import get_sub_serializer_fields
 from system.models import ModelLabelField
-from system.utils.serializer import ModelLabelFieldSerializer
+from system.serializers.field import ModelLabelFieldSerializer
 
 logger = logging.getLogger(__name__)
 

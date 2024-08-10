@@ -14,7 +14,7 @@ from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ListDeleteModelSet
 from common.core.response import ApiResponse
 from system.models import NoticeMessage, NoticeUserRead
-from system.utils.serializer import NoticeMessageSerializer, NoticeUserReadMessageSerializer, AnnouncementSerializer
+from system.serializers.notice import NoticeMessageSerializer, NoticeUserReadMessageSerializer, AnnouncementSerializer
 
 
 class NoticeMessageFilter(BaseFilterSet):

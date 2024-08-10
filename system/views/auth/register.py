@@ -15,9 +15,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
-from system.models import UserInfo, DeptInfo
-from system.utils.security import check_password_rules, RegisterBlockUtil
-from system.utils.view import get_token_lifetime, save_login_log, verify_sms_email_code
+from settings.utils.password import check_password_rules
+from settings.utils.security import RegisterBlockUtil
+from system.models import DeptInfo, UserInfo
+from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 
 
 class RegisterView(APIView):
@@ -48,7 +49,7 @@ class RegisterView(APIView):
         if query_key == 'username':
             default = {}
 
-        with cache.lock(f"_LOCKER_REGISTER_USER", timeout=10): # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
+        with cache.lock(f"_LOCKER_REGISTER_USER", timeout=10):  # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
             if UserInfo.objects.filter(**{query_key: target}).exists():
                 return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
             user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)

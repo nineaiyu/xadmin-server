@@ -9,18 +9,18 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.utils.request import get_request_ip
+from settings.utils.security import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo
-from system.utils.security import LoginBlockUtil, LoginIpBlockUtil
-from system.utils.view import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
+from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
     save_login_log, verify_sms_email_code
 
 
-class LoginView(TokenObtainPairView):
+class BasicLoginView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 
@@ -83,7 +83,7 @@ class LoginView(TokenObtainPairView):
         return ApiResponse(data=config)
 
 
-class LoginByVerifyCode(TokenObtainPairView):
+class VerifyCodeLoginView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 
@@ -106,12 +106,3 @@ class LoginByVerifyCode(TokenObtainPairView):
         request.user = user
         save_login_log(request)
         return ApiResponse(data=result)
-
-
-class RefreshTokenView(TokenRefreshView):
-    """刷新Token"""
-
-    def post(self, request, *args, **kwargs):
-        data = super().post(request, *args, **kwargs).data
-        data.update(get_token_lifetime(request.user))
-        return ApiResponse(data=data)

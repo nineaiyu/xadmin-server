@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-09 21:52+0800\n"
+"POT-Creation-Date: 2024-08-10 18:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,10 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-#: captcha/fields.py:155 captcha/fields.py:196
-msgid "Invalid CAPTCHA"
-msgstr ""
 
 #: common/celery/flower.py:39
 msgid ""
@@ -32,7 +28,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/utils/view.py:112
+#: common/core/auth.py:36 system/utils/auth.py:102
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -107,9 +103,9 @@ msgstr ""
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:132 system/utils/modelset.py:53
-#: system/utils/view.py:107 system/views/auth.py:34 system/views/auth.py:188
-#: system/views/register.py:38
+#: common/core/modelset.py:132 system/utils/auth.py:97
+#: system/utils/modelset.py:53 system/views/auth/code.py:139
+#: system/views/auth/register.py:39 system/views/auth/reset.py:30
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -216,7 +212,7 @@ msgid "Invalid ip"
 msgstr ""
 
 #: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
-#: system/models.py:68
+#: system/models/user.py:20
 msgid "Unknown"
 msgstr ""
 
@@ -241,7 +237,8 @@ msgstr ""
 msgid "Send SMS code"
 msgstr ""
 
-#: settings/models.py:16 settings/serializers/sms.py:56 system/models.py:176
+#: settings/models.py:16 settings/serializers/sms.py:56
+#: system/models/permission.py:17
 msgid "Name"
 msgstr ""
 
@@ -257,8 +254,9 @@ msgstr ""
 msgid "Encrypted"
 msgstr ""
 
-#: settings/models.py:20 system/models.py:151 system/models.py:178
-#: system/models.py:193 system/models.py:235 system/models.py:405
+#: settings/models.py:20 system/models/config.py:17
+#: system/models/department.py:29 system/models/menu.py:68
+#: system/models/permission.py:19 system/models/role.py:17
 msgid "Is active"
 msgstr ""
 
@@ -276,7 +274,7 @@ msgid ""
 "and is usually used in links in system emails"
 msgstr ""
 
-#: settings/serializers/email.py:13 system/models.py:81
+#: settings/serializers/email.py:13 system/models/user.py:33
 msgid "Email"
 msgstr ""
 
@@ -284,74 +282,74 @@ msgstr ""
 msgid "Enable Email Service (Email)"
 msgstr ""
 
-#: settings/serializers/email.py:15 settings/utils/serializer.py:16
+#: settings/serializers/email.py:15
 msgid "Host"
 msgstr ""
 
-#: settings/serializers/email.py:16 settings/utils/serializer.py:17
+#: settings/serializers/email.py:16
 msgid "Port"
 msgstr ""
 
-#: settings/serializers/email.py:18 settings/utils/serializer.py:19
+#: settings/serializers/email.py:18
 msgid "Account"
 msgstr ""
 
-#: settings/serializers/email.py:19 settings/utils/serializer.py:20
+#: settings/serializers/email.py:19
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:22 settings/utils/serializer.py:23
+#: settings/serializers/email.py:22
 msgid "Password"
 msgstr ""
 
-#: settings/serializers/email.py:24 settings/utils/serializer.py:25
+#: settings/serializers/email.py:24
 msgid ""
 "Password to use for the email server. It is used in conjunction with `User` "
 "when authenticating to the email server"
 msgstr ""
 
-#: settings/serializers/email.py:27 settings/utils/serializer.py:28
+#: settings/serializers/email.py:27
 msgid "Sender"
 msgstr ""
 
-#: settings/serializers/email.py:28 settings/utils/serializer.py:29
+#: settings/serializers/email.py:28
 msgid "Sender email address (default to using the `User`)"
 msgstr ""
 
-#: settings/serializers/email.py:32 settings/utils/serializer.py:36
+#: settings/serializers/email.py:32
 msgid "Subject prefix"
 msgstr ""
 
-#: settings/serializers/email.py:33 settings/utils/serializer.py:37
+#: settings/serializers/email.py:33
 msgid "The subject line prefix of the sent email"
 msgstr ""
 
-#: settings/serializers/email.py:36 settings/utils/serializer.py:40
+#: settings/serializers/email.py:36
 msgid "Use SSL"
 msgstr ""
 
-#: settings/serializers/email.py:38 settings/utils/serializer.py:42
+#: settings/serializers/email.py:38
 msgid ""
 "Whether to use an implicit TLS (secure) connection when talking to the SMTP "
 "server. In most email documentation this type of TLS connection is referred "
 "to as SSL. It is generally used on port 465"
 msgstr ""
 
-#: settings/serializers/email.py:41 settings/utils/serializer.py:45
+#: settings/serializers/email.py:41
 msgid "Use TLS"
 msgstr ""
 
-#: settings/serializers/email.py:43 settings/utils/serializer.py:47
+#: settings/serializers/email.py:43
 msgid ""
 "Whether to use a TLS (secure) connection when talking to the SMTP server. "
 "This is used for explicit TLS connections, generally on port 587"
 msgstr ""
 
-#: settings/serializers/email.py:47 settings/utils/serializer.py:32
+#: settings/serializers/email.py:47
 msgid "Recipient"
 msgstr ""
 
-#: settings/serializers/email.py:48 settings/utils/serializer.py:33
+#: settings/serializers/email.py:48
 msgid "The recipient is used for testing the email server's connectivity"
 msgstr ""
 
@@ -567,7 +565,7 @@ msgstr ""
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr ""
 
-#: settings/serializers/sms.py:31 system/models.py:80
+#: settings/serializers/sms.py:31 system/models/user.py:32
 msgid "Phone"
 msgstr ""
 
@@ -675,7 +673,7 @@ msgstr ""
 msgid "Noise functions"
 msgstr ""
 
-#: settings/views.py:91 settings/views/email.py:40
+#: settings/views/email.py:40
 msgid "Test smtp setting"
 msgstr ""
 
@@ -691,587 +689,670 @@ msgstr ""
 msgid "Test success"
 msgstr ""
 
-#: system/models.py:18
-msgid "Text"
-msgstr ""
-
-#: system/models.py:19
-msgid "Json"
-msgstr ""
-
-#: system/models.py:20
-msgid "All data"
-msgstr ""
-
-#: system/models.py:21
-msgid "Datetime"
-msgstr ""
-
-#: system/models.py:22
-msgid "Datetime range selector"
-msgstr ""
-
-#: system/models.py:23
-msgid "Seconds to the current time"
-msgstr ""
-
-#: system/models.py:24
-msgid "My ID"
-msgstr ""
-
-#: system/models.py:25
-msgid "My department ID"
-msgstr ""
-
-#: system/models.py:26
-msgid "My department ID and data below the department"
-msgstr ""
-
-#: system/models.py:27
-msgid "Department ID and data below the department"
-msgstr ""
-
-#: system/models.py:28
-msgid "Select the user ID"
-msgstr ""
-
-#: system/models.py:29
-msgid "Select menu ID"
-msgstr ""
-
-#: system/models.py:30
-msgid "Select role ID"
-msgstr ""
-
-#: system/models.py:31
-msgid "Select department ID"
-msgstr ""
-
-#: system/models.py:34 system/models.py:83 system/models.py:229
-#: system/utils/serializer.py:140
-msgid "Role permission"
-msgstr ""
-
-#: system/models.py:35 system/models.py:84 system/models.py:183
-#: system/models.py:230 system/utils/serializer.py:143
-msgid "Data permission"
-msgstr ""
-
-#: system/models.py:37 system/utils/serializer.py:41
-msgid "Field type"
-msgstr ""
-
-#: system/models.py:39
-msgid "Parent node"
-msgstr ""
-
-#: system/models.py:40
-msgid "Model/Field name"
-msgstr ""
-
-#: system/models.py:41
-msgid "Model/Field label"
-msgstr ""
-
-#: system/models.py:45
-msgid "Model label field"
-msgstr ""
-
-#: system/models.py:54
+#: system/models/abstract.py:14
 msgid "Or mode"
 msgstr ""
 
-#: system/models.py:55
+#: system/models/abstract.py:15
 msgid "And mode"
 msgstr ""
 
-#: system/models.py:58
+#: system/models/abstract.py:18
 msgid "Data permission mode"
 msgstr ""
 
-#: system/models.py:60
+#: system/models/abstract.py:20
 msgid ""
 "Permission mode, and the mode indicates that the data needs to satisfy each "
 "rule in the rule list at the same time, or the mode satisfies any rule"
 msgstr ""
 
-#: system/models.py:69
-msgid "Male"
+#: system/models/config.py:16
+msgid "Config value"
 msgstr ""
 
-#: system/models.py:70
-msgid "Female"
+#: system/models/config.py:18
+msgid "API access"
 msgstr ""
 
-#: system/models.py:72
-msgid "Avatar"
+#: system/models/config.py:19
+msgid "Allows API interfaces to access this config"
 msgstr ""
 
-#: system/models.py:78
-msgid "Nickname"
+#: system/models/config.py:26 system/models/config.py:40
+msgid "Config name"
 msgstr ""
 
-#: system/models.py:79 system/utils/serializer.py:205
-msgid "Gender"
+#: system/models/config.py:27
+msgid "User inherit"
 msgstr ""
 
-#: system/models.py:85 system/models.py:255 system/utils/serializer.py:203
-msgid "Department"
+#: system/models/config.py:28
+msgid "Allows users to inherit this config"
 msgstr ""
 
-#: system/models.py:89
-msgid "Userinfo"
+#: system/models/config.py:31
+msgid "System config"
 msgstr ""
 
-#: system/models.py:98 system/utils/serializer.py:332
-msgid "Menu title"
+#: system/models/config.py:39 system/models/notice.py:70
+#: system/serializers/config.py:45 system/serializers/config.py:57
+#: system/serializers/log.py:31 system/serializers/log.py:49
+#: system/serializers/notice.py:141
+msgid "User"
 msgstr ""
 
-#: system/models.py:99
-msgid "Left icon"
+#: system/models/config.py:43
+msgid "User config"
 msgstr ""
 
-#: system/models.py:100 system/utils/serializer.py:250
-msgid "Right icon"
-msgstr ""
-
-#: system/models.py:101
-msgid "Additional icon to the right of menu name"
-msgstr ""
-
-#: system/models.py:102 system/utils/serializer.py:249
-msgid "Show menu"
-msgstr ""
-
-#: system/models.py:103 system/utils/serializer.py:248
-msgid "Show parent menu"
-msgstr ""
-
-#: system/models.py:104 system/utils/serializer.py:251
-msgid "Keepalive"
-msgstr ""
-
-#: system/models.py:106
-msgid ""
-"When enabled, the entire state of the page is saved, and when refreshed, the "
-"state is cleared"
-msgstr ""
-
-#: system/models.py:107 system/utils/serializer.py:252
-msgid "Iframe URL"
-msgstr ""
-
-#: system/models.py:108
-msgid "The embedded iframe link address"
-msgstr ""
-
-#: system/models.py:109 system/utils/serializer.py:253
-msgid "Iframe loading"
-msgstr ""
-
-#: system/models.py:111
-msgid "Enter animation"
-msgstr ""
-
-#: system/models.py:112
-msgid "Leave animation"
-msgstr ""
-
-#: system/models.py:114 system/utils/serializer.py:263
-msgid "Hidden tag"
-msgstr ""
-
-#: system/models.py:115
-msgid ""
-"The current menu name or custom information is prohibited from being added "
-"to the TAB"
-msgstr ""
-
-#: system/models.py:116 system/utils/serializer.py:264
-msgid "Fixed tag"
-msgstr ""
-
-#: system/models.py:117
-msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
-msgstr ""
-
-#: system/models.py:118 system/utils/serializer.py:265
-msgid "Dynamic level"
-msgstr ""
-
-#: system/models.py:119
-msgid "Maximum number of dynamic routes that can be opened"
-msgstr ""
-
-#: system/models.py:122 system/models.py:152 system/utils/serializer.py:292
-#: system/utils/serializer.py:336
-msgid "Menu meta"
-msgstr ""
-
-#: system/models.py:132
-msgid "Directory"
-msgstr ""
-
-#: system/models.py:133 system/models.py:167 system/models.py:179
-#: system/models.py:194 system/models.py:207 system/utils/serializer.py:58
-#: system/utils/serializer.py:124
-msgid "Menu"
-msgstr ""
-
-#: system/models.py:134
-msgid "Permission"
-msgstr ""
-
-#: system/models.py:137
-msgid "GET"
-msgstr ""
-
-#: system/models.py:138
-msgid "POST"
-msgstr ""
-
-#: system/models.py:139
-msgid "PUT"
-msgstr ""
-
-#: system/models.py:140
-msgid "DELETE"
-msgstr ""
-
-#: system/models.py:141
-msgid "PATCH"
-msgstr ""
-
-#: system/models.py:143 system/utils/serializer.py:302
-msgid "Parent menu"
-msgstr ""
-
-#: system/models.py:146 system/utils/serializer.py:307
-msgid "Menu type"
-msgstr ""
-
-#: system/models.py:147
-msgid "Component name or permission code"
-msgstr ""
-
-#: system/models.py:148 system/models.py:231
-msgid "Rank"
-msgstr ""
-
-#: system/models.py:149
-msgid "Route path or api path"
-msgstr ""
-
-#: system/models.py:150
-msgid "Component path"
-msgstr ""
-
-#: system/models.py:153 system/utils/serializer.py:304
-msgid "Model"
-msgstr ""
-
-#: system/models.py:157
-msgid "Method"
-msgstr ""
-
-#: system/models.py:177
-msgid "Rules"
-msgstr ""
-
-#: system/models.py:180
-msgid "If a menu exists, it only applies to the selected menu permission"
-msgstr ""
-
-#: system/models.py:191
-msgid "Role name"
-msgstr ""
-
-#: system/models.py:192
-msgid "Role code"
-msgstr ""
-
-#: system/models.py:197
-msgid "User role"
-msgstr ""
-
-#: system/models.py:206
-msgid "Role"
-msgstr ""
-
-#: system/models.py:208
-msgid "Field"
-msgstr ""
-
-#: system/models.py:211
-msgid "Field permission"
-msgstr ""
-
-#: system/models.py:225
+#: system/models/department.py:19
 msgid "Department name"
 msgstr ""
 
-#: system/models.py:226
+#: system/models/department.py:20
 msgid "Department code"
 msgstr ""
 
-#: system/models.py:227 system/utils/serializer.py:162
+#: system/models/department.py:21 system/serializers/department.py:33
 msgid "Superior department"
 msgstr ""
 
-#: system/models.py:232
+#: system/models/department.py:23 system/models/field.py:32
+#: system/models/user.py:35 system/serializers/base.py:21
+msgid "Role permission"
+msgstr ""
+
+#: system/models/department.py:24 system/models/field.py:33
+#: system/models/permission.py:24 system/models/user.py:36
+#: system/serializers/base.py:24
+msgid "Data permission"
+msgstr ""
+
+#: system/models/department.py:25 system/models/menu.py:65
+msgid "Rank"
+msgstr ""
+
+#: system/models/department.py:26
 msgid "Auto bind"
 msgstr ""
 
-#: system/models.py:234
+#: system/models/department.py:28
 msgid ""
 "If the value of the registration parameter channel is consistent with the "
 "department code, the user is automatically bound to the department"
 msgstr ""
 
-#: system/models.py:265
+#: system/models/department.py:49 system/models/user.py:37
+#: system/serializers/user.py:44
+msgid "Department"
+msgstr ""
+
+#: system/models/field.py:16
+msgid "Text"
+msgstr ""
+
+#: system/models/field.py:17
+msgid "Json"
+msgstr ""
+
+#: system/models/field.py:18
+msgid "All data"
+msgstr ""
+
+#: system/models/field.py:19
+msgid "Datetime"
+msgstr ""
+
+#: system/models/field.py:20
+msgid "Datetime range selector"
+msgstr ""
+
+#: system/models/field.py:21
+msgid "Seconds to the current time"
+msgstr ""
+
+#: system/models/field.py:22
+msgid "My ID"
+msgstr ""
+
+#: system/models/field.py:23
+msgid "My department ID"
+msgstr ""
+
+#: system/models/field.py:24
+msgid "My department ID and data below the department"
+msgstr ""
+
+#: system/models/field.py:25
+msgid "Department ID and data below the department"
+msgstr ""
+
+#: system/models/field.py:26
+msgid "Select the user ID"
+msgstr ""
+
+#: system/models/field.py:27
+msgid "Select menu ID"
+msgstr ""
+
+#: system/models/field.py:28
+msgid "Select role ID"
+msgstr ""
+
+#: system/models/field.py:29
+msgid "Select department ID"
+msgstr ""
+
+#: system/models/field.py:35 system/serializers/field.py:26
+msgid "Field type"
+msgstr ""
+
+#: system/models/field.py:37
+msgid "Parent node"
+msgstr ""
+
+#: system/models/field.py:38
+msgid "Model/Field name"
+msgstr ""
+
+#: system/models/field.py:39
+msgid "Model/Field label"
+msgstr ""
+
+#: system/models/field.py:43
+msgid "Model label field"
+msgstr ""
+
+#: system/models/log.py:19
 msgid "Username and password"
 msgstr ""
 
-#: system/models.py:266
+#: system/models/log.py:20
 msgid "SMS verification code"
 msgstr ""
 
-#: system/models.py:267
+#: system/models/log.py:21
 msgid "Wechat scan code"
 msgstr ""
 
-#: system/models.py:269
+#: system/models/log.py:23
 msgid "Login status"
 msgstr ""
 
-#: system/models.py:270 system/models.py:287
+#: system/models/log.py:24 system/models/log.py:41
 msgid "IpAddress"
 msgstr ""
 
-#: system/models.py:271 system/models.py:288
+#: system/models/log.py:25 system/models/log.py:42
 msgid "Browser"
 msgstr ""
 
-#: system/models.py:272 system/models.py:289
+#: system/models/log.py:26 system/models/log.py:43
 msgid "System"
 msgstr ""
 
-#: system/models.py:273
+#: system/models/log.py:27
 msgid "Agent"
 msgstr ""
 
-#: system/models.py:275
+#: system/models/log.py:29
 msgid "Login type"
 msgstr ""
 
-#: system/models.py:278
+#: system/models/log.py:32
 msgid "User login log"
 msgstr ""
 
-#: system/models.py:283 system/utils/serializer.py:350
+#: system/models/log.py:37 system/serializers/log.py:32
 msgid "Module"
 msgstr ""
 
-#: system/models.py:284
+#: system/models/log.py:38
 msgid "URL path"
 msgstr ""
 
-#: system/models.py:285
+#: system/models/log.py:39
 msgid "Request body"
 msgstr ""
 
-#: system/models.py:286
+#: system/models/log.py:40
 msgid "Request method"
 msgstr ""
 
-#: system/models.py:290
+#: system/models/log.py:44
 msgid "Response code"
 msgstr ""
 
-#: system/models.py:291
+#: system/models/log.py:45
 msgid "Response result"
 msgstr ""
 
-#: system/models.py:292
+#: system/models/log.py:46
 msgid "Status code"
 msgstr ""
 
-#: system/models.py:295
+#: system/models/log.py:49
 msgid "Operation log"
 msgstr ""
 
-#: system/models.py:307
-msgid "Filepath"
+#: system/models/menu.py:15 system/serializers/menu.py:111
+msgid "Menu title"
 msgstr ""
 
-#: system/models.py:308
-msgid "Internet URL"
+#: system/models/menu.py:16
+msgid "Left icon"
 msgstr ""
 
-#: system/models.py:309
-msgid "Usually an address accessible to the outside Internet"
+#: system/models/menu.py:17 system/serializers/menu.py:29
+msgid "Right icon"
 msgstr ""
 
-#: system/models.py:310
-msgid "Filename"
+#: system/models/menu.py:18
+msgid "Additional icon to the right of menu name"
 msgstr ""
 
-#: system/models.py:311
-msgid "Filesize"
+#: system/models/menu.py:19 system/serializers/menu.py:28
+msgid "Show menu"
 msgstr ""
 
-#: system/models.py:312
-msgid "Mime type"
+#: system/models/menu.py:20 system/serializers/menu.py:27
+msgid "Show parent menu"
 msgstr ""
 
-#: system/models.py:313
-msgid "File md5sum"
+#: system/models/menu.py:21 system/serializers/menu.py:30
+msgid "Keepalive"
 msgstr ""
 
-#: system/models.py:314
-msgid "Tmp file"
+#: system/models/menu.py:23
+msgid ""
+"When enabled, the entire state of the page is saved, and when refreshed, the "
+"state is cleared"
 msgstr ""
 
-#: system/models.py:315
-msgid "Temporary files are automatically cleared by scheduled tasks"
+#: system/models/menu.py:24 system/serializers/menu.py:31
+msgid "Iframe URL"
 msgstr ""
 
-#: system/models.py:316 system/models.py:330
-msgid "Upload file"
+#: system/models/menu.py:25
+msgid "The embedded iframe link address"
 msgstr ""
 
-#: system/models.py:339
+#: system/models/menu.py:26 system/serializers/menu.py:32
+msgid "Iframe loading"
+msgstr ""
+
+#: system/models/menu.py:28
+msgid "Enter animation"
+msgstr ""
+
+#: system/models/menu.py:29
+msgid "Leave animation"
+msgstr ""
+
+#: system/models/menu.py:31 system/serializers/menu.py:42
+msgid "Hidden tag"
+msgstr ""
+
+#: system/models/menu.py:32
+msgid ""
+"The current menu name or custom information is prohibited from being added "
+"to the TAB"
+msgstr ""
+
+#: system/models/menu.py:33 system/serializers/menu.py:43
+msgid "Fixed tag"
+msgstr ""
+
+#: system/models/menu.py:34
+msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
+msgstr ""
+
+#: system/models/menu.py:35 system/serializers/menu.py:44
+msgid "Dynamic level"
+msgstr ""
+
+#: system/models/menu.py:36
+msgid "Maximum number of dynamic routes that can be opened"
+msgstr ""
+
+#: system/models/menu.py:39 system/models/menu.py:69
+#: system/serializers/menu.py:71 system/serializers/menu.py:115
+msgid "Menu meta"
+msgstr ""
+
+#: system/models/menu.py:49
+msgid "Directory"
+msgstr ""
+
+#: system/models/menu.py:50 system/models/menu.py:84
+#: system/models/permission.py:20 system/models/permission.py:33
+#: system/models/role.py:18 system/serializers/permission.py:35
+#: system/serializers/role.py:34
+msgid "Menu"
+msgstr ""
+
+#: system/models/menu.py:51
+msgid "Permission"
+msgstr ""
+
+#: system/models/menu.py:54
+msgid "GET"
+msgstr ""
+
+#: system/models/menu.py:55
+msgid "POST"
+msgstr ""
+
+#: system/models/menu.py:56
+msgid "PUT"
+msgstr ""
+
+#: system/models/menu.py:57
+msgid "DELETE"
+msgstr ""
+
+#: system/models/menu.py:58
+msgid "PATCH"
+msgstr ""
+
+#: system/models/menu.py:60 system/serializers/menu.py:81
+msgid "Parent menu"
+msgstr ""
+
+#: system/models/menu.py:63 system/serializers/menu.py:86
+msgid "Menu type"
+msgstr ""
+
+#: system/models/menu.py:64
+msgid "Component name or permission code"
+msgstr ""
+
+#: system/models/menu.py:66
+msgid "Route path or api path"
+msgstr ""
+
+#: system/models/menu.py:67
+msgid "Component path"
+msgstr ""
+
+#: system/models/menu.py:70 system/serializers/menu.py:83
+msgid "Model"
+msgstr ""
+
+#: system/models/menu.py:74
+msgid "Method"
+msgstr ""
+
+#: system/models/notice.py:16
 msgid "System notification"
 msgstr ""
 
-#: system/models.py:340
+#: system/models/notice.py:17
 msgid "System announcement"
 msgstr ""
 
-#: system/models.py:341
+#: system/models/notice.py:18
 msgid "User notification"
 msgstr ""
 
-#: system/models.py:342
+#: system/models/notice.py:19
 msgid "Department notification"
 msgstr ""
 
-#: system/models.py:343
+#: system/models/notice.py:20
 msgid "Role notification"
 msgstr ""
 
-#: system/models.py:346
+#: system/models/notice.py:23
 msgid "Ordinary notices"
 msgstr ""
 
-#: system/models.py:347
+#: system/models/notice.py:24
 msgid "General notices"
 msgstr ""
 
-#: system/models.py:348
+#: system/models/notice.py:25
 msgid "Success notices"
 msgstr ""
 
-#: system/models.py:349
+#: system/models/notice.py:26
 msgid "Important notices"
 msgstr ""
 
-#: system/models.py:352 system/utils/serializer.py:392
+#: system/models/notice.py:29 system/serializers/notice.py:33
 msgid "The notified user"
 msgstr ""
 
-#: system/models.py:353 system/utils/serializer.py:396
+#: system/models/notice.py:31 system/serializers/notice.py:37
 msgid "The notified department"
 msgstr ""
 
-#: system/models.py:354 system/utils/serializer.py:397
+#: system/models/notice.py:33 system/serializers/notice.py:38
 msgid "The notified role"
 msgstr ""
 
-#: system/models.py:355 system/utils/serializer.py:407
+#: system/models/notice.py:34 system/serializers/notice.py:48
 msgid "Notice level"
 msgstr ""
 
-#: system/models.py:357 system/utils/serializer.py:405
-#: system/utils/serializer.py:502 system/utils/serializer.py:521
+#: system/models/notice.py:36 system/serializers/notice.py:46
+#: system/serializers/notice.py:140 system/serializers/notice.py:157
 msgid "Notice type"
 msgstr ""
 
-#: system/models.py:359
+#: system/models/notice.py:38
 msgid "Notice title"
 msgstr ""
 
-#: system/models.py:360 system/models.py:376 system/utils/serializer.py:524
+#: system/models/notice.py:39 system/models/notice.py:55
+#: system/serializers/notice.py:144
 msgid "Notice message"
 msgstr ""
 
-#: system/models.py:361
+#: system/models/notice.py:40
 msgid "Additional json data"
 msgstr ""
 
-#: system/models.py:362 system/utils/serializer.py:400
+#: system/models/notice.py:41 system/serializers/notice.py:41
 msgid "Uploaded attachments"
 msgstr ""
 
-#: system/models.py:363
+#: system/models/notice.py:42
 msgid "Publish"
 msgstr ""
 
-#: system/models.py:391 system/models.py:427 system/utils/serializer.py:522
-#: system/utils/serializer.py:549 system/utils/serializer.py:561
-#: system/utils/serializer.py:596
-msgid "User"
-msgstr ""
-
-#: system/models.py:392
+#: system/models/notice.py:71
 msgid "Notice"
 msgstr ""
 
-#: system/models.py:393 system/utils/serializer.py:503
+#: system/models/notice.py:72 system/serializers/notice.py:158
 msgid "Unread"
 msgstr ""
 
-#: system/models.py:397
+#: system/models/notice.py:76
 msgid "User has read the message"
 msgstr ""
 
-#: system/models.py:404
-msgid "Config value"
+#: system/models/permission.py:18
+msgid "Rules"
 msgstr ""
 
-#: system/models.py:406
-msgid "API access"
+#: system/models/permission.py:21
+msgid "If a menu exists, it only applies to the selected menu permission"
 msgstr ""
 
-#: system/models.py:407
-msgid "Allows API interfaces to access this config"
+#: system/models/permission.py:32
+msgid "Role"
 msgstr ""
 
-#: system/models.py:414 system/models.py:428
-msgid "Config name"
+#: system/models/permission.py:34
+msgid "Field"
 msgstr ""
 
-#: system/models.py:415
-msgid "User inherit"
+#: system/models/permission.py:37
+msgid "Field permission"
 msgstr ""
 
-#: system/models.py:416
-msgid "Allows users to inherit this config"
+#: system/models/role.py:15
+msgid "Role name"
 msgstr ""
 
-#: system/models.py:419
-msgid "System config"
+#: system/models/role.py:16
+msgid "Role code"
 msgstr ""
 
-#: system/models.py:431
-msgid "User config"
+#: system/models/role.py:21
+msgid "User role"
+msgstr ""
+
+#: system/models/upload.py:17
+msgid "Filepath"
+msgstr ""
+
+#: system/models/upload.py:18
+msgid "Internet URL"
+msgstr ""
+
+#: system/models/upload.py:19
+msgid "Usually an address accessible to the outside Internet"
+msgstr ""
+
+#: system/models/upload.py:20
+msgid "Filename"
+msgstr ""
+
+#: system/models/upload.py:21
+msgid "Filesize"
+msgstr ""
+
+#: system/models/upload.py:22
+msgid "Mime type"
+msgstr ""
+
+#: system/models/upload.py:23
+msgid "File md5sum"
+msgstr ""
+
+#: system/models/upload.py:24
+msgid "Tmp file"
+msgstr ""
+
+#: system/models/upload.py:25
+msgid "Temporary files are automatically cleared by scheduled tasks"
+msgstr ""
+
+#: system/models/upload.py:26 system/models/upload.py:40
+msgid "Upload file"
+msgstr ""
+
+#: system/models/user.py:21
+msgid "Male"
+msgstr ""
+
+#: system/models/user.py:22
+msgid "Female"
+msgstr ""
+
+#: system/models/user.py:24
+msgid "Avatar"
+msgstr ""
+
+#: system/models/user.py:30
+msgid "Nickname"
+msgstr ""
+
+#: system/models/user.py:31 system/serializers/user.py:46
+msgid "Gender"
+msgstr ""
+
+#: system/models/user.py:41
+msgid "Userinfo"
+msgstr ""
+
+#: system/serializers/base.py:25 system/serializers/permission.py:38
+msgid "Mode type"
+msgstr ""
+
+#: system/serializers/config.py:30
+msgid "Config cache value"
+msgstr ""
+
+#: system/serializers/config.py:59
+msgid "Users"
+msgstr ""
+
+#: system/serializers/config.py:66
+msgid "User cannot be null"
+msgstr ""
+
+#: system/serializers/department.py:31 system/serializers/notice.py:42
+msgid "User count"
+msgstr ""
+
+#: system/serializers/department.py:49
+msgid "The superior department cannot be its own subordinate department"
+msgstr ""
+
+#: system/serializers/notice.py:43
+msgid "Read user count"
+msgstr ""
+
+#: system/serializers/notice.py:69
+msgid "Parameter error. System announcement cannot be created"
+msgstr ""
+
+#: system/serializers/notice.py:79
+msgid "The notice role cannot be null"
+msgstr ""
+
+#: system/serializers/notice.py:85
+msgid "The notice department cannot be null"
+msgstr ""
+
+#: system/serializers/notice.py:91
+msgid "The notice user cannot be null"
+msgstr ""
+
+#: system/serializers/notice.py:130
+msgid "Parameter error"
+msgstr ""
+
+#: system/serializers/permission.py:43
+msgid "The rule cannot be null"
+msgstr ""
+
+#: system/serializers/role.py:38 system/serializers/role.py:39
+msgid "Fields"
+msgstr ""
+
+#: system/serializers/upload.py:28
+msgid "Access URL"
+msgstr ""
+
+#: system/serializers/upload.py:35
+msgid "Internet url cannot be null"
+msgstr ""
+
+#: system/serializers/user.py:49
+msgid "Login blocked"
+msgstr ""
+
+#: system/serializers/user.py:64 system/views/admin/user.py:75
+#: system/views/auth/register.py:45 system/views/auth/reset.py:37
+#: system/views/user/userinfo.py:63
+msgid "Password does not match security rules"
+msgstr ""
+
+#: system/serializers/user.py:66
+msgid "Abnormal password field"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:9
 msgid "Hello"
 msgstr ""
 
-#: system/templates/msg_verify_code.html:12 system/views/auth.py:155
+#: system/templates/msg_verify_code.html:12 system/views/auth/code.py:106
 msgid "Verify code"
 msgstr ""
 
@@ -1287,82 +1368,32 @@ msgstr ""
 msgid "If you have any questions, you can contact the administrator"
 msgstr ""
 
-#: system/utils/serializer.py:62 system/utils/serializer.py:63
-msgid "Fields"
+#: system/utils/auth.py:36
+msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/utils/serializer.py:127 system/utils/serializer.py:146
-msgid "Mode type"
+#: system/utils/auth.py:42
+msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/utils/serializer.py:132
-msgid "The rule cannot be null"
+#: system/utils/auth.py:68
+msgid ""
+"The address has been locked (please contact admin to unlock it or try again "
+"after {} minutes)"
 msgstr ""
 
-#: system/utils/serializer.py:160 system/utils/serializer.py:401
-msgid "User count"
+#: system/utils/auth.py:72 system/utils/auth.py:123
+#: system/views/auth/login.py:60
+msgid ""
+"The account has been locked (please contact admin to unlock it or try again "
+"after {} minutes)"
 msgstr ""
 
-#: system/utils/serializer.py:178
-msgid "The superior department cannot be its own subordinate department"
-msgstr ""
-
-#: system/utils/serializer.py:208
-msgid "Login blocked"
-msgstr ""
-
-#: system/utils/serializer.py:223 system/views/admin/user.py:74
-#: system/views/auth.py:41 system/views/register.py:44
-#: system/views/user/userinfo.py:63
-msgid "Password does not match security rules"
-msgstr ""
-
-#: system/utils/serializer.py:225
-msgid "Abnormal password field"
-msgstr ""
-
-#: system/utils/serializer.py:367
-msgid "Access URL"
-msgstr ""
-
-#: system/utils/serializer.py:374
-msgid "Internet url cannot be null"
-msgstr ""
-
-#: system/utils/serializer.py:402
-msgid "Read user count"
-msgstr ""
-
-#: system/utils/serializer.py:428
-msgid "Parameter error. System announcement cannot be created"
-msgstr ""
-
-#: system/utils/serializer.py:438
-msgid "The notice role cannot be null"
-msgstr ""
-
-#: system/utils/serializer.py:444
-msgid "The notice department cannot be null"
-msgstr ""
-
-#: system/utils/serializer.py:450
-msgid "The notice user cannot be null"
-msgstr ""
-
-#: system/utils/serializer.py:489
-msgid "Parameter error"
-msgstr ""
-
-#: system/utils/serializer.py:534
-msgid "Config cache value"
-msgstr ""
-
-#: system/utils/serializer.py:563
-msgid "Users"
-msgstr ""
-
-#: system/utils/serializer.py:570
-msgid "User cannot be null"
+#: system/utils/auth.py:118
+#, python-brace-format
+msgid ""
+"{error} please enter it again. You can also try {times_try} times (The "
+"account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
 #: system/utils/signal_handler.py:43
@@ -1373,70 +1404,43 @@ msgstr ""
 msgid "All fields"
 msgstr ""
 
-#: system/utils/view.py:46
-msgid "Captcha validation failed. Please try again"
-msgstr ""
-
-#: system/utils/view.py:52
-msgid "Temporary Token validation failed. Please try again"
-msgstr ""
-
-#: system/utils/view.py:78
-msgid ""
-"The address has been locked (please contact admin to unlock it or try again "
-"after {} minutes)"
-msgstr ""
-
-#: system/utils/view.py:82 system/utils/view.py:133 system/views/login.py:60
-msgid ""
-"The account has been locked (please contact admin to unlock it or try again "
-"after {} minutes)"
-msgstr ""
-
-#: system/utils/view.py:128
-#, python-brace-format
-msgid ""
-"{error} please enter it again. You can also try {times_try} times (The "
-"account will be temporarily locked for {block_time} minutes)"
-msgstr ""
-
-#: system/views/admin/user.py:49
+#: system/views/admin/user.py:50
 msgid "The super administrator disallows deletion"
 msgstr ""
 
-#: system/views/auth.py:46
-msgid "Reset password success, return to login page"
-msgstr ""
-
-#: system/views/auth.py:129
+#: system/views/auth/code.py:78
 msgid "Phone already exist"
 msgstr ""
 
-#: system/views/auth.py:131
+#: system/views/auth/code.py:80
 msgid "Email already exist"
 msgstr ""
 
-#: system/views/auth.py:141
+#: system/views/auth/code.py:90
 msgid "Phone does not exist"
 msgstr ""
 
-#: system/views/auth.py:143
+#: system/views/auth/code.py:92
 msgid "Email does not exist"
 msgstr ""
 
-#: system/views/auth.py:174
+#: system/views/auth/code.py:94
+msgid "Username does not exist"
+msgstr ""
+
+#: system/views/auth/code.py:125
 msgid "Forbidden send verification code"
 msgstr ""
 
-#: system/views/auth.py:225
+#: system/views/auth/code.py:176
 msgid "The verification code has been sent"
 msgstr ""
 
-#: system/views/login.py:29 system/views/login.py:92
+#: system/views/auth/login.py:29 system/views/auth/login.py:92
 msgid "Login forbidden"
 msgstr ""
 
-#: system/views/login.py:54
+#: system/views/auth/login.py:54
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1444,12 +1448,16 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/register.py:31
+#: system/views/auth/register.py:32
 msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/register.py:53
+#: system/views/auth/register.py:54
 msgid "The account already exists, please try another one"
+msgstr ""
+
+#: system/views/auth/reset.py:42
+msgid "Reset password success, return to login page"
 msgstr ""
 
 #: system/views/upload.py:55

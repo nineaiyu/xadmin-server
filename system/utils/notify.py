@@ -12,7 +12,7 @@ from django.db.models import QuerySet
 from common.core.config import UserConfig
 from message.utils import push_message
 from system.models import NoticeMessage
-from system.utils.serializer import NoticeMessageSerializer
+from system.serializers.notice import NoticeMessageSerializer
 
 SYSTEM = NoticeMessage.NoticeChoices.SYSTEM
 

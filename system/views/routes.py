@@ -12,7 +12,7 @@ from common.base.utils import menu_list_to_tree, format_menu_data
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from system.models import Menu
-from system.utils.serializer import RouteSerializer
+from system.serializers.menu import RouteSerializer
 
 
 class UserRoutesView(APIView):

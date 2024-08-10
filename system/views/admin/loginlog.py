@@ -11,7 +11,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from system.models import UserLoginLog
-from system.utils.serializer import UserLoginLogSerializer
+from system.serializers.log import UserLoginLogSerializer
 
 
 class UserLoginLogFilter(BaseFilterSet):

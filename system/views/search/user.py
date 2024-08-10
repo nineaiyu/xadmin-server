@@ -10,7 +10,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from system.models import UserInfo
-from system.utils.serializer import UserSerializer
+from system.serializers.user import UserSerializer
 
 
 class SearchUserFilter(BaseFilterSet):

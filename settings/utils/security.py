@@ -3,45 +3,13 @@
 # project : xadmin-server
 # filename : security
 # author : ly_13
-# date : 8/1/2024
-import re
+# date : 8/10/2024
+
 
 from django.conf import settings
 from django.core.cache import cache
 
 from common.utils import ip
-
-
-def get_password_check_rules(user):
-    check_rules = []
-    for rule in settings.SECURITY_PASSWORD_RULES:
-        if user.is_superuser and rule == 'SECURITY_PASSWORD_MIN_LENGTH':
-            rule = 'SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH'
-        value = getattr(settings, rule)
-        if not value:
-            continue
-        check_rules.append({'key': rule, 'value': int(value)})
-    return check_rules
-
-
-def check_password_rules(password, is_super_admin=False):
-    pattern = r"^"
-    if settings.SECURITY_PASSWORD_UPPER_CASE:
-        pattern += '(?=.*[A-Z])'
-    if settings.SECURITY_PASSWORD_LOWER_CASE:
-        pattern += '(?=.*[a-z])'
-    if settings.SECURITY_PASSWORD_NUMBER:
-        pattern += '(?=.*\d)'
-    if settings.SECURITY_PASSWORD_SPECIAL_CHAR:
-        pattern += '(?=.*[`~!@#$%^&*()\-=_+\[\]{}|;:\'",.<>/?])'
-    pattern += '[a-zA-Z\d`~!@#\$%\^&\*\(\)-=_\+\[\]\{\}\|;:\'\",\.<>\/\?]'
-    if is_super_admin:
-        min_length = settings.SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH
-    else:
-        min_length = settings.SECURITY_PASSWORD_MIN_LENGTH
-    pattern += '.{' + str(min_length - 1) + ',}$'
-    match_obj = re.match(pattern, password)
-    return bool(match_obj)
 
 
 class BlockUtil:

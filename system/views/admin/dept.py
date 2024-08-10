@@ -12,8 +12,8 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
 from system.models import DeptInfo
+from system.serializers.department import DeptSerializer
 from system.utils.modelset import ChangeRolePermissionAction
-from system.utils.serializer import DeptSerializer
 
 logger = logging.getLogger(__name__)
 

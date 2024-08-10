@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# project : server
-# filename : auth
+# project : xadmin-server
+# filename : code
 # author : ly_13
-# date : 6/6/2023
+# date : 8/10/2024
+
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
@@ -11,65 +12,13 @@ from rest_framework.views import APIView
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
-from common.core.throttle import ResetPasswordThrottle
 from common.utils.request import get_request_ip
-from common.utils.token import make_token_cache, random_string
+from common.utils.token import random_string
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
+from settings.utils.password import get_password_check_rules
+from settings.utils.security import SendVerifyCodeBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo
-from system.utils.captcha import CaptchaAuth
-from system.utils.security import get_password_check_rules, SendVerifyCodeBlockUtil, LoginIpBlockUtil, ResetBlockUtil, \
-    check_password_rules
-from system.utils.view import get_request_ident, check_token_and_captcha, check_is_block, verify_sms_email_code
-
-
-class ResetPasswordView(APIView):
-    permission_classes = []
-    authentication_classes = []
-    throttle_classes = [ResetPasswordThrottle]
-
-    def post(self, request, *args, **kwargs):
-        query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
-        password = request.data.get('password')
-        if not password:
-            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
-
-        if settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED:
-            password = AESCipherV2(verify_token).decrypt(password)
-
-        instance = UserInfo.objects.get(**{query_key: target})
-        if not check_password_rules(password, instance.is_superuser):
-            return ApiResponse(code=1002, detail=_('Password does not match security rules'))
-        instance.set_password(password)
-        instance.modifier = instance
-        instance.save(update_fields=['password', 'modifier'])
-        TokenTempCache.expired_cache_token(verify_token)
-        return ApiResponse(detail=_("Reset password success, return to login page"))
-
-
-class TempTokenView(APIView):
-    """获取临时token"""
-    permission_classes = []
-    authentication_classes = []
-
-    def get(self, request):
-        token = make_token_cache(get_request_ident(request), time_limit=600, force_new=True).encode('utf-8')
-        return ApiResponse(token=token)
-
-
-class CaptchaView(APIView):
-    """获取验证码"""
-    permission_classes = []
-    authentication_classes = []
-
-    def get(self, request):
-        return ApiResponse(**CaptchaAuth().generate())
-
-
-class PasswordRulesView(APIView):
-    permission_classes = []
-
-    def get(self, request):
-        return ApiResponse(data={"password_rules": get_password_check_rules(request.user)})
+from system.utils.auth import check_token_and_captcha, check_is_block
 
 
 class SendVerifyCodeView(APIView):
@@ -139,8 +88,10 @@ class SendVerifyCodeView(APIView):
     def check_reset_config(request, form_type, query_key, target):
         if form_type == 'sms':
             detail = _("Phone does not exist")
-        else:
+        elif form_type == 'email':
             detail = _("Email does not exist")
+        else:
+            detail = _("Username does not exist")
 
         user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
         if not user:

@@ -13,8 +13,8 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
-from system.models import UserLoginLog, UserInfo, OperationLog
-from system.utils.serializer import UserLoginLogSerializer
+from system.models import UserLoginLog, OperationLog, UserInfo
+from system.serializers.log import UserLoginLogSerializer
 
 
 def trend_info(queryset, limit_day=30):

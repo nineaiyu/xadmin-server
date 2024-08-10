@@ -5,22 +5,19 @@
 # author : ly_13
 # date : 8/6/2024
 
-import base64
-
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
-from rest_framework.throttling import BaseThrottle
 from user_agents import parse
 
+from captcha.utils import CaptchaAuth
 from common.base.utils import AESCipherV2
-from common.utils.request import get_request_ip, get_browser, get_os
+from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident
 from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
+from settings.utils.security import LoginIpBlockUtil, LoginBlockUtil
 from system.models import UserLoginLog
-from system.utils.captcha import CaptchaAuth
-from system.utils.security import LoginIpBlockUtil, LoginBlockUtil
-from system.utils.serializer import UserLoginLogSerializer
+from system.serializers.log import UserLoginLogSerializer
 
 
 def get_token_lifetime(user_obj):
@@ -31,13 +28,6 @@ def get_token_lifetime(user_obj):
         'refresh_token_lifetime': int(refresh_token_lifetime.total_seconds()),
         # 'username': user_obj.username
     }
-
-
-def get_request_ident(request):
-    http_user_agent = request.META.get('HTTP_USER_AGENT')
-    http_accept = request.META.get('HTTP_ACCEPT')
-    remote_addr = BaseThrottle().get_ident(request)
-    return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode("utf-8")).decode('utf-8')
 
 
 def check_captcha(need, captcha_key, captcha_code):

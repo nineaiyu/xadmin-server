@@ -11,9 +11,9 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import SystemConfig, UserPersonalConfig
-from system.utils.modelset import InvalidConfigCacheAction
-from system.utils.serializer import SystemConfigSerializer, UserPersonalConfigSerializer, \
+from system.serializers.config import SystemConfigSerializer, UserPersonalConfigSerializer, \
     UserPersonalConfigExportImportSerializer
+from system.utils.modelset import InvalidConfigCacheAction
 
 logger = logging.getLogger(__name__)
 

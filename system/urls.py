@@ -18,12 +18,15 @@ from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
 from system.views.admin.user import UserView
-from system.views.auth import TempTokenView, CaptchaView, PasswordRulesView, SendVerifyCodeView, ResetPasswordView
+from system.views.auth.code import SendVerifyCodeView
+from system.views.auth.login import BasicLoginView, VerifyCodeLoginView
+from system.views.auth.logout import LogoutView
+from system.views.auth.register import RegisterView
+from system.views.auth.reset import ResetPasswordView
+from system.views.auth.rule import PasswordRulesView
+from system.views.auth.token import RefreshTokenView, CaptchaView, TempTokenView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
-from system.views.login import LoginView, RefreshTokenView, LoginByVerifyCode
-from system.views.logout import LogoutView
-from system.views.register import RegisterView
 from system.views.routes import UserRoutesView
 from system.views.search.dept import SearchDeptView
 from system.views.search.menu import SearchMenuView
@@ -37,8 +40,8 @@ router = SimpleRouter(False)
 
 no_auth_url = [
     re_path('^captcha/', include('captcha.urls')),
-    re_path('^login/basic$', LoginView.as_view(), name='login-by-basic'),
-    re_path('^login/code$', LoginByVerifyCode.as_view(), name='login-by-code'),
+    re_path('^login/basic$', BasicLoginView.as_view(), name='login-by-basic'),
+    re_path('^login/code$', VerifyCodeLoginView.as_view(), name='login-by-code'),
     re_path('^register$', RegisterView.as_view(), name='register'),
     re_path('^auth/captcha$', CaptchaView.as_view(), name='captcha'),
     re_path('^auth/token$', TempTokenView.as_view(), name='temp_token'),
