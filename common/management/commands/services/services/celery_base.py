@@ -13,6 +13,7 @@ class CeleryBaseService(BaseService):
     @property
     def cmd(self):
         print('\n- Start Celery as Distributed Task Queue: {}'.format(self.queue.capitalize()))
+        os.environ.setdefault('LC_ALL', 'C.UTF-8')
         os.environ.setdefault('PYTHONOPTIMIZE', '1')
 
         if os.getuid() == 0:
@@ -25,7 +26,7 @@ class CeleryBaseService(BaseService):
             'celery',
             '-A', 'server',
             'worker',
-            '-P', 'prefork',
+            '-P', 'threads',  # 默认的prefork是资源隔离的，导致修改settings配置时候，无法同步数据到该线程，因此需要用 threads模式
             '-l', 'INFO',
             # '-c', str(self.num), # 开启自动弹性伸缩
             '--autoscale', ",".join([str(x) for x in self.autoscale]),
