@@ -259,6 +259,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "0df47e0e-42d7-42cb-a593-df5015e0b699",
+    "fields": {
+      "created_time": "2024-08-11T10:18:35.298Z",
+      "updated_time": "2024-08-11T10:18:35.298Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "2cd0f34f-498a-43ca-a00e-f529b7ed4da2",
+      "menu_type": 2,
+      "name": "detail:SettingBindPhone",
+      "rank": 9999,
+      "path": "api/settings/bind/phone$",
+      "component": "",
+      "is_active": true,
+      "meta": "47735658-bb40-42fd-8fbb-a8be68d49f91",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "0e5b8019-f4df-4dd4-a635-8ee198c196a3",
     "fields": {
       "created_time": "2024-01-22T09:32:09.329Z",
@@ -461,6 +483,28 @@
       "model": [
         "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "191a3313-3a6a-48a7-acf7-46813ec52165",
+    "fields": {
+      "created_time": "2024-08-11T08:07:33.563Z",
+      "updated_time": "2024-08-11T08:07:33.563Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+      "menu_type": 2,
+      "name": "bind:UserInfo",
+      "rank": 9999,
+      "path": "api/system/userinfo/bind$",
+      "component": "",
+      "is_active": true,
+      "meta": "b0aef262-3899-4646-b42f-edd121a31883",
+      "method": "POST",
+      "model": []
     }
   },
   {
@@ -682,6 +726,28 @@
       "is_active": true,
       "meta": "ebd2d441-c438-4ec2-916d-1aa247a2f8c6",
       "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2cd0f34f-498a-43ca-a00e-f529b7ed4da2",
+    "fields": {
+      "created_time": "2024-08-11T10:17:12.637Z",
+      "updated_time": "2024-08-11T10:17:12.637Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "ea094317-8c50-429c-90a6-17dc3c8b366c",
+      "menu_type": 1,
+      "name": "SettingBind",
+      "rank": 9999,
+      "path": "/settings/bind",
+      "component": "settings/bind",
+      "is_active": true,
+      "meta": "645fe671-e8c1-4573-9af8-645a18dc4cfe",
+      "method": "",
       "model": []
     }
   },
@@ -1498,6 +1564,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "5f7ff55f-1d87-4dc1-b20c-2c6021d0dea7",
+    "fields": {
+      "created_time": "2024-08-11T10:18:11.868Z",
+      "updated_time": "2024-08-11T10:18:11.868Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "2cd0f34f-498a-43ca-a00e-f529b7ed4da2",
+      "menu_type": 2,
+      "name": "update:SettingBindEmail",
+      "rank": 9999,
+      "path": "api/settings/bind/email$",
+      "component": "",
+      "is_active": true,
+      "meta": "3fcde8e4-173c-4307-8463-829ebf4948fe",
+      "method": "PATCH",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "602e20d6-9893-44ae-876a-443cbfa90703",
     "fields": {
       "created_time": "2024-01-22T09:32:05.751Z",
@@ -1638,17 +1726,17 @@
     "pk": "6997ffe2-8246-401d-8800-248ecbc2dd83",
     "fields": {
       "created_time": "2024-01-22T09:32:06.591Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-08-11T08:06:52.250Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "parent": null,
-      "menu_type": 1,
+      "menu_type": 0,
       "name": "UserInfo",
       "rank": 150,
       "path": "/user/info/index",
-      "component": "user/info/index",
+      "component": "",
       "is_active": true,
       "meta": "3fa471d6-8523-4ab4-afd6-673bf020c0d6",
       "method": null,
@@ -1808,6 +1896,28 @@
       "is_active": true,
       "meta": "ebb88c83-3762-478e-ae30-04eb9d455e72",
       "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "7277e2f9-67f7-4746-836b-cf25110f628e",
+    "fields": {
+      "created_time": "2024-08-11T10:17:48.773Z",
+      "updated_time": "2024-08-11T10:17:48.773Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "2cd0f34f-498a-43ca-a00e-f529b7ed4da2",
+      "menu_type": 2,
+      "name": "detail:SettingBindEmail",
+      "rank": 9999,
+      "path": "api/settings/bind/email$",
+      "component": "",
+      "is_active": true,
+      "meta": "5c34c1b2-4347-4f83-974b-7c38e504c249",
+      "method": "GET",
       "model": []
     }
   },
@@ -2370,6 +2480,30 @@
       "meta": "62981476-34e9-4ddf-ac0a-9248f205596f",
       "method": "POST",
       "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9ff63ec3-cd7d-4d5d-b7b6-664b61a34bcc",
+    "fields": {
+      "created_time": "2024-08-11T09:06:48.695Z",
+      "updated_time": "2024-08-11T09:12:02.530Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+      "menu_type": 2,
+      "name": "list:userLoginLog",
+      "rank": 9999,
+      "path": "api/system/user/log$",
+      "component": "",
+      "is_active": true,
+      "meta": "b43e725a-0a2d-411a-9b3c-595a490d57e1",
+      "method": "GET",
+      "model": [
+        "585d2a2a-1c9b-42de-9b69-113e150da4a2"
+      ]
     }
   },
   {
@@ -3020,6 +3154,28 @@
       "is_active": true,
       "meta": "64434e5f-9475-4974-9478-d9341967a2a1",
       "method": "",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d4614019-73e4-49d5-b999-d5562b8d1ec4",
+    "fields": {
+      "created_time": "2024-08-11T10:18:59.155Z",
+      "updated_time": "2024-08-11T10:18:59.155Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": "2ae3ae42-9cd6-4af8-8895-0644a13e0d79",
+      "parent": "2cd0f34f-498a-43ca-a00e-f529b7ed4da2",
+      "menu_type": 2,
+      "name": "update:SettingBindPhone",
+      "rank": 9999,
+      "path": "api/settings/bind/phone$",
+      "component": "",
+      "is_active": true,
+      "meta": "34656373-671e-411c-abae-f60363fd9411",
+      "method": "PATCH",
       "model": []
     }
   },

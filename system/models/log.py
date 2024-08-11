@@ -46,6 +46,7 @@ class UserLoginLog(DbAuditModel):
             login_type = UserLoginLog.LoginTypeChoices.UNKNOWN
         return login_type
 
+
 class OperationLog(DbAuditModel):
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
     path = models.CharField(max_length=400, verbose_name=_("URL path"), null=True, blank=True)
