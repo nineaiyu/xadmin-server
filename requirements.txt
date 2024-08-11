@@ -18,7 +18,6 @@ uvicorn==0.30.3
 daphne==4.1.2
 channels==4.1.0
 channels-redis==4.2.0
-django-simple-captcha==0.6.0
 user-agents==2.2.0
 aiofiles==24.1.0
 websockets==12.0
