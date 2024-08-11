@@ -15,7 +15,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.utils.request import get_request_ip
 from settings.utils.security import LoginBlockUtil, LoginIpBlockUtil
-from system.models import UserInfo
+from system.models import UserInfo, UserLoginLog
 from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
     save_login_log, verify_sms_email_code
 
@@ -104,5 +104,5 @@ class VerifyCodeLoginView(TokenObtainPairView):
         user.save(update_fields=['last_login'])
         result.update(**get_token_lifetime(user))
         request.user = user
-        save_login_log(request)
+        save_login_log(request, login_type=UserLoginLog.get_login_type(query_key))
         return ApiResponse(data=result)

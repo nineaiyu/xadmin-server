@@ -192,6 +192,48 @@ class SecurityResetPasswordAuthSerializer(serializers.Serializer):
     )
 
 
+class SecurityBindEmailAuthSerializer(serializers.Serializer):
+    SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind email enable"),
+        help_text=_("Enable bind email for user")
+    )
+    SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind email captcha"),
+        help_text=_("Enable captcha to prevent robot reset password")
+    )
+
+    SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind email encrypted"),
+        help_text=_("Enable encryption to prevent information leakage")
+    )
+
+    SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind email temp token"),
+        help_text=_("Enable temporary tokens to prevent attacks")
+    )
+
+
+class SecurityBindPhoneAuthSerializer(serializers.Serializer):
+    SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind phone enable"),
+        help_text=_("Enable bind phone for user")
+    )
+    SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind phone captcha"),
+        help_text=_("Enable captcha to prevent robot reset password")
+    )
+
+    SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind phone encrypted"),
+        help_text=_("Enable encryption to prevent information leakage")
+    )
+
+    SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Bind phone temp token"),
+        help_text=_("Enable temporary tokens to prevent attacks")
+    )
+
+
 class SecurityBlockIPSerializer(serializers.Serializer):
     id = serializers.UUIDField(required=False)
     ip = serializers.CharField(max_length=1024, required=False, allow_blank=True)

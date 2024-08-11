@@ -493,8 +493,8 @@ class Migration(migrations.Migration):
                 ('system', models.CharField(blank=True, max_length=64, null=True, verbose_name='System')),
                 ('agent', models.CharField(blank=True, max_length=128, null=True, verbose_name='Agent')),
                 ('login_type', models.SmallIntegerField(
-                    choices=[(0, 'Username and password'), (1, 'SMS verification code'), (2, 'Wechat scan code')],
-                    default=0, verbose_name='Login type')),
+                    choices=[(0, 'Username and password'), (1, 'SMS verification code'), (2, 'Email verification code'),
+                             (4, 'Wechat scan code'), (9, 'Unknown')], default=0, verbose_name='Login type')),
                 ('creator', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                               related_name='+', related_query_name='creator_query',
                                               to=settings.AUTH_USER_MODEL, verbose_name='Creator')),

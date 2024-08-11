@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-10 18:15+0800\n"
+"POT-Creation-Date: 2024-08-11 18:19+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -104,8 +104,8 @@ msgid "Sorting saved successfully"
 msgstr ""
 
 #: common/core/modelset.py:132 system/utils/auth.py:97
-#: system/utils/modelset.py:53 system/views/auth/code.py:139
-#: system/views/auth/register.py:39 system/views/auth/reset.py:30
+#: system/utils/modelset.py:53 system/views/auth/register.py:39
+#: system/views/auth/reset.py:30 system/views/auth/verify_code.py:65
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -212,7 +212,7 @@ msgid "Invalid ip"
 msgstr ""
 
 #: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
-#: system/models/user.py:20
+#: system/models/log.py:23 system/models/user.py:20
 msgid "Unknown"
 msgstr ""
 
@@ -438,7 +438,8 @@ msgid "Login encrypted"
 msgstr ""
 
 #: settings/serializers/security.py:104 settings/serializers/security.py:140
-#: settings/serializers/security.py:176
+#: settings/serializers/security.py:176 settings/serializers/security.py:207
+#: settings/serializers/security.py:228
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
@@ -447,7 +448,8 @@ msgid "Login temp token"
 msgstr ""
 
 #: settings/serializers/security.py:109 settings/serializers/security.py:145
-#: settings/serializers/security.py:181
+#: settings/serializers/security.py:181 settings/serializers/security.py:212
+#: settings/serializers/security.py:233
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
@@ -529,7 +531,8 @@ msgstr ""
 msgid "Reset password captcha"
 msgstr ""
 
-#: settings/serializers/security.py:171
+#: settings/serializers/security.py:171 settings/serializers/security.py:202
+#: settings/serializers/security.py:223
 msgid "Enable captcha to prevent robot reset password"
 msgstr ""
 
@@ -547,6 +550,46 @@ msgstr ""
 
 #: settings/serializers/security.py:190
 msgid "Reset password by sms"
+msgstr ""
+
+#: settings/serializers/security.py:197
+msgid "Bind email enable"
+msgstr ""
+
+#: settings/serializers/security.py:198
+msgid "Enable bind email for user"
+msgstr ""
+
+#: settings/serializers/security.py:201
+msgid "Bind email captcha"
+msgstr ""
+
+#: settings/serializers/security.py:206
+msgid "Bind email encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:211
+msgid "Bind email temp token"
+msgstr ""
+
+#: settings/serializers/security.py:218
+msgid "Bind phone enable"
+msgstr ""
+
+#: settings/serializers/security.py:219
+msgid "Enable bind phone for user"
+msgstr ""
+
+#: settings/serializers/security.py:222
+msgid "Bind phone captcha"
+msgstr ""
+
+#: settings/serializers/security.py:227
+msgid "Bind phone encrypted"
+msgstr ""
+
+#: settings/serializers/security.py:232
+msgid "Bind phone temp token"
 msgstr ""
 
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:27
@@ -873,66 +916,70 @@ msgid "SMS verification code"
 msgstr ""
 
 #: system/models/log.py:21
+msgid "Email verification code"
+msgstr ""
+
+#: system/models/log.py:22
 msgid "Wechat scan code"
 msgstr ""
 
-#: system/models/log.py:23
+#: system/models/log.py:25
 msgid "Login status"
 msgstr ""
 
-#: system/models/log.py:24 system/models/log.py:41
+#: system/models/log.py:26 system/models/log.py:54
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:25 system/models/log.py:42
+#: system/models/log.py:27 system/models/log.py:55
 msgid "Browser"
 msgstr ""
 
-#: system/models/log.py:26 system/models/log.py:43
+#: system/models/log.py:28 system/models/log.py:56
 msgid "System"
 msgstr ""
 
-#: system/models/log.py:27
+#: system/models/log.py:29
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:29
+#: system/models/log.py:31
 msgid "Login type"
 msgstr ""
 
-#: system/models/log.py:32
+#: system/models/log.py:34
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:37 system/serializers/log.py:32
+#: system/models/log.py:50 system/serializers/log.py:32
 msgid "Module"
 msgstr ""
 
-#: system/models/log.py:38
+#: system/models/log.py:51
 msgid "URL path"
 msgstr ""
 
-#: system/models/log.py:39
+#: system/models/log.py:52
 msgid "Request body"
 msgstr ""
 
-#: system/models/log.py:40
+#: system/models/log.py:53
 msgid "Request method"
 msgstr ""
 
-#: system/models/log.py:44
+#: system/models/log.py:57
 msgid "Response code"
 msgstr ""
 
-#: system/models/log.py:45
+#: system/models/log.py:58
 msgid "Response result"
 msgstr ""
 
-#: system/models/log.py:46
+#: system/models/log.py:59
 msgid "Status code"
 msgstr ""
 
-#: system/models/log.py:49
+#: system/models/log.py:62
 msgid "Operation log"
 msgstr ""
 
@@ -1263,6 +1310,7 @@ msgid "Nickname"
 msgstr ""
 
 #: system/models/user.py:31 system/serializers/user.py:46
+#: system/serializers/userinfo.py:30
 msgid "Gender"
 msgstr ""
 
@@ -1340,7 +1388,7 @@ msgstr ""
 
 #: system/serializers/user.py:64 system/views/admin/user.py:75
 #: system/views/auth/register.py:45 system/views/auth/reset.py:37
-#: system/views/user/userinfo.py:63
+#: system/views/user/userinfo.py:66
 msgid "Password does not match security rules"
 msgstr ""
 
@@ -1352,7 +1400,7 @@ msgstr ""
 msgid "Hello"
 msgstr ""
 
-#: system/templates/msg_verify_code.html:12 system/views/auth/code.py:106
+#: system/templates/msg_verify_code.html:12 system/views/auth/verify_code.py:32
 msgid "Verify code"
 msgstr ""
 
@@ -1382,14 +1430,14 @@ msgid ""
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:72 system/utils/auth.py:123
+#: system/utils/auth.py:72 system/utils/auth.py:124
 #: system/views/auth/login.py:60
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:118
+#: system/utils/auth.py:119
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -1406,34 +1454,6 @@ msgstr ""
 
 #: system/views/admin/user.py:50
 msgid "The super administrator disallows deletion"
-msgstr ""
-
-#: system/views/auth/code.py:78
-msgid "Phone already exist"
-msgstr ""
-
-#: system/views/auth/code.py:80
-msgid "Email already exist"
-msgstr ""
-
-#: system/views/auth/code.py:90
-msgid "Phone does not exist"
-msgstr ""
-
-#: system/views/auth/code.py:92
-msgid "Email does not exist"
-msgstr ""
-
-#: system/views/auth/code.py:94
-msgid "Username does not exist"
-msgstr ""
-
-#: system/views/auth/code.py:125
-msgid "Forbidden send verification code"
-msgstr ""
-
-#: system/views/auth/code.py:176
-msgid "The verification code has been sent"
 msgstr ""
 
 #: system/views/auth/login.py:29 system/views/auth/login.py:92
@@ -1460,6 +1480,38 @@ msgstr ""
 msgid "Reset password success, return to login page"
 msgstr ""
 
+#: system/views/auth/verify_code.py:51
+msgid "Forbidden send verification code"
+msgstr ""
+
+#: system/views/auth/verify_code.py:100
+msgid "The verification code has been sent"
+msgstr ""
+
+#: system/views/auth/verify_code.py:152
+msgid "Phone already exist"
+msgstr ""
+
+#: system/views/auth/verify_code.py:154
+msgid "Email already exist"
+msgstr ""
+
+#: system/views/auth/verify_code.py:156
+msgid "Username already exist"
+msgstr ""
+
+#: system/views/auth/verify_code.py:167
+msgid "Phone does not exist"
+msgstr ""
+
+#: system/views/auth/verify_code.py:169
+msgid "Email does not exist"
+msgstr ""
+
+#: system/views/auth/verify_code.py:171
+msgid "Username does not exist"
+msgstr ""
+
 #: system/views/upload.py:55
 msgid "upload file size cannot exceed {}"
 msgstr ""
@@ -1468,6 +1520,6 @@ msgstr ""
 msgid "Wrong upload file type"
 msgstr ""
 
-#: system/views/user/userinfo.py:61
+#: system/views/user/userinfo.py:64
 msgid "Old password verification failed"
 msgstr ""

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-10 18:15+0800\n"
+"POT-Creation-Date: 2024-08-11 18:19+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -103,8 +103,8 @@ msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
 #: common/core/modelset.py:132 system/utils/auth.py:97
-#: system/utils/modelset.py:53 system/views/auth/code.py:139
-#: system/views/auth/register.py:39 system/views/auth/reset.py:30
+#: system/utils/modelset.py:53 system/views/auth/register.py:39
+#: system/views/auth/reset.py:30 system/views/auth/verify_code.py:65
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
@@ -211,7 +211,7 @@ msgid "Invalid ip"
 msgstr "无效 IP"
 
 #: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
-#: system/models/user.py:20
+#: system/models/log.py:23 system/models/user.py:20
 msgid "Unknown"
 msgstr "未知"
 
@@ -443,7 +443,8 @@ msgid "Login encrypted"
 msgstr "登录信息加密"
 
 #: settings/serializers/security.py:104 settings/serializers/security.py:140
-#: settings/serializers/security.py:176
+#: settings/serializers/security.py:176 settings/serializers/security.py:207
+#: settings/serializers/security.py:228
 msgid "Enable encryption to prevent information leakage"
 msgstr "开启敏感信息加密，防止数据泄露"
 
@@ -452,7 +453,8 @@ msgid "Login temp token"
 msgstr "登录临时令牌"
 
 #: settings/serializers/security.py:109 settings/serializers/security.py:145
-#: settings/serializers/security.py:181
+#: settings/serializers/security.py:181 settings/serializers/security.py:212
+#: settings/serializers/security.py:233
 msgid "Enable temporary tokens to prevent attacks"
 msgstr "开启临时令牌，防止被攻击"
 
@@ -534,7 +536,8 @@ msgstr "允许用户重置密码"
 msgid "Reset password captcha"
 msgstr "重置密码图片验证码"
 
-#: settings/serializers/security.py:171
+#: settings/serializers/security.py:171 settings/serializers/security.py:202
+#: settings/serializers/security.py:223
 msgid "Enable captcha to prevent robot reset password"
 msgstr "开启图片验证码，防止机器人重置密码"
 
@@ -553,6 +556,46 @@ msgstr "通过邮件重置密码"
 #: settings/serializers/security.py:190
 msgid "Reset password by sms"
 msgstr "通过短信重置密码"
+
+#: settings/serializers/security.py:197
+msgid "Bind email enable"
+msgstr "绑定邮件"
+
+#: settings/serializers/security.py:198
+msgid "Enable bind email for user"
+msgstr "允许用户进行绑定邮件"
+
+#: settings/serializers/security.py:201
+msgid "Bind email captcha"
+msgstr "绑定邮件图片验证码"
+
+#: settings/serializers/security.py:206
+msgid "Bind email encrypted"
+msgstr "绑定邮件信息加密"
+
+#: settings/serializers/security.py:211
+msgid "Bind email temp token"
+msgstr "绑定邮件临时令牌"
+
+#: settings/serializers/security.py:218
+msgid "Bind phone enable"
+msgstr "绑定手机"
+
+#: settings/serializers/security.py:219
+msgid "Enable bind phone for user"
+msgstr "允许用户绑定手机"
+
+#: settings/serializers/security.py:222
+msgid "Bind phone captcha"
+msgstr "绑定手机图片验证码"
+
+#: settings/serializers/security.py:227
+msgid "Bind phone encrypted"
+msgstr "绑定手机信息加密"
+
+#: settings/serializers/security.py:232
+msgid "Bind phone temp token"
+msgstr "绑定手机临时令牌"
 
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:27
 msgid "SMS"
@@ -880,66 +923,70 @@ msgid "SMS verification code"
 msgstr "短信验证"
 
 #: system/models/log.py:21
+msgid "Email verification code"
+msgstr "邮箱验证码"
+
+#: system/models/log.py:22
 msgid "Wechat scan code"
 msgstr "微信扫码"
 
-#: system/models/log.py:23
+#: system/models/log.py:25
 msgid "Login status"
 msgstr "登录状态"
 
-#: system/models/log.py:24 system/models/log.py:41
+#: system/models/log.py:26 system/models/log.py:54
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:25 system/models/log.py:42
+#: system/models/log.py:27 system/models/log.py:55
 msgid "Browser"
 msgstr "浏览器"
 
-#: system/models/log.py:26 system/models/log.py:43
+#: system/models/log.py:28 system/models/log.py:56
 msgid "System"
 msgstr "操作系统"
 
-#: system/models/log.py:27
+#: system/models/log.py:29
 msgid "Agent"
 msgstr "Agent信息"
 
-#: system/models/log.py:29
+#: system/models/log.py:31
 msgid "Login type"
 msgstr "登录类型"
 
-#: system/models/log.py:32
+#: system/models/log.py:34
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:37 system/serializers/log.py:32
+#: system/models/log.py:50 system/serializers/log.py:32
 msgid "Module"
 msgstr "模块"
 
-#: system/models/log.py:38
+#: system/models/log.py:51
 msgid "URL path"
 msgstr "访问路径"
 
-#: system/models/log.py:39
+#: system/models/log.py:52
 msgid "Request body"
 msgstr "请求参数"
 
-#: system/models/log.py:40
+#: system/models/log.py:53
 msgid "Request method"
 msgstr "请求方式"
 
-#: system/models/log.py:44
+#: system/models/log.py:57
 msgid "Response code"
 msgstr "响应码"
 
-#: system/models/log.py:45
+#: system/models/log.py:58
 msgid "Response result"
 msgstr "响应内容"
 
-#: system/models/log.py:46
+#: system/models/log.py:59
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:49
+#: system/models/log.py:62
 msgid "Operation log"
 msgstr "操作日志"
 
@@ -1270,6 +1317,7 @@ msgid "Nickname"
 msgstr "昵称"
 
 #: system/models/user.py:31 system/serializers/user.py:46
+#: system/serializers/userinfo.py:30
 msgid "Gender"
 msgstr "性别"
 
@@ -1347,7 +1395,7 @@ msgstr "登录被锁定"
 
 #: system/serializers/user.py:64 system/views/admin/user.py:75
 #: system/views/auth/register.py:45 system/views/auth/reset.py:37
-#: system/views/user/userinfo.py:63
+#: system/views/user/userinfo.py:66
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
@@ -1359,7 +1407,7 @@ msgstr "密码字段异常"
 msgid "Hello"
 msgstr "你好"
 
-#: system/templates/msg_verify_code.html:12 system/views/auth/code.py:106
+#: system/templates/msg_verify_code.html:12 system/views/auth/verify_code.py:32
 msgid "Verify code"
 msgstr "验证码"
 
@@ -1389,14 +1437,14 @@ msgid ""
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
-#: system/utils/auth.py:72 system/utils/auth.py:123
+#: system/utils/auth.py:72 system/utils/auth.py:124
 #: system/views/auth/login.py:60
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 
-#: system/utils/auth.py:118
+#: system/utils/auth.py:119
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -1416,34 +1464,6 @@ msgstr "全部字段"
 #: system/views/admin/user.py:50
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
-
-#: system/views/auth/code.py:78
-msgid "Phone already exist"
-msgstr "手机号已经存在"
-
-#: system/views/auth/code.py:80
-msgid "Email already exist"
-msgstr "邮件已经存在"
-
-#: system/views/auth/code.py:90
-msgid "Phone does not exist"
-msgstr "手机号不存在"
-
-#: system/views/auth/code.py:92
-msgid "Email does not exist"
-msgstr "邮件不存在"
-
-#: system/views/auth/code.py:94
-msgid "Username does not exist"
-msgstr "用户名不存在"
-
-#: system/views/auth/code.py:125
-msgid "Forbidden send verification code"
-msgstr "禁止发送验证码"
-
-#: system/views/auth/code.py:176
-msgid "The verification code has been sent"
-msgstr "验证码已发送"
 
 #: system/views/auth/login.py:29 system/views/auth/login.py:92
 msgid "Login forbidden"
@@ -1471,6 +1491,38 @@ msgstr "用户已经存在，请换个试试"
 msgid "Reset password success, return to login page"
 msgstr "重置密码成功，返回到登录页面"
 
+#: system/views/auth/verify_code.py:51
+msgid "Forbidden send verification code"
+msgstr "禁止发送验证码"
+
+#: system/views/auth/verify_code.py:100
+msgid "The verification code has been sent"
+msgstr "验证码已发送"
+
+#: system/views/auth/verify_code.py:152
+msgid "Phone already exist"
+msgstr "手机号已经存在"
+
+#: system/views/auth/verify_code.py:154
+msgid "Email already exist"
+msgstr "邮件已经存在"
+
+#: system/views/auth/verify_code.py:156
+msgid "Username already exist"
+msgstr "用户名已经存在"
+
+#: system/views/auth/verify_code.py:167
+msgid "Phone does not exist"
+msgstr "手机号不存在"
+
+#: system/views/auth/verify_code.py:169
+msgid "Email does not exist"
+msgstr "邮件不存在"
+
+#: system/views/auth/verify_code.py:171
+msgid "Username does not exist"
+msgstr "用户名不存在"
+
 #: system/views/upload.py:55
 msgid "upload file size cannot exceed {}"
 msgstr "文件大小不能超过 {}"
@@ -1479,6 +1531,6 @@ msgstr "文件大小不能超过 {}"
 msgid "Wrong upload file type"
 msgstr "错误的文件类型"
 
-#: system/views/user/userinfo.py:61
+#: system/views/user/userinfo.py:64
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"

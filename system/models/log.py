@@ -18,7 +18,9 @@ class UserLoginLog(DbAuditModel):
     class LoginTypeChoices(models.IntegerChoices):
         USERNAME = 0, _("Username and password")
         SMS = 1, _("SMS verification code")
-        WECHAT = 2, _("Wechat scan code")
+        EMAIL = 2, _("Email verification code")
+        WECHAT = 4, _("Wechat scan code")
+        UNKNOWN = 9, _("Unknown")
 
     status = models.BooleanField(default=True, verbose_name=_("Login status"))
     ipaddress = models.GenericIPAddressField(verbose_name=_("IpAddress"), null=True, blank=True)
@@ -32,6 +34,17 @@ class UserLoginLog(DbAuditModel):
         verbose_name = _("User login log")
         verbose_name_plural = verbose_name
 
+    @staticmethod
+    def get_login_type(query_key):
+        if query_key == "email":
+            login_type = UserLoginLog.LoginTypeChoices.EMAIL
+        elif query_key == "phone":
+            login_type = UserLoginLog.LoginTypeChoices.SMS
+        elif query_key == "username":
+            login_type = UserLoginLog.LoginTypeChoices.USERNAME
+        else:
+            login_type = UserLoginLog.LoginTypeChoices.UNKNOWN
+        return login_type
 
 class OperationLog(DbAuditModel):
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)

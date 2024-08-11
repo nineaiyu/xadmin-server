@@ -7,7 +7,8 @@
 
 from common.utils import get_logger
 from settings.serializers.security import SecurityPasswordRuleSerializer, SecurityLoginLimitSerializer, \
-    SecurityLoginAuthSerializer, SecurityRegisterAuthSerializer, SecurityResetPasswordAuthSerializer
+    SecurityLoginAuthSerializer, SecurityRegisterAuthSerializer, SecurityResetPasswordAuthSerializer, \
+    SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer
 from settings.views.settings import BaseSettingView
 
 logger = get_logger(__file__)
@@ -36,3 +37,13 @@ class SecurityRegisterAuthView(BaseSettingView):
 class SecurityResetPasswordAuthView(BaseSettingView):
     serializer_class = SecurityResetPasswordAuthSerializer
     category = "security_reset_password_auth"
+
+
+class SecurityBindEmailAuthView(BaseSettingView):
+    serializer_class = SecurityBindEmailAuthSerializer
+    category = "security_bind_email_auth"
+
+
+class SecurityBindPhoneAuthView(BaseSettingView):
+    serializer_class = SecurityBindPhoneAuthSerializer
+    category = "security_bind_phone_auth"

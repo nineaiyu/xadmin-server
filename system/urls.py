@@ -10,7 +10,7 @@ from rest_framework.routers import SimpleRouter
 from system.views.admin.config import SystemConfigView, UserPersonalConfigView
 from system.views.admin.dept import DeptView
 from system.views.admin.file import UploadFileView
-from system.views.admin.loginlog import UserLoginLogView
+from system.views.admin.loginlog import LoginLogView
 from system.views.admin.menu import MenuView
 from system.views.admin.modelfield import ModelLabelFieldView
 from system.views.admin.notice import NoticeUserReadMessageView, NoticeMessageView
@@ -18,13 +18,13 @@ from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
 from system.views.admin.user import UserView
-from system.views.auth.code import SendVerifyCodeView
 from system.views.auth.login import BasicLoginView, VerifyCodeLoginView
 from system.views.auth.logout import LogoutView
 from system.views.auth.register import RegisterView
 from system.views.auth.reset import ResetPasswordView
 from system.views.auth.rule import PasswordRulesView
 from system.views.auth.token import RefreshTokenView, CaptchaView, TempTokenView
+from system.views.auth.verify_code import SendVerifyCodeView
 from system.views.configs import ConfigsView
 from system.views.dashboard import DashboardView
 from system.views.routes import UserRoutesView
@@ -33,6 +33,7 @@ from system.views.search.menu import SearchMenuView
 from system.views.search.role import SearchRoleView
 from system.views.search.user import SearchUserView
 from system.views.upload import UploadView
+from system.views.user.login_log import UserLoginLogView
 from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
 
@@ -72,6 +73,7 @@ router.register('search/menu', SearchMenuView, basename='SearchMenu')
 # 个人用户信息
 router.register('userinfo', UserInfoView, basename='userinfo')
 router.register('user/notice', UserNoticeMessage, basename='user_notice')
+router.register('user/log', UserLoginLogView, basename='user_login_log')
 router.register('configs', ConfigsView, basename='configs')
 
 # 系统设置相关路由
@@ -88,7 +90,7 @@ router.register('config/user', UserPersonalConfigView, basename='userconfig')
 
 # 日志相关
 router.register('logs/operation', OperationLogView, basename='operation_log')
-router.register('logs/login', UserLoginLogView, basename='login_log')
+router.register('logs/login', LoginLogView, basename='login_log')
 
 # 消息通知路由
 router.register('message/notice', NoticeMessageView, basename='message_notice')

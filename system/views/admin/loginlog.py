@@ -14,7 +14,7 @@ from system.models import UserLoginLog
 from system.serializers.log import UserLoginLogSerializer
 
 
-class UserLoginLogFilter(BaseFilterSet):
+class LoginLogFilter(BaseFilterSet):
     ipaddress = filters.CharFilter(field_name='ipaddress', lookup_expr='icontains')
     system = filters.CharFilter(field_name='system', lookup_expr='icontains')
     browser = filters.CharFilter(field_name='browser', lookup_expr='icontains')
@@ -26,10 +26,10 @@ class UserLoginLogFilter(BaseFilterSet):
         fields = ['login_type', 'ipaddress', 'system', 'creator_id', 'browser', 'agent', 'created_time']
 
 
-class UserLoginLogView(ListDeleteModelSet, OnlyExportDataAction):
+class LoginLogView(ListDeleteModelSet, OnlyExportDataAction):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
 
     ordering_fields = ['created_time']
-    filterset_class = UserLoginLogFilter
+    filterset_class = LoginLogFilter

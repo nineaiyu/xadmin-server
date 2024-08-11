@@ -16,7 +16,7 @@ from common.utils.request import get_request_ip, get_browser, get_os, get_reques
 from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
 from settings.utils.security import LoginIpBlockUtil, LoginBlockUtil
-from system.models import UserLoginLog
+from system.models import UserLoginLog, UserInfo
 from system.serializers.log import UserLoginLogSerializer
 
 
@@ -111,7 +111,8 @@ def verify_sms_email_code(request, block_utils):
     except Exception as e:
         block_util.incr_failed_count()
         ip_block.set_block_if_need()
-
+        request.user = UserInfo.objects.filter(**{query_key: target}).first()
+        save_login_log(request, login_type=UserLoginLog.get_login_type(query_key), status=False)
         times_remainder = block_util.get_remainder_times()
         if times_remainder > 0:
             detail = _(

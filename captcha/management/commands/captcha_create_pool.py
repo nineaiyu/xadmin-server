@@ -21,7 +21,7 @@ class Command(BaseCommand):
             help="Cleanup expired captchas after creating new ones",
         )
 
-    @transaction.atomic()
+    @transaction.atomic
     def handle(self, **options):
         verbose = int(options.get("verbosity"))
         count = options.get("pool_size")

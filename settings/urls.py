@@ -10,7 +10,8 @@ from common.core.routers import NoDetailRouter
 from settings.views.basic import BasicSettingView
 from settings.views.email import EmailServerSettingView
 from settings.views.security import SecurityPasswordRuleView, SecurityLoginLimitView, \
-    SecurityLoginAuthView, SecurityRegisterAuthView, SecurityResetPasswordAuthView
+    SecurityLoginAuthView, SecurityRegisterAuthView, SecurityResetPasswordAuthView, SecurityBindEmailAuthView, \
+    SecurityBindPhoneAuthView
 from settings.views.sms import SMSBackendView, SmsSettingView, SmsConfigView
 from settings.views.verify import VerifyCodeSettingView, CaptchaSettingView
 
@@ -30,6 +31,8 @@ no_detail_router.register('login/auth', SecurityLoginAuthView, basename='securit
 
 no_detail_router.register('register/auth', SecurityRegisterAuthView, basename='security-register-auth')
 no_detail_router.register('reset/auth', SecurityResetPasswordAuthView, basename='security-reset-auth')
+no_detail_router.register('bind/email', SecurityBindEmailAuthView, basename='security-bind-email-auth')
+no_detail_router.register('bind/phone', SecurityBindPhoneAuthView, basename='security-bind-phone-auth')
 
 no_detail_router.register('sms', SmsSettingView, basename='sms-settings')
 
