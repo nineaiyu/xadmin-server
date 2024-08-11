@@ -18,7 +18,7 @@ from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
 from system.models import Menu
-from system.utils.serializer import MenuSerializer, MenuPermissionSerializer
+from system.serializers.menu import MenuSerializer, MenuPermissionSerializer
 
 
 class MenuFilter(BaseFilterSet):

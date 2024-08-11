@@ -11,7 +11,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from system.models import DataPermission
-from system.utils.serializer import DataPermissionSerializer
+from system.serializers.permission import DataPermissionSerializer
 
 logger = logging.getLogger(__name__)
 

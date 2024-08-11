@@ -16,10 +16,12 @@ from common.base.utils import AESCipherV2
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
 from common.core.response import ApiResponse
+from settings.utils.password import check_password_rules
+from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
+from system.serializers.user import UserSerializer
 from system.utils import notify
 from system.utils.modelset import ChangeRolePermissionAction
-from system.utils.serializer import UserSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +29,11 @@ logger = logging.getLogger(__name__)
 class UserFilter(BaseFilterSet):
     username = filters.CharFilter(field_name='username', lookup_expr='icontains')
     nickname = filters.CharFilter(field_name='nickname', lookup_expr='icontains')
-    mobile = filters.CharFilter(field_name='mobile', lookup_expr='icontains')
+    phone = filters.CharFilter(field_name='phone', lookup_expr='icontains')
 
     class Meta:
         model = UserInfo
-        fields = ['username', 'nickname', 'mobile', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
+        fields = ['username', 'nickname', 'phone', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
 class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
@@ -69,6 +71,8 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
         instance = self.get_object()
         password = request.data.get('password')
         password = AESCipherV2(instance.username).decrypt(password)
+        if not check_password_rules(password, instance.is_superuser):
+            return ApiResponse(code=1001, detail=_('Password does not match security rules'))
         if instance and password:
             instance.set_password(password)
             instance.modifier = request.user
@@ -76,4 +80,10 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
             notify.notify_error(users=instance, title="密码重置成功",
                                 message="密码被管理员重置成功")
             return ApiResponse()
-        return ApiResponse(code=1001)
+        return ApiResponse(code=1002)
+
+    @action(methods=["post"], detail=True)
+    def unblock(self, request, *args, **kwargs):
+        instance = self.get_object()
+        LoginBlockUtil.unblock_user(instance.username)
+        return ApiResponse()

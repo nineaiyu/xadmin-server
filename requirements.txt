@@ -31,3 +31,6 @@ unicodecsv==0.14.1
 chardet==5.2.0
 pyexcel==0.7.0
 pyexcel-xlsx==0.6.0
+alibabacloud-dysmsapi20170525==3.0.0
+phonenumbers==8.13.42
+pycountry==24.6.1

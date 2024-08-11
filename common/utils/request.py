@@ -4,13 +4,14 @@
 # filename : request
 # author : ly_13
 # date : 6/27/2023
-
+import base64
 import json
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.models import AnonymousUser
 from django.utils.module_loading import import_string
+from rest_framework.throttling import BaseThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from user_agents import parse
 
@@ -154,3 +155,10 @@ def get_verbose_name(queryset=None, view=None, model=None):
         verbose_name = ""
         pass
     return model, verbose_name
+
+
+def get_request_ident(request):
+    http_user_agent = request.META.get('HTTP_USER_AGENT')
+    http_accept = request.META.get('HTTP_ACCEPT')
+    remote_addr = BaseThrottle().get_ident(request)
+    return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode("utf-8")).decode('utf-8')

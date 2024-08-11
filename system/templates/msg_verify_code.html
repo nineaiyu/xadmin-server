@@ -1,0 +1,22 @@
+{% load i18n %}
+
+<div style="width: 100%; text-align: center">
+    <table style="margin: 0 auto; border: 1px solid #ccc; border-collapse: collapse">
+        <tr style="background-color: #1ab394; color: white">
+            <th style="height: 80px;">{{ title }}</th>
+        </tr>
+        <tr style="border: 1px solid #eee;">
+            <td style="height: 50px;">{% trans 'Hello' %} {{ username }},</td>
+        </tr>
+        <tr style="border: 1px solid #eee">
+            <td style="height: 50px;">{% trans 'Verify code' %}: <span style="font-weight: bold;">{{ code }}</span></td>
+        </tr>
+        <tr style="border: 1px solid #eee">
+            <td style="height: 30px;">
+                {% trans 'The validity period of the verification code is' %}{{ ttl }}{% trans 'seconds' %}</td>
+        </tr>
+        <tr style="border: 1px solid #eee">
+            <td style="height: 30px;">{% trans 'If you have any questions, you can contact the administrator' %}</td>
+        </tr>
+    </table>
+</div>

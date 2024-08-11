@@ -10,28 +10,28 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from system.models import UserInfo
-from system.utils.serializer import UserSerializer
+from system.serializers.user import UserSerializer
 
 
 class SearchUserFilter(BaseFilterSet):
     username = filters.CharFilter(field_name='username', lookup_expr='icontains')
     nickname = filters.CharFilter(field_name='nickname', lookup_expr='icontains')
-    mobile = filters.CharFilter(field_name='mobile', lookup_expr='icontains')
+    phone = filters.CharFilter(field_name='phone', lookup_expr='icontains')
 
     class Meta:
         model = UserInfo
-        fields = ['username', 'nickname', 'mobile', 'email', 'is_active', 'gender', 'dept']
+        fields = ['username', 'nickname', 'phone', 'email', 'is_active', 'gender', 'dept']
 
 
 class SearchUserSerializer(UserSerializer):
     class Meta:
         model = UserInfo
-        fields = ['pk', 'avatar', 'username', 'nickname', 'mobile', 'email', 'gender', 'is_active', 'password', 'dept',
+        fields = ['pk', 'avatar', 'username', 'nickname', 'phone', 'email', 'gender', 'is_active', 'password', 'dept',
                   'description', 'last_login', 'date_joined']
 
         read_only_fields = [x.name for x in UserInfo._meta.fields]
 
-        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'is_active', 'dept', 'mobile',
+        table_fields = ['pk', 'avatar', 'username', 'nickname', 'gender', 'is_active', 'dept', 'phone',
                         'last_login', 'date_joined']
 
 

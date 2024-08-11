@@ -11,6 +11,7 @@ import os
 
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
+from django.conf import settings
 from django.forms.models import ModelChoiceIteratorValue
 
 logger = logging.getLogger(__file__)
@@ -21,13 +22,13 @@ class AESCipher(object):
     def __init__(self, key):
         self.key = hashlib.sha256(key.encode()).digest()
 
-    def encrypt(self, raw):
+    def encrypt(self, raw: bytes | str) -> bytes:
         raw = self._pack_data(raw)
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw))
 
-    def decrypt(self, enc):
+    def decrypt(self, enc: str | bytes) -> str:
         enc = base64.b64decode(enc)
         iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
@@ -35,6 +36,8 @@ class AESCipher(object):
 
     @staticmethod
     def _pack_data(s):
+        if isinstance(s, str):
+            s = s.encode('utf-8')
         return s + ((AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size)).encode(
             'utf-8')
 
@@ -44,6 +47,14 @@ class AESCipher(object):
         if isinstance(data, bytes):
             data = data.decode('utf-8')
         return data
+
+
+def get_signer():
+    s = AESCipher(settings.SECRET_KEY)
+    return s
+
+
+signer: AESCipher = get_signer()
 
 
 class AesBaseCrypt(object):

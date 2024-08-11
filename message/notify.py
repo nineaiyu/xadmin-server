@@ -24,7 +24,7 @@ from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from message.utils import async_push_message
 from system.models import UserInfo
-from system.utils.serializer import UserInfoSerializer
+from system.serializers.userinfo import UserInfoSerializer
 
 logger = logging.getLogger(__name__)
 

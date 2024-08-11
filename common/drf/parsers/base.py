@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.exceptions import ParseError, APIException
 from rest_framework.parsers import BaseParser
 
-from common.core.serializers import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
 
 logger = logging.getLogger(__file__)
 

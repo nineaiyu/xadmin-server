@@ -16,12 +16,14 @@ from common.core.config import SysConfig, UserConfig
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from system.models import UploadFile
-from system.utils.serializer import UploadFileSerializer
+from system.serializers.upload import UploadFileSerializer
 
 logger = logging.getLogger(__file__)
 
+
 def get_upload_max_size(user_obj):
     return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
+
 
 class UploadView(APIView):
     """本地上传文件接口"""
@@ -61,4 +63,3 @@ class UploadView(APIView):
 
     def get(self, request):
         return ApiResponse(data={'file_upload_size': get_upload_max_size(request.user)})
-

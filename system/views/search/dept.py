@@ -13,7 +13,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
 from system.models import DeptInfo
-from system.utils.serializer import DeptSerializer
+from system.serializers.department import DeptSerializer
 
 logger = logging.getLogger(__name__)
 

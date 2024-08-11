@@ -28,7 +28,7 @@ class UserSerializer(BaseRoleRuleInfo):
     class Meta:
         model = models.UserInfo
         fields = ['username', 'nickname', 'email', 'last_login', 'gender', 'date_joined', 'roles', 'rules', 'is_active',
-                  'pk', 'dept', 'mobile', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type']
+                  'pk', 'dept', 'phone', 'avatar', 'roles_info', 'description', 'dept_info', 'rules_info', 'mode_type']
         extra_kwargs = {'last_login': {'read_only': True}, 'date_joined': {'read_only': True},
                         'rules': {'read_only': True}, 'pk': {'read_only': True}, 'avatar': {'read_only': True},
                         'roles': {'read_only': True}}
