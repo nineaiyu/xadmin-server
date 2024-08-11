@@ -8,7 +8,7 @@
 # debug为false的时候，如果遇到静态文件无法访问，比如api文档无法正常打开，需要通过下面命令收集静态文件
 # python manage.py collectstatic
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -31,13 +31,11 @@ DB_ENGINE = 'django.db.backends.sqlite3'
 
 # 缓存配置
 REDIS_HOST = "redis"
-REDIS_PORT = 46379
+REDIS_PORT = 6379
 REDIS_PASSWORD = "nineven"
 
 # 需要将创建的应用写到里面
-XADMIN_APPS = [
-    # "demo.apps.DemoConfig",
-]
+XADMIN_APPS = []
 
 # 速率限制配置
 DEFAULT_THROTTLE_RATES = {}
