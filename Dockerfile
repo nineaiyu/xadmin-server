@@ -1,4 +1,4 @@
-FROM python:3.12.3-slim
+FROM python:3.12.5-slim
 
 # add pip cn mirrors
 ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
