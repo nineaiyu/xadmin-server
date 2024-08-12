@@ -38,6 +38,8 @@ class Setting(DbAuditModel, DbUuidModel):
     @cleaned_value.setter
     def cleaned_value(self, item):
         try:
+            if isinstance(item, set):
+                item = list(item)
             v = json.dumps(item)
             if self.encrypted:
                 v = signer.encrypt(v.encode('utf-8')).decode('utf-8')

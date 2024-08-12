@@ -8,7 +8,7 @@ from django.db.models import TextChoices
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField, LabeledMultipleChoiceField, ColorField
+from common.core.fields import ColorField
 
 
 class VerifyCodeSettingSerializer(serializers.Serializer):
@@ -52,10 +52,10 @@ class CaptchaSettingSerializer(serializers.Serializer):
         FUNCTION_ARCS = 'captcha.helpers.noise_arcs', _('Noise function arcs')
         FUNCTION_DOTS = 'captcha.helpers.noise_dots', _('Noise function dots')
 
-    CAPTCHA_CHALLENGE_FUNCT = LabeledChoiceField(
-        choices=ChallengeChoices.choices, default=ChallengeChoices.MATH_CHALLENGE, label=_('Challenge generator'),
-        help_text=_('Image verification code generation mode')
-    )
+    CAPTCHA_CHALLENGE_FUNCT = serializers.ChoiceField(choices=ChallengeChoices.choices,
+                                                      default=ChallengeChoices.MATH_CHALLENGE,
+                                                      label=_('Challenge generator'),
+                                                      help_text=_('Image verification code generation mode'))
 
     CAPTCHA_LENGTH = serializers.IntegerField(
         default=4, min_value=2, max_value=16, label=_('Captcha code length'),
@@ -75,6 +75,6 @@ class CaptchaSettingSerializer(serializers.Serializer):
     CAPTCHA_BACKGROUND_COLOR = ColorField(max_length=256, required=True, label=_('Captcha background color'))
     CAPTCHA_FOREGROUND_COLOR = ColorField(max_length=256, required=True, label=_('Captcha foreground color'))
 
-    CAPTCHA_NOISE_FUNCTIONS = LabeledMultipleChoiceField(label=_('Noise functions'),
-                                                         default=NoiseFunctionsChoices.FUNCTION_NULL,
-                                                         choices=NoiseFunctionsChoices.choices)
+    CAPTCHA_NOISE_FUNCTIONS = serializers.MultipleChoiceField(label=_('Noise functions'),
+                                                              default=NoiseFunctionsChoices.FUNCTION_NULL,
+                                                              choices=NoiseFunctionsChoices.choices)

@@ -8,7 +8,7 @@ import phonenumbers
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import PhoneField, LabeledChoiceField
+from common.core.fields import PhoneField
 from common.core.validators import PhoneValidator
 from common.sdk.sms.endpoint import BACKENDS
 
@@ -17,10 +17,8 @@ class SMSSettingSerializer(serializers.Serializer):
     SMS_ENABLED = serializers.BooleanField(
         default=False, label=_('SMS'), help_text=_('Enable Short Message Service (SMS)')
     )
-    SMS_BACKEND = LabeledChoiceField(
-        choices=BACKENDS.choices, default=BACKENDS.ALIBABA, label=_('Provider'),
-        help_text=_('Short Message Service (SMS) provider or protocol')
-    )
+    SMS_BACKEND = serializers.ChoiceField(choices=BACKENDS.choices, default=BACKENDS.ALIBABA, label=_('Provider'),
+                                          help_text=_('Short Message Service (SMS) provider or protocol'))
 
 
 class BaseSMSSettingSerializer(serializers.Serializer):

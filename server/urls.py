@@ -24,8 +24,9 @@ from drf_yasg.views import get_schema_view
 
 from common.celery.flower import CeleryFlowerView
 from common.core.utils import auto_register_app_url
+from common.swagger.utils import CustomOpenAPISchemaGenerator
+from common.swagger.views import ApiLogin, ApiLogout
 from common.utils.media import media_serve
-from common.utils.swagger import CustomOpenAPISchemaGenerator, ApiLogin, ApiLogout
 
 schema_view = get_schema_view(
     openapi.Info(

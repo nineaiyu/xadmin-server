@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-12 14:00+0800\n"
+"POT-Creation-Date: 2024-08-12 15:25+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -190,6 +190,14 @@ msgstr "验证码错误"
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
+#: common/swagger/views.py:31
+msgid "Incorrect username/password"
+msgstr "用户名或密码错误"
+
+#: common/swagger/views.py:38
+msgid "Please enter your account information to log in"
+msgstr "请输入用户信息进行登录"
+
 #: common/tasks.py:19
 msgid "Send email"
 msgstr "发件邮件"
@@ -224,14 +232,6 @@ msgstr "目录索引不被允许"
 msgid "“%(path)s” does not exist"
 msgstr "“%(path)s” 不存在"
 
-#: common/utils/swagger.py:33
-msgid "Incorrect username/password"
-msgstr "用户名或密码错误"
-
-#: common/utils/swagger.py:40
-msgid "Please enter your account information to log in"
-msgstr "请输入用户信息进行登录"
-
 #: common/utils/verify_code.py:23
 msgid "Send SMS code"
 msgstr "发送短信验证码"
@@ -259,7 +259,7 @@ msgstr "加密的"
 msgid "Is active"
 msgstr "激活状态"
 
-#: settings/models.py:97
+#: settings/models.py:99
 msgid "System setting"
 msgstr "系统设置"
 
