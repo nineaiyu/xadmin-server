@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-11 18:19+0800\n"
+"POT-Creation-Date: 2024-08-12 14:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -927,15 +927,15 @@ msgstr ""
 msgid "Login status"
 msgstr ""
 
-#: system/models/log.py:26 system/models/log.py:54
+#: system/models/log.py:26 system/models/log.py:55
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:27 system/models/log.py:55
+#: system/models/log.py:27 system/models/log.py:56
 msgid "Browser"
 msgstr ""
 
-#: system/models/log.py:28 system/models/log.py:56
+#: system/models/log.py:28 system/models/log.py:57
 msgid "System"
 msgstr ""
 
@@ -951,35 +951,35 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:50 system/serializers/log.py:32
+#: system/models/log.py:51 system/serializers/log.py:32
 msgid "Module"
 msgstr ""
 
-#: system/models/log.py:51
+#: system/models/log.py:52
 msgid "URL path"
 msgstr ""
 
-#: system/models/log.py:52
+#: system/models/log.py:53
 msgid "Request body"
 msgstr ""
 
-#: system/models/log.py:53
+#: system/models/log.py:54
 msgid "Request method"
 msgstr ""
 
-#: system/models/log.py:57
+#: system/models/log.py:58
 msgid "Response code"
 msgstr ""
 
-#: system/models/log.py:58
+#: system/models/log.py:59
 msgid "Response result"
 msgstr ""
 
-#: system/models/log.py:59
+#: system/models/log.py:60
 msgid "Status code"
 msgstr ""
 
-#: system/models/log.py:62
+#: system/models/log.py:63
 msgid "Operation log"
 msgstr ""
 

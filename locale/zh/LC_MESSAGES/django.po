@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-11 18:19+0800\n"
+"POT-Creation-Date: 2024-08-12 14:00+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -934,15 +934,15 @@ msgstr "微信扫码"
 msgid "Login status"
 msgstr "登录状态"
 
-#: system/models/log.py:26 system/models/log.py:54
+#: system/models/log.py:26 system/models/log.py:55
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:27 system/models/log.py:55
+#: system/models/log.py:27 system/models/log.py:56
 msgid "Browser"
 msgstr "浏览器"
 
-#: system/models/log.py:28 system/models/log.py:56
+#: system/models/log.py:28 system/models/log.py:57
 msgid "System"
 msgstr "操作系统"
 
@@ -958,35 +958,35 @@ msgstr "登录类型"
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:50 system/serializers/log.py:32
+#: system/models/log.py:51 system/serializers/log.py:32
 msgid "Module"
 msgstr "模块"
 
-#: system/models/log.py:51
+#: system/models/log.py:52
 msgid "URL path"
 msgstr "访问路径"
 
-#: system/models/log.py:52
+#: system/models/log.py:53
 msgid "Request body"
 msgstr "请求参数"
 
-#: system/models/log.py:53
+#: system/models/log.py:54
 msgid "Request method"
 msgstr "请求方式"
 
-#: system/models/log.py:57
+#: system/models/log.py:58
 msgid "Response code"
 msgstr "响应码"
 
-#: system/models/log.py:58
+#: system/models/log.py:59
 msgid "Response result"
 msgstr "响应内容"
 
-#: system/models/log.py:59
+#: system/models/log.py:60
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:62
+#: system/models/log.py:63
 msgid "Operation log"
 msgstr "操作日志"
 

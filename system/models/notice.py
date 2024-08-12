@@ -75,5 +75,5 @@ class NoticeUserRead(DbAuditModel):
         ordering = ('-created_time',)
         verbose_name = _("User has read the message")
         verbose_name_plural = verbose_name
-        index_together = ('owner', 'unread')
+        indexes = [models.Index(fields=['owner', 'unread'])]
         unique_together = ('owner', 'notice')
