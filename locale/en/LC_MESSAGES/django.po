@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-12 15:25+0800\n"
+"POT-Creation-Date: 2024-08-13 14:24+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -64,10 +64,11 @@ msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
 
 #: common/core/models.py:20 common/core/models.py:27
+#: settings/serializers/security.py:238
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:34
+#: common/core/models.py:34 settings/serializers/security.py:240
 msgid "Created time"
 msgstr ""
 
@@ -237,7 +238,7 @@ msgstr ""
 msgid "Send SMS code"
 msgstr ""
 
-#: settings/models.py:16 settings/serializers/sms.py:56
+#: settings/models.py:16 settings/serializers/sms.py:54
 #: system/models/permission.py:17
 msgid "Name"
 msgstr ""
@@ -592,7 +593,11 @@ msgstr ""
 msgid "Bind phone temp token"
 msgstr ""
 
-#: settings/serializers/sms.py:18 settings/serializers/sms.py:27
+#: settings/serializers/security.py:239
+msgid "Block IP"
+msgstr ""
+
+#: settings/serializers/sms.py:18 settings/serializers/sms.py:25
 msgid "SMS"
 msgstr ""
 
@@ -600,31 +605,31 @@ msgstr ""
 msgid "Enable Short Message Service (SMS)"
 msgstr ""
 
-#: settings/serializers/sms.py:21
+#: settings/serializers/sms.py:20
 msgid "Provider"
 msgstr ""
 
-#: settings/serializers/sms.py:22
+#: settings/serializers/sms.py:21
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr ""
 
-#: settings/serializers/sms.py:31 system/models/user.py:32
+#: settings/serializers/sms.py:29 system/models/user.py:32
 msgid "Phone"
 msgstr ""
 
-#: settings/serializers/sms.py:31
+#: settings/serializers/sms.py:29
 msgid "The phone is used for testing the SMS server's connectivity"
 msgstr ""
 
-#: settings/serializers/sms.py:51
+#: settings/serializers/sms.py:49
 msgid "Signature"
 msgstr ""
 
-#: settings/serializers/sms.py:52
+#: settings/serializers/sms.py:50
 msgid "Template code"
 msgstr ""
 
-#: settings/serializers/sms.py:57
+#: settings/serializers/sms.py:55
 msgid "Label"
 msgstr ""
 
@@ -672,11 +677,11 @@ msgstr ""
 msgid "Noise function dots"
 msgstr ""
 
-#: settings/serializers/verify.py:56
+#: settings/serializers/verify.py:57
 msgid "Challenge generator"
 msgstr ""
 
-#: settings/serializers/verify.py:57
+#: settings/serializers/verify.py:58
 msgid "Image verification code generation mode"
 msgstr ""
 
@@ -1123,7 +1128,7 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models/menu.py:70 system/serializers/menu.py:83
+#: system/models/menu.py:70
 msgid "Model"
 msgstr ""
 

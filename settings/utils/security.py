@@ -8,6 +8,8 @@
 
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from common.utils import ip
 
@@ -107,7 +109,7 @@ class BlockGlobalIpUtilBase:
         limit_count = settings.SECURITY_LOGIN_IP_LIMIT_COUNT
         if count < limit_count:
             return
-        cache.set(self.block_key, True, self.key_ttl)
+        cache.set(self.block_key, timezone.now().isoformat(), self.key_ttl)
 
     def clean_block_if_need(self):
         cache.delete(self.limit_key)
@@ -119,6 +121,15 @@ class BlockGlobalIpUtilBase:
         if self.ip_in_black_list:
             return True
         return bool(cache.get(self.block_key))
+
+    def get_block_info(self):
+        try:
+            data = cache.get(self.block_key)
+            if data:
+                return parse_datetime(data)
+            return "N/A"
+        except:
+            return "N/A"
 
 
 class LoginBlockUtil(BlockUtilBase):

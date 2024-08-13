@@ -138,7 +138,7 @@ class BasePrimaryKeyRelatedField(RelatedField):
                 continue
             if isinstance(data[attr], partial):
                 data[attr] = data[attr]()
-        if data and self.label_format:
+        if data and self.label_format and "label" not in self.attrs:
             data["label"] = self.label_format.format(**data)
         return data
 

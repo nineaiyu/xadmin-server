@@ -847,6 +847,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "323bcb18-d831-4370-b9f1-011720354082",
+    "fields": {
+      "created_time": "2024-08-13T05:10:43.991Z",
+      "updated_time": "2024-08-13T05:10:43.991Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "list:SettingBlockIp",
+      "rank": 9999,
+      "path": "api/settings/ip/block$",
+      "component": "",
+      "is_active": true,
+      "meta": "573866f5-aa93-4b30-b7c0-3c1a0d48da9a",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "33662086-715b-4478-b60d-a346c8c4f66b",
     "fields": {
       "created_time": "2024-01-22T09:32:11.012Z",
@@ -1381,6 +1403,28 @@
       "is_active": true,
       "meta": "b2ee64d0-091f-4eed-a205-01b8161a4326",
       "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "54bf787b-cc1c-497a-97f4-4fb54c159854",
+    "fields": {
+      "created_time": "2024-08-13T05:11:52.607Z",
+      "updated_time": "2024-08-13T05:11:52.607Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "batchDelete:SettingBlockIp",
+      "rank": 9999,
+      "path": "api/settings/ip/block/batch-delete$",
+      "component": "",
+      "is_active": true,
+      "meta": "51b5014a-5dfd-4706-9cf6-3ba4f7d9a3ff",
+      "method": "POST",
       "model": []
     }
   },
@@ -3088,6 +3132,28 @@
       "is_active": true,
       "meta": "adf68ee6-c0b7-44b8-b753-a1ecedc25a3d",
       "method": "PATCH",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cd7b13da-61f6-484c-8d0c-153d3353330e",
+    "fields": {
+      "created_time": "2024-08-13T05:11:20.656Z",
+      "updated_time": "2024-08-13T05:11:20.656Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "delete:SettingBlockIp",
+      "rank": 9999,
+      "path": "api/settings/ip/block/(?P<pk>[^/.]+)$",
+      "component": "",
+      "is_active": true,
+      "meta": "548fdcd6-dace-4c2e-b97d-7f0e9599dca2",
+      "method": "DELETE",
       "model": []
     }
   },

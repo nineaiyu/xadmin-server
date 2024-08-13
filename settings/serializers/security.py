@@ -235,5 +235,6 @@ class SecurityBindPhoneAuthSerializer(serializers.Serializer):
 
 
 class SecurityBlockIPSerializer(serializers.Serializer):
-    id = serializers.UUIDField(required=False)
-    ip = serializers.CharField(max_length=1024, required=False, allow_blank=True)
+    pk = serializers.CharField(required=False, label=_("ID"))
+    ip = serializers.CharField(max_length=1024, required=False, allow_blank=True, label=_("Block IP"))
+    created_time = serializers.DateTimeField(label=_("Created time"))

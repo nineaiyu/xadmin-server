@@ -8,6 +8,7 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from settings.views.basic import BasicSettingView
+from settings.views.block_ip import BlockIpView
 from settings.views.email import EmailServerSettingView
 from settings.views.security import SecurityPasswordRuleView, SecurityLoginLimitView, \
     SecurityLoginAuthView, SecurityRegisterAuthView, SecurityResetPasswordAuthView, SecurityBindEmailAuthView, \
@@ -37,6 +38,7 @@ no_detail_router.register('bind/phone', SecurityBindPhoneAuthView, basename='sec
 no_detail_router.register('sms', SmsSettingView, basename='sms-settings')
 
 router.register('sms/backend', SMSBackendView, basename='sms-backend')
+router.register('ip/block', BlockIpView, basename='ip-block')
 no_detail_router.register('sms/config', SmsConfigView, basename='sms-config')
 
 urlpatterns = no_detail_router.urls + router.urls

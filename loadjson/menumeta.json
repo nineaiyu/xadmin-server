@@ -1076,6 +1076,31 @@
   },
   {
     "model": "system.menumeta",
+    "pk": "51b5014a-5dfd-4706-9cf6-3ba4f7d9a3ff",
+    "fields": {
+      "created_time": "2024-08-13T05:11:52.606Z",
+      "updated_time": "2024-08-13T05:11:52.606Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "title": "批量删除拦截IP",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": "5377a608-2ad6-477e-b131-c51362861df9",
     "fields": {
       "created_time": "2024-08-01T10:37:29.888Z",
@@ -1151,6 +1176,31 @@
   },
   {
     "model": "system.menumeta",
+    "pk": "548fdcd6-dace-4c2e-b97d-7f0e9599dca2",
+    "fields": {
+      "created_time": "2024-08-13T05:11:20.655Z",
+      "updated_time": "2024-08-13T05:11:20.655Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "title": "删除拦截IP",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": "5532c083-062b-440b-9090-1c709246a287",
     "fields": {
       "created_time": "2024-01-22T09:32:12.267Z",
@@ -1210,6 +1260,31 @@
       "modifier": null,
       "dept_belong": null,
       "title": "导出数据",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": false,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "573866f5-aa93-4b30-b7c0-3c1a0d48da9a",
+    "fields": {
+      "created_time": "2024-08-13T05:10:43.988Z",
+      "updated_time": "2024-08-13T05:10:43.988Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "title": "查询IP拦截数据",
       "icon": "",
       "r_svg_name": "",
       "is_show_menu": true,
