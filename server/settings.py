@@ -326,6 +326,7 @@ CORS_ALLOW_METHODS = (
     'OPTIONS',
     'POST',
     'PUT',
+    'PATCH',
 )
 
 CORS_ALLOW_HEADERS = (
@@ -627,7 +628,7 @@ SWAGGER_SETTINGS = {
     "OPERATIONS_SORTER": "alpha",
     "VALIDATOR_URL": None,
     "AUTO_SCHEMA_TYPE": 2,  # 分组根据url层级分，0、1 或 2 层
-    "DEFAULT_AUTO_SCHEMA_CLASS": "common.utils.swagger.CustomSwaggerAutoSchema",
+    "DEFAULT_AUTO_SCHEMA_CLASS": "common.swagger.utils.CustomSwaggerAutoSchema",
 }
 
 # 密码安全配置
