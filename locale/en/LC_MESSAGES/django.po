@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-16 10:07+0800\n"
+"POT-Creation-Date: 2024-08-16 15:43+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -988,7 +988,7 @@ msgstr ""
 msgid "Operation log"
 msgstr ""
 
-#: system/models/menu.py:15 system/serializers/menu.py:111
+#: system/models/menu.py:15 system/serializers/menu.py:71
 msgid "Menu title"
 msgstr ""
 
@@ -996,7 +996,7 @@ msgstr ""
 msgid "Left icon"
 msgstr ""
 
-#: system/models/menu.py:17 system/serializers/menu.py:29
+#: system/models/menu.py:17 system/serializers/route.py:27
 msgid "Right icon"
 msgstr ""
 
@@ -1004,15 +1004,15 @@ msgstr ""
 msgid "Additional icon to the right of menu name"
 msgstr ""
 
-#: system/models/menu.py:19 system/serializers/menu.py:28
+#: system/models/menu.py:19 system/serializers/route.py:26
 msgid "Show menu"
 msgstr ""
 
-#: system/models/menu.py:20 system/serializers/menu.py:27
+#: system/models/menu.py:20 system/serializers/route.py:25
 msgid "Show parent menu"
 msgstr ""
 
-#: system/models/menu.py:21 system/serializers/menu.py:30
+#: system/models/menu.py:21 system/serializers/route.py:28
 msgid "Keepalive"
 msgstr ""
 
@@ -1022,7 +1022,7 @@ msgid ""
 "state is cleared"
 msgstr ""
 
-#: system/models/menu.py:24 system/serializers/menu.py:31
+#: system/models/menu.py:24 system/serializers/route.py:29
 msgid "Iframe URL"
 msgstr ""
 
@@ -1030,7 +1030,7 @@ msgstr ""
 msgid "The embedded iframe link address"
 msgstr ""
 
-#: system/models/menu.py:26 system/serializers/menu.py:32
+#: system/models/menu.py:26 system/serializers/route.py:30
 msgid "Iframe loading"
 msgstr ""
 
@@ -1042,7 +1042,7 @@ msgstr ""
 msgid "Leave animation"
 msgstr ""
 
-#: system/models/menu.py:31 system/serializers/menu.py:42
+#: system/models/menu.py:31 system/serializers/route.py:40
 msgid "Hidden tag"
 msgstr ""
 
@@ -1052,7 +1052,7 @@ msgid ""
 "to the TAB"
 msgstr ""
 
-#: system/models/menu.py:33 system/serializers/menu.py:43
+#: system/models/menu.py:33 system/serializers/route.py:41
 msgid "Fixed tag"
 msgstr ""
 
@@ -1060,7 +1060,7 @@ msgstr ""
 msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
 msgstr ""
 
-#: system/models/menu.py:35 system/serializers/menu.py:44
+#: system/models/menu.py:35 system/serializers/route.py:42
 msgid "Dynamic level"
 msgstr ""
 
@@ -1069,7 +1069,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr ""
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:71 system/serializers/menu.py:115
+#: system/serializers/menu.py:31 system/serializers/route.py:54
 msgid "Menu meta"
 msgstr ""
 
@@ -1108,11 +1108,12 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models/menu.py:60 system/serializers/menu.py:81
+#: system/models/menu.py:60 system/serializers/menu.py:41
+#: system/serializers/route.py:52
 msgid "Parent menu"
 msgstr ""
 
-#: system/models/menu.py:63 system/serializers/menu.py:86
+#: system/models/menu.py:63 system/serializers/menu.py:46
 msgid "Menu type"
 msgstr ""
 
@@ -1128,7 +1129,7 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models/menu.py:70 system/serializers/menu.py:84
+#: system/models/menu.py:70 system/serializers/menu.py:44
 msgid "Model"
 msgstr ""
 

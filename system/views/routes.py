@@ -12,8 +12,15 @@ from common.base.utils import menu_list_to_tree, format_menu_data
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from system.models import Menu
-from system.serializers.menu import RouteSerializer
+from system.serializers.route import RouteSerializer
 
+
+def get_auths(user):
+    if user.is_superuser:
+        menu_obj = Menu.objects.filter(is_active=True)
+    else:
+        menu_obj = get_user_menu_queryset(user)
+    return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list('name', flat=True).distinct()
 
 class UserRoutesView(APIView):
     """获取菜单路由"""
@@ -31,7 +38,7 @@ class UserRoutesView(APIView):
             route_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
                                          many=True, context={'user': request.user}, all_fields=True).data
 
-            return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)))
+            return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
         else:
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
@@ -39,4 +46,4 @@ class UserRoutesView(APIView):
                     menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
                     context={'user': request.user}, all_fields=True).data
 
-        return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)))
+        return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-16 10:07+0800\n"
+"POT-Creation-Date: 2024-08-16 15:43+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -995,7 +995,7 @@ msgstr "状态码"
 msgid "Operation log"
 msgstr "操作日志"
 
-#: system/models/menu.py:15 system/serializers/menu.py:111
+#: system/models/menu.py:15 system/serializers/menu.py:71
 msgid "Menu title"
 msgstr "菜单名称"
 
@@ -1003,7 +1003,7 @@ msgstr "菜单名称"
 msgid "Left icon"
 msgstr "菜单左图标"
 
-#: system/models/menu.py:17 system/serializers/menu.py:29
+#: system/models/menu.py:17 system/serializers/route.py:27
 msgid "Right icon"
 msgstr "菜单右图标"
 
@@ -1011,15 +1011,15 @@ msgstr "菜单右图标"
 msgid "Additional icon to the right of menu name"
 msgstr "菜单右侧额外图标"
 
-#: system/models/menu.py:19 system/serializers/menu.py:28
+#: system/models/menu.py:19 system/serializers/route.py:26
 msgid "Show menu"
 msgstr "显示菜单"
 
-#: system/models/menu.py:20 system/serializers/menu.py:27
+#: system/models/menu.py:20 system/serializers/route.py:25
 msgid "Show parent menu"
 msgstr "显示父级菜单"
 
-#: system/models/menu.py:21 system/serializers/menu.py:30
+#: system/models/menu.py:21 system/serializers/route.py:28
 msgid "Keepalive"
 msgstr "页面缓存"
 
@@ -1029,7 +1029,7 @@ msgid ""
 "state is cleared"
 msgstr "开启后，会保存该页面的整体状态，刷新后会清空状态"
 
-#: system/models/menu.py:24 system/serializers/menu.py:31
+#: system/models/menu.py:24 system/serializers/route.py:29
 msgid "Iframe URL"
 msgstr "Iframe地址"
 
@@ -1037,7 +1037,7 @@ msgstr "Iframe地址"
 msgid "The embedded iframe link address"
 msgstr "内嵌的Iframe地址"
 
-#: system/models/menu.py:26 system/serializers/menu.py:32
+#: system/models/menu.py:26 system/serializers/route.py:30
 msgid "Iframe loading"
 msgstr "Iframe页面加载动画"
 
@@ -1049,7 +1049,7 @@ msgstr "页面进场动画"
 msgid "Leave animation"
 msgstr "页面离场动画"
 
-#: system/models/menu.py:31 system/serializers/menu.py:42
+#: system/models/menu.py:31 system/serializers/route.py:40
 msgid "Hidden tag"
 msgstr "隐藏标签"
 
@@ -1059,7 +1059,7 @@ msgid ""
 "to the TAB"
 msgstr "当前菜单名称或自定义信息禁止添加到标签页"
 
-#: system/models/menu.py:33 system/serializers/menu.py:43
+#: system/models/menu.py:33 system/serializers/route.py:41
 msgid "Fixed tag"
 msgstr "固定标签"
 
@@ -1067,7 +1067,7 @@ msgstr "固定标签"
 msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
 msgstr "当前菜单名称是否固定显示在标签页且不可关闭"
 
-#: system/models/menu.py:35 system/serializers/menu.py:44
+#: system/models/menu.py:35 system/serializers/route.py:42
 msgid "Dynamic level"
 msgstr "标签显示数量"
 
@@ -1076,7 +1076,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr "显示已打开标签页最大数量"
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:71 system/serializers/menu.py:115
+#: system/serializers/menu.py:31 system/serializers/route.py:54
 msgid "Menu meta"
 msgstr "菜单元数据"
 
@@ -1115,11 +1115,12 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models/menu.py:60 system/serializers/menu.py:81
+#: system/models/menu.py:60 system/serializers/menu.py:41
+#: system/serializers/route.py:52
 msgid "Parent menu"
 msgstr "上级菜单"
 
-#: system/models/menu.py:63 system/serializers/menu.py:86
+#: system/models/menu.py:63 system/serializers/menu.py:46
 msgid "Menu type"
 msgstr "菜单类型"
 
@@ -1135,7 +1136,7 @@ msgstr "路由地址 或 后端权限路由"
 msgid "Component path"
 msgstr "组件地址"
 
-#: system/models/menu.py:70 system/serializers/menu.py:84
+#: system/models/menu.py:70 system/serializers/menu.py:44
 msgid "Model"
 msgstr "模型"
 

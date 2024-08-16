@@ -11,51 +11,11 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
-from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer
 from system.models import Menu, MenuMeta, ModelLabelField
 
 logger = logging.getLogger(__name__)
 
-
-class RouteMetaSerializer(BaseModelSerializer):
-    class Meta:
-        model = MenuMeta
-        fields = ['title', 'icon', 'showParent', 'showLink', 'extraIcon', 'keepAlive', 'frameSrc', 'frameLoading',
-                  'transition', 'hiddenTag', 'dynamicLevel', 'fixedTag', 'auths']
-
-    showParent = serializers.BooleanField(source='is_show_parent', read_only=True, label=_("Show parent menu"))
-    showLink = serializers.BooleanField(source='is_show_menu', read_only=True, label=_("Show menu"))
-    extraIcon = serializers.CharField(source='r_svg_name', read_only=True, label=_("Right icon"))
-    keepAlive = serializers.BooleanField(source='is_keepalive', read_only=True, label=_("Keepalive"))
-    frameSrc = serializers.CharField(source='frame_url', read_only=True, label=_("Iframe URL"))
-    frameLoading = serializers.BooleanField(source='frame_loading', read_only=True, label=_("Iframe loading"))
-
-    transition = serializers.SerializerMethodField()
-
-    def get_transition(self, obj):
-        return {
-            'enterTransition': obj.transition_enter,
-            'leaveTransition': obj.transition_leave,
-        }
-
-    hiddenTag = serializers.BooleanField(source='is_hidden_tag', read_only=True, label=_("Hidden tag"))
-    fixedTag = serializers.BooleanField(source='fixed_tag', read_only=True, label=_("Fixed tag"))
-    dynamicLevel = serializers.IntegerField(source='dynamic_level', read_only=True, label=_("Dynamic level"))
-
-    auths = serializers.SerializerMethodField()
-
-    def get_auths(self, obj):
-        user = self.context.get('user')
-        if user.is_superuser:
-            menu_obj = Menu.objects.filter(is_active=True)
-        else:
-            menu_obj = get_user_menu_queryset(user)
-        if menu_obj.exists():
-            return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION, parent=obj.menu).values_list('name',
-                                                                                                       flat=True).distinct()
-        else:
-            return []
 
 
 class MenuMetaSerializer(BaseModelSerializer):
@@ -110,6 +70,3 @@ class MenuPermissionSerializer(MenuSerializer):
 
     title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu title"))
 
-
-class RouteSerializer(MenuSerializer):
-    meta = RouteMetaSerializer(all_fields=True, label=_("Menu meta"))  # 用于前端菜单渲染

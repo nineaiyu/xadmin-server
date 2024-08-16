@@ -79,10 +79,10 @@
     "pk": "01e439a0-7973-4b73-a3f0-6f7382aa7a98",
     "fields": {
       "created_time": "2024-05-05T05:45:48.709Z",
-      "updated_time": "2024-05-05T05:45:48.709Z",
+      "updated_time": "2024-08-16T07:44:00.197Z",
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "title": "文档模式",
       "icon": "",

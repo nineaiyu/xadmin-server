@@ -8,6 +8,8 @@
 import logging
 
 from django.apps import apps
+from django.conf import settings
+from django.utils.translation import activate
 from django_filters import rest_framework as filters
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -91,5 +93,6 @@ class ModelLabelFieldView(OnlyListModelSet):
     @swagger_auto_schema(ignore_params=True)
     @action(methods=['get'], detail=False)
     def sync(self, request, *args, **kwargs):
+        activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
         get_sub_serializer_fields()
         return ApiResponse()
