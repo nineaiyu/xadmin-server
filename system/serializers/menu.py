@@ -13,7 +13,7 @@ from rest_framework import serializers
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.permission import get_user_menu_queryset
 from common.core.serializers import BaseModelSerializer
-from system.models import Menu, MenuMeta
+from system.models import Menu, MenuMeta, ModelLabelField
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +79,9 @@ class MenuSerializer(BaseModelSerializer):
 
     parent = BasePrimaryKeyRelatedField(queryset=Menu.objects, allow_null=True, required=False,
                                         label=_("Parent menu"), attrs=['pk', 'name'])
-    # 前端升级依赖之后，突然有问题，无法解析，因此先注释 model 下次优化
-    # model = BasePrimaryKeyRelatedField(queryset=ModelLabelField.objects, allow_null=True, required=False,
-    #                                    label=_("Model"), attrs=['pk', 'name', 'label'], many=True)
+
+    model = BasePrimaryKeyRelatedField(queryset=ModelLabelField.objects, allow_null=True, required=False,
+                                       label=_("Model"), attrs=['pk', 'name', 'label'], many=True)
     menu_type = LabeledChoiceField(choices=Menu.MenuChoices.choices,
                                    default=Menu.MenuChoices.DIRECTORY, label=_("Menu type"))
 
