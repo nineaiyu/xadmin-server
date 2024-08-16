@@ -4265,7 +4265,7 @@
       "is_show_menu": true,
       "is_show_parent": false,
       "is_keepalive": false,
-      "frame_url": "/api-docs/swagger/",
+      "frame_url": "/api-docs/login/",
       "frame_loading": false,
       "transition_enter": "",
       "transition_leave": "",

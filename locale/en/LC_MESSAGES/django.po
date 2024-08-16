@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-13 14:24+0800\n"
+"POT-Creation-Date: 2024-08-16 10:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -192,11 +192,11 @@ msgstr ""
 msgid "Please wait {} seconds before sending"
 msgstr ""
 
-#: common/swagger/views.py:31
+#: common/swagger/views.py:33
 msgid "Incorrect username/password"
 msgstr ""
 
-#: common/swagger/views.py:38
+#: common/swagger/views.py:42
 msgid "Please enter your account information to log in"
 msgstr ""
 
@@ -1128,7 +1128,7 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models/menu.py:70
+#: system/models/menu.py:70 system/serializers/menu.py:84
 msgid "Model"
 msgstr ""
 

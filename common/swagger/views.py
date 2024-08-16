@@ -10,15 +10,17 @@ from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.generics import GenericAPIView
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 from common.core.response import ApiResponse
 
 
-class ApiLogin(TokenObtainPairView):
+class ApiLogin(GenericAPIView):
     """接口文档的登录接口"""
-
+    permission_classes = ()
+    serializer_class = TokenObtainSerializer
     @swagger_auto_schema(auto_schema=None)
     @xframe_options_exempt
     def post(self, request, *args, **kwargs):
@@ -35,6 +37,8 @@ class ApiLogin(TokenObtainPairView):
     @swagger_auto_schema(auto_schema=None)
     @xframe_options_exempt
     def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect(to="/api-docs/swagger/")
         return ApiResponse(detail=_("Please enter your account information to log in"))
 
 

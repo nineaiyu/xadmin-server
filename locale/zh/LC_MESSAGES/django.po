@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-13 14:24+0800\n"
+"POT-Creation-Date: 2024-08-16 10:07+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -191,11 +191,11 @@ msgstr "验证码错误"
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
-#: common/swagger/views.py:31
+#: common/swagger/views.py:33
 msgid "Incorrect username/password"
 msgstr "用户名或密码错误"
 
-#: common/swagger/views.py:38
+#: common/swagger/views.py:42
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
@@ -1135,7 +1135,7 @@ msgstr "路由地址 或 后端权限路由"
 msgid "Component path"
 msgstr "组件地址"
 
-#: system/models/menu.py:70
+#: system/models/menu.py:70 system/serializers/menu.py:84
 msgid "Model"
 msgstr "模型"
 
