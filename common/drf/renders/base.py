@@ -42,6 +42,7 @@ class BaseFileRenderer(BaseRenderer):
         filename = "{}_{}_{}.{}".format(self.template, filename_prefix, now, self.format)
         disposition = 'attachment; filename="{}"'.format(filename)
         response['Content-Disposition'] = disposition
+        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
 
     def get_rendered_fields(self):
         fields = self.serializer.fields
