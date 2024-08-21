@@ -4254,7 +4254,7 @@
     "pk": "fc6cbe6d-5a9a-4c38-9a8d-175b87713ee2",
     "fields": {
       "created_time": "2024-05-04T12:48:20.495Z",
-      "updated_time": "2024-05-05T05:41:05.730Z",
+      "updated_time": "2024-08-21T05:55:34.005Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -4265,7 +4265,7 @@
       "is_show_menu": true,
       "is_show_parent": false,
       "is_keepalive": false,
-      "frame_url": "/api-docs/login/",
+      "frame_url": "/api-docs/swagger/",
       "frame_loading": false,
       "transition_enter": "",
       "transition_leave": "",

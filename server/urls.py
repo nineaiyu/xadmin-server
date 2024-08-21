@@ -17,12 +17,17 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, re_path
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.static import serve as static_serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from common.celery.flower import CeleryFlowerView
 from common.core.utils import auto_register_app_url
 from common.utils.media import media_serve
+
+SpectacularAPIView.get = xframe_options_exempt(SpectacularAPIView.get)
+SpectacularSwaggerView.get = xframe_options_exempt(SpectacularSwaggerView.get)
+SpectacularRedocView.get = xframe_options_exempt(SpectacularRedocView.get)
 
 swagger_apis = [
     re_path('^api-docs/schema/', SpectacularAPIView.as_view(), name='schema'),
