@@ -7,6 +7,7 @@
 from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
+from common.core.routers import NoDetailRouter
 from system.views.admin.config import SystemConfigView, UserPersonalConfigView
 from system.views.admin.dept import DeptView
 from system.views.admin.file import UploadFileView
@@ -38,6 +39,7 @@ from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
 
 router = SimpleRouter(False)
+no_detail_router = NoDetailRouter(False)
 
 no_auth_url = [
     re_path('^captcha/', include('captcha.urls')),
@@ -71,7 +73,7 @@ router.register('search/dept', SearchDeptView, basename='SearchDept')
 router.register('search/menu', SearchMenuView, basename='SearchMenu')
 
 # 个人用户信息
-router.register('userinfo', UserInfoView, basename='userinfo')
+no_detail_router.register('userinfo', UserInfoView, basename='userinfo')
 router.register('user/notice', UserNoticeMessage, basename='user_notice')
 router.register('user/log', UserLoginLogView, basename='user_login_log')
 router.register('configs', ConfigsView, basename='configs')
@@ -99,4 +101,4 @@ router.register('message/read', NoticeUserReadMessageView, basename='message_rea
 # 文件管理
 router.register('file', UploadFileView, basename='file')
 
-urlpatterns = no_auth_url + auth_url + router_url + router.urls
+urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls

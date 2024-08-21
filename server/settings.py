@@ -567,7 +567,7 @@ CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'me
 PERMISSION_WHITE_URL = [
     "^/api/system/login$",
     "^/api/system/logout$",
-    "^/api/system/userinfo/self$",
+    "^/api/system/userinfo$",
     "^/api/system/user/notice/unread$",
     "^/api/system/routes$",
     "^/api/system/dashboard/",

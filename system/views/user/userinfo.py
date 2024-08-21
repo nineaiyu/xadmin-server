@@ -10,6 +10,7 @@ from drf_spectacular.plumbing import build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
@@ -68,6 +69,17 @@ class UserInfoView(OwnerModelSet, ChoicesAction, UploadFileAction):
         ),
         responses=get_default_response_schema()
     )
+    @extend_schema(
+        description="上传头像",
+        request=OpenApiRequest(
+            build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
+        ),
+        responses=get_default_response_schema()
+    )
+    @action(methods=['post'], detail=False, parser_classes=(MultiPartParser,))
+    def upload(self, request, *args, **kwargs):
+        return super().upload(request, *args, **kwargs)
+
     @action(methods=['post'], detail=False, url_path='bind')
     def bind(self, request, *args, **kwargs):
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)

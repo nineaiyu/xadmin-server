@@ -436,7 +436,7 @@ class BatchDeleteAction(object):
         return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
 
 
-class BaseAction(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction):
+class BaseAction(BaseModelAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction):
 
     def create(self, request, *args, **kwargs):
         data = super().create(request, *args, **kwargs).data
@@ -470,8 +470,7 @@ class OwnerModelSet(BaseModelAction, mixins.RetrieveModelMixin, mixins.UpdateMod
         return ApiResponse(data=data)
 
 
-class OnlyListModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, mixins.ListModelMixin,
-                       GenericViewSet):
+class OnlyListModelSet(BaseModelAction, SearchFieldsAction, SearchColumnsAction, mixins.ListModelMixin, GenericViewSet):
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(data=data)
@@ -482,7 +481,7 @@ class BaseModelSet(BaseAction, ModelViewSet):
 
 
 # 只允许读和删除，不允许创建和修改
-class ListDeleteModelSet(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction,
+class ListDeleteModelSet(BaseModelAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction,
                          mixins.DestroyModelMixin, ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         data = super().retrieve(request, *args, **kwargs).data

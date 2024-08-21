@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 
 from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction
+from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
@@ -35,7 +35,7 @@ class MenuFilter(BaseFilterSet):
         fields = ['name']
 
 
-class MenuView(BaseModelSet, RankAction, ImportExportDataAction):
+class MenuView(BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction):
     """菜单管理"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
