@@ -60,7 +60,8 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'imagekit',
-    'drf_yasg',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
     *locals().get("XADMIN_APPS", []),
     'common.apps.CommonConfig',  # 这个放到最后, django ready
 ]
@@ -230,6 +231,7 @@ FILE_UPLOAD_HANDLERS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'common.swagger.utils.CustomAutoSchema',
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -245,7 +247,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
-        "rest_framework.authentication.SessionAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",  # 允许basic授权，方便调试使用
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
@@ -559,7 +561,7 @@ CELERY_FLOWER_AUTH = 'flower:flower123.'
 CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles', 'common',
                       'system', 'settings', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha',
                       'corsheaders', 'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat',
-                      'imagekit', 'drf_yasg']
+                      'imagekit', 'drf_spectacular', 'drf_spectacular_sidecar']
 
 # 访问白名单配置，无需权限配置
 PERMISSION_WHITE_URL = [
@@ -571,6 +573,7 @@ PERMISSION_WHITE_URL = [
     "^/api/system/dashboard/",
     "^/api/system/.*choices$",
     "^/api/system/.*search-fields$",
+    "^/api/common/resources/cache$",
 ]
 
 # 前端权限路由 忽略配置
@@ -612,23 +615,23 @@ API_MODEL_MAP = {
     "/api/system/password/send": "重置密码",
 }
 
-SWAGGER_SETTINGS = {
-    "USE_SESSION_AUTH": True,
-    "SECURITY_DEFINITIONS": {"Bearer": {"type": "apiKey", 'in': 'header', 'name': 'Authorization'}},
-    'LOGIN_URL': '/api-docs/login/',
-    'LOGOUT_URL': '/api-docs/logout/',
-    # 'DOC_EXPANSION': None,
-    # 'SHOW_REQUEST_HEADERS':True,
-    # 'DOC_EXPANSION': 'list',
-    # 接口文档中方法列表以首字母升序排列
-    "APIS_SORTER": "alpha",
-    # 如果支持json提交, 则接口文档中包含json输入框
-    "JSON_EDITOR": True,
-    # 方法列表字母排序
-    "OPERATIONS_SORTER": "alpha",
-    "VALIDATOR_URL": None,
-    "AUTO_SCHEMA_TYPE": 2,  # 分组根据url层级分，0、1 或 2 层
-    "DEFAULT_AUTO_SCHEMA_CLASS": "common.swagger.utils.CustomSwaggerAutoSchema",
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Xadmin Server API',
+    'DESCRIPTION': 'Django Xadmin Server',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_PUBLIC': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    "SWAGGER_UI_SETTINGS": {
+        "displayRequestDuration": True,
+        "deepLinking": True,
+        "filter": True,
+        "persistAuthorization": True,
+        "displayOperationId": False,
+    },
+    # 'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
 }
 
 # 密码安全配置

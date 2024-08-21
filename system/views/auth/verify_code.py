@@ -8,11 +8,15 @@
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
-from rest_framework.views import APIView
+from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiRequest
+from rest_framework.generics import GenericAPIView
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.fields.utils import get_file_absolute_uri
+from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ip
 from common.utils.token import random_string
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
@@ -22,7 +26,76 @@ from system.models import UserInfo
 from system.utils.auth import check_token_and_captcha, check_is_block
 
 
-class SendVerifyCodeView(APIView):
+@extend_schema_view(
+    get=extend_schema(
+        description="获取发送验证码配置信息",
+        parameters=[
+            OpenApiParameter(
+                name='category',
+                required=True,
+                type=OpenApiTypes.STR,
+                enum=['login', 'register', 'reset', 'bind_phone', 'bind_email']
+            )
+        ],
+        responses=get_default_response_schema(
+            {
+                'data': build_object_type(
+                    properties={
+                        'access': build_basic_type(OpenApiTypes.BOOL),
+                        'captcha': build_basic_type(OpenApiTypes.BOOL),
+                        'token': build_basic_type(OpenApiTypes.BOOL),
+                        'encrypted': build_basic_type(OpenApiTypes.BOOL),
+                        'email': build_basic_type(OpenApiTypes.BOOL),
+                        'sms': build_basic_type(OpenApiTypes.BOOL),
+                        'rate': build_basic_type(OpenApiTypes.NUMBER),
+                        'lifetime': build_basic_type(OpenApiTypes.NUMBER),
+                        'basic': build_basic_type(OpenApiTypes.BOOL),
+                        'reset': build_basic_type(OpenApiTypes.BOOL),
+                        'register': build_basic_type(OpenApiTypes.BOOL),
+                        'password': build_array_type(build_object_type(
+                            properties={
+                                'key': build_basic_type(OpenApiTypes.STR),
+                                'value': build_basic_type(OpenApiTypes.NUMBER),
+                            }
+                        ))
+                    }
+                )
+            }
+        )
+    ),
+    post=extend_schema(
+        description="发送验证码",
+        parameters=[
+            OpenApiParameter(
+                name='category',
+                required=True,
+                type=OpenApiTypes.STR,
+                enum=['login', 'register', 'reset', 'bind_phone', 'bind_email']
+            )
+        ],
+        request=OpenApiRequest(build_object_type(
+            properties={
+                'form_type': build_basic_type(OpenApiTypes.STR),
+                'target': build_basic_type(OpenApiTypes.STR),
+                'token': build_basic_type(OpenApiTypes.STR),
+                'captcha_key': build_basic_type(OpenApiTypes.STR),
+                'captcha_code': build_basic_type(OpenApiTypes.STR),
+            }
+        )),
+        responses=get_default_response_schema(
+            {
+                'data': build_object_type(
+                    properties={
+                        'verify_token': build_basic_type(OpenApiTypes.STR),
+                        'verify_code': build_basic_type(OpenApiTypes.STR),
+                        'extra': build_basic_type(OpenApiTypes.ANY),
+                    }
+                )
+            }
+        )
+    )
+)
+class SendVerifyCodeView(GenericAPIView):
     """获取验证码配置"""
     permission_classes = []
     authentication_classes = []

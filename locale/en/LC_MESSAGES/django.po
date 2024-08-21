@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-19 09:44+0800\n"
+"POT-Creation-Date: 2024-08-21 13:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,29 +92,29 @@ msgstr ""
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/modelset.py:64
+#: common/core/modelset.py:67
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/modelset.py:67
+#: common/core/modelset.py:70
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
-#: common/core/modelset.py:91
+#: common/core/modelset.py:99
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:132 system/utils/auth.py:97
-#: system/utils/modelset.py:53 system/views/auth/register.py:39
-#: system/views/auth/reset.py:30 system/views/auth/verify_code.py:65
+#: common/core/modelset.py:161 system/utils/auth.py:97
+#: system/utils/modelset.py:59 system/views/auth/register.py:69
+#: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/modelset.py:391
+#: common/core/modelset.py:426
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:401
+#: common/core/modelset.py:436
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
@@ -299,7 +299,7 @@ msgstr ""
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:22
+#: settings/serializers/email.py:22 system/serializers/user.py:74
 msgid "Password"
 msgstr ""
 
@@ -729,11 +729,11 @@ msgstr ""
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
-#: settings/views/sms.py:86
+#: settings/views/sms.py:98
 msgid "test_phone is required"
 msgstr ""
 
-#: settings/views/sms.py:97
+#: settings/views/sms.py:109
 msgid "Test success"
 msgstr ""
 
@@ -784,9 +784,9 @@ msgid "System config"
 msgstr ""
 
 #: system/models/config.py:39 system/models/notice.py:70
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:31 system/serializers/log.py:49
-#: system/serializers/notice.py:141
+#: system/serializers/config.py:47 system/serializers/config.py:59
+#: system/serializers/log.py:32 system/serializers/log.py:51
+#: system/serializers/notice.py:144
 msgid "User"
 msgstr ""
 
@@ -802,7 +802,7 @@ msgstr ""
 msgid "Department code"
 msgstr ""
 
-#: system/models/department.py:21 system/serializers/department.py:33
+#: system/models/department.py:21 system/serializers/department.py:34
 msgid "Superior department"
 msgstr ""
 
@@ -832,7 +832,7 @@ msgid ""
 msgstr ""
 
 #: system/models/department.py:49 system/models/user.py:37
-#: system/serializers/user.py:44
+#: system/serializers/user.py:45
 msgid "Department"
 msgstr ""
 
@@ -956,7 +956,7 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:51 system/serializers/log.py:32
+#: system/models/log.py:51 system/serializers/log.py:33
 msgid "Module"
 msgstr ""
 
@@ -1080,7 +1080,7 @@ msgstr ""
 #: system/models/menu.py:50 system/models/menu.py:84
 #: system/models/permission.py:20 system/models/permission.py:33
 #: system/models/role.py:18 system/serializers/permission.py:35
-#: system/serializers/role.py:34
+#: system/serializers/role.py:36
 msgid "Menu"
 msgstr ""
 
@@ -1173,24 +1173,24 @@ msgstr ""
 msgid "Important notices"
 msgstr ""
 
-#: system/models/notice.py:29 system/serializers/notice.py:33
+#: system/models/notice.py:29 system/serializers/notice.py:34
 msgid "The notified user"
 msgstr ""
 
-#: system/models/notice.py:31 system/serializers/notice.py:37
+#: system/models/notice.py:31 system/serializers/notice.py:38
 msgid "The notified department"
 msgstr ""
 
-#: system/models/notice.py:33 system/serializers/notice.py:38
+#: system/models/notice.py:33 system/serializers/notice.py:39
 msgid "The notified role"
 msgstr ""
 
-#: system/models/notice.py:34 system/serializers/notice.py:48
+#: system/models/notice.py:34 system/serializers/notice.py:49
 msgid "Notice level"
 msgstr ""
 
-#: system/models/notice.py:36 system/serializers/notice.py:46
-#: system/serializers/notice.py:140 system/serializers/notice.py:157
+#: system/models/notice.py:36 system/serializers/notice.py:47
+#: system/serializers/notice.py:143 system/serializers/notice.py:160
 msgid "Notice type"
 msgstr ""
 
@@ -1199,7 +1199,7 @@ msgid "Notice title"
 msgstr ""
 
 #: system/models/notice.py:39 system/models/notice.py:55
-#: system/serializers/notice.py:144
+#: system/serializers/notice.py:147
 msgid "Notice message"
 msgstr ""
 
@@ -1207,7 +1207,7 @@ msgstr ""
 msgid "Additional json data"
 msgstr ""
 
-#: system/models/notice.py:41 system/serializers/notice.py:41
+#: system/models/notice.py:41 system/serializers/notice.py:42
 msgid "Uploaded attachments"
 msgstr ""
 
@@ -1219,7 +1219,7 @@ msgstr ""
 msgid "Notice"
 msgstr ""
 
-#: system/models/notice.py:72 system/serializers/notice.py:158
+#: system/models/notice.py:72 system/serializers/notice.py:161
 msgid "Unread"
 msgstr ""
 
@@ -1315,8 +1315,8 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
-#: system/models/user.py:31 system/serializers/user.py:46
-#: system/serializers/userinfo.py:30
+#: system/models/user.py:31 system/serializers/user.py:47
+#: system/serializers/userinfo.py:33
 msgid "Gender"
 msgstr ""
 
@@ -1328,47 +1328,47 @@ msgstr ""
 msgid "Mode type"
 msgstr ""
 
-#: system/serializers/config.py:30
+#: system/serializers/config.py:31
 msgid "Config cache value"
 msgstr ""
 
-#: system/serializers/config.py:59
+#: system/serializers/config.py:61
 msgid "Users"
 msgstr ""
 
-#: system/serializers/config.py:66
+#: system/serializers/config.py:68
 msgid "User cannot be null"
 msgstr ""
 
-#: system/serializers/department.py:31 system/serializers/notice.py:42
+#: system/serializers/department.py:32 system/serializers/notice.py:43
 msgid "User count"
 msgstr ""
 
-#: system/serializers/department.py:49
+#: system/serializers/department.py:50
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/notice.py:43
+#: system/serializers/notice.py:44
 msgid "Read user count"
 msgstr ""
 
-#: system/serializers/notice.py:69
+#: system/serializers/notice.py:72
 msgid "Parameter error. System announcement cannot be created"
 msgstr ""
 
-#: system/serializers/notice.py:79
+#: system/serializers/notice.py:82
 msgid "The notice role cannot be null"
 msgstr ""
 
-#: system/serializers/notice.py:85
+#: system/serializers/notice.py:88
 msgid "The notice department cannot be null"
 msgstr ""
 
-#: system/serializers/notice.py:91
+#: system/serializers/notice.py:94
 msgid "The notice user cannot be null"
 msgstr ""
 
-#: system/serializers/notice.py:130
+#: system/serializers/notice.py:133
 msgid "Parameter error"
 msgstr ""
 
@@ -1376,37 +1376,50 @@ msgstr ""
 msgid "The rule cannot be null"
 msgstr ""
 
-#: system/serializers/role.py:38 system/serializers/role.py:39
+#: system/serializers/role.py:40 system/serializers/role.py:41
 msgid "Fields"
 msgstr ""
 
-#: system/serializers/upload.py:28
+#: system/serializers/upload.py:29
 msgid "Access URL"
 msgstr ""
 
-#: system/serializers/upload.py:35
+#: system/serializers/upload.py:37
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:49
+#: system/serializers/user.py:50
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:64 system/views/admin/user.py:75
-#: system/views/auth/register.py:45 system/views/auth/reset.py:37
-#: system/views/user/userinfo.py:66
+#: system/serializers/user.py:66 system/serializers/user.py:80
+#: system/serializers/userinfo.py:56 system/views/auth/register.py:75
+#: system/views/auth/reset.py:53
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:66
+#: system/serializers/user.py:68
 msgid "Abnormal password field"
+msgstr ""
+
+#: system/serializers/userinfo.py:44
+msgid "Old password"
+msgstr ""
+
+#: system/serializers/userinfo.py:47
+msgid "Confirm password"
+msgstr ""
+
+#: system/serializers/userinfo.py:54
+msgid "Old password verification failed"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:9
 msgid "Hello"
 msgstr ""
 
-#: system/templates/msg_verify_code.html:12 system/views/auth/verify_code.py:32
+#: system/templates/msg_verify_code.html:12
+#: system/views/auth/verify_code.py:105
 msgid "Verify code"
 msgstr ""
 
@@ -1437,7 +1450,7 @@ msgid ""
 msgstr ""
 
 #: system/utils/auth.py:72 system/utils/auth.py:124
-#: system/views/auth/login.py:60
+#: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -1462,11 +1475,7 @@ msgstr ""
 msgid "The super administrator disallows deletion"
 msgstr ""
 
-#: system/views/auth/login.py:29 system/views/auth/login.py:92
-msgid "Login forbidden"
-msgstr ""
-
-#: system/views/auth/login.py:54
+#: system/views/auth/login.py:42
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1474,58 +1483,58 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/auth/register.py:32
+#: system/views/auth/login.py:96 system/views/auth/login.py:178
+msgid "Login forbidden"
+msgstr ""
+
+#: system/views/auth/register.py:62
 msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/auth/register.py:54
+#: system/views/auth/register.py:84
 msgid "The account already exists, please try another one"
 msgstr ""
 
-#: system/views/auth/reset.py:42
+#: system/views/auth/reset.py:58
 msgid "Reset password success, return to login page"
 msgstr ""
 
-#: system/views/auth/verify_code.py:51
+#: system/views/auth/verify_code.py:124
 msgid "Forbidden send verification code"
 msgstr ""
 
-#: system/views/auth/verify_code.py:100
+#: system/views/auth/verify_code.py:173
 msgid "The verification code has been sent"
 msgstr ""
 
-#: system/views/auth/verify_code.py:152
+#: system/views/auth/verify_code.py:225
 msgid "Phone already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:154
+#: system/views/auth/verify_code.py:227
 msgid "Email already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:156
+#: system/views/auth/verify_code.py:229
 msgid "Username already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:167
+#: system/views/auth/verify_code.py:240
 msgid "Phone does not exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:169
+#: system/views/auth/verify_code.py:242
 msgid "Email does not exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:171
+#: system/views/auth/verify_code.py:244
 msgid "Username does not exist"
 msgstr ""
 
-#: system/views/upload.py:55
+#: system/views/upload.py:79
 msgid "upload file size cannot exceed {}"
 msgstr ""
 
-#: system/views/upload.py:58
+#: system/views/upload.py:82
 msgid "Wrong upload file type"
-msgstr ""
-
-#: system/views/user/userinfo.py:64
-msgid "Old password verification failed"
 msgstr ""

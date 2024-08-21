@@ -9,6 +9,8 @@
 
 from collections import OrderedDict
 
+from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
@@ -26,6 +28,20 @@ class PageNumber(PageNumberPagination):
             # ('previous', self.get_previous_link()),
             ('results', data)
         ]))
+
+    def get_paginated_response_schema(self, schema):
+        return build_object_type(
+            properties={
+                'code': build_basic_type(OpenApiTypes.NUMBER),
+                'detail': build_basic_type(OpenApiTypes.STR),
+                'data': build_object_type(
+                    properties={
+                        'total': build_basic_type(OpenApiTypes.NUMBER),
+                        'results': schema
+                    }
+                ),
+            }
+        )
 
 
 class DynamicPageNumber(object):

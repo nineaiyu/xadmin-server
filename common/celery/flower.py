@@ -11,19 +11,19 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from proxy.views import proxy_view
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 
 logger = logging.getLogger(__name__)
 
 flower_url = f'{settings.CELERY_FLOWER_HOST}:{settings.CELERY_FLOWER_PORT}'
 
 
-class CeleryFlowerView(APIView):
+class CeleryFlowerView(GenericAPIView):
     """celery 定时任务"""
 
-    @swagger_auto_schema(auto_schema=None)
+    @extend_schema(exclude=True)
     @xframe_options_exempt
     def get(self, request, path):
         remote_url = 'http://{}/api/flower/{}'.format(flower_url, path)
@@ -40,7 +40,7 @@ class CeleryFlowerView(APIView):
             response = HttpResponse(msg)
         return response
 
-    @swagger_auto_schema(auto_schema=None)
+    @extend_schema(exclude=True)
     @xframe_options_exempt
     def post(self, request, path):
         return self.get(request, path)

@@ -8,6 +8,7 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -27,6 +28,7 @@ class UploadFileSerializer(BaseModelSerializer):
 
     access_url = serializers.SerializerMethodField(label=_("Access URL"))
 
+    @extend_schema_field(serializers.CharField)
     def get_access_url(self, obj):
         return obj.file_url if obj.file_url else get_file_absolute_uri(obj.filepath, self.context.get('request', None))
 

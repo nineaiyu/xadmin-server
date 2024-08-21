@@ -5,30 +5,36 @@
 # author : ly_13
 # date : 12/24/2023
 from django.utils.translation import gettext_lazy as _
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
-from system.models import UserRole, DataPermission, SystemConfig, ModeTypeAbstract
+from common.swagger.utils import get_default_response_schema
+from system.models import UserRole, DataPermission, SystemConfig
 
 
 class ChangeRolePermissionAction(object):
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['roles', 'rules', 'mode_type'],
-        properties={'roles': openapi.Schema(description='角色信息', type=openapi.TYPE_ARRAY,
-                                            items=openapi.Schema(type=openapi.TYPE_STRING, )),
-                    'rules': openapi.Schema(description='数据权限', type=openapi.TYPE_ARRAY,
-                                            items=openapi.Schema(type=openapi.TYPE_STRING, )),
-                    'mode_type': openapi.Schema(description='权限模式', type=openapi.TYPE_NUMBER,
-                                                default=ModeTypeAbstract.ModeChoices.OR)}
-    ), operation_description='分配角色-数据权限')
+    @extend_schema(
+        description="分配角色-数据权限",
+        request=OpenApiRequest(
+            build_object_type(
+                required=['roles', 'rules', 'mode_type'],
+                properties={
+                    'roles': build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    'rules': build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    'mode_type': build_basic_type(OpenApiTypes.NUMBER),
+                }
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=True)
     def empower(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -57,7 +63,11 @@ class InvalidConfigCacheAction(object):
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
-    @swagger_auto_schema(operation_description="使配置值缓存失效", ignore_params=True)
+    @extend_schema(
+        description="使配置值缓存失效",
+        request=None,
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=True)
     def invalid(self, request, *args, **kwargs):
         instance = self.get_object()

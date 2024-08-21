@@ -4,8 +4,8 @@
 # filename : routes
 # author : ly_13
 # date : 4/21/2024
-
-from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from rest_framework.generics import GenericAPIView
 
 from common.base.magic import cache_response
 from common.base.utils import menu_list_to_tree, format_menu_data
@@ -22,13 +22,15 @@ def get_auths(user):
         menu_obj = get_user_menu_queryset(user)
     return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list('name', flat=True).distinct()
 
-class UserRoutesView(APIView):
+
+class UserRoutesView(GenericAPIView):
     """获取菜单路由"""
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
         return f"{func_name}_{request.user.pk}"
 
+    @extend_schema(exclude=True)
     @cache_response(timeout=3600 * 24 * 7, key_func='get_cache_key')
     def get(self, request):
         route_list = []

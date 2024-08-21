@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-19 09:44+0800\n"
+"POT-Creation-Date: 2024-08-21 13:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -91,29 +91,29 @@ msgstr "修改人"
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
-#: common/core/modelset.py:64
+#: common/core/modelset.py:67
 msgid "Image size cannot exceed {}"
 msgstr "图片大小不能超过 {}"
 
-#: common/core/modelset.py:67
+#: common/core/modelset.py:70
 msgid "Wrong image type, the type should be {}"
 msgstr "错误的图片类型, 类型应该为 {}"
 
-#: common/core/modelset.py:91
+#: common/core/modelset.py:99
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:132 system/utils/auth.py:97
-#: system/utils/modelset.py:53 system/views/auth/register.py:39
-#: system/views/auth/reset.py:30 system/views/auth/verify_code.py:65
+#: common/core/modelset.py:161 system/utils/auth.py:97
+#: system/utils/modelset.py:59 system/views/auth/register.py:69
+#: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/modelset.py:391
+#: common/core/modelset.py:426
 msgid "Operation failed. Primary key list does not exist"
 msgstr "操作失败，主键列表不存在"
 
-#: common/core/modelset.py:401
+#: common/core/modelset.py:436
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
@@ -298,7 +298,7 @@ msgstr "账号"
 msgid "The user to be used for email server authentication"
 msgstr "登录到邮件服务器的用户名。这通常是你的邮件地址"
 
-#: settings/serializers/email.py:22
+#: settings/serializers/email.py:22 system/serializers/user.py:74
 msgid "Password"
 msgstr "密码"
 
@@ -734,11 +734,11 @@ msgstr "测试 smtp 设置"
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
 
-#: settings/views/sms.py:86
+#: settings/views/sms.py:98
 msgid "test_phone is required"
 msgstr "测试手机号 该字段是必填项。"
 
-#: settings/views/sms.py:97
+#: settings/views/sms.py:109
 msgid "Test success"
 msgstr "测试成功"
 
@@ -791,9 +791,9 @@ msgid "System config"
 msgstr "系统配置"
 
 #: system/models/config.py:39 system/models/notice.py:70
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:31 system/serializers/log.py:49
-#: system/serializers/notice.py:141
+#: system/serializers/config.py:47 system/serializers/config.py:59
+#: system/serializers/log.py:32 system/serializers/log.py:51
+#: system/serializers/notice.py:144
 msgid "User"
 msgstr "用户"
 
@@ -809,7 +809,7 @@ msgstr "部门名称"
 msgid "Department code"
 msgstr "部门标识"
 
-#: system/models/department.py:21 system/serializers/department.py:33
+#: system/models/department.py:21 system/serializers/department.py:34
 msgid "Superior department"
 msgstr "上级部门"
 
@@ -839,7 +839,7 @@ msgid ""
 msgstr "注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定"
 
 #: system/models/department.py:49 system/models/user.py:37
-#: system/serializers/user.py:44
+#: system/serializers/user.py:45
 msgid "Department"
 msgstr "部门"
 
@@ -963,7 +963,7 @@ msgstr "登录类型"
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:51 system/serializers/log.py:32
+#: system/models/log.py:51 system/serializers/log.py:33
 msgid "Module"
 msgstr "模块"
 
@@ -1087,7 +1087,7 @@ msgstr "目录"
 #: system/models/menu.py:50 system/models/menu.py:84
 #: system/models/permission.py:20 system/models/permission.py:33
 #: system/models/role.py:18 system/serializers/permission.py:35
-#: system/serializers/role.py:34
+#: system/serializers/role.py:36
 msgid "Menu"
 msgstr "菜单"
 
@@ -1180,24 +1180,24 @@ msgstr "成功通知"
 msgid "Important notices"
 msgstr "重要通知"
 
-#: system/models/notice.py:29 system/serializers/notice.py:33
+#: system/models/notice.py:29 system/serializers/notice.py:34
 msgid "The notified user"
 msgstr "被通知用户"
 
-#: system/models/notice.py:31 system/serializers/notice.py:37
+#: system/models/notice.py:31 system/serializers/notice.py:38
 msgid "The notified department"
 msgstr "被通知部门"
 
-#: system/models/notice.py:33 system/serializers/notice.py:38
+#: system/models/notice.py:33 system/serializers/notice.py:39
 msgid "The notified role"
 msgstr "被通知角色"
 
-#: system/models/notice.py:34 system/serializers/notice.py:48
+#: system/models/notice.py:34 system/serializers/notice.py:49
 msgid "Notice level"
 msgstr "通知级别"
 
-#: system/models/notice.py:36 system/serializers/notice.py:46
-#: system/serializers/notice.py:140 system/serializers/notice.py:157
+#: system/models/notice.py:36 system/serializers/notice.py:47
+#: system/serializers/notice.py:143 system/serializers/notice.py:160
 msgid "Notice type"
 msgstr "通知类型"
 
@@ -1206,7 +1206,7 @@ msgid "Notice title"
 msgstr "通知标题"
 
 #: system/models/notice.py:39 system/models/notice.py:55
-#: system/serializers/notice.py:144
+#: system/serializers/notice.py:147
 msgid "Notice message"
 msgstr "通知内容"
 
@@ -1214,7 +1214,7 @@ msgstr "通知内容"
 msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: system/models/notice.py:41 system/serializers/notice.py:41
+#: system/models/notice.py:41 system/serializers/notice.py:42
 msgid "Uploaded attachments"
 msgstr "上传的附件"
 
@@ -1226,7 +1226,7 @@ msgstr "发布"
 msgid "Notice"
 msgstr "通知"
 
-#: system/models/notice.py:72 system/serializers/notice.py:158
+#: system/models/notice.py:72 system/serializers/notice.py:161
 msgid "Unread"
 msgstr "未读"
 
@@ -1322,8 +1322,8 @@ msgstr "头像"
 msgid "Nickname"
 msgstr "昵称"
 
-#: system/models/user.py:31 system/serializers/user.py:46
-#: system/serializers/userinfo.py:30
+#: system/models/user.py:31 system/serializers/user.py:47
+#: system/serializers/userinfo.py:33
 msgid "Gender"
 msgstr "性别"
 
@@ -1335,47 +1335,47 @@ msgstr "用户信息"
 msgid "Mode type"
 msgstr "权限模式"
 
-#: system/serializers/config.py:30
+#: system/serializers/config.py:31
 msgid "Config cache value"
 msgstr "配置缓存数值"
 
-#: system/serializers/config.py:59
+#: system/serializers/config.py:61
 msgid "Users"
 msgstr "多个用户"
 
-#: system/serializers/config.py:66
+#: system/serializers/config.py:68
 msgid "User cannot be null"
 msgstr "用户不能为空"
 
-#: system/serializers/department.py:31 system/serializers/notice.py:42
+#: system/serializers/department.py:32 system/serializers/notice.py:43
 msgid "User count"
 msgstr "用户数量"
 
-#: system/serializers/department.py:49
+#: system/serializers/department.py:50
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/notice.py:43
+#: system/serializers/notice.py:44
 msgid "Read user count"
 msgstr "已读用户数量"
 
-#: system/serializers/notice.py:69
+#: system/serializers/notice.py:72
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: system/serializers/notice.py:79
+#: system/serializers/notice.py:82
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: system/serializers/notice.py:85
+#: system/serializers/notice.py:88
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: system/serializers/notice.py:91
+#: system/serializers/notice.py:94
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: system/serializers/notice.py:130
+#: system/serializers/notice.py:133
 msgid "Parameter error"
 msgstr "参与有误"
 
@@ -1383,37 +1383,50 @@ msgstr "参与有误"
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
 
-#: system/serializers/role.py:38 system/serializers/role.py:39
+#: system/serializers/role.py:40 system/serializers/role.py:41
 msgid "Fields"
 msgstr "字段"
 
-#: system/serializers/upload.py:28
+#: system/serializers/upload.py:29
 msgid "Access URL"
 msgstr "访问地址"
 
-#: system/serializers/upload.py:35
+#: system/serializers/upload.py:37
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/serializers/user.py:49
+#: system/serializers/user.py:50
 msgid "Login blocked"
 msgstr "登录被锁定"
 
-#: system/serializers/user.py:64 system/views/admin/user.py:75
-#: system/views/auth/register.py:45 system/views/auth/reset.py:37
-#: system/views/user/userinfo.py:66
+#: system/serializers/user.py:66 system/serializers/user.py:80
+#: system/serializers/userinfo.py:56 system/views/auth/register.py:75
+#: system/views/auth/reset.py:53
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
-#: system/serializers/user.py:66
+#: system/serializers/user.py:68
 msgid "Abnormal password field"
 msgstr "密码字段异常"
+
+#: system/serializers/userinfo.py:44
+msgid "Old password"
+msgstr "旧密码"
+
+#: system/serializers/userinfo.py:47
+msgid "Confirm password"
+msgstr "确认密码"
+
+#: system/serializers/userinfo.py:54
+msgid "Old password verification failed"
+msgstr "旧密码校验失败"
 
 #: system/templates/msg_verify_code.html:9
 msgid "Hello"
 msgstr "你好"
 
-#: system/templates/msg_verify_code.html:12 system/views/auth/verify_code.py:32
+#: system/templates/msg_verify_code.html:12
+#: system/views/auth/verify_code.py:105
 msgid "Verify code"
 msgstr "验证码"
 
@@ -1444,7 +1457,7 @@ msgid ""
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
 #: system/utils/auth.py:72 system/utils/auth.py:124
-#: system/views/auth/login.py:60
+#: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -1471,11 +1484,7 @@ msgstr "全部字段"
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
-#: system/views/auth/login.py:29 system/views/auth/login.py:92
-msgid "Login forbidden"
-msgstr "禁止登录"
-
-#: system/views/auth/login.py:54
+#: system/views/auth/login.py:42
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -1485,58 +1494,58 @@ msgstr ""
 "您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
 "被临时 锁定 {block_time} 分钟)"
 
-#: system/views/auth/register.py:32
+#: system/views/auth/login.py:96 system/views/auth/login.py:178
+msgid "Login forbidden"
+msgstr "禁止登录"
+
+#: system/views/auth/register.py:62
 msgid "Registration forbidden"
 msgstr "禁止注册"
 
-#: system/views/auth/register.py:54
+#: system/views/auth/register.py:84
 msgid "The account already exists, please try another one"
 msgstr "用户已经存在，请换个试试"
 
-#: system/views/auth/reset.py:42
+#: system/views/auth/reset.py:58
 msgid "Reset password success, return to login page"
 msgstr "重置密码成功，返回到登录页面"
 
-#: system/views/auth/verify_code.py:51
+#: system/views/auth/verify_code.py:124
 msgid "Forbidden send verification code"
 msgstr "禁止发送验证码"
 
-#: system/views/auth/verify_code.py:100
+#: system/views/auth/verify_code.py:173
 msgid "The verification code has been sent"
 msgstr "验证码已发送"
 
-#: system/views/auth/verify_code.py:152
+#: system/views/auth/verify_code.py:225
 msgid "Phone already exist"
 msgstr "手机号已经存在"
 
-#: system/views/auth/verify_code.py:154
+#: system/views/auth/verify_code.py:227
 msgid "Email already exist"
 msgstr "邮件已经存在"
 
-#: system/views/auth/verify_code.py:156
+#: system/views/auth/verify_code.py:229
 msgid "Username already exist"
 msgstr "用户名已经存在"
 
-#: system/views/auth/verify_code.py:167
+#: system/views/auth/verify_code.py:240
 msgid "Phone does not exist"
 msgstr "手机号不存在"
 
-#: system/views/auth/verify_code.py:169
+#: system/views/auth/verify_code.py:242
 msgid "Email does not exist"
 msgstr "邮件不存在"
 
-#: system/views/auth/verify_code.py:171
+#: system/views/auth/verify_code.py:244
 msgid "Username does not exist"
 msgstr "用户名不存在"
 
-#: system/views/upload.py:55
+#: system/views/upload.py:79
 msgid "upload file size cannot exceed {}"
 msgstr "文件大小不能超过 {}"
 
-#: system/views/upload.py:58
+#: system/views/upload.py:82
 msgid "Wrong upload file type"
 msgstr "错误的文件类型"
-
-#: system/views/user/userinfo.py:64
-msgid "Old password verification failed"
-msgstr "旧密码校验失败"

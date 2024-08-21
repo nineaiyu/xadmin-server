@@ -6,15 +6,15 @@
 # date : 8/12/2024
 import socket
 import struct
-from uuid import uuid4
 
 from django.conf import settings
 from django.core.cache import cache
 
 from common.core.modelset import ListDeleteModelSet
-from common.core.response import ApiResponse
+from settings.models import Setting
 from settings.serializers.security import SecurityBlockIPSerializer
 from settings.utils.security import LoginIpBlockUtil
+
 
 class FilterIps(list):
 
@@ -39,6 +39,7 @@ class IpUtils(object):
 
 class BlockIpView(ListDeleteModelSet):
     serializer_class = SecurityBlockIPSerializer
+    queryset = Setting.objects.none()
 
     def filter_queryset(self, obj):
         # 为啥写函数，去没有加(), 因为只有在序列化的时候，才会判断，如果是方法就执行，减少资源浪费

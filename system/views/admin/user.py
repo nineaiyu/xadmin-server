@@ -8,18 +8,18 @@ import logging
 
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_object_type, build_array_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
-from common.base.utils import AESCipherV2
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
 from common.core.response import ApiResponse
-from settings.utils.password import check_password_rules
+from common.swagger.utils import get_default_response_schema
 from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
-from system.serializers.user import UserSerializer
+from system.serializers.user import UserSerializer, ResetPasswordSerializer
 from system.utils import notify
 from system.utils.modelset import ChangeRolePermissionAction
 
@@ -50,37 +50,32 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
             raise Exception(_("The super administrator disallows deletion"))
         return instance.delete()
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['pks'],
-        properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
-    ), operation_description='批量删除')
+    @extend_schema(
+        description='批量删除',
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=['pks'],
+                description="主键列表"
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_delete(request, *args, **kwargs)
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['password'],
-        properties={'password': openapi.Schema(description='新密码', type=openapi.TYPE_STRING)}
-    ), operation_description='管理员重置用户密码')
-    @action(methods=['post'], detail=True, url_path='reset-password')
+    @extend_schema(description='管理员重置用户密码', responses=get_default_response_schema())
+    @action(methods=['post'], detail=True, url_path='reset-password', serializer_class=ResetPasswordSerializer)
     def reset_password(self, request, *args, **kwargs):
         instance = self.get_object()
-        password = request.data.get('password')
-        password = AESCipherV2(instance.username).decrypt(password)
-        if not check_password_rules(password, instance.is_superuser):
-            return ApiResponse(code=1001, detail=_('Password does not match security rules'))
-        if instance and password:
-            instance.set_password(password)
-            instance.modifier = request.user
-            instance.save(update_fields=['password', 'modifier'])
-            notify.notify_error(users=instance, title="密码重置成功",
-                                message="密码被管理员重置成功")
-            return ApiResponse()
-        return ApiResponse(code=1002)
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        notify.notify_error(users=instance, title="密码重置成功",
+                            message="密码被管理员重置成功")
+        return ApiResponse()
 
     @action(methods=["post"], detail=True)
     def unblock(self, request, *args, **kwargs):

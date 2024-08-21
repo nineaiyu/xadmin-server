@@ -9,10 +9,13 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.base.utils import AESCipherV2
 from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
+from settings.utils.password import check_password_rules
 from system import models
 from system.models import UserInfo
 
@@ -31,5 +34,28 @@ class UserInfoSerializer(BaseModelSerializer):
     dept = serializers.CharField(source='dept.name', read_only=True)
     roles = serializers.SerializerMethodField()
 
+    @extend_schema_field(serializers.ListField)
     def get_roles(self, obj):
         return obj.roles.values_list('name', flat=True)
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(
+        min_length=5, max_length=128, required=True, write_only=True, label=_("Old password")
+    )
+    sure_password = serializers.CharField(
+        min_length=5, max_length=128, required=True, write_only=True, label=_("Confirm password")
+    )
+
+    def update(self, instance, validated_data):
+        sure_password = AESCipherV2(instance.username).decrypt(validated_data.get('sure_password'))
+        old_password = AESCipherV2(instance.username).decrypt(validated_data.get('old_password'))
+        if not instance.check_password(old_password):
+            raise serializers.ValidationError(_("Old password verification failed"))
+        if not check_password_rules(sure_password, instance.is_superuser):
+            raise serializers.ValidationError(_('Password does not match security rules'))
+
+        instance.set_password(sure_password)
+        instance.modifier = self.context.get('request').user
+        instance.save(update_fields=['password', 'modifier'])
+        return instance

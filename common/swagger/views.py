@@ -9,9 +9,8 @@ from django.contrib.auth import login, logout
 from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
-from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 from common.core.response import ApiResponse
@@ -21,7 +20,8 @@ class ApiLogin(GenericAPIView):
     """接口文档的登录接口"""
     permission_classes = ()
     serializer_class = TokenObtainSerializer
-    @swagger_auto_schema(auto_schema=None)
+
+    @extend_schema(exclude=True)
     @xframe_options_exempt
     def post(self, request, *args, **kwargs):
 
@@ -34,7 +34,7 @@ class ApiLogin(GenericAPIView):
         response = redirect(request.query_params.get("next", "/api-docs/swagger/"))
         return response
 
-    @swagger_auto_schema(auto_schema=None)
+    @extend_schema(exclude=True)
     @xframe_options_exempt
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -42,10 +42,10 @@ class ApiLogin(GenericAPIView):
         return ApiResponse(detail=_("Please enter your account information to log in"))
 
 
-class ApiLogout(APIView):
+class ApiLogout(GenericAPIView):
     permission_classes = []
 
-    @swagger_auto_schema(auto_schema=None)
+    @extend_schema(exclude=True)
     @xframe_options_exempt
     def get(self, request, *args, **kwargs):
         logout(request)

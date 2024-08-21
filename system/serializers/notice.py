@@ -10,6 +10,7 @@ import os.path
 from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -47,6 +48,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     level = LabeledChoiceField(choices=NoticeMessage.LevelChoices.choices,
                                default=NoticeMessage.LevelChoices.DEFAULT, label=_("Notice level"))
 
+    @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
         if obj.notice_type in NoticeMessage.user_choices:
             return NoticeUserRead.objects.filter(notice=obj, unread=False,
@@ -57,6 +59,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
         return 0
 
+    @extend_schema_field(serializers.IntegerField)
     def get_user_count(self, obj):
         if obj.notice_type == NoticeMessage.NoticeChoices.DEPT:
             return UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
@@ -157,6 +160,7 @@ class UserNoticeSerializer(BaseModelSerializer):
                                      default=NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
+    @extend_schema_field(serializers.BooleanField)
     def get_unread(self, obj):
         queryset = NoticeUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
         if obj.notice_type in NoticeMessage.user_choices:

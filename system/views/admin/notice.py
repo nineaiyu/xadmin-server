@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : notice
@@ -6,13 +6,15 @@
 # date : 9/15/2023
 
 from django_filters import rest_framework as filters
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ListDeleteModelSet
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from system.models import NoticeMessage, NoticeUserRead
 from system.serializers.notice import NoticeMessageSerializer, NoticeUserReadMessageSerializer, AnnouncementSerializer
 
@@ -34,8 +36,15 @@ class NoticeMessageView(BaseModelSet):
     ordering_fields = ['updated_time', 'created_time']
     filterset_class = NoticeMessageFilter
 
-    @swagger_auto_schema(request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-        'publish': openapi.Schema(type=openapi.TYPE_BOOLEAN)}))
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'publish': build_basic_type(OpenApiTypes.BOOL)},
+                required=['publish']
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['put'], detail=True)
     def publish(self, request, *args, **kwargs):
         instance: NoticeMessage = self.get_object()
@@ -72,8 +81,15 @@ class NoticeUserReadMessageView(ListDeleteModelSet):
     ordering_fields = ['updated_time', 'created_time']
     filterset_class = NoticeUserReadMessageFilter
 
-    @swagger_auto_schema(request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-        'unread': openapi.Schema(type=openapi.TYPE_BOOLEAN)}))
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'unread': build_basic_type(OpenApiTypes.BOOL)},
+                required=['unread']
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['put'], detail=True)
     def state(self, request, *args, **kwargs):
         instance = self.get_object()

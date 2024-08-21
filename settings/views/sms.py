@@ -8,17 +8,20 @@ import importlib
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.plumbing import build_array_type, build_object_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from rest_framework.mixins import ListModelMixin
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.generics import GenericAPIView
 
 from common.base.utils import get_choices_dict
 from common.core.response import ApiResponse
 from common.sdk.sms.endpoint import BACKENDS
+from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from settings.models import Setting
-from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer, SMSBackendSerializer
+from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer
 from settings.views.settings import BaseSettingView
 
 logger = get_logger(__file__)
@@ -29,10 +32,19 @@ class SmsSettingView(BaseSettingView):
     category = "sms"
 
 
-class SMSBackendView(ListModelMixin, GenericViewSet):
-    serializer_class = SMSBackendSerializer
+class SMSBackendView(GenericAPIView):
 
-    def list(self, request, *args, **kwargs):
+    @extend_schema(parameters=None, responses=get_default_response_schema(
+        {
+            'data': build_array_type(build_object_type(
+                properties={
+                    'value': build_basic_type(OpenApiTypes.STR),
+                    'label': build_basic_type(OpenApiTypes.STR),
+                }
+            ))
+        }
+    ))
+    def get(self, request, *args, **kwargs):
         return ApiResponse(data=get_choices_dict(BACKENDS.choices))
 
 
