@@ -4,6 +4,7 @@
 # filename : urls
 # author : ly_13
 # date : 6/6/2023
+from django.urls import re_path
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
@@ -37,8 +38,11 @@ no_detail_router.register('bind/phone', SecurityBindPhoneAuthView, basename='sec
 
 no_detail_router.register('sms', SmsSettingView, basename='sms-settings')
 
-router.register('sms/backend', SMSBackendView, basename='sms-backend')
 router.register('ip/block', BlockIpView, basename='ip-block')
 no_detail_router.register('sms/config', SmsConfigView, basename='sms-config')
 
-urlpatterns = no_detail_router.urls + router.urls
+urls = [
+    re_path('^sms/backend$', SMSBackendView.as_view(), name='sms-backend'),
+]
+
+urlpatterns = no_detail_router.urls + router.urls + urls

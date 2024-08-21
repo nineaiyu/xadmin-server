@@ -24,7 +24,8 @@ aiofiles==24.1.0
 websockets==12.0
 django-imagekit==5.0.0
 pilkit==3.0
-drf-yasg==1.21.7
+drf-spectacular==0.27.2
+drf-spectacular-sidecar==2024.7.1
 openpyxl==3.2.0b1
 pyzipper==0.3.6
 unicodecsv==0.14.1

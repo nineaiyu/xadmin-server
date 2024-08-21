@@ -4,31 +4,49 @@
 # filename : token
 # author : ly_13
 # date : 8/10/2024
-from rest_framework.views import APIView
+from drf_spectacular.plumbing import build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from captcha.utils import CaptchaAuth
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ident
 from common.utils.token import make_token_cache
 from system.utils.auth import get_token_lifetime
 
 
-class TempTokenView(APIView):
+class TempTokenView(GenericAPIView):
     """获取临时token"""
     permission_classes = []
     authentication_classes = []
 
+    @extend_schema(
+        description="获取临时token",
+        responses=get_default_response_schema({'token': build_basic_type(OpenApiTypes.STR)})
+    )
     def get(self, request):
         token = make_token_cache(get_request_ident(request), time_limit=600, force_new=True).encode('utf-8')
         return ApiResponse(token=token)
 
 
-class CaptchaView(APIView):
+class CaptchaView(GenericAPIView):
     """获取验证码"""
     permission_classes = []
     authentication_classes = []
 
+    @extend_schema(
+        description="获取验证码",
+        responses=get_default_response_schema(
+            {
+                'captcha_image': build_basic_type(OpenApiTypes.STR),
+                'captcha_key': build_basic_type(OpenApiTypes.STR),
+                'length': build_basic_type(OpenApiTypes.NUMBER)
+            }
+        )
+    )
     def get(self, request):
         return ApiResponse(**CaptchaAuth().generate())
 

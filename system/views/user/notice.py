@@ -8,8 +8,11 @@ from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer, \
+    OpenApiRequest
+from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
@@ -17,6 +20,7 @@ from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from system.models import NoticeMessage, NoticeUserRead
 from system.serializers.notice import UserNoticeSerializer
 
@@ -78,7 +82,23 @@ class UserNoticeMessage(OnlyListModelSet):
         func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
         return f"{func_name}_{request.user.pk}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
 
-    @swagger_auto_schema(ignore_params=True)
+    @extend_schema(
+        parameters=[],
+        responses={
+            200: inline_serializer(name='unread', fields={
+                'code': serializers.IntegerField(),
+                'detail': serializers.CharField(),
+                'data': inline_serializer(name='data', fields={
+                    'results': inline_serializer(name='results', fields={
+                        'key': serializers.CharField(),
+                        'name': serializers.CharField(),
+                        'list': UserNoticeSerializer(many=True),
+                    }),
+                    'total': serializers.IntegerField(),
+                })
+            })
+        }
+    )
     @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
@@ -106,18 +126,23 @@ class UserNoticeMessage(OnlyListModelSet):
                 NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
         return ApiResponse()
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['pks'],
-        properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
-    ), operation_description='批量已读消息')
+    @extend_schema(
+        description='批量已读消息',
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=['pks'],
+                description="主键列表"
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['put'], detail=False)
     def read(self, request, *args, **kwargs):
         pks = request.data.get('pks', [])
         return self.read_message(pks, request)
 
-    @swagger_auto_schema(ignore_params=True)
+    @extend_schema(description='全部已读消息', responses=get_default_response_schema())
     @action(methods=['put'], detail=False, url_path='read-all')
     def read_all(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user))

@@ -17,40 +17,17 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, re_path
-from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.static import serve as static_serve
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from common.celery.flower import CeleryFlowerView
 from common.core.utils import auto_register_app_url
-from common.swagger.utils import CustomOpenAPISchemaGenerator
-from common.swagger.views import ApiLogin, ApiLogout
 from common.utils.media import media_serve
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Snippets API",
-        default_version='v1',
-        description="Django Xadmin Server",
-        terms_of_service="https://github.com/nineaiyu/xadmin-server",
-        contact=openapi.Contact(email="ly_1301b@163.com"),
-    ),
-    generator_class=CustomOpenAPISchemaGenerator,
-    public=False,
-    # #如果无需授权，需要将下面三行取消注释即可
-    # public=True,
-    # permission_classes=[permissions.AllowAny],
-    # authentication_classes=[],
-)
-
-schema_view.get = xframe_options_exempt(schema_view.get)
-
 swagger_apis = [
-    re_path('^api-docs/swagger/$', schema_view.with_ui('swagger', cache_timeout=60), name='schema-swagger-ui'),
-    re_path('^api-docs/redoc/$', schema_view.with_ui('redoc', cache_timeout=60), name='schema-redoc'),
-    re_path('^api-docs/login/$', ApiLogin.as_view(), name='api-docs-login'),
-    re_path('^api-docs/logout/$', ApiLogout.as_view(), name='api-docs-logout'),
+    re_path('^api-docs/schema/', SpectacularAPIView.as_view(), name='schema'),
+    re_path('^api-docs/swagger/$', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    re_path('^api-docs/redoc/$', SpectacularRedocView.as_view(url_name='schema'), name='schema-redoc'),
 ]
 
 urlpatterns = [

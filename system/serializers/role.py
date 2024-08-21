@@ -8,6 +8,8 @@ import logging
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.core.fields import BasePrimaryKeyRelatedField
@@ -38,6 +40,7 @@ class RoleSerializer(BaseModelSerializer):
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
     fields = serializers.DictField(write_only=True, label=_("Fields"))
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_field(self, obj):
         results = FieldPermissionSerializer(FieldPermission.objects.filter(role=obj), many=True,
                                             request=self.request, all_fields=True).data
@@ -79,5 +82,6 @@ class ListRoleSerializer(RoleSerializer):
     field = serializers.ListField(default=[], read_only=True)
     menu = serializers.SerializerMethodField(read_only=True)
 
+    @extend_schema_field(serializers.ListField)
     def get_menu(self, instance):
         return []

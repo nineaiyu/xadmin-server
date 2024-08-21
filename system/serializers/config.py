@@ -9,6 +9,7 @@ import json
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -29,6 +30,7 @@ class SystemConfigSerializer(BaseModelSerializer):
 
     cache_value = serializers.SerializerMethodField(read_only=True, label=_("Config cache value"))
 
+    @extend_schema_field(serializers.CharField)
     def get_cache_value(self, obj):
         val = SysConfig.get_value(obj.key)
         if isinstance(val, dict):
@@ -75,6 +77,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         validated_data.pop('config_user', None)
         return super().update(instance, validated_data)
 
+    @extend_schema_field(serializers.CharField)
     def get_cache_value(self, obj):
         val = UserConfig(obj.owner).get_value(obj.key)
         if isinstance(val, dict):

@@ -14,8 +14,9 @@ from django.forms.widgets import SelectMultiple, DateTimeInput
 from django.utils.translation import gettext_lazy as _
 from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiRequest, OpenApiParameter
 from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
@@ -29,6 +30,7 @@ from common.core.serializers import BasePrimaryKeyRelatedField
 from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
+from common.swagger.utils import get_default_response_schema
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +46,13 @@ class UploadFileAction(object):
     def get_object(self):
         raise NotImplementedError('get_object must be overridden')
 
-    @swagger_auto_schema(ignore_body_params=True, manual_parameters=[
-        openapi.Parameter(
-            'file', in_=openapi.IN_FORM, type=openapi.TYPE_FILE,
-            description='File to upload', required=True
+    @extend_schema(
+        description="上传头像",
+        request=OpenApiRequest(
+            build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
         ),
-    ], operation_description='上传头像', methods=['post'])
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=True, parser_classes=(MultiPartParser,))
     def upload(self, request, *args, **kwargs):
         self.FILE_UPLOAD_SIZE = self.get_upload_size()
@@ -76,12 +79,17 @@ class RankAction(object):
     filter_queryset: Callable
     get_queryset: Callable
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['pks'],
-        properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
-    ), operation_description='根据主键顺序，进行从小到大进行排序')
+    @extend_schema(
+        description='根据主键顺序，进行从小到大进行排序',
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=['pks'],
+                description="主键列表"
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=False, url_path='rank')
     def action_rank(self, request, *args, **kwargs):
         rank = 1
@@ -92,6 +100,15 @@ class RankAction(object):
 
 
 class OnlyExportDataAction(object):
+    @extend_schema(
+        description='数据导出',
+        parameters=[
+            OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
+        ],
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
     @action(methods=['get'], detail=False, url_path='export-data')
     def export_data(self, request, *args, **kwargs):
         self.format_kwarg = request.query_params.get('type', 'xlsx')
@@ -109,6 +126,18 @@ class ImportExportDataAction(OnlyExportDataAction):
     perform_create: Callable
     perform_update: Callable
 
+    @extend_schema(
+        description='数据导入',
+        parameters=[
+            OpenApiParameter(name='action', required=True, enum=['create', 'update']),
+        ],
+        request=OpenApiRequest(
+            build_basic_type(OpenApiTypes.BINARY),
+        ),
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
     @action(methods=['post'], detail=False, url_path='import-data')
     @transaction.atomic
     def import_data(self, request, *args, **kwargs):
@@ -135,22 +164,25 @@ class ImportExportDataAction(OnlyExportDataAction):
 class ChoicesAction(object):
     choices_models: []
 
-    @swagger_auto_schema(operation_description='获取字段选择', ignore_params=True, responses={
-        200: openapi.Response('字段选择结果', openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'code': openapi.Schema(type=openapi.TYPE_NUMBER, default=1000),
-                'detail': openapi.Schema(type=openapi.TYPE_STRING, default='success'),
-                'choices_dict': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                    'key': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                                              'value': openapi.Schema(type=openapi.TYPE_STRING),
-                                              'label': openapi.Schema(type=openapi.TYPE_STRING),
-                                          })),
-                }),
+    @extend_schema(
+        description='获取字段选择',
+        responses=get_default_response_schema(
+            {
+                'choices_dict': build_object_type(
+                    properties={
+                        'key': build_array_type(
+                            build_object_type(
+                                properties={
+                                    'value': build_basic_type(OpenApiTypes.STR),
+                                    'label': build_basic_type(OpenApiTypes.STR),
+                                }
+                            )
+                        )
+                    }
+                )
             }
-        ))
-    })
+        )
+    )
     @action(methods=['get'], detail=False, url_path='choices')
     def choices_dict(self, request, *args, **kwargs):
         result = {}
@@ -168,34 +200,33 @@ class ChoicesAction(object):
 class SearchFieldsAction(object):
     filterset_class: Callable
 
-    @swagger_auto_schema(operation_description='获取可查询字段', ignore_params=True, responses={
-        200: openapi.Response('可查询字段结果', openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'code': openapi.Schema(type=openapi.TYPE_NUMBER, default=1000),
-                'detail': openapi.Schema(type=openapi.TYPE_STRING, default='success'),
-                'data': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                    'results': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                              items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                                                  'key': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'input_type': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                                                            items=openapi.Schema(
-                                                                                type=openapi.TYPE_OBJECT, properties={
-                                                                                    'value': openapi.Schema(
-                                                                                        type=openapi.TYPE_STRING),
-                                                                                    'label': openapi.Schema(
-                                                                                        type=openapi.TYPE_STRING),
-                                                                                })),
-                                              })),
-                })
-
+    @extend_schema(
+        description='获取可查询字段',
+        responses=get_default_response_schema(
+            {
+                'data': build_array_type(
+                    build_object_type(
+                        properties={
+                            'key': build_basic_type(OpenApiTypes.STR),
+                            'label': build_basic_type(OpenApiTypes.STR),
+                            'help_text': build_basic_type(OpenApiTypes.STR),
+                            'default': build_basic_type(OpenApiTypes.ANY),
+                            'input_type': build_basic_type(OpenApiTypes.STR),
+                            'choices': build_array_type(
+                                build_object_type(
+                                    properties={
+                                        'pk': build_basic_type(OpenApiTypes.STR),
+                                        'value': build_basic_type(OpenApiTypes.STR),
+                                        'label': build_basic_type(OpenApiTypes.STR),
+                                    }
+                                )
+                            )
+                        }
+                    )
+                )
             }
-        ))
-    })
+        )
+    )
     @action(methods=['get'], detail=False, url_path='search-fields')
     def search_fields(self, request, *args, **kwargs):
         results = []
@@ -256,40 +287,39 @@ class SearchFieldsAction(object):
 class SearchColumnsAction(object):
     filterset_class: Callable
 
-    @swagger_auto_schema(operation_description='获取列表和创建更新字段', ignore_params=True, responses={
-        200: openapi.Response('列表和创建更新字段结果', openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'code': openapi.Schema(type=openapi.TYPE_NUMBER, default=1000),
-                'detail': openapi.Schema(type=openapi.TYPE_STRING, default='success'),
-                'data': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                    'results': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                              items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                                                  'key': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'label': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'help_text': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'default': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'required': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                                  'read_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                                  'write_only': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                                  'multiple': openapi.Schema(type=openapi.TYPE_BOOLEAN),
-                                                  'max_length': openapi.Schema(type=openapi.TYPE_NUMBER),
-                                                  'table_show': openapi.Schema(type=openapi.TYPE_NUMBER),
-                                                  'input_type': openapi.Schema(type=openapi.TYPE_STRING),
-                                                  'choices': openapi.Schema(type=openapi.TYPE_ARRAY,
-                                                                            items=openapi.Schema(
-                                                                                type=openapi.TYPE_OBJECT, properties={
-                                                                                    'value': openapi.Schema(
-                                                                                        type=openapi.TYPE_STRING),
-                                                                                    'label': openapi.Schema(
-                                                                                        type=openapi.TYPE_STRING),
-                                                                                })),
-                                              })),
-                })
-
+    @extend_schema(
+        description='获取列表和创建更新字段',
+        responses=get_default_response_schema(
+            {
+                'data': build_array_type(
+                    build_object_type(
+                        properties={
+                            'key': build_basic_type(OpenApiTypes.STR),
+                            'label': build_basic_type(OpenApiTypes.STR),
+                            'help_text': build_basic_type(OpenApiTypes.STR),
+                            'default': build_basic_type(OpenApiTypes.ANY),
+                            'input_type': build_basic_type(OpenApiTypes.STR),
+                            'required': build_basic_type(OpenApiTypes.BOOL),
+                            'read_only': build_basic_type(OpenApiTypes.BOOL),
+                            'write_only': build_basic_type(OpenApiTypes.BOOL),
+                            'multiple': build_basic_type(OpenApiTypes.BOOL),
+                            'max_length': build_basic_type(OpenApiTypes.NUMBER),
+                            'table_show': build_basic_type(OpenApiTypes.NUMBER),
+                            'choices': build_array_type(
+                                build_object_type(
+                                    properties={
+                                        'pk': build_basic_type(OpenApiTypes.STR),
+                                        'value': build_basic_type(OpenApiTypes.STR),
+                                        'label': build_basic_type(OpenApiTypes.STR),
+                                    }
+                                )
+                            )
+                        }
+                    )
+                )
             }
-        ))
-    })
+        )
+    )
     @action(methods=['get'], detail=False, url_path='search-columns')
     def search_columns(self, request, *args, **kwargs):
         results = []
@@ -378,12 +408,17 @@ class BatchDeleteAction(object):
     get_queryset: Callable
     perform_destroy: Callable
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['pks'],
-        properties={'pks': openapi.Schema(description='主键列表', type=openapi.TYPE_ARRAY,
-                                          items=openapi.Schema(type=openapi.TYPE_STRING))}
-    ), operation_description='批量删除')
+    @extend_schema(
+        description='批量删除',
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=['pks'],
+                description="主键列表"
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
         pks = get_query_post_pks(request)
@@ -425,7 +460,7 @@ class BaseAction(BaseModelAction, ChoicesAction, SearchFieldsAction, SearchColum
         return ApiResponse(data=data)
 
 
-class OwnerModelSet(BaseModelAction, ChoicesAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+class OwnerModelSet(BaseModelAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     def update(self, request, *args, **kwargs):
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)

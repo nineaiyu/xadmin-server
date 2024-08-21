@@ -9,10 +9,14 @@ import datetime
 from django.db.models import Count
 from django.db.models.functions import TruncDay
 from django.utils import timezone
+from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from system.models import UserLoginLog, OperationLog, UserInfo
 from system.serializers.log import UserLoginLogSerializer
 
@@ -38,35 +42,69 @@ def trend_info(queryset, limit_day=30):
     return results, percent, queryset.count()
 
 
+def get_schema_response(has_count=True):
+    ext = {}
+    if has_count:
+        ext = {
+            'percent': build_basic_type(OpenApiTypes.NUMBER),
+            'count': build_basic_type(OpenApiTypes.NUMBER),
+        }
+    return get_default_response_schema(
+        {
+            'results': build_array_type(
+                build_object_type(
+                    properties={
+                        'day': build_basic_type(OpenApiTypes.STR),
+                        'count': build_basic_type(OpenApiTypes.NUMBER),
+                    }
+                )
+            ),
+            **ext
+        }
+    )
+
+
 class DashboardView(GenericViewSet):
     """面板统计信息"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
     ordering_fields = ['created_time']
 
+    @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, url_path='user-login-total')
     def user_login_total(self, request, *args, **kwargs):
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
+    @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-total')
     def user_total(self, request, *args, **kwargs):
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
+    @extend_schema(responses=get_schema_response(False))
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-registered-trend')
     def user_registered_trend(self, request, *args, **kwargs):
         return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
+    @extend_schema(responses=get_schema_response(False))
     @action(methods=['GET'], detail=False, url_path='user-login-trend')
     def user_login_trend(self, request, *args, **kwargs):
         return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
+    @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, queryset=OperationLog.objects.all(), url_path='today-operate-total')
     def today_operate_total(self, request, *args, **kwargs):
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
+    @extend_schema(
+        responses=get_default_response_schema(
+            {
+                'data': build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER)))
+            }
+        )
+    )
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-active')
     def user_active(self, request, *args, **kwargs):
         today = timezone.now()

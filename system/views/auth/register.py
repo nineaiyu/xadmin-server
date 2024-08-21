@@ -9,24 +9,54 @@ from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from rest_framework.views import APIView
+from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
+from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
+from common.swagger.utils import get_default_response_schema
 from settings.utils.password import check_password_rules
 from settings.utils.security import RegisterBlockUtil
 from system.models import DeptInfo, UserInfo
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 
 
-class RegisterView(APIView):
+class RegisterView(GenericAPIView):
     """用户注册"""
     permission_classes = []
     authentication_classes = []
     throttle_classes = [RegisterThrottle]
 
+    @extend_schema(
+        description="注册账户",
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    'channel': build_basic_type(OpenApiTypes.STR),
+                    'password': build_basic_type(OpenApiTypes.STR),
+                    'verify_token': build_basic_type(OpenApiTypes.STR),
+                    'verify_code': build_basic_type(OpenApiTypes.STR),
+                },
+                required=['verify_token', 'verify_code'],
+            )
+        ),
+        responses=get_default_response_schema(
+            {
+                'data': build_object_type(
+                    properties={
+                        'refresh': build_basic_type(OpenApiTypes.STR),
+                        'access': build_basic_type(OpenApiTypes.STR),
+                        'access_token_lifetime': build_basic_type(OpenApiTypes.NUMBER),
+                        'refresh_token_lifetime': build_basic_type(OpenApiTypes.NUMBER)
+                    }
+                )
+            }
+        )
+    )
     def post(self, request, *args, **kwargs):
         if not settings.SECURITY_REGISTER_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Registration forbidden"))

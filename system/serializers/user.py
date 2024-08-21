@@ -8,6 +8,7 @@ import logging
 
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
@@ -48,6 +49,7 @@ class UserSerializer(BaseRoleRuleInfo):
     block = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='boolean',
                                                              label=_("Login blocked"))
 
+    @extend_schema_field(serializers.BooleanField)
     def get_block(self, obj):
         return LoginBlockUtil.is_user_block(obj.username)
 
@@ -65,3 +67,19 @@ class UserSerializer(BaseRoleRuleInfo):
             else:
                 raise ValidationError(_("Abnormal password field"))
         return attrs
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(
+        min_length=5, max_length=128, required=True, write_only=True, label=_("Password")
+    )
+
+    def update(self, instance, validated_data):
+        password = AESCipherV2(instance.username).decrypt(validated_data.get('password'))
+        if not check_password_rules(password, instance.is_superuser):
+            raise serializers.ValidationError(_('Password does not match security rules'))
+
+        instance.set_password(password)
+        instance.modifier = self.context.get('request').user
+        instance.save(update_fields=['password', 'modifier'])
+        return instance

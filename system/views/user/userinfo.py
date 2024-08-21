@@ -6,26 +6,26 @@
 # date : 6/16/2023
 import logging
 
-from django.utils.translation import gettext_lazy as _
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.base.magic import cache_response
-from common.base.utils import get_choices_dict, AESCipherV2
-from common.core.modelset import OwnerModelSet, UploadFileAction
+from common.base.utils import get_choices_dict
+from common.core.modelset import OwnerModelSet, UploadFileAction, ChoicesAction
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
-from settings.utils.password import check_password_rules
 from settings.utils.security import ResetBlockUtil
 from system.models import UserInfo
-from system.serializers.userinfo import UserInfoSerializer
+from system.serializers.userinfo import UserInfoSerializer, ChangePasswordSerializer
 from system.utils.auth import verify_sms_email_code
 
 logger = logging.getLogger(__name__)
 
 
-class UserInfoView(OwnerModelSet, UploadFileAction):
+class UserInfoView(OwnerModelSet, ChoicesAction, UploadFileAction):
     """用户个人信息管理"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
@@ -46,30 +46,28 @@ class UserInfoView(OwnerModelSet, UploadFileAction):
         data = super().retrieve(request, *args, **kwargs).data
         return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices))
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        required=['old_password', 'sure_password'],
-        properties={'old_password': openapi.Schema(description='旧密码', type=openapi.TYPE_STRING),
-                    'sure_password': openapi.Schema(description='新密码', type=openapi.TYPE_STRING)}
-    ), operation_description='修改个人密码')
-    @action(methods=['post'], detail=False, url_path='reset-password')
+    @extend_schema(description='用户修改密码', responses=get_default_response_schema())
+    @action(methods=['post'], detail=False, url_path='reset-password', serializer_class=ChangePasswordSerializer)
     def reset_password(self, request, *args, **kwargs):
-        old_password = request.data.get('old_password')
-        sure_password = request.data.get('sure_password')
-        if old_password and sure_password:
-            instance = self.get_object()
-            sure_password = AESCipherV2(instance.username).decrypt(sure_password)
-            old_password = AESCipherV2(instance.username).decrypt(old_password)
-            if not instance.check_password(old_password):
-                return ApiResponse(code=1001, detail=_("Old password verification failed"))
-            if not check_password_rules(sure_password, instance.is_superuser):
-                return ApiResponse(code=1002, detail=_('Password does not match security rules'))
-            instance.set_password(sure_password)
-            instance.modifier = request.user
-            instance.save(update_fields=['password', 'modifier'])
-            return ApiResponse()
-        return ApiResponse(code=1003)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return ApiResponse()
 
+    @extend_schema(
+        description="绑定邮箱或者手机",
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    'verify_token': build_basic_type(OpenApiTypes.STR),
+                    'verify_code': build_basic_type(OpenApiTypes.STR),
+                },
+                required=['verify_token', 'verify_code'],
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=False, url_path='bind')
     def bind(self, request, *args, **kwargs):
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)

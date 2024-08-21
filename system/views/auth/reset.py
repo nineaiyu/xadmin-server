@@ -6,11 +6,15 @@
 # date : 8/10/2024
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from rest_framework.views import APIView
+from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiRequest
+from rest_framework.generics import GenericAPIView
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
+from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
 from settings.utils.password import check_password_rules
 from settings.utils.security import ResetBlockUtil
@@ -18,11 +22,23 @@ from system.models import UserInfo
 from system.utils.auth import verify_sms_email_code
 
 
-class ResetPasswordView(APIView):
+class ResetPasswordView(GenericAPIView):
     permission_classes = []
     authentication_classes = []
     throttle_classes = [ResetPasswordThrottle]
 
+    @extend_schema(
+        description="重置密码",
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    'verify_token': build_basic_type(OpenApiTypes.STR),
+                    'verify_code': build_basic_type(OpenApiTypes.STR),
+                }
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     def post(self, request, *args, **kwargs):
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         password = request.data.get('password')

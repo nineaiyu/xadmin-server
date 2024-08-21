@@ -7,6 +7,7 @@
 import logging
 
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -49,5 +50,6 @@ class DeptSerializer(BaseRoleRuleInfo):
             raise ValidationError(_("The superior department cannot be its own subordinate department"))
         return super().update(instance, validated_data)
 
+    @extend_schema_field(serializers.IntegerField)
     def get_user_count(self, obj):
         return obj.userinfo_set.count()
