@@ -98,7 +98,7 @@ def auto_register_app_url(urlpatterns):
         try:
             urls = import_from_string(f"{name}.config.PERMISSION_WHITE_REURL")
             if urls:
-                settings.PERMISSION_WHITE_URL.extend(urls)
+                settings.PERMISSION_WHITE_URL.update(urls)
         except Exception as e:
             logger.warning(f"auto register {name} permission_white_reurl failed. {e}")
 

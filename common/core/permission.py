@@ -85,8 +85,8 @@ class IsAuthenticated(BasePermission):
             if request.user.is_superuser:
                 return True
             url = request.path_info
-            for w_url in settings.PERMISSION_WHITE_URL:
-                if re.match(w_url, url):
+            for w_url, method in settings.PERMISSION_WHITE_URL.items():
+                if re.match(w_url, url) and ('*' in method or request.method in method):
                     request.all_fields = True
                     return True
             permission_data = get_user_permission(request.user)

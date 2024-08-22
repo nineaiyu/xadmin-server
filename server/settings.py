@@ -563,25 +563,26 @@ CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'me
                       'corsheaders', 'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat',
                       'imagekit', 'drf_spectacular', 'drf_spectacular_sidecar']
 
-# 访问白名单配置，无需权限配置
-PERMISSION_WHITE_URL = [
-    "^/api/system/login$",
-    "^/api/system/logout$",
-    "^/api/system/userinfo$",
-    "^/api/system/user/notice/unread$",
-    "^/api/system/routes$",
-    "^/api/system/dashboard/",
-    "^/api/system/.*choices$",
-    "^/api/system/.*search-fields$",
-    "^/api/common/resources/cache$",
-]
+# 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
+PERMISSION_WHITE_URL = {
+    "^/api/system/login$": ['*'],
+    "^/api/system/logout$": ['*'],
+    "^/api/system/userinfo$": ['GET'],
+    "^/api/system/user/notice/unread$": ['*'],
+    "^/api/system/routes$": ['*'],
+    "^/api/system/dashboard/": ['*'],
+    "^/api/.*choices$": ['*'],
+    "^/api/.*search-fields$": ['*'],
+    "^/api/common/resources/cache$": ['*'],
+}
 
 # 前端权限路由 忽略配置
 ROUTE_IGNORE_URL = [
     "^/api/system/.*choices$",  # 每个方法都有该路由，则忽略即可
-    "^/api/system/.*search-fields$",  # 每个方法都有该路由，则忽略即可
-    "^/api/system/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
+    "^/api/.*search-fields$",  # 每个方法都有该路由，则忽略即可
+    "^/api/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
+    "^/api/system/dashboard/",  # 忽略dashboard路由
 ]
 
 # 访问权限配置

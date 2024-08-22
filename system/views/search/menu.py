@@ -26,7 +26,6 @@ class SearchMenuFilter(BaseFilterSet):
 
 
 class SearchMenuSerializer(MenuSerializer):
-    # meta = MenuMetaSerializer(label='菜单元属性')
 
     class Meta:
         model = Menu

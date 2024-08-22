@@ -71,7 +71,7 @@ class BaseFileRenderer(BaseRenderer):
             name = field.label
             if field.required:
                 name = '*' + name
-            titles.append(name)
+            titles.append(f"{name}({field.field_name})")
         return titles
 
     def process_data(self, data):

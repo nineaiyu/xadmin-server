@@ -60,10 +60,13 @@ class BaseFileParser(BaseParser):
                 k: k
             })
         lowercase_fields_map = {k.lower(): v for k, v in fields_map.items()}
-        field_names = [
-            lowercase_fields_map.get(column_title.strip('*').lower(), '')
-            for column_title in column_titles
-        ]
+        field_names = []
+        for column_title in column_titles:
+            if "(" in column_title and column_title.endswith(")"):
+                field = column_title.strip('*').strip(")").split('(')[-1]
+            else:
+                field = lowercase_fields_map.get(column_title.strip('*').lower(), '')
+            field_names.append(field)
         return field_names
 
     @staticmethod
