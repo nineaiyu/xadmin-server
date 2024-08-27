@@ -12,6 +12,7 @@ from user_agents import parse
 
 from captcha.utils import CaptchaAuth
 from common.base.utils import AESCipherV2
+from common.utils.ip import get_ip_city
 from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident
 from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
@@ -74,8 +75,12 @@ def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=Logi
 
 
 def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
+    login_ip = get_request_ip(request) if request else ''
+    login_ip = login_ip or '0.0.0.0'
+    login_city = get_ip_city(login_ip) or _("Unknown")
     data = {
-        'ipaddress': get_request_ip(request),
+        'ipaddress': login_ip,
+        'city': str(login_city),
         'browser': get_browser(request),
         'system': get_os(request),
         'status': status,

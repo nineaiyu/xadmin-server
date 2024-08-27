@@ -7,12 +7,13 @@
 from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import GenericViewSet
 
+from common.core.modelset import SearchColumnsAction
 from common.core.response import ApiResponse
 from system.models import UserLoginLog
 from system.serializers.log import UserLoginLogSerializer
 
 
-class UserLoginLogView(ListModelMixin, GenericViewSet):
+class UserLoginLogView(ListModelMixin, SearchColumnsAction, GenericViewSet):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

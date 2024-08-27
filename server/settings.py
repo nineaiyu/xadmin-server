@@ -191,8 +191,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
+# http://www.i18nguy.com/unicode/language-identifiers.html
+# LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -350,8 +351,6 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 
-# I18N 用于生成权限字段 label
-PERMISSION_FIELD_LANGUAGE_CODE = 'zh'
 
 BASE_LOG_DIR = os.path.join(BASE_DIR, "logs", "api")
 TMP_LOG_DIR = os.path.join(BASE_DIR, "logs", "tmp")

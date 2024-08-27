@@ -37,7 +37,7 @@ def post_migrate_handler(sender, **kwargs):
     if label not in settings.PERMISSION_DATA_AUTH_APPS:
         return
     plf = PrintLogFormat(f"App:({label})")
-    activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
+    activate(settings.LANGUAGE_CODE)
     field_type = ModelLabelField.FieldChoices.DATA
     obj, created = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type,
                                                             defaults={'label': _("All tables")}, parent=None)

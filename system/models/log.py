@@ -24,6 +24,7 @@ class UserLoginLog(DbAuditModel):
 
     status = models.BooleanField(default=True, verbose_name=_("Login status"))
     ipaddress = models.GenericIPAddressField(verbose_name=_("IpAddress"), null=True, blank=True)
+    city = models.CharField(max_length=254, verbose_name=_("Login city"), null=True, blank=True)
     browser = models.CharField(max_length=64, verbose_name=_("Browser"), null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name=_("System"), null=True, blank=True)
     agent = models.CharField(max_length=128, verbose_name=_("Agent"), null=True, blank=True)
@@ -33,6 +34,7 @@ class UserLoginLog(DbAuditModel):
     class Meta:
         verbose_name = _("User login log")
         verbose_name_plural = verbose_name
+        ordering = ('-created_time',)
 
     @staticmethod
     def get_login_type(query_key):
