@@ -39,6 +39,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 ALLOWED_HOSTS = locals().get("ALLOWED_HOSTS", ["*"])
 
 # Application definition
+XADMIN_APPS = locals().get("XADMIN_APPS", [])
 
 INSTALLED_APPS = [
     'daphne',  # 支持websocket
@@ -62,7 +63,7 @@ INSTALLED_APPS = [
     'imagekit',
     'drf_spectacular',
     'drf_spectacular_sidecar',
-    *locals().get("XADMIN_APPS", []),
+    *XADMIN_APPS,
     'common.apps.CommonConfig',  # 这个放到最后, django ready
 ]
 
@@ -556,11 +557,6 @@ HTTP_LISTEN_PORT = locals().get('HTTP_LISTEN_PORT', 8896)
 CELERY_FLOWER_PORT = 5566
 CELERY_FLOWER_HOST = '127.0.0.1'
 CELERY_FLOWER_AUTH = 'flower:flower123.'
-
-CONFIG_IGNORE_APPS = ['daphne', 'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles', 'common',
-                      'system', 'settings', 'message', 'rest_framework_simplejwt', 'token_blacklist', 'captcha',
-                      'corsheaders', 'rest_framework', 'django_filters', 'django_celery_results', 'django_celery_beat',
-                      'imagekit', 'drf_spectacular', 'drf_spectacular_sidecar']
 
 # 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
 PERMISSION_WHITE_URL = {
