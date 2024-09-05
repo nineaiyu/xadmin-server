@@ -79,7 +79,7 @@ def download_ip_db():
 
 def expire_caches():
     try:
-        management.call_command('expire_caches', '*')
+        management.call_command('expire_caches', 'config_*')
     except:
         pass
 

@@ -4,7 +4,7 @@
 # filename : config
 # author : ly_13
 # date : 12/15/2023
-# 修改下面配置之后，记得清理一下redis缓存： python manage.py expire_caches '*'
+# 修改下面配置之后，记得清理一下redis缓存： python manage.py expire_caches 'config_*'
 
 
 import json
@@ -54,15 +54,16 @@ class ConfigCacheBase(object):
     def invalid_config_cache(self, key='*'):
         UserSystemConfigCache(f'{self.px}_{key}').del_many()
 
-    def get_render_value(self, value):
+    def get_render_value(self, value: str) -> dict:
         if value:
             try:
                 context_dict = {}
                 for sys_obj_dict in self.model.objects.filter(is_active=True).values().all():
-                    if re.findall('{{.*%s.*}}' % sys_obj_dict['key'], sys_obj_dict['value']):
+                    str_value = json.dumps(sys_obj_dict['value'])  # 将dict转换为json字符串进行匹配
+                    if re.findall('{{.*%s.*}}' % sys_obj_dict['key'], str_value):
                         logger.warning(f"get same render key. so continue")
                         continue
-                    context_dict[sys_obj_dict['key']] = sys_obj_dict['value']
+                    context_dict[sys_obj_dict['key']] = str_value
                 try:
                     value = get_render_context(value, context_dict)
                 except TemplateSyntaxError as e:
@@ -75,21 +76,22 @@ class ConfigCacheBase(object):
                     logger.warning(f"db config - render failed {e}")
             except Exception as e:
                 logger.warning(f"db config - render failed {e}")
+        value = value.replace('"(', '').replace(')"', '')  # 支持"({{ h }})"， 为了转换变量，h不能为字符串
         try:
             value = json.loads(value)
         except Exception as e:
             logger.warning(f"db config - json loads failed {e}")
-        if isinstance(value, str):
-            if value.isdigit():
-                return int(value)
-            v_group = re.findall('"(.*?)"', value)
-            if v_group and len(v_group) == 1 and v_group[0].isdigit():
-                return int(v_group[0])
+        # if isinstance(value, str):
+        #     if value.isdigit():
+        #         return int(value)
+        #     v_group = re.findall('"(.*?)"', value)
+        #     if v_group and len(v_group) == 1 and v_group[0].isdigit():
+        #         return int(v_group[0])
         return value
 
     def get_value_from_db(self, key):
         data = self.serializer(self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()).data
-        if re.findall('{{.*%s.*}}' % data['key'], data['value']):
+        if re.findall('{{.*%s.*}}' % data['key'], json.dumps(data['value'])):  # 防止渲染出现递归
             logger.warning(f"get same render key:{key}. so get default value")
             data['key'] = ''
         return data
@@ -113,12 +115,13 @@ class ConfigCacheBase(object):
                 return cache_data
         db_data = self.get_value_from_db(key)
         d_key = db_data.get('key', '')
-        data = self.get_default_data(key, default_data)
-        if d_key != key and data is not None:
-            db_data['value'] = json.dumps(data)
-            db_data['key'] = key
-            db_data['access'] = True
-        db_data['value'] = self.get_render_value(db_data['value'])
+        if d_key != key:
+            data = self.get_default_data(key, default_data)
+            if data is not None:
+                db_data['value'] = data
+                db_data['key'] = key
+                db_data['access'] = True
+        db_data['value'] = self.get_render_value(json.dumps(db_data['value']))
         cache.set_storage_cache(db_data, timeout=self.timeout)
         if ignore_access or db_data.get('access'):
             return db_data
@@ -136,8 +139,6 @@ class ConfigCacheBase(object):
         return self.model.objects.filter(key=key, **kwargs).delete()
 
     def set_value(self, key, value, is_active=None, description=None, **kwargs):
-        if not isinstance(value, str):
-            value = json.dumps(value)
         obj = self.save_db(key, value, is_active, description, **kwargs)
         self.cache(f'{self.px}_{key}').del_storage_cache()
         return obj
@@ -150,6 +151,8 @@ class ConfigCacheBase(object):
         self.cache(f'{self.px}_{key}').del_storage_cache()
 
     def __getattribute__(self, name):
+        if name == 'shape':
+            return ''
         try:
             return object.__getattribute__(self, name)
         except Exception as e:
@@ -182,43 +185,6 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value('EXPORT_MAX_LIMIT', 20000)
 
 
-class AuthConfCache(ConfigCacheBase):
-    def __init__(self, *args, **kwargs):
-        super(AuthConfCache, self).__init__(*args, **kwargs)
-
-    @property
-    def LOGIN(self):
-        return self.get_value('LOGIN', True)
-
-    @property
-    def NEED_LOGIN_TOKEN(self):
-        return self.get_value('NEED_LOGIN_TOKEN', True)
-
-    @property
-    def NEED_LOGIN_CAPTCHA(self):
-        return self.get_value('NEED_LOGIN_CAPTCHA', True)
-
-    @property
-    def NEED_LOGIN_ENCRYPTED(self):
-        return self.get_value('NEED_LOGIN_ENCRYPTED', True)
-
-    @property
-    def REGISTER(self):
-        return self.get_value('REGISTER', True)
-
-    @property
-    def NEED_REGISTER_TOKEN(self):
-        return self.get_value('NEED_REGISTER_TOKEN', True)
-
-    @property
-    def NEED_REGISTER_CAPTCHA(self):
-        return self.get_value('NEED_REGISTER_CAPTCHA', True)
-
-    @property
-    def NEED_REGISTER_ENCRYPTED(self):
-        return self.get_value('NEED_REGISTER_ENCRYPTED', True)
-
-
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):
         super(MessagePushConfCache, self).__init__(*args, **kwargs)
@@ -232,7 +198,7 @@ class MessagePushConfCache(ConfigCacheBase):
         return self.get_value('PUSH_CHAT_MESSAGE', True)
 
 
-class ConfigCache(BaseConfCache, MessagePushConfCache, AuthConfCache):
+class ConfigCache(BaseConfCache, MessagePushConfCache):
     def __init__(self, *args, **kwargs):
         super(ConfigCache, self).__init__(*args, **kwargs)
 

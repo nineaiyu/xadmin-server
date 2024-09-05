@@ -7,6 +7,7 @@
 from functools import wraps
 
 from django.db.models.fields.files import FieldFile
+from rest_framework.fields import Field as RFField
 
 
 def get_file_absolute_uri(value: FieldFile, request=None, use_url=True):
@@ -31,7 +32,7 @@ def input_wrapper(func):
     """
 
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> RFField:
         class Field(func):
             def __init__(self, *_args, **_kwargs):
                 self.input_type = _kwargs.pop("input_type", '')

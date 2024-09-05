@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
                 ('updated_time', models.DateTimeField(auto_now=True, verbose_name='Updated time')),
                 ('description', models.CharField(blank=True, max_length=256, null=True, verbose_name='Description')),
                 ('name', models.CharField(max_length=255, unique=True, verbose_name='Name')),
-                ('rules', models.JSONField(max_length=512, verbose_name='Rules')),
+                ('rules', models.JSONField(max_length=10240, verbose_name='Rules')),
                 ('is_active', models.BooleanField(default=True, verbose_name='Is active')),
                 ('creator', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                               related_name='+', related_query_name='creator_query',

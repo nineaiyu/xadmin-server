@@ -19,6 +19,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiRequest, OpenApiParameter
 from rest_framework import mixins
 from rest_framework.decorators import action
+from rest_framework.fields import CharField
 from rest_framework.parsers import MultiPartParser
 from rest_framework.utils import encoders
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
@@ -355,7 +356,7 @@ class SearchColumnsAction(object):
             if value.field_name.replace('_', ' ').capitalize() == info['label'] and hasattr(field, 'verbose_name'):
                 info['label'] = field.verbose_name
 
-            if value.style.get('base_template', '') == 'textarea.html':
+            if isinstance(value, CharField) and value.style.get('base_template', '') == 'textarea.html':
                 info['input_type'] = 'textarea'
             else:
                 info['input_type'] = get_input_type(value, info)
