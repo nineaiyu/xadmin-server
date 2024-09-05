@@ -51,7 +51,7 @@ def post_migrate_handler(sender, **kwargs):
         delete = True
         model_name = model._meta.model_name
         verbose_name = model._meta.verbose_name
-        if 'relationship' in verbose_name and '_' in model_name:
+        if not hasattr(model, 'Meta'):  # 虚拟 model 判断, 不包含Meta的模型，是系统生成的第三方模型，包含 relationship
             continue
         obj, created = ModelLabelField.objects.update_or_create(name=f"{label}.{model_name}", field_type=field_type,
                                                                 parent=None, defaults={'label': verbose_name})

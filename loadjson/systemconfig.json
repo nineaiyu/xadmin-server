@@ -52,23 +52,6 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": "6a53d866-da52-4f5c-a754-b757784e4e87",
-    "fields": {
-      "created_time": "2024-01-08T09:44:28.864Z",
-      "updated_time": "2024-09-05T07:20:53.605Z",
-      "description": "注册",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "value": true,
-      "is_active": true,
-      "access": false,
-      "key": "REGISTER",
-      "inherit": false
-    }
-  },
-  {
-    "model": "system.systemconfig",
     "pk": "79f49339-bd81-42c1-95ca-a7032f540d57",
     "fields": {
       "created_time": "2024-01-08T09:34:10.182Z",
@@ -112,7 +95,7 @@
       "modifier": 1,
       "dept_belong": null,
       "value": {
-        "Version": "3.3.1",
+        "Version": "3.3.5",
         "Title": "xAdmin",
         "FixedHeader": true,
         "HiddenSideBar": false,
