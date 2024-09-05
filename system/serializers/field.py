@@ -21,6 +21,6 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
         fields = ['pk', 'name', 'label', 'parent', 'field_type', 'created_time', 'updated_time']
         read_only_fields = [x.name for x in ModelLabelField._meta.fields]
 
-    parent = BasePrimaryKeyRelatedField(read_only=True, attrs=['pk', 'name'])
+    parent = BasePrimaryKeyRelatedField(read_only=True, attrs=['pk', 'name', 'label'], format="{label}({pk})")
     field_type = LabeledChoiceField(choices=ModelLabelField.FieldChoices.choices,
                                     default=ModelLabelField.FieldChoices.DATA, label=_("Field type"))

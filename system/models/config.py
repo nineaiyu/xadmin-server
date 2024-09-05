@@ -13,7 +13,7 @@ from common.core.models import DbAuditModel, DbUuidModel
 
 
 class BaseConfig(DbAuditModel):
-    value = models.TextField(max_length=10240, verbose_name=_("Config value"))
+    value = models.JSONField(max_length=10240, verbose_name=_("Config value"))
     is_active = models.BooleanField(default=True, verbose_name=_("Is active"))
     access = models.BooleanField(default=False, verbose_name=_("API access"),
                                  help_text=_("Allows API interfaces to access this config"))

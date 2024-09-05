@@ -15,7 +15,7 @@ from system.models import ModeTypeAbstract
 
 class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name=_("Name"), max_length=255, unique=True)
-    rules = models.JSONField(verbose_name=_("Rules"), max_length=512)
+    rules = models.JSONField(verbose_name=_("Rules"), max_length=10240)
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
     menu = models.ManyToManyField("system.Menu", verbose_name=_("Menu"), null=True, blank=True,
                                   help_text=_("If a menu exists, it only applies to the selected menu permission"))

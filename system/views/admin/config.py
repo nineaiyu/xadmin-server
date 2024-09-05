@@ -7,9 +7,11 @@
 import logging
 
 from django_filters import rest_framework as filters
+from drf_spectacular.utils import extend_schema
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.swagger.utils import get_default_response_schema
 from system.models import SystemConfig, UserPersonalConfig
 from system.serializers.config import SystemConfigSerializer, UserPersonalConfigSerializer, \
     UserPersonalConfigExportImportSerializer
@@ -37,6 +39,15 @@ class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataA
     ordering_fields = ['created_time']
     filterset_class = SystemConfigFilter
 
+    @extend_schema(
+        description="删除配置并清理缓存",
+        request=None,
+        responses=get_default_response_schema()
+    )
+    def destroy(self, request, *args, **kwargs):
+        self.invalid(request, *args, **kwargs)
+        return super().destroy(request, *args, **kwargs)
+
 
 class UserPersonalConfigFilter(SystemConfigFilter):
     pk = filters.UUIDFilter(field_name='id')
@@ -48,7 +59,7 @@ class UserPersonalConfigFilter(SystemConfigFilter):
         fields = ['pk', 'is_active', 'key', 'access', 'username', 'owner_id', 'value', 'description']
 
 
-class UserPersonalConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
+class UserPersonalConfigView(SystemConfigView):
     """
     用户配置管理
     """

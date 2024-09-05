@@ -6,6 +6,8 @@ from django.conf import settings
 from django.core import management
 from django.db.utils import OperationalError
 
+from common.utils.file import download_file
+
 HTTP_HOST = settings.HTTP_BIND_HOST or '127.0.0.1'
 HTTP_PORT = settings.HTTP_LISTEN_PORT or 8080
 CELERY_FLOWER_HOST = settings.CELERY_FLOWER_HOST or '127.0.0.1'
@@ -61,8 +63,31 @@ def compile_i18n_file():
     print("Compile i18n files done")
 
 
+def download_ip_db():
+    db_base_dir = os.path.join(BASE_DIR, 'common', 'utils', 'ip')
+    db_path_url_mapper = {
+        ('geoip', 'GeoLite2-City.mmdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/GeoLite2-City.mmdb',
+        ('ipip', 'ipipfree.ipdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb'
+    }
+    for p, src in db_path_url_mapper.items():
+        path = os.path.join(db_base_dir, *p)
+        if os.path.isfile(path) and os.path.getsize(path) > 1000:
+            continue
+        print("Download ip db: {}".format(path))
+        download_file(src, path)
+
+
+def expire_caches():
+    try:
+        management.call_command('expire_caches', 'config_*')
+    except:
+        pass
+
+
 def prepare():
     check_database_connection()
     collect_static()
     compile_i18n_file()
     perform_db_migrate()
+    expire_caches()
+    download_ip_db()

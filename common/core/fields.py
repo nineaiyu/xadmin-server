@@ -78,7 +78,7 @@ class BasePrimaryKeyRelatedField(RelatedField):
 
     def __init__(self, **kwargs):
         self.attrs = kwargs.pop("attrs", [])
-        self.label_format = kwargs.pop("format", "{pk}")
+        self.label_format = kwargs.pop("format", None)
         self.input_type = kwargs.pop("input_type", '')
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
@@ -138,8 +138,12 @@ class BasePrimaryKeyRelatedField(RelatedField):
                 continue
             if isinstance(data[attr], partial):
                 data[attr] = data[attr]()
-        if data and self.label_format and "label" not in self.attrs:
-            data["label"] = self.label_format.format(**data)
+        if data:
+            if self.label_format:
+                data["label"] = self.label_format.format(**data)
+            else:
+                if "label" not in self.attrs:
+                    data["label"] = data.get("pk")
         return data
 
     def to_internal_value(self, data):

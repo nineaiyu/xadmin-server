@@ -120,7 +120,7 @@ class BaseModelSerializer(ModelSerializer):
 @transaction.atomic
 def get_sub_serializer_fields():
     cls_list = []
-    activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
+    activate(settings.LANGUAGE_CODE)
 
     def get_all_subclass(base_cls):
         if base_cls.__subclasses__():

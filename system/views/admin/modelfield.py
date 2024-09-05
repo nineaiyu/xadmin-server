@@ -112,6 +112,6 @@ class ModelLabelFieldView(OnlyListModelSet):
     @extend_schema(description='同步字段', responses=get_default_response_schema())
     @action(methods=['get'], detail=False)
     def sync(self, request, *args, **kwargs):
-        activate(settings.PERMISSION_FIELD_LANGUAGE_CODE)
+        activate(settings.LANGUAGE_CODE)
         get_sub_serializer_fields()
         return ApiResponse()

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-08-22 10:30+0800\n"
+"POT-Creation-Date: 2024-09-05 15:18+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/utils/auth.py:102
+#: common/core/auth.py:36 system/utils/auth.py:107
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -92,29 +92,29 @@ msgstr ""
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/modelset.py:67
+#: common/core/modelset.py:68
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/modelset.py:70
+#: common/core/modelset.py:71
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
-#: common/core/modelset.py:99
+#: common/core/modelset.py:100
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:161 system/utils/auth.py:97
+#: common/core/modelset.py:162 system/utils/auth.py:102
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
 #: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/modelset.py:426
+#: common/core/modelset.py:427
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:436
+#: common/core/modelset.py:437
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
@@ -221,8 +221,13 @@ msgid "Invalid ip"
 msgstr ""
 
 #: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
-#: system/models/log.py:23 system/models/user.py:20
+#: common/utils/ip/utils.py:104 system/models/log.py:23
+#: system/models/user.py:20 system/utils/auth.py:80
 msgid "Unknown"
+msgstr ""
+
+#: common/utils/ip/utils.py:98
+msgid "Invalid address"
 msgstr ""
 
 #: common/utils/media.py:54
@@ -784,8 +789,8 @@ msgid "System config"
 msgstr ""
 
 #: system/models/config.py:39 system/models/notice.py:70
-#: system/serializers/config.py:47 system/serializers/config.py:59
-#: system/serializers/log.py:32 system/serializers/log.py:51
+#: system/serializers/config.py:45 system/serializers/config.py:57
+#: system/serializers/log.py:32 system/serializers/log.py:53
 #: system/serializers/notice.py:144
 msgid "User"
 msgstr ""
@@ -932,59 +937,63 @@ msgstr ""
 msgid "Login status"
 msgstr ""
 
-#: system/models/log.py:26 system/models/log.py:55
+#: system/models/log.py:26 system/models/log.py:57
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:27 system/models/log.py:56
+#: system/models/log.py:27
+msgid "Login city"
+msgstr ""
+
+#: system/models/log.py:28 system/models/log.py:58
 msgid "Browser"
 msgstr ""
 
-#: system/models/log.py:28 system/models/log.py:57
+#: system/models/log.py:29 system/models/log.py:59
 msgid "System"
 msgstr ""
 
-#: system/models/log.py:29
+#: system/models/log.py:30
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:31
+#: system/models/log.py:32 system/serializers/log.py:55
 msgid "Login type"
 msgstr ""
 
-#: system/models/log.py:34
+#: system/models/log.py:35
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:51 system/serializers/log.py:33
+#: system/models/log.py:53 system/serializers/log.py:33
 msgid "Module"
 msgstr ""
 
-#: system/models/log.py:52
+#: system/models/log.py:54
 msgid "URL path"
 msgstr ""
 
-#: system/models/log.py:53
+#: system/models/log.py:55
 msgid "Request body"
 msgstr ""
 
-#: system/models/log.py:54
+#: system/models/log.py:56
 msgid "Request method"
 msgstr ""
 
-#: system/models/log.py:58
+#: system/models/log.py:60
 msgid "Response code"
 msgstr ""
 
-#: system/models/log.py:59
+#: system/models/log.py:61
 msgid "Response result"
 msgstr ""
 
-#: system/models/log.py:60
+#: system/models/log.py:62
 msgid "Status code"
 msgstr ""
 
-#: system/models/log.py:63
+#: system/models/log.py:65
 msgid "Operation log"
 msgstr ""
 
@@ -1332,11 +1341,11 @@ msgstr ""
 msgid "Config cache value"
 msgstr ""
 
-#: system/serializers/config.py:61
+#: system/serializers/config.py:59
 msgid "Users"
 msgstr ""
 
-#: system/serializers/config.py:68
+#: system/serializers/config.py:66
 msgid "User cannot be null"
 msgstr ""
 
@@ -1435,28 +1444,28 @@ msgstr ""
 msgid "If you have any questions, you can contact the administrator"
 msgstr ""
 
-#: system/utils/auth.py:36
+#: system/utils/auth.py:37
 msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/utils/auth.py:42
+#: system/utils/auth.py:43
 msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/utils/auth.py:68
+#: system/utils/auth.py:69
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:72 system/utils/auth.py:124
+#: system/utils/auth.py:73 system/utils/auth.py:129
 #: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:119
+#: system/utils/auth.py:124
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "

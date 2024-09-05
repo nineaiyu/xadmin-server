@@ -2,12 +2,11 @@ import ipaddress
 import socket
 from ipaddress import ip_network, ip_address
 
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
-# from django.conf import settings
-# from django.utils.translation import gettext_lazy as _
-#
-# from .geoip import get_ip_city_by_geoip
-# from .ipip import get_ip_city_by_ipip
+from .geoip import get_ip_city_by_geoip
+from .ipip import get_ip_city_by_ipip
 
 
 def is_ip_address(address):
@@ -94,22 +93,22 @@ def is_ip(ip, rule_value):
         return ip.startswith(rule_value)
 
 
-# def get_ip_city(ip):
-#     if not ip or not isinstance(ip, str):
-#         return _("Invalid address")
-#     if ':' in ip:
-#         return 'IPv6'
-#
-#     info = get_ip_city_by_ipip(ip)
-#     if info:
-#         city = info.get('city', _("Unknown"))
-#         country = info.get('country')
-#
-#         # 国内城市 并且 语言是中文就使用国内
-#         is_zh = settings.LANGUAGE_CODE.startswith('zh')
-#         if country == '中国' and is_zh:
-#             return city
-#     return get_ip_city_by_geoip(ip)
+def get_ip_city(ip):
+    if not ip or not isinstance(ip, str):
+        return _("Invalid address")
+    if ':' in ip:
+        return 'IPv6'
+
+    info = get_ip_city_by_ipip(ip)
+    if info:
+        city = info.get('city', _("Unknown"))
+        country = info.get('country')
+
+        # 国内城市 并且 语言是中文就使用国内
+        is_zh = settings.LANGUAGE_CODE.startswith('zh')
+        if country == '中国' and is_zh:
+            return city
+    return get_ip_city_by_geoip(ip)
 
 
 def lookup_domain(domain):
