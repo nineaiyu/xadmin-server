@@ -14,17 +14,17 @@ reader = None
 
 def get_ip_city_by_geoip(ip):
     global reader
-    if reader is None:
-        path = os.path.join(os.path.dirname(__file__), 'GeoLite2-City.mmdb')
-        reader = geoip2.database.Reader(path)
-
     try:
+        if reader is None:
+            path = os.path.join(os.path.dirname(__file__), 'GeoLite2-City.mmdb')
+            reader = geoip2.database.Reader(path)
         is_private = ipaddress.ip_address(ip.strip()).is_private
         if is_private:
             return _('LAN')
     except ValueError:
         return _("Invalid ip")
-
+    except Exception:
+        return _("Unknown")
     try:
         response = reader.city(ip)
     except GeoIP2Error:

@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-05 15:18+0800\n"
+"POT-Creation-Date: 2024-09-11 12:16+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -212,17 +212,17 @@ msgstr ""
 msgid "China"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:24
+#: common/utils/ip/geoip/utils.py:23
 msgid "LAN"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:26
+#: common/utils/ip/geoip/utils.py:25
 msgid "Invalid ip"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:31 common/utils/ip/geoip/utils.py:37
-#: common/utils/ip/utils.py:104 system/models/log.py:23
-#: system/models/user.py:20 system/utils/auth.py:80
+#: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
+#: common/utils/ip/geoip/utils.py:37 common/utils/ip/utils.py:104
+#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:80
 msgid "Unknown"
 msgstr ""
 
