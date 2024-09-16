@@ -26,7 +26,6 @@ class SearchMenuFilter(BaseFilterSet):
 
 
 class SearchMenuSerializer(MenuSerializer):
-
     class Meta:
         model = Menu
         fields = ['title', 'pk', 'rank', 'path', 'component', 'parent', 'menu_type', 'is_active', 'method']

@@ -24,7 +24,7 @@ from common.utils.request import get_request_ip
 from settings.utils.security import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
-    save_login_log, verify_sms_email_code
+    save_login_log, verify_sms_email_code, check_different_city_login_if_need
 
 
 def login_failed(request, username):
@@ -56,6 +56,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
     login_ip_block = LoginIpBlockUtil(ipaddr)
     request.user = user_obj
     save_login_log(request, login_type=login_type)
+    check_different_city_login_if_need(user_obj, ipaddr)
     login_block_util.clean_failed_count()
     login_ip_block.clean_block_if_need()
 

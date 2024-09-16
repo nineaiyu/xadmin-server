@@ -17,10 +17,10 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from notifications.message import SiteMessageUtil
 from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
 from system.serializers.user import UserSerializer, ResetPasswordSerializer
-from system.utils import notify
 from system.utils.modelset import ChangeRolePermissionAction
 
 logger = logging.getLogger(__name__)
@@ -73,8 +73,7 @@ class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Impor
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        notify.notify_error(users=instance, title="密码重置成功",
-                            message="密码被管理员重置成功")
+        SiteMessageUtil.notify_error(users=instance, title="密码重置成功", message="密码被管理员重置成功")
         return ApiResponse()
 
     @action(methods=["post"], detail=True)

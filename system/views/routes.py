@@ -20,6 +20,8 @@ def get_auths(user):
         menu_obj = Menu.objects.filter(is_active=True)
     else:
         menu_obj = get_user_menu_queryset(user)
+    if not menu_obj:
+        menu_obj = Menu.objects.none()
     return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list('name', flat=True).distinct()
 
 

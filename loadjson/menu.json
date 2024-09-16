@@ -644,7 +644,7 @@
     "pk": "24244ee6-cf54-4900-94b1-717a7317af04",
     "fields": {
       "created_time": "2024-01-22T09:32:08.910Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-09-16T09:10:52.812Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -653,13 +653,13 @@
       "menu_type": 2,
       "name": "list:systemNotice",
       "rank": 88,
-      "path": "api/system/message/notice$",
+      "path": "api/notifications/notice-messages$",
       "component": null,
       "is_active": true,
       "meta": "555c4963-7e46-435c-b112-95c2635c625c",
       "method": "GET",
       "model": [
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682"
       ]
     }
   },
@@ -780,7 +780,7 @@
     "pk": "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
     "fields": {
       "created_time": "2024-01-22T09:32:07.225Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-09-16T09:12:39.699Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -789,15 +789,15 @@
       "menu_type": 2,
       "name": "list:systemNoticeRead",
       "rank": 96,
-      "path": "api/system/message/read$",
+      "path": "api/notifications/user-read-messages$",
       "component": null,
       "is_active": true,
       "meta": "9a2c5255-72a9-4608-b15b-696148d4de5a",
       "method": "GET",
       "model": [
         "14071ee3-6725-4fcc-962d-ad7898efa284",
-        "1ad2fb4d-b834-4099-bdc0-152028da06c9",
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682",
+        "6d5caaee-fc35-4827-b563-2e7354b10650"
       ]
     }
   },
@@ -815,7 +815,7 @@
       "menu_type": 2,
       "name": "delete:systemNotice",
       "rank": 93,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
+      "path": "api/notifications/notice-messages/(?P<pk>[^/.]+)$",
       "component": null,
       "is_active": true,
       "meta": "9357e3b2-6714-44b5-a719-9c5701de1233",
@@ -1288,7 +1288,7 @@
       "menu_type": 2,
       "name": "update:userNoticeReadAll",
       "rank": 167,
-      "path": "api/system/user/notice/read-all$",
+      "path": "api/notifications/site-messages/read-all$",
       "component": null,
       "is_active": true,
       "meta": "20d5ae2d-ebda-4da0-bcf8-95ac59491951",
@@ -1521,7 +1521,7 @@
     "pk": "5c71e14d-1a3d-4dc3-9cc5-1a1f4eb1c44a",
     "fields": {
       "created_time": "2024-01-22T09:32:01.972Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-09-16T09:12:15.934Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1530,13 +1530,13 @@
       "menu_type": 2,
       "name": "create:systemAnnouncement",
       "rank": 91,
-      "path": "api/system/message/notice/announcement$",
+      "path": "api/notifications/notice-messages/announcement$",
       "component": null,
       "is_active": true,
       "meta": "99511cb8-8bda-4bed-a709-86db08f62dde",
       "method": "POST",
       "model": [
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682"
       ]
     }
   },
@@ -1576,7 +1576,7 @@
       "menu_type": 2,
       "name": "batchDelete:systemNoticeRead",
       "rank": 98,
-      "path": "api/system/message/read/batch-delete$",
+      "path": "api/notifications/user-read-messages/batch-delete$",
       "component": null,
       "is_active": true,
       "meta": "9c5caa19-dd95-4ab7-8141-137c69b0e43c",
@@ -1642,7 +1642,7 @@
       "menu_type": 2,
       "name": "update:systemNoticeReadState",
       "rank": 99,
-      "path": "api/system/message/read/(?P<pk>[^/.]+)/state$",
+      "path": "api/notifications/user-read-messages/(?P<pk>[^/.]+)/state$",
       "component": null,
       "is_active": true,
       "meta": "aef28ddd-f962-47e4-9970-6a55f21e5b7b",
@@ -1889,7 +1889,7 @@
       "menu_type": 2,
       "name": "update:userNoticeRead",
       "rank": 166,
-      "path": "api/system/user/notice/read$",
+      "path": "api/notifications/site-messages/read$",
       "component": null,
       "is_active": true,
       "meta": "c715a80d-4a9f-4d48-b801-f217591d5483",
@@ -2338,7 +2338,7 @@
       "menu_type": 2,
       "name": "update:systemNoticePublish",
       "rank": 94,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)/publish$",
+      "path": "api/notifications/notice-messages/(?P<pk>[^/.]+)/publish$",
       "component": null,
       "is_active": true,
       "meta": "096c6aa9-299d-4f14-9158-2ea4661fed51",
@@ -2518,7 +2518,7 @@
       "menu_type": 2,
       "name": "batchDelete:systemNotice",
       "rank": 92,
-      "path": "api/system/message/notice/batch-delete$",
+      "path": "api/notifications/notice-messages/batch-delete$",
       "component": null,
       "is_active": true,
       "meta": "62981476-34e9-4ddf-ac0a-9248f205596f",
@@ -2577,7 +2577,7 @@
     "pk": "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
     "fields": {
       "created_time": "2024-01-22T09:32:08.275Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-09-16T09:12:08.609Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2586,13 +2586,13 @@
       "menu_type": 2,
       "name": "create:systemNotice",
       "rank": 90,
-      "path": "api/system/message/notice$",
+      "path": "api/notifications/notice-messages$",
       "component": null,
       "is_active": true,
       "meta": "c02abdfc-1dd5-4e83-9db7-2b6e08dda7f7",
       "method": "POST",
       "model": [
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682"
       ]
     }
   },
@@ -2667,7 +2667,7 @@
     "pk": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
     "fields": {
       "created_time": "2024-01-22T09:32:05.331Z",
-      "updated_time": "2024-03-06T05:50:47.460Z",
+      "updated_time": "2024-09-16T09:09:50.902Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2676,13 +2676,13 @@
       "menu_type": 2,
       "name": "list:userNotice",
       "rank": 165,
-      "path": "api/system/user/notice$",
+      "path": "api/notifications/site-messages$",
       "component": null,
       "is_active": true,
       "meta": "fea8d5b7-c9ae-497f-af19-ef06bafd583e",
       "method": "GET",
       "model": [
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682"
       ]
     }
   },
@@ -2832,7 +2832,7 @@
       "menu_type": 2,
       "name": "delete:systemNoticeRead",
       "rank": 97,
-      "path": "api/system/message/read/(?P<pk>[^/.]+)$",
+      "path": "api/notifications/user-read-messages/(?P<pk>[^/.]+)$",
       "component": null,
       "is_active": true,
       "meta": "6f88698a-734d-4dfc-b11e-6bf47f1cf4ff",
@@ -3003,7 +3003,7 @@
     "pk": "c2e45d75-1270-474b-bf0c-03475ecb8b60",
     "fields": {
       "created_time": "2024-01-22T09:32:08.066Z",
-      "updated_time": "2024-01-22T09:31:56.271Z",
+      "updated_time": "2024-09-16T09:12:03.054Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -3012,13 +3012,13 @@
       "menu_type": 2,
       "name": "update:systemNotice",
       "rank": 89,
-      "path": "api/system/message/notice/(?P<pk>[^/.]+)$",
+      "path": "api/notifications/notice-messages/(?P<pk>[^/.]+)$",
       "component": null,
       "is_active": true,
       "meta": "ad7d1868-0846-4fa8-b81b-2d116e807284",
       "method": "PATCH",
       "model": [
-        "49d7f2c8-6b22-4c2c-9ba5-5ba45ed574dc"
+        "331d76d8-7f36-43ba-8a3c-09540130f682"
       ]
     }
   },

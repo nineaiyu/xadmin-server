@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'system.apps.SystemConfig',  # 系统管理
     'settings.apps.SettingsConfig',  # 设置相关
+    "notifications.apps.NotificationsConfig",  # 消息通知相关
     'captcha.apps.CaptchaConfig',  # 图片验证码
     'message.apps.MessageConfig',  # websocket 消息
     'rest_framework_simplejwt',
@@ -249,7 +250,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
-        # "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",  # 允许basic授权，方便调试使用
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
@@ -351,7 +352,6 @@ CORS_ALLOW_HEADERS = (
 LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
-
 
 BASE_LOG_DIR = os.path.join(BASE_DIR, "logs", "api")
 TMP_LOG_DIR = os.path.join(BASE_DIR, "logs", "tmp")
@@ -525,30 +525,6 @@ CELERY_TASK_SERIALIZER = 'json'
 # CELERY_ACCEPT_CONTENT = ['pickle']
 # CELERY_TASK_SERIALIZER = 'pickle'
 
-CELERY_BEAT_SCHEDULE = {
-    'auto_clean_operation_job': {
-        'task': 'system.tasks.auto_clean_operation_job',
-        'schedule': crontab(hour='2', minute='2'),
-        'args': ()
-    },
-    'auto_clean_expired_captcha_job': {
-        'task': 'system.tasks.auto_clean_expired_captcha_job',
-        'schedule': crontab(hour='2', minute='12'),
-        'args': ()
-    },
-    'auto_clean_black_token_job': {
-        'task': 'system.tasks.auto_clean_black_token_job',
-        'schedule': crontab(hour='2', minute='22'),
-        'args': ()
-    },
-    'auto_clean_tmp_file_job': {
-        'task': 'system.tasks.auto_clean_tmp_file_job',
-        'schedule': crontab(hour='2', minute='32'),
-        'args': ()
-    },
-    **locals().get('CELERY_BEAT_SCHEDULE', {})
-}
-
 APPEND_SLASH = False
 
 HTTP_BIND_HOST = '0.0.0.0'
@@ -563,12 +539,12 @@ PERMISSION_WHITE_URL = {
     "^/api/system/login$": ['*'],
     "^/api/system/logout$": ['*'],
     "^/api/system/userinfo$": ['GET'],
-    "^/api/system/user/notice/unread$": ['*'],
     "^/api/system/routes$": ['*'],
     "^/api/system/dashboard/": ['*'],
     "^/api/.*choices$": ['*'],
     "^/api/.*search-fields$": ['*'],
     "^/api/common/resources/cache$": ['*'],
+    "^/api/notifications/site-messages/unread$": ['*'],
 }
 
 # 前端权限路由 忽略配置
@@ -584,13 +560,15 @@ ROUTE_IGNORE_URL = [
 PERMISSION_SHOW_PREFIX = [
     r'api/system',
     r'api/settings',
+    r'api/notifications',
     r'api/flower',
     r'api-docs',
 ]
 # 数据权限配置
 PERMISSION_DATA_AUTH_APPS = [
     'system',
-    'settings'
+    'settings',
+    'notifications'
 ]
 
 API_LOG_ENABLE = True
@@ -648,6 +626,7 @@ SECURITY_PASSWORD_RULES = [
 # 用户登录限制的规则
 SECURITY_LOGIN_LIMIT_COUNT = 7
 SECURITY_LOGIN_LIMIT_TIME = 30  # Unit: minute
+SECURITY_CHECK_DIFFERENT_CITY_LOGIN = True
 # 登录IP限制的规则
 SECURITY_LOGIN_IP_BLACK_LIST = []
 SECURITY_LOGIN_IP_WHITE_LIST = []

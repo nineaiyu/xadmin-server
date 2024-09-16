@@ -116,7 +116,7 @@
           "value": ""
         },
         {
-          "table": "system.noticeuserread",
+          "table": "system.messageuserread",
           "field": "owner",
           "match": "exact",
           "exclude": false,

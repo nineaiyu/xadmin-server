@@ -39,6 +39,7 @@ urlpatterns = [
     re_path('^admin/', admin.site.urls),
     re_path('^api/system/', include('system.urls')),
     re_path('^api/settings/', include('settings.urls')),
+    re_path('^api/notifications/', include('notifications.urls')),
     re_path('^api/common/', include('common.urls')),
     re_path('^api/flower/(?P<path>.*)$', CeleryFlowerView.as_view(), name='flower-view'),
     # media路径配置 开发环境可以启动下面配置，正式环境需要让nginx读取资源，无需进行转发

@@ -25,7 +25,7 @@ class UploadFile(DbAuditModel):
                                  help_text=_("Temporary files are automatically cleared by scheduled tasks"))
     is_upload = models.BooleanField(verbose_name=_("Upload file"), default=False)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         self.filename = self.filename[:255]
         if not self.md5sum and not self.file_url:
             md5 = hashlib.md5()
@@ -34,7 +34,7 @@ class UploadFile(DbAuditModel):
             if not self.filesize:
                 self.filesize = self.filepath.size
             self.md5sum = md5.hexdigest()
-        return super().save(force_insert, force_update, using, update_fields)
+        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Upload file")

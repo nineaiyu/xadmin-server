@@ -17,7 +17,6 @@ from system.models import Menu, MenuMeta, ModelLabelField
 logger = logging.getLogger(__name__)
 
 
-
 class MenuMetaSerializer(BaseModelSerializer):
     class Meta:
         model = MenuMeta
@@ -69,4 +68,3 @@ class MenuPermissionSerializer(MenuSerializer):
         extra_kwargs = {'rank': {'read_only': True}}
 
     title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu title"))
-

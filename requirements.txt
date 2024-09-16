@@ -38,3 +38,4 @@ pycountry==24.6.1
 geoip2==4.8.0
 ipip-ipdb==1.6.1
 requests==2.32.3
+html2text==2024.2.26

@@ -57,6 +57,13 @@ def ip_group_child_validator(ip_group_child):
 
 
 class SecurityLoginLimitSerializer(serializers.Serializer):
+    SECURITY_CHECK_DIFFERENT_CITY_LOGIN = serializers.BooleanField(
+        required=False, label=_('Suspicious Login Verification'),
+        help_text=_(
+            'The system determines whether the login IP address belongs to a common login city. '
+            'If the account is logged in from a common login city, the system sends a remote login reminder'
+        )
+    )
     SECURITY_LOGIN_LIMIT_COUNT = serializers.IntegerField(
         min_value=3, max_value=99999,
         label=_('User login failures count')

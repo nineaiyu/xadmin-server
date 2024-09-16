@@ -1,9 +1,9 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
-# filename : notice
+# filename : message
 # author : ly_13
-# date : 9/15/2023
+# date : 9/15/2024
 
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -15,8 +15,9 @@ from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ListDeleteModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import NoticeMessage, NoticeUserRead
-from system.serializers.notice import NoticeMessageSerializer, NoticeUserReadMessageSerializer, AnnouncementSerializer
+from notifications.models import MessageContent, MessageUserRead
+from notifications.serializers.message import NoticeMessageSerializer, NoticeUserReadMessageSerializer, \
+    AnnouncementSerializer
 
 
 class NoticeMessageFilter(BaseFilterSet):
@@ -24,13 +25,13 @@ class NoticeMessageFilter(BaseFilterSet):
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
 
     class Meta:
-        model = NoticeMessage
+        model = MessageContent
         fields = ['pk', 'title', 'message', 'notice_type', 'level', 'publish']
 
 
 class NoticeMessageView(BaseModelSet):
     """消息通知管理"""
-    queryset = NoticeMessage.objects.all()
+    queryset = MessageContent.objects.all()
     serializer_class = NoticeMessageSerializer
 
     ordering_fields = ['updated_time', 'created_time']
@@ -47,7 +48,7 @@ class NoticeMessageView(BaseModelSet):
     )
     @action(methods=['put'], detail=True)
     def publish(self, request, *args, **kwargs):
-        instance: NoticeMessage = self.get_object()
+        instance: MessageContent = self.get_object()
         instance.publish = request.data.get('publish')
         instance.modifier = request.user
         instance.save(update_fields=['publish', 'modifier'])
@@ -64,20 +65,20 @@ class NoticeUserReadMessageFilter(BaseFilterSet):
     title = filters.CharFilter(field_name='notice__title', lookup_expr='icontains')
     username = filters.CharFilter(field_name='owner__username')
     notice_id = filters.NumberFilter(field_name='notice__pk')
-    notice_type = filters.ChoiceFilter(field_name='notice__notice_type', choices=NoticeMessage.NoticeChoices.choices)
-    level = filters.MultipleChoiceFilter(field_name='notice__level', choices=NoticeMessage.LevelChoices)
+    notice_type = filters.ChoiceFilter(field_name='notice__notice_type', choices=MessageContent.NoticeChoices.choices)
+    level = filters.MultipleChoiceFilter(field_name='notice__level', choices=MessageContent.LevelChoices)
     owner_id = PkMultipleFilter(input_type='api-search-user')
 
     class Meta:
-        model = NoticeUserRead
+        model = MessageUserRead
         fields = ['notice_id', 'title', 'username', 'owner_id', 'notice_type', 'unread', 'level', 'message']
 
 
 class NoticeUserReadMessageView(ListDeleteModelSet):
     """用户消息公告已读管理"""
-    queryset = NoticeUserRead.objects.all()
+    queryset = MessageUserRead.objects.all()
     serializer_class = NoticeUserReadMessageSerializer
-    choices_models = [NoticeMessage]
+    choices_models = [MessageContent]
     ordering_fields = ['updated_time', 'created_time']
     filterset_class = NoticeUserReadMessageFilter
 
@@ -93,10 +94,10 @@ class NoticeUserReadMessageView(ListDeleteModelSet):
     @action(methods=['put'], detail=True)
     def state(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.notice.notice_type in NoticeMessage.user_choices:
+        if instance.notice.notice_type in MessageContent.user_choices:
             instance.unread = request.data.get('unread', True)
             instance.modifier = request.user
             instance.save(update_fields=['unread', 'modifier'])
-        if instance.notice.notice_type in NoticeMessage.notice_choices:
+        if instance.notice.notice_type in MessageContent.notice_choices:
             instance.delete()
         return ApiResponse()

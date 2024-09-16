@@ -19,9 +19,7 @@ from common.core.config import SysConfig
 from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
 from common.core.utils import PrintLogFormat
-from system.models import Menu, NoticeMessage, UserRole, UserInfo, NoticeUserRead, DeptInfo, DataPermission, \
-    SystemConfig, ModelLabelField
-from system.utils.notify import push_notice_messages
+from system.models import Menu, UserRole, UserInfo, DeptInfo, DataPermission, SystemConfig, ModelLabelField
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +76,6 @@ def post_migrate_handler(sender, **kwargs):
 @receiver(m2m_changed)
 def clean_m2m_cache_handler(sender, instance, **kwargs):
     if kwargs.get('action') in ['post_add', 'pre_remove']:
-        if issubclass(sender, NoticeUserRead):
-            for pk in kwargs.get('pk_set', []):
-                invalid_notify_cache(pk)
 
         if isinstance(instance, UserInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             invalid_user_cache(instance.pk)
@@ -89,9 +84,6 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
             for dept in DeptInfo.objects.filter(pk__in=DeptInfo.recursion_dept_info(instance.pk)).all():
                 if dept.userinfo_set.count():
                     invalid_roles_cache(instance)
-
-        if isinstance(instance, NoticeMessage):
-            invalid_notify_caches(instance, kwargs.get('pk_set', []))
 
         if isinstance(instance, UserRole):
             invalid_roles_cache(instance)
@@ -104,38 +96,17 @@ def invalid_dept_caches(instance):
             invalid_roles_cache(dept)
 
 
-def invalid_notify_caches(instance, pk_set):
-    pks = []
-    if instance.notice_type == NoticeMessage.NoticeChoices.USER:
-        pks = pk_set
-    if instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
-        pks = UserInfo.objects.filter(roles__in=pk_set).values_list('pk', flat=True)
-    if instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
-        pks = UserInfo.objects.filter(dept__in=pk_set).values_list('pk', flat=True)
-    if pks:
-        if instance.publish:
-            push_notice_messages(instance, set(pks))
-        for pk in set(pks):
-            invalid_notify_cache(pk)
-
-
 def invalid_user_cache(user_pk):
     cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
     cache_response.invalid_cache(f'UserRoutesView_get_{user_pk}')
     MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
     MagicCacheData.invalid_cache(f'get_user_field_queryset_{user_pk}')  # 清理权限
     cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
-    invalid_notify_cache(user_pk)
 
 
 def invalid_superuser_cache():
     for pk in UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True):
         invalid_user_cache(pk)
-
-
-def invalid_notify_cache(pk):
-    cache_response.invalid_cache(f'UserNoticeMessage_unread_{pk}_*')
-    cache_response.invalid_cache(f'UserNoticeMessage_list_{pk}_*')
 
 
 def invalid_roles_cache(instance):
@@ -176,32 +147,10 @@ def clean_cache_handler(sender, instance, **kwargs):
             cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
         logger.info(f"invalid cache {sender}")
 
-    if issubclass(sender, NoticeUserRead):
-        invalid_notify_cache(instance.owner.pk)
-
     if issubclass(sender, SystemConfig):
         SysConfig.invalid_config_cache(instance.key)
         if instance.key in ['PERMISSION_DATA', 'PERMISSION_FIELD']:
             invalid_user_cache('*')
-
-
-@receiver([post_save])
-def clean_cache_handler_post_save(sender, instance, **kwargs):
-    if issubclass(sender, NoticeMessage):
-        pk_set = None
-        if instance.notice_type == NoticeMessage.NoticeChoices.NOTICE:
-            invalid_notify_cache('*')
-            if instance.publish:
-                push_notice_messages(instance, UserInfo.objects.values_list('pk', flat=True))
-        elif instance.notice_type == NoticeMessage.NoticeChoices.DEPT:
-            pk_set = instance.notice_dept.values_list('pk', flat=True)
-        elif instance.notice_type == NoticeMessage.NoticeChoices.ROLE:
-            pk_set = instance.notice_role.values_list('pk', flat=True)
-        else:
-            pk_set = instance.notice_user.values_list('pk', flat=True)
-        if pk_set:
-            invalid_notify_caches(instance, pk_set)
-        logger.info(f"invalid cache {sender}")
 
 
 @receiver([pre_delete])

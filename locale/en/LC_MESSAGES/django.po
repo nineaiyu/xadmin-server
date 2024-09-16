@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-11 12:16+0800\n"
+"POT-Creation-Date: 2024-09-16 17:23+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/utils/auth.py:107
+#: common/core/auth.py:36 system/utils/auth.py:109
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -64,11 +64,12 @@ msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
 
 #: common/core/models.py:20 common/core/models.py:27
-#: settings/serializers/security.py:238
+#: settings/serializers/security.py:245
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:34 settings/serializers/security.py:240
+#: common/core/models.py:34 common/models.py:17
+#: settings/serializers/security.py:247
 msgid "Created time"
 msgstr ""
 
@@ -104,7 +105,7 @@ msgstr ""
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:162 system/utils/auth.py:102
+#: common/core/modelset.py:162 system/utils/auth.py:104
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
 #: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
@@ -164,6 +165,49 @@ msgstr ""
 msgid "{} is not a valid value for AESCharField"
 msgstr ""
 
+#: common/models.py:13
+msgid "CPU Load"
+msgstr ""
+
+#: common/models.py:14
+msgid "Memory Used"
+msgstr ""
+
+#: common/models.py:15
+msgid "Disk Used"
+msgstr ""
+
+#: common/models.py:16
+msgid "Boot Time"
+msgstr ""
+
+#: common/models.py:20 common/notifications.py:14
+msgid "Monitor"
+msgstr ""
+
+#: common/notifications.py:15
+msgid "Server performance"
+msgstr ""
+
+#: common/notifications.py:21
+msgid "Server health check warning"
+msgstr ""
+
+#: common/notifications.py:48
+#, python-brace-format
+msgid "Disk used more than {max_threshold}%: => {value}"
+msgstr ""
+
+#: common/notifications.py:53
+#, python-brace-format
+msgid "Memory used more than {max_threshold}%: => {value}"
+msgstr ""
+
+#: common/notifications.py:58
+#, python-brace-format
+msgid "CPU load more than {max_threshold}: => {value}"
+msgstr ""
+
 #: common/sdk/sms/alibaba.py:62
 msgid "Signature does not match"
 msgstr ""
@@ -200,19 +244,56 @@ msgstr ""
 msgid "Please enter your account information to log in"
 msgstr ""
 
-#: common/tasks.py:19
+#: common/tasks.py:28
 msgid "Send email"
 msgstr ""
 
-#: common/tasks.py:46
+#: common/tasks.py:55
 msgid "Send email attachment"
+msgstr ""
+
+#: common/tasks.py:77
+msgid "Periodic delete monitor"
+msgstr ""
+
+#: common/tasks.py:86
+msgid "Clear celery periodic tasks"
+msgstr ""
+
+#: common/tasks.py:87
+msgid "At system startup, clean up celery tasks that no longer exist"
+msgstr ""
+
+#: common/tasks.py:109
+msgid "Create or update periodic tasks"
+msgstr ""
+
+#: common/tasks.py:111
+msgid ""
+"With version iterations, new tasks may be added, or task names and execution "
+"times may \n"
+"        be modified. Therefore, upon system startup, tasks will be "
+"registered or the parameters \n"
+"        of scheduled tasks will be updated"
+msgstr ""
+
+#: common/tasks.py:124
+msgid "Periodic check service performance"
+msgstr ""
+
+#: common/tasks.py:126
+msgid ""
+"Check every hour whether each component is offline and whether the CPU, "
+"memory, \n"
+"        and disk usage exceed the thresholds, and send an alert message to "
+"the administrator"
 msgstr ""
 
 #: common/utils/country.py:48
 msgid "China"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:23
+#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:143
 msgid "LAN"
 msgstr ""
 
@@ -222,7 +303,7 @@ msgstr ""
 
 #: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
 #: common/utils/ip/geoip/utils.py:37 common/utils/ip/utils.py:104
-#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:80
+#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:82
 msgid "Unknown"
 msgstr ""
 
@@ -241,6 +322,182 @@ msgstr ""
 
 #: common/utils/verify_code.py:23
 msgid "Send SMS code"
+msgstr ""
+
+#: notifications/apps.py:8
+msgid "App Notifications"
+msgstr ""
+
+#: notifications/backends/__init__.py:10 settings/serializers/email.py:13
+#: system/models/user.py:33
+msgid "Email"
+msgstr ""
+
+#: notifications/backends/__init__.py:11
+msgid "Site message"
+msgstr ""
+
+#: notifications/models/message.py:16
+msgid "System notification"
+msgstr ""
+
+#: notifications/models/message.py:17
+msgid "System announcement"
+msgstr ""
+
+#: notifications/models/message.py:18
+msgid "User notification"
+msgstr ""
+
+#: notifications/models/message.py:19
+msgid "Department notification"
+msgstr ""
+
+#: notifications/models/message.py:20
+msgid "Role notification"
+msgstr ""
+
+#: notifications/models/message.py:23
+msgid "Ordinary notices"
+msgstr ""
+
+#: notifications/models/message.py:24
+msgid "General notices"
+msgstr ""
+
+#: notifications/models/message.py:25
+msgid "Success notices"
+msgstr ""
+
+#: notifications/models/message.py:26
+msgid "Important notices"
+msgstr ""
+
+#: notifications/models/message.py:29 notifications/serializers/message.py:36
+msgid "The notified user"
+msgstr ""
+
+#: notifications/models/message.py:31 notifications/serializers/message.py:40
+msgid "The notified department"
+msgstr ""
+
+#: notifications/models/message.py:33 notifications/serializers/message.py:41
+msgid "The notified role"
+msgstr ""
+
+#: notifications/models/message.py:34 notifications/serializers/message.py:51
+#: notifications/serializers/message.py:167
+msgid "Notice level"
+msgstr ""
+
+#: notifications/models/message.py:36 notifications/serializers/message.py:49
+#: notifications/serializers/message.py:148
+#: notifications/serializers/message.py:165
+msgid "Notice type"
+msgstr ""
+
+#: notifications/models/message.py:38
+msgid "Notice title"
+msgstr ""
+
+#: notifications/models/message.py:39 notifications/serializers/message.py:152
+msgid "Notice message"
+msgstr ""
+
+#: notifications/models/message.py:40
+msgid "Additional json data"
+msgstr ""
+
+#: notifications/models/message.py:41 notifications/serializers/message.py:44
+msgid "Uploaded attachments"
+msgstr ""
+
+#: notifications/models/message.py:42
+msgid "Publish"
+msgstr ""
+
+#: notifications/models/message.py:55
+msgid "Message content"
+msgstr ""
+
+#: notifications/models/message.py:70 notifications/models/notification.py:15
+#: notifications/serializers/message.py:149 system/models/config.py:39
+#: system/serializers/config.py:45 system/serializers/config.py:57
+#: system/serializers/log.py:32 system/serializers/log.py:53
+msgid "User"
+msgstr ""
+
+#: notifications/models/message.py:71
+msgid "Notice"
+msgstr ""
+
+#: notifications/models/message.py:72 notifications/serializers/message.py:168
+msgid "Unread"
+msgstr ""
+
+#: notifications/models/message.py:76
+msgid "User read message"
+msgstr ""
+
+#: notifications/models/notification.py:17
+#: notifications/models/notification.py:30
+msgid "receive backend"
+msgstr ""
+
+#: notifications/models/notification.py:20
+msgid "User message subscription"
+msgstr ""
+
+#: notifications/models/notification.py:23
+msgid "{} subscription"
+msgstr ""
+
+#: notifications/models/notification.py:27
+msgid "message type"
+msgstr ""
+
+#: notifications/models/notification.py:35
+msgid "System message subscription"
+msgstr ""
+
+#: notifications/notifications.py:43
+msgid "Publish the station message"
+msgstr ""
+
+#: notifications/notifications.py:187
+msgid "Time"
+msgstr ""
+
+#: notifications/serializers/message.py:45 system/serializers/department.py:32
+msgid "User count"
+msgstr ""
+
+#: notifications/serializers/message.py:46
+msgid "Read user count"
+msgstr ""
+
+#: notifications/serializers/message.py:74
+msgid "Parameter error. System announcement cannot be created"
+msgstr ""
+
+#: notifications/serializers/message.py:84
+msgid "The notice role cannot be null"
+msgstr ""
+
+#: notifications/serializers/message.py:90
+msgid "The notice department cannot be null"
+msgstr ""
+
+#: notifications/serializers/message.py:96
+msgid "The notice user cannot be null"
+msgstr ""
+
+#: notifications/serializers/message.py:115
+msgid "The system notice cannot be update"
+msgstr ""
+
+#: notifications/serializers/message.py:138
+msgid "Parameter error"
 msgstr ""
 
 #: settings/models.py:16 settings/serializers/sms.py:54
@@ -278,10 +535,6 @@ msgstr ""
 msgid ""
 "Site URL is the externally accessible address of the current product service "
 "and is usually used in links in system emails"
-msgstr ""
-
-#: settings/serializers/email.py:13 system/models/user.py:33
-msgid "Email"
 msgstr ""
 
 #: settings/serializers/email.py:13
@@ -399,206 +652,217 @@ msgstr ""
 msgid "IP address invalid: `{}`"
 msgstr ""
 
-#: settings/serializers/security.py:62
+#: settings/serializers/security.py:61
+msgid "Suspicious Login Verification"
+msgstr ""
+
+#: settings/serializers/security.py:63
+msgid ""
+"The system determines whether the login IP address belongs to a common login "
+"city. If the account is logged in from a common login city, the system sends "
+"a remote login reminder"
+msgstr ""
+
+#: settings/serializers/security.py:69
 msgid "User login failures count"
 msgstr ""
 
-#: settings/serializers/security.py:66
+#: settings/serializers/security.py:73
 msgid "User login failure period (minute)"
 msgstr ""
 
-#: settings/serializers/security.py:72
+#: settings/serializers/security.py:79
 msgid "IP login failures count"
 msgstr ""
 
-#: settings/serializers/security.py:76
+#: settings/serializers/security.py:83
 msgid "IP login failure period (minute)"
 msgstr ""
 
-#: settings/serializers/security.py:80
+#: settings/serializers/security.py:87
 msgid "Login IP whitelist"
 msgstr ""
 
-#: settings/serializers/security.py:85
+#: settings/serializers/security.py:92
 msgid "Login IP blacklist"
 msgstr ""
 
-#: settings/serializers/security.py:93
+#: settings/serializers/security.py:100
 msgid "Login enabled"
 msgstr ""
 
-#: settings/serializers/security.py:94
+#: settings/serializers/security.py:101
 msgid "Enable login for user"
 msgstr ""
 
-#: settings/serializers/security.py:98
+#: settings/serializers/security.py:105
 msgid "Login captcha"
 msgstr ""
 
-#: settings/serializers/security.py:99
+#: settings/serializers/security.py:106
 msgid "Enable captcha to prevent robot authentication"
 msgstr ""
 
-#: settings/serializers/security.py:103
+#: settings/serializers/security.py:110
 msgid "Login encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:104 settings/serializers/security.py:140
-#: settings/serializers/security.py:176 settings/serializers/security.py:207
-#: settings/serializers/security.py:228
+#: settings/serializers/security.py:111 settings/serializers/security.py:147
+#: settings/serializers/security.py:183 settings/serializers/security.py:214
+#: settings/serializers/security.py:235
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
-#: settings/serializers/security.py:108
+#: settings/serializers/security.py:115
 msgid "Login temp token"
 msgstr ""
 
-#: settings/serializers/security.py:109 settings/serializers/security.py:145
-#: settings/serializers/security.py:181 settings/serializers/security.py:212
-#: settings/serializers/security.py:233
+#: settings/serializers/security.py:116 settings/serializers/security.py:152
+#: settings/serializers/security.py:188 settings/serializers/security.py:219
+#: settings/serializers/security.py:240
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
-#: settings/serializers/security.py:113
+#: settings/serializers/security.py:120
 msgid "Login by email"
 msgstr ""
 
-#: settings/serializers/security.py:114 settings/serializers/security.py:150
-#: settings/serializers/security.py:186
+#: settings/serializers/security.py:121 settings/serializers/security.py:157
+#: settings/serializers/security.py:193
 msgid "Enable send email verify code to user"
 msgstr ""
 
-#: settings/serializers/security.py:118
+#: settings/serializers/security.py:125
 msgid "Login by sms"
 msgstr ""
 
-#: settings/serializers/security.py:119 settings/serializers/security.py:155
-#: settings/serializers/security.py:191
+#: settings/serializers/security.py:126 settings/serializers/security.py:162
+#: settings/serializers/security.py:198
 msgid "Enable send sms verify code to user"
 msgstr ""
 
-#: settings/serializers/security.py:123
+#: settings/serializers/security.py:130
 msgid "Login by basic"
 msgstr ""
 
-#: settings/serializers/security.py:124
+#: settings/serializers/security.py:131
 msgid "Enable basic verify to user login"
 msgstr ""
 
-#: settings/serializers/security.py:130
+#: settings/serializers/security.py:137
 msgid "Register enable"
 msgstr ""
 
-#: settings/serializers/security.py:131
+#: settings/serializers/security.py:138
 msgid "Enable register for user"
 msgstr ""
 
-#: settings/serializers/security.py:134
+#: settings/serializers/security.py:141
 msgid "Register captcha"
 msgstr ""
 
-#: settings/serializers/security.py:135
+#: settings/serializers/security.py:142
 msgid "Enable captcha to prevent robot register"
 msgstr ""
 
-#: settings/serializers/security.py:139
+#: settings/serializers/security.py:146
 msgid "Register encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:144
+#: settings/serializers/security.py:151
 msgid "Register temp token"
 msgstr ""
 
-#: settings/serializers/security.py:149
+#: settings/serializers/security.py:156
 msgid "Register by email"
 msgstr ""
 
-#: settings/serializers/security.py:154
+#: settings/serializers/security.py:161
 msgid "Register by sms"
 msgstr ""
 
-#: settings/serializers/security.py:159
+#: settings/serializers/security.py:166
 msgid "Register by basic"
 msgstr ""
 
-#: settings/serializers/security.py:160
+#: settings/serializers/security.py:167
 msgid "Enable basic verify to user register"
 msgstr ""
 
-#: settings/serializers/security.py:166
+#: settings/serializers/security.py:173
 msgid "Reset password enable"
 msgstr ""
 
-#: settings/serializers/security.py:167
+#: settings/serializers/security.py:174
 msgid "Enable reset password for user"
 msgstr ""
 
-#: settings/serializers/security.py:170
+#: settings/serializers/security.py:177
 msgid "Reset password captcha"
 msgstr ""
 
-#: settings/serializers/security.py:171 settings/serializers/security.py:202
-#: settings/serializers/security.py:223
+#: settings/serializers/security.py:178 settings/serializers/security.py:209
+#: settings/serializers/security.py:230
 msgid "Enable captcha to prevent robot reset password"
 msgstr ""
 
-#: settings/serializers/security.py:175
+#: settings/serializers/security.py:182
 msgid "Reset password encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:180
+#: settings/serializers/security.py:187
 msgid "Reset password temp token"
 msgstr ""
 
-#: settings/serializers/security.py:185
+#: settings/serializers/security.py:192
 msgid "Reset password by email"
 msgstr ""
 
-#: settings/serializers/security.py:190
+#: settings/serializers/security.py:197
 msgid "Reset password by sms"
 msgstr ""
 
-#: settings/serializers/security.py:197
+#: settings/serializers/security.py:204
 msgid "Bind email enable"
 msgstr ""
 
-#: settings/serializers/security.py:198
+#: settings/serializers/security.py:205
 msgid "Enable bind email for user"
 msgstr ""
 
-#: settings/serializers/security.py:201
+#: settings/serializers/security.py:208
 msgid "Bind email captcha"
 msgstr ""
 
-#: settings/serializers/security.py:206
+#: settings/serializers/security.py:213
 msgid "Bind email encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:211
+#: settings/serializers/security.py:218
 msgid "Bind email temp token"
 msgstr ""
 
-#: settings/serializers/security.py:218
+#: settings/serializers/security.py:225
 msgid "Bind phone enable"
 msgstr ""
 
-#: settings/serializers/security.py:219
+#: settings/serializers/security.py:226
 msgid "Enable bind phone for user"
 msgstr ""
 
-#: settings/serializers/security.py:222
+#: settings/serializers/security.py:229
 msgid "Bind phone captcha"
 msgstr ""
 
-#: settings/serializers/security.py:227
+#: settings/serializers/security.py:234
 msgid "Bind phone encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:232
+#: settings/serializers/security.py:239
 msgid "Bind phone temp token"
 msgstr ""
 
-#: settings/serializers/security.py:239
+#: settings/serializers/security.py:246
 msgid "Block IP"
 msgstr ""
 
@@ -788,13 +1052,6 @@ msgstr ""
 msgid "System config"
 msgstr ""
 
-#: system/models/config.py:39 system/models/notice.py:70
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:32 system/serializers/log.py:53
-#: system/serializers/notice.py:144
-msgid "User"
-msgstr ""
-
 #: system/models/config.py:43
 msgid "User config"
 msgstr ""
@@ -941,11 +1198,12 @@ msgstr ""
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:27
+#: system/models/log.py:27 system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr ""
 
 #: system/models/log.py:28 system/models/log.py:58
+#: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr ""
 
@@ -997,7 +1255,7 @@ msgstr ""
 msgid "Operation log"
 msgstr ""
 
-#: system/models/menu.py:15 system/serializers/menu.py:71
+#: system/models/menu.py:15 system/serializers/menu.py:70
 msgid "Menu title"
 msgstr ""
 
@@ -1078,7 +1336,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr ""
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:31 system/serializers/route.py:54
+#: system/serializers/menu.py:30 system/serializers/route.py:54
 msgid "Menu meta"
 msgstr ""
 
@@ -1117,12 +1375,12 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models/menu.py:60 system/serializers/menu.py:41
+#: system/models/menu.py:60 system/serializers/menu.py:40
 #: system/serializers/route.py:52
 msgid "Parent menu"
 msgstr ""
 
-#: system/models/menu.py:63 system/serializers/menu.py:46
+#: system/models/menu.py:63 system/serializers/menu.py:45
 msgid "Menu type"
 msgstr ""
 
@@ -1138,102 +1396,12 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models/menu.py:70 system/serializers/menu.py:44
+#: system/models/menu.py:70 system/serializers/menu.py:43
 msgid "Model"
 msgstr ""
 
 #: system/models/menu.py:74
 msgid "Method"
-msgstr ""
-
-#: system/models/notice.py:16
-msgid "System notification"
-msgstr ""
-
-#: system/models/notice.py:17
-msgid "System announcement"
-msgstr ""
-
-#: system/models/notice.py:18
-msgid "User notification"
-msgstr ""
-
-#: system/models/notice.py:19
-msgid "Department notification"
-msgstr ""
-
-#: system/models/notice.py:20
-msgid "Role notification"
-msgstr ""
-
-#: system/models/notice.py:23
-msgid "Ordinary notices"
-msgstr ""
-
-#: system/models/notice.py:24
-msgid "General notices"
-msgstr ""
-
-#: system/models/notice.py:25
-msgid "Success notices"
-msgstr ""
-
-#: system/models/notice.py:26
-msgid "Important notices"
-msgstr ""
-
-#: system/models/notice.py:29 system/serializers/notice.py:34
-msgid "The notified user"
-msgstr ""
-
-#: system/models/notice.py:31 system/serializers/notice.py:38
-msgid "The notified department"
-msgstr ""
-
-#: system/models/notice.py:33 system/serializers/notice.py:39
-msgid "The notified role"
-msgstr ""
-
-#: system/models/notice.py:34 system/serializers/notice.py:49
-msgid "Notice level"
-msgstr ""
-
-#: system/models/notice.py:36 system/serializers/notice.py:47
-#: system/serializers/notice.py:143 system/serializers/notice.py:160
-msgid "Notice type"
-msgstr ""
-
-#: system/models/notice.py:38
-msgid "Notice title"
-msgstr ""
-
-#: system/models/notice.py:39 system/models/notice.py:55
-#: system/serializers/notice.py:147
-msgid "Notice message"
-msgstr ""
-
-#: system/models/notice.py:40
-msgid "Additional json data"
-msgstr ""
-
-#: system/models/notice.py:41 system/serializers/notice.py:42
-msgid "Uploaded attachments"
-msgstr ""
-
-#: system/models/notice.py:42
-msgid "Publish"
-msgstr ""
-
-#: system/models/notice.py:71
-msgid "Notice"
-msgstr ""
-
-#: system/models/notice.py:72 system/serializers/notice.py:161
-msgid "Unread"
-msgstr ""
-
-#: system/models/notice.py:76
-msgid "User has read the message"
 msgstr ""
 
 #: system/models/permission.py:18
@@ -1333,6 +1501,14 @@ msgstr ""
 msgid "Userinfo"
 msgstr ""
 
+#: system/notifications.py:17
+msgid "Different city login reminder"
+msgstr ""
+
+#: system/notifications.py:50
+msgid "Reset password success"
+msgstr ""
+
 #: system/serializers/base.py:25 system/serializers/permission.py:38
 msgid "Mode type"
 msgstr ""
@@ -1349,36 +1525,8 @@ msgstr ""
 msgid "User cannot be null"
 msgstr ""
 
-#: system/serializers/department.py:32 system/serializers/notice.py:43
-msgid "User count"
-msgstr ""
-
 #: system/serializers/department.py:50
 msgid "The superior department cannot be its own subordinate department"
-msgstr ""
-
-#: system/serializers/notice.py:44
-msgid "Read user count"
-msgstr ""
-
-#: system/serializers/notice.py:72
-msgid "Parameter error. System announcement cannot be created"
-msgstr ""
-
-#: system/serializers/notice.py:82
-msgid "The notice role cannot be null"
-msgstr ""
-
-#: system/serializers/notice.py:88
-msgid "The notice department cannot be null"
-msgstr ""
-
-#: system/serializers/notice.py:94
-msgid "The notice user cannot be null"
-msgstr ""
-
-#: system/serializers/notice.py:133
-msgid "Parameter error"
 msgstr ""
 
 #: system/serializers/permission.py:43
@@ -1393,7 +1541,7 @@ msgstr ""
 msgid "Access URL"
 msgstr ""
 
-#: system/serializers/upload.py:37
+#: system/serializers/upload.py:38
 msgid "Internet url cannot be null"
 msgstr ""
 
@@ -1424,6 +1572,7 @@ msgid "Old password verification failed"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:9
+#: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
 msgstr ""
 
@@ -1441,42 +1590,80 @@ msgid "seconds"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:19
+#: system/templates/notify/msg_rest_password_success.html:15
 msgid "If you have any questions, you can contact the administrator"
 msgstr ""
 
-#: system/utils/auth.py:37
+#: system/templates/notify/msg_different_city.html:6
+msgid "Your account has remote login behavior, please pay attention"
+msgstr ""
+
+#: system/templates/notify/msg_different_city.html:9
+#: system/templates/notify/msg_rest_password_success.html:8
+msgid "Username"
+msgstr ""
+
+#: system/templates/notify/msg_different_city.html:10
+msgid "Login Date"
+msgstr ""
+
+#: system/templates/notify/msg_different_city.html:16
+msgid ""
+"If you suspect that the login behavior is abnormal, please modify the "
+"account password in time."
+msgstr ""
+
+#: system/templates/notify/msg_rest_password_success.html:2
+msgid "Dear"
+msgstr ""
+
+#: system/templates/notify/msg_rest_password_success.html:5
+msgid "Your password has just been successfully updated"
+msgstr ""
+
+#: system/templates/notify/msg_rest_password_success.html:9
+msgid "IP"
+msgstr ""
+
+#: system/templates/notify/msg_rest_password_success.html:14
+msgid ""
+"If the password update was not initiated by you, your account may have "
+"security issues"
+msgstr ""
+
+#: system/utils/auth.py:39
 msgid "Captcha validation failed. Please try again"
 msgstr ""
 
-#: system/utils/auth.py:43
+#: system/utils/auth.py:45
 msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
-#: system/utils/auth.py:69
+#: system/utils/auth.py:71
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:73 system/utils/auth.py:129
+#: system/utils/auth.py:75 system/utils/auth.py:131
 #: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr ""
 
-#: system/utils/auth.py:124
+#: system/utils/auth.py:126
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
 "account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
-#: system/utils/signal_handler.py:43
+#: system/utils/signal_handler.py:41
 msgid "All tables"
 msgstr ""
 
-#: system/utils/signal_handler.py:45
+#: system/utils/signal_handler.py:43
 msgid "All fields"
 msgstr ""
 
@@ -1492,7 +1679,7 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/auth/login.py:96 system/views/auth/login.py:178
+#: system/views/auth/login.py:97 system/views/auth/login.py:179
 msgid "Login forbidden"
 msgstr ""
 

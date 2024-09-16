@@ -20,6 +20,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
 from settings.utils.security import ResetBlockUtil
 from system.models import UserInfo
+from system.notifications import ResetPasswordSuccessMsg
 from system.serializers.userinfo import UserInfoSerializer, ChangePasswordSerializer
 from system.utils.auth import verify_sms_email_code
 
@@ -54,6 +55,7 @@ class UserInfoView(OwnerModelSet, ChoicesAction, UploadFileAction):
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        ResetPasswordSuccessMsg(instance, request).publish_async()
         return ApiResponse()
 
     @extend_schema(

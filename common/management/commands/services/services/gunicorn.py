@@ -1,3 +1,4 @@
+from common.startup import CoreTerminal
 from .base import BaseService
 from ..hands import *
 
@@ -22,7 +23,9 @@ class GunicornService(BaseService):
             '-b', bind,
             '-k', 'uvicorn.workers.UvicornWorker',
             '-w', str(self.worker),
-            '--max-requests', '4096',
+            '--max-requests', '10240',
+            '--max-requests-jitter', '2048',
+            '--graceful-timeout', '30',
             '--access-logformat', log_format,
             '--access-logfile', '-'
         ]
@@ -33,3 +36,7 @@ class GunicornService(BaseService):
     @property
     def cwd(self):
         return APPS_DIR
+
+    def start_other(self):
+        core_terminal = CoreTerminal()
+        core_terminal.start_heartbeat_thread()

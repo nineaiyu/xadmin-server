@@ -4,6 +4,7 @@
 # filename : view
 # author : ly_13
 # date : 8/6/2024
+import ipaddress
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -18,6 +19,7 @@ from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
 from settings.utils.security import LoginIpBlockUtil, LoginBlockUtil
 from system.models import UserLoginLog, UserInfo
+from system.notifications import DifferentCityLoginMessage
 from system.serializers.log import UserLoginLogSerializer
 
 
@@ -132,3 +134,25 @@ def verify_sms_email_code(request, block_utils):
         raise APIException(detail)
 
     return query_key, target, verify_token
+
+
+def check_different_city_login_if_need(user, ipaddr):
+    if not settings.SECURITY_CHECK_DIFFERENT_CITY_LOGIN or ipaddr == 'unknown':
+        return
+
+    city_white = [_('LAN'), 'LAN']
+    is_private = ipaddress.ip_address(ipaddr).is_private
+    if is_private:
+        return
+    last_user_login = UserLoginLog.objects.exclude(
+        city__in=city_white
+    ).filter(creator=user, status=True).first()
+    if not last_user_login:
+        return
+
+    city = get_ip_city(ipaddr)
+    last_city = get_ip_city(last_user_login.ip)
+    if city == last_city:
+        return
+
+    DifferentCityLoginMessage(user, ipaddr, city).publish_async()

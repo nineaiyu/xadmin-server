@@ -17,7 +17,6 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 ## [Docker 容器化部署](https://docs.dvcloud.xin/guide/installation-docker.html)
 
-
 # 附录
 
 ⚠️ Windows上面无法正常运行celery flower，导致任务监控无法正常使用，请使用Linux环境开发部署

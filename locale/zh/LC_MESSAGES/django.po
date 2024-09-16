@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-11 12:16+0800\n"
+"POT-Creation-Date: 2024-09-16 17:23+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "任务监控系统不可用，请联系管理员"
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
-#: common/core/auth.py:36 system/utils/auth.py:107
+#: common/core/auth.py:36 system/utils/auth.py:109
 msgid "Token is invalid or expired"
 msgstr "令牌无效或过期"
 
@@ -63,11 +63,12 @@ msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
 #: common/core/models.py:20 common/core/models.py:27
-#: settings/serializers/security.py:238
+#: settings/serializers/security.py:245
 msgid "ID"
 msgstr "主键ID"
 
-#: common/core/models.py:34 settings/serializers/security.py:240
+#: common/core/models.py:34 common/models.py:17
+#: settings/serializers/security.py:247
 msgid "Created time"
 msgstr "创建时间"
 
@@ -103,7 +104,7 @@ msgstr "错误的图片类型, 类型应该为 {}"
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:162 system/utils/auth.py:102
+#: common/core/modelset.py:162 system/utils/auth.py:104
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
 #: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
@@ -163,6 +164,49 @@ msgstr "{} - 未设置加密密码 - 请前往个人信息 -> 文件加密密码
 msgid "{} is not a valid value for AESCharField"
 msgstr "{} 不支持的AES加密类型"
 
+#: common/models.py:13
+msgid "CPU Load"
+msgstr "CPU负载"
+
+#: common/models.py:14
+msgid "Memory Used"
+msgstr "内存使用"
+
+#: common/models.py:15
+msgid "Disk Used"
+msgstr "磁盘使用"
+
+#: common/models.py:16
+msgid "Boot Time"
+msgstr "运行时间"
+
+#: common/models.py:20 common/notifications.py:14
+msgid "Monitor"
+msgstr "资源监控"
+
+#: common/notifications.py:15
+msgid "Server performance"
+msgstr "监控告警"
+
+#: common/notifications.py:21
+msgid "Server health check warning"
+msgstr "服务健康状况检查警告"
+
+#: common/notifications.py:48
+#, python-brace-format
+msgid "Disk used more than {max_threshold}%: => {value}"
+msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
+
+#: common/notifications.py:53
+#, python-brace-format
+msgid "Memory used more than {max_threshold}%: => {value}"
+msgstr "内存使用率超过 {max_threshold}%: => {value}"
+
+#: common/notifications.py:58
+#, python-brace-format
+msgid "CPU load more than {max_threshold}: => {value}"
+msgstr "CPU 使用率超过 {max_threshold}: => {value}"
+
 #: common/sdk/sms/alibaba.py:62
 msgid "Signature does not match"
 msgstr "签名不匹配"
@@ -199,19 +243,60 @@ msgstr "用户名或密码错误"
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
-#: common/tasks.py:19
+#: common/tasks.py:28
 msgid "Send email"
 msgstr "发件邮件"
 
-#: common/tasks.py:46
+#: common/tasks.py:55
 msgid "Send email attachment"
 msgstr "发送邮件附件"
+
+#: common/tasks.py:77
+msgid "Periodic delete monitor"
+msgstr "周期清理监控日志"
+
+#: common/tasks.py:86
+msgid "Clear celery periodic tasks"
+msgstr "清理周期任务"
+
+#: common/tasks.py:87
+msgid "At system startup, clean up celery tasks that no longer exist"
+msgstr "系统启动时，清理已经不存在的celery任务"
+
+#: common/tasks.py:109
+msgid "Create or update periodic tasks"
+msgstr "创建或更新周期任务"
+
+#: common/tasks.py:111
+msgid ""
+"With version iterations, new tasks may be added, or task names and execution "
+"times may \n"
+"        be modified. Therefore, upon system startup, tasks will be "
+"registered or the parameters \n"
+"        of scheduled tasks will be updated"
+msgstr ""
+"随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以在系统启动时，"
+"将会注册任务或者更新定时任务参数"
+
+#: common/tasks.py:124
+msgid "Periodic check service performance"
+msgstr "周期检测服务性能"
+
+#: common/tasks.py:126
+msgid ""
+"Check every hour whether each component is offline and whether the CPU, "
+"memory, \n"
+"        and disk usage exceed the thresholds, and send an alert message to "
+"the administrator"
+msgstr ""
+"每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送消息"
+"预警"
 
 #: common/utils/country.py:48
 msgid "China"
 msgstr "中国"
 
-#: common/utils/ip/geoip/utils.py:23
+#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:143
 msgid "LAN"
 msgstr "局域网"
 
@@ -221,7 +306,7 @@ msgstr "无效 IP"
 
 #: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
 #: common/utils/ip/geoip/utils.py:37 common/utils/ip/utils.py:104
-#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:80
+#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:82
 msgid "Unknown"
 msgstr "未知"
 
@@ -241,6 +326,182 @@ msgstr "“%(path)s” 不存在"
 #: common/utils/verify_code.py:23
 msgid "Send SMS code"
 msgstr "发送短信验证码"
+
+#: notifications/apps.py:8
+msgid "App Notifications"
+msgstr "通知管理"
+
+#: notifications/backends/__init__.py:10 settings/serializers/email.py:13
+#: system/models/user.py:33
+msgid "Email"
+msgstr "邮件"
+
+#: notifications/backends/__init__.py:11
+msgid "Site message"
+msgstr "站内信"
+
+#: notifications/models/message.py:16
+msgid "System notification"
+msgstr "系统通知"
+
+#: notifications/models/message.py:17
+msgid "System announcement"
+msgstr "系统公告"
+
+#: notifications/models/message.py:18
+msgid "User notification"
+msgstr "用户通知"
+
+#: notifications/models/message.py:19
+msgid "Department notification"
+msgstr "部门通知"
+
+#: notifications/models/message.py:20
+msgid "Role notification"
+msgstr "角色通知"
+
+#: notifications/models/message.py:23
+msgid "Ordinary notices"
+msgstr "普遍通知"
+
+#: notifications/models/message.py:24
+msgid "General notices"
+msgstr "一般通知"
+
+#: notifications/models/message.py:25
+msgid "Success notices"
+msgstr "成功通知"
+
+#: notifications/models/message.py:26
+msgid "Important notices"
+msgstr "重要通知"
+
+#: notifications/models/message.py:29 notifications/serializers/message.py:36
+msgid "The notified user"
+msgstr "被通知用户"
+
+#: notifications/models/message.py:31 notifications/serializers/message.py:40
+msgid "The notified department"
+msgstr "被通知部门"
+
+#: notifications/models/message.py:33 notifications/serializers/message.py:41
+msgid "The notified role"
+msgstr "被通知角色"
+
+#: notifications/models/message.py:34 notifications/serializers/message.py:51
+#: notifications/serializers/message.py:167
+msgid "Notice level"
+msgstr "通知级别"
+
+#: notifications/models/message.py:36 notifications/serializers/message.py:49
+#: notifications/serializers/message.py:148
+#: notifications/serializers/message.py:165
+msgid "Notice type"
+msgstr "通知类型"
+
+#: notifications/models/message.py:38
+msgid "Notice title"
+msgstr "通知标题"
+
+#: notifications/models/message.py:39 notifications/serializers/message.py:152
+msgid "Notice message"
+msgstr "通知内容"
+
+#: notifications/models/message.py:40
+msgid "Additional json data"
+msgstr "额外的Json数据"
+
+#: notifications/models/message.py:41 notifications/serializers/message.py:44
+msgid "Uploaded attachments"
+msgstr "上传的附件"
+
+#: notifications/models/message.py:42
+msgid "Publish"
+msgstr "发布"
+
+#: notifications/models/message.py:55
+msgid "Message content"
+msgstr "消息中心"
+
+#: notifications/models/message.py:70 notifications/models/notification.py:15
+#: notifications/serializers/message.py:149 system/models/config.py:39
+#: system/serializers/config.py:45 system/serializers/config.py:57
+#: system/serializers/log.py:32 system/serializers/log.py:53
+msgid "User"
+msgstr "用户"
+
+#: notifications/models/message.py:71
+msgid "Notice"
+msgstr "通知"
+
+#: notifications/models/message.py:72 notifications/serializers/message.py:168
+msgid "Unread"
+msgstr "未读"
+
+#: notifications/models/message.py:76
+msgid "User read message"
+msgstr "用户已读消息"
+
+#: notifications/models/notification.py:17
+#: notifications/models/notification.py:30
+msgid "receive backend"
+msgstr "消息后端"
+
+#: notifications/models/notification.py:20
+msgid "User message subscription"
+msgstr "用户消息订阅"
+
+#: notifications/models/notification.py:23
+msgid "{} subscription"
+msgstr "{} 订阅"
+
+#: notifications/models/notification.py:27
+msgid "message type"
+msgstr "消息类型"
+
+#: notifications/models/notification.py:35
+msgid "System message subscription"
+msgstr "系统消息订阅"
+
+#: notifications/notifications.py:43
+msgid "Publish the station message"
+msgstr "发布站内消息"
+
+#: notifications/notifications.py:187
+msgid "Time"
+msgstr "时间"
+
+#: notifications/serializers/message.py:45 system/serializers/department.py:32
+msgid "User count"
+msgstr "用户数量"
+
+#: notifications/serializers/message.py:46
+msgid "Read user count"
+msgstr "已读用户数量"
+
+#: notifications/serializers/message.py:74
+msgid "Parameter error. System announcement cannot be created"
+msgstr "参数有误，不支持创建系统公告"
+
+#: notifications/serializers/message.py:84
+msgid "The notice role cannot be null"
+msgstr "被通知角色不能为空"
+
+#: notifications/serializers/message.py:90
+msgid "The notice department cannot be null"
+msgstr "被通知部门不能为空"
+
+#: notifications/serializers/message.py:96
+msgid "The notice user cannot be null"
+msgstr "被通知用户不能为空"
+
+#: notifications/serializers/message.py:115
+msgid "The system notice cannot be update"
+msgstr "系统通知不允许更新"
+
+#: notifications/serializers/message.py:138
+msgid "Parameter error"
+msgstr "参数有误"
 
 #: settings/models.py:16 settings/serializers/sms.py:54
 #: system/models/permission.py:17
@@ -278,10 +539,6 @@ msgid ""
 "Site URL is the externally accessible address of the current product service "
 "and is usually used in links in system emails"
 msgstr "站点 URL 是当前产品服务的外部可访问地址，通常在系统邮件中的链接中使用"
-
-#: settings/serializers/email.py:13 system/models/user.py:33
-msgid "Email"
-msgstr "邮件"
 
 #: settings/serializers/email.py:13
 msgid "Enable Email Service (Email)"
@@ -404,206 +661,219 @@ msgstr ""
 msgid "IP address invalid: `{}`"
 msgstr "IP 地址无效: `{}`"
 
-#: settings/serializers/security.py:62
+#: settings/serializers/security.py:61
+msgid "Suspicious Login Verification"
+msgstr "异地登录通知"
+
+#: settings/serializers/security.py:63
+msgid ""
+"The system determines whether the login IP address belongs to a common login "
+"city. If the account is logged in from a common login city, the system sends "
+"a remote login reminder"
+msgstr ""
+"根据登录 IP 是否所属常用登录城市进行判断，若账号在非常用城市登录，会发送异地"
+"登录提醒"
+
+#: settings/serializers/security.py:69
 msgid "User login failures count"
 msgstr "限制用户登录失败次数"
 
-#: settings/serializers/security.py:66
+#: settings/serializers/security.py:73
 msgid "User login failure period (minute)"
 msgstr "禁止用户登录间隔 (分)"
 
-#: settings/serializers/security.py:72
+#: settings/serializers/security.py:79
 msgid "IP login failures count"
 msgstr "限制 IP 登录失败次数"
 
-#: settings/serializers/security.py:76
+#: settings/serializers/security.py:83
 msgid "IP login failure period (minute)"
 msgstr "禁止 IP 登录间隔 (分)"
 
-#: settings/serializers/security.py:80
+#: settings/serializers/security.py:87
 msgid "Login IP whitelist"
 msgstr "IP 登录白名单"
 
-#: settings/serializers/security.py:85
+#: settings/serializers/security.py:92
 msgid "Login IP blacklist"
 msgstr "IP 登录黑名单"
 
-#: settings/serializers/security.py:93
+#: settings/serializers/security.py:100
 msgid "Login enabled"
 msgstr "允许登录"
 
-#: settings/serializers/security.py:94
+#: settings/serializers/security.py:101
 msgid "Enable login for user"
 msgstr "允许用户进行登录"
 
-#: settings/serializers/security.py:98
+#: settings/serializers/security.py:105
 msgid "Login captcha"
 msgstr "登录图片验证码"
 
-#: settings/serializers/security.py:99
+#: settings/serializers/security.py:106
 msgid "Enable captcha to prevent robot authentication"
 msgstr "开启图片验证码，防止机器人登录"
 
-#: settings/serializers/security.py:103
+#: settings/serializers/security.py:110
 msgid "Login encrypted"
 msgstr "登录信息加密"
 
-#: settings/serializers/security.py:104 settings/serializers/security.py:140
-#: settings/serializers/security.py:176 settings/serializers/security.py:207
-#: settings/serializers/security.py:228
+#: settings/serializers/security.py:111 settings/serializers/security.py:147
+#: settings/serializers/security.py:183 settings/serializers/security.py:214
+#: settings/serializers/security.py:235
 msgid "Enable encryption to prevent information leakage"
 msgstr "开启敏感信息加密，防止数据泄露"
 
-#: settings/serializers/security.py:108
+#: settings/serializers/security.py:115
 msgid "Login temp token"
 msgstr "登录临时令牌"
 
-#: settings/serializers/security.py:109 settings/serializers/security.py:145
-#: settings/serializers/security.py:181 settings/serializers/security.py:212
-#: settings/serializers/security.py:233
+#: settings/serializers/security.py:116 settings/serializers/security.py:152
+#: settings/serializers/security.py:188 settings/serializers/security.py:219
+#: settings/serializers/security.py:240
 msgid "Enable temporary tokens to prevent attacks"
 msgstr "开启临时令牌，防止被攻击"
 
-#: settings/serializers/security.py:113
+#: settings/serializers/security.py:120
 msgid "Login by email"
 msgstr "通过邮件登录"
 
-#: settings/serializers/security.py:114 settings/serializers/security.py:150
-#: settings/serializers/security.py:186
+#: settings/serializers/security.py:121 settings/serializers/security.py:157
+#: settings/serializers/security.py:193
 msgid "Enable send email verify code to user"
 msgstr "允许用户通过发送邮件验证码"
 
-#: settings/serializers/security.py:118
+#: settings/serializers/security.py:125
 msgid "Login by sms"
 msgstr "通过手机登录"
 
-#: settings/serializers/security.py:119 settings/serializers/security.py:155
-#: settings/serializers/security.py:191
+#: settings/serializers/security.py:126 settings/serializers/security.py:162
+#: settings/serializers/security.py:198
 msgid "Enable send sms verify code to user"
 msgstr "允许用户通过发送短信验证码"
 
-#: settings/serializers/security.py:123
+#: settings/serializers/security.py:130
 msgid "Login by basic"
 msgstr "通过用户名密码登录"
 
-#: settings/serializers/security.py:124
+#: settings/serializers/security.py:131
 msgid "Enable basic verify to user login"
 msgstr "允许用户通过用户名密码登录"
 
-#: settings/serializers/security.py:130
+#: settings/serializers/security.py:137
 msgid "Register enable"
 msgstr "允许注册"
 
-#: settings/serializers/security.py:131
+#: settings/serializers/security.py:138
 msgid "Enable register for user"
 msgstr "允许用户进行注册"
 
-#: settings/serializers/security.py:134
+#: settings/serializers/security.py:141
 msgid "Register captcha"
 msgstr "注册图片验证码"
 
-#: settings/serializers/security.py:135
+#: settings/serializers/security.py:142
 msgid "Enable captcha to prevent robot register"
 msgstr "开启图片验证码，防止机器人注册"
 
-#: settings/serializers/security.py:139
+#: settings/serializers/security.py:146
 msgid "Register encrypted"
 msgstr "注册信息加密"
 
-#: settings/serializers/security.py:144
+#: settings/serializers/security.py:151
 msgid "Register temp token"
 msgstr "注册临时令牌"
 
-#: settings/serializers/security.py:149
+#: settings/serializers/security.py:156
 msgid "Register by email"
 msgstr "通过邮件注册"
 
-#: settings/serializers/security.py:154
+#: settings/serializers/security.py:161
 msgid "Register by sms"
 msgstr "通过手机注册"
 
-#: settings/serializers/security.py:159
+#: settings/serializers/security.py:166
 msgid "Register by basic"
 msgstr "通过用户名密码注册"
 
-#: settings/serializers/security.py:160
+#: settings/serializers/security.py:167
 msgid "Enable basic verify to user register"
 msgstr "允许用户通过用户名密码注册"
 
-#: settings/serializers/security.py:166
+#: settings/serializers/security.py:173
 msgid "Reset password enable"
 msgstr "允许重置密码"
 
-#: settings/serializers/security.py:167
+#: settings/serializers/security.py:174
 msgid "Enable reset password for user"
 msgstr "允许用户重置密码"
 
-#: settings/serializers/security.py:170
+#: settings/serializers/security.py:177
 msgid "Reset password captcha"
 msgstr "重置密码图片验证码"
 
-#: settings/serializers/security.py:171 settings/serializers/security.py:202
-#: settings/serializers/security.py:223
+#: settings/serializers/security.py:178 settings/serializers/security.py:209
+#: settings/serializers/security.py:230
 msgid "Enable captcha to prevent robot reset password"
 msgstr "开启图片验证码，防止机器人重置密码"
 
-#: settings/serializers/security.py:175
+#: settings/serializers/security.py:182
 msgid "Reset password encrypted"
 msgstr "重置密码信息加密"
 
-#: settings/serializers/security.py:180
+#: settings/serializers/security.py:187
 msgid "Reset password temp token"
 msgstr "重置密码临时令牌"
 
-#: settings/serializers/security.py:185
+#: settings/serializers/security.py:192
 msgid "Reset password by email"
 msgstr "通过邮件重置密码"
 
-#: settings/serializers/security.py:190
+#: settings/serializers/security.py:197
 msgid "Reset password by sms"
 msgstr "通过短信重置密码"
 
-#: settings/serializers/security.py:197
+#: settings/serializers/security.py:204
 msgid "Bind email enable"
 msgstr "绑定邮件"
 
-#: settings/serializers/security.py:198
+#: settings/serializers/security.py:205
 msgid "Enable bind email for user"
 msgstr "允许用户进行绑定邮件"
 
-#: settings/serializers/security.py:201
+#: settings/serializers/security.py:208
 msgid "Bind email captcha"
 msgstr "绑定邮件图片验证码"
 
-#: settings/serializers/security.py:206
+#: settings/serializers/security.py:213
 msgid "Bind email encrypted"
 msgstr "绑定邮件信息加密"
 
-#: settings/serializers/security.py:211
+#: settings/serializers/security.py:218
 msgid "Bind email temp token"
 msgstr "绑定邮件临时令牌"
 
-#: settings/serializers/security.py:218
+#: settings/serializers/security.py:225
 msgid "Bind phone enable"
 msgstr "绑定手机"
 
-#: settings/serializers/security.py:219
+#: settings/serializers/security.py:226
 msgid "Enable bind phone for user"
 msgstr "允许用户绑定手机"
 
-#: settings/serializers/security.py:222
+#: settings/serializers/security.py:229
 msgid "Bind phone captcha"
 msgstr "绑定手机图片验证码"
 
-#: settings/serializers/security.py:227
+#: settings/serializers/security.py:234
 msgid "Bind phone encrypted"
 msgstr "绑定手机信息加密"
 
-#: settings/serializers/security.py:232
+#: settings/serializers/security.py:239
 msgid "Bind phone temp token"
 msgstr "绑定手机临时令牌"
 
-#: settings/serializers/security.py:239
+#: settings/serializers/security.py:246
 msgid "Block IP"
 msgstr "拦截的IP"
 
@@ -795,13 +1065,6 @@ msgstr "允许用户继承该配置"
 msgid "System config"
 msgstr "系统配置"
 
-#: system/models/config.py:39 system/models/notice.py:70
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:32 system/serializers/log.py:53
-#: system/serializers/notice.py:144
-msgid "User"
-msgstr "用户"
-
 #: system/models/config.py:43
 msgid "User config"
 msgstr "用户配置"
@@ -948,11 +1211,12 @@ msgstr "登录状态"
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:27
+#: system/models/log.py:27 system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr "登录城市"
 
 #: system/models/log.py:28 system/models/log.py:58
+#: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr "浏览器"
 
@@ -1004,7 +1268,7 @@ msgstr "状态码"
 msgid "Operation log"
 msgstr "操作日志"
 
-#: system/models/menu.py:15 system/serializers/menu.py:71
+#: system/models/menu.py:15 system/serializers/menu.py:70
 msgid "Menu title"
 msgstr "菜单名称"
 
@@ -1085,7 +1349,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr "显示已打开标签页最大数量"
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:31 system/serializers/route.py:54
+#: system/serializers/menu.py:30 system/serializers/route.py:54
 msgid "Menu meta"
 msgstr "菜单元数据"
 
@@ -1124,12 +1388,12 @@ msgstr ""
 msgid "PATCH"
 msgstr ""
 
-#: system/models/menu.py:60 system/serializers/menu.py:41
+#: system/models/menu.py:60 system/serializers/menu.py:40
 #: system/serializers/route.py:52
 msgid "Parent menu"
 msgstr "上级菜单"
 
-#: system/models/menu.py:63 system/serializers/menu.py:46
+#: system/models/menu.py:63 system/serializers/menu.py:45
 msgid "Menu type"
 msgstr "菜单类型"
 
@@ -1145,103 +1409,13 @@ msgstr "路由地址 或 后端权限路由"
 msgid "Component path"
 msgstr "组件地址"
 
-#: system/models/menu.py:70 system/serializers/menu.py:44
+#: system/models/menu.py:70 system/serializers/menu.py:43
 msgid "Model"
 msgstr "模型"
 
 #: system/models/menu.py:74
 msgid "Method"
 msgstr "请求方式"
-
-#: system/models/notice.py:16
-msgid "System notification"
-msgstr "系统通知"
-
-#: system/models/notice.py:17
-msgid "System announcement"
-msgstr "系统公告"
-
-#: system/models/notice.py:18
-msgid "User notification"
-msgstr "用户通知"
-
-#: system/models/notice.py:19
-msgid "Department notification"
-msgstr "部门通知"
-
-#: system/models/notice.py:20
-msgid "Role notification"
-msgstr "角色通知"
-
-#: system/models/notice.py:23
-msgid "Ordinary notices"
-msgstr "普遍通知"
-
-#: system/models/notice.py:24
-msgid "General notices"
-msgstr "一般通知"
-
-#: system/models/notice.py:25
-msgid "Success notices"
-msgstr "成功通知"
-
-#: system/models/notice.py:26
-msgid "Important notices"
-msgstr "重要通知"
-
-#: system/models/notice.py:29 system/serializers/notice.py:34
-msgid "The notified user"
-msgstr "被通知用户"
-
-#: system/models/notice.py:31 system/serializers/notice.py:38
-msgid "The notified department"
-msgstr "被通知部门"
-
-#: system/models/notice.py:33 system/serializers/notice.py:39
-msgid "The notified role"
-msgstr "被通知角色"
-
-#: system/models/notice.py:34 system/serializers/notice.py:49
-msgid "Notice level"
-msgstr "通知级别"
-
-#: system/models/notice.py:36 system/serializers/notice.py:47
-#: system/serializers/notice.py:143 system/serializers/notice.py:160
-msgid "Notice type"
-msgstr "通知类型"
-
-#: system/models/notice.py:38
-msgid "Notice title"
-msgstr "通知标题"
-
-#: system/models/notice.py:39 system/models/notice.py:55
-#: system/serializers/notice.py:147
-msgid "Notice message"
-msgstr "通知内容"
-
-#: system/models/notice.py:40
-msgid "Additional json data"
-msgstr "额外的Json数据"
-
-#: system/models/notice.py:41 system/serializers/notice.py:42
-msgid "Uploaded attachments"
-msgstr "上传的附件"
-
-#: system/models/notice.py:42
-msgid "Publish"
-msgstr "发布"
-
-#: system/models/notice.py:71
-msgid "Notice"
-msgstr "通知"
-
-#: system/models/notice.py:72 system/serializers/notice.py:161
-msgid "Unread"
-msgstr "未读"
-
-#: system/models/notice.py:76
-msgid "User has read the message"
-msgstr "用户已读通知"
 
 #: system/models/permission.py:18
 msgid "Rules"
@@ -1340,6 +1514,14 @@ msgstr "性别"
 msgid "Userinfo"
 msgstr "用户信息"
 
+#: system/notifications.py:17
+msgid "Different city login reminder"
+msgstr "异地登录提醒"
+
+#: system/notifications.py:50
+msgid "Reset password success"
+msgstr "重置密码成功"
+
 #: system/serializers/base.py:25 system/serializers/permission.py:38
 msgid "Mode type"
 msgstr "权限模式"
@@ -1356,37 +1538,9 @@ msgstr "多个用户"
 msgid "User cannot be null"
 msgstr "用户不能为空"
 
-#: system/serializers/department.py:32 system/serializers/notice.py:43
-msgid "User count"
-msgstr "用户数量"
-
 #: system/serializers/department.py:50
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
-
-#: system/serializers/notice.py:44
-msgid "Read user count"
-msgstr "已读用户数量"
-
-#: system/serializers/notice.py:72
-msgid "Parameter error. System announcement cannot be created"
-msgstr "参数有误，不支持创建系统公告"
-
-#: system/serializers/notice.py:82
-msgid "The notice role cannot be null"
-msgstr "被通知角色不能为空"
-
-#: system/serializers/notice.py:88
-msgid "The notice department cannot be null"
-msgstr "被通知部门不能为空"
-
-#: system/serializers/notice.py:94
-msgid "The notice user cannot be null"
-msgstr "被通知用户不能为空"
-
-#: system/serializers/notice.py:133
-msgid "Parameter error"
-msgstr "参与有误"
 
 #: system/serializers/permission.py:43
 msgid "The rule cannot be null"
@@ -1400,7 +1554,7 @@ msgstr "字段"
 msgid "Access URL"
 msgstr "访问地址"
 
-#: system/serializers/upload.py:37
+#: system/serializers/upload.py:38
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
@@ -1431,6 +1585,7 @@ msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 
 #: system/templates/msg_verify_code.html:9
+#: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
 msgstr "你好"
 
@@ -1448,31 +1603,69 @@ msgid "seconds"
 msgstr "秒"
 
 #: system/templates/msg_verify_code.html:19
+#: system/templates/notify/msg_rest_password_success.html:15
 msgid "If you have any questions, you can contact the administrator"
 msgstr "如果有疑问或需求，请联系系统管理员"
 
-#: system/utils/auth.py:37
+#: system/templates/notify/msg_different_city.html:6
+msgid "Your account has remote login behavior, please pay attention"
+msgstr "请注意，你的账号存在异地登录行为"
+
+#: system/templates/notify/msg_different_city.html:9
+#: system/templates/notify/msg_rest_password_success.html:8
+msgid "Username"
+msgstr "用户名"
+
+#: system/templates/notify/msg_different_city.html:10
+msgid "Login Date"
+msgstr "登录日期"
+
+#: system/templates/notify/msg_different_city.html:16
+msgid ""
+"If you suspect that the login behavior is abnormal, please modify the "
+"account password in time."
+msgstr "若怀疑此次登录行为异常，请及时修改账号密码"
+
+#: system/templates/notify/msg_rest_password_success.html:2
+msgid "Dear"
+msgstr "尊敬的"
+
+#: system/templates/notify/msg_rest_password_success.html:5
+msgid "Your password has just been successfully updated"
+msgstr "你的密码刚刚成功更新"
+
+#: system/templates/notify/msg_rest_password_success.html:9
+msgid "IP"
+msgstr "IP"
+
+#: system/templates/notify/msg_rest_password_success.html:14
+msgid ""
+"If the password update was not initiated by you, your account may have "
+"security issues"
+msgstr "如果这次密码更新不是由你发起的，那么你的账号可能存在安全问题"
+
+#: system/utils/auth.py:39
 msgid "Captcha validation failed. Please try again"
 msgstr "图片验证码校验失败，请稍后重试"
 
-#: system/utils/auth.py:43
+#: system/utils/auth.py:45
 msgid "Temporary Token validation failed. Please try again"
 msgstr "临时Token校验失败，请稍后重试"
 
-#: system/utils/auth.py:69
+#: system/utils/auth.py:71
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
-#: system/utils/auth.py:73 system/utils/auth.py:129
+#: system/utils/auth.py:75 system/utils/auth.py:131
 #: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 
-#: system/utils/auth.py:124
+#: system/utils/auth.py:126
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -1481,11 +1674,11 @@ msgstr ""
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
 
-#: system/utils/signal_handler.py:43
+#: system/utils/signal_handler.py:41
 msgid "All tables"
 msgstr "全部表"
 
-#: system/utils/signal_handler.py:45
+#: system/utils/signal_handler.py:43
 msgid "All fields"
 msgstr "全部字段"
 
@@ -1503,7 +1696,7 @@ msgstr ""
 "您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
 "被临时 锁定 {block_time} 分钟)"
 
-#: system/views/auth/login.py:96 system/views/auth/login.py:178
+#: system/views/auth/login.py:97 system/views/auth/login.py:179
 msgid "Login forbidden"
 msgstr "禁止登录"
 

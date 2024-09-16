@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
-# filename : notice
+# filename : message
 # author : ly_13
-# date : 8/10/2024
+# date : 9/15/2024
+
 import logging
 import os.path
 
@@ -17,14 +18,15 @@ from rest_framework.exceptions import ValidationError
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
-from system.models import NoticeMessage, UploadFile, NoticeUserRead, DeptInfo, UserRole, UserInfo
+from notifications.models import MessageUserRead, MessageContent
+from system.models import UploadFile, DeptInfo, UserRole, UserInfo
 
 logger = logging.getLogger(__name__)
 
 
 class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
-        model = NoticeMessage
+        model = MessageContent
         fields = ['pk', 'title', 'level', "publish", 'notice_type', "notice_user", 'notice_dept', 'notice_role',
                   'message', "created_time", "user_count", "read_user_count", 'extra_json', "files"]
 
@@ -43,51 +45,51 @@ class NoticeMessageSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
-    notice_type = LabeledChoiceField(choices=NoticeMessage.NoticeChoices.choices,
-                                     default=NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
-    level = LabeledChoiceField(choices=NoticeMessage.LevelChoices.choices,
-                               default=NoticeMessage.LevelChoices.DEFAULT, label=_("Notice level"))
+    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
+                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
+    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
+                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
-        if obj.notice_type in NoticeMessage.user_choices:
-            return NoticeUserRead.objects.filter(notice=obj, unread=False,
-                                                 owner_id__in=obj.notice_user.all()).count()
+        if obj.notice_type in MessageContent.user_choices:
+            return MessageUserRead.objects.filter(notice=obj, unread=False,
+                                                  owner_id__in=obj.notice_user.all()).count()
 
-        elif obj.notice_type in NoticeMessage.notice_choices:
+        elif obj.notice_type in MessageContent.notice_choices:
             return obj.notice_user.count()
 
         return 0
 
     @extend_schema_field(serializers.IntegerField)
     def get_user_count(self, obj):
-        if obj.notice_type == NoticeMessage.NoticeChoices.DEPT:
+        if obj.notice_type == MessageContent.NoticeChoices.DEPT:
             return UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
-        if obj.notice_type == NoticeMessage.NoticeChoices.ROLE:
+        if obj.notice_type == MessageContent.NoticeChoices.ROLE:
             return UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
         return obj.notice_user.count()
 
     def validate_notice_type(self, val):
-        if NoticeMessage.NoticeChoices.NOTICE == val and self.request.method == 'POST':
+        if MessageContent.NoticeChoices.NOTICE == val and self.request.method == 'POST':
             raise ValidationError(_("Parameter error. System announcement cannot be created"))
         return val
 
     def validate(self, attrs):
         notice_type = attrs.get('notice_type')
 
-        if notice_type == NoticeMessage.NoticeChoices.ROLE:
+        if notice_type == MessageContent.NoticeChoices.ROLE:
             attrs.pop('notice_dept', None)
             attrs.pop('notice_user', None)
             if not attrs.get('notice_role'):
                 raise ValidationError(_("The notice role cannot be null"))
 
-        if notice_type == NoticeMessage.NoticeChoices.DEPT:
+        if notice_type == MessageContent.NoticeChoices.DEPT:
             attrs.pop('notice_user', None)
             attrs.pop('notice_role', None)
             if not attrs.get('notice_dept'):
                 raise ValidationError(_("The notice department cannot be null"))
 
-        if notice_type == NoticeMessage.NoticeChoices.USER:
+        if notice_type == MessageContent.NoticeChoices.USER:
             attrs.pop('notice_role', None)
             attrs.pop('notice_dept', None)
             if not attrs.get('notice_user'):
@@ -109,6 +111,9 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop('notice_type', None)  # 不能修改消息类型
+        if instance.notice_type == MessageContent.NoticeChoices.SYSTEM:  # 系统通知不允许修改
+            raise ValidationError(_("The system notice cannot be update"))
+
         o_files = list(instance.file.all().values_list('pk', flat=True))  # 加上list，否则删除文件不会清理底层资源
         n_files = []
         if validated_data.get('file', None) is not None:
@@ -128,16 +133,16 @@ class NoticeMessageSerializer(BaseModelSerializer):
 class AnnouncementSerializer(NoticeMessageSerializer):
 
     def validate_notice_type(self, val):
-        if NoticeMessage.NoticeChoices.NOTICE == val:
+        if MessageContent.NoticeChoices.NOTICE == val:
             return val
         raise ValidationError(_("Parameter error"))
 
 
 class NoticeUserReadMessageSerializer(BaseModelSerializer):
     class Meta:
-        model = NoticeUserRead
+        model = MessageUserRead
         fields = ['pk', 'notice_info', 'notice_type', 'owner_info', "unread", "updated_time"]
-        read_only_fields = [x.name for x in NoticeUserRead._meta.fields]
+        read_only_fields = [x.name for x in MessageUserRead._meta.fields]
         # depth = 1
 
     notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice type"))
@@ -151,20 +156,22 @@ class UserNoticeSerializer(BaseModelSerializer):
     ignore_field_permission = True
 
     class Meta:
-        model = NoticeMessage
+        model = MessageContent
         fields = ['pk', 'level', 'title', 'message', "created_time", 'unread', 'notice_type']
         table_fields = ['pk', 'title', 'unread', 'notice_type', "created_time"]
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
-    notice_type = LabeledChoiceField(choices=NoticeMessage.NoticeChoices.choices,
-                                     default=NoticeMessage.NoticeChoices.USER, label=_("Notice type"))
+    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
+                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
+    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
+                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
     @extend_schema_field(serializers.BooleanField)
     def get_unread(self, obj):
-        queryset = NoticeUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
-        if obj.notice_type in NoticeMessage.user_choices:
+        queryset = MessageUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
+        if obj.notice_type in MessageContent.user_choices:
             return bool(queryset.filter(unread=True).count())
-        elif obj.notice_type in NoticeMessage.notice_choices:
+        elif obj.notice_type in MessageContent.notice_choices:
             return not bool(queryset.count())
         return True

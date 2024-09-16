@@ -14,7 +14,6 @@ from system.views.admin.file import UploadFileView
 from system.views.admin.loginlog import LoginLogView
 from system.views.admin.menu import MenuView
 from system.views.admin.modelfield import ModelLabelFieldView
-from system.views.admin.notice import NoticeUserReadMessageView, NoticeMessageView
 from system.views.admin.operationlog import OperationLogView
 from system.views.admin.permission import DataPermissionView
 from system.views.admin.role import RoleView
@@ -35,7 +34,6 @@ from system.views.search.role import SearchRoleView
 from system.views.search.user import SearchUserView
 from system.views.upload import UploadView
 from system.views.user.login_log import UserLoginLogView
-from system.views.user.notice import UserNoticeMessage
 from system.views.user.userinfo import UserInfoView
 
 router = SimpleRouter(False)
@@ -74,7 +72,6 @@ router.register('search/menu', SearchMenuView, basename='SearchMenu')
 
 # 个人用户信息
 no_detail_router.register('userinfo', UserInfoView, basename='userinfo')
-router.register('user/notice', UserNoticeMessage, basename='user_notice')
 router.register('user/log', UserLoginLogView, basename='user_login_log')
 router.register('configs', ConfigsView, basename='configs')
 
@@ -93,10 +90,6 @@ router.register('config/user', UserPersonalConfigView, basename='userconfig')
 # 日志相关
 router.register('logs/operation', OperationLogView, basename='operation_log')
 router.register('logs/login', LoginLogView, basename='login_log')
-
-# 消息通知路由
-router.register('message/notice', NoticeMessageView, basename='message_notice')
-router.register('message/read', NoticeUserReadMessageView, basename='message_read')
 
 # 文件管理
 router.register('file', UploadFileView, basename='file')

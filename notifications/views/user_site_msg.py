@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
-# filename : notice
+# filename : user_site_msg
 # author : ly_13
-# date : 3/4/2024
+# date : 9/15/2024
+
 from hashlib import md5
 
 from django.db.models import Q
@@ -21,15 +22,15 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import NoticeMessage, NoticeUserRead
-from system.serializers.notice import UserNoticeSerializer
+from notifications.models import MessageContent, MessageUserRead
+from notifications.serializers.message import UserNoticeSerializer
 
 
 def get_users_notice_q(user_obj):
     q = Q()
-    q |= Q(notice_type=NoticeMessage.NoticeChoices.NOTICE)
-    q |= Q(notice_type=NoticeMessage.NoticeChoices.DEPT, notice_dept=user_obj.dept)
-    q |= Q(notice_type=NoticeMessage.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
+    q |= Q(notice_type=MessageContent.NoticeChoices.NOTICE)
+    q |= Q(notice_type=MessageContent.NoticeChoices.DEPT, notice_dept=user_obj.dept)
+    q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
     return q
 
 
@@ -38,14 +39,14 @@ def get_user_unread_q1(user_obj):
 
 
 def get_user_unread_q2(user_obj):
-    return Q(notice_type__in=NoticeMessage.user_choices, notice_user=user_obj, noticeuserread__unread=True)
+    return Q(notice_type__in=MessageContent.user_choices, notice_user=user_obj, messageuserread__unread=True)
 
 
 def get_user_unread_q(user_obj):
     return get_user_unread_q1(user_obj) | get_user_unread_q2(user_obj)
 
 
-class UserNoticeMessageFilter(BaseFilterSet):
+class UserSiteMessageViewSetFilter(BaseFilterSet):
     message = filters.CharFilter(field_name='message', lookup_expr='icontains')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
     unread = filters.BooleanFilter(field_name='unread', method='unread_filter')
@@ -54,26 +55,26 @@ class UserNoticeMessageFilter(BaseFilterSet):
         if value:
             return queryset.filter(get_user_unread_q(self.request.user))
         else:
-            return queryset.filter(notice_user=self.request.user, noticeuserread__unread=False)
+            return queryset.filter(notice_user=self.request.user, messageuserread__unread=False)
 
     class Meta:
-        model = NoticeMessage
+        model = MessageContent
         fields = ['title', 'message', 'pk', 'notice_type', 'unread', 'level']
 
 
-class UserNoticeMessage(OnlyListModelSet):
+class UserSiteMessageViewSet(OnlyListModelSet):
     """用户个人通知公告管理"""
-    queryset = NoticeMessage.objects.filter(publish=True).all().distinct()
+    queryset = MessageContent.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['created_time']
-    filterset_class = UserNoticeMessageFilter
+    filterset_class = UserSiteMessageViewSetFilter
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         unread_count = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).count()
         q = get_users_notice_q(request.user)
-        q |= Q(notice_type__in=NoticeMessage.user_choices, notice_user=request.user)
+        q |= Q(notice_type__in=MessageContent.user_choices, notice_user=request.user)
         self.queryset = self.filter_queryset(self.get_queryset()).filter(q)
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, unread_count=unread_count)
@@ -121,9 +122,9 @@ class UserNoticeMessage(OnlyListModelSet):
 
     def read_message(self, pks, request):
         if pks:
-            NoticeUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
+            MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
             for pk in pks:
-                NoticeUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
+                MessageUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
         return ApiResponse()
 
     @extend_schema(
