@@ -230,7 +230,7 @@ class Migration(migrations.Migration):
                                   null=True, verbose_name='Right icon')),
                 ('is_show_menu', models.BooleanField(default=True, verbose_name='Show menu')),
                 ('is_show_parent', models.BooleanField(default=False, verbose_name='Show parent menu')),
-                ('is_keepalive', models.BooleanField(default=False,
+                ('is_keepalive', models.BooleanField(default=True,
                                                      help_text='When enabled, the entire state of the page is saved, and when refreshed, the state is cleared',
                                                      verbose_name='Keepalive')),
                 ('frame_url',

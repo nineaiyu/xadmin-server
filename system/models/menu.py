@@ -18,7 +18,7 @@ class MenuMeta(DbAuditModel, DbUuidModel):
                                   help_text=_("Additional icon to the right of menu name"))
     is_show_menu = models.BooleanField(verbose_name=_("Show menu"), default=True)
     is_show_parent = models.BooleanField(verbose_name=_("Show parent menu"), default=False)
-    is_keepalive = models.BooleanField(verbose_name=_("Keepalive"), default=False,
+    is_keepalive = models.BooleanField(verbose_name=_("Keepalive"), default=True,
                                        help_text=_(
                                            "When enabled, the entire state of the page is saved, and when refreshed, the state is cleared"))
     frame_url = models.CharField(verbose_name=_("Iframe URL"), max_length=255, null=True, blank=True,
