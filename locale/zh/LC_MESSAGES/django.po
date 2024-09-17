@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-16 17:23+0800\n"
+"POT-Creation-Date: 2024-09-17 19:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -192,17 +192,17 @@ msgstr "监控告警"
 msgid "Server health check warning"
 msgstr "服务健康状况检查警告"
 
-#: common/notifications.py:48
+#: common/notifications.py:49
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:53
+#: common/notifications.py:54
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr "内存使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:58
+#: common/notifications.py:59
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
@@ -423,8 +423,11 @@ msgstr "发布"
 msgid "Message content"
 msgstr "消息中心"
 
-#: notifications/models/message.py:70 notifications/models/notification.py:15
-#: notifications/serializers/message.py:149 system/models/config.py:39
+#: notifications/models/message.py:70 notifications/models/notification.py:16
+#: notifications/models/notification.py:29
+#: notifications/serializers/message.py:149
+#: notifications/serializers/notifications.py:19
+#: notifications/serializers/notifications.py:37 system/models/config.py:39
 #: system/serializers/config.py:45 system/serializers/config.py:57
 #: system/serializers/log.py:32 system/serializers/log.py:53
 msgid "User"
@@ -442,6 +445,11 @@ msgstr "未读"
 msgid "User read message"
 msgstr "用户已读消息"
 
+#: notifications/models/notification.py:15
+#: notifications/models/notification.py:28
+msgid "message type"
+msgstr "消息类型"
+
 #: notifications/models/notification.py:17
 #: notifications/models/notification.py:30
 msgid "receive backend"
@@ -451,23 +459,19 @@ msgstr "消息后端"
 msgid "User message subscription"
 msgstr "用户消息订阅"
 
-#: notifications/models/notification.py:23
+#: notifications/models/notification.py:24
 msgid "{} subscription"
 msgstr "{} 订阅"
 
-#: notifications/models/notification.py:27
-msgid "message type"
-msgstr "消息类型"
-
-#: notifications/models/notification.py:35
+#: notifications/models/notification.py:33
 msgid "System message subscription"
 msgstr "系统消息订阅"
 
-#: notifications/notifications.py:43
+#: notifications/notifications.py:41
 msgid "Publish the station message"
 msgstr "发布站内消息"
 
-#: notifications/notifications.py:187
+#: notifications/notifications.py:185
 msgid "Time"
 msgstr "时间"
 
@@ -1514,11 +1518,19 @@ msgstr "性别"
 msgid "Userinfo"
 msgstr "用户信息"
 
-#: system/notifications.py:17
+#: system/notifications.py:11 system/notifications.py:47
+msgid "Account Security"
+msgstr "账号安全"
+
+#: system/notifications.py:12 system/notifications.py:21
 msgid "Different city login reminder"
 msgstr "异地登录提醒"
 
-#: system/notifications.py:50
+#: system/notifications.py:48
+msgid "Reset password reminder"
+msgstr "重置密码提醒"
+
+#: system/notifications.py:58
 msgid "Reset password success"
 msgstr "重置密码成功"
 
@@ -1554,7 +1566,7 @@ msgstr "字段"
 msgid "Access URL"
 msgstr "访问地址"
 
-#: system/serializers/upload.py:38
+#: system/serializers/upload.py:37
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 

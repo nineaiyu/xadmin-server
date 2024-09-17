@@ -9,9 +9,8 @@ from django.utils.functional import LazyObject
 from common.base.magic import cache_response
 from common.utils import get_logger
 from common.utils.connection import RedisPubSub
-from notifications.backends import BACKEND
 from notifications.message import SiteMessageUtil
-from notifications.models import UserMsgSubscription, SystemMsgSubscription, MessageContent, MessageUserRead
+from notifications.models import SystemMsgSubscription, MessageContent, MessageUserRead
 from notifications.notifications import SystemMessage
 from system.models import UserInfo
 
@@ -81,15 +80,15 @@ def create_system_messages(app_config: AppConfig, **kwargs):
         pass
 
 
-@receiver(post_save, sender=UserInfo)
-def on_user_post_save(sender, instance, created, **kwargs):
-    if not created:
-        return
-    receive_backends = []
-    for backend in BACKEND:
-        if backend.get_account(instance):
-            receive_backends.append(backend)
-    UserMsgSubscription.objects.create(user=instance, receive_backends=receive_backends)
+# @receiver(post_save, sender=UserInfo)
+# def on_user_post_save(sender, instance, created, **kwargs):
+#     if not created:
+#         return
+#     receive_backends = []
+#     for backend in BACKEND:
+#         if backend.get_account(instance):
+#             receive_backends.append(backend)
+#     UserMsgSubscription.objects.create(user=instance, receive_backends=receive_backends)
 
 
 def invalid_notify_cache(pk):

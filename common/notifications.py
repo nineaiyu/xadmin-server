@@ -22,10 +22,11 @@ class ServerPerformanceMessage(SystemMessage):
         context = {
             'terms_with_errors': self.terms_with_errors
         }
-        message = render_to_string('monitor/_msg_terminal_performance.html', context)
+        message = render_to_string('monitor/msg_terminal_performance.html', context)
         return {
             'subject': subject,
-            'message': message
+            'message': message,
+            'level': 'danger'
         }
 
     @classmethod

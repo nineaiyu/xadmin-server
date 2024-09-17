@@ -127,6 +127,6 @@ def create_or_update_registered_periodic_tasks():
         and disk usage exceed the thresholds, and send an alert message to the administrator"""
     )
 )
-@register_as_period_task(interval=3600)
+@register_as_period_task(interval=60)
 def check_server_performance_period():
     ServerPerformanceCheckUtil().check_and_publish()

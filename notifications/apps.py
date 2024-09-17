@@ -8,6 +8,7 @@ class NotificationsConfig(AppConfig):
     verbose_name = _('App Notifications')
 
     def ready(self):
+        from notifications.backends import BACKEND  # noqa
         from . import signal_handlers  # noqa
         from . import notifications  # noqa
         super().ready()

@@ -1,9 +1,7 @@
 import textwrap
 import traceback
-from itertools import chain
 
 from celery import shared_task
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
@@ -236,12 +234,7 @@ class SystemMessage(Message):
         receive_backends = subscription.receive_backends
         receive_backends = BACKEND.filter_enable_backends(receive_backends)
 
-        users = [
-            *subscription.users.all(),
-            *chain(*[g.users.all() for g in subscription.groups.all()])
-        ]
-
-        receive_user_ids = [u.id for u in users]
+        receive_user_ids = subscription.users.values_list('pk', flat=True).all()
         backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
         if is_async:
             publish_task.delay(receive_user_ids, backends_msg_mapper)
@@ -265,10 +258,16 @@ class UserMessage(Message):
 
     def publish(self, is_async=False):
         """
-        发送消息到每个用户配置的接收方式上
+        发送消息到用户配置的接收方式上
         """
-        sub = UserMsgSubscription.objects.get(user=self.user)
-        backends_msg_mapper = self.get_backend_msg_mapper(sub.receive_backends)
+        subscription = UserMsgSubscription.objects.filter(user=self.user, message_type=self.get_message_type()).first()
+        if subscription:
+            receive_backends = subscription.receive_backends
+            receive_backends = BACKEND.filter_enable_backends(receive_backends)
+        else:
+            receive_backends = []
+
+        backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
         receive_user_ids = [self.user.id]
         if is_async:
             publish_task.delay(receive_user_ids, backends_msg_mapper)

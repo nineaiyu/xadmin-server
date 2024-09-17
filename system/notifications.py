@@ -7,6 +7,10 @@ from notifications.notifications import UserMessage
 
 
 class DifferentCityLoginMessage(UserMessage):
+    category = 'AccountSecurity'
+    category_label = _('Account Security')
+    message_type_label = _('Different city login reminder')
+
     def __init__(self, user, ip, city):
         self.ip = ip
         self.city = city
@@ -39,6 +43,10 @@ class DifferentCityLoginMessage(UserMessage):
 
 
 class ResetPasswordSuccessMsg(UserMessage):
+    category = 'AccountSecurity'
+    category_label = _('Account Security')
+    message_type_label = _('Reset password reminder')
+
     def __init__(self, user, request):
         super().__init__(user)
         self.ip_address = get_request_ip(request)

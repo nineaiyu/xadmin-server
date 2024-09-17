@@ -4,28 +4,25 @@
 # filename : notifications
 # author : ly_13
 # date : 9/13/2024
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 
 
 class SystemMsgSubscriptionSerializer(BaseModelSerializer):
     receive_backends = serializers.ListField(child=serializers.CharField())
+    message_type_label = serializers.CharField(read_only=True)
+    receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, source='users',
+                                           label=_("User"), many=True, format='{username}({nickname})')
 
     class Meta:
         model = SystemMsgSubscription
-        fields = ['message_type', 'message_type_label', 'users', 'groups', 'receive_backends', 'receivers']
+        fields = ['message_type', 'message_type_label', 'users', 'receive_backends', 'receivers']
         read_only_fields = ['pk', 'message_type', 'message_type_label', 'receivers']
-        extra_kwargs = {
-            'users': {'allow_empty': True},
-            'groups': {'allow_empty': True},
-            'receive_backends': {'required': True}
-        }
-
-    def update(self, instance, validated_data):
-        instance.set_message_type_label()
-        return super().update(instance, validated_data)
+        extra_kwargs = {'users': {'allow_empty': True}, 'receive_backends': {'required': True}}
 
 
 class SystemMsgSubscriptionByCategorySerializer(serializers.Serializer):
@@ -35,8 +32,19 @@ class SystemMsgSubscriptionByCategorySerializer(serializers.Serializer):
 
 
 class UserMsgSubscriptionSerializer(BaseModelSerializer):
-    receive_backends = serializers.ListField(child=serializers.CharField(), read_only=False)
+    receive_backends = serializers.ListField(child=serializers.CharField())
+    message_type_label = serializers.CharField(read_only=True)
+    receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, label=_("User"),
+                                           source='user', format='{username}({nickname})')
 
     class Meta:
         model = UserMsgSubscription
-        fields = ['user', 'receive_backends']
+        fields = ['message_type', 'message_type_label', 'user', 'receive_backends', 'receivers']
+        read_only_fields = ['pk', 'message_type', 'message_type_label', 'receivers']
+        extra_kwargs = {'user': {'read_only': True}, 'receive_backends': {'required': True}}
+
+
+class UserMsgSubscriptionByCategorySerializer(serializers.Serializer):
+    category = serializers.CharField()
+    category_label = serializers.CharField()
+    children = UserMsgSubscriptionSerializer(many=True)
