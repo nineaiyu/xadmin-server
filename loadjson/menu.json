@@ -2496,7 +2496,7 @@
       "menu_type": 2,
       "name": "list:SettingSmsBackends",
       "rank": 144,
-      "path": "api/settings/sms/backend$",
+      "path": "api/settings/sms/backends$",
       "component": "",
       "is_active": true,
       "meta": "31cb60ea-4d22-401e-8d39-c42ba366aa2f",

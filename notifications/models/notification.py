@@ -56,15 +56,15 @@ class SystemMsgSubscription(DbAuditModel):
                 users.append(user)
 
         receive_backends = self.receive_backends
-        receviers = []
+        receivers = []
 
         for user in users:
-            recevier = {'name': str(user), 'id': user.id}
+            receiver = {'nickname': user.nickname, 'pk': user.id, 'label': user.username}
             for backend in receive_backends:
-                recevier[backend] = bool(BACKEND(backend).get_account(user))
-            receviers.append(recevier)
+                receiver[backend] = bool(BACKEND(backend).get_account(user))
+            receivers.append(receiver)
 
-        return receviers
+        return receivers
 
     def __str__(self):
         return f'{self.message_type_label}' or f'{self.message_type}'

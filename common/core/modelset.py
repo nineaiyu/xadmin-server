@@ -461,7 +461,7 @@ class BaseAction(BaseModelAction, SearchFieldsAction, SearchColumnsAction, Batch
         return ApiResponse(data=data)
 
 
-class OwnerModelSet(BaseModelAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
+class DetailUpdateModelSet(BaseModelAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
     def update(self, request, *args, **kwargs):
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)

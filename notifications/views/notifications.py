@@ -5,7 +5,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin, UpdateModelMixin
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
-from common.core.modelset import BaseModelAction
+from common.core.modelset import BaseModelAction, DetailUpdateModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from notifications.backends import BACKEND
@@ -31,7 +31,7 @@ class BackendListView(GenericAPIView):
             data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
 
 
-class SystemMsgSubscriptionViewSet(BaseModelAction, ListModelMixin, UpdateModelMixin, GenericViewSet):
+class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
     lookup_field = 'message_type'
     queryset = SystemMsgSubscription.objects.all()
     serializer_class = SystemMsgSubscriptionSerializer

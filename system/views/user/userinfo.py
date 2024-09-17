@@ -14,7 +14,7 @@ from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
-from common.core.modelset import OwnerModelSet, UploadFileAction, ChoicesAction
+from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
@@ -27,7 +27,7 @@ from system.utils.auth import verify_sms_email_code
 logger = logging.getLogger(__name__)
 
 
-class UserInfoView(OwnerModelSet, ChoicesAction, UploadFileAction):
+class UserInfoView(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     """用户个人信息管理"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'

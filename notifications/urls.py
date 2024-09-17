@@ -18,7 +18,7 @@ router.register('system-msg-subscription', SystemMsgSubscriptionViewSet, basenam
 router.register('user-msg-subscription', UserMsgSubscriptionViewSet, basename='user-msg-subscription')
 
 urls = [
-    re_path('^backend$', BackendListView.as_view(), name='notifications-backend'),
+    re_path('^backends$', BackendListView.as_view(), name='notifications-backends'),
 ]
 
 urlpatterns = router.urls + urls

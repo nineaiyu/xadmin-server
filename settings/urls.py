@@ -42,7 +42,7 @@ router.register('ip/block', BlockIpView, basename='ip-block')
 no_detail_router.register('sms/config', SmsConfigView, basename='sms-config')
 
 urls = [
-    re_path('^sms/backend$', SMSBackendView.as_view(), name='sms-backend'),
+    re_path('^sms/backends$', SMSBackendView.as_view(), name='sms-backends'),
 ]
 
 urlpatterns = no_detail_router.urls + router.urls + urls
