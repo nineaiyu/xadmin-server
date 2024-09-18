@@ -71,6 +71,7 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
 
 
 class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
+    lookup_field = 'message_type'
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer
     queryset = UserMsgSubscription.objects.all()

@@ -80,17 +80,6 @@ def create_system_messages(app_config: AppConfig, **kwargs):
         pass
 
 
-# @receiver(post_save, sender=UserInfo)
-# def on_user_post_save(sender, instance, created, **kwargs):
-#     if not created:
-#         return
-#     receive_backends = []
-#     for backend in BACKEND:
-#         if backend.get_account(instance):
-#             receive_backends.append(backend)
-#     UserMsgSubscription.objects.create(user=instance, receive_backends=receive_backends)
-
-
 def invalid_notify_cache(pk):
     cache_response.invalid_cache(f'UserSiteMessageViewSet_unread_{pk}_*')
     cache_response.invalid_cache(f'UserSiteMessageViewSet_list_{pk}_*')

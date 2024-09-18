@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-17 19:15+0800\n"
+"POT-Creation-Date: 2024-09-18 12:56+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -181,29 +181,29 @@ msgstr ""
 msgid "Boot Time"
 msgstr ""
 
-#: common/models.py:20 common/notifications.py:14
+#: common/models.py:20 common/notifications.py:13
 msgid "Monitor"
 msgstr ""
 
-#: common/notifications.py:15
+#: common/notifications.py:14
 msgid "Server performance"
 msgstr ""
 
-#: common/notifications.py:21
+#: common/notifications.py:20
 msgid "Server health check warning"
 msgstr ""
 
-#: common/notifications.py:49
+#: common/notifications.py:48
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: common/notifications.py:54
+#: common/notifications.py:53
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: common/notifications.py:59
+#: common/notifications.py:58
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr ""
@@ -502,6 +502,10 @@ msgstr ""
 
 #: notifications/serializers/message.py:138
 msgid "Parameter error"
+msgstr ""
+
+#: notifications/serializers/notifications.py:36
+msgid "Message Type"
 msgstr ""
 
 #: settings/models.py:16 settings/serializers/sms.py:54

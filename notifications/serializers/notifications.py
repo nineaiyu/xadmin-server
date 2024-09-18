@@ -33,7 +33,7 @@ class SystemMsgSubscriptionByCategorySerializer(serializers.Serializer):
 
 class UserMsgSubscriptionSerializer(BaseModelSerializer):
     receive_backends = serializers.ListField(child=serializers.CharField())
-    message_type_label = serializers.CharField(read_only=True)
+    message_type_label = serializers.CharField(read_only=True, label=_("Message Type"))
     receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, label=_("User"),
                                            source='user', format='{username}({nickname})')
 

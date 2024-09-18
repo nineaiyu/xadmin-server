@@ -100,7 +100,7 @@
     "fields": {
       "mode_type": 0,
       "created_time": "2023-12-24T06:52:26.814Z",
-      "updated_time": "2024-07-19T05:54:17.477Z",
+      "updated_time": "2024-09-18T04:54:52.836Z",
       "description": "仅本人数据",
       "creator": 1,
       "modifier": 1,
@@ -134,6 +134,14 @@
         {
           "table": "system.userloginlog",
           "field": "creator",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.id",
+          "value": ""
+        },
+        {
+          "table": "notifications.usermsgsubscription",
+          "field": "user",
           "match": "exact",
           "exclude": false,
           "type": "value.user.id",
