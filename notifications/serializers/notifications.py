@@ -16,7 +16,7 @@ class SystemMsgSubscriptionSerializer(BaseModelSerializer):
     receive_backends = serializers.ListField(child=serializers.CharField())
     message_type_label = serializers.CharField(read_only=True)
     receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, source='users',
-                                           label=_("User"), many=True, format='{username}({nickname})')
+                                           label=_("User"), many=True, format='{nickname}({username})')
 
     class Meta:
         model = SystemMsgSubscription
@@ -35,7 +35,7 @@ class UserMsgSubscriptionSerializer(BaseModelSerializer):
     receive_backends = serializers.ListField(child=serializers.CharField())
     message_type_label = serializers.CharField(read_only=True, label=_("Message Type"))
     receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, label=_("User"),
-                                           source='user', format='{username}({nickname})')
+                                           source='user', format='{nickname}({username})')
 
     class Meta:
         model = UserMsgSubscription
