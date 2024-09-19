@@ -46,9 +46,12 @@ class BaseFileRenderer(BaseRenderer):
 
     def get_rendered_fields(self):
         fields = self.serializer.fields
+        meta = getattr(self.serializer, 'Meta', None)
         pk_field = fields.get('pk')
         if self.template == 'import':
             fields = [v for k, v in fields.items() if not v.read_only and k not in ['id', 'pk']]
+            fields_unimport = getattr(meta, 'fields_unimport', [])
+            fields = [v for v in fields if v.field_name not in fields_unimport]
         elif self.template == 'update':
             fields = [v for k, v in fields.items() if not v.read_only]
             if pk_field:
@@ -58,10 +61,8 @@ class BaseFileRenderer(BaseRenderer):
             if pk_field:
                 fields.insert(0, pk_field)
 
-        meta = getattr(self.serializer, 'Meta', None)
-        if meta:
-            fields_unexport = getattr(meta, 'fields_unexport', [])
-            fields = [v for v in fields if v.field_name not in fields_unexport]
+        fields_unexport = getattr(meta, 'fields_unexport', [])
+        fields = [v for v in fields if v.field_name not in fields_unexport]
         return fields
 
     @staticmethod
