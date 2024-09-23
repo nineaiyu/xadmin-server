@@ -151,7 +151,7 @@ def check_different_city_login_if_need(user, ipaddr):
         return
 
     city = get_ip_city(ipaddr)
-    last_city = get_ip_city(last_user_login.ip)
+    last_city = get_ip_city(last_user_login.ipaddress)
     if city == last_city:
         return
 
