@@ -13,7 +13,8 @@ from common.core.models import DbAuditModel
 
 class UserMsgSubscription(DbAuditModel):
     message_type = models.CharField(max_length=128, verbose_name=_('message type'))
-    user = models.ForeignKey('system.UserInfo', on_delete=models.CASCADE, verbose_name=_('User'))
+    user = models.ForeignKey('system.UserInfo', related_name='user_msg_subscription', on_delete=models.CASCADE,
+                             verbose_name=_('User'))
     receive_backends = models.JSONField(default=list, verbose_name=_('receive backend'))
 
     class Meta:

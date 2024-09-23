@@ -13,6 +13,17 @@ from django.core.management.base import BaseCommand
 from system.models import *
 
 
+def get_fields(model):
+    print(model, type(model), type(UserRole))
+    if issubclass(model, FieldPermission):
+        exclude_fields = ['updated_time', 'created_time']
+    elif issubclass(model, ModelLabelField):
+        exclude_fields = ['updated_time']
+    else:
+        exclude_fields = []
+
+    return [x.name for x in model._meta.get_fields() if x.name not in exclude_fields]
+
 class Command(BaseCommand):
     help = 'dump init json data'
     model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField]
@@ -26,7 +37,7 @@ class Command(BaseCommand):
                 indent=2,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
-                # fields=[x.name for x in queryset.model._meta.get_fields() if x.name not in ['updated_time']]
+                fields=get_fields(queryset.model)
             )
         except Exception as e:
             print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
