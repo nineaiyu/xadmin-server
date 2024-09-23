@@ -15,7 +15,7 @@ from django.conf import settings
 from common.core.db.utils import close_old_connections
 from common.decorators import Singleton
 from common.serializers import MonitorSerializer
-from common.utils import get_cpu_load, get_memory_usage, get_disk_usage, get_boot_time
+from common.utils import get_cpu_load, get_memory_usage, get_disk_usage, get_boot_time, get_cpu_percent
 
 
 class BaseTerminal(object):
@@ -48,6 +48,7 @@ class BaseTerminal(object):
         while True:
             heartbeat_data = {
                 'cpu_load': get_cpu_load(),
+                'cpu_percent': get_cpu_percent(),
                 'memory_used': get_memory_usage(),
                 'disk_used': get_disk_usage(path=settings.BASE_DIR),
                 'boot_time': get_boot_time(),

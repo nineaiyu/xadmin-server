@@ -16,6 +16,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('cpu_load', models.FloatField(default=0, verbose_name='CPU Load')),
+                ('cpu_percent', models.FloatField(default=0, verbose_name='CPU Percent')),
                 ('memory_used', models.FloatField(verbose_name='Memory Used')),
                 ('disk_used', models.FloatField(default=0, verbose_name='Disk Used')),
                 ('boot_time', models.FloatField(default=0, verbose_name='Boot Time')),

@@ -38,6 +38,9 @@ def get_boot_time():
     return psutil.boot_time()
 
 
+def get_cpu_percent():
+    return psutil.cpu_percent()
+
 def get_cpu_load():
     cpu_load_1, cpu_load_5, cpu_load_15 = psutil.getloadavg()
     cpu_count = psutil.cpu_count()

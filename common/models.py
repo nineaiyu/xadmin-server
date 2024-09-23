@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 class Monitor(models.Model):
     cpu_load = models.FloatField(verbose_name=_("CPU Load"), default=0)
+    cpu_percent = models.FloatField(verbose_name=_("CPU Percent"), default=0)
     memory_used = models.FloatField(verbose_name=_("Memory Used"))
     disk_used = models.FloatField(verbose_name=_("Disk Used"), default=0)
     boot_time = models.FloatField(verbose_name=_("Boot Time"), default=0)

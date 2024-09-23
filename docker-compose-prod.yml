@@ -42,7 +42,7 @@ services:
     restart: always
     image: 'xadmin-server'
     build:
-      context: system
+      context: .
       dockerfile: Dockerfile
     working_dir: /data/xadmin-server
     networks:

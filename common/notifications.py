@@ -54,8 +54,13 @@ class ServerPerformanceCheckUtil(object):
         },
         'cpu_load': {
             'default': 0,
-            'max_threshold': 5,
+            'max_threshold': 10,
             'alarm_msg_format': _('CPU load more than {max_threshold}: => {value}'),
+        },
+        'cpu_percent': {
+            'default': 0,
+            'max_threshold': 80,
+            'alarm_msg_format': _('CPU percent more than {max_threshold}: => {value}'),
         },
     }
 

@@ -14,7 +14,6 @@ from system.models import *
 
 
 def get_fields(model):
-    print(model, type(model), type(UserRole))
     if issubclass(model, FieldPermission):
         exclude_fields = ['updated_time', 'created_time']
     elif issubclass(model, ModelLabelField):

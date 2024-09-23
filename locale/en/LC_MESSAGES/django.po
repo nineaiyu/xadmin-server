@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-19 11:37+0800\n"
+"POT-Creation-Date: 2024-09-23 17:37+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,7 +68,7 @@ msgstr ""
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:34 common/models.py:17
+#: common/core/models.py:34 common/models.py:18
 #: settings/serializers/security.py:247
 msgid "Created time"
 msgstr ""
@@ -170,18 +170,22 @@ msgid "CPU Load"
 msgstr ""
 
 #: common/models.py:14
-msgid "Memory Used"
+msgid "CPU Percent"
 msgstr ""
 
 #: common/models.py:15
-msgid "Disk Used"
+msgid "Memory Used"
 msgstr ""
 
 #: common/models.py:16
+msgid "Disk Used"
+msgstr ""
+
+#: common/models.py:17
 msgid "Boot Time"
 msgstr ""
 
-#: common/models.py:20 common/notifications.py:13
+#: common/models.py:21 common/notifications.py:13
 msgid "Monitor"
 msgstr ""
 
@@ -206,6 +210,11 @@ msgstr ""
 #: common/notifications.py:58
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
+msgstr ""
+
+#: common/notifications.py:63
+#, python-brace-format
+msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr ""
 
 #: common/sdk/sms/alibaba.py:62
@@ -420,8 +429,8 @@ msgstr ""
 msgid "Message content"
 msgstr ""
 
-#: notifications/models/message.py:70 notifications/models/notification.py:16
-#: notifications/models/notification.py:29
+#: notifications/models/message.py:70 notifications/models/notification.py:17
+#: notifications/models/notification.py:30
 #: notifications/serializers/message.py:149
 #: notifications/serializers/notifications.py:19
 #: notifications/serializers/notifications.py:37 system/models/config.py:39
@@ -443,24 +452,24 @@ msgid "User read message"
 msgstr ""
 
 #: notifications/models/notification.py:15
-#: notifications/models/notification.py:28
+#: notifications/models/notification.py:29
 msgid "message type"
 msgstr ""
 
-#: notifications/models/notification.py:17
-#: notifications/models/notification.py:30
+#: notifications/models/notification.py:18
+#: notifications/models/notification.py:31
 msgid "receive backend"
 msgstr ""
 
-#: notifications/models/notification.py:20
+#: notifications/models/notification.py:21
 msgid "User message subscription"
 msgstr ""
 
-#: notifications/models/notification.py:24
+#: notifications/models/notification.py:25
 msgid "{} subscription"
 msgstr ""
 
-#: notifications/models/notification.py:33
+#: notifications/models/notification.py:34
 msgid "System message subscription"
 msgstr ""
 
