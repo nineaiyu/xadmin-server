@@ -12,6 +12,9 @@ DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
+# 生产服必须保证唯一性，你必须保证这个值的安全，否则攻击者可以用它来生成自己的签名值
+SECRET_KEY = 'django-insecure-mlq6(#a^2vk!1=7=xhp#$i=o5d%namfs=+b26$m#sh_2rco7j^'
+
 ### 更多数据库配置，参考官方文档：https://docs.djangoproject.com/zh-hans/5.0/ref/databases/
 
 # # mysql 数据库配置
