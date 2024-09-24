@@ -116,8 +116,6 @@ class HealthCheckView(GenericAPIView):
                         'time': build_basic_type(OpenApiTypes.FLOAT),
                         'db_time': build_basic_type(OpenApiTypes.FLOAT),
                         'redis_time': build_basic_type(OpenApiTypes.FLOAT),
-                        'pre_middleware_time': build_basic_type(OpenApiTypes.FLOAT),
-                        'post_middleware_time': build_basic_type(OpenApiTypes.FLOAT),
                     }
                 )
             )
