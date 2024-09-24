@@ -94,6 +94,7 @@ class UserSiteMessageViewSet(OnlyListModelSet):
                         'key': serializers.CharField(),
                         'name': serializers.CharField(),
                         'list': UserNoticeSerializer(many=True),
+                        'total': serializers.IntegerField()
                     }),
                     'total': serializers.IntegerField(),
                 })
@@ -109,16 +110,18 @@ class UserSiteMessageViewSet(OnlyListModelSet):
             {
                 "key": "1",
                 "name": "layout.notice",
-                "list": self.serializer_class(notice_queryset[:10], many=True, context={'request': request}).data
+                "list": self.serializer_class(notice_queryset[:10], many=True, context={'request': request}).data,
+                "total": notice_queryset.count()
             },
             {
                 "key": "2",
                 "name": "layout.announcement",
-                "list": self.serializer_class(announce_queryset[:10], many=True, context={'request': request}).data
+                "list": self.serializer_class(announce_queryset[:10], many=True, context={'request': request}).data,
+                "total": announce_queryset.count()
             }
         ]
 
-        return ApiResponse(data={'results': results, 'total': notice_queryset.count() + announce_queryset.count()})
+        return ApiResponse(data={'results': results, 'total': sum([item.get('total', 0) for item in results])})
 
     def read_message(self, pks, request):
         if pks:
