@@ -53,3 +53,4 @@ CELERY_BEAT_SCHEDULE = {}
 
 # api服务监听端口，通过 python manage.py start all 命令启动时的监听端口
 HTTP_LISTEN_PORT = 8896
+GUNICORN_MAX_WORKER = 4 # API服务最多启动的worker数量

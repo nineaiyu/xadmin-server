@@ -91,7 +91,7 @@ class BaseActionCommand(BaseCommand):
         super().__init__(*args, **kwargs)
 
     def add_arguments(self, parser):
-        cores = 10
+        cores = GUNICORN_MAX_WORKER
         if (multiprocessing.cpu_count() * 2 + 1) < cores:
             cores = multiprocessing.cpu_count() * 2 + 1
 
