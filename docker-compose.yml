@@ -29,10 +29,11 @@ services:
       - ../xadmin-mariadb/data:/bitnami/mariadb/data
       - ../xadmin-mariadb/logs:/opt/bitnami/mariadb/logs
     healthcheck:
-      test: [ 'CMD', '/opt/bitnami/scripts/mariadb/healthcheck.sh' ]
-      interval: 15s
+      test: "mariadb-admin -uroot ping"
+      interval: 10s
       timeout: 5s
-      retries: 6
+      retries: 3
+      start_period: 30s
 
   xadmin-redis:
     image: 'bitnami/redis:7.4.0'
@@ -44,7 +45,7 @@ services:
       - TZ=Asia/Shanghai
       - REDIS_PASSWORD=nineven
     healthcheck:
-      test: "redis-cli -h 127.0.0.1 -p $$REDIS_PORT_NUMBER -a $$REDIS_PASSWORD info Replication"
+      test: "redis-cli -h 127.0.0.1 -a $$REDIS_PASSWORD info Replication"
       interval: 10s
       timeout: 5s
       retries: 3

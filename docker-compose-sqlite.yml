@@ -17,7 +17,7 @@ services:
       - TZ=Asia/Shanghai
       - REDIS_PASSWORD=nineven
     healthcheck:
-      test: "redis-cli -h 127.0.0.1 -p $$REDIS_PORT_NUMBER -a $$REDIS_PASSWORD info Replication"
+      test: "redis-cli -h 127.0.0.1 -a $$REDIS_PASSWORD info Replication"
       interval: 10s
       timeout: 5s
       retries: 3
