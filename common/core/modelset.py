@@ -145,15 +145,14 @@ class ImportExportDataAction(OnlyExportDataAction):
         act = request.query_params.get('action')
         if act and request.data:
             if act == 'create':
-                for data in request.data:
-                    serializer = self.get_serializer(data=data)
-                    serializer.is_valid(raise_exception=True)
-                    self.perform_create(serializer)
+                serializer = self.get_serializer(data=request.data, many=True)
+                serializer.is_valid(raise_exception=True)
+                self.perform_create(serializer)
             elif act == 'update':
-                queryset = self.get_queryset()
+                queryset = self.filter_queryset(self.get_queryset())
                 for data in request.data:
-                    instance = queryset.get(pk=data.get('pk'))
-                    if getattr(instance, 'is_superuser', None):
+                    instance = queryset.filter(pk=data.get('pk')).first()
+                    if not instance:
                         continue
                     serializer = self.get_serializer(instance, data=data, partial=True)
                     serializer.is_valid(raise_exception=True)
