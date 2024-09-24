@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-23 17:37+0800\n"
+"POT-Creation-Date: 2024-09-24 13:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -212,6 +212,7 @@ msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 负载超过 {max_threshold}: => {value}"
 
 #: common/notifications.py:63
+#, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
 
@@ -1103,7 +1104,7 @@ msgid "Role permission"
 msgstr "角色权限"
 
 #: system/models/department.py:24 system/models/field.py:33
-#: system/models/permission.py:24 system/models/user.py:36
+#: system/models/permission.py:25 system/models/user.py:36
 #: system/serializers/base.py:24
 msgid "Data permission"
 msgstr "数据权限"
@@ -1199,7 +1200,7 @@ msgstr "模型/字段数值"
 msgid "Model/Field label"
 msgstr "模型/字段数值"
 
-#: system/models/field.py:43
+#: system/models/field.py:44
 msgid "Model label field"
 msgstr "模型/字段名称"
 
@@ -1374,7 +1375,7 @@ msgid "Directory"
 msgstr "目录"
 
 #: system/models/menu.py:50 system/models/menu.py:84
-#: system/models/permission.py:20 system/models/permission.py:33
+#: system/models/permission.py:20 system/models/permission.py:34
 #: system/models/role.py:18 system/serializers/permission.py:35
 #: system/serializers/role.py:36
 msgid "Menu"
@@ -1441,15 +1442,15 @@ msgstr "规则"
 msgid "If a menu exists, it only applies to the selected menu permission"
 msgstr "若存在菜单权限，则该权限仅针对所选择的菜单权限生效"
 
-#: system/models/permission.py:32
+#: system/models/permission.py:33
 msgid "Role"
 msgstr "角色"
 
-#: system/models/permission.py:34
+#: system/models/permission.py:35
 msgid "Field"
 msgstr "字段"
 
-#: system/models/permission.py:37
+#: system/models/permission.py:38
 msgid "Field permission"
 msgstr "字段权限"
 

@@ -39,6 +39,7 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
     label = models.CharField(verbose_name=_("Model/Field label"), max_length=128)
 
     class Meta:
+        ordering = ('-created_time',)
         unique_together = ('name', 'parent')
         verbose_name = _("Model label field")
         verbose_name_plural = verbose_name

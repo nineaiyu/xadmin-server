@@ -7,35 +7,22 @@ networks:
         - subnet: 192.168.196.0/24
 
 services:
-  xadmin-mariadb:
-    image: bitnami/mariadb:10.11.8
-    container_name: xadmin-mariadb
-    restart: always
-    environment:
-      - MARIADB_DATABASE=xadmin
-      - MARIADB_USER=server
-      - MARIADB_PASSWORD=KGzKjZpWBp4R4RSa
-      - ALLOW_EMPTY_PASSWORD=yes
-      - MARIADB_SKIP_TEST_DB=yes
-      - MARIADB_ENABLE_SLOW_QUERY=1
-      - MARIADB_LONG_QUERY_TIME=3
-      - MARIADB_EXTRA_FLAGS=--max-connect-errors=3000 --max_connections=30000
-    #ports:
-    #  - 3306:3306
-    networks:
-      - net
-    volumes:
-      - ../mariadb/data:/bitnami/mariadb/data
-      - ../mariadb/logs:/opt/bitnami/mariadb/logs
-
   xadmin-redis:
-    image: 'bitnami/redis:7.2.4'
+    image: 'bitnami/redis:7.4.0'
     container_name: xadmin-redis
     restart: always
     networks:
       - net
     environment:
+      - TZ=Asia/Shanghai
       - REDIS_PASSWORD=nineven
+    healthcheck:
+      test: "redis-cli -h 127.0.0.1 -p $$REDIS_PORT_NUMBER -a $$REDIS_PASSWORD info Replication"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 
   xadmin-server:
     container_name: xadmin-server
@@ -45,12 +32,13 @@ services:
       context: .
       dockerfile: Dockerfile
     working_dir: /data/xadmin-server
+    environment:
+      - TZ=Asia/Shanghai
     networks:
       - net
-    volumes:
+    volumes: #需要设置 1001 权限，否则mysql会启动失败
       - ./:/data/xadmin-server
     external_links:
-      - xadmin-mariadb:mariadb
       - xadmin-redis:redis
     #extra_hosts:
     # - "mariadb:192.168.196.1"
@@ -60,5 +48,11 @@ services:
       - "8896:8896"
     depends_on:
       - xadmin-redis
-      - xadmin-mariadb
+    healthcheck:
+      test: "curl -fsL http://localhost:8896/api/common/api/health > /dev/null"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
 

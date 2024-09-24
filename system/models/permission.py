@@ -21,6 +21,7 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
                                   help_text=_("If a menu exists, it only applies to the selected menu permission"))
 
     class Meta:
+        ordering = ('-created_time',)
         verbose_name = _("Data permission")
         verbose_name_plural = verbose_name
 

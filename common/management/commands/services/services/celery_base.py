@@ -28,8 +28,8 @@ class CeleryBaseService(BaseService):
             'worker',
             '-P', 'threads',  # 默认的prefork是资源隔离的，导致修改settings配置时候，无法同步数据到该线程，因此需要用 threads模式
             '-l', 'INFO',
-            # '-c', str(self.num), # 开启自动弹性伸缩
-            '--autoscale', ",".join([str(x) for x in self.autoscale]),
+            '-c', str(self.num),
+            # '--autoscale', ",".join([str(x) for x in self.autoscale]), # 开启自动弹性伸缩
             '-Q', self.queue,
             '--heartbeat-interval', '10',
             '-n', f'{self.queue}@{server_hostname}',

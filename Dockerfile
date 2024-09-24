@@ -1,4 +1,4 @@
-FROM python:3.12.5-slim
+FROM python:3.12.6-slim
 
 # add pip cn mirrors
 ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
@@ -17,6 +17,7 @@ WORKDIR /data/xadmin-server/
 RUN addgroup --system --gid 1001 nginx \
     && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
 
-
-#ENTRYPOINT ["python", "manage.py", "start", "all","-u","nginx"]
+USER 1001
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+
+CMD ["start", "all"]

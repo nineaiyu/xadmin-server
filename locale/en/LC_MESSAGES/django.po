@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-23 17:37+0800\n"
+"POT-Creation-Date: 2024-09-24 13:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1091,7 +1091,7 @@ msgid "Role permission"
 msgstr ""
 
 #: system/models/department.py:24 system/models/field.py:33
-#: system/models/permission.py:24 system/models/user.py:36
+#: system/models/permission.py:25 system/models/user.py:36
 #: system/serializers/base.py:24
 msgid "Data permission"
 msgstr ""
@@ -1187,7 +1187,7 @@ msgstr ""
 msgid "Model/Field label"
 msgstr ""
 
-#: system/models/field.py:43
+#: system/models/field.py:44
 msgid "Model label field"
 msgstr ""
 
@@ -1362,7 +1362,7 @@ msgid "Directory"
 msgstr ""
 
 #: system/models/menu.py:50 system/models/menu.py:84
-#: system/models/permission.py:20 system/models/permission.py:33
+#: system/models/permission.py:20 system/models/permission.py:34
 #: system/models/role.py:18 system/serializers/permission.py:35
 #: system/serializers/role.py:36
 msgid "Menu"
@@ -1429,15 +1429,15 @@ msgstr ""
 msgid "If a menu exists, it only applies to the selected menu permission"
 msgstr ""
 
-#: system/models/permission.py:32
+#: system/models/permission.py:33
 msgid "Role"
 msgstr ""
 
-#: system/models/permission.py:34
+#: system/models/permission.py:35
 msgid "Field"
 msgstr ""
 
-#: system/models/permission.py:37
+#: system/models/permission.py:38
 msgid "Field permission"
 msgstr ""
 

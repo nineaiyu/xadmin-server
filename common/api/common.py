@@ -11,8 +11,9 @@ from django.core.cache import cache
 from django.utils import translation
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import extend_schema, OpenApiRequest, OpenApiResponse
 from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from common.cache.storage import CommonResourceIDsCache
@@ -46,7 +47,7 @@ class ResourcesIDCacheApi(GenericAPIView):
 
 class CountryListApi(GenericAPIView):
     """城市列表"""
-    permission_classes = []
+    permission_classes = (AllowAny,)
 
     @extend_schema(
         description="获取城市手机号列表",
@@ -74,6 +75,7 @@ class CountryListApi(GenericAPIView):
 
 
 class HealthCheckView(GenericAPIView):
+    permission_classes = (AllowAny,)
 
     @staticmethod
     def get_db_status():
@@ -102,6 +104,25 @@ class HealthCheckView(GenericAPIView):
         except Exception as e:
             return False, str(e)
 
+    @extend_schema(
+        description="获取服务健康状态",
+        responses={
+            200: OpenApiResponse(
+                build_object_type(
+                    properties={
+                        'status': build_basic_type(OpenApiTypes.BOOL),
+                        'db_status': build_basic_type(OpenApiTypes.BOOL),
+                        'redis_status': build_basic_type(OpenApiTypes.BOOL),
+                        'time': build_basic_type(OpenApiTypes.FLOAT),
+                        'db_time': build_basic_type(OpenApiTypes.FLOAT),
+                        'redis_time': build_basic_type(OpenApiTypes.FLOAT),
+                        'pre_middleware_time': build_basic_type(OpenApiTypes.FLOAT),
+                        'post_middleware_time': build_basic_type(OpenApiTypes.FLOAT),
+                    }
+                )
+            )
+        }
+    )
     def get(self, request):
         redis_status, redis_time = self.get_redis_status()
         db_status, db_time = self.get_db_status()
@@ -109,9 +130,9 @@ class HealthCheckView(GenericAPIView):
         data = {
             'status': status,
             'db_status': db_status,
-            'db_time': db_time,
             'redis_status': redis_status,
-            'redis_time': redis_time,
             'time': int(time.time()),
+            'db_time': db_time,
+            'redis_time': redis_time,
         }
         return Response(data)

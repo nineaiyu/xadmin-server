@@ -26,9 +26,9 @@ def trend_info(queryset, limit_day=30):
     limit_days = today - datetime.timedelta(days=limit_day, hours=today.hour, minutes=today.minute,
                                             seconds=today.second, microseconds=today.microsecond)
     data_count = queryset.filter(created_time__gte=limit_days).annotate(
-        date=TruncDay('created_time')).values(
-        'date').annotate(count=Count('pk')).order_by('-date')
-    dict_count = {d.get('date').strftime('%m-%d'): d.get('count') for d in data_count}
+        created_time_day=TruncDay('created_time')).values(
+        'created_time_day').annotate(count=Count('pk')).order_by('-created_time_day')
+    dict_count = {d.get('created_time_day').strftime('%m-%d'): d.get('count') for d in data_count}
     results = []
     for i in range(limit_day, -1, -1):
         date = (today - datetime.timedelta(days=i)).strftime('%m-%d')

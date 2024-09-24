@@ -106,6 +106,7 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name': 'Data permission',
                 'verbose_name_plural': 'Data permission',
+                'ordering': ('-created_time',),
             },
         ),
         migrations.AddField(
@@ -299,6 +300,7 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name': 'Model label field',
                 'verbose_name_plural': 'Model label field',
+                'ordering': ('-created_time',),
                 'unique_together': {('name', 'parent')},
             },
         ),
