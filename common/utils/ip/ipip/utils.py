@@ -13,7 +13,7 @@ def get_ip_city_by_ipip(ip):
     try:
         if ipip_db is None:
             ipip_db_path = os.path.join(os.path.dirname(__file__), 'ipipfree.ipdb')
-        ipip_db = ipdb.City(ipip_db_path)
+            ipip_db = ipdb.City(ipip_db_path)
         info = ipip_db.find_info(ip, 'CN')
     except ValueError:
         return None
