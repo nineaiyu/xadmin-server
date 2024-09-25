@@ -44,7 +44,7 @@ def run_function_by_locker(timeout=60 * 5, lock_func=None):
                     res = func(*args, **kwargs)
             else:
                 res = func(*args, **kwargs)
-            logger.info(f"{new_locker_key} exec {func} finished. used time:{time.time() - start_time} result:{res}")
+            logger.debug(f"{new_locker_key} exec {func} finished. used time:{time.time() - start_time} result:{res}")
             return res
 
         return wrapper
@@ -72,7 +72,7 @@ def call_function_try_attempts(try_attempts=3, sleep_time=2, failed_callback=Non
                 if failed_callback:
                     logger.error(f'exec {func} failed and exec failed callback {failed_callback.__name__}')
                     failed_callback(*args, **kwargs, result=res)
-            logger.info(f"exec {func} finished. time:{time.time() - start_time} result:{res}")
+            logger.debug(f"exec {func} finished. time:{time.time() - start_time} result:{res}")
             return res
 
         return wrapper
@@ -126,7 +126,7 @@ def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
             start_time = time.time()
             try:
                 res = func(*args, **kwargs)
-                logger.info(
+                logger.debug(
                     f"exec {func} finished. time:{time.time() - start_time}  cache_key:{cache_key} result:{res}")
                 status = True
             except Exception as e:
@@ -214,7 +214,7 @@ class MagicCacheResponse(object):
         cache_key = f'magic_cache_response_{key}'
         for delete_key in cache.iter_keys(cache_key):
             cache.delete(delete_key)
-        logger.warning(f"invalid_response_cache cache_key:{cache_key}")
+        logger.info(f"invalid_response_cache cache_key:{cache_key}")
 
     def __call__(self, func):
         this = self
@@ -280,7 +280,7 @@ class MagicCacheResponse(object):
                 )
                 res = {'c_time': n_time, 'data': data}
                 cache.set(cache_key, res, timeout)
-                logger.info(
+                logger.debug(
                     f"exec {func_name} finished. time:{time.time() - n_time}  cache_key:{cache_key} result:{res}")
 
         if not hasattr(response, '_closable_objects'):
