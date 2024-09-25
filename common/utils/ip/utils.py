@@ -101,13 +101,13 @@ def get_ip_city(ip):
 
     info = get_ip_city_by_ipip(ip)
     if info:
-        city = info.get('city', _("Unknown"))
+        city = info.get('city', None)
         country = info.get('country')
 
         # 国内城市 并且 语言是中文就使用国内
         is_zh = settings.LANGUAGE_CODE.startswith('zh')
         if country == '中国' and is_zh:
-            return city
+            return city if city else get_ip_city_by_geoip(ip)
     return get_ip_city_by_geoip(ip)
 
 
