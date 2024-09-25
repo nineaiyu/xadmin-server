@@ -54,11 +54,11 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(user_obj.username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
-    request.user = user_obj
-    save_login_log(request, login_type=login_type)
-    check_different_city_login_if_need(user_obj, ipaddr)
     login_block_util.clean_failed_count()
     login_ip_block.clean_block_if_need()
+    request.user = user_obj
+    check_different_city_login_if_need(user_obj, ipaddr)
+    save_login_log(request, login_type=login_type)
 
 
 class BasicLoginView(TokenObtainPairView):
