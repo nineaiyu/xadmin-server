@@ -676,6 +676,7 @@ SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = True
 
 # 基本配置
 SITE_URL = 'http://127.0.0.1:8000'
+FRONT_END_WEB_WATERMARK_ENABLED = True  # 前端水印展示
 
 # 验证码配置
 VERIFY_CODE_TTL = 5 * 60  # Unit: second

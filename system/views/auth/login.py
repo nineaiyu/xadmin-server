@@ -61,7 +61,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
     save_login_log(request, login_type=login_type)
 
 
-class BasicLoginView(TokenObtainPairView):
+class BasicLoginAPIView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 
@@ -145,7 +145,7 @@ class BasicLoginView(TokenObtainPairView):
         return ApiResponse(data=config)
 
 
-class VerifyCodeLoginView(TokenObtainPairView):
+class VerifyCodeLoginAPIView(TokenObtainPairView):
     """用户登录"""
     throttle_classes = [LoginThrottle]
 

@@ -64,7 +64,7 @@ def get_schema_response(has_count=True):
     )
 
 
-class DashboardView(GenericViewSet):
+class DashboardViewSet(GenericViewSet):
     """面板统计信息"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

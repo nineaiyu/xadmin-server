@@ -17,6 +17,11 @@ class BasicSettingSerializer(serializers.Serializer):
         )
     )
 
+    FRONT_END_WEB_WATERMARK_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("front-end web watermark enabled"),
+        help_text=_("Enable watermark for front-end web")
+    )
+
     @staticmethod
     def validate_SITE_URL(s):
         if not s:

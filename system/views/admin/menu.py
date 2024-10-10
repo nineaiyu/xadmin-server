@@ -4,7 +4,6 @@
 # filename : menu
 # author : ly_13
 # date : 6/6/2023
-from hashlib import md5
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
@@ -15,7 +14,7 @@ from rest_framework.decorators import action
 
 from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction
+from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
@@ -35,7 +34,7 @@ class MenuFilter(BaseFilterSet):
         fields = ['name']
 
 
-class MenuView(BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction):
+class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin):
     """菜单管理"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
@@ -44,9 +43,6 @@ class MenuView(BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction):
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
 
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
-        return f"{func_name}_{request.user.pk}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):

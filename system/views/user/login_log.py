@@ -13,7 +13,7 @@ from system.models import UserLoginLog
 from system.serializers.log import UserLoginLogSerializer
 
 
-class UserLoginLogView(ListModelMixin, SearchColumnsAction, GenericViewSet):
+class UserLoginLogViewSet(ListModelMixin, SearchColumnsAction, GenericViewSet):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

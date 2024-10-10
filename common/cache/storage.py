@@ -58,8 +58,7 @@ class RedisCacheBase(object):
         return cache.get_many(self.cache_key)
 
     def del_many(self):
-        for delete_key in cache.iter_keys(self.cache_key):
-            cache.delete(delete_key)
+        cache.delete_pattern(self.cache_key)
         return True
 
 

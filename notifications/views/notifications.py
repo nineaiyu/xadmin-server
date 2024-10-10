@@ -14,7 +14,7 @@ from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsg
     UserMsgSubscriptionSerializer, UserMsgSubscriptionByCategorySerializer
 
 
-class BackendListView(GenericAPIView):
+class BackendListAPIView(GenericAPIView):
 
     @extend_schema(parameters=None, responses=get_default_response_schema(
         {

@@ -36,7 +36,7 @@ class UserFilter(BaseFilterSet):
         fields = ['username', 'nickname', 'phone', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
-class UserView(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
+class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
     """用户管理"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()

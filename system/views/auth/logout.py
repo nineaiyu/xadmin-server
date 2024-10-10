@@ -18,7 +18,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
 
-class LogoutView(GenericAPIView):
+class LogoutAPIView(GenericAPIView):
     """用户登出"""
 
     @extend_schema(

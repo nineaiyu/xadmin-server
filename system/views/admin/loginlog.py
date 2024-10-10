@@ -27,7 +27,7 @@ class LoginLogFilter(BaseFilterSet):
         fields = ['login_type', 'ipaddress', 'city', 'system', 'creator_id', 'browser', 'agent', 'created_time']
 
 
-class LoginLogView(ListDeleteModelSet, OnlyExportDataAction):
+class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer

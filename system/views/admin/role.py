@@ -25,7 +25,7 @@ class RoleFilter(BaseFilterSet):
         fields = ['name', 'code', 'is_active', 'description']
 
 
-class RoleView(BaseModelSet, ImportExportDataAction):
+class RoleViewSet(BaseModelSet, ImportExportDataAction):
     """角色管理"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer

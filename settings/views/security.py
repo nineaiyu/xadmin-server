@@ -9,41 +9,41 @@ from common.utils import get_logger
 from settings.serializers.security import SecurityPasswordRuleSerializer, SecurityLoginLimitSerializer, \
     SecurityLoginAuthSerializer, SecurityRegisterAuthSerializer, SecurityResetPasswordAuthSerializer, \
     SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer
-from settings.views.settings import BaseSettingView
+from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__file__)
 
 
-class SecurityPasswordRuleView(BaseSettingView):
+class SecurityPasswordRuleViewSet(BaseSettingViewSet):
     serializer_class = SecurityPasswordRuleSerializer
     category = "security_password"
 
 
-class SecurityLoginLimitView(BaseSettingView):
+class SecurityLoginLimitViewSet(BaseSettingViewSet):
     serializer_class = SecurityLoginLimitSerializer
     category = "security_login_limit"
 
 
-class SecurityLoginAuthView(BaseSettingView):
+class SecurityLoginAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityLoginAuthSerializer
     category = "security_login_auth"
 
 
-class SecurityRegisterAuthView(BaseSettingView):
+class SecurityRegisterAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityRegisterAuthSerializer
     category = "security_register_auth"
 
 
-class SecurityResetPasswordAuthView(BaseSettingView):
+class SecurityResetPasswordAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityResetPasswordAuthSerializer
     category = "security_reset_password_auth"
 
 
-class SecurityBindEmailAuthView(BaseSettingView):
+class SecurityBindEmailAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityBindEmailAuthSerializer
     category = "security_bind_email_auth"
 
 
-class SecurityBindPhoneAuthView(BaseSettingView):
+class SecurityBindPhoneAuthViewSet(BaseSettingViewSet):
     serializer_class = SecurityBindPhoneAuthSerializer
     category = "security_bind_phone_auth"

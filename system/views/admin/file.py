@@ -24,7 +24,7 @@ class UploadFileFilter(BaseFilterSet):
         fields = ['filename', 'mime_type', 'md5sum', 'description', 'is_upload', 'is_tmp']
 
 
-class UploadFileView(BaseModelSet):
+class UploadFileViewSet(BaseModelSet):
     """
     文件管理
     """

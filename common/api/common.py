@@ -23,7 +23,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils.country import COUNTRY_CALLING_CODES, COUNTRY_CALLING_CODES_ZH
 
 
-class ResourcesIDCacheApi(GenericAPIView):
+class ResourcesIDCacheAPIView(GenericAPIView):
     """资源ID 缓存"""
 
     @extend_schema(
@@ -45,7 +45,7 @@ class ResourcesIDCacheApi(GenericAPIView):
         return ApiResponse(spm=spm)
 
 
-class CountryListApi(GenericAPIView):
+class CountryListAPIView(GenericAPIView):
     """城市列表"""
     permission_classes = (AllowAny,)
 
@@ -74,7 +74,7 @@ class CountryListApi(GenericAPIView):
             return ApiResponse(data=COUNTRY_CALLING_CODES)
 
 
-class HealthCheckView(GenericAPIView):
+class HealthCheckAPIView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     @staticmethod

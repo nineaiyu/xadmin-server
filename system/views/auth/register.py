@@ -25,7 +25,7 @@ from system.models import DeptInfo, UserInfo
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 
 
-class RegisterView(GenericAPIView):
+class RegisterViewAPIView(GenericAPIView):
     """用户注册"""
     permission_classes = []
     authentication_classes = []

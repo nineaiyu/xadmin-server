@@ -14,7 +14,7 @@ from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
-from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
+from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction, CacheDetailResponseMixin
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
@@ -27,7 +27,7 @@ from system.utils.auth import verify_sms_email_code
 logger = logging.getLogger(__name__)
 
 
-class UserInfoView(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
+class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction, CacheDetailResponseMixin):
     """用户个人信息管理"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
@@ -38,10 +38,6 @@ class UserInfoView(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
 
     def get_queryset(self):
         return UserInfo.objects.filter(pk=self.request.user.pk)
-
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
-        return f"{func_name}_{request.user.pk}"
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def retrieve(self, request, *args, **kwargs):

@@ -35,7 +35,7 @@ class SearchDeptSerializer(DeptSerializer):
         read_only_fields = [x.name for x in DeptInfo._meta.fields]
 
 
-class SearchDeptView(OnlyListModelSet):
+class SearchDeptViewSet(OnlyListModelSet):
     """
     部门信息
     """

@@ -25,7 +25,7 @@ class DataPermissionFilter(BaseFilterSet):
         fields = ['pk', 'name', 'mode_type', 'is_active', 'description']
 
 
-class DataPermissionView(BaseModelSet, ImportExportDataAction):
+class DataPermissionViewSet(BaseModelSet, ImportExportDataAction):
     """数据权限管理"""
     queryset = DataPermission.objects.all()
     serializer_class = DataPermissionSerializer

@@ -45,7 +45,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
         fields = ['pk', 'name', 'label', 'parent', 'field_type']
 
 
-class ModelLabelFieldView(OnlyListModelSet):
+class ModelLabelFieldViewSet(OnlyListModelSet):
     """模型字段管理"""
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer

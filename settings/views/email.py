@@ -13,12 +13,12 @@ from django.utils.translation import gettext_lazy as _
 from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.email import EmailSettingSerializer
-from settings.views.settings import BaseSettingView
+from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__file__)
 
 
-class EmailServerSettingView(BaseSettingView):
+class EmailServerSettingViewSet(BaseSettingViewSet):
     serializer_class = EmailSettingSerializer
     category = "email"
 

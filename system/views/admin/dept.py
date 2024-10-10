@@ -27,7 +27,7 @@ class DeptFilter(BaseFilterSet):
         fields = ['pk', 'is_active', 'code', 'mode_type', 'auto_bind', 'name', 'description']
 
 
-class DeptView(BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
+class DeptViewSet(BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
     """
     部门信息
     """

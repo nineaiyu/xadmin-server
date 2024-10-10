@@ -27,7 +27,7 @@ class OperationLogFilter(BaseFilterSet):
         fields = ['module', 'ipaddress', 'system', 'creator_id', 'browser', 'path', 'created_time']
 
 
-class OperationLogView(ListDeleteModelSet, OnlyExportDataAction):
+class OperationLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     """用户操作日志"""
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer

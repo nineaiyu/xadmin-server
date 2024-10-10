@@ -6,5 +6,5 @@ class SystemConfig(AppConfig):
     name = 'system'
 
     def ready(self):
-        from .utils import signal_handler  # noqa
+        from . import signal_handler  # noqa
         super().ready()
