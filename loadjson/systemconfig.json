@@ -78,7 +78,7 @@
       "modifier": 1,
       "dept_belong": null,
       "value": {
-        "Version": "3.3.5",
+        "Version": "4.1.0",
         "Title": "xAdmin",
         "FixedHeader": true,
         "HiddenSideBar": false,
