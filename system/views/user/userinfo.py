@@ -6,15 +6,14 @@
 # date : 6/16/2023
 import logging
 
+from django.conf import settings
 from drf_spectacular.plumbing import build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
-from common.base.magic import cache_response
-from common.base.utils import get_choices_dict
-from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction, CacheDetailResponseMixin
+from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
@@ -27,7 +26,7 @@ from system.utils.auth import verify_sms_email_code
 logger = logging.getLogger(__name__)
 
 
-class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction, CacheDetailResponseMixin):
+class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     """用户个人信息管理"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
@@ -39,10 +38,11 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction, Cac
     def get_queryset(self):
         return UserInfo.objects.filter(pk=self.request.user.pk)
 
-    @cache_response(timeout=600, key_func='get_cache_key')
     def retrieve(self, request, *args, **kwargs):
         data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(**data, choices_dict=get_choices_dict(UserInfo.GenderChoices.choices))
+        return ApiResponse(**data, config={
+            'FRONT_END_WEB_WATERMARK_ENABLED': settings.FRONT_END_WEB_WATERMARK_ENABLED
+        })
 
     @extend_schema(description='用户修改密码', responses=get_default_response_schema())
     @action(methods=['post'], detail=False, url_path='reset-password', serializer_class=ChangePasswordSerializer)
@@ -53,6 +53,17 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction, Cac
         serializer.save()
         ResetPasswordSuccessMsg(instance, request).publish_async()
         return ApiResponse()
+
+    @extend_schema(
+        description="上传头像",
+        request=OpenApiRequest(
+            build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
+        ),
+        responses=get_default_response_schema()
+    )
+    @action(methods=['post'], detail=False, parser_classes=(MultiPartParser,))
+    def upload(self, request, *args, **kwargs):
+        return super().upload(request, *args, **kwargs)
 
     @extend_schema(
         description="绑定邮箱或者手机",
@@ -67,17 +78,6 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction, Cac
         ),
         responses=get_default_response_schema()
     )
-    @extend_schema(
-        description="上传头像",
-        request=OpenApiRequest(
-            build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
-        ),
-        responses=get_default_response_schema()
-    )
-    @action(methods=['post'], detail=False, parser_classes=(MultiPartParser,))
-    def upload(self, request, *args, **kwargs):
-        return super().upload(request, *args, **kwargs)
-
     @action(methods=['post'], detail=False, url_path='bind')
     def bind(self, request, *args, **kwargs):
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)

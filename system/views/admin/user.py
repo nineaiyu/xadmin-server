@@ -76,6 +76,7 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         SiteMessageUtil.notify_error(users=instance, title="密码重置成功", message="密码被管理员重置成功")
         return ApiResponse()
 
+    @extend_schema(description='解禁用户', responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)
     def unblock(self, request, *args, **kwargs):
         instance = self.get_object()

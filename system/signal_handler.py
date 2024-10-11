@@ -7,6 +7,7 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth import user_logged_out
 from django.db import transaction
 from django.db.models.signals import post_save, pre_delete, m2m_changed, post_migrate
 from django.dispatch import receiver
@@ -20,6 +21,7 @@ from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
 from common.core.utils import PrintLogFormat
 from system.models import Menu, UserRole, UserInfo, DeptInfo, DataPermission, SystemConfig, ModelLabelField
+from system.signal import invalid_user_cache_signal
 
 logger = logging.getLogger(__name__)
 
@@ -76,12 +78,12 @@ def post_migrate_handler(sender, **kwargs):
             plf.error(f"auto get sub serializer fields failed. {e}")
 
 
-def invalid_userinfo_view_cache(user_pk):
-    cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
+# def invalid_userinfo_view_cache(user_pk):
+#     cache_response.invalid_cache(f'UserInfoViewSet_retrieve_{user_pk}')
 
 
 def invalid_menu_view_cache(user_pk):
-    cache_response.invalid_cache(f'MenuView_list_{user_pk}')
+    cache_response.invalid_cache(f'MenuViewSet_list_{user_pk}')
 
 
 def invalid_route_view_cache(user_pk):
@@ -92,8 +94,15 @@ def invalid_user_permission_data_cache(user_pk):
     MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
 
 
-def invalid_user_cache(user_pk):
-    invalid_userinfo_view_cache(user_pk)
+@receiver([invalid_user_cache_signal, user_logged_out])
+def invalid_user_cache(**kwargs):
+    user_pk = kwargs.get('user_pk', None)
+    user = kwargs.get('user', None)
+    if user is not None:
+        user_pk = user.pk
+    if user_pk is None:
+        return
+    # invalid_userinfo_view_cache(user_pk)
     invalid_route_view_cache(user_pk)
     invalid_menu_view_cache(f'{user_pk}_*')
 
@@ -106,7 +115,7 @@ def clean_m2m_cache_handler(sender, instance, **kwargs):
     if kwargs.get('action') in ['post_add', 'pre_remove']:
 
         if isinstance(instance, UserInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
-            invalid_user_cache(instance.pk)
+            invalid_user_cache(user_pk=instance.pk)
 
         if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             for dept in DeptInfo.objects.filter(pk__in=DeptInfo.recursion_dept_info(instance.pk)).all():
@@ -126,12 +135,12 @@ def invalid_dept_caches(instance):
 
 def invalid_superuser_cache():
     for pk in UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True):
-        invalid_user_cache(pk)
+        invalid_user_cache(user_pk=pk)
 
 
 def invalid_roles_cache(instance):
     for pk in instance.userinfo_set.values_list('pk', flat=True).distinct():
-        invalid_user_cache(pk)
+        invalid_user_cache(user_pk=pk)
 
 
 @receiver([post_save, pre_delete])
@@ -149,15 +158,13 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, UserInfo):
         if update_fields is None or {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
-            invalid_user_cache(instance.pk)
-        else:
-            invalid_userinfo_view_cache(instance.pk)
+            invalid_user_cache(user_pk=instance.pk)
+        # else:
+        #     invalid_userinfo_view_cache(instance.pk)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, SystemConfig):
         SysConfig.invalid_config_cache(instance.key)
-        if instance.key in ['PERMISSION_DATA', 'PERMISSION_FIELD']:
-            invalid_user_cache('*')
 
 
 @receiver([pre_delete])

@@ -16,16 +16,20 @@ from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsg
 
 class BackendListAPIView(GenericAPIView):
 
-    @extend_schema(parameters=None, responses=get_default_response_schema(
-        {
-            'data': build_array_type(build_object_type(
-                properties={
-                    'value': build_basic_type(OpenApiTypes.STR),
-                    'label': build_basic_type(OpenApiTypes.STR),
-                }
-            ))
-        }
-    ))
+    @extend_schema(
+        parameters=None, description="获取消息通知后端", responses=get_default_response_schema(
+            {
+                'data': build_array_type(
+                    build_object_type(
+                        properties={
+                            'value': build_basic_type(OpenApiTypes.STR),
+                            'label': build_basic_type(OpenApiTypes.STR)
+                        }
+                    )
+                )
+            }
+        )
+    )
     def get(self, request, *args, **kwargs):
         return ApiResponse(
             data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
@@ -37,6 +41,7 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
     serializer_class = SystemMsgSubscriptionSerializer
     list_serializer_class = SystemMsgSubscriptionByCategorySerializer
 
+    @extend_schema(description="获取系统消息订阅列表", responses={200: SystemMsgSubscriptionByCategorySerializer})
     def list(self, request, *args, **kwargs):
         data = []
         category_children_mapper = {}
@@ -79,6 +84,7 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
 
+    @extend_schema(description="获取用户消息订阅列表", responses={200: UserMsgSubscriptionByCategorySerializer})
     def list(self, request, *args, **kwargs):
         data = []
         category_children_mapper = {}

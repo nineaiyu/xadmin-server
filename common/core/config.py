@@ -89,7 +89,7 @@ class ConfigCacheBase(object):
         #         return int(v_group[0])
         return value
 
-    def get_value_from_db(self, key):
+    def get_value_from_db(self, key):  # 取得数据是激活的数据，如果数据未激活，则取默认数据
         data = self.serializer(self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()).data
         if re.findall('{{.*%s.*}}' % data['key'], json.dumps(data['value'])):  # 防止渲染出现递归
             logger.warning(f"get same render key:{key}. so get default value")
@@ -171,14 +171,6 @@ class BaseConfCache(ConfigCacheBase):
     @property
     def PICTURE_UPLOAD_SIZE(self):
         return self.get_value('PICTURE_UPLOAD_SIZE', settings.PICTURE_UPLOAD_SIZE)
-
-    @property
-    def PERMISSION_FIELD(self):
-        return self.get_value('PERMISSION_FIELD', True)
-
-    @property
-    def PERMISSION_DATA(self):
-        return self.get_value('PERMISSION_DATA', True)
 
     @property
     def EXPORT_MAX_LIMIT(self):

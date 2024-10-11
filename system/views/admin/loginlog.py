@@ -11,7 +11,7 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from system.models import UserLoginLog
-from system.serializers.log import UserLoginLogSerializer
+from system.serializers.log import LoginLogSerializer
 
 
 class LoginLogFilter(BaseFilterSet):
@@ -30,7 +30,7 @@ class LoginLogFilter(BaseFilterSet):
 class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     """用户登录日志"""
     queryset = UserLoginLog.objects.all()
-    serializer_class = UserLoginLogSerializer
+    serializer_class = LoginLogSerializer
 
     ordering_fields = ['created_time']
     filterset_class = LoginLogFilter

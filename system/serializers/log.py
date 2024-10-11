@@ -41,7 +41,7 @@ class OperationLogSerializer(BaseModelSerializer):
         return module_name
 
 
-class UserLoginLogSerializer(BaseModelSerializer):
+class LoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = UserLoginLog
         fields = ['pk', 'creator', 'ipaddress', 'city', 'login_type', 'browser', 'system', 'agent', 'status',
@@ -53,3 +53,10 @@ class UserLoginLogSerializer(BaseModelSerializer):
     creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label=_("User"))
     login_type = LabeledChoiceField(choices=UserLoginLog.LoginTypeChoices.choices,
                                     default=UserLoginLog.LoginTypeChoices.USERNAME, label=_("Login type"))
+
+
+class UserLoginLogSerializer(LoginLogSerializer):
+    class Meta:
+        model = UserLoginLog
+        fields = ['created_time', 'status', 'agent', 'city', 'login_type', 'system', 'browser', 'ipaddress']
+        read_only_fields = [x.name for x in UserLoginLog._meta.fields]

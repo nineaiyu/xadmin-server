@@ -4,8 +4,11 @@
 # filename : basic
 # author : ly_13
 # date : 8/1/2024
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+
+from system.signal import invalid_user_cache_signal
 
 
 class BasicSettingSerializer(serializers.Serializer):
@@ -18,8 +21,18 @@ class BasicSettingSerializer(serializers.Serializer):
     )
 
     FRONT_END_WEB_WATERMARK_ENABLED = serializers.BooleanField(
-        required=False, default=True, label=_("front-end web watermark enabled"),
+        required=False, default=True, label=_("Front-end web watermark"),
         help_text=_("Enable watermark for front-end web")
+    )
+
+    PERMISSION_FIELD_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Field permission"),
+        help_text=_("Field permissions are used to authorize access to data field display")
+    )
+
+    PERMISSION_DATA_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_("Data permission"),
+        help_text=_("Data permissions are used to authorize access to data")
     )
 
     @staticmethod
@@ -27,3 +40,9 @@ class BasicSettingSerializer(serializers.Serializer):
         if not s:
             return 'http://127.0.0.1'
         return s.strip('/')
+
+    def post_save(self):
+        if settings.PERMISSION_FIELD_ENABLED != self.validated_data[
+            'PERMISSION_FIELD_ENABLED'] or settings.PERMISSION_DATA_ENABLED != self.validated_data[
+            'PERMISSION_DATA_ENABLED']:
+            invalid_user_cache_signal.send(sender=self, user_pk='*')

@@ -18,7 +18,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import UserLoginLog, OperationLog, UserInfo
-from system.serializers.log import UserLoginLogSerializer
+from system.serializers.log import LoginLogSerializer
 
 
 def trend_info(queryset, limit_day=30):
@@ -67,7 +67,7 @@ def get_schema_response(has_count=True):
 class DashboardViewSet(GenericViewSet):
     """面板统计信息"""
     queryset = UserLoginLog.objects.all()
-    serializer_class = UserLoginLogSerializer
+    serializer_class = LoginLogSerializer
     ordering_fields = ['created_time']
 
     @extend_schema(responses=get_schema_response())

@@ -20,7 +20,7 @@ from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
 from settings.utils.security import LoginIpBlockUtil, LoginBlockUtil
 from system.models import UserLoginLog, UserInfo
 from system.notifications import DifferentCityLoginMessage
-from system.serializers.log import UserLoginLogSerializer
+from system.serializers.log import LoginLogSerializer
 
 
 def get_token_lifetime(user_obj):
@@ -89,7 +89,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         'agent': str(parse(request.META['HTTP_USER_AGENT'])),
         'login_type': login_type
     }
-    serializer = UserLoginLogSerializer(data=data, request=request, all_fields=True)
+    serializer = LoginLogSerializer(data=data, request=request, all_fields=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
