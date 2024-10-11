@@ -25,8 +25,12 @@ class ServerPerformanceMessage(SystemMessage):
         return {
             'subject': subject,
             'message': message,
-            'level': 'danger'
         }
+
+    def get_site_msg_msg(self):
+        info = self.get_html_msg()
+        info['level'] = 'danger'
+        return info
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription):
