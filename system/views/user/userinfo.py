@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
-    """用户个人信息管理"""
+    """个人信息"""
     serializer_class = UserInfoSerializer
     FILE_UPLOAD_FIELD = 'avatar'
     choices_models = [UserInfo]

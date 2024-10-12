@@ -61,7 +61,7 @@ class UserSiteMessageViewSetFilter(BaseFilterSet):
 
 
 class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
-    """用户个人通知公告管理"""
+    """用户消息中心"""
     queryset = MessageContent.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]

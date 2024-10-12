@@ -75,7 +75,7 @@ class NoticeUserReadMessageFilter(BaseFilterSet):
 
 
 class NoticeUserReadMessageViewSet(ListDeleteModelSet):
-    """用户消息公告已读管理"""
+    """已读消息公告"""
     queryset = MessageUserRead.objects.all()
     serializer_class = NoticeUserReadMessageSerializer
     choices_models = [MessageContent]

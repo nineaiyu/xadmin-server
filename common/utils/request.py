@@ -140,19 +140,19 @@ def get_verbose_name(queryset=None, view=None, model=None):
     :param view:
     :return:
     """
+    verbose_name = ''
     try:
+        if view is not None and hasattr(view, '__doc__'):
+            verbose_name = getattr(view, '__doc__')
         if queryset is not None and hasattr(queryset, 'model'):
             model = queryset.model
         elif view and hasattr(view.get_queryset(), 'model'):
             model = view.get_queryset().model
         elif view and hasattr(view.get_serializer(), 'Meta') and hasattr(view.get_serializer().Meta, 'model'):
             model = view.get_serializer().Meta.model
-        if model:
+        if model and not verbose_name:
             verbose_name = getattr(model, '_meta').verbose_name
-        else:
-            verbose_name = ""
     except Exception as e:
-        verbose_name = ""
         pass
     return model, verbose_name
 
