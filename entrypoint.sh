@@ -14,7 +14,9 @@ trap cleanup EXIT
 
 rm -f logs/tmp/*.pid
 
-if [[ "$action" == "bash" || "$action" == "sh" ]];then
+if [[ "${action:0:1}" == "/" ]];then
+    $@
+elif [[ "$action" == "bash" || "$action" == "sh" ]];then
     bash
 else
     python manage.py "${action}" "${service}"
