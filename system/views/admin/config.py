@@ -30,7 +30,7 @@ class SystemConfigFilter(BaseFilterSet):
         fields = ['pk', 'is_active', 'key', 'inherit', 'access', 'value', 'description']
 
 
-class SystemConfigView(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
+class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
     """
     系统配置管理
     """
@@ -59,7 +59,7 @@ class UserPersonalConfigFilter(SystemConfigFilter):
         fields = ['pk', 'is_active', 'key', 'access', 'username', 'owner_id', 'value', 'description']
 
 
-class UserPersonalConfigView(SystemConfigView):
+class UserPersonalConfigViewSet(SystemConfigViewSet):
     """
     用户配置管理
     """

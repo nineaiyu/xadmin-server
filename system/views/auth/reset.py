@@ -22,7 +22,7 @@ from system.models import UserInfo
 from system.utils.auth import verify_sms_email_code
 
 
-class ResetPasswordView(GenericAPIView):
+class ResetPasswordAPIView(GenericAPIView):
     permission_classes = []
     authentication_classes = []
     throttle_classes = [ResetPasswordThrottle]

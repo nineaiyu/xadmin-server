@@ -81,6 +81,7 @@ def create_system_messages(app_config: AppConfig, **kwargs):
 
 
 def invalid_notify_cache(pk):
+    """清理消息缓存"""
     cache_response.invalid_cache(f'UserSiteMessageViewSet_unread_{pk}_*')
     cache_response.invalid_cache(f'UserSiteMessageViewSet_list_{pk}_*')
 

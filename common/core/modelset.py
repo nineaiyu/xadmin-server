@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import json
 import logging
+from hashlib import md5
 from typing import Callable
 
 from django.conf import settings
@@ -24,6 +25,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.utils import encoders
 from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
 
+from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
@@ -34,6 +36,32 @@ from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
 
 logger = logging.getLogger(__name__)
+
+
+class CacheDetailResponseMixin(object):
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{request.user.pk}"
+
+    @classmethod
+    def invalid_cache(cls, pk, methods=None):
+        if methods is None:
+            methods = ['retrieve', 'get']
+        for method in methods:
+            cache_response.invalid_cache(f'{cls.__name__}_{method}_{pk}')
+
+
+class CacheListResponseMixin(object):
+    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
+        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        return f"{func_name}_{request.user.pk}_{md5(json.dumps(request.query_params, sort_keys=True).encode('utf-8')).hexdigest()}"
+
+    @classmethod
+    def invalid_cache(cls, pk, methods=None):
+        if methods is None:
+            methods = ['list']
+        for method in methods:
+            cache_response.invalid_cache(f'{cls.__name__}_{method}_{pk}')
 
 
 class UploadFileAction(object):

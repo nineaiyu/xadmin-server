@@ -16,7 +16,7 @@ from settings.serializers.basic import BasicSettingSerializer
 logger = logging.getLogger(__name__)
 
 
-class BaseSettingView(NoDetailModelSet):
+class BaseSettingViewSet(NoDetailModelSet):
     queryset = Setting.objects.all()
     serializer_class = BasicSettingSerializer
     category = "basic"

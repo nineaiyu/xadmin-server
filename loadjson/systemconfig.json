@@ -18,23 +18,6 @@
   },
   {
     "model": "system.systemconfig",
-    "pk": "3451e8e0-f9f5-4216-ac74-65aa323865f0",
-    "fields": {
-      "created_time": "2024-01-10T01:37:12.011Z",
-      "updated_time": "2024-09-05T07:20:42.114Z",
-      "description": "字段权限控制",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "value": true,
-      "is_active": true,
-      "access": false,
-      "key": "PERMISSION_FIELD",
-      "inherit": false
-    }
-  },
-  {
-    "model": "system.systemconfig",
     "pk": "3bd7a92c-5d3c-4671-9843-15784577a27d",
     "fields": {
       "created_time": "2024-06-09T06:58:20.035Z",
@@ -90,58 +73,31 @@
     "fields": {
       "created_time": "2024-04-19T07:43:23.923Z",
       "updated_time": "2024-09-05T07:21:29.816Z",
-      "description": null,
+      "description": "站点默认配置",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
       "value": {
-        "Version": "4.0.0",
-        "Title": "xAdmin",
-        "FixedHeader": true,
-        "HiddenSideBar": false,
-        "MultiTagsCache": false,
-        "KeepAlive": true,
         "Locale": "zh",
         "Layout": "vertical",
         "Theme": "light",
         "DarkMode": false,
+        "SidebarStatus": true,
+        "EpThemeColor": "#409EFF",
         "OverallStyle": "light",
         "Grey": false,
         "Weak": false,
         "HideTabs": false,
         "HideFooter": false,
-        "Stretch": false,
-        "SidebarStatus": true,
-        "EpThemeColor": "#409EFF",
         "ShowLogo": true,
         "ShowModel": "smart",
-        "MenuArrowIconNoTransition": false,
-        "CachingAsyncRoutes": false,
-        "TooltipEffect": "light",
-        "ResponsiveStorageNameSpace": "responsive-",
-        "MenuSearchHistory": 6
+        "MultiTagsCache": false,
+        "Stretch": false
       },
       "is_active": true,
       "access": true,
       "key": "WEB_SITE_CONFIG",
       "inherit": true
-    }
-  },
-  {
-    "model": "system.systemconfig",
-    "pk": "dd9dcb49-07b3-43e6-8893-cf093762b9cb",
-    "fields": {
-      "created_time": "2024-01-10T01:35:44.713Z",
-      "updated_time": "2024-09-05T07:20:47.194Z",
-      "description": "数据权限控制",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "value": true,
-      "is_active": true,
-      "access": false,
-      "key": "PERMISSION_DATA",
-      "inherit": false
     }
   }
 ]

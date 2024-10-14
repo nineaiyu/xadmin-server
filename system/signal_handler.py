@@ -7,6 +7,7 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth import user_logged_out
 from django.db import transaction
 from django.db.models.signals import post_save, pre_delete, m2m_changed, post_migrate
 from django.dispatch import receiver
@@ -20,6 +21,7 @@ from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
 from common.core.utils import PrintLogFormat
 from system.models import Menu, UserRole, UserInfo, DeptInfo, DataPermission, SystemConfig, ModelLabelField
+from system.signal import invalid_user_cache_signal
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,9 @@ logger = logging.getLogger(__name__)
 @receiver(post_migrate)
 @transaction.atomic
 def post_migrate_handler(sender, **kwargs):
+    """
+    用于执行迁移命令的时候，同步字段数据到数据库
+    """
     if not UserInfo.objects.filter(pk=1).first():
         return
     label = sender.label
@@ -73,12 +78,44 @@ def post_migrate_handler(sender, **kwargs):
             plf.error(f"auto get sub serializer fields failed. {e}")
 
 
+# def invalid_userinfo_view_cache(user_pk):
+#     cache_response.invalid_cache(f'UserInfoViewSet_retrieve_{user_pk}')
+
+
+def invalid_menu_view_cache(user_pk):
+    cache_response.invalid_cache(f'MenuViewSet_list_{user_pk}')
+
+
+def invalid_route_view_cache(user_pk):
+    cache_response.invalid_cache(f'UserRoutesAPIView_get_{user_pk}')
+
+
+def invalid_user_permission_data_cache(user_pk):
+    MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
+
+
+@receiver([invalid_user_cache_signal, user_logged_out])
+def invalid_user_cache(**kwargs):
+    user_pk = kwargs.get('user_pk', None)
+    user = kwargs.get('user', None)
+    if user is not None:
+        user_pk = user.pk
+    if user_pk is None:
+        return
+    # invalid_userinfo_view_cache(user_pk)
+    invalid_route_view_cache(user_pk)
+    invalid_menu_view_cache(f'{user_pk}_*')
+
+    invalid_user_permission_data_cache(user_pk)
+    MagicCacheData.invalid_cache(f'get_user_field_queryset_{user_pk}')  # 清理权限
+
+
 @receiver(m2m_changed)
 def clean_m2m_cache_handler(sender, instance, **kwargs):
     if kwargs.get('action') in ['post_add', 'pre_remove']:
 
         if isinstance(instance, UserInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
-            invalid_user_cache(instance.pk)
+            invalid_user_cache(user_pk=instance.pk)
 
         if isinstance(instance, DeptInfo):  # 分配用户角色，需要同时清理用户路由和用户信息
             for dept in DeptInfo.objects.filter(pk__in=DeptInfo.recursion_dept_info(instance.pk)).all():
@@ -96,40 +133,19 @@ def invalid_dept_caches(instance):
             invalid_roles_cache(dept)
 
 
-def invalid_user_cache(user_pk):
-    cache_response.invalid_cache(f'UserInfoView_retrieve_{user_pk}')
-    cache_response.invalid_cache(f'UserRoutesView_get_{user_pk}')
-    MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
-    MagicCacheData.invalid_cache(f'get_user_field_queryset_{user_pk}')  # 清理权限
-    cache_response.invalid_cache(f'MenuView_list_{user_pk}_*')
-
-
 def invalid_superuser_cache():
     for pk in UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True):
-        invalid_user_cache(pk)
+        invalid_user_cache(user_pk=pk)
 
 
 def invalid_roles_cache(instance):
     for pk in instance.userinfo_set.values_list('pk', flat=True).distinct():
-        invalid_user_cache(pk)
+        invalid_user_cache(user_pk=pk)
 
 
 @receiver([post_save, pre_delete])
 def clean_cache_handler(sender, instance, **kwargs):
     update_fields = kwargs.get('update_fields', [])
-    if issubclass(sender, Menu):
-        cache_response.invalid_cache('MenuView_list_*')
-        queryset = instance.userrole_set.values_list('userinfo', flat=True)
-        invalid_superuser_cache()
-        if queryset.count() > 100:
-            cache_response.invalid_cache('UserRoutesView_get_*')
-        else:
-            for pk in set(queryset):
-                cache_response.invalid_cache(f'UserRoutesView_get_{pk}')
-                MagicCacheData.invalid_cache(f'get_user_permission_{pk}')  # 清理权限
-        for obj in DeptInfo.objects.filter(roles__menu=instance).distinct():
-            invalid_roles_cache(obj)
-        logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, DataPermission):
         invalid_roles_cache(instance)
@@ -142,15 +158,13 @@ def clean_cache_handler(sender, instance, **kwargs):
 
     if issubclass(sender, UserInfo):
         if update_fields is None or {'roles', 'rules', 'dept', 'mode_type'} & set(update_fields):
-            invalid_user_cache(instance.pk)
-        else:
-            cache_response.invalid_cache(f'UserInfoView_retrieve_{instance.pk}')
+            invalid_user_cache(user_pk=instance.pk)
+        # else:
+        #     invalid_userinfo_view_cache(instance.pk)
         logger.info(f"invalid cache {sender}")
 
     if issubclass(sender, SystemConfig):
         SysConfig.invalid_config_cache(instance.key)
-        if instance.key in ['PERMISSION_DATA', 'PERMISSION_FIELD']:
-            invalid_user_cache('*')
 
 
 @receiver([pre_delete])
@@ -159,3 +173,14 @@ def clean_cache_handler_pre_delete(sender, instance, **kwargs):
         if instance.userinfo_set.count():
             invalid_roles_cache(instance)
             logger.info(f"invalid cache {sender}")
+
+
+@receiver([post_save, pre_delete], sender=Menu)
+def clean_cache_handler(sender, instance, **kwargs):
+    invalid_menu_view_cache('*')
+    invalid_superuser_cache()
+    invalid_route_view_cache('*')
+    invalid_user_permission_data_cache('*')
+    for obj in DeptInfo.objects.filter(roles__menu=instance).distinct():
+        invalid_roles_cache(obj)
+    logger.info(f"invalid cache {sender}")

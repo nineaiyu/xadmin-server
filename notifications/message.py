@@ -5,7 +5,7 @@ from django.db import transaction
 from common.core.config import UserConfig
 from common.utils import get_logger
 from message.utils import push_message
-from notifications.serializers.message import UserNoticeSerializer, NoticeMessageSerializer
+from notifications.serializers.message import NoticeMessageSerializer
 from system.models import UserInfo
 
 logger = get_logger(__file__)

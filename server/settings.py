@@ -225,8 +225,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # Media配置
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "upload")
-FILE_UPLOAD_SIZE = 1024 * 1024 * 10
-PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5
+FILE_UPLOAD_SIZE = 1024 * 1024 * 10  # 文件上传大小限制,默认10兆
+PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5  # 头像图片上传大小，默认为500kb
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
@@ -676,6 +676,9 @@ SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = True
 
 # 基本配置
 SITE_URL = 'http://127.0.0.1:8000'
+FRONT_END_WEB_WATERMARK_ENABLED = True  # 前端水印展示
+PERMISSION_FIELD_ENABLED = True  # 字段权限控制
+PERMISSION_DATA_ENABLED = True  # 数据权限控制
 
 # 验证码配置
 VERIFY_CODE_TTL = 5 * 60  # Unit: second

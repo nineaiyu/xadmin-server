@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 flower_url = f'{settings.CELERY_FLOWER_HOST}:{settings.CELERY_FLOWER_PORT}'
 
 
-class CeleryFlowerView(GenericAPIView):
+class CeleryFlowerAPIView(GenericAPIView):
     """celery 定时任务"""
 
     @extend_schema(exclude=True)

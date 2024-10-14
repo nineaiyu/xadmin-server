@@ -22,17 +22,17 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer
-from settings.views.settings import BaseSettingView
+from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__file__)
 
 
-class SmsSettingView(BaseSettingView):
+class SmsSettingViewSet(BaseSettingViewSet):
     serializer_class = SMSSettingSerializer
     category = "sms"
 
 
-class SMSBackendView(GenericAPIView):
+class SMSBackendAPIView(GenericAPIView):
 
     @extend_schema(parameters=None, responses=get_default_response_schema(
         {
@@ -48,7 +48,7 @@ class SMSBackendView(GenericAPIView):
         return ApiResponse(data=get_choices_dict(BACKENDS.choices))
 
 
-class SmsConfigView(BaseSettingView):
+class SmsConfigViewSet(BaseSettingViewSet):
     serializer_class_mapper = {
         'alibaba': AlibabaSMSSettingSerializer,
     }

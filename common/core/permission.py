@@ -13,7 +13,6 @@ from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
-from common.core.config import SysConfig
 from system.models import Menu, FieldPermission
 
 
@@ -90,7 +89,6 @@ class IsAuthenticated(BasePermission):
                     request.all_fields = True
                     return True
             permission_data = get_user_permission(request.user)
-            permission_field = SysConfig.PERMISSION_FIELD
             for p_data in permission_data:
                 # 处理search-columns字段权限和list权限一致
                 match_group = re.match("(?P<url>.*)/search-columns$", url)
@@ -99,7 +97,7 @@ class IsAuthenticated(BasePermission):
 
                 if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
                     request.user.menu = p_data.get('pk')
-                    if permission_field:
+                    if settings.PERMISSION_FIELD_ENABLED:
                         # 为了使导入导出字段权限和list, create同步
                         if url.endswith('import-data') or url.endswith('export-data'):
                             p_data = get_import_export_permission(permission_data, url, request)

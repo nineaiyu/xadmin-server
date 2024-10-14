@@ -35,7 +35,7 @@ class IpUtils(object):
         return socket.inet_ntoa(struct.pack("!I", int(self.ip)))
 
 
-class BlockIpView(ListDeleteModelSet):
+class BlockIpViewSet(ListDeleteModelSet):
     serializer_class = SecurityBlockIPSerializer
     queryset = Setting.objects.none()
 

@@ -14,7 +14,8 @@ from common.swagger.utils import get_default_response_schema
 from settings.utils.password import get_password_check_rules
 
 
-class PasswordRulesView(GenericAPIView):
+class PasswordRulesAPIView(GenericAPIView):
+    """密码规则配置信息"""
     permission_classes = []
 
     @extend_schema(

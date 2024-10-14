@@ -22,7 +22,7 @@ def config_response_schema():
     return get_default_response_schema({'config': build_object_type(), 'auth': build_basic_type(OpenApiTypes.STR)})
 
 
-class ConfigsView(GenericViewSet):
+class ConfigsViewSet(GenericViewSet):
     """配置信息"""
     queryset = UserPersonalConfig.objects.none()
     serializer_class = UserPersonalConfigSerializer

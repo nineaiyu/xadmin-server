@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-24 18:54+0800\n"
+"POT-Creation-Date: 2024-10-14 09:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
-#: common/core/permission.py:112
+#: common/core/permission.py:110
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
@@ -92,33 +92,33 @@ msgstr "修改人"
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
-#: common/core/modelset.py:68
+#: common/core/modelset.py:96
 msgid "Image size cannot exceed {}"
 msgstr "图片大小不能超过 {}"
 
-#: common/core/modelset.py:71
+#: common/core/modelset.py:99
 msgid "Wrong image type, the type should be {}"
 msgstr "错误的图片类型, 类型应该为 {}"
 
-#: common/core/modelset.py:100
+#: common/core/modelset.py:128
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:161 system/utils/auth.py:104
+#: common/core/modelset.py:189 system/utils/auth.py:104
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
 #: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/modelset.py:426
+#: common/core/modelset.py:454
 msgid "Operation failed. Primary key list does not exist"
 msgstr "操作失败，主键列表不存在"
 
-#: common/core/modelset.py:436
+#: common/core/modelset.py:464
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/permission.py:110
+#: common/core/permission.py:108
 msgid "Permission denied"
 msgstr "权限拒绝"
 
@@ -184,34 +184,34 @@ msgstr "磁盘使用"
 msgid "Boot Time"
 msgstr "运行时间"
 
-#: common/models.py:21 common/notifications.py:13
+#: common/models.py:21 common/notifications.py:15
 msgid "Monitor"
 msgstr "资源监控"
 
-#: common/notifications.py:14
+#: common/notifications.py:16
 msgid "Server performance"
 msgstr "监控告警"
 
-#: common/notifications.py:20
+#: common/notifications.py:22
 msgid "Server health check warning"
 msgstr "服务健康状况检查警告"
 
-#: common/notifications.py:48
+#: common/notifications.py:54
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:53
+#: common/notifications.py:59
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr "内存使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:58
+#: common/notifications.py:64
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 负载超过 {max_threshold}: => {value}"
 
-#: common/notifications.py:63
+#: common/notifications.py:69
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
@@ -314,8 +314,8 @@ msgid "Invalid ip"
 msgstr "无效 IP"
 
 #: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
-#: common/utils/ip/geoip/utils.py:37 common/utils/ip/utils.py:104
-#: system/models/log.py:23 system/models/user.py:20 system/utils/auth.py:82
+#: common/utils/ip/geoip/utils.py:37 system/models/log.py:23
+#: system/models/user.py:20 system/utils/auth.py:82
 msgid "Unknown"
 msgstr "未知"
 
@@ -476,11 +476,11 @@ msgstr "{} 订阅"
 msgid "System message subscription"
 msgstr "系统消息订阅"
 
-#: notifications/notifications.py:41
+#: notifications/notifications.py:42
 msgid "Publish the station message"
 msgstr "发布站内消息"
 
-#: notifications/notifications.py:185
+#: notifications/notifications.py:186
 msgid "Time"
 msgstr "时间"
 
@@ -547,15 +547,41 @@ msgstr "激活状态"
 msgid "System setting"
 msgstr "系统设置"
 
-#: settings/serializers/basic.py:13
+#: settings/serializers/basic.py:16
 msgid "Site URL"
 msgstr "当前站点 URL"
 
-#: settings/serializers/basic.py:15
+#: settings/serializers/basic.py:18
 msgid ""
 "Site URL is the externally accessible address of the current product service "
 "and is usually used in links in system emails"
 msgstr "站点 URL 是当前产品服务的外部可访问地址，通常在系统邮件中的链接中使用"
+
+#: settings/serializers/basic.py:24
+msgid "Front-end web watermark"
+msgstr "前端页面水印"
+
+#: settings/serializers/basic.py:25
+msgid "Enable watermark for front-end web"
+msgstr "开启前端页面水印"
+
+#: settings/serializers/basic.py:29 system/models/permission.py:38
+msgid "Field permission"
+msgstr "字段权限"
+
+#: settings/serializers/basic.py:30
+msgid "Field permissions are used to authorize access to data field display"
+msgstr "字段权限用于授权访问数据字段展示"
+
+#: settings/serializers/basic.py:34 system/models/department.py:24
+#: system/models/field.py:33 system/models/permission.py:25
+#: system/models/user.py:36 system/serializers/base.py:24
+msgid "Data permission"
+msgstr "数据权限"
+
+#: settings/serializers/basic.py:35
+msgid "Data permissions are used to authorize access to data"
+msgstr "数据权限用于授权访问数据"
 
 #: settings/serializers/email.py:13
 msgid "Enable Email Service (Email)"
@@ -1103,12 +1129,6 @@ msgstr "上级部门"
 msgid "Role permission"
 msgstr "角色权限"
 
-#: system/models/department.py:24 system/models/field.py:33
-#: system/models/permission.py:25 system/models/user.py:36
-#: system/serializers/base.py:24
-msgid "Data permission"
-msgstr "数据权限"
-
 #: system/models/department.py:25 system/models/menu.py:65
 msgid "Rank"
 msgstr "排序"
@@ -1450,10 +1470,6 @@ msgstr "角色"
 msgid "Field"
 msgstr "字段"
 
-#: system/models/permission.py:38
-msgid "Field permission"
-msgstr "字段权限"
-
 #: system/models/role.py:15
 msgid "Role name"
 msgstr "角色名称"
@@ -1609,6 +1625,14 @@ msgstr "确认密码"
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 
+#: system/signal_handler.py:46
+msgid "All tables"
+msgstr "全部表"
+
+#: system/signal_handler.py:48
+msgid "All fields"
+msgstr "全部字段"
+
 #: system/templates/msg_verify_code.html:9
 #: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
@@ -1698,14 +1722,6 @@ msgid ""
 msgstr ""
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
-
-#: system/utils/signal_handler.py:41
-msgid "All tables"
-msgstr "全部表"
-
-#: system/utils/signal_handler.py:43
-msgid "All fields"
-msgstr "全部字段"
 
 #: system/views/admin/user.py:50
 msgid "The super administrator disallows deletion"

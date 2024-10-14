@@ -35,7 +35,7 @@ class SearchMenuSerializer(MenuSerializer):
     title = serializers.CharField(source='meta.title', read_only=True)
 
 
-class SearchMenuView(OnlyListModelSet):
+class SearchMenuViewSet(OnlyListModelSet):
     """菜单管理"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = SearchMenuSerializer

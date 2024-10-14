@@ -95,7 +95,7 @@ from system.utils.auth import check_token_and_captcha, check_is_block
         )
     )
 )
-class SendVerifyCodeView(GenericAPIView):
+class SendVerifyCodeAPIView(GenericAPIView):
     """获取验证码配置"""
     permission_classes = []
     authentication_classes = []

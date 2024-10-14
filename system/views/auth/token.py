@@ -18,7 +18,7 @@ from common.utils.token import make_token_cache
 from system.utils.auth import get_token_lifetime
 
 
-class TempTokenView(GenericAPIView):
+class TempTokenAPIView(GenericAPIView):
     """获取临时token"""
     permission_classes = []
     authentication_classes = []
@@ -32,7 +32,7 @@ class TempTokenView(GenericAPIView):
         return ApiResponse(token=token)
 
 
-class CaptchaView(GenericAPIView):
+class CaptchaAPIView(GenericAPIView):
     """获取验证码"""
     permission_classes = []
     authentication_classes = []
@@ -51,7 +51,7 @@ class CaptchaView(GenericAPIView):
         return ApiResponse(**CaptchaAuth().generate())
 
 
-class RefreshTokenView(TokenRefreshView):
+class RefreshTokenAPIView(TokenRefreshView):
     """刷新Token"""
 
     def post(self, request, *args, **kwargs):

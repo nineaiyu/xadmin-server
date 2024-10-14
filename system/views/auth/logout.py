@@ -7,6 +7,7 @@
 import hashlib
 import time
 
+from django.contrib.auth import logout
 from drf_spectacular.plumbing import build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
@@ -18,7 +19,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
 
-class LogoutView(GenericAPIView):
+class LogoutAPIView(GenericAPIView):
     """用户登出"""
 
     @extend_schema(
@@ -43,4 +44,5 @@ class LogoutView(GenericAPIView):
                 token.blacklist()
             except Exception as e:
                 pass
+        logout(request)
         return ApiResponse()

@@ -35,7 +35,7 @@ class SearchUserSerializer(UserSerializer):
                         'last_login', 'date_joined']
 
 
-class SearchUserView(OnlyListModelSet):
+class SearchUserViewSet(OnlyListModelSet):
     queryset = UserInfo.objects.all()
     serializer_class = SearchUserSerializer
 

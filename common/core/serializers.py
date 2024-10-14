@@ -15,7 +15,6 @@ from rest_framework.fields import empty
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
-from common.core.config import SysConfig
 from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.utils import PrintLogFormat
 from system.models import ModelLabelField
@@ -62,7 +61,7 @@ class BaseModelSerializer(ModelSerializer):
         allowed2 = allowed1 = None
         if fields is not None:
             allowed1 = set(fields)
-        if self.request and SysConfig.PERMISSION_FIELD and not self.ignore_field_permission:
+        if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
             if hasattr(self.request, "fields"):
                 if self.request.fields and isinstance(self.request.fields, dict):
                     allowed2 = set(self.request.fields.get(self.Meta.model._meta.label_lower, []))

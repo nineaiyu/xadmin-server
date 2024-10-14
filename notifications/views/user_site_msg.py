@@ -5,8 +5,6 @@
 # author : ly_13
 # date : 9/15/2024
 
-from hashlib import md5
-
 from django.db.models import Q
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
@@ -19,7 +17,7 @@ from rest_framework.filters import OrderingFilter
 
 from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet
-from common.core.modelset import OnlyListModelSet
+from common.core.modelset import OnlyListModelSet, CacheListResponseMixin
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from notifications.models import MessageContent, MessageUserRead
@@ -62,8 +60,8 @@ class UserSiteMessageViewSetFilter(BaseFilterSet):
         fields = ['title', 'message', 'pk', 'notice_type', 'unread', 'level']
 
 
-class UserSiteMessageViewSet(OnlyListModelSet):
-    """用户个人通知公告管理"""
+class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
+    """用户消息中心"""
     queryset = MessageContent.objects.filter(publish=True).all().distinct()
     serializer_class = UserNoticeSerializer
     filter_backends = [filters.DjangoFilterBackend, OrderingFilter]
@@ -78,10 +76,6 @@ class UserSiteMessageViewSet(OnlyListModelSet):
         self.queryset = self.filter_queryset(self.get_queryset()).filter(q)
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, unread_count=unread_count)
-
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
-        return f"{func_name}_{request.user.pk}_{md5(request.META['QUERY_STRING'].encode('utf-8')).hexdigest()}"
 
     @extend_schema(
         parameters=[],

@@ -7,16 +7,16 @@
 
 from common.utils import get_logger
 from settings.serializers.verify import VerifyCodeSettingSerializer, CaptchaSettingSerializer
-from settings.views.settings import BaseSettingView
+from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__file__)
 
 
-class VerifyCodeSettingView(BaseSettingView):
+class VerifyCodeSettingViewSet(BaseSettingViewSet):
     serializer_class = VerifyCodeSettingSerializer
     category = "verify"
 
 
-class CaptchaSettingView(BaseSettingView):
+class CaptchaSettingViewSet(BaseSettingViewSet):
     serializer_class = CaptchaSettingSerializer
     category = "captcha"

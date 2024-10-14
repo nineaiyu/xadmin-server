@@ -5,12 +5,13 @@ from celery import shared_task
 from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
-from common.utils import lazyproperty
+from common.utils import lazyproperty, get_logger
 from common.utils.timezone import local_now
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from system.models import UserInfo
 
+logger = get_logger(__file__)
 system_msgs = []
 user_msgs = []
 
@@ -235,6 +236,9 @@ class SystemMessage(Message):
         receive_backends = BACKEND.filter_enable_backends(receive_backends)
 
         receive_user_ids = subscription.users.values_list('pk', flat=True).all()
+        if not receive_user_ids:
+            logger.warning(f"send system msg failed. No receive users found for {self}")
+            return
         backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
         if is_async:
             publish_task.delay(receive_user_ids, backends_msg_mapper)

@@ -165,7 +165,7 @@ class MagicCacheData(object):
                 n_time = time.time()
                 res = cache.get(cache_key)
                 if res:
-                    while res.get('status') != 'ok':
+                    while not res or res.get('status') != 'ok':
                         time.sleep(0.5)
                         logger.warning(
                             f'exec {func} wait. data status is not ok. cache_time:{cache_time} cache_key:{cache_key}  cache data exist result:{res}')
@@ -198,9 +198,8 @@ class MagicCacheData(object):
     @staticmethod
     def invalid_cache(key):
         cache_key = f'magic_cache_data_{key}'
-        for delete_key in cache.iter_keys(cache_key):
-            cache.delete(delete_key)
-        logger.warning(f"invalid_cache cache_key:{cache_key}")
+        count = cache.delete_pattern(cache_key)
+        logger.warning(f"invalid_cache cache_key:{cache_key} count:{count}")
 
 
 class MagicCacheResponse(object):
@@ -212,9 +211,8 @@ class MagicCacheResponse(object):
     @staticmethod
     def invalid_cache(key):
         cache_key = f'magic_cache_response_{key}'
-        for delete_key in cache.iter_keys(cache_key):
-            cache.delete(delete_key)
-        logger.info(f"invalid_response_cache cache_key:{cache_key}")
+        count = cache.delete_pattern(cache_key)
+        logger.warning(f"invalid_response_cache cache_key:{cache_key} count:{count}")
 
     def __call__(self, func):
         this = self

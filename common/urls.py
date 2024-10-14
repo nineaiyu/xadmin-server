@@ -6,10 +6,10 @@
 # date : 6/6/2023
 from django.urls import re_path
 
-from common.api.common import ResourcesIDCacheApi, CountryListApi, HealthCheckView
+from common.api.common import ResourcesIDCacheAPIView, CountryListAPIView, HealthCheckAPIView
 
 urlpatterns = [
-    re_path('^resources/cache$', ResourcesIDCacheApi.as_view(), name='resources-cache'),
-    re_path('^countries$', CountryListApi.as_view(), name='countries'),
-    re_path('^api/health', HealthCheckView.as_view(), name='health'),
+    re_path('^resources/cache$', ResourcesIDCacheAPIView.as_view(), name='resources-cache'),
+    re_path('^countries$', CountryListAPIView.as_view(), name='countries'),
+    re_path('^api/health', HealthCheckAPIView.as_view(), name='health'),
 ]

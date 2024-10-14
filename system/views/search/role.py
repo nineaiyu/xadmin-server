@@ -33,7 +33,7 @@ class SearchRoleSerializer(RoleSerializer):
         read_only_fields = [x.name for x in UserRole._meta.fields]
 
 
-class SearchRoleView(OnlyListModelSet):
+class SearchRoleViewSet(OnlyListModelSet):
     """角色管理"""
     queryset = UserRole.objects.all()
     serializer_class = SearchRoleSerializer

@@ -52,7 +52,7 @@ def get_upload_max_size(user_obj):
         })
     )
 )
-class UploadView(GenericAPIView):
+class UploadAPIView(GenericAPIView):
     """本地上传文件接口"""
     throttle_classes = [UploadThrottle]
     parser_classes = (MultiPartParser,)

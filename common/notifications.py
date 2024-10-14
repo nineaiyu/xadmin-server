@@ -1,3 +1,5 @@
+from django.db.models.aggregates import Avg
+from django.db.models.functions import Round
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -25,8 +27,12 @@ class ServerPerformanceMessage(SystemMessage):
         return {
             'subject': subject,
             'message': message,
-            'level': 'danger'
         }
+
+    def get_site_msg_msg(self):
+        info = self.get_html_msg()
+        info['level'] = 'danger'
+        return info
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription):
@@ -54,7 +60,7 @@ class ServerPerformanceCheckUtil(object):
         },
         'cpu_load': {
             'default': 0,
-            'max_threshold': 10,
+            'max_threshold': 5,
             'alarm_msg_format': _('CPU load more than {max_threshold}: => {value}'),
         },
         'cpu_percent': {
@@ -95,7 +101,7 @@ class ServerPerformanceCheckUtil(object):
     def check_item(term, item, data):
         default = data['default']
         max_threshold = data['max_threshold']
-        value = getattr(term, item, default)
+        value = term.get(item, default)
 
         if isinstance(value, bool) and value != max_threshold:
             return
@@ -110,5 +116,15 @@ class ServerPerformanceCheckUtil(object):
             return
         ServerPerformanceMessage(self.terms_with_errors).publish()
 
+    @staticmethod
+    def get_monitor_latest_average_value(num=3):
+        """最近三次数据的平均值"""
+        return Monitor.objects.order_by('-created_time')[0:num].aggregate(
+            cpu_load=Round(Avg('cpu_load'), 2),
+            cpu_percent=Round(Avg('cpu_percent'), 2),
+            memory_used=Round(Avg('memory_used'), 2),
+            disk_used=Round(Avg('disk_used'), 2),
+        )
+
     def initial_terminals(self):
-        self._terminals = [Monitor.objects.last()]
+        self._terminals = [self.get_monitor_latest_average_value()]

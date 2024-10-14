@@ -9,6 +9,7 @@ from rest_framework.generics import GenericAPIView
 
 from common.base.magic import cache_response
 from common.base.utils import menu_list_to_tree, format_menu_data
+from common.core.modelset import CacheDetailResponseMixin
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from system.models import Menu
@@ -25,12 +26,8 @@ def get_auths(user):
     return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list('name', flat=True).distinct()
 
 
-class UserRoutesView(GenericAPIView):
+class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
     """获取菜单路由"""
-
-    def get_cache_key(self, view_instance, view_method, request, args, kwargs):
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
-        return f"{func_name}_{request.user.pk}"
 
     @extend_schema(exclude=True)
     @cache_response(timeout=3600 * 24 * 7, key_func='get_cache_key')

@@ -29,7 +29,7 @@ class NoticeMessageFilter(BaseFilterSet):
         fields = ['pk', 'title', 'message', 'notice_type', 'level', 'publish']
 
 
-class NoticeMessageView(BaseModelSet):
+class NoticeMessageViewSet(BaseModelSet):
     """消息通知管理"""
     queryset = MessageContent.objects.all()
     serializer_class = NoticeMessageSerializer
@@ -74,8 +74,8 @@ class NoticeUserReadMessageFilter(BaseFilterSet):
         fields = ['notice_id', 'title', 'username', 'owner_id', 'notice_type', 'unread', 'level', 'message']
 
 
-class NoticeUserReadMessageView(ListDeleteModelSet):
-    """用户消息公告已读管理"""
+class NoticeUserReadMessageViewSet(ListDeleteModelSet):
+    """已读消息公告"""
     queryset = MessageUserRead.objects.all()
     serializer_class = NoticeUserReadMessageSerializer
     choices_models = [MessageContent]

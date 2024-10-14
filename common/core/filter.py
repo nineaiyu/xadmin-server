@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q, QuerySet
 from django.forms.utils import from_current_timezone
@@ -20,7 +21,6 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
 from common.cache.storage import CommonResourceIDsCache
-from common.core.config import SysConfig
 from common.core.db.utils import RelatedManager
 from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
 
@@ -151,7 +151,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         若模式为或模式，并存在全部数据，则直接返回queryset
         若模式为且模式，则 返回queryset.filter(规则)
     """
-    if not SysConfig.PERMISSION_DATA or queryset is None:
+    if not settings.PERMISSION_DATA_ENABLED or queryset is None:
         return queryset
 
     if user_obj.is_superuser:
