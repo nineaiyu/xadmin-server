@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-11 16:51+0800\n"
+"POT-Creation-Date: 2024-10-14 09:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -184,34 +184,34 @@ msgstr "磁盘使用"
 msgid "Boot Time"
 msgstr "运行时间"
 
-#: common/models.py:21 common/notifications.py:13
+#: common/models.py:21 common/notifications.py:15
 msgid "Monitor"
 msgstr "资源监控"
 
-#: common/notifications.py:14
+#: common/notifications.py:16
 msgid "Server performance"
 msgstr "监控告警"
 
-#: common/notifications.py:20
+#: common/notifications.py:22
 msgid "Server health check warning"
 msgstr "服务健康状况检查警告"
 
-#: common/notifications.py:52
+#: common/notifications.py:54
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:57
+#: common/notifications.py:59
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr "内存使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:62
+#: common/notifications.py:64
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 负载超过 {max_threshold}: => {value}"
 
-#: common/notifications.py:67
+#: common/notifications.py:69
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
