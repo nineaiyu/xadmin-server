@@ -225,8 +225,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # Media配置
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "upload")
-FILE_UPLOAD_SIZE = 1024 * 1024 * 10
-PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5
+FILE_UPLOAD_SIZE = 1024 * 1024 * 10  # 文件上传大小限制,默认10兆
+PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5  # 头像图片上传大小，默认为500kb
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
