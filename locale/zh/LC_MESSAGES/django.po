@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-14 09:55+0800\n"
+"POT-Creation-Date: 2024-10-16 12:28+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -48,16 +48,16 @@ msgstr "请求地址不正确或数据权限不允许"
 msgid "This data with other data binding"
 msgstr "该条数据与其他数据有绑定"
 
-#: common/core/fields.py:74
+#: common/core/fields.py:78
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/fields.py:75
+#: common/core/fields.py:79
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 
-#: common/core/fields.py:76
+#: common/core/fields.py:80
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"

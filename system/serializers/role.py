@@ -43,7 +43,7 @@ class RoleSerializer(BaseModelSerializer):
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_field(self, obj):
         results = FieldPermissionSerializer(FieldPermission.objects.filter(role=obj), many=True,
-                                            request=self.request, all_fields=True).data
+                                            request=self.request, ignore_field_permission=True).data
         data = {}
         for res in results:
             data[str(res.get('menu'))] = res.get('field', [])
@@ -52,7 +52,7 @@ class RoleSerializer(BaseModelSerializer):
     def save_fields(self, fields, instance):
         for k, v in fields.items():
             serializer = FieldPermissionSerializer(data={'role': instance.pk, 'menu': k, 'field': v},
-                                                   request=self.request, all_fields=True)
+                                                   request=self.request, ignore_field_permission=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
 

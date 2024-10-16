@@ -51,4 +51,4 @@ class RouteSerializer(BaseModelSerializer):
     parent = BasePrimaryKeyRelatedField(queryset=Menu.objects, allow_null=True, required=False,
                                         label=_("Parent menu"), attrs=['pk', 'name'])
 
-    meta = RouteMetaSerializer(all_fields=True, label=_("Menu meta"))  # 用于前端菜单渲染
+    meta = RouteMetaSerializer(ignore_field_permission=True, label=_("Menu meta"))  # 用于前端菜单渲染

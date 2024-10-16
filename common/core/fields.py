@@ -7,6 +7,7 @@
 from functools import partial
 
 import phonenumbers
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils.translation import gettext_lazy as _
@@ -70,25 +71,36 @@ class LabeledMultipleChoiceField(MultipleChoiceField):
 
 
 class BasePrimaryKeyRelatedField(RelatedField):
+    """
+    Base class for primary key related fields.
+    """
     default_error_messages = {
         "required": _("This field is required."),
         "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
         "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
     }
 
-    def __init__(self, **kwargs):
-        self.attrs = kwargs.pop("attrs", [])
+    def __init__(self, request=None, attrs=None, ignore_field_permission=False, **kwargs):
+        """
+        :param request:
+        :param attrs: 默认为 None，返回默认的 pk， 一般需要自定义
+        :param ignore_field_permission: 忽略字段权限控制
+        """
+        self.attrs = attrs
         self.label_format = kwargs.pop("format", None)
         self.input_type = kwargs.pop("input_type", '')
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
-        self.request: Request = self.context.get("request", None)
+        self.request: Request = request or self.context.get("request", None)
+        self.ignore_field_permission = ignore_field_permission
 
     def use_pk_only_optimization(self):
         return False
 
     def get_queryset(self):
         request = self.context.get("request", None)
+        if not self.request:
+            self.request = request
         if request and request.user and request.user.is_authenticated:
             return get_filter_queryset(super().get_queryset(), request.user)
         return super().get_queryset()
@@ -124,11 +136,36 @@ class BasePrimaryKeyRelatedField(RelatedField):
                 result[key] = self.display_value(item)
         return result
 
+    def get_allow_fields(self, value):
+        if self.attrs is None:  # 默认没写attrs, 返回默认pk
+            return self.attrs
+        fields = [x.name for x in value._meta.fields]
+
+        if not isinstance(self.attrs, (list, set)):  # 如果存在，且不是列表，则返回所有字段
+            self.attrs = fields
+        extra_fields = set(self.attrs) - set(fields)  # 这些字段不在model内，并且不受权限控制
+
+        if self.ignore_field_permission or (self.request and hasattr(self.request, "ignore_field_permission")):
+            return set(self.attrs)
+
+        allow_fields = []
+        if self.request and settings.PERMISSION_FIELD_ENABLED:
+            if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
+                allow_fields = self.attrs
+            elif hasattr(self.request, "fields"):
+                if self.request.fields and isinstance(self.request.fields, dict):
+                    allow_fields = self.request.fields.get(value._meta.label_lower, [])
+        else:
+            allow_fields = self.attrs
+
+        return set(self.attrs) & set(allow_fields) | extra_fields
+
     def to_representation(self, value):
-        if not self.attrs:
+        attrs = self.get_allow_fields(value)
+        if not attrs:
             return value.pk
         data = {}
-        for attr in self.attrs:
+        for attr in attrs:
             # if not hasattr(value, attr):
             #     continue
             # data[attr] = getattr(value, attr)
@@ -140,7 +177,10 @@ class BasePrimaryKeyRelatedField(RelatedField):
                 data[attr] = data[attr]()
         if data:
             if self.label_format:
-                data["label"] = self.label_format.format(**data)
+                try:
+                    data["label"] = self.label_format.format(**data)
+                except Exception:  # 使用权限控制的时候，format字段可能不在权限里面
+                    data["label"] = data.get("pk")
             else:
                 if "label" not in self.attrs:
                     data["label"] = data.get("pk")

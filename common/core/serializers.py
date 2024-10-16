@@ -43,48 +43,55 @@ class BaseModelSerializer(ModelSerializer):
             meta = MenuMetaSerializer()
         """
         for field_name in declared_fields:
-            if declared_fields[field_name] and isinstance(declared_fields[field_name], BaseModelSerializer):
+            if declared_fields[field_name] and isinstance(declared_fields[field_name],
+                                                          (BaseModelSerializer, BasePrimaryKeyRelatedField)):
                 obj = declared_fields[field_name]
                 declared_fields[field_name] = obj.__class__(*obj._args, **obj._kwargs, request=self.request)
 
         extra_kwargs, hidden_fields = super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
         return super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
 
-    def __init__(self, instance=None, data=empty, request=None, fields=None, all_fields=False, **kwargs):
+    def get_allow_fields(self, fields, ignore_field_permission):
+        """
+        self.fields: 默认定义的字段
+        fields: 需要展示的字段
+        allow_fields: 字段权限允许的字段
+        """
+        _fields = set(self.fields)
+        if fields is None:
+            fields = _fields
+
+        if self.ignore_field_permission or ignore_field_permission or (
+                self.request and hasattr(self.request, "ignore_field_permission")):
+            return set(fields) & _fields
+
+        allow_fields = []
+        # 获取权限字段，如果没有配置，则为定义的所有字段
+        if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
+            if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
+                allow_fields = _fields
+            elif hasattr(self.request, "fields"):
+                if self.request.fields and isinstance(self.request.fields, dict):
+                    allow_fields = self.request.fields.get(self.Meta.model._meta.label_lower, [])
+        else:
+            allow_fields = _fields
+
+        return set(fields) & _fields & set(allow_fields)
+
+    def __init__(self, instance=None, data=empty, request=None, fields=None, ignore_field_permission=False, **kwargs):
+        """
+        :param instance:
+        :param data:
+        :param request: Request 对象
+        :param fields: 序列化展示的字段， 默认定义的全部字段
+        :param ignore_field_permission: 忽略字段权限控制
+        """
         super().__init__(instance, data, **kwargs)
         self.request: Request = request or self.context.get("request", None)
-        if all_fields:
+        if self.request is None:
             return
-        if not fields and (self.request is None or getattr(self.request, 'all_fields', None) is not None):
-            return
-        allowed = set()
-        allowed2 = allowed1 = None
-        if fields is not None:
-            allowed1 = set(fields)
-        if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
-            if hasattr(self.request, "fields"):
-                if self.request.fields and isinstance(self.request.fields, dict):
-                    allowed2 = set(self.request.fields.get(self.Meta.model._meta.label_lower, []))
-
-            if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
-                allowed2 = set(self.fields)
-        else:
-            allowed2 = set(self.fields)
-
-        if self.request and hasattr(self.request, "all_fields"):
-            allowed2 = set(self.fields)
-
-        if allowed2 is not None and allowed1 is not None:
-            allowed = allowed1 & allowed2
-
-        if allowed2 and allowed1 is None:
-            allowed = allowed2
-
-        if allowed1 and allowed2 is None:
-            allowed = allowed1
-
-        existing = set(self.fields)
-        for field_name in existing - allowed:
+        allowed = self.get_allow_fields(fields, ignore_field_permission)
+        for field_name in set(self.fields) - allowed:
             self.fields.pop(field_name)
 
     def build_standard_field(self, field_name, model_field):
@@ -133,7 +140,7 @@ def get_sub_serializer_fields():
     now = timezone.now()
     field_type = ModelLabelField.FieldChoices.ROLE
     for cls in cls_list:
-        instance = cls(all_fields=True)
+        instance = cls(ignore_field_permission=True)
         model = instance.Meta.model
         if not model:
             continue
