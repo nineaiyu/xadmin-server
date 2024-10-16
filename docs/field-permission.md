@@ -60,5 +60,5 @@ dept_info = DeptSerializer(fields=['name', 'pk'], read_only=True, source='dept')
 这两个，因为上面定义的用户序列化方法中，仅仅使用了这两个字段, 其他字段无需勾选，勾选也不会显示，如果要想显示其他字段，则需在修改如下
 
 ```python
-roles_info = RoleSerializer(all_fields=True, many=True, read_only=True, source='roles')
+roles_info = RoleSerializer(ignore_field_permission=True, many=True, read_only=True, source='roles')
 ```
