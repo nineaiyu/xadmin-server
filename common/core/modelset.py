@@ -173,9 +173,10 @@ class ImportExportDataAction(OnlyExportDataAction):
         act = request.query_params.get('action')
         if act and request.data:
             if act == 'create':
-                serializer = self.get_serializer(data=request.data, many=True)
-                serializer.is_valid(raise_exception=True)
-                self.perform_create(serializer)
+                for data in request.data:
+                    serializer = self.get_serializer(data=data)
+                    serializer.is_valid(raise_exception=True)
+                    self.perform_create(serializer)
             elif act == 'update':
                 queryset = self.filter_queryset(self.get_queryset())
                 for data in request.data:

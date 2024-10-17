@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-17 14:34+0800\n"
+"POT-Creation-Date: 2024-10-17 15:32+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -105,17 +105,17 @@ msgstr ""
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:189 system/utils/auth.py:104
+#: common/core/modelset.py:190 system/utils/auth.py:104
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
 #: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/modelset.py:454
+#: common/core/modelset.py:455
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:464
+#: common/core/modelset.py:465
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
