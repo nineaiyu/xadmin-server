@@ -2,10 +2,12 @@ import os
 import sys
 import time
 
+import psutil
 from django.conf import settings
 from django.core import management
 from django.db.utils import OperationalError
 
+from common.core.utils import PrintLogFormat
 from common.utils.file import download_file
 
 HTTP_HOST = settings.HTTP_BIND_HOST or '127.0.0.1'
@@ -19,38 +21,48 @@ APPS_DIR = BASE_DIR = settings.BASE_DIR
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 TMP_DIR = os.path.join(LOG_DIR, 'tmp')
 
+logger = PrintLogFormat(f"xAdmin API Server", title_width=30, body_width=0)
+
+
+def check_port_is_used(port):
+    for proc in psutil.process_iter():
+        for con in proc.connections():
+            if con.status == 'LISTEN' and con.laddr.port == port:
+                logger.error(f"Check LISTEN PORT {port} failed, Address already in use")
+                sys.exit(10)
+
 
 def check_database_connection():
     for i in range(60):
-        print(f"Check database connection: {i}")
+        logger.info(f"Check database connection: {i}")
         try:
             management.call_command('check', '--database', 'default')
-            print("Database connect success")
+            logger.info("Database connect success")
             return
         except OperationalError:
-            print('Database not setup, retry')
+            logger.warning('Database not setup, retry')
         except Exception as exc:
-            print('Unexpect error occur: {}'.format(str(exc)))
+            logger.warning('Unexpect error occur: {}'.format(str(exc)))
         time.sleep(1)
-    print("Connection database failed, exit")
+    logger.error("Connection database failed, exit")
     sys.exit(10)
 
 
 def perform_db_migrate():
-    print("Check database structure change ...")
-    print("Migrate model change to database ...")
+    logger.info("Check database structure change ...")
+    logger.info("Migrate model change to database ...")
     try:
         management.call_command('migrate')
     except Exception as e:
-        print(f'Perform migrate failed, {e} exit')
+        logger.error(f'Perform migrate failed, {e} exit')
         sys.exit(11)
 
 
 def collect_static():
-    print("Collect static files")
+    logger.info("Collect static files")
     try:
         management.call_command('collectstatic', '--no-input', '-c', verbosity=0, interactive=False)
-        print("Collect static files done")
+        logger.info("Collect static files done")
     except:
         pass
 
@@ -61,7 +73,7 @@ def compile_i18n_file():
     #     return
     os.chdir(os.path.join(BASE_DIR))
     management.call_command('compilemessages', verbosity=0)
-    print("Compile i18n files done")
+    logger.info("Compile i18n files done")
 
 
 def download_ip_db(force=False):
@@ -74,7 +86,7 @@ def download_ip_db(force=False):
         path = os.path.join(db_base_dir, *p)
         if not force and os.path.isfile(path) and os.path.getsize(path) > 1000:
             continue
-        print("Download ip db: {}".format(path))
+        logger.info("Download ip db: {}".format(path))
         download_file(src, path)
 
 
@@ -89,6 +101,7 @@ def prepare():
     check_database_connection()
     collect_static()
     compile_i18n_file()
+    check_port_is_used(HTTP_PORT)
     perform_db_migrate()
     expire_caches()
     download_ip_db()
