@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-16 12:28+0800\n"
+"POT-Creation-Date: 2024-10-17 14:34+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
-#: common/core/permission.py:110
+#: common/core/permission.py:111
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
@@ -118,7 +118,7 @@ msgstr "操作失败，主键列表不存在"
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/permission.py:108
+#: common/core/permission.py:109
 msgid "Permission denied"
 msgstr "权限拒绝"
 

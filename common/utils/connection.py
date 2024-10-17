@@ -2,6 +2,7 @@ import json
 import threading
 import time
 
+import redis
 from django.core.cache import cache
 from redis.client import PubSub
 
@@ -13,6 +14,7 @@ logger = get_logger(__name__)
 
 def get_redis_client(db=0):
     client = cache.client.get_client()
+    assert isinstance(client, redis.Redis)
     return client
 
 
@@ -45,6 +47,7 @@ class Subscription:
         self.ch = pb.ch
         self.sub = sub
         self.unsubscribed = False
+        logger.info("Subscribed to channel: {}".format(sub))
 
     def _handle_msg(self, _next, error, complete):
         """
@@ -103,10 +106,11 @@ class Subscription:
 
     def unsubscribe(self):
         self.unsubscribed = True
+        logger.info("Unsubscribed from channel: {}".format(self.sub))
         try:
             self.sub.close()
         except Exception as e:
-            logger.debug('Unsubscribe msg error: {}'.format(e))
+            logger.warning('Unsubscribe msg error: {}'.format(e))
 
     def retry(self, _next, error, complete):
         logger.info('Retry subscribe channel: {}'.format(self.ch))

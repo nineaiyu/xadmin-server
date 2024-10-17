@@ -53,21 +53,22 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
         attrs: List = self.target.attrs
 
         obj = {}
-        for attr in attrs:
-            if not source_model or not field_mapping:
-                obj[attr] = build_basic_type(OpenApiTypes.STR)
-            else:
-                field = get_model_field(source_model, 'id' if attr == 'pk' else attr)
-                if field is None:
+        if isinstance(attrs, (list, set)):
+            for attr in attrs:
+                if not source_model or not field_mapping:
                     obj[attr] = build_basic_type(OpenApiTypes.STR)
                 else:
-                    try:
-                        field_class, field_kwargs = ms.build_standard_field(attr, field)
-                        obj[attr] = auto_schema._map_serializer_field(field_class(**field_kwargs), direction)
-                    except Exception as e:
-                        logger.warning(f"get filed {attr} {field} auto schema error: {e}")
-        if 'label' not in attrs:
-            obj["label"] = build_basic_type(OpenApiTypes.STR)
+                    field = get_model_field(source_model, 'id' if attr == 'pk' else attr)
+                    if field is None:
+                        obj[attr] = build_basic_type(OpenApiTypes.STR)
+                    else:
+                        try:
+                            field_class, field_kwargs = ms.build_standard_field(attr, field)
+                            obj[attr] = auto_schema._map_serializer_field(field_class(**field_kwargs), direction)
+                        except Exception as e:
+                            logger.warning(f"get filed {attr} {field} auto schema error: {e}")
+            if 'label' not in attrs:
+                obj["label"] = build_basic_type(OpenApiTypes.STR)
         return build_object_type(obj)
 
 

@@ -4,6 +4,7 @@
 # filename : utils
 # author : ly_13
 # date : 6/2/2023
+import datetime
 import logging
 import re
 from collections import OrderedDict
@@ -119,30 +120,43 @@ def get_query_post_pks(request):
 
 
 class PrintLogFormat(object):
-    def __init__(self, base_str=''):
+    def __init__(self, base_str='', title_width=80, body_width=60, logger_enable=True):
         self.base_str = base_str
+        self.logger_enable = logger_enable
+        self.title_width = title_width
+        self.body_width = body_width
         self.bold_error = make_style(opts=('bold',), fg='magenta')
         self._info = make_style(fg='green')
         self._error = make_style(fg='red')
         self._warning = make_style(fg='yellow')
         self._debug = make_style(fg='blue')
 
+    def __print(self, title, body):
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"{now} {title}" if self.title_width < 1 else '{0: <{title_width}}'.format(f"{now} {title}",
+                                                                                         title_width=self.title_width),
+              body if self.body_width < 1 else '{0: >{body_width}}'.format(body, body_width=self.body_width))
+
     def info(self, msg, *args, **kwargs):
-        logger.info(f"{self.base_str} {msg}", *args, **kwargs)
+        if self.logger_enable:
+            logger.info(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.INFO):
-            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._info(msg)))
+            self.__print(self.bold_error(self.base_str), self._info(msg))
 
     def error(self, msg, *args, **kwargs):
-        logger.error(f"{self.base_str} {msg}", *args, **kwargs)
+        if self.logger_enable:
+            logger.error(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.ERROR):
-            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._error(msg)))
+            self.__print(self.bold_error(self.base_str), self._error(msg))
 
     def debug(self, msg, *args, **kwargs):
-        logger.debug(f"{self.base_str} {msg}", *args, **kwargs)
+        if self.logger_enable:
+            logger.debug(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.DEBUG):
-            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._debug(msg)))
+            self.__print(self.bold_error(self.base_str), self._debug(msg))
 
     def warning(self, msg, *args, **kwargs):
-        logger.warning(f"{self.base_str} {msg}", *args, **kwargs)
+        if self.logger_enable:
+            logger.warning(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.WARNING):
-            print('{0: <50}'.format(self.bold_error(self.base_str)), '{0: >60}'.format(self._warning(msg)))
+            self.__print(self.bold_error(self.base_str), self._warning(msg))
