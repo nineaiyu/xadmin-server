@@ -20,15 +20,18 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(asctime)s [%(levelname)s] [%(pathname)s:%(lineno)d] %(process)d %(thread)d %(message)s'
+            '()': 'server.logging.ServerFormatter',
+            'format': '%(asctime)s.%(msecs)03d [%(levelname)s %(user)s] [%(pathname)s:%(lineno)d] %(process)d %(thread)d %(message)s'
         },
         'main': {
+            '()': 'server.logging.ServerFormatter',
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': ' %(asctime)s [%(levelname)s] [%(pathname)s:%(lineno)d] %(message)s',
+            'format': '%(asctime)s.%(msecs)03d [%(levelname)s %(user)s] [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
         },
         'exception': {
+            '()': 'server.logging.ServerFormatter',
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '\n%(asctime)s [%(levelname)s] %(message)s',
+            'format': '\n%(asctime)s [%(levelname)s %(user)s] %(message)s',
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -70,10 +73,10 @@ LOGGING = {
         }
     },
     'loggers': {
-        # '': {  # 默认的logger应用如下配置
-        #     'handlers': ['server', 'console', 'drf_exception', 'unexpected_exception'],
+        # '': {  # 默认的logger ，所有日志将会输出到配置的 handlers
+        #     'handlers': ['server', 'console'],
         #     'level': LOG_LEVEL,
-        #     'propagate': True,
+        #     'propagate': False,
         # },
         'django': {
             'handlers': ['null'],

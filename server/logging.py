@@ -4,10 +4,12 @@
 # filename : logging
 # author : ly_13
 # date : 10/18/2024
-
+import logging
 import os
 from datetime import datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
+
+from server.utils import current_request
 
 
 class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
@@ -25,3 +27,9 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
         filename = os.path.join(*path)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         return filename
+
+
+class ServerFormatter(logging.Formatter):
+    def format(self, record):
+        record.user = str(current_request.user if current_request else 'SYSTEM')
+        return super().format(record)
