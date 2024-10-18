@@ -4,6 +4,7 @@
 # filename : signal_handler
 # author : ly_13
 # date : 6/29/2023
+import logging
 
 from celery import subtask
 from celery.signals import worker_ready, worker_shutdown, after_setup_logger
