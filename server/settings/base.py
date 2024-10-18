@@ -13,8 +13,6 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from celery.schedules import crontab
-
 try:
     from config import *
 except ImportError:
@@ -30,7 +28,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = locals().get("DEBUG", False)
-
+LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
+DEBUG_DEV = locals().get('DEBUG_DEV', False)
 # 如果前端是代理，则可以通过该配置，在系统构建url的时候，获取正确的 scheme
 # 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto https;
 # https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#std-setting-SECURE_PROXY_SSL_HEADER

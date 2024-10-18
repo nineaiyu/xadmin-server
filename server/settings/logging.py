@@ -10,8 +10,6 @@ from .base import *
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 TMP_LOG_DIR = os.path.join(BASE_DIR, "logs", "tmp")
 CELERY_LOG_DIR = os.path.join(BASE_DIR, "logs", "task")
-LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
-DEBUG_DEV = locals().get('DEBUG_DEV', False)
 
 SERVER_LOG_FILE = os.path.join(LOG_DIR, 'server.log')
 DRF_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'drf_exception.log')
@@ -88,6 +86,11 @@ LOGGING = {
             'propagate': False,
         },
         'django.server': {
+            'handlers': ['console', 'server'],
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'django.security': {
             'handlers': ['console', 'server'],
             'level': LOG_LEVEL,
             'propagate': False,
