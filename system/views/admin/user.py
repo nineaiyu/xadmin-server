@@ -4,7 +4,6 @@
 # filename : user
 # author : ly_13
 # date : 6/16/2023
-import logging
 
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -17,13 +16,14 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from notifications.message import SiteMessageUtil
 from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
 from system.serializers.user import UserSerializer, ResetPasswordSerializer
 from system.utils.modelset import ChangeRolePermissionAction
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class UserFilter(BaseFilterSet):
@@ -44,6 +44,8 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
 
     ordering_fields = ['date_joined', 'last_login', 'created_time']
     filterset_class = UserFilter
+
+    # export_as_zip = True  导出zip压缩包，密码是用户名
 
     def perform_destroy(self, instance):
         if instance.is_superuser:

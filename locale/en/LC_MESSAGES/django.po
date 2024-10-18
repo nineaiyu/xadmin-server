@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-17 15:32+0800\n"
+"POT-Creation-Date: 2024-10-18 13:13+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: common/celery/flower.py:39
+#: common/celery/flower.py:40
 msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr ""
@@ -32,20 +32,20 @@ msgstr ""
 msgid "Token is invalid or expired"
 msgstr ""
 
-#: common/core/exception.py:29
+#: common/core/exception.py:35
 msgid "Your visit is too fast, please visit again later"
 msgstr ""
 
-#: common/core/exception.py:31
+#: common/core/exception.py:37
 msgid "Your visit is too fast, please visit again in {} seconds"
 msgstr ""
 
-#: common/core/exception.py:54
+#: common/core/exception.py:60
 msgid ""
 "The requested address is incorrect or the data permission is not allowed"
 msgstr ""
 
-#: common/core/exception.py:58
+#: common/core/exception.py:64
 msgid "This data with other data binding"
 msgstr ""
 
@@ -63,33 +63,33 @@ msgstr ""
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
 
-#: common/core/models.py:20 common/core/models.py:27
+#: common/core/models.py:21 common/core/models.py:28
 #: settings/serializers/security.py:245
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:34 common/models.py:18
+#: common/core/models.py:35 common/models.py:18
 #: settings/serializers/security.py:247
 msgid "Created time"
 msgstr ""
 
-#: common/core/models.py:35
+#: common/core/models.py:36
 msgid "Updated time"
 msgstr ""
 
-#: common/core/models.py:36
+#: common/core/models.py:37
 msgid "Description"
 msgstr ""
 
-#: common/core/models.py:82
+#: common/core/models.py:83
 msgid "Creator"
 msgstr ""
 
-#: common/core/models.py:84
+#: common/core/models.py:85
 msgid "Modifier"
 msgstr ""
 
-#: common/core/models.py:86
+#: common/core/models.py:87
 msgid "Data ownership department"
 msgstr ""
 
@@ -143,11 +143,11 @@ msgstr ""
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr ""
 
-#: common/drf/parsers/base.py:185
+#: common/drf/parsers/base.py:191
 msgid "The resource does not support imports!"
 msgstr ""
 
-#: common/drf/parsers/base.py:205
+#: common/drf/parsers/base.py:211
 msgid "Parse file error: {}"
 msgstr ""
 
@@ -155,7 +155,7 @@ msgstr ""
 msgid "Invalid excel file {}"
 msgstr ""
 
-#: common/drf/renders/base.py:220
+#: common/drf/renders/base.py:222
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
@@ -434,8 +434,8 @@ msgstr ""
 #: notifications/serializers/message.py:149
 #: notifications/serializers/notifications.py:19
 #: notifications/serializers/notifications.py:37 system/models/config.py:39
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:32 system/serializers/log.py:53
+#: system/serializers/config.py:44 system/serializers/config.py:56
+#: system/serializers/log.py:31 system/serializers/log.py:52
 msgid "User"
 msgstr ""
 
@@ -572,7 +572,7 @@ msgstr ""
 
 #: settings/serializers/basic.py:34 system/models/department.py:24
 #: system/models/field.py:33 system/models/permission.py:25
-#: system/models/user.py:36 system/serializers/base.py:24
+#: system/models/user.py:36 system/serializers/base.py:23
 msgid "Data permission"
 msgstr ""
 
@@ -1112,7 +1112,7 @@ msgid "Superior department"
 msgstr ""
 
 #: system/models/department.py:23 system/models/field.py:32
-#: system/models/user.py:35 system/serializers/base.py:21
+#: system/models/user.py:35 system/serializers/base.py:20
 msgid "Role permission"
 msgstr ""
 
@@ -1252,7 +1252,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:32 system/serializers/log.py:55
+#: system/models/log.py:32 system/serializers/log.py:54
 msgid "Login type"
 msgstr ""
 
@@ -1260,7 +1260,7 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:53 system/serializers/log.py:33
+#: system/models/log.py:53 system/serializers/log.py:32
 msgid "Module"
 msgstr ""
 
@@ -1383,7 +1383,7 @@ msgstr ""
 
 #: system/models/menu.py:50 system/models/menu.py:84
 #: system/models/permission.py:20 system/models/permission.py:34
-#: system/models/role.py:18 system/serializers/permission.py:35
+#: system/models/role.py:18 system/serializers/permission.py:34
 #: system/serializers/role.py:36
 msgid "Menu"
 msgstr ""
@@ -1526,7 +1526,7 @@ msgid "Nickname"
 msgstr ""
 
 #: system/models/user.py:31 system/serializers/user.py:47
-#: system/serializers/userinfo.py:33
+#: system/serializers/userinfo.py:32
 msgid "Gender"
 msgstr ""
 
@@ -1550,19 +1550,19 @@ msgstr ""
 msgid "Reset password success"
 msgstr ""
 
-#: system/serializers/base.py:25 system/serializers/permission.py:38
+#: system/serializers/base.py:24 system/serializers/permission.py:37
 msgid "Mode type"
 msgstr ""
 
-#: system/serializers/config.py:31
+#: system/serializers/config.py:30
 msgid "Config cache value"
 msgstr ""
 
-#: system/serializers/config.py:59
+#: system/serializers/config.py:58
 msgid "Users"
 msgstr ""
 
-#: system/serializers/config.py:66
+#: system/serializers/config.py:65
 msgid "User cannot be null"
 msgstr ""
 
@@ -1570,7 +1570,7 @@ msgstr ""
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/permission.py:43
+#: system/serializers/permission.py:42
 msgid "The rule cannot be null"
 msgstr ""
 
@@ -1578,11 +1578,11 @@ msgstr ""
 msgid "Fields"
 msgstr ""
 
-#: system/serializers/upload.py:29
+#: system/serializers/upload.py:28
 msgid "Access URL"
 msgstr ""
 
-#: system/serializers/upload.py:37
+#: system/serializers/upload.py:36
 msgid "Internet url cannot be null"
 msgstr ""
 
@@ -1591,7 +1591,7 @@ msgid "Login blocked"
 msgstr ""
 
 #: system/serializers/user.py:66 system/serializers/user.py:80
-#: system/serializers/userinfo.py:56 system/views/auth/register.py:75
+#: system/serializers/userinfo.py:55 system/views/auth/register.py:75
 #: system/views/auth/reset.py:53
 msgid "Password does not match security rules"
 msgstr ""
@@ -1600,15 +1600,15 @@ msgstr ""
 msgid "Abnormal password field"
 msgstr ""
 
-#: system/serializers/userinfo.py:44
+#: system/serializers/userinfo.py:43
 msgid "Old password"
 msgstr ""
 
-#: system/serializers/userinfo.py:47
+#: system/serializers/userinfo.py:46
 msgid "Confirm password"
 msgstr ""
 
-#: system/serializers/userinfo.py:54
+#: system/serializers/userinfo.py:53
 msgid "Old password verification failed"
 msgstr ""
 
@@ -1708,7 +1708,7 @@ msgid ""
 "account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
-#: system/views/admin/user.py:50
+#: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"
 msgstr ""
 

@@ -6,7 +6,6 @@
 # date : 6/2/2023
 import datetime
 import json
-import logging
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -22,9 +21,10 @@ from rest_framework.filters import BaseFilterBackend
 
 from common.cache.storage import CommonResourceIDsCache
 from common.core.db.utils import RelatedManager
+from common.utils import get_logger
 from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):

@@ -5,12 +5,13 @@
 # author : ly_13
 # date : 6/2/2023
 
-import logging
 import time
 
 from django.core.cache import cache
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class CacheBaseState(object):

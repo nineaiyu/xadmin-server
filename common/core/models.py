@@ -4,7 +4,6 @@
 # filename : models
 # author : ly_13
 # date : 12/20/2023
-import logging
 import os
 import time
 import uuid
@@ -13,7 +12,9 @@ from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class DbUuidModel(models.Model):

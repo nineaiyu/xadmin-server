@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 6/29/2023
 import base64
-import logging
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -15,7 +14,9 @@ from drf_spectacular.utils import extend_schema
 from proxy.views import proxy_view
 from rest_framework.generics import GenericAPIView
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 flower_url = f'{settings.CELERY_FLOWER_HOST}:{settings.CELERY_FLOWER_PORT}'
 

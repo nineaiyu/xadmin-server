@@ -4,7 +4,6 @@
 # filename : signal_handler.py
 # author : ly_13
 # date : 12/15/2023
-import logging
 
 from django.conf import settings
 from django.contrib.auth import user_logged_out
@@ -20,10 +19,11 @@ from common.core.config import SysConfig
 from common.core.models import DbAuditModel
 from common.core.serializers import get_sub_serializer_fields
 from common.core.utils import PrintLogFormat
+from common.utils import get_logger
 from system.models import Menu, UserRole, UserInfo, DeptInfo, DataPermission, SystemConfig, ModelLabelField
 from system.signal import invalid_user_cache_signal
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @receiver(post_migrate)

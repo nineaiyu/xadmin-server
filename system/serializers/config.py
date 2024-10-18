@@ -5,8 +5,6 @@
 # author : ly_13
 # date : 8/10/2024
 
-import logging
-
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -16,9 +14,10 @@ from common.core.config import SysConfig, UserConfig
 from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
+from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig, UserInfo
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SystemConfigSerializer(BaseModelSerializer):

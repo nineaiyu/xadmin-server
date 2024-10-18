@@ -5,14 +5,13 @@
 # author : ly_13
 # date : 8/10/2024
 
-import logging
-
 from django.utils import timezone
 
 from captcha.helpers import captcha_image_url
 from captcha.models import CaptchaStore
+from common.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CaptchaAuth(object):

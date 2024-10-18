@@ -5,15 +5,14 @@
 # author : ly_13
 # date : 8/10/2024
 
-import logging
-
 from django.utils.translation import gettext_lazy as _
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
+from common.utils import get_logger
 from system.models import UserRole, DataPermission, ModeTypeAbstract
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BaseRoleRuleInfo(BaseModelSerializer):

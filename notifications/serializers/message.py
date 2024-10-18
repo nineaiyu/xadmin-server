@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 9/15/2024
 
-import logging
 import os.path
 
 from django.conf import settings
@@ -18,10 +17,11 @@ from rest_framework.exceptions import ValidationError
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
+from common.utils import get_logger
 from notifications.models import MessageUserRead, MessageContent
 from system.models import UploadFile, DeptInfo, UserRole, UserInfo
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class NoticeMessageSerializer(BaseModelSerializer):

@@ -4,7 +4,6 @@
 # filename : menu
 # author : ly_13
 # date : 8/10/2024
-import logging
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
@@ -12,9 +11,10 @@ from rest_framework import serializers
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
+from common.utils import get_logger
 from system.models import Menu, MenuMeta, ModelLabelField
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class MenuMetaSerializer(BaseModelSerializer):

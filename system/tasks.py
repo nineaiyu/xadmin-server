@@ -5,14 +5,13 @@
 # author : ly_13
 # date : 6/29/2023
 
-import logging
-
 from celery import shared_task
 
 from common.celery.decorator import register_as_period_task
+from common.utils import get_logger
 from system.utils.ctasks import auto_clean_operation_log, auto_clean_black_token, auto_clean_tmp_file
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @shared_task

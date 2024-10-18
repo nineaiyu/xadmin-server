@@ -4,7 +4,6 @@
 # filename : upload
 # author : ly_13
 # date : 6/26/2023
-import logging
 
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
@@ -18,10 +17,11 @@ from common.core.config import SysConfig, UserConfig
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.upload import UploadFileSerializer
 
-logger = logging.getLogger(__file__)
+logger = get_logger(__name__)
 
 
 def get_upload_max_size(user_obj):

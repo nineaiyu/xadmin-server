@@ -8,7 +8,14 @@
 # debug为false的时候，如果遇到静态文件无法访问，比如api文档无法正常打开，需要通过下面命令收集静态文件
 # python manage.py collectstatic
 
+# DEBUG 模式 开启DEBUG后遇到错误时可以看到更多日志
 DEBUG = False
+
+DEBUG_DEV = False  # 用于debug模式下，输出sql日志
+
+# DEBUG, INFO, WARNING, ERROR, CRITICAL can set
+# 日志级别
+LOG_LEVEL = "WARNING"
 
 ALLOWED_HOSTS = ["*"]
 

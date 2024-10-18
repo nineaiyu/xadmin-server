@@ -1,6 +1,5 @@
 import abc
 import io
-import logging
 import re
 from datetime import datetime
 
@@ -12,8 +11,9 @@ from rest_framework.utils import encoders, json
 
 from common.core.config import SysConfig
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.utils import get_logger
 
-logger = logging.getLogger(__file__)
+logger = get_logger(__name__)
 
 
 class BaseFileRenderer(BaseRenderer):
@@ -111,7 +111,7 @@ class BaseFileRenderer(BaseRenderer):
             value = '-'
         elif hasattr(field, 'to_file_representation'):
             value = field.to_file_representation(value)
-        elif isinstance(value, bool):
+        elif isinstance(field, serializers.BooleanField):
             value = 'Yes' if value else 'No'
         elif isinstance(field, LabeledChoiceField):
             value = value or {}
@@ -129,6 +129,8 @@ class BaseFileRenderer(BaseRenderer):
             value = [self.render_value(field.child_relation, v) for v in value]
         elif isinstance(field, serializers.ListField):
             value = [self.render_value(field.child, v) for v in value]
+        elif isinstance(field, serializers.JSONField):
+            value = json.dumps(value)
 
         if not isinstance(value, str):
             value = json.dumps(value, cls=encoders.JSONEncoder, ensure_ascii=False)
@@ -215,11 +217,11 @@ class BaseFileRenderer(BaseRenderer):
         response['Content-Disposition'] = content_disposition.replace(self.format, 'zip')
 
         contents_io = io.BytesIO()
-        secret_key = request.user.secret_key
+        secret_key = request.user.username  # 默认密码是用户名，后期可配置
         if not secret_key:
             content = _("{} - The encryption password has not been set - "
                         "please go to personal information -> file encryption password "
-                        "to set the encryption password").format(request.user.name)
+                        "to set the encryption password").format(request.user.nickname)
 
             response['Content-Disposition'] = content_disposition.replace(self.format, 'txt')
             contents_io.write(content.encode('utf-8'))

@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 6/29/2023
 import json
-import logging
 import os
 from datetime import datetime, timedelta, UTC
 
@@ -14,9 +13,10 @@ from django.db.utils import ProgrammingError, OperationalError
 from django.utils import timezone
 from django_celery_beat.models import IntervalSchedule, CrontabSchedule, PeriodicTask, PeriodicTasks
 
+from common.utils import get_logger
 from common.utils.timezone import local_now
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # celery 日志完成之后，写入的魔法字符，作为结束标记
 CELERY_LOG_MAGIC_MARK = b'\x00\x00\x00\x00\x00'

@@ -4,7 +4,6 @@
 # filename : user
 # author : ly_13
 # date : 8/10/2024
-import logging
 
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext_lazy as _
@@ -16,12 +15,13 @@ from rest_framework.validators import UniqueValidator
 from common.base.utils import AESCipherV2
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.fields.utils import input_wrapper
+from common.utils import get_logger
 from settings.utils.password import check_password_rules
 from settings.utils.security import LoginBlockUtil
 from system.models import DeptInfo, UserInfo
 from system.serializers.base import BaseRoleRuleInfo
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class UserSerializer(BaseRoleRuleInfo):

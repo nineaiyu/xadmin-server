@@ -1,7 +1,6 @@
 import abc
 import codecs
 import json
-import logging
 import re
 
 from django.utils.translation import gettext_lazy as _
@@ -11,8 +10,9 @@ from rest_framework.exceptions import ParseError, APIException
 from rest_framework.parsers import BaseParser
 
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.utils import get_logger
 
-logger = logging.getLogger(__file__)
+logger = get_logger(__name__)
 
 
 class FileContentOverflowedError(APIException):
@@ -141,10 +141,16 @@ class BaseFileParser(BaseParser):
             value = [self.parse_value(field.child_relation, v) for v in value]
         elif isinstance(field, serializers.ListField):
             value = [self.parse_value(field.child, v) for v in value]
-        elif isinstance(field, serializers.CharField):
-            if not isinstance(value, str):
-                value = json.dumps(value)
-
+        elif isinstance(field, serializers.JSONField):
+            if isinstance(value, str):
+                if value.lower() in ['yes']:
+                    return True
+                elif value.lower() in ['no']:
+                    return False
+            try:
+                value = json.loads(value)
+            except:
+                pass
         return value
 
     def process_row_data(self, row_data):

@@ -7,7 +7,6 @@
 import asyncio
 import datetime
 import json
-import logging
 import os
 import time
 
@@ -22,11 +21,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 from common.base.magic import MagicCacheData
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
+from common.utils import get_logger
 from message.utils import async_push_message
 from system.models import UserInfo
 from system.serializers.userinfo import UserInfoSerializer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @sync_to_async
