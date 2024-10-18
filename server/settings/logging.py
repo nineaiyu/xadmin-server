@@ -20,11 +20,11 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(pathname)s:%(lineno)d  %(message)s'
+            'format': '%(asctime)s [%(levelname)s] [%(pathname)s:%(lineno)d] %(process)d %(thread)d %(message)s'
         },
         'main': {
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '%(asctime)s [%(levelname).4s] %(message)s',
+            'format': ' %(asctime)s [%(levelname)s] [%(pathname)s:%(lineno)d] %(message)s',
         },
         'exception': {
             'datefmt': '%Y-%m-%d %H:%M:%S',

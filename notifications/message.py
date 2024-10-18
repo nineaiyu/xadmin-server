@@ -8,7 +8,7 @@ from message.utils import push_message
 from notifications.serializers.message import NoticeMessageSerializer
 from system.models import UserInfo
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 from django.db.models import QuerySet
 

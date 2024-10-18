@@ -17,7 +17,7 @@ from common.tasks import send_mail_async
 from common.utils import get_logger
 from common.utils.token import random_string
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 @shared_task(verbose_name=_('Send SMS code'))

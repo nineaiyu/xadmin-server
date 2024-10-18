@@ -10,11 +10,7 @@ import os
 
 import psutil
 
-
-def get_logger(name=''):
-    if '/' in name:
-        name = os.path.basename(name).replace('.py', '')
-    return logging.getLogger('xadmin.%s' % name)
+from server.utils import current_request
 
 
 class lazyproperty:
@@ -83,3 +79,37 @@ def get_memory_usage():
     if usage is not None:
         return usage
     return psutil.virtual_memory().percent
+
+
+class Logger(object):
+    def __init__(self, name):
+        self.logger = logging.getLogger(name)
+
+    def __console(self, level, *args, **kwargs):
+        logger = getattr(self.logger, level)
+
+        user = current_request.user if current_request else None
+        if not user or not user.is_authenticated:
+            return logger(*args, **kwargs)
+        logger(f"[{user}] {args[0]}", **kwargs)
+
+    def critical(self, *args, **kwargs):
+        return self.__console('critical', *args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        return self.__console('error', *args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        return self.__console('warning', *args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        return self.__console('info', *args, **kwargs)
+
+    def debug(self, *args, **kwargs):
+        return self.__console('debug', *args, **kwargs)
+
+
+def get_logger(name='') -> logging.Logger:
+    if '/' in name:
+        name = os.path.basename(name).replace('.py', '')
+    return Logger('xadmin.%s' % name)

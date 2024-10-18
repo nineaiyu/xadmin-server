@@ -24,7 +24,7 @@ from settings.models import Setting
 from settings.serializers.sms import AlibabaSMSSettingSerializer, SMSSettingSerializer
 from settings.views.settings import BaseSettingViewSet
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class SmsSettingViewSet(BaseSettingViewSet):

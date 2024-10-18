@@ -68,7 +68,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'common.core.middleware.StartMiddleware',
+    'server.middleware.StartMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -78,9 +78,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'common.core.middleware.SQLCountMiddleware',
+    'server.middleware.RequestMiddleware',
+    'server.middleware.RefererCheckMiddleware',
+    'server.middleware.SQLCountMiddleware',
     'common.core.middleware.ApiLoggingMiddleware',
-    'common.core.middleware.EndMiddleware'
+    'server.middleware.EndMiddleware'
 ]
 
 ROOT_URLCONF = 'server.urls'

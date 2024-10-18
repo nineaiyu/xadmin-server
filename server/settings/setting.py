@@ -4,7 +4,6 @@
 # filename : setting
 # author : ly_13
 # date : 10/18/2024
-import os
 
 from .base import *
 
@@ -75,6 +74,7 @@ SITE_URL = 'http://127.0.0.1:8000'
 FRONT_END_WEB_WATERMARK_ENABLED = True  # 前端水印展示
 PERMISSION_FIELD_ENABLED = True  # 字段权限控制
 PERMISSION_DATA_ENABLED = True  # 数据权限控制
+REFERER_CHECK_ENABLED = False  # referer 校验
 
 # 验证码配置
 VERIFY_CODE_TTL = 5 * 60  # Unit: second

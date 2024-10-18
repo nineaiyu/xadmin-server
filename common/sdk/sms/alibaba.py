@@ -17,7 +17,7 @@ from rest_framework.exceptions import APIException
 from common.utils import get_logger
 from .base import BaseSMSClient
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class AlibabaSMS(BaseSMSClient):
