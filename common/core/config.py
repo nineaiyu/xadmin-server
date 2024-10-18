@@ -8,7 +8,6 @@
 
 
 import json
-import logging
 import re
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -16,10 +15,11 @@ from django.template.base import VariableNode
 from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
+from common.utils import get_logger
 from server import settings
 from system.models import SystemConfig, UserPersonalConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SystemConfigSerializer(serializers.ModelSerializer):

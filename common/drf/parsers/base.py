@@ -1,7 +1,6 @@
 import abc
 import codecs
 import json
-import logging
 import re
 
 from django.utils.translation import gettext_lazy as _
@@ -11,8 +10,9 @@ from rest_framework.exceptions import ParseError, APIException
 from rest_framework.parsers import BaseParser
 
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.utils import get_logger
 
-logger = logging.getLogger(__file__)
+logger = get_logger(__name__)
 
 
 class FileContentOverflowedError(APIException):

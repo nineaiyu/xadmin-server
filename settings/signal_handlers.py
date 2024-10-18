@@ -5,17 +5,16 @@
 # author : ly_13
 # date : 7/31/2024
 
-import logging
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.functional import LazyObject
 
 from common.signals import django_ready
+from common.utils import get_logger
 from common.utils.connection import RedisPubSub
 from settings.models import Setting
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SettingSubPub(LazyObject):

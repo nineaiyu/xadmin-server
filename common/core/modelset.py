@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 6/2/2023
 import json
-import logging
 from hashlib import md5
 from typing import Callable
 
@@ -34,8 +33,9 @@ from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CacheDetailResponseMixin(object):

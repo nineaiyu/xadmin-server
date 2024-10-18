@@ -4,7 +4,6 @@
 # filename : token
 # author : ly_13
 # date : 6/2/2023
-import logging
 import random
 import secrets
 import string
@@ -12,8 +11,9 @@ import time
 import uuid
 
 from common.cache.storage import TokenManagerCache, RedisCacheBase
+from common.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def make_token_cache(key, time_limit=60, prefix='', force_new=False, ext_data=None):

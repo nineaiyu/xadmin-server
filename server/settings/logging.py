@@ -4,43 +4,36 @@
 # filename : logging
 # author : ly_13
 # date : 10/18/2024
-import os
+
 from .base import *
 
-BASE_LOG_DIR = os.path.join(BASE_DIR, "logs", "api")
+LOG_DIR = os.path.join(BASE_DIR, "logs")
 TMP_LOG_DIR = os.path.join(BASE_DIR, "logs", "tmp")
 CELERY_LOG_DIR = os.path.join(BASE_DIR, "logs", "task")
 LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
+DEBUG_DEV = locals().get('DEBUG_DEV', False)
 
-if not os.path.isdir(BASE_LOG_DIR):
-    os.makedirs(BASE_LOG_DIR)
-if not os.path.isdir(TMP_LOG_DIR):
-    os.makedirs(TMP_LOG_DIR)
-if not os.path.isdir(CELERY_LOG_DIR):
-    os.makedirs(CELERY_LOG_DIR)
+SERVER_LOG_FILE = os.path.join(LOG_DIR, 'server.log')
+DRF_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'drf_exception.log')
+UNEXPECTED_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'unexpected_exception.log')
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '[%(filename)s:%(funcName)s:%(lineno)d %(levelname)s] %(asctime)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(pathname)s:%(lineno)d  %(message)s'
         },
         'main': {
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '%(asctime)s [%(filename)s:%(funcName)s:%(lineno)d %(levelname)s] %(message)s',
+            'format': '%(asctime)s [%(levelname).4s] %(message)s',
         },
         'exception': {
             'datefmt': '%Y-%m-%d %H:%M:%S',
             'format': '\n%(asctime)s [%(levelname)s] %(message)s',
         },
         'simple': {
-            'format': '[%(levelname)s][%(asctime)s][%(filename)s:%(funcName)s:%(lineno)d]%(message)s'
-        },
-    },
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
+            'format': '%(levelname)s %(message)s'
         },
     },
     'handlers': {
@@ -50,81 +43,79 @@ LOGGING = {
         },
         'console': {
             'level': 'DEBUG',
-            'filters': ['require_debug_true'],  # 只有在Django debug为True时才在屏幕打印日志
             'class': 'logging.StreamHandler',
             'formatter': 'main'
         },
         'server': {
+            'encoding': 'utf8',
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件，根据时间自动切
-            'filename': os.path.join(BASE_LOG_DIR, "server.log"),  # 日志文件
-            'maxBytes': 1024 * 1024 * 100,  # 日志大小 100M
-            'backupCount': 10,  # 备份数为3
-            # 'when': 'W6',  # 每天一切， 可选值有S/秒 M/分 H/小时 D/天 W0-W6/周(0=周一) midnight/如果没指定时间就默认在午夜
+            'class': 'server.logging.DailyTimedRotatingFileHandler',
+            'when': 'midnight',
             'formatter': 'main',
-            'encoding': 'utf-8',
+            'filename': SERVER_LOG_FILE,
         },
         'drf_exception': {
             'encoding': 'utf8',
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'DEBUG',
+            'class': 'server.logging.DailyTimedRotatingFileHandler',
+            'when': 'midnight',
             'formatter': 'exception',
-            'maxBytes': 1024 * 1024 * 100,
-            'backupCount': 7,
-            'filename': os.path.join(BASE_LOG_DIR, "drf_exception.log"),
+            'filename': DRF_EXCEPTION_LOG_FILE,
         },
         'unexpected_exception': {
             'encoding': 'utf8',
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'formatter': 'exception',
-            'maxBytes': 1024 * 1024 * 100,
-            'backupCount': 7,
-            'filename': os.path.join(BASE_LOG_DIR, "unexpected_exception.log"),
-        },
-        'sql': {
             'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件，自动切
-            'filename': os.path.join(BASE_LOG_DIR, "sql.log"),  # 日志文件
-            'maxBytes': 1024 * 1024 * 50,  # 日志大小 50M
-            'backupCount': 10,
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
+            'class': 'server.logging.DailyTimedRotatingFileHandler',
+            'when': 'midnight',
+            'formatter': 'exception',
+            'filename': UNEXPECTED_EXCEPTION_LOG_FILE,
+        }
     },
     'loggers': {
-        '': {  # 默认的logger应用如下配置
-            'handlers': ['server', 'console', 'drf_exception', 'unexpected_exception'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+        # '': {  # 默认的logger应用如下配置
+        #     'handlers': ['server', 'console', 'drf_exception', 'unexpected_exception'],
+        #     'level': LOG_LEVEL,
+        #     'propagate': True,
+        # },
         'django': {
             'handlers': ['null'],
             'propagate': False,
-            'level': 'DEBUG',
+            'level': LOG_LEVEL,
         },
         'django.request': {
             'handlers': ['console', 'server'],
-            'level': 'DEBUG',
+            'level': LOG_LEVEL,
             'propagate': False,
         },
         'django.server': {
             'handlers': ['console', 'server'],
-            'level': 'DEBUG',
+            'level': LOG_LEVEL,
             'propagate': False,
         },
-        'django.db.backends': {
-            'handlers': ['sql'],
-            'propagate': True,
-            'level': 'DEBUG',
+        'xadmin': {
+            'handlers': ['console', 'server'],
+            'level': LOG_LEVEL,
         },
         'drf_exception': {
             'handlers': ['console', 'drf_exception'],
-            'level': 'ERROR',
+            'level': LOG_LEVEL,
         },
         'unexpected_exception': {
-            'handlers': ['console', 'unexpected_exception'],
-            'level': 'ERROR',
+            'handlers': ['unexpected_exception'],
+            'level': LOG_LEVEL,
         },
     },
 }
+
+if DEBUG_DEV:
+    LOGGING['loggers']['django.db'] = {
+        'handlers': ['console', 'server'],
+        'level': 'DEBUG'
+    }
+
+if not os.path.isdir(LOG_DIR):
+    os.makedirs(LOG_DIR)
+if not os.path.isdir(TMP_LOG_DIR):
+    os.makedirs(TMP_LOG_DIR)
+if not os.path.isdir(CELERY_LOG_DIR):
+    os.makedirs(CELERY_LOG_DIR)

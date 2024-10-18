@@ -4,7 +4,6 @@
 # filename : userinfo
 # author : ly_13
 # date : 6/16/2023
-import logging
 
 from django.conf import settings
 from drf_spectacular.plumbing import build_object_type, build_basic_type
@@ -16,6 +15,7 @@ from rest_framework.parsers import MultiPartParser
 from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
 from settings.utils.security import ResetBlockUtil
 from system.models import UserInfo
@@ -23,7 +23,7 @@ from system.notifications import ResetPasswordSuccessMsg
 from system.serializers.userinfo import UserInfoSerializer, ChangePasswordSerializer
 from system.utils.auth import verify_sms_email_code
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):

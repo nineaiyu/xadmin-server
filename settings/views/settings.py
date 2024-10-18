@@ -5,15 +5,14 @@
 # author : ly_13
 # date : 7/31/2024
 
-import logging
-
 from django.conf import settings
 
 from common.core.modelset import NoDetailModelSet
+from common.utils import get_logger
 from settings.models import Setting
 from settings.serializers.basic import BasicSettingSerializer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BaseSettingViewSet(NoDetailModelSet):

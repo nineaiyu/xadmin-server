@@ -5,8 +5,6 @@
 # author : ly_13
 # date : 1/5/2024
 
-import logging
-
 from django.apps import apps
 from django.conf import settings
 from django.utils.translation import activate
@@ -23,10 +21,11 @@ from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.serializers import get_sub_serializer_fields
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldSerializer
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ModelLabelFieldFilter(BaseFilterSet):

@@ -5,12 +5,13 @@
 # author : ly_13
 # date : 6/2/2023
 import json
-import logging
 import time
 
 from django_redis import get_redis_connection
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def format_return(data):

@@ -4,18 +4,18 @@
 # filename : dept
 # author : ly_13
 # date : 6/16/2023
-import logging
 
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
+from common.utils import get_logger
 from system.models import DeptInfo
 from system.serializers.department import DeptSerializer
 from system.utils.modelset import ChangeRolePermissionAction
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class DeptFilter(BaseFilterSet):

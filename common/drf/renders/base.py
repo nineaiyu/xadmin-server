@@ -1,6 +1,5 @@
 import abc
 import io
-import logging
 import re
 from datetime import datetime
 
@@ -12,8 +11,9 @@ from rest_framework.utils import encoders, json
 
 from common.core.config import SysConfig
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.utils import get_logger
 
-logger = logging.getLogger(__file__)
+logger = get_logger(__name__)
 
 
 class BaseFileRenderer(BaseRenderer):

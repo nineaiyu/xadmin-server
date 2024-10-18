@@ -5,14 +5,14 @@
 # author : ly_13
 # date : 6/2/2023
 
-import logging
 import time
 
 from django.core.cache import cache
 
 from common.cache.storage import PendingStateCache
+from common.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def set_pending_cache(unique_key, cache_data, cache_obj, timeout):

@@ -1,6 +1,5 @@
 import datetime
 import hashlib
-import logging
 import random
 import time
 
@@ -19,7 +18,9 @@ else:
     randrange = random.randrange
 MAX_RANDOM_KEY = 18446744073709551616  # 2 << 63
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class CaptchaStore(models.Model):

@@ -4,12 +4,13 @@
 # filename : storage
 # author : ly_13
 # date : 6/2/2023
-import logging
 
 from django.conf import settings
 from django.core.cache import cache
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class RedisCacheBase(object):

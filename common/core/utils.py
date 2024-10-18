@@ -17,8 +17,9 @@ from django.utils.module_loading import import_string
 from django.utils.termcolors import make_style
 
 from common.base.magic import import_from_string
+from common.utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def check_show_url(url):

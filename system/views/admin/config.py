@@ -4,7 +4,6 @@
 # filename : config
 # author : ly_13
 # date : 6/16/2023
-import logging
 
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
@@ -12,12 +11,13 @@ from drf_spectacular.utils import extend_schema
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig
 from system.serializers.config import SystemConfigSerializer, UserPersonalConfigSerializer, \
     UserPersonalConfigExportImportSerializer
 from system.utils.modelset import InvalidConfigCacheAction
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SystemConfigFilter(BaseFilterSet):

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-18 10:34+0800\n"
+"POT-Creation-Date: 2024-10-18 11:54+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: common/celery/flower.py:39
+#: common/celery/flower.py:40
 msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr "任务监控系统不可用，请联系管理员"
@@ -62,33 +62,33 @@ msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
-#: common/core/models.py:20 common/core/models.py:27
+#: common/core/models.py:21 common/core/models.py:28
 #: settings/serializers/security.py:245
 msgid "ID"
 msgstr "主键ID"
 
-#: common/core/models.py:34 common/models.py:18
+#: common/core/models.py:35 common/models.py:18
 #: settings/serializers/security.py:247
 msgid "Created time"
 msgstr "创建时间"
 
-#: common/core/models.py:35
+#: common/core/models.py:36
 msgid "Updated time"
 msgstr "更新时间"
 
-#: common/core/models.py:36
+#: common/core/models.py:37
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:82
+#: common/core/models.py:83
 msgid "Creator"
 msgstr "创建人"
 
-#: common/core/models.py:84
+#: common/core/models.py:85
 msgid "Modifier"
 msgstr "修改人"
 
-#: common/core/models.py:86
+#: common/core/models.py:87
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
@@ -437,8 +437,8 @@ msgstr "消息中心"
 #: notifications/serializers/message.py:149
 #: notifications/serializers/notifications.py:19
 #: notifications/serializers/notifications.py:37 system/models/config.py:39
-#: system/serializers/config.py:45 system/serializers/config.py:57
-#: system/serializers/log.py:32 system/serializers/log.py:53
+#: system/serializers/config.py:44 system/serializers/config.py:56
+#: system/serializers/log.py:31 system/serializers/log.py:52
 msgid "User"
 msgstr "用户"
 
@@ -575,7 +575,7 @@ msgstr "字段权限用于授权访问数据字段展示"
 
 #: settings/serializers/basic.py:34 system/models/department.py:24
 #: system/models/field.py:33 system/models/permission.py:25
-#: system/models/user.py:36 system/serializers/base.py:24
+#: system/models/user.py:36 system/serializers/base.py:23
 msgid "Data permission"
 msgstr "数据权限"
 
@@ -1125,7 +1125,7 @@ msgid "Superior department"
 msgstr "上级部门"
 
 #: system/models/department.py:23 system/models/field.py:32
-#: system/models/user.py:35 system/serializers/base.py:21
+#: system/models/user.py:35 system/serializers/base.py:20
 msgid "Role permission"
 msgstr "角色权限"
 
@@ -1265,7 +1265,7 @@ msgstr "操作系统"
 msgid "Agent"
 msgstr "用户代理"
 
-#: system/models/log.py:32 system/serializers/log.py:55
+#: system/models/log.py:32 system/serializers/log.py:54
 msgid "Login type"
 msgstr "登录类型"
 
@@ -1273,7 +1273,7 @@ msgstr "登录类型"
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:53 system/serializers/log.py:33
+#: system/models/log.py:53 system/serializers/log.py:32
 msgid "Module"
 msgstr "模块"
 
@@ -1396,7 +1396,7 @@ msgstr "目录"
 
 #: system/models/menu.py:50 system/models/menu.py:84
 #: system/models/permission.py:20 system/models/permission.py:34
-#: system/models/role.py:18 system/serializers/permission.py:35
+#: system/models/role.py:18 system/serializers/permission.py:34
 #: system/serializers/role.py:36
 msgid "Menu"
 msgstr "菜单"
@@ -1539,7 +1539,7 @@ msgid "Nickname"
 msgstr "昵称"
 
 #: system/models/user.py:31 system/serializers/user.py:47
-#: system/serializers/userinfo.py:33
+#: system/serializers/userinfo.py:32
 msgid "Gender"
 msgstr "性别"
 
@@ -1563,19 +1563,19 @@ msgstr "重置密码提醒"
 msgid "Reset password success"
 msgstr "重置密码成功"
 
-#: system/serializers/base.py:25 system/serializers/permission.py:38
+#: system/serializers/base.py:24 system/serializers/permission.py:37
 msgid "Mode type"
 msgstr "权限模式"
 
-#: system/serializers/config.py:31
+#: system/serializers/config.py:30
 msgid "Config cache value"
 msgstr "配置缓存数值"
 
-#: system/serializers/config.py:59
+#: system/serializers/config.py:58
 msgid "Users"
 msgstr "多个用户"
 
-#: system/serializers/config.py:66
+#: system/serializers/config.py:65
 msgid "User cannot be null"
 msgstr "用户不能为空"
 
@@ -1583,7 +1583,7 @@ msgstr "用户不能为空"
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/permission.py:43
+#: system/serializers/permission.py:42
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
 
@@ -1591,11 +1591,11 @@ msgstr "权限规则不能为空"
 msgid "Fields"
 msgstr "字段"
 
-#: system/serializers/upload.py:29
+#: system/serializers/upload.py:28
 msgid "Access URL"
 msgstr "访问地址"
 
-#: system/serializers/upload.py:37
+#: system/serializers/upload.py:36
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
@@ -1604,7 +1604,7 @@ msgid "Login blocked"
 msgstr "登录被锁定"
 
 #: system/serializers/user.py:66 system/serializers/user.py:80
-#: system/serializers/userinfo.py:56 system/views/auth/register.py:75
+#: system/serializers/userinfo.py:55 system/views/auth/register.py:75
 #: system/views/auth/reset.py:53
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
@@ -1613,15 +1613,15 @@ msgstr "密码不满足安全规则"
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
-#: system/serializers/userinfo.py:44
+#: system/serializers/userinfo.py:43
 msgid "Old password"
 msgstr "旧密码"
 
-#: system/serializers/userinfo.py:47
+#: system/serializers/userinfo.py:46
 msgid "Confirm password"
 msgstr "确认密码"
 
-#: system/serializers/userinfo.py:54
+#: system/serializers/userinfo.py:53
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 
