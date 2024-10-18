@@ -5,7 +5,7 @@
 # author : ly_13
 # date : 6/2/2023
 
-import logging
+
 import time
 from functools import wraps, WRAPPER_ASSIGNMENTS
 from importlib import import_module
@@ -14,7 +14,9 @@ from django.core.cache import cache
 from django.db import close_old_connections
 from django.http.response import HttpResponse
 
-logger = logging.getLogger(__name__)
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_function_by_locker(timeout=60 * 5, lock_func=None):

@@ -15,7 +15,7 @@ from common.utils import get_logger
 from settings.serializers.email import EmailSettingSerializer
 from settings.views.settings import BaseSettingViewSet
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class EmailServerSettingViewSet(BaseSettingViewSet):

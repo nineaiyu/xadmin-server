@@ -17,7 +17,7 @@ from rest_framework.utils.field_mapping import ClassLookupDict
 
 from common.utils import get_logger
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class CustomAutoSchema(AutoSchema):

@@ -6,7 +6,7 @@
 # date : 8/6/2024
 from common.utils import get_logger
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class BaseSMSClient:

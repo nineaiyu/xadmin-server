@@ -11,7 +11,7 @@ from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from system.models import UserInfo
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 system_msgs = []
 user_msgs = []
 

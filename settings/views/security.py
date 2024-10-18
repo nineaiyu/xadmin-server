@@ -11,7 +11,7 @@ from settings.serializers.security import SecurityPasswordRuleSerializer, Securi
     SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer
 from settings.views.settings import BaseSettingViewSet
 
-logger = get_logger(__file__)
+logger = get_logger(__name__)
 
 
 class SecurityPasswordRuleViewSet(BaseSettingViewSet):
