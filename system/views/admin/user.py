@@ -45,6 +45,8 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
     ordering_fields = ['date_joined', 'last_login', 'created_time']
     filterset_class = UserFilter
 
+    # export_as_zip = True  导出zip压缩包，密码是用户名
+
     def perform_destroy(self, instance):
         if instance.is_superuser:
             raise Exception(_("The super administrator disallows deletion"))

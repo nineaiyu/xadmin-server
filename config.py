@@ -10,6 +10,8 @@
 
 DEBUG = False
 
+LOG_LEVEL = "DEBUG"
+
 ALLOWED_HOSTS = ["*"]
 
 # SECURITY WARNING: keep the secret key used in production secret!

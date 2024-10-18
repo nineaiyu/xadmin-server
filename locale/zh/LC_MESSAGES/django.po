@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-17 15:32+0800\n"
+"POT-Creation-Date: 2024-10-18 10:34+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -142,11 +142,11 @@ msgstr "表单数据解析异常 - {}"
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr "文件内容太大 (最大长度 `{}` 字节)"
 
-#: common/drf/parsers/base.py:185
+#: common/drf/parsers/base.py:191
 msgid "The resource does not support imports!"
 msgstr "该资源不支持导入"
 
-#: common/drf/parsers/base.py:205
+#: common/drf/parsers/base.py:211
 msgid "Parse file error: {}"
 msgstr "文件解析失败 {}"
 
@@ -154,7 +154,7 @@ msgstr "文件解析失败 {}"
 msgid "Invalid excel file {}"
 msgstr "错误的Excel文件 {}"
 
-#: common/drf/renders/base.py:220
+#: common/drf/renders/base.py:222
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
@@ -1723,7 +1723,7 @@ msgstr ""
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
 
-#: system/views/admin/user.py:50
+#: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 

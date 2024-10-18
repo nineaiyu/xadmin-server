@@ -141,10 +141,16 @@ class BaseFileParser(BaseParser):
             value = [self.parse_value(field.child_relation, v) for v in value]
         elif isinstance(field, serializers.ListField):
             value = [self.parse_value(field.child, v) for v in value]
-        elif isinstance(field, serializers.CharField):
-            if not isinstance(value, str):
-                value = json.dumps(value)
-
+        elif isinstance(field, serializers.JSONField):
+            if isinstance(value, str):
+                if value.lower() in ['yes']:
+                    return True
+                elif value.lower() in ['no']:
+                    return False
+            try:
+                value = json.loads(value)
+            except:
+                pass
         return value
 
     def process_row_data(self, row_data):
