@@ -81,7 +81,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
         except Exception:  # sqlite3 数据库因为锁表可能会导致日志记录失败
             pass
-        logger.debug(f"request end. {info}")
+        del info['request_uuid']
+        logger.debug(f"request end. {request.method} {request.path} {getattr(request, 'request_data', {})} log:{info}")
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):

@@ -21,17 +21,17 @@ LOGGING = {
     'formatters': {
         'verbose': {
             '()': 'server.logging.ServerFormatter',
-            'format': '%(asctime)s.%(msecs)03d [%(levelname)s %(user)s] [%(pathname)s:%(lineno)d] %(process)d %(thread)d %(message)s'
+            'format': '%(asctime)s.%(msecs)03d [%(requestUuid)s %(levelname)s] [%(requestUser)s] [%(pathname)s:%(lineno)d] %(process)d %(thread)d %(message)s'
         },
         'main': {
             '()': 'server.logging.ServerFormatter',
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '%(asctime)s.%(msecs)03d [%(levelname)s %(user)s] [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+            'format': '%(asctime)s.%(msecs)03d [%(requestUuid)s %(levelname).4s] [%(requestUser)s] [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
         },
         'exception': {
             '()': 'server.logging.ServerFormatter',
             'datefmt': '%Y-%m-%d %H:%M:%S',
-            'format': '\n%(asctime)s [%(levelname)s %(user)s] %(message)s',
+            'format': '\n%(asctime)s.%(msecs)03d [%(requestUuid)s %(levelname)s %(requestUser)s] %(message)s',
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
