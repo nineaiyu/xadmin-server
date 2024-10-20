@@ -35,32 +35,57 @@
   },
   {
     "model": "system.datapermission",
-    "pk": "541738f4-be19-4ef7-9d39-38178caaae20",
+    "pk": "d2f7df24-e469-462f-896b-26629a8edf24",
     "fields": {
       "mode_type": 0,
-      "created_time": "2024-06-08T14:39:23.163Z",
-      "updated_time": "2024-07-23T07:06:21.181Z",
+      "created_time": "2024-06-08T14:51:41.608Z",
+      "updated_time": "2024-06-08T14:51:41.608Z",
       "description": null,
       "creator": 1,
-      "modifier": 1,
+      "modifier": null,
       "dept_belong": null,
-      "name": "测试部门只读权限",
+      "name": "本部门只读权限",
       "rules": [
         {
-          "table": "system.deptinfo",
-          "field": "id",
-          "match": "in",
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
           "exclude": false,
-          "type": "value.table.dept.ids",
-          "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"label\":\"测试部门\"}]"
+          "type": "value.user.dept.id",
+          "value": ""
+        },
+        {
+          "table": "system.userinfo",
+          "field": "dept",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.dept.id",
+          "value": ""
         }
       ],
       "is_active": true,
       "menu": [
-        "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
-        "7595b222-e832-48ad-b91f-234b20043fb3",
+        "a53bfa34-4225-4214-98b8-91b2dc29bd93",
+        "54f3dbcf-4600-49e4-8e3c-dee3350b2d06",
+        "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
+        "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
+        "f2107787-4453-4bc3-898c-a1449e39bf67",
+        "6fc056af-acd8-48dd-91cf-e34053014997",
         "009fa855-b1fd-4764-95b6-1f1eb94dd336",
-        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9"
+        "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
+        "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
+        "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
+        "14622100-4732-4f48-ae6f-7189a3407c89",
+        "24244ee6-cf54-4900-94b1-717a7317af04",
+        "8f3eef4e-c88b-415a-a467-b0ebf7144b73",
+        "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
+        "60a0d029-75ae-4314-b5c7-bbd8d642847d",
+        "47dc29c2-202b-4837-be9c-db4607924416",
+        "e374f3ef-7326-475a-8b0a-5e082e695144",
+        "f25f86f8-c676-43b7-b650-b2410f5b1447",
+        "00d7809c-0a74-4e80-9730-239b882f9cfa",
+        "c876c6be-1e45-4b05-bd51-68071a2878d9"
       ]
     }
   },
@@ -96,55 +121,142 @@
   },
   {
     "model": "system.datapermission",
-    "pk": "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+    "pk": "541738f4-be19-4ef7-9d39-38178caaae20",
     "fields": {
       "mode_type": 0,
-      "created_time": "2023-12-24T06:52:26.814Z",
-      "updated_time": "2024-09-18T04:54:52.836Z",
-      "description": "仅本人数据",
+      "created_time": "2024-06-08T14:39:23.163Z",
+      "updated_time": "2024-07-23T07:06:21.181Z",
+      "description": null,
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
-      "name": "仅本人数据",
+      "name": "测试部门只读权限",
       "rules": [
         {
-          "table": "system.userpersonalconfig",
-          "field": "owner",
-          "match": "exact",
+          "table": "system.deptinfo",
+          "field": "id",
+          "match": "in",
           "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
+          "type": "value.table.dept.ids",
+          "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"label\":\"测试部门\"}]"
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+        "7595b222-e832-48ad-b91f-234b20043fb3",
+        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9"
+      ]
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "db58769c-040f-41f2-874e-9be9fbd93790",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:12:40.796Z",
+      "updated_time": "2023-12-29T07:09:35.797Z",
+      "description": "本部门及以下数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "本部门及以下数据",
+      "rules": [
         {
-          "table": "system.messageuserread",
-          "field": "owner",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
+          "table": "*",
+          "field": "dept_belong",
+          "match": "in",
+          "type": "value.user.dept.ids",
           "value": ""
-        },
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "95045a58-b9c1-4289-8a97-ac9ce61cdae5",
+    "fields": {
+      "mode_type": 1,
+      "created_time": "2023-12-24T06:11:34.092Z",
+      "updated_time": "2023-12-25T12:57:41.010Z",
+      "description": "仅本部门下的本人数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "仅本部门下的本人数据",
+      "rules": [
         {
-          "table": "system.operationlog",
+          "table": "*",
           "field": "creator",
           "match": "exact",
-          "exclude": false,
           "type": "value.user.id",
           "value": ""
         },
         {
-          "table": "system.userloginlog",
-          "field": "creator",
+          "table": "*",
+          "field": "dept_belong",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
+          "type": "value.user.dept.id",
+          "value": ""
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "9d737343-0034-4a08-985e-af41bf184699",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:09:48.598Z",
+      "updated_time": "2024-01-15T07:39:05.041Z",
+      "description": "全部数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "全部数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "*",
+          "match": "*",
+          "type": "value.all",
+          "value": "*"
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "fc8f9238-32b6-415c-bb12-c39bc9883ea0",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:13:13.633Z",
+      "updated_time": "2023-12-25T13:43:04.535Z",
+      "description": "本部门数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "本部门数据",
+      "rules": [
+        {
+          "table": "*",
+          "field": "dept_belong",
+          "match": "exact",
+          "type": "value.user.dept.id",
           "value": ""
         },
         {
-          "table": "notifications.usermsgsubscription",
-          "field": "user",
+          "table": "system.userinfo",
+          "field": "dept",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
+          "type": "value.user.dept.id",
           "value": ""
         }
       ],
@@ -210,167 +322,55 @@
   },
   {
     "model": "system.datapermission",
-    "pk": "95045a58-b9c1-4289-8a97-ac9ce61cdae5",
+    "pk": "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
     "fields": {
-      "mode_type": 1,
-      "created_time": "2023-12-24T06:11:34.092Z",
-      "updated_time": "2023-12-25T12:57:41.010Z",
-      "description": "仅本部门下的本人数据",
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:52:26.814Z",
+      "updated_time": "2024-09-18T04:54:52.836Z",
+      "description": "仅本人数据",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
-      "name": "仅本部门下的本人数据",
+      "name": "仅本人数据",
       "rules": [
         {
-          "table": "*",
-          "field": "creator",
+          "table": "system.userpersonalconfig",
+          "field": "owner",
           "match": "exact",
+          "exclude": false,
           "type": "value.user.id",
           "value": ""
         },
         {
-          "table": "*",
-          "field": "dept_belong",
-          "match": "exact",
-          "type": "value.user.dept.id",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "9d737343-0034-4a08-985e-af41bf184699",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2023-12-24T06:09:48.598Z",
-      "updated_time": "2024-01-15T07:39:05.041Z",
-      "description": "全部数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "全部数据",
-      "rules": [
-        {
-          "table": "*",
-          "field": "*",
-          "match": "*",
-          "type": "value.all",
-          "value": "*"
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "d2f7df24-e469-462f-896b-26629a8edf24",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2024-06-08T14:51:41.608Z",
-      "updated_time": "2024-06-08T14:51:41.608Z",
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": null,
-      "name": "本部门只读权限",
-      "rules": [
-        {
-          "table": "*",
-          "field": "dept_belong",
+          "table": "system.messageuserread",
+          "field": "owner",
           "match": "exact",
           "exclude": false,
-          "type": "value.user.dept.id",
+          "type": "value.user.id",
           "value": ""
         },
         {
-          "table": "system.userinfo",
-          "field": "dept",
+          "table": "system.operationlog",
+          "field": "creator",
           "match": "exact",
           "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": [
-        "a53bfa34-4225-4214-98b8-91b2dc29bd93",
-        "54f3dbcf-4600-49e4-8e3c-dee3350b2d06",
-        "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
-        "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
-        "f2107787-4453-4bc3-898c-a1449e39bf67",
-        "6fc056af-acd8-48dd-91cf-e34053014997",
-        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
-        "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
-        "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
-        "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
-        "14622100-4732-4f48-ae6f-7189a3407c89",
-        "24244ee6-cf54-4900-94b1-717a7317af04",
-        "8f3eef4e-c88b-415a-a467-b0ebf7144b73",
-        "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
-        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
-        "60a0d029-75ae-4314-b5c7-bbd8d642847d",
-        "47dc29c2-202b-4837-be9c-db4607924416",
-        "e374f3ef-7326-475a-8b0a-5e082e695144",
-        "f25f86f8-c676-43b7-b650-b2410f5b1447",
-        "00d7809c-0a74-4e80-9730-239b882f9cfa",
-        "c876c6be-1e45-4b05-bd51-68071a2878d9"
-      ]
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "db58769c-040f-41f2-874e-9be9fbd93790",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2023-12-24T06:12:40.796Z",
-      "updated_time": "2023-12-29T07:09:35.797Z",
-      "description": "本部门及以下数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "本部门及以下数据",
-      "rules": [
-        {
-          "table": "*",
-          "field": "dept_belong",
-          "match": "in",
-          "type": "value.user.dept.ids",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "fc8f9238-32b6-415c-bb12-c39bc9883ea0",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2023-12-24T06:13:13.633Z",
-      "updated_time": "2023-12-25T13:43:04.535Z",
-      "description": "本部门数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "本部门数据",
-      "rules": [
-        {
-          "table": "*",
-          "field": "dept_belong",
-          "match": "exact",
-          "type": "value.user.dept.id",
+          "type": "value.user.id",
           "value": ""
         },
         {
-          "table": "system.userinfo",
-          "field": "dept",
+          "table": "system.userloginlog",
+          "field": "creator",
           "match": "exact",
-          "type": "value.user.dept.id",
+          "exclude": false,
+          "type": "value.user.id",
+          "value": ""
+        },
+        {
+          "table": "notifications.usermsgsubscription",
+          "field": "user",
+          "match": "exact",
+          "exclude": false,
+          "type": "value.user.id",
           "value": ""
         }
       ],
