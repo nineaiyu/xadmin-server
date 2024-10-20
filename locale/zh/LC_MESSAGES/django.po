@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-18 13:13+0800\n"
+"POT-Creation-Date: 2024-10-20 17:01+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -122,11 +122,11 @@ msgstr "操作成功，批量删除 {} 条数据"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -1301,7 +1301,15 @@ msgstr "响应内容"
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:65
+#: system/models/log.py:63
+msgid "Request ID"
+msgstr "请求ID"
+
+#: system/models/log.py:64
+msgid "Execution time"
+msgstr "执行时间"
+
+#: system/models/log.py:67
 msgid "Operation log"
 msgstr "操作日志"
 

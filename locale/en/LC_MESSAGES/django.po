@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-18 13:13+0800\n"
+"POT-Creation-Date: 2024-10-20 17:01+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -123,11 +123,11 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation failed"
 msgstr ""
 
@@ -1288,7 +1288,15 @@ msgstr ""
 msgid "Status code"
 msgstr ""
 
-#: system/models/log.py:65
+#: system/models/log.py:63
+msgid "Request ID"
+msgstr ""
+
+#: system/models/log.py:64
+msgid "Execution time"
+msgstr ""
+
+#: system/models/log.py:67
 msgid "Operation log"
 msgstr ""
 

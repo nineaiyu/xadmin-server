@@ -21,10 +21,10 @@ logger = get_logger(__name__)
 class OperationLogSerializer(BaseModelSerializer):
     class Meta:
         model = OperationLog
-        fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system",
-                  "response_code", "status_code", "body", "response_result", "created_time"]
+        fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system", "request_uuid",
+                  "exec_time", "response_code", "status_code", "body", "response_result", "created_time"]
 
-        table_fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system",
+        table_fields = ["pk", "module", "creator", "ipaddress", "path", "method", "browser", "system", "exec_time",
                         "status_code", "created_time"]
         read_only_fields = ["pk"] + list(set([x.name for x in OperationLog._meta.fields]))
 

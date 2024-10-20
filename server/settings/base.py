@@ -40,6 +40,18 @@ ALLOWED_HOSTS = locals().get("ALLOWED_HOSTS", ["*"])
 # Application definition
 XADMIN_APPS = locals().get("XADMIN_APPS", [])
 
+# 表前缀设置
+# 1.指定配置
+# DB_PREFIX={
+# 'system': 'abc_', # system app所有的表都加前缀 abc_
+# 'system.config':'xxa_', # 仅system.config添加前缀 xxa_
+# '': '', # 默认前缀
+# }
+#
+# 2.全局配置
+# DB_PREFIX='abc_'  : 所有表都添加 abc_
+DB_PREFIX = locals().get("DB_PREFIX", "")
+
 INSTALLED_APPS = [
     'daphne',  # 支持websocket
     'django.contrib.admin',
@@ -458,6 +470,7 @@ PERMISSION_DATA_AUTH_APPS = [
 
 API_LOG_ENABLE = True
 API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
+API_LOG_METHODS = 'ALL'
 
 # 忽略日志记录
 API_LOG_IGNORE = {

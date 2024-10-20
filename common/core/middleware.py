@@ -6,16 +6,19 @@
 # date : 6/27/2023
 
 import json
+import time
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.utils import encoders
 
+from common.utils import get_logger
 from common.utils.request import get_request_user, get_request_ip, get_request_data, get_request_path, get_os, \
     get_browser, get_verbose_name
 from system.models import OperationLog
 
+logger = get_logger(__name__)
 
 class ApiLoggingMiddleware(MiddlewareMixin):
 
@@ -31,8 +34,15 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         request.request_ip = get_request_ip(request)
         request.request_data = get_request_data(request)
         request.request_path = get_request_path(request)
+        request.request_start_time = time.time()
+        logger.debug(f"request start. {request.method} {request.path} {getattr(request, 'request_data', {})}")
 
     def __handle_response(self, request, response):
+        request_start_time = getattr(request, 'request_start_time', None)
+        exec_time = time.time() - request_start_time
+        if exec_time > 1:
+            logger.warning(
+                f"exec time {exec_time} over 1s. {request.method} {request.path} {getattr(request, 'request_data', {})}")
         # 判断有无log_id属性，使用All记录时，会出现此情况
         operation_log_id = getattr(request, self.operation_log_id, None)
         if operation_log_id is None:
@@ -62,6 +72,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             'system': get_os(request),
             'browser': get_browser(request),
             'status_code': response.data.get('code'),
+            'request_uuid': getattr(request, 'request_uuid', None),
+            'exec_time': time.time() - request_start_time,
             'response_result': json.dumps({"code": response.data.get('code'), "data": response.data.get('data'),
                                            "detail": response.data.get('detail')}, cls=encoders.JSONEncoder),
         }
@@ -69,6 +81,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             OperationLog.objects.update_or_create(defaults=info, id=operation_log_id)
         except Exception:  # sqlite3 数据库因为锁表可能会导致日志记录失败
             pass
+        logger.debug(f"request end. {info}")
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):
