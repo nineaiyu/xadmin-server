@@ -30,10 +30,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEBUG = locals().get("DEBUG", False)
 LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
 DEBUG_DEV = locals().get('DEBUG_DEV', False)
+
 # 如果前端是代理，则可以通过该配置，在系统构建url的时候，获取正确的 scheme
-# 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto https;
+# 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto $scheme;
 # https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#std-setting-SECURE_PROXY_SSL_HEADER
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# 为了兼容前端NGINX代理，并且使用非80，443端口访问，详细查看源码：django.http.request.HttpRequest._get_raw_host
+# https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#use-x-forwarded-host
+USE_X_FORWARDED_HOST = True
 
 ALLOWED_HOSTS = locals().get("ALLOWED_HOSTS", ["*"])
 
@@ -87,7 +92,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
