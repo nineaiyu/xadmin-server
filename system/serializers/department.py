@@ -46,7 +46,7 @@ class DeptSerializer(BaseRoleRuleInfo):
 
     def update(self, instance, validated_data):
         parent = validated_data.get('parent')
-        if parent and parent.pk in DeptInfo.recursion_dept_info(dept_id=instance.pk):
+        if parent and str(parent.pk) in DeptInfo.recursion_dept_info(dept_id=instance.pk):
             raise ValidationError(_("The superior department cannot be its own subordinate department"))
         return super().update(instance, validated_data)
 
