@@ -28,9 +28,7 @@ class DeptFilter(BaseFilterSet):
 
 
 class DeptViewSet(BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
-    """
-    部门信息
-    """
+    """部门信息"""
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
     pagination_class = DynamicPageNumber(1000)

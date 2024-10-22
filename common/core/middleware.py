@@ -61,7 +61,20 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         except Exception:
             return
         user = get_request_user(request)
+        request_module = getattr(request, 'request_module', '')
+        if hasattr(response, 'renderer_context'):
+            action_doc = getattr(response.renderer_context['view'], request.method.lower()).__doc__
+            if action_doc:
+                try:
+                    action_doc = action_doc.format(cls=request_module)
+                except Exception:
+                    action_doc = request_module
+            else:
+                action_doc = request_module
+        else:
+            action_doc = request_module
         info = {
+            'module': action_doc,
             'creator': user if not isinstance(user, AnonymousUser) else None,
             'dept_belong_id': getattr(request.user, 'dept_id', None),
             'ipaddress': getattr(request, 'request_ip'),
@@ -98,6 +111,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                     log = OperationLog(module=v)
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
+                    setattr(request, 'request_module', v)
 
         return
 

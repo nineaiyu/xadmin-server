@@ -31,6 +31,6 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
 
 class ServerFormatter(logging.Formatter):
     def format(self, record):
-        record.requestUser = str(current_request.user if current_request else 'SYSTEM')
+        record.requestUser = str(current_request.user if current_request else 'SYSTEM')[:16]
         record.requestUuid = str(getattr(current_request, 'request_uuid', ""))
         return super().format(record)
