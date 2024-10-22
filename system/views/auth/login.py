@@ -146,7 +146,7 @@ class BasicLoginAPIView(TokenObtainPairView):
 
 
 class VerifyCodeLoginAPIView(TokenObtainPairView):
-    """用户登录"""
+    """用户验证码登录"""
     throttle_classes = [LoginThrottle]
 
     @extend_schema(

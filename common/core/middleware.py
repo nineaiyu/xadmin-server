@@ -102,12 +102,13 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             if self.enable:
                 if self.methods == 'ALL' or request.method in self.methods:
                     model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
-                    if model and request.method in self.ignores.get(model._meta.label, []):
+                    if (model and request.method in self.ignores.get(model._meta.label, [])) or (
+                            request.method in self.ignores.get(request.request_path, [])):
                         return
                     if not v:
                         v = settings.API_MODEL_MAP.get(request.request_path, v)
-                        if not v:
-                            return
+                        if not v and model:
+                            v = model._meta.label
                     log = OperationLog(module=v)
                     log.save()
                     setattr(request, self.operation_log_id, log.id)

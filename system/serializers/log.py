@@ -5,10 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.utils import extend_schema_field
-from rest_framework import serializers
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
@@ -29,15 +26,6 @@ class OperationLogSerializer(BaseModelSerializer):
         read_only_fields = ["pk"] + list(set([x.name for x in OperationLog._meta.fields]))
 
     creator = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, label=_("User"))
-    module = serializers.SerializerMethodField(label=_("Module"))
-
-    @extend_schema_field(serializers.CharField)
-    def get_module(self, obj):
-        module_name = obj.module
-        map_module_name = settings.API_MODEL_MAP.get(obj.path, None)
-        if not module_name and map_module_name:
-            return map_module_name
-        return module_name
 
 
 class LoginLogSerializer(BaseModelSerializer):

@@ -476,19 +476,16 @@ PERMISSION_DATA_AUTH_APPS = [
 API_LOG_ENABLE = True
 API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
 
-# 忽略日志记录
+# 忽略日志记录, 支持model 或者 request_path, 不支持正则
 API_LOG_IGNORE = {
-    'system.OperationLog': ['GET']
+    'system.OperationLog': ['GET'],
+    '/api/common/api/health': ['GET'],
 }
 
 # 在操作日志中详细记录的请求模块映射
 API_MODEL_MAP = {
     "/api/system/refresh": "Token刷新",
-    "/api/system/upload": "文件上传",
-    "/api/system/login": "用户登录",
-    "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
-    "/api/system/password/send": "重置密码",
 }
 
 SPECTACULAR_SETTINGS = {

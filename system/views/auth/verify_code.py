@@ -118,6 +118,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return ApiResponse(data=get_config_func(request))
 
     def post(self, request):
+        """发送验证码"""
         category = request.query_params.get('category')
         config = getattr(self, 'get_%s_config' % category)(request)
         if not config.get("access"):
