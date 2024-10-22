@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-20 17:01+0800\n"
+"POT-Creation-Date: 2024-10-22 11:11+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -107,7 +107,7 @@ msgstr ""
 
 #: common/core/modelset.py:190 system/utils/auth.py:104
 #: system/utils/modelset.py:59 system/views/auth/register.py:69
-#: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
+#: system/views/auth/reset.py:47 system/views/auth/verify_code.py:138
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -1041,11 +1041,11 @@ msgstr ""
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
-#: settings/views/sms.py:98
+#: settings/views/sms.py:99
 msgid "test_phone is required"
 msgstr ""
 
-#: settings/views/sms.py:109
+#: settings/views/sms.py:110
 msgid "Test success"
 msgstr ""
 
@@ -1600,7 +1600,7 @@ msgstr ""
 
 #: system/serializers/user.py:66 system/serializers/user.py:80
 #: system/serializers/userinfo.py:55 system/views/auth/register.py:75
-#: system/views/auth/reset.py:53
+#: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr ""
 
@@ -1740,7 +1740,7 @@ msgstr ""
 msgid "The account already exists, please try another one"
 msgstr ""
 
-#: system/views/auth/reset.py:58
+#: system/views/auth/reset.py:59
 msgid "Reset password success, return to login page"
 msgstr ""
 

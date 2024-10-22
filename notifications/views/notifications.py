@@ -15,6 +15,7 @@ from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsg
 
 
 class BackendListAPIView(GenericAPIView):
+    """获取消息通知后端"""
 
     @extend_schema(
         parameters=None, description="获取消息通知后端", responses=get_default_response_schema(

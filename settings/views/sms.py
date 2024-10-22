@@ -33,6 +33,7 @@ class SmsSettingViewSet(BaseSettingViewSet):
 
 
 class SMSBackendAPIView(GenericAPIView):
+    """获取短信后端"""
 
     @extend_schema(parameters=None, responses=get_default_response_schema(
         {

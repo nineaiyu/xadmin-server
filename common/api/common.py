@@ -75,6 +75,7 @@ class CountryListAPIView(GenericAPIView):
 
 
 class HealthCheckAPIView(GenericAPIView):
+    """获取服务健康状态"""
     permission_classes = (AllowAny,)
 
     @staticmethod
