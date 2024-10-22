@@ -93,6 +93,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                         return
                     if not v:
                         v = settings.API_MODEL_MAP.get(request.request_path, v)
+                        if not v:
+                            return
                     log = OperationLog(module=v)
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
