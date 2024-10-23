@@ -36,9 +36,12 @@ class ServicesUtil(object):
             self.watch()
 
     def start(self):
+        check_db_status = False
         if 'gunicorn' in [service.name for service in self._services]:
             prepare()
-
+            check_db_status = True
+        if not check_db_status and {'celery_default', 'beat'} & set([service.name for service in self._services]):
+            check_database_connection()
         for service in self._services:
             service: BaseService
             service.start()
