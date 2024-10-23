@@ -12,6 +12,7 @@ class CommonConfig(AppConfig):
     name = 'common'
 
     def ready(self):
+        from .celery import heatbeat  # noqa
         from . import signal_handlers  # noqa
         from . import tasks  # noqa
         from .swagger.utils import OpenApiAuthenticationScheme, OpenApiPrimaryKeyRelatedField  # noqa

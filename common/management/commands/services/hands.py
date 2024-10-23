@@ -37,6 +37,7 @@ def check_database_connection():
         logger.info(f"Check database connection: {i}")
         try:
             management.call_command('check', '--database', 'default')
+            management.call_command('expire_caches', 'system')
             logger.info("Database connect success")
             return
         except OperationalError:

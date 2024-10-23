@@ -1,9 +1,10 @@
 #!/bin/bash
 function cleanup()
 {
-    local pids=`jobs -p`
+    local pids
+    pids=$(jobs -p)
     if [[ "${pids}" != ""  ]]; then
-        kill ${pids} >/dev/null 2>/dev/null
+        kill "${pids}" >/dev/null 2>/dev/null
     fi
 }
 
@@ -15,7 +16,7 @@ trap cleanup EXIT
 rm -f logs/tmp/*.pid
 
 if [[ "${action:0:1}" == "/" ]];then
-    $@
+    "$@"
 elif [[ "$action" == "bash" || "$action" == "sh" ]];then
     bash
 elif [[ "$action" == "sleep" ]];then
