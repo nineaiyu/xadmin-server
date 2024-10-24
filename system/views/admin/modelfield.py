@@ -6,8 +6,6 @@
 # date : 1/5/2024
 
 from django.apps import apps
-from django.conf import settings
-from django.utils.translation import activate
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
@@ -16,14 +14,14 @@ from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
 from common.core.filter import BaseFilterSet
-from common.core.modelset import OnlyListModelSet
+from common.core.modelset import ListDeleteModelSet, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
-from common.core.serializers import get_sub_serializer_fields
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldSerializer
+from system.utils.modelfield import sync_model_field
 
 logger = get_logger(__name__)
 
@@ -44,7 +42,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
         fields = ['pk', 'name', 'label', 'parent', 'field_type']
 
 
-class ModelLabelFieldViewSet(OnlyListModelSet):
+class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     """模型字段管理"""
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer
@@ -111,6 +109,5 @@ class ModelLabelFieldViewSet(OnlyListModelSet):
     @extend_schema(description='同步字段', responses=get_default_response_schema())
     @action(methods=['get'], detail=False)
     def sync(self, request, *args, **kwargs):
-        activate(settings.LANGUAGE_CODE)
-        get_sub_serializer_fields()
+        sync_model_field()
         return ApiResponse()

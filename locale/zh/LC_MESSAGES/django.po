@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-23 15:45+0800\n"
+"POT-Creation-Date: 2024-10-24 19:42+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1633,14 +1633,6 @@ msgstr "确认密码"
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 
-#: system/signal_handler.py:46
-msgid "All tables"
-msgstr "全部表"
-
-#: system/signal_handler.py:48
-msgid "All fields"
-msgstr "全部字段"
-
 #: system/templates/msg_verify_code.html:9
 #: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
@@ -1730,6 +1722,14 @@ msgid ""
 msgstr ""
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
+
+#: system/utils/modelfield.py:67
+msgid "All tables"
+msgstr "全部表"
+
+#: system/utils/modelfield.py:69
+msgid "All fields"
+msgstr "全部字段"
 
 #: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"

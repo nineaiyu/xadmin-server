@@ -2351,6 +2351,31 @@
   },
   {
     "model": "system.menumeta",
+    "pk": "a8578d6e-2480-43d5-8f4b-88be88cbc372",
+    "fields": {
+      "created_time": "2024-10-24T11:45:59.692Z",
+      "updated_time": "2024-10-24T11:46:58.513Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "导入模型字段",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": "aea8a63d-3ab6-40db-b365-893b50e69cec",
     "fields": {
       "created_time": "2024-03-01T02:42:41.839Z",
@@ -3101,6 +3126,31 @@
   },
   {
     "model": "system.menumeta",
+    "pk": "4b4f9531-988d-4df9-9927-a5eecfdf84d3",
+    "fields": {
+      "created_time": "2024-10-24T11:46:44.661Z",
+      "updated_time": "2024-10-24T11:47:02.730Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "批量删除模型字段",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
     "pk": "7a4cf50f-0c9f-4b46-bf6f-a7c9f8c052ea",
     "fields": {
       "created_time": "2024-01-22T09:32:03.228Z",
@@ -3710,6 +3760,31 @@
       "modifier": 1,
       "dept_belong": null,
       "title": "分配部门角色权限",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c9ddbc19-93a2-4731-b4b1-d2cdc025face",
+    "fields": {
+      "created_time": "2024-10-24T11:44:52.282Z",
+      "updated_time": "2024-10-24T11:46:07.623Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "导出模型字段",
       "icon": "",
       "r_svg_name": "",
       "is_show_menu": true,

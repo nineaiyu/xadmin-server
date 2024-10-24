@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-23 15:45+0800\n"
+"POT-Creation-Date: 2024-10-24 19:42+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1620,14 +1620,6 @@ msgstr ""
 msgid "Old password verification failed"
 msgstr ""
 
-#: system/signal_handler.py:46
-msgid "All tables"
-msgstr ""
-
-#: system/signal_handler.py:48
-msgid "All fields"
-msgstr ""
-
 #: system/templates/msg_verify_code.html:9
 #: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
@@ -1714,6 +1706,14 @@ msgstr ""
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
 "account will be temporarily locked for {block_time} minutes)"
+msgstr ""
+
+#: system/utils/modelfield.py:67
+msgid "All tables"
+msgstr ""
+
+#: system/utils/modelfield.py:69
+msgid "All fields"
 msgstr ""
 
 #: system/views/admin/user.py:52
