@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-utils_dir=$(pwd)
+utils_dir=$(dirname "$(readlink -f "$0")")
 cd "$(dirname "${utils_dir}")" || exit 1
 
 for d in *;do
