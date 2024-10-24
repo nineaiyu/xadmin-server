@@ -20,12 +20,14 @@ function usage() {
   echo
   echo "More Commands: "
   echo "  install_docker           Install Docker"
+  echo "  import_tzinfo            Import Mariadb zone info"
   echo
 }
 
 EXE=""
 
 function start() {
+  check_docker_start
   pull_images
   ${EXE} up -d
 }
@@ -35,7 +37,7 @@ function stop() {
     ${EXE} stop "${target}"
     return
   fi
-  ${EXE} stop -v
+  ${EXE} stop
 }
 
 function close() {
@@ -58,6 +60,38 @@ function restart() {
 function pull_images() {
     bash "${PROJECT_DIR}/utils/pull_docker_images.sh"
 }
+
+function import_tzinfo() {
+  if ${EXE} ps|grep xadmin-mariadb|grep healthy &>/dev/null;then
+    docker exec -it xadmin-mariadb sh -c 'mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -u root mysql && "import tzinfo success"'
+  else
+    echo "error: xadmin-mariadb not running"
+    exit 1
+  fi
+}
+
+function start_docker() {
+  if command -v systemctl&>/dev/null; then
+    systemctl daemon-reload
+    systemctl enable docker
+    systemctl start docker
+  fi
+  if ! docker ps &>/dev/null; then
+    echo "error: docker start failed"
+    exit 1
+  fi
+}
+
+function check_docker_start() {
+  if ! which docker &>/dev/null ;then
+    echo "error: docker not found, please run install_docker"
+    exit 1
+  fi
+  if ! docker ps &>/dev/null; then
+    start_docker
+  fi
+}
+
 
 function main() {
 
@@ -94,6 +128,9 @@ function main() {
     ;;
   install_docker)
     bash "${PROJECT_DIR}/utils/install_centos_docker.sh"
+    ;;
+  import_tzinfo)
+    import_tzinfo
     ;;
   help)
     usage
