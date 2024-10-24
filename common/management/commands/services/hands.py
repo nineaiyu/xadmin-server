@@ -9,6 +9,7 @@ from django.db.utils import OperationalError
 
 from common.core.utils import PrintLogFormat
 from common.utils.file import download_file
+from settings.models import Setting
 
 HTTP_HOST = settings.HTTP_BIND_HOST or '127.0.0.1'
 HTTP_PORT = settings.HTTP_LISTEN_PORT or 8080
@@ -96,6 +97,19 @@ def expire_caches():
         management.call_command('expire_caches', 'config_*')
     except:
         pass
+
+
+def check_settings():
+    for i in range(60):
+        try:
+            Setting.objects.exists()
+            time.sleep(1)
+            return
+        except Exception as exc:
+            logger.warning('Unexpect error occur: {}, retry'.format(str(exc)))
+        time.sleep(1)
+    logger.error("check settings database failed, exit")
+    sys.exit(10)
 
 
 def prepare():

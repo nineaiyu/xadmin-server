@@ -8,7 +8,7 @@ ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn
 RUN sed -i "s@http://.*.debian.org@${APT_MIRROR}@g" /etc/apt/sources.list.d/debian.sources
 
 RUN apt update  \
-    && apt-get install gettext libmariadb-dev g++ pkg-config --no-install-recommends -y  \
+    && apt-get install gettext libmariadb-dev g++ pkg-config curl --no-install-recommends -y  \
     && apt-get clean all  \
     && rm -rf /var/lib/apt/lists/*
 

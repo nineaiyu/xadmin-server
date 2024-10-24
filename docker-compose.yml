@@ -107,7 +107,8 @@ services:
       - xadmin-mariadb:mariadb
       - xadmin-redis:redis
     depends_on:
-      - xadmin-server
+      - xadmin-redis
+      - xadmin-mariadb
     healthcheck:
       test: "bash utils/check_celery.sh"
       interval: 10s
