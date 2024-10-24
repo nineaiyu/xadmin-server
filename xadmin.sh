@@ -24,11 +24,44 @@ function usage() {
   echo
 }
 
+function start_docker() {
+  if command -v systemctl&>/dev/null; then
+    systemctl daemon-reload
+    systemctl enable docker
+    systemctl start docker
+  fi
+  if ! docker ps &>/dev/null; then
+    echo "error: docker start failed"
+    exit 1
+  fi
+}
+
+function check_docker_start() {
+  if ! which docker &>/dev/null ;then
+    echo "error: docker not found, please run install_docker"
+    exit 1
+  fi
+  if ! docker ps &>/dev/null; then
+    start_docker
+  fi
+}
+
+function check_permission() {
+    project_parent_dir=$(dirname "${PROJECT_DIR}")
+    mkdir -p "${project_parent_dir}"/xadmin-mariadb/{data,logs}
+    if [ "$(stat -c  %u logs)" -ne "1001" ] ;then
+      chown 1001.1001 -R "${project_parent_dir}"/xadmin-mariadb/{data,logs}
+      chown 1001.1001 -R "${project_parent_dir}"/xadmin-server/*
+    fi
+}
+
+
 EXE=""
 
 function start() {
   check_docker_start
   pull_images
+  check_permission
   ${EXE} up -d
 }
 
@@ -63,35 +96,12 @@ function pull_images() {
 
 function import_tzinfo() {
   if ${EXE} ps|grep xadmin-mariadb|grep healthy &>/dev/null;then
-    docker exec -it xadmin-mariadb sh -c 'mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -u root mysql && "import tzinfo success"'
+    docker exec -it xadmin-mariadb sh -c 'mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -u root mysql && echo "import tzinfo success"'
   else
     echo "error: xadmin-mariadb not running"
     exit 1
   fi
 }
-
-function start_docker() {
-  if command -v systemctl&>/dev/null; then
-    systemctl daemon-reload
-    systemctl enable docker
-    systemctl start docker
-  fi
-  if ! docker ps &>/dev/null; then
-    echo "error: docker start failed"
-    exit 1
-  fi
-}
-
-function check_docker_start() {
-  if ! which docker &>/dev/null ;then
-    echo "error: docker not found, please run install_docker"
-    exit 1
-  fi
-  if ! docker ps &>/dev/null; then
-    start_docker
-  fi
-}
-
 
 function main() {
 
