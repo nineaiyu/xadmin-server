@@ -8,7 +8,8 @@ networks:
 
 services:
   xadmin-mariadb:
-    image: bitnami/mariadb:11.5.2
+    image: xadmin-mariadb:11.5.2
+    #    image: bitnami/mariadb:11.5.2
     container_name: xadmin-mariadb
     restart: always
     environment:
@@ -36,7 +37,8 @@ services:
       start_period: 30s
 
   xadmin-redis:
-    image: 'bitnami/redis:7.4.0'
+    image: xadmin-redis:7.4.1
+    #    image: bitnami/redis:7.4.1
     container_name: xadmin-redis
     restart: always
     networks:
@@ -57,7 +59,7 @@ services:
     restart: always
     tty: true
     command: start web
-    image: xadmin-server
+    image: xadmin-server:4.1.2
     build:
       context: .
       dockerfile: Dockerfile
@@ -93,7 +95,7 @@ services:
     restart: always
     tty: true
     command: start task
-    image: xadmin-server
+    image: xadmin-server:4.1.2
     working_dir: /data/xadmin-server
     environment:
       - TZ=Asia/Shanghai
