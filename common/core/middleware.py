@@ -20,6 +20,7 @@ from system.models import OperationLog
 
 logger = get_logger(__name__)
 
+
 class ApiLoggingMiddleware(MiddlewareMixin):
 
     def __init__(self, get_response=None):

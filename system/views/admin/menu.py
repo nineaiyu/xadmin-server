@@ -43,7 +43,6 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
 
-
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         data = super().list(request, *args, **kwargs).data

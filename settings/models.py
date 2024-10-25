@@ -1,7 +1,6 @@
 import json
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile

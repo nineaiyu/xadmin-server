@@ -35,6 +35,7 @@ def check_port_is_used():
     logger.error(f"Check LISTEN {HTTP_HOST}:{HTTP_PORT} failed, exit")
     sys.exit(10)
 
+
 def check_database_connection():
     for i in range(60):
         logger.info(f"Check database connection: {i}")

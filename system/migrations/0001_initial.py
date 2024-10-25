@@ -14,7 +14,6 @@ import common.fields.image
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [

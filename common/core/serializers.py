@@ -116,4 +116,3 @@ class BaseModelSerializer(ModelSerializer):
                 if hasattr(self.instance, 'modifier'):
                     validated_data["modifier"] = user
         return super().update(instance, validated_data)
-

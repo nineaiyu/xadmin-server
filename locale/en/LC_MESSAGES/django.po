@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-25 14:10+0800\n"
+"POT-Creation-Date: 2024-10-25 16:23+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 
 #: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
-#: common/core/permission.py:125
+#: common/core/permission.py:126
 msgid "Unauthorized authentication"
 msgstr ""
 
@@ -123,7 +123,7 @@ msgstr ""
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/permission.py:123
+#: common/core/permission.py:124
 msgid "Permission denied"
 msgstr ""
 
@@ -521,30 +521,30 @@ msgstr ""
 msgid "Message Type"
 msgstr ""
 
-#: settings/models.py:16 settings/serializers/sms.py:54
+#: settings/models.py:15 settings/serializers/sms.py:54
 #: system/models/permission.py:17
 msgid "Name"
 msgstr ""
 
-#: settings/models.py:17
+#: settings/models.py:16
 msgid "Value"
 msgstr ""
 
-#: settings/models.py:18
+#: settings/models.py:17
 msgid "Category"
 msgstr ""
 
-#: settings/models.py:19
+#: settings/models.py:18
 msgid "Encrypted"
 msgstr ""
 
-#: settings/models.py:20 system/models/config.py:17
+#: settings/models.py:19 system/models/config.py:17
 #: system/models/department.py:29 system/models/menu.py:68
 #: system/models/permission.py:19 system/models/role.py:17
 msgid "Is active"
 msgstr ""
 
-#: settings/models.py:99
+#: settings/models.py:98
 msgid "System setting"
 msgstr ""
 

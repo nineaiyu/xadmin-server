@@ -18,7 +18,6 @@ from system.signal import invalid_user_cache_signal
 logger = get_logger(__name__)
 
 
-
 # def invalid_userinfo_view_cache(user_pk):
 #     cache_response.invalid_cache(f'UserInfoViewSet_retrieve_{user_pk}')
 

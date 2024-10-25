@@ -23,6 +23,7 @@ def get_fields(model):
 
     return [x.name for x in model._meta.get_fields() if x.name not in exclude_fields]
 
+
 class Command(BaseCommand):
     help = 'dump init json data'
     model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField]

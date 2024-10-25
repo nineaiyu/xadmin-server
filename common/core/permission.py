@@ -83,6 +83,7 @@ def get_menu_pk(permission_data, url):
                 return p_data
     return p_data
 
+
 class IsAuthenticated(BasePermission):
     """
     Allows access only to authenticated users.

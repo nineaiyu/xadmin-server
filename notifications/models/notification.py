@@ -33,6 +33,5 @@ class SystemMsgSubscription(DbAuditModel):
     class Meta:
         verbose_name = _('System message subscription')
 
-
     def __str__(self):
         return f'{self.message_type} -- {self.receive_backends}'

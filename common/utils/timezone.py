@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.utils import timezone as dj_timezone
-from rest_framework.fields import DateTimeField
 
 
 def as_current_tz(dt: datetime):
@@ -30,4 +29,3 @@ def local_now_date_display(fmt='%Y-%m-%d'):
 
 def local_zero_hour(fmt='%Y-%m-%d'):
     return datetime.strptime(local_now().strftime(fmt), fmt)
-

@@ -18,6 +18,7 @@ def get_logger(name='') -> logging.Logger:
         name = os.path.basename(name).replace('.py', '')
     return logging.getLogger(f'xadmin.{name}')
 
+
 class lazyproperty:
     def __init__(self, func):
         self.func = func
@@ -41,6 +42,7 @@ def get_boot_time():
 
 def get_cpu_percent():
     return psutil.cpu_percent()
+
 
 def get_cpu_load():
     cpu_load_1, cpu_load_5, cpu_load_15 = psutil.getloadavg()
