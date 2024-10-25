@@ -7,7 +7,9 @@
 
 import logging
 import os
+import socket
 
+import html2text
 import psutil
 
 
@@ -82,3 +84,26 @@ def get_memory_usage():
     if usage is not None:
         return usage
     return psutil.virtual_memory().percent
+
+
+def test_ip_connectivity(host, port, timeout=0.5):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    result = sock.connect_ex((host, int(port)))
+    sock.close()
+    if result == 0:
+        connectivity = True
+    else:
+        connectivity = False
+    return connectivity
+
+
+def convert_html_to_markdown(html_str):
+    h = html2text.HTML2Text()
+    h.body_width = 0
+    h.ignore_links = False
+
+    markdown = h.handle(html_str)
+    markdown = markdown.replace('\n\n', '\n')
+    markdown = markdown.replace('\n ', '\n')
+    return markdown

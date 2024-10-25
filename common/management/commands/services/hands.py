@@ -2,12 +2,12 @@ import os
 import sys
 import time
 
-import psutil
 from django.conf import settings
 from django.core import management
 from django.db.utils import OperationalError
 
 from common.core.utils import PrintLogFormat
+from common.utils import test_ip_connectivity
 from common.utils.file import download_file
 from settings.models import Setting
 
@@ -25,13 +25,15 @@ TMP_DIR = os.path.join(LOG_DIR, 'tmp')
 logger = PrintLogFormat(f"xAdmin API Server", title_width=30, body_width=0)
 
 
-def check_port_is_used(port):
-    for proc in psutil.process_iter():
-        for con in proc.connections():
-            if con.status == 'LISTEN' and con.laddr.port == port:
-                logger.error(f"Check LISTEN PORT {port} failed, Address already in use")
-                sys.exit(10)
-
+def check_port_is_used():
+    for i in range(5):
+        if not test_ip_connectivity(HTTP_HOST, HTTP_PORT):
+            return
+        else:
+            logger.error(f"Check LISTEN {HTTP_HOST}:{HTTP_PORT} failed, Address already in use, try")
+        time.sleep(1)
+    logger.error(f"Check LISTEN {HTTP_HOST}:{HTTP_PORT} failed, exit")
+    sys.exit(10)
 
 def check_database_connection():
     for i in range(60):
@@ -116,7 +118,7 @@ def prepare():
     check_database_connection()
     collect_static()
     compile_i18n_file()
-    check_port_is_used(HTTP_PORT)
+    check_port_is_used()
     perform_db_migrate()
     expire_caches()
     download_ip_db()
