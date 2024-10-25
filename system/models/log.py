@@ -60,6 +60,8 @@ class OperationLog(DbAuditModel):
     response_code = models.IntegerField(verbose_name=_("Response code"), null=True, blank=True)
     response_result = models.TextField(verbose_name=_("Response result"), null=True, blank=True)
     status_code = models.IntegerField(verbose_name=_("Status code"), null=True, blank=True)
+    request_uuid = models.UUIDField(verbose_name=_("Request ID"), null=True, blank=True)
+    exec_time = models.FloatField(verbose_name=_("Execution time"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("Operation log")

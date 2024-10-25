@@ -24,7 +24,7 @@ class OperationLogFilter(BaseFilterSet):
 
     class Meta:
         model = OperationLog
-        fields = ['module', 'ipaddress', 'system', 'creator_id', 'browser', 'path', 'created_time']
+        fields = ['request_uuid', 'module', 'ipaddress', 'system', 'creator_id', 'browser', 'path', 'created_time']
 
 
 class OperationLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
@@ -32,5 +32,5 @@ class OperationLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer
 
-    ordering_fields = ['created_time', 'updated_time']
+    ordering_fields = ['created_time', 'updated_time', 'exec_time']
     filterset_class = OperationLogFilter

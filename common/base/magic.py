@@ -260,6 +260,7 @@ class MagicCacheResponse(object):
             logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
             content, status, headers = res['data']
             response = HttpResponse(content=content, status=status)
+            response.renderer_context = view_instance.get_renderer_context()
             for k, v in headers.values():
                 response[k] = v
         else:
@@ -268,15 +269,10 @@ class MagicCacheResponse(object):
             response.render()
 
             if not response.status_code >= 400 and not getattr(request, 'no_cache', False):
-                # django 3.0 has not .items() method, django 3.2 has not ._headers
-                if hasattr(response, '_headers'):
-                    headers = response._headers.copy()
-                else:
-                    headers = {k: (k, v) for k, v in response.items()}
                 data = (
                     response.rendered_content,
                     response.status_code,
-                    headers
+                    {k: (k, v) for k, v in response.items()}
                 )
                 res = {'c_time': n_time, 'data': data}
                 cache.set(cache_key, res, timeout)

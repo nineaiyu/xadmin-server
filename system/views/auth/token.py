@@ -33,7 +33,7 @@ class TempTokenAPIView(GenericAPIView):
 
 
 class CaptchaAPIView(GenericAPIView):
-    """获取验证码"""
+    """获取图片验证码"""
     permission_classes = []
     authentication_classes = []
 

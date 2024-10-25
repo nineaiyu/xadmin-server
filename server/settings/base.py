@@ -30,15 +30,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DEBUG = locals().get("DEBUG", False)
 LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
 DEBUG_DEV = locals().get('DEBUG_DEV', False)
+
 # 如果前端是代理，则可以通过该配置，在系统构建url的时候，获取正确的 scheme
-# 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto https;
+# 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto $scheme;
 # https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#std-setting-SECURE_PROXY_SSL_HEADER
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# 为了兼容前端NGINX代理，并且使用非80，443端口访问，详细查看源码：django.http.request.HttpRequest._get_raw_host
+# https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#use-x-forwarded-host
+USE_X_FORWARDED_HOST = True
 
 ALLOWED_HOSTS = locals().get("ALLOWED_HOSTS", ["*"])
 
 # Application definition
 XADMIN_APPS = locals().get("XADMIN_APPS", [])
+
+# 表前缀设置
+# 1.指定配置
+# DB_PREFIX={
+# 'system': 'abc_', # system app所有的表都加前缀 abc_
+# 'system.config':'xxa_', # 仅system.config添加前缀 xxa_
+# '': '', # 默认前缀
+# }
+#
+# 2.全局配置
+# DB_PREFIX='abc_'  : 所有表都添加 abc_
+DB_PREFIX = locals().get("DB_PREFIX", "")
 
 INSTALLED_APPS = [
     'daphne',  # 支持websocket
@@ -69,16 +86,16 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'server.middleware.StartMiddleware',
+    'server.middleware.RequestMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'server.middleware.RequestMiddleware',
     'server.middleware.RefererCheckMiddleware',
     'server.middleware.SQLCountMiddleware',
     'common.core.middleware.ApiLoggingMiddleware',
@@ -459,19 +476,16 @@ PERMISSION_DATA_AUTH_APPS = [
 API_LOG_ENABLE = True
 API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
 
-# 忽略日志记录
+# 忽略日志记录, 支持model 或者 request_path, 不支持正则
 API_LOG_IGNORE = {
-    'system.OperationLog': ['GET']
+    'system.OperationLog': ['GET'],
+    '/api/common/api/health': ['GET'],
 }
 
 # 在操作日志中详细记录的请求模块映射
 API_MODEL_MAP = {
     "/api/system/refresh": "Token刷新",
-    "/api/system/upload": "文件上传",
-    "/api/system/login": "用户登录",
-    "/api/system/logout": "用户登出",
     "/api/flower": "定时任务",
-    "/api/system/password/send": "重置密码",
 }
 
 SPECTACULAR_SETTINGS = {

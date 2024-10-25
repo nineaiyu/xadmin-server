@@ -8,7 +8,8 @@ networks:
 
 services:
   xadmin-redis:
-    image: 'bitnami/redis:7.4.0'
+    image: xadmin-redis:7.4.1
+    #    image: bitnami/redis:7.4.1
     container_name: xadmin-redis
     restart: always
     networks:
@@ -27,7 +28,9 @@ services:
   xadmin-server:
     container_name: xadmin-server
     restart: always
-    image: 'xadmin-server'
+    tty: true
+    command: start web
+    image: xadmin-server:4.1.2
     build:
       context: .
       dockerfile: Dockerfile
@@ -40,10 +43,8 @@ services:
       - ./:/data/xadmin-server
     external_links:
       - xadmin-redis:redis
-    #extra_hosts:
-    # - "mariadb:192.168.196.1"
-    sysctls:
-      - net.core.somaxconn=4096
+    ulimits:
+      core: 0
     ports:
       - "8896:8896"
     depends_on:
@@ -55,4 +56,30 @@ services:
       retries: 3
       start_period: 90s
 
+  xadmin-celery:
+    container_name: xadmin-celery
+    hostname: xadmin-celery
+    ulimits:
+      core: 0
+    restart: always
+    tty: true
+    command: start task
+    image: xadmin-server:4.1.2
+    working_dir: /data/xadmin-server
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - net
+    volumes:
+      - ./:/data/xadmin-server
+    external_links:
+      - xadmin-redis:redis
+    depends_on:
+      - xadmin-server
+    healthcheck:
+      test: "bash utils/check_celery.sh"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-18 13:13+0800\n"
+"POT-Creation-Date: 2024-10-25 14:10+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 
 #: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
-#: common/core/permission.py:111
+#: common/core/permission.py:125
 msgid "Unauthorized authentication"
 msgstr ""
 
@@ -93,41 +93,45 @@ msgstr ""
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/modelset.py:96
+#: common/core/modelset.py:97
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/modelset.py:99
+#: common/core/modelset.py:100
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
-#: common/core/modelset.py:128
+#: common/core/modelset.py:130
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:190 system/utils/auth.py:104
-#: system/utils/modelset.py:59 system/views/auth/register.py:69
-#: system/views/auth/reset.py:46 system/views/auth/verify_code.py:138
-msgid "Operation failed. Abnormal data"
-msgstr ""
-
-#: common/core/modelset.py:455
+#: common/core/modelset.py:398
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:465
+#: common/core/modelset.py:408
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
-#: common/core/permission.py:109
+#: common/core/modelset.py:518
+msgid "Operation successful. Import {} data"
+msgstr ""
+
+#: common/core/modelset.py:519 system/utils/auth.py:104
+#: system/utils/modelset.py:59 system/views/auth/register.py:69
+#: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
+msgid "Operation failed. Abnormal data"
+msgstr ""
+
+#: common/core/permission.py:123
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:16
+#: common/core/response.py:18
 msgid "Operation failed"
 msgstr ""
 
@@ -143,11 +147,11 @@ msgstr ""
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr ""
 
-#: common/drf/parsers/base.py:191
+#: common/drf/parsers/base.py:195
 msgid "The resource does not support imports!"
 msgstr ""
 
-#: common/drf/parsers/base.py:211
+#: common/drf/parsers/base.py:215
 msgid "Parse file error: {}"
 msgstr ""
 
@@ -435,7 +439,7 @@ msgstr ""
 #: notifications/serializers/notifications.py:19
 #: notifications/serializers/notifications.py:37 system/models/config.py:39
 #: system/serializers/config.py:44 system/serializers/config.py:56
-#: system/serializers/log.py:31 system/serializers/log.py:52
+#: system/serializers/log.py:28 system/serializers/log.py:40
 msgid "User"
 msgstr ""
 
@@ -477,7 +481,7 @@ msgstr ""
 msgid "Publish the station message"
 msgstr ""
 
-#: notifications/notifications.py:186
+#: notifications/notifications.py:189
 msgid "Time"
 msgstr ""
 
@@ -1041,11 +1045,11 @@ msgstr ""
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
-#: settings/views/sms.py:98
+#: settings/views/sms.py:99
 msgid "test_phone is required"
 msgstr ""
 
-#: settings/views/sms.py:109
+#: settings/views/sms.py:110
 msgid "Test success"
 msgstr ""
 
@@ -1252,7 +1256,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:32 system/serializers/log.py:54
+#: system/models/log.py:32 system/serializers/log.py:42
 msgid "Login type"
 msgstr ""
 
@@ -1260,7 +1264,7 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:53 system/serializers/log.py:32
+#: system/models/log.py:53
 msgid "Module"
 msgstr ""
 
@@ -1288,7 +1292,15 @@ msgstr ""
 msgid "Status code"
 msgstr ""
 
-#: system/models/log.py:65
+#: system/models/log.py:63
+msgid "Request ID"
+msgstr ""
+
+#: system/models/log.py:64
+msgid "Execution time"
+msgstr ""
+
+#: system/models/log.py:67
 msgid "Operation log"
 msgstr ""
 
@@ -1592,7 +1604,7 @@ msgstr ""
 
 #: system/serializers/user.py:66 system/serializers/user.py:80
 #: system/serializers/userinfo.py:55 system/views/auth/register.py:75
-#: system/views/auth/reset.py:53
+#: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr ""
 
@@ -1610,14 +1622,6 @@ msgstr ""
 
 #: system/serializers/userinfo.py:53
 msgid "Old password verification failed"
-msgstr ""
-
-#: system/signal_handler.py:46
-msgid "All tables"
-msgstr ""
-
-#: system/signal_handler.py:48
-msgid "All fields"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:9
@@ -1708,6 +1712,14 @@ msgid ""
 "account will be temporarily locked for {block_time} minutes)"
 msgstr ""
 
+#: system/utils/modelfield.py:67
+msgid "All tables"
+msgstr ""
+
+#: system/utils/modelfield.py:69
+msgid "All fields"
+msgstr ""
+
 #: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"
 msgstr ""
@@ -1732,46 +1744,46 @@ msgstr ""
 msgid "The account already exists, please try another one"
 msgstr ""
 
-#: system/views/auth/reset.py:58
+#: system/views/auth/reset.py:59
 msgid "Reset password success, return to login page"
 msgstr ""
 
-#: system/views/auth/verify_code.py:124
+#: system/views/auth/verify_code.py:125
 msgid "Forbidden send verification code"
 msgstr ""
 
-#: system/views/auth/verify_code.py:173
+#: system/views/auth/verify_code.py:174
 msgid "The verification code has been sent"
 msgstr ""
 
-#: system/views/auth/verify_code.py:225
+#: system/views/auth/verify_code.py:226
 msgid "Phone already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:227
+#: system/views/auth/verify_code.py:228
 msgid "Email already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:229
+#: system/views/auth/verify_code.py:230
 msgid "Username already exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:240
+#: system/views/auth/verify_code.py:241
 msgid "Phone does not exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:242
+#: system/views/auth/verify_code.py:243
 msgid "Email does not exist"
 msgstr ""
 
-#: system/views/auth/verify_code.py:244
+#: system/views/auth/verify_code.py:245
 msgid "Username does not exist"
 msgstr ""
 
-#: system/views/upload.py:79
+#: system/views/upload.py:78
 msgid "upload file size cannot exceed {}"
 msgstr ""
 
-#: system/views/upload.py:82
+#: system/views/upload.py:81
 msgid "Wrong upload file type"
 msgstr ""

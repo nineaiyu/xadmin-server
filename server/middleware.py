@@ -7,6 +7,7 @@
 import json
 import re
 import time
+import uuid
 
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
@@ -67,6 +68,7 @@ class RequestMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        request.request_uuid = uuid.uuid4()
         set_current_request(request)
         response = self.get_response(request)
         return response

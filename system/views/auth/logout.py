@@ -28,9 +28,7 @@ class LogoutAPIView(GenericAPIView):
         responses=get_default_response_schema()
     )
     def post(self, request):
-        """
-        登出账户，并且将账户的access 和 refresh token 加入黑名单
-        """
+        """用户登出"""
         auth = request.auth
         if not auth:
             return ApiResponse()
@@ -41,7 +39,7 @@ class LogoutAPIView(GenericAPIView):
         if request.data.get('refresh'):
             try:
                 token = RefreshToken(request.data.get('refresh'))
-                token.blacklist()
+                token.blacklist()  # 登出账户，并且将账户的access 和 refresh token 加入黑名单
             except Exception as e:
                 pass
         logout(request)

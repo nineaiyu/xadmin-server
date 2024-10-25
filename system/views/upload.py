@@ -61,9 +61,8 @@ class UploadAPIView(GenericAPIView):
     pagination_class = None
 
     def post(self, request):
-        """
-        本地上传文件接口
-        """
+        """文件上传"""
+
         # 获取多个file
         files = request.FILES.getlist('file', [])
         result = []

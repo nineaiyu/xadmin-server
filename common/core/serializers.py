@@ -7,17 +7,12 @@
 from inspect import isfunction
 
 from django.conf import settings
-from django.db import transaction
 from django.db.models.fields import NOT_PROVIDED
-from django.utils import timezone
-from django.utils.translation import activate
 from rest_framework.fields import empty
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
 from common.core.fields import BasePrimaryKeyRelatedField
-from common.core.utils import PrintLogFormat
-from system.models import ModelLabelField
 
 
 class BaseModelSerializer(ModelSerializer):
@@ -122,42 +117,3 @@ class BaseModelSerializer(ModelSerializer):
                     validated_data["modifier"] = user
         return super().update(instance, validated_data)
 
-
-@transaction.atomic
-def get_sub_serializer_fields():
-    cls_list = []
-    activate(settings.LANGUAGE_CODE)
-
-    def get_all_subclass(base_cls):
-        if base_cls.__subclasses__():
-            for cls in base_cls.__subclasses__():
-                cls_list.append(cls)
-                get_all_subclass(cls)
-
-    get_all_subclass(BaseModelSerializer)
-
-    delete = False
-    now = timezone.now()
-    field_type = ModelLabelField.FieldChoices.ROLE
-    for cls in cls_list:
-        instance = cls(ignore_field_permission=True)
-        model = instance.Meta.model
-        if not model:
-            continue
-        count = [0, 0]
-
-        delete = True
-        obj, created = ModelLabelField.objects.update_or_create(name=model._meta.label_lower, field_type=field_type,
-                                                                parent=None,
-                                                                defaults={'label': model._meta.verbose_name})
-        count[int(not created)] += 1
-        for name, field in instance.fields.items():
-            _, created = ModelLabelField.objects.update_or_create(name=name, parent=obj, field_type=field_type,
-                                                                  defaults={'label': field.label})
-            count[int(not created)] += 1
-        PrintLogFormat(f"Model:({model._meta.label_lower})").warning(
-            f"update_or_create role permission, created:{count[0]} updated:{count[1]}")
-
-    if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat(f"Sync Role permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")

@@ -23,6 +23,7 @@ from system.utils.auth import verify_sms_email_code
 
 
 class ResetPasswordAPIView(GenericAPIView):
+    """重置密码"""
     permission_classes = []
     authentication_classes = []
     throttle_classes = [ResetPasswordThrottle]

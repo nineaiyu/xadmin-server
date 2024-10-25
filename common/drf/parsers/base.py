@@ -151,6 +151,10 @@ class BaseFileParser(BaseParser):
                 value = json.loads(value)
             except:
                 pass
+        elif isinstance(field, serializers.CharField):
+            if not isinstance(value, str):
+                value = json.dumps(value)
+
         return value
 
     def process_row_data(self, row_data):

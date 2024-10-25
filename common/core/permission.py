@@ -55,23 +55,33 @@ def get_user_field_queryset(user_obj, menu):
     return data
 
 
-@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x: x.pk)
-def get_user_permission(user_obj):
-    menu = []
+@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x, y: f"{x.pk}_{y}")
+def get_user_permission(user_obj, method):
+    menus = []
     menu_queryset = get_user_menu_queryset(user_obj)
     if menu_queryset:
-        menu = menu_queryset.filter(menu_type=Menu.MenuChoices.PERMISSION).values('path', 'method', 'pk').distinct()
-    return menu
+        filter_kwargs = {"menu_type": Menu.MenuChoices.PERMISSION, "method": method}
+        menus = menu_queryset.filter(**filter_kwargs).values_list('path', 'pk', 'model').distinct()
+    return dict([(menu[0], menu[1:]) for menu in menus])
 
 
-def get_import_export_permission(permission_data, url, request):
+def get_import_export_permission(permission_data, url):
     match_group = re.match("(?P<url>.*)/(export|import)-data$", url)
     if match_group:
         url = match_group.group('url')
         for p_data in permission_data:
-            if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
+            if re.match(f"/{p_data.get('path')}", url):
                 return p_data
 
+
+def get_menu_pk(permission_data, url):
+    # 1.直接get api/system/permission$   /api/system/config/system
+    p_data = permission_data.get(f"{url[1:]}$")
+    if not p_data:
+        for p_path, p_data in permission_data.items():
+            if re.match(f"/{p_path}", url):
+                return p_data
+    return p_data
 
 class IsAuthenticated(BasePermission):
     """
@@ -89,23 +99,27 @@ class IsAuthenticated(BasePermission):
                 if re.match(w_url, url) and ('*' in method or request.method in method):
                     request.ignore_field_permission = True
                     return True
-            permission_data = get_user_permission(request.user)
-            for p_data in permission_data:
-                # 处理search-columns字段权限和list权限一致
-                match_group = re.match("(?P<url>.*)/search-columns$", url)
-                if match_group:
-                    url = match_group.group('url')
+            permission_data = get_user_permission(request.user, request.method)
+            # 处理search-columns字段权限和list权限一致
+            match_group = re.match("(?P<url>.*)/search-columns$", url)
+            if match_group:
+                url = match_group.group('url')
+            p_data = p_data_new = get_menu_pk(permission_data, url)
 
-                if p_data.get('method') == request.method and re.match(f"/{p_data.get('path')}", url):
-                    request.user.menu = p_data.get('pk')
-                    if settings.PERMISSION_FIELD_ENABLED:
-                        # 为了使导入导出字段权限和list, create同步
-                        if url.endswith('import-data') or url.endswith('export-data'):
-                            p_data = get_import_export_permission(permission_data, url, request)
-                        if p_data:
-                            request.user.menu = p_data.get('pk')
-                            request.fields = get_user_field_queryset(request.user, p_data.get('pk'))
-                    return True
+            if p_data:
+                # 导入导出功能，若未绑定模型，则使用list, create菜单
+                match_group = re.match("(?P<url>.*)/(export|import)-data$", url)
+                if match_group and p_data[1] is None:
+                    url = match_group.group('url')
+                    p_data_new = get_menu_pk(permission_data, url)
+                if not p_data_new:
+                    p_data_new = p_data
+
+                request.user.menu = p_data_new[0]
+                if settings.PERMISSION_FIELD_ENABLED:
+                    request.fields = get_user_field_queryset(request.user, p_data_new[0])
+                return True
+
             raise PermissionDenied(_("Permission denied"))
         else:
             raise NotAuthenticated(_("Unauthorized authentication"))

@@ -22,7 +22,7 @@ from rest_framework.decorators import action
 from rest_framework.fields import CharField
 from rest_framework.parsers import MultiPartParser
 from rest_framework.utils import encoders
-from rest_framework.viewsets import GenericViewSet, ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import GenericViewSet
 
 from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
@@ -84,6 +84,7 @@ class UploadFileAction(object):
     )
     @action(methods=['post'], detail=True, parser_classes=(MultiPartParser,))
     def upload(self, request, *args, **kwargs):
+        """上传头像"""
         self.FILE_UPLOAD_SIZE = self.get_upload_size()
         files = request.FILES.getlist('file', [])
         instance = self.get_object()
@@ -121,73 +122,12 @@ class RankAction(object):
     )
     @action(methods=['post'], detail=False, url_path='rank')
     def action_rank(self, request, *args, **kwargs):
+        """{cls}排序"""
         rank = 1
         for pk in get_query_post_pks(request):
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail=_("Sorting saved successfully"))
-
-
-class OnlyExportDataAction(object):
-    @extend_schema(
-        description='数据导出',
-        parameters=[
-            OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
-        ],
-        responses={
-            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
-        }
-    )
-    @action(methods=['get'], detail=False, url_path='export-data')
-    def export_data(self, request, *args, **kwargs):
-        self.format_kwarg = request.query_params.get('type', 'xlsx')
-        request.no_cache = True  # 防止自定义缓存数据
-        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
-        request.accepted_renderer = None
-        data = self.list(request, *args, **kwargs)
-        return data
-
-
-class ImportExportDataAction(OnlyExportDataAction):
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_serializer: Callable
-    perform_create: Callable
-    perform_update: Callable
-
-    @extend_schema(
-        description='数据导入',
-        parameters=[
-            OpenApiParameter(name='action', required=True, enum=['create', 'update']),
-        ],
-        request=OpenApiRequest(
-            build_basic_type(OpenApiTypes.BINARY),
-        ),
-        responses={
-            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
-        }
-    )
-    @action(methods=['post'], detail=False, url_path='import-data')
-    @transaction.atomic
-    def import_data(self, request, *args, **kwargs):
-        act = request.query_params.get('action')
-        if act and request.data:
-            if act == 'create':
-                for data in request.data:
-                    serializer = self.get_serializer(data=data)
-                    serializer.is_valid(raise_exception=True)
-                    self.perform_create(serializer)
-            elif act == 'update':
-                queryset = self.filter_queryset(self.get_queryset())
-                for data in request.data:
-                    instance = queryset.filter(pk=data.get('pk')).first()
-                    if not instance:
-                        continue
-                    serializer = self.get_serializer(instance, data=data, partial=True)
-                    serializer.is_valid(raise_exception=True)
-                    self.perform_update(serializer)
-            return ApiResponse()
-        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
 
 
 class ChoicesAction(object):
@@ -258,6 +198,7 @@ class SearchFieldsAction(object):
     )
     @action(methods=['get'], detail=False, url_path='search-fields')
     def search_fields(self, request, *args, **kwargs):
+        """获取{cls}的查询字段"""
         results = []
         try:
             filterset_class = self.filterset_class.get_filters()
@@ -295,8 +236,12 @@ class SearchFieldsAction(object):
                 if choice.startswith('-'):
                     choice = choice[1:]
                     is_des = True
-                des = (f"-{choice}", f"{choice} descending")
-                ase = (choice, f"{choice} ascending")
+                label = choice
+                field = get_model_field(self.filterset_class._meta.model, choice)
+                if field:
+                    label = getattr(field, 'verbose_name', choice)
+                des = (f"-{choice}", f"{label} descending")
+                ase = (choice, f"{label} ascending")
                 if is_des:
                     des, ase = ase, des
                 order_choices.extend([des, ase])
@@ -351,6 +296,7 @@ class SearchColumnsAction(object):
     )
     @action(methods=['get'], detail=False, url_path='search-columns')
     def search_columns(self, request, *args, **kwargs):
+        """获取{cls}的展示字段"""
         results = []
 
         def get_input_type(value, info):
@@ -397,11 +343,7 @@ class SearchColumnsAction(object):
         return ApiResponse(data=results)
 
 
-class BaseModelAction(object):
-    filterset_class: Callable
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_object: Callable
+class BaseViewSet(GenericViewSet):
     action: Callable
     extra_filter_class = []
 
@@ -432,7 +374,7 @@ class BaseModelAction(object):
         return super().get_serializer_class()
 
 
-class BatchDeleteAction(object):
+class BatchDestroyAction(object):
     filter_queryset: Callable
     get_queryset: Callable
     perform_destroy: Callable
@@ -450,6 +392,7 @@ class BatchDeleteAction(object):
     )
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
+        """批量删除{cls}"""
         pks = get_query_post_pks(request)
         if not pks:
             return ApiResponse(code=1003, detail=_("Operation failed. Primary key list does not exist"))
@@ -465,73 +408,136 @@ class BatchDeleteAction(object):
         return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
 
 
-class BaseAction(BaseModelAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction):
-
+class CreateAction(mixins.CreateModelMixin):
     def create(self, request, *args, **kwargs):
+        """添加{cls}"""
         data = super().create(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
+
+class DetailAction(mixins.RetrieveModelMixin):
     def retrieve(self, request, *args, **kwargs):
+        """获取{cls}的详情"""
         data = super().retrieve(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
+
+class ListAction(mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
+        """获取{cls}的列表"""
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
+
+class DestroyAction(mixins.DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
+        """删除{cls}"""
         instance = self.get_object()
         self.perform_destroy(instance)
         return ApiResponse()
 
+
+class UpdateAction(mixins.UpdateModelMixin):
     def update(self, request, *args, **kwargs):
+        """更新{cls}"""
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
-
-class DetailUpdateModelSet(BaseModelAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, GenericViewSet):
-    def update(self, request, *args, **kwargs):
-        data = super().update(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-    def retrieve(self, request, *args, **kwargs):
-        data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(data=data)
+    def partial_update(self, request, *args, **kwargs):
+        """更新{cls}"""
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
 
-class OnlyListModelSet(BaseModelAction, SearchFieldsAction, SearchColumnsAction, mixins.ListModelMixin, GenericViewSet):
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(data=data)
+class OnlyExportDataAction(ListAction):
+    @extend_schema(
+        description='数据导出',
+        parameters=[
+            OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
+        ],
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
+    @action(methods=['get'], detail=False, url_path='export-data')
+    def export_data(self, request, *args, **kwargs):
+        """导出{cls}"""
+        self.format_kwarg = request.query_params.get('type', 'xlsx')
+        request.no_cache = True  # 防止自定义缓存数据
+        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
+        request.accepted_renderer = None
+        data = self.list(request, *args, **kwargs)
+        return data
 
 
-class BaseModelSet(BaseAction, ModelViewSet):
+class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
+    filter_queryset: Callable
+    get_queryset: Callable
+    get_serializer: Callable
+
+    @extend_schema(
+        description='数据导入',
+        parameters=[
+            OpenApiParameter(name='action', required=True, enum=['create', 'update']),
+        ],
+        request=OpenApiRequest(
+            build_basic_type(OpenApiTypes.BINARY),
+        ),
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
+    @action(methods=['post'], detail=False, url_path='import-data')
+    @transaction.atomic
+    def import_data(self, request, *args, **kwargs):
+        """导入{cls}"""
+        act = request.query_params.get('action')
+        ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
+        if act and request.data:
+            count = 0
+            if act == 'create':
+                for data in request.data:
+                    serializer = self.get_serializer(data=data)
+                    serializer.is_valid(raise_exception=not ignore_error)
+                    if serializer.errors and ignore_error:
+                        continue
+                    self.perform_create(serializer)
+                    count += 1
+            elif act == 'update':
+                queryset = self.filter_queryset(self.get_queryset())
+                for data in request.data:
+                    instance = queryset.filter(pk=data.get('pk')).first()
+                    if not instance:
+                        continue
+                    serializer = self.get_serializer(instance, data=data, partial=True)
+                    serializer.is_valid(raise_exception=not ignore_error)
+                    if serializer.errors and ignore_error:
+                        continue
+                    self.perform_update(serializer)
+                    count += 1
+            return ApiResponse(detail=_("Operation successful. Import {} data").format(count))
+        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
+
+
+class DetailUpdateModelSet(UpdateAction, DetailAction, BaseViewSet):
+    pass
+
+
+class OnlyListModelSet(ListAction, SearchFieldsAction, SearchColumnsAction, BaseViewSet):
+    pass
+
+
+# 全部 ViewSet 包含增删改查 
+class BaseModelSet(CreateAction, DestroyAction, UpdateAction, ListAction, DetailAction, SearchFieldsAction,
+                   SearchColumnsAction, BatchDestroyAction, BaseViewSet):
     pass
 
 
 # 只允许读和删除，不允许创建和修改
-class ListDeleteModelSet(BaseModelAction, SearchFieldsAction, SearchColumnsAction, BatchDeleteAction,
-                         mixins.DestroyModelMixin, ReadOnlyModelViewSet):
-    def retrieve(self, request, *args, **kwargs):
-        data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-    def list(self, request, *args, **kwargs):
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return ApiResponse()
+class ListDeleteModelSet(DestroyAction, ListAction, DetailAction, SearchFieldsAction, SearchColumnsAction,
+                         BatchDestroyAction, BaseViewSet):
+    pass
 
 
-class NoDetailModelSet(BaseModelAction, SearchColumnsAction, mixins.RetrieveModelMixin, mixins.UpdateModelMixin,
-                       GenericViewSet):
-    def update(self, request, *args, **kwargs):
-        data = super().update(request, *args, **kwargs).data
-        return ApiResponse(data=data)
-
-    def retrieve(self, request, *args, **kwargs):
-        data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(data=data)
+class NoDetailModelSet(UpdateAction, DetailAction, SearchColumnsAction, BaseViewSet):
+    pass

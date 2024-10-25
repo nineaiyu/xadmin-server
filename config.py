@@ -38,7 +38,7 @@ DB_PASSWORD = 'KGzKjZpWBp4R4RSa'
 DB_OPTIONS = {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4'}
 
 
-# sqlite3 配置，和 mysql配置 二选一, 默认sqlite数据库
+# sqlite3 配置，和 mysql配置 二选一, 默认mysql数据库
 # DB_ENGINE = 'django.db.backends.sqlite3'
 
 # 缓存配置
