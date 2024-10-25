@@ -492,7 +492,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     def import_data(self, request, *args, **kwargs):
         """导入{cls}"""
         act = request.query_params.get('action')
-        ignore_error = request.query_params.get('ignore_error', False)
+        ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
         if act and request.data:
             count = 0
             if act == 'create':
