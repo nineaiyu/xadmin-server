@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 # project : xadmin-server
-# filename : expire_config_caches
+# filename : sync_model_field
 # author : ly_13
-# date : 12/25/2023
+# date : 10/25/2024
 from django.core.management.base import BaseCommand
 
 from system.utils.modelfield import sync_model_field
