@@ -130,70 +130,6 @@ class RankAction(object):
         return ApiResponse(detail=_("Sorting saved successfully"))
 
 
-class OnlyExportDataAction(object):
-    @extend_schema(
-        description='数据导出',
-        parameters=[
-            OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
-        ],
-        responses={
-            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
-        }
-    )
-    @action(methods=['get'], detail=False, url_path='export-data')
-    def export_data(self, request, *args, **kwargs):
-        """导出{cls}"""
-        self.format_kwarg = request.query_params.get('type', 'xlsx')
-        request.no_cache = True  # 防止自定义缓存数据
-        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
-        request.accepted_renderer = None
-        data = self.list(request, *args, **kwargs)
-        return data
-
-
-class ImportExportDataAction(OnlyExportDataAction):
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_serializer: Callable
-    perform_create: Callable
-    perform_update: Callable
-
-    @extend_schema(
-        description='数据导入',
-        parameters=[
-            OpenApiParameter(name='action', required=True, enum=['create', 'update']),
-        ],
-        request=OpenApiRequest(
-            build_basic_type(OpenApiTypes.BINARY),
-        ),
-        responses={
-            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
-        }
-    )
-    @action(methods=['post'], detail=False, url_path='import-data')
-    @transaction.atomic
-    def import_data(self, request, *args, **kwargs):
-        """导入{cls}"""
-        act = request.query_params.get('action')
-        if act and request.data:
-            if act == 'create':
-                for data in request.data:
-                    serializer = self.get_serializer(data=data)
-                    serializer.is_valid(raise_exception=True)
-                    self.perform_create(serializer)
-            elif act == 'update':
-                queryset = self.filter_queryset(self.get_queryset())
-                for data in request.data:
-                    instance = queryset.filter(pk=data.get('pk')).first()
-                    if not instance:
-                        continue
-                    serializer = self.get_serializer(instance, data=data, partial=True)
-                    serializer.is_valid(raise_exception=True)
-                    self.perform_update(serializer)
-            return ApiResponse()
-        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
-
-
 class ChoicesAction(object):
     choices_models: []
 
@@ -513,6 +449,76 @@ class UpdateAction(mixins.UpdateModelMixin):
         return self.update(request, *args, **kwargs)
 
 
+class OnlyExportDataAction(ListAction):
+    @extend_schema(
+        description='数据导出',
+        parameters=[
+            OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
+        ],
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
+    @action(methods=['get'], detail=False, url_path='export-data')
+    def export_data(self, request, *args, **kwargs):
+        """导出{cls}"""
+        self.format_kwarg = request.query_params.get('type', 'xlsx')
+        request.no_cache = True  # 防止自定义缓存数据
+        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
+        request.accepted_renderer = None
+        data = self.list(request, *args, **kwargs)
+        return data
+
+
+class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
+    filter_queryset: Callable
+    get_queryset: Callable
+    get_serializer: Callable
+
+    @extend_schema(
+        description='数据导入',
+        parameters=[
+            OpenApiParameter(name='action', required=True, enum=['create', 'update']),
+        ],
+        request=OpenApiRequest(
+            build_basic_type(OpenApiTypes.BINARY),
+        ),
+        responses={
+            200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))
+        }
+    )
+    @action(methods=['post'], detail=False, url_path='import-data')
+    @transaction.atomic
+    def import_data(self, request, *args, **kwargs):
+        """导入{cls}"""
+        act = request.query_params.get('action')
+        ignore_error = request.query_params.get('ignore_error', False)
+        if act and request.data:
+            count = 0
+            if act == 'create':
+                for data in request.data:
+                    serializer = self.get_serializer(data=data)
+                    serializer.is_valid(raise_exception=not ignore_error)
+                    if serializer.errors and ignore_error:
+                        continue
+                    self.perform_create(serializer)
+                    count += 1
+            elif act == 'update':
+                queryset = self.filter_queryset(self.get_queryset())
+                for data in request.data:
+                    instance = queryset.filter(pk=data.get('pk')).first()
+                    if not instance:
+                        continue
+                    serializer = self.get_serializer(instance, data=data, partial=True)
+                    serializer.is_valid(raise_exception=not ignore_error)
+                    if serializer.errors and ignore_error:
+                        continue
+                    self.perform_update(serializer)
+                    count += 1
+            return ApiResponse(detail=_("Operation successful. Import {} data").format(count))
+        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
+
+
 class DetailUpdateModelSet(UpdateAction, DetailAction, BaseViewSet):
     pass
 
@@ -522,13 +528,13 @@ class OnlyListModelSet(ListAction, SearchFieldsAction, SearchColumnsAction, Base
 
 
 # 全部 ViewSet 包含增删改查 
-class BaseModelSet(CreateAction, DetailAction, ListAction, DestroyAction, UpdateAction, SearchFieldsAction,
+class BaseModelSet(CreateAction, DestroyAction, UpdateAction, ListAction, DetailAction, SearchFieldsAction,
                    SearchColumnsAction, BatchDestroyAction, BaseViewSet):
     pass
 
 
 # 只允许读和删除，不允许创建和修改
-class ListDeleteModelSet(DetailAction, ListAction, DestroyAction, SearchFieldsAction, SearchColumnsAction,
+class ListDeleteModelSet(DestroyAction, ListAction, DetailAction, SearchFieldsAction, SearchColumnsAction,
                          BatchDestroyAction, BaseViewSet):
     pass
 

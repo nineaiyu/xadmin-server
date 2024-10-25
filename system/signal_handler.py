@@ -32,7 +32,7 @@ def invalid_route_view_cache(user_pk):
 
 
 def invalid_user_permission_data_cache(user_pk):
-    MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}')  # 清理权限
+    MagicCacheData.invalid_cache(f'get_user_permission_{user_pk}_*')  # 清理权限
 
 
 @receiver([invalid_user_cache_signal, user_logged_out])

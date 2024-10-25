@@ -39,7 +39,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
 
     class Meta:
         model = ModelLabelField
-        fields = ['pk', 'name', 'label', 'parent', 'field_type']
+        fields = ['pk', 'name', 'label', 'parent', 'field_type', 'created_time']
 
 
 class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):

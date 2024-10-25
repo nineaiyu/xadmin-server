@@ -15,6 +15,7 @@ from settings.views.security import SecurityPasswordRuleViewSet, SecurityLoginLi
     SecurityLoginAuthViewSet, SecurityRegisterAuthViewSet, SecurityResetPasswordAuthViewSet, \
     SecurityBindEmailAuthViewSet, \
     SecurityBindPhoneAuthViewSet
+from settings.views.settings import SettingViewSet
 from settings.views.sms import SMSBackendAPIView, SmsSettingViewSet, SmsConfigViewSet
 from settings.views.verify import VerifyCodeSettingViewSet, CaptchaSettingViewSet
 
@@ -40,6 +41,8 @@ no_detail_router.register('bind/phone', SecurityBindPhoneAuthViewSet, basename='
 no_detail_router.register('sms', SmsSettingViewSet, basename='sms-settings')
 
 router.register('ip/block', BlockIpViewSet, basename='ip-block')
+router.register('setting', SettingViewSet, basename='setting')
+
 no_detail_router.register('sms/config', SmsConfigViewSet, basename='sms-config')
 
 urls = [
