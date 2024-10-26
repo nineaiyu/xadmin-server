@@ -97,6 +97,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             pass
         del info['request_uuid']
         logger.debug(f"request end. {request.method} {request.path} {getattr(request, 'request_data', {})} log:{info}")
+        return True
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):
@@ -126,7 +127,10 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         :param response:
         :return:
         """
+        show = False
         if self.enable:
             if self.methods == 'ALL' or request.method in self.methods:
-                self.__handle_response(request, response)
+                show = self.__handle_response(request, response)
+        if not show:
+            logger.debug(f" request end. {request.method} {request.path} {getattr(response, 'data', {})}")
         return response

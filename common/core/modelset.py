@@ -72,9 +72,6 @@ class UploadFileAction(object):
     def get_upload_size(self):
         return SysConfig.PICTURE_UPLOAD_SIZE
 
-    def get_object(self):
-        raise NotImplementedError('get_object must be overridden')
-
     @extend_schema(
         description="上传头像",
         request=OpenApiRequest(

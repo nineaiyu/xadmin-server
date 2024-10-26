@@ -18,8 +18,6 @@ from system.models import UserRole, DataPermission, SystemConfig
 
 
 class ChangeRolePermissionAction(object):
-    def get_object(self):
-        raise NotImplementedError('get_object must be overridden')
 
     @extend_schema(
         description="分配角色-数据权限",
@@ -60,8 +58,6 @@ class ChangeRolePermissionAction(object):
 
 
 class InvalidConfigCacheAction(object):
-    def get_object(self):
-        raise NotImplementedError('get_object must be overridden')
 
     @extend_schema(
         description="使配置值缓存失效",
