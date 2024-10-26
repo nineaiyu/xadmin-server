@@ -107,7 +107,7 @@ LOGGING = {
             'level': LOG_LEVEL,
         },
         'unexpected_exception': {
-            'handlers': ['unexpected_exception'],
+            'handlers': ['console', 'unexpected_exception'],
             'level': LOG_LEVEL,
         },
     },

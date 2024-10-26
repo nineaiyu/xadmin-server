@@ -1676,7 +1676,7 @@
       "field_type": 0,
       "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
       "name": "parent",
-      "label": "Parent"
+      "label": "上级节点"
     }
   },
   {
@@ -2816,7 +2816,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "creator",
-      "label": "用户"
+      "label": "创建人"
     }
   },
   {
@@ -3250,7 +3250,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": "6d5caaee-fc35-4827-b563-2e7354b10650",
-      "name": "owner_info",
+      "name": "owner",
       "label": "用户"
     }
   },
@@ -5861,7 +5861,7 @@
       "field_type": 0,
       "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
       "name": "creator",
-      "label": "用户"
+      "label": "创建人"
     }
   },
   {

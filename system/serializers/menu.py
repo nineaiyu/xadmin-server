@@ -9,10 +9,10 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
+from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.models import Menu, MenuMeta, ModelLabelField
+from system.models import Menu, MenuMeta
 
 logger = get_logger(__name__)
 
@@ -31,16 +31,16 @@ class MenuSerializer(BaseModelSerializer):
 
     class Meta:
         model = Menu
-        fields = ['pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active',
-                  'model', 'method']
+        fields = [
+            'pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active', 'model', 'method'
+        ]
         # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
-        extra_kwargs = {'rank': {'read_only': True}}
+        extra_kwargs = {
+            'rank': {'read_only': True},
+            'parent': {'attrs': ['pk', 'name'], 'allow_null': True, 'required': False},
+            'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
+        }
 
-    parent = BasePrimaryKeyRelatedField(queryset=Menu.objects, allow_null=True, required=False,
-                                        label=_("Parent menu"), attrs=['pk', 'name'])
-
-    model = BasePrimaryKeyRelatedField(queryset=ModelLabelField.objects, allow_null=True, required=False,
-                                       label=_("Model"), attrs=['pk', 'name', 'label'], many=True)
     menu_type = LabeledChoiceField(choices=Menu.MenuChoices.choices,
                                    default=Menu.MenuChoices.DIRECTORY, label=_("Menu type"))
 
