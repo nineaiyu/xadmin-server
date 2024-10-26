@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-26 21:18+0800\n"
+"POT-Creation-Date: 2024-10-26 22:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -401,14 +401,11 @@ msgstr "被通知部门"
 msgid "The notified role"
 msgstr "被通知角色"
 
-#: notifications/models/message.py:34 notifications/serializers/message.py:50
-#: notifications/serializers/message.py:167
+#: notifications/models/message.py:34
 msgid "Notice level"
 msgstr "通知级别"
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:48
-#: notifications/serializers/message.py:149
-#: notifications/serializers/message.py:165
+#: notifications/models/message.py:36 notifications/serializers/message.py:144
 msgid "Notice type"
 msgstr "通知类型"
 
@@ -416,7 +413,7 @@ msgstr "通知类型"
 msgid "Notice title"
 msgstr "通知标题"
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:152
+#: notifications/models/message.py:39 notifications/serializers/message.py:147
 msgid "Notice message"
 msgstr "通知内容"
 
@@ -424,7 +421,7 @@ msgstr "通知内容"
 msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:43
+#: notifications/models/message.py:41 notifications/serializers/message.py:42
 msgid "Uploaded attachments"
 msgstr "上传的附件"
 
@@ -447,7 +444,7 @@ msgstr "用户"
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:72 notifications/serializers/message.py:168
+#: notifications/models/message.py:72 notifications/serializers/message.py:159
 msgid "Unread"
 msgstr "未读"
 
@@ -485,35 +482,35 @@ msgstr "发布站内消息"
 msgid "Time"
 msgstr "时间"
 
-#: notifications/serializers/message.py:44 system/serializers/department.py:41
+#: notifications/serializers/message.py:43 system/serializers/department.py:40
 msgid "User count"
 msgstr "用户数量"
 
-#: notifications/serializers/message.py:45
+#: notifications/serializers/message.py:44
 msgid "Read user count"
 msgstr "已读用户数量"
 
-#: notifications/serializers/message.py:73
+#: notifications/serializers/message.py:68
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: notifications/serializers/message.py:83
+#: notifications/serializers/message.py:78
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: notifications/serializers/message.py:89
+#: notifications/serializers/message.py:84
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: notifications/serializers/message.py:95
+#: notifications/serializers/message.py:90
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: notifications/serializers/message.py:114
+#: notifications/serializers/message.py:109
 msgid "The system notice cannot be update"
 msgstr "系统通知不允许更新"
 
-#: notifications/serializers/message.py:137
+#: notifications/serializers/message.py:132
 msgid "Parameter error"
 msgstr "参数有误"
 
@@ -604,7 +601,7 @@ msgstr "账号"
 msgid "The user to be used for email server authentication"
 msgstr "登录到邮件服务器的用户名。这通常是你的邮件地址"
 
-#: settings/serializers/email.py:22 system/serializers/user.py:80
+#: settings/serializers/email.py:22 system/serializers/user.py:75
 msgid "Password"
 msgstr "密码"
 
@@ -1204,7 +1201,7 @@ msgstr "选择角色ID"
 msgid "Select department ID"
 msgstr "选择部门ID"
 
-#: system/models/field.py:35 system/serializers/field.py:26
+#: system/models/field.py:35
 msgid "Field type"
 msgstr "字段类型"
 
@@ -1265,7 +1262,7 @@ msgstr "操作系统"
 msgid "Agent"
 msgstr "用户代理"
 
-#: system/models/log.py:32 system/serializers/log.py:47
+#: system/models/log.py:32
 msgid "Login type"
 msgstr "登录类型"
 
@@ -1313,7 +1310,7 @@ msgstr "执行时间"
 msgid "Operation log"
 msgstr "操作日志"
 
-#: system/models/menu.py:15 system/serializers/menu.py:70
+#: system/models/menu.py:15 system/serializers/menu.py:67
 msgid "Menu title"
 msgstr "菜单名称"
 
@@ -1394,7 +1391,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr "显示已打开标签页最大数量"
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:30 system/serializers/route.py:56
+#: system/serializers/menu.py:29 system/serializers/route.py:56
 msgid "Menu meta"
 msgstr "菜单元数据"
 
@@ -1436,7 +1433,7 @@ msgstr ""
 msgid "Parent menu"
 msgstr "上级菜单"
 
-#: system/models/menu.py:63 system/serializers/menu.py:45
+#: system/models/menu.py:63
 msgid "Menu type"
 msgstr "菜单类型"
 
@@ -1544,8 +1541,7 @@ msgstr "头像"
 msgid "Nickname"
 msgstr "昵称"
 
-#: system/models/user.py:31 system/serializers/user.py:51
-#: system/serializers/userinfo.py:32
+#: system/models/user.py:31
 msgid "Gender"
 msgstr "性别"
 
@@ -1581,16 +1577,11 @@ msgstr "多个用户"
 msgid "User cannot be null"
 msgstr "用户不能为空"
 
-#: system/serializers/department.py:42 system/serializers/permission.py:39
-#: system/serializers/user.py:56
-msgid "Mode type"
-msgstr "权限模式"
-
-#: system/serializers/department.py:59
+#: system/serializers/department.py:56
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/permission.py:44
+#: system/serializers/permission.py:41
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
 
@@ -1606,29 +1597,29 @@ msgstr "访问地址"
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/serializers/user.py:54
+#: system/serializers/user.py:51
 msgid "Login blocked"
 msgstr "登录被锁定"
 
-#: system/serializers/user.py:72 system/serializers/user.py:86
-#: system/serializers/userinfo.py:55 system/views/auth/register.py:75
+#: system/serializers/user.py:67 system/serializers/user.py:81
+#: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
-#: system/serializers/user.py:74
+#: system/serializers/user.py:69
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
-#: system/serializers/userinfo.py:43
+#: system/serializers/userinfo.py:40
 msgid "Old password"
 msgstr "旧密码"
 
-#: system/serializers/userinfo.py:46
+#: system/serializers/userinfo.py:43
 msgid "Confirm password"
 msgstr "确认密码"
 
-#: system/serializers/userinfo.py:53
+#: system/serializers/userinfo.py:50
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 

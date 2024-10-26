@@ -13,13 +13,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
 from common.base.utils import AESCipherV2
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
 from settings.utils.password import check_password_rules
 from settings.utils.security import LoginBlockUtil
-from system.models import UserInfo, ModeTypeAbstract
+from system.models import UserInfo
 
 logger = get_logger(__name__)
 
@@ -47,14 +46,10 @@ class UserSerializer(BaseModelSerializer):
             'phone': {'validators': [UniqueValidator(queryset=UserInfo.objects.all())]}
         }
 
-    gender = LabeledChoiceField(choices=UserInfo.GenderChoices.choices,
-                                default=UserInfo.GenderChoices.UNKNOWN, label=_("Gender"))
 
     block = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='boolean',
                                                              label=_("Login blocked"))
 
-    mode_type = LabeledChoiceField(choices=ModeTypeAbstract.ModeChoices.choices, label=_("Mode type"),
-                                   default=ModeTypeAbstract.ModeChoices.OR.value)
     @extend_schema_field(serializers.BooleanField)
     def get_block(self, obj):
         return LoginBlockUtil.is_user_block(obj.username)

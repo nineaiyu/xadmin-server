@@ -9,10 +9,9 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.models import DataPermission, Menu, ModeTypeAbstract
+from system.models import DataPermission, Menu
 
 logger = get_logger(__name__)
 
@@ -35,8 +34,6 @@ class DataPermissionSerializer(BaseModelSerializer):
             },
         }
 
-    mode_type = LabeledChoiceField(choices=ModeTypeAbstract.ModeChoices.choices,
-                                   default=ModeTypeAbstract.ModeChoices.OR, label=_("Mode type"))
 
     def validate(self, attrs):
         rules = attrs.get('rules', [] if not self.instance else self.instance.rules)

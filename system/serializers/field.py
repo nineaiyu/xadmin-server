@@ -5,9 +5,6 @@
 # author : ly_13
 # date : 8/10/2024
 
-from django.utils.translation import gettext_lazy as _
-
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import ModelLabelField
@@ -22,5 +19,3 @@ class ModelLabelFieldSerializer(BaseModelSerializer):
         read_only_fields = [x.name for x in ModelLabelField._meta.fields]
         extra_kwargs = {'parent': {'attrs': ['pk', 'name', 'label'], 'read_only': True, 'format': '{label}({pk})'}}
 
-    field_type = LabeledChoiceField(choices=ModelLabelField.FieldChoices.choices,
-                                    default=ModelLabelField.FieldChoices.DATA, label=_("Field type"))

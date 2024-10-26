@@ -9,7 +9,6 @@ from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import Menu, MenuMeta
@@ -41,8 +40,6 @@ class MenuSerializer(BaseModelSerializer):
             'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
         }
 
-    menu_type = LabeledChoiceField(choices=Menu.MenuChoices.choices,
-                                   default=Menu.MenuChoices.DIRECTORY, label=_("Menu type"))
 
     def update(self, instance, validated_data):
         with transaction.atomic():

@@ -14,7 +14,6 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import LabeledChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
@@ -44,10 +43,6 @@ class NoticeMessageSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
-    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
-                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
-    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
-                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
@@ -161,10 +156,6 @@ class UserNoticeSerializer(BaseModelSerializer):
         table_fields = ['pk', 'title', 'unread', 'notice_type', "created_time"]
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
-    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
-                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
-    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
-                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
     @extend_schema_field(serializers.BooleanField)

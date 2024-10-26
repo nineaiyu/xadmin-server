@@ -5,9 +5,6 @@
 # author : ly_13
 # date : 8/10/2024
 
-from django.utils.translation import gettext_lazy as _
-
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import UserLoginLog, OperationLog
@@ -43,8 +40,6 @@ class LoginLogSerializer(BaseModelSerializer):
         read_only_fields = ['pk', 'creator']
         extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
 
-    login_type = LabeledChoiceField(choices=UserLoginLog.LoginTypeChoices.choices,
-                                    default=UserLoginLog.LoginTypeChoices.USERNAME, label=_("Login type"))
 
 
 class UserLoginLogSerializer(LoginLogSerializer):

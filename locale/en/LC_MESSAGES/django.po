@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-26 21:18+0800\n"
+"POT-Creation-Date: 2024-10-26 22:15+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -398,14 +398,11 @@ msgstr ""
 msgid "The notified role"
 msgstr ""
 
-#: notifications/models/message.py:34 notifications/serializers/message.py:50
-#: notifications/serializers/message.py:167
+#: notifications/models/message.py:34
 msgid "Notice level"
 msgstr ""
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:48
-#: notifications/serializers/message.py:149
-#: notifications/serializers/message.py:165
+#: notifications/models/message.py:36 notifications/serializers/message.py:144
 msgid "Notice type"
 msgstr ""
 
@@ -413,7 +410,7 @@ msgstr ""
 msgid "Notice title"
 msgstr ""
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:152
+#: notifications/models/message.py:39 notifications/serializers/message.py:147
 msgid "Notice message"
 msgstr ""
 
@@ -421,7 +418,7 @@ msgstr ""
 msgid "Additional json data"
 msgstr ""
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:43
+#: notifications/models/message.py:41 notifications/serializers/message.py:42
 msgid "Uploaded attachments"
 msgstr ""
 
@@ -444,7 +441,7 @@ msgstr ""
 msgid "Notice"
 msgstr ""
 
-#: notifications/models/message.py:72 notifications/serializers/message.py:168
+#: notifications/models/message.py:72 notifications/serializers/message.py:159
 msgid "Unread"
 msgstr ""
 
@@ -482,35 +479,35 @@ msgstr ""
 msgid "Time"
 msgstr ""
 
-#: notifications/serializers/message.py:44 system/serializers/department.py:41
+#: notifications/serializers/message.py:43 system/serializers/department.py:40
 msgid "User count"
 msgstr ""
 
-#: notifications/serializers/message.py:45
+#: notifications/serializers/message.py:44
 msgid "Read user count"
 msgstr ""
 
-#: notifications/serializers/message.py:73
+#: notifications/serializers/message.py:68
 msgid "Parameter error. System announcement cannot be created"
 msgstr ""
 
-#: notifications/serializers/message.py:83
+#: notifications/serializers/message.py:78
 msgid "The notice role cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:89
+#: notifications/serializers/message.py:84
 msgid "The notice department cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:95
+#: notifications/serializers/message.py:90
 msgid "The notice user cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:114
+#: notifications/serializers/message.py:109
 msgid "The system notice cannot be update"
 msgstr ""
 
-#: notifications/serializers/message.py:137
+#: notifications/serializers/message.py:132
 msgid "Parameter error"
 msgstr ""
 
@@ -601,7 +598,7 @@ msgstr ""
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:22 system/serializers/user.py:80
+#: settings/serializers/email.py:22 system/serializers/user.py:75
 msgid "Password"
 msgstr ""
 
@@ -1191,7 +1188,7 @@ msgstr ""
 msgid "Select department ID"
 msgstr ""
 
-#: system/models/field.py:35 system/serializers/field.py:26
+#: system/models/field.py:35
 msgid "Field type"
 msgstr ""
 
@@ -1252,7 +1249,7 @@ msgstr ""
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:32 system/serializers/log.py:47
+#: system/models/log.py:32
 msgid "Login type"
 msgstr ""
 
@@ -1300,7 +1297,7 @@ msgstr ""
 msgid "Operation log"
 msgstr ""
 
-#: system/models/menu.py:15 system/serializers/menu.py:70
+#: system/models/menu.py:15 system/serializers/menu.py:67
 msgid "Menu title"
 msgstr ""
 
@@ -1381,7 +1378,7 @@ msgid "Maximum number of dynamic routes that can be opened"
 msgstr ""
 
 #: system/models/menu.py:39 system/models/menu.py:69
-#: system/serializers/menu.py:30 system/serializers/route.py:56
+#: system/serializers/menu.py:29 system/serializers/route.py:56
 msgid "Menu meta"
 msgstr ""
 
@@ -1423,7 +1420,7 @@ msgstr ""
 msgid "Parent menu"
 msgstr ""
 
-#: system/models/menu.py:63 system/serializers/menu.py:45
+#: system/models/menu.py:63
 msgid "Menu type"
 msgstr ""
 
@@ -1531,8 +1528,7 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
-#: system/models/user.py:31 system/serializers/user.py:51
-#: system/serializers/userinfo.py:32
+#: system/models/user.py:31
 msgid "Gender"
 msgstr ""
 
@@ -1568,16 +1564,11 @@ msgstr ""
 msgid "User cannot be null"
 msgstr ""
 
-#: system/serializers/department.py:42 system/serializers/permission.py:39
-#: system/serializers/user.py:56
-msgid "Mode type"
-msgstr ""
-
-#: system/serializers/department.py:59
+#: system/serializers/department.py:56
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/permission.py:44
+#: system/serializers/permission.py:41
 msgid "The rule cannot be null"
 msgstr ""
 
@@ -1593,29 +1584,29 @@ msgstr ""
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:54
+#: system/serializers/user.py:51
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:72 system/serializers/user.py:86
-#: system/serializers/userinfo.py:55 system/views/auth/register.py:75
+#: system/serializers/user.py:67 system/serializers/user.py:81
+#: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:74
+#: system/serializers/user.py:69
 msgid "Abnormal password field"
 msgstr ""
 
-#: system/serializers/userinfo.py:43
+#: system/serializers/userinfo.py:40
 msgid "Old password"
 msgstr ""
 
-#: system/serializers/userinfo.py:46
+#: system/serializers/userinfo.py:43
 msgid "Confirm password"
 msgstr ""
 
-#: system/serializers/userinfo.py:53
+#: system/serializers/userinfo.py:50
 msgid "Old password verification failed"
 msgstr ""
 

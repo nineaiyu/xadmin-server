@@ -10,10 +10,9 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.models import DeptInfo, ModeTypeAbstract
+from system.models import DeptInfo
 
 logger = get_logger(__name__)
 
@@ -39,8 +38,6 @@ class DeptSerializer(BaseModelSerializer):
         }
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
-    mode_type = LabeledChoiceField(choices=ModeTypeAbstract.ModeChoices.choices, label=_("Mode type"),
-                                   default=ModeTypeAbstract.ModeChoices.OR.value)
 
     def validate(self, attrs):
         # 权限需要其他接口设置，下面三个参数忽略
