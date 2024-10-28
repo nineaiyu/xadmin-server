@@ -456,6 +456,7 @@ ROUTE_IGNORE_URL = [
     "^/api/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/system/dashboard/",  # 忽略dashboard路由
+    "^/api/system/captcha",  # 忽略图片验证码路由
 ]
 
 # 访问权限配置

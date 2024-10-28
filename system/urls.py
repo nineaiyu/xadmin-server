@@ -36,6 +36,8 @@ from system.views.upload import UploadAPIView
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.userinfo import UserInfoViewSet
 
+app_name = "system"
+
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)
 

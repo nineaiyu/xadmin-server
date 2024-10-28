@@ -19,6 +19,8 @@ from settings.views.settings import SettingViewSet
 from settings.views.sms import SMSBackendAPIView, SmsSettingViewSet, SmsConfigViewSet
 from settings.views.verify import VerifyCodeSettingViewSet, CaptchaSettingViewSet
 
+app_name = "settings"
+
 router = SimpleRouter(False)
 no_detail_router = NoDetailRouter(False)
 

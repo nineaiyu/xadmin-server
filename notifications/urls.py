@@ -6,6 +6,8 @@ from notifications.views.notifications import SystemMsgSubscriptionViewSet, Back
     UserMsgSubscriptionViewSet
 from notifications.views.user_site_msg import UserSiteMessageViewSet
 
+app_name = 'notifications'
+
 router = SimpleRouter(False)
 
 # 消息通知路由
