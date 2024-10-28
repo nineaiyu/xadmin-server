@@ -1,5 +1,6 @@
 import json
-from tempfile import NamedTemporaryFile
+import os
+from tempfile import NamedTemporaryFile, mktemp
 
 from openpyxl import Workbook
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
@@ -110,7 +111,16 @@ class ExcelFileRenderer(BaseFileRenderer):
             self.ws.add_table(tab)
 
     def get_rendered_value(self):
-        with NamedTemporaryFile() as tmp:
-            self.wb.save(tmp.name)
-            tmp.seek(0)
-            return tmp.read()
+        if os.name == 'nt':
+            ## 针对 windows 平台，解决 NamedTemporaryFile 方法 权限异常
+            tmp_name = mktemp()
+            self.wb.save(tmp_name)
+            with open(tmp_name, 'rb') as tmp:
+                value = tmp.read()
+            os.unlink(tmp_name)
+            return value
+        else:
+            with NamedTemporaryFile() as tmp:
+                self.wb.save(tmp.name)
+                tmp.seek(0)
+                return tmp.read()

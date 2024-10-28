@@ -187,7 +187,7 @@ class BaseFileRenderer(BaseRenderer):
             self.set_response_disposition(response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = 'The resource not support export!'.encode('utf-8')
+            value = f'The resource not support export! error:{e}'.encode('utf-8')
             return value
 
         try:
@@ -205,7 +205,8 @@ class BaseFileRenderer(BaseRenderer):
                 value = self.compress_into_zip_file(value, request, response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = 'Render error! ({})'.format(self.media_type).encode('utf-8')
+            value = f'Render error! media:{self.media_type} \r\nerror:\r\n{e}'.encode('utf-8')
+            response['Content-Disposition'] = response['Content-Disposition'].replace(self.format, 'txt')
             return value
         return value
 
