@@ -105,6 +105,9 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
                 component = instance.component
                 # component = view_string.split('.')[-1]
             permissions = get_view_permissions(view_string, component)
+            # 该代码禁用了信号，导致菜单数据不刷新
             self._save_permissions(instance, permissions)
+            # 保存数据，触发刷新缓存信号
+            instance.save(update_fields=['is_active'])
             return ApiResponse()
         return ApiResponse(code=1001)
