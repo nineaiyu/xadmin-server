@@ -20,7 +20,6 @@ from system.models import UserRole, DataPermission, SystemConfig
 class ChangeRolePermissionAction(object):
 
     @extend_schema(
-        description="分配角色-数据权限",
         request=OpenApiRequest(
             build_object_type(
                 required=['roles', 'rules', 'mode_type'],
@@ -35,6 +34,7 @@ class ChangeRolePermissionAction(object):
     )
     @action(methods=['post'], detail=True)
     def empower(self, request, *args, **kwargs):
+        """给{cls}分配角色-数据权限"""
         instance = self.get_object()
         roles = request.data.get('roles')
         rules = request.data.get('rules')
@@ -59,13 +59,10 @@ class ChangeRolePermissionAction(object):
 
 class InvalidConfigCacheAction(object):
 
-    @extend_schema(
-        description="使配置值缓存失效",
-        request=None,
-        responses=get_default_response_schema()
-    )
+    @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=['post'], detail=True)
     def invalid(self, request, *args, **kwargs):
+        """使{cls}缓存失效"""
         instance = self.get_object()
 
         if isinstance(instance, SystemConfig):

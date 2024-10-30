@@ -73,7 +73,6 @@ class UploadFileAction(object):
         return SysConfig.PICTURE_UPLOAD_SIZE
 
     @extend_schema(
-        description="上传头像",
         request=OpenApiRequest(
             build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
         ),
@@ -107,7 +106,6 @@ class RankAction(object):
     get_queryset: Callable
 
     @extend_schema(
-        description='根据主键顺序，进行从小到大进行排序',
         request=OpenApiRequest(
             build_object_type(
                 properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -131,7 +129,6 @@ class ChoicesAction(object):
     choices_models: []
 
     @extend_schema(
-        description='获取字段选择',
         responses=get_default_response_schema(
             {
                 'choices_dict': build_object_type(
@@ -151,6 +148,7 @@ class ChoicesAction(object):
     )
     @action(methods=['get'], detail=False, url_path='choices')
     def choices_dict(self, request, *args, **kwargs):
+        """获取{cls}的字段选择"""
         result = {}
         models = getattr(self, 'choices_models', None)
         if not models:
@@ -167,7 +165,6 @@ class SearchFieldsAction(object):
     filterset_class: Callable
 
     @extend_schema(
-        description='获取可查询字段',
         responses=get_default_response_schema(
             {
                 'data': build_array_type(
@@ -259,7 +256,6 @@ class SearchColumnsAction(object):
     filterset_class: Callable
 
     @extend_schema(
-        description='获取列表和创建更新字段',
         responses=get_default_response_schema(
             {
                 'data': build_array_type(
@@ -377,7 +373,6 @@ class BatchDestroyAction(object):
     perform_destroy: Callable
 
     @extend_schema(
-        description='批量删除',
         request=OpenApiRequest(
             build_object_type(
                 properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -407,7 +402,7 @@ class BatchDestroyAction(object):
 
 class CreateAction(mixins.CreateModelMixin):
     def create(self, request, *args, **kwargs):
-        """添加{cls}"""
+        """添加{cls}数据"""
         data = super().create(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
@@ -428,7 +423,7 @@ class ListAction(mixins.ListModelMixin):
 
 class DestroyAction(mixins.DestroyModelMixin):
     def destroy(self, request, *args, **kwargs):
-        """删除{cls}"""
+        """删除{cls}数据"""
         instance = self.get_object()
         self.perform_destroy(instance)
         return ApiResponse()
@@ -436,19 +431,18 @@ class DestroyAction(mixins.DestroyModelMixin):
 
 class UpdateAction(mixins.UpdateModelMixin):
     def update(self, request, *args, **kwargs):
-        """更新{cls}"""
+        """更新{cls}信息"""
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
     def partial_update(self, request, *args, **kwargs):
-        """更新{cls}"""
+        """更新{cls}信息"""
         kwargs['partial'] = True
         return self.update(request, *args, **kwargs)
 
 
 class OnlyExportDataAction(ListAction):
     @extend_schema(
-        description='数据导出',
         parameters=[
             OpenApiParameter(name='type', required=True, enum=['xlsx', 'csv']),
         ],
@@ -458,7 +452,7 @@ class OnlyExportDataAction(ListAction):
     )
     @action(methods=['get'], detail=False, url_path='export-data')
     def export_data(self, request, *args, **kwargs):
-        """导出{cls}"""
+        """导出{cls}数据"""
         self.format_kwarg = request.query_params.get('type', 'xlsx')
         request.no_cache = True  # 防止自定义缓存数据
         self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
@@ -473,7 +467,6 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     get_serializer: Callable
 
     @extend_schema(
-        description='数据导入',
         parameters=[
             OpenApiParameter(name='action', required=True, enum=['create', 'update']),
         ],
@@ -487,7 +480,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     @action(methods=['post'], detail=False, url_path='import-data')
     @transaction.atomic
     def import_data(self, request, *args, **kwargs):
-        """导入{cls}"""
+        """导入{cls}数据"""
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
         if act and request.data:

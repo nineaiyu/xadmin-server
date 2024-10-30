@@ -27,7 +27,6 @@ class ResourcesIDCacheAPIView(GenericAPIView):
     """资源ID 缓存"""
 
     @extend_schema(
-        description='将资源数据临时保存到服务器',
         request=OpenApiRequest(
             build_object_type(
                 properties={'resources': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -38,6 +37,7 @@ class ResourcesIDCacheAPIView(GenericAPIView):
         responses=get_default_response_schema({'spm': build_basic_type(OpenApiTypes.STR)})
     )
     def post(self, request, *args, **kwargs):
+        """添加临时资源数据"""
         spm = str(uuid.uuid4())
         resources = request.data.get('resources')
         if resources is not None:
@@ -50,7 +50,6 @@ class CountryListAPIView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     @extend_schema(
-        description="获取城市手机号列表",
         responses=get_default_response_schema(
             {
                 'data': build_array_type(
@@ -67,6 +66,7 @@ class CountryListAPIView(GenericAPIView):
         )
     )
     def get(self, request, *args, **kwargs):
+        """获取城市手机号列表"""
         current_lang = translation.get_language()
         if current_lang == 'zh-hans':
             return ApiResponse(data=COUNTRY_CALLING_CODES_ZH)
@@ -106,7 +106,6 @@ class HealthCheckAPIView(GenericAPIView):
             return False, str(e)
 
     @extend_schema(
-        description="获取服务健康状态",
         responses={
             200: OpenApiResponse(
                 build_object_type(
@@ -123,6 +122,7 @@ class HealthCheckAPIView(GenericAPIView):
         }
     )
     def get(self, request):
+        """获取服务健康状态"""
         redis_status, redis_time = self.get_redis_status()
         db_status, db_time = self.get_db_status()
         status = all([redis_status, db_status])

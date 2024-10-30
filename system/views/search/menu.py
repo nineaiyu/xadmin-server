@@ -36,7 +36,7 @@ class SearchMenuSerializer(MenuSerializer):
 
 
 class SearchMenuViewSet(OnlyListModelSet):
-    """菜单管理"""
+    """菜单搜索"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = SearchMenuSerializer
     pagination_class = DynamicPageNumber(1000)

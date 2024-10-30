@@ -30,7 +30,7 @@ class NoticeMessageFilter(BaseFilterSet):
 
 
 class NoticeMessageViewSet(BaseModelSet):
-    """消息通知管理"""
+    """消息通知"""
     queryset = MessageContent.objects.all()
     serializer_class = NoticeMessageSerializer
 
@@ -48,6 +48,7 @@ class NoticeMessageViewSet(BaseModelSet):
     )
     @action(methods=['put'], detail=True)
     def publish(self, request, *args, **kwargs):
+        """修改{cls}状态"""
         instance: MessageContent = self.get_object()
         instance.publish = request.data.get('publish')
         instance.modifier = request.user
@@ -56,6 +57,7 @@ class NoticeMessageViewSet(BaseModelSet):
 
     @action(methods=['post'], detail=False)
     def announcement(self, request, *args, **kwargs):
+        """添加{cls}公告"""
         self.serializer_class = AnnouncementSerializer
         return super().create(request, *args, **kwargs)
 
@@ -93,6 +95,7 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
     )
     @action(methods=['put'], detail=True)
     def state(self, request, *args, **kwargs):
+        """修改{cls}状态"""
         instance = self.get_object()
         if instance.notice.notice_type in MessageContent.user_choices:
             instance.unread = request.data.get('unread', True)

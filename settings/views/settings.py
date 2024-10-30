@@ -88,6 +88,7 @@ class SettingFilter(BaseFilterSet):
 
 
 class SettingViewSet(ListDeleteModelSet, ImportExportDataAction):
+    """系统设置"""
     queryset = Setting.objects.all()
     serializer_class = SettingSerializer
     ordering_fields = ['created_time', 'category']

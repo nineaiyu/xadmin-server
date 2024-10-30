@@ -15,10 +15,8 @@ from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsg
 
 
 class BackendListAPIView(GenericAPIView):
-    """获取消息通知后端"""
 
-    @extend_schema(
-        parameters=None, description="获取消息通知后端", responses=get_default_response_schema(
+    @extend_schema(parameters=None, responses=get_default_response_schema(
             {
                 'data': build_array_type(
                     build_object_type(
@@ -32,18 +30,21 @@ class BackendListAPIView(GenericAPIView):
         )
     )
     def get(self, request, *args, **kwargs):
+        """获取消息通知后端"""
         return ApiResponse(
             data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
 
 
 class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
+    """系统消息订阅"""
     lookup_field = 'message_type'
     queryset = SystemMsgSubscription.objects.all()
     serializer_class = SystemMsgSubscriptionSerializer
     list_serializer_class = SystemMsgSubscriptionByCategorySerializer
 
-    @extend_schema(description="获取系统消息订阅列表", responses={200: SystemMsgSubscriptionByCategorySerializer})
+    @extend_schema(responses={200: SystemMsgSubscriptionByCategorySerializer})
     def list(self, request, *args, **kwargs):
+        """获取系统消息订阅列表"""
         data = []
         category_children_mapper = {}
 
@@ -77,6 +78,7 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
 
 
 class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
+    """用户消息订阅"""
     lookup_field = 'message_type'
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer
@@ -85,8 +87,9 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
 
-    @extend_schema(description="获取用户消息订阅列表", responses={200: UserMsgSubscriptionByCategorySerializer})
+    @extend_schema(responses={200: UserMsgSubscriptionByCategorySerializer})
     def list(self, request, *args, **kwargs):
+        """获取用户消息订阅列表"""
         data = []
         category_children_mapper = {}
         msg_type_sub_mapper = {}

@@ -36,6 +36,7 @@ class IpUtils(object):
 
 
 class BlockIpViewSet(ListDeleteModelSet):
+    """Ip拦截名单"""
     serializer_class = SecurityBlockIPSerializer
     queryset = Setting.objects.none()
 

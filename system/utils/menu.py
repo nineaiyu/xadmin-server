@@ -60,7 +60,7 @@ def get_view_permissions(view_string, code_suffix=''):
             try:
                 models = get_related_models(view_set.queryset.model)
             except Exception as e:
-                logger.error(f'get_related_models failed {e}')
+                logger.error(f'get_related_models {view_set} failed {e}', exc_info=True)
                 pass
         else:
             is_view_set = False

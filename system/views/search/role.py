@@ -33,7 +33,7 @@ class SearchRoleSerializer(RoleSerializer):
 
 
 class SearchRoleViewSet(OnlyListModelSet):
-    """角色管理"""
+    """角色搜索"""
     queryset = UserRole.objects.all()
     serializer_class = SearchRoleSerializer
     ordering_fields = ['updated_time', 'name', 'created_time']

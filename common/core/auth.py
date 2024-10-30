@@ -4,6 +4,7 @@
 # filename : system
 # author : ly_13
 # date : 6/2/2023
+import functools
 import hashlib
 
 from django.http.cookie import parse_cookie
@@ -17,6 +18,7 @@ from common.cache.storage import BlackAccessTokenCache
 
 
 def auth_required(view_func):
+    @functools.wraps(view_func)
     def wrapper(view, request, *args, **kwargs):
         if request.user and request.user.is_authenticated:
             return view_func(view, request, *args, **kwargs)

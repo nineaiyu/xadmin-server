@@ -13,10 +13,12 @@ logger = get_logger(__name__)
 
 
 class VerifyCodeSettingViewSet(BaseSettingViewSet):
+    """验证码规则"""
     serializer_class = VerifyCodeSettingSerializer
     category = "verify"
 
 
 class CaptchaSettingViewSet(BaseSettingViewSet):
+    """图片验证码"""
     serializer_class = CaptchaSettingSerializer
     category = "captcha"

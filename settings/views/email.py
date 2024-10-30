@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 
 
 class EmailServerSettingViewSet(BaseSettingViewSet):
+    """邮件服务"""
     serializer_class = EmailSettingSerializer
     category = "email"
 

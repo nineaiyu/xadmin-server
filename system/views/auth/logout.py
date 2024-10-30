@@ -23,7 +23,6 @@ class LogoutAPIView(GenericAPIView):
     """用户登出"""
 
     @extend_schema(
-        description="用户登出",
         request=OpenApiRequest(build_object_type(properties={'refresh': build_basic_type(OpenApiTypes.STR)})),
         responses=get_default_response_schema()
     )

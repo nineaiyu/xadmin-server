@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-28 18:06+0800\n"
+"POT-Creation-Date: 2024-10-30 09:37+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,12 +23,12 @@ msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr ""
 
-#: common/core/auth.py:23 common/core/filter.py:202 common/core/filter.py:210
+#: common/core/auth.py:25 common/core/filter.py:202 common/core/filter.py:210
 #: common/core/permission.py:126
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:36 system/utils/auth.py:109
+#: common/core/auth.py:38 system/utils/auth.py:109
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -93,31 +93,31 @@ msgstr ""
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/modelset.py:94
+#: common/core/modelset.py:93
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/modelset.py:97
+#: common/core/modelset.py:96
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
-#: common/core/modelset.py:127
+#: common/core/modelset.py:125
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:395
+#: common/core/modelset.py:390
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:405
+#: common/core/modelset.py:400
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
-#: common/core/modelset.py:515
+#: common/core/modelset.py:508
 msgid "Operation successful. Import {} data"
 msgstr ""
 
-#: common/core/modelset.py:516 system/utils/auth.py:104
+#: common/core/modelset.py:509 system/utils/auth.py:104
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
@@ -1031,19 +1031,19 @@ msgstr ""
 msgid "Noise functions"
 msgstr ""
 
-#: settings/views/email.py:40
+#: settings/views/email.py:41
 msgid "Test smtp setting"
 msgstr ""
 
-#: settings/views/email.py:65
+#: settings/views/email.py:66
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
-#: settings/views/sms.py:99
+#: settings/views/sms.py:101
 msgid "test_phone is required"
 msgstr ""
 
-#: settings/views/sms.py:110
+#: settings/views/sms.py:112
 msgid "Test success"
 msgstr ""
 
@@ -1297,7 +1297,7 @@ msgstr ""
 msgid "Operation log"
 msgstr ""
 
-#: system/models/menu.py:15 system/serializers/menu.py:67
+#: system/models/menu.py:15
 msgid "Menu title"
 msgstr ""
 

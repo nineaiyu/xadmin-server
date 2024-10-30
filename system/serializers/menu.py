@@ -57,11 +57,3 @@ class MenuSerializer(BaseModelSerializer):
             return super().create(validated_data)
 
 
-class MenuPermissionSerializer(MenuSerializer):
-    class Meta:
-        model = Menu
-        fields = ['pk', 'title', 'parent', 'menu_type']
-        read_only_fields = ['pk']
-        extra_kwargs = {'rank': {'read_only': True}}
-
-    title = serializers.CharField(source='meta.title', read_only=True, label=_("Menu title"))

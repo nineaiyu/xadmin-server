@@ -37,7 +37,7 @@ class UserFilter(BaseFilterSet):
 
 
 class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
-    """用户管理"""
+    """用户"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer
@@ -53,7 +53,6 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         return instance.delete()
 
     @extend_schema(
-        description='批量删除',
         request=OpenApiRequest(
             build_object_type(
                 properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -65,12 +64,14 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
     )
     @action(methods=['post'], detail=False, url_path='batch-delete')
     def batch_delete(self, request, *args, **kwargs):
+        """批量删除{cls}"""
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_delete(request, *args, **kwargs)
 
-    @extend_schema(description='管理员重置用户密码', responses=get_default_response_schema())
+    @extend_schema(responses=get_default_response_schema())
     @action(methods=['post'], detail=True, url_path='reset-password', serializer_class=ResetPasswordSerializer)
     def reset_password(self, request, *args, **kwargs):
+        """重置用户密码"""
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -78,9 +79,10 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         SiteMessageUtil.notify_error(users=instance, title="密码重置成功", message="密码被管理员重置成功")
         return ApiResponse()
 
-    @extend_schema(description='解禁用户', responses=get_default_response_schema(), request=None)
+    @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)
     def unblock(self, request, *args, **kwargs):
+        """解禁用户"""
         instance = self.get_object()
         LoginBlockUtil.unblock_user(instance.username)
         return ApiResponse()

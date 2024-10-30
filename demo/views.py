@@ -25,7 +25,7 @@ class BookViewSetFilter(BaseFilterSet):
 
 
 class BookViewSet(BaseModelSet, ImportExportDataAction):
-    """书籍管理"""
+    """书籍"""
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     ordering_fields = ['created_time']

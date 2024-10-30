@@ -25,9 +25,7 @@ class UploadFileFilter(BaseFilterSet):
 
 
 class UploadFileViewSet(BaseModelSet):
-    """
-    文件管理
-    """
+    """文件"""
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
     ordering_fields = ['created_time', 'filesize']

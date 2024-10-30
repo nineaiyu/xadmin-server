@@ -28,7 +28,7 @@ class LoginLogFilter(BaseFilterSet):
 
 
 class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
-    """用户登录日志"""
+    """登录日志"""
     queryset = UserLoginLog.objects.all()
     serializer_class = LoginLogSerializer
 

@@ -125,7 +125,6 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         return ApiResponse()
 
     @extend_schema(
-        description='批量已读消息',
         request=OpenApiRequest(
             build_object_type(
                 properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -137,11 +136,13 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     )
     @action(methods=['put'], detail=False)
     def read(self, request, *args, **kwargs):
+        """批量已读消息"""
         pks = request.data.get('pks', [])
         return self.read_message(pks, request)
 
-    @extend_schema(description='全部已读消息', responses=get_default_response_schema())
+    @extend_schema(responses=get_default_response_schema())
     @action(methods=['put'], detail=False, url_path='read-all')
     def read_all(self, request, *args, **kwargs):
+        """全部已读消息"""
         queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user))
         return self.read_message(queryset.values_list('pk', flat=True).distinct(), request)

@@ -28,12 +28,12 @@ logger = get_logger(__name__)
 
 
 class SmsSettingViewSet(BaseSettingViewSet):
+    """短信配置"""
     serializer_class = SMSSettingSerializer
     category = "sms"
 
 
 class SMSBackendAPIView(GenericAPIView):
-    """获取短信后端"""
 
     @extend_schema(parameters=None, responses=get_default_response_schema(
         {
@@ -46,10 +46,12 @@ class SMSBackendAPIView(GenericAPIView):
         }
     ))
     def get(self, request, *args, **kwargs):
+        """获取短信后端"""
         return ApiResponse(data=get_choices_dict(BACKENDS.choices))
 
 
 class SmsConfigViewSet(BaseSettingViewSet):
+    """短信服务"""
     serializer_class_mapper = {
         'alibaba': AlibabaSMSSettingSerializer,
     }

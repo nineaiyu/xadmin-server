@@ -313,6 +313,7 @@ cache_response = MagicCacheResponse
 
 
 def handle_db_connections(func):
+    @wraps(func)
     def func_wrapper(*args, **kwargs):
         close_old_connections()
         logger.info(f'{func.__name__} run before do close old connection')
@@ -323,3 +324,20 @@ def handle_db_connections(func):
         return result
 
     return func_wrapper
+
+
+def temporary_disable_signal(signal, receiver, *args, **kwargs):
+    """临时禁用信号"""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*_args, **_kwargs):
+            signal.disconnect(receiver=receiver, *args, **kwargs)
+            try:
+                return func(*_args, **_kwargs)
+            finally:
+                signal.connect(receiver=receiver, *args, **kwargs)
+
+        return wrapper
+
+    return decorator

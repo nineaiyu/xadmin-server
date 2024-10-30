@@ -35,7 +35,7 @@ class SearchDeptSerializer(DeptSerializer):
 
 
 class SearchDeptViewSet(OnlyListModelSet):
-    """部门信息"""
+    """部门搜索"""
     queryset = DeptInfo.objects.all()
     serializer_class = SearchDeptSerializer
     pagination_class = DynamicPageNumber(1000)

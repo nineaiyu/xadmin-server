@@ -29,7 +29,6 @@ class ResetPasswordAPIView(GenericAPIView):
     throttle_classes = [ResetPasswordThrottle]
 
     @extend_schema(
-        description="重置密码",
         request=OpenApiRequest(
             build_object_type(
                 properties={
@@ -41,6 +40,7 @@ class ResetPasswordAPIView(GenericAPIView):
         responses=get_default_response_schema()
     )
     def post(self, request, *args, **kwargs):
+        """重置密码"""
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         password = request.data.get('password')
         if not password:
