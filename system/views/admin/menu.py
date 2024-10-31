@@ -69,7 +69,7 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
         return ApiResponse(data=get_all_url_dict(''))
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
-    def _save_permissions(self, instance, permissions):
+    def _save_permissions(self, instance, permissions, skip_existing):
         # 该代码禁用了信号，导致菜单数据不刷新
         rank = 10000
         for permission in permissions:
@@ -91,6 +91,8 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
             }
             permission_menu = self.get_queryset().filter(menu_type=data['menu_type'], name=data['name']).first()
             if permission_menu:
+                if skip_existing:
+                    continue
                 data['meta']['title'] = 'U-' + data['meta']['title']
                 serializer = self.get_serializer(permission_menu, data=data, partial=True)
                 serializer.is_valid(raise_exception=True)
@@ -118,6 +120,7 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
         """自动添加API权限"""
         views = request.data.get('views')
         component = request.data.get('component')
+        skip_existing = request.data.get('skip_existing')
         if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
 
@@ -126,7 +129,7 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
                 if len(views) == 1:
                     if component:
                         code_suffix = component
-                self._save_permissions(instance, get_view_permissions(view, code_suffix))
+                self._save_permissions(instance, get_view_permissions(view, code_suffix), skip_existing)
 
             # 保存数据，触发刷新缓存信号
             instance.save(update_fields=['is_active'])

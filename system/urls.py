@@ -32,7 +32,6 @@ from system.views.search.dept import SearchDeptViewSet
 from system.views.search.menu import SearchMenuViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
-from system.views.upload import UploadAPIView
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.userinfo import UserInfoViewSet
 
@@ -56,7 +55,6 @@ no_auth_url = [
 auth_url = [
     re_path('^logout$', LogoutAPIView.as_view(), name='logout'),
     re_path('^refresh$', RefreshTokenAPIView.as_view(), name='refresh'),
-    re_path('^upload$', UploadAPIView.as_view(), name='upload'),
     re_path('^rules/password$', PasswordRulesAPIView.as_view(), name='password-rules'),
 ]
 
