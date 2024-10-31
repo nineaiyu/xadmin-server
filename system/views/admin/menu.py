@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.base.magic import cache_response, temporary_disable_signal
@@ -45,6 +45,7 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
 
     @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
+        """获取{cls}的列表"""
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data)
 
@@ -69,10 +70,14 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
     def _save_permissions(self, instance, permissions):
+        # 该代码禁用了信号，导致菜单数据不刷新
+        rank = 10000
         for permission in permissions:
+            rank += 1
             models = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE,
                                                     name__in=permission.get('models')).all()
             data = {
+                'rank': rank,
                 'is_active': True,
                 'menu_type': Menu.MenuChoices.PERMISSION,
                 'name': permission.get('code'),
@@ -81,32 +86,48 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
                 'method': permission.get('method'),
                 'model': models,
                 'meta': {
-                    'title': permission.get('description')[:255]
+                    'title': permission.get('description')[:250]
                 }
             }
             permission_menu = self.get_queryset().filter(menu_type=data['menu_type'], name=data['name']).first()
             if permission_menu:
+                data['meta']['title'] = 'U-' + data['meta']['title']
                 serializer = self.get_serializer(permission_menu, data=data, partial=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             else:
+                data['meta']['title'] = 'C-' + data['meta']['title']
                 serializer = self.get_serializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
 
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    'views': build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    'component': build_basic_type(OpenApiTypes.STR),
+                },
+                required=['views'],
+            )
+        ),
+        responses=get_default_response_schema()
+    )
     @action(methods=['post'], detail=True, url_path='permissions')
     def permissions(self, request, *args, **kwargs):
         """自动添加API权限"""
-        view_string = request.data.get('view_string')
+        views = request.data.get('views')
         component = request.data.get('component')
-        if view_string:
+        if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
-            if not component:
-                component = instance.component
-                # component = view_string.split('.')[-1]
-            permissions = get_view_permissions(view_string, component)
-            # 该代码禁用了信号，导致菜单数据不刷新
-            self._save_permissions(instance, permissions)
+
+            for view in views:
+                code_suffix = view.split(".")[-1].replace('ViewSet', ' ').replace('APIView', ' ')
+                if len(views) == 1:
+                    if component:
+                        code_suffix = component
+                self._save_permissions(instance, get_view_permissions(view, code_suffix))
+
             # 保存数据，触发刷新缓存信号
             instance.save(update_fields=['is_active'])
             return ApiResponse()

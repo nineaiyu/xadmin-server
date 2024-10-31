@@ -62,11 +62,11 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['post'], detail=False, url_path='batch-delete')
-    def batch_delete(self, request, *args, **kwargs):
+    @action(methods=['post'], detail=False, url_path='batch-destroy')
+    def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
         self.queryset = self.queryset.filter(is_superuser=False)
-        return super().batch_delete(request, *args, **kwargs)
+        return super().batch_destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=['post'], detail=True, url_path='reset-password', serializer_class=ResetPasswordSerializer)

@@ -35,7 +35,6 @@ class MenuSerializer(BaseModelSerializer):
         ]
         # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
         extra_kwargs = {
-            'rank': {'read_only': True},
             'parent': {'attrs': ['pk', 'name'], 'allow_null': True, 'required': False},
             'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
         }

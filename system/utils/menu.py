@@ -76,6 +76,8 @@ def get_view_permissions(view_string, code_suffix=''):
     for url_path in url_paths:
         methods = route_info.get(url_path.get('name'), {})
         for method, func_name in methods.items():
+            if is_view_set and method.lower() == 'put':  # 忽略view set的put请求，使用patch请求
+                continue
             try:
                 action_doc = getattr(view_set, func_name if is_view_set else method).__doc__
             except Exception as e:
@@ -86,12 +88,13 @@ def get_view_permissions(view_string, code_suffix=''):
             except Exception:
                 action_doc = view_doc
 
+            code = func_name.title().replace('_', '').replace('-', '')
             permissions.append({
                 'method': method.upper(),
                 'url': url_path.get('url'),
-                'code': f"{func_name.title().replace('_', '').replace('-', '')}:{code_suffix}",
+                'code': f"{code[0].lower()}{code[1:]}:{code_suffix}",
                 'description': action_doc if action_doc else view_set.__name__,
-                'models': models
+                'models': models if func_name in ['list', 'create', 'retrieve', 'update', 'partial_update'] else []
             })
 
     return permissions

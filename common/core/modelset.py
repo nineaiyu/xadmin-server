@@ -116,7 +116,7 @@ class RankAction(object):
         responses=get_default_response_schema()
     )
     @action(methods=['post'], detail=False, url_path='rank')
-    def action_rank(self, request, *args, **kwargs):
+    def rank(self, request, *args, **kwargs):
         """{cls}排序"""
         rank = 1
         for pk in get_query_post_pks(request):
@@ -382,8 +382,8 @@ class BatchDestroyAction(object):
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['post'], detail=False, url_path='batch-delete')
-    def batch_delete(self, request, *args, **kwargs):
+    @action(methods=['post'], detail=False, url_path='batch-destroy')
+    def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
         pks = get_query_post_pks(request)
         if not pks:
@@ -431,12 +431,12 @@ class DestroyAction(mixins.DestroyModelMixin):
 
 class UpdateAction(mixins.UpdateModelMixin):
     def update(self, request, *args, **kwargs):
-        """更新{cls}信息"""
+        """整体更新{cls}信息"""
         data = super().update(request, *args, **kwargs).data
         return ApiResponse(data=data)
 
     def partial_update(self, request, *args, **kwargs):
-        """更新{cls}信息"""
+        """部分更新{cls}信息"""
         kwargs['partial'] = True
         return self.update(request, *args, **kwargs)
 

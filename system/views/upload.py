@@ -85,4 +85,5 @@ class UploadAPIView(GenericAPIView):
         return ApiResponse(data=self.get_serializer(result, many=True).data)
 
     def get(self, request):
+        """获取上传配置"""
         return ApiResponse(data={'file_upload_size': get_upload_max_size(request.user)})

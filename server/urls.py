@@ -26,6 +26,7 @@ from common.core.utils import auto_register_app_url
 from common.utils.media import media_serve
 
 SpectacularAPIView.get = xframe_options_exempt(SpectacularAPIView.get)
+SpectacularAPIView.get.__doc__ = "获取API的文档模式"
 SpectacularSwaggerView.get = xframe_options_exempt(SpectacularSwaggerView.get)
 SpectacularRedocView.get = xframe_options_exempt(SpectacularRedocView.get)
 

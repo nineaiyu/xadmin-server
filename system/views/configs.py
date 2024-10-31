@@ -48,7 +48,7 @@ class ConfigsViewSet(GenericViewSet):
 
     @extend_schema(responses=config_response_schema(), request=OpenApiRequest(build_object_type()))
     @auth_required
-    def update(self, request, *args, **kwargs):
+    def partial_update(self, request, *args, **kwargs):
         """更新{cls}"""
         value_key = self.kwargs[self.lookup_field]
         if value_key:

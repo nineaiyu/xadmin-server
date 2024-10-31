@@ -46,7 +46,7 @@ class NoticeMessageViewSet(BaseModelSet):
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['put'], detail=True)
+    @action(methods=['patch'], detail=True)
     def publish(self, request, *args, **kwargs):
         """修改{cls}状态"""
         instance: MessageContent = self.get_object()
@@ -93,7 +93,7 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['put'], detail=True)
+    @action(methods=['patch'], detail=True)
     def state(self, request, *args, **kwargs):
         """修改{cls}状态"""
         instance = self.get_object()

@@ -167,7 +167,9 @@ DATABASES = {
         # 设置MySQL的驱动
         # 'OPTIONS': {'init_command': 'SET storage_engine=INNODB'},
         # 'OPTIONS': {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4'},
-        'OPTIONS': locals().get('OPTIONS', {}),
+        'OPTIONS': locals().get('DB_OPTIONS',
+                                {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4',
+                                 'collation': 'utf8mb4_bin'}),
     }
 }
 # https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing

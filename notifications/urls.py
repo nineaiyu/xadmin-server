@@ -2,7 +2,7 @@ from django.urls import re_path
 from rest_framework.routers import SimpleRouter
 
 from notifications.views.message import NoticeMessageViewSet, NoticeUserReadMessageViewSet
-from notifications.views.notifications import SystemMsgSubscriptionViewSet, BackendListAPIView, \
+from notifications.views.notifications import SystemMsgSubscriptionViewSet, NotificationsBackendAPIView, \
     UserMsgSubscriptionViewSet
 from notifications.views.user_site_msg import UserSiteMessageViewSet
 
@@ -20,7 +20,7 @@ router.register('system-msg-subscription', SystemMsgSubscriptionViewSet, basenam
 router.register('user-msg-subscription', UserMsgSubscriptionViewSet, basename='user-msg-subscription')
 
 urls = [
-    re_path('^backends$', BackendListAPIView.as_view(), name='notifications-backends'),
+    re_path('^backends$', NotificationsBackendAPIView.as_view(), name='notifications-backends'),
 ]
 
 urlpatterns = router.urls + urls
