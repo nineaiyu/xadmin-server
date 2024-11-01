@@ -55,6 +55,12 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
 
             if check_show_url(url) and not ignore_white_url(url):
                 url_ordered_dict[name] = {'name': name, 'url': url, 'view': item.lookup_str}
+                try:
+                    view_set = import_string(item.lookup_str)
+                    url_ordered_dict[name]['label'] = view_set.__doc__
+                except Exception:
+                    pass
+
 
         elif isinstance(item, URLResolver):  # 路由分发，递归操作
             new_pre_url = pre_url + item.pattern.regex.pattern.lstrip('^')
@@ -80,7 +86,7 @@ def get_all_url_dict(pre_url='/'):
     """
     url_ordered_dict = OrderedDict()
     md = import_string(settings.ROOT_URLCONF)
-    url_ordered_dict['#'] = {'name': '#', 'url': '#', 'view': '#'}
+    url_ordered_dict['#'] = {'name': '#', 'url': '#', 'view': '#', 'label': '#'}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
 

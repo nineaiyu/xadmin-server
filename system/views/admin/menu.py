@@ -70,7 +70,7 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
     def _save_permissions(self, instance, permissions, skip_existing):
-        # 该代码禁用了信号，导致菜单数据不刷新
+        # 该代码禁用了信号，菜单数据不刷新
         rank = 10000
         for permission in permissions:
             rank += 1
