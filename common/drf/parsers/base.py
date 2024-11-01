@@ -154,6 +154,8 @@ class BaseFileParser(BaseParser):
         elif isinstance(field, serializers.CharField):
             if not isinstance(value, str):
                 value = json.dumps(value)
+        elif isinstance(field, serializers.FileField):
+            value = None
 
         return value
 
