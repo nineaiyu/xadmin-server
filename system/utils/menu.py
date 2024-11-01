@@ -9,6 +9,7 @@ from django.utils.module_loading import import_string
 from rest_framework.routers import SimpleRouter
 from rest_framework.viewsets import GenericViewSet
 
+from common.core.modelset import NoDetailModelSet
 from common.core.routers import NoDetailRouter
 from common.core.utils import get_all_url_dict
 from common.utils import get_logger
@@ -56,7 +57,11 @@ def get_view_permissions(view_string, code_suffix=''):
     models = []
     try:
         if issubclass(view_set, GenericViewSet):
-            route_info = {r.name.format(basename=basename): r.mapping for r in router.get_routes(view_set)}
+            if issubclass(view_set, NoDetailModelSet):
+                routers = no_detail_router.get_routes(view_set)
+            else:
+                routers = router.get_routes(view_set)
+            route_info = {r.name.format(basename=basename): r.mapping for r in routers}
             try:
                 models = get_related_models(view_set.queryset.model)
             except Exception as e:

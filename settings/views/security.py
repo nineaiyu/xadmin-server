@@ -8,7 +8,8 @@
 from common.utils import get_logger
 from settings.serializers.security import SecurityPasswordRuleSerializer, SecurityLoginLimitSerializer, \
     SecurityLoginAuthSerializer, SecurityRegisterAuthSerializer, SecurityResetPasswordAuthSerializer, \
-    SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer
+    SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer, SecurityVerifyCodeSerializer, \
+    SecurityCaptchaCodeSerializer
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -54,3 +55,15 @@ class SecurityBindPhoneAuthViewSet(BaseSettingViewSet):
     """绑定手机"""
     serializer_class = SecurityBindPhoneAuthSerializer
     category = "security_bind_phone_auth"
+
+
+class SecurityVerifyCodeViewSet(BaseSettingViewSet):
+    """验证码规则"""
+    serializer_class = SecurityVerifyCodeSerializer
+    category = "verify"
+
+
+class SecurityCaptchaCodeViewSet(BaseSettingViewSet):
+    """图片验证码"""
+    serializer_class = SecurityCaptchaCodeSerializer
+    category = "captcha"

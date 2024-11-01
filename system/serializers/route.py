@@ -7,6 +7,7 @@
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
 
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
@@ -15,7 +16,7 @@ from system.models import Menu, MenuMeta
 logger = get_logger(__name__)
 
 
-class RouteMetaSerializer(BaseModelSerializer):
+class RouteMetaSerializer(ModelSerializer):
     class Meta:
         model = MenuMeta
         fields = [
@@ -52,5 +53,4 @@ class RouteSerializer(BaseModelSerializer):
             'parent': {'attrs': ['pk', 'name'], 'allow_null': True, 'required': False},
         }
 
-
-    meta = RouteMetaSerializer(ignore_field_permission=True, label=_("Menu meta"))  # 用于前端菜单渲染
+    meta = RouteMetaSerializer(label=_("Menu meta"))  # 用于前端菜单渲染

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-10-30 09:37+0800\n"
+"POT-Creation-Date: 2024-11-01 13:01+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: common/celery/flower.py:40
+#: common/celery/flower.py:41
 msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr "任务监控系统不可用，请联系管理员"
@@ -63,12 +63,12 @@ msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
 #: common/core/models.py:21 common/core/models.py:28
-#: settings/serializers/security.py:245
+#: settings/serializers/security.py:246
 msgid "ID"
 msgstr "主键ID"
 
 #: common/core/models.py:35 common/models.py:18
-#: settings/serializers/security.py:247
+#: settings/serializers/security.py:248
 msgid "Created time"
 msgstr "创建时间"
 
@@ -660,37 +660,37 @@ msgstr "收件人"
 msgid "The recipient is used for testing the email server's connectivity"
 msgstr "收件人用于测试电子邮件服务器的连通性"
 
-#: settings/serializers/security.py:17
+#: settings/serializers/security.py:18
 msgid "Minimum length (User)"
 msgstr "密码最小长度"
 
-#: settings/serializers/security.py:21
+#: settings/serializers/security.py:22
 msgid "Minimum length (Admin)"
 msgstr "管理员密码最小长度"
 
-#: settings/serializers/security.py:24 settings/serializers/verify.py:33
+#: settings/serializers/security.py:25 settings/serializers/security.py:270
 msgid "Uppercase"
 msgstr "大写字母"
 
-#: settings/serializers/security.py:27 settings/serializers/verify.py:37
+#: settings/serializers/security.py:28 settings/serializers/security.py:274
 msgid "Lowercase"
 msgstr "小写字母"
 
-#: settings/serializers/security.py:30 settings/serializers/verify.py:41
+#: settings/serializers/security.py:31 settings/serializers/security.py:278
 msgid "Digits"
 msgstr "数字"
 
-#: settings/serializers/security.py:33
+#: settings/serializers/security.py:34
 msgid "Special characters"
 msgstr "必须包含特殊字符"
 
-#: settings/serializers/security.py:38
+#: settings/serializers/security.py:39
 msgid ""
 "If the user has failed to log in for a limited number of times, no login is "
 "allowed during this time interval."
 msgstr "当用户登录失败次数达到限制后，那么在此间隔内禁止登录"
 
-#: settings/serializers/security.py:43
+#: settings/serializers/security.py:44
 msgid ""
 "With * indicating a match all. Such as: 192.168.10.1, 192.168.1.0/24, "
 "10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64 "
@@ -698,15 +698,15 @@ msgstr ""
 "* 表示匹配所有。例如: 192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:"
 "db8:2de::e13, 2001:db8:1a:1110::/64  (支持网域)"
 
-#: settings/serializers/security.py:55
+#: settings/serializers/security.py:56
 msgid "IP address invalid: `{}`"
 msgstr "IP 地址无效: `{}`"
 
-#: settings/serializers/security.py:61
+#: settings/serializers/security.py:62
 msgid "Suspicious Login Verification"
 msgstr "异地登录通知"
 
-#: settings/serializers/security.py:63
+#: settings/serializers/security.py:64
 msgid ""
 "The system determines whether the login IP address belongs to a common login "
 "city. If the account is logged in from a common login city, the system sends "
@@ -715,208 +715,296 @@ msgstr ""
 "根据登录 IP 是否所属常用登录城市进行判断，若账号在非常用城市登录，会发送异地"
 "登录提醒"
 
-#: settings/serializers/security.py:69
+#: settings/serializers/security.py:70
 msgid "User login failures count"
 msgstr "限制用户登录失败次数"
 
-#: settings/serializers/security.py:73
+#: settings/serializers/security.py:74
 msgid "User login failure period (minute)"
 msgstr "禁止用户登录间隔 (分)"
 
-#: settings/serializers/security.py:79
+#: settings/serializers/security.py:80
 msgid "IP login failures count"
 msgstr "限制 IP 登录失败次数"
 
-#: settings/serializers/security.py:83
+#: settings/serializers/security.py:84
 msgid "IP login failure period (minute)"
 msgstr "禁止 IP 登录间隔 (分)"
 
-#: settings/serializers/security.py:87
+#: settings/serializers/security.py:88
 msgid "Login IP whitelist"
 msgstr "IP 登录白名单"
 
-#: settings/serializers/security.py:92
+#: settings/serializers/security.py:93
 msgid "Login IP blacklist"
 msgstr "IP 登录黑名单"
 
-#: settings/serializers/security.py:100
+#: settings/serializers/security.py:101
 msgid "Login enabled"
 msgstr "允许登录"
 
-#: settings/serializers/security.py:101
+#: settings/serializers/security.py:102
 msgid "Enable login for user"
 msgstr "允许用户进行登录"
 
-#: settings/serializers/security.py:105
+#: settings/serializers/security.py:106
 msgid "Login captcha"
 msgstr "登录图片验证码"
 
-#: settings/serializers/security.py:106
+#: settings/serializers/security.py:107
 msgid "Enable captcha to prevent robot authentication"
 msgstr "开启图片验证码，防止机器人登录"
 
-#: settings/serializers/security.py:110
+#: settings/serializers/security.py:111
 msgid "Login encrypted"
 msgstr "登录信息加密"
 
-#: settings/serializers/security.py:111 settings/serializers/security.py:147
-#: settings/serializers/security.py:183 settings/serializers/security.py:214
-#: settings/serializers/security.py:235
+#: settings/serializers/security.py:112 settings/serializers/security.py:148
+#: settings/serializers/security.py:184 settings/serializers/security.py:215
+#: settings/serializers/security.py:236
 msgid "Enable encryption to prevent information leakage"
 msgstr "开启敏感信息加密，防止数据泄露"
 
-#: settings/serializers/security.py:115
+#: settings/serializers/security.py:116
 msgid "Login temp token"
 msgstr "登录临时令牌"
 
-#: settings/serializers/security.py:116 settings/serializers/security.py:152
-#: settings/serializers/security.py:188 settings/serializers/security.py:219
-#: settings/serializers/security.py:240
+#: settings/serializers/security.py:117 settings/serializers/security.py:153
+#: settings/serializers/security.py:189 settings/serializers/security.py:220
+#: settings/serializers/security.py:241
 msgid "Enable temporary tokens to prevent attacks"
 msgstr "开启临时令牌，防止被攻击"
 
-#: settings/serializers/security.py:120
+#: settings/serializers/security.py:121
 msgid "Login by email"
 msgstr "通过邮件登录"
 
-#: settings/serializers/security.py:121 settings/serializers/security.py:157
-#: settings/serializers/security.py:193
+#: settings/serializers/security.py:122 settings/serializers/security.py:158
+#: settings/serializers/security.py:194
 msgid "Enable send email verify code to user"
 msgstr "允许用户通过发送邮件验证码"
 
-#: settings/serializers/security.py:125
+#: settings/serializers/security.py:126
 msgid "Login by sms"
 msgstr "通过手机登录"
 
-#: settings/serializers/security.py:126 settings/serializers/security.py:162
-#: settings/serializers/security.py:198
+#: settings/serializers/security.py:127 settings/serializers/security.py:163
+#: settings/serializers/security.py:199
 msgid "Enable send sms verify code to user"
 msgstr "允许用户通过发送短信验证码"
 
-#: settings/serializers/security.py:130
+#: settings/serializers/security.py:131
 msgid "Login by basic"
 msgstr "通过用户名密码登录"
 
-#: settings/serializers/security.py:131
+#: settings/serializers/security.py:132
 msgid "Enable basic verify to user login"
 msgstr "允许用户通过用户名密码登录"
 
-#: settings/serializers/security.py:137
+#: settings/serializers/security.py:138
 msgid "Register enable"
 msgstr "允许注册"
 
-#: settings/serializers/security.py:138
+#: settings/serializers/security.py:139
 msgid "Enable register for user"
 msgstr "允许用户进行注册"
 
-#: settings/serializers/security.py:141
+#: settings/serializers/security.py:142
 msgid "Register captcha"
 msgstr "注册图片验证码"
 
-#: settings/serializers/security.py:142
+#: settings/serializers/security.py:143
 msgid "Enable captcha to prevent robot register"
 msgstr "开启图片验证码，防止机器人注册"
 
-#: settings/serializers/security.py:146
+#: settings/serializers/security.py:147
 msgid "Register encrypted"
 msgstr "注册信息加密"
 
-#: settings/serializers/security.py:151
+#: settings/serializers/security.py:152
 msgid "Register temp token"
 msgstr "注册临时令牌"
 
-#: settings/serializers/security.py:156
+#: settings/serializers/security.py:157
 msgid "Register by email"
 msgstr "通过邮件注册"
 
-#: settings/serializers/security.py:161
+#: settings/serializers/security.py:162
 msgid "Register by sms"
 msgstr "通过手机注册"
 
-#: settings/serializers/security.py:166
+#: settings/serializers/security.py:167
 msgid "Register by basic"
 msgstr "通过用户名密码注册"
 
-#: settings/serializers/security.py:167
+#: settings/serializers/security.py:168
 msgid "Enable basic verify to user register"
 msgstr "允许用户通过用户名密码注册"
 
-#: settings/serializers/security.py:173
+#: settings/serializers/security.py:174
 msgid "Reset password enable"
 msgstr "允许重置密码"
 
-#: settings/serializers/security.py:174
+#: settings/serializers/security.py:175
 msgid "Enable reset password for user"
 msgstr "允许用户重置密码"
 
-#: settings/serializers/security.py:177
+#: settings/serializers/security.py:178
 msgid "Reset password captcha"
 msgstr "重置密码图片验证码"
 
-#: settings/serializers/security.py:178 settings/serializers/security.py:209
-#: settings/serializers/security.py:230
+#: settings/serializers/security.py:179 settings/serializers/security.py:210
+#: settings/serializers/security.py:231
 msgid "Enable captcha to prevent robot reset password"
 msgstr "开启图片验证码，防止机器人重置密码"
 
-#: settings/serializers/security.py:182
+#: settings/serializers/security.py:183
 msgid "Reset password encrypted"
 msgstr "重置密码信息加密"
 
-#: settings/serializers/security.py:187
+#: settings/serializers/security.py:188
 msgid "Reset password temp token"
 msgstr "重置密码临时令牌"
 
-#: settings/serializers/security.py:192
+#: settings/serializers/security.py:193
 msgid "Reset password by email"
 msgstr "通过邮件重置密码"
 
-#: settings/serializers/security.py:197
+#: settings/serializers/security.py:198
 msgid "Reset password by sms"
 msgstr "通过短信重置密码"
 
-#: settings/serializers/security.py:204
+#: settings/serializers/security.py:205
 msgid "Bind email enable"
 msgstr "绑定邮件"
 
-#: settings/serializers/security.py:205
+#: settings/serializers/security.py:206
 msgid "Enable bind email for user"
 msgstr "允许用户进行绑定邮件"
 
-#: settings/serializers/security.py:208
+#: settings/serializers/security.py:209
 msgid "Bind email captcha"
 msgstr "绑定邮件图片验证码"
 
-#: settings/serializers/security.py:213
+#: settings/serializers/security.py:214
 msgid "Bind email encrypted"
 msgstr "绑定邮件信息加密"
 
-#: settings/serializers/security.py:218
+#: settings/serializers/security.py:219
 msgid "Bind email temp token"
 msgstr "绑定邮件临时令牌"
 
-#: settings/serializers/security.py:225
+#: settings/serializers/security.py:226
 msgid "Bind phone enable"
 msgstr "绑定手机"
 
-#: settings/serializers/security.py:226
+#: settings/serializers/security.py:227
 msgid "Enable bind phone for user"
 msgstr "允许用户绑定手机"
 
-#: settings/serializers/security.py:229
+#: settings/serializers/security.py:230
 msgid "Bind phone captcha"
 msgstr "绑定手机图片验证码"
 
-#: settings/serializers/security.py:234
+#: settings/serializers/security.py:235
 msgid "Bind phone encrypted"
 msgstr "绑定手机信息加密"
 
-#: settings/serializers/security.py:239
+#: settings/serializers/security.py:240
 msgid "Bind phone temp token"
 msgstr "绑定手机临时令牌"
 
-#: settings/serializers/security.py:246
+#: settings/serializers/security.py:247
 msgid "Block IP"
 msgstr "拦截的IP"
+
+#: settings/serializers/security.py:254
+msgid "Verify code TTL (second)"
+msgstr "验证码有效时间 (秒)"
+
+#: settings/serializers/security.py:255
+msgid "Verify code expiration time"
+msgstr "验证码过期时间"
+
+#: settings/serializers/security.py:260
+msgid "Verify code rate (second)"
+msgstr "验证码速率限制 (秒)"
+
+#: settings/serializers/security.py:261
+msgid "Verify code send rate limit"
+msgstr "验证码发送速率限制"
+
+#: settings/serializers/security.py:265
+msgid "Code length"
+msgstr "验证码长度"
+
+#: settings/serializers/security.py:266
+msgid "Length of the sent verification code"
+msgstr "发送验证码的长度"
+
+#: settings/serializers/security.py:284
+msgid "Random char"
+msgstr "随机字符串"
+
+#: settings/serializers/security.py:285
+msgid "Math challenge"
+msgstr "数学运算"
+
+#: settings/serializers/security.py:288
+msgid "Noise function null"
+msgstr "无噪声函数"
+
+#: settings/serializers/security.py:289
+msgid "Noise function arcs"
+msgstr "弧噪声函数"
+
+#: settings/serializers/security.py:290
+msgid "Noise function dots"
+msgstr "点噪声函数"
+
+#: settings/serializers/security.py:294
+msgid "Challenge generator"
+msgstr "图片算法模式"
+
+#: settings/serializers/security.py:295
+msgid "Image verification code generation mode"
+msgstr "图片验证码生成的算法模式"
+
+#: settings/serializers/security.py:298
+msgid "Captcha code length"
+msgstr "验证码长度"
+
+#: settings/serializers/security.py:299
+msgid "Length of the captcha code"
+msgstr "图片验证码长度"
+
+#: settings/serializers/security.py:303
+msgid "Captcha font size"
+msgstr "验证码字体大小"
+
+#: settings/serializers/security.py:304
+msgid "Font size of the captcha code"
+msgstr "图片验证码字体大小"
+
+#: settings/serializers/security.py:308
+msgid "Captcha timeout (minute)"
+msgstr "验证码过期时间 (分)"
+
+#: settings/serializers/security.py:309
+msgid "Captcha code expiration time"
+msgstr "图片验证码过期时间"
+
+#: settings/serializers/security.py:312
+msgid "Captcha background color"
+msgstr "验证码背景色"
+
+#: settings/serializers/security.py:313
+msgid "Captcha foreground color"
+msgstr "验证码字体色"
+
+#: settings/serializers/security.py:315
+msgid "Noise functions"
+msgstr "噪声函数"
 
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:25
 msgid "SMS"
@@ -954,107 +1042,19 @@ msgstr "模板"
 msgid "Label"
 msgstr "标签"
 
-#: settings/serializers/verify.py:17
-msgid "Verify code TTL (second)"
-msgstr "验证码有效时间 (秒)"
-
-#: settings/serializers/verify.py:18
-msgid "Verify code expiration time"
-msgstr "验证码过期时间"
-
-#: settings/serializers/verify.py:23
-msgid "Verify code rate (second)"
-msgstr "验证码速率限制 (秒)"
-
-#: settings/serializers/verify.py:24
-msgid "Verify code send rate limit"
-msgstr "验证码发送速率限制"
-
-#: settings/serializers/verify.py:28
-msgid "Code length"
-msgstr "验证码长度"
-
-#: settings/serializers/verify.py:29
-msgid "Length of the sent verification code"
-msgstr "发送验证码的长度"
-
-#: settings/serializers/verify.py:47
-msgid "Random char"
-msgstr "随机字符串"
-
-#: settings/serializers/verify.py:48
-msgid "Math challenge"
-msgstr "数学运算"
-
-#: settings/serializers/verify.py:51
-msgid "Noise function null"
-msgstr "无噪声函数"
-
-#: settings/serializers/verify.py:52
-msgid "Noise function arcs"
-msgstr "弧噪声函数"
-
-#: settings/serializers/verify.py:53
-msgid "Noise function dots"
-msgstr "点噪声函数"
-
-#: settings/serializers/verify.py:57
-msgid "Challenge generator"
-msgstr "图片算法模式"
-
-#: settings/serializers/verify.py:58
-msgid "Image verification code generation mode"
-msgstr "图片验证码生成的算法模式"
-
-#: settings/serializers/verify.py:61
-msgid "Captcha code length"
-msgstr "验证码长度"
-
-#: settings/serializers/verify.py:62
-msgid "Length of the captcha code"
-msgstr "图片验证码长度"
-
-#: settings/serializers/verify.py:66
-msgid "Captcha font size"
-msgstr "验证码字体大小"
-
-#: settings/serializers/verify.py:67
-msgid "Font size of the captcha code"
-msgstr "图片验证码字体大小"
-
-#: settings/serializers/verify.py:71
-msgid "Captcha timeout (minute)"
-msgstr "验证码过期时间 (分)"
-
-#: settings/serializers/verify.py:72
-msgid "Captcha code expiration time"
-msgstr "图片验证码过期时间"
-
-#: settings/serializers/verify.py:75
-msgid "Captcha background color"
-msgstr "验证码背景色"
-
-#: settings/serializers/verify.py:76
-msgid "Captcha foreground color"
-msgstr "验证码字体色"
-
-#: settings/serializers/verify.py:78
-msgid "Noise functions"
-msgstr "噪声函数"
-
-#: settings/views/email.py:41
+#: settings/views/email.py:42
 msgid "Test smtp setting"
 msgstr "测试 smtp 设置"
 
-#: settings/views/email.py:66
+#: settings/views/email.py:67
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
 
-#: settings/views/sms.py:101
+#: settings/views/sms.py:100
 msgid "test_phone is required"
 msgstr "测试手机号 该字段是必填项。"
 
-#: settings/views/sms.py:112
+#: settings/views/sms.py:111
 msgid "Test success"
 msgstr "测试成功"
 
@@ -1310,7 +1310,7 @@ msgstr "执行时间"
 msgid "Operation log"
 msgstr "操作日志"
 
-#: system/models/menu.py:15
+#: system/models/menu.py:15 system/views/search/menu.py:36
 msgid "Menu title"
 msgstr "菜单名称"
 
@@ -1318,7 +1318,7 @@ msgstr "菜单名称"
 msgid "Left icon"
 msgstr "菜单左图标"
 
-#: system/models/menu.py:17 system/serializers/route.py:28
+#: system/models/menu.py:17 system/serializers/route.py:29
 msgid "Right icon"
 msgstr "菜单右图标"
 
@@ -1326,15 +1326,15 @@ msgstr "菜单右图标"
 msgid "Additional icon to the right of menu name"
 msgstr "菜单右侧额外图标"
 
-#: system/models/menu.py:19 system/serializers/route.py:27
+#: system/models/menu.py:19 system/serializers/route.py:28
 msgid "Show menu"
 msgstr "显示菜单"
 
-#: system/models/menu.py:20 system/serializers/route.py:26
+#: system/models/menu.py:20 system/serializers/route.py:27
 msgid "Show parent menu"
 msgstr "显示父级菜单"
 
-#: system/models/menu.py:21 system/serializers/route.py:29
+#: system/models/menu.py:21 system/serializers/route.py:30
 msgid "Keepalive"
 msgstr "页面缓存"
 
@@ -1344,7 +1344,7 @@ msgid ""
 "state is cleared"
 msgstr "开启后，会保存该页面的整体状态，刷新后会清空状态"
 
-#: system/models/menu.py:24 system/serializers/route.py:30
+#: system/models/menu.py:24 system/serializers/route.py:31
 msgid "Iframe URL"
 msgstr "Iframe地址"
 
@@ -1352,7 +1352,7 @@ msgstr "Iframe地址"
 msgid "The embedded iframe link address"
 msgstr "内嵌的Iframe地址"
 
-#: system/models/menu.py:26 system/serializers/route.py:31
+#: system/models/menu.py:26 system/serializers/route.py:32
 msgid "Iframe loading"
 msgstr "Iframe页面加载动画"
 
@@ -1364,7 +1364,7 @@ msgstr "页面进场动画"
 msgid "Leave animation"
 msgstr "页面离场动画"
 
-#: system/models/menu.py:31 system/serializers/route.py:41
+#: system/models/menu.py:31 system/serializers/route.py:42
 msgid "Hidden tag"
 msgstr "隐藏标签"
 
@@ -1374,7 +1374,7 @@ msgid ""
 "to the TAB"
 msgstr "当前菜单名称或自定义信息禁止添加到标签页"
 
-#: system/models/menu.py:33 system/serializers/route.py:42
+#: system/models/menu.py:33 system/serializers/route.py:43
 msgid "Fixed tag"
 msgstr "固定标签"
 
@@ -1382,7 +1382,7 @@ msgstr "固定标签"
 msgid "Whether the current menu name is fixed to the TAB and cannot be closed"
 msgstr "当前菜单名称是否固定显示在标签页且不可关闭"
 
-#: system/models/menu.py:35 system/serializers/route.py:43
+#: system/models/menu.py:35 system/serializers/route.py:44
 msgid "Dynamic level"
 msgstr "标签显示数量"
 
@@ -1721,6 +1721,14 @@ msgstr "全部表"
 msgid "All fields"
 msgstr "全部字段"
 
+#: system/views/admin/file.py:87
+msgid "upload file size cannot exceed {}"
+msgstr "文件大小不能超过 {}"
+
+#: system/views/admin/file.py:90
+msgid "Wrong upload file type"
+msgstr "错误的文件类型"
+
 #: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
@@ -1782,11 +1790,3 @@ msgstr "邮件不存在"
 #: system/views/auth/verify_code.py:245
 msgid "Username does not exist"
 msgstr "用户名不存在"
-
-#: system/views/upload.py:78
-msgid "upload file size cannot exceed {}"
-msgstr "文件大小不能超过 {}"
-
-#: system/views/upload.py:81
-msgid "Wrong upload file type"
-msgstr "错误的文件类型"

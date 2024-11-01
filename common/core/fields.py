@@ -97,12 +97,16 @@ class BasePrimaryKeyRelatedField(RelatedField):
     def use_pk_only_optimization(self):
         return False
 
-    def get_queryset(self):
+
+    def __add_request(self):
         request = self.context.get("request", None)
         if not self.request:
             self.request = request
-        if request and request.user and request.user.is_authenticated:
-            return get_filter_queryset(super().get_queryset(), request.user)
+
+    def get_queryset(self):
+        self.__add_request()
+        if self.request and self.request.user and self.request.user.is_authenticated:
+            return get_filter_queryset(super().get_queryset(), self.request.user)
         return super().get_queryset()
 
     def display_value(self, instance):
@@ -137,6 +141,7 @@ class BasePrimaryKeyRelatedField(RelatedField):
         return result
 
     def get_allow_fields(self, value):
+        self.__add_request()
         if self.attrs is None:  # 默认没写attrs, 返回默认pk
             return self.attrs
         fields = [x.name for x in value._meta.fields]

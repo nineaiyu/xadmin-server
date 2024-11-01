@@ -12,8 +12,8 @@ from drf_spectacular.plumbing import build_array_type, build_object_type, build_
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.exceptions import APIException
-from rest_framework.generics import GenericAPIView
 
 from common.base.utils import get_choices_dict
 from common.core.response import ApiResponse
@@ -32,9 +32,6 @@ class SmsSettingViewSet(BaseSettingViewSet):
     serializer_class = SMSSettingSerializer
     category = "sms"
 
-
-class SMSBackendAPIView(GenericAPIView):
-
     @extend_schema(parameters=None, responses=get_default_response_schema(
         {
             'data': build_array_type(build_object_type(
@@ -45,8 +42,9 @@ class SMSBackendAPIView(GenericAPIView):
             ))
         }
     ))
-    def get(self, request, *args, **kwargs):
-        """获取短信后端"""
+    @action(methods=['get'], detail=False)
+    def backends(self, request, *args, **kwargs):
+        """获取可配置短信后端"""
         return ApiResponse(data=get_choices_dict(BACKENDS.choices))
 
 
@@ -93,6 +91,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
         return get_params_func(data)
 
     def create(self, request, *args, **kwargs):
+        """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
