@@ -27,6 +27,7 @@ class CeleryFlowerAPIView(GenericAPIView):
     @extend_schema(exclude=True)
     @xframe_options_exempt
     def get(self, request, path):
+        """获取{cls}"""
         remote_url = 'http://{}/api/flower/{}'.format(flower_url, path)
         try:
             basic_auth = base64.b64encode(settings.CELERY_FLOWER_AUTH.encode('utf-8')).decode('utf-8')
@@ -44,4 +45,5 @@ class CeleryFlowerAPIView(GenericAPIView):
     @extend_schema(exclude=True)
     @xframe_options_exempt
     def post(self, request, path):
+        """操作{cls}"""
         return self.get(request, path)

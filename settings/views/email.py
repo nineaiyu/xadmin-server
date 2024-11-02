@@ -19,10 +19,12 @@ logger = get_logger(__name__)
 
 
 class EmailServerSettingViewSet(BaseSettingViewSet):
+    """邮件服务"""
     serializer_class = EmailSettingSerializer
     category = "email"
 
     def create(self, request, *args, **kwargs):
+        """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 

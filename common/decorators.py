@@ -265,6 +265,9 @@ def do_test():
 
 
 def cached_method(ttl=20):
+    """
+    内存缓存，ttl为缓存时间，-1 表示缓存时间永久
+    """
     _cache = {}
 
     def decorator(func):
@@ -272,7 +275,7 @@ def cached_method(ttl=20):
         def wrapper(*args, **kwargs):
             key = (func, args, tuple(sorted(kwargs.items())))
             # 检查缓存是否存在且未过期
-            if key in _cache and time.time() - _cache[key]['timestamp'] < ttl:
+            if key in _cache and (ttl == -1 or time.time() - _cache[key]['timestamp'] < ttl):
                 return _cache[key]['result']
 
             # 缓存过期或不存在，执行方法并缓存结果

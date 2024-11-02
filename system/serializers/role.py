@@ -11,10 +11,9 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from common.core.fields import BasePrimaryKeyRelatedField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.models import FieldPermission, UserRole, Menu
+from system.models import FieldPermission, UserRole
 
 logger = get_logger(__name__)
 
@@ -32,9 +31,15 @@ class RoleSerializer(BaseModelSerializer):
         fields = ['pk', 'name', 'code', 'is_active', 'description', 'menu', 'updated_time', 'field', 'fields']
         table_fields = ['pk', 'name', 'code', 'is_active', 'description', 'updated_time']
         read_only_fields = ['pk']
+        extra_kwargs = {
+            'menu': {
+                'attrs': ['pk', 'name'], 'many': True, 'input_type': "input"
+            }
+        }
 
-    menu = BasePrimaryKeyRelatedField(queryset=Menu.objects, many=True, label=_("Menu"), attrs=['pk', 'name'],
-                                      input_type="input")
+    # 上面写的 extra_kwargs['menu'] 和下面下结果一样，但是上面写法少写了 label 和 queryset
+    # menu = BasePrimaryKeyRelatedField(queryset=Menu.objects, many=True, label=_("Menu"), attrs=['pk', 'name'],
+    #                                   input_type="input")
 
     # field和fields 设置两个相同的label，可以进行文件导入导出
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))

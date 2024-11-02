@@ -4,13 +4,14 @@ import re
 from datetime import datetime
 
 import pyzipper
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.renderers import BaseRenderer
 from rest_framework.utils import encoders, json
 
 from common.core.config import SysConfig
-from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField, PhoneField
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -38,8 +39,10 @@ class BaseFileRenderer(BaseRenderer):
             filename_prefix = serializer.Meta.model.__name__.lower()
         else:
             filename_prefix = 'download'
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = "{}_{}_{}.{}".format(self.template, filename_prefix, now, self.format)
+        suffix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        if self.template == 'import':
+            suffix = 'template'
+        filename = "{}_{}.{}".format(filename_prefix, suffix, self.format)
         disposition = 'attachment; filename="{}"'.format(filename)
         response['Content-Disposition'] = disposition
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
@@ -136,6 +139,69 @@ class BaseFileRenderer(BaseRenderer):
             value = json.dumps(value, cls=encoders.JSONEncoder, ensure_ascii=False)
         return str(value)
 
+    def get_field_help_text(self, field):
+        text = ''
+        if hasattr(field, 'get_render_help_text'):
+            text = field.get_render_help_text()
+        elif isinstance(field, serializers.BooleanField):
+            text = _('Yes/No')
+        elif isinstance(field, serializers.CharField):
+            if field.max_length:
+                text = _('Text, max length {}').format(field.max_length)
+            else:
+                text = _("Long text, no length limit")
+        elif isinstance(field, serializers.IntegerField):
+            text = _('Number, min {}, max {}').format(field.min_value, field.max_value)
+        elif isinstance(field, serializers.FloatField):
+            text = _('Float, min {}, max {}').format(field.min_value, field.max_value)
+        elif isinstance(field, serializers.DecimalField):
+            text = _('Decimal, min {}, max {}, max_digits {}, decimal_places {}').format(field.min_value,
+                                                                                         field.max_value,
+                                                                                         field.max_digits,
+                                                                                         field.decimal_places)
+        elif isinstance(field, serializers.DateTimeField):
+            text = _('Datetime format {}').format(timezone.now())
+        elif isinstance(field, serializers.IPAddressField):
+            text = _('IP')
+        elif isinstance(field, serializers.ChoiceField):
+            choices = [str(v) for v in field.choices.keys()]
+            if isinstance(field, LabeledChoiceField):
+                text = _("Choices, format name(value), name is optional for human read,"
+                         " value is requisite, options {}").format(','.join(choices))
+            else:
+                text = _("Choices, options {}").format(",".join(choices))
+        elif isinstance(field, PhoneField):
+            text = _("Phone number, format +8612345678901")
+        elif isinstance(field, LabeledChoiceField):
+            text = _('Label, format ["key:value"]')
+        elif isinstance(field, BasePrimaryKeyRelatedField):
+            text = _("Object, format name(id), name is optional for human read, id is requisite")
+        elif isinstance(field, serializers.PrimaryKeyRelatedField):
+            text = _('Object, format id')
+        elif isinstance(field, serializers.ManyRelatedField):
+            child_relation_class_name = field.child_relation.__class__.__name__
+            if child_relation_class_name == "ObjectRelatedField":
+                text = _('Objects, format ["name(id)", ...], name is optional for human read, id is requisite')
+            elif child_relation_class_name == "LabelRelatedField":
+                text = _('Labels, format ["key:value", ...], if label not exists, will create it')
+            else:
+                text = _('Objects, format ["id", ...]')
+        elif isinstance(field, serializers.ListSerializer):
+            child = field.child
+            if hasattr(child, 'get_render_help_text'):
+                text = child.get_render_help_text()
+        elif isinstance(field, serializers.JSONField):
+            text = _('JSON')
+        elif isinstance(field, serializers.UUIDField):
+            text = _('UUID4')
+        if isinstance(field, (serializers.IntegerField, serializers.FloatField, serializers.DecimalField)):
+            n_text = []
+            for t in text.split(','):
+                if 'None' not in t:
+                    n_text.append(t)
+            text = ','.join(n_text)
+        return text
+
     def generate_rows(self, data, render_fields):
         for item in data:
             row = []
@@ -144,6 +210,17 @@ class BaseFileRenderer(BaseRenderer):
                 value = self.render_value(field, value)
                 row.append(value)
             yield row
+
+    def write_help_text_if_need(self):
+        if self.template == 'export':
+            return
+        fields = self.get_rendered_fields()
+        row = []
+        for f in fields:
+            text = self.get_field_help_text(f)
+            row.append(text)
+        row[0] = '#Help ' + str(row[0])
+        self.write_row(row)
 
     @abc.abstractmethod
     def initial_writer(self):
@@ -187,7 +264,7 @@ class BaseFileRenderer(BaseRenderer):
             self.set_response_disposition(response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = 'The resource not support export!'.encode('utf-8')
+            value = f'The resource not support export! error:{e}'.encode('utf-8')
             return value
 
         try:
@@ -196,8 +273,9 @@ class BaseFileRenderer(BaseRenderer):
             data = self.process_data(data)
             rows = self.generate_rows(data, rendered_fields)
             self.initial_writer()
-            self.add_validation(rendered_fields)
+            # self.add_validation(rendered_fields)  # 关闭校验，通过help来进行提醒
             self.write_column_titles(column_titles)
+            self.write_help_text_if_need()
             self.write_rows(rows)
             self.after_render()
             value = self.get_rendered_value()
@@ -205,7 +283,8 @@ class BaseFileRenderer(BaseRenderer):
                 value = self.compress_into_zip_file(value, request, response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = 'Render error! ({})'.format(self.media_type).encode('utf-8')
+            value = f'Render error! media:{self.media_type} \r\nerror:\r\n{e}'.encode('utf-8')
+            response['Content-Disposition'] = response['Content-Disposition'].replace(self.format, 'txt')
             return value
         return value
 

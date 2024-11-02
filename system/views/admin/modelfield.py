@@ -43,7 +43,7 @@ class ModelLabelFieldFilter(BaseFilterSet):
 
 
 class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
-    """模型字段管理"""
+    """模型字段"""
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer
     pagination_class = DynamicPageNumber(1000)
@@ -52,7 +52,6 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     filterset_class = ModelLabelFieldFilter
 
     @extend_schema(
-        description='获取字段选择',
         responses=get_default_response_schema(
             {
                 'choices_dict': build_object_type(
@@ -72,6 +71,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     )
     @action(methods=['get'], detail=False, url_path='choices')
     def choices_dict(self, request, *args, **kwargs):
+        """获取{cls}字段选择"""
         disabled_choices = [
             ModelLabelField.KeyChoices.TEXT,
             ModelLabelField.KeyChoices.JSON,
@@ -82,7 +82,6 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
         return ApiResponse(choices_dict={'choices': result})
 
     @extend_schema(
-        description='获取字段名',
         parameters=[
             OpenApiParameter(name='table', required=True, type=str),
             OpenApiParameter(name='field', required=True, type=str),
@@ -91,6 +90,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     )
     @action(methods=['get'], detail=False, queryset=ModelLabelField.objects, filterset_class=None)
     def lookups(self, request, *args, **kwargs):
+        """获取{cls}的字段名"""
         table = request.query_params.get('table')
         field = request.query_params.get('field')
         if table and field:
@@ -106,8 +106,9 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
                         return ApiResponse(data=mf.get_class_lookups().keys())
         return ApiResponse(code=1001)
 
-    @extend_schema(description='同步字段', responses=get_default_response_schema())
+    @extend_schema(responses=get_default_response_schema())
     @action(methods=['get'], detail=False)
     def sync(self, request, *args, **kwargs):
+        """同步{cls}的字段名"""
         sync_model_field()
         return ApiResponse()

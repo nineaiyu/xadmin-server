@@ -19,7 +19,6 @@ class PasswordRulesAPIView(GenericAPIView):
     permission_classes = []
 
     @extend_schema(
-        description="密码规则配置信息",
         responses=get_default_response_schema(
             {
                 'data': build_object_type(
@@ -38,4 +37,5 @@ class PasswordRulesAPIView(GenericAPIView):
         )
     )
     def get(self, request):
+        """获取密码规则配置"""
         return ApiResponse(data={"password_rules": get_password_check_rules(request.user)})

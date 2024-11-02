@@ -98,6 +98,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
+        """用户未读消息"""
         notice_queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q2(request.user))
         announce_queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q1(request.user))
         results = [
@@ -125,7 +126,6 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         return ApiResponse()
 
     @extend_schema(
-        description='批量已读消息',
         request=OpenApiRequest(
             build_object_type(
                 properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
@@ -135,13 +135,15 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['put'], detail=False)
-    def read(self, request, *args, **kwargs):
+    @action(methods=['patch'], detail=False, url_path='batch-read')
+    def batch_read(self, request, *args, **kwargs):
+        """批量已读消息"""
         pks = request.data.get('pks', [])
         return self.read_message(pks, request)
 
-    @extend_schema(description='全部已读消息', responses=get_default_response_schema())
-    @action(methods=['put'], detail=False, url_path='read-all')
-    def read_all(self, request, *args, **kwargs):
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=['patch'], detail=False, url_path='all-read')
+    def all_read(self, request, *args, **kwargs):
+        """全部已读消息"""
         queryset = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user))
         return self.read_message(queryset.values_list('pk', flat=True).distinct(), request)

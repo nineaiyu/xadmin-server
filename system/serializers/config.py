@@ -40,20 +40,19 @@ class UserPersonalConfigExportImportSerializer(SystemConfigSerializer):
         model = UserPersonalConfig
         fields = ['pk', 'value', 'key', 'is_active', 'created_time', 'description', 'cache_value', 'owner', 'access']
         read_only_fields = ['pk']
-
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label=_("User"), queryset=UserInfo.objects,
-                                       required=True)
+        extra_kwargs = {'owner': {'attrs': ['pk', 'username'], 'required': True}}
 
 
 class UserPersonalConfigSerializer(SystemConfigSerializer):
     class Meta:
         model = UserPersonalConfig
-        fields = ['pk', 'config_user', 'owner', 'key', 'value', 'cache_value', 'is_active', 'access', 'description',
-                  'created_time']
-
+        fields = [
+            'pk', 'config_user', 'owner', 'key', 'value', 'cache_value', 'is_active', 'access', 'description',
+            'created_time'
+        ]
         read_only_fields = ['pk', 'owner']
+        extra_kwargs = {'owner': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
 
-    owner = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], label=_("User"), read_only=True, format='{username}')
     config_user = BasePrimaryKeyRelatedField(write_only=True, many=True, queryset=UserInfo.objects,
                                              label=_("Users"), input_type='api-search-user')
 

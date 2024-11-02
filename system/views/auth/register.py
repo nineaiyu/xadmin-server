@@ -32,7 +32,6 @@ class RegisterViewAPIView(GenericAPIView):
     throttle_classes = [RegisterThrottle]
 
     @extend_schema(
-        description="注册账户",
         request=OpenApiRequest(
             build_object_type(
                 properties={
@@ -58,6 +57,7 @@ class RegisterViewAPIView(GenericAPIView):
         )
     )
     def post(self, request, *args, **kwargs):
+        """注册账户"""
         if not settings.SECURITY_REGISTER_ACCESS_ENABLED:
             return ApiResponse(code=1001, detail=_("Registration forbidden"))
 

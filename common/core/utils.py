@@ -17,6 +17,7 @@ from django.utils.module_loading import import_string
 from django.utils.termcolors import make_style
 
 from common.base.magic import import_from_string
+from common.decorators import cached_method
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +54,18 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
             # url = url.replace('^', '').replace('$', '')
 
             if check_show_url(url) and not ignore_white_url(url):
-                url_ordered_dict[name] = {'name': name, 'url': url}
+                url_ordered_dict[name] = {'name': name, 'url': url, 'view': item.lookup_str}
+                try:
+                    view_set = import_string(item.lookup_str)
+                    url_ordered_dict[name]['label'] = view_set.__doc__
+                except Exception:
+                    pass
+
 
         elif isinstance(item, URLResolver):  # 路由分发，递归操作
+            new_pre_url = pre_url + item.pattern.regex.pattern.lstrip('^')
+            if not check_show_url(new_pre_url):
+                continue
             if pre_namespace:
                 if item.namespace:
                     namespace = "%s:%s" % (pre_namespace, item.namespace)
@@ -66,17 +76,17 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                     namespace = item.namespace
                 else:
                     namespace = None
-            recursion_urls(namespace, pre_url + item.pattern.regex.pattern.lstrip('^'), item.url_patterns,
-                           url_ordered_dict)
+            recursion_urls(namespace, new_pre_url, item.url_patterns, url_ordered_dict)
 
 
+@cached_method(ttl=-1)
 def get_all_url_dict(pre_url='/'):
     """
        获取项目中所有的URL（必须有name别名）
     """
     url_ordered_dict = OrderedDict()
     md = import_string(settings.ROOT_URLCONF)
-    url_ordered_dict['#'] = {'name': '#', 'url': '#'}
+    url_ordered_dict['#'] = {'name': '#', 'url': '#', 'view': '#', 'label': '#'}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
 

@@ -73,28 +73,33 @@ class DashboardViewSet(GenericViewSet):
     @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, url_path='user-login-total')
     def user_login_total(self, request, *args, **kwargs):
+        """{cls}-用户登录"""
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
     @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-total')
     def user_total(self, request, *args, **kwargs):
+        """{cls}-用户数量"""
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-registered-trend')
     def user_registered_trend(self, request, *args, **kwargs):
+        """{cls}-注册报表"""
         return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response(False))
     @action(methods=['GET'], detail=False, url_path='user-login-trend')
     def user_login_trend(self, request, *args, **kwargs):
+        """{cls}-登录报表"""
         return ApiResponse(data=trend_info(self.filter_queryset(self.get_queryset()))[0])
 
     @extend_schema(responses=get_schema_response())
     @action(methods=['GET'], detail=False, queryset=OperationLog.objects.all(), url_path='today-operate-total')
     def today_operate_total(self, request, *args, **kwargs):
+        """{cls}-最近操作日志"""
         results, percent, count = trend_info(self.filter_queryset(self.get_queryset()), 7)
         return ApiResponse(results=results, percent=percent, count=count)
 
@@ -107,6 +112,7 @@ class DashboardViewSet(GenericViewSet):
     )
     @action(methods=['GET'], detail=False, queryset=UserInfo.objects.all(), url_path='user-active')
     def user_active(self, request, *args, **kwargs):
+        """{cls}-活跃用户"""
         today = timezone.now()
         active_date_list = [1, 3, 7, 30]
         results = []

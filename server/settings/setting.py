@@ -71,7 +71,7 @@ SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = True
 
 # 基本配置
 SITE_URL = 'http://127.0.0.1:8000'
-FRONT_END_WEB_WATERMARK_ENABLED = True  # 前端水印展示
+FRONT_END_WEB_WATERMARK_ENABLED = False  # 前端水印展示
 PERMISSION_FIELD_ENABLED = True  # 字段权限控制
 PERMISSION_DATA_ENABLED = True  # 数据权限控制
 REFERER_CHECK_ENABLED = False  # referer 校验
@@ -112,7 +112,7 @@ CAPTCHA_IMAGE_SIZE = (120, 40)  # 设置 captcha 图片大小
 CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
 CAPTCHA_LENGTH = 4  # 字符个数,仅针对随机字符串生效
 CAPTCHA_TIMEOUT = 5  # 超时(minutes)
-CAPTCHA_FONT_SIZE = 22
+CAPTCHA_FONT_SIZE = 26
 CAPTCHA_BACKGROUND_COLOR = "#ffffff"
 CAPTCHA_FOREGROUND_COLOR = "#001100"
 CAPTCHA_NOISE_FUNCTIONS = ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots")

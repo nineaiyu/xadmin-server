@@ -31,18 +31,15 @@ class SystemConfigFilter(BaseFilterSet):
 
 
 class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
-    """系统配置管理"""
+    """系统配置"""
     queryset = SystemConfig.objects.all()
     serializer_class = SystemConfigSerializer
     ordering_fields = ['created_time']
     filterset_class = SystemConfigFilter
 
-    @extend_schema(
-        description="删除配置并清理缓存",
-        request=None,
-        responses=get_default_response_schema()
-    )
+    @extend_schema(request=None, responses=get_default_response_schema())
     def destroy(self, request, *args, **kwargs):
+        """删除{cls}并清理缓存"""
         self.invalid(request, *args, **kwargs)
         return super().destroy(request, *args, **kwargs)
 
@@ -58,7 +55,7 @@ class UserPersonalConfigFilter(SystemConfigFilter):
 
 
 class UserPersonalConfigViewSet(SystemConfigViewSet):
-    """用户配置管理"""
+    """用户配置"""
     queryset = UserPersonalConfig.objects.all()
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ['created_time']

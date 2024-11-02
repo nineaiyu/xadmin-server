@@ -11,7 +11,6 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.base.utils import AESCipherV2
-from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from settings.utils.password import check_password_rules
@@ -28,14 +27,12 @@ class UserInfoSerializer(BaseModelSerializer):
         fields = write_fields + ['email', 'last_login', 'pk', 'phone', 'avatar', 'roles', 'date_joined', 'dept']
         read_only_fields = list(set([x.name for x in models.UserInfo._meta.fields]) - set(write_fields))
 
-    gender = LabeledChoiceField(choices=UserInfo.GenderChoices.choices,
-                                default=UserInfo.GenderChoices.UNKNOWN, label=_("Gender"))
     dept = serializers.CharField(source='dept.name', read_only=True)
     roles = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.ListField)
     def get_roles(self, obj):
-        return obj.roles.values_list('name', flat=True)
+        return list(obj.roles.values_list('name', flat=True))
 
 
 class ChangePasswordSerializer(serializers.Serializer):

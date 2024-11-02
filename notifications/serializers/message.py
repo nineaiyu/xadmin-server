@@ -14,12 +14,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from notifications.models import MessageUserRead, MessageContent
-from system.models import UploadFile, DeptInfo, UserRole, UserInfo
+from system.models import UploadFile, UserInfo
 
 logger = get_logger(__name__)
 
@@ -31,24 +30,19 @@ class NoticeMessageSerializer(BaseModelSerializer):
                   'message', "created_time", "user_count", "read_user_count", 'extra_json', "files"]
 
         table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
-        extra_kwargs = {'extra_json': {'read_only': True}}
+        extra_kwargs = {
+            'extra_json': {'read_only': True},
+            'notice_user': {'attrs': ['pk', 'username'], 'many': True, 'format': '{username}',
+                            'input_type': 'api-search-user', 'read_only': False},  # 很奇快，该字段 read_only为True，导致前端异常
+            'notice_dept': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-dept'},
+            'notice_role': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-role'},
+        }
 
-    notice_user = BasePrimaryKeyRelatedField(many=True, queryset=UserInfo.objects, label=_("The notified user"),
-                                             attrs=['pk', 'username'], input_type='api-search-user',
-                                             format='{username}')
-    notice_dept = BasePrimaryKeyRelatedField(many=True, queryset=DeptInfo.objects, input_type='api-search-dept',
-                                             label=_("The notified department"), attrs=['pk', 'name'], format='{name}')
-    notice_role = BasePrimaryKeyRelatedField(many=True, queryset=UserRole.objects, label=_("The notified role"),
-                                             attrs=['pk', 'name'], input_type='api-search-role', format='{name}')
 
     files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
-    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
-                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
-    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
-                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
@@ -141,12 +135,13 @@ class AnnouncementSerializer(NoticeMessageSerializer):
 class NoticeUserReadMessageSerializer(BaseModelSerializer):
     class Meta:
         model = MessageUserRead
-        fields = ['pk', 'notice_info', 'notice_type', 'owner_info', "unread", "updated_time"]
+        fields = ['pk', 'notice_info', 'notice_type', 'owner', "unread", "updated_time"]
         read_only_fields = [x.name for x in MessageUserRead._meta.fields]
-        # depth = 1
+        extra_kwargs = {
+            'owner': {'attrs': ['pk', 'username'], 'read_only': True}
+        }
 
     notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice type"))
-    owner_info = BasePrimaryKeyRelatedField(attrs=['pk', 'username'], read_only=True, source='owner', label=_("User"))
 
     notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
                                           read_only=True, source='notice', label=_("Notice message"))
@@ -161,10 +156,6 @@ class UserNoticeSerializer(BaseModelSerializer):
         table_fields = ['pk', 'title', 'unread', 'notice_type', "created_time"]
         read_only_fields = ['pk', 'notice_user', 'notice_type']
 
-    notice_type = LabeledChoiceField(choices=MessageContent.NoticeChoices.choices,
-                                     default=MessageContent.NoticeChoices.USER, label=_("Notice type"))
-    level = LabeledChoiceField(choices=MessageContent.LevelChoices.choices,
-                               default=MessageContent.LevelChoices.DEFAULT, label=_("Notice level"))
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
     @extend_schema_field(serializers.BooleanField)

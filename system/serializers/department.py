@@ -10,28 +10,34 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.fields import BasePrimaryKeyRelatedField
+from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import DeptInfo
-from system.serializers.base import BaseRoleRuleInfo
 
 logger = get_logger(__name__)
 
 
-class DeptSerializer(BaseRoleRuleInfo):
+class DeptSerializer(BaseModelSerializer):
     class Meta:
         model = DeptInfo
-        fields = ['pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'user_count', 'rules',
-                  'mode_type', 'auto_bind', 'description', 'created_time']
+        fields = [
+            'pk', 'name', 'code', 'parent', 'rank', 'is_active', 'roles', 'user_count', 'rules', 'mode_type',
+            'auto_bind', 'description', 'created_time'
+        ]
 
-        table_fields = ['name', 'pk', 'code', 'user_count', 'rank', 'mode_type', 'auto_bind', 'is_active', 'roles',
-                        'rules', 'created_time']
+        table_fields = [
+            'name', 'pk', 'code', 'user_count', 'rank', 'mode_type', 'auto_bind', 'is_active', 'roles', 'rules',
+            'created_time'
+        ]
 
-        extra_kwargs = {'roles': {'read_only': True}, 'rules': {'read_only': True}}
+        extra_kwargs = {
+            'roles': {'required': False, 'attrs': ['pk', 'name', 'code'], 'format': "{name}", 'many': True},
+            'rules': {'required': False, 'attrs': ['pk', 'name', 'get_mode_type_display'], 'format': "{name}",
+                      'many': True},
+            'parent': {'required': False, 'attrs': ['pk', 'name', 'parent_id']},
+        }
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
-    parent = BasePrimaryKeyRelatedField(queryset=DeptInfo.objects, allow_null=True, required=False,
-                                        label=_("Superior department"), attrs=['pk', 'name', 'parent_id'])
 
     def validate(self, attrs):
         # 权限需要其他接口设置，下面三个参数忽略

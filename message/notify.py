@@ -12,15 +12,14 @@ import time
 
 import aiofiles
 from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
-from django.utils.module_loading import import_string
 from rest_framework.utils import encoders
-from rest_framework_simplejwt.exceptions import TokenError
 
-from common.base.magic import MagicCacheData
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
+from common.decorators import cached_method
 from common.utils import get_logger
 from message.utils import async_push_message
 from system.models import UserInfo
@@ -29,34 +28,19 @@ from system.serializers.userinfo import UserInfoSerializer
 logger = get_logger(__name__)
 
 
-@sync_to_async
-@MagicCacheData.make_cache(timeout=5, key_func=lambda x: x.pk)
-def get_userinfo(user_obj):
-    return UserInfoSerializer(instance=user_obj).data
+@database_sync_to_async
+@cached_method()
+def get_userinfo(user):
+    result = UserInfoSerializer(instance=user).data
+    return result
 
 
-@sync_to_async
+@database_sync_to_async
 def get_user_pk(username):
     try:
         return UserInfo.objects.filter(username=username, is_active=True).values_list('pk', flat=True).first()
     except UserInfo.DoesNotExist:
         return
-
-
-@sync_to_async
-def token_auth(scope):
-    cookies = scope.get('cookies')
-    if cookies:
-        token = f"{cookies.get('X-Token')}".encode('utf-8')
-        if token:
-            try:
-                auth = import_string(settings.SIMPLE_JWT.get('AUTH_TOKEN_CLASSES')[0])
-                auth_class = import_string(settings.REST_FRAMEWORK.get('DEFAULT_AUTHENTICATION_CLASSES')[0])()
-                validated_token = auth(token)
-                return True, auth_class.get_user(validated_token)
-            except TokenError as e:
-                return False, e.args[0]
-    return False, False
 
 
 @sync_to_async
@@ -69,20 +53,19 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         super().__init__(args, kwargs)
         self.room_group_name = None
         self.disconnected = True
-        self.user_obj = None
+        self.user = None
 
     async def connect(self):
-        status, self.user_obj = await token_auth(self.scope)
-        if not status:
-            logger.error(f"auth failed {self.user_obj}")
+        self.user = self.scope["user"]
+        if not self.user:
             # https://developer.mozilla.org/zh-CN/docs/Web/API/CloseEvent#status_codes
             await self.close(4401)
         else:
-            logger.info(f"{self.user_obj} connect success")
+            logger.info(f"{self.user} connect success")
             group_name = self.scope["url_route"]["kwargs"].get('group_name')
             username = self.scope["url_route"]["kwargs"].get('username')
             # # data = verify_token(token, room_name, success_once=True)
-            if username and group_name and username != self.user_obj.username:
+            if username and group_name and username != self.user.username:
                 self.disconnected = False
                 self.room_group_name = "message_system_default"
                 # self.room_group_name = f"message_{room_name}"
@@ -92,7 +75,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             else:
                 #     logger.error(f"room_name:{room_name} token:{username} auth failed")
                 #     await self.close()
-                self.room_group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user_obj.pk}"
+                self.room_group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
                 self.disconnected = False
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
@@ -104,7 +87,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         self.disconnected = True
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        logger.info(f"{self.user_obj} disconnect")
+        logger.info(f"{self.user} disconnect")
 
     @classmethod
     async def encode_json(cls, content):
@@ -117,8 +100,8 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             await self.close()
         data = content.get('data', {})
         if action == "chat_message":
-            data['pk'] = self.user_obj.pk
-            data['username'] = self.user_obj.username
+            data['pk'] = self.user.pk
+            data['username'] = self.user.username
             # Send message to room group
             await self.channel_layer.group_send(
                 self.room_group_name, {"type": "chat_message", "data": data}
@@ -132,7 +115,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                         pk = await get_user_pk(target)
                         if pk and await(get_can_push_message(pk)):
                             push_message = {
-                                'title': f"用户 {self.user_obj.username} 发来一条消息",
+                                'title': f"用户 {self.user.username} 发来一条消息",
                                 'message': text,
                                 'level': 'info',
                                 'notice_type': {'label': '聊天室', 'value': 0},
@@ -147,8 +130,8 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
     # rec: {"action":"userinfo","data":{}}
     async def userinfo(self, event):
         data = {
-            'userinfo': await get_userinfo(self.user_obj),
-            'pk': self.user_obj.pk
+            'userinfo': await get_userinfo(self.user),
+            'pk': self.user.pk
         }
         await self.send_data('userinfo', {'data': data})
 

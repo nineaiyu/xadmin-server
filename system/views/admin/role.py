@@ -26,7 +26,7 @@ class RoleFilter(BaseFilterSet):
 
 
 class RoleViewSet(BaseModelSet, ImportExportDataAction):
-    """角色管理"""
+    """角色"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer

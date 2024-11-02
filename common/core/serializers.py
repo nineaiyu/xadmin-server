@@ -12,11 +12,12 @@ from rest_framework.fields import empty
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
-from common.core.fields import BasePrimaryKeyRelatedField
+from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 
 
 class BaseModelSerializer(ModelSerializer):
     serializer_related_field = BasePrimaryKeyRelatedField
+    serializer_choice_field = LabeledChoiceField
     ignore_field_permission = False  # 忽略字段权限
 
     class Meta:

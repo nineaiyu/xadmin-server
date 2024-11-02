@@ -36,6 +36,7 @@ class SearchUserSerializer(UserSerializer):
 
 
 class SearchUserViewSet(OnlyListModelSet):
+    """用户搜索"""
     queryset = UserInfo.objects.all()
     serializer_class = SearchUserSerializer
 

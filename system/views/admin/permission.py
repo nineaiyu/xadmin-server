@@ -26,7 +26,7 @@ class DataPermissionFilter(BaseFilterSet):
 
 
 class DataPermissionViewSet(BaseModelSet, ImportExportDataAction):
-    """数据权限管理"""
+    """数据权限"""
     queryset = DataPermission.objects.all()
     serializer_class = DataPermissionSerializer
     ordering_fields = ['created_time']

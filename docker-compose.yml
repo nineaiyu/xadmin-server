@@ -21,6 +21,8 @@ services:
       - MARIADB_SKIP_TEST_DB=yes
       - MARIADB_ENABLE_SLOW_QUERY=1
       - MARIADB_LONG_QUERY_TIME=3
+      - MARIADB_CHARACTER_SET=utf8mb4
+      - MARIADB_COLLATE=utf8mb4_bin # 字段值 大小写敏感
       - MARIADB_EXTRA_FLAGS=--max-connect-errors=3000 --max_connections=30000
     #ports:
     #  - 3306:3306

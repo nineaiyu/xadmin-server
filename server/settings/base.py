@@ -167,7 +167,9 @@ DATABASES = {
         # 设置MySQL的驱动
         # 'OPTIONS': {'init_command': 'SET storage_engine=INNODB'},
         # 'OPTIONS': {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4'},
-        'OPTIONS': locals().get('OPTIONS', {}),
+        'OPTIONS': locals().get('DB_OPTIONS',
+                                {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4',
+                                 'collation': 'utf8mb4_bin'}),
     }
 }
 # https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
@@ -456,6 +458,7 @@ ROUTE_IGNORE_URL = [
     "^/api/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/system/dashboard/",  # 忽略dashboard路由
+    "^/api/system/captcha",  # 忽略图片验证码路由
 ]
 
 # 访问权限配置
