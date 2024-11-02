@@ -13,6 +13,7 @@ from notifications.models import SystemMsgSubscription, UserMsgSubscription
 
 
 class SystemMsgSubscriptionSerializer(BaseModelSerializer):
+    ignore_field_permission = True
     receive_backends = serializers.ListField(child=serializers.CharField())
     message_type_label = serializers.CharField(read_only=True)
     receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, source='users',
@@ -32,6 +33,7 @@ class SystemMsgSubscriptionByCategorySerializer(serializers.Serializer):
 
 
 class UserMsgSubscriptionSerializer(BaseModelSerializer):
+    ignore_field_permission = True
     receive_backends = serializers.ListField(child=serializers.CharField())
     message_type_label = serializers.CharField(read_only=True, label=_("Message Type"))
     receivers = BasePrimaryKeyRelatedField(attrs=['pk', 'username', 'nickname'], read_only=True, label=_("User"),
