@@ -32,7 +32,7 @@ class UserInfoSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.ListField)
     def get_roles(self, obj):
-        return obj.roles.values_list('name', flat=True)
+        return list(obj.roles.values_list('name', flat=True))
 
 
 class ChangePasswordSerializer(serializers.Serializer):
