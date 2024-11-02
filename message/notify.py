@@ -42,6 +42,7 @@ def get_user_pk(username):
     except UserInfo.DoesNotExist:
         return
 
+
 @sync_to_async
 def get_can_push_message(pk):
     return UserConfig(pk).PUSH_CHAT_MESSAGE

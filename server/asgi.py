@@ -6,6 +6,7 @@ It exposes the ASGI callable as a module-level variable named ``application``.
 For more information on this file, see
 https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
+import os
 
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
@@ -17,10 +18,15 @@ from django.core.handlers.asgi import ASGIRequest
 from django.utils.module_loading import import_string
 
 from common.utils import get_logger
-from message.routing import urlpatterns as message_urlpatterns
 from server.utils import set_current_request
 
 logger = get_logger(__name__)
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'server.settings')
+django_asgi_app = get_asgi_application()
+
+# 写到上面会导致gunicorn启动失败
+from message.routing import urlpatterns as message_urlpatterns
 
 urlpatterns = message_urlpatterns
 
@@ -59,7 +65,7 @@ class WsSignatureAuthMiddleware:
 
 application = ProtocolTypeRouter(
     {
-        "http": get_asgi_application(),
+        "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
             WsSignatureAuthMiddleware(
                 AuthMiddlewareStack(URLRouter(urlpatterns))
