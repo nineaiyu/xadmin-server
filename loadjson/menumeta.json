@@ -404,7 +404,7 @@
     "pk": "bc08feaf-e914-4546-bc7e-1a5d7295dfc1",
     "fields": {
       "created_time": "2024-11-01T04:30:23.044Z",
-      "updated_time": "2024-11-01T08:27:39.096Z",
+      "updated_time": "2024-11-02T05:49:27.868Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -654,7 +654,7 @@
     "pk": "e0158905-2fa4-4eae-b6d4-247f207594db",
     "fields": {
       "created_time": "2024-11-01T04:33:26.005Z",
-      "updated_time": "2024-11-01T08:27:39.009Z",
+      "updated_time": "2024-11-02T05:49:37.609Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -1904,7 +1904,7 @@
     "pk": "f836f3f3-c4e2-41fe-95a7-67eb78e0d0d0",
     "fields": {
       "created_time": "2024-09-18T03:09:48.924Z",
-      "updated_time": "2024-10-31T09:47:02.181Z",
+      "updated_time": "2024-11-02T05:39:23.720Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2429,7 +2429,7 @@
     "pk": "486a4bc9-a0cd-4031-bbff-7a17a226ecfe",
     "fields": {
       "created_time": "2024-11-01T04:30:22.995Z",
-      "updated_time": "2024-11-01T08:27:39.046Z",
+      "updated_time": "2024-11-02T05:49:59.838Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -2554,7 +2554,7 @@
     "pk": "f57afa2e-ecca-4e6a-a91c-8091041c0436",
     "fields": {
       "created_time": "2024-09-18T03:09:05.496Z",
-      "updated_time": "2024-10-31T09:46:54.775Z",
+      "updated_time": "2024-11-02T05:40:47.619Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -4379,7 +4379,7 @@
     "pk": "5d8cc8b2-3d5a-4e1a-b58b-d2e936ed7f34",
     "fields": {
       "created_time": "2024-11-01T04:30:23.013Z",
-      "updated_time": "2024-11-01T08:27:39.060Z",
+      "updated_time": "2024-11-02T05:49:55.386Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
@@ -4619,31 +4619,6 @@
       "frame_loading": false,
       "transition_enter": "",
       "transition_leave": "",
-      "is_hidden_tag": false,
-      "fixed_tag": false,
-      "dynamic_level": 0
-    }
-  },
-  {
-    "model": "system.menumeta",
-    "pk": "8957fbf4-cc10-47f9-815f-dbcd4072affa",
-    "fields": {
-      "created_time": "2024-11-01T04:30:23.027Z",
-      "updated_time": "2024-11-01T08:27:39.079Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "title": "U-获取系统消息订阅的详情",
-      "icon": null,
-      "r_svg_name": null,
-      "is_show_menu": true,
-      "is_show_parent": false,
-      "is_keepalive": true,
-      "frame_url": null,
-      "frame_loading": false,
-      "transition_enter": null,
-      "transition_leave": null,
       "is_hidden_tag": false,
       "fixed_tag": false,
       "dynamic_level": 0
@@ -5204,7 +5179,7 @@
     "pk": "d01d4946-f805-4968-bddc-f7ce494a2243",
     "fields": {
       "created_time": "2024-09-18T03:08:40.590Z",
-      "updated_time": "2024-10-31T09:46:59.397Z",
+      "updated_time": "2024-11-02T05:40:57.617Z",
       "description": null,
       "creator": 1,
       "modifier": 1,
