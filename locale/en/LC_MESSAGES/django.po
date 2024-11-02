@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-02 12:27+0800\n"
+"POT-Creation-Date: 2024-11-02 14:30+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -515,8 +515,8 @@ msgstr ""
 
 #: notifications/models/message.py:70 notifications/models/notification.py:17
 #: notifications/models/notification.py:30
-#: notifications/serializers/notifications.py:19
-#: notifications/serializers/notifications.py:37 system/models/config.py:39
+#: notifications/serializers/notifications.py:20
+#: notifications/serializers/notifications.py:39 system/models/config.py:39
 msgid "User"
 msgstr ""
 
@@ -594,7 +594,7 @@ msgstr ""
 msgid "Parameter error"
 msgstr ""
 
-#: notifications/serializers/notifications.py:36
+#: notifications/serializers/notifications.py:38
 msgid "Message Type"
 msgstr ""
 
