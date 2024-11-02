@@ -14,7 +14,30 @@ from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsg
     UserMsgSubscriptionSerializer, UserMsgSubscriptionByCategorySerializer
 
 
-class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
+class MsgSubscriptionBackend(object):
+    @extend_schema(
+        parameters=None,
+        responses=get_default_response_schema(
+            {
+                'data': build_array_type(
+                    build_object_type(
+                        properties={
+                            'value': build_basic_type(OpenApiTypes.STR),
+                            'label': build_basic_type(OpenApiTypes.STR)
+                        }
+                    )
+                )
+            }
+        )
+    )
+    @action(methods=['get'], detail=False)
+    def backends(self, request, *args, **kwargs):
+        """获取消息通知后端"""
+        return ApiResponse(
+            data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
+
+
+class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
     """系统消息订阅"""
     lookup_field = 'message_type'
     queryset = SystemMsgSubscription.objects.all()
@@ -55,29 +78,8 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
         serializer = self.get_serializer(data, many=True)
         return ApiResponse(data=serializer.data)
 
-    @extend_schema(
-        parameters=None,
-        responses=get_default_response_schema(
-            {
-                'data': build_array_type(
-                    build_object_type(
-                        properties={
-                            'value': build_basic_type(OpenApiTypes.STR),
-                            'label': build_basic_type(OpenApiTypes.STR)
-                        }
-                    )
-                )
-            }
-        )
-    )
-    @action(methods=['get'], detail=False)
-    def backends(self, request, *args, **kwargs):
-        """获取消息通知后端"""
-        return ApiResponse(
-            data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
 
-
-class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet):
+class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
     """用户消息订阅"""
     lookup_field = 'message_type'
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
