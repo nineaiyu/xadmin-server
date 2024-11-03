@@ -21,9 +21,30 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 ⚠️ Windows上面无法正常运行celery flower，导致任务监控无法正常使用，请使用Linux环境开发部署
 
+## 启动程序(启动之前必须配置好Redis和数据库)
+
+### A.一键执行命令【不支持windows平台，如果是Windows，请使用 手动执行命令】
+
+```shell
+python manage.py start all -d  # -d 参数是后台运行，如果去掉，则前台运行
+```
+
+### B.手动执行命令
+
+#### 1.api服务
 ```shell
 python manage.py runserver 0.0.0.0:8896
-python -m celery -A server flower --debug --url_prefix=api/flower --auto_refresh=False  --address=0.0.0.0 --port=5566
+```
+
+#### 2.定时任务
+
+```shell
 python -m celery -A server beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler --max-interval 60
-python -m celery -A server worker -P prefork -l INFO --autoscale 10,3 -Q celery --heartbeat-interval 10 -n celery@%h --without-mingle
+python -m celery -A server worker -P threads -l INFO -c 10 -Q celery --heartbeat-interval 10 -n celery@%h --without-mingle
+```
+
+#### 3.任务监控，在windows无需执行，因为Windows平台无法正常运行
+
+```shell
+python -m celery -A server flower -logging=info --url_prefix=api/flower --auto_refresh=False  --address=0.0.0.0 --port=5566
 ```
