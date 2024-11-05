@@ -11,6 +11,7 @@ images["python:3.12.7-slim"]="python"
 images["xadmin-redis:7.4.1"]="redis"
 images["xadmin-mariadb:11.5.2"]="mariadb"
 images["xadmin-server:4.1.2"]="../../"
+images["xadmin-node:22.11.0-slim"]="../../../xadmin-client/"
 
 
 find ./ -name '*.sh' -exec chmod a+x {} \;
