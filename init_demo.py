@@ -16,15 +16,22 @@ from django.core import management
 
 import os
 
+# 如果有用户存在，则不支持初始化操作
+if UserInfo.objects.exists():
+    print(f'User already exists')
+    exit(-1)
+
+# 需要删除所有表
 try:
     os.unlink('./db.sqlite3')
 except OSError as e:
     print(e)
 
+# 初始化操作
 try:
     management.call_command('makemigrations', )
     management.call_command('migrate', )
-    # management.call_command('collectstatic', )
+    management.call_command('collectstatic', )
     management.call_command('compilemessages', )
     management.call_command('download_ip_db', )
 except Exception as e:

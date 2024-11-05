@@ -14,7 +14,6 @@ images["xadmin-server:4.1.2"]="../../"
 images["xadmin-node:22.11.0-slim"]="../../../xadmin-client/"
 
 
-find ./ -name '*.sh' -exec chmod a+x {} \;
 
 if ! docker buildx ls |grep xadmin-builder &>/dev/null;then
     docker buildx create --platform "${platform}" --name xadmin-builder --driver docker-container \
