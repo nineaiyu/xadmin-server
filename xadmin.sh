@@ -106,7 +106,7 @@ function import_tzinfo() {
 
 function init_demo() {
   if ${EXE} ps|grep xadmin-server|grep healthy &>/dev/null;then
-    docker exec -it xadmin-server sh -c 'python init_demo.py"'
+    docker exec -it xadmin-server sh -c 'python init_demo.py'
   else
     echo "error: xadmin-server not running"
     exit 1
