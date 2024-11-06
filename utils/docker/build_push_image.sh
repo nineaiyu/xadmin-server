@@ -4,23 +4,22 @@ DOCKER_IMAGE_PREFIX="swr.cn-north-4.myhuaweicloud.com/nineaiyu"
 
 platform="linux/amd64,linux/arm64"
 
-declare -A images
-
-images["node:22.11.0-slim"]="node"
-images["python:3.12.7-slim"]="python"
-images["xadmin-redis:7.4.1"]="redis"
-images["xadmin-mariadb:11.5.2"]="mariadb"
-images["xadmin-server:4.1.2"]="../../"
-images["xadmin-node:22.11.0-slim"]="../../../xadmin-client/"
-
+function build_image() {
+    key="$1"
+    path="$2"
+    docker buildx use xadmin-builder
+    docker buildx build -t "${DOCKER_IMAGE_PREFIX}/${key}" --platform  "${platform}" --push --provenance=false "${path}"
+}
 
 
 if ! docker buildx ls |grep xadmin-builder &>/dev/null;then
-    docker buildx create --platform "${platform}" --name xadmin-builder --driver docker-container \
-      --buildkitd-config buildkitd.toml --bootstrap --use
+    docker buildx create --platform "${platform}" --name xadmin-builder --driver docker-container --buildkitd-config buildkitd.toml --bootstrap --use
 fi
 
-for key in ${!images[*]}
-do
-    docker buildx build -t "${DOCKER_IMAGE_PREFIX}/${key}" --platform  "${platform}" --push --provenance=false "${images[$key]}"
-done
+
+build_image "node:22.11.0-slim" "node"
+build_image "python:3.12.7-slim" "python"
+build_image "xadmin-redis:7.4.1" "redis"
+build_image "xadmin-mariadb:11.5.2" "mariadb"
+build_image "xadmin-server:4.1.2" "../../"
+build_image "xadmin-node:22.11.0-slim" "../../../xadmin-client/"
