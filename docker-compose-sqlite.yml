@@ -30,7 +30,7 @@ services:
     restart: always
     tty: true
     command: start web
-    image: xadmin-server:4.1.2
+    image: xadmin-server:4.1.5
     build:
       context: .
       dockerfile: Dockerfile
@@ -64,7 +64,7 @@ services:
     restart: always
     tty: true
     command: start task
-    image: xadmin-server:4.1.2
+    image: xadmin-server:4.1.5
     working_dir: /data/xadmin-server
     environment:
       - TZ=Asia/Shanghai
