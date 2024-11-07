@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 
 import pyzipper
-from django.utils import timezone
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.renderers import BaseRenderer
@@ -13,6 +13,7 @@ from rest_framework.utils import encoders, json
 from common.core.config import SysConfig
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField, PhoneField
 from common.utils import get_logger
+from common.utils.timezone import local_now
 
 logger = get_logger(__name__)
 
@@ -160,7 +161,7 @@ class BaseFileRenderer(BaseRenderer):
                                                                                          field.max_digits,
                                                                                          field.decimal_places)
         elif isinstance(field, serializers.DateTimeField):
-            text = _('Datetime format {}').format(timezone.now())
+            text = _('Datetime format {}').format(local_now().strftime(settings.REST_FRAMEWORK['DATETIME_FORMAT']))
         elif isinstance(field, serializers.IPAddressField):
             text = _('IP')
         elif isinstance(field, serializers.ChoiceField):
