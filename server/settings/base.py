@@ -302,6 +302,8 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
         'common.core.filter.BaseDataPermissionFilter',
     ),
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+    'DATETIME_INPUT_FORMATS': ['%Y/%m/%d %H:%M:%S', 'iso-8601', '%Y-%m-%d %H:%M:%S'],
 }
 
 # DRF扩展缓存时间

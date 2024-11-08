@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-02 14:30+0800\n"
+"POT-Creation-Date: 2024-11-07 15:47+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -159,90 +159,90 @@ msgstr ""
 msgid "Invalid excel file {}"
 msgstr ""
 
-#: common/drf/renders/base.py:147
+#: common/drf/renders/base.py:148
 msgid "Yes/No"
 msgstr ""
 
-#: common/drf/renders/base.py:150
+#: common/drf/renders/base.py:151
 msgid "Text, max length {}"
 msgstr ""
 
-#: common/drf/renders/base.py:152
+#: common/drf/renders/base.py:153
 msgid "Long text, no length limit"
 msgstr ""
 
-#: common/drf/renders/base.py:154
+#: common/drf/renders/base.py:155
 msgid "Number, min {}, max {}"
 msgstr ""
 
-#: common/drf/renders/base.py:156
+#: common/drf/renders/base.py:157
 msgid "Float, min {}, max {}"
 msgstr ""
 
-#: common/drf/renders/base.py:158
+#: common/drf/renders/base.py:159
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr ""
 
-#: common/drf/renders/base.py:163
+#: common/drf/renders/base.py:164
 msgid "Datetime format {}"
 msgstr ""
 
-#: common/drf/renders/base.py:165
+#: common/drf/renders/base.py:166
 #: system/templates/notify/msg_rest_password_success.html:9
 msgid "IP"
 msgstr ""
 
-#: common/drf/renders/base.py:169
+#: common/drf/renders/base.py:170
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr ""
 
-#: common/drf/renders/base.py:172
+#: common/drf/renders/base.py:173
 msgid "Choices, options {}"
 msgstr ""
 
-#: common/drf/renders/base.py:174
+#: common/drf/renders/base.py:175
 msgid "Phone number, format +8612345678901"
 msgstr ""
 
-#: common/drf/renders/base.py:176
+#: common/drf/renders/base.py:177
 msgid "Label, format [\"key:value\"]"
 msgstr ""
 
-#: common/drf/renders/base.py:178
+#: common/drf/renders/base.py:179
 msgid ""
 "Object, format name(id), name is optional for human read, id is requisite"
 msgstr ""
 
-#: common/drf/renders/base.py:180
+#: common/drf/renders/base.py:181
 msgid "Object, format id"
 msgstr ""
 
-#: common/drf/renders/base.py:184
+#: common/drf/renders/base.py:185
 msgid ""
 "Objects, format [\"name(id)\", ...], name is optional for human read, id is "
 "requisite"
 msgstr ""
 
-#: common/drf/renders/base.py:186
+#: common/drf/renders/base.py:187
 msgid ""
 "Labels, format [\"key:value\", ...], if label not exists, will create it"
 msgstr ""
 
-#: common/drf/renders/base.py:188
+#: common/drf/renders/base.py:189
 msgid "Objects, format [\"id\", ...]"
 msgstr ""
 
-#: common/drf/renders/base.py:194
+#: common/drf/renders/base.py:195
 msgid "JSON"
 msgstr ""
 
-#: common/drf/renders/base.py:196
+#: common/drf/renders/base.py:197
 msgid "UUID4"
 msgstr ""
 
-#: common/drf/renders/base.py:301
+#: common/drf/renders/base.py:302
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"

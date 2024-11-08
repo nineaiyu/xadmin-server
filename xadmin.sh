@@ -21,6 +21,7 @@ function usage() {
   echo "More Commands: "
   echo "  install_docker           Install Docker"
   echo "  import_tzinfo            Import Mariadb zone info"
+  echo "  init_demo                Init demo info"
   echo
 }
 
@@ -103,6 +104,15 @@ function import_tzinfo() {
   fi
 }
 
+function init_demo() {
+  if ${EXE} ps|grep xadmin-server|grep healthy &>/dev/null;then
+    docker exec -it xadmin-server sh -c 'python init_demo.py'
+  else
+    echo "error: xadmin-server not running"
+    exit 1
+  fi
+}
+
 function main() {
 
   if [[ "${action}" == "help" || "${action}" == "h" || "${action}" == "-h" || "${action}" == "--help" ]]; then
@@ -141,6 +151,9 @@ function main() {
     ;;
   import_tzinfo)
     import_tzinfo
+    ;;
+  init_demo)
+    init_demo
     ;;
   help)
     usage
