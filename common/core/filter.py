@@ -76,7 +76,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 rule['match'] = 'all'
                 if ModeTypeAbstract.ModeChoices.OR == result.get('mode'):
                     if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
-                        logger.warning(f"{model._meta.label_lower} : all queryset")
+                        logger.info(f"{model._meta.label_lower} : all queryset")
                         return Q()  # 全部数据直接返回 queryset
             elif f_type == ModelLabelField.KeyChoices.DATE:
                 val = json.loads(rule['value'])
@@ -136,7 +136,7 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
                 q1 |= q
         if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
             return Q(id=0)
-    logger.warning(f"{model._meta.label_lower} : {q1}")
+    logger.info(f"{model._meta.label_lower} : {q1}")
     return q1
 
 
@@ -155,7 +155,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         return queryset
 
     if user_obj.is_superuser:
-        logger.debug(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
+        logger.info(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
     # table = f'*'
@@ -180,7 +180,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
     # 不存在个人单独授权，则返回部门规则授权
     if not permission.count():
-        logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
+        logger.info(f"get filter end. {queryset.model._meta.label} : {q}")
         if has_dept:
             return queryset.filter(q)
         else:
@@ -190,7 +190,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         q = q1
     else:
         q |= q1  # 存在部门规则和个人规则，或操作
-    logger.warning(f"get filter end. {queryset.model._meta.label} : {q}")
+    logger.info(f"get filter end. {queryset.model._meta.label} : {q}")
     return queryset.filter(q)
 
 
