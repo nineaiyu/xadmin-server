@@ -97,7 +97,6 @@ class BasePrimaryKeyRelatedField(RelatedField):
     def use_pk_only_optimization(self):
         return False
 
-
     def __add_request(self):
         request = self.context.get("request", None)
         if not self.request:

@@ -1,5 +1,5 @@
 debug = true
 [registry."docker.io"]
-    mirrors=["hub.dvcloud.xin"]
-    http = true
-    insecure = true
+mirrors = ["hub.dvcloud.xin"]
+http = true
+insecure = true

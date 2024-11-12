@@ -34,7 +34,6 @@ class DataPermissionSerializer(BaseModelSerializer):
             },
         }
 
-
     def validate(self, attrs):
         rules = attrs.get('rules', [] if not self.instance else self.instance.rules)
         if not rules:

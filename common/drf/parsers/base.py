@@ -190,6 +190,7 @@ class BaseFileParser(BaseParser):
         if rows[0][0].startswith('#Help'):
             rows.pop(0)
         return rows
+
     def parse(self, stream, media_type=None, parser_context=None):
         assert parser_context is not None, '`parser_context` should not be `None`'
 

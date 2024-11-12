@@ -46,7 +46,6 @@ class UserSerializer(BaseModelSerializer):
             'phone': {'validators': [UniqueValidator(queryset=UserInfo.objects.all())]}
         }
 
-
     block = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='boolean',
                                                              label=_("Login blocked"))
 

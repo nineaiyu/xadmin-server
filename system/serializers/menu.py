@@ -39,7 +39,6 @@ class MenuSerializer(BaseModelSerializer):
             'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
         }
 
-
     def update(self, instance, validated_data):
         with transaction.atomic():
             serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
@@ -54,5 +53,3 @@ class MenuSerializer(BaseModelSerializer):
             serializer.is_valid(raise_exception=True)
             validated_data['meta'] = serializer.save()
             return super().create(validated_data)
-
-

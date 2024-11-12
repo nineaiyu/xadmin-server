@@ -140,7 +140,7 @@ class Migration(migrations.Migration):
                 ('modifier', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                                related_name='+', related_query_name='modifier_query',
                                                to=settings.AUTH_USER_MODEL, verbose_name='Modifier')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
                                              related_query_name='parent_query', to='system.deptinfo',
                                              verbose_name='Superior department')),
                 ('rules', models.ManyToManyField(blank=True, null=True, to='system.datapermission',

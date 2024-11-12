@@ -32,6 +32,7 @@ python manage.py start all -d  # -d 参数是后台运行，如果去掉，则�
 ### B.手动执行命令
 
 #### 1.api服务
+
 ```shell
 python manage.py runserver 0.0.0.0:8896
 ```

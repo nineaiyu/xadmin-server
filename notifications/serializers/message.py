@@ -38,11 +38,9 @@ class NoticeMessageSerializer(BaseModelSerializer):
             'notice_role': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-role'},
         }
 
-
     files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
-
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
