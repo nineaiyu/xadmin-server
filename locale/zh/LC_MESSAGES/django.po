@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-12 12:39+0800\n"
+"POT-Creation-Date: 2024-11-12 13:23+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,6 +61,10 @@ msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
+
+#: common/core/fields.py:81
+msgid "The query set is empty."
+msgstr "当前查询对象为空"
 
 #: common/core/models.py:21 common/core/models.py:28
 #: settings/serializers/security.py:246
@@ -146,11 +150,11 @@ msgstr "表单数据解析异常 - {}"
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr "文件内容太大 (最大长度 `{}` 字节)"
 
-#: common/drf/parsers/base.py:205
+#: common/drf/parsers/base.py:206
 msgid "The resource does not support imports!"
 msgstr "该资源不支持导入"
 
-#: common/drf/parsers/base.py:226
+#: common/drf/parsers/base.py:227
 msgid "Parse file error: {}"
 msgstr "文件解析失败 {}"
 
@@ -489,7 +493,7 @@ msgstr "被通知角色"
 msgid "Notice level"
 msgstr "通知级别"
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:144
+#: notifications/models/message.py:36 notifications/serializers/message.py:142
 msgid "Notice type"
 msgstr "通知类型"
 
@@ -497,7 +501,7 @@ msgstr "通知类型"
 msgid "Notice title"
 msgstr "通知标题"
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:147
+#: notifications/models/message.py:39 notifications/serializers/message.py:145
 msgid "Notice message"
 msgstr "通知内容"
 
@@ -505,7 +509,7 @@ msgstr "通知内容"
 msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:42
+#: notifications/models/message.py:41 notifications/serializers/message.py:41
 msgid "Uploaded attachments"
 msgstr "上传的附件"
 
@@ -528,7 +532,7 @@ msgstr "用户"
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:72 notifications/serializers/message.py:159
+#: notifications/models/message.py:72 notifications/serializers/message.py:157
 msgid "Unread"
 msgstr "未读"
 
@@ -566,35 +570,35 @@ msgstr "发布站内消息"
 msgid "Time"
 msgstr "时间"
 
-#: notifications/serializers/message.py:43 system/serializers/department.py:40
+#: notifications/serializers/message.py:42 system/serializers/department.py:40
 msgid "User count"
 msgstr "用户数量"
 
-#: notifications/serializers/message.py:44
+#: notifications/serializers/message.py:43
 msgid "Read user count"
 msgstr "已读用户数量"
 
-#: notifications/serializers/message.py:68
+#: notifications/serializers/message.py:66
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: notifications/serializers/message.py:78
+#: notifications/serializers/message.py:76
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: notifications/serializers/message.py:84
+#: notifications/serializers/message.py:82
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: notifications/serializers/message.py:90
+#: notifications/serializers/message.py:88
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: notifications/serializers/message.py:109
+#: notifications/serializers/message.py:107
 msgid "The system notice cannot be update"
 msgstr "系统通知不允许更新"
 
-#: notifications/serializers/message.py:132
+#: notifications/serializers/message.py:130
 msgid "Parameter error"
 msgstr "参数有误"
 
@@ -685,7 +689,7 @@ msgstr "账号"
 msgid "The user to be used for email server authentication"
 msgstr "登录到邮件服务器的用户名。这通常是你的邮件地址"
 
-#: settings/serializers/email.py:22 system/serializers/user.py:75
+#: settings/serializers/email.py:22 system/serializers/user.py:74
 msgid "Password"
 msgstr "密码"
 
@@ -1665,7 +1669,7 @@ msgstr "用户不能为空"
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/permission.py:41
+#: system/serializers/permission.py:40
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
 
@@ -1681,17 +1685,17 @@ msgstr "访问地址"
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/serializers/user.py:51
+#: system/serializers/user.py:50
 msgid "Login blocked"
 msgstr "登录被锁定"
 
-#: system/serializers/user.py:67 system/serializers/user.py:81
+#: system/serializers/user.py:66 system/serializers/user.py:80
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
-#: system/serializers/user.py:69
+#: system/serializers/user.py:68
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 

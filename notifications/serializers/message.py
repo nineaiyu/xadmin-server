@@ -32,8 +32,8 @@ class NoticeMessageSerializer(BaseModelSerializer):
         table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
         extra_kwargs = {
             'extra_json': {'read_only': True},
-            'notice_user': {'attrs': ['pk', 'username'], 'many': True, 'format': '{username}',
-                            'input_type': 'api-search-user', 'read_only': False},  # 很奇快，该字段 read_only为True，导致前端异常
+            'notice_user': {'attrs': ['pk', 'username'], 'many': True, 'format': '{username}', 'read_only': False,
+                            'input_type': 'api-search-user', 'queryset': UserInfo.objects},
             'notice_dept': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-dept'},
             'notice_role': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-role'},
         }

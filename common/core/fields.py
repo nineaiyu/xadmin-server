@@ -78,6 +78,7 @@ class BasePrimaryKeyRelatedField(RelatedField):
         "required": _("This field is required."),
         "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
         "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
+        "queryset_none": _("The query set is empty."),
     }
 
     def __init__(self, request=None, attrs=None, ignore_field_permission=False, **kwargs):
@@ -192,6 +193,8 @@ class BasePrimaryKeyRelatedField(RelatedField):
 
     def to_internal_value(self, data):
         queryset = self.get_queryset()
+        if queryset is None:
+            return self.fail("queryset_none")
         if isinstance(data, Model):
             return queryset.get(pk=data.pk)
 

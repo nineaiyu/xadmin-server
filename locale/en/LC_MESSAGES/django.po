@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-12 12:39+0800\n"
+"POT-Creation-Date: 2024-11-12 13:23+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,6 +61,10 @@ msgstr ""
 #: common/core/fields.py:80
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
+msgstr ""
+
+#: common/core/fields.py:81
+msgid "The query set is empty."
 msgstr ""
 
 #: common/core/models.py:21 common/core/models.py:28
@@ -147,11 +151,11 @@ msgstr ""
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr ""
 
-#: common/drf/parsers/base.py:205
+#: common/drf/parsers/base.py:206
 msgid "The resource does not support imports!"
 msgstr ""
 
-#: common/drf/parsers/base.py:226
+#: common/drf/parsers/base.py:227
 msgid "Parse file error: {}"
 msgstr ""
 
@@ -485,7 +489,7 @@ msgstr ""
 msgid "Notice level"
 msgstr ""
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:144
+#: notifications/models/message.py:36 notifications/serializers/message.py:142
 msgid "Notice type"
 msgstr ""
 
@@ -493,7 +497,7 @@ msgstr ""
 msgid "Notice title"
 msgstr ""
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:147
+#: notifications/models/message.py:39 notifications/serializers/message.py:145
 msgid "Notice message"
 msgstr ""
 
@@ -501,7 +505,7 @@ msgstr ""
 msgid "Additional json data"
 msgstr ""
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:42
+#: notifications/models/message.py:41 notifications/serializers/message.py:41
 msgid "Uploaded attachments"
 msgstr ""
 
@@ -524,7 +528,7 @@ msgstr ""
 msgid "Notice"
 msgstr ""
 
-#: notifications/models/message.py:72 notifications/serializers/message.py:159
+#: notifications/models/message.py:72 notifications/serializers/message.py:157
 msgid "Unread"
 msgstr ""
 
@@ -562,35 +566,35 @@ msgstr ""
 msgid "Time"
 msgstr ""
 
-#: notifications/serializers/message.py:43 system/serializers/department.py:40
+#: notifications/serializers/message.py:42 system/serializers/department.py:40
 msgid "User count"
 msgstr ""
 
-#: notifications/serializers/message.py:44
+#: notifications/serializers/message.py:43
 msgid "Read user count"
 msgstr ""
 
-#: notifications/serializers/message.py:68
+#: notifications/serializers/message.py:66
 msgid "Parameter error. System announcement cannot be created"
 msgstr ""
 
-#: notifications/serializers/message.py:78
+#: notifications/serializers/message.py:76
 msgid "The notice role cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:84
+#: notifications/serializers/message.py:82
 msgid "The notice department cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:90
+#: notifications/serializers/message.py:88
 msgid "The notice user cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:109
+#: notifications/serializers/message.py:107
 msgid "The system notice cannot be update"
 msgstr ""
 
-#: notifications/serializers/message.py:132
+#: notifications/serializers/message.py:130
 msgid "Parameter error"
 msgstr ""
 
@@ -681,7 +685,7 @@ msgstr ""
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:22 system/serializers/user.py:75
+#: settings/serializers/email.py:22 system/serializers/user.py:74
 msgid "Password"
 msgstr ""
 
@@ -1651,7 +1655,7 @@ msgstr ""
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/permission.py:41
+#: system/serializers/permission.py:40
 msgid "The rule cannot be null"
 msgstr ""
 
@@ -1667,17 +1671,17 @@ msgstr ""
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:51
+#: system/serializers/user.py:50
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:67 system/serializers/user.py:81
+#: system/serializers/user.py:66 system/serializers/user.py:80
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:69
+#: system/serializers/user.py:68
 msgid "Abnormal password field"
 msgstr ""
 
