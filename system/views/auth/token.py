@@ -46,7 +46,7 @@ class CaptchaAPIView(GenericAPIView):
     )
     def get(self, request):
         """获取{cls}"""
-        return ApiResponse(**CaptchaAuth().generate())
+        return ApiResponse(**CaptchaAuth(request=request).generate())
 
 
 class RefreshTokenAPIView(TokenRefreshView):
