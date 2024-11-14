@@ -1,0 +1,65 @@
+on:
+  issue_comment:
+    types: [created]
+
+name: Add issues workflow labels
+
+jobs:
+  add-label-if-is-author:
+    runs-on: ubuntu-latest
+    if: (github.event.issue.user.id == github.event.comment.user.id) && !github.event.issue.pull_request && (github.event.issue.state == 'open')
+    steps:
+      - name: Add require handle label
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'add-labels'
+          labels: '🔔 Pending processing'
+
+      - name: Remove require reply label
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'remove-labels'
+          labels: '⏳ Pending feedback'
+
+  add-label-if-is-member:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Organization name
+        id: org_name
+        run: echo "data=$(echo '${{ github.repository }}' | cut -d '/' -f 1)" >> $GITHUB_OUTPUT
+
+      - name: Get Organization public members
+        uses: octokit/request-action@v2.x
+        id: members
+        with:
+          route: GET /orgs/${{ steps.org_name.outputs.data }}/public_members
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Process public members data
+        # 将 members 中的数据转化为 login 字段的拼接字符串
+        id: member_names
+        run: echo "data=$(echo '${{ steps.members.outputs.data }}' | jq '[.[].login] | join(",")')" >> $GITHUB_OUTPUT
+
+
+      - run: "echo members: '${{ steps.members.outputs.data }}'"
+      - run: "echo member names: '${{ steps.member_names.outputs.data }}'"
+      - run: "echo comment user: '${{ github.event.comment.user.login }}'"
+      - run: "echo contains? : '${{ contains(steps.member_names.outputs.data, github.event.comment.user.login) }}'"
+
+      - name: Add require replay label
+        if: contains(steps.member_names.outputs.data, github.event.comment.user.login)
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'add-labels'
+          labels: '⏳ Pending feedback'
+
+      - name: Remove require handle label
+        if: contains(steps.member_names.outputs.data, github.event.comment.user.login)
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'remove-labels'
+          labels: '🔔 Pending processing'
