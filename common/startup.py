@@ -50,7 +50,7 @@ class BaseTerminal(object):
                 'cpu_load': get_cpu_load(),
                 'cpu_percent': get_cpu_percent(),
                 'memory_used': get_memory_usage(),
-                'disk_used': get_disk_usage(path=settings.BASE_DIR),
+                'disk_used': get_disk_usage(path=settings.PROJECT_DIR),
                 'boot_time': get_boot_time(),
             }
             status_serializer = MonitorSerializer(data=heartbeat_data)

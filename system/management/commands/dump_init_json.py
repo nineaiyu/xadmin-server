@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 stream.close()
 
     def handle(self, *args, **options):
-        file_root = os.path.join(settings.BASE_DIR, "loadjson")
+        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
             self.save_json(model.objects.all().order_by('pk'),
                            os.path.join(file_root, f"{model._meta.model_name}.json"))

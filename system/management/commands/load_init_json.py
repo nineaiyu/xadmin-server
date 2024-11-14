@@ -23,7 +23,7 @@ class Command(LoadCommand):
 
     def handle(self, *args, **options):
         fixture_labels = []
-        file_root = os.path.join(settings.BASE_DIR, "loadjson")
+        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
             fixture_labels.append(os.path.join(file_root, f"{model._meta.model_name}.json"))
         options["ignore"] = ""

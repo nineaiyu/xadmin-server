@@ -10,26 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
-from datetime import timedelta
-from pathlib import Path
 
-try:
-    from config import *
-except ImportError:
-    print("未发现自定义配置，使用默认配置")
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+from ..const import CONFIG, PROJECT_DIR
 
+BASE_DIR = PROJECT_DIR
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = locals().get("SECRET_KEY", 'django-insecure-mlq6(#a^2vk!1=7=xhp#$i=o5d%namfs=+b26$m#sh_2rco7j^')
+SECRET_KEY = CONFIG.SECRET_KEY
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = locals().get("DEBUG", False)
-LOG_LEVEL = locals().get('LOG_LEVEL', "DEBUG")
-DEBUG_DEV = locals().get('DEBUG_DEV', False)
+DEBUG = CONFIG.DEBUG
+# SECURITY WARNING: If you run with debug turned on, more debug msg with be log
+DEBUG_DEV = CONFIG.DEBUG_DEV
+
+LOG_LEVEL = CONFIG.LOG_LEVEL
 
 # 如果前端是代理，则可以通过该配置，在系统构建url的时候，获取正确的 scheme
 # 需要在 前端加入该配置  proxy_set_header X-Forwarded-Proto $scheme;
@@ -40,10 +35,10 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#use-x-forwarded-host
 USE_X_FORWARDED_HOST = True
 
-ALLOWED_HOSTS = locals().get("ALLOWED_HOSTS", ["*"])
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
-XADMIN_APPS = locals().get("XADMIN_APPS", [])
+XADMIN_APPS = CONFIG.XADMIN_APPS
 
 # 表前缀设置
 # 1.指定配置
@@ -55,10 +50,9 @@ XADMIN_APPS = locals().get("XADMIN_APPS", [])
 #
 # 2.全局配置
 # DB_PREFIX='abc_'  : 所有表都添加 abc_
-DB_PREFIX = locals().get("DB_PREFIX", "")
+DB_PREFIX = CONFIG.DB_PREFIX
 
 INSTALLED_APPS = [
-    'daphne',  # 支持websocket
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -84,6 +78,9 @@ INSTALLED_APPS = [
     'common.apps.CommonConfig',  # 这个放到最后, django ready
 ]
 
+if DEBUG or DEBUG_DEV:
+    INSTALLED_APPS.insert(0, 'daphne')  # 支持websocket
+
 MIDDLEWARE = [
     'server.middleware.StartMiddleware',
     'server.middleware.RequestMiddleware',
@@ -107,7 +104,7 @@ ROOT_URLCONF = 'server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
+        'DIRS': [os.path.join(PROJECT_DIR, 'templates')]
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -128,13 +125,13 @@ ASGI_APPLICATION = "server.asgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Redis 配置
-REDIS_HOST = locals().get("REDIS_HOST", "redis")
-REDIS_PORT = locals().get("REDIS_PORT", 6379)
-REDIS_PASSWORD = locals().get("REDIS_PASSWORD", "nineven")
+REDIS_HOST = CONFIG.REDIS_HOST
+REDIS_PORT = CONFIG.REDIS_PORT
+REDIS_PASSWORD = CONFIG.REDIS_PASSWORD
 
-DEFAULT_CACHE_ID = 1
-CHANNEL_LAYERS_CACHE_ID = 2
-CELERY_BROKER_CACHE_ID = 3
+DEFAULT_CACHE_ID = CONFIG.DEFAULT_CACHE_ID
+CHANNEL_LAYERS_CACHE_ID = CONFIG.CHANNEL_LAYERS_CACHE_ID
+CELERY_BROKER_CACHE_ID = CONFIG.CELERY_BROKER_CACHE_ID
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -143,7 +140,8 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {"max_connections": 8000},
             "PASSWORD": REDIS_PASSWORD,
-            "DECODE_RESPONSES": True
+            "DECODE_RESPONSES": True,
+            "REDIS_CLIENT_KWARGS": {"health_check_interval": 30},
         },
         "TIMEOUT": 60 * 15,
         "KEY_FUNCTION": "common.base.utils.redis_key_func",
@@ -155,23 +153,28 @@ CACHES = {
 # grant all on xadmin.* to server@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
 # python manage.py makemigrations
 # python manage.py migrate
+
+DB_OPTIONS = {}
+DB_ENGINE = CONFIG.DB_ENGINE.lower()
 DATABASES = {
     'default': {
-        'ENGINE': locals().get('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': locals().get('DB_DATABASE', BASE_DIR / "db.sqlite3"),
-        'HOST': locals().get('DB_HOST', 'mariadb'),
-        'PORT': locals().get('DB_PORT', 3306),
-        'USER': locals().get('DB_USER', 'server'),
-        'PASSWORD': locals().get('DB_PASSWORD', 'KGzKjZpWBp4R4RSa'),
+        'ENGINE': 'django.db.backends.{}'.format(DB_ENGINE),
+        'NAME': CONFIG.DB_DATABASE,
+        'HOST': CONFIG.DB_HOST,
+        'PORT': CONFIG.DB_PORT,
+        'USER': CONFIG.DB_USER,
+        'PASSWORD': CONFIG.DB_PASSWORD,
+        'ATOMIC_REQUESTS': True,
         'CONN_MAX_AGE': 600,
-        # 设置MySQL的驱动
-        # 'OPTIONS': {'init_command': 'SET storage_engine=INNODB'},
-        # 'OPTIONS': {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4'},
-        'OPTIONS': locals().get('DB_OPTIONS',
-                                {'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"', 'charset': 'utf8mb4',
-                                 'collation': 'utf8mb4_bin'}),
+        'OPTIONS': DB_OPTIONS
     }
 }
+
+if DB_ENGINE == 'mysql':
+    DB_OPTIONS['init_command'] = "SET sql_mode='STRICT_TRANS_TABLES'"
+    DB_OPTIONS['charset'] = "utf8mb4"
+    DB_OPTIONS['collation'] = "utf8mb4_bin"
+
 # https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
 # 读写分离 可能会出现 the current database router prevents this relation.
 # 1.项目设置了router读写分离，且在ORM create()方法中，使用了前边filter()方法得到的数据，
@@ -218,9 +221,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 # http://www.i18nguy.com/unicode/language-identifiers.html
 # LANGUAGE_CODE = 'en-us'
-LANGUAGE_CODE = 'zh-hans'
+LANGUAGE_CODE = CONFIG.LANGUAGE_CODE
 
-TIME_ZONE = 'Asia/Shanghai'
+TIME_ZONE = CONFIG.TIME_ZONE
 
 USE_I18N = True
 
@@ -232,7 +235,7 @@ AUTH_USER_MODEL = "system.UserInfo"
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'api/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_ROOT = os.path.join(PROJECT_DIR, "static")
 
 # STATICFILES_FINDERS = (
 #     "django.contrib.staticfiles.finders.FileSystemFinder",
@@ -244,9 +247,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # Media配置
 MEDIA_URL = "media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "upload")
-FILE_UPLOAD_SIZE = 1024 * 1024 * 10  # 文件上传大小限制,默认10兆
-PICTURE_UPLOAD_SIZE = 1024 * 1024 * 0.5  # 头像图片上传大小，默认为500kb
+MEDIA_ROOT = os.path.join(PROJECT_DIR, "data", "upload")
+FILE_UPLOAD_SIZE = CONFIG.FILE_UPLOAD_SIZE
+PICTURE_UPLOAD_SIZE = CONFIG.PICTURE_UPLOAD_SIZE
 FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.MemoryFileUploadHandler",
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
@@ -256,126 +259,10 @@ FILE_UPLOAD_HANDLERS = [
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'common.swagger.utils.CustomAutoSchema',
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-        # 'common.drf.renders.CSVFileRenderer', # 为什么注释：因为导入导出需要权限判断，在导入导出功能中再次自定义解析数据
-        # 'common.drf.renders.ExcelFileRenderer',
-    ),
-    'DEFAULT_PARSER_CLASSES': (
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.FormParser',
-        'common.drf.parsers.AxiosMultiPartParser',
-        'common.drf.parsers.CSVFileParser',
-        'common.drf.parsers.ExcelFileParser',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'common.core.auth.CookieJWTAuthentication',
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",  # 允许basic授权，方便调试使用
-    ],
-    'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
-    'DEFAULT_METADATA_CLASS': 'common.drf.metadata.SimpleMetadataWithFilters',
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {  # {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
-        'anon': '60/m',
-        'user': '600/m',
-        'upload': '100/m',
-        'download1': '10/m',
-        'download2': '100/h',
-        'register': '50/d',
-        'reset_password': '50/d',
-        'login': '50/h',
-        **locals().get('DEFAULT_THROTTLE_RATES', {})
-    },
-    'DEFAULT_PAGINATION_CLASS': 'common.core.pagination.PageNumber',
-    'DEFAULT_PERMISSION_CLASSES': [
-        # 'rest_framework.permissions.IsAuthenticated',
-        'common.core.permission.IsAuthenticated',
-    ],
-    'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',
-        'rest_framework.filters.OrderingFilter',
-        'common.core.filter.BaseDataPermissionFilter',
-    ),
-    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
-    'DATETIME_INPUT_FORMATS': ['%Y/%m/%d %H:%M:%S', 'iso-8601', '%Y-%m-%d %H:%M:%S'],
-}
-
-# DRF扩展缓存时间
-REST_FRAMEWORK_EXTENSIONS = {
-    # 缓存时间
-    'DEFAULT_CACHE_RESPONSE_TIMEOUT': 3600,
-    # 缓存存储
-    'DEFAULT_USE_CACHE': 'default',
-}
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=3600),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=15),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': True,  # 在登录的时候更新user表  last_login 字段
-
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUDIENCE': 'x',
-    'ISSUER': 'server',
-    'JWK_URL': None,
-    'LEEWAY': 0,
-
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-
-    'AUTH_TOKEN_CLASSES': ('common.core.auth.ServerAccessToken',),
-    # 'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-
-    'JTI_CLAIM': 'jti',
-
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-}
-
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_METHODS = (
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'POST',
-    'PUT',
-    'PATCH',
-)
-
-CORS_ALLOW_HEADERS = (
-    'XMLHttpRequest',
-    "accept",
-    "accept-encoding",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-    "x-token"
-)
 
 # I18N translation
 LOCALE_PATHS = [
-    os.path.join(BASE_DIR, 'locale'),
+    os.path.join(PROJECT_DIR, 'locale'),
 ]
 
 CACHE_KEY_TEMPLATE = {
@@ -386,128 +273,15 @@ CACHE_KEY_TEMPLATE = {
     'user_websocket_key': 'user_websocket',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
-    'common_resource_ids_key': 'common_resource_ids',
-    **locals().get('CACHE_KEY_TEMPLATE', {})
+    'common_resource_ids_key': 'common_resource_ids'
 }
-
-# Celery Configuration Options
-# https://docs.celeryq.dev/en/stable/userguide/configuration.html?
-CELERY_TIMEZONE = "Asia/Shanghai"
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
-
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-# CELERY_RESULT_BACKEND = ''
-# CELERY_CACHE_BACKEND = 'django-cache'
-
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_CACHE_BACKEND = 'default'
-
-# broker redis
-DJANGO_DEFAULT_CACHES = CACHES['default']
-CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CELERY_BROKER_CACHE_ID}'
-
-# CELERY_WORKER_CONCURRENCY = 10  # worker并发数
-CELERY_WORKER_AUTOSCALE = [10, 3]  # which needs two numbers: the maximum and minimum number of pool processes
-
-CELERYD_FORCE_EXECV = True  # 非常重要,有些情况下可以防止死
-CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
-
-CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
-CELERY_WORKER_PREFETCH_MULTIPLIER = 60  # celery worker 每次去redis取任务的数量
-
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 200  # 每个worker执行了多少任务就会死掉，我建议数量可以大一些，比如200
-
-CELERY_ENABLE_UTC = False
-DJANGO_CELERY_BEAT_TZ_AWARE = True
-
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-
-# celery消息的序列化方式，由于要把对象当做参数所以使用pickle
-# CELERY_RESULT_SERIALIZER = 'pickle'
-# CELERY_ACCEPT_CONTENT = ['pickle']
-# CELERY_TASK_SERIALIZER = 'pickle'
 
 APPEND_SLASH = False
 
-HTTP_BIND_HOST = '0.0.0.0'
-HTTP_LISTEN_PORT = locals().get('HTTP_LISTEN_PORT', 8896)
-GUNICORN_MAX_WORKER = locals().get('GUNICORN_MAX_WORKER', 4)
+HTTP_BIND_HOST = CONFIG.HTTP_BIND_HOST
+HTTP_LISTEN_PORT = CONFIG.HTTP_LISTEN_PORT
+GUNICORN_MAX_WORKER = CONFIG.GUNICORN_MAX_WORKER
 # celery flower 任务监控配置
-CELERY_FLOWER_PORT = 5566
-CELERY_FLOWER_HOST = '127.0.0.1'
-CELERY_FLOWER_AUTH = 'flower:flower123.'
-
-# 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
-PERMISSION_WHITE_URL = {
-    "^/api/system/login$": ['*'],
-    "^/api/system/logout$": ['*'],
-    "^/api/system/userinfo$": ['GET'],
-    "^/api/system/routes$": ['*'],
-    "^/api/system/dashboard/": ['*'],
-    "^/api/.*choices$": ['*'],
-    "^/api/.*search-fields$": ['*'],
-    "^/api/common/resources/cache$": ['*'],
-    "^/api/notifications/site-messages/unread$": ['*'],
-}
-
-# 前端权限路由 忽略配置
-ROUTE_IGNORE_URL = [
-    "^/api/system/.*choices$",  # 每个方法都有该路由，则忽略即可
-    "^/api/.*search-fields$",  # 每个方法都有该路由，则忽略即可
-    "^/api/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
-    "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
-    "^/api/system/dashboard/",  # 忽略dashboard路由
-    "^/api/system/captcha",  # 忽略图片验证码路由
-]
-
-# 访问权限配置
-PERMISSION_SHOW_PREFIX = [
-    r'api/system',
-    r'api/settings',
-    r'api/notifications',
-    r'api/flower',
-    r'api-docs',
-]
-# 数据权限配置
-PERMISSION_DATA_AUTH_APPS = [
-    'system',
-    'settings',
-    'notifications'
-]
-
-API_LOG_ENABLE = True
-API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
-
-# 忽略日志记录, 支持model 或者 request_path, 不支持正则
-API_LOG_IGNORE = {
-    'system.OperationLog': ['GET'],
-    '/api/common/api/health': ['GET'],
-}
-
-# 在操作日志中详细记录的请求模块映射
-API_MODEL_MAP = {
-    "/api/system/refresh": "Token刷新",
-    "/api/flower": "定时任务",
-}
-
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Xadmin Server API',
-    'DESCRIPTION': 'Django Xadmin Server',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SERVE_PUBLIC': False,
-    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
-    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
-    'REDOC_DIST': 'SIDECAR',
-    "SWAGGER_UI_SETTINGS": {
-        "displayRequestDuration": True,
-        "deepLinking": True,
-        "filter": True,
-        "persistAuthorization": True,
-        "displayOperationId": False,
-    },
-    # 'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
-}
+CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT
+CELERY_FLOWER_HOST = CONFIG.CELERY_FLOWER_HOST
+CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH
