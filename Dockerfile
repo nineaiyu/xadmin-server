@@ -19,6 +19,7 @@ ENV LANG=en_US.UTF-8 \
 ARG APT_MIRROR=http://deb.debian.org
 
 ARG DEPENDENCIES="                    \
+        gettext                       \
         libmariadb-dev"
 
 RUN set -ex \
