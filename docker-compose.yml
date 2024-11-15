@@ -58,7 +58,7 @@ services:
     restart: always
     tty: true
     command: start web
-    image: nineaiyu/xadmin-server:4.1.5
+    image: nineaiyu/xadmin-server:4.2.1
     build:
       context: .
       dockerfile: Dockerfile
@@ -94,7 +94,7 @@ services:
     restart: always
     tty: true
     command: start task
-    image: nineaiyu/xadmin-server:4.1.5
+    image: nineaiyu/xadmin-server:4.2.1
     working_dir: /data/xadmin-server
     environment:
       - TZ=Asia/Shanghai
