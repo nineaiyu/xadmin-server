@@ -2,15 +2,13 @@ name: Build and Push Image
 
 on:
   push:
-    branches:
-      - 'main'
-      - 'dev'
-    paths:
-      - server/const.py
+    tags:
+      - 'v*'
 
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+
     steps:
 
       - name: Checkout repository
@@ -30,9 +28,7 @@ jobs:
 
       - name: Extract repository name
         id: repo
-        run: |
-          echo "REPO=$(basename ${{ github.repository }})" >> $GITHUB_ENV
-          echo VERSION=$(grep "VERSION " server/const.py | sed "s/.*VERSION = ['|\"]\(.*\)['|\"].*/\1/") >> $GITHUB_ENV
+        run: echo "REPO=$(basename ${{ github.repository }})" >> $GITHUB_ENV
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -40,28 +36,14 @@ jobs:
         with:
           images: nineaiyu/${{ env.REPO }}
           tags: |
-            type=semver,pattern={{version}}, value=${{ env.VERSION }}
+            type=semver,pattern={{version}}
 
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v6
         with:
+          build-args: VERSION=${{ steps.meta.outputs.version }}
           platforms: linux/amd64,linux/arm64
           push: true
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Update docker-compose.yml
-        run: |
-          sed -i 's@image: nineaiyu/.*@image: nineaiyu/${{ env.REPO }}:${{ env.VERSION }}@' docker-compose.yml
-          sed -i 's@image: nineaiyu/.*@image: nineaiyu/${{ env.REPO }}:${{ env.VERSION }}@' docker-compose-sqlite.yml
-
-      - name: Commit changes
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add docker-compose.yml docker-compose-sqlite.yml
-          git commit -m "perf: Update docker-compose.yml with new image tag"
-          git push origin ${{ github.event.pull_request.head.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
