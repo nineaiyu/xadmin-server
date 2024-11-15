@@ -33,14 +33,14 @@ RUN set -ex \
 COPY --from=stage-build /data /data
 COPY --from=stage-build /usr/local/bin /usr/local/bin
 
-RUN addgroup --system --gid 1001 nginx \
-    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
+#RUN addgroup --system --gid 1001 nginx \
+#    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
 
 WORKDIR /data/xadmin-server
 
 VOLUME /data/xadmin-server/data
 
-USER 1001
+#USER 1001
 
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
 
