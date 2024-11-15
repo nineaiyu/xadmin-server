@@ -20,6 +20,7 @@ ARG APT_MIRROR=http://deb.debian.org
 
 ARG DEPENDENCIES="                    \
         gettext                       \
+        curl                          \
         libmariadb-dev"
 
 RUN set -ex \
