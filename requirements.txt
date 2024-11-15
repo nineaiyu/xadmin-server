@@ -3,6 +3,7 @@ djangorestframework==3.15.2
 django-cors-headers==4.6.0
 django-filter==24.3
 mysqlclient==2.2.5
+psycopg2-binary==2.9.10
 django-redis==5.4.0
 pycryptodomex==3.21.0
 djangorestframework-simplejwt==5.3.1
