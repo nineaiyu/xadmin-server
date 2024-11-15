@@ -34,7 +34,7 @@ CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH or 'flower:flower'
 DEBUG = CONFIG.DEBUG or False
 APPS_DIR = settings.BASE_DIR
 LOG_DIR = os.path.join(APPS_DIR, 'data', 'logs')
-TMP_DIR = os.path.join(APPS_DIR, 'data', 'tmp')
+TMP_DIR = os.path.join(APPS_DIR, 'tmp')
 
 
 def check_port_is_used():

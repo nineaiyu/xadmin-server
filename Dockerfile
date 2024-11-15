@@ -11,9 +11,6 @@ RUN echo > config.yml \
         sed -i "s@VERSION = .*@VERSION = '${VERSION}'@g" server/const.py; \
     fi
 
-RUN set -ex \
-    && export SECRET_KEY=$(head -c100 < /dev/urandom | base64 | tr -dc A-Za-z0-9 | head -c 48)
-
 FROM python:3.12.7-slim
 
 ENV LANG=en_US.UTF-8 \

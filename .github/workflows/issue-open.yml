@@ -2,7 +2,7 @@ name: Issue Open Check
 
 on:
   issues:
-    types: [opened]
+    types: [ opened ]
 
 jobs:
   issue-open-add-labels:

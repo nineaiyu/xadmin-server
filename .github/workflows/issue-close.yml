@@ -2,7 +2,7 @@ name: Issue Close Check
 
 on:
   issues:
-    types: [closed]
+    types: [ closed ]
 
 jobs:
   issue-close-remove-labels:

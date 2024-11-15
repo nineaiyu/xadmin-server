@@ -50,12 +50,15 @@ function check_docker_start() {
 function check_permission() {
     project_parent_dir=$(dirname "${PROJECT_DIR}")
     mkdir -p "${project_parent_dir}"/xadmin-mariadb/{data,logs}
-    if [ "$(stat -c  %u logs)" -ne "1001" ] ;then
+    if [ "$(stat -c  %u data/logs)" -ne "1001" ] ;then
       chown 1001.1001 -R "${project_parent_dir}"/xadmin-mariadb/{data,logs}
       chown 1001.1001 -R "${project_parent_dir}"/xadmin-server/*
     fi
 }
 
+function pull_images() {
+    bash "${PROJECT_DIR}/utils/pull_docker_images.sh"
+}
 
 EXE=""
 
@@ -89,10 +92,6 @@ function restart() {
   stop
   echo -e "\n"
   start
-}
-
-function pull_images() {
-    bash "${PROJECT_DIR}/utils/pull_docker_images.sh"
 }
 
 function import_tzinfo() {

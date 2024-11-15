@@ -1,6 +1,6 @@
 on:
   issue_comment:
-    types: [created]
+    types: [ created ]
 
 name: Add issues workflow labels
 
