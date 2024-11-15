@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - 'main'
+      - 'dev'
+    paths:
+      - server/const.py
 
 jobs:
   build-and-push-image:
