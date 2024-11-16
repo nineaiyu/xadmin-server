@@ -21,7 +21,8 @@ try:
     if UserInfo.objects.exists():
         print(f'User already exists')
         exit(-1)
-except:
+except Exception as e:
+    print(e)
     pass
 
 # 初始化操作
@@ -34,6 +35,7 @@ try:
 except Exception as e:
     print(f'Perform migrate failed, {e} exit')
 
+# 创建是默认管理员用户，请及时修改信息
 UserInfo.objects.create_superuser('xadmin', 'xadmin@dvcloud.xin', 'xAdminPwd!')
 
 management.call_command('load_init_json', )
