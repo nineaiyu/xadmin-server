@@ -14,8 +14,6 @@ django.setup()
 from system.models import *
 from django.core import management
 
-import os
-
 # 如果有用户存在，则不支持初始化操作
 try:
     if UserInfo.objects.exists():
@@ -23,12 +21,6 @@ try:
         exit(-1)
 except:
     pass
-
-# 需要删除所有表
-try:
-    os.unlink('./db.sqlite3')
-except OSError as e:
-    print(e)
 
 # 初始化操作
 try:
@@ -40,7 +32,9 @@ try:
 except Exception as e:
     print(f'Perform migrate failed, {e} exit')
 
-UserInfo.objects.create_superuser('xadmin', 'demon@xadmin.com', '123456')
+UserInfo.objects.create_superuser('xadmin', 'xadmin@dvcloud.xin', 'xAdminPwd!')
 
 management.call_command('load_init_json', )
-management.call_command('loaddata', 'loadjson/userinfo.json')
+
+# 加载默认用户数据，一般部署新服的时候，如果有默认数据，则可以进行加载
+# management.call_command('loaddata', 'loadjson/userinfo.json')

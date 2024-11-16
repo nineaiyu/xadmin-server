@@ -12,7 +12,7 @@ SECRET_KEY:
 # LOG_LEVEL: DEBUG
 
 # 用于DEBUG模式下，输出sql日志
-# DEBUG_DEV = false
+# DEBUG_DEV = true
 
 # Database setting, Support sqlite3, mysql, postgres ....
 # 数据库设置
@@ -46,10 +46,10 @@ REDIS_PORT: 6379
 #CELERY_BROKER_CACHE_ID: 3
 
 # When Django start it will bind this host and port
-# ./manage.py runserver 127.0.0.1:8080
+# ./manage.py runserver 127.0.0.1:8896
 # 运行时绑定端口
 HTTP_BIND_HOST: 0.0.0.0
-HTTP_LISTEN_PORT: 8080
+HTTP_LISTEN_PORT: 8896
 GUNICORN_MAX_WORKER: 4
 
 # 需要将创建的应用写到里面
