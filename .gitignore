@@ -2,7 +2,7 @@
 **/__pycache__/*
 *.mo
 __pycache__/*
-logs/*
+data/*
 static/*
 upload/*
 common/utils/ip/geoip/GeoLite2-City.mmdb

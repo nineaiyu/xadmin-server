@@ -44,7 +44,7 @@ services:
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
-    command: [ "redis-server", "--requirepass", "$REDIS_PASSWORD" ]
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:-nineven}", "--port", "${REDIS_PORT:-6379}" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       REDIS_PORT: ${REDIS_PORT:-6379}
@@ -81,5 +81,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 90s
+    depends_on:
+      - nginx
+      - postgresql
+      - redis
     networks:
       - net
