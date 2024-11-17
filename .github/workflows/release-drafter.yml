@@ -15,6 +15,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Get version
+        id: get_version
+        run: |
+          TAG=$(basename ${GITHUB_REF})
+          VERSION=${TAG/v/}
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          wget https://raw.githubusercontent.com/nineaiyu/xadmin-installer/master/quick_start.sh
+          sed -i "s@VERSION=.*@VERSION=v${VERSION}@g" quick_start.sh
+
       - name: Create Release
         id: create_release
         uses: release-drafter/release-drafter@v6
@@ -25,13 +34,6 @@ jobs:
           version: ${{ steps.get_version.outputs.TAG }}
           tag: ${{ steps.get_version.outputs.TAG }}
 
-      - name: Get version
-        id: get_version
-        run: |
-          TAG=$(basename ${GITHUB_REF})
-          VERSION=${TAG/v/}
-          wget https://raw.githubusercontent.com/nineaiyu/xadmin-installer/master/quick_start.sh
-          sed -i "s@VERSION=.*@VERSION=v${VERSION}@g" quick_start.sh
 
       - name: Release Upload Assets
         uses: softprops/action-gh-release@v2
