@@ -8,7 +8,7 @@ import traceback
 from logging import getLogger
 
 from django.conf import settings
-from django.db.models import ProtectedError, RestrictedError
+from django.db.models import ProtectedError
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import Throttled, APIException
@@ -59,9 +59,10 @@ def common_exception_handler(exc, context):
         ret.status_code = 400
         ret.data = {'detail': _("The requested address is incorrect or the data permission is not allowed")}
 
-    elif isinstance(exc, (ProtectedError, RestrictedError)):
+    elif isinstance(exc, ProtectedError):
         set_rollback()
-        return ApiResponse(code=998, detail=_("This data with other data binding"))
+        verbose_name = exc.protected_objects.pop()._meta.verbose_name
+        return ApiResponse(code=998, detail=_("Is referenced by other {} and cannot be deleted").format(verbose_name))
     else:
         unexpected_exception_logger.exception('')
 

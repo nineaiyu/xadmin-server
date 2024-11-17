@@ -1,0 +1,43 @@
+FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.12.7-slim
+
+# add pip cn mirrors
+ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
+ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn
+
+# Install APT dependencies
+ARG DEPENDENCIES="                    \
+        curl                          \
+        g++                           \
+        make                          \
+        pkg-config                    \
+        libmariadb-dev                \
+        gettext"
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked,id=core \
+    set -ex \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && sed -i "s@http://.*.debian.org@${APT_MIRROR}@g" /etc/apt/sources.list.d/debian.sources \
+    && apt-get update > /dev/null \
+    && apt-get -y install --no-install-recommends ${DEPENDENCIES} \
+    && echo "no" | dpkg-reconfigure dash
+
+
+# install pip
+
+RUN --mount=type=cache,target=/root/.cache,id=core \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
+    set -ex \
+    && pip install -U setuptools pip --ignore-installed -i ${PIP_MIRROR}  \
+    && pip install --no-cache-dir -r requirements.txt -i ${PIP_MIRROR}
+
+WORKDIR /data/xadmin-server/
+
+ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+
+EXPOSE 8896
+
+STOPSIGNAL SIGQUIT
+
+CMD ["start", "all"]

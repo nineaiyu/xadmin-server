@@ -41,7 +41,6 @@ class LoginLogSerializer(BaseModelSerializer):
         extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
 
 
-
 class UserLoginLogSerializer(LoginLogSerializer):
     class Meta:
         model = UserLoginLog

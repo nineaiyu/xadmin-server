@@ -13,7 +13,7 @@ service="${2-all}"
 
 trap cleanup EXIT
 
-rm -f logs/tmp/*.pid
+rm -f /data/xadmin-server/tmp/*.pid
 
 if [[ "${action:0:1}" == "/" ]];then
     "$@"

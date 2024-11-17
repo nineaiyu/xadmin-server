@@ -4,16 +4,14 @@
 # filename : logging
 # author : ly_13
 # date : 10/18/2024
+import os
 
-from .base import *
-
-LOG_DIR = os.path.join(BASE_DIR, "logs")
-TMP_LOG_DIR = os.path.join(BASE_DIR, "logs", "tmp")
-CELERY_LOG_DIR = os.path.join(BASE_DIR, "logs", "task")
+from ..const import LOG_DIR, CONFIG, TMP_DIR, CELERY_LOG_DIR
 
 SERVER_LOG_FILE = os.path.join(LOG_DIR, 'server.log')
 DRF_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'drf_exception.log')
 UNEXPECTED_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'unexpected_exception.log')
+LOG_LEVEL = CONFIG.LOG_LEVEL
 
 LOGGING = {
     'version': 1,
@@ -113,7 +111,7 @@ LOGGING = {
     },
 }
 
-if DEBUG_DEV:
+if CONFIG.DEBUG_DEV:
     LOGGING['loggers']['django.db'] = {
         'handlers': ['console', 'server'],
         'level': 'DEBUG'
@@ -121,7 +119,7 @@ if DEBUG_DEV:
 
 if not os.path.isdir(LOG_DIR):
     os.makedirs(LOG_DIR)
-if not os.path.isdir(TMP_LOG_DIR):
-    os.makedirs(TMP_LOG_DIR)
+if not os.path.isdir(TMP_DIR):
+    os.makedirs(TMP_DIR)
 if not os.path.isdir(CELERY_LOG_DIR):
     os.makedirs(CELERY_LOG_DIR)

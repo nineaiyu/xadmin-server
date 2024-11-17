@@ -4,7 +4,6 @@
 # filename : dept
 # author : ly_13
 # date : 6/16/2023
-
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet

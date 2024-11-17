@@ -15,8 +15,9 @@ logger = get_logger(__name__)
 
 
 class CaptchaAuth(object):
-    def __init__(self, captcha_key=''):
+    def __init__(self, captcha_key='', request=None):
         self.captcha_key = captcha_key
+        self.request = request
 
     def __get_captcha_obj(self):
         return CaptchaStore.objects.filter(hashkey=self.captcha_key).first()
@@ -24,6 +25,8 @@ class CaptchaAuth(object):
     def generate(self):
         self.captcha_key = CaptchaStore.generate_key()
         captcha_image = captcha_image_url(self.captcha_key)
+        if self.request:
+            captcha_image = self.request.build_absolute_uri(captcha_image)
         captcha_obj = self.__get_captcha_obj()
         code_length = 0
         if captcha_obj:

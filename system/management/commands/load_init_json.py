@@ -10,12 +10,14 @@ from django.conf import settings
 from django.core.management.commands.loaddata import Command as LoadCommand
 from django.db import DEFAULT_DB_ALIAS
 
+from settings.models import Setting
 from system.models import *
 
 
 class Command(LoadCommand):
     help = 'load init json data'
-    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField]
+    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField,
+                   Setting]
     missing_args_message = None
 
     def add_arguments(self, parser):
@@ -23,7 +25,7 @@ class Command(LoadCommand):
 
     def handle(self, *args, **options):
         fixture_labels = []
-        file_root = os.path.join(settings.BASE_DIR, "loadjson")
+        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
             fixture_labels.append(os.path.join(file_root, f"{model._meta.model_name}.json"))
         options["ignore"] = ""

@@ -28,13 +28,15 @@ def get_long_str(li):
             break
     return result
 
+
 def get_related_models(model):
     related_models = {model._meta.label_lower}
     for field in model._meta._get_fields(reverse=False):
-        if field.is_relation and field.related_model and not issubclass(field.related_model,(Group,Permission)) \
-                and field.name not in ['creator','modifier','dept_belong']:
+        if field.is_relation and field.related_model and not issubclass(field.related_model, (Group, Permission)) \
+                and field.name not in ['creator', 'modifier', 'dept_belong']:
             related_models.add(field.related_model._meta.label_lower)
     return related_models
+
 
 def get_view_permissions(view_string, code_suffix=''):
     permissions = []

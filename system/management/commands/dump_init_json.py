@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core import serializers
 from django.core.management.base import BaseCommand
 
+from settings.models import Setting
 from system.models import *
 
 
@@ -26,7 +27,8 @@ def get_fields(model):
 
 class Command(BaseCommand):
     help = 'dump init json data'
-    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField]
+    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField,
+                   Setting]
 
     def save_json(self, queryset, filename):
         stream = open(filename, 'w', encoding='utf8')
@@ -46,7 +48,7 @@ class Command(BaseCommand):
                 stream.close()
 
     def handle(self, *args, **options):
-        file_root = os.path.join(settings.BASE_DIR, "loadjson")
+        file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
             self.save_json(model.objects.all().order_by('pk'),
                            os.path.join(file_root, f"{model._meta.model_name}.json"))

@@ -9,20 +9,32 @@ from django.db.utils import OperationalError
 from common.core.utils import PrintLogFormat
 from common.utils import test_ip_connectivity
 from common.utils.file import download_file
+from server.const import CONFIG
 from settings.models import Setting
 
-HTTP_HOST = settings.HTTP_BIND_HOST or '127.0.0.1'
-HTTP_PORT = settings.HTTP_LISTEN_PORT or 8080
-GUNICORN_MAX_WORKER = settings.GUNICORN_MAX_WORKER or 10
-CELERY_FLOWER_HOST = settings.CELERY_FLOWER_HOST or '127.0.0.1'
-CELERY_FLOWER_PORT = settings.CELERY_FLOWER_PORT or 5555
-CELERY_FLOWER_AUTH = settings.CELERY_FLOWER_AUTH or 'flower:flower'
-DEBUG = settings.DEBUG or False
-APPS_DIR = BASE_DIR = settings.BASE_DIR
-LOG_DIR = os.path.join(BASE_DIR, 'logs')
-TMP_DIR = os.path.join(LOG_DIR, 'tmp')
-
 logger = PrintLogFormat(f"xAdmin API Server", title_width=30, body_width=0)
+
+try:
+    from server import const
+
+    __version__ = const.VERSION
+except ImportError as e:
+    print("Not found __version__: {}".format(e))
+    print("Python is: ")
+    logger.info(sys.executable)
+    __version__ = 'Unknown'
+    sys.exit(1)
+
+HTTP_HOST = CONFIG.HTTP_BIND_HOST or '127.0.0.1'
+HTTP_PORT = CONFIG.HTTP_LISTEN_PORT or 8896
+GUNICORN_MAX_WORKER = CONFIG.GUNICORN_MAX_WORKER or 10
+CELERY_FLOWER_HOST = CONFIG.CELERY_FLOWER_HOST or '127.0.0.1'
+CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT or 5555
+CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH or 'flower:flower'
+DEBUG = CONFIG.DEBUG or False
+APPS_DIR = settings.BASE_DIR
+LOG_DIR = os.path.join(APPS_DIR, 'data', 'logs')
+TMP_DIR = os.path.join(APPS_DIR, 'tmp')
 
 
 def check_port_is_used():
@@ -73,16 +85,16 @@ def collect_static():
 
 
 def compile_i18n_file():
-    # django_mo_file = os.path.join(BASE_DIR, 'locale', 'zh', 'LC_MESSAGES', 'django.mo')
+    # django_mo_file = os.path.join(PROJECT_DIR, 'locale', 'zh', 'LC_MESSAGES', 'django.mo')
     # if os.path.exists(django_mo_file):
     #     return
-    os.chdir(os.path.join(BASE_DIR))
+    os.chdir(os.path.join(APPS_DIR))
     management.call_command('compilemessages', verbosity=0)
     logger.info("Compile i18n files done")
 
 
 def download_ip_db(force=False):
-    db_base_dir = os.path.join(BASE_DIR, 'common', 'utils', 'ip')
+    db_base_dir = os.path.join(APPS_DIR, 'common', 'utils', 'ip')
     db_path_url_mapper = {
         ('geoip', 'GeoLite2-City.mmdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/GeoLite2-City.mmdb',
         ('ipip', 'ipipfree.ipdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb'

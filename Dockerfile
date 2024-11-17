@@ -1,28 +1,53 @@
+FROM nineaiyu/xadmin-server-base:20241115_054837 AS stage-build
+ARG VERSION
+
+WORKDIR /data/xadmin-server
+
+COPY . .
+
+RUN echo > config.yml \
+    && \
+    if [ -n "${VERSION}" ]; then \
+        sed -i "s@VERSION = .*@VERSION = '${VERSION}'@g" server/const.py; \
+    fi
+
 FROM python:3.12.7-slim
 
-# add pip cn mirrors
-ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
-ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn
+ENV LANG=en_US.UTF-8 \
+    PATH=/data/py3/bin:$PATH
 
-# set apt cn mirrors
-RUN sed -i "s@http://.*.debian.org@${APT_MIRROR}@g" /etc/apt/sources.list.d/debian.sources
+ARG APT_MIRROR=http://deb.debian.org
 
-RUN apt update  \
-    && apt-get install gettext libmariadb-dev g++ pkg-config curl --no-install-recommends -y  \
-    && apt-get clean all  \
+ARG DEPENDENCIES="                    \
+        gettext                       \
+        curl                          \
+        libmariadb-dev"
+
+RUN set -ex \
+    && sed -i "s@http://.*.debian.org@${APT_MIRROR}@g" /etc/apt/sources.list.d/debian.sources \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && apt-get update > /dev/null \
+    && apt-get -y install --no-install-recommends ${DEPENDENCIES} \
+    && echo "no" | dpkg-reconfigure dash \
+    && apt-get clean all \
     && rm -rf /var/lib/apt/lists/*
 
-# install pip
-WORKDIR /opt/
-COPY requirements.txt requirements.txt
-RUN pip install -U setuptools pip --ignore-installed -i ${PIP_MIRROR}  \
-    && pip install --no-cache-dir -r requirements.txt -i ${PIP_MIRROR}
+COPY --from=stage-build /data /data
+COPY --from=stage-build /usr/local/bin /usr/local/bin
 
-WORKDIR /data/xadmin-server/
-RUN addgroup --system --gid 1001 nginx \
-    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
+#RUN addgroup --system --gid 1001 nginx \
+#    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
 
-USER 1001
+WORKDIR /data/xadmin-server
+
+VOLUME /data/xadmin-server/data
+
+#USER 1001
+
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+
+EXPOSE 8896
+
+STOPSIGNAL SIGQUIT
 
 CMD ["start", "all"]

@@ -19,9 +19,7 @@ function usage() {
   echo "  down              Offline   API Server"
   echo
   echo "More Commands: "
-  echo "  install_docker           Install Docker"
-  echo "  import_tzinfo            Import Mariadb zone info"
-  echo "  init_demo                Init demo info"
+  echo "  init_data                Init demo info"
   echo
 }
 
@@ -47,22 +45,10 @@ function check_docker_start() {
   fi
 }
 
-function check_permission() {
-    project_parent_dir=$(dirname "${PROJECT_DIR}")
-    mkdir -p "${project_parent_dir}"/xadmin-mariadb/{data,logs}
-    if [ "$(stat -c  %u logs)" -ne "1001" ] ;then
-      chown 1001.1001 -R "${project_parent_dir}"/xadmin-mariadb/{data,logs}
-      chown 1001.1001 -R "${project_parent_dir}"/xadmin-server/*
-    fi
-}
-
-
 EXE=""
 
 function start() {
   check_docker_start
-  pull_images
-  check_permission
   ${EXE} up -d
 }
 
@@ -79,7 +65,7 @@ function close() {
     ${EXE} stop "${target}"
     return
   fi
-  services="xadmin-server xadmin-celery"
+  services="xadmin-server"
   for i in ${services}; do
     ${EXE} stop "${i}"
   done
@@ -91,24 +77,11 @@ function restart() {
   start
 }
 
-function pull_images() {
-    bash "${PROJECT_DIR}/utils/pull_docker_images.sh"
-}
-
-function import_tzinfo() {
-  if ${EXE} ps|grep xadmin-mariadb|grep healthy &>/dev/null;then
-    docker exec -it xadmin-mariadb sh -c 'mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -u root mysql && echo "import tzinfo success"'
-  else
-    echo "error: xadmin-mariadb not running"
-    exit 1
-  fi
-}
-
-function init_demo() {
+function init_data() {
   if ${EXE} ps|grep xadmin-server|grep healthy &>/dev/null;then
-    docker exec -it xadmin-server sh -c 'python init_demo.py'
+    docker exec -it xadmin-server sh -c 'python utils/init_data.py'
   else
-    echo "error: xadmin-server not running"
+    echo "error: xadmin-server not healthy"
     exit 1
   fi
 }
@@ -143,17 +116,8 @@ function main() {
       ${EXE} stop "${target}" && ${EXE} rm -f "${target}"
     fi
     ;;
-  pull_images)
-    pull_images
-    ;;
-  install_docker)
-    bash "${PROJECT_DIR}/utils/install_centos_docker.sh"
-    ;;
-  import_tzinfo)
-    import_tzinfo
-    ;;
-  init_demo)
-    init_demo
+  init_data)
+    init_data
     ;;
   help)
     usage

@@ -1,0 +1,36 @@
+FROM python:3.12.7-slim
+
+# Install APT dependencies
+ARG DEPENDENCIES="                    \
+        curl                          \
+        g++                           \
+        make                          \
+        pkg-config                    \
+        libmariadb-dev                \
+        gettext"
+
+ARG APT_MIRROR=http://deb.debian.org
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked,id=core \
+    set -ex \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && sed -i "s@http://.*.debian.org@${APT_MIRROR}@g" /etc/apt/sources.list.d/debian.sources \
+    && apt-get update > /dev/null \
+    && apt-get -y install --no-install-recommends ${DEPENDENCIES} \
+    && echo "no" | dpkg-reconfigure dash
+
+
+# install pip
+WORKDIR /data/
+
+ARG PIP_MIRROR=https://pypi.org/simple
+
+RUN --mount=type=cache,target=/root/.cache,id=core \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
+    set -ex \
+    && python3 -m venv /data/py3 \
+    && . /data/py3/bin/activate \
+    && pip install -U setuptools pip --ignore-installed -i ${PIP_MIRROR}  \
+    && pip install --no-cache-dir -r requirements.txt -i ${PIP_MIRROR}
