@@ -22,6 +22,7 @@ jobs:
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
           wget https://raw.githubusercontent.com/nineaiyu/xadmin-installer/master/quick_start.sh
           VERSION=${TAG/v/}
+          echo "TAG=${VERSION}" >> $GITHUB_ENV
           sed -i "s@VERSION=.*@VERSION=v${VERSION}@g" quick_start.sh
 
       - name: Create Release
