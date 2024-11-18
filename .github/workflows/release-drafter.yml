@@ -34,7 +34,7 @@ jobs:
           config-name: release-config.yml
           version: ${{ steps.get_version.outputs.TAG }}
           tag: ${{ steps.get_version.outputs.TAG }}
-          
+
       - name: Sleep time
         run: |
           sleep 2
