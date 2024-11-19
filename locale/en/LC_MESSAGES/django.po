@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-19 17:09+0800\n"
+"POT-Creation-Date: 2024-11-19 18:08+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1787,6 +1787,165 @@ msgstr ""
 
 #: system/utils/modelfield.py:69
 msgid "All fields"
+msgstr ""
+
+#: system/utils/modelfield.py:115
+msgid ""
+"Exact match, the field value must be exactly the same as the given value."
+msgstr ""
+
+#: system/utils/modelfield.py:116
+msgid "Case-insensitive exact match."
+msgstr ""
+
+#: system/utils/modelfield.py:117
+msgid "The field value must contain the given substring (case-sensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:119
+msgid ""
+"Case-insensitive containment, the field value must contain the given "
+"substring (case-insensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:120
+msgid "The field value must be within the given list, tuple, or queryset."
+msgstr ""
+
+#: system/utils/modelfield.py:121
+msgid "Greater than, the field value must be greater than the given value."
+msgstr ""
+
+#: system/utils/modelfield.py:122
+msgid ""
+"Greater than or equal to, the field value must be greater than or equal to "
+"the given value."
+msgstr ""
+
+#: system/utils/modelfield.py:123
+msgid "Less than, the field value must be less than the given value."
+msgstr ""
+
+#: system/utils/modelfield.py:124
+msgid ""
+"Less than or equal to, the field value must be less than or equal to the "
+"given value."
+msgstr ""
+
+#: system/utils/modelfield.py:125
+msgid "The field value must start with the given string (case-sensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:127
+msgid ""
+"Case-insensitive start with, the field value must start with the given "
+"string (case-insensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:128
+msgid "The field value must end with the given string (case-sensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:129
+msgid ""
+"Case-insensitive end with, the field value must end with the given string "
+"(case-insensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:130
+msgid ""
+"Within a range, the field value must be between the two given values "
+"(inclusive)."
+msgstr ""
+
+#: system/utils/modelfield.py:131
+msgid "Filters only the date part (ignores the time part)."
+msgstr ""
+
+#: system/utils/modelfield.py:132
+msgid "Filters by year."
+msgstr ""
+
+#: system/utils/modelfield.py:133
+msgid "Filters by ISO year (may not be the same as the Gregorian year)."
+msgstr ""
+
+#: system/utils/modelfield.py:134
+msgid "Filters by month."
+msgstr ""
+
+#: system/utils/modelfield.py:135
+msgid "Filters by day of the month."
+msgstr ""
+
+#: system/utils/modelfield.py:136
+msgid "Filters by week number of the year."
+msgstr ""
+
+#: system/utils/modelfield.py:137
+msgid "Filters by a specific day of the week (1 = Monday, 7 = Sunday)."
+msgstr ""
+
+#: system/utils/modelfield.py:138
+msgid "Filters by a specific day of the ISO week (1 = Monday, 7 = Sunday)."
+msgstr ""
+
+#: system/utils/modelfield.py:139
+msgid "Filters by quarter (1, 2, 3, 4)."
+msgstr ""
+
+#: system/utils/modelfield.py:140
+msgid "Filters only the time part (ignores the date part)."
+msgstr ""
+
+#: system/utils/modelfield.py:141
+msgid "Filters by hour."
+msgstr ""
+
+#: system/utils/modelfield.py:142
+msgid "Filters by minute."
+msgstr ""
+
+#: system/utils/modelfield.py:143
+msgid "Filters by second."
+msgstr ""
+
+#: system/utils/modelfield.py:144
+msgid "Checks if the field value is NULL, can be set to True or False."
+msgstr ""
+
+#: system/utils/modelfield.py:145
+msgid ""
+"The field value must match the given regular expression (case-sensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:146
+msgid ""
+"The field value must match the given regular expression (case-insensitive)."
+msgstr ""
+
+#: system/utils/modelfield.py:148
+msgid ""
+"The field value must be a subset of the given value, typically used with "
+"array or JSON fields."
+msgstr ""
+
+#: system/utils/modelfield.py:150
+msgid ""
+"The field value must contain at least one of the given keys, typically used "
+"with JSON fields."
+msgstr ""
+
+#: system/utils/modelfield.py:151
+msgid ""
+"The field value must contain all the given keys, typically used with JSON "
+"fields."
+msgstr ""
+
+#: system/utils/modelfield.py:152
+msgid ""
+"The field value must contain the given single key, typically used with JSON "
+"fields."
 msgstr ""
 
 #: system/views/admin/file.py:87
