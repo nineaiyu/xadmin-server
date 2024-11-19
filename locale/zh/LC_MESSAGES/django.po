@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-12 13:23+0800\n"
+"POT-Creation-Date: 2024-11-19 17:09+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -629,7 +629,7 @@ msgstr "加密的"
 msgid "Is active"
 msgstr "激活状态"
 
-#: settings/models.py:98
+#: settings/models.py:95
 msgid "System setting"
 msgstr "系统设置"
 

@@ -4739,7 +4739,7 @@
       "r_svg_name": "",
       "is_show_menu": true,
       "is_show_parent": false,
-      "is_keepalive": true,
+      "is_keepalive": false,
       "frame_url": "",
       "frame_loading": false,
       "transition_enter": "",
