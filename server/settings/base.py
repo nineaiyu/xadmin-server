@@ -235,7 +235,7 @@ AUTH_USER_MODEL = "system.UserInfo"
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'api/static/'
-STATIC_ROOT = os.path.join(PROJECT_DIR, "static")
+STATIC_ROOT = os.path.join(PROJECT_DIR, "data", "static")
 
 # STATICFILES_FINDERS = (
 #     "django.contrib.staticfiles.finders.FileSystemFinder",
