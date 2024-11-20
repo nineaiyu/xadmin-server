@@ -67,7 +67,7 @@ class Menu(DbAuditModel, DbUuidModel):
     component = models.CharField(verbose_name=_("Component path"), max_length=255, null=True, blank=True)
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
     meta = models.OneToOneField("system.MenuMeta", on_delete=models.CASCADE, verbose_name=_("Menu meta"))
-    model = models.ManyToManyField("system.ModelLabelField", verbose_name=_("Model"), null=True, blank=True)
+    model = models.ManyToManyField("system.ModelLabelField", verbose_name=_("Model"), blank=True)
 
     # permission_marking = models.CharField(verbose_name="权限标识", max_length=255)
     # api_route = models.CharField(verbose_name="后端权限路由", max_length=255, null=True, blank=True)

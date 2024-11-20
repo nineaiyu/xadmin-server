@@ -44,13 +44,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='messagecontent',
             name='notice_dept',
-            field=models.ManyToManyField(blank=True, null=True, to='system.deptinfo',
-                                         verbose_name='The notified department'),
+            field=models.ManyToManyField(blank=True, to='system.deptinfo', verbose_name='The notified department'),
         ),
         migrations.AddField(
             model_name='messagecontent',
             name='notice_role',
-            field=models.ManyToManyField(blank=True, null=True, to='system.userrole', verbose_name='The notified role'),
+            field=models.ManyToManyField(blank=True, to='system.userrole', verbose_name='The notified role'),
         ),
         migrations.AddField(
             model_name='messageuserread',
@@ -88,7 +87,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='messagecontent',
             name='notice_user',
-            field=models.ManyToManyField(blank=True, null=True, through='notifications.MessageUserRead',
+            field=models.ManyToManyField(blank=True, through='notifications.MessageUserRead',
                                          to=settings.AUTH_USER_MODEL, verbose_name='The notified user'),
         ),
         migrations.AddField(

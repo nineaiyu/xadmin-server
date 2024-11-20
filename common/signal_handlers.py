@@ -6,7 +6,7 @@
 # date : 6/29/2023
 import logging
 
-from celery import subtask
+from celery import signature
 from celery.signals import worker_ready, worker_shutdown, after_setup_logger
 from django.core.cache import cache
 from django.db.models.signals import pre_delete
@@ -37,7 +37,7 @@ def on_app_ready(sender=None, headers=None, **kwargs):
         if periodic_task and not periodic_task.enabled:
             logger.debug("Periodic task [{}] is disabled!".format(task))
             continue
-        subtask(task).delay()
+        signature(task).delay()
 
 
 @worker_shutdown.connect

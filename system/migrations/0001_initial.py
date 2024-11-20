@@ -111,8 +111,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userinfo',
             name='rules',
-            field=models.ManyToManyField(blank=True, null=True, to='system.datapermission',
-                                         verbose_name='Data permission'),
+            field=models.ManyToManyField(blank=True, to='system.datapermission', verbose_name='Data permission'),
         ),
         migrations.CreateModel(
             name='DeptInfo',
@@ -143,8 +142,8 @@ class Migration(migrations.Migration):
                 ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT,
                                              related_query_name='parent_query', to='system.deptinfo',
                                              verbose_name='Superior department')),
-                ('rules', models.ManyToManyField(blank=True, null=True, to='system.datapermission',
-                                                 verbose_name='Data permission')),
+                ('rules',
+                 models.ManyToManyField(blank=True, to='system.datapermission', verbose_name='Data permission')),
             ],
             options={
                 'verbose_name': 'Department',
@@ -214,7 +213,7 @@ class Migration(migrations.Migration):
             name='menu',
             field=models.ManyToManyField(blank=True,
                                          help_text='If a menu exists, it only applies to the selected menu permission',
-                                         null=True, to='system.menu', verbose_name='Menu'),
+                                         to='system.menu', verbose_name='Menu'),
         ),
         migrations.CreateModel(
             name='MenuMeta',
@@ -306,7 +305,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='menu',
             name='model',
-            field=models.ManyToManyField(blank=True, null=True, to='system.modellabelfield', verbose_name='Model'),
+            field=models.ManyToManyField(blank=True, to='system.modellabelfield', verbose_name='Model'),
         ),
         migrations.CreateModel(
             name='OperationLog',
@@ -453,7 +452,7 @@ class Migration(migrations.Migration):
                 ('dept_belong', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                                   related_name='+', related_query_name='dept_belong_query',
                                                   to='system.deptinfo', verbose_name='Data ownership department')),
-                ('menu', models.ManyToManyField(blank=True, null=True, to='system.menu', verbose_name='Menu')),
+                ('menu', models.ManyToManyField(blank=True, to='system.menu', verbose_name='Menu')),
                 ('modifier', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                                related_name='+', related_query_name='modifier_query',
                                                to=settings.AUTH_USER_MODEL, verbose_name='Modifier')),
@@ -467,12 +466,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='deptinfo',
             name='roles',
-            field=models.ManyToManyField(blank=True, null=True, to='system.userrole', verbose_name='Role permission'),
+            field=models.ManyToManyField(blank=True, to='system.userrole', verbose_name='Role permission'),
         ),
         migrations.AddField(
             model_name='userinfo',
             name='roles',
-            field=models.ManyToManyField(blank=True, null=True, to='system.userrole', verbose_name='Role permission'),
+            field=models.ManyToManyField(blank=True, to='system.userrole', verbose_name='Role permission'),
         ),
         migrations.CreateModel(
             name='UserPersonalConfig',
@@ -522,8 +521,7 @@ class Migration(migrations.Migration):
                                                to=settings.AUTH_USER_MODEL, verbose_name='Modifier')),
                 ('menu',
                  models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='system.menu', verbose_name='Menu')),
-                ('field',
-                 models.ManyToManyField(blank=True, null=True, to='system.modellabelfield', verbose_name='Field')),
+                ('field', models.ManyToManyField(blank=True, to='system.modellabelfield', verbose_name='Field')),
                 ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='system.userrole',
                                            verbose_name='Role')),
             ],

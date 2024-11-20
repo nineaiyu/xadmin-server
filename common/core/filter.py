@@ -158,7 +158,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         logger.info(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
-    # table = f'*'
+
     dept_obj = user_obj.dept
     q = Q()
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))

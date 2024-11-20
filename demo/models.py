@@ -23,10 +23,8 @@ class Book(DbAuditModel):
                                related_name="book_admin2")
 
     # ManyToManyField 多对多关系
-    managers = models.ManyToManyField(to=UserInfo, verbose_name="操作人员1", blank=True, null=True,
-                                      related_name="book_managers")
-    managers2 = models.ManyToManyField(to=UserInfo, verbose_name="操作人员2", blank=True, null=True,
-                                       related_name="book_managers2")
+    managers = models.ManyToManyField(to=UserInfo, verbose_name="操作人员1", blank=True, related_name="book_managers")
+    managers2 = models.ManyToManyField(to=UserInfo, verbose_name="操作人员2", blank=True, related_name="book_managers2")
     # 图片上传，原图访问
     cover = models.ImageField(verbose_name="书籍封面原图", null=True, blank=True)
 
