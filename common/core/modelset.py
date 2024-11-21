@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/2/2023
 import json
+import uuid
 from hashlib import md5
 from typing import Callable
 
@@ -33,6 +34,7 @@ from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
+from common.tasks import import_data_from_file_job
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -481,6 +483,18 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     @transaction.atomic
     def import_data(self, request, *args, **kwargs):
         """导入{cls}数据"""
+
+        task = kwargs.get("task")
+        if not task:
+            # 任务异步导入
+            view = f"{self.__class__.__module__}.{self.__class__.__name__}"
+            meta = request.META
+            meta["task_id"] = str(uuid.uuid4())
+            res = import_data_from_file_job.apply_async(args=(view, meta, json.dumps(request.data)),
+                                                        task_id=meta["task_id"])
+            logger.info(f"add {view} import data task success. {res}")
+            return ApiResponse(detail=_("Task add success"))
+
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
         if act and request.data:

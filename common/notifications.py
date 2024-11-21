@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from common.models import Monitor
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription
-from notifications.notifications import SystemMessage
+from notifications.notifications import SystemMessage, UserMessage
 from system.models import UserInfo
 
 
@@ -128,3 +128,26 @@ class ServerPerformanceCheckUtil(object):
 
     def initial_terminals(self):
         self._terminals = [self.get_monitor_latest_average_value()]
+
+
+class ImportDataMessage(UserMessage):
+    category = 'Task Message'
+    category_label = _('Task Message')
+    message_type_label = _('Import data message')
+
+    def __init__(self, user, task):
+        self.task = task
+        super().__init__(user)
+
+    def get_html_msg(self) -> dict:
+        subject = _('Import {} data {} message').format(self.task.get("view_doc"), self.task.get("status"))
+        context = dict(
+            subject=subject,
+            name=self.user.nickname,
+            **self.task,
+        )
+        message = render_to_string('notify/msg_task.html', context)
+        return {
+            'subject': subject,
+            'message': message
+        }

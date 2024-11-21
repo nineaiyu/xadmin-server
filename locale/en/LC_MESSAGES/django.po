@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-19 18:08+0800\n"
+"POT-Creation-Date: 2024-11-21 21:11+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr ""
 
-#: common/core/auth.py:25 common/core/filter.py:202 common/core/filter.py:210
+#: common/core/auth.py:25 common/core/filter.py:205 common/core/filter.py:213
 #: common/core/permission.py:126
 msgid "Unauthorized authentication"
 msgstr ""
@@ -97,31 +97,35 @@ msgstr ""
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/modelset.py:93
+#: common/core/modelset.py:95
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/modelset.py:96
+#: common/core/modelset.py:98
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
-#: common/core/modelset.py:125
+#: common/core/modelset.py:127
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset.py:390
+#: common/core/modelset.py:392
 msgid "Operation failed. Primary key list does not exist"
 msgstr ""
 
-#: common/core/modelset.py:400
+#: common/core/modelset.py:402
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
-#: common/core/modelset.py:508
+#: common/core/modelset.py:496
+msgid "Task add success"
+msgstr ""
+
+#: common/core/modelset.py:522
 msgid "Operation successful. Import {} data"
 msgstr ""
 
-#: common/core/modelset.py:509 system/utils/auth.py:104
+#: common/core/modelset.py:523 system/utils/auth.py:104
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
@@ -131,11 +135,11 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:18
+#: common/core/response.py:18 common/tasks.py:156
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:18
+#: common/core/response.py:18 common/tasks.py:156
 msgid "Operation failed"
 msgstr ""
 
@@ -308,6 +312,18 @@ msgstr ""
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr ""
 
+#: common/notifications.py:135
+msgid "Task Message"
+msgstr ""
+
+#: common/notifications.py:136
+msgid "Import data message"
+msgstr ""
+
+#: common/notifications.py:143
+msgid "Import {} data {} message"
+msgstr ""
+
 #: common/sdk/sms/alibaba.py:62
 msgid "Signature does not match"
 msgstr ""
@@ -344,31 +360,31 @@ msgstr ""
 msgid "Please enter your account information to log in"
 msgstr ""
 
-#: common/tasks.py:28
+#: common/tasks.py:32
 msgid "Send email"
 msgstr ""
 
-#: common/tasks.py:55
+#: common/tasks.py:59
 msgid "Send email attachment"
 msgstr ""
 
-#: common/tasks.py:77
+#: common/tasks.py:81
 msgid "Periodic delete monitor"
 msgstr ""
 
-#: common/tasks.py:86
+#: common/tasks.py:90
 msgid "Clear celery periodic tasks"
 msgstr ""
 
-#: common/tasks.py:87
+#: common/tasks.py:91
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr ""
 
-#: common/tasks.py:109
+#: common/tasks.py:113
 msgid "Create or update periodic tasks"
 msgstr ""
 
-#: common/tasks.py:111
+#: common/tasks.py:115
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -377,16 +393,50 @@ msgid ""
 "        of scheduled tasks will be updated"
 msgstr ""
 
-#: common/tasks.py:124
+#: common/tasks.py:128
 msgid "Periodic check service performance"
 msgstr ""
 
-#: common/tasks.py:126
+#: common/tasks.py:130
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
 "        and disk usage exceed the thresholds, and send an alert message to "
 "the administrator"
+msgstr ""
+
+#: common/tasks.py:139
+msgid "Import data from excel/csv file"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:3
+#: system/templates/msg_verify_code.html:9
+#: system/templates/notify/msg_different_city.html:3
+msgid "Hello"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:6
+msgid "Your Task is finished"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:9
+msgid "Task name"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:10
+msgid "Task Id"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:11
+msgid "Task start date"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:12
+msgid "Task end date"
+msgstr ""
+
+#: common/templates/notify/msg_task.html:13
+msgid "Task result"
 msgstr ""
 
 #: common/utils/country.py:48
@@ -1695,11 +1745,6 @@ msgstr ""
 
 #: system/serializers/userinfo.py:50
 msgid "Old password verification failed"
-msgstr ""
-
-#: system/templates/msg_verify_code.html:9
-#: system/templates/notify/msg_different_city.html:3
-msgid "Hello"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:12

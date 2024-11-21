@@ -6,12 +6,15 @@
 # date : 7/30/2024
 import datetime
 import os
+from io import BytesIO
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
+from django.core.handlers.wsgi import WSGIRequest
 from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
 from django.utils import timezone
+from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import PeriodicTask
 
@@ -19,7 +22,8 @@ from common.celery.decorator import register_as_period_task, after_app_ready_sta
 from common.celery.utils import delete_celery_periodic_task, disable_celery_periodic_task, get_celery_periodic_task, \
     create_or_update_celery_periodic_tasks
 from common.models import Monitor
-from common.notifications import ServerPerformanceCheckUtil
+from common.notifications import ServerPerformanceCheckUtil, ImportDataMessage
+from common.utils.timezone import local_now_display
 from server.celery import app
 
 logger = get_task_logger(__name__)
@@ -130,3 +134,25 @@ def create_or_update_registered_periodic_tasks():
 @register_as_period_task(interval=60)
 def check_server_performance_period():
     ServerPerformanceCheckUtil().check_and_publish()
+
+
+@shared_task(verbose_name=_("Import data from excel/csv file"))
+def import_data_from_file_job(view: str, meta: dict, data: str):
+    task_info = {
+        "start_time": local_now_display(),
+        "task_id": meta.get("task_id"),
+        "task_name": view
+    }
+    view_func = import_string(view)
+    b_data = data.encode("utf-8")
+    meta["wsgi.input"] = BytesIO(b_data)
+    meta["CONTENT_TYPE"] = "application/json"
+    meta["CONTENT_LENGTH"] = len(b_data)
+    request = WSGIRequest(meta)
+    result = view_func.as_view({'post': 'import_data'})(request, task=True)
+    task_info["result"] = result.data.get("detail", result.data)
+    task_info["end_time"] = local_now_display()
+    task_info["view_doc"] = view_func.__doc__
+    task_info["status"] = _("Operation successful") if result.data.get("code") == 1000 else _("Operation failed")
+    ImportDataMessage(getattr(request, "user"), task_info).publish()
+    return task_info

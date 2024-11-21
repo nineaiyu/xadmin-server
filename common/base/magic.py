@@ -11,7 +11,7 @@ from functools import wraps, WRAPPER_ASSIGNMENTS
 from importlib import import_module
 
 from django.core.cache import cache
-from django.db import close_old_connections
+from django.db import close_old_connections, connection
 from django.http.response import HttpResponse
 
 from common.utils import get_logger
@@ -341,3 +341,39 @@ def temporary_disable_signal(signal, receiver, *args, **kwargs):
         return wrapper
 
     return decorator
+
+
+import functools
+
+
+def timeit(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        logger.info(f"{func.__name__} run time:{end_time - start_time}")
+        return result
+
+    return wrapper
+
+
+class SQLCounter:
+    def __init__(self):
+        self.count = 0
+
+    def __call__(self, execute, sql, params, many, context):
+        self.count += 1
+        return execute(sql, params, many, context)
+
+
+def count_sql_queries(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        sql_counter = SQLCounter()
+        with connection.execute_wrapper(sql_counter):
+            result = func(*args, **kwargs)
+        logger.info(f"{func.__name__} sql queries count: {sql_counter.count}")
+        return result
+
+    return wrapper

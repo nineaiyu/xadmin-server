@@ -1,0 +1,14 @@
+{% load i18n %}
+<p>
+    {% trans 'Hello' %} {{ name }},
+</p>
+<p>
+    {% trans 'Your Task is finished' %}
+</p>
+<p>
+    <b>{% trans 'Task name' %}:</b> {{ task_name }}<br>
+    <b>{% trans 'Task Id' %}:</b> {{ task_id }}<br>
+    <b>{% trans 'Task start date' %}:</b> {{ start_time }}<br>
+    <b>{% trans 'Task end date' %}:</b> {{ end_time }}<br>
+    <b>{% trans 'Task result' %}:</b> {{ result }}
+</p>

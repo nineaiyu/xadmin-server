@@ -19,6 +19,7 @@ from django_filters.fields import MultipleChoiceField
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.filters import BaseFilterBackend
 
+from common.base.magic import timeit, count_sql_queries
 from common.cache.storage import CommonResourceIDsCache
 from common.core.db.utils import RelatedManager
 from common.utils import get_logger
@@ -140,6 +141,8 @@ def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
     return q1
 
 
+@timeit
+@count_sql_queries
 def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     """
     1.获取所有数据权限规则
