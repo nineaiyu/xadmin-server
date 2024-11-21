@@ -29,7 +29,7 @@ setting_pub_sub = SettingSubPub()
 def refresh_settings_on_changed(sender, instance=None, **kwargs):
     if not instance:
         return
-    setting_pub_sub.publish(instance.name)
+    setting_pub_sub.publish((instance.name, instance.cleaned_value))
 
 
 @receiver(django_ready)

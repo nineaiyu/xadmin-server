@@ -21,7 +21,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldSerializer
-from system.utils.modelfield import sync_model_field
+from system.utils.modelfield import sync_model_field, get_field_lookup_info
 
 logger = get_logger(__name__)
 
@@ -103,7 +103,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
                 if mt:
                     mf = mt._meta.get_field(field)
                     if mf:
-                        return ApiResponse(data=mf.get_class_lookups().keys())
+                        return ApiResponse(data=get_field_lookup_info(mf.get_class_lookups().keys()))
         return ApiResponse(code=1001)
 
     @extend_schema(responses=get_default_response_schema())

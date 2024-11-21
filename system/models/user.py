@@ -32,8 +32,8 @@ class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
     phone = models.CharField(verbose_name=_("Phone"), max_length=16, default='', blank=True, db_index=True)
     email = models.EmailField(verbose_name=_("Email"), default='', blank=True, db_index=True)
 
-    roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True, null=True)
-    rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True, null=True)
+    roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
+    rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
     dept = models.ForeignKey(to="system.DeptInfo", verbose_name=_("Department"), on_delete=models.PROTECT, blank=True,
                              null=True, related_query_name="dept_query")
 

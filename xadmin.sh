@@ -1,6 +1,5 @@
 #!/bin/bash
 
-PROJECT_DIR=$(dirname "$(readlink -f "$0")")
 
 action=${1-}
 target=${2-}

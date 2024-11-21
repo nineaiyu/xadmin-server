@@ -15,7 +15,7 @@ class UserRole(DbAuditModel, DbUuidModel):
     name = models.CharField(max_length=128, verbose_name=_("Role name"), unique=True)
     code = models.CharField(max_length=128, verbose_name=_("Role code"), unique=True)
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
-    menu = models.ManyToManyField('system.Menu', verbose_name=_("Menu"), null=True, blank=True)
+    menu = models.ManyToManyField('system.Menu', verbose_name=_("Menu"), blank=True)
 
     class Meta:
         verbose_name = _("User role")

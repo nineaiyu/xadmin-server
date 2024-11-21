@@ -25,11 +25,11 @@ class MessageContent(DbAuditModel):
         SUCCESS = 'success', _("Success notices")
         DANGER = 'danger', _("Important notices")
 
-    notice_user = models.ManyToManyField("system.UserInfo", through="MessageUserRead", null=True, blank=True,
+    notice_user = models.ManyToManyField("system.UserInfo", through="MessageUserRead", blank=True,
                                          through_fields=('notice', 'owner'), verbose_name=_("The notified user"))
-    notice_dept = models.ManyToManyField("system.DeptInfo", null=True, blank=True,
+    notice_dept = models.ManyToManyField("system.DeptInfo", blank=True,
                                          verbose_name=_("The notified department"))
-    notice_role = models.ManyToManyField("system.UserRole", null=True, blank=True,
+    notice_role = models.ManyToManyField("system.UserRole", blank=True,
                                          verbose_name=_("The notified role"))
     level = models.CharField(verbose_name=_("Notice level"), choices=LevelChoices, default=LevelChoices.DEFAULT,
                              max_length=20)
