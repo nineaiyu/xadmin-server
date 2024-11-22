@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-22 16:40+0800\n"
+"POT-Creation-Date: 2024-11-22 18:11+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -130,11 +130,11 @@ msgstr "操作失败，数据异常"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:18 common/tasks.py:167
+#: common/core/response.py:18 common/tasks.py:168
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:18 common/tasks.py:167
+#: common/core/response.py:18 common/tasks.py:168
 msgid "Operation failed"
 msgstr "操作失败"
 

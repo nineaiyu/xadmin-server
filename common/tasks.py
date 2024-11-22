@@ -156,21 +156,22 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     task_info["end_time"] = local_now_display()
     task_info["status"] = result.data.get("code") == 1000
     cache.push(task_info)
-    if cache.len() == meta["task_count"]:
-        task_results = cache.get_all()
-        cache.delete()
-        state = all([task["status"] for task in task_results])
-        task_info = {
-            "task_name": view,
-            "view_doc": view_func.__doc__,
-            "state": state,
-            "status": _("Operation successful") if state else _("Operation failed"),
-            "tasks": sorted(task_results, key=lambda task: task["task_index"])
-        }
-        match meta["action"]:
-            case "import_data":
-                ImportDataMessage(getattr(request, "user"), task_info).publish()
-            case "batch_destroy":
-                BatchDeleteDataMessage(getattr(request, "user"), task_info).publish()
+    with cache.lock(timeout=180):
+        if cache.len() and cache.len() == meta["task_count"]:
+            task_results = cache.get_all()
+            cache.delete()
+            state = all([task["status"] for task in task_results])
+            task_info = {
+                "task_name": view,
+                "view_doc": view_func.__doc__,
+                "state": state,
+                "status": _("Operation successful") if state else _("Operation failed"),
+                "tasks": sorted(task_results, key=lambda task: task["task_index"])
+            }
+            match meta["action"]:
+                case "import_data":
+                    ImportDataMessage(getattr(request, "user"), task_info).publish()
+                case "batch_destroy":
+                    BatchDeleteDataMessage(getattr(request, "user"), task_info).publish()
 
     return task_info

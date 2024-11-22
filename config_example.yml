@@ -12,7 +12,7 @@ SECRET_KEY:
 # LOG_LEVEL: DEBUG
 
 # 用于DEBUG模式下，输出sql日志
-# DEBUG_DEV = true
+# DEBUG_DEV: true
 
 # Database setting, Support sqlite3, mysql, postgres ....
 # 数据库设置

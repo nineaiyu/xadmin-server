@@ -28,11 +28,20 @@ def format_input(data):
         return data
 
 
-class CacheList(object):
+class CacheRedis(object):
 
-    def __init__(self, key, max_size=1024, timeout=None):
+    def __init__(self, key):
         self.connect = get_redis_connection("default")
         self.key = key
+
+    def lock(self, *args, **kwargs):
+        return self.connect.lock(f"{self.key}_locker", *args, **kwargs)
+
+
+class CacheList(CacheRedis):
+
+    def __init__(self, key, max_size=1024, timeout=None):
+        super().__init__(key)
         self.max_size = max_size
         self.timeout = timeout
 
@@ -66,11 +75,10 @@ class CacheList(object):
         return [format_return(k) for k in self.connect.lrange(self.key, 0, -1)]
 
 
-class CacheSet(object):
+class CacheSet(CacheRedis):
 
     def __init__(self, key):
-        self.connect = get_redis_connection("default")
-        self.key = key
+        super().__init__(key)
 
     def get_all(self):
         return {format_return(k) for k in self.connect.smembers(self.key)}
@@ -94,11 +102,10 @@ class CacheSet(object):
         self.connect.delete(self.key)
 
 
-class CacheSortedSet(object):
+class CacheSortedSet(CacheRedis):
 
     def __init__(self, key):
-        self.connect = get_redis_connection("default")
-        self.key = key
+        super().__init__(key)
 
     def get_all(self, with_scores=False):
         return self.get_members(0, -1, with_scores)
@@ -141,11 +148,10 @@ class CacheSortedSet(object):
         self.connect.delete(self.key)
 
 
-class CacheHash(object):
+class CacheHash(CacheRedis):
 
     def __init__(self, key):
-        self.connect = get_redis_connection("default")
-        self.key = key
+        super().__init__(key)
 
     def get_all(self):
         # return [format_return(v) for v in self.connect.hgetall(self.key).values()]
