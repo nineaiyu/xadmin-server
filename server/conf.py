@@ -80,12 +80,12 @@ class Config(dict):
     }
     settings = {
         # 密码安全配置
-        'SECURITY_PASSWORD_MIN_LENGTH': 8,
-        'SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH': 8,
-        'SECURITY_PASSWORD_UPPER_CASE': True,
-        'SECURITY_PASSWORD_LOWER_CASE': True,
-        'SECURITY_PASSWORD_NUMBER': True,
-        'SECURITY_PASSWORD_SPECIAL_CHAR': True,
+        'SECURITY_PASSWORD_MIN_LENGTH': 6,
+        'SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH': 6,
+        'SECURITY_PASSWORD_UPPER_CASE': False,
+        'SECURITY_PASSWORD_LOWER_CASE': False,
+        'SECURITY_PASSWORD_NUMBER': False,
+        'SECURITY_PASSWORD_SPECIAL_CHAR': False,
         # 用户登录限制的规则
         'SECURITY_LOGIN_LIMIT_COUNT': 7,
         'SECURITY_LOGIN_LIMIT_TIME': 30,  # Unit: minute
