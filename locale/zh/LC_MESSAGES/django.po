@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-21 21:11+0800\n"
+"POT-Creation-Date: 2024-11-22 16:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -96,35 +96,31 @@ msgstr "修改人"
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
-#: common/core/modelset.py:95
-msgid "Image size cannot exceed {}"
-msgstr "图片大小不能超过 {}"
-
-#: common/core/modelset.py:98
-msgid "Wrong image type, the type should be {}"
-msgstr "错误的图片类型, 类型应该为 {}"
-
-#: common/core/modelset.py:127
-msgid "Sorting saved successfully"
-msgstr "排序保存成功"
-
-#: common/core/modelset.py:392
-msgid "Operation failed. Primary key list does not exist"
-msgstr "操作失败，主键列表不存在"
-
-#: common/core/modelset.py:402
-msgid "Operation successful. Batch deleted {} data"
-msgstr "操作成功，批量删除 {} 条数据"
-
-#: common/core/modelset.py:496
+#: common/core/modelset.py:58
 msgid "Task add success"
 msgstr "任务添加成功"
 
-#: common/core/modelset.py:522
+#: common/core/modelset.py:113
+msgid "Image size cannot exceed {}"
+msgstr "图片大小不能超过 {}"
+
+#: common/core/modelset.py:116
+msgid "Wrong image type, the type should be {}"
+msgstr "错误的图片类型, 类型应该为 {}"
+
+#: common/core/modelset.py:139
+msgid "Sorting saved successfully"
+msgstr "排序保存成功"
+
+#: common/core/modelset.py:410
+msgid "Operation successful. Batch deleted {} data"
+msgstr "操作成功，批量删除 {} 条数据"
+
+#: common/core/modelset.py:523
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
-#: common/core/modelset.py:523 system/utils/auth.py:104
+#: common/core/modelset.py:524 system/utils/auth.py:104
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
@@ -134,11 +130,11 @@ msgstr "操作失败，数据异常"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:18 common/tasks.py:156
+#: common/core/response.py:18 common/tasks.py:167
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:18 common/tasks.py:156
+#: common/core/response.py:18 common/tasks.py:167
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -312,17 +308,25 @@ msgstr "CPU 负载超过 {max_threshold}: => {value}"
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
 
-#: common/notifications.py:135
+#: common/notifications.py:149 common/notifications.py:160
 msgid "Task Message"
 msgstr "任务通知"
 
-#: common/notifications.py:136
+#: common/notifications.py:150
 msgid "Import data message"
 msgstr "导入数据通知"
 
-#: common/notifications.py:143
+#: common/notifications.py:155
 msgid "Import {} data {} message"
 msgstr "导入{}数据{}通知"
+
+#: common/notifications.py:161
+msgid "Batch delete data message"
+msgstr "批量删除数据通知"
+
+#: common/notifications.py:166
+msgid "Batch delete {} data {} message"
+msgstr "批量删除{}数据{}通知"
 
 #: common/sdk/sms/alibaba.py:62
 msgid "Signature does not match"
@@ -360,31 +364,31 @@ msgstr "用户名或密码错误"
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
-#: common/tasks.py:32
+#: common/tasks.py:33
 msgid "Send email"
 msgstr "发件邮件"
 
-#: common/tasks.py:59
+#: common/tasks.py:60
 msgid "Send email attachment"
 msgstr "发送邮件附件"
 
-#: common/tasks.py:81
+#: common/tasks.py:82
 msgid "Periodic delete monitor"
 msgstr "周期清理监控日志"
 
-#: common/tasks.py:90
+#: common/tasks.py:91
 msgid "Clear celery periodic tasks"
 msgstr "清理周期任务"
 
-#: common/tasks.py:91
+#: common/tasks.py:92
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr "系统启动时，清理已经不存在的celery任务"
 
-#: common/tasks.py:113
+#: common/tasks.py:114
 msgid "Create or update periodic tasks"
 msgstr "创建或更新周期任务"
 
-#: common/tasks.py:115
+#: common/tasks.py:116
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -395,11 +399,11 @@ msgstr ""
 "随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以在系统启动时，"
 "将会注册任务或者更新定时任务参数"
 
-#: common/tasks.py:128
+#: common/tasks.py:129
 msgid "Periodic check service performance"
 msgstr "周期检测服务性能"
 
-#: common/tasks.py:130
+#: common/tasks.py:131
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -409,9 +413,9 @@ msgstr ""
 "每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送消息"
 "预警"
 
-#: common/tasks.py:139
-msgid "Import data from excel/csv file"
-msgstr "从excel/csv导入数据"
+#: common/tasks.py:140
+msgid "Run background task view set"
+msgstr "通过任务方式执行视图"
 
 #: common/templates/notify/msg_task.html:3
 #: system/templates/msg_verify_code.html:9
@@ -420,26 +424,26 @@ msgid "Hello"
 msgstr "你好"
 
 #: common/templates/notify/msg_task.html:6
-msgid "Your Task is finished"
-msgstr "你的任务已经执结束"
-
-#: common/templates/notify/msg_task.html:9
 msgid "Task name"
 msgstr "任务名称"
 
-#: common/templates/notify/msg_task.html:10
+#: common/templates/notify/msg_task.html:7
+msgid "Your Task is finished"
+msgstr "你的任务已经执结束"
+
+#: common/templates/notify/msg_task.html:18
 msgid "Task Id"
 msgstr "任务ID"
 
-#: common/templates/notify/msg_task.html:11
+#: common/templates/notify/msg_task.html:19
 msgid "Task start date"
 msgstr "任务开始时间"
 
-#: common/templates/notify/msg_task.html:12
+#: common/templates/notify/msg_task.html:20
 msgid "Task end date"
 msgstr "任务结束时间"
 
-#: common/templates/notify/msg_task.html:13
+#: common/templates/notify/msg_task.html:21
 msgid "Task result"
 msgstr "任务结果"
 

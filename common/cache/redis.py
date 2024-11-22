@@ -30,10 +30,11 @@ def format_input(data):
 
 class CacheList(object):
 
-    def __init__(self, key, max_size=1024):
+    def __init__(self, key, max_size=1024, timeout=None):
         self.connect = get_redis_connection("default")
         self.key = key
         self.max_size = max_size
+        self.timeout = timeout
 
     def auto_ltrim(self):
         stop = self.connect.llen(self.key)
@@ -44,6 +45,8 @@ class CacheList(object):
     def push(self, json_data, *args):
         self.connect.lpush(self.key, json.dumps(json_data), *[json.dumps(x) for x in args])
         self.auto_ltrim()
+        if self.timeout is not None:
+            self.connect.expire(self.key, self.timeout)
 
     def pop(self):
         try:
@@ -56,10 +59,11 @@ class CacheList(object):
     def delete(self):
         self.connect.delete(self.key)
 
+    def len(self):
+        return self.connect.llen(self.key)
 
-class RobotMsgCache(CacheList):
-    def __init__(self, key='', max_size=1024):
-        super().__init__(f'ai_robot_chat_msg_{key}', max_size)
+    def get_all(self):
+        return [format_return(k) for k in self.connect.lrange(self.key, 0, -1)]
 
 
 class CacheSet(object):

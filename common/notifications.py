@@ -130,24 +130,37 @@ class ServerPerformanceCheckUtil(object):
         self._terminals = [self.get_monitor_latest_average_value()]
 
 
-class ImportDataMessage(UserMessage):
-    category = 'Task Message'
-    category_label = _('Task Message')
-    message_type_label = _('Import data message')
-
-    def __init__(self, user, task):
-        self.task = task
-        super().__init__(user)
-
+class TaskMessage(object):
     def get_html_msg(self) -> dict:
-        subject = _('Import {} data {} message').format(self.task.get("view_doc"), self.task.get("status"))
         context = dict(
-            subject=subject,
+            subject=self.subject,
             name=self.user.nickname,
             **self.task,
         )
         message = render_to_string('notify/msg_task.html', context)
         return {
-            'subject': subject,
+            'subject': self.subject,
             'message': message
         }
+
+
+class ImportDataMessage(TaskMessage, UserMessage):
+    category = 'Task Message'
+    category_label = _('Task Message')
+    message_type_label = _('Import data message')
+
+    def __init__(self, user, task):
+        super().__init__(user)
+        self.task = task
+        self.subject = _('Import {} data {} message').format(self.task.get("view_doc"), self.task.get("status"))
+
+
+class BatchDeleteDataMessage(TaskMessage, UserMessage):
+    category = 'Task Message'
+    category_label = _('Task Message')
+    message_type_label = _('Batch delete data message')
+
+    def __init__(self, user, task):
+        super().__init__(user)
+        self.task = task
+        self.subject = _('Batch delete {} data {} message').format(self.task.get("view_doc"), self.task.get("status"))

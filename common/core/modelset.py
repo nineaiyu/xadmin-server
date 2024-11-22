@@ -4,11 +4,13 @@
 # filename : modelset
 # author : ly_13
 # date : 6/2/2023
+import itertools
 import json
 import uuid
 from hashlib import md5
 from typing import Callable
 
+import math
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
@@ -30,14 +32,30 @@ from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
-from common.core.utils import get_query_post_pks
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
-from common.tasks import import_data_from_file_job
+from common.tasks import background_task_view_set_job
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def run_view_by_celery_task(view, request, kwargs, list_data, batch_length=100):
+    task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
+    if task:
+        view_str = f"{view.__class__.__module__}.{view.__class__.__name__}"
+        meta = request.META
+        task_id = uuid.uuid4()
+        meta["task_count"] = math.ceil(len(list_data) / batch_length)
+        meta["action"] = view.action
+        for index, batch in enumerate(itertools.batched(list_data, batch_length)):
+            meta["task_id"] = f"{task_id}_{index}"
+            meta["task_index"] = index
+            res = background_task_view_set_job.apply_async(args=(view_str, meta, json.dumps(batch), view.action_map),
+                                                           task_id=meta["task_id"])
+            logger.info(f"add {view_str} task success. {res}")
+        return ApiResponse(detail=_("Task add success"))
 
 
 class CacheDetailResponseMixin(object):
@@ -108,20 +126,14 @@ class RankAction(object):
     get_queryset: Callable
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
-                required=['pks'],
-                description="主键列表"
-            )
-        ),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
         responses=get_default_response_schema()
     )
     @action(methods=['post'], detail=False, url_path='rank')
     def rank(self, request, *args, **kwargs):
         """{cls}排序"""
         rank = 1
-        for pk in get_query_post_pks(request):
+        for pk in request.data:
             self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
             rank += 1
         return ApiResponse(detail=_("Sorting saved successfully"))
@@ -338,7 +350,7 @@ class SearchColumnsAction(object):
         return ApiResponse(data=results)
 
 
-class BaseViewSet(GenericViewSet):
+class BaseViewSet(object):
     action: Callable
     extra_filter_class = []
 
@@ -375,30 +387,26 @@ class BatchDestroyAction(object):
     perform_destroy: Callable
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={'pks': build_array_type(build_basic_type(OpenApiTypes.STR))},
-                required=['pks'],
-                description="主键列表"
-            )
-        ),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
         responses=get_default_response_schema()
     )
     @action(methods=['post'], detail=False, url_path='batch-destroy')
     def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
-        pks = get_query_post_pks(request)
-        if not pks:
-            return ApiResponse(code=1003, detail=_("Operation failed. Primary key list does not exist"))
+
+        response = run_view_by_celery_task(self, request, kwargs, request.data, batch_length=30)
+        if response:
+            return response
+
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
         count = 0
-        for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+        for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=request.data):
             try:
                 deleted, _rows_count = self.perform_destroy(instance)
                 if deleted:
                     count += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"failed to destroy instance {instance} with error {e}")
         return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
 
 
@@ -484,16 +492,9 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     def import_data(self, request, *args, **kwargs):
         """导入{cls}数据"""
 
-        task = kwargs.get("task")
-        if not task:
-            # 任务异步导入
-            view = f"{self.__class__.__module__}.{self.__class__.__name__}"
-            meta = request.META
-            meta["task_id"] = str(uuid.uuid4())
-            res = import_data_from_file_job.apply_async(args=(view, meta, json.dumps(request.data)),
-                                                        task_id=meta["task_id"])
-            logger.info(f"add {view} import data task success. {res}")
-            return ApiResponse(detail=_("Task add success"))
+        response = run_view_by_celery_task(self, request, kwargs, request.data)
+        if response:
+            return response
 
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
@@ -523,25 +524,25 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
         return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
 
 
-class DetailUpdateModelSet(UpdateAction, DetailAction, BaseViewSet):
+class DetailUpdateModelSet(BaseViewSet, UpdateAction, DetailAction, GenericViewSet):
     pass
 
 
-class OnlyListModelSet(ListAction, SearchFieldsAction, SearchColumnsAction, BaseViewSet):
+class OnlyListModelSet(BaseViewSet, ListAction, SearchFieldsAction, SearchColumnsAction, GenericViewSet):
     pass
 
 
 # 全部 ViewSet 包含增删改查 
-class BaseModelSet(CreateAction, DestroyAction, UpdateAction, ListAction, DetailAction, SearchFieldsAction,
-                   SearchColumnsAction, BatchDestroyAction, BaseViewSet):
+class BaseModelSet(BaseViewSet, CreateAction, DestroyAction, UpdateAction, ListAction, DetailAction, SearchFieldsAction,
+                   SearchColumnsAction, BatchDestroyAction, GenericViewSet):
     pass
 
 
 # 只允许读和删除，不允许创建和修改
-class ListDeleteModelSet(DestroyAction, ListAction, DetailAction, SearchFieldsAction, SearchColumnsAction,
-                         BatchDestroyAction, BaseViewSet):
+class ListDeleteModelSet(BaseViewSet, DestroyAction, ListAction, DetailAction, SearchFieldsAction, SearchColumnsAction,
+                         BatchDestroyAction, GenericViewSet):
     pass
 
 
-class NoDetailModelSet(UpdateAction, DetailAction, SearchColumnsAction, BaseViewSet):
+class NoDetailModelSet(BaseViewSet, UpdateAction, DetailAction, SearchColumnsAction, GenericViewSet):
     pass
