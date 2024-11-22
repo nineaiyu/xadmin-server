@@ -13,7 +13,7 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import PeriodicTask
@@ -151,6 +151,9 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     meta["CONTENT_TYPE"] = "application/json"
     meta["CONTENT_LENGTH"] = len(b_data)
     request = WSGIRequest(meta)
+    language = translation.get_language_from_request(request)
+    translation.activate(language)
+    request.LANGUAGE_CODE = translation.get_language()
     result = view_func.as_view(action_map)(request, task=False)
     task_info["result"] = result.data.get("detail", result.data)
     task_info["end_time"] = local_now_display()
