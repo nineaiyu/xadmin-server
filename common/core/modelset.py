@@ -394,9 +394,9 @@ class BatchDestroyAction(object):
     def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
 
-        response = run_view_by_celery_task(self, request, kwargs, request.data, batch_length=30)
-        if response:
-            return response
+        # response = run_view_by_celery_task(self, request, kwargs, request.data, batch_length=30)
+        # if response:
+        #     return response
 
         # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
         count = 0
