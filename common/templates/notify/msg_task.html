@@ -1,0 +1,24 @@
+{% load i18n %}
+<p>
+    {% trans 'Hello' %} {{ name }},
+</p>
+<p>
+    <b>{% trans 'Task name' %}:</b> {{ task_name }}<br>
+    {% trans 'Your Task is finished' %}<br>
+    {% if state %}
+        <span style="color: green;">{{ status }}</span>
+    {% else %}
+        <span style="color: red;">{{ status }}</span>
+    {% endif %}
+</p>
+
+-
+{% for task in tasks %}
+    <p>
+        <b>{% trans 'Task Id' %}:</b> {{ task.task_id }}<br>
+        <b>{% trans 'Task start date' %}:</b> {{ task.start_time }}<br>
+        <b>{% trans 'Task end date' %}:</b> {{ task.end_time }}<br>
+        <b>{% trans 'Task result' %}:</b> {{ task.result }}
+    </p>
+    <br>
+{% endfor %}
