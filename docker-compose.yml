@@ -61,7 +61,7 @@ services:
       - net
 
   server:
-    image: nineaiyu/xadmin-server
+    image: xadmin-server
     container_name: xadmin-server
     hostname: xadmin-server
     build:
@@ -71,7 +71,7 @@ services:
       core: 0
     restart: always
     privileged: true
-    command: start all
+    command: start web
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
@@ -83,6 +83,33 @@ services:
       start_period: 90s
     depends_on:
       - nginx
+      - postgresql
+      - redis
+    networks:
+      - net
+
+  celery:
+    image: xadmin-server
+    container_name: xadmin-celery
+    hostname: xadmin-celery
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    ulimits:
+      core: 0
+    restart: always
+    privileged: true
+    command: start task
+    volumes:
+      - ./:/data/xadmin-server
+    #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    healthcheck:
+      test: "bash utils/check_celery.sh"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    depends_on:
       - postgresql
       - redis
     networks:
