@@ -23,6 +23,7 @@ services:
     image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.5
     container_name: xadmin-postgresql
     restart: always
+    command: [ "postgres","-c","max_connections=8000" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
