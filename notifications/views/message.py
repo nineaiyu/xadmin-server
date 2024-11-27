@@ -97,10 +97,10 @@ class NoticeUserReadMessageViewSet(ListDeleteModelSet):
     def state(self, request, *args, **kwargs):
         """修改{cls}状态"""
         instance = self.get_object()
-        if instance.notice.notice_type in MessageContent.user_choices:
+        if instance.notice.notice_type in MessageContent.get_user_choices():
             instance.unread = request.data.get('unread', True)
             instance.modifier = request.user
             instance.save(update_fields=['unread', 'modifier'])
-        if instance.notice.notice_type in MessageContent.notice_choices:
+        if instance.notice.notice_type in MessageContent.get_notice_choices():
             instance.delete()
         return ApiResponse()

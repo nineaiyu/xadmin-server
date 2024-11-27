@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-22 19:43+0800\n"
+"POT-Creation-Date: 2024-11-27 11:21+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -571,26 +571,26 @@ msgstr "上传的附件"
 msgid "Publish"
 msgstr "发布"
 
-#: notifications/models/message.py:55
+#: notifications/models/message.py:53
 msgid "Message content"
 msgstr "消息中心"
 
-#: notifications/models/message.py:70 notifications/models/notification.py:17
+#: notifications/models/message.py:68 notifications/models/notification.py:17
 #: notifications/models/notification.py:30
 #: notifications/serializers/notifications.py:20
 #: notifications/serializers/notifications.py:39 system/models/config.py:39
 msgid "User"
 msgstr "用户"
 
-#: notifications/models/message.py:71
+#: notifications/models/message.py:69
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:72 notifications/serializers/message.py:157
+#: notifications/models/message.py:70 notifications/serializers/message.py:157
 msgid "Unread"
 msgstr "未读"
 
-#: notifications/models/message.py:76
+#: notifications/models/message.py:74
 msgid "User read message"
 msgstr "用户已读消息"
 
