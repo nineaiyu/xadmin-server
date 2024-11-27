@@ -37,7 +37,7 @@ def get_user_unread_q1(user_obj):
 
 
 def get_user_unread_q2(user_obj):
-    return Q(notice_type__in=MessageContent.user_choices, notice_user=user_obj, messageuserread__unread=True)
+    return Q(notice_type__in=MessageContent.get_user_choices(), notice_user=user_obj, messageuserread__unread=True)
 
 
 def get_user_unread_q(user_obj):
@@ -72,7 +72,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     def list(self, request, *args, **kwargs):
         unread_count = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).count()
         q = get_users_notice_q(request.user)
-        q |= Q(notice_type__in=MessageContent.user_choices, notice_user=request.user)
+        q |= Q(notice_type__in=MessageContent.get_user_choices(), notice_user=request.user)
         self.queryset = self.filter_queryset(self.get_queryset()).filter(q)
         data = super().list(request, *args, **kwargs).data
         return ApiResponse(**data, unread_count=unread_count)

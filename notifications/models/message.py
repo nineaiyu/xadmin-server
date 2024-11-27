@@ -42,13 +42,11 @@ class MessageContent(DbAuditModel):
     publish = models.BooleanField(verbose_name=_("Publish"), default=True)
 
     @classmethod
-    @property
-    def user_choices(cls):
+    def get_user_choices(cls):
         return [cls.NoticeChoices.USER, cls.NoticeChoices.SYSTEM]
 
     @classmethod
-    @property
-    def notice_choices(cls):
+    def get_notice_choices(cls):
         return [cls.NoticeChoices.NOTICE, cls.NoticeChoices.DEPT, cls.NoticeChoices.ROLE]
 
     class Meta:

@@ -44,11 +44,11 @@ class NoticeMessageSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
-        if obj.notice_type in MessageContent.user_choices:
+        if obj.notice_type in MessageContent.get_user_choices():
             return MessageUserRead.objects.filter(notice=obj, unread=False,
                                                   owner_id__in=obj.notice_user.all()).count()
 
-        elif obj.notice_type in MessageContent.notice_choices:
+        elif obj.notice_type in MessageContent.get_notice_choices():
             return obj.notice_user.count()
 
         return 0
@@ -159,8 +159,8 @@ class UserNoticeSerializer(BaseModelSerializer):
     @extend_schema_field(serializers.BooleanField)
     def get_unread(self, obj):
         queryset = MessageUserRead.objects.filter(notice=obj, owner=self.context.get('request').user)
-        if obj.notice_type in MessageContent.user_choices:
+        if obj.notice_type in MessageContent.get_user_choices():
             return bool(queryset.filter(unread=True).count())
-        elif obj.notice_type in MessageContent.notice_choices:
+        elif obj.notice_type in MessageContent.get_notice_choices():
             return not bool(queryset.count())
         return True
