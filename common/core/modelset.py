@@ -6,11 +6,11 @@
 # date : 6/2/2023
 import itertools
 import json
+import math
 import uuid
 from hashlib import md5
 from typing import Callable
 
-import math
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
@@ -41,15 +41,17 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-def run_view_by_celery_task(view, request, kwargs, list_data, batch_length=100):
+def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
     task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
     if task:
         view_str = f"{view.__class__.__module__}.{view.__class__.__name__}"
         meta = request.META
         task_id = uuid.uuid4()
-        meta["task_count"] = math.ceil(len(list_data) / batch_length)
+        if isinstance(data, dict):
+            data = [data]
+        meta["task_count"] = math.ceil(len(data) / batch_length)
         meta["action"] = view.action
-        for index, batch in enumerate(itertools.batched(list_data, batch_length)):
+        for index, batch in enumerate(itertools.batched(data, batch_length)):
             meta["task_id"] = f"{task_id}_{index}"
             meta["task_index"] = index
             res = background_task_view_set_job.apply_async(args=(view_str, meta, json.dumps(batch), view.action_map),
