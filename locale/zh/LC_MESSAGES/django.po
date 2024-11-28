@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-27 13:22+0800\n"
+"POT-Creation-Date: 2024-11-28 10:19+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -162,91 +162,91 @@ msgstr "文件解析失败 {}"
 msgid "Invalid excel file {}"
 msgstr "错误的Excel文件 {}"
 
-#: common/drf/renders/base.py:148
+#: common/drf/renders/base.py:147
 msgid "Yes/No"
 msgstr ""
 
-#: common/drf/renders/base.py:151
+#: common/drf/renders/base.py:150
 msgid "Text, max length {}"
 msgstr "文本，最大长度 {}"
 
-#: common/drf/renders/base.py:153
+#: common/drf/renders/base.py:152
 msgid "Long text, no length limit"
 msgstr "长文本，无长度限制"
 
-#: common/drf/renders/base.py:155
+#: common/drf/renders/base.py:154
 msgid "Number, min {}, max {}"
 msgstr "数字, 最小 {}, 最大 {}"
 
-#: common/drf/renders/base.py:157
+#: common/drf/renders/base.py:156
 msgid "Float, min {}, max {}"
 msgstr "浮点数, 最小 {}, 最大 {}"
 
-#: common/drf/renders/base.py:159
+#: common/drf/renders/base.py:158
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr "固定精度的数, 最小 {}, 最大 {}, 最大位数（小数和整数）{}, 小数位数 {}"
 
-#: common/drf/renders/base.py:164
+#: common/drf/renders/base.py:163
 msgid "Datetime format {}"
 msgstr "日期时间格式 {}"
 
-#: common/drf/renders/base.py:166
+#: common/drf/renders/base.py:165
 #: system/templates/notify/msg_rest_password_success.html:9
 msgid "IP"
 msgstr "IP"
 
-#: common/drf/renders/base.py:170
+#: common/drf/renders/base.py:169
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr "选项，格式: 名称(值)，名称是可选的，方便阅读，值是必填的，可选项有 {}"
 
-#: common/drf/renders/base.py:173
+#: common/drf/renders/base.py:172
 msgid "Choices, options {}"
 msgstr "选项，可选项有 {}"
 
-#: common/drf/renders/base.py:175
+#: common/drf/renders/base.py:174
 msgid "Phone number, format +8612345678901"
 msgstr "手机号，格式 +8612345678901"
 
-#: common/drf/renders/base.py:177
+#: common/drf/renders/base.py:176
 msgid "Label, format [\"key:value\"]"
 msgstr "标签，格式: [\"键:值\"]"
 
-#: common/drf/renders/base.py:179
+#: common/drf/renders/base.py:178
 msgid ""
 "Object, format name(id), name is optional for human read, id is requisite"
 msgstr "关联项，格式: 名称(id), 名称是可选的，方便阅读，id 是必填的"
 
-#: common/drf/renders/base.py:181
+#: common/drf/renders/base.py:180
 msgid "Object, format id"
 msgstr "关联项，格式是 id"
 
-#: common/drf/renders/base.py:185
+#: common/drf/renders/base.py:184
 msgid ""
 "Objects, format [\"name(id)\", ...], name is optional for human read, id is "
 "requisite"
 msgstr ""
 "多关联项，格式: [\"名称(id)\", ...], 名称是可选的，方便阅读，id 是必填的"
 
-#: common/drf/renders/base.py:187
+#: common/drf/renders/base.py:186
 msgid ""
 "Labels, format [\"key:value\", ...], if label not exists, will create it"
 msgstr "标签，格式: [\"键:值\", ...], 如果标签不存在，将创建它"
 
-#: common/drf/renders/base.py:189
+#: common/drf/renders/base.py:188
 msgid "Objects, format [\"id\", ...]"
 msgstr "多关联项，格式是 [\"id\", ...]"
 
-#: common/drf/renders/base.py:195
+#: common/drf/renders/base.py:194
 msgid "JSON"
 msgstr "JSON格式的数据"
 
-#: common/drf/renders/base.py:197
+#: common/drf/renders/base.py:196
 msgid "UUID4"
 msgstr ""
 
-#: common/drf/renders/base.py:302
+#: common/drf/renders/base.py:301
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
@@ -722,6 +722,14 @@ msgstr "数据权限"
 #: settings/serializers/basic.py:35
 msgid "Data permissions are used to authorize access to data"
 msgstr "数据权限用于授权访问数据"
+
+#: settings/serializers/basic.py:39
+msgid "Export max limit"
+msgstr "数据导出限制"
+
+#: settings/serializers/basic.py:40
+msgid "Limit the maximum number of rows of exported data"
+msgstr "导出数据最大行数限制"
 
 #: settings/serializers/email.py:13
 msgid "Enable Email Service (Email)"

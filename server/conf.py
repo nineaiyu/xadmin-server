@@ -134,6 +134,7 @@ class Config(dict):
         'PERMISSION_FIELD_ENABLED': True,  # 字段权限控制
         'PERMISSION_DATA_ENABLED': True,  # 数据权限控制
         'REFERER_CHECK_ENABLED': False,  # referer 校验
+        'EXPORT_MAX_LIMIT': 20000,  # 限制导出数据数量
         # 验证码配置
         'VERIFY_CODE_TTL': 5 * 60,  # Unit: second
         'VERIFY_CODE_LIMIT': 60,
