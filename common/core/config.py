@@ -172,10 +172,6 @@ class BaseConfCache(ConfigCacheBase):
     def PICTURE_UPLOAD_SIZE(self):
         return self.get_value('PICTURE_UPLOAD_SIZE', settings.PICTURE_UPLOAD_SIZE)
 
-    @property
-    def EXPORT_MAX_LIMIT(self):
-        return self.get_value('EXPORT_MAX_LIMIT', 20000)
-
 
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):

@@ -13,7 +13,7 @@ from system.signal import invalid_user_cache_signal
 
 class BasicSettingSerializer(serializers.Serializer):
     SITE_URL = serializers.URLField(
-        required=True, label=_("Site URL"),
+        required=False, label=_("Site URL"),
         help_text=_(
             'Site URL is the externally accessible address of the current product '
             'service and is usually used in links in system emails'
@@ -33,6 +33,11 @@ class BasicSettingSerializer(serializers.Serializer):
     PERMISSION_DATA_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Data permission"),
         help_text=_("Data permissions are used to authorize access to data")
+    )
+
+    EXPORT_MAX_LIMIT = serializers.IntegerField(
+        required=False, label=_('Export max limit'),
+        help_text=_("Limit the maximum number of rows of exported data")
     )
 
     @staticmethod

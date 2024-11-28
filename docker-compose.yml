@@ -32,7 +32,7 @@ services:
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
     healthcheck:
-      test: "pg_isready -q -U $$POSTGRES_USER"
+      test: "pg_isready -q -U $$POSTGRES_USER -d $$POSTGRES_DB"
       interval: 10s
       timeout: 5s
       retries: 3

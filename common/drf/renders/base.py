@@ -10,7 +10,6 @@ from rest_framework import serializers
 from rest_framework.renderers import BaseRenderer
 from rest_framework.utils import encoders, json
 
-from common.core.config import SysConfig
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField, PhoneField
 from common.utils import get_logger
 from common.utils.timezone import local_now
@@ -89,7 +88,7 @@ class BaseFileRenderer(BaseRenderer):
             results = [results[0]] if results else results
         else:
             # 限制数据数量
-            results = results[:SysConfig.EXPORT_MAX_LIMIT]
+            results = results[:settings.EXPORT_MAX_LIMIT]
         # 会将一些 UUID 字段转化为 string
         results = json.loads(json.dumps(results, cls=encoders.JSONEncoder))
         return results
