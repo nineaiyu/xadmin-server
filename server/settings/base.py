@@ -156,9 +156,14 @@ CACHES = {
 
 DB_OPTIONS = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
+if DB_ENGINE in ['mysql', 'oracle', 'postgresql', 'sqlite3']:
+    ENGINE = 'django.db.backends.{}'.format(DB_ENGINE)
+else:
+    ENGINE = CONFIG.DB_ENGINE
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.{}'.format(DB_ENGINE),
+        'ENGINE': DB_ENGINE,
         'NAME': CONFIG.DB_DATABASE,
         'HOST': CONFIG.DB_HOST,
         'PORT': CONFIG.DB_PORT,
