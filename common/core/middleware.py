@@ -119,6 +119,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         return
 
     def process_request(self, request):
+        if request.path == '/api/common/api/health':
+            return
         self.__handle_request(request)
 
     def process_response(self, request, response):
@@ -127,6 +129,8 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         :param response:
         :return:
         """
+        if request.path == '/api/common/api/health':
+            return response
         show = False
         if self.enable:
             if self.methods == 'ALL' or request.method in self.methods:
