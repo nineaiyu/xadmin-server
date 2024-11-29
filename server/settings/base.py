@@ -163,7 +163,7 @@ else:
 
 DATABASES = {
     'default': {
-        'ENGINE': DB_ENGINE,
+        'ENGINE': ENGINE,
         'NAME': CONFIG.DB_DATABASE,
         'HOST': CONFIG.DB_HOST,
         'PORT': CONFIG.DB_PORT,
