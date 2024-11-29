@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 11/14/2024
 
+from ..const import CONFIG
+
 # 访问白名单配置，无需权限配置, key为路由，value为列表，对应的是请求方式， * 表示全部请求方式, 请求方式为大写
 PERMISSION_WHITE_URL = {
     "^/api/system/login$": ['*'],
@@ -43,17 +45,11 @@ PERMISSION_DATA_AUTH_APPS = [
     'notifications'
 ]
 
-API_LOG_ENABLE = True
-API_LOG_METHODS = ["POST", "DELETE", "PUT", "PATCH"]  # 'ALL'
+API_LOG_ENABLE = CONFIG.API_LOG_ENABLE
+API_LOG_METHODS = CONFIG.API_LOG_METHODS  # 'ALL'
 
 # 忽略日志记录, 支持model 或者 request_path, 不支持正则
-API_LOG_IGNORE = {
-    'system.OperationLog': ['GET'],
-    '/api/common/api/health': ['GET'],
-}
+API_LOG_IGNORE = CONFIG.API_LOG_IGNORE
 
 # 在操作日志中详细记录的请求模块映射
-API_MODEL_MAP = {
-    "/api/system/refresh": "Token刷新",
-    "/api/flower": "定时任务",
-}
+API_MODEL_MAP = CONFIG.API_MODEL_MAP

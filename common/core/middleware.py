@@ -14,7 +14,7 @@ from django.utils.deprecation import MiddlewareMixin
 from rest_framework.utils import encoders
 
 from common.utils import get_logger
-from common.utils.request import get_request_user, get_request_ip, get_request_data, get_request_path, get_os, \
+from common.utils.request import get_request_user, get_request_ip, get_request_data, get_os, \
     get_browser, get_verbose_name
 from system.models import OperationLog
 
@@ -34,7 +34,6 @@ class ApiLoggingMiddleware(MiddlewareMixin):
     def __handle_request(cls, request):
         request.request_ip = get_request_ip(request)
         request.request_data = get_request_data(request)
-        request.request_path = get_request_path(request)
         request.request_start_time = time.time()
         logger.debug(f"request start. {request.method} {request.path} {getattr(request, 'request_data', {})}")
 
@@ -80,7 +79,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             'dept_belong_id': getattr(request.user, 'dept_id', None),
             'ipaddress': getattr(request, 'request_ip'),
             'method': request.method,
-            'path': request.request_path,
+            'path': request.path,
             'body': json.dumps(body) if isinstance(body, dict) else body,
             'response_code': response.status_code,
             'system': get_os(request),
@@ -105,10 +104,10 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 if self.methods == 'ALL' or request.method in self.methods:
                     model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
                     if (model and request.method in self.ignores.get(model._meta.label, [])) or (
-                            request.method in self.ignores.get(request.request_path, [])):
+                            request.method in self.ignores.get(request.path, [])):
                         return
                     if not v:
-                        v = settings.API_MODEL_MAP.get(request.request_path, v)
+                        v = settings.API_MODEL_MAP.get(request.path, v)
                         if not v and model:
                             v = model._meta.label
                     log = OperationLog(module=v)
