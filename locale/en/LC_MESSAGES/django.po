@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-28 10:19+0800\n"
+"POT-Creation-Date: 2024-11-29 15:39+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,7 +24,7 @@ msgid ""
 msgstr ""
 
 #: common/core/auth.py:25 common/core/filter.py:204 common/core/filter.py:212
-#: common/core/permission.py:126
+#: common/core/permission.py:131
 msgid "Unauthorized authentication"
 msgstr ""
 
@@ -49,21 +49,21 @@ msgstr ""
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr ""
 
-#: common/core/fields.py:78
-msgid "This field is required."
-msgstr ""
-
 #: common/core/fields.py:79
-#, python-brace-format
-msgid "Invalid pk \"{pk_value}\" - object does not exist."
+msgid "This field is required."
 msgstr ""
 
 #: common/core/fields.py:80
 #, python-brace-format
-msgid "Incorrect type. Expected pk value, received {data_type}."
+msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr ""
 
 #: common/core/fields.py:81
+#, python-brace-format
+msgid "Incorrect type. Expected pk value, received {data_type}."
+msgstr ""
+
+#: common/core/fields.py:82
 msgid "The query set is empty."
 msgstr ""
 
@@ -127,7 +127,7 @@ msgstr ""
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
-#: common/core/permission.py:124
+#: common/core/permission.py:129
 msgid "Permission denied"
 msgstr ""
 

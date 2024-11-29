@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-28 10:19+0800\n"
+"POT-Creation-Date: 2024-11-29 15:39+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:25 common/core/filter.py:204 common/core/filter.py:212
-#: common/core/permission.py:126
+#: common/core/permission.py:131
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
@@ -48,21 +48,21 @@ msgstr "请求地址不正确或数据权限不允许"
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: common/core/fields.py:78
+#: common/core/fields.py:79
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/fields.py:79
+#: common/core/fields.py:80
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 
-#: common/core/fields.py:80
+#: common/core/fields.py:81
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
-#: common/core/fields.py:81
+#: common/core/fields.py:82
 msgid "The query set is empty."
 msgstr "当前查询对象为空"
 
@@ -126,7 +126,7 @@ msgstr "操作成功，导入 {} 条数据"
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/permission.py:124
+#: common/core/permission.py:129
 msgid "Permission denied"
 msgstr "权限拒绝"
 

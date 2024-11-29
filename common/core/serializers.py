@@ -13,6 +13,7 @@ from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
+from server.utils import get_current_request
 
 
 class BaseModelSerializer(ModelSerializer):
@@ -31,21 +32,6 @@ class BaseModelSerializer(ModelSerializer):
         # if html.is_html_input(dictionary):
         #     return html.parse_html_dict(dictionary, prefix=self.field_name) or empty
         return dictionary.get(self.field_name, empty)
-
-    def get_uniqueness_extra_kwargs(self, field_names, declared_fields, extra_kwargs):
-        """
-        # 该方法是为了让继承BaseModelSerializer的方法，增加request传参,例如下面，为meta这个字段的序列化增加request参数
-        class MenuSerializer(BaseModelSerializer):
-            meta = MenuMetaSerializer()
-        """
-        for field_name in declared_fields:
-            if declared_fields[field_name] and isinstance(declared_fields[field_name],
-                                                          (BaseModelSerializer, BasePrimaryKeyRelatedField)):
-                obj = declared_fields[field_name]
-                declared_fields[field_name] = obj.__class__(*obj._args, **obj._kwargs, request=self.request)
-
-        extra_kwargs, hidden_fields = super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
-        return super().get_uniqueness_extra_kwargs(field_names, declared_fields, extra_kwargs)
 
     def get_allow_fields(self, fields, ignore_field_permission):
         """
@@ -74,7 +60,7 @@ class BaseModelSerializer(ModelSerializer):
 
         return set(fields) & _fields & set(allow_fields)
 
-    def __init__(self, instance=None, data=empty, request=None, fields=None, ignore_field_permission=False, **kwargs):
+    def __init__(self, instance=None, data=empty, fields=None, ignore_field_permission=False, **kwargs):
         """
         :param instance:
         :param data:
@@ -83,7 +69,7 @@ class BaseModelSerializer(ModelSerializer):
         :param ignore_field_permission: 忽略字段权限控制
         """
         super().__init__(instance, data, **kwargs)
-        self.request: Request = request or self.context.get("request", None)
+        self.request: Request = get_current_request()
         if self.request is None:
             return
         allowed = self.get_allow_fields(fields, ignore_field_permission)
@@ -100,20 +86,3 @@ class BaseModelSerializer(ModelSerializer):
             field_kwargs.setdefault("default", default)
         return field_class, field_kwargs
 
-    def create(self, validated_data):
-        if self.request:
-            user = self.request.user
-            if user and user.is_authenticated:
-                if hasattr(self.Meta.model, 'creator') or hasattr(self.instance, 'creator'):
-                    validated_data["creator"] = user
-                if hasattr(self.Meta.model, 'dept_belong') or hasattr(self.instance, 'dept_belong'):
-                    validated_data["dept_belong"] = user.dept
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        if self.request:
-            user = self.request.user
-            if user and user.is_authenticated:
-                if hasattr(self.instance, 'modifier'):
-                    validated_data["modifier"] = user
-        return super().update(instance, validated_data)

@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 6/6/2023
 import re
+import uuid
 
 from django.conf import settings
 from django.db.models import Q
@@ -13,6 +14,7 @@ from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from server.utils import get_current_request, set_current_request
 from system.models import Menu, FieldPermission
 
 
@@ -92,6 +94,9 @@ class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
         auth = bool(request.user and request.user.is_authenticated)
         if auth:
+            request.request_uuid = getattr(get_current_request(), "request_uuid", uuid.uuid4())
+            set_current_request(request)
+
             if request.user.is_superuser:
                 request.ignore_field_permission = True
                 return True

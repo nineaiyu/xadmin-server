@@ -5,13 +5,10 @@
 # author : ly_13
 # date : 10/18/2024
 
-from functools import partial
-
 from django.conf import settings
 from django.db import connection
 from django.db.backends.utils import truncate_name
 from django.db.models.signals import class_prepared
-from werkzeug.local import LocalProxy
 
 from common.local import thread_local
 
@@ -26,10 +23,6 @@ def _find(attr):
 
 def get_current_request():
     return _find('current_request')
-
-
-current_request = LocalProxy(partial(_find, 'current_request'))
-
 
 def add_db_prefix(sender, **kwargs):
     prefix = settings.DB_PREFIX

@@ -5,11 +5,16 @@
 # author : ly_13
 # date : 6/29/2023
 import logging
+import re
+from collections import defaultdict
 
 from celery import signature
 from celery.signals import worker_ready, worker_shutdown, after_setup_logger
+from django.conf import settings
 from django.core.cache import cache
-from django.db.models.signals import pre_delete
+from django.core.signals import request_finished
+from django.db import connection
+from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
 from django_celery_beat.models import PeriodicTask
 from django_celery_results.models import TaskResult
@@ -19,9 +24,12 @@ from common.celery.decorator import get_after_app_ready_tasks, get_after_app_shu
 from common.celery.logger import CeleryThreadTaskFileHandler
 from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
+from server.utils import get_current_request
 
 logger = get_logger(__name__)
 safe_str = lambda x: x
+
+pattern = re.compile(r'FROM `(\w+)`')
 
 
 @worker_ready.connect
@@ -61,7 +69,6 @@ def delete_file_handler(sender, **kwargs):
             log_path = get_celery_task_log_path(task_id)
             remove_file(log_path)
 
-
 @after_setup_logger.connect
 def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, **kwargs):
     if not logger:
@@ -71,3 +78,82 @@ def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, 
     formatter = logging.Formatter(format)
     task_handler.setFormatter(formatter)
     logger.addHandler(task_handler)
+
+
+class Counter:
+    def __init__(self):
+        self.counter = 0
+        self.time = 0
+
+    def __gt__(self, other):
+        return self.counter > other.counter
+
+    def __lt__(self, other):
+        return self.counter < other.counter
+
+    def __eq__(self, other):
+        return self.counter == other.counter
+
+
+def on_request_finished_logging_db_query(sender, **kwargs):
+    queries = connection.queries
+    counters = defaultdict(Counter)
+    table_queries = defaultdict(list)
+    for query in queries:
+        if not query['sql'] or not query['sql'].startswith('SELECT'):
+            continue
+        tables = pattern.findall(query['sql'])
+        table_name = ''.join(tables)
+        time = query['time']
+        counters[table_name].counter += 1
+        counters[table_name].time += float(time)
+        counters['total'].counter += 1
+        counters['total'].time += float(time)
+        table_queries[table_name].append(query)
+
+    counters = sorted(counters.items(), key=lambda x: x[1])
+    if not counters:
+        return
+
+    method = 'GET'
+    path = '/Unknown'
+    current_request = get_current_request()
+    if current_request:
+        method = current_request.method
+        path = current_request.get_full_path()
+
+    print(">>>. [{}] {}".format(method, path))
+
+    for name, counter in counters:
+        logger.debug("Query {:3} times using {:.2f}s {}".format(
+            counter.counter, counter.time, name)
+        )
+
+
+def _get_request_user():
+    current_request = get_current_request()
+    if current_request and current_request.user and current_request.user.is_authenticated:
+        return current_request.user
+
+
+@receiver(pre_save)
+def on_create_set_creator(sender, instance=None, **kwargs):
+    if getattr(instance, '_ignore_auto_creator', False):
+        return
+    if not hasattr(instance, 'creator') or instance.creator:
+        return
+    instance.creator = _get_request_user()
+    if hasattr(instance, 'dept_belong') and instance.creator:
+        instance.dept_belong = instance.creator.dept
+
+
+@receiver(pre_save)
+def on_update_set_modifier(sender, instance=None, created=False, **kwargs):
+    if getattr(instance, '_ignore_auto_modifier', False):
+        return
+    if hasattr(instance, 'modifier'):
+        instance.modifier = _get_request_user()
+
+
+if settings.DEBUG_DEV:
+    request_finished.connect(on_request_finished_logging_db_query)

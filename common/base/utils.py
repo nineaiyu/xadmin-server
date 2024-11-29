@@ -146,7 +146,7 @@ def format_menu_meta(meta: dict) -> dict:
 def format_menu_data(data):
     new_result = []
     for d in data:
-        if d.get('count', -1) < 2:
+        if d.get('count', -1) < 1:
             route = {
                 'path': f"/default{d.get('path')}",
                 'title': d.get('title'),

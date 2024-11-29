@@ -37,7 +37,7 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
             route_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
-                                         many=True, context={'user': request.user}, ignore_field_permission=True).data
+                                         many=True, ignore_field_permission=True).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
         else:
@@ -45,6 +45,6 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
             if menu_queryset:
                 route_list = RouteSerializer(
                     menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
-                    context={'user': request.user}, ignore_field_permission=True).data
+                    ignore_field_permission=True).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
