@@ -17,6 +17,7 @@ from rest_framework.request import Request
 from rest_framework.serializers import RelatedField, MultipleChoiceField
 
 from common.core.filter import get_filter_queryset
+from server.utils import get_current_request
 
 
 def attr_get(obj, attr, sp='.'):
@@ -81,9 +82,8 @@ class BasePrimaryKeyRelatedField(RelatedField):
         "queryset_none": _("The query set is empty."),
     }
 
-    def __init__(self, request=None, attrs=None, ignore_field_permission=False, **kwargs):
+    def __init__(self, attrs=None, ignore_field_permission=False, **kwargs):
         """
-        :param request:
         :param attrs: 默认为 None，返回默认的 pk， 一般需要自定义
         :param ignore_field_permission: 忽略字段权限控制
         """
@@ -92,16 +92,15 @@ class BasePrimaryKeyRelatedField(RelatedField):
         self.input_type = kwargs.pop("input_type", '')
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
-        self.request: Request = request or self.context.get("request", None)
+        self.request: Request = get_current_request()
         self.ignore_field_permission = ignore_field_permission
 
     def use_pk_only_optimization(self):
         return False
 
     def __add_request(self):
-        request = self.context.get("request", None)
         if not self.request:
-            self.request = request
+            self.request = get_current_request()
 
     def get_queryset(self):
         self.__add_request()

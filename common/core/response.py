@@ -8,7 +8,7 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
 
-from server.utils import current_request
+from server.utils import get_current_request
 
 
 class ApiResponse(Response):
@@ -16,7 +16,7 @@ class ApiResponse(Response):
         dic = {
             'code': code,
             'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
-            'requestId': str(getattr(current_request, 'request_uuid', ""))
+            'requestId': str(getattr(get_current_request(), 'request_uuid', ""))
         }
         if data is not None:
             dic['data'] = data

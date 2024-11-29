@@ -6,10 +6,9 @@
 # date : 10/18/2024
 
 
-from werkzeug.local import Local
+from asgiref.local import Local
 
-thread_local = Local()
-
+thread_local = Local(thread_critical=True)
 
 def _find(attr):
     return getattr(thread_local, attr, None)

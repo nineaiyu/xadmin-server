@@ -42,14 +42,14 @@ class MenuSerializer(BaseModelSerializer):
     def update(self, instance, validated_data):
         with transaction.atomic():
             serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
-                                            context=self.context, request=self.request)
+                                            context=self.context)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return super().update(instance, validated_data)
 
     def create(self, validated_data):
         with transaction.atomic():
-            serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context, request=self.request)
+            serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context)
             serializer.is_valid(raise_exception=True)
             validated_data['meta'] = serializer.save()
             return super().create(validated_data)

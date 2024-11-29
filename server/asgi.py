@@ -7,6 +7,7 @@ For more information on this file, see
 https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 """
 import os
+import uuid
 
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
@@ -43,6 +44,7 @@ def get_signature_user(scope):
             user, _ = backend().authenticate(request)
             if user:
                 request.user = user
+                request.request_uuid = uuid.uuid4()
                 set_current_request(request)
                 logger.info(f"web socket auth success")
                 return user

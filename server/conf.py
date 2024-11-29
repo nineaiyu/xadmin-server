@@ -174,7 +174,17 @@ class Config(dict):
     }
 
     defaults = {
-
+        'API_LOG_ENABLE': True,
+        # 忽略日志记录, 支持model 或者 request_path, 不支持正则
+        'API_LOG_IGNORE': {
+            'system.OperationLog': ['GET'],
+            '/api/common/api/health': ['GET'],
+        },
+        'API_LOG_METHODS': ["POST", "DELETE", "PUT", "PATCH"],
+        'API_MODEL_MAP': {
+            "/api/system/refresh": "Token刷新",
+            "/api/flower": "定时任务",
+        }
     }
     defaults.update(base)
     defaults.update(libs)
