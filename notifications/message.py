@@ -31,7 +31,7 @@ class SiteMessageUtil:
     def push_notice_messages(cls, notify_obj, pks):
         notice_message = NoticeMessageSerializer(
             fields=['pk', 'level', 'title', 'notice_type', 'message'],
-            instance=notify_obj).data
+            instance=notify_obj, ignore_field_permission=True).data
         notice_message['message_type'] = 'notify_message'
         for pk in pks:
             if UserConfig(pk).PUSH_MESSAGE_NOTICE:
