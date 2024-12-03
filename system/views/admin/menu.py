@@ -94,12 +94,12 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
                 if skip_existing:
                     continue
                 data['meta']['title'] = 'U-' + data['meta']['title']
-                serializer = self.get_serializer(permission_menu, data=data, partial=True)
+                serializer = self.get_serializer(permission_menu, data=data, partial=True, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             else:
                 data['meta']['title'] = 'C-' + data['meta']['title']
-                serializer = self.get_serializer(data=data)
+                serializer = self.get_serializer(data=data, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
 

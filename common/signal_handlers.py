@@ -142,18 +142,21 @@ def on_create_set_creator(sender, instance=None, **kwargs):
         return
     if not hasattr(instance, 'creator') or instance.creator:
         return
-    instance.creator = _get_request_user()
-    if hasattr(instance, 'dept_belong') and instance.creator:
-        instance.dept_belong = instance.creator.dept
+    creator = _get_request_user()
+    if creator:
+        instance.creator = creator
+        if hasattr(instance, 'dept_belong'):
+            instance.dept_belong = creator.dept
 
 
 @receiver(pre_save)
-def on_update_set_modifier(sender, instance=None, created=False, **kwargs):
+def on_update_set_modifier(sender, instance=None, **kwargs):
     if getattr(instance, '_ignore_auto_modifier', False):
         return
     if hasattr(instance, 'modifier'):
-        instance.modifier = _get_request_user()
-
+        modifier = _get_request_user()
+        if modifier:
+            instance.modifier = modifier
 
 if settings.DEBUG_DEV:
     request_finished.connect(on_request_finished_logging_db_query)
