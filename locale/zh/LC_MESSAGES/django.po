@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-29 15:39+0800\n"
+"POT-Creation-Date: 2024-12-03 20:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2030,6 +2030,10 @@ msgstr "文件大小不能超过 {}"
 #: system/views/admin/file.py:90
 msgid "Wrong upload file type"
 msgstr "错误的文件类型"
+
+#: system/views/admin/operationlog.py:21
+msgid "Error status"
+msgstr "状态码异常"
 
 #: system/views/admin/user.py:52
 msgid "The super administrator disallows deletion"

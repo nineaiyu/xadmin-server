@@ -18,13 +18,12 @@ class LoginLogFilter(BaseFilterSet):
     ipaddress = filters.CharFilter(field_name='ipaddress', lookup_expr='icontains')
     city = filters.CharFilter(field_name='city', lookup_expr='icontains')
     system = filters.CharFilter(field_name='system', lookup_expr='icontains')
-    browser = filters.CharFilter(field_name='browser', lookup_expr='icontains')
     agent = filters.CharFilter(field_name='agent', lookup_expr='icontains')
     creator_id = PkMultipleFilter(input_type='api-search-user')
 
     class Meta:
         model = UserLoginLog
-        fields = ['login_type', 'ipaddress', 'city', 'system', 'creator_id', 'browser', 'agent', 'created_time']
+        fields = ['login_type', 'ipaddress', 'city', 'system', 'creator_id', 'status', 'agent', 'created_time']
 
 
 class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):

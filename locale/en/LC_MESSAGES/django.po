@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-29 15:39+0800\n"
+"POT-Creation-Date: 2024-12-03 20:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2011,6 +2011,10 @@ msgstr ""
 
 #: system/views/admin/file.py:90
 msgid "Wrong upload file type"
+msgstr ""
+
+#: system/views/admin/operationlog.py:21
+msgid "Error status"
 msgstr ""
 
 #: system/views/admin/user.py:52
