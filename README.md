@@ -44,8 +44,16 @@ python -m celery -A server beat -l INFO --scheduler django_celery_beat.scheduler
 python -m celery -A server worker -P threads -l INFO -c 10 -Q celery --heartbeat-interval 10 -n celery@%h --without-mingle
 ```
 
-#### 3.任务监控，在windows无需执行，因为Windows平台无法正常运行
+#### 3.任务监控[windows可能会异常]
 
 ```shell
 python -m celery -A server flower -logging=info --url_prefix=api/flower --auto_refresh=False  --address=0.0.0.0 --port=5566
 ```
+
+## 捐赠or鼓励
+
+如果你觉得这个项目帮助到了你，你可以[star](https://github.com/nineaiyu/xadmin-server)表示鼓励，也可以帮作者买一杯果汁🍹表示鼓励。
+
+| 微信                                                                                     | 支付宝                                                                                     |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| <img src="http://qiniu.cdn.xadmin.dvcloud.xin/pay/wxpay.jpg" height="188" width="188"> | <img src="http://qiniu.cdn.xadmin.dvcloud.xin/pay/alipay.jpg" height="188" width="188"> |
