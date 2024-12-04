@@ -23,23 +23,6 @@ class NewSiteMsgSubPub(LazyObject):
 
 new_site_msg_chan = NewSiteMsgSubPub()
 
-
-# @receiver(post_save, sender=MessageContent)
-# def on_site_message_create(sender, instance, created, **kwargs):
-#     if not created:
-#         return
-#     logger.debug('New site msg created, publish it')
-#     user_ids = instance.users.all().values_list('id', flat=True)
-#     user_ids = [str(i) for i in user_ids]
-#     data = {
-#         'id': str(instance.id),
-#         'subject': instance.subject,
-#         'message': instance.message,
-#         'users': user_ids
-#     }
-#     new_site_msg_chan.publish(data)
-
-
 @receiver(post_migrate, dispatch_uid='notifications.signal_handlers.create_system_messages')
 def create_system_messages(app_config: AppConfig, **kwargs):
     try:

@@ -203,6 +203,12 @@ class MagicCacheData(object):
         count = cache.delete_pattern(cache_key)
         logger.warning(f"invalid_cache cache_key:{cache_key} count:{count}")
 
+    @staticmethod
+    def invalid_caches(keys):
+        delete_keys = [f'magic_cache_data_{key}' for key in keys]
+        count = cache.delete_many(delete_keys)
+        logger.warning(
+            f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
 
 class MagicCacheResponse(object):
     def __init__(self, timeout=60 * 10, invalid_time=0, key_func=None):

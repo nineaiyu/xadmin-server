@@ -4,7 +4,6 @@
 # filename : basic
 # author : ly_13
 # date : 8/1/2024
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -47,7 +46,5 @@ class BasicSettingSerializer(serializers.Serializer):
         return s.strip('/')
 
     def post_save(self):
-        if settings.PERMISSION_FIELD_ENABLED != self.validated_data[
-            'PERMISSION_FIELD_ENABLED'] or settings.PERMISSION_DATA_ENABLED != self.validated_data[
-            'PERMISSION_DATA_ENABLED']:
+        if set(getattr(self, '_change_fields', [])) & {'PERMISSION_FIELD_ENABLED', 'PERMISSION_DATA_ENABLED'}:
             invalid_user_cache_signal.send(sender=self, user_pk='*')

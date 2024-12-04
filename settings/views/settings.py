@@ -64,15 +64,17 @@ class BaseSettingViewSet(NoDetailModelSet):
         post_data_names = list(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
         serializer_data = getattr(serializer, 'data', {})
-
+        change_fields = []
         for item in settings_items:
             if item['name'] not in post_data_names:
                 continue
             changed, setting = Setting.update_or_create(**item, user=self.request.user)
             if not changed:
                 continue
+            change_fields.append(setting.name)
             serializer_data[setting.name] = setting.cleaned_value
         setattr(serializer, '_data', serializer_data)
+        setattr(serializer, '_change_fields', change_fields)
         if hasattr(serializer, 'post_save'):
             serializer.post_save()
 
