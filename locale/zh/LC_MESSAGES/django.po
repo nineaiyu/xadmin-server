@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-03 20:31+0800\n"
+"POT-Creation-Date: 2024-12-05 15:27+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:25 common/core/filter.py:204 common/core/filter.py:212
-#: common/core/permission.py:131
+#: common/core/permission.py:130
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
@@ -126,7 +126,7 @@ msgstr "操作成功，导入 {} 条数据"
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/permission.py:129
+#: common/core/permission.py:128
 msgid "Permission denied"
 msgstr "权限拒绝"
 
@@ -687,47 +687,47 @@ msgstr "激活状态"
 msgid "System setting"
 msgstr "系统设置"
 
-#: settings/serializers/basic.py:16
+#: settings/serializers/basic.py:15
 msgid "Site URL"
 msgstr "当前站点 URL"
 
-#: settings/serializers/basic.py:18
+#: settings/serializers/basic.py:17
 msgid ""
 "Site URL is the externally accessible address of the current product service "
 "and is usually used in links in system emails"
 msgstr "站点 URL 是当前产品服务的外部可访问地址，通常在系统邮件中的链接中使用"
 
-#: settings/serializers/basic.py:24
+#: settings/serializers/basic.py:23
 msgid "Front-end web watermark"
 msgstr "前端页面水印"
 
-#: settings/serializers/basic.py:25
+#: settings/serializers/basic.py:24
 msgid "Enable watermark for front-end web"
 msgstr "开启前端页面水印"
 
-#: settings/serializers/basic.py:29 system/models/permission.py:38
+#: settings/serializers/basic.py:28 system/models/permission.py:38
 msgid "Field permission"
 msgstr "字段权限"
 
-#: settings/serializers/basic.py:30
+#: settings/serializers/basic.py:29
 msgid "Field permissions are used to authorize access to data field display"
 msgstr "字段权限用于授权访问数据字段展示"
 
-#: settings/serializers/basic.py:34 system/models/department.py:24
+#: settings/serializers/basic.py:33 system/models/department.py:24
 #: system/models/field.py:33 system/models/permission.py:25
 #: system/models/user.py:36
 msgid "Data permission"
 msgstr "数据权限"
 
-#: settings/serializers/basic.py:35
+#: settings/serializers/basic.py:34
 msgid "Data permissions are used to authorize access to data"
 msgstr "数据权限用于授权访问数据"
 
-#: settings/serializers/basic.py:39
+#: settings/serializers/basic.py:38
 msgid "Export max limit"
 msgstr "数据导出限制"
 
-#: settings/serializers/basic.py:40
+#: settings/serializers/basic.py:39
 msgid "Limit the maximum number of rows of exported data"
 msgstr "导出数据最大行数限制"
 

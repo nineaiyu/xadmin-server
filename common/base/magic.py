@@ -222,6 +222,13 @@ class MagicCacheResponse(object):
         count = cache.delete_pattern(cache_key)
         logger.warning(f"invalid_response_cache cache_key:{cache_key} count:{count}")
 
+    @staticmethod
+    def invalid_caches(keys):
+        delete_keys = [f'magic_cache_response_{key}' for key in keys]
+        count = cache.delete_many(delete_keys)
+        logger.warning(
+            f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
+
     def __call__(self, func):
         this = self
 
