@@ -30,7 +30,7 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
     """获取菜单路由"""
 
     @extend_schema(exclude=True)
-    @cache_response(timeout=3600 * 24 * 7, key_func='get_cache_key')
+    @cache_response(timeout=3600 * 24, key_func='get_cache_key')
     def get(self, request):
         route_list = []
         user_obj = request.user

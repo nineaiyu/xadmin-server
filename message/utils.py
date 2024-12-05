@@ -13,6 +13,12 @@ from django.conf import settings
 from rest_framework.utils import encoders
 
 
+@async_to_sync
+async def get_online_user_pks():
+    channel_layer = get_channel_layer()
+    return {int(key.split('_')[-1]) for key in channel_layer.groups.keys()}
+
+
 async def async_push_message(user_pk: str | int, message: Dict, message_type='push_message'):
     room_group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{user_pk}"
     channel_layer = get_channel_layer()

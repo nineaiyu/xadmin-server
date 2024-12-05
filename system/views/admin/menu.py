@@ -11,7 +11,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
-from common.base.magic import cache_response, temporary_disable_signal
+from common.base.magic import temporary_disable_signal
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin
 from common.core.pagination import DynamicPageNumber
@@ -43,11 +43,11 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
 
-    @cache_response(timeout=600, key_func='get_cache_key')
-    def list(self, request, *args, **kwargs):
-        """获取{cls}的列表"""
-        data = super().list(request, *args, **kwargs).data
-        return ApiResponse(**data)
+    # @cache_response(timeout=600, key_func='get_cache_key')
+    # def list(self, request, *args, **kwargs):
+    #     """获取{cls}的列表"""
+    #     data = super().list(request, *args, **kwargs).data
+    #     return ApiResponse(**data)
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -94,12 +94,12 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
                 if skip_existing:
                     continue
                 data['meta']['title'] = 'U-' + data['meta']['title']
-                serializer = self.get_serializer(permission_menu, data=data, partial=True)
+                serializer = self.get_serializer(permission_menu, data=data, partial=True, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             else:
                 data['meta']['title'] = 'C-' + data['meta']['title']
-                serializer = self.get_serializer(data=data)
+                serializer = self.get_serializer(data=data, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
 

@@ -18,7 +18,6 @@ from server.utils import get_current_request, set_current_request
 from system.models import Menu, FieldPermission
 
 
-@MagicCacheData.make_cache(timeout=5, key_func=lambda x: x.pk)
 def get_user_menu_queryset(user_obj):
     q = Q()
     has_role = False
@@ -34,7 +33,7 @@ def get_user_menu_queryset(user_obj):
         return Menu.objects.filter(is_active=True).filter(q)
 
 
-@MagicCacheData.make_cache(timeout=30, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
+@MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
 def get_user_field_queryset(user_obj, menu):
     q = Q()
     data = {}
@@ -57,7 +56,7 @@ def get_user_field_queryset(user_obj, menu):
     return data
 
 
-@MagicCacheData.make_cache(timeout=3600 * 24 * 7, key_func=lambda x, y: f"{x.pk}_{y}")
+@MagicCacheData.make_cache(timeout=3600 * 24, key_func=lambda x, y: f"{x.pk}_{y}")
 def get_user_permission(user_obj, method):
     menus = []
     menu_queryset = get_user_menu_queryset(user_obj)

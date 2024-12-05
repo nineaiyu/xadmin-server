@@ -4,7 +4,7 @@ from django.db import transaction
 
 from common.core.config import UserConfig
 from common.utils import get_logger
-from message.utils import push_message
+from message.utils import push_message, get_online_user_pks
 from notifications.serializers.message import NoticeMessageSerializer
 from system.models import UserInfo
 
@@ -33,7 +33,8 @@ class SiteMessageUtil:
             fields=['pk', 'level', 'title', 'notice_type', 'message'],
             instance=notify_obj, ignore_field_permission=True).data
         notice_message['message_type'] = 'notify_message'
-        for pk in pks:
+        online_pks = get_online_user_pks()  # 仅推送在线用户
+        for pk in set(pks) & online_pks:
             if UserConfig(pk).PUSH_MESSAGE_NOTICE:
                 push_message(pk, notice_message)
         return notify_obj

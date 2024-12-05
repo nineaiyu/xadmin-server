@@ -15,7 +15,6 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
-from common.base.magic import cache_response
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet, CacheListResponseMixin
 from common.core.response import ApiResponse
@@ -68,7 +67,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     ordering_fields = ['created_time']
     filterset_class = UserSiteMessageViewSetFilter
 
-    @cache_response(timeout=600, key_func='get_cache_key')
+    # @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         unread_count = self.filter_queryset(self.get_queryset()).filter(get_user_unread_q(self.request.user)).count()
         q = get_users_notice_q(request.user)
@@ -95,7 +94,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
             })
         }
     )
-    @cache_response(timeout=600, key_func='get_cache_key')
+    # @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=['get'], detail=False)
     def unread(self, request, *args, **kwargs):
         """用户未读消息"""
