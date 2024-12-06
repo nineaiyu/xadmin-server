@@ -9,6 +9,7 @@ import os.path
 from django.conf import settings
 from django.core.management.commands.loaddata import Command as LoadCommand
 from django.db import DEFAULT_DB_ALIAS
+from django.db.models.signals import ModelSignal
 
 from settings.models import Setting
 from system.models import *
@@ -16,7 +17,7 @@ from system.models import *
 
 class Command(LoadCommand):
     help = 'load init json data'
-    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField,
+    model_names = [MenuMeta, Menu, SystemConfig, DataPermission, UserRole, FieldPermission, ModelLabelField, DeptInfo,
                    Setting]
     missing_args_message = None
 
@@ -24,6 +25,8 @@ class Command(LoadCommand):
         pass
 
     def handle(self, *args, **options):
+        ModelSignal.send = lambda *args, **kwargs: []  # 忽略任何信号
+
         fixture_labels = []
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
