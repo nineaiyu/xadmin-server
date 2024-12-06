@@ -16,6 +16,8 @@ logger = get_logger(__name__)
 
 def format_return(data):
     try:
+        if isinstance(data, bytes):
+            data = data.decode(encoding='utf-8')
         return json.loads(data)
     except:
         return data
