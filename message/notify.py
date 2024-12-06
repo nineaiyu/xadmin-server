@@ -21,7 +21,8 @@ from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.decorators import cached_method
 from common.utils import get_logger
-from message.utils import async_push_message
+from common.utils.timezone import local_now_display
+from message.utils import async_push_message, online_caches
 from system.models import UserInfo
 from system.serializers.userinfo import UserInfoSerializer
 
@@ -79,6 +80,8 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                 self.disconnected = False
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+                online_caches.push(self.room_group_name, {'time': local_now_display(), 'name': self.channel_name})
+
                 await self.accept()
                 # 建立连接，推送用户信息
                 # await self.userinfo(None)
@@ -87,6 +90,10 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         self.disconnected = True
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+
+            if self.channel_layer._get_group_channel_name(self.room_group_name) not in self.channel_layer.groups:
+                online_caches.pop(self.room_group_name)
+
         logger.info(f"{self.user} disconnect")
 
     @classmethod

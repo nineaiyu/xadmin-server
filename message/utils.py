@@ -12,11 +12,13 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 from rest_framework.utils import encoders
 
+from common.cache.redis import CacheHash
 
-@async_to_sync
-async def get_online_user_pks():
-    channel_layer = get_channel_layer()
-    return {int(key.split('_')[-1]) for key in channel_layer.groups.keys()}
+online_caches = CacheHash(key='online_users_socket')
+
+
+def get_online_user_pks():
+    return {int(key.split('_')[-1]) for key in online_caches.get_all().keys()}
 
 
 async def async_push_message(user_pk: str | int, message: Dict, message_type='push_message'):
