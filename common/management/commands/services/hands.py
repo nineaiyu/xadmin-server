@@ -127,7 +127,14 @@ def check_settings():
     sys.exit(10)
 
 
-def prepare():
+def celery_prepare():
+    check_database_connection()
+    check_settings()
+    compile_i18n_file()
+    download_ip_db()
+
+
+def server_prepare():
     check_database_connection()
     collect_static()
     compile_i18n_file()
