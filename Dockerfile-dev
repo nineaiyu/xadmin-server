@@ -1,4 +1,4 @@
-FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.12.7-slim
+FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.13.1-slim
 
 # add pip cn mirrors
 ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple

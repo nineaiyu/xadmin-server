@@ -11,7 +11,7 @@ RUN echo > config.yml \
         sed -i "s@VERSION = .*@VERSION = '${VERSION}'@g" server/const.py; \
     fi
 
-FROM python:3.12.7-slim
+FROM python:3.13.1-slim
 
 ENV LANG=en_US.UTF-8 \
     PATH=/data/py3/bin:$PATH
