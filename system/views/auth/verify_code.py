@@ -17,8 +17,8 @@ from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.fields.utils import get_file_absolute_uri
 from common.swagger.utils import get_default_response_schema
+from common.utils import random_string
 from common.utils.request import get_request_ip
-from common.utils.token import random_string
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from settings.utils.password import get_password_check_rules
 from settings.utils.security import SendVerifyCodeBlockUtil, LoginIpBlockUtil

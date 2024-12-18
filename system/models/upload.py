@@ -10,10 +10,10 @@ import hashlib
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import upload_directory_path, DbAuditModel
+from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin
 
 
-class UploadFile(DbAuditModel):
+class UploadFile(AutoCleanFileMixin, DbAuditModel):
     filepath = models.FileField(verbose_name=_("Filepath"), null=True, blank=True, upload_to=upload_directory_path)
     file_url = models.URLField(verbose_name=_("Internet URL"), max_length=255, blank=True, null=True,
                                help_text=_("Usually an address accessible to the outside Internet"))

@@ -10,12 +10,12 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
-from common.core.models import upload_directory_path, DbAuditModel
+from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin
 from common.fields.image import ProcessedImageField
 from system.models import ModeTypeAbstract
 
 
-class UserInfo(DbAuditModel, AbstractUser, ModeTypeAbstract):
+class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract):
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("Unknown")
         MALE = 1, _("Male")

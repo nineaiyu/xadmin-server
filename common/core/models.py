@@ -31,10 +31,10 @@ class DbCharModel(models.Model):
         abstract = True
 
 
-class DbBaseModel(models.Model):
-    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"), null=True, blank=True)
-    updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated time"), null=True, blank=True)
-    description = models.CharField(max_length=256, verbose_name=_("Description"), null=True, blank=True)
+class AutoCleanFileMixin(object):
+    """
+    当对象包含文件字段，更新或者删除的时候，自动删除底层文件
+    """
 
     def save(self, *args, **kwargs):
         if kwargs.get('force_insert', None):
@@ -73,6 +73,12 @@ class DbBaseModel(models.Model):
                 if file_obj:
                     filelist.append((field.name, file_obj.name, file_obj))
         return filelist
+
+
+class DbBaseModel(models.Model):
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"), null=True, blank=True)
+    updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated time"), null=True, blank=True)
+    description = models.CharField(max_length=256, verbose_name=_("Description"), null=True, blank=True)
 
     class Meta:
         abstract = True
