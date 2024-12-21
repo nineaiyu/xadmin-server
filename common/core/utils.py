@@ -7,7 +7,7 @@
 import datetime
 import logging
 import re
-from collections import OrderedDict
+from collections import OrderedDict, deque, defaultdict
 
 from django.apps import apps
 from django.conf import settings
@@ -170,3 +170,49 @@ class PrintLogFormat(object):
             logger.warning(f"{self.base_str} {msg}", *args, **kwargs)
         if logger.isEnabledFor(logging.WARNING):
             self.__print(self.bold_error(self.base_str), self._warning(msg))
+
+
+def topological_sort(data, pk='pk', parent='parent'):
+    # 构建图和入度表
+    graph = defaultdict(list)
+    in_degree = {item[pk]: 0 for item in data}
+    nodes = set()
+    new_data = {}
+    for item in data:
+        node_id = item[pk]
+        new_data[node_id] = item
+        parent_id = item[parent]
+        if isinstance(parent_id, dict):
+            parent_id = item[parent].get(pk)
+        nodes.add(node_id)
+        if parent_id is not None:
+            graph[parent_id].append(node_id)
+            if parent_id in in_degree:
+                in_degree[node_id] += 1
+
+    # 找到所有入度为0的节点
+    queue = deque([node for node in nodes if in_degree[node] == 0])
+    sorted_order = []
+
+    while queue:
+        current = queue.popleft()
+        sorted_order.append(current)
+        for neighbor in graph[current]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    # 如果排序后的列表长度不等于原始列表长度，说明存在环
+    if len(sorted_order) != len(nodes):
+        raise ValueError("Circular dependencies exist")
+
+    return [new_data[node_id] for node_id in sorted_order]
+
+
+def has_self_fields(model):
+    """
+    仅仅支持判断 ForeignKey 自关联，不支持多对对自关联判断
+    """
+    for field in model._meta.fields:
+        if field.is_relation and field.related_model is not None and field.related_model == model:
+            return field.name
