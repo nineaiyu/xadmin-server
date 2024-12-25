@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-05 15:27+0800\n"
+"POT-Creation-Date: 2024-12-21 13:40+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -71,28 +71,28 @@ msgstr "当前查询对象为空"
 msgid "ID"
 msgstr "主键ID"
 
-#: common/core/models.py:35 common/models.py:18
+#: common/core/models.py:79 common/models.py:18
 #: settings/serializers/security.py:248
 msgid "Created time"
 msgstr "创建时间"
 
-#: common/core/models.py:36
+#: common/core/models.py:80
 msgid "Updated time"
 msgstr "更新时间"
 
-#: common/core/models.py:37
+#: common/core/models.py:81
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:83
+#: common/core/models.py:89
 msgid "Creator"
 msgstr "创建人"
 
-#: common/core/models.py:85
+#: common/core/models.py:91
 msgid "Modifier"
 msgstr "修改人"
 
-#: common/core/models.py:87
+#: common/core/models.py:93
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
@@ -116,11 +116,11 @@ msgstr "排序保存成功"
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/modelset.py:525
+#: common/core/modelset.py:537
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
-#: common/core/modelset.py:526 system/utils/auth.py:104
+#: common/core/modelset.py:538 system/utils/auth.py:104
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
@@ -478,7 +478,7 @@ msgstr "目录索引不被允许"
 msgid "“%(path)s” does not exist"
 msgstr "“%(path)s” 不存在"
 
-#: common/utils/verify_code.py:23
+#: common/utils/verify_code.py:22
 msgid "Send SMS code"
 msgstr "发送短信验证码"
 

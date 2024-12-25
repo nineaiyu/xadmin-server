@@ -14,8 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from common.sdk.sms.endpoint import SMS
 from common.sdk.sms.exceptions import CodeError, CodeExpired, CodeSendOverRate
 from common.tasks import send_mail_async
-from common.utils import get_logger
-from common.utils.token import random_string
+from common.utils import get_logger, random_string
 
 logger = get_logger(__name__)
 

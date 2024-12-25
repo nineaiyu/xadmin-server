@@ -32,6 +32,7 @@ from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
+from common.core.utils import has_self_fields, topological_sort
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
@@ -39,7 +40,6 @@ from common.tasks import background_task_view_set_job
 from common.utils import get_logger
 
 logger = get_logger(__name__)
-
 
 def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
     task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
@@ -494,9 +494,21 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
     def import_data(self, request, *args, **kwargs):
         """导入{cls}数据"""
 
-        response = run_view_by_celery_task(self, request, kwargs, request.data)
-        if response:
-            return response
+        task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
+        if task:
+            # 如果包含自关联数据，则对数据进行排序，将依赖数据先导入，并且取消批量导入任务
+            datas = request.data
+            if isinstance(datas, dict):
+                datas = [datas]
+            self_field = has_self_fields(self.queryset.model)
+            if self_field:
+                batch_length = 99999999
+                datas = topological_sort(datas, parent=self_field)
+            else:
+                batch_length = 100
+            response = run_view_by_celery_task(self, request, kwargs, datas, batch_length)
+            if response:
+                return response
 
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'

@@ -20,7 +20,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
-from system.serializers.field import ModelLabelFieldSerializer
+from system.serializers.field import ModelLabelFieldSerializer, ModelLabelFieldImportSerializer
 from system.utils.modelfield import sync_model_field, get_field_lookup_info
 
 logger = get_logger(__name__)
@@ -47,7 +47,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     queryset = ModelLabelField.objects.all()
     serializer_class = ModelLabelFieldSerializer
     pagination_class = DynamicPageNumber(1000)
-
+    import_data_serializer_class = ModelLabelFieldImportSerializer
     ordering_fields = ['created_time', 'updated_time']
     filterset_class = ModelLabelFieldFilter
 

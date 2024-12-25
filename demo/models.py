@@ -2,12 +2,12 @@ from django.db import models
 from django.utils import timezone
 from pilkit.processors import ResizeToFill
 
-from common.core.models import DbAuditModel, upload_directory_path
+from common.core.models import DbAuditModel, upload_directory_path, AutoCleanFileMixin
 from common.fields.image import ProcessedImageField
 from system.models import UserInfo
 
 
-class Book(DbAuditModel):
+class Book(AutoCleanFileMixin, DbAuditModel):
     class CategoryChoices(models.IntegerChoices):
         DIRECTORY = 0, "小说"
         MENU = 1, "文学"
