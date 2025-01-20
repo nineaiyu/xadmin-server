@@ -24,7 +24,7 @@ SECRET_KEY:
 # SQLite setting:
 # 使用单文件sqlite数据库
 # DB_ENGINE: sqlite3
-# DB_NAME:
+# DB_DATABASE:
 # MySQL or postgres setting like:
 # DB_ENGINE can set mysql, oracle, postgresql, sqlite3
 

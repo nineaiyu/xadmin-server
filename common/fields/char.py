@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from common.base.utils import AESCipher
 
 
-class AESCharField(models.CharField):
+class AESField(models.Field):
 
     def __init__(self, *args, **kwargs):
         if 'prefix' in kwargs:
@@ -21,10 +21,10 @@ class AESCharField(models.CharField):
         else:
             self.prefix = "aes:::"
         self.cipher = AESCipher(settings.SECRET_KEY)
-        super(AESCharField, self).__init__(*args, **kwargs)
+        super(AESField, self).__init__(*args, **kwargs)
 
     def deconstruct(self):
-        name, path, args, kwargs = super(AESCharField, self).deconstruct()
+        name, path, args, kwargs = super(AESField, self).deconstruct()
         if self.prefix != "aes:::":
             kwargs['prefix'] = self.prefix
         return name, path, args, kwargs
@@ -58,3 +58,11 @@ class AESCharField(models.CharField):
         elif value is not None:
             raise TypeError(_("{} is not a valid value for AESCharField").format(value))
         return value
+
+
+class AESCharField(AESField, models.CharField):
+    pass
+
+
+class AESTextField(AESField, models.TextField):
+    pass
