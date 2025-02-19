@@ -20,7 +20,7 @@ services:
       - net
 
   postgresql:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.5
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.7
     container_name: xadmin-postgresql
     restart: always
     command: [ "postgres","-c","max_connections=8000" ]
@@ -41,7 +41,7 @@ services:
       - net
 
   redis:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.1
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.2
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
