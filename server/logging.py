@@ -35,3 +35,33 @@ class ServerFormatter(logging.Formatter):
         record.requestUser = str(current_request.user if current_request else 'SYSTEM')[:16]
         record.requestUuid = str(getattr(current_request, 'request_uuid', ""))
         return super().format(record)
+
+
+class ColorHandler(logging.StreamHandler):
+    WHITE = "0"
+    RED = "31"
+    GREEN = "32"
+    YELLOW = "33"
+    BLUE = "34"
+    PURPLE = "35"
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            level_color_map = {
+                logging.DEBUG: self.BLUE,
+                logging.INFO: self.GREEN,
+                logging.WARNING: self.YELLOW,
+                logging.ERROR: self.RED,
+                logging.CRITICAL: self.PURPLE
+            }
+
+            csi = f"{chr(27)}["  # 控制序列引入符
+            color = level_color_map.get(record.levelno, self.WHITE)
+
+            self.stream.write(f"{csi}{color}m{msg}{csi}m\n")
+            self.flush()
+        except RecursionError:
+            raise
+        except Exception:
+            self.handleError(record)

@@ -42,7 +42,7 @@ LOGGING = {
         },
         'console': {
             'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+            'class': 'server.logging.ColorHandler',
             'formatter': 'main'
         },
         'server': {
