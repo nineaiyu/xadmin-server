@@ -6,6 +6,7 @@
 # date : 1/17/2024
 import os
 
+from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import models
 from django.db.models.fields.files import ImageFieldFile
 from imagekit.cachefiles import ImageCacheFile
@@ -38,7 +39,10 @@ def get_thumbnail(source, index, force=False):
     return file.name
 
 
+
 class ProcessedImageFieldFile(ImageFieldFile):
+    is_local_storage = isinstance(default_storage, FileSystemStorage)
+
     def save(self, name, content, save=True):
         filename, ext = os.path.splitext(name)
         spec = self.field.get_spec(source=content)
@@ -52,19 +56,20 @@ class ProcessedImageFieldFile(ImageFieldFile):
         if hasattr(self, "_dimensions_cache"):
             del self._dimensions_cache
         name = self.name
-        try:
-            for i in self.field.scales:
-                self.name = f"{name.split('.')[0]}_{i}.jpg"
-                super().delete(False)
-        except Exception as e:
-            pass
+        if self.is_local_storage:
+            try:
+                for i in self.field.scales:
+                    self.name = f"{name.split('.')[0]}_{i}.jpg"
+                    super().delete(False)
+            except Exception as e:
+                pass
         self.name = name
         super().delete(save)
 
     @property
     def url(self):
         url: str = super().url
-        if url.endswith('.png'):
+        if self.is_local_storage and url.endswith('.png'):
             return url.replace('.png', '_1.jpg')
         return url
 

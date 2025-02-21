@@ -102,4 +102,8 @@ def upload_directory_path(instance, filename):
     tmp_name = f"{filename}_{time.time()}"
     new_filename = f"{uuid.uuid5(uuid.NAMESPACE_DNS, tmp_name).__str__().replace('-', '')}.{prefix}"
     labels = instance._meta.label_lower.split('.')
-    return os.path.join(labels[0], labels[1], str(instance.pk), new_filename)
+    if creator := getattr(instance, "creator", None):
+        creator_pk = creator.pk
+    else:
+        creator_pk = 0
+    return os.path.join(labels[0], labels[1], str(creator_pk), new_filename)

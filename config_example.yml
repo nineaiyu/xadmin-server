@@ -4,7 +4,7 @@
 SECRET_KEY:
 
 # Development env open this, when error occur display the full process track, Production disable it
-# DEBUG 模式 开启DEBUG后遇到错误时可以看到更多日志，正式服要禁用
+# DEBUG 模式 开启DEBUG后遇到错误时可以看到更多日志，正式服要禁用，开发阶段，需要取消该注释，否则会导致前端ws连接失败
 # DEBUG: true
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL can set. See https://docs.djangoproject.com/zh-hans/5.0/topics/logging/
