@@ -8,7 +8,7 @@ import ipaddress
 import re
 from contextlib import contextmanager
 
-from django.db import connections, transaction
+from django.db import connections, transaction, connection
 from django.db.models import Q
 
 
@@ -114,13 +114,25 @@ def close_old_connections():
 
 @contextmanager
 def safe_db_connection():
-    close_old_connections()
-    yield
-    close_old_connections()
+    in_atomic_block = connection.in_atomic_block  # 当前是否处于事务中
+    autocommit = transaction.get_autocommit()  # 是否启用了自动提交
+    created = False
+
+    try:
+        if not connection.is_usable():
+            connection.close()
+            connection.connect()
+            created = True
+        yield
+    finally:
+        # 如果不是事务中（API 请求中可能需要提交事务），则关闭连接
+        if created and not in_atomic_block and autocommit:
+            print("close connection in safe_db_connection")
+            close_old_connections()
 
 
 @contextmanager
-def open_db_connection(alias='default'):
+def open_db_connection(alias="default"):
     connection = transaction.get_connection(alias)
     try:
         connection.connect()
