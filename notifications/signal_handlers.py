@@ -51,6 +51,8 @@ def create_system_messages(app_config: AppConfig, **kwargs):
             message_type = obj.get_message_type()
             sub, created = SystemMsgSubscription.objects.get_or_create(message_type=message_type)
             if not created:
+                admins = UserInfo.objects.filter(is_superuser=True, is_active=True)
+                sub.users.set(admins)
                 return
 
             try:
