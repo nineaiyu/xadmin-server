@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-21 13:40+0800\n"
+"POT-Creation-Date: 2025-03-26 15:41+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -747,7 +747,7 @@ msgstr ""
 msgid "The user to be used for email server authentication"
 msgstr ""
 
-#: settings/serializers/email.py:22 system/serializers/user.py:74
+#: settings/serializers/email.py:22 system/serializers/user.py:81
 msgid "Password"
 msgstr ""
 
@@ -1733,17 +1733,21 @@ msgstr ""
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:50
+#: system/serializers/user.py:51
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:66 system/serializers/user.py:80
+#: system/serializers/user.py:53
+msgid "Online count"
+msgstr ""
+
+#: system/serializers/user.py:73 system/serializers/user.py:87
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:68
+#: system/serializers/user.py:75
 msgid "Abnormal password field"
 msgstr ""
 
@@ -2017,7 +2021,7 @@ msgstr ""
 msgid "Error status"
 msgstr ""
 
-#: system/views/admin/user.py:52
+#: system/views/admin/user.py:53
 msgid "The super administrator disallows deletion"
 msgstr ""
 

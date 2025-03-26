@@ -21,8 +21,7 @@ from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.decorators import cached_method
 from common.utils import get_logger
-from common.utils.timezone import local_now_display
-from message.utils import async_push_message, online_caches
+from message.utils import async_push_message, online_user_cache
 from system.models import UserInfo
 from system.serializers.userinfo import UserInfoSerializer
 
@@ -56,6 +55,14 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         self.disconnected = True
         self.user = None
 
+    def update_online_user(self):
+        online_layers = self.channel_layer.groups.get(
+            self.channel_layer._get_group_channel_name(self.room_group_name), {})
+        if online_layers:
+            online_user_cache.push(self.room_group_name, list(online_layers))
+        else:
+            online_user_cache.pop(self.room_group_name)
+
     async def connect(self):
         self.user = self.scope["user"]
         if not self.user:
@@ -68,7 +75,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             # # data = verify_token(token, room_name, success_once=True)
             if username and group_name and username != self.user.username:
                 self.disconnected = False
-                self.room_group_name = "message_system_default"
+                self.room_group_name = 'message_system_default_0'
                 # self.room_group_name = f"message_{room_name}"
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
@@ -80,7 +87,6 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                 self.disconnected = False
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-                online_caches.push(self.room_group_name, {'time': local_now_display(), 'name': self.channel_name})
 
                 await self.accept()
                 # 建立连接，推送用户信息
@@ -90,9 +96,9 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         self.disconnected = True
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
-            if self.channel_layer._get_group_channel_name(self.room_group_name) not in self.channel_layer.groups:
-                online_caches.pop(self.room_group_name)
+            self.update_online_user()
+            # if self.channel_layer._get_group_channel_name(self.room_group_name) not in self.channel_layer.groups:
+            #     online_user_cache.pop(self.room_group_name)
 
         logger.info(f"{self.user} disconnect")
 
@@ -103,36 +109,43 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
     # Receive message from WebSocket
     async def receive_json(self, content, **kwargs):
         action = content.get('action')
-        if not action or action not in ['userinfo', 'push_message', 'chat_message']:
+        if not action:
             await self.close()
         data = content.get('data', {})
-        if action == "chat_message":
-            data['pk'] = self.user.pk
-            data['username'] = self.user.username
-            # Send message to room group
-            await self.channel_layer.group_send(
-                self.room_group_name, {"type": "chat_message", "data": data}
-            )
-            text = data.get('text')
-            if text.startswith('@'):
-                target = text.split(' ')[0].split('@')
-                if len(target) > 1:
-                    target = target[1]
-                    try:
-                        pk = await get_user_pk(target)
-                        if pk and await(get_can_push_message(pk)):
-                            push_message = {
-                                'title': f"用户 {self.user.username} 发来一条消息",
-                                'message': text,
-                                'level': 'info',
-                                'notice_type': {'label': '聊天室', 'value': 0},
-                                'message_type': 'chat_message',
-                            }
-                            await async_push_message(pk, push_message)
-                    except Exception as e:
-                        logger.error(e)
-        else:
-            await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
+        match action:
+            case 'ping':
+                # 更新用户在线状态，通过hashset更新
+                self.update_online_user()
+                await self.send_data(action, {'data': {"message": 'pong'}})
+            case 'chat_message':
+                data['pk'] = self.user.pk
+                data['username'] = self.user.username
+                # Send message to room group
+                await self.channel_layer.group_send(
+                    self.room_group_name, {"type": "chat_message", "data": data}
+                )
+                text = data.get('text')
+                if text.startswith('@'):
+                    target = text.split(' ')[0].split('@')
+                    if len(target) > 1:
+                        target = target[1]
+                        try:
+                            pk = await get_user_pk(target)
+                            if pk and await(get_can_push_message(pk)):
+                                push_message = {
+                                    'title': f"用户 {self.user.username} 发来一条消息",
+                                    'message': text,
+                                    'level': 'info',
+                                    'notice_type': {'label': '聊天室', 'value': 0},
+                                    'message_type': 'chat_message',
+                                }
+                                await async_push_message(pk, push_message)
+                        except Exception as e:
+                            logger.error(e)
+            case 'userinfo' | 'push_message':
+                await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
+            case _:
+                await self.close()
 
     # rec: {"action":"userinfo","data":{}}
     async def userinfo(self, event):

@@ -5,7 +5,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "0082624f-63f6-4421-85a3-2329a212d541",
@@ -26,11 +26,12 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
       "field": [
+        "2bf8654c-e052-4e32-a577-738aa1e19acb",
         "1aacee92-cc19-4c98-a7ec-9253c238121b",
         "3654f48b-7aed-4d74-9146-e960bbac5bcb",
         "aa6d2bba-632b-4335-94f8-61c4899d252c",
@@ -63,7 +64,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "053ade04-8753-4934-9e4d-8ce0adc9e561",
@@ -107,7 +108,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "055e0b43-c6e7-46a9-9be0-fe64056c902c",
@@ -128,7 +129,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
@@ -151,7 +152,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb",
@@ -173,7 +174,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "0bdc3ab5-112d-406e-a7c8-dba377ebf3b0",
@@ -196,7 +197,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "13a2e23f-6cfb-4992-948b-3477b96591d4",
@@ -223,7 +224,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "13b2992d-21c1-4090-9540-367488332f8d",
@@ -244,7 +245,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "140ca964-fe1f-4200-9056-89cea529f2c8",
@@ -265,7 +266,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "14340eec-daf5-43b8-973c-837a7b8040f0",
@@ -288,7 +289,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "168ac361-7d7d-45ac-9b4c-7f431059f991",
@@ -312,7 +313,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "18e700d2-749e-4ae0-ba85-4a601db9c18f",
@@ -343,7 +344,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
@@ -387,7 +388,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "21b7eb97-df47-46b8-a8fd-eba8f0b02024",
@@ -408,7 +409,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "24244ee6-cf54-4900-94b1-717a7317af04",
@@ -437,7 +438,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "24a69ec9-c2ee-48e8-8fe8-2bd3457eccbf",
@@ -458,7 +459,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "256cf2aa-161a-423a-b00f-d3e42f81b66d",
@@ -485,7 +486,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "270803fc-8159-41fc-b531-588c2e7a7fe1",
@@ -506,7 +507,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "2cd3ca25-e606-4e46-983e-7aef573ef713",
@@ -533,7 +534,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
@@ -571,7 +572,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "31f8bd94-d987-4d36-80b3-c41e97f8a777",
@@ -592,7 +593,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "3400d5fa-7540-4262-a9fe-675fc1b3a8b9",
@@ -615,7 +616,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "389d9b86-6379-4ba4-aa0b-1e2640f31929",
@@ -636,7 +637,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "3c4cc808-fd7f-4b76-89f4-9c3c5bd0fdeb",
@@ -658,7 +659,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "3da7f84e-4378-4ca3-b9e4-da416135cd84",
@@ -679,7 +680,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "3e66faba-41c0-42c8-af56-60204956104b",
@@ -700,7 +701,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
@@ -723,7 +724,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "42a6ac37-3b9d-45d0-a90d-81b8fd0a5fb5",
@@ -761,7 +762,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
@@ -792,7 +793,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
@@ -815,7 +816,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "47dc29c2-202b-4837-be9c-db4607924416",
@@ -842,7 +843,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "4baa5cde-5bf5-4d7d-a017-213a2949bc5e",
@@ -863,7 +864,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "54df6d2f-97af-4aee-a935-424e0a10dbbe",
@@ -884,7 +885,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "5c53f18e-633f-4664-b627-287e7aa20358",
@@ -911,7 +912,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "5c71e14d-1a3d-4dc3-9cc5-1a1f4eb1c44a",
@@ -940,7 +941,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "60a0d029-75ae-4314-b5c7-bbd8d642847d",
@@ -962,7 +963,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
@@ -994,7 +995,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "6842305a-c3a5-4506-a2cc-29a45cb74de7",
@@ -1017,7 +1018,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "686c025d-4aa0-4c79-8b7a-cc04190bbda6",
@@ -1046,7 +1047,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "6e889c66-fa31-48c6-9581-0fef7b1d5f20",
@@ -1067,7 +1068,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "6fc056af-acd8-48dd-91cf-e34053014997",
@@ -1098,7 +1099,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "731d7005-46da-4e8f-a972-54069c174300",
@@ -1121,7 +1122,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "74f8f9a8-9d62-4900-ab13-a57f8dad43fb",
@@ -1142,7 +1143,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "7595b222-e832-48ad-b91f-234b20043fb3",
@@ -1173,7 +1174,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "76893f41-9ae7-4775-903b-cb0e53b0b5c2",
@@ -1194,7 +1195,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "78c0c388-42a6-4ccf-986b-b1749db060a7",
@@ -1215,7 +1216,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "859581e1-77db-4752-b02b-8936fe62d0aa",
@@ -1236,7 +1237,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "87f1d3e8-b4f7-46bd-9b0b-35761dff228b",
@@ -1257,7 +1258,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "891b8e29-f612-4c01-9a5d-f989f0225cd7",
@@ -1301,7 +1302,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "8a8b1998-8f22-4ed6-b7d2-baf89cd0c8c5",
@@ -1322,7 +1323,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
@@ -1345,7 +1346,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "8e84b889-9a72-4af3-b5b5-8d1180781306",
@@ -1362,33 +1363,11 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-8fee6673-34a8-4515-bd92-e51f573d3503",
-    "fields": {
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": null,
-      "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
-      "menu": "8fee6673-34a8-4515-bd92-e51f573d3503",
-      "field": [
-        "2db96131-41f5-45b9-ae9f-f7082efe8f9a",
-        "c99d4115-806f-4b66-842e-1473caa84b4b",
-        "5f79d10b-f307-4dc0-ac6f-a91d393ee475",
-        "811d3590-e11f-4fab-8642-cd9a5cb08824",
-        "a26220bd-3112-41f5-816e-49aab2784088",
-        "191c005e-ee6c-4262-825d-27c88ef23970",
-        "e8907d07-b7b6-4866-903b-5f9c5771701d",
-        "b578ab7e-7920-4567-975a-b0f88feaac84"
-      ]
-    }
-  },
-  {
-    "model": "system.fieldpermission",
     "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-99f15c2c-e9ca-4b17-bfa4-1e6efb77f4e4",
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "99f15c2c-e9ca-4b17-bfa4-1e6efb77f4e4",
@@ -1409,7 +1388,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
@@ -1440,7 +1419,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "9ff63ec3-cd7d-4d5d-b7b6-664b61a34bcc",
@@ -1464,7 +1443,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "a386ce52-0363-4e09-afad-a6bf8684183e",
@@ -1485,7 +1464,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
@@ -1514,7 +1493,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
@@ -1539,33 +1518,11 @@
   },
   {
     "model": "system.fieldpermission",
-    "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-b87f1acd-2407-44d0-aec7-1336bfc6cad1",
-    "fields": {
-      "description": null,
-      "creator": 1,
-      "modifier": null,
-      "dept_belong": null,
-      "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
-      "menu": "b87f1acd-2407-44d0-aec7-1336bfc6cad1",
-      "field": [
-        "2db96131-41f5-45b9-ae9f-f7082efe8f9a",
-        "c99d4115-806f-4b66-842e-1473caa84b4b",
-        "5f79d10b-f307-4dc0-ac6f-a91d393ee475",
-        "811d3590-e11f-4fab-8642-cd9a5cb08824",
-        "a26220bd-3112-41f5-816e-49aab2784088",
-        "191c005e-ee6c-4262-825d-27c88ef23970",
-        "e8907d07-b7b6-4866-903b-5f9c5771701d",
-        "b578ab7e-7920-4567-975a-b0f88feaac84"
-      ]
-    }
-  },
-  {
-    "model": "system.fieldpermission",
     "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-bd1e50ca-8688-4d81-ac3b-3be94d574ec3",
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "bd1e50ca-8688-4d81-ac3b-3be94d574ec3",
@@ -1586,7 +1543,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859",
@@ -1608,7 +1565,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "be438ec0-eda8-483e-ad02-8f6f61ebd15c",
@@ -1629,7 +1586,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
@@ -1660,7 +1617,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "c2e45d75-1270-474b-bf0c-03475ecb8b60",
@@ -1689,7 +1646,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "c68fec86-88d6-4511-baa0-01f79d81341b",
@@ -1726,7 +1683,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "c8268327-efb7-45ca-8759-2298828a8dd0",
@@ -1753,7 +1710,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "c876c6be-1e45-4b05-bd51-68071a2878d9",
@@ -1780,7 +1737,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "c9843844-f855-42a7-90ad-18b94862a3da",
@@ -1806,7 +1763,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d29bfc9a-3334-4e12-84f3-65de82b0862c",
@@ -1827,7 +1784,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d31941a6-6068-44ba-9e36-ca55007a412f",
@@ -1848,7 +1805,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d548ec7d-3105-4639-9a82-fb745e6789fe",
@@ -1869,7 +1826,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d5bf9c52-2ece-4208-a878-3e4e85894b23",
@@ -1890,7 +1847,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d5c467d6-d72c-4d42-b66b-d354ea249691",
@@ -1914,7 +1871,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "d64cc8bd-f860-47e3-8abd-6950953cb072",
@@ -1937,7 +1894,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "da17b8fe-7837-423d-9a91-52ad4bb972d3",
@@ -1969,7 +1926,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "dea6ac90-85db-4eea-b6d4-19fe020d1df0",
@@ -2013,7 +1970,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "e0ca0938-d2bc-4113-a4f4-dbd9dc080370",
@@ -2034,7 +1991,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "e2ce31f9-8a39-4101-9cb1-e1ed9d8b173b",
@@ -2055,7 +2012,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "e374f3ef-7326-475a-8b0a-5e082e695144",
@@ -2078,7 +2035,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
@@ -2122,7 +2079,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "f2107787-4453-4bc3-898c-a1449e39bf67",
@@ -2149,7 +2106,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "f242d7f1-0956-4def-ad07-3f825f9aa215",
@@ -2172,7 +2129,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "f25f86f8-c676-43b7-b650-b2410f5b1447",
@@ -2193,7 +2150,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
       "menu": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
@@ -3355,11 +3312,12 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "009fa855-b1fd-4764-95b6-1f1eb94dd336",
       "field": [
+        "2bf8654c-e052-4e32-a577-738aa1e19acb",
         "1aacee92-cc19-4c98-a7ec-9253c238121b",
         "3654f48b-7aed-4d74-9146-e960bbac5bcb",
         "aa6d2bba-632b-4335-94f8-61c4899d252c",
@@ -3392,7 +3350,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "06c77f1a-dd5f-42a4-a5c9-719d554eb603",
@@ -3415,7 +3373,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb",
@@ -3437,7 +3395,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "13a2e23f-6cfb-4992-948b-3477b96591d4",
@@ -3462,7 +3420,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "168ac361-7d7d-45ac-9b4c-7f431059f991",
@@ -3486,7 +3444,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "18e700d2-749e-4ae0-ba85-4a601db9c18f",
@@ -3517,7 +3475,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "19028bcf-080f-4e30-8b09-7ea4ae4fccaf",
@@ -3561,7 +3519,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "24244ee6-cf54-4900-94b1-717a7317af04",
@@ -3590,7 +3548,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "2cd3ca25-e606-4e46-983e-7aef573ef713",
@@ -3615,7 +3573,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd",
@@ -3653,7 +3611,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "3c4cc808-fd7f-4b76-89f4-9c3c5bd0fdeb",
@@ -3675,7 +3633,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "3f56972e-5390-4e1b-8f4d-124042fcc31f",
@@ -3698,7 +3656,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "42a6ac37-3b9d-45d0-a90d-81b8fd0a5fb5",
@@ -3736,7 +3694,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
@@ -3765,7 +3723,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "44ebfeb1-6472-4409-978d-2f5c1b1c1d95",
@@ -3788,7 +3746,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "47dc29c2-202b-4837-be9c-db4607924416",
@@ -3815,7 +3773,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "5c53f18e-633f-4664-b627-287e7aa20358",
@@ -3842,7 +3800,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "60a0d029-75ae-4314-b5c7-bbd8d642847d",
@@ -3864,7 +3822,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "66847cd8-ab49-42ae-bb60-a32e42e69ea8",
@@ -3896,7 +3854,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "686c025d-4aa0-4c79-8b7a-cc04190bbda6",
@@ -3925,7 +3883,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "6fc056af-acd8-48dd-91cf-e34053014997",
@@ -3956,7 +3914,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "7595b222-e832-48ad-b91f-234b20043fb3",
@@ -3985,7 +3943,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
@@ -4008,7 +3966,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
@@ -4039,7 +3997,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "9ff63ec3-cd7d-4d5d-b7b6-664b61a34bcc",
@@ -4063,7 +4021,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
@@ -4092,7 +4050,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "acbbdcf4-5511-4df2-9c8c-06b06be7b753",
@@ -4121,7 +4079,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859",
@@ -4143,7 +4101,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "bf59ff4d-4a79-46cc-a1e4-8136a588d7fd",
@@ -4172,7 +4130,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "c2e45d75-1270-474b-bf0c-03475ecb8b60",
@@ -4201,7 +4159,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "c68fec86-88d6-4511-baa0-01f79d81341b",
@@ -4238,7 +4196,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "c8268327-efb7-45ca-8759-2298828a8dd0",
@@ -4263,7 +4221,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "c876c6be-1e45-4b05-bd51-68071a2878d9",
@@ -4290,7 +4248,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "d5c467d6-d72c-4d42-b66b-d354ea249691",
@@ -4314,7 +4272,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "d64cc8bd-f860-47e3-8abd-6950953cb072",
@@ -4337,7 +4295,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "da17b8fe-7837-423d-9a91-52ad4bb972d3",
@@ -4369,7 +4327,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "e374f3ef-7326-475a-8b0a-5e082e695144",
@@ -4392,7 +4350,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "ecfd76e4-6bae-4f2b-821b-9627f644f8a4",
@@ -4436,7 +4394,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "f2107787-4453-4bc3-898c-a1449e39bf67",
@@ -4463,7 +4421,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "f25f86f8-c676-43b7-b650-b2410f5b1447",
@@ -4484,7 +4442,7 @@
     "fields": {
       "description": null,
       "creator": 1,
-      "modifier": null,
+      "modifier": 1,
       "dept_belong": null,
       "role": "9be1b2f6-405c-4978-8bca-093f566b8d3c",
       "menu": "f622cdde-dd9b-4733-9db8-f3873c1be1be",
