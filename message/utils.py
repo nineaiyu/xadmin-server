@@ -17,8 +17,13 @@ from common.cache.redis import CacheHash
 online_user_cache = CacheHash(key='online_user_socket')
 
 
-def get_online_user_pks():
-    return {int(key.split('_')[-1]) for key in online_user_cache.get_all().keys()}
+def get_online_info():
+    online_user_pks = []
+    online_user_sockets = []
+    for key, value in online_user_cache.get_all().items():
+        online_user_pks.append(int(key.split('_')[-1]))
+        online_user_sockets.extend(value)
+    return online_user_pks, online_user_sockets
 
 
 def get_user_channel_layer_group_name(user_pk):
@@ -42,6 +47,11 @@ async def get_online_user(user_pk):
 async def async_push_layer_message(channel_name: str, message: Dict, message_type='push_message'):
     channel_layer = get_channel_layer()
     await channel_layer.send(channel_name, {'type': message_type, "data": json.dumps(message)})
+
+
+def get_user_channel_names(user_pk: str | int):
+    room_group_name = get_user_channel_layer_group_name(user_pk)
+    return online_user_cache.get(room_group_name)
 
 
 @async_to_sync

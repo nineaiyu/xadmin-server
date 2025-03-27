@@ -1471,6 +1471,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "34b1797e-b0e8-422a-acee-f6cd5318af2f",
+    "fields": {
+      "created_time": "2025-03-27T06:51:00.265Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "1ea46b0b-c317-4692-83a0-220498450c55",
+      "name": "channel_name",
+      "label": "频道名称"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "34b8d105-5b02-419f-bc3f-736452d6a6f9",
     "fields": {
       "created_time": "2024-01-22T09:56:44.470Z",
@@ -4002,6 +4017,21 @@
       "parent": "331d76d8-7f36-43ba-8a3c-09540130f682",
       "name": "notice_dept",
       "label": "被通知部门"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "90cf387d-2d52-4969-aff0-3fd20c2a1f0e",
+    "fields": {
+      "created_time": "2025-03-27T06:51:00.723Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 0,
+      "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
+      "name": "online",
+      "label": "在线"
     }
   },
   {
@@ -6702,6 +6732,21 @@
       "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
       "name": "modifier",
       "label": "修改人"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "f1af6f98-cd8d-4496-a344-5199a6df0b98",
+    "fields": {
+      "created_time": "2025-03-27T06:51:00.724Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 0,
+      "parent": "585d2a2a-1c9b-42de-9b69-113e150da4a2",
+      "name": "channel_name",
+      "label": "频道名称"
     }
   },
   {

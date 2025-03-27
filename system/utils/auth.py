@@ -76,7 +76,7 @@ def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=Logi
                              " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME))
 
 
-def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True):
+def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True, channel_name=""):
     login_ip = get_request_ip(request) if request else ''
     login_ip = login_ip or '0.0.0.0'
     login_city = get_ip_city(login_ip) or _("Unknown")
@@ -85,6 +85,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         'city': str(login_city),
         'browser': get_browser(request),
         'system': get_os(request),
+        'channel_name': channel_name or getattr(request, "channel_name", ""),
         'status': status,
         'agent': str(parse(request.META['HTTP_USER_AGENT'])),
         'login_type': login_type

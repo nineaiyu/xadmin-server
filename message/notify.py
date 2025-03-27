@@ -22,8 +22,10 @@ from common.core.config import UserConfig
 from common.decorators import cached_method
 from common.utils import get_logger
 from message.utils import async_push_message, online_user_cache
-from system.models import UserInfo
+from server.utils import get_current_request
+from system.models import UserInfo, UserLoginLog
 from system.serializers.userinfo import UserInfoSerializer
+from system.views.auth.login import login_success
 
 logger = get_logger(__name__)
 
@@ -46,6 +48,13 @@ def get_user_pk(username):
 @sync_to_async
 def get_can_push_message(pk):
     return UserConfig(pk).PUSH_CHAT_MESSAGE
+
+
+@sync_to_async
+def websocket_login_success(user_obj, channel_name):
+    request = get_current_request()
+    request.channel_name = channel_name
+    login_success(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET)
 
 
 class MessageNotify(AsyncJsonWebsocketConsumer):
@@ -87,7 +96,7 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                 self.disconnected = False
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-
+                await websocket_login_success(self.user, self.channel_name)
                 await self.accept()
                 # 建立连接，推送用户信息
                 # await self.userinfo(None)

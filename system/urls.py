@@ -14,6 +14,7 @@ from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
+from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
 from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.role import RoleViewSet
@@ -82,6 +83,7 @@ router.register('menu', MenuViewSet, basename='menu')
 router.register('role', RoleViewSet, basename='role')
 router.register('permission', DataPermissionViewSet, basename='permission')
 router.register('field', ModelLabelFieldViewSet, basename='model_label_field')
+router.register('online', UserOnlineViewSet, basename='online_socket')
 
 # 配置相关
 router.register('config/system', SystemConfigViewSet, basename='sysconfig')

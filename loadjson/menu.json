@@ -489,6 +489,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "14b5d2a4-fc5e-42fa-89e6-0c8cb0589c4f",
+    "fields": {
+      "created_time": "2025-03-27T06:29:24.620Z",
+      "updated_time": "2025-03-27T06:29:24.620Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "destroy:SystemUserOnline",
+      "rank": 10004,
+      "path": "api/system/online/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "5e992885-5ced-4aed-8a35-f2cc817313cf",
+      "method": "DELETE",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "168ac361-7d7d-45ac-9b4c-7f431059f991",
     "fields": {
       "created_time": "2024-01-22T09:31:57.746Z",
@@ -997,6 +1019,28 @@
       "model": [
         "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3237bc0b-7e8c-4bf1-940b-5fa4e1a48079",
+    "fields": {
+      "created_time": "2025-03-27T06:29:24.604Z",
+      "updated_time": "2025-03-27T06:29:24.604Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "batchDestroy:SystemUserOnline",
+      "rank": 10002,
+      "path": "api/system/online/batch-destroy$",
+      "component": null,
+      "is_active": true,
+      "meta": "5cec713b-ab6c-4554-add0-53a91c8f135c",
+      "method": "POST",
+      "model": []
     }
   },
   {
@@ -2989,6 +3033,30 @@
   },
   {
     "model": "system.menu",
+    "pk": "9c564fba-5120-4953-9653-2a40eeb61414",
+    "fields": {
+      "created_time": "2025-03-27T06:29:24.594Z",
+      "updated_time": "2025-03-27T06:29:24.594Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "list:SystemUserOnline",
+      "rank": 10001,
+      "path": "api/system/online$",
+      "component": null,
+      "is_active": true,
+      "meta": "68298e7a-0bc6-400f-aecb-71adea00e920",
+      "method": "GET",
+      "model": [
+        "585d2a2a-1c9b-42de-9b69-113e150da4a2"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f",
     "fields": {
       "created_time": "2024-01-22T09:32:08.489Z",
@@ -3579,6 +3647,28 @@
   },
   {
     "model": "system.menu",
+    "pk": "c5a92123-877d-4c98-af6b-a76e0b4ef666",
+    "fields": {
+      "created_time": "2025-03-27T06:41:56.819Z",
+      "updated_time": "2025-03-27T06:41:56.819Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "exportData:SystemUserOnline",
+      "rank": 10003,
+      "path": "api/system/online/export-data$",
+      "component": null,
+      "is_active": true,
+      "meta": "91336fe2-7343-469f-8dbf-f2dcc454897f",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "c68fec86-88d6-4511-baa0-01f79d81341b",
     "fields": {
       "created_time": "2024-10-30T08:50:22.320Z",
@@ -3695,6 +3785,28 @@
       "component": "",
       "is_active": true,
       "meta": "4b4f9531-988d-4df9-9927-a5eecfdf84d3",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "ce3f73bd-f2fc-40ef-b47a-6ed6f95fe2c6",
+    "fields": {
+      "created_time": "2025-03-27T02:26:30.287Z",
+      "updated_time": "2025-03-27T02:26:30.287Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+      "menu_type": 2,
+      "name": "logout:SystemUserLoginLog",
+      "rank": 10006,
+      "path": "api/system/logs/login/(?P<pk>[^/.]+)/logout$",
+      "component": null,
+      "is_active": true,
+      "meta": "781a6812-d653-4b46-bd50-d69149e7cb42",
       "method": "POST",
       "model": []
     }
@@ -4094,6 +4206,52 @@
       "method": "GET",
       "model": [
         "0f57a580-952e-4751-a110-9e447a08768d"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+    "fields": {
+      "created_time": "2025-03-27T06:19:01.555Z",
+      "updated_time": "2025-03-27T06:38:19.656Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "74defdba-9645-439a-bf36-c0545bb9cda1",
+      "menu_type": 1,
+      "name": "SystemUserOnline",
+      "rank": 0,
+      "path": "/system/online/index",
+      "component": "system/online/index",
+      "is_active": true,
+      "meta": "5f28c8e6-3e3f-4b6c-a5dd-643f036f1903",
+      "method": "",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e5ea342e-0947-4cf4-b6dc-98f155973f50",
+    "fields": {
+      "created_time": "2025-03-27T06:29:24.612Z",
+      "updated_time": "2025-03-27T06:29:24.612Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "retrieve:SystemUserOnline",
+      "rank": 10003,
+      "path": "api/system/online/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "16d85f46-f99b-4ccb-9459-bbf54614544f",
+      "method": "GET",
+      "model": [
+        "585d2a2a-1c9b-42de-9b69-113e150da4a2"
       ]
     }
   },
