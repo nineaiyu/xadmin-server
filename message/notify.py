@@ -5,36 +5,23 @@
 # author : ly_13
 # date : 6/2/2023
 import asyncio
-import datetime
-import json
 import os
-import time
+from typing import Dict
 
 import aiofiles
-from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
-from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
-from rest_framework.utils import encoders
 
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
-from common.decorators import cached_method
 from common.utils import get_logger
-from message.utils import async_push_message, online_user_cache
+from message.base import AsyncJsonWebsocket
+from message.utils import async_push_message, update_online_user
 from server.utils import get_current_request
 from system.models import UserInfo, UserLoginLog
-from system.serializers.userinfo import UserInfoSerializer
 from system.views.auth.login import login_success
 
 logger = get_logger(__name__)
-
-
-@database_sync_to_async
-@cached_method()
-def get_userinfo(user):
-    result = UserInfoSerializer(instance=user).data
-    return result
 
 
 @database_sync_to_async
@@ -45,32 +32,56 @@ def get_user_pk(username):
         return
 
 
-@sync_to_async
+@database_sync_to_async
 def get_can_push_message(pk):
     return UserConfig(pk).PUSH_CHAT_MESSAGE
 
 
-@sync_to_async
+async def notify_at_user_msg(data: Dict, username: str):
+    text = data.get('text')
+    if text.startswith('@'):
+        target = text.split(' ')[0].split('@')
+        if len(target) > 1:
+            target = target[1]
+            try:
+                pk = await get_user_pk(target)
+                if pk and await(get_can_push_message(pk)):
+                    push_message = {
+                        'title': f"用户 {username} 发来一条消息",
+                        'message': text,
+                        'level': 'info',
+                        'notice_type': {'label': '聊天室', 'value': 0},
+                        'message_type': 'chat_message',
+                    }
+                    await async_push_message(pk, push_message)
+            except Exception as e:
+                logger.error(e)
+
+
+@database_sync_to_async
 def websocket_login_success(user_obj, channel_name):
     request = get_current_request()
     request.channel_name = channel_name
     login_success(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET)
 
 
-class MessageNotify(AsyncJsonWebsocketConsumer):
+class MessageNotify(AsyncJsonWebsocket):
+    """
+    数据消息格式如下
+    {
+        "action":"",
+        "timestamp":"",
+        "data":str|dict|byte,
+        "status":"success",
+    }
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
         self.room_group_name = None
         self.disconnected = True
         self.user = None
 
-    def update_online_user(self):
-        online_layers = self.channel_layer.groups.get(
-            self.channel_layer._get_group_channel_name(self.room_group_name), {})
-        if online_layers:
-            online_user_cache.push(self.room_group_name, list(online_layers))
-        else:
-            online_user_cache.pop(self.room_group_name)
 
     async def connect(self):
         self.user = self.scope["user"]
@@ -81,39 +92,27 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
             logger.info(f"{self.user} connect success")
             group_name = self.scope["url_route"]["kwargs"].get('group_name')
             username = self.scope["url_route"]["kwargs"].get('username')
-            # # data = verify_token(token, room_name, success_once=True)
             if username and group_name and username != self.user.username:
                 self.disconnected = False
                 self.room_group_name = 'message_system_default_0'
-                # self.room_group_name = f"message_{room_name}"
-                # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
                 await self.accept()
             else:
-                #     logger.error(f"room_name:{room_name} token:{username} auth failed")
-                #     await self.close()
                 self.room_group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
                 self.disconnected = False
                 # Join room group
                 await self.channel_layer.group_add(self.room_group_name, self.channel_name)
                 await websocket_login_success(self.user, self.channel_name)
                 await self.accept()
-                # 建立连接，推送用户信息
-                # await self.userinfo(None)
 
     async def disconnect(self, close_code):
         self.disconnected = True
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-            self.update_online_user()
-            # if self.channel_layer._get_group_channel_name(self.room_group_name) not in self.channel_layer.groups:
-            #     online_user_cache.pop(self.room_group_name)
+            update_online_user(self.channel_layer, self.room_group_name)
 
         logger.info(f"{self.user} disconnect")
 
-    @classmethod
-    async def encode_json(cls, content):
-        return json.dumps(content, cls=encoders.JSONEncoder, ensure_ascii=False)
 
     # Receive message from WebSocket
     async def receive_json(self, content, **kwargs):
@@ -124,8 +123,8 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
         match action:
             case 'ping':
                 # 更新用户在线状态，通过hashset更新
-                self.update_online_user()
-                await self.send_data(action, {'data': {"message": 'pong'}})
+                update_online_user(self.channel_layer, self.room_group_name)
+                await self.send_base_json(action, 'pong')
             case 'chat_message':
                 data['pk'] = self.user.pk
                 data['username'] = self.user.username
@@ -133,56 +132,14 @@ class MessageNotify(AsyncJsonWebsocketConsumer):
                 await self.channel_layer.group_send(
                     self.room_group_name, {"type": "chat_message", "data": data}
                 )
-                text = data.get('text')
-                if text.startswith('@'):
-                    target = text.split(' ')[0].split('@')
-                    if len(target) > 1:
-                        target = target[1]
-                        try:
-                            pk = await get_user_pk(target)
-                            if pk and await(get_can_push_message(pk)):
-                                push_message = {
-                                    'title': f"用户 {self.user.username} 发来一条消息",
-                                    'message': text,
-                                    'level': 'info',
-                                    'notice_type': {'label': '聊天室', 'value': 0},
-                                    'message_type': 'chat_message',
-                                }
-                                await async_push_message(pk, push_message)
-                        except Exception as e:
-                            logger.error(e)
+                await notify_at_user_msg(data, self.user.username)
+
             case 'userinfo' | 'push_message':
+                # 使用下面方法，将action 分发到对应的方法里面
                 await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
             case _:
                 await self.close()
 
-    # rec: {"action":"userinfo","data":{}}
-    async def userinfo(self, event):
-        data = {
-            'userinfo': await get_userinfo(self.user),
-            'pk': self.user.pk
-        }
-        await self.send_data('userinfo', {'data': data})
-
-    # 系统推送消息到客户端，推送消息格式如下：{"time": 1709714533.5625794, "action": "push_message", "data": {"message": 11}}
-    async def push_message(self, event):
-        data = event["data"]
-        await self.send_data('push_message', {'data': data})
-
-    # 客户端聊天消息，已经失效
-    async def chat_message(self, event):
-        data = event["data"]
-        data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-        # Send message to WebSocket
-        await self.send_data('chat_message', {'data': data})
-
-    async def send_data(self, action, content, close=False):
-        data = {
-            'time': time.time(),
-            'action': action
-        }
-        data.update(content)
-        return await super().send_json(data, close)
 
     # 下面查看文件方法忽略
     async def task_log(self, event):
