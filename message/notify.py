@@ -78,13 +78,15 @@ class MessageNotify(AsyncJsonWebsocket):
 
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
-        self.room_group_name = None
+        self.group_name = None
         self.disconnected = True
         self.user = None
 
     async def connect(self):
         self.user = self.scope["user"]
         if not self.user:
+            logger.error(f"user not exists. so close. {self.scope}")
+            await asyncio.sleep(3)
             # https://developer.mozilla.org/zh-CN/docs/Web/API/CloseEvent#status_codes
             await self.close(4401)
         else:
@@ -93,23 +95,21 @@ class MessageNotify(AsyncJsonWebsocket):
             username = self.scope["url_route"]["kwargs"].get('username')
             if username and group_name and username != self.user.username:
                 self.disconnected = False
-                self.room_group_name = 'message_system_default_0'
-                await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+                self.group_name = 'message_system_default_0'
+                await self.channel_layer.group_add(self.group_name, self.channel_name)
                 await self.accept()
             else:
-                self.room_group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
+                self.group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
                 self.disconnected = False
                 # Join room group
-                await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+                await self.channel_layer.group_add(self.group_name, self.channel_name)
                 await websocket_login_success(self.user, self.channel_name)
                 await self.accept()
 
     async def disconnect(self, close_code):
         self.disconnected = True
-        if self.room_group_name:
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
-            # await update_online_user(self.room_group_name)
+        if self.group_name:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
         logger.info(f"{self.user} disconnect")
 
@@ -117,20 +117,21 @@ class MessageNotify(AsyncJsonWebsocket):
     async def receive_json(self, content, **kwargs):
         action = content.get('action')
         if not action:
+            logger.error(f"action not exists. so close. {content}")
+            await asyncio.sleep(3)
             await self.close()
         data = content.get('data', {})
         match action:
             case 'ping':
                 # 更新用户在线状态，通过hashset更新
-                # await update_online_user(self.room_group_name)
-                await self.channel_layer.update_active_layers(self.room_group_name, self.channel_name)
+                await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
                 await self.send_base_json(action, 'pong')
             case 'chat_message':
                 data['pk'] = self.user.pk
                 data['username'] = self.user.username
                 # Send message to room group
                 await self.channel_layer.group_send(
-                    self.room_group_name, {"type": "chat_message", "data": data}
+                    self.group_name, {"type": "chat_message", "data": data}
                 )
                 await notify_at_user_msg(data, self.user.username)
 
@@ -138,6 +139,8 @@ class MessageNotify(AsyncJsonWebsocket):
                 # 使用下面方法，将action 分发到对应的方法里面
                 await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
             case _:
+                logger.error(f"action unknown. so close. {content}")
+                await asyncio.sleep(3)
                 await self.close()
 
     # 下面查看文件方法忽略

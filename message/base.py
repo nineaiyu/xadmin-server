@@ -44,7 +44,7 @@ class AsyncJsonWebsocket(AsyncJsonWebsocketConsumer):
 
     # 系统推送消息到客户端，推送消息格式如下：{"timestamp": 1709714533.5625794, "action": "push_message", "data": {"message_type": 11}}
     async def push_message(self, event):
-        await self.send_base_json(event["type"], event["data"])
+        await self.send_base_json(event["data"].get("action", event["type"]), event["data"])
 
     async def chat_message(self, event):
-        await self.send_base_json(event["type"], event["data"])
+        await self.send_base_json(event["data"].get("action", event["type"]), event["data"])
