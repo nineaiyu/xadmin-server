@@ -16,7 +16,7 @@ from common.base.utils import AESCipherV2
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
-from message.utils import get_online_user
+from message.utils import get_online_user_layers
 from settings.utils.password import check_password_rules
 from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
@@ -58,7 +58,7 @@ class UserSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_online_count(self, obj):
-        return len(get_online_user(obj.pk))
+        return len(get_online_user_layers(obj.pk))
 
     def validate(self, attrs):
         password = attrs.get('password')

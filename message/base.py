@@ -24,7 +24,6 @@ def get_userinfo(user):
 
 
 class AsyncJsonWebsocket(AsyncJsonWebsocketConsumer):
-
     user: None
 
     @classmethod
@@ -41,7 +40,7 @@ class AsyncJsonWebsocket(AsyncJsonWebsocketConsumer):
         await self.send_json(content, close)
 
     async def userinfo(self, event):
-        await self.send_base_json(event["type"],  await get_userinfo(self.user))
+        await self.send_base_json(event["type"], await get_userinfo(self.user))
 
     # 系统推送消息到客户端，推送消息格式如下：{"timestamp": 1709714533.5625794, "action": "push_message", "data": {"message_type": 11}}
     async def push_message(self, event):

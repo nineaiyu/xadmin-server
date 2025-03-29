@@ -79,4 +79,3 @@ def generate_good_token_of_length(length):
     ascii_uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
     digits = '23456789'
     return "".join([random.choice(digits + ascii_uppercase) for _ in range(length)])
-

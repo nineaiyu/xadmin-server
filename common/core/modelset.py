@@ -6,11 +6,11 @@
 # date : 6/2/2023
 import itertools
 import json
+import math
 import uuid
 from hashlib import md5
 from typing import Callable
 
-import math
 from django.conf import settings
 from django.db import transaction
 from django.forms.widgets import SelectMultiple, DateTimeInput
@@ -40,6 +40,7 @@ from common.tasks import background_task_view_set_job
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
 
 def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
     task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入

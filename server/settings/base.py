@@ -196,8 +196,8 @@ DATABASE_ROUTERS = ['common.core.db.router.DBRouter']
 # websocket 消息需要用到redis的消息发布订阅
 CHANNEL_LAYERS = {
     "default": {
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
+        "BACKEND": "common.cache.channel.RedisChannelLayer",
+        # "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
         "CONFIG": {
             "hosts": [f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CHANNEL_LAYERS_CACHE_ID}"],
         },

@@ -10,5 +10,6 @@ from asgiref.local import Local
 
 thread_local = Local(thread_critical=True)
 
+
 def _find(attr):
     return getattr(thread_local, attr, None)

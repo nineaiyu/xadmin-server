@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from message.utils import get_online_user
+from message.utils import get_online_user_layers
 from system.models import UserLoginLog, OperationLog
 
 logger = get_logger(__name__)
@@ -51,7 +51,7 @@ class LoginLogSerializer(BaseModelSerializer):
     @extend_schema_field(serializers.IntegerField)
     def get_online(self, obj):
         if UserLoginLog.LoginTypeChoices.WEBSOCKET == obj.login_type:
-            return obj.channel_name in get_online_user(obj.creator.pk)
+            return obj.channel_name in get_online_user_layers(obj.creator.pk)
         return -1
 
 

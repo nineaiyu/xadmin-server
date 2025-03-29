@@ -16,7 +16,7 @@ from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
-from message.utils import async_push_message, update_online_user
+from message.utils import async_push_message
 from server.utils import get_current_request
 from system.models import UserInfo, UserLoginLog
 from system.views.auth.login import login_success
@@ -82,7 +82,6 @@ class MessageNotify(AsyncJsonWebsocket):
         self.disconnected = True
         self.user = None
 
-
     async def connect(self):
         self.user = self.scope["user"]
         if not self.user:
@@ -109,10 +108,10 @@ class MessageNotify(AsyncJsonWebsocket):
         self.disconnected = True
         if self.room_group_name:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-            update_online_user(self.channel_layer, self.room_group_name)
+
+            # await update_online_user(self.room_group_name)
 
         logger.info(f"{self.user} disconnect")
-
 
     # Receive message from WebSocket
     async def receive_json(self, content, **kwargs):
@@ -123,7 +122,8 @@ class MessageNotify(AsyncJsonWebsocket):
         match action:
             case 'ping':
                 # 更新用户在线状态，通过hashset更新
-                update_online_user(self.channel_layer, self.room_group_name)
+                # await update_online_user(self.room_group_name)
+                await self.channel_layer.update_active_layers(self.room_group_name, self.channel_name)
                 await self.send_base_json(action, 'pong')
             case 'chat_message':
                 data['pk'] = self.user.pk
@@ -139,7 +139,6 @@ class MessageNotify(AsyncJsonWebsocket):
                 await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
             case _:
                 await self.close()
-
 
     # 下面查看文件方法忽略
     async def task_log(self, event):

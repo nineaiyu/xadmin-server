@@ -42,6 +42,7 @@ class CacheRedis(object):
     def expire(self, timeout=None):
         return self.connect.expire(self.key, timeout)
 
+
 class CacheList(CacheRedis):
 
     def __init__(self, key, max_size=1024, timeout=None):

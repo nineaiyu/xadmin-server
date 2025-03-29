@@ -29,7 +29,7 @@ class UserLoginLog(DbAuditModel):
     browser = models.CharField(max_length=64, verbose_name=_("Browser"), null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name=_("System"), null=True, blank=True)
     agent = models.CharField(max_length=128, verbose_name=_("Agent"), null=True, blank=True)
-    channel_name = models.CharField(max_length=64, verbose_name=_("Channel name"), null=True, blank=True)
+    channel_name = models.CharField(max_length=128, verbose_name=_("Channel name"), null=True, blank=True)
     login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices,
                                           verbose_name=_("Login type"))
 

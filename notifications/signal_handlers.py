@@ -23,6 +23,7 @@ class NewSiteMsgSubPub(LazyObject):
 
 new_site_msg_chan = NewSiteMsgSubPub()
 
+
 @receiver(post_migrate, dispatch_uid='notifications.signal_handlers.create_system_messages')
 def create_system_messages(app_config: AppConfig, **kwargs):
     try:

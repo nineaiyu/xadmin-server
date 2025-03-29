@@ -210,6 +210,7 @@ class MagicCacheData(object):
         logger.warning(
             f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
 
+
 class MagicCacheResponse(object):
     def __init__(self, timeout=60 * 10, invalid_time=0, key_func=None):
         self.timeout = timeout
