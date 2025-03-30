@@ -66,19 +66,10 @@ def websocket_login_success(user_obj, channel_name):
 
 
 class MessageNotify(AsyncJsonWebsocket):
-    """
-    数据消息格式如下
-    {
-        "action":"",
-        "timestamp":"",
-        "data":str|dict|byte,
-        "status":"success",
-    }
-    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
-        self.group_name = None
+        self.group_name = ''
         self.disconnected = True
         self.user = None
 
@@ -93,18 +84,16 @@ class MessageNotify(AsyncJsonWebsocket):
             logger.info(f"{self.user} connect success")
             group_name = self.scope["url_route"]["kwargs"].get('group_name')
             username = self.scope["url_route"]["kwargs"].get('username')
-            if username and group_name and username != self.user.username:
-                self.disconnected = False
+            if username and group_name and username != self.user.username:  # 加入聊天室房间
                 self.group_name = 'message_system_default_0'
-                await self.channel_layer.group_add(self.group_name, self.channel_name)
-                await self.accept()
-            else:
+            else:  # 加入个人消息推送组
                 self.group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
-                self.disconnected = False
-                # Join room group
-                await self.channel_layer.group_add(self.group_name, self.channel_name)
                 await websocket_login_success(self.user, self.channel_name)
-                await self.accept()
+
+            self.disconnected = False
+            # Join room group
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
 
     async def disconnect(self, close_code):
         self.disconnected = True
@@ -114,18 +103,8 @@ class MessageNotify(AsyncJsonWebsocket):
         logger.info(f"{self.user} disconnect")
 
     # Receive message from WebSocket
-    async def receive_json(self, content, **kwargs):
-        action = content.get('action')
-        if not action:
-            logger.error(f"action not exists. so close. {content}")
-            await asyncio.sleep(3)
-            await self.close()
-        data = content.get('data', {})
+    async def receive_json(self, action, data, content, **kwargs):
         match action:
-            case 'ping':
-                # 更新用户在线状态，通过hashset更新
-                await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
-                await self.send_base_json(action, 'pong')
             case 'chat_message':
                 data['pk'] = self.user.pk
                 data['username'] = self.user.username
@@ -135,9 +114,6 @@ class MessageNotify(AsyncJsonWebsocket):
                 )
                 await notify_at_user_msg(data, self.user.username)
 
-            case 'userinfo' | 'push_message':
-                # 使用下面方法，将action 分发到对应的方法里面
-                await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
             case _:
                 logger.error(f"action unknown. so close. {content}")
                 await asyncio.sleep(3)
