@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-30 18:50+0800\n"
+"POT-Creation-Date: 2025-03-31 10:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -131,11 +131,11 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:66
+#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:66
+#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
 msgid "Operation failed"
 msgstr ""
 
@@ -476,6 +476,10 @@ msgstr ""
 
 #: common/utils/verify_code.py:22
 msgid "Send SMS code"
+msgstr ""
+
+#: message/utils.py:98
+msgid "Wait for result timeout"
 msgstr ""
 
 #: notifications/apps.py:8

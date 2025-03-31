@@ -15,6 +15,7 @@ from rest_framework.utils import encoders
 
 from common.decorators import cached_method
 from common.utils import get_logger
+from message.utils import set_mid_result_to_cache
 from system.serializers.userinfo import UserInfoSerializer
 
 logger = get_logger(__name__)
@@ -59,7 +60,12 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
 
         pass
 
-    async def send_base_json(self, action: str, data=None, code=1000, detail=None, close=False, **kwargs):
+    async def send_base_json(self, action: str, data=None, mid=None, code=1000, detail=None, close=False, **kwargs):
+        """
+        action: 动作
+        data: 数据
+        mid: 消息ID，该ID和发送端的mid保持一致
+        """
         content = {
             'code': code,
             'action': action,
@@ -68,6 +74,8 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         }
         if data:
             content['data'] = data
+        if mid:
+            content['mid'] = mid
         content.update(kwargs)
         await self.send_json(content, close)
 
@@ -83,9 +91,10 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
                 logger.error(f"action not exists. so close. {content}")
                 await asyncio.sleep(3)
                 await self.close()
+            if mid := content.get('mid'):
+                set_mid_result_to_cache(mid, content)
             data = content.get('data', {})
             match action:
-
                 case 'ping' | 'userinfo' | 'push_message':
                     await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
                 case _:
@@ -97,14 +106,20 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         raise ValueError("No text section for incoming WebSocket frame!")
 
     async def _send_base(self, event):
-        await self.send_base_json(event["data"].get("action", event["type"]), event["data"])
+        data = event['data']
+        if isinstance(data, str):
+            await self.send_base_json(event["type"], data, mid=event.get("mid"))
+        else:
+            await self.send_base_json(data.get("action", event["type"]), data, mid=data.get("mid", event.get("mid")))
 
     async def ping(self, event):
         await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
-        await self.send_base_json(event["type"], 'pong')
+        event['data'] = 'pong'
+        await self._send_base(event)
 
     async def userinfo(self, event):
-        await self.send_base_json(event["type"], await get_userinfo(self.user))
+        event['data'] = await get_userinfo(self.user)
+        await self._send_base(event)
 
     # 系统推送消息到客户端，推送消息格式如下：{"timestamp": 1709714533.5625794, "action": "push_message", "data": {"message_type": 11}}
     async def push_message(self, event):

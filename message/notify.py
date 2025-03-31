@@ -10,13 +10,12 @@ from typing import Dict
 
 import aiofiles
 from channels.db import database_sync_to_async
-from django.conf import settings
 
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
 from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
-from message.utils import async_push_message
+from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
 from system.models import UserInfo, UserLoginLog
 from system.views.auth.login import login_success
@@ -87,7 +86,7 @@ class MessageNotify(AsyncJsonWebsocket):
             if username and group_name and username != self.user.username:  # 加入聊天室房间
                 self.group_name = 'message_system_default_0'
             else:  # 加入个人消息推送组
-                self.group_name = f"{settings.CACHE_KEY_TEMPLATE.get('user_websocket_key')}_{self.user.pk}"
+                self.group_name = get_user_layer_group_name(self.user.pk)
                 await websocket_login_success(self.user, self.channel_name)
 
             self.disconnected = False

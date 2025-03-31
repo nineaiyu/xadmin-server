@@ -275,10 +275,11 @@ CACHE_KEY_TEMPLATE = {
     'make_token_key': 'make_token',
     'download_url_key': 'download_url',
     'pending_state_key': 'pending_state',
-    'user_websocket_key': 'user_websocket',
+    'websocket_group_key': 'websocket_group',
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
-    'common_resource_ids_key': 'common_resource_ids'
+    'common_resource_ids_key': 'common_resource_ids',
+    'websocket_message_result_key': 'websocket_message_result'
 }
 
 APPEND_SLASH = False
