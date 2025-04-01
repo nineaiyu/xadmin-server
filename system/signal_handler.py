@@ -39,6 +39,7 @@ def batch_invalid_cache(pks, batch_length=1000):
         for data in itertools.batched(keys[1], batch_length):
             keys[0](data)
 
+
 @receiver([post_save, pre_delete], sender=Menu)
 def clean_cache_handler(sender, instance, **kwargs):
     batch_invalid_cache(UserInfo.objects.filter(is_superuser=True).values_list('pk', flat=True))

@@ -4,6 +4,7 @@
 # filename : response
 # author : ly_13
 # date : 6/2/2023
+import datetime
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
@@ -16,7 +17,8 @@ class ApiResponse(Response):
         dic = {
             'code': code,
             'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
-            'requestId': str(getattr(get_current_request(), 'request_uuid', ""))
+            'requestId': str(getattr(get_current_request(), 'request_uuid', "")),
+            'timestamp': str(datetime.datetime.now()),
         }
         if data is not None:
             dic['data'] = data

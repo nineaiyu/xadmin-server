@@ -41,8 +41,9 @@ def get_signature_user(scope):
     for backend_str in settings.REST_FRAMEWORK.get('DEFAULT_AUTHENTICATION_CLASSES'):
         try:
             backend = import_string(backend_str)
-            user, _ = backend().authenticate(request)
+            user, auth = backend().authenticate(request)
             if user:
+                user.auth = auth
                 request.user = user
                 request.request_uuid = uuid.uuid4()
                 set_current_request(request)

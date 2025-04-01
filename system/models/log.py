@@ -20,6 +20,7 @@ class UserLoginLog(DbAuditModel):
         SMS = 1, _("SMS verification code")
         EMAIL = 2, _("Email verification code")
         WECHAT = 4, _("Wechat scan code")
+        WEBSOCKET = 8, _("Websocket")
         UNKNOWN = 9, _("Unknown")
 
     status = models.BooleanField(default=True, verbose_name=_("Login status"))
@@ -28,6 +29,7 @@ class UserLoginLog(DbAuditModel):
     browser = models.CharField(max_length=64, verbose_name=_("Browser"), null=True, blank=True)
     system = models.CharField(max_length=64, verbose_name=_("System"), null=True, blank=True)
     agent = models.CharField(max_length=128, verbose_name=_("Agent"), null=True, blank=True)
+    channel_name = models.CharField(max_length=128, verbose_name=_("Channel name"), null=True, blank=True)
     login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices,
                                           verbose_name=_("Login type"))
 

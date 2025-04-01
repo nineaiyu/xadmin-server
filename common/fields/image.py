@@ -39,7 +39,6 @@ def get_thumbnail(source, index, force=False):
     return file.name
 
 
-
 class ProcessedImageFieldFile(ImageFieldFile):
     is_local_storage = isinstance(default_storage, FileSystemStorage)
 

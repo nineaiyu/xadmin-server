@@ -1,10 +1,12 @@
+import json
 from typing import List, Dict
 
 from django.db import transaction
+from rest_framework.utils import encoders
 
 from common.core.config import UserConfig
 from common.utils import get_logger
-from message.utils import push_message, get_online_user_pks
+from message.utils import push_message, get_online_users
 from notifications.serializers.message import NoticeMessageSerializer
 from system.models import UserInfo
 
@@ -33,10 +35,9 @@ class SiteMessageUtil:
             fields=['pk', 'level', 'title', 'notice_type', 'message'],
             instance=notify_obj, ignore_field_permission=True).data
         notice_message['message_type'] = 'notify_message'
-        online_pks = get_online_user_pks()  # 仅推送在线用户
-        for pk in set(pks) & online_pks:
+        for pk in set(pks) & set(get_online_users()):
             if UserConfig(pk).PUSH_MESSAGE_NOTICE:
-                push_message(pk, notice_message)
+                push_message(pk, json.loads(json.dumps(notice_message, cls=encoders.JSONEncoder, ensure_ascii=False)))
         return notify_obj
 
     @classmethod

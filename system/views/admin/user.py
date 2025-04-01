@@ -17,6 +17,7 @@ from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDat
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from message.utils import send_logout_msg
 from notifications.message import SiteMessageUtil
 from settings.utils.security import LoginBlockUtil
 from system.models import UserInfo
@@ -85,4 +86,22 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         """解禁用户"""
         instance = self.get_object()
         LoginBlockUtil.unblock_user(instance.username)
+        return ApiResponse()
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={'channel_names': build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=['channel_names'],
+                description="列表"
+            )
+        ),
+        responses=get_default_response_schema()
+    )
+    @action(methods=["post"], detail=True)
+    def logout(self, request, *args, **kwargs):
+        """强退用户"""
+        instance = self.get_object()
+        channel_names = request.data.get('channel_names', [])
+        send_logout_msg(instance.pk, channel_names)
         return ApiResponse()

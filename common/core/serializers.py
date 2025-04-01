@@ -85,4 +85,3 @@ class BaseModelSerializer(ModelSerializer):
                 default = default()
             field_kwargs.setdefault("default", default)
         return field_class, field_kwargs
-

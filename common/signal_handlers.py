@@ -69,6 +69,7 @@ def delete_file_handler(sender, **kwargs):
             log_path = get_celery_task_log_path(task_id)
             remove_file(log_path)
 
+
 @after_setup_logger.connect
 def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, **kwargs):
     if not logger:
@@ -157,6 +158,7 @@ def on_update_set_modifier(sender, instance=None, **kwargs):
         modifier = _get_request_user()
         if modifier:
             instance.modifier = modifier
+
 
 if settings.DEBUG_DEV:
     request_finished.connect(on_request_finished_logging_db_query)

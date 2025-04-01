@@ -103,3 +103,9 @@ class CommonResourceIDsCache(RedisCacheBase):
     def __init__(self, prefix_key):
         self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('common_resource_ids_key')}_{prefix_key}"
         super().__init__(self.cache_key)
+
+
+class WebSocketMsgResultCache(RedisCacheBase):
+    def __init__(self, prefix_key):
+        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('websocket_message_result_key')}_{prefix_key}"
+        super().__init__(self.cache_key)

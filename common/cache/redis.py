@@ -39,6 +39,9 @@ class CacheRedis(object):
     def lock(self, *args, **kwargs):
         return self.connect.lock(f"{self.key}_locker", *args, **kwargs)
 
+    def expire(self, timeout=None):
+        return self.connect.expire(self.key, timeout)
+
 
 class CacheList(CacheRedis):
 

@@ -24,6 +24,7 @@ def _find(attr):
 def get_current_request():
     return _find('current_request')
 
+
 def add_db_prefix(sender, **kwargs):
     prefix = settings.DB_PREFIX
     meta = sender._meta

@@ -128,7 +128,11 @@ class BasePrimaryKeyRelatedField(RelatedField):
             result = []
             for item in queryset:
                 data = self.to_representation(item)
-                data['value'] = data.get("pk")
+                if isinstance(data, dict):
+                    if "pk" in data:
+                        data['value'] = data.get("pk")
+                else:
+                    data = {"value": data, "label": data}
                 result.append(data)
         else:
             result = {}

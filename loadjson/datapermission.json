@@ -13,20 +13,255 @@
       "name": "演示模式菜单",
       "rules": [
         {
-          "table": "system.menu",
+          "type": "value.table.menu.ids",
           "field": "id",
           "match": "in",
-          "exclude": false,
-          "type": "value.table.menu.ids",
-          "value": "[{\"pk\":\"050f7e13-cf60-4c1d-b791-3ab6a97254f6\",\"label\":\"系统管理\"},{\"pk\":\"4f9726d3-3796-4602-a716-1337ee2a168e\",\"label\":\"用户管理\"},{\"pk\":\"009fa855-b1fd-4764-95b6-1f1eb94dd336\",\"label\":\"U-获取用户的列表\"},{\"pk\":\"438bd316-a31e-4a2c-b075-9d6a82c4ae24\",\"label\":\"U-添加用户数据\"},{\"pk\":\"e6148cc0-9078-4cc2-9c3d-b359f9b26c34\",\"label\":\"U-批量删除用户\"},{\"pk\":\"bf59ff4d-4a79-46cc-a1e4-8136a588d7fd\",\"label\":\"U-导入用户数据\"},{\"pk\":\"91bb2a03-607e-4954-9883-bc1712c66273\",\"label\":\"U-导出用户数据\"},{\"pk\":\"7595b222-e832-48ad-b91f-234b20043fb3\",\"label\":\"U-部分更新用户信息\"},{\"pk\":\"2118f861-8c58-4685-839e-57afbea60644\",\"label\":\"U-删除用户数据\"},{\"pk\":\"0e5b8019-f4df-4dd4-a635-8ee198c196a3\",\"label\":\"U-重置用户密码\"},{\"pk\":\"7850416a-7c4d-424d-935b-226bf0ee5d45\",\"label\":\"U-解禁用户\"},{\"pk\":\"2bc5d8ee-add8-4c95-a845-2bcd4fd86122\",\"label\":\"U-上传头像\"},{\"pk\":\"8c6f0f01-a29e-4d72-96a8-abf67a4ede65\",\"label\":\"部门管理\"},{\"pk\":\"9aeef7b7-d637-4935-b2f6-a7b965f1b7e9\",\"label\":\"U-获取部门的列表\"},{\"pk\":\"2cd3ca25-e606-4e46-983e-7aef573ef713\",\"label\":\"U-添加部门数据\"},{\"pk\":\"5c53c6d2-ccdd-410f-8ef2-d20653fb31b5\",\"label\":\"U-批量删除部门\"},{\"pk\":\"ffb62a1f-4c95-4a85-aca2-e583c3b4ef46\",\"label\":\"U-导出部门数据\"},{\"pk\":\"c8268327-efb7-45ca-8759-2298828a8dd0\",\"label\":\"U-导入部门数据\"},{\"pk\":\"13a2e23f-6cfb-4992-948b-3477b96591d4\",\"label\":\"U-部分更新部门信息\"},{\"pk\":\"2fc6ed05-aaa5-4098-983b-f4c2a1e9108a\",\"label\":\"U-删除部门数据\"},{\"pk\":\"432d5df8-a0b8-4042-83b9-580027b1e236\",\"label\":\"U-给部门分配角色-数据权限\"},{\"pk\":\"4f569df2-6149-462f-ad50-27f24370f5e2\",\"label\":\"菜单管理\"},{\"pk\":\"ecfd76e4-6bae-4f2b-821b-9627f644f8a4\",\"label\":\"U-获取菜单的列表\"},{\"pk\":\"ed0b3381-c1cb-439e-ab2e-3958f6905d7e\",\"label\":\"U-获取后端API列表\"},{\"pk\":\"7fdee495-3d72-4c16-ac36-a097d09aa1c4\",\"label\":\"U-导出菜单数据\"},{\"pk\":\"96772790-53e4-4113-b1d1-10998fe2f616\",\"label\":\"权限管理\"},{\"pk\":\"b5f6aa93-62dd-433f-9759-2f542baae423\",\"label\":\"角色权限\"},{\"pk\":\"44ebfeb1-6472-4409-978d-2f5c1b1c1d95\",\"label\":\"U-获取角色的列表\"},{\"pk\":\"d64cc8bd-f860-47e3-8abd-6950953cb072\",\"label\":\"U-添加角色数据\"},{\"pk\":\"20df8641-ae58-42e7-b95d-49096a186eb6\",\"label\":\"U-批量删除角色\"},{\"pk\":\"ebf23aac-ded5-4eff-a6ed-28f5211e5fd8\",\"label\":\"U-导出角色数据\"},{\"pk\":\"b988dcf2-e1aa-4d1b-86db-b9094401b3a0\",\"label\":\"U-导入角色数据\"},{\"pk\":\"f622cdde-dd9b-4733-9db8-f3873c1be1be\",\"label\":\"U-获取角色的详情\"},{\"pk\":\"3f56972e-5390-4e1b-8f4d-124042fcc31f\",\"label\":\"U-部分更新角色信息\"},{\"pk\":\"85929fd1-128c-4035-8204-20c53068b490\",\"label\":\"U-删除角色数据\"},{\"pk\":\"60a0d029-75ae-4314-b5c7-bbd8d642847d\",\"label\":\"U-获取数据权限的列表\"},{\"pk\":\"0678cc57-f292-4287-887b-ffade834dde1\",\"label\":\"数据权限\"},{\"pk\":\"bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859\",\"label\":\"U-添加数据权限数据\"},{\"pk\":\"a85ac0ec-8cda-4ac1-b38f-492388648253\",\"label\":\"U-批量删除数据权限\"},{\"pk\":\"ceede782-929e-4b94-aefb-715cf4796d06\",\"label\":\"U-导出数据权限数据\"},{\"pk\":\"20b2a39b-0bcd-4b4a-849d-2cd76464e127\",\"label\":\"U-导入数据权限数据\"},{\"pk\":\"07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb\",\"label\":\"U-部分更新数据权限信息\"},{\"pk\":\"44b8aaf4-dd2f-4da5-b329-c3bc367d5789\",\"label\":\"U-删除数据权限数据\"},{\"pk\":\"de2bdbf8-aeaf-4171-b73e-17cc383298d2\",\"label\":\"字段管理\"},{\"pk\":\"f25f86f8-c676-43b7-b650-b2410f5b1447\",\"label\":\"U-获取模型字段的列表\"},{\"pk\":\"8e99e47e-e041-45dd-8879-fe976d8260fa\",\"label\":\"U-导出模型字段数据\"},{\"pk\":\"74defdba-9645-439a-bf36-c0545bb9cda1\",\"label\":\"日志管理\"},{\"pk\":\"33662086-715b-4478-b60d-a346c8c4f66b\",\"label\":\"访问日志\"},{\"pk\":\"66847cd8-ab49-42ae-bb60-a32e42e69ea8\",\"label\":\"U-获取操作日志的列表\"},{\"pk\":\"66aa0535-a958-4bc0-9667-8b49004d90a5\",\"label\":\"U-批量删除操作日志\"},{\"pk\":\"fa566621-73fb-4428-99de-f4edd4b2dbdc\",\"label\":\"U-导出操作日志数据\"},{\"pk\":\"4a4ee30a-523b-4a1e-a9c1-6097a26f1979\",\"label\":\"U-删除操作日志数据\"},{\"pk\":\"45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b\",\"label\":\"登录日志\"},{\"pk\":\"47dc29c2-202b-4837-be9c-db4607924416\",\"label\":\"U-获取登录日志的列表\"},{\"pk\":\"3946ac20-1dd1-4fce-aa6f-3372694024ac\",\"label\":\"U-批量删除登录日志\"},{\"pk\":\"fdfbdf2e-3518-41ce-84dc-dd93ac7c6abe\",\"label\":\"U-导出登录日志数据\"},{\"pk\":\"c20ef280-7894-493c-b14a-1646fc5ce73b\",\"label\":\"U-删除登录日志数据\"},{\"pk\":\"864eba5d-f793-4a9c-b7eb-cdb227a9d221\",\"label\":\"通知公告\"},{\"pk\":\"7008bb48-18b1-4bc1-a2ea-c22998024721\",\"label\":\"消息公告\"},{\"pk\":\"24244ee6-cf54-4900-94b1-717a7317af04\",\"label\":\"U-获取消息通知的列表\"},{\"pk\":\"a6d1933e-f26a-46a9-94fc-6ec61f0f679c\",\"label\":\"U-添加消息通知数据\"},{\"pk\":\"9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f\",\"label\":\"U-批量删除消息通知\"},{\"pk\":\"c2e45d75-1270-474b-bf0c-03475ecb8b60\",\"label\":\"U-部分更新消息通知信息\"},{\"pk\":\"2ef524c5-3a70-4950-9f11-31f3f4f8c321\",\"label\":\"U-删除消息通知数据\"},{\"pk\":\"8f3eef4e-c88b-415a-a467-b0ebf7144b73\",\"label\":\"U-修改消息通知状态\"},{\"pk\":\"b8664880-b2dd-48d9-ad88-c79258156084\",\"label\":\"已读消息\"},{\"pk\":\"2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd\",\"label\":\"U-获取已读消息公告的列表\"},{\"pk\":\"5efb38e7-830b-41ac-8130-f2a7e2061ce9\",\"label\":\"U-批量删除已读消息公告\"},{\"pk\":\"602e20d6-9893-44ae-876a-443cbfa90703\",\"label\":\"U-修改已读消息公告状态\"},{\"pk\":\"b6a0ed04-ac8d-4e24-ad61-3d11e4e72260\",\"label\":\"U-删除已读消息公告数据\"},{\"pk\":\"56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3\",\"label\":\"文件管理\"},{\"pk\":\"8bb42cf0-5565-4996-af35-286f8c6fb5c1\",\"label\":\"U-获取文件的列表\"},{\"pk\":\"b1a01bd0-e437-4397-8e26-d532a0c04293\",\"label\":\"定时任务\"},{\"pk\":\"de81c3f5-9e75-447c-ba0d-5d4a638859d4\",\"label\":\"U-操作celery 定时任务\"},{\"pk\":\"14622100-4732-4f48-ae6f-7189a3407c89\",\"label\":\"U-获取celery 定时任务\"},{\"pk\":\"53e1896e-dbf1-49aa-85b3-1711e27477ee\",\"label\":\"数据查询\"},{\"pk\":\"06c77f1a-dd5f-42a4-a5c9-719d554eb603\",\"label\":\"U-获取角色搜索的列表\"},{\"pk\":\"19028bcf-080f-4e30-8b09-7ea4ae4fccaf\",\"label\":\"U-获取菜单搜索的列表\"},{\"pk\":\"f2107787-4453-4bc3-898c-a1449e39bf67\",\"label\":\"U-获取部门搜索的列表\"},{\"pk\":\"6fc056af-acd8-48dd-91cf-e34053014997\",\"label\":\"U-获取用户搜索的列表\"},{\"pk\":\"6997ffe2-8246-401d-8800-248ecbc2dd83\",\"label\":\"个人中心\"},{\"pk\":\"9ff63ec3-cd7d-4d5d-b7b6-664b61a34bcc\",\"label\":\"U-用户登录日志\"},{\"pk\":\"c9843844-f855-42a7-90ad-18b94862a3da\",\"label\":\"U-部分更新个人信息\"},{\"pk\":\"05920c01-b31e-42a1-9dfd-d1e0b176e55f\",\"label\":\"U-上传个人头像\"},{\"pk\":\"ba02b4fc-fff8-40e5-a656-2a6f13c53773\",\"label\":\"U-获取消息通知后端\"},{\"pk\":\"af3ad441-2f48-4d74-b99a-370eb047f669\",\"label\":\"U-修改个人密码\"},{\"pk\":\"b4c4be63-5c7c-4f40-857d-625884134de0\",\"label\":\"U-获取用户消息订阅列表\"},{\"pk\":\"3bf8f63d-f056-4db5-b9ec-6cd73aa7b246\",\"label\":\"U-部分更新用户消息订阅信息\"},{\"pk\":\"e9e2e5c4-3735-4219-af09-1e0f3e5118d8\",\"label\":\"消息中心\"},{\"pk\":\"acbbdcf4-5511-4df2-9c8c-06b06be7b753\",\"label\":\"U-用户消息中心\"},{\"pk\":\"4e4eb5b1-3b37-4090-ae19-f470e172c6fd\",\"label\":\"U-全部已读消息\"},{\"pk\":\"6fbc9578-58a1-4d28-8339-6a3742b30461\",\"label\":\"U-批量已读消息\"},{\"pk\":\"7f0c08a8-77fe-4c74-b718-3c0102723642\",\"label\":\"U-用户未读消息\"},{\"pk\":\"3949728a-8f7c-45a8-b84f-122b82e9c45e\",\"label\":\"聊天室\"},{\"pk\":\"3896fdff-a39c-4919-8b04-3cab771abe4a\",\"label\":\"接口文档\"},{\"pk\":\"8be959b8-13d0-48f0-a575-55f2e3988ca3\",\"label\":\"U-获取API的文档模式\"},{\"pk\":\"a53bfa34-4225-4214-98b8-91b2dc29bd93\",\"label\":\"U-SpectacularRedocView\"},{\"pk\":\"54f3dbcf-4600-49e4-8e3c-dee3350b2d06\",\"label\":\"U-SpectacularSwaggerView\"},{\"pk\":\"5f1217a4-79d4-4692-9d12-9f7c8627012e\",\"label\":\"关于\"}]"
+          "table": "system.menu",
+          "value": "[{\"pk\":\"050f7e13-cf60-4c1d-b791-3ab6a97254f6\",\"label\":\"系统管理\"},{\"pk\":\"4f9726d3-3796-4602-a716-1337ee2a168e\",\"label\":\"用户管理\"},{\"pk\":\"009fa855-b1fd-4764-95b6-1f1eb94dd336\",\"label\":\"U-获取用户的列表\"},{\"pk\":\"438bd316-a31e-4a2c-b075-9d6a82c4ae24\",\"label\":\"U-添加用户数据\"},{\"pk\":\"e6148cc0-9078-4cc2-9c3d-b359f9b26c34\",\"label\":\"U-批量删除用户\"},{\"pk\":\"bf59ff4d-4a79-46cc-a1e4-8136a588d7fd\",\"label\":\"U-导入用户数据\"},{\"pk\":\"91bb2a03-607e-4954-9883-bc1712c66273\",\"label\":\"U-导出用户数据\"},{\"pk\":\"7595b222-e832-48ad-b91f-234b20043fb3\",\"label\":\"U-部分更新用户信息\"},{\"pk\":\"2118f861-8c58-4685-839e-57afbea60644\",\"label\":\"U-删除用户数据\"},{\"pk\":\"0e5b8019-f4df-4dd4-a635-8ee198c196a3\",\"label\":\"U-重置用户密码\"},{\"pk\":\"7850416a-7c4d-424d-935b-226bf0ee5d45\",\"label\":\"U-解禁用户\"},{\"pk\":\"2bc5d8ee-add8-4c95-a845-2bcd4fd86122\",\"label\":\"U-上传头像\"},{\"pk\":\"8c6f0f01-a29e-4d72-96a8-abf67a4ede65\",\"label\":\"部门管理\"},{\"pk\":\"9aeef7b7-d637-4935-b2f6-a7b965f1b7e9\",\"label\":\"U-获取部门的列表\"},{\"pk\":\"2cd3ca25-e606-4e46-983e-7aef573ef713\",\"label\":\"U-添加部门数据\"},{\"pk\":\"5c53c6d2-ccdd-410f-8ef2-d20653fb31b5\",\"label\":\"U-批量删除部门\"},{\"pk\":\"ffb62a1f-4c95-4a85-aca2-e583c3b4ef46\",\"label\":\"U-导出部门数据\"},{\"pk\":\"c8268327-efb7-45ca-8759-2298828a8dd0\",\"label\":\"U-导入部门数据\"},{\"pk\":\"13a2e23f-6cfb-4992-948b-3477b96591d4\",\"label\":\"U-部分更新部门信息\"},{\"pk\":\"2fc6ed05-aaa5-4098-983b-f4c2a1e9108a\",\"label\":\"U-删除部门数据\"},{\"pk\":\"432d5df8-a0b8-4042-83b9-580027b1e236\",\"label\":\"U-给部门分配角色-数据权限\"},{\"pk\":\"4f569df2-6149-462f-ad50-27f24370f5e2\",\"label\":\"菜单管理\"},{\"pk\":\"ecfd76e4-6bae-4f2b-821b-9627f644f8a4\",\"label\":\"U-获取菜单的列表\"},{\"pk\":\"ed0b3381-c1cb-439e-ab2e-3958f6905d7e\",\"label\":\"U-获取后端API列表\"},{\"pk\":\"7fdee495-3d72-4c16-ac36-a097d09aa1c4\",\"label\":\"U-导出菜单数据\"},{\"pk\":\"96772790-53e4-4113-b1d1-10998fe2f616\",\"label\":\"权限管理\"},{\"pk\":\"b5f6aa93-62dd-433f-9759-2f542baae423\",\"label\":\"角色权限\"},{\"pk\":\"44ebfeb1-6472-4409-978d-2f5c1b1c1d95\",\"label\":\"U-获取角色的列表\"},{\"pk\":\"d64cc8bd-f860-47e3-8abd-6950953cb072\",\"label\":\"U-添加角色数据\"},{\"pk\":\"20df8641-ae58-42e7-b95d-49096a186eb6\",\"label\":\"U-批量删除角色\"},{\"pk\":\"ebf23aac-ded5-4eff-a6ed-28f5211e5fd8\",\"label\":\"U-导出角色数据\"},{\"pk\":\"b988dcf2-e1aa-4d1b-86db-b9094401b3a0\",\"label\":\"U-导入角色数据\"},{\"pk\":\"f622cdde-dd9b-4733-9db8-f3873c1be1be\",\"label\":\"U-获取角色的详情\"},{\"pk\":\"3f56972e-5390-4e1b-8f4d-124042fcc31f\",\"label\":\"U-部分更新角色信息\"},{\"pk\":\"85929fd1-128c-4035-8204-20c53068b490\",\"label\":\"U-删除角色数据\"},{\"pk\":\"60a0d029-75ae-4314-b5c7-bbd8d642847d\",\"label\":\"U-获取数据权限的列表\"},{\"pk\":\"0678cc57-f292-4287-887b-ffade834dde1\",\"label\":\"数据权限\"},{\"pk\":\"bda4b9f4-e9ca-4f3e-b18b-8e0a8ad32859\",\"label\":\"U-添加数据权限数据\"},{\"pk\":\"a85ac0ec-8cda-4ac1-b38f-492388648253\",\"label\":\"U-批量删除数据权限\"},{\"pk\":\"ceede782-929e-4b94-aefb-715cf4796d06\",\"label\":\"U-导出数据权限数据\"},{\"pk\":\"20b2a39b-0bcd-4b4a-849d-2cd76464e127\",\"label\":\"U-导入数据权限数据\"},{\"pk\":\"07b01c5a-bbdf-4fe1-8024-8f52c2bde4bb\",\"label\":\"U-部分更新数据权限信息\"},{\"pk\":\"44b8aaf4-dd2f-4da5-b329-c3bc367d5789\",\"label\":\"U-删除数据权限数据\"},{\"pk\":\"de2bdbf8-aeaf-4171-b73e-17cc383298d2\",\"label\":\"字段管理\"},{\"pk\":\"f25f86f8-c676-43b7-b650-b2410f5b1447\",\"label\":\"U-获取模型字段的列表\"},{\"pk\":\"8e99e47e-e041-45dd-8879-fe976d8260fa\",\"label\":\"U-导出模型字段数据\"},{\"pk\":\"74defdba-9645-439a-bf36-c0545bb9cda1\",\"label\":\"日志管理\"},{\"pk\":\"33662086-715b-4478-b60d-a346c8c4f66b\",\"label\":\"访问日志\"},{\"pk\":\"66847cd8-ab49-42ae-bb60-a32e42e69ea8\",\"label\":\"U-获取操作日志的列表\"},{\"pk\":\"66aa0535-a958-4bc0-9667-8b49004d90a5\",\"label\":\"U-批量删除操作日志\"},{\"pk\":\"fa566621-73fb-4428-99de-f4edd4b2dbdc\",\"label\":\"U-导出操作日志数据\"},{\"pk\":\"4a4ee30a-523b-4a1e-a9c1-6097a26f1979\",\"label\":\"U-删除操作日志数据\"},{\"pk\":\"45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b\",\"label\":\"登录日志\"},{\"pk\":\"47dc29c2-202b-4837-be9c-db4607924416\",\"label\":\"U-获取登录日志的列表\"},{\"pk\":\"3946ac20-1dd1-4fce-aa6f-3372694024ac\",\"label\":\"U-批量删除登录日志\"},{\"pk\":\"fdfbdf2e-3518-41ce-84dc-dd93ac7c6abe\",\"label\":\"U-导出登录日志数据\"},{\"pk\":\"c20ef280-7894-493c-b14a-1646fc5ce73b\",\"label\":\"U-删除登录日志数据\"},{\"pk\":\"864eba5d-f793-4a9c-b7eb-cdb227a9d221\",\"label\":\"通知公告\"},{\"pk\":\"7008bb48-18b1-4bc1-a2ea-c22998024721\",\"label\":\"消息公告\"},{\"pk\":\"24244ee6-cf54-4900-94b1-717a7317af04\",\"label\":\"U-获取消息通知的列表\"},{\"pk\":\"a6d1933e-f26a-46a9-94fc-6ec61f0f679c\",\"label\":\"U-添加消息通知数据\"},{\"pk\":\"9ecd244a-7547-4266-a4bf-5d4ecd9bbd3f\",\"label\":\"U-批量删除消息通知\"},{\"pk\":\"c2e45d75-1270-474b-bf0c-03475ecb8b60\",\"label\":\"U-部分更新消息通知信息\"},{\"pk\":\"2ef524c5-3a70-4950-9f11-31f3f4f8c321\",\"label\":\"U-删除消息通知数据\"},{\"pk\":\"8f3eef4e-c88b-415a-a467-b0ebf7144b73\",\"label\":\"U-修改消息通知状态\"},{\"pk\":\"b8664880-b2dd-48d9-ad88-c79258156084\",\"label\":\"已读消息\"},{\"pk\":\"2ee349ff-7800-4af4-aa7f-e6ecf7b8b0bd\",\"label\":\"U-获取已读消息公告的列表\"},{\"pk\":\"5efb38e7-830b-41ac-8130-f2a7e2061ce9\",\"label\":\"U-批量删除已读消息公告\"},{\"pk\":\"602e20d6-9893-44ae-876a-443cbfa90703\",\"label\":\"U-修改已读消息公告状态\"},{\"pk\":\"b6a0ed04-ac8d-4e24-ad61-3d11e4e72260\",\"label\":\"U-删除已读消息公告数据\"},{\"pk\":\"56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3\",\"label\":\"文件管理\"},{\"pk\":\"8bb42cf0-5565-4996-af35-286f8c6fb5c1\",\"label\":\"U-获取文件的列表\"},{\"pk\":\"b1a01bd0-e437-4397-8e26-d532a0c04293\",\"label\":\"定时任务\"},{\"pk\":\"de81c3f5-9e75-447c-ba0d-5d4a638859d4\",\"label\":\"U-操作celery 定时任务\"},{\"pk\":\"14622100-4732-4f48-ae6f-7189a3407c89\",\"label\":\"U-获取celery 定时任务\"},{\"pk\":\"53e1896e-dbf1-49aa-85b3-1711e27477ee\",\"label\":\"数据查询\"},{\"pk\":\"06c77f1a-dd5f-42a4-a5c9-719d554eb603\",\"label\":\"U-获取角色搜索的列表\"},{\"pk\":\"19028bcf-080f-4e30-8b09-7ea4ae4fccaf\",\"label\":\"U-获取菜单搜索的列表\"},{\"pk\":\"f2107787-4453-4bc3-898c-a1449e39bf67\",\"label\":\"U-获取部门搜索的列表\"},{\"pk\":\"6fc056af-acd8-48dd-91cf-e34053014997\",\"label\":\"U-获取用户搜索的列表\"},{\"pk\":\"6997ffe2-8246-401d-8800-248ecbc2dd83\",\"label\":\"个人中心\"},{\"pk\":\"9ff63ec3-cd7d-4d5d-b7b6-664b61a34bcc\",\"label\":\"U-用户登录日志\"},{\"pk\":\"c9843844-f855-42a7-90ad-18b94862a3da\",\"label\":\"U-部分更新个人信息\"},{\"pk\":\"05920c01-b31e-42a1-9dfd-d1e0b176e55f\",\"label\":\"U-上传个人头像\"},{\"pk\":\"ba02b4fc-fff8-40e5-a656-2a6f13c53773\",\"label\":\"U-获取消息通知后端\"},{\"pk\":\"af3ad441-2f48-4d74-b99a-370eb047f669\",\"label\":\"U-修改个人密码\"},{\"pk\":\"b4c4be63-5c7c-4f40-857d-625884134de0\",\"label\":\"U-获取用户消息订阅列表\"},{\"pk\":\"3bf8f63d-f056-4db5-b9ec-6cd73aa7b246\",\"label\":\"U-部分更新用户消息订阅信息\"},{\"pk\":\"e9e2e5c4-3735-4219-af09-1e0f3e5118d8\",\"label\":\"消息中心\"},{\"pk\":\"acbbdcf4-5511-4df2-9c8c-06b06be7b753\",\"label\":\"U-用户消息中心\"},{\"pk\":\"4e4eb5b1-3b37-4090-ae19-f470e172c6fd\",\"label\":\"U-全部已读消息\"},{\"pk\":\"6fbc9578-58a1-4d28-8339-6a3742b30461\",\"label\":\"U-批量已读消息\"},{\"pk\":\"7f0c08a8-77fe-4c74-b718-3c0102723642\",\"label\":\"U-用户未读消息\"},{\"pk\":\"3949728a-8f7c-45a8-b84f-122b82e9c45e\",\"label\":\"聊天室\"},{\"pk\":\"3896fdff-a39c-4919-8b04-3cab771abe4a\",\"label\":\"接口文档\"},{\"pk\":\"8be959b8-13d0-48f0-a575-55f2e3988ca3\",\"label\":\"U-获取API的文档模式\"},{\"pk\":\"a53bfa34-4225-4214-98b8-91b2dc29bd93\",\"label\":\"U-SpectacularRedocView\"},{\"pk\":\"54f3dbcf-4600-49e4-8e3c-dee3350b2d06\",\"label\":\"U-SpectacularSwaggerView\"},{\"pk\":\"5f1217a4-79d4-4692-9d12-9f7c8627012e\",\"label\":\"关于\"}]",
+          "exclude": false
         },
         {
-          "table": "system.fieldpermission",
+          "type": "value.all",
           "field": "id",
           "match": "exact",
-          "exclude": false,
+          "table": "system.fieldpermission",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "541738f4-be19-4ef7-9d39-38178caaae20",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2024-06-08T14:39:23.163Z",
+      "updated_time": "2024-11-01T06:53:56.081Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "测试部门只读权限",
+      "rules": [
+        {
+          "type": "value.table.dept.ids",
+          "field": "id",
+          "match": "in",
+          "table": "system.deptinfo",
+          "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"label\":\"测试部门\"}]",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
+        "7595b222-e832-48ad-b91f-234b20043fb3",
+        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
+        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9"
+      ]
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "5fb63591-6c46-470f-a04d-2d97cc579306",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2024-07-19T05:56:34.670Z",
+      "updated_time": "2024-11-01T06:54:21.688Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "数据查询本人数据",
+      "rules": [
+        {
+          "type": "value.user.id",
+          "field": "id",
+          "match": "exact",
+          "table": "system.userinfo",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
+        "168ac361-7d7d-45ac-9b4c-7f431059f991",
+        "d5c467d6-d72c-4d42-b66b-d354ea249691"
+      ]
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:52:26.814Z",
+      "updated_time": "2024-11-01T06:51:30.401Z",
+      "description": "仅本人数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "仅本人数据",
+      "rules": [
+        {
+          "type": "value.user.id",
+          "field": "owner",
+          "match": "exact",
+          "table": "system.userpersonalconfig",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.id",
+          "field": "creator",
+          "match": "exact",
+          "table": "system.operationlog",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.id",
+          "field": "creator",
+          "match": "exact",
+          "table": "system.userloginlog",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.id",
+          "field": "user",
+          "match": "exact",
+          "table": "notifications.usermsgsubscription",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.id",
+          "field": "owner",
+          "match": "exact",
+          "table": "notifications.messageuserread",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "899d2d18-1085-4904-bf59-c87994033ac5",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2024-01-23T07:30:17.572Z",
+      "updated_time": "2024-11-01T06:53:33.010Z",
+      "description": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "仅查询数据",
+      "rules": [
+        {
           "type": "value.all",
-          "value": ""
+          "field": "id",
+          "match": "exact",
+          "table": "system.systemconfig",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "id",
+          "match": "exact",
+          "table": "system.datapermission",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "id",
+          "match": "exact",
+          "table": "system.modellabelfield",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.all",
+          "field": "id",
+          "match": "exact",
+          "table": "system.uploadfile",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": [
+        "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
+        "60a0d029-75ae-4314-b5c7-bbd8d642847d",
+        "e374f3ef-7326-475a-8b0a-5e082e695144",
+        "f25f86f8-c676-43b7-b650-b2410f5b1447",
+        "00d7809c-0a74-4e80-9730-239b882f9cfa"
+      ]
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "95045a58-b9c1-4289-8a97-ac9ce61cdae5",
+    "fields": {
+      "mode_type": 1,
+      "created_time": "2023-12-24T06:11:34.092Z",
+      "updated_time": "2024-11-01T06:49:38.762Z",
+      "description": "仅本部门下的本人数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "仅本部门下的本人数据",
+      "rules": [
+        {
+          "type": "value.user.id",
+          "field": "creator",
+          "match": "exact",
+          "table": "*",
+          "value": "",
+          "exclude": false
+        },
+        {
+          "type": "value.user.dept.id",
+          "field": "dept_belong",
+          "match": "exact",
+          "table": "*",
+          "value": "",
+          "exclude": false
+        }
+      ],
+      "is_active": true,
+      "menu": []
+    }
+  },
+  {
+    "model": "system.datapermission",
+    "pk": "9d737343-0034-4a08-985e-af41bf184699",
+    "fields": {
+      "mode_type": 0,
+      "created_time": "2023-12-24T06:09:48.598Z",
+      "updated_time": "2024-11-01T06:49:15.912Z",
+      "description": "全部数据",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "全部数据",
+      "rules": [
+        {
+          "type": "value.all",
+          "field": "*",
+          "match": "*",
+          "table": "*",
+          "value": "*",
+          "exclude": false
         }
       ],
       "is_active": true,
@@ -47,20 +282,20 @@
       "name": "本部门只读权限",
       "rules": [
         {
-          "table": "*",
+          "type": "value.user.dept.id",
           "field": "dept_belong",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
+          "table": "*",
+          "value": "",
+          "exclude": false
         },
         {
-          "table": "system.userinfo",
+          "type": "value.user.dept.id",
           "field": "dept",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
+          "table": "system.userinfo",
+          "value": "",
+          "exclude": false
         }
       ],
       "is_active": true,
@@ -91,67 +326,6 @@
   },
   {
     "model": "system.datapermission",
-    "pk": "5fb63591-6c46-470f-a04d-2d97cc579306",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2024-07-19T05:56:34.670Z",
-      "updated_time": "2024-11-01T06:54:21.688Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "数据查询本人数据",
-      "rules": [
-        {
-          "table": "system.userinfo",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": [
-        "a6d1933e-f26a-46a9-94fc-6ec61f0f679c",
-        "168ac361-7d7d-45ac-9b4c-7f431059f991",
-        "d5c467d6-d72c-4d42-b66b-d354ea249691"
-      ]
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "541738f4-be19-4ef7-9d39-38178caaae20",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2024-06-08T14:39:23.163Z",
-      "updated_time": "2024-11-01T06:53:56.081Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "测试部门只读权限",
-      "rules": [
-        {
-          "table": "system.deptinfo",
-          "field": "id",
-          "match": "in",
-          "exclude": false,
-          "type": "value.table.dept.ids",
-          "value": "[{\"pk\":\"6f2e45a1-4969-4d62-a456-9769866935ca\",\"label\":\"测试部门\"}]"
-        }
-      ],
-      "is_active": true,
-      "menu": [
-        "438bd316-a31e-4a2c-b075-9d6a82c4ae24",
-        "7595b222-e832-48ad-b91f-234b20043fb3",
-        "009fa855-b1fd-4764-95b6-1f1eb94dd336",
-        "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9"
-      ]
-    }
-  },
-  {
-    "model": "system.datapermission",
     "pk": "db58769c-040f-41f2-874e-9be9fbd93790",
     "fields": {
       "mode_type": 0,
@@ -164,72 +338,12 @@
       "name": "本部门及以下数据",
       "rules": [
         {
-          "table": "*",
+          "type": "value.user.dept.ids",
           "field": "dept_belong",
           "match": "in",
-          "exclude": false,
-          "type": "value.user.dept.ids",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "95045a58-b9c1-4289-8a97-ac9ce61cdae5",
-    "fields": {
-      "mode_type": 1,
-      "created_time": "2023-12-24T06:11:34.092Z",
-      "updated_time": "2024-11-01T06:49:38.762Z",
-      "description": "仅本部门下的本人数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "仅本部门下的本人数据",
-      "rules": [
-        {
           "table": "*",
-          "field": "creator",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
-        {
-          "table": "*",
-          "field": "dept_belong",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "9d737343-0034-4a08-985e-af41bf184699",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2023-12-24T06:09:48.598Z",
-      "updated_time": "2024-11-01T06:49:15.912Z",
-      "description": "全部数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "全部数据",
-      "rules": [
-        {
-          "table": "*",
-          "field": "*",
-          "match": "*",
-          "exclude": false,
-          "type": "value.all",
-          "value": "*"
+          "value": "",
+          "exclude": false
         }
       ],
       "is_active": true,
@@ -250,134 +364,20 @@
       "name": "本部门数据",
       "rules": [
         {
-          "table": "*",
+          "type": "value.user.dept.id",
           "field": "dept_belong",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
+          "table": "*",
+          "value": "",
+          "exclude": false
         },
         {
-          "table": "system.userinfo",
+          "type": "value.user.dept.id",
           "field": "dept",
           "match": "exact",
-          "exclude": false,
-          "type": "value.user.dept.id",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": []
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "899d2d18-1085-4904-bf59-c87994033ac5",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2024-01-23T07:30:17.572Z",
-      "updated_time": "2024-11-01T06:53:33.010Z",
-      "description": "",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "仅查询数据",
-      "rules": [
-        {
-          "table": "system.systemconfig",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.all",
-          "value": ""
-        },
-        {
-          "table": "system.datapermission",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.all",
-          "value": ""
-        },
-        {
-          "table": "system.modellabelfield",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.all",
-          "value": ""
-        },
-        {
-          "table": "system.uploadfile",
-          "field": "id",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.all",
-          "value": ""
-        }
-      ],
-      "is_active": true,
-      "menu": [
-        "8bb42cf0-5565-4996-af35-286f8c6fb5c1",
-        "60a0d029-75ae-4314-b5c7-bbd8d642847d",
-        "e374f3ef-7326-475a-8b0a-5e082e695144",
-        "f25f86f8-c676-43b7-b650-b2410f5b1447",
-        "00d7809c-0a74-4e80-9730-239b882f9cfa"
-      ]
-    }
-  },
-  {
-    "model": "system.datapermission",
-    "pk": "6d4352c8-f324-4340-a124-da8ecc1ccbd2",
-    "fields": {
-      "mode_type": 0,
-      "created_time": "2023-12-24T06:52:26.814Z",
-      "updated_time": "2024-11-01T06:51:30.401Z",
-      "description": "仅本人数据",
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "name": "仅本人数据",
-      "rules": [
-        {
-          "table": "system.userpersonalconfig",
-          "field": "owner",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
-        {
-          "table": "system.operationlog",
-          "field": "creator",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
-        {
-          "table": "system.userloginlog",
-          "field": "creator",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
-        {
-          "table": "notifications.usermsgsubscription",
-          "field": "user",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
-        },
-        {
-          "table": "notifications.messageuserread",
-          "field": "owner",
-          "match": "exact",
-          "exclude": false,
-          "type": "value.user.id",
-          "value": ""
+          "table": "system.userinfo",
+          "value": "",
+          "exclude": false
         }
       ],
       "is_active": true,

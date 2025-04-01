@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-21 13:40+0800\n"
+"POT-Creation-Date: 2025-03-31 10:48+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,7 +27,7 @@ msgstr "任务监控系统不可用，请联系管理员"
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
-#: common/core/auth.py:38 system/utils/auth.py:109
+#: common/core/auth.py:38 system/utils/auth.py:110
 msgid "Token is invalid or expired"
 msgstr "令牌无效或过期"
 
@@ -96,31 +96,31 @@ msgstr "修改人"
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
-#: common/core/modelset.py:60
+#: common/core/modelset.py:61
 msgid "Task add success"
 msgstr "任务添加成功"
 
-#: common/core/modelset.py:115
+#: common/core/modelset.py:116
 msgid "Image size cannot exceed {}"
 msgstr "图片大小不能超过 {}"
 
-#: common/core/modelset.py:118
+#: common/core/modelset.py:119
 msgid "Wrong image type, the type should be {}"
 msgstr "错误的图片类型, 类型应该为 {}"
 
-#: common/core/modelset.py:141
+#: common/core/modelset.py:142
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:412
+#: common/core/modelset.py:413
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/modelset.py:537
+#: common/core/modelset.py:538
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
-#: common/core/modelset.py:538 system/utils/auth.py:104
+#: common/core/modelset.py:539 system/utils/auth.py:105
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
@@ -130,11 +130,11 @@ msgstr "操作失败，数据异常"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:18 common/tasks.py:171
+#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:18 common/tasks.py:171
+#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -451,7 +451,7 @@ msgstr "任务结果"
 msgid "China"
 msgstr "中国"
 
-#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:143
+#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:144
 msgid "LAN"
 msgstr "局域网"
 
@@ -460,7 +460,7 @@ msgid "Invalid ip"
 msgstr "无效 IP"
 
 #: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
-#: common/utils/ip/geoip/utils.py:37 system/models/log.py:23
+#: common/utils/ip/geoip/utils.py:37 system/models/log.py:24
 #: system/models/user.py:20 system/utils/auth.py:82
 msgid "Unknown"
 msgstr "未知"
@@ -481,6 +481,10 @@ msgstr "“%(path)s” 不存在"
 #: common/utils/verify_code.py:22
 msgid "Send SMS code"
 msgstr "发送短信验证码"
+
+#: message/utils.py:98
+msgid "Wait for result timeout"
+msgstr "等待命令结果返回超时"
 
 #: notifications/apps.py:8
 msgid "App Notifications"
@@ -751,7 +755,7 @@ msgstr "账号"
 msgid "The user to be used for email server authentication"
 msgstr "登录到邮件服务器的用户名。这通常是你的邮件地址"
 
-#: settings/serializers/email.py:22 system/serializers/user.py:74
+#: settings/serializers/email.py:22 system/serializers/user.py:81
 msgid "Password"
 msgstr "密码"
 
@@ -1387,76 +1391,84 @@ msgstr "邮箱验证码"
 msgid "Wechat scan code"
 msgstr "微信扫码"
 
-#: system/models/log.py:25
+#: system/models/log.py:23
+msgid "Websocket"
+msgstr ""
+
+#: system/models/log.py:26
 msgid "Login status"
 msgstr "登录状态"
 
-#: system/models/log.py:26 system/models/log.py:57
+#: system/models/log.py:27 system/models/log.py:59
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:27 system/templates/notify/msg_different_city.html:11
+#: system/models/log.py:28 system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr "登录城市"
 
-#: system/models/log.py:28 system/models/log.py:58
+#: system/models/log.py:29 system/models/log.py:60
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr "浏览器"
 
-#: system/models/log.py:29 system/models/log.py:59
+#: system/models/log.py:30 system/models/log.py:61
 msgid "System"
 msgstr "操作系统"
 
-#: system/models/log.py:30
+#: system/models/log.py:31
 msgid "Agent"
 msgstr "用户代理"
 
 #: system/models/log.py:32
+msgid "Channel name"
+msgstr "频道名称"
+
+#: system/models/log.py:34
 msgid "Login type"
 msgstr "登录类型"
 
-#: system/models/log.py:35
+#: system/models/log.py:37
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:53
+#: system/models/log.py:55
 msgid "Module"
 msgstr "模块"
 
-#: system/models/log.py:54
+#: system/models/log.py:56
 msgid "URL path"
 msgstr "访问路径"
 
-#: system/models/log.py:55
+#: system/models/log.py:57
 msgid "Request body"
 msgstr "请求参数"
 
-#: system/models/log.py:56
+#: system/models/log.py:58
 msgid "Request method"
 msgstr "请求方式"
 
-#: system/models/log.py:60
+#: system/models/log.py:62
 msgid "Response code"
 msgstr "响应码"
 
-#: system/models/log.py:61
+#: system/models/log.py:63
 msgid "Response result"
 msgstr "响应内容"
 
-#: system/models/log.py:62
+#: system/models/log.py:64
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:63
+#: system/models/log.py:65
 msgid "Request ID"
 msgstr "请求ID"
 
-#: system/models/log.py:64
+#: system/models/log.py:66
 msgid "Execution time"
 msgstr "执行时间"
 
-#: system/models/log.py:67
+#: system/models/log.py:69
 msgid "Operation log"
 msgstr "操作日志"
 
@@ -1731,6 +1743,10 @@ msgstr "用户不能为空"
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
+#: system/serializers/log.py:49
+msgid "Online"
+msgstr "在线"
+
 #: system/serializers/permission.py:40
 msgid "The rule cannot be null"
 msgstr "权限规则不能为空"
@@ -1747,17 +1763,21 @@ msgstr "访问地址"
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/serializers/user.py:50
+#: system/serializers/user.py:51
 msgid "Login blocked"
 msgstr "登录被锁定"
 
-#: system/serializers/user.py:66 system/serializers/user.py:80
+#: system/serializers/user.py:53
+msgid "Online count"
+msgstr "在线数量"
+
+#: system/serializers/user.py:73 system/serializers/user.py:87
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
-#: system/serializers/user.py:68
+#: system/serializers/user.py:75
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
@@ -1838,14 +1858,14 @@ msgid ""
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
-#: system/utils/auth.py:75 system/utils/auth.py:131
+#: system/utils/auth.py:75 system/utils/auth.py:132
 #: system/views/auth/login.py:48
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 
-#: system/utils/auth.py:126
+#: system/utils/auth.py:127
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -2035,7 +2055,7 @@ msgstr "错误的文件类型"
 msgid "Error status"
 msgstr "状态码异常"
 
-#: system/views/admin/user.py:52
+#: system/views/admin/user.py:53
 msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
