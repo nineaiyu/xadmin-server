@@ -7,7 +7,7 @@ psycopg2-binary==2.9.10
 django-redis==5.4.0
 pycryptodomex==3.22.0
 djangorestframework-simplejwt==5.5.0
-celery==5.5.0
+celery==5.5.1
 django-celery-beat==2.7.0
 django-celery-results==2.5.1
 flower==2.0.1

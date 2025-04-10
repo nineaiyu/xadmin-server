@@ -18,7 +18,7 @@ class UserOnlineFilter(BaseFilterSet):
 
     class Meta:
         model = UserLoginLog
-        fields = ['creator_id', 'channel_name']
+        fields = ['creator_id']
 
 
 class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
