@@ -1097,6 +1097,29 @@
   },
   {
     "model": "system.fieldpermission",
+    "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-72a636d3-99f2-4abc-9689-e34ccaad4573",
+    "fields": {
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "role": "069ea080-66b5-4ce3-9047-e3044ee98f30",
+      "menu": "72a636d3-99f2-4abc-9689-e34ccaad4573",
+      "field": [
+        "d2126ef2-3876-416b-8b7b-fb6aa370c5d4",
+        "98ac03f2-18d9-4104-8189-853d4395fc64",
+        "d4e7f68c-42c5-4e52-9df7-788b70ada28c",
+        "6d7f40fe-265b-4375-94d9-fc7f3a659874",
+        "52dec320-69f6-4ffd-9d28-8b438cd54d2e",
+        "6d1cc67b-de72-4af9-8839-3feb477d24e9",
+        "21b85978-b7d4-4dab-a5f0-9d605617fed4",
+        "9d132e73-6e0f-407d-a198-0872108f6862",
+        "7e370824-a5d4-4d9a-94fb-bcbe2dac84e9"
+      ]
+    }
+  },
+  {
+    "model": "system.fieldpermission",
     "pk": "069ea080-66b5-4ce3-9047-e3044ee98f30-731d7005-46da-4e8f-a972-54069c174300",
     "fields": {
       "description": null,

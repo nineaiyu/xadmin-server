@@ -2295,7 +2295,9 @@
       "is_active": true,
       "meta": "f6c4e5ba-5858-4484-a520-ee326f116dd1",
       "method": "POST",
-      "model": []
+      "model": [
+        "771d52ec-3633-41c4-89b4-2ca1f0ba4997"
+      ]
     }
   },
   {
