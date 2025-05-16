@@ -29,7 +29,7 @@ def auto_clean_black_token(clean_day=1):
 def auto_clean_tmp_file(clean_day=1):
     clean_time = timezone.now() - datetime.timedelta(days=clean_day)
     _rows_count = 0
-    for instance in UploadFile.objects.filter(created_time__lte=clean_time):
+    for instance in UploadFile.objects.filter(created_time__lte=clean_time, is_tmp=True):
         if instance.delete():
             _rows_count += 1
     logger.info(f"clean {_rows_count} upload tmp file")
