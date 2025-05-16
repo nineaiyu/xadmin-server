@@ -91,7 +91,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         if files is not None:
             del attrs['files']
             queryset = UploadFile.objects.filter(
-                filepath__in=[file.replace(os.path.join('/', settings.MEDIA_URL), '') for file in files])
+                filepath__in=[file.split(os.path.join('/', settings.MEDIA_URL))[-1] for file in files])
             attrs['file'] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
