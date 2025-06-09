@@ -79,9 +79,9 @@ def get_menu_pk(permission_data, url):
     # 1.直接get api/system/permission$   /api/system/config/system
     p_data = permission_data.get(f"{url[1:]}$")
     if not p_data:
-        for p_path, p_data in permission_data.items():
+        for p_path, permission_item in permission_data.items():
             if re.match(f"/{p_path}", url):
-                return p_data
+                return permission_item
     return p_data
 
 
