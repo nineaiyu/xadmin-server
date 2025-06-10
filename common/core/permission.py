@@ -31,6 +31,7 @@ def get_user_menu_queryset(user_obj):
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
         # 菜单通过角色控制，就不用再次通过数据权限过滤了，要不然还得两个地方都得配置
         return Menu.objects.filter(is_active=True).filter(q)
+    return None
 
 
 @MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
@@ -64,16 +65,6 @@ def get_user_permission(user_obj, method):
         filter_kwargs = {"menu_type": Menu.MenuChoices.PERMISSION, "method": method}
         menus = menu_queryset.filter(**filter_kwargs).values_list('path', 'pk', 'model').distinct()
     return dict([(menu[0], menu[1:]) for menu in menus])
-
-
-def get_import_export_permission(permission_data, url):
-    match_group = re.match("(?P<url>.*)/(export|import)-data$", url)
-    if match_group:
-        url = match_group.group('url')
-        for p_data in permission_data:
-            if re.match(f"/{p_data.get('path')}", url):
-                return p_data
-
 
 def get_menu_pk(permission_data, url):
     # 1.直接get api/system/permission$   /api/system/config/system

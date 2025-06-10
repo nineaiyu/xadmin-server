@@ -66,6 +66,7 @@ class Config(dict):
         'HTTP_BIND_HOST': '0.0.0.0',
         'HTTP_LISTEN_PORT': 8896,
         'GUNICORN_MAX_WORKER': 4,
+        'CELERY_WORKER_COUNT': 10,
         # celery flower 任务监控配置
         'CELERY_FLOWER_PORT': 5566,
         'CELERY_FLOWER_HOST': '127.0.0.1',
