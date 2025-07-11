@@ -340,6 +340,17 @@ class SearchColumnsAction(object):
         fields = getattr(serializer, 'fields', [])
         meta = getattr(serializer, 'Meta', {})
         table_fields = getattr(meta, 'table_fields', [])
+        tabs_fields = getattr(meta, 'tabs', [])
+        tabs_label = []
+        tabs_info = {}
+        if tabs_fields:
+            index = 0
+            for tabs in tabs_fields:
+                tabs_label.append(tabs.label)
+                for field in tabs.fields:
+                    tabs_info[field] = index
+                index += 1
+
         for key, value in fields.items():
             info = metadata_class.get_field_info(value)
             if hasattr(meta, 'model'):
@@ -362,6 +373,9 @@ class SearchColumnsAction(object):
                 info['table_show'] = 1
             if key in table_fields:
                 info['table_show'] = (table_fields.index(key)) + 1
+            if tabs_info and tabs_label:
+                info['tabs_index'] = tabs_info.get(key, 0)
+                info['tabs_label'] = tabs_label[info['tabs_index']]
             results.append(info)
         return ApiResponse(data=results)
 

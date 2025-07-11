@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-31 10:48+0800\n"
+"POT-Creation-Date: 2025-07-11 23:31+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgid ""
 msgstr "任务监控系统不可用，请联系管理员"
 
 #: common/core/auth.py:25 common/core/filter.py:204 common/core/filter.py:212
-#: common/core/permission.py:130
+#: common/core/permission.py:121
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
@@ -48,51 +48,51 @@ msgstr "请求地址不正确或数据权限不允许"
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: common/core/fields.py:79
+#: common/core/fields.py:81
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/fields.py:80
+#: common/core/fields.py:82
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 
-#: common/core/fields.py:81
+#: common/core/fields.py:83
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
-#: common/core/fields.py:82
+#: common/core/fields.py:84
 msgid "The query set is empty."
 msgstr "当前查询对象为空"
 
-#: common/core/models.py:21 common/core/models.py:28
+#: common/core/models.py:22 common/core/models.py:29
 #: settings/serializers/security.py:246
 msgid "ID"
 msgstr "主键ID"
 
-#: common/core/models.py:79 common/models.py:18
+#: common/core/models.py:100 common/models.py:18
 #: settings/serializers/security.py:248
 msgid "Created time"
 msgstr "创建时间"
 
-#: common/core/models.py:80
+#: common/core/models.py:101
 msgid "Updated time"
 msgstr "更新时间"
 
-#: common/core/models.py:81
+#: common/core/models.py:102
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:89
+#: common/core/models.py:110
 msgid "Creator"
 msgstr "创建人"
 
-#: common/core/models.py:91
+#: common/core/models.py:112
 msgid "Modifier"
 msgstr "修改人"
 
-#: common/core/models.py:93
+#: common/core/models.py:114
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
@@ -112,21 +112,21 @@ msgstr "错误的图片类型, 类型应该为 {}"
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:413
+#: common/core/modelset.py:440
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/modelset.py:538
+#: common/core/modelset.py:565
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
-#: common/core/modelset.py:539 system/utils/auth.py:105
+#: common/core/modelset.py:566 system/utils/auth.py:105
 #: system/utils/modelset.py:57 system/views/auth/register.py:69
 #: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/permission.py:128
+#: common/core/permission.py:119
 msgid "Permission denied"
 msgstr "权限拒绝"
 
@@ -551,7 +551,7 @@ msgstr "被通知角色"
 msgid "Notice level"
 msgstr "通知级别"
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:142
+#: notifications/models/message.py:36 notifications/serializers/message.py:122
 msgid "Notice type"
 msgstr "通知类型"
 
@@ -559,7 +559,7 @@ msgstr "通知类型"
 msgid "Notice title"
 msgstr "通知标题"
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:145
+#: notifications/models/message.py:39 notifications/serializers/message.py:125
 msgid "Notice message"
 msgstr "通知内容"
 
@@ -567,7 +567,7 @@ msgstr "通知内容"
 msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:41
+#: notifications/models/message.py:41 notifications/serializers/message.py:40
 msgid "Uploaded attachments"
 msgstr "上传的附件"
 
@@ -579,22 +579,22 @@ msgstr "发布"
 msgid "Message content"
 msgstr "消息中心"
 
-#: notifications/models/message.py:68 notifications/models/notification.py:17
+#: notifications/models/message.py:62 notifications/models/notification.py:17
 #: notifications/models/notification.py:30
 #: notifications/serializers/notifications.py:20
 #: notifications/serializers/notifications.py:39 system/models/config.py:39
 msgid "User"
 msgstr "用户"
 
-#: notifications/models/message.py:69
+#: notifications/models/message.py:63
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:70 notifications/serializers/message.py:157
+#: notifications/models/message.py:64 notifications/serializers/message.py:137
 msgid "Unread"
 msgstr "未读"
 
-#: notifications/models/message.py:74
+#: notifications/models/message.py:68
 msgid "User read message"
 msgstr "用户已读消息"
 
@@ -628,35 +628,35 @@ msgstr "发布站内消息"
 msgid "Time"
 msgstr "时间"
 
-#: notifications/serializers/message.py:42 system/serializers/department.py:40
+#: notifications/serializers/message.py:41 system/serializers/department.py:40
 msgid "User count"
 msgstr "用户数量"
 
-#: notifications/serializers/message.py:43
+#: notifications/serializers/message.py:42
 msgid "Read user count"
 msgstr "已读用户数量"
 
-#: notifications/serializers/message.py:66
+#: notifications/serializers/message.py:65
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: notifications/serializers/message.py:76
+#: notifications/serializers/message.py:75
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: notifications/serializers/message.py:82
+#: notifications/serializers/message.py:81
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: notifications/serializers/message.py:88
+#: notifications/serializers/message.py:87
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: notifications/serializers/message.py:107
+#: notifications/serializers/message.py:101
 msgid "The system notice cannot be update"
 msgstr "系统通知不允许更新"
 
-#: notifications/serializers/message.py:130
+#: notifications/serializers/message.py:110
 msgid "Parameter error"
 msgstr "参数有误"
 

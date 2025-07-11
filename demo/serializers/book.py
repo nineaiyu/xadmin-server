@@ -4,9 +4,10 @@
 # filename : serializer
 # author : ly_13
 # date : 6/12/2024
+
 from rest_framework import serializers
 
-from common.core.serializers import BaseModelSerializer
+from common.core.serializers import BaseModelSerializer, TabsColumn
 from common.fields.utils import input_wrapper
 from demo import models
 
@@ -16,11 +17,26 @@ class BookSerializer(BaseModelSerializer):
         model = models.Book
         ## pk 字段用于前端删除，更新等标识，如果有删除更新等，必须得加上 pk 字段
         ## 数据返回的字段，该字段受字段权限控制
-        fields = [
-            'pk', 'name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price', 'block',
-            'created_time', 'admin', 'admin2', 'managers', 'managers2', 'avatar', 'cover', 'book_file', 'file', 'files',
-            'updated_time',
+
+        ############### 1.使用简易 tabs 表单 #############
+        tabs = [
+            TabsColumn('基本信息',
+                       ['name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price',
+                        'created_time']),
+            TabsColumn('管理员', ['admin', 'admin2', 'managers', 'managers2']),
+            TabsColumn('文件信息', ['avatar', 'cover', 'book_file', 'file', 'files'])
         ]
+        fields = ['pk', 'block', 'created_time', 'updated_time']
+        ########### 单表单结束 ################
+
+        ############### 2.默认的单表单 ##############
+        # fields = [
+        #     'pk', 'name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price', 'block',
+        #     'created_time', 'admin', 'admin2', 'managers', 'managers2', 'avatar', 'cover', 'book_file', 'file', 'files',
+        #     'updated_time',
+        # ]
+        ########### 单表单结束 ################
+
         ## 仅用于前端table表格字段有顺序的展示，如果没定义，默认使用 fields 定义的变量
         ## 为啥要有这个变量？ 一般情况下，前端table表格宽度不够，不需要显示太多字段，就可以通过这个变量来控制显示的字段
         table_fields = [
@@ -56,7 +72,7 @@ class BookSerializer(BaseModelSerializer):
             },
             # 使用自定义 input_type为 m2m_related_field_image ，是为了让前端支持图片上传后回显，默认是文件，不支持回显
             'file': {
-                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
+                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': True, 'format': "{filename}({pk})",
                 'input_type': 'object_related_field_image'
             }
         }
