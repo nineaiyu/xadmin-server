@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 12/21/2023
 from inspect import isfunction
+from typing import List
 
 from django.conf import settings
 from django.db.models import QuerySet
@@ -25,6 +26,7 @@ class BaseModelSerializer(ModelSerializer):
     class Meta:
         model = None
         table_fields = []  # 用于控制前端table的字段展示
+        tabs = []
 
     def get_value(self, dictionary):
         # We override the default field access in order to support
@@ -70,12 +72,27 @@ class BaseModelSerializer(ModelSerializer):
         :param ignore_field_permission: 忽略字段权限控制
         """
         super().__init__(instance, data, **kwargs)
+        meta = getattr(self, 'Meta', None)
+        if meta and hasattr(meta, 'tabs') and meta.fields != '__all__':
+            meta.fields = meta.fields + self.get_fields_from_tabs(meta.tabs)
+
         self.request: Request = get_current_request()
         if self.request is None:
             return
         allowed = self.get_allow_fields(fields, ignore_field_permission)
         for field_name in set(self.fields) - allowed:
             self.fields.pop(field_name)
+
+    @staticmethod
+    def get_fields_from_tabs(tabs: List) -> List[str]:
+        seen = set()
+        result = []
+        for tab in tabs:
+            for field in tab.fields:
+                if field not in seen:
+                    seen.add(field)
+                    result.append(field)
+        return result
 
     def build_standard_field(self, field_name, model_field):
         field_class, field_kwargs = super().build_standard_field(field_name, model_field)
@@ -132,3 +149,13 @@ class BaseModelSerializer(ModelSerializer):
             setattr(n_file, 'is_tmp', False)
             n_file.save(update_fields=['is_tmp'])
         return result
+
+
+class TabsColumn(object):
+
+    def __init__(self, label: str, fields: List[str]):
+        self.label = label
+        self.fields = fields
+
+    def __str__(self):
+        return {'label': self.label, 'fields': self.fields}
