@@ -10,6 +10,7 @@ import phonenumbers
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
+from django.db.models.fields.files import FieldFile
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.fields import ChoiceField
@@ -17,6 +18,7 @@ from rest_framework.request import Request
 from rest_framework.serializers import RelatedField, MultipleChoiceField
 
 from common.core.filter import get_filter_queryset
+from common.fields.utils import get_file_absolute_uri
 from server.utils import get_current_request
 
 
@@ -181,6 +183,8 @@ class BasePrimaryKeyRelatedField(RelatedField):
                 data[attr] = attr_get(value, attr, '__')
             except:
                 continue
+            if isinstance(data[attr], FieldFile):
+                data[attr] = get_file_absolute_uri(data[attr], self.request)
             if isinstance(data[attr], partial):
                 data[attr] = data[attr]()
         if data:
