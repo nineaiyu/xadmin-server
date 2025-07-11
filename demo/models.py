@@ -4,7 +4,7 @@ from pilkit.processors import ResizeToFill
 
 from common.core.models import DbAuditModel, upload_directory_path, AutoCleanFileMixin
 from common.fields.image import ProcessedImageField
-from system.models import UserInfo
+from system.models import UserInfo, UploadFile
 
 
 class Book(AutoCleanFileMixin, DbAuditModel):
@@ -39,6 +39,11 @@ class Book(AutoCleanFileMixin, DbAuditModel):
 
     # 文件上传
     book_file = models.FileField(verbose_name="书籍存储", upload_to=upload_directory_path, null=True, blank=True)
+
+    # 使用 UploadFile 关联
+    file = models.ForeignKey(to=UploadFile, related_name="book_file", verbose_name="书籍单个附件", blank=True,
+                             on_delete=models.CASCADE)
+    files = models.ManyToManyField(to=UploadFile, related_name="book_files", verbose_name="书籍多附件", blank=True)
 
     # 普通字段
     name = models.CharField(verbose_name="书籍名称", max_length=100, help_text="书籍名称啊，随便填")
