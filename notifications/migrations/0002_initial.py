@@ -88,7 +88,8 @@ class Migration(migrations.Migration):
             model_name='messagecontent',
             name='notice_user',
             field=models.ManyToManyField(blank=True, through='notifications.MessageUserRead',
-                                         to=settings.AUTH_USER_MODEL, verbose_name='The notified user'),
+                                         through_fields=('notice', 'owner'), to=settings.AUTH_USER_MODEL,
+                                         verbose_name='The notified user'),
         ),
         migrations.AddField(
             model_name='systemmsgsubscription',

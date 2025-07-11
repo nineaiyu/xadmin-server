@@ -35,7 +35,7 @@ DEBUG = CONFIG.DEBUG or False
 APPS_DIR = settings.BASE_DIR
 LOG_DIR = os.path.join(APPS_DIR, 'data', 'logs')
 TMP_DIR = os.path.join(APPS_DIR, 'tmp')
-
+CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT or 10
 
 def check_port_is_used():
     for i in range(5):

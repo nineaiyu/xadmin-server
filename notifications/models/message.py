@@ -8,10 +8,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel
+from common.core.models import DbAuditModel, AutoCleanFileMixin
 
 
-class MessageContent(DbAuditModel):
+class MessageContent(AutoCleanFileMixin, DbAuditModel):
     class NoticeChoices(models.IntegerChoices):
         SYSTEM = 0, _("System notification")
         NOTICE = 1, _("System announcement")
@@ -53,12 +53,6 @@ class MessageContent(DbAuditModel):
         verbose_name = _("Message content")
         verbose_name_plural = verbose_name
         ordering = ('-created_time',)
-
-    def delete(self, using=None, keep_parents=False):
-        if self.file:
-            for file in self.file.all():
-                file.delete()
-        return super().delete(using, keep_parents)
 
     def __str__(self):
         return f"{self.title}-{self.get_notice_type_display()}"

@@ -10,6 +10,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -47,8 +48,10 @@ class AutoCleanFileMixin(object):
 
     def delete(self, *args, **kwargs):
         filelist = self.__get_filelist()
+        related_filelist = self.__get_related_filelist()
         result = super().delete(*args, **kwargs)
         self.__delete_file(filelist)
+        self.__delete_related_files(related_filelist)
         return result
 
     def __delete_file(self, filelist, is_save=False):
@@ -74,6 +77,24 @@ class AutoCleanFileMixin(object):
                     filelist.append((field.name, file_obj.name, file_obj))
         return filelist
 
+    def __get_related_filelist(self, obj=None):
+        filelist = []
+        if obj is None:
+            obj = self
+        for field in obj._meta.get_fields():
+            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
+                file_data = getattr(obj, field.name, None)
+                if isinstance(field, models.ManyToManyField):
+                    file_data = file_data.all()
+                if isinstance(file_data, (list, QuerySet)):
+                    filelist.extend(file_data)
+                else:
+                    filelist.append(file_data)
+        return filelist
+
+    def __delete_related_files(self, filelist):
+        for file in filelist:
+            file.delete()
 
 class DbBaseModel(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"), null=True, blank=True)
@@ -106,4 +127,4 @@ def upload_directory_path(instance, filename):
         creator_pk = creator.pk
     else:
         creator_pk = 0
-    return os.path.join(labels[0], labels[1], str(creator_pk), new_filename)
+    return os.path.join(labels[0], labels[1], str(creator_pk), str(instance.pk if instance.pk else 0), new_filename)

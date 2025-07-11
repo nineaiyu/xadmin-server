@@ -18,7 +18,8 @@ class BookSerializer(BaseModelSerializer):
         ## 数据返回的字段，该字段受字段权限控制
         fields = [
             'pk', 'name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price', 'block',
-            'created_time', 'admin', 'admin2', 'managers', 'managers2', 'avatar', 'cover', 'book_file', 'updated_time',
+            'created_time', 'admin', 'admin2', 'managers', 'managers2', 'avatar', 'cover', 'book_file', 'file', 'files',
+            'updated_time',
         ]
         ## 仅用于前端table表格字段有顺序的展示，如果没定义，默认使用 fields 定义的变量
         ## 为啥要有这个变量？ 一般情况下，前端table表格宽度不够，不需要显示太多字段，就可以通过这个变量来控制显示的字段
@@ -49,6 +50,14 @@ class BookSerializer(BaseModelSerializer):
             },
             'managers2': {
                 'attrs': ['pk', 'username'], 'required': False, 'format': "{username}({pk})",
+            },
+            'files': {
+                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
+            },
+            # 使用自定义 input_type为 m2m_related_field_image ，是为了让前端支持图片上传后回显，默认是文件，不支持回显
+            'file': {
+                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
+                'input_type': 'object_related_field_image'
             }
         }
 

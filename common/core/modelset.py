@@ -309,6 +309,18 @@ class SearchColumnsAction(object):
         """获取{cls}的展示字段"""
         results = []
 
+        def check_upload_tp(value, tp):
+            if hasattr(value, 'child_relation'):
+                value = value.child_relation
+            try:
+                if (value.queryset.model._meta.label == "system.UploadFile"
+                        and isinstance(value, BasePrimaryKeyRelatedField)
+                        and tp in ['object_related_field', 'm2m_related_field']):
+                    return tp + "_file"
+            except Exception:
+                pass
+            return tp
+
         def get_input_type(value, info):
             if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info['multiple'] = True
@@ -316,6 +328,7 @@ class SearchColumnsAction(object):
                 tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
             else:
                 tp = info['type']
+            tp = check_upload_tp(value, tp)
             if tp and tp.endswith('related_field'):
                 setattr(value, 'is_column', True)
                 info['choices'] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))

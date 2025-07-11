@@ -8,7 +8,6 @@
 import os.path
 
 from django.conf import settings
-from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -95,31 +94,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
             attrs['file'] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
-    def create(self, validated_data):
-        with transaction.atomic():
-            instance = super().create(validated_data)
-            instance.file.filter(is_tmp=True).update(is_tmp=False)
-            return instance
 
     def update(self, instance, validated_data):
         validated_data.pop('notice_type', None)  # 不能修改消息类型
         if instance.notice_type == MessageContent.NoticeChoices.SYSTEM:  # 系统通知不允许修改
             raise ValidationError(_("The system notice cannot be update"))
-
-        o_files = list(instance.file.all().values_list('pk', flat=True))  # 加上list，否则删除文件不会清理底层资源
-        n_files = []
-        if validated_data.get('file', None) is not None:
-            n_files = validated_data.get('file').values_list('pk', flat=True)
-        else:
-            o_files = []
-        instance = super().update(instance, validated_data)
-        if instance:
-            instance.file.filter(is_tmp=True).update(is_tmp=False)
-            del_files = set(o_files) - set(n_files)
-            if del_files:
-                for file in UploadFile.objects.filter(pk__in=del_files):
-                    file.delete()  # 这样操作，才可以同时删除底层的文件，如果直接 queryset 进行delete操作，则不删除底层文件
-        return instance
+        return super().update(instance, validated_data)
 
 
 class AnnouncementSerializer(NoticeMessageSerializer):

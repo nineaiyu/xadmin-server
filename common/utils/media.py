@@ -21,8 +21,8 @@ from common.fields.image import ProcessedImageField, get_thumbnail
 
 def get_media_path(path):
     path_list = path.split('/')
-    if len(path_list) == 4:
-        pic_names = path_list[3].split('_')
+    if len(path_list) == 5:
+        pic_names = path_list[4].split('_')
         if len(pic_names) != 2:
             return
         model = apps.get_model(path_list[0], path_list[1])
@@ -32,9 +32,9 @@ def get_media_path(path):
                 field = i
                 break
         if field:
-            pk = path_list[2]
+            pk = path_list[3]
             fw = {"pk": pk}
-            if pk == "None":  # 通过form-data增加数据的时候，由于instance还未创建，pk不存在
+            if pk == "0":  # 通过form-data增加数据的时候，由于instance还未创建，pk不存在,为默认0
                 fw = {field.name: path.replace(f"_{pic_names[1]}", f".{field.format}")}
             obj = model.objects.filter(**fw).first()
             if obj:

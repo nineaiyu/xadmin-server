@@ -7,6 +7,7 @@
 from inspect import isfunction
 
 from django.conf import settings
+from django.db.models import QuerySet
 from django.db.models.fields import NOT_PROVIDED
 from rest_framework.fields import empty
 from rest_framework.request import Request
@@ -85,3 +86,49 @@ class BaseModelSerializer(ModelSerializer):
                 default = default()
             field_kwargs.setdefault("default", default)
         return field_class, field_kwargs
+
+    def create(self, validated_data):
+        n_file_objs = []
+        for field in self.Meta.model._meta.get_fields():
+            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
+                if field.name in validated_data:
+                    file_data = validated_data[field.name]
+                    if isinstance(file_data, (list, QuerySet)):
+                        n_file_objs.extend(validated_data.get(field.name))
+                    else:
+                        n_file_objs.append(validated_data.get(field.name))
+
+        result = super().create(validated_data)
+
+        for n_file in n_file_objs:
+            setattr(n_file, 'is_tmp', False)
+            n_file.save(update_fields=['is_tmp'])
+        return result
+
+    def update(self, instance, validated_data):
+        n_file_objs = []
+        d_file_objs = []
+        for field in self.Meta.model._meta.get_fields():
+            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
+                if field.name in validated_data:
+                    file_data = validated_data[field.name]
+                    if isinstance(file_data, (list, QuerySet)):
+                        d_file_objs.extend(
+                            set(getattr(instance, field.name).all()) - set(validated_data.get(field.name)))
+                        n_file_objs.extend(
+                            set(validated_data.get(field.name)) - set(getattr(instance, field.name).all()))
+                    else:
+                        o_file_obj = getattr(instance, field.name)
+                        n_file_obj = validated_data.get(field.name)
+                        if o_file_obj.pk != n_file_obj.pk:
+                            d_file_objs.append(o_file_obj)
+                            n_file_objs.append(n_file_obj)
+
+        result = super().update(instance, validated_data)
+
+        for d_file in d_file_objs:
+            d_file.delete()
+        for n_file in n_file_objs:
+            setattr(n_file, 'is_tmp', False)
+            n_file.save(update_fields=['is_tmp'])
+        return result

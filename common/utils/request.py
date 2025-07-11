@@ -49,10 +49,13 @@ def get_request_ip(request):
     :param request:
     :return:
     """
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[-1].strip()
-        return ip
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')
+    if x_forwarded_for and x_forwarded_for[0]:
+        login_ip = x_forwarded_for[0]
+        if login_ip.count(':') == 1:
+            # format: ipv4:port (非标准格式的 X-Forwarded-For)
+            return login_ip.split(":")[0]
+        return login_ip
     ip = request.META.get('REMOTE_ADDR', '') or getattr(request, 'request_ip', None)
     return ip or 'unknown'
 
