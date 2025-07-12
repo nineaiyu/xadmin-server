@@ -69,11 +69,13 @@ class BookSerializer(BaseModelSerializer):
             },
             'files': {
                 'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
+                'ignore_field_permission': True
             },
-            # 使用自定义 input_type为 m2m_related_field_image ，是为了让前端支持图片上传后回显，默认是文件，不支持回显
+            # 使用自定义 input_type为 m2m_related_field_image ，是为了让前端支持图片上传后回显，默认是文件，不支持回显,
+            # ignore_field_permission 忽略上传文件的字段控制权限
             'file': {
                 'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': True, 'format': "{filename}({pk})",
-                'input_type': 'object_related_field_image'
+                'ignore_field_permission': True, 'input_type': 'object_related_field_image'
             }
         }
 
