@@ -26,6 +26,7 @@ from common.models import Monitor
 from common.notifications import ServerPerformanceCheckUtil, ImportDataMessage, BatchDeleteDataMessage
 from common.utils.timezone import local_now_display
 from server.celery import app
+from system.models import UserInfo
 
 logger = get_task_logger(__name__)
 
@@ -44,6 +45,8 @@ def send_mail_async(*args, **kwargs):
     Example:
     send_mail_sync.delay(subject, message, recipient_list, fail_silently=False, html_message=None)
     """
+    from system.utils.common import activate_user_language
+
     if len(args) == 3:
         args = list(args)
         args[0] = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {args[0]}"
@@ -51,8 +54,18 @@ def send_mail_async(*args, **kwargs):
         args.insert(2, from_email)
 
     args = tuple(args)
+
+    subject = args[0] if len(args) > 0 else kwargs.get('subject')
+    recipient_list = args[3] if len(args) > 3 else kwargs.get('recipient_list')
+    logger.info(
+        "send_mail_async called with subject=%r, recipients=%r", subject, recipient_list
+    )
+
     try:
-        return send_mail(connection=get_connection(), *args, **kwargs)
+        users = UserInfo.objects.filter(email__in=recipient_list).all()
+        for user in users:
+            with activate_user_language(user):
+                send_mail(connection=get_connection(), *args, **kwargs)
     except Exception as e:
         logger.error("Sending mail error: {}".format(e))
 

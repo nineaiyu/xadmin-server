@@ -296,7 +296,7 @@ class BaseFileRenderer(BaseRenderer):
         response['Content-Disposition'] = content_disposition.replace(self.format, 'zip')
 
         contents_io = io.BytesIO()
-        secret_key = request.user.username  # 默认密码是用户名，后期可配置
+        secret_key = request.user.secret_key
         if not secret_key:
             content = _("{} - The encryption password has not been set - "
                         "please go to personal information -> file encryption password "
