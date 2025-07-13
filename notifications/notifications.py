@@ -10,6 +10,7 @@ from common.utils.timezone import local_now
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from system.models import UserInfo
+from system.utils.common import activate_user_language
 
 logger = get_logger(__name__)
 system_msgs = []
@@ -90,7 +91,9 @@ class Message(metaclass=MessageType):
                 backend = BACKEND(backend)
                 client = backend.client()
                 users = UserInfo.objects.filter(id__in=receive_user_ids).all()
-                client.send_msg(users, **msg)
+                for user in users:
+                    with activate_user_language(user):
+                        client.send_msg([user], **msg)
             except NotImplementedError:
                 continue
             except:

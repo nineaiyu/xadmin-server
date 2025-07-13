@@ -9,7 +9,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
-
+from django.conf import settings
 from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin
 from common.fields.image import ProcessedImageField
 from system.models import ModeTypeAbstract
@@ -36,6 +36,28 @@ class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract)
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
     dept = models.ForeignKey(to="system.DeptInfo", verbose_name=_("Department"), on_delete=models.PROTECT, blank=True,
                              null=True, related_query_name="dept_query")
+
+    @property
+    def preference(self):
+        from system.models.preference import PreferenceManager
+        return PreferenceManager(self)
+
+    @property
+    def secret_key(self):
+        instance = self.preferences.filter(name="secret_key").first()
+        if not instance:
+            return
+        return instance.decrypt_value
+
+    # 从站点配置单独提取出来
+    @property
+    def lang(self):
+        return self.preference.get_value("lang", default=settings.LANGUAGE_CODE)
+
+    @lang.setter
+    def lang(self, value):
+        self.preference.set_value('lang', value)
+
 
     class Meta:
         verbose_name = _("Userinfo")
