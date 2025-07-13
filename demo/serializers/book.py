@@ -41,7 +41,7 @@ class BookSerializer(BaseModelSerializer):
         ## 为啥要有这个变量？ 一般情况下，前端table表格宽度不够，不需要显示太多字段，就可以通过这个变量来控制显示的字段
         table_fields = [
             'pk', 'cover', 'category', 'name', 'is_active', 'isbn', 'author', 'publisher', 'publication_date', 'price',
-            'book_file'
+            'book_file', 'file', 'files'
         ]
 
         # fields_unexport = ['pk']  # 导入导出文件时，忽略该字段
@@ -67,13 +67,16 @@ class BookSerializer(BaseModelSerializer):
             'managers2': {
                 'attrs': ['pk', 'username'], 'required': False, 'format': "{username}({pk})",
             },
+            # 多文件关联默认的 input_type为 m2m_related_field_file
             'files': {
                 'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
+                'ignore_field_permission': True
             },
-            # 使用自定义 input_type为 m2m_related_field_image ，是为了让前端支持图片上传后回显，默认是文件，不支持回显
+            # 单文件关联默认的 input_type为 object_related_field_file  ，为了让前端支持图片上传后回显，需要添加 'input_type_suffix': 'image'
+            # ignore_field_permission 忽略上传文件的字段控制权限
             'file': {
                 'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': True, 'format': "{filename}({pk})",
-                'input_type': 'object_related_field_image'
+                'ignore_field_permission': True, 'input_type_suffix': 'image'
             }
         }
 

@@ -42,6 +42,36 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def get_upload_input_type_suffix(value, default):
+    if hasattr(value, 'child_relation'):
+        value = value.child_relation
+    try:
+        if (value.queryset.model._meta.label == "system.UploadFile"
+                and isinstance(value, BasePrimaryKeyRelatedField)
+                and default in ['object_related_field', 'm2m_related_field']):
+            return "_file"
+    except Exception:
+        pass
+    return ''
+
+
+def get_format_intput_type(value, default=''):
+    input_type_prefix = ''
+    input_type = default
+    input_type_suffix = get_upload_input_type_suffix(value, default)
+
+    if hasattr(value, 'input_type') and value.input_type is not None:
+        input_type = value.input_type
+    if hasattr(value, 'input_type_prefix') and value.input_type_prefix is not None:
+        input_type_prefix = f"{value.input_type_prefix}_" if value.input_type_prefix else ''
+    if hasattr(value, 'input_type_suffix') and value.input_type_suffix is not None:
+        input_type_suffix = f"_{value.input_type_suffix}" if value.input_type_suffix else ''
+    input_type_str = input_type_prefix + input_type + input_type_suffix
+    if input_type_str:
+        return input_type_str
+    return default
+
+
 def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
     task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
     if task:
@@ -226,7 +256,7 @@ class SearchFieldsAction(object):
                 # if hasattr(value.field, 'queryset'):  # 将一些具有关联的字段的数据置空
                 #     widget.input_type = 'text'
                 #     widget.choices = []
-                if hasattr(value, 'input_type'): widget.input_type = value.input_type
+                widget.input_type = get_format_intput_type(value, widget.input_type)
                 choices = list(getattr(widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
@@ -309,26 +339,25 @@ class SearchColumnsAction(object):
         """获取{cls}的展示字段"""
         results = []
 
-        def check_upload_tp(value, tp):
-            if hasattr(value, 'child_relation'):
-                value = value.child_relation
-            try:
-                if (value.queryset.model._meta.label == "system.UploadFile"
-                        and isinstance(value, BasePrimaryKeyRelatedField)
-                        and tp in ['object_related_field', 'm2m_related_field']):
-                    return tp + "_file"
-            except Exception:
-                pass
-            return tp
+        # def check_upload_tp(value, tp):
+        #     if hasattr(value, 'child_relation'):
+        #         value = value.child_relation
+        #     try:
+        #         if (value.queryset.model._meta.label == "system.UploadFile"
+        #                 and isinstance(value, BasePrimaryKeyRelatedField)
+        #                 and tp in ['object_related_field', 'm2m_related_field']):
+        #             return tp + "_file"
+        #     except Exception:
+        #         pass
+        #     return tp
 
         def get_input_type(value, info):
             if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info['multiple'] = True
                 setattr(value.child_relation, 'is_column', True)
-                tp = value.child_relation.input_type if value.child_relation.input_type else info['type']
+                tp = get_format_intput_type(value.child_relation, info['type'])
             else:
-                tp = info['type']
-            tp = check_upload_tp(value, tp)
+                tp = get_format_intput_type(value, info['type'])
             if tp and tp.endswith('related_field'):
                 setattr(value, 'is_column', True)
                 info['choices'] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
