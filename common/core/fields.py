@@ -91,7 +91,9 @@ class BasePrimaryKeyRelatedField(RelatedField):
         """
         self.attrs = attrs
         self.label_format = kwargs.pop("format", None)
-        self.input_type = kwargs.pop("input_type", '')
+        self.input_type = kwargs.pop("input_type", None)
+        self.input_type_prefix = kwargs.pop("input_type_prefix", None)
+        self.input_type_suffix = kwargs.pop("input_type_suffix", None)
         self.many = kwargs.get("many", False)
         super().__init__(**kwargs)
         self.request: Request = get_current_request()
