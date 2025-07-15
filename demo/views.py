@@ -4,7 +4,7 @@
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
-from common.core.filter import BaseFilterSet
+from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
@@ -20,10 +20,17 @@ class BookViewSetFilter(BaseFilterSet):
     author = filters.CharFilter(field_name='author', lookup_expr='icontains')
     publisher = filters.CharFilter(field_name='publisher', lookup_expr='icontains')
 
+    # 自定义的搜索模板，针对用户搜索，前端已经内置 api-search-user 模板处理
+    managers2 = PkMultipleFilter(input_type='api-search-user')
+
+    # 自定义的搜索模板，默认是带有choices的下拉框，当数据多的话，体验不好，所以这里改为输入框，前端已经内置 input 处理
+    managers = PkMultipleFilter(input_type='input')
+
+
     class Meta:
         model = Book
         fields = ['name', 'isbn', 'author', 'publisher', 'is_active', 'publication_date', 'price',
-                  'created_time']  # fields用于前端自动生成的搜索表单
+                  'created_time', 'managers', 'managers2']  # fields用于前端自动生成的搜索表单
 
 
 class BookViewSet(BaseModelSet, ImportExportDataAction):
