@@ -370,14 +370,25 @@ class SearchColumnsAction(object):
         meta = getattr(serializer, 'Meta', {})
         table_fields = getattr(meta, 'table_fields', [])
         tabs_fields = getattr(meta, 'tabs', [])
+        tabs_fieldsets = getattr(meta, 'tabs_fieldsets', [])
         tabs_label = []
         tabs_info = {}
+        tabs_fieldsets_label = []
+        tabs_fieldsets_info = {}
         if tabs_fields:
             index = 0
             for tabs in tabs_fields:
                 tabs_label.append(tabs.label)
                 for field in tabs.fields:
                     tabs_info[field] = index
+                index += 1
+
+        if tabs_fieldsets:
+            index = 0
+            for tabs in tabs_fieldsets:
+                tabs_fieldsets_label.append(tabs.label)
+                for field in tabs.fields:
+                    tabs_fieldsets_info[field] = index
                 index += 1
 
         for key, value in fields.items():
@@ -405,6 +416,9 @@ class SearchColumnsAction(object):
             if tabs_info and tabs_label:
                 info['tabs_index'] = tabs_info.get(key, 0)
                 info['tabs_label'] = tabs_label[info['tabs_index']]
+            if tabs_fieldsets_info and tabs_fieldsets_label:
+                info['tabs_fieldsets_index'] = tabs_fieldsets_info.get(key, 0)
+                info['tabs_fieldsets_label'] = tabs_fieldsets_label[info['tabs_fieldsets_index']]
             results.append(info)
         return ApiResponse(data=results)
 
