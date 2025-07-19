@@ -27,6 +27,7 @@ class BaseModelSerializer(ModelSerializer):
         model = None
         table_fields = []  # 用于控制前端table的字段展示
         tabs = []
+        tabs_fieldsets = []
 
     def get_value(self, dictionary):
         # We override the default field access in order to support
@@ -76,6 +77,9 @@ class BaseModelSerializer(ModelSerializer):
         if meta and hasattr(meta, 'tabs') and meta.fields != '__all__':
             meta.fields = meta.fields + self.get_fields_from_tabs(meta.tabs)
 
+        if meta and hasattr(meta, 'tabs_fieldsets') and meta.fields != '__all__':
+            meta.fields = meta.fields + self.get_fields_from_tabs_fieldsets(meta.tabs_fieldsets)
+
         self.request: Request = get_current_request()
         if self.request is None:
             return
@@ -94,6 +98,16 @@ class BaseModelSerializer(ModelSerializer):
                     result.append(field)
         return result
 
+    @staticmethod
+    def get_fields_from_tabs_fieldsets(tabs_fieldsets: List) -> List[str]:
+        seen = set()
+        result = []
+        for tab in tabs_fieldsets:
+            for field in tab.fields:
+                if field not in seen:
+                    seen.add(field)
+                    result.append(field)
+        return result
     def build_standard_field(self, field_name, model_field):
         field_class, field_kwargs = super().build_standard_field(field_name, model_field)
         default = getattr(model_field, 'default', NOT_PROVIDED)
