@@ -22,11 +22,11 @@ class BookSerializer(BaseModelSerializer):
         tabs = [
             TabsColumn('基本信息',
                        ['name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price',
-                        'created_time']),
+                        'created_time', 'updated_time']),
             TabsColumn('管理员', ['admin', 'admin2', 'managers', 'managers2']),
             TabsColumn('文件信息', ['avatar', 'cover', 'book_file', 'file', 'files'])
         ]
-        fields = ['pk', 'block', 'created_time', 'updated_time']
+        fields = ['pk', 'block']
         ########### 单表单结束 ################
 
         ############### 2.默认的单表单 ##############
