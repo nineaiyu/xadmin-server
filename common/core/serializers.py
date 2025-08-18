@@ -31,7 +31,9 @@ class BaseModelSerializer(ModelSerializer):
     def get_field_names(self, declared_fields, info):
         """将默认的id字段 转换为 pk"""
         fields = super().get_field_names(declared_fields, info)
-        return ['pk'] + [f for f in fields if f != 'id']
+        if 'id' in fields:
+            return ['pk'] + [f for f in fields if f != 'id']
+        return fields
 
     def get_value(self, dictionary):
         # We override the default field access in order to support
