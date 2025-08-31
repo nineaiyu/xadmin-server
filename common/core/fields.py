@@ -14,7 +14,6 @@ from django.db.models.fields.files import FieldFile
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.request import Request
-from rest_framework.serializers import RelatedField
 
 from common.core.filter import get_filter_queryset
 from common.fields.utils import get_file_absolute_uri
@@ -37,22 +36,20 @@ class LabeledChoiceField(serializers.ChoiceField):
         self.attrs = kwargs.pop("attrs", None) or ("value", "label")
         super().__init__(**kwargs)
 
-    def to_representation(self, value):
-        if not value:
-            return value
-        data = {}
-        for attr in self.attrs:
-            if not hasattr(value, attr):
-                continue
-            data[attr] = getattr(value, attr)
-        return data
+    def to_representation(self, key):
+        if key is None:
+            return key
+        label = self.choices.get(key, key)
+        return {"value": key, "label": label}
 
     def to_internal_value(self, data):
         if not data:
             return data
         if isinstance(data, dict):
-            return data.get("value") or data.get("label")
-        return data
+            data = data.get("value")
+        if isinstance(data, str) and "(" in data and data.endswith(")"):
+            data = data.strip(")").split('(')[-1]
+        return super(LabeledChoiceField, self).to_internal_value(data)
 
     def get_schema(self):
         """
@@ -108,7 +105,7 @@ class LabeledMultipleChoiceField(serializers.MultipleChoiceField):
             return data
 
 
-class BasePrimaryKeyRelatedField(RelatedField):
+class BasePrimaryKeyRelatedField(serializers.RelatedField):
     """
     Base class for primary key related fields.
     """
