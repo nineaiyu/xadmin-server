@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-13 10:23+0800\n"
+"POT-Creation-Date: 2025-08-31 11:05+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -48,21 +48,21 @@ msgstr "请求地址不正确或数据权限不允许"
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: common/core/fields.py:81
+#: common/core/fields.py:116
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/fields.py:82
+#: common/core/fields.py:117
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 
-#: common/core/fields.py:83
+#: common/core/fields.py:118
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
-#: common/core/fields.py:84
+#: common/core/fields.py:119
 msgid "The query set is empty."
 msgstr "当前查询对象为空"
 
@@ -130,11 +130,11 @@ msgstr "操作失败，数据异常"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -356,11 +356,11 @@ msgstr "验证码错误"
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
-#: common/swagger/views.py:33
+#: common/swagger/views.py:38
 msgid "Incorrect username/password"
 msgstr "用户名或密码错误"
 
-#: common/swagger/views.py:42
+#: common/swagger/views.py:47
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
@@ -368,27 +368,27 @@ msgstr "请输入用户信息进行登录"
 msgid "Send email"
 msgstr "发件邮件"
 
-#: common/tasks.py:60
+#: common/tasks.py:65
 msgid "Send email attachment"
 msgstr "发送邮件附件"
 
-#: common/tasks.py:82
+#: common/tasks.py:87
 msgid "Periodic delete monitor"
 msgstr "周期清理监控日志"
 
-#: common/tasks.py:91
+#: common/tasks.py:96
 msgid "Clear celery periodic tasks"
 msgstr "清理周期任务"
 
-#: common/tasks.py:92
+#: common/tasks.py:97
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr "系统启动时，清理已经不存在的celery任务"
 
-#: common/tasks.py:114
+#: common/tasks.py:119
 msgid "Create or update periodic tasks"
 msgstr "创建或更新周期任务"
 
-#: common/tasks.py:116
+#: common/tasks.py:121
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -399,11 +399,11 @@ msgstr ""
 "随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以在系统启动时，"
 "将会注册任务或者更新定时任务参数"
 
-#: common/tasks.py:129
+#: common/tasks.py:134
 msgid "Periodic check service performance"
 msgstr "周期检测服务性能"
 
-#: common/tasks.py:131
+#: common/tasks.py:136
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -413,7 +413,7 @@ msgstr ""
 "每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送消息"
 "预警"
 
-#: common/tasks.py:140
+#: common/tasks.py:145
 msgid "Run background task view set"
 msgstr "通过任务方式执行视图"
 
@@ -451,19 +451,19 @@ msgstr "任务结果"
 msgid "China"
 msgstr "中国"
 
-#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:144
-msgid "LAN"
-msgstr "局域网"
-
-#: common/utils/ip/geoip/utils.py:25
-msgid "Invalid ip"
-msgstr "无效 IP"
-
-#: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
-#: common/utils/ip/geoip/utils.py:37 system/models/log.py:24
+#: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
+#: common/utils/ip/geoip/utils.py:51 system/models/log.py:24
 #: system/models/user.py:20 system/utils/auth.py:82
 msgid "Unknown"
 msgstr "未知"
+
+#: common/utils/ip/geoip/utils.py:38 system/utils/auth.py:144
+msgid "LAN"
+msgstr "局域网"
+
+#: common/utils/ip/geoip/utils.py:40
+msgid "Invalid ip"
+msgstr "无效 IP"
 
 #: common/utils/ip/utils.py:98
 msgid "Invalid address"
@@ -620,11 +620,11 @@ msgstr "{} 订阅"
 msgid "System message subscription"
 msgstr "系统消息订阅"
 
-#: notifications/notifications.py:42
+#: notifications/notifications.py:43
 msgid "Publish the station message"
 msgstr "发布站内消息"
 
-#: notifications/notifications.py:189
+#: notifications/notifications.py:190
 msgid "Time"
 msgstr "时间"
 
@@ -1743,7 +1743,7 @@ msgstr "用户不能为空"
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/log.py:49
+#: system/serializers/log.py:52
 msgid "Online"
 msgstr "在线"
 

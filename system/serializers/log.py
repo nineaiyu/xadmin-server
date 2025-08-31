@@ -31,6 +31,9 @@ class OperationLogSerializer(BaseModelSerializer):
         read_only_fields = ["pk"] + list(set([x.name for x in OperationLog._meta.fields]))
         extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
 
+    response_result = serializers.JSONField()
+    body = serializers.JSONField()
+
 
 class LoginLogSerializer(BaseModelSerializer):
     class Meta:

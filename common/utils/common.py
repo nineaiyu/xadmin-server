@@ -19,18 +19,6 @@ def get_logger(name='') -> logging.Logger:
     return logging.getLogger(f'xadmin.{name}')
 
 
-class lazyproperty:
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, cls):
-        if instance is None:
-            return self
-        else:
-            value = self.func(instance)
-            setattr(instance, self.func.__name__, value)
-            return value
-
 
 def get_disk_usage(path):
     return psutil.disk_usage(path=path).percent

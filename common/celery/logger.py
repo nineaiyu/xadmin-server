@@ -97,7 +97,8 @@ class CeleryThreadTaskFileHandler(CeleryThreadingLoggerHandler):
             f.flush()
 
     def handle_task_start(self, task_id):
-        log_path = get_celery_task_log_path(task_id.split('_')[0])
+        # log_path = get_celery_task_log_path(task_id.split('_')[0])
+        log_path = get_celery_task_log_path(task_id)
         thread_id = self.get_current_thread_id()
         self.task_id_thread_id_mapper[task_id] = thread_id
         f = open(log_path, 'ab')

@@ -1,11 +1,12 @@
 import textwrap
 import traceback
+from functools import cached_property
 
 from celery import shared_task
 from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
-from common.utils import lazyproperty, get_logger
+from common.utils import get_logger
 from common.utils.timezone import local_now
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
@@ -134,25 +135,25 @@ class Message(metaclass=MessageType):
         msg['message'] = h.handle(content)
         return msg
 
-    @lazyproperty
+    @cached_property
     def common_msg(self) -> dict:
         return self.get_common_msg()
 
-    @lazyproperty
+    @cached_property
     def text_msg(self) -> dict:
         msg = self.get_text_msg()
         return msg
 
-    @lazyproperty
+    @cached_property
     def markdown_msg(self):
         return self.get_markdown_msg()
 
-    @lazyproperty
+    @cached_property
     def html_msg(self) -> dict:
         msg = self.get_html_msg()
         return msg
 
-    @lazyproperty
+    @cached_property
     def html_msg_with_sign(self):
         msg = self.get_html_msg()
         msg['message'] = textwrap.dedent("""
@@ -166,7 +167,7 @@ class Message(metaclass=MessageType):
         """).format(msg['message'], self.signature)
         return msg
 
-    @lazyproperty
+    @cached_property
     def text_msg_with_sign(self):
         msg = self.get_text_msg()
         msg['message'] = textwrap.dedent("""
@@ -176,7 +177,7 @@ class Message(metaclass=MessageType):
         """).format(msg['message'], self.signature)
         return msg
 
-    @lazyproperty
+    @cached_property
     def signature(self):
         return 'Xadmin Server'
 
