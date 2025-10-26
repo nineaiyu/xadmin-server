@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-07-13 10:23+0800\n"
+"POT-Creation-Date: 2025-08-31 11:29+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -49,21 +49,21 @@ msgstr ""
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr ""
 
-#: common/core/fields.py:81
+#: common/core/fields.py:113
 msgid "This field is required."
 msgstr ""
 
-#: common/core/fields.py:82
+#: common/core/fields.py:114
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr ""
 
-#: common/core/fields.py:83
+#: common/core/fields.py:115
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
 
-#: common/core/fields.py:84
+#: common/core/fields.py:116
 msgid "The query set is empty."
 msgstr ""
 
@@ -131,11 +131,11 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:171 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
 msgid "Operation failed"
 msgstr ""
 
@@ -356,11 +356,11 @@ msgstr ""
 msgid "Please wait {} seconds before sending"
 msgstr ""
 
-#: common/swagger/views.py:33
+#: common/swagger/views.py:38
 msgid "Incorrect username/password"
 msgstr ""
 
-#: common/swagger/views.py:42
+#: common/swagger/views.py:47
 msgid "Please enter your account information to log in"
 msgstr ""
 
@@ -368,27 +368,27 @@ msgstr ""
 msgid "Send email"
 msgstr ""
 
-#: common/tasks.py:60
+#: common/tasks.py:65
 msgid "Send email attachment"
 msgstr ""
 
-#: common/tasks.py:82
+#: common/tasks.py:87
 msgid "Periodic delete monitor"
 msgstr ""
 
-#: common/tasks.py:91
+#: common/tasks.py:96
 msgid "Clear celery periodic tasks"
 msgstr ""
 
-#: common/tasks.py:92
+#: common/tasks.py:97
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr ""
 
-#: common/tasks.py:114
+#: common/tasks.py:119
 msgid "Create or update periodic tasks"
 msgstr ""
 
-#: common/tasks.py:116
+#: common/tasks.py:121
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -397,11 +397,11 @@ msgid ""
 "        of scheduled tasks will be updated"
 msgstr ""
 
-#: common/tasks.py:129
+#: common/tasks.py:134
 msgid "Periodic check service performance"
 msgstr ""
 
-#: common/tasks.py:131
+#: common/tasks.py:136
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -409,7 +409,7 @@ msgid ""
 "the administrator"
 msgstr ""
 
-#: common/tasks.py:140
+#: common/tasks.py:145
 msgid "Run background task view set"
 msgstr ""
 
@@ -447,18 +447,18 @@ msgstr ""
 msgid "China"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:23 system/utils/auth.py:144
+#: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
+#: common/utils/ip/geoip/utils.py:51 system/models/log.py:24
+#: system/models/user.py:20 system/utils/auth.py:82
+msgid "Unknown"
+msgstr ""
+
+#: common/utils/ip/geoip/utils.py:38 system/utils/auth.py:144
 msgid "LAN"
 msgstr ""
 
-#: common/utils/ip/geoip/utils.py:25
+#: common/utils/ip/geoip/utils.py:40
 msgid "Invalid ip"
-msgstr ""
-
-#: common/utils/ip/geoip/utils.py:27 common/utils/ip/geoip/utils.py:31
-#: common/utils/ip/geoip/utils.py:37 system/models/log.py:24
-#: system/models/user.py:20 system/utils/auth.py:82
-msgid "Unknown"
 msgstr ""
 
 #: common/utils/ip/utils.py:98
@@ -616,11 +616,11 @@ msgstr ""
 msgid "System message subscription"
 msgstr ""
 
-#: notifications/notifications.py:42
+#: notifications/notifications.py:43
 msgid "Publish the station message"
 msgstr ""
 
-#: notifications/notifications.py:189
+#: notifications/notifications.py:190
 msgid "Time"
 msgstr ""
 
@@ -1729,7 +1729,7 @@ msgstr ""
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/log.py:49
+#: system/serializers/log.py:52
 msgid "Online"
 msgstr ""
 

@@ -15,7 +15,6 @@ class CommonConfig(AppConfig):
         from .celery import heatbeat  # noqa
         from . import signal_handlers  # noqa
         from . import tasks  # noqa
-        from .swagger.utils import OpenApiAuthenticationScheme, OpenApiPrimaryKeyRelatedField  # noqa
         from .signals import django_ready
         excludes = ['migrate', 'compilemessages', 'makemigrations', 'stop']
         for i in excludes:

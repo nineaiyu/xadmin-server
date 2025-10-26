@@ -158,6 +158,8 @@ DB_OPTIONS = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
 if DB_ENGINE in ['mysql', 'oracle', 'postgresql', 'sqlite3']:
     ENGINE = 'django.db.backends.{}'.format(DB_ENGINE)
+elif DB_ENGINE == 'vastbase':
+    ENGINE = 'django_vastbase_backend'
 else:
     ENGINE = CONFIG.DB_ENGINE
 
@@ -240,7 +242,8 @@ AUTH_USER_MODEL = "system.UserInfo"
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'api/static/'
-STATIC_ROOT = os.path.join(PROJECT_DIR, "data", "static")
+DATA_DIR = os.path.join(PROJECT_DIR, "data")
+STATIC_ROOT = os.path.join(DATA_DIR, "static")
 
 # STATICFILES_FINDERS = (
 #     "django.contrib.staticfiles.finders.FileSystemFinder",
@@ -252,7 +255,7 @@ STATIC_ROOT = os.path.join(PROJECT_DIR, "data", "static")
 
 # Media配置
 MEDIA_URL = "media/"
-MEDIA_ROOT = os.path.join(PROJECT_DIR, "data", "upload")
+MEDIA_ROOT = os.path.join(DATA_DIR, "upload")
 FILE_UPLOAD_SIZE = CONFIG.FILE_UPLOAD_SIZE
 PICTURE_UPLOAD_SIZE = CONFIG.PICTURE_UPLOAD_SIZE
 FILE_UPLOAD_HANDLERS = [

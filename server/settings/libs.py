@@ -183,5 +183,10 @@ SPECTACULAR_SETTINGS = {
         "persistAuthorization": True,
         "displayOperationId": False,
     },
+    'SERIALIZER_EXTENSIONS': [
+        'common.swagger.utils.OpenApiAuthenticationScheme',
+        'common.swagger.utils.OpenApiPrimaryKeyRelatedField',
+        'common.swagger.utils.LabeledChoiceFieldExtension'
+    ],
     # 'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
 }

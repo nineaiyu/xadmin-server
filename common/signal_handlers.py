@@ -23,6 +23,7 @@ from common.base.utils import remove_file
 from common.celery.decorator import get_after_app_ready_tasks, get_after_app_shutdown_clean_tasks
 from common.celery.logger import CeleryThreadTaskFileHandler
 from common.celery.utils import get_celery_task_log_path
+from common.signals import django_ready
 from common.utils import get_logger
 from server.utils import get_current_request
 
@@ -162,3 +163,8 @@ def on_update_set_modifier(sender, instance=None, **kwargs):
 
 if settings.DEBUG_DEV:
     request_finished.connect(on_request_finished_logging_db_query)
+
+
+@receiver(django_ready)
+def clear_response_cache(sender, **kwargs):
+    cache.delete_pattern('magic_cache_response_*')

@@ -94,16 +94,16 @@ def compile_i18n_file():
 
 
 def download_ip_db(force=False):
-    db_base_dir = os.path.join(APPS_DIR, 'common', 'utils', 'ip')
     db_path_url_mapper = {
-        ('geoip', 'GeoLite2-City.mmdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/GeoLite2-City.mmdb',
-        ('ipip', 'ipipfree.ipdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb'
+        ('system', 'GeoLite2-City.mmdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/GeoLite2-City.mmdb',
+        ('system', 'ipipfree.ipdb'): 'https://jms-pkg.oss-cn-beijing.aliyuncs.com/ip/ipipfree.ipdb'
     }
     for p, src in db_path_url_mapper.items():
-        path = os.path.join(db_base_dir, *p)
+        path = os.path.join(settings.DATA_DIR, *p)
         if not force and os.path.isfile(path) and os.path.getsize(path) > 1000:
             continue
         logger.info("Download ip db: {}".format(path))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         download_file(src, path)
 
 

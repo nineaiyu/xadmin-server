@@ -14,26 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, re_path
-from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.static import serve as static_serve
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from common.celery.flower import CeleryFlowerAPIView
 from common.core.utils import auto_register_app_url
+from common.swagger.views import JsonApi, SwaggerUI, Redoc
 from common.utils.media import media_serve
 
-SpectacularAPIView.get = xframe_options_exempt(SpectacularAPIView.get)
-SpectacularAPIView.__doc__ = "获取API的文档模式"
-SpectacularSwaggerView.get = xframe_options_exempt(SpectacularSwaggerView.get)
-SpectacularRedocView.get = xframe_options_exempt(SpectacularRedocView.get)
-
 swagger_apis = [
-    re_path('^api-docs/schema/', SpectacularAPIView.as_view(), name='schema'),
-    re_path('^api-docs/swagger/$', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    re_path('^api-docs/redoc/$', SpectacularRedocView.as_view(url_name='schema'), name='schema-redoc'),
+    re_path('^api-docs/schema/', JsonApi.as_view(), name='schema'),
+    re_path('^api-docs/swagger/$', SwaggerUI.as_view(url_name='schema'), name='swagger-ui'),
+    re_path('^api-docs/redoc/$', Redoc.as_view(url_name='schema'), name='schema-redoc'),
 ]
 
 urlpatterns = [

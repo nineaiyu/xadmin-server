@@ -1,18 +1,18 @@
 # ~*~ coding: utf-8 ~*~
 #
+from functools import cached_property
 
 import chardet
 import unicodecsv
 
 from .base import BaseFileParser
 from ..const import CSV_FILE_ESCAPE_CHARS
-from ..utils import lazyproperty
 
 
 class CSVFileParser(BaseFileParser):
     media_type = 'text/csv'
 
-    @lazyproperty
+    @cached_property
     def match_escape_chars(self):
         chars = []
         for c in CSV_FILE_ESCAPE_CHARS:
