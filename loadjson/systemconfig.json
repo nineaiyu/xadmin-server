@@ -90,7 +90,7 @@
         "ShowModel": "smart",
         "HideFooter": false,
         "EpThemeColor": "#409EFF",
-        "OverallStyle": "light",
+        "ThemeMode": "light",
         "SidebarStatus": true,
         "MultiTagsCache": false
       },
