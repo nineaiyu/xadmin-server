@@ -101,20 +101,20 @@ def auto_register_app_url(urlpatterns):
     # xadmin_apps = [x.split('.')[0] for x in settings.XADMIN_APPS]
     for name, value in apps.app_configs.items():
         if name not in xadmin_apps: continue
-        # try:
-        urls = import_from_string(f"{name}.config.URLPATTERNS")
+
+        # 使用 value.name 替代 name，以正确处理 apps.xxxx.apps.XxxxConfig 这样的嵌套结构
+        app_module_name = value.name
+
+        urls = import_from_string(f"{app_module_name}.config.URLPATTERNS")
         logger.info(f"auto register {name} url success")
         if urls:
             urlpatterns.extend(urls)
             for url in urls:
                 settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
             settings.PERMISSION_DATA_AUTH_APPS.append(name)
-        # except Exception as e:
-        #     logger.warning(f"auto register {name} url failed. {e}")
-        #     continue
 
         try:
-            urls = import_from_string(f"{name}.config.PERMISSION_WHITE_REURL")
+            urls = import_from_string(f"{app_module_name}.config.PERMISSION_WHITE_REURL")
             if urls:
                 settings.PERMISSION_WHITE_URL.update(urls)
         except Exception as e:
