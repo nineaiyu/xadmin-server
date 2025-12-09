@@ -88,9 +88,9 @@
         "HideTabs": false,
         "ShowLogo": true,
         "ShowModel": "smart",
+        "ThemeMode": "light",
         "HideFooter": false,
         "EpThemeColor": "#409EFF",
-        "ThemeMode": "light",
         "SidebarStatus": true,
         "MultiTagsCache": false
       },

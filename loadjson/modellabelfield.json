@@ -61,6 +61,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "02488572-ee29-413d-a767-3db83a4be36f",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.980Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "138a9de0-191d-4d74-bbe0-bdc7bad0970b",
+      "name": "notice_role",
+      "label": "被通知角色"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "0311842c-38ee-4c06-91ea-20c9c0305149",
     "fields": {
       "created_time": "2024-08-27T07:13:47.992Z",
@@ -1411,6 +1426,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "328c385f-07c2-4f71-b0e6-10ba3e015321",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.796Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "4ce233dd-6ac0-4f14-8c19-c3fbf5d9d12e",
+      "name": "menu",
+      "label": "菜单"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "331d76d8-7f36-43ba-8a3c-09540130f682",
     "fields": {
       "created_time": "2024-09-16T09:09:26.895Z",
@@ -2266,6 +2296,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "4dbed9c4-7325-45f9-bd66-2e3a0e054a81",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.895Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
+      "name": "groups",
+      "label": "组"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "4e01b6f5-8690-48c7-8ad6-cfebfeab845d",
     "fields": {
       "created_time": "2024-01-22T09:56:44.886Z",
@@ -2307,6 +2352,21 @@
       "parent": null,
       "name": "notifications.systemmsgsubscription",
       "label": "系统消息订阅"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "4f1687a8-5768-4775-836b-5892a41b04f6",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.762Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "c77a1832-d839-4a31-a562-c37aa11ccd53",
+      "name": "field",
+      "label": "字段"
     }
   },
   {
@@ -2397,6 +2457,21 @@
       "parent": "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
       "name": "md5sum",
       "label": "文件MD5"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "538c74fd-8c0b-44ab-a76b-b9430adca1d7",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.470Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
+      "name": "rules",
+      "label": "数据权限"
     }
   },
   {
@@ -2772,6 +2847,21 @@
       "parent": null,
       "name": "system.systemconfig",
       "label": "系统配置"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "63ab3aef-d093-45ee-a0a1-e24da213dd9c",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.732Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "fa760e60-8ae4-4d0a-9728-419f191e83d1",
+      "name": "menu",
+      "label": "菜单"
     }
   },
   {
@@ -3436,6 +3526,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "7a9e59b6-5bd1-451b-b727-f1ebf47d0c79",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.901Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
+      "name": "roles",
+      "label": "角色权限"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "7ae2281a-cd61-4899-ab3c-5a68f3b9f179",
     "fields": {
       "created_time": "2024-01-22T09:56:45.133Z",
@@ -3566,7 +3671,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "body",
-      "label": "请求参数"
+      "label": "Body"
     }
   },
   {
@@ -3657,6 +3762,21 @@
       "parent": "201ffaa5-b0bb-4523-a87c-911d47204994",
       "name": "message_type_label",
       "label": "Message type label"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "8230e467-ba77-47c9-adba-5687a9859c9e",
+    "fields": {
+      "created_time": "2025-12-09T10:54:14.056Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "4e5630c9-8fd5-4ed8-af9e-cf42ffd4fc26",
+      "name": "users",
+      "label": "用户"
     }
   },
   {
@@ -3912,6 +4032,21 @@
       "parent": "99471d41-86a6-4980-ab31-7ebd8737cc29",
       "name": "modifier",
       "label": "修改人"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "8c198e6d-7db7-4e9c-b3f9-df8f22d588fd",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.701Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
+      "name": "model",
+      "label": "模型"
     }
   },
   {
@@ -4302,6 +4437,21 @@
       "parent": null,
       "name": "system.uploadfile",
       "label": "上传文件"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "998359c8-704e-4f68-b0d6-aff28f0781fd",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.974Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "138a9de0-191d-4d74-bbe0-bdc7bad0970b",
+      "name": "notice_user",
+      "label": "被通知用户"
     }
   },
   {
@@ -5401,6 +5551,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "bd75cbc2-4383-47cc-b82c-836f203b7100",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.977Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "138a9de0-191d-4d74-bbe0-bdc7bad0970b",
+      "name": "notice_dept",
+      "label": "被通知部门"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "bdf98f42-c83f-4040-9ad6-3c52879435b4",
     "fields": {
       "created_time": "2024-08-02T09:05:13.749Z",
@@ -5911,6 +6076,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "cf5762fb-2332-4c93-8f64-6d7926248441",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.898Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
+      "name": "user_permissions",
+      "label": "用户权限"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "cfc43356-63cb-432e-876f-3872f7fc0148",
     "fields": {
       "created_time": "2024-09-16T09:09:26.846Z",
@@ -6012,6 +6192,21 @@
       "parent": "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6",
       "name": "name",
       "label": "模型/字段数值"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "d346fadf-c883-4b28-8bb3-c59cd9671767",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.467Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
+      "name": "roles",
+      "label": "角色权限"
     }
   },
   {
@@ -6211,6 +6406,21 @@
   },
   {
     "model": "system.modellabelfield",
+    "pk": "de11dd22-fda3-4849-b038-1f1ba1a68c09",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.983Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "138a9de0-191d-4d74-bbe0-bdc7bad0970b",
+      "name": "file",
+      "label": "上传的附件"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
     "pk": "de4f5ac0-4182-4cec-8013-9403d1fc97fb",
     "fields": {
       "created_time": "2024-01-22T09:54:40.846Z",
@@ -6221,7 +6431,7 @@
       "field_type": 0,
       "parent": "b5e9a978-60a6-41d4-843c-bbb5f1339113",
       "name": "response_result",
-      "label": "响应内容"
+      "label": "Response result"
     }
   },
   {
@@ -6537,6 +6747,21 @@
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "meta",
       "label": "菜单元数据"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "ea37f3ee-3bdc-4d64-8318-b249fa42f15e",
+    "fields": {
+      "created_time": "2025-12-09T10:54:13.903Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
+      "name": "rules",
+      "label": "数据权限"
     }
   },
   {
