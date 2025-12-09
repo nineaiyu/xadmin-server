@@ -1,4 +1,4 @@
-django==5.2.8
+django==5.2.9
 djangorestframework==3.16.1
 django-cors-headers==4.9.0
 django-filter==25.2
@@ -7,7 +7,7 @@ psycopg2-binary==2.9.11
 django-redis==6.0.0
 pycryptodomex==3.23.0
 djangorestframework-simplejwt==5.5.1
-celery==5.5.3
+celery==5.6.0
 django-celery-beat==2.8.1
 django-celery-results==2.6.0
 flower==2.0.1
@@ -26,15 +26,15 @@ websockets==15.0.1
 django-imagekit==6.0.0
 pilkit==3.0
 drf-spectacular==0.29.0
-drf-spectacular-sidecar==2025.10.1
+drf-spectacular-sidecar==2025.12.1
 openpyxl==3.2.0b1
 pyzipper==0.3.6
 unicodecsv==0.14.1
 chardet==5.2.0
 pyexcel==0.7.4
 pyexcel-xlsx==0.6.1
-alibabacloud-dysmsapi20170525==4.2.0
-phonenumbers==9.0.19
+alibabacloud-dysmsapi20170525==4.3.0
+phonenumbers==9.0.20
 pycountry==24.6.1
 geoip2==5.2.0
 ipip-ipdb==1.6.1
