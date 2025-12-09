@@ -88,7 +88,7 @@ def get_app_model_fields():
                                                                     parent=None, defaults={'label': verbose_name})
             count[int(not created)] += 1
             # for field in model._meta.get_fields():
-            for field in model._meta.fields:
+            for field in model._meta.fields + model._meta.many_to_many:
                 _obj, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj,
                                                                          field_type=field_type,
                                                                          defaults={'label': field.verbose_name})
