@@ -99,7 +99,7 @@ class BaseFileRenderer(BaseRenderer):
             return '-'
         pk = str(value.get('id', '') or value.get('pk', ''))
         name = value.get('display_name', '') or value.get('name', '') or value.get('username', '') or value.get(
-            'nickname', '')
+            'nickname', '') or pk
         return '{}({})'.format(name, pk)
 
     @staticmethod
