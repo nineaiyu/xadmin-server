@@ -209,10 +209,10 @@ def topological_sort(data, pk='pk', parent='parent'):
     return [new_data[node_id] for node_id in sorted_order]
 
 
-def has_self_fields(model):
+def has_self_fields(model, keys):
     """
     仅仅支持判断 ForeignKey 自关联，不支持多对对自关联判断
     """
     for field in model._meta.fields:
-        if field.is_relation and field.related_model is not None and field.related_model == model:
+        if field.is_relation and field.related_model is not None and field.related_model == model and field.name in keys:
             return field.name
