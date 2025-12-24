@@ -82,13 +82,27 @@ def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
             data = [data]
         meta["task_count"] = math.ceil(len(data) / batch_length)
         meta["action"] = view.action
-        for index, batch in enumerate(itertools.batched(data, batch_length)):
-            meta["task_id"] = f"{task_id}_{index}"
-            meta["task_index"] = index
-            res = background_task_view_set_job.apply_async(args=(view_str, meta, json.dumps(batch), view.action_map),
-                                                           task_id=meta["task_id"])
-            logger.info(f"add {view_str} task success. {res}")
-        return ApiResponse(detail=_("Task add success"))
+        try:
+            # 检查Celery是否可用，如果不可用则直接执行任务
+            from server.celery import app
+            inspect = app.control.inspect()
+            active_workers = inspect.active()
+            if active_workers is None or not active_workers:
+                # 没有活跃的worker，直接执行任务
+                logger.warning("No active Celery workers found, executing task directly")
+                return None  # 返回None表示需要直接执行
+            for index, batch in enumerate(itertools.batched(data, batch_length)):
+                meta["task_id"] = f"{task_id}_{index}"
+                meta["task_index"] = index
+                res = background_task_view_set_job.apply_async(
+                    args=(view_str, meta, json.dumps(batch), view.action_map),
+                    task_id=meta["task_id"])
+                logger.info(f"add {view_str} task success. {res}")
+            return ApiResponse(detail=_("Task add success"))
+        except Exception as e:
+            logger.error(f"Celery task submission failed: {e}, executing task directly")
+            return None  # 如果提交任务失败，也返回None表示需要直接执行
+    return None  # 如果task参数为false，直接执行
 
 
 class CacheDetailResponseMixin(object):
@@ -557,7 +571,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
             datas = request.data
             if isinstance(datas, dict):
                 datas = [datas]
-            self_field = has_self_fields(self.queryset.model)
+            self_field = has_self_fields(self.queryset.model, datas[0].keys())
             if self_field:
                 batch_length = 99999999
                 datas = topological_sort(datas, parent=self_field)
