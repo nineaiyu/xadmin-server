@@ -566,28 +566,34 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
         """导入{cls}数据"""
 
         task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
-        datas = request.data
-        if task:
-            # 如果包含自关联数据，则对数据进行排序，将依赖数据先导入，并且取消批量导入任务
-            if isinstance(datas, dict):
-                datas = [datas]
-            self_field = has_self_fields(self.queryset.model, datas[0].keys())
-            if self_field:
-                batch_length = 99999999
-                datas = topological_sort(datas, parent=self_field)
-            else:
-                batch_length = 100
-            response = run_view_by_celery_task(self, request, kwargs, datas, batch_length)
+        data = request.data
+
+        # 处理数据格式，确保是列表格式
+        if isinstance(data, dict):
+            data = [data]
+
+        # 检查是否存在自关联依赖
+        self_field = has_self_fields(self.queryset.model, data[0].keys()) if data else None
+
+        # 如果存在依赖关系，则对数据进行拓扑排序
+        if self_field:
+            data = topological_sort(data, parent=self_field)
+
+        # 尝试使用异步任务导入
+        if task and data:
+            batch_length = 99999999 if self_field else 100
+            response = run_view_by_celery_task(self, request, kwargs, data, batch_length)
             if response:
                 return response
 
+        # 同步导入数据
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
-        if act and datas:
+        if act and data:
             count = 0
             if act == 'create':
-                for data in datas:
-                    serializer = self.get_serializer(data=data)
+                for item in data:
+                    serializer = self.get_serializer(data=item)
                     serializer.is_valid(raise_exception=not ignore_error)
                     if serializer.errors and ignore_error:
                         continue
@@ -595,11 +601,11 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
                     count += 1
             elif act == 'update':
                 queryset = self.filter_queryset(self.get_queryset())
-                for data in datas:
-                    instance = queryset.filter(pk=data.get('pk')).first()
+                for item in data:
+                    instance = queryset.filter(pk=item.get('pk')).first()
                     if not instance:
                         continue
-                    serializer = self.get_serializer(instance, data=data, partial=True)
+                    serializer = self.get_serializer(instance, data=item, partial=True)
                     serializer.is_valid(raise_exception=not ignore_error)
                     if serializer.errors and ignore_error:
                         continue
