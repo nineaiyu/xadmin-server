@@ -566,9 +566,9 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
         """导入{cls}数据"""
 
         task = kwargs.get("task", request.query_params.get('task', 'true').lower() in ['true', '1', 'yes'])  # 默认为任务异步导入
+        datas = request.data
         if task:
             # 如果包含自关联数据，则对数据进行排序，将依赖数据先导入，并且取消批量导入任务
-            datas = request.data
             if isinstance(datas, dict):
                 datas = [datas]
             self_field = has_self_fields(self.queryset.model, datas[0].keys())
@@ -583,10 +583,10 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
 
         act = request.query_params.get('action')
         ignore_error = request.query_params.get('ignore_error', 'false') == 'true'
-        if act and request.data:
+        if act and datas:
             count = 0
             if act == 'create':
-                for data in request.data:
+                for data in datas:
                     serializer = self.get_serializer(data=data)
                     serializer.is_valid(raise_exception=not ignore_error)
                     if serializer.errors and ignore_error:
@@ -595,7 +595,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
                     count += 1
             elif act == 'update':
                 queryset = self.filter_queryset(self.get_queryset())
-                for data in request.data:
+                for data in datas:
                     instance = queryset.filter(pk=data.get('pk')).first()
                     if not instance:
                         continue
