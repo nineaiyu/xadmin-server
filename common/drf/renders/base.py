@@ -11,6 +11,7 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.utils import encoders, json
 
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField, PhoneField
+from common.core.utils import has_self_fields
 from common.utils import get_logger
 from common.utils.timezone import local_now
 
@@ -55,6 +56,11 @@ class BaseFileRenderer(BaseRenderer):
             fields = [v for k, v in fields.items() if not v.read_only and k not in ['id', 'pk']]
             fields_unimport = getattr(meta, 'fields_unimport', [])
             fields = [v for v in fields if v.field_name not in fields_unimport]
+            # 当模型存在自关联字段时，import 模板需要包含 pk 字段用于拓扑排序
+            if pk_field and meta and hasattr(meta, 'model'):
+                field_names = [f.field_name for f in fields]
+                if has_self_fields(meta.model, field_names):
+                    fields.insert(0, pk_field)
         elif self.template == 'update':
             fields = [v for k, v in fields.items() if not v.read_only]
             if pk_field:
