@@ -24,6 +24,11 @@ from system.signal_handler import clean_cache_handler
 from system.utils.menu import get_view_permissions
 
 
+def _view_class_code_suffix(view_import_path: str) -> str:
+    """从 View 导入路径解析用于权限 code 的后缀（去掉 ViewSet/APIView）。"""
+    return view_import_path.split(".")[-1].replace("ViewSet", "").replace("APIView", "").strip()
+
+
 class MenuFilter(BaseFilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     component = filters.CharFilter(field_name='component', lookup_expr='icontains')
@@ -123,12 +128,17 @@ class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesActio
         skip_existing = request.data.get('skip_existing')
         if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
+            component_parts = [p.strip() for p in str(component).split("|")] if component else []
+            parts_len = len(component_parts)
+            is_single_view = len(views) == 1
 
-            for view in views:
-                code_suffix = view.split(".")[-1].replace('ViewSet', ' ').replace('APIView', ' ')
-                if len(views) == 1:
-                    if component:
-                        code_suffix = component
+            for idx, view in enumerate(views):
+                if is_single_view:
+                    code_suffix = str(component).strip() if component else _view_class_code_suffix(view)
+                else:
+                    code_suffix = _view_class_code_suffix(view)
+                    if idx < parts_len and component_parts[idx]:
+                        code_suffix = component_parts[idx]
                 self._save_permissions(instance, get_view_permissions(view, code_suffix), skip_existing)
 
             # 保存数据，触发刷新缓存信号
