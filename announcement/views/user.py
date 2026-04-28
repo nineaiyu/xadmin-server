@@ -12,17 +12,17 @@ class AnnouncementUserFilter(BaseFilterSet):
 
     class Meta:
         model = Announcement
-        fields = ['title', 'is_top', 'publish_time']
+        fields = ['title', 'is_top', 'publish_time', 'created_time']
 
 
 class AnnouncementUserViewSet(OnlyListModelSet, DetailAction):
     """用户公告查看"""
     serializer_class = AnnouncementUserSerializer
-    ordering_fields = ['is_top', 'publish_time']
+    ordering_fields = ['is_top', 'publish_time', 'created_time']
     filterset_class = AnnouncementUserFilter
     pagination_class = DynamicPageNumber(1000)
 
     def get_queryset(self):
         return Announcement.objects.filter(
-            status=Announcement.StatusChoices.PUBLISHED
-        ).order_by('-is_top', '-publish_time')
+            is_published=True
+        ).order_by('-is_top', '-created_time')

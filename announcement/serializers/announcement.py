@@ -8,11 +8,11 @@ class AnnouncementSerializer(BaseModelSerializer):
     class Meta:
         model = models.Announcement
         fields = [
-            'pk', 'title', 'content', 'is_top', 'status', 'publish_time',
+            'pk', 'title', 'content', 'is_top', 'is_published', 'status', 'publish_time',
             'creator', 'modifier', 'dept_belong', 'created_time', 'updated_time', 'description'
         ]
         table_fields = [
-            'pk', 'title', 'is_top', 'status', 'publish_time', 'creator', 'created_time'
+            'pk', 'title', 'is_top', 'is_published', 'status', 'publish_time', 'creator', 'created_time'
         ]
         read_only_fields = ['pk', 'creator', 'modifier', 'dept_belong', 'created_time', 'updated_time']
         extra_kwargs = {

@@ -12,6 +12,7 @@ class Announcement(DbAuditModel):
     title = models.CharField(max_length=200, verbose_name=_("标题"))
     content = models.TextField(verbose_name=_("内容"))
     is_top = models.BooleanField(default=False, verbose_name=_("是否置顶"))
+    is_published = models.BooleanField(default=False, verbose_name=_("是否发布"))
     status = models.SmallIntegerField(choices=StatusChoices, default=StatusChoices.DRAFT, verbose_name=_("状态"))
     publish_time = models.DateTimeField(null=True, blank=True, verbose_name=_("发布时间"))
 

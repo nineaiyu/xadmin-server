@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from rest_framework.decorators import action
 
@@ -13,11 +14,12 @@ from announcement.serializers import AnnouncementSerializer
 class AnnouncementAdminFilter(BaseFilterSet):
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
     is_top = filters.BooleanFilter(field_name='is_top')
+    is_published = filters.BooleanFilter(field_name='is_published')
     status = filters.NumberFilter(field_name='status')
 
     class Meta:
         model = Announcement
-        fields = ['title', 'is_top', 'status', 'created_time', 'publish_time']
+        fields = ['title', 'is_top', 'is_published', 'status', 'created_time', 'publish_time']
 
 
 class AnnouncementAdminViewSet(BaseModelSet, ImportExportDataAction):
@@ -30,13 +32,13 @@ class AnnouncementAdminViewSet(BaseModelSet, ImportExportDataAction):
 
     def perform_create(self, serializer):
         instance = serializer.save(creator=self.request.user, dept_belong=self.request.user.dept)
-        if instance.status == Announcement.StatusChoices.PUBLISHED and not instance.publish_time:
+        if instance.is_published and not instance.publish_time:
             instance.publish_time = timezone.now()
             instance.save(update_fields=['publish_time'])
 
     def perform_update(self, serializer):
         instance = serializer.save(modifier=self.request.user)
-        if instance.status == Announcement.StatusChoices.PUBLISHED and not instance.publish_time:
+        if instance.is_published and not instance.publish_time:
             instance.publish_time = timezone.now()
             instance.save(update_fields=['publish_time'])
 
@@ -44,19 +46,21 @@ class AnnouncementAdminViewSet(BaseModelSet, ImportExportDataAction):
     def publish(self, request, *args, **kwargs):
         """发布公告"""
         instance = self.get_object()
-        if instance.status != Announcement.StatusChoices.PUBLISHED:
+        if not instance.is_published:
+            instance.is_published = True
             instance.status = Announcement.StatusChoices.PUBLISHED
             instance.publish_time = timezone.now()
             instance.modifier = request.user
-            instance.save(update_fields=['status', 'publish_time', 'modifier'])
+            instance.save(update_fields=['is_published', 'status', 'publish_time', 'modifier'])
         return ApiResponse(detail=_("发布成功"))
 
     @action(methods=['post'], detail=True)
     def unpublish(self, request, *args, **kwargs):
-        """取消发布公告"""
+        """下架公告"""
         instance = self.get_object()
-        if instance.status == Announcement.StatusChoices.PUBLISHED:
+        if instance.is_published:
+            instance.is_published = False
             instance.status = Announcement.StatusChoices.DRAFT
             instance.modifier = request.user
-            instance.save(update_fields=['status', 'modifier'])
-        return ApiResponse(detail=_("取消发布成功"))
+            instance.save(update_fields=['is_published', 'status', 'modifier'])
+        return ApiResponse(detail=_("下架成功"))
