@@ -19,14 +19,14 @@ def format_return(data):
         if isinstance(data, bytes):
             data = data.decode(encoding='utf-8')
         return json.loads(data)
-    except:
+    except Exception:
         return data
 
 
 def format_input(data):
     try:
         return json.dumps(data)
-    except:
+    except Exception:
         return data
 
 

@@ -80,7 +80,7 @@ def collect_static():
     try:
         management.call_command('collectstatic', '--no-input', '-c', verbosity=0, interactive=False)
         logger.info("Collect static files done")
-    except:
+    except Exception:
         pass
 
 
@@ -110,7 +110,7 @@ def download_ip_db(force=False):
 def expire_caches():
     try:
         management.call_command('expire_caches', 'config_*')
-    except:
+    except Exception:
         pass
 
 

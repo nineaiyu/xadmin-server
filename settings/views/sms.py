@@ -112,7 +112,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
         except APIException as e:
             try:
                 error = e.detail['errmsg']
-            except:
+            except Exception:
                 error = e.detail
             status_code = status.HTTP_400_BAD_REQUEST
             detail = error

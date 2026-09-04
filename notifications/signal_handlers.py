@@ -57,7 +57,7 @@ def create_system_messages(app_config: AppConfig, **kwargs):
             try:
                 obj.post_insert_to_db(sub)
                 logger.info(f'Create MsgSubscription: package={app_config.module.__package__} type={message_type}')
-            except:
+            except Exception:
                 pass
     except ModuleNotFoundError:
         pass

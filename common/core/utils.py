@@ -100,7 +100,8 @@ def auto_register_app_url(urlpatterns):
             xadmin_apps.append(app)
     # xadmin_apps = [x.split('.')[0] for x in settings.XADMIN_APPS]
     for name, value in apps.app_configs.items():
-        if name not in xadmin_apps: continue
+        if name not in xadmin_apps:
+            continue
 
         # 使用 value.name 替代 name，以正确处理 apps.xxxx.apps.XxxxConfig 这样的嵌套结构
         app_module_name = value.name

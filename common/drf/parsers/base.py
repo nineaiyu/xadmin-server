@@ -149,7 +149,7 @@ class BaseFileParser(BaseParser):
                     return False
             try:
                 value = json.loads(value)
-            except:
+            except Exception:
                 pass
         elif isinstance(field, serializers.CharField):
             if not isinstance(value, str):

@@ -259,7 +259,8 @@ class SearchFieldsAction(object):
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
             for field_name, value in filterset_class.items():
-                if field_name not in filter_fields: continue
+                if field_name not in filter_fields:
+                    continue
                 widget = value.field.widget
                 if isinstance(widget, SelectMultiple):
                     widget.input_type = 'select-multiple'

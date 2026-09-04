@@ -59,10 +59,12 @@ class Subscription:
         msgs = self.sub.listen()
 
         if error is None:
-            error = lambda m, i: None
+            def error(m, i):
+                return None
 
         if complete is None:
-            complete = lambda: None
+            def complete():
+                return None
 
         try:
             for msg in msgs:

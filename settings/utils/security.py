@@ -128,7 +128,7 @@ class BlockGlobalIpUtilBase:
             if data:
                 return parse_datetime(data)
             return "N/A"
-        except:
+        except Exception:
             return "N/A"
 
 

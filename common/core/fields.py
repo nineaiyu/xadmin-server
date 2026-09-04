@@ -215,7 +215,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             # data[attr] = getattr(value, attr)
             try:
                 data[attr] = attr_get(value, attr, '__')
-            except:
+            except Exception:
                 continue
             if isinstance(data[attr], FieldFile):
                 data[attr] = get_file_absolute_uri(data[attr], self.request)

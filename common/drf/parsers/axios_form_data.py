@@ -67,7 +67,7 @@ def format_data(data: QueryDict | dict):
             if key_split[0] == 'pks':  # 用于批量操作
                 try:
                     value = data.getlist(key_split[0])
-                except:
+                except Exception:
                     value = data.get(key_split[0])
             new_data[key_split[0]] = value
         else:

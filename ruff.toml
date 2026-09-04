@@ -1,4 +1,4 @@
-# Ruff 配置：仅启用存量代码可接受的错误级规则，避免大规模改动存量代码
+# Ruff 配置：启用 E/F 错误级规则；存量通配 import 文件在 per-file-ignores 中显式列出，新代码不得新增
 line-length = 120
 target-version = "py313"
 extend-exclude = ["zsign", "demo/migrations", "data", "loadjson"]
@@ -8,12 +8,32 @@ select = ["E4", "E7", "E9", "F"]
 ignore = [
     "E501", # 行长，存量代码大量超长
     "E402", # import 不在顶部，settings 模块需要先打补丁再导入
-    "E722", # bare-except，存量风格，后续治理
-    "E731", # lambda 赋值，存量风格
-    "E701", # 单行多语句，存量风格
-    "F403", # import *，项目 settings/序列化器的既有风格
-    "F405", # import * 引入的符号，同上
 ]
 
 [lint.per-file-ignores]
 "tests/**" = []
+# 存量通配 import（models/settings 聚合导出与进程管理脚本），重构收敛后逐个移除
+"common/drf/parsers/__init__.py" = ["F403", "F405"]
+"common/drf/renders/__init__.py" = ["F403", "F405"]
+"common/management/commands/services/command.py" = ["F403", "F405"]
+"common/management/commands/services/services/__init__.py" = ["F403", "F405"]
+"common/management/commands/services/services/base.py" = ["F403", "F405"]
+"common/management/commands/services/services/beat.py" = ["F403", "F405"]
+"common/management/commands/services/services/celery_base.py" = ["F403", "F405"]
+"common/management/commands/services/services/flower.py" = ["F403", "F405"]
+"common/management/commands/services/services/gunicorn.py" = ["F403", "F405"]
+"common/management/commands/services/utils.py" = ["F403", "F405"]
+"common/utils/__init__.py" = ["F403", "F405"]
+"common/utils/ip/__init__.py" = ["F403", "F405"]
+"common/utils/ip/geoip/__init__.py" = ["F403", "F405"]
+"common/utils/ip/ipip/__init__.py" = ["F403", "F405"]
+"notifications/admin.py" = ["F403", "F405"]
+"notifications/models/__init__.py" = ["F403", "F405"]
+"notifications/serializers/__init__.py" = ["F403", "F405"]
+"server/settings/__init__.py" = ["F403", "F405"]
+"system/admin.py" = ["F403", "F405"]
+"system/management/commands/dump_init_json.py" = ["F403", "F405"]
+"system/management/commands/load_init_json.py" = ["F403", "F405"]
+"system/models/__init__.py" = ["F403", "F405"]
+"tests/settings_test.py" = ["F403", "F405"]
+"utils/init_data.py" = ["F403", "F405"]

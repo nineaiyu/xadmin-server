@@ -28,7 +28,8 @@ from common.utils import get_logger
 from server.utils import get_current_request
 
 logger = get_logger(__name__)
-safe_str = lambda x: x
+def safe_str(x):
+    return x
 
 pattern = re.compile(r'FROM `(\w+)`')
 
