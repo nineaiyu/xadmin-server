@@ -15,3 +15,4 @@ config.yml
 .coverage
 .coverage.*
 htmlcov/
+.DS_Store

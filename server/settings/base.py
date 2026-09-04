@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 from ..const import CONFIG, PROJECT_DIR
 
 BASE_DIR = PROJECT_DIR
@@ -21,6 +23,15 @@ BASE_DIR = PROJECT_DIR
 SECRET_KEY = CONFIG.SECRET_KEY
 
 DEBUG = CONFIG.DEBUG
+
+# SECRET_KEY 同时作为 JWT 签名密钥（SIMPLE_JWT.SIGNING_KEY），
+# 生产环境为空会导致任意伪造 token，直接拒绝启动；DEBUG 模式允许为空便于本地调试
+if not SECRET_KEY and not DEBUG:
+    raise ImproperlyConfigured(
+        'SECRET_KEY is required when DEBUG is disabled. '
+        'Set it in config.yml or the SECRET_KEY environment variable.'
+    )
+
 # SECURITY WARNING: If you run with debug turned on, more debug msg with be log
 DEBUG_DEV = CONFIG.DEBUG_DEV
 
@@ -35,7 +46,8 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # https://docs.djangoproject.com/zh-hans/4.2/ref/settings/#use-x-forwarded-host
 USE_X_FORWARDED_HOST = True
 
-ALLOWED_HOSTS = ["*"]
+# DEBUG 模式默认放行所有 Host；生产环境必须通过 config.yml 配置域名白名单
+ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS or (["*"] if DEBUG else [])
 
 # Application definition
 XADMIN_APPS = CONFIG.XADMIN_APPS

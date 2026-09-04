@@ -60,6 +60,11 @@ class Config(dict):
         'DB_DATABASE': 'xadmin',
         'DB_USER': 'server',
         'DB_PASSWORD': '',
+        # HOST 校验白名单，生产环境必须配置，如 ['xadmin.example.com']；DEBUG 模式默认放行
+        'ALLOWED_HOSTS': [],
+        # CORS 跨域配置，同源部署（nginx 反代）无需配置；跨域部署请配置白名单
+        'CORS_ALLOW_ALL_ORIGINS': False,
+        'CORS_ALLOWED_ORIGINS': [],
         'LANGUAGE_CODE': 'zh-hans',
         'TIME_ZONE': 'Asia/Shanghai',
         # 服务配置

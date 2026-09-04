@@ -14,6 +14,15 @@ SECRET_KEY:
 # 用于DEBUG模式下，输出sql日志
 # DEBUG_DEV: true
 
+# Host 校验白名单（生产环境必须配置，DEBUG 模式默认放行所有 Host）
+# ALLOWED_HOSTS:
+#   - xadmin.example.com
+
+# CORS 跨域配置（同源部署/nginx 反代无需配置；跨域部署请配置域名白名单）
+# CORS_ALLOW_ALL_ORIGINS: false
+# CORS_ALLOWED_ORIGINS:
+#   - https://xadmin.example.com
+
 # Database setting, Support sqlite3, mysql, postgres ....
 # 数据库设置
 # ### 更多数据库配置，参考官方文档：https://docs.djangoproject.com/zh-hans/5.0/ref/databases/
@@ -47,7 +56,7 @@ DB_DATABASE: xadmin
 # Redis配置
 REDIS_HOST: redis
 REDIS_PORT: 6379
-#REDIS_PASSWORD: nineven
+#REDIS_PASSWORD: <your-redis-password>
 #DEFAULT_CACHE_ID: 1
 #CHANNEL_LAYERS_CACHE_ID: 2
 #CELERY_BROKER_CACHE_ID: 3
