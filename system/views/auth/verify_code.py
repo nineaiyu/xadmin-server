@@ -11,19 +11,22 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiRequest
+from rest_framework.exceptions import APIException
 from rest_framework.generics import GenericAPIView
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.fields.utils import get_file_absolute_uri
 from common.swagger.utils import get_default_response_schema
-from common.utils import random_string
+from common.utils import get_logger, random_string
 from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from settings.services import get_password_check_rules
 from settings.services import SendVerifyCodeBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo
-from system.utils.auth import check_token_and_captcha, check_is_block
+from system.utils.auth import ValidateError, check_token_and_captcha, check_is_block
+
+logger = get_logger(__name__)
 
 
 @extend_schema_view(
@@ -155,15 +158,23 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
         try:
             username, extra = getattr(self, 'check_%s_config' % category)(request, form_type, query_key, target)
-        except Exception as e:
+        except APIException as e:
+            # 业务校验失败（ValidateError 等），异常文案本身面向用户
             LoginIpBlockUtil(ipaddr).set_block_if_need()
-            return ApiResponse(code=1001, detail=str(e))
+            return ApiResponse(code=1001, detail=str(e.detail))
+        except Exception:
+            # 未预期异常不向客户端暴露内部细节
+            logger.exception('Send verify code check failed')
+            LoginIpBlockUtil(ipaddr).set_block_if_need()
+            return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
 
         dryrun = form_type == 'username'
         try:
             content, code = self.prepare_code_data(username)
             SendAndVerifyCodeUtil(target, code, backend=form_type, dryrun=dryrun, **content).gen_and_send_async()
         except ValueError as e:
+            # 发送工具抛出的 ValueError 为业务校验文案
+            logger.warning('Send verify code failed: %s', e)
             return ApiResponse(code=1002, detail=str(e))
         cache_data = {"target": target, "form_type": form_type, "query_key": query_key, "extra": extra}
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
@@ -231,7 +242,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
         user = UserInfo.objects.filter(**{query_key: target}).exists()
         if user:
-            raise Exception(detail)
+            raise ValidateError(detail)
         return '', extra
 
     @staticmethod
@@ -246,7 +257,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
         user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
         if not user:
-            raise Exception(detail)
+            raise ValidateError(detail)
         return user.username, extra
 
     def check_login_config(self, request, form_type, query_key, target):

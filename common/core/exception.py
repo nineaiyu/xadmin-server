@@ -67,10 +67,14 @@ def common_exception_handler(exc, context):
         unexpected_exception_logger.exception('')
 
     if not ret:  # drf内置处理不了，丢给django 的，我们自己来处理
-        return ApiResponse(detail=str(exc), code=500, status=500)
+        # 未预期异常不向客户端暴露内部细节（完整堆栈已由 unexpected_exception_logger 记录）
+        return ApiResponse(
+            detail=_("Server internal error, please contact administrator or try again later"),
+            code=500, status=500
+        )
     else:
         if isinstance(ret.data, list):
-            ret.data = {'detail': str(exc)}
+            ret.data = {'detail': ret.data}
         if not ret.data.get('detail'):
             ret.data['detail'] = str(exc)
         ret.data['status'] = ret.status_code

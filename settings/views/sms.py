@@ -117,6 +117,8 @@ class SmsConfigViewSet(BaseSettingViewSet):
             status_code = status.HTTP_400_BAD_REQUEST
             detail = error
         except Exception as e:
+            # 超管诊断接口：保留原始错误便于排查短信通道问题，但需留日志
+            logger.warning('SMS test failed: %s', e)
             status_code = status.HTTP_400_BAD_REQUEST
             detail = str(e)
         return ApiResponse(code=status_code, detail=detail)
