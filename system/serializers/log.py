@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from message.services import get_online_user_layers
+from message.services import get_online_users_layers
 from system.models import UserLoginLog, OperationLog
 
 logger = get_logger(__name__)
@@ -54,7 +54,13 @@ class LoginLogSerializer(BaseModelSerializer):
     @extend_schema_field(serializers.IntegerField)
     def get_online(self, obj):
         if UserLoginLog.LoginTypeChoices.WEBSOCKET == obj.login_type:
-            return obj.channel_name in get_online_user_layers(obj.creator.pk)
+            if not obj.creator:
+                return -1
+            # 以整页 creator 为单位批量查询在线 layers，结果缓存在 context 中（同页同一 creator 的多条日志可复用）
+            if 'login_log_online_layers' not in self.context:
+                pks = [instance.creator.pk for instance in self.get_page_instances(obj) if instance.creator]
+                self.context['login_log_online_layers'] = get_online_users_layers(pks)
+            return obj.channel_name in self.context['login_log_online_layers'].get(obj.creator.pk, [])
         return -1
 
 

@@ -101,6 +101,18 @@ class BaseModelSerializer(ModelSerializer):
                     result.append(field)
         return result
 
+    def get_page_instances(self, default=None):
+        """
+        获取当前正在序列化的整页对象列表（many=True 时为分页结果），供 SerializerMethodField
+        做整页批量查询；整页对象与当前对象类型不一致（嵌套序列化场景）或单对象序列化时，
+        退化为 [default]，保持与逐对象查询相同的行为。
+        """
+        instances = getattr(getattr(self, 'parent', None), 'instance', None)
+        if isinstance(instances, (list, tuple)) and instances and all(
+                isinstance(instance, default.__class__) for instance in instances):
+            return instances
+        return [default] if default is not None else []
+
     def build_standard_field(self, field_name, model_field):
         field_class, field_kwargs = super().build_standard_field(field_name, model_field)
         default = getattr(model_field, 'default', NOT_PROVIDED)

@@ -16,7 +16,7 @@ from common.base.utils import AESCipherV2
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
-from message.services import get_online_user_layers
+from message.services import get_online_users_layers
 from settings.services import check_password_rules
 from settings.services import LoginBlockUtil
 from system.models import UserInfo
@@ -54,11 +54,18 @@ class UserSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.BooleanField)
     def get_block(self, obj):
-        return LoginBlockUtil.is_user_block(obj.username)
+        # 以整页用户名为单位批量查询锁定状态，结果缓存在 context 中（ListSerializer 与子字段共享）
+        if 'user_login_block' not in self.context:
+            usernames = [instance.username for instance in self.get_page_instances(obj)]
+            self.context['user_login_block'] = LoginBlockUtil.get_users_block(usernames)
+        return self.context['user_login_block'].get(obj.username, False)
 
     @extend_schema_field(serializers.IntegerField)
     def get_online_count(self, obj):
-        return len(get_online_user_layers(obj.pk))
+        if 'user_online_layers' not in self.context:
+            pks = [instance.pk for instance in self.get_page_instances(obj)]
+            self.context['user_online_layers'] = get_online_users_layers(pks)
+        return len(self.context['user_online_layers'].get(obj.pk, []))
 
     def validate(self, attrs):
         password = attrs.get('password')

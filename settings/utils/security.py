@@ -77,6 +77,15 @@ class BlockUtilBase:
         block_key = cls.BLOCK_KEY_TMPL.format(username)
         return bool(cache.get(block_key))
 
+    @classmethod
+    def get_users_block(cls, usernames):
+        """批量获取多个用户是否处于锁定状态，一次 get_many 替代逐用户访问缓存"""
+        if not usernames:
+            return {}
+        key_username = {cls.BLOCK_KEY_TMPL.format(username): username for username in set(usernames)}
+        cached = cache.get_many(key_username)
+        return {username: bool(cached.get(key)) for key, username in key_username.items()}
+
     def is_block(self):
         return bool(cache.get(self.block_key))
 

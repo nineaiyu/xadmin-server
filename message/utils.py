@@ -46,6 +46,15 @@ async def get_online_user_layers(user_pk):
 
 
 @async_to_sync
+async def get_online_users_layers(user_pks):
+    """批量获取多个用户的在线 channel layers，一次同步桥接完成全部查询，user_pk 自动去重"""
+    result = {}
+    for user_pk in dict.fromkeys(user_pks):
+        result[user_pk] = await get_layers_form_group(get_user_layer_group_name(user_pk))
+    return result
+
+
+@async_to_sync
 async def get_online_users():
     return [int(group.split('_')[-1]) for group in await channel_layer.get_groups()]
 
