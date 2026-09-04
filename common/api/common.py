@@ -18,7 +18,6 @@ from rest_framework.response import Response
 
 from common.cache.storage import CommonResourceIDsCache
 from common.core.response import ApiResponse
-from common.models import Monitor
 from common.swagger.utils import get_default_response_schema
 from common.utils.country import COUNTRY_CALLING_CODES, COUNTRY_CALLING_CODES_ZH
 
@@ -80,11 +79,16 @@ class HealthCheckAPIView(GenericAPIView):
 
     @staticmethod
     def get_db_status():
+        # 使用最基础的 SELECT 1 探测数据库连通性，
+        # 不依赖任何业务表（此前依赖 Monitor 表，在未启用 celery monitor 时会误报 db_status=false）
         t1 = time.time()
         try:
-            ok = Monitor.objects.first() is not None
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT 1')
+                cursor.fetchone()
             t2 = time.time()
-            return ok, t2 - t1
+            return True, t2 - t1
         except Exception as e:
             return False, str(e)
 
@@ -105,6 +109,18 @@ class HealthCheckAPIView(GenericAPIView):
         except Exception as e:
             return False, str(e)
 
+    @staticmethod
+    def get_celery_status():
+        # 探测是否存在在线 worker（inspect ping 最长阻塞 1 秒，healthcheck 轮询间隔下可接受）
+        t1 = time.time()
+        try:
+            from server.celery import app
+            workers = app.control.inspect(timeout=1).ping()
+            t2 = time.time()
+            return bool(workers), t2 - t1
+        except Exception as e:
+            return False, str(e)
+
     @extend_schema(
         responses={
             200: OpenApiResponse(
@@ -113,9 +129,11 @@ class HealthCheckAPIView(GenericAPIView):
                         'status': build_basic_type(OpenApiTypes.BOOL),
                         'db_status': build_basic_type(OpenApiTypes.BOOL),
                         'redis_status': build_basic_type(OpenApiTypes.BOOL),
+                        'celery_status': build_basic_type(OpenApiTypes.BOOL),
                         'time': build_basic_type(OpenApiTypes.FLOAT),
                         'db_time': build_basic_type(OpenApiTypes.FLOAT),
                         'redis_time': build_basic_type(OpenApiTypes.FLOAT),
+                        'celery_time': build_basic_type(OpenApiTypes.FLOAT),
                     }
                 )
             )
@@ -125,13 +143,17 @@ class HealthCheckAPIView(GenericAPIView):
         """获取服务健康状态"""
         redis_status, redis_time = self.get_redis_status()
         db_status, db_time = self.get_db_status()
+        celery_status, celery_time = self.get_celery_status()
+        # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）
         status = all([redis_status, db_status])
         data = {
             'status': status,
             'db_status': db_status,
             'redis_status': redis_status,
+            'celery_status': celery_status,
             'time': int(time.time()),
             'db_time': db_time,
             'redis_time': redis_time,
+            'celery_time': celery_time,
         }
         return Response(data)

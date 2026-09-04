@@ -67,10 +67,18 @@ class RequestMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
+    @staticmethod
+    def get_request_uuid(request):
+        # 优先沿用网关/上游传入的请求 ID，便于跨服务日志串联；无则生成新的
+        upstream_id = re.sub(r'[^0-9a-zA-Z\-_]', '', request.headers.get('X-Request-Id', ''))[:64]
+        return upstream_id or uuid.uuid4()
+
     def __call__(self, request):
-        request.request_uuid = uuid.uuid4()
+        request.request_uuid = self.get_request_uuid(request)
         set_current_request(request)
         response = self.get_response(request)
+        # 回写响应头，便于前端/网关按请求 ID 关联日志与反馈问题
+        response['X-Request-Id'] = str(request.request_uuid)
         return response
 
 

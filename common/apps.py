@@ -13,6 +13,7 @@ class CommonConfig(AppConfig):
 
     def ready(self):
         from .celery import heatbeat  # noqa
+        from .celery import failure_handler  # noqa
         from . import signal_handlers  # noqa
         from . import tasks  # noqa
         from .signals import django_ready
