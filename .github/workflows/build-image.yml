@@ -6,7 +6,30 @@ on:
       - 'v*'
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout server repository
+        uses: actions/checkout@v4
+
+      - name: Checkout client repository
+        uses: actions/checkout@v4
+        with:
+          repository: nineaiyu/xadmin-client
+          path: xadmin-client
+
+      - name: Check version consistency with client
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          CLIENT_VERSION=$(python3 -c "import json; print(json.load(open('xadmin-client/package.json'))['version'])")
+          echo "server tag: $TAG_VERSION, client version: $CLIENT_VERSION"
+          if [ "$TAG_VERSION" != "$CLIENT_VERSION" ]; then
+            echo "::error::前后端版本不一致：server tag v$TAG_VERSION vs client $CLIENT_VERSION，请同步升版后再发布"
+            exit 1
+          fi
+
   build-and-push-image:
+    needs: check-version
     runs-on: ubuntu-latest
 
     steps:
