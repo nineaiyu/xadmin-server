@@ -28,7 +28,7 @@ services:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
       POSTGRES_USER: ${DB_USER:-server}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required, set it in .env or environment}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
     healthcheck:

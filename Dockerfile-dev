@@ -1,8 +1,8 @@
 FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.13.3-slim
 
 # add pip cn mirrors
-ARG PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple
-ARG APT_MIRROR=http://mirrors.tuna.tsinghua.edu.cn
+ARG PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple
+ARG APT_MIRROR=http://mirrors.aliyun.com
 
 # Install APT dependencies
 ARG DEPENDENCIES="                    \
