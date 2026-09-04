@@ -978,12 +978,12 @@ const auth = getDefaultAuths("UserViewSet");
 
 - 三层权限的组合关系复杂，调试困难
 - 数据权限的 JSON 规则格式不够直观，配置门槛高
-- 权限缓存可能导致权限变更不及时（最长 24 小时）
+- 权限缓存已有信号驱动失效（`system/signal_handler.py` 监听 Menu/UserRole/DeptInfo/UserInfo/SystemConfig 变更及登出信号），但该链路缺测试保护，且绕过 API 的 ORM 直改 M2M（如 `role.menu.set()` 不保存实例）不触发失效
 - 字段权限与序列化器耦合，增加了序列化器的复杂度
 
 **改进建议**: 
 - 提供权限可视化配置界面
-- 缩短权限缓存时间或提供手动刷新机制
+- 为信号失效链路补充回归测试，评估挂接 `m2m_changed` 关闭 ORM 直改缺口
 - 将字段权限逻辑从序列化器中解耦
 
 #### 5.2.3 前后端耦合度较高
