@@ -8,7 +8,7 @@ from common.core.config import UserConfig
 from common.utils import get_logger
 from message.utils import push_message, get_online_users
 from notifications.serializers.message import NoticeMessageSerializer
-from system.models import UserInfo
+from system.services import UserInfo
 
 logger = get_logger(__name__)
 

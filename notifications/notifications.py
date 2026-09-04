@@ -10,7 +10,7 @@ from common.utils import get_logger
 from common.utils.timezone import local_now
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
-from system.models import UserInfo
+from system.services import UserInfo, get_superusers, get_users_by_pks
 
 logger = get_logger(__name__)
 system_msgs = []
@@ -90,7 +90,7 @@ class Message(metaclass=MessageType):
             try:
                 backend = BACKEND(backend)
                 client = backend.client()
-                users = UserInfo.objects.filter(id__in=receive_user_ids).all()
+                users = get_users_by_pks(receive_user_ids)
                 client.send_msg(users, **msg)
             except NotImplementedError:
                 continue
@@ -103,8 +103,7 @@ class Message(metaclass=MessageType):
         if not msg:
             return
 
-        from system.models import UserInfo
-        users = UserInfo.objects.filter(is_superuser=True)
+        users = get_superusers()
         backends = []
         msg.send_msg(users, backends)
 
@@ -284,7 +283,6 @@ class UserMessage(Message):
 
     @classmethod
     def get_test_user(cls):
-        from system.models import UserInfo
         return UserInfo.objects.all().first()
 
     @classmethod

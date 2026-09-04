@@ -12,10 +12,8 @@ from celery.signals import task_failure
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
-from notifications.backends import BACKEND
-from notifications.models import SystemMsgSubscription
-from notifications.notifications import SystemMessage
-from system.models import UserInfo
+from notifications.services import BACKEND, SystemMessage, SystemMsgSubscription
+from system.services import get_active_superuser_queryset
 
 logger = logging.getLogger('xadmin')
 
@@ -50,7 +48,7 @@ class TaskFailureMessage(SystemMessage):
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription):
-        admins = UserInfo.objects.filter(is_superuser=True, is_active=True)
+        admins = get_active_superuser_queryset()
         subscription.users.add(*admins)
         subscription.receive_backends = [BACKEND.SITE_MSG, BACKEND.EMAIL]
         subscription.save()

@@ -17,18 +17,14 @@ from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
 from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
-from system.models import UserInfo, UserLoginLog
-from system.services import login_success
+from system.services import UserLoginLog, get_active_user_pk_by_username, login_success
 
 logger = get_logger(__name__)
 
 
 @database_sync_to_async
 def get_user_pk(username):
-    try:
-        return UserInfo.objects.filter(username=username, is_active=True).values_list('pk', flat=True).first()
-    except UserInfo.DoesNotExist:
-        return
+    return get_active_user_pk_by_username(username)
 
 
 @database_sync_to_async

@@ -11,7 +11,7 @@ from common.utils.connection import RedisPubSub
 from notifications.message import SiteMessageUtil
 from notifications.models import SystemMsgSubscription, MessageContent
 from notifications.notifications import SystemMessage
-from system.models import UserInfo
+from system.services import UserInfo
 
 logger = get_logger(__name__)
 

@@ -17,7 +17,7 @@ from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from notifications.models import MessageUserRead, MessageContent
-from system.models import UploadFile, UserInfo
+from system.services import UploadFile, UserInfo
 
 logger = get_logger(__name__)
 

@@ -16,7 +16,7 @@ from rest_framework.utils import encoders
 from common.decorators import cached_method
 from common.utils import get_logger
 from message.utils import set_mid_result_to_cache
-from system.serializers.userinfo import UserInfoSerializer
+from system.services import serialize_user_info
 
 logger = get_logger(__name__)
 
@@ -24,8 +24,7 @@ logger = get_logger(__name__)
 @database_sync_to_async
 @cached_method()
 def get_userinfo(user):
-    result = UserInfoSerializer(instance=user).data
-    return result
+    return serialize_user_info(user)
 
 
 class AsyncJsonWebsocket(AsyncWebsocketConsumer):

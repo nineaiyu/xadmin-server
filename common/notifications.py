@@ -4,10 +4,8 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
 from common.models import Monitor
-from notifications.backends import BACKEND
-from notifications.models import SystemMsgSubscription
-from notifications.notifications import SystemMessage, UserMessage
-from system.models import UserInfo
+from notifications.services import BACKEND, SystemMessage, SystemMsgSubscription, UserMessage
+from system.services import get_active_superuser_queryset
 
 
 class ServerPerformanceMessage(SystemMessage):
@@ -36,7 +34,7 @@ class ServerPerformanceMessage(SystemMessage):
 
     @classmethod
     def post_insert_to_db(cls, subscription: SystemMsgSubscription):
-        admins = UserInfo.objects.filter(is_superuser=True, is_active=True)
+        admins = get_active_superuser_queryset()
         subscription.users.add(*admins)
         subscription.receive_backends = [BACKEND.EMAIL]
         subscription.save()
