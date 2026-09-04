@@ -7,7 +7,7 @@
 import itertools
 
 from django.contrib.auth import user_logged_out
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import m2m_changed, post_save, pre_delete
 from django.dispatch import receiver
 
 from common.base.magic import cache_response, MagicCacheData
@@ -86,3 +86,28 @@ def invalid_user_cache(sender, **kwargs):
         return
 
     batch_invalid_cache([user_pk])
+
+
+# m2m 直改（绕过 API 不触发实例 save）同样需要失效权限缓存
+M2M_CHANGED_ACTIONS = ("post_add", "post_remove", "post_clear")
+
+
+@receiver(m2m_changed, sender=UserRole.menu.through)
+def invalid_role_menu_m2m_cache_handler(sender, instance, action, **kwargs):
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    invalid_role_cache_handler(sender=UserRole, instance=instance)
+
+
+@receiver(m2m_changed, sender=UserInfo.roles.through)
+def invalid_user_roles_m2m_cache_handler(sender, instance, action, **kwargs):
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    batch_invalid_cache([instance.pk])
+
+
+@receiver(m2m_changed, sender=DeptInfo.roles.through)
+def invalid_dept_roles_m2m_cache_handler(sender, instance, action, **kwargs):
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    batch_invalid_cache(instance.userinfo_set.values_list('pk', flat=True).distinct())
