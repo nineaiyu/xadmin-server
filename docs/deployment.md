@@ -63,14 +63,11 @@ python manage.py start beat            # 定时任务调度
 ## 3. Docker 部署
 
 ```shell
-# 必须先设置密码（无默认值，缺失时 compose 拒绝启动）
-echo "DB_PASSWORD=$(openssl rand -hex 16)" >> .env
-echo "REDIS_PASSWORD=$(openssl rand -hex 16)" >> .env
-
 docker compose up -d
 ```
 
-服务拓扑：
+- 密码策略：compose 对 postgres 提供与 `config.yml` 对齐的默认密码兜底（`${DB_PASSWORD:-KGzKjZpWBp4R4RSa}`），本地开发开箱即用；**生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值（`config.yml` 中同步修改），否则使用默认密码等于裸奔。
+- 服务拓扑（另含 `db-backup` 定时备份服务，见 §3.1）：
 
 | 服务 | 说明 | 健康检查 |
 |------|------|----------|
@@ -79,7 +76,21 @@ docker compose up -d
 | celery-worker | 默认队列 worker | 心跳文件（celery 队列） |
 | celery-heavy | heavy 队列 worker | 心跳文件（heavy 队列） |
 | celery-beat | 定时调度 | 进程探活 |
+| db-backup | 每日 pg_dump 备份，滚动保留 7 天 | 日志（`docker logs xadmin-db-backup`） |
 | postgresql / redis | 存储与 broker | 内置 |
+
+### 3.1 数据库备份与恢复
+
+- 备份：`db-backup` 服务每日自动执行 `pg_dump | gzip`，产出 `${VOLUME_DIR}/xadmin-db-backups/<库名>_<时间戳>.sql.gz`，滚动保留 7 天（`KEEP_DAYS` 可调）。
+- 手动备份：`docker exec xadmin-db-backup bash -c 'source /utils/db_backup.sh'` 不可用（脚本为常驻循环），直接执行：
+  `docker exec xadmin-postgresql pg_dump -U server -d xadmin | gzip > backup_$(date +%Y%m%d).sql.gz`
+- 恢复（宿主机执行，会**清空重建**目标库，请先确认）：
+
+```shell
+sh utils/db_restore.sh ../xadmin-db-backups/xadmin_20260904_205752.sql.gz xadmin
+```
+
+- 建议定期将 `xadmin-db-backups` 目录同步到异地/对象存储；恢复流程至少每季度演练一次（RTO 目标 ≤30 分钟，见半年规划 P5）。
 
 生产 `config.yml` 建议：
 

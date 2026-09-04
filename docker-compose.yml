@@ -61,6 +61,30 @@ services:
     networks:
       - net
 
+  db-backup:
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8
+    container_name: xadmin-db-backup
+    restart: always
+    entrypoint: [ "bash", "/utils/db_backup.sh" ]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      PGHOST: postgresql
+      PGPORT: 5432
+      PGUSER: ${DB_USER:-server}
+      PGPASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
+      PGDATABASE: ${DB_DATABASE:-xadmin}
+      BACKUP_DIR: /backups
+      KEEP_DAYS: 7
+      BACKUP_INTERVAL: 86400
+    volumes:
+      - ./utils/db_backup.sh:/utils/db_backup.sh:ro
+      - ${VOLUME_DIR:-../}/xadmin-db-backups:/backups
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - net
+
   server:
     image: xadmin-server
     container_name: xadmin-server
