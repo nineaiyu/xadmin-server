@@ -87,12 +87,14 @@
         "DarkMode": false,
         "HideTabs": false,
         "ShowLogo": true,
-        "ShowModel": "smart",
         "ThemeMode": "light",
         "HideFooter": false,
         "EpThemeColor": "#409EFF",
         "SidebarStatus": true,
-        "MultiTagsCache": false
+        "MultiTagsCache": false,
+        "TagsStyle": "smart",
+        "Watermark": false,
+        "WatermarkText": ""
       },
       "is_active": true,
       "access": true,
