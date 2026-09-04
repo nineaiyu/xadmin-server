@@ -88,24 +88,75 @@ services:
     networks:
       - net
 
-  celery:
+  celery-worker:
     image: xadmin-server
-    container_name: xadmin-celery
-    hostname: xadmin-celery
+    container_name: xadmin-celery-worker
+    hostname: xadmin-celery-worker
     build:
       context: .
       dockerfile: Dockerfile-dev
     ulimits:
       core: 0
     restart: always
-    privileged: true
-    command: start task
+    command: start celery_default
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
     healthcheck:
-      test: "bash utils/check_celery.sh"
+      test: "bash utils/check_celery.sh celery"
       interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - net
+
+  celery-heavy:
+    image: xadmin-server
+    container_name: xadmin-celery-heavy
+    hostname: xadmin-celery-heavy
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    ulimits:
+      core: 0
+    restart: always
+    command: start celery_heavy
+    volumes:
+      - ./:/data/xadmin-server
+    #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    healthcheck:
+      test: "bash utils/check_celery.sh heavy"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - net
+
+  celery-beat:
+    image: xadmin-server
+    container_name: xadmin-celery-beat
+    hostname: xadmin-celery-beat
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    ulimits:
+      core: 0
+    restart: always
+    command: start beat
+    volumes:
+      - ./:/data/xadmin-server
+    #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    healthcheck:
+      test: "pgrep -f 'celery.*beat'"
+      interval: 30s
       timeout: 5s
       retries: 3
       start_period: 90s

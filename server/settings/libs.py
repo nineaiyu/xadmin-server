@@ -136,6 +136,12 @@ CELERY_TIMEZONE = CONFIG.TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
+# 队列路由：heavy 队列承载导入/导出/批量操作等重任务（background_task_view_set_job），
+# 避免慢任务阻塞邮件/短信/站内信等轻量任务；worker 由 start celery_heavy 拉起消费 heavy 队列
+CELERY_TASK_ROUTES = {
+    'common.tasks.background_task_view_set_job': {'queue': 'heavy'},
+}
+
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # CELERY_RESULT_BACKEND = ''

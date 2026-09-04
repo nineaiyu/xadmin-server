@@ -10,6 +10,7 @@ from .utils import ServicesUtil
 class Services(TextChoices):
     gunicorn = 'gunicorn', 'gunicorn'
     celery_default = 'celery_default', 'celery_default'
+    celery_heavy = 'celery_heavy', 'celery_heavy'
     beat = 'beat', 'beat'
     flower = 'flower', 'flower'
     web = 'web', 'web'
@@ -24,6 +25,7 @@ class Services(TextChoices):
             cls.gunicorn.value: services.GunicornService,
             cls.flower: services.FlowerService,
             cls.celery_default: services.CeleryDefaultService,
+            cls.celery_heavy: services.CeleryHeavyService,
             cls.beat: services.BeatService
         }
         return services_map.get(name)
@@ -34,7 +36,7 @@ class Services(TextChoices):
 
     @classmethod
     def celery_services(cls):
-        return [cls.celery_default]
+        return [cls.celery_default, cls.celery_heavy]
 
     @classmethod
     def task_services(cls):
