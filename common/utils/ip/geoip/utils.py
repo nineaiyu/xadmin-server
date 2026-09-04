@@ -21,7 +21,7 @@ def init_ip_reader():
     if not os.path.exists(path):
         path = os.path.join(os.path.dirname(__file__), 'GeoLite2-City.mmdb')
     if not os.path.exists(path):
-        raise FileNotFoundError(f"IP Database not found, please run `python manage.py download_ip_db`")
+        raise FileNotFoundError("IP Database not found, please run `python manage.py download_ip_db`")
 
     reader = geoip2.database.Reader(path)
 

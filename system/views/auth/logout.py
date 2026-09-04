@@ -39,7 +39,7 @@ class LogoutAPIView(GenericAPIView):
             try:
                 token = RefreshToken(request.data.get('refresh'))
                 token.blacklist()  # 登出账户，并且将账户的access 和 refresh token 加入黑名单
-            except Exception as e:
+            except Exception:
                 pass
         logout(request)
         return ApiResponse()

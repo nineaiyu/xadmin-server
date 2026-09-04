@@ -1,0 +1,12 @@
+[run]
+source = system,captcha,server,common,message,notifications,demo
+omit =
+    */migrations/*
+    */tests/*
+    */settings/*
+    */wsgi.py
+    */asgi.py
+    **/apps.py
+    **/management/commands/*
+[report]
+skip_covered = True

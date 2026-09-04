@@ -23,6 +23,11 @@ from system.notifications import DifferentCityLoginMessage
 from system.serializers.log import LoginLogSerializer
 
 
+class ValidateError(APIException):
+    """校验类失败统一返回 HTTP 400，避免登录失败触发前端 401 处理导致页面刷新"""
+    status_code = 400
+
+
 def get_token_lifetime(user_obj):
     access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
     refresh_token_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME')
@@ -36,13 +41,13 @@ def get_token_lifetime(user_obj):
 def check_captcha(need, captcha_key, captcha_code):
     if not need or (captcha_key and CaptchaAuth(captcha_key=captcha_key).valid(captcha_code)):
         return True
-    raise APIException(_("Captcha validation failed. Please try again"))
+    raise ValidateError(_("Captcha validation failed. Please try again"))
 
 
 def check_tmp_token(need, token, client_id, success_once=True):
     if not need or (client_id and token and verify_token_cache(token, client_id, success_once)):
         return True
-    raise APIException(_("Temporary Token validation failed. Please try again"))
+    raise ValidateError(_("Temporary Token validation failed. Please try again"))
 
 
 def check_token_and_captcha(request, token_enable, captcha_enable, success_once=True):
@@ -68,12 +73,12 @@ def get_username_password(need, request, token):
 def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=LoginBlockUtil):
     if ip_block and ip_block(ipaddr).is_block():
         ip_block(ipaddr).set_block_if_need()
-        raise APIException(_("The address has been locked (please contact admin to unlock it or try"
-                             " again after {} minutes)").format(settings.SECURITY_LOGIN_IP_LIMIT_TIME))
+        raise ValidateError(_("The address has been locked (please contact admin to unlock it or try"
+                              " again after {} minutes)").format(settings.SECURITY_LOGIN_IP_LIMIT_TIME))
 
     if login_block and login_block(username, ipaddr).is_block():
-        raise APIException(_("The account has been locked (please contact admin to unlock it or try"
-                             " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME))
+        raise ValidateError(_("The account has been locked (please contact admin to unlock it or try"
+                              " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME))
 
 
 def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True, channel_name=""):
@@ -102,12 +107,12 @@ def verify_sms_email_code(request, block_utils):
     ip_block = LoginIpBlockUtil(ipaddr)
 
     if not verify_token or not verify_code:
-        raise APIException(_("Operation failed. Abnormal data"))
+        raise ValidateError(_("Operation failed. Abnormal data"))
 
     data = TokenTempCache.validate_cache_token(verify_token)
     if not data:
         ip_block.set_block_if_need()
-        raise APIException(_('Token is invalid or expired'))
+        raise ValidateError(_('Token is invalid or expired'))
 
     target = data.get('target')
     query_key = data.get('query_key')
@@ -132,7 +137,7 @@ def verify_sms_email_code(request, block_utils):
             detail = _("The account has been locked (please contact admin to unlock it or try"
                        " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
 
-        raise APIException(detail)
+        raise ValidateError(detail)
 
     return query_key, target, verify_token
 

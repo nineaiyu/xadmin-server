@@ -26,7 +26,7 @@ class ServicesUtil(object):
 
     def start_and_watch(self):
         print(time.ctime())
-        print(f'server now start')
+        print('server now start')
         self.start()
         if self.run_daemon:
             self.show_status()

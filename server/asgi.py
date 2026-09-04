@@ -47,11 +47,11 @@ def get_signature_user(scope):
                 request.user = user
                 request.request_uuid = uuid.uuid4()
                 set_current_request(request)
-                logger.info(f"web socket auth success")
+                logger.info("web socket auth success")
                 return user
         except Exception as e:
             logger.warning(f"web socket auth failed by {backend_str}. Exception: {e}")
-    logger.error(f"web socket auth failed.")
+    logger.error("web socket auth failed.")
     return None
 
 

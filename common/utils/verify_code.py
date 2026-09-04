@@ -48,7 +48,7 @@ class SendAndVerifyCodeUtil(object):
             if not self.code:
                 self.__generate()
             self.__send()
-        except Exception as e:
+        except Exception:
             self.__clear()
             raise
 

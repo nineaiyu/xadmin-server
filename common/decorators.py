@@ -141,7 +141,7 @@ ignore_err_exceptions = (
 
 def _run_func(key, func, *args, **kwargs):
     try:
-        with open_db_connection() as conn:
+        with open_db_connection():
             # 保证执行时使用的是新的 connection 数据库连接
             # 避免出现 MySQL server has gone away 的情况
             func(*args, **kwargs)

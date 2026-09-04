@@ -79,7 +79,7 @@ class RegisterViewAPIView(GenericAPIView):
         if query_key == 'username':
             default = {}
 
-        with cache.lock(f"_LOCKER_REGISTER_USER", timeout=10):  # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
+        with cache.lock("_LOCKER_REGISTER_USER", timeout=10):  # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
             if UserInfo.objects.filter(**{query_key: target}).exists():
                 return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
             user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)

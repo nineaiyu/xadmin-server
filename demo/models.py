@@ -57,6 +57,7 @@ class Book(AutoCleanFileMixin, DbAuditModel):
     class Meta:
         verbose_name = '书籍名称'
         verbose_name_plural = verbose_name
+        ordering = ("pk",)
 
     def __str__(self):
         return f"{self.name}"

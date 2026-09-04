@@ -1,0 +1,19 @@
+# Ruff 配置：仅启用存量代码可接受的错误级规则，避免大规模改动存量代码
+line-length = 120
+target-version = "py313"
+extend-exclude = ["zsign", "demo/migrations", "data", "loadjson"]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = [
+    "E501", # 行长，存量代码大量超长
+    "E402", # import 不在顶部，settings 模块需要先打补丁再导入
+    "E722", # bare-except，存量风格，后续治理
+    "E731", # lambda 赋值，存量风格
+    "E701", # 单行多语句，存量风格
+    "F403", # import *，项目 settings/序列化器的既有风格
+    "F405", # import * 引入的符号，同上
+]
+
+[lint.per-file-ignores]
+"tests/**" = []

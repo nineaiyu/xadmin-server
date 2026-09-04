@@ -18,7 +18,7 @@ def init_ipip_db():
     if not os.path.exists(ipip_db_path):
         ipip_db_path = os.path.join(os.path.dirname(__file__), 'ipipfree.ipdb')
     if not os.path.exists(ipip_db_path):
-        raise FileNotFoundError(f"IP Database not found, please run `python manage.py download_ip_db`")
+        raise FileNotFoundError("IP Database not found, please run `python manage.py download_ip_db`")
     ipip_db = ipdb.City(ipip_db_path)
 
 

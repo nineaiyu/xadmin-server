@@ -30,7 +30,7 @@ def get_request_user(request):
         return user
     try:
         user, token = JWTAuthentication().authenticate(request)
-    except Exception as e:
+    except Exception:
         try:
             body = getattr(request, 'request_data', {})
             refresh_token = body.get('refresh')
@@ -38,7 +38,7 @@ def get_request_user(request):
                 token = GetUserFromAccessToken(refresh_token)
                 auth_class = import_string(settings.REST_FRAMEWORK.get('DEFAULT_AUTHENTICATION_CLASSES')[0])()
                 user = auth_class.get_user(token)
-        except Exception as e:
+        except Exception:
             pass
     return user or AnonymousUser()
 
@@ -78,7 +78,7 @@ def get_request_data(request):
             body = request.body
             if body:
                 data = json.loads(body)
-        except Exception as e:
+        except Exception:
             pass
         if not isinstance(data, dict):
             data = {'data': data}
@@ -155,7 +155,7 @@ def get_verbose_name(queryset=None, view=None, model=None):
             model = view.get_serializer().Meta.model
         if model and not verbose_name:
             verbose_name = getattr(model, '_meta').verbose_name
-    except Exception as e:
+    except Exception:
         pass
     return model, verbose_name
 

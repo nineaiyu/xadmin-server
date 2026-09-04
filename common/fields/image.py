@@ -60,7 +60,7 @@ class ProcessedImageFieldFile(ImageFieldFile):
                 for i in self.field.scales:
                     self.name = f"{name.split('.')[0]}_{i}.jpg"
                     super().delete(False)
-            except Exception as e:
+            except Exception:
                 pass
         self.name = name
         super().delete(save)

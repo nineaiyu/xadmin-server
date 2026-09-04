@@ -56,16 +56,16 @@ def get_sub_serializer_fields():
 
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat(f"Sync Role permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
+        PrintLogFormat("Sync Role permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
 
 
 def get_app_model_fields():
     delete = False
     now = timezone.now()
     field_type = ModelLabelField.FieldChoices.DATA
-    obj, created = ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type,
+    obj, created = ModelLabelField.objects.update_or_create(name="*", field_type=field_type,
                                                             defaults={'label': _("All tables")}, parent=None)
-    ModelLabelField.objects.update_or_create(name=f"*", field_type=field_type, parent=obj,
+    ModelLabelField.objects.update_or_create(name="*", field_type=field_type, parent=obj,
                                              defaults={'label': _("All fields")})
 
     for field in DbAuditModel._meta.fields:
@@ -97,7 +97,7 @@ def get_app_model_fields():
                 f"update_or_create data permission, created:{count[0]} updated:{count[1]}")
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat(f"Sync Data permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
+        PrintLogFormat("Sync Data permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
 
 
 @transaction.atomic

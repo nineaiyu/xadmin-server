@@ -61,7 +61,7 @@ class ConfigCacheBase(object):
                 for sys_obj_dict in self.model.objects.filter(is_active=True).values().all():
                     str_value = json.dumps(sys_obj_dict['value'])  # 将dict转换为json字符串进行匹配
                     if re.findall('{{.*%s.*}}' % sys_obj_dict['key'], str_value):
-                        logger.warning(f"get same render key. so continue")
+                        logger.warning("get same render key. so continue")
                         continue
                     context_dict[sys_obj_dict['key']] = str_value
                 try:

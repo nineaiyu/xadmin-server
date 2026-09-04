@@ -158,7 +158,7 @@ class UploadFileAction(object):
                 raise
             if file_obj.size > self.FILE_UPLOAD_SIZE:
                 return ApiResponse(code=1003, detail=_("Image size cannot exceed {}").format(self.FILE_UPLOAD_SIZE))
-        except Exception as e:
+        except Exception:
             return ApiResponse(code=1002,
                                detail=_("Wrong image type, the type should be {}").format(
                                    ','.join(self.FILE_UPLOAD_TYPE)))

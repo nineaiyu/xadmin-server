@@ -1,0 +1,33 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        # 测试环境使用 sqlite3，无需编译 mysqlclient
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^mysqlclient' requirements.txt > /tmp/requirements-test.txt
+          pip install -r /tmp/requirements-test.txt -r requirements-dev.txt
+
+      - name: Run tests (parallel)
+        # -n auto 并行（sqlite 内存库每 worker 独立、FakeRedis 进程内无交叉污染）
+        # --cov-fail-under=55 覆盖率门禁（见 .coveragerc 作用域）
+        run: pytest -n auto --cov --cov-report=term-missing --cov-fail-under=55
+
+      # 代码风格检查由 lint.yml 独立负责，此处不再重复执行 ruff

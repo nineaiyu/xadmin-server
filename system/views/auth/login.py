@@ -12,7 +12,6 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
-from rest_framework.exceptions import APIException
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -24,7 +23,7 @@ from common.utils.request import get_request_ip
 from settings.utils.security import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
-    save_login_log, verify_sms_email_code, check_different_city_login_if_need
+    save_login_log, verify_sms_email_code, check_different_city_login_if_need, ValidateError
 
 
 def login_failed(request, username):
@@ -47,7 +46,7 @@ def login_failed(request, username):
     else:
         detail = _("The account has been locked (please contact admin to unlock it or try"
                    " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
-    raise APIException(detail)
+    raise ValidateError(detail)
 
 
 def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
@@ -107,7 +106,7 @@ class BasicLoginAPIView(TokenObtainPairView):
         serializer = self.get_serializer(data={'username': username, 'password': password})
         try:
             serializer.is_valid(raise_exception=True)
-        except Exception as e:
+        except Exception:
             return login_failed(request, username)
         data = serializer.validated_data
         data.update(get_token_lifetime(serializer.user))

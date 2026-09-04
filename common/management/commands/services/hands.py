@@ -12,7 +12,7 @@ from common.utils.file import download_file
 from server.const import CONFIG
 from settings.models import Setting
 
-logger = PrintLogFormat(f"xAdmin API Server", title_width=30, body_width=0)
+logger = PrintLogFormat("xAdmin API Server", title_width=30, body_width=0)
 
 try:
     from server import const

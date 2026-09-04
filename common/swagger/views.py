@@ -34,7 +34,7 @@ class ApiLogin(GenericAPIView):
         try:
             serializer.is_valid(raise_exception=True)
             login(request, serializer.user)
-        except Exception as e:
+        except Exception:
             return ApiResponse(detail=_("Incorrect username/password"))
         response = redirect(request.query_params.get("next", "/api-docs/swagger/"))
         return response

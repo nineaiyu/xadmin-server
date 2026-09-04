@@ -1,0 +1,12 @@
+# 测试与开发专用依赖（在运行依赖之外额外安装）
+# 注意：测试配置（server/settings/test.py）使用 sqlite3 内存库，
+# 因此 mysqlclient 不需要安装（其需要本地编译 MySQL 客户端库）。
+# CI 中可执行：
+#   grep -v '^mysqlclient' requirements.txt > /tmp/req.txt
+#   pip install -r /tmp/req.txt -r requirements-dev.txt
+pytest>=8.0
+pytest-django>=4.8
+pytest-cov>=5.0
+pytest-xdist>=3.0
+fakeredis[lua]>=2.23
+ruff>=0.6

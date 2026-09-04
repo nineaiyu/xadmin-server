@@ -19,7 +19,7 @@ from django.core import management
 # 如果有用户存在，则不支持初始化操作
 try:
     if UserInfo.objects.exists():
-        print(f'User already exists')
+        print('User already exists')
         exit(-1)
 except Exception as e:
     print(e)
