@@ -13,6 +13,7 @@ from common.core.pagination import DynamicPageNumber
 from common.utils import get_logger
 from system.models import DeptInfo
 from system.serializers.department import DeptSerializer
+from system.utils.modelset import AnnotateUserCountMixin
 
 logger = get_logger(__name__)
 
@@ -34,7 +35,7 @@ class SearchDeptSerializer(DeptSerializer):
         read_only_fields = [x.name for x in DeptInfo._meta.fields]
 
 
-class SearchDeptViewSet(OnlyListModelSet):
+class SearchDeptViewSet(AnnotateUserCountMixin, OnlyListModelSet):
     """部门搜索"""
     queryset = DeptInfo.objects.all()
     serializer_class = SearchDeptSerializer

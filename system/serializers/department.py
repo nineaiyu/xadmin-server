@@ -58,4 +58,7 @@ class DeptSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_user_count(self, obj):
-        return obj.userinfo_set.count()
+        # 列表/详情/导出由 AnnotateUserCountMixin 预聚合，直接取聚合结果，避免每行一次 COUNT；
+        # 未走该 mixin 的场景（直接序列化单个对象）回退为单对象聚合，结果保持一致
+        count = getattr(obj, 'user_count', None)
+        return count if count is not None else obj.userinfo_set.count()

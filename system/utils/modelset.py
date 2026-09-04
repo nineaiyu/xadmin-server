@@ -4,6 +4,7 @@
 # filename : modelset
 # author : ly_13
 # date : 12/24/2023
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
@@ -72,3 +73,25 @@ class InvalidConfigCacheAction(object):
             owner = instance.owner
         UserConfig(owner).invalid_config_cache(key=instance.key)
         return ApiResponse()
+
+
+class AnnotateUserCountMixin(object):
+    """
+    部门 user_count 预聚合：列表/详情/导出会逐行序列化该字段，不加聚合时为每行一次 COUNT。
+
+    反向查询名固定为 dept_query —— UserInfo.dept 显式声明了 related_query_name，
+    覆盖了默认的模型名小写，写成 userinfo 会抛 FieldError。
+
+    仅在会逐行序列化的 action 生效，避免 annotate 影响 update/delete 等写操作。
+    """
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if getattr(self, 'action', None) in getattr(self, 'auto_prefetch_actions', ()):
+            # annotate 产生 GROUP BY 后 Django 不再套用 Meta.ordering，需显式补回，
+            # 否则分页顺序不稳定；前端传 ordering 时 OrderingFilter 会在其后覆盖
+            ordering = queryset.query.order_by or queryset.model._meta.ordering
+            queryset = queryset.annotate(user_count=Count('dept_query'))
+            if ordering:
+                queryset = queryset.order_by(*ordering)
+        return queryset
