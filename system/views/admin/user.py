@@ -17,9 +17,9 @@ from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDat
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from message.utils import send_logout_msg
+from message.services import send_logout_msg
 from notifications.message import SiteMessageUtil
-from settings.utils.security import LoginBlockUtil
+from settings.services import LoginBlockUtil
 from system.models import UserInfo
 from system.serializers.user import UserSerializer, ResetPasswordSerializer
 from system.utils.modelset import ChangeRolePermissionAction

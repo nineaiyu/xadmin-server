@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from message.utils import get_online_user_layers
+from message.services import get_online_user_layers
 from system.models import UserLoginLog, OperationLog
 
 logger = get_logger(__name__)

@@ -13,7 +13,7 @@ from rest_framework import serializers
 from common.base.utils import AESCipherV2
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from settings.utils.password import check_password_rules
+from settings.services import check_password_rules
 from system import models
 from system.models import UserInfo
 

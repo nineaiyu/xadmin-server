@@ -16,8 +16,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
-from settings.utils.password import check_password_rules
-from settings.utils.security import ResetBlockUtil
+from settings.services import check_password_rules
+from settings.services import ResetBlockUtil
 from system.models import UserInfo
 from system.utils.auth import verify_sms_email_code
 

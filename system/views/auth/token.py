@@ -10,7 +10,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from captcha.utils import CaptchaAuth
+from captcha.services import CaptchaAuth
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ident

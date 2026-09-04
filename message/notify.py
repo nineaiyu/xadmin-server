@@ -18,7 +18,7 @@ from message.base import AsyncJsonWebsocket
 from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
 from system.models import UserInfo, UserLoginLog
-from system.views.auth.login import login_success
+from system.services import login_success
 
 logger = get_logger(__name__)
 

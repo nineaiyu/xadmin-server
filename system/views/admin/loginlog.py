@@ -14,7 +14,7 @@ from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from message.utils import send_logout_msg
+from message.services import send_logout_msg
 from system.models import UserLoginLog
 from system.serializers.log import LoginLogSerializer
 

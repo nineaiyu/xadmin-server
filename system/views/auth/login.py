@@ -20,7 +20,7 @@ from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ip
-from settings.utils.security import LoginBlockUtil, LoginIpBlockUtil
+from settings.services import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
     save_login_log, verify_sms_email_code, check_different_city_login_if_need, ValidateError

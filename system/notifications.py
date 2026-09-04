@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.utils.request import get_request_ip, get_browser
 from common.utils.timezone import local_now_display
-from notifications.notifications import UserMessage
+from notifications.services import UserMessage
 
 
 class DifferentCityLoginMessage(UserMessage):

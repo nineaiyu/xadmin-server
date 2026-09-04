@@ -19,8 +19,8 @@ from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
-from settings.utils.password import check_password_rules
-from settings.utils.security import RegisterBlockUtil
+from settings.services import check_password_rules
+from settings.services import RegisterBlockUtil
 from system.models import DeptInfo, UserInfo
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 

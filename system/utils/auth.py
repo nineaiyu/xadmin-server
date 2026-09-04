@@ -11,13 +11,13 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 from user_agents import parse
 
-from captcha.utils import CaptchaAuth
+from captcha.services import CaptchaAuth
 from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
 from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident
 from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
-from settings.utils.security import LoginIpBlockUtil, LoginBlockUtil
+from settings.services import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserLoginLog, UserInfo
 from system.notifications import DifferentCityLoginMessage
 from system.serializers.log import LoginLogSerializer

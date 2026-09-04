@@ -8,7 +8,7 @@
 from common.core.filter import BaseFilterSet, PkMultipleFilter
 from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
 from common.core.pagination import DynamicPageNumber
-from message.utils import get_online_info, send_logout_msg
+from message.services import get_online_info, send_logout_msg
 from system.models import UserLoginLog
 from system.serializers.log import UserOnlineSerializer
 
