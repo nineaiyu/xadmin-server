@@ -39,6 +39,12 @@ class UploadFile(AutoCleanFileMixin, DbAuditModel):
     class Meta:
         verbose_name = _("Upload file")
         verbose_name_plural = verbose_name
+        indexes = [
+            # PERF-13：列表过滤（is_tmp）与每日清理（is_tmp + created_time）共用复合索引；
+            # md5sum 用于精确匹配（秒传/去重）
+            models.Index(fields=['is_tmp', 'created_time'], name='idx_uploadfile_tmp_created'),
+            models.Index(fields=['md5sum'], name='idx_uploadfile_md5sum'),
+        ]
 
     def __str__(self):
         return f"{self.filename}"

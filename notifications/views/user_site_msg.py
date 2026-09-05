@@ -104,13 +104,16 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
             {
                 "key": "1",
                 "name": "layout.notice",
-                "list": self.serializer_class(notice_queryset[:10], many=True, context={'request': request}).data,
+                # 传 list 使 serializer.instance 为列表，get_page_instances 才能拿到整页做批量查询
+                "list": self.serializer_class(list(notice_queryset[:10]), many=True,
+                                              context={'request': request}).data,
                 "total": notice_queryset.count()
             },
             {
                 "key": "2",
                 "name": "layout.announcement",
-                "list": self.serializer_class(announce_queryset[:10], many=True, context={'request': request}).data,
+                "list": self.serializer_class(list(announce_queryset[:10]), many=True,
+                                              context={'request': request}).data,
                 "total": announce_queryset.count()
             }
         ]
@@ -118,10 +121,20 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         return ApiResponse(data={'results': results, 'total': sum([item.get('total', 0) for item in results])})
 
     def read_message(self, pks, request):
-        if pks:
-            MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
-            for pk in pks:
-                MessageUserRead.objects.update_or_create(owner=request.user, notice_id=pk, defaults={'unread': False})
+        """批量已读：固定 3 条 SQL，与 pks 数量无关（PERF-06，旧实现为 2N 条）"""
+        pks = list(set(pks))
+        if not pks:
+            return ApiResponse()
+        # 1. 已存在的未读记录批量置为已读
+        MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user, unread=True).update(unread=False)
+        # 2. 已存在的记录（无论原状态）不再重复创建
+        exist_ids = set(MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user)
+                        .values_list('notice_id', flat=True))
+        # 3. 仅对尚无记录的消息补建"已读"行
+        MessageUserRead.objects.bulk_create([
+            MessageUserRead(owner=request.user, notice_id=pk, unread=False)
+            for pk in pks if pk not in exist_ids
+        ])
         return ApiResponse()
 
     @extend_schema(

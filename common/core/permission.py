@@ -14,8 +14,11 @@ from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from common.utils import get_logger
 from server.utils import get_current_request, set_current_request
 from system.models import Menu, FieldPermission
+
+logger = get_logger(__name__)
 
 
 def get_user_menu_queryset(user_obj):
@@ -95,7 +98,13 @@ class IsAuthenticated(BasePermission):
                 if re.match(w_url, url) and ('*' in method or request.method in method):
                     request.ignore_field_permission = True
                     return True
-            permission_data = get_user_permission(request.user, request.method)
+            try:
+                # PERF-01：缓存基建修复后异常不再被吞掉（不再缓存空权限），此处 fail-closed
+                # 兜底：依赖瞬时故障（如 DB 抖动）时不放行、也不 500，下一次请求自动重试
+                permission_data = get_user_permission(request.user, request.method)
+            except Exception as e:
+                logger.error(f"get user permission failed. user:{request.user} method:{request.method} error:{e}")
+                raise PermissionDenied(_("Permission denied"))
             # 处理search-columns字段权限和list权限一致
             match_group = re.match("(?P<url>.*)/search-columns$", url)
             if match_group:
@@ -113,7 +122,12 @@ class IsAuthenticated(BasePermission):
 
                 request.user.menu = p_data_new[0]
                 if settings.PERMISSION_FIELD_ENABLED:
-                    request.fields = get_user_field_queryset(request.user, p_data_new[0])
+                    try:
+                        request.fields = get_user_field_queryset(request.user, p_data_new[0])
+                    except Exception as e:
+                        logger.error(
+                            f"get user field permission failed. user:{request.user} menu:{p_data_new[0]} error:{e}")
+                        raise PermissionDenied(_("Permission denied"))
                 return True
 
             raise PermissionDenied(_("Permission denied"))

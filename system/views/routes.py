@@ -36,15 +36,17 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         user_obj = request.user
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
-            route_list = RouteSerializer(Menu.objects.filter(is_active=True, menu_type__in=menu_type).order_by('rank'),
-                                         many=True, ignore_field_permission=True).data
+            # PERF-17：嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
+            route_list = RouteSerializer(
+                Menu.objects.filter(is_active=True, menu_type__in=menu_type).select_related('meta').order_by('rank'),
+                many=True, ignore_field_permission=True).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
         else:
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
                 route_list = RouteSerializer(
-                    menu_queryset.filter(menu_type__in=menu_type).distinct().order_by('rank'), many=True,
-                    ignore_field_permission=True).data
+                    menu_queryset.filter(menu_type__in=menu_type).select_related('meta').distinct().order_by('rank'),
+                    many=True, ignore_field_permission=True).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))

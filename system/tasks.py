@@ -17,7 +17,8 @@ logger = get_logger(__name__)
 @shared_task
 @register_as_period_task(crontab='2 2 * * *')
 def auto_clean_operation_job():
-    auto_clean_operation_log(clean_day=30 * 6)
+    # 保留期读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天），不再硬编码
+    auto_clean_operation_log()
 
 
 @shared_task

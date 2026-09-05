@@ -9,12 +9,11 @@ import ipaddress
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
-from user_agents import parse
 
 from captcha.services import CaptchaAuth
 from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
-from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident
+from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident, get_user_agent
 from common.utils.token import verify_token_cache
 from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
@@ -92,7 +91,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         'system': get_os(request),
         'channel_name': channel_name or getattr(request, "channel_name", ""),
         'status': status,
-        'agent': str(parse(request.META['HTTP_USER_AGENT'])),
+        'agent': str(get_user_agent(request)) if request else '',
         'login_type': login_type
     }
     serializer = LoginLogSerializer(data=data, ignore_field_permission=True)

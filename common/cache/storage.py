@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 6/2/2023
 
+import logging
+
 from django.conf import settings
 from django.core.cache import cache
 
@@ -19,7 +21,9 @@ class RedisCacheBase(object):
         self._timeout = timeout
 
     def __getattribute__(self, item):
-        if isinstance(item, str) and item != 'cache_key':
+        # PERF-03：f-string 会先求值再传参，即使日志级别过滤掉输出，字符串拼接开销也逃不掉。
+        # 该类被 JWT 黑名单校验等热路径继承，必须用 isEnabledFor 守卫，DEBUG 关闭时零开销。
+        if logger.isEnabledFor(logging.DEBUG) and isinstance(item, str) and item != 'cache_key':
             if hasattr(self, "cache_key"):
                 logger.debug(f'act:{item} cache_key:{super().__getattribute__("cache_key")}')
         return super().__getattribute__(item)

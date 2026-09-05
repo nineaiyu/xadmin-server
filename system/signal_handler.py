@@ -66,6 +66,8 @@ def invalid_role_cache_handler(sender, instance, **kwargs):
 @receiver([post_save, pre_delete], sender=DeptInfo)
 def invalid_dept_cache_handler(sender, instance, **kwargs):
     batch_invalid_cache(instance.userinfo_set.values_list('pk', flat=True).distinct())
+    # PERF-09：部门树变化会影响下级/上级递归结果，缓存一并失效
+    DeptInfo.invalid_dept_tree_cache()
     logger.info(f"invalid cache {instance}")
 
 

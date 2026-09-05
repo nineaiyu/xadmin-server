@@ -172,6 +172,20 @@ class BaseConfCache(ConfigCacheBase):
     def PICTURE_UPLOAD_SIZE(self):
         return self.get_value('PICTURE_UPLOAD_SIZE', settings.PICTURE_UPLOAD_SIZE)
 
+    @property
+    def OPERATION_LOG_RETENTION_DAYS(self):
+        """操作日志保留天数（PERF-04 清理保留期配置化，默认 180 天）"""
+        return self.get_value('OPERATION_LOG_RETENTION_DAYS', 30 * 6)
+
+    @property
+    def SEARCH_CHOICES_MAX_COUNT(self):
+        """search-columns / search-fields 关联列 choices 的最大返回条数（PERF-07，默认 200）。
+
+        大表关联字段请务必自定义 input_type='api-search-*'（远程搜索），否则超出的
+        选项不会出现在下拉里，且接口会带出 choices_truncated 标记。
+        """
+        return self.get_value('SEARCH_CHOICES_MAX_COUNT', 200)
+
 
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):
@@ -192,6 +206,34 @@ class ConfigCache(BaseConfCache, MessagePushConfCache):
 
 
 SysConfig = ConfigCache()
+
+
+def batch_user_config(user_pks, key, default=None):
+    """PERF-08：批量读取多个用户的同一配置项，返回 {user_pk: value}。
+
+    逐用户 UserConfig(pk).key 会产生 N 次缓存读 + N 次 DB 回源；这里一次 get_many
+    批量取缓存，缺失项只回源一次系统级默认值。系统公告/性能告警等全量推送场景
+    由 N 次降为常数次。
+    """
+    from django.core.cache import cache as django_cache
+
+    pks = list(dict.fromkeys(user_pks))
+    if not pks:
+        return {}
+    key_map = {pk: UserSystemConfigCache(f'user_{pk}_{key}').cache_key for pk in pks}
+    cached = django_cache.get_many(list(key_map.values()))
+    result = {}
+    for pk, cache_key in key_map.items():
+        data = cached.get(cache_key)
+        if isinstance(data, dict) and data.get('key') == key:
+            result[pk] = data.get('value')
+    missing = [pk for pk in pks if pk not in result]
+    if missing:
+        # 用户未单独配置时，统一回退到系统级默认值（单次读取）
+        system_value = SysConfig.get_value(key, default)
+        for pk in missing:
+            result[pk] = system_value
+    return result
 
 
 class UserConfigSerializer(serializers.ModelSerializer):

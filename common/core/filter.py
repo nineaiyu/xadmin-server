@@ -153,6 +153,9 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     b.判断外层规则 【如果规则数量为一个，则模式该规则链为或模式】
         若模式为或模式，并存在全部数据，则直接返回queryset
         若模式为且模式，则 返回queryset.filter(规则)
+
+    PERF-09：部门权限规则一次查询后按部门分组（旧实现循环每个上级部门各查一次，
+    SQL 数 = 部门树深度 + 2）；个人授权判断改用 exists()，避免全量计数。
     """
     if not settings.PERMISSION_DATA_ENABLED or queryset is None:
         return queryset
@@ -163,16 +166,28 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
 
     dept_obj = user_obj.dept
     q = Q()
+    # menu 属性由 IsAuthenticated 在权限校验时写入 request.user（当前生效的功能菜单），
+    # 用于把授权限定到"通用授权 + 当前菜单授权"，并非无效条件
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, 'menu', None))
     has_dept = False
     if dept_obj:
         # 存在部门，递归获取部门，类似树结构，部门权限需要且模式，将获取到的所有部门的数据规则通过且操作
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
+        # PERF-09：一次取出整棵部门树上的全部有效授权并按部门分组（2 条 SQL），
+        # 替代旧实现"每个部门各查一次"（SQL 数 = 部门树深度 + 1）
+        dept_permissions = {}
+        if dept_pks:
+            # recursion_dept_info 返回 JSON 序列化后的主键（UUID 为字符串），统一成 str 便于比对
+            dept_pks = [str(pk) for pk in dept_pks]
+            dept_pk_set = set(dept_pks)
+            for item in DataPermission.objects.filter(is_active=True).filter(
+                    deptinfo__in=dept_pks).filter(dq).distinct().prefetch_related('deptinfo_set'):
+                for dept in item.deptinfo_set.all():
+                    if str(dept.pk) in dept_pk_set:
+                        dept_permissions.setdefault(dept.pk, []).append(item)
         for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
-            # 获取对应的数据权限
-            permission = DataPermission.objects.filter(is_active=True).filter(deptinfo=p_dept_obj).filter(dq)
             # 将数据权限且操作
-            q &= get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
+            q &= get_filter_q_base(queryset.model, dept_permissions.get(p_dept_obj.pk, []), user_obj, dept_obj)
             has_dept = True
         if not has_dept and q == Q():
             q = Q(id=0)
@@ -180,8 +195,8 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
             return queryset
     # 获取个人单独授权规则
     permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
-    # 不存在个人单独授权，则返回部门规则授权
-    if not permission.count():
+    # 不存在个人单独授权，则返回部门规则授权（exists() 替代 count()，不再做全量计数）
+    if not permission.exists():
         logger.info(f"get filter end. {queryset.model._meta.label} : {q}")
         if has_dept:
             return queryset.filter(q)

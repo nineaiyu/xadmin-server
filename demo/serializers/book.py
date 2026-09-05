@@ -85,8 +85,9 @@ class BookSerializer(BaseModelSerializer):
     # # { "pk": 2, "username": "admin", "label": "admin(2)" }
     # # attrs 变量，表示展示的字段，有 pk,username 字段， 且 pk 字段是必须的， 比如 'attrs': ['pk']
     # # format 变量，表示label字段展示内容，里面的字段一定是属于 attrs 定义的字段，写错的话，可能会报错
-    # # queryset 变量， 表示数据查询对象集合，注意：search-columns 方法中，该字段会有个 choices 变量，并且包含所有queryset数据，
-    # #      如果数据量特别大的时候，一定要自定义 input_type， 否则会有问题
+    # # queryset 变量， 表示数据查询对象集合，注意：search-columns 方法中，该字段会有个 choices 变量，默认最多返回
+    # #      SEARCH_CHOICES_MAX_COUNT（系统配置，默认 200）条，并带出 choices_truncated 标记，
+    # #      超出部分的选项不会出现在下拉里，如果数据量特别大的时候，一定要自定义 input_type（如 api-search-user）， 否则会有问题
     # # input_type 变量， 自定义，如果存在，前端解析定义的类型 api-search-user ，并且 search-columns 方法中，choices变量为 []
     # #      如果数据量特别大的时候，推荐这种写法
     # # 目前，可以注释了，在父类里面，已经定义了 serializer_related_field 字段， 建议写到 extra_kwargs 里面，使用系统会自动生成

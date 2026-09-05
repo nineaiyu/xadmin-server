@@ -114,15 +114,25 @@ def get_request_path(request, *args, **kwargs):
     return path
 
 
+def get_user_agent(request):
+    """
+    解析 User-Agent。PERF-05：每个请求只解析一次（user_agents.parse 是重型正则），
+    结果挂在 request 上复用；缺失 UA 头不再抛 KeyError。
+    """
+    ua_string = request.META.get('HTTP_USER_AGENT', '')
+    if getattr(request, '_user_agent_string', None) != ua_string:
+        request._parsed_user_agent = parse(ua_string)
+        request._user_agent_string = ua_string
+    return request._parsed_user_agent
+
+
 def get_browser(request):
     """
     获取浏览器名
     :param request:
     :return:
     """
-    ua_string = request.META['HTTP_USER_AGENT']
-    user_agent = parse(ua_string)
-    return user_agent.get_browser()
+    return get_user_agent(request).get_browser()
 
 
 def get_os(request):
@@ -131,9 +141,7 @@ def get_os(request):
     :param request:
     :return:
     """
-    ua_string = request.META['HTTP_USER_AGENT']
-    user_agent = parse(ua_string)
-    return user_agent.get_os()
+    return get_user_agent(request).get_os()
 
 
 def get_verbose_name(queryset=None, view=None, model=None):

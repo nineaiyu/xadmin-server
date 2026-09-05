@@ -15,6 +15,11 @@ from system.utils.ctasks import (
     auto_clean_tmp_file,
 )
 
+
+def _real_remove_expired(clean_day=None, batch_size=2000):
+    """直接调用模型层实现，绕过 ctasks 的日志封装。"""
+    return OperationLog.remove_expired(clean_day=clean_day, batch_size=batch_size)
+
 pytestmark = pytest.mark.django_db
 
 
@@ -70,6 +75,43 @@ class TestAutoCleanOperationLog:
 
         assert not OperationLog.objects.filter(pk=old.pk).exists()
         assert OperationLog.objects.filter(pk=recent.pk).exists()
+
+    def test_batched_delete_across_multiple_batches(self):
+        """总行数 > 批大小时循环正确：分多批删除，全部清除"""
+        for _ in range(5):
+            _make_operation_log(created_days_ago=400)
+
+        deleted = _real_remove_expired(clean_day=180, batch_size=2)
+
+        assert deleted == 5
+        assert OperationLog.objects.count() == 0
+
+    def test_batched_delete_keeps_recent_rows(self):
+        for _ in range(3):
+            _make_operation_log(created_days_ago=400)
+        _make_operation_log(created_days_ago=0)
+
+        deleted = _real_remove_expired(clean_day=180, batch_size=2)
+
+        assert deleted == 3
+        assert OperationLog.objects.count() == 1
+
+    def test_default_clean_day_reads_sys_config(self, monkeypatch):
+        """未显式传 clean_day 时读取系统配置 OPERATION_LOG_RETENTION_DAYS"""
+        from common.core.config import SysConfig
+
+        old = _make_operation_log(created_days_ago=100)
+        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_RETENTION_DAYS",
+                            property(lambda self: 30), raising=False)
+
+        auto_clean_operation_log()
+
+        assert not OperationLog.objects.filter(pk=old.pk).exists()
+
+    def test_invalid_clean_day_noop(self):
+        _make_operation_log(created_days_ago=400)
+        assert OperationLog.remove_expired(clean_day=0) == 0
+        assert OperationLog.remove_expired(clean_day=None) > 0
 
 
 class TestAutoCleanBlackToken:

@@ -14,7 +14,7 @@ from typing import Callable
 from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import Case, IntegerField, QuerySet, Value, When
 from django.forms.widgets import SelectMultiple, DateTimeInput
 from django.utils.translation import gettext_lazy as _
 from django_filters.utils import get_model_field
@@ -33,6 +33,7 @@ from common.base.magic import cache_response
 from common.base.utils import get_choices_dict
 from common.core.config import SysConfig
 from common.core.response import ApiResponse
+from common.core.fields import get_search_choices_max_count
 from common.core.serializers import BasePrimaryKeyRelatedField
 from common.core.utils import has_self_fields, topological_sort
 from common.drf.renders.csv import CSVFileRenderer
@@ -181,10 +182,14 @@ class RankAction(object):
     @action(methods=['post'], detail=False, url_path='rank')
     def rank(self, request, *args, **kwargs):
         """{cls}排序"""
-        rank = 1
-        for pk in request.data:
-            self.filter_queryset(self.get_queryset()).filter(pk=pk).update(rank=rank)
-            rank += 1
+        pks = list(request.data)
+        if pks:
+            # PERF-12：Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
+            queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
+            queryset.update(rank=Case(
+                *[When(pk=pk, then=Value(index)) for index, pk in enumerate(pks, start=1)],
+                output_field=IntegerField(),
+            ))
         return ApiResponse(detail=_("Sorting saved successfully"))
 
 
@@ -246,7 +251,8 @@ class SearchFieldsAction(object):
                                         'label': build_basic_type(OpenApiTypes.STR),
                                     }
                                 )
-                            )
+                            ),
+                            'choices_truncated': build_basic_type(OpenApiTypes.BOOL),
                         }
                     )
                 )
@@ -277,6 +283,12 @@ class SearchFieldsAction(object):
                 choices = list(getattr(widget, 'choices', []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
+                # PERF-07：关联字段的 widget.choices 同样会全量求值，这里做同样的行数上限
+                max_choices = get_search_choices_max_count()
+                choices_truncated = False
+                if max_choices and len(choices) > max_choices:
+                    choices = choices[:max_choices]
+                    choices_truncated = True
                 field = get_model_field(self.filterset_class._meta.model, value.field_name)
                 results.append({
                     'key': field_name,
@@ -285,7 +297,8 @@ class SearchFieldsAction(object):
                     'help_text': value.field.help_text if value.field.help_text else getattr(field, 'help_text', None),
                     'input_type': widget.input_type,
                     'choices': get_choices_dict(choices),
-                    'default': [] if 'multiple' in widget.input_type else ""
+                    'default': [] if 'multiple' in widget.input_type else "",
+                    **({'choices_truncated': True} if choices_truncated else {})
                 })
             order_choices = []
             ordering_fields = list(getattr(self, 'ordering_fields', []))
@@ -344,7 +357,8 @@ class SearchColumnsAction(object):
                                         'label': build_basic_type(OpenApiTypes.STR),
                                     }
                                 )
-                            )
+                            ),
+                            'choices_truncated': build_basic_type(OpenApiTypes.BOOL),
                         }
                     )
                 )
@@ -372,13 +386,17 @@ class SearchColumnsAction(object):
             if hasattr(value, 'child_relation') and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info['multiple'] = True
                 setattr(value.child_relation, 'is_column', True)
+                choices_owner = value.child_relation
                 tp = get_format_intput_type(value.child_relation, info['type'])
             else:
                 tp = get_format_intput_type(value, info['type'])
+                choices_owner = value
             if tp and tp.endswith('related_field'):
                 setattr(value, 'is_column', True)
+                # PERF-07：超上限时仅返回前 SEARCH_CHOICES_MAX_COUNT 条，并带出截断标记供前端降级
                 info['choices'] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
-                # info['choices'] = [{'value': k, 'label': v} for k, v in value.choices.items()]
+                if getattr(choices_owner, 'choices_truncated', False):
+                    info['choices_truncated'] = True
             return tp
 
         metadata_class = self.metadata_class()
@@ -542,9 +560,16 @@ class BatchDestroyAction(object):
         # if response:
         #     return response
 
-        # queryset  delete() 方法进行批量删除，并不调用模型上的任何 delete() 方法,需要通过循环对象进行删除
+        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
+        if not self._has_file_cleanup():
+            # PERF-19：模型无文件字段时无需逐行触发文件清理，直接走批量 delete()，
+            # 单条 SQL 完成（旧实现逐行 instance.delete()，N 行 = N 次级联删除事务）
+            deleted, _rows_count = queryset.delete()
+            return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(deleted))
+
+        # 带文件字段的模型需要触发模型 delete() 以清理底层文件；先收集再统一删除
         count = 0
-        for instance in self.filter_queryset(self.get_queryset()).filter(pk__in=request.data):
+        for instance in queryset:
             try:
                 deleted, _rows_count = self.perform_destroy(instance)
                 if deleted:
@@ -552,6 +577,19 @@ class BatchDestroyAction(object):
             except Exception as e:
                 logger.error(f"failed to destroy instance {instance} with error {e}")
         return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))
+
+    def _has_file_cleanup(self):
+        """PERF-19：模型是否需要逐行 delete() 以清理文件/附件。
+
+        只有继承 AutoCleanFileMixin 且确实存在文件/附件关联的模型，其 delete()
+        才有批量 delete() 覆盖不到的副作用，需要逐行触发。
+        """
+        model = getattr(getattr(self, 'queryset', None), 'model', None)
+        if model is None:
+            return True
+        from common.core.models import AutoCleanFileMixin
+
+        return issubclass(model, AutoCleanFileMixin) and AutoCleanFileMixin.has_file_cleanup(model)
 
 
 class CreateAction(mixins.CreateModelMixin):

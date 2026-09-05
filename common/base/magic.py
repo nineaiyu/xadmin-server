@@ -144,6 +144,21 @@ def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
 
 
 class MagicCacheData(object):
+    """带占位保护的缓存装饰器。
+
+    相比旧实现的三处关键修正：
+    1. ``func`` 抛异常时删除占位并向上传播，**绝不把空结果标记成成功缓存**
+       （旧实现会把 ``data=''`` 缓存整个业务 TTL，导致权限缓存为空 24 小时）；
+    2. 占位（``status='ready'``）与分布式锁使用**独立于业务 TTL 的短超时**
+       ``PLACEHOLDER_TTL``。计算进程崩溃后最多影响 ``PLACEHOLDER_TTL`` 秒，
+       而不是像旧实现那样要等完整业务 TTL（``get_user_permission`` 为 24 小时）；
+    3. 去掉无上限忙等轮询，等待方在锁上排队；锁超时（<= PLACEHOLDER_TTL）后
+       尚未获得锁的调用方抛出锁异常，不会无限期挂起。
+    """
+
+    # 占位与锁的超时上限，与业务 TTL 解耦，避免崩溃后长时间不可用
+    PLACEHOLDER_TTL = 60
+
     @staticmethod
     def make_cache(timeout=60 * 10, invalid_time=0, key_func=None, timeout_func=None):
         """
@@ -164,34 +179,46 @@ class MagicCacheData(object):
                 cache_time = timeout
                 if timeout_func:
                     cache_time = timeout_func(*args, **kwargs)
+                valid_time = max(cache_time - invalid_time, 0)
+                # 占位/锁的 TTL 取 PLACEHOLDER_TTL 与业务有效期的较小值，至少 1 秒
+                placeholder_ttl = max(min(MagicCacheData.PLACEHOLDER_TTL, valid_time), 1)
+
+                def is_valid(res, now):
+                    return bool(res) and res.get('status') == 'ok' and now - res.get('c_time', 0) < valid_time
+
                 n_time = time.time()
                 res = cache.get(cache_key)
-                if res:
-                    while not res or res.get('status') != 'ok':
-                        time.sleep(0.5)
-                        logger.warning(
-                            f'exec {func} wait. data status is not ok. cache_time:{cache_time} cache_key:{cache_key}  cache data exist result:{res}')
-                        res = cache.get(cache_key)
-                with cache.lock(f"locker_{cache_key}", timeout=cache_time - invalid_time):
-                    if res and n_time - res.get('c_time', n_time) < cache_time - invalid_time:
+                if is_valid(res, n_time):
+                    logger.debug(
+                        f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist")
+                    return res['data']
+
+                with cache.lock(f"locker_{cache_key}", timeout=placeholder_ttl,
+                                blocking_timeout=placeholder_ttl + 5):
+                    # 双重检查：等待锁期间可能已有其他进程完成计算并写入缓存
+                    n_time = time.time()
+                    res = cache.get(cache_key)
+                    if is_valid(res, n_time):
                         logger.debug(
-                            f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist result:{res}")
+                            f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist")
                         return res['data']
-                    else:
-                        res = {'c_time': n_time, 'data': '', 'status': 'ready'}
-                        cache.set(cache_key, res, cache_time)
-                        try:
-                            res['data'] = func(*args, **kwargs)
-                            logger.debug(
-                                f"exec {func} finished. time:{time.time() - n_time} cache_time:{cache_time} cache_key:{cache_key} result:{res}")
-                        except Exception as e:
-                            logger.error(
-                                f"exec {func} failed. time:{time.time() - n_time}  cache_time:{cache_time} cache_key:{cache_key} Exception:{e}")
 
-                        res['status'] = 'ok'
-                        cache.set(cache_key, res, cache_time)
-
-                        return res['data']
+                    # 占位使用短 TTL：崩溃后最多影响 placeholder_ttl 秒
+                    cache.set(cache_key, {'status': 'ready', 'c_time': n_time}, placeholder_ttl)
+                    try:
+                        data = func(*args, **kwargs)
+                    except Exception as e:
+                        # 关键：异常时清除占位，下一次调用重新计算，不缓存空结果
+                        cache.delete(cache_key)
+                        logger.error(
+                            f"exec {func} failed. time:{time.time() - n_time} cache_time:{cache_time} "
+                            f"cache_key:{cache_key} Exception:{e}")
+                        raise
+                    cache.set(cache_key, {'status': 'ok', 'c_time': time.time(), 'data': data}, cache_time)
+                    logger.debug(
+                        f"exec {func} finished. time:{time.time() - n_time} cache_time:{cache_time} "
+                        f"cache_key:{cache_key}")
+                    return data
 
             return wrapper
 

@@ -7,11 +7,14 @@
 
 import datetime
 
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel
+
+# 分批删除的批大小：避免一次性大 DELETE 造成长事务与锁表
+CLEAN_BATCH_SIZE = 2000
 
 
 class UserLoginLog(DbAuditModel):
@@ -37,6 +40,9 @@ class UserLoginLog(DbAuditModel):
         verbose_name = _("User login log")
         verbose_name_plural = verbose_name
         ordering = ('-created_time',)
+        indexes = [
+            models.Index(fields=['created_time'], name='idx_loginlog_created'),
+        ]
 
     @staticmethod
     def get_login_type(query_key):
@@ -69,9 +75,35 @@ class OperationLog(DbAuditModel):
         verbose_name = _("Operation log")
         verbose_name_plural = verbose_name
         ordering = ("-created_time",)
+        indexes = [
+            models.Index(fields=['created_time'], name='idx_oplog_created'),
+            models.Index(fields=['module', 'created_time'], name='idx_oplog_module_created'),
+            models.Index(fields=['request_uuid'], name='idx_oplog_request_uuid'),
+        ]
 
-    def remove_expired(cls, clean_day=30 * 6):
+    @classmethod
+    def remove_expired(cls, clean_day=None, batch_size=CLEAN_BATCH_SIZE):
+        """分批删除过期日志，避免一次性大 DELETE 造成长事务与锁表。
+
+        :param clean_day: 保留天数；缺省读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天）
+        :param batch_size: 每批删除的行数
+        :return: 删除的总行数
+        """
+        if clean_day is None:
+            # 局部导入避免 system.models <-> common.core.config 的循环依赖
+            from common.core.config import SysConfig
+
+            clean_day = SysConfig.OPERATION_LOG_RETENTION_DAYS
+        if not clean_day or clean_day <= 0:
+            return 0
         clean_time = timezone.now() - datetime.timedelta(days=clean_day)
-        cls.objects.filter(created_time__lt=clean_time).delete()
-
-    remove_expired = classmethod(remove_expired)
+        total = 0
+        while True:
+            pks = list(cls.objects.filter(created_time__lt=clean_time)
+                       .values_list('pk', flat=True)[:batch_size])
+            if not pks:
+                break
+            with transaction.atomic():
+                deleted, _rows_count = cls.objects.filter(pk__in=pks).delete()
+            total += deleted
+        return total

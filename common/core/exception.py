@@ -30,11 +30,14 @@ def common_exception_handler(exc, context):
     # context['view']  是TextView的对象，想拿出这个对象对应的类名
     ret = exception_handler(exc, context)  # 是Response对象，它内部有个data
     logger.error(f'{context["view"].__class__.__name__} ERROR: {exc} ret:{ret}')
+    # 各分支显式指定的业务码，优先于 HTTP 状态码写入响应体（见函数末尾）
+    business_code = None
     if isinstance(exc, Throttled):
         if not exc.wait:
             detail = _("Your visit is too fast, please visit again later")
         else:
             detail = _("Your visit is too fast, please visit again in {} seconds").format(exc.wait)
+        business_code = 999
         ret.data = {
             'code': 999,
             'detail': detail
@@ -78,5 +81,6 @@ def common_exception_handler(exc, context):
         if not ret.data.get('detail'):
             ret.data['detail'] = str(exc)
         ret.data['status'] = ret.status_code
-        ret.data['code'] = ret.code if hasattr(ret, 'code') else ret.status_code
+        # 业务码优先：Throttled 的 999 / InvalidToken 的 40001 不被 HTTP 状态码覆盖
+        ret.data['code'] = business_code or (ret.code if hasattr(ret, 'code') else ret.status_code)
         return ApiResponse(**ret.data)

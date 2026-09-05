@@ -16,8 +16,16 @@ from system.models import OperationLog, UploadFile
 logger = get_task_logger(__name__)
 
 
-def auto_clean_operation_log(clean_day=30 * 6):
-    return OperationLog.remove_expired(clean_day)
+def auto_clean_operation_log(clean_day=None):
+    """分批清理过期操作日志（保留期默认取系统配置 OPERATION_LOG_RETENTION_DAYS）。
+
+    同时输出剩余行数，便于监控告警：清理强依赖 celery beat 部署，
+    beat 未部署时该任务静默不执行，表会无限增长。
+    """
+    deleted = OperationLog.remove_expired(clean_day)
+    remaining = OperationLog.objects.count()
+    logger.info(f"clean {deleted} operation log. remaining {remaining}")
+    return deleted
 
 
 def auto_clean_black_token(clean_day=1):

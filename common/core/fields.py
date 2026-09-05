@@ -31,6 +31,35 @@ def attr_get(obj, attr, sp='.'):
     return func(obj)
 
 
+_CHOICES_MAX_CACHE = {"value": None, "expires": 0.0}
+
+
+def get_search_choices_max_count(default=200, ttl=60):
+    """PERF-07：读取关联列 choices 的行数上限（系统配置 SEARCH_CHOICES_MAX_COUNT）。
+
+    局部导入避免潜在的循环依赖；配置读取失败时退回默认值，绝不让下拉数据影响主流程。
+    search-columns / search-fields 会对每个关联字段调用一次，这里做进程内短 TTL 缓存，
+    避免把一次 Redis/DB 读放大成 N 次；配置变更最迟 ttl 秒后生效。
+    """
+    import time
+
+    now = time.monotonic()
+    cached = _CHOICES_MAX_CACHE["value"]
+    if cached is not None and _CHOICES_MAX_CACHE["expires"] > now:
+        return cached
+    try:
+        from common.core.config import SysConfig
+
+        value = int(SysConfig.SEARCH_CHOICES_MAX_COUNT)
+        if value <= 0:
+            return default
+        _CHOICES_MAX_CACHE["value"] = value
+        _CHOICES_MAX_CACHE["expires"] = now + ttl
+        return value
+    except Exception:
+        return default  # 读取异常不缓存，下一次请求自动重试
+
+
 class LabeledChoiceField(serializers.ChoiceField):
     def __init__(self, **kwargs):
         self.attrs = kwargs.pop("attrs", None) or ("value", "label")
@@ -157,8 +186,13 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             # even when accessed with a read-only field.
             return [] if is_column else {}
 
+        # PERF-07：关联列全量序列化 choices 会随关联表增大线性恶化（每次打开表格页都触发），
+        # 这里在 queryset 层截断：只序列化上限+1 行，多余的一行仅用于判定是否发生了截断。
+        max_count = get_search_choices_max_count()
         if cutoff is not None:
             queryset = queryset[:cutoff]
+        elif max_count:
+            queryset = queryset[:max_count + 1]
 
         if is_column:
             result = []
@@ -177,6 +211,13 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                 if isinstance(key, dict):
                     key = key.get("pk")
                 result[key] = self.display_value(item)
+
+        if max_count and cutoff is None and len(result) > max_count:
+            self.choices_truncated = True
+            if isinstance(result, list):
+                result = result[:max_count]
+            else:
+                result = dict(list(result.items())[:max_count])
         return result
 
     def get_allow_fields(self, value):
@@ -232,26 +273,63 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                     data["label"] = data.get("pk")
         return data
 
+    def _get_related_memo(self):
+        """PERF-10：请求级关联对象缓存。
+
+        导入 R 行 × F 个关联字段时，旧实现每字段每行执行一次 SELECT（超管 R×F 条，
+        非超管叠加数据权限最坏 5×R×F 条）。memo 挂在请求级（thread-local request 对象
+        属性）上，单次请求生命周期内复用；key 必须含字段维度——不同字段的 queryset
+        过滤条件不同，同一 pk 在不同数据权限下不能串用。
+        celery 后台导入时 background_task_view_set_job 每任务构造独立 WSGIRequest，
+        memo 天然按任务隔离。
+        """
+        request = None
+        # 沿序列化树向上找 context（many=True 时 request 在 ListSerializer.context 上）
+        node = self.parent
+        while node is not None:
+            context = getattr(node, 'context', None)
+            if isinstance(context, dict) and context.get('request') is not None:
+                request = context['request']
+                break
+            node = getattr(node, 'parent', None)
+        if request is None:
+            request = self.request
+        if request is None:
+            return None
+        memo = getattr(request, '_related_memo', None)
+        if memo is None:
+            memo = request._related_memo = {}
+        return memo
+
     def to_internal_value(self, data):
         queryset = self.get_queryset()
         if queryset is None:
             return self.fail("queryset_none")
-        if isinstance(data, Model):
-            return queryset.get(pk=data.pk)
 
-        if not isinstance(data, dict):
+        memo = self._get_related_memo()
+        if isinstance(data, Model):
+            pk = data.pk
+        elif not isinstance(data, dict):
             pk = data
         else:
             pk = data.get("id") or data.get("pk") or data.get(self.attrs[0])
 
+        memo_key = (self.field_name, str(pk))
+        if memo is not None and memo_key in memo:
+            return memo[memo_key]
+
         try:
             if isinstance(data, bool):
                 raise TypeError
-            return queryset.get(pk=pk)
+            obj = queryset.get(pk=pk)
         except ObjectDoesNotExist:
             self.fail("does_not_exist", pk_value=pk)
         except (TypeError, ValueError):
             self.fail("incorrect_type", data_type=type(pk).__name__)
+
+        if memo is not None:
+            memo[memo_key] = obj
+        return obj
 
     def get_schema(self):
         """

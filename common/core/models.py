@@ -9,6 +9,7 @@ import time
 import uuid
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
@@ -38,13 +39,44 @@ class AutoCleanFileMixin(object):
     """
 
     def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
         if kwargs.get('force_insert', None):
+            filelist = []
+        elif update_fields and not (set(update_fields) & self._file_field_names):
+            # PERF-11：本次保存不涉及文件字段时，文件内容不可能变化，
+            # 跳过 diff 前置 SELECT。UserInfo 每次登录更新 last_login、
+            # MessageContent 每条消息保存都因此少一次查询。
             filelist = []
         else:
             filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
         result = super().save(*args, **kwargs)
         self.__delete_file(filelist, True)
         return result
+
+    @property
+    def _file_field_names(self):
+        if not hasattr(self, '_cached_file_field_names'):
+            self._cached_file_field_names = {
+                field.name for field in self._meta.fields
+                if isinstance(field, (models.ImageField, models.FileField))
+            }
+        return self._cached_file_field_names
+
+    @classmethod
+    def has_file_cleanup(cls, model=None):
+        """PERF-19：模型是否存在需要逐行 delete() 才能清理的文件/附件。
+
+        - 自身含文件字段（ImageField/FileField）；或
+        - 与 system.UploadFile 存在关联（delete() 时级联清理附件记录）。
+        """
+        model = model or cls
+        if any(isinstance(field, (models.ImageField, models.FileField)) for field in model._meta.fields):
+            return True
+        return any(
+            field.is_relation and field.related_model is not None
+            and field.related_model._meta.label == "system.UploadFile"
+            for field in model._meta.get_fields() if field.is_relation
+        )
 
     def delete(self, *args, **kwargs):
         filelist = self.__get_filelist()
@@ -83,7 +115,15 @@ class AutoCleanFileMixin(object):
             obj = self
         for field in obj._meta.get_fields():
             if field.is_relation and field.related_model._meta.label == "system.UploadFile":
-                file_data = getattr(obj, field.name, None)
+                try:
+                    file_data = getattr(obj, field.name, None)
+                except ObjectDoesNotExist:
+                    # 关联的附件行已被（级联）删除，而实例内存中的外键仍指向旧行：
+                    # 批量逐行删除共享同一附件的对象时必然发生，无可清理，跳过
+                    continue
+                if file_data is None:
+                    # FK 为空的实例不能把 None 放进待删列表，否则 None.delete() 崩溃
+                    continue
                 if isinstance(field, models.ManyToManyField):
                     file_data = file_data.all()
                 if isinstance(file_data, (list, QuerySet)):
