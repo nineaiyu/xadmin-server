@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "xadmin/schemas/search-fields.schema.json",
+  "title": "SearchFieldsData",
+  "description": "GET /api/<resource>/search-fields 响应中 data 字段的载荷（查询字段元数据）。T2.3 契约固化；服务端由 tests/unit/common/test_metadata_schema.py 持续校验。",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["key", "label", "input_type", "choices", "default"],
+    "properties": {
+      "key": { "type": "string", "description": "过滤字段名；排序聚合项固定为 ordering" },
+      "label": { "type": ["string", "null"], "description": "展示名" },
+      "help_text": { "type": ["string", "null"], "description": "字段说明；ordering 聚合项无此键" },
+      "input_type": {
+        "type": "string",
+        "description": "前端渲染器类型：text/select/select-multiple/number/datetime/datetimerange/input/api-search-user/select-ordering 等"
+      },
+      "choices": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "label"],
+          "properties": {
+            "value": {},
+            "label": {},
+            "disabled": { "type": "boolean" }
+          }
+        }
+      },
+      "default": { "description": "默认值：multiple 类型为空数组，其余为字符串" },
+      "choices_truncated": { "type": "boolean", "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true（PERF-07）" }
+    }
+  }
+}

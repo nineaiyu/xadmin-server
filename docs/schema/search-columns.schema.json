@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "xadmin/schemas/search-columns.schema.json",
+  "title": "SearchColumnsData",
+  "description": "GET /api/<resource>/search-columns 响应中 data 字段的载荷（展示字段元数据）。T2.3 契约固化；服务端由 tests/unit/common/test_metadata_schema.py 持续校验。",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["key", "label", "required", "read_only", "write_only", "input_type"],
+    "properties": {
+      "key": { "type": "string", "description": "序列化器字段名" },
+      "label": { "type": ["string", "null"], "description": "展示名（优先取模型 verbose_name）" },
+      "help_text": { "type": ["string", "null"], "description": "字段说明；无 help_text 时缺省" },
+      "required": { "type": "boolean" },
+      "read_only": { "type": "boolean" },
+      "write_only": { "type": "boolean" },
+      "input_type": {
+        "type": "string",
+        "description": "前端渲染器类型：string/integer/float/boolean/datetime/labeled_choice/api-search-user/object_related_field/m2m_related_field/image upload/textarea 等"
+      },
+      "max_length": { "type": "number", "description": "字符长度上限（CharField 及路径类字段）" },
+      "default": { "description": "字段默认值（类型随字段而定；仅非 required 且有默认值时出现）" },
+      "choices": {
+        "type": "array",
+        "description": "关联字段的候选项，条目含 attrs 声明的展示键（如 pk/username）与 label/value",
+        "items": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["value", "label"],
+          "properties": {
+            "value": {},
+            "label": {},
+            "pk": {}
+          }
+        }
+      },
+      "choices_truncated": { "type": "boolean", "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true（PERF-07）" },
+      "multiple": { "type": "boolean", "description": "多值关联（M2M）字段为 true" },
+      "table_show": { "type": "integer", "description": "表格列顺序（serializer Meta.table_fields 中的位置+1；不在 table_fields 中则缺省）" },
+      "tabs_index": { "type": "integer", "description": "表单分组 tabs 下标" },
+      "tabs_label": { "type": "string", "description": "表单分组 tabs 名称" }
+    }
+  }
+}
