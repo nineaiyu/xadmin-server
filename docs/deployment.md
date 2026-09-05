@@ -30,6 +30,8 @@ python utils/init_data.py          # 初始数据 + 超管账号（仅库为空�
 
 生产环境必须设置 `SECRET_KEY`，否则服务拒绝启动（DEBUG 关闭时强制校验）。
 
+- 超管初始密码：通过环境变量 `XADMIN_ADMIN_PASSWORD` 显式注入；未设置时 `init_data` 会随机生成强密码并**仅在初始化输出中打印一次**（首次登录后立即修改）。历史版本的默认密码 `xAdminPwd!` 已移除，升级不影响已存在的账号。
+
 ### 1.3 启动服务
 
 ```shell
