@@ -176,3 +176,44 @@ class TestImportDataAction:
     def test_without_action_param_fails(self, auth_client, import_row):
         resp = self._import(auth_client, [dict(import_row, isbn="no-act")])
         assert resp.data["code"] == 1001
+
+
+class TestInlineMetadata:
+    """T3.2：with_meta=1 内联元数据，首开合并请求。"""
+
+    def test_list_with_meta_includes_both_metadata(self, auth_client):
+        resp = auth_client.get(f"{BOOK_LIST_URL}?with_meta=1")
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+        columns = resp.data["data"]["search_columns"]
+        fields = resp.data["data"]["search_fields"]
+        assert {"name", "isbn", "admin"} <= {c["key"] for c in columns}
+        assert "name" in {f["key"] for f in fields}
+
+    def test_list_without_meta_stays_clean(self, auth_client):
+        resp = auth_client.get(BOOK_LIST_URL)
+        assert resp.data["code"] == 1000
+        assert "search_columns" not in resp.data["data"]
+        assert "search_fields" not in resp.data["data"]
+
+    def test_list_with_meta_degrades_without_metadata_actions(self, superuser):
+        """未混入元数据 Action 的视图集：不报错、不注入键。"""
+        from rest_framework.viewsets import GenericViewSet
+
+        from common.core.modelset import BaseViewSet, ListAction
+        from demo.models import Book
+        from demo.serializers.book import BookSerializer
+        from tests.integration.demo.test_modelset_boundary import _call
+
+        class BareListSet(BaseViewSet, ListAction, GenericViewSet):
+            queryset = Book.objects.all()
+            serializer_class = BookSerializer
+
+        resp = _call(
+            BareListSet, {"get": "list"}, "get", f"{BOOK_LIST_URL}?with_meta=1",
+            superuser,
+        )
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+        assert "search_columns" not in resp.data["data"]
+        assert "search_fields" not in resp.data["data"]

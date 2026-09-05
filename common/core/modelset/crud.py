@@ -8,6 +8,9 @@
 from rest_framework import mixins
 
 from common.core.response import ApiResponse
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class CreateAction(mixins.CreateModelMixin):
@@ -28,7 +31,32 @@ class ListAction(mixins.ListModelMixin):
     def list(self, request, *args, **kwargs):
         """获取{cls}的列表"""
         data = super().list(request, *args, **kwargs).data
+        if isinstance(data, dict) and request.query_params.get("with_meta", "").lower() in ("1", "true", "yes"):
+            # T3.2：按 with_meta=1 内联元数据，页面首开把
+            # list / search-columns / search-fields 三个请求合并为一个
+            self.inline_metadata(request, data)
         return ApiResponse(data=data)
+
+    def inline_metadata(self, request, data: dict) -> None:
+        """将 search-columns / search-fields 载荷内联进列表响应。
+
+        仅在视图集混入了对应元数据 Action 时生效；单条元数据构建失败
+        只记录日志并降级省略，绝不影响列表本身。
+        """
+        for action_name, key in (
+            ("search_columns", "search_columns"),
+            ("search_fields", "search_fields"),
+        ):
+            action = getattr(self, action_name, None)
+            if action is None:
+                continue
+            try:
+                result = action(request)
+                payload = result.data.get("data")
+                if payload is not None:
+                    data[key] = payload
+            except Exception as e:
+                logger.warning(f"inline metadata {action_name} failed on {self.__class__.__name__}: {e}")
 
 
 class DestroyAction(mixins.DestroyModelMixin):
