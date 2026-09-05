@@ -10,8 +10,16 @@ BACKEND / SystemMessage / UserMessage / SystemMsgSubscription 为通知体系的
 公共扩展点（自定义消息类型需继承 SystemMessage 并实现 post_insert_to_db），
 统一经由本模块引用。
 """
+
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription
-from notifications.notifications import SystemMessage, UserMessage
+from notifications.notifications import SystemMessage, UserMessage, register_backend_msg, register_message
 
-__all__ = ["BACKEND", "SystemMessage", "UserMessage", "SystemMsgSubscription"]
+__all__ = [
+    "BACKEND",
+    "SystemMessage",
+    "UserMessage",
+    "SystemMsgSubscription",
+    "register_message",
+    "register_backend_msg",
+]
