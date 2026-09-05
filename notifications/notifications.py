@@ -294,6 +294,8 @@ def register_message(cls):
         "message_type_label": cls.message_type_label,
         "category": cls.category,
         "category_label": cls.category_label,
+        # 类引用：post_migrate 补建订阅时回调 cls.post_insert_to_db
+        "cls": cls,
     }
     if issubclass(cls, SystemMessage):
         SYSTEM_MESSAGE_REGISTRY.append(info)
