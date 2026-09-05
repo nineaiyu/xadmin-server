@@ -17,7 +17,7 @@ from rest_framework.utils import encoders
 from common.utils import get_logger
 from common.utils.request import get_request_user, get_request_ip, get_request_data, get_os, \
     get_browser, get_verbose_name
-from system.models import OperationLog
+from system.services import OperationLog
 
 logger = get_logger(__name__)
 

@@ -23,3 +23,17 @@ jobs:
 
       - name: Run ruff check
         run: ruff check .
+
+  cross-app-imports:
+    name: Cross-app import gate (T2.2)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check cross-app direct imports
+        run: python scripts/check_cross_app_imports.py

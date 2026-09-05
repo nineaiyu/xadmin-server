@@ -16,7 +16,7 @@ from rest_framework.permissions import BasePermission
 from common.base.magic import MagicCacheData
 from common.utils import get_logger
 from server.utils import get_current_request, set_current_request
-from system.models import Menu, FieldPermission
+from system.services import FieldPermission, Menu
 
 logger = get_logger(__name__)
 

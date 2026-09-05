@@ -7,7 +7,7 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from system.signal import invalid_user_cache_signal
+from system.services import invalid_user_cache_signal
 
 
 class BasicSettingSerializer(serializers.Serializer):

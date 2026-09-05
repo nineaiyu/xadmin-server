@@ -23,7 +23,7 @@ from common.base.magic import timeit, count_sql_queries
 from common.cache.storage import CommonResourceIDsCache
 from common.core.db.utils import RelatedManager
 from common.utils import get_logger
-from system.models import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
+from system.services import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
 
 logger = get_logger(__name__)
 
