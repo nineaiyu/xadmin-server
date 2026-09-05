@@ -18,24 +18,25 @@ globals，``from system.services import Menu`` 这类 from-import 仍然可用�
 （import 链很重：login → verify_code → common.tasks），同理按需加载。
 """
 
+# 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
 __all__ = [
     # 模型契约
-    "UserInfo",
-    "UserLoginLog",
-    "UploadFile",
-    "SystemConfig",
-    "UserPersonalConfig",
-    "OperationLog",
-    "Menu",
-    "FieldPermission",
-    "DataPermission",
-    "ModeTypeAbstract",
-    "DeptInfo",
-    "ModelLabelField",
+    "UserInfo",  # noqa: F822
+    "UserLoginLog",  # noqa: F822
+    "UploadFile",  # noqa: F822
+    "SystemConfig",  # noqa: F822
+    "UserPersonalConfig",  # noqa: F822
+    "OperationLog",  # noqa: F822
+    "Menu",  # noqa: F822
+    "FieldPermission",  # noqa: F822
+    "DataPermission",  # noqa: F822
+    "ModeTypeAbstract",  # noqa: F822
+    "DeptInfo",  # noqa: F822
+    "ModelLabelField",  # noqa: F822
     # 序列化器契约
-    "UserInfoSerializer",
+    "UserInfoSerializer",  # noqa: F822
     # 信号契约
-    "invalid_user_cache_signal",
+    "invalid_user_cache_signal",  # noqa: F822
     # 服务函数
     "get_superusers",
     "get_active_superuser_queryset",
