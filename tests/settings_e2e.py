@@ -32,6 +32,12 @@ from server.settings import *  # noqa: F401,F403,E402
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
+# 用例断言匹配中文文案（如锁定提示 /已被锁定/）。LocaleMiddleware 会按请求
+# Accept-Language 协商语言，CI 的 API 请求上下文无中文头时回退英文，断言全部
+# 落空（实测 lockout 用例死循环打登录接口）。E2E 环境去掉协商、固定中文。
+LANGUAGE_CODE = "zh-hans"
+MIDDLEWARE = [m for m in MIDDLEWARE if m != "django.middleware.locale.LocaleMiddleware"]  # noqa: F405
+
 # SECURITY_* 常量在 server.settings.custom 导入时即从 CONFIG 冻结（彼时 _test_config
 # 尚未注入 E2E 差异），必须在此后显式覆盖才会生效：
 # 登录关验证码/加密（E2E 明文密码走真实链路），放宽失败锁定阈值避免用例互相影响
