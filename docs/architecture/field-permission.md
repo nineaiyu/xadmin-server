@@ -11,7 +11,7 @@
 
 ### 1. 在前端页面菜单中，添加权限，然后选择关联模型
 
-![add-user-menu.png](imgs/field-permission/add-user-menu.png)
+![add-user-menu.png](../imgs/field-permission/add-user-menu.png)
 
 #### 为什么要关联这四个模型？
 
@@ -44,7 +44,7 @@ class UserSerializer(BaseRoleRuleInfo):
 
 ### 2. 在 角色权限中，创建角色，并关联字段
 
-![add-role.png](imgs/field-permission/add-role.png)
+![add-role.png](../imgs/field-permission/add-role.png)
 
 #### 为什么查询用户下面有四个？
 

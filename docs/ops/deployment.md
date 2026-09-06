@@ -1,6 +1,7 @@
 # 部署与运维手册
 
-> 本文档沉淀常用部署方式与运维要点，在线文档见 https://docs.dvcloud.xin/ 。
+> 本文档沉淀常用部署方式与运维要点（T6.2 本地化，外站 https://docs.dvcloud.xin/ 降级为补充资料）。
+> 常见故障的「现象 → 定位 → 处置」速查见 [runbook.md](runbook.md)。
 > 适用于 xadmin-server 4.2.5+（含队列拆分与健康检查增强）。
 
 ## 1. 本地开发
@@ -140,11 +141,43 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 | 登录页提示"当前服务器不允许登录" | 多为登录接口限流（默认 `login: 50/h`，GET/POST 共享额度）；检查是否被自动化/共享出口打满，可在 `config.yml` 的 `DEFAULT_THROTTLE_RATES` 调整 |
 | `db_status: false` 但数据库正常 | 确认 `config.yml` 数据库连接项；4.2.5 起健康检查不再依赖 Monitor 表 |
 | 导入/导出无响应 | 检查 heavy worker 是否在线（`celery_status`、flower 面板）；无 heavy worker 时任务滞留队列 |
-| flower 无法访问 | flower 随 web 容器启动（`start web`），认证取 `CELERY_FLOWER_AUTH` 配置 |
+| flower 无法访问 | flower 随 web 容器启动（`start web`），认证取 `CELERY_FLOWER_AUTH` 配置；未配置认证时仅允许绑定 127.0.0.1，绑定其他地址启动会被拒绝（见 [security-review.md](../security-review.md)） |
 | 服务启动即退出 | `SECRET_KEY` 未设置（非 DEBUG 强制校验）；查看 `data/logs/` |
 
-## 6. 升级注意
+更多场景（登录锁定、WebSocket 不通、导入导出积压、权限不生效、磁盘占满、备份恢复、migrate 卡住、CVE 响应等）见 [runbook.md](runbook.md)。
 
-- 4.2.5 起 Docker compose 不再内置数据库/Redis 默认密码，升级前先在 `.env` 配置 `DB_PASSWORD`、`REDIS_PASSWORD`。
-- 队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat` 三个容器并移除旧 `celery` 容器。
-- 升级前备份数据库；执行 `python manage.py migrate` 完成迁移。
+## 6. 升级与回滚
+
+### 6.1 升级流程
+
+1. **备份先行**：确认最近一次 `db-backup` 产出完好（或手动 `pg_dump` 一次）；
+2. **读变更说明**：Release Notes 中「升级注意」段落（破坏性迁移、新增必配项）；
+3. **拉取新镜像/代码**：`docker compose pull`（或 `git pull` + 重建）；
+4. **单实例迁移**：`python manage.py migrate`——多副本部署时保证只有一个实例执行迁移（其余实例先缩容），避免 DDL 互相锁；
+5. **滚动重启**：`docker compose up -d` 逐服务重建，观察 healthz 四项全 `true` 再继续；
+6. **验证**：登录冒烟（登录 → 菜单加载 → 任一列表页 → 一次导入导出）。
+
+> 历史版本注意：4.2.5 起 compose 不再内置数据库/Redis 默认密码，升级前先在 `.env` 配置 `DB_PASSWORD`、`REDIS_PASSWORD`；队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat` 三个容器并移除旧 `celery` 容器。
+
+### 6.2 回滚
+
+- 镜像回滚：`docker compose` 中把镜像 tag 固定到上一版本 `up -d`（Release 附件中的镜像 tag 见 release 页面）；
+- 数据库回滚：**Django 迁移原则上不做反向回滚**——先恢复服务到旧版本运行，数据问题走 [runbook.md §12](runbook.md) 备份恢复（清空重建，RTO ≤30 分钟）；仅当上一版本明确依赖旧表结构且新迁移破坏读兼容时，才评估 `migrate <app> <旧迁移号>`；
+- 升级失败快速止损顺序：服务回滚 → 确认 healthz → 数据恢复（最后手段）。
+
+### 6.3 镜像与供应链
+
+- 发布镜像经 trivy 扫描（HIGH/CRITICAL 阻断）并随 release 附 CycloneDX SBOM（T5.5），升级前可在 release 页面核对 SBOM 变更；
+- base 镜像由 `build-base-image.yml` 自动构建回写，基础层 CVE 修复通过重建 base 镜像消化。
+
+## 7. 国产化适配要点
+
+| 组件 | 说明 |
+|------|------|
+| CPU 架构 | 镜像已多架构构建（linux/amd64 + linux/arm64），鲲鹏/飞腾等 ARM 环境直接拉取 |
+| 操作系统 | 银河麒麟/统信 UOS 等可运行 arm64 容器环境直接使用；宿主机直装需 Python 3.12+ 与对应系统依赖（psycopg2/mysqlclient 编译链） |
+| 数据库 | 默认 PostgreSQL（openGauss 兼容 PG 协议，`DB_ENGINE: postgresql` 尝试接入）；人大金仓/达梦需替换 Django 后端驱动并回归迁移文件 |
+| 中间件 | Redis 兼容版本即可（缓存/broker 用途，无特殊命令依赖） |
+| 验证清单 | 迁移全量通过 → 登录/验证码/图片处理（Pillow/GeoIP 库）→ 导入导出（openpyxl）→ WebSocket → 定时任务 |
+
+> 国产化数据库替换涉及迁移文件与第三方库兼容性，属大变更：先建独立分支跑全量门禁（pytest + E2E），并登记 ADR 后再合入。

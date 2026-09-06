@@ -11,11 +11,15 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 ## 开发部署文档
 
-[https://docs.dvcloud.xin/](https://docs.dvcloud.xin/)
+**优先查阅本仓库文档中心：[docs/README.md](docs/README.md)**（环境搭建、架构总览、三层权限、部署运维 runbook、ADR）
 
-## [Centos 9 Stream 安装部署](https://docs.dvcloud.xin/guide/installation-local.html)
+- 本地部署 / Docker 部署 / 升级回滚 / 国产化适配：[docs/ops/deployment.md](docs/ops/deployment.md)
+- 常见故障排查：[docs/ops/runbook.md](docs/ops/runbook.md)
+- 外站在线文档（补充资料）：[https://docs.dvcloud.xin/](https://docs.dvcloud.xin/)
 
-## [Docker 容器化部署](https://docs.dvcloud.xin/guide/installation-docker.html)
+### [Centos 9 Stream 安装部署](https://docs.dvcloud.xin/guide/installation-local.html)
+
+### [Docker 容器化部署](https://docs.dvcloud.xin/guide/installation-docker.html)
 
 # 附录
 

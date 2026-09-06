@@ -20,8 +20,8 @@ filter_queryset = self.filter_queryset(self.get_queryset())
 
 ### 1. 在前端页面菜单中，添加数据权限，然后选择菜单为查询用户，规则选择
 
-![add-data-permission.png](imgs/data-permission/add-data-permission.png)
+![add-data-permission.png](../imgs/data-permission/add-data-permission.png)
 
-![add-data-permission-rules.png](imgs/data-permission/add-data-permission-rules.png)
+![add-data-permission-rules.png](../imgs/data-permission/add-data-permission-rules.png)
 
 将该数据权限分配给用户即可

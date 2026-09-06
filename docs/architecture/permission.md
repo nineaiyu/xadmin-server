@@ -1,7 +1,7 @@
 # 三层权限体系设计（API / 数据 / 字段）
 
 > 适用版本：xadmin-server 4.2.5+（T2.6 梳理，2026-09-05）
-> 本文是三层权限的**整体设计文档**；操作教程见 [data-permission.md](../data-permission.md) 与 [field-permission.md](../field-permission.md)。
+> 本文是三层权限的**整体设计文档**；操作教程见 [data-permission.md](data-permission.md) 与 [field-permission.md](field-permission.md)。
 
 ## 一、总览
 
