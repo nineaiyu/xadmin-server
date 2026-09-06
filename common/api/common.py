@@ -7,6 +7,7 @@
 import time
 import uuid
 
+from django.conf import settings
 from django.core.cache import cache
 from django.utils import translation
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
@@ -111,6 +112,10 @@ class HealthCheckAPIView(GenericAPIView):
 
     @staticmethod
     def get_celery_status():
+        # E2E/单进程模式（memory broker + eager celery）没有可探测的 worker 协议，
+        # inspect ping 在 memory:// 上会无限阻塞，允许通过设置显式跳过
+        if getattr(settings, 'HEALTH_CHECK_SKIP_CELERY', False):
+            return False, 0.0
         # 探测是否存在在线 worker（inspect ping 最长阻塞 1 秒，healthcheck 轮询间隔下可接受）
         t1 = time.time()
         try:
