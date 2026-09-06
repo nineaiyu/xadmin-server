@@ -178,7 +178,6 @@ class TestConfigManager:
         tests/settings_test.py 已全局把 load_user_config 替换为返回测试配置，
         这里按 conf.py 原始语义用组件方法显式重建回退链验证。
         """
-        from server.conf import PROJECT_DIR
 
         # 空目录：三个来源全部落空 → 等效于 load_user_config 抛 ImportError
         manager = ConfigManager(root_path=str(tmp_path / "nope"))

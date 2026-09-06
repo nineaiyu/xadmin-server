@@ -14,7 +14,7 @@ eager celery），但差异点：
 """
 import os
 
-from server.conf import Config, ConfigManager
+from server.conf import ConfigManager
 
 from tests import settings_test as _base
 
@@ -50,10 +50,10 @@ SECURITY_LOGIN_IP_LIMIT_COUNT = 100000
 # 全部为匿名请求且未覆写 throttle_classes，走 DEFAULT_THROTTLE_CLASSES 的
 # AnonRateThrottle（默认 60/m）。锁定用例单次就要 50+ 轮「取临时 Token + 登录」，
 # anon 会先于 login 打满并雪崩，表现为后续用例集体登录失败（429 而非 401）。
-REST_FRAMEWORK = {
-    **REST_FRAMEWORK,
+REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
+    **REST_FRAMEWORK,  # noqa: F405
     "DEFAULT_THROTTLE_RATES": {
-        **REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {}),
+        **REST_FRAMEWORK.get("DEFAULT_THROTTLE_RATES", {}),  # noqa: F405
         "anon": "100000/m",
         "user": "100000/m",
         "login": "10000/h",

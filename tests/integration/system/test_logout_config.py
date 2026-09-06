@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """登出黑名单与用户配置视图测试（T4.1）。"""
 import hashlib
-import time
 
 import pytest
 from rest_framework.test import APIRequestFactory

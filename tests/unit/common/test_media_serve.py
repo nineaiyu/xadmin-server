@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/utils/media.py：媒体文件响应（目录拒绝、404、304 与文件流）。"""
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import Http404, HttpResponseNotModified
 from django.test import RequestFactory
 
@@ -17,7 +16,6 @@ def media_root(tmp_path, settings):
 @pytest.fixture
 def image_file(media_root):
     png = b"\x89PNG\r\n\x1a\n" + b"0" * 32
-    file = SimpleUploadedFile("logo.png", png, content_type="image/png")
     target = media_root / "logo.png"
     target.write_bytes(png)
     return target
