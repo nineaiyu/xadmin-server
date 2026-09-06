@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "pin",
+  "separateMajorMinor": true,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "packageRules": [
+    {
+      "description": "补丁版本自动合并（门禁全绿为前提）",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Django 大版本升级不自动升，走 ADR-004 评估流程",
+      "matchPackageNames": ["django"],
+      "matchUpdateTypes": ["major", "minor"],
+      "automerge": false,
+      "labels": ["dependencies", "adr-required"]
+    },
+    {
+      "description": "openpyxl 仅允许稳定版（历史曾固定 beta，TD-18）",
+      "matchPackageNames": ["openpyxl"],
+      "ignoreUnstable": true
+    }
+  ]
+}

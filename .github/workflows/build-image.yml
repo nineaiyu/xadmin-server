@@ -28,8 +28,69 @@ jobs:
             exit 1
           fi
 
-  build-and-push-image:
+  security-scan:
     needs: check-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pip-audit
+
+      # 依赖高危门禁：待 T5.1 依赖升级窗口清零存量后，移除 `|| true` 切换为发布阻断
+      - name: Generate SBOM (CycloneDX) and dependency audit
+        run: pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json || true
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-server
+          path: sbom/sbom-server.cdx.json
+
+      # 静态 OpenAPI 随版本发布（T6.3）；config.yml 置空与 Dockerfile 同口径，SECRET_KEY 仅为通过拒启校验
+      - name: Export OpenAPI schema
+        run: |
+          echo > config.yml
+          SECRET_KEY=ci-openapi-export python manage.py spectacular --file openapi/openapi.json --format openapi-json
+
+      - name: Upload OpenAPI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-server
+          path: openapi/openapi.json
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for scan (single arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          build-args: VERSION=${{ github.ref_name }}
+          tags: xadmin-server:scan
+
+      # 高危/严重漏洞阻断发布
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: xadmin-server:scan
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+
+  build-and-push-image:
+    needs: [check-version, security-scan]
     runs-on: ubuntu-latest
 
     steps:
@@ -70,3 +131,24 @@ jobs:
           file: Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-server
+          path: sbom
+
+      - name: Download OpenAPI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-server
+          path: openapi
+
+      - name: Upload SBOM and OpenAPI to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sbom/sbom-server.cdx.json
+            openapi/openapi.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
