@@ -16,7 +16,7 @@
 | M07 | 接口权限 | 白名单路由方法外访问（userinfo PATCH） | 403 |
 | M08 | 接口权限 | 角色停用后授权立即吊销 | 403 |
 | M09 | 接口权限 | 菜单停用后授权立即吊销 | 403 |
-| M10 | 自提权 | 借用户管理接口给自己授予不可见角色 | 400 且角色不变 |
+| M10 | 自提权 | 借用户管理接口给自己授予不可见角色 | 角色关系不变（字段白名单缺失=写忽略） |
 | M11 | 数据权限 | 列表仅返回本人数据（水平隔离） | 他人数据不可见 |
 | M12 | 数据权限 | 读他人单条数据 | 400（数据权限拦截） |
 | M13 | 数据权限 | 改他人单条数据 | 400 且零副作用 |
@@ -33,7 +33,7 @@
 import pytest
 
 from demo.models import Book
-from system.models import DataPermission, FieldPermission, ModelLabelField
+from system.models import DataPermission, FieldPermission, ModelLabelField, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -184,27 +184,35 @@ class TestVerticalSelfEscalation:
     ):
         """M10：持有用户管理 PATCH 权限的用户，无法给自己授予数据权限不可见的角色。
 
-        roles 关联字段的可选集经数据权限过滤：用户对 system.userrole 无任何
-        授权 → 角色下拉为空 → 提交无效主键被 400 拒绝，角色关系零变化。
+        roles 关联字段写入受字段白名单约束：用户无 system.userrole 字段白名单 →
+        roles 字段被整体裁剪（写忽略），目标角色不会被授予。防护观感为
+        200-写忽略 或 400-拒绝，均属阻断，此处断言安全属性本身。
+        （normal_user fixture 默认持有 role 以承载菜单授权，提权目标用另一角色。）
         """
         grant_menu(role, menu_factory, USER_DETAIL_PATH, "PATCH")
         # 数据权限仅允许看见本人资料（否则对象级就被拦截，测不到字段层防线）
         normal_user.rules.add(make_owner_permission("self-userinfo", "system.userinfo", "pk"))
+        target_role = UserRole.objects.create(name="管理员", code="admin")
         api_client.force_authenticate(user=normal_user)
-        resp = api_client.patch(
-            f"{USER_LIST_URL}/{normal_user.pk}", {"roles": [role.pk]}, format="json"
+        api_client.patch(
+            f"{USER_LIST_URL}/{normal_user.pk}", {"roles": [target_role.pk]}, format="json"
         )
-        assert resp.status_code == 400
         normal_user.refresh_from_db()
-        assert not normal_user.roles.exists()
+        assert target_role not in normal_user.roles.all()
+        assert set(normal_user.roles.all()) == {role}
 
 
 class TestHorizontalDataPermission:
     """M11-M16：水平越权——数据权限层。"""
 
     def _grant_own_only(self, normal_user, role, menu_factory):
-        """列表 + 详情 GET 授权 + 仅本人数据权限（标准只读授权）。"""
-        grant_menu(role, menu_factory, LIST_PATH, "GET")
+        """列表 + 详情 GET 授权 + 仅本人数据权限（标准只读授权）。
+
+        字段权限为白名单制（无白名单=响应字段全裁剪），断言行内容前需授予
+        字段白名单，否则 results 行为空对象。
+        """
+        list_menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
+        make_field_whitelist(role, list_menu, ["pk", "name", "isbn"])
         grant_menu(role, menu_factory, DETAIL_PATH, "GET", name="p-book-detail")
         normal_user.rules.add(make_owner_permission("own-book", "demo.book", "admin"))
 
@@ -285,6 +293,7 @@ class TestHorizontalDataPermission:
     ):
         """M16 正向对照：数据权限绑定到当前菜单时正常生效（排除误伤回归）。"""
         menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
+        make_field_whitelist(role, menu, ["pk", "name", "isbn"])
         dp = make_owner_permission("scoped-own", "demo.book", "admin")
         dp.menu.add(menu)
         normal_user.rules.add(dp)

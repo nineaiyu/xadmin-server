@@ -120,7 +120,7 @@ def main() -> None:
     init_data_main()
 
     from system.models import (
-        DataPermission, FieldPermission, Menu, ModelLabelField, UserInfo, UserRole
+        DataPermission, UserInfo, UserRole
     )
 
     created_users = {}
