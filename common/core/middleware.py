@@ -67,7 +67,11 @@ def build_operation_log_info(request, response, request_start_time):
     user = get_request_user(request)
     request_module = getattr(request, 'request_module', '')
     if hasattr(response, 'renderer_context'):
-        action_doc = getattr(response.renderer_context['view'], request.method.lower()).__doc__
+        # 视图实例可能没有与 HTTP 动词同名的方法（如 ViewSet 的 405/detail 误配路径），
+        # getattr 必须带兜底，否则操作日志会把业务响应改写成 500（TD-24）
+        view = response.renderer_context.get('view')
+        handler = getattr(view, request.method.lower(), None) if view else None
+        action_doc = getattr(handler, '__doc__', None)
         if action_doc:
             try:
                 action_doc = action_doc.format(cls=request_module)
