@@ -16,3 +16,6 @@ config.yml
 .coverage.*
 htmlcov/
 .DS_Store
+
+# k6 压测结果（T3.1 性能基线，不入库）
+loadtest/results/

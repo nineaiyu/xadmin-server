@@ -111,6 +111,25 @@ MIDDLEWARE = [
     'server.middleware.EndMiddleware'
 ]
 
+# django-silk 性能剖析（T3.1 性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
+# 仅限 DEBUG/DEBUG_DEV 环境；剖析开销较大，k6 基线测定必须在关闭 silk 的状态下执行，
+# silk 仅用于低并发下的单接口 SQL/profiling 剖析。开启后需 `python manage.py migrate` 创建 silk 表
+if CONFIG.SILK_ENABLED:
+    if not (DEBUG or DEBUG_DEV):
+        raise ImproperlyConfigured(
+            'SILK_ENABLED 仅允许在 DEBUG/DEBUG_DEV 环境开启（性能剖析工具不可用于生产）'
+        )
+    if 'silk' not in INSTALLED_APPS:
+        INSTALLED_APPS.append('silk')
+        MIDDLEWARE.insert(0, 'silk.middleware.SilkyMiddleware')
+    SILKY_AUTHENTICATION = True  # /silk 面板要求登录
+    SILKY_AUTHORISATION = True  # 且要求员工/超级管理员权限
+    SILKY_MAX_RECORDED_REQUESTS = 10_000
+    SILKY_MAX_RECORDED_REQUESTS_CHECK_PERCENT = 5  # 降低落库概率检查频率，减少剖析自身开销
+    SILKY_PYTHON_PROFILER = True  # 请求级 Python profiling；压测排查时如干扰明显可关闭
+    SILKY_PYTHON_PROFILER_RESULT_PATH = os.path.join(PROJECT_DIR, 'tmp', 'silk_profiles')
+    SILKY_IGNORE_PATHS = ('/api/health', '/api/static', '^/media', '^/api/system/auth/captcha')
+
 ROOT_URLCONF = 'server.urls'
 
 TEMPLATES = [

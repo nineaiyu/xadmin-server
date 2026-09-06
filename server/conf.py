@@ -42,6 +42,9 @@ class Config(dict):
         'SECRET_KEY': '',
         'DEBUG': False,
         'DEBUG_DEV': False,
+        # django-silk 性能剖析开关（T3.1 性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
+        # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
+        'SILK_ENABLED': False,
         'LOG_LEVEL': "WARNING",
         'XADMIN_APPS': [],
         # 表前缀 abc_
@@ -75,7 +78,9 @@ class Config(dict):
         # celery flower 任务监控配置
         'CELERY_FLOWER_PORT': 5566,
         'CELERY_FLOWER_HOST': '127.0.0.1',
-        'CELERY_FLOWER_AUTH': 'flower:flower123.',
+        # Flower 监控 basic-auth（格式 用户:密码），生产环境必须配置；
+        # 未配置时 Flower 仅允许绑定 127.0.0.1 供本机调试，绑定其他地址将拒绝启动
+        'CELERY_FLOWER_AUTH': '',
     }
     libs = {
         # REST_FRAMEWORK

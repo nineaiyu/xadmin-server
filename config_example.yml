@@ -14,6 +14,11 @@ SECRET_KEY:
 # 用于DEBUG模式下，输出sql日志
 # DEBUG_DEV: true
 
+# django-silk 性能剖析（T3.1 性能基线，仅 DEBUG/DEBUG_DEV 环境生效）
+# 开启前先安装 dev 依赖：pip install -r requirements-dev.txt（含 django-silk），并执行 python manage.py migrate
+# 面板地址 /silk（需员工/超级管理员登录）；k6 基线测定时必须保持关闭，避免剖析开销污染基线数据
+# SILK_ENABLED: true
+
 # Host 校验白名单（生产环境必须配置，DEBUG 模式默认放行所有 Host）
 # ALLOWED_HOSTS:
 #   - xadmin.example.com
@@ -68,6 +73,12 @@ HTTP_BIND_HOST: 0.0.0.0
 HTTP_LISTEN_PORT: 8896
 GUNICORN_MAX_WORKER: 4
 CELERY_WORKER_COUNT: 4
+
+# Celery Flower 任务监控（默认关闭外网暴露：仅绑定 127.0.0.1）
+# CELERY_FLOWER_HOST: 127.0.0.1
+# CELERY_FLOWER_PORT: 5566
+# Flower 监控 basic-auth（格式 用户:密码）；生产环境必须配置，未配置时仅允许绑定 127.0.0.1
+# CELERY_FLOWER_AUTH: flower:<your-flower-password>
 
 # 需要将创建的应用写到里面
 XADMIN_APPS:

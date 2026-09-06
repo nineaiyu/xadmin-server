@@ -10,3 +10,6 @@ pytest-cov>=5.0
 pytest-xdist>=3.0
 fakeredis[lua]>=2.23
 ruff>=0.6
+
+# 性能剖析（T3.1 性能基线）：config.yml 中 SILK_ENABLED: true 时启用，仅 dev 环境
+django-silk>=5.4
