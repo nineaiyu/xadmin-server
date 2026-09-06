@@ -18,6 +18,7 @@ PERMISSION_WHITE_URL = {
     "^/api/.*search-fields$": ['*'],
     "^/api/common/resources/cache$": ['*'],
     "^/api/notifications/site-messages/unread$": ['*'],
+    "^/api/mfa/": ['*'],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
 }
 
 # 前端权限路由 忽略配置
@@ -28,6 +29,7 @@ ROUTE_IGNORE_URL = [
     "^/api/settings/.*search-columns$",  # 该路由使用list权限字段，无需重新配置
     "^/api/system/dashboard/",  # 忽略dashboard路由
     "^/api/system/captcha",  # 忽略图片验证码路由
+    "^/api/mfa/",  # 忽略 MFA 二次验证路由
 ]
 
 # 访问权限配置

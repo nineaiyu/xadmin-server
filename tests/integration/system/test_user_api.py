@@ -8,6 +8,19 @@ from system.models import UserInfo
 pytestmark = pytest.mark.django_db
 
 USER_URL = "/api/system/user"
+CONFIRM_URL = "/api/mfa/confirm"
+
+
+@pytest.fixture
+def confirmed_client(auth_client):
+    """已通过密码二次确认的管理员客户端（删除用户为敏感操作，需先验证）。"""
+    resp = auth_client.post(
+        CONFIRM_URL,
+        {"confirm_type": "password", "method": "password", "code": "Admin@123456"},
+        format="json",
+    )
+    assert resp.data["code"] == 1000, resp.data
+    return auth_client
 
 
 def _create_user(auth_client, username="lisi", **kwargs):
@@ -20,7 +33,8 @@ def _create_user(auth_client, username="lisi", **kwargs):
 
 
 class TestUserCrudSmoke:
-    def test_create_list_retrieve_patch_delete(self, auth_client, role):
+    def test_create_list_retrieve_patch_delete(self, confirmed_client, role):
+        auth_client = confirmed_client
         pk = _create_user(auth_client, roles=[role.pk])
 
         resp = auth_client.get(USER_URL, {"username": "lisi"})
@@ -57,7 +71,8 @@ class TestUserCrudSmoke:
 
 
 class TestUserActionsSmoke:
-    def test_delete_superuser_forbidden(self, auth_client):
+    def test_delete_superuser_forbidden(self, confirmed_client):
+        auth_client = confirmed_client
         pk = UserInfo.objects.create_superuser(
             username="admin2", email="a2@example.com", password="Admin@123456"
         ).pk
@@ -65,7 +80,8 @@ class TestUserActionsSmoke:
         assert resp.status_code == 500
         assert UserInfo.objects.filter(pk=pk).exists()
 
-    def test_batch_destroy_excludes_superuser(self, auth_client):
+    def test_batch_destroy_excludes_superuser(self, confirmed_client):
+        auth_client = confirmed_client
         normal_pk = _create_user(auth_client, username="lisi")
         super_pk = UserInfo.objects.create_superuser(
             username="admin2", email="a2@example.com", password="Admin@123456"

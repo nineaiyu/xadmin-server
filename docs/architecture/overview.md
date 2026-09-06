@@ -2,7 +2,7 @@
 
 > 本文是 [XADMIN_FRAMEWORK_ANALYSIS.md](../../XADMIN_FRAMEWORK_ANALYSIS.md)（1289 行深度分析，2026-09-04 撰写）的**精炼导航版**（T6.1，2026-09-06）。
 > 深度细节、跨语言重写建议请看完整版；两文冲突时以本文（较新）与代码为准。
-> 关联：[permission.md](permission.md)（三层权限）、[cache.md](cache.md)（缓存策略）、[indexes.md](indexes.md)（索引评审）、[../exception-handling.md](../exception-handling.md)（错误码）、[../schema/](../schema/)（元数据契约）。
+> 关联：[permission.md](permission.md)（三层权限）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)（缓存策略）、[indexes.md](indexes.md)（索引评审）、[../exception-handling.md](../exception-handling.md)（错误码）、[../schema/](../schema/)（元数据契约）。
 
 ## 一、技术栈与系统形态
 

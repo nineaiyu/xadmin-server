@@ -17,6 +17,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from common.cache.storage import BlackAccessTokenCache
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from mfa.cache import UserConfirmStateCache
 
 
 class LogoutAPIView(GenericAPIView):
@@ -28,6 +29,10 @@ class LogoutAPIView(GenericAPIView):
     )
     def post(self, request):
         """用户登出"""
+        # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证
+        # （放在 auth 判断之前：session 等非 JWT 认证方式下 request.auth 为空）
+        if getattr(request, 'user', None) and request.user.is_authenticated:
+            UserConfirmStateCache(request.user).clear()
         auth = request.auth
         if not auth:
             return ApiResponse()
@@ -42,4 +47,6 @@ class LogoutAPIView(GenericAPIView):
             except Exception:
                 pass
         logout(request)
+        # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证
+        UserConfirmStateCache(request.user).clear()
         return ApiResponse()

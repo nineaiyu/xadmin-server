@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-APPS = {"common", "system", "notifications", "message", "settings", "captcha", "demo"}
+APPS = {"common", "system", "notifications", "message", "settings", "captcha", "demo", "mfa"}
 SCAN_DIRS = sorted(APPS) + ["utils", "server"]
 
 # 模块级顶层 import 才算耦合（函数内惰性 import 是官方许可的逃生门）

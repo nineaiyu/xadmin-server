@@ -21,6 +21,7 @@ from system.views.admin.role import RoleViewSet
 from system.views.admin.user import UserViewSet
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
+from system.views.auth.mfa import LoginMFASendCodeAPIView, LoginMFAVerifyAPIView
 from system.views.auth.register import RegisterViewAPIView
 from system.views.auth.reset import ResetPasswordAPIView
 from system.views.auth.rule import PasswordRulesAPIView
@@ -45,6 +46,8 @@ no_auth_url = [
     re_path('^captcha/', include('captcha.urls')),
     re_path('^login/basic$', BasicLoginAPIView.as_view(), name='login-by-basic'),
     re_path('^login/code$', VerifyCodeLoginAPIView.as_view(), name='login-by-code'),
+    re_path('^login/mfa/send-code$', LoginMFASendCodeAPIView.as_view(), name='login-mfa-send-code'),
+    re_path('^login/mfa/verify$', LoginMFAVerifyAPIView.as_view(), name='login-mfa-verify'),
     re_path('^register$', RegisterViewAPIView.as_view(), name='register'),
     re_path('^auth/captcha$', CaptchaAPIView.as_view(), name='captcha'),
     re_path('^auth/token$', TempTokenAPIView.as_view(), name='temp_token'),

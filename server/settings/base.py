@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'system.apps.SystemConfig',  # 系统管理
     'settings.apps.SettingsConfig',  # 设置相关
+    'mfa.apps.MfaConfig',  # MFA / 敏感操作二次验证
     "notifications.apps.NotificationsConfig",  # 消息通知相关
     'captcha.apps.CaptchaConfig',  # 图片验证码
     'message.apps.MessageConfig',  # websocket 消息
@@ -313,7 +314,10 @@ CACHE_KEY_TEMPLATE = {
     'upload_part_info_key': 'upload_part_info',
     'black_access_token_key': 'black_access_token',
     'common_resource_ids_key': 'common_resource_ids',
-    'websocket_message_result_key': 'websocket_message_result'
+    'websocket_message_result_key': 'websocket_message_result',
+    'mfa_confirm_state_key': 'mfa_confirm_state',
+    'mfa_otp_bind_key': 'mfa_otp_bind',
+    'mfa_otp_used_key': 'mfa_otp_used'
 }
 
 APPEND_SLASH = False

@@ -1,14 +1,8 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-08-31 11:29+0800\n"
+"POT-Creation-Date: 2026-09-06 21:43+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,124 +11,158 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: common/celery/failure_handler.py:29 common/models.py:21
+#: common/notifications.py:20
+msgid "Monitor"
+msgstr "资源监控"
+
+#: common/celery/failure_handler.py:30
+msgid "Celery task failure"
+msgstr "Celery 任务失败"
+
+#: common/celery/failure_handler.py:38
+#, python-brace-format
+msgid "Celery task failure alert: {}"
+msgstr "Celery 任务失败告警：{}"
+
+#: common/celery/failure_handler.py:40
+msgid "Task"
+msgstr "任务"
+
+#: common/celery/failure_handler.py:41
+msgid "Error"
+msgstr "错误"
+
 #: common/celery/flower.py:41
 msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr "任务监控系统不可用，请联系管理员"
 
-#: common/core/auth.py:25 common/core/filter.py:204 common/core/filter.py:212
-#: common/core/permission.py:121
+#: common/core/auth.py:25 common/core/filter.py:219 common/core/filter.py:227
+#: common/core/permission.py:135
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
-#: common/core/auth.py:38 system/utils/auth.py:110
+#: common/core/auth.py:38 system/utils/auth.py:114
 msgid "Token is invalid or expired"
 msgstr "令牌无效或过期"
 
-#: common/core/exception.py:35
+#: common/core/exception.py:37
 msgid "Your visit is too fast, please visit again later"
 msgstr "您的手速太快啦，请稍后再访问"
 
-#: common/core/exception.py:37
+#: common/core/exception.py:39
+#, python-brace-format
 msgid "Your visit is too fast, please visit again in {} seconds"
 msgstr "您的手速太快啦，请 {} 秒后再次访问"
 
-#: common/core/exception.py:60
+#: common/core/exception.py:63
 msgid ""
 "The requested address is incorrect or the data permission is not allowed"
 msgstr "请求地址不正确或数据权限不允许"
 
-#: common/core/exception.py:65
+#: common/core/exception.py:68
+#, python-brace-format
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: common/core/fields.py:113
+#: common/core/exception.py:75
+msgid "Server internal error, please contact administrator or try again later"
+msgstr "服务器内部错误，请联系管理员或稍后再试"
+
+#: common/core/fields.py:142
 msgid "This field is required."
 msgstr "该字段不可为空"
 
-#: common/core/fields.py:114
+#: common/core/fields.py:143
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 
-#: common/core/fields.py:115
+#: common/core/fields.py:144
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 
-#: common/core/fields.py:116
+#: common/core/fields.py:145
 msgid "The query set is empty."
 msgstr "当前查询对象为空"
 
-#: common/core/models.py:22 common/core/models.py:29
+#: common/core/models.py:23 common/core/models.py:30
 #: settings/serializers/security.py:246
 msgid "ID"
 msgstr "主键ID"
 
-#: common/core/models.py:100 common/models.py:18
+#: common/core/models.py:140 common/models.py:18
 #: settings/serializers/security.py:248
 msgid "Created time"
 msgstr "创建时间"
 
-#: common/core/models.py:101
+#: common/core/models.py:141
 msgid "Updated time"
 msgstr "更新时间"
 
-#: common/core/models.py:102
+#: common/core/models.py:142
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:110
+#: common/core/models.py:150
 msgid "Creator"
 msgstr "创建人"
 
-#: common/core/models.py:112
+#: common/core/models.py:152
 msgid "Modifier"
 msgstr "修改人"
 
-#: common/core/models.py:114
+#: common/core/models.py:154
 msgid "Data ownership department"
 msgstr "数据归属部门"
 
-#: common/core/modelset.py:91
-msgid "Task add success"
-msgstr "任务添加成功"
-
-#: common/core/modelset.py:146
-msgid "Image size cannot exceed {}"
-msgstr "图片大小不能超过 {}"
-
-#: common/core/modelset.py:149
-msgid "Wrong image type, the type should be {}"
-msgstr "错误的图片类型, 类型应该为 {}"
-
-#: common/core/modelset.py:172
+#: common/core/modelset/batch.py:45
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset.py:469
+#: common/core/modelset/batch.py:70 common/core/modelset/batch.py:81
+#, python-brace-format
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/modelset.py:594
+#: common/core/modelset/import_export.py:61
+msgid "Task add success"
+msgstr "任务添加成功"
+
+#: common/core/modelset/import_export.py:153
+#, python-brace-format
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
-#: common/core/modelset.py:595 system/utils/auth.py:105
-#: system/utils/modelset.py:57 system/views/auth/register.py:69
-#: system/views/auth/reset.py:47 system/views/auth/verify_code.py:139
+#: common/core/modelset/import_export.py:154 system/utils/auth.py:109
+#: system/utils/modelset.py:58 system/views/auth/mfa.py:41
+#: system/views/auth/register.py:69 system/views/auth/reset.py:47
+#: system/views/auth/verify_code.py:142 system/views/auth/verify_code.py:169
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
-#: common/core/permission.py:119
+#: common/core/modelset/upload.py:45
+#, python-brace-format
+msgid "Image size cannot exceed {}"
+msgstr "图片大小不能超过 {}"
+
+#: common/core/modelset/upload.py:48
+#, python-brace-format
+msgid "Wrong image type, the type should be {}"
+msgstr "错误的图片类型, 类型应该为 {}"
+
+#: common/core/permission.py:107 common/core/permission.py:130
+#: common/core/permission.py:133
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:71
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:19 common/tasks.py:176 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:176 message/base.py:71
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -143,10 +171,12 @@ msgid "The phone number format is incorrect"
 msgstr "手机号格式不正确"
 
 #: common/drf/parsers/axios_form_data.py:129
+#, python-brace-format
 msgid "Multipart form parse error - {}"
 msgstr "表单数据解析异常 - {}"
 
 #: common/drf/parsers/base.py:21
+#, python-brace-format
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr "文件内容太大 (最大长度 `{}` 字节)"
 
@@ -155,104 +185,115 @@ msgid "The resource does not support imports!"
 msgstr "该资源不支持导入"
 
 #: common/drf/parsers/base.py:227
+#, python-brace-format
 msgid "Parse file error: {}"
 msgstr "文件解析失败 {}"
 
 #: common/drf/parsers/excel.py:14
+#, python-brace-format
 msgid "Invalid excel file {}"
 msgstr "错误的Excel文件 {}"
 
-#: common/drf/renders/base.py:147
+#: common/drf/renders/base.py:153
 msgid "Yes/No"
-msgstr ""
+msgstr "是/否"
 
-#: common/drf/renders/base.py:150
+#: common/drf/renders/base.py:156
+#, python-brace-format
 msgid "Text, max length {}"
 msgstr "文本，最大长度 {}"
 
-#: common/drf/renders/base.py:152
+#: common/drf/renders/base.py:158
 msgid "Long text, no length limit"
 msgstr "长文本，无长度限制"
 
-#: common/drf/renders/base.py:154
+#: common/drf/renders/base.py:160
+#, python-brace-format
 msgid "Number, min {}, max {}"
 msgstr "数字, 最小 {}, 最大 {}"
 
-#: common/drf/renders/base.py:156
+#: common/drf/renders/base.py:162
+#, python-brace-format
 msgid "Float, min {}, max {}"
 msgstr "浮点数, 最小 {}, 最大 {}"
 
-#: common/drf/renders/base.py:158
+#: common/drf/renders/base.py:164
+#, python-brace-format
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr "固定精度的数, 最小 {}, 最大 {}, 最大位数（小数和整数）{}, 小数位数 {}"
 
-#: common/drf/renders/base.py:163
+#: common/drf/renders/base.py:169
+#, python-brace-format
 msgid "Datetime format {}"
 msgstr "日期时间格式 {}"
 
-#: common/drf/renders/base.py:165
+#: common/drf/renders/base.py:171
 #: system/templates/notify/msg_rest_password_success.html:9
 msgid "IP"
 msgstr "IP"
 
-#: common/drf/renders/base.py:169
+#: common/drf/renders/base.py:175
+#, python-brace-format
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr "选项，格式: 名称(值)，名称是可选的，方便阅读，值是必填的，可选项有 {}"
 
-#: common/drf/renders/base.py:172
+#: common/drf/renders/base.py:178
+#, python-brace-format
 msgid "Choices, options {}"
 msgstr "选项，可选项有 {}"
 
-#: common/drf/renders/base.py:174
+#: common/drf/renders/base.py:180
 msgid "Phone number, format +8612345678901"
 msgstr "手机号，格式 +8612345678901"
 
-#: common/drf/renders/base.py:176
+#: common/drf/renders/base.py:182
 msgid "Label, format [\"key:value\"]"
 msgstr "标签，格式: [\"键:值\"]"
 
-#: common/drf/renders/base.py:178
+#: common/drf/renders/base.py:184
 msgid ""
 "Object, format name(id), name is optional for human read, id is requisite"
 msgstr "关联项，格式: 名称(id), 名称是可选的，方便阅读，id 是必填的"
 
-#: common/drf/renders/base.py:180
+#: common/drf/renders/base.py:186
 msgid "Object, format id"
 msgstr "关联项，格式是 id"
 
-#: common/drf/renders/base.py:184
+#: common/drf/renders/base.py:190
 msgid ""
 "Objects, format [\"name(id)\", ...], name is optional for human read, id is "
 "requisite"
 msgstr ""
 "多关联项，格式: [\"名称(id)\", ...], 名称是可选的，方便阅读，id 是必填的"
 
-#: common/drf/renders/base.py:186
+#: common/drf/renders/base.py:192
 msgid ""
 "Labels, format [\"key:value\", ...], if label not exists, will create it"
 msgstr "标签，格式: [\"键:值\", ...], 如果标签不存在，将创建它"
 
-#: common/drf/renders/base.py:188
+#: common/drf/renders/base.py:194
 msgid "Objects, format [\"id\", ...]"
 msgstr "多关联项，格式是 [\"id\", ...]"
 
-#: common/drf/renders/base.py:194
+#: common/drf/renders/base.py:200
 msgid "JSON"
 msgstr "JSON格式的数据"
 
-#: common/drf/renders/base.py:196
+#: common/drf/renders/base.py:202
 msgid "UUID4"
 msgstr ""
 
-#: common/drf/renders/base.py:301
+#: common/drf/renders/base.py:307
+#, python-brace-format
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
 msgstr "{} - 未设置加密密码 - 请前往个人信息 -> 文件加密密码中设置加密密码"
 
 #: common/fields/char.py:59
+#, python-brace-format
 msgid "{} is not a valid value for AESCharField"
 msgstr "{} 不支持的AES加密类型"
 
@@ -276,55 +317,53 @@ msgstr "磁盘使用"
 msgid "Boot Time"
 msgstr "运行时间"
 
-#: common/models.py:21 common/notifications.py:15
-msgid "Monitor"
-msgstr "资源监控"
-
-#: common/notifications.py:16
+#: common/notifications.py:21
 msgid "Server performance"
 msgstr "监控告警"
 
-#: common/notifications.py:22
+#: common/notifications.py:27
 msgid "Server health check warning"
 msgstr "服务健康状况检查警告"
 
-#: common/notifications.py:54
+#: common/notifications.py:57
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr "硬盘使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:59
+#: common/notifications.py:62
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr "内存使用率超过 {max_threshold}%: => {value}"
 
-#: common/notifications.py:64
+#: common/notifications.py:67
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr "CPU 负载超过 {max_threshold}: => {value}"
 
-#: common/notifications.py:69
+#: common/notifications.py:72
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr "CPU 使用率超过 {max_threshold}: => {value}"
 
-#: common/notifications.py:149 common/notifications.py:160
+#: common/notifications.py:150 common/notifications.py:162
 msgid "Task Message"
 msgstr "任务通知"
 
-#: common/notifications.py:150
+#: common/notifications.py:151
 msgid "Import data message"
 msgstr "导入数据通知"
 
-#: common/notifications.py:155
+#: common/notifications.py:156
+#, python-brace-format
 msgid "Import {} data {} message"
 msgstr "导入{}数据{}通知"
 
-#: common/notifications.py:161
+#: common/notifications.py:163
 msgid "Batch delete data message"
 msgstr "批量删除数据通知"
 
-#: common/notifications.py:166
+#: common/notifications.py:168
+#, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr "批量删除{}数据{}通知"
 
@@ -337,6 +376,7 @@ msgid "Alibaba cloud"
 msgstr "阿里云"
 
 #: common/sdk/sms/endpoint.py:33
+#, python-brace-format
 msgid "SMS provider not support: {}"
 msgstr "短信服务商不支持：{}"
 
@@ -353,6 +393,7 @@ msgid "The verification code is incorrect"
 msgstr "验证码错误"
 
 #: common/sdk/sms/exceptions.py:24 common/sdk/sms/exceptions.py:32
+#, python-brace-format
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
@@ -452,12 +493,12 @@ msgid "China"
 msgstr "中国"
 
 #: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
-#: common/utils/ip/geoip/utils.py:51 system/models/log.py:24
-#: system/models/user.py:20 system/utils/auth.py:82
+#: common/utils/ip/geoip/utils.py:51 system/models/log.py:27
+#: system/models/user.py:20 system/utils/auth.py:86
 msgid "Unknown"
 msgstr "未知"
 
-#: common/utils/ip/geoip/utils.py:38 system/utils/auth.py:144
+#: common/utils/ip/geoip/utils.py:38 system/utils/auth.py:148
 msgid "LAN"
 msgstr "局域网"
 
@@ -482,16 +523,157 @@ msgstr "“%(path)s” 不存在"
 msgid "Send SMS code"
 msgstr "发送短信验证码"
 
-#: message/utils.py:98
+#: message/utils.py:157
 msgid "Wait for result timeout"
 msgstr "等待命令结果返回超时"
+
+#: mfa/backends/base.py:45
+msgid "This method does not support sending verification codes"
+msgstr "该验证方式不支持发送验证码"
+
+#: mfa/backends/email.py:19 settings/serializers/security.py:334
+#: system/models/log.py:24
+msgid "Email verification code"
+msgstr "邮箱验证码"
+
+#: mfa/backends/email.py:20
+msgid "Please enter the Email verification code"
+msgstr "请输入邮箱验证码"
+
+#: mfa/backends/email.py:32 system/templates/msg_verify_code.html:12
+#: system/views/auth/verify_code.py:108
+msgid "Verify code"
+msgstr "验证码"
+
+#: mfa/backends/otp.py:17 mfa/serializers.py:30
+#: settings/serializers/security.py:332
+msgid "OTP verification code"
+msgstr "OTP 动态验证码"
+
+#: mfa/backends/otp.py:18
+msgid "Please enter the 6-digit dynamic code"
+msgstr "请输入 6 位动态验证码"
+
+#: mfa/backends/otp.py:30
+msgid "OTP is not bound"
+msgstr "OTP 未绑定"
+
+#: mfa/backends/otp.py:33
+msgid "The verification code has already been used"
+msgstr "验证码已被使用"
+
+#: mfa/backends/otp.py:35 mfa/views.py:137
+msgid "The OTP verification code is incorrect"
+msgstr "OTP 动态验证码错误"
+
+#: mfa/backends/password.py:15 settings/serializers/security.py:335
+msgid "Login password"
+msgstr "登录密码"
+
+#: mfa/backends/password.py:16
+msgid "Please enter your login password"
+msgstr "请输入登录密码"
+
+#: mfa/backends/password.py:29
+msgid "The password is incorrect"
+msgstr "密码错误"
+
+#: mfa/backends/sms.py:17 settings/serializers/security.py:333
+#: system/models/log.py:23
+msgid "SMS verification code"
+msgstr "短信验证"
+
+#: mfa/backends/sms.py:18
+msgid "Please enter the SMS verification code"
+msgstr "请输入短信验证码"
+
+#: mfa/confirm.py:65
+msgid "Authentication required"
+msgstr "需要先完成认证"
+
+#: mfa/confirm.py:82
+msgid "Request object not found"
+msgstr "请求对象缺失"
+
+#: mfa/const.py:14 settings/serializers/email.py:22
+#: system/serializers/user.py:88
+msgid "Password"
+msgstr "密码"
+
+#: mfa/const.py:15
+msgid "MFA"
+msgstr "MFA"
+
+#: mfa/exceptions.py:17
+msgid "This action requires identity verification"
+msgstr "该操作需要进行身份二次验证"
+
+#: mfa/serializers.py:18
+msgid "Confirm type"
+msgstr "验证类型"
+
+#: mfa/serializers.py:19 mfa/serializers.py:25
+msgid "Verification method"
+msgstr "验证方式"
+
+#: mfa/serializers.py:20
+msgid "Verification code / password"
+msgstr "验证码 / 密码"
+
+#: mfa/services.py:41
+msgid ""
+"Too many failures, the account has been locked (please contact admin to "
+"unlock it or try again after {} minutes)"
+msgstr "失败次数过多，账号已被锁定（请联系管理员解锁或 {} 分钟后重试）"
+
+#: mfa/services.py:65 mfa/services.py:80 mfa/services.py:94
+#: system/views/auth/mfa.py:68 system/views/auth/mfa.py:111
+msgid "The verification method is unavailable"
+msgstr "该验证方式不可用"
+
+#: mfa/services.py:82
+msgid "The verification method does not meet the security requirements"
+msgstr "该验证方式不满足本次验证的安全级别要求"
+
+#: mfa/services.py:96
+msgid "This method does not need a verification code to be sent"
+msgstr "该验证方式无需发送验证码"
+
+#: mfa/views.py:78
+msgid "Verification successful"
+msgstr "验证通过"
+
+#: mfa/views.py:89 system/views/auth/mfa.py:72
+#: system/views/auth/verify_code.py:185
+msgid "The verification code has been sent"
+msgstr "验证码已发送"
+
+#: mfa/views.py:110 mfa/views.py:124
+msgid "OTP is already bound"
+msgstr "OTP 已绑定"
+
+#: mfa/views.py:127
+msgid "Please start binding first"
+msgstr "请先发起绑定"
+
+#: mfa/views.py:134
+msgid "Too many failures, the account has been locked"
+msgstr "失败次数过多，账号已被锁定"
+
+#: mfa/views.py:144
+msgid "OTP binding successful"
+msgstr "OTP 绑定成功"
+
+#: mfa/views.py:156
+msgid "OTP unbinding successful"
+msgstr "OTP 解绑成功"
 
 #: notifications/apps.py:8
 msgid "App Notifications"
 msgstr "通知管理"
 
 #: notifications/backends/__init__.py:10 settings/serializers/email.py:13
-#: system/models/user.py:33
+#: system/models/user.py:37
 msgid "Email"
 msgstr "邮件"
 
@@ -551,7 +733,7 @@ msgstr "被通知角色"
 msgid "Notice level"
 msgstr "通知级别"
 
-#: notifications/models/message.py:36 notifications/serializers/message.py:122
+#: notifications/models/message.py:36 notifications/serializers/message.py:149
 msgid "Notice type"
 msgstr "通知类型"
 
@@ -559,7 +741,7 @@ msgstr "通知类型"
 msgid "Notice title"
 msgstr "通知标题"
 
-#: notifications/models/message.py:39 notifications/serializers/message.py:125
+#: notifications/models/message.py:39 notifications/serializers/message.py:152
 msgid "Notice message"
 msgstr "通知内容"
 
@@ -567,7 +749,7 @@ msgstr "通知内容"
 msgid "Additional json data"
 msgstr "额外的Json数据"
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:40
+#: notifications/models/message.py:41 notifications/serializers/message.py:41
 msgid "Uploaded attachments"
 msgstr "上传的附件"
 
@@ -579,22 +761,22 @@ msgstr "发布"
 msgid "Message content"
 msgstr "消息中心"
 
-#: notifications/models/message.py:62 notifications/models/notification.py:17
+#: notifications/models/message.py:66 notifications/models/notification.py:17
 #: notifications/models/notification.py:30
 #: notifications/serializers/notifications.py:20
 #: notifications/serializers/notifications.py:39 system/models/config.py:39
 msgid "User"
 msgstr "用户"
 
-#: notifications/models/message.py:63
+#: notifications/models/message.py:67
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:64 notifications/serializers/message.py:137
+#: notifications/models/message.py:69 notifications/serializers/message.py:164
 msgid "Unread"
 msgstr "未读"
 
-#: notifications/models/message.py:68
+#: notifications/models/message.py:73
 msgid "User read message"
 msgstr "用户已读消息"
 
@@ -613,6 +795,7 @@ msgid "User message subscription"
 msgstr "用户消息订阅"
 
 #: notifications/models/notification.py:25
+#, python-brace-format
 msgid "{} subscription"
 msgstr "{} 订阅"
 
@@ -620,43 +803,43 @@ msgstr "{} 订阅"
 msgid "System message subscription"
 msgstr "系统消息订阅"
 
-#: notifications/notifications.py:43
+#: notifications/notifications.py:37
 msgid "Publish the station message"
 msgstr "发布站内消息"
 
-#: notifications/notifications.py:190
+#: notifications/notifications.py:185
 msgid "Time"
 msgstr "时间"
 
-#: notifications/serializers/message.py:41 system/serializers/department.py:40
+#: notifications/serializers/message.py:42 system/serializers/department.py:40
 msgid "User count"
 msgstr "用户数量"
 
-#: notifications/serializers/message.py:42
+#: notifications/serializers/message.py:43
 msgid "Read user count"
 msgstr "已读用户数量"
 
-#: notifications/serializers/message.py:65
+#: notifications/serializers/message.py:92
 msgid "Parameter error. System announcement cannot be created"
 msgstr "参数有误，不支持创建系统公告"
 
-#: notifications/serializers/message.py:75
+#: notifications/serializers/message.py:102
 msgid "The notice role cannot be null"
 msgstr "被通知角色不能为空"
 
-#: notifications/serializers/message.py:81
+#: notifications/serializers/message.py:108
 msgid "The notice department cannot be null"
 msgstr "被通知部门不能为空"
 
-#: notifications/serializers/message.py:87
+#: notifications/serializers/message.py:114
 msgid "The notice user cannot be null"
 msgstr "被通知用户不能为空"
 
-#: notifications/serializers/message.py:101
+#: notifications/serializers/message.py:128
 msgid "The system notice cannot be update"
 msgstr "系统通知不允许更新"
 
-#: notifications/serializers/message.py:110
+#: notifications/serializers/message.py:137
 msgid "Parameter error"
 msgstr "参数有误"
 
@@ -682,7 +865,7 @@ msgid "Encrypted"
 msgstr "加密的"
 
 #: settings/models.py:19 system/models/config.py:17
-#: system/models/department.py:29 system/models/menu.py:68
+#: system/models/department.py:33 system/models/menu.py:68
 #: system/models/permission.py:19 system/models/role.py:17
 msgid "Is active"
 msgstr "激活状态"
@@ -717,9 +900,9 @@ msgstr "字段权限"
 msgid "Field permissions are used to authorize access to data field display"
 msgstr "字段权限用于授权访问数据字段展示"
 
-#: settings/serializers/basic.py:33 system/models/department.py:24
+#: settings/serializers/basic.py:33 system/models/department.py:28
 #: system/models/field.py:33 system/models/permission.py:25
-#: system/models/user.py:36
+#: system/models/user.py:45
 msgid "Data permission"
 msgstr "数据权限"
 
@@ -754,10 +937,6 @@ msgstr "账号"
 #: settings/serializers/email.py:19
 msgid "The user to be used for email server authentication"
 msgstr "登录到邮件服务器的用户名。这通常是你的邮件地址"
-
-#: settings/serializers/email.py:22 system/serializers/user.py:81
-msgid "Password"
-msgstr "密码"
 
 #: settings/serializers/email.py:24
 msgid ""
@@ -849,10 +1028,11 @@ msgid ""
 "With * indicating a match all. Such as: 192.168.10.1, 192.168.1.0/24, "
 "10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64 "
 msgstr ""
-"* 表示匹配所有。例如: 192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:"
-"db8:2de::e13, 2001:db8:1a:1110::/64  (支持网域)"
+"* 表示匹配所有。例如: 192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, "
+"2001:db8:2de::e13, 2001:db8:1a:1110::/64  (支持网域)"
 
 #: settings/serializers/security.py:56
+#, python-brace-format
 msgid "IP address invalid: `{}`"
 msgstr "IP 地址无效: `{}`"
 
@@ -1160,6 +1340,75 @@ msgstr "验证码字体色"
 msgid "Noise functions"
 msgstr "噪声函数"
 
+#: settings/serializers/security.py:324
+msgid "Sensitive operation verification"
+msgstr "敏感操作二次验证"
+
+#: settings/serializers/security.py:325
+msgid ""
+"Require re-verification of identity before performing sensitive operations"
+msgstr "执行敏感操作前需要重新验证身份"
+
+#: settings/serializers/security.py:329
+msgid "Verification methods"
+msgstr "验证方式"
+
+#: settings/serializers/security.py:337
+msgid ""
+"Verification methods allowed to be used for sensitive operation verification"
+msgstr "敏感操作二次验证允许使用的验证方式"
+
+#: settings/serializers/security.py:342
+msgid "MFA confirm validity period (second)"
+msgstr "MFA 方式确认有效期（秒）"
+
+#: settings/serializers/security.py:344
+msgid ""
+"After passing the verification via OTP/SMS/Email, sensitive operations do "
+"not need to be verified again within the validity period"
+msgstr "通过 OTP/短信/邮件方式验证通过后，有效期内敏感操作无需重复验证"
+
+#: settings/serializers/security.py:351
+msgid "Password confirm validity period (second)"
+msgstr "密码方式确认有效期（秒）"
+
+#: settings/serializers/security.py:352
+msgid "After passing the verification via password"
+msgstr "通过密码方式验证后"
+
+#: settings/serializers/security.py:356
+msgid "Login MFA"
+msgstr "登录二次验证"
+
+#: settings/serializers/security.py:357
+msgid "Force MFA verification at login for users who have bound OTP"
+msgstr "已绑定 OTP 的用户登录时强制二次验证"
+
+#: settings/serializers/security.py:362
+msgid "Login MFA token validity period (second)"
+msgstr "登录二次验证临时令牌有效期（秒）"
+
+#: settings/serializers/security.py:363
+msgid "Validity period of the temporary token during login MFA verification"
+msgstr "登录二次验证过程中临时令牌的有效期"
+
+#: settings/serializers/security.py:368
+msgid "OTP valid window"
+msgstr "OTP 容错窗口"
+
+#: settings/serializers/security.py:369
+msgid ""
+"The number of time periods allowed before and after the OTP verification"
+msgstr "OTP 验证允许前后容错的时间周期数"
+
+#: settings/serializers/security.py:373
+msgid "OTP issuer"
+msgstr "OTP 签发方名称"
+
+#: settings/serializers/security.py:374
+msgid "The issuer name in the otpauth binding URI"
+msgstr "otpauth 绑定 URI 中的签发方名称"
+
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:25
 msgid "SMS"
 msgstr "短信"
@@ -1176,7 +1425,7 @@ msgstr "提供商"
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr "短信服务 (SMS) 提供商或协议"
 
-#: settings/serializers/sms.py:29 system/models/user.py:32
+#: settings/serializers/sms.py:29 system/models/user.py:36
 msgid "Phone"
 msgstr "手机"
 
@@ -1201,6 +1450,7 @@ msgid "Test smtp setting"
 msgstr "测试 smtp 设置"
 
 #: settings/views/email.py:67
+#, python-brace-format
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
 
@@ -1264,38 +1514,38 @@ msgstr "系统配置"
 msgid "User config"
 msgstr "用户配置"
 
-#: system/models/department.py:19
+#: system/models/department.py:23
 msgid "Department name"
 msgstr "部门名称"
 
-#: system/models/department.py:20
+#: system/models/department.py:24
 msgid "Department code"
 msgstr "部门标识"
 
-#: system/models/department.py:21
+#: system/models/department.py:25
 msgid "Superior department"
 msgstr "上级部门"
 
-#: system/models/department.py:23 system/models/field.py:32
-#: system/models/user.py:35
+#: system/models/department.py:27 system/models/field.py:32
+#: system/models/user.py:44
 msgid "Role permission"
 msgstr "角色权限"
 
-#: system/models/department.py:25 system/models/menu.py:65
+#: system/models/department.py:29 system/models/menu.py:65
 msgid "Rank"
 msgstr "排序"
 
-#: system/models/department.py:26
+#: system/models/department.py:30
 msgid "Auto bind"
 msgstr "自动绑定"
 
-#: system/models/department.py:28
+#: system/models/department.py:32
 msgid ""
 "If the value of the registration parameter channel is consistent with the "
 "department code, the user is automatically bound to the department"
 msgstr "注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定"
 
-#: system/models/department.py:49 system/models/user.py:37
+#: system/models/department.py:76 system/models/user.py:46
 msgid "Department"
 msgstr "部门"
 
@@ -1375,100 +1625,92 @@ msgstr "模型/字段数值"
 msgid "Model label field"
 msgstr "模型/字段名称"
 
-#: system/models/log.py:19
+#: system/models/log.py:22
 msgid "Username and password"
 msgstr "用户名和密码"
 
-#: system/models/log.py:20
-msgid "SMS verification code"
-msgstr "短信验证"
-
-#: system/models/log.py:21
-msgid "Email verification code"
-msgstr "邮箱验证码"
-
-#: system/models/log.py:22
+#: system/models/log.py:25
 msgid "Wechat scan code"
 msgstr "微信扫码"
 
-#: system/models/log.py:23
-msgid "Websocket"
-msgstr ""
-
 #: system/models/log.py:26
+msgid "Websocket"
+msgstr "WebSocket"
+
+#: system/models/log.py:29
 msgid "Login status"
 msgstr "登录状态"
 
-#: system/models/log.py:27 system/models/log.py:59
+#: system/models/log.py:30 system/models/log.py:65
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:28 system/templates/notify/msg_different_city.html:11
+#: system/models/log.py:31 system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr "登录城市"
 
-#: system/models/log.py:29 system/models/log.py:60
+#: system/models/log.py:32 system/models/log.py:66
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr "浏览器"
 
-#: system/models/log.py:30 system/models/log.py:61
+#: system/models/log.py:33 system/models/log.py:67
 msgid "System"
 msgstr "操作系统"
 
-#: system/models/log.py:31
+#: system/models/log.py:34
 msgid "Agent"
 msgstr "用户代理"
 
-#: system/models/log.py:32
+#: system/models/log.py:35
 msgid "Channel name"
 msgstr "频道名称"
 
-#: system/models/log.py:34
+#: system/models/log.py:37
 msgid "Login type"
 msgstr "登录类型"
 
-#: system/models/log.py:37
+#: system/models/log.py:40
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:55
+#: system/models/log.py:61
 msgid "Module"
 msgstr "模块"
 
-#: system/models/log.py:56
+#: system/models/log.py:62
 msgid "URL path"
 msgstr "访问路径"
 
-#: system/models/log.py:57
+#: system/models/log.py:63
 msgid "Request body"
 msgstr "请求参数"
 
-#: system/models/log.py:58
+#: system/models/log.py:64
 msgid "Request method"
 msgstr "请求方式"
 
-#: system/models/log.py:62
+#: system/models/log.py:68
 msgid "Response code"
 msgstr "响应码"
 
-#: system/models/log.py:63
+#: system/models/log.py:69
 msgid "Response result"
 msgstr "响应内容"
 
-#: system/models/log.py:64
+#: system/models/log.py:70
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:65
+#: system/models/log.py:71
 msgid "Request ID"
 msgstr "请求ID"
 
-#: system/models/log.py:66
+#: system/models/log.py:72
 msgid "Execution time"
 msgstr "执行时间"
 
-#: system/models/log.py:69
+#: system/models/log.py:75
 msgid "Operation log"
 msgstr "操作日志"
 
@@ -1695,27 +1937,43 @@ msgstr "男性"
 msgid "Female"
 msgstr "女性"
 
-#: system/models/user.py:24
+#: system/models/user.py:25
+msgid "Disabled"
+msgstr "禁用"
+
+#: system/models/user.py:26
+msgid "Enabled"
+msgstr "启用"
+
+#: system/models/user.py:28
 msgid "Avatar"
 msgstr "头像"
 
-#: system/models/user.py:30
+#: system/models/user.py:34
 msgid "Nickname"
 msgstr "昵称"
 
-#: system/models/user.py:31
+#: system/models/user.py:35
 msgid "Gender"
 msgstr "性别"
 
-#: system/models/user.py:41
+#: system/models/user.py:40
+msgid "MFA level"
+msgstr "MFA 级别"
+
+#: system/models/user.py:42
+msgid "OTP secret key"
+msgstr "OTP 密钥"
+
+#: system/models/user.py:50
 msgid "Userinfo"
 msgstr "用户信息"
 
-#: system/notifications.py:11 system/notifications.py:47
+#: system/notifications.py:12 system/notifications.py:47
 msgid "Account Security"
 msgstr "账号安全"
 
-#: system/notifications.py:12 system/notifications.py:21
+#: system/notifications.py:13 system/notifications.py:22
 msgid "Different city login reminder"
 msgstr "异地登录提醒"
 
@@ -1771,13 +2029,13 @@ msgstr "登录被锁定"
 msgid "Online count"
 msgstr "在线数量"
 
-#: system/serializers/user.py:73 system/serializers/user.py:87
+#: system/serializers/user.py:80 system/serializers/user.py:94
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:75
 #: system/views/auth/reset.py:54
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
-#: system/serializers/user.py:75
+#: system/serializers/user.py:82
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
@@ -1792,11 +2050,6 @@ msgstr "确认密码"
 #: system/serializers/userinfo.py:50
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
-
-#: system/templates/msg_verify_code.html:12
-#: system/views/auth/verify_code.py:105
-msgid "Verify code"
-msgstr "验证码"
 
 #: system/templates/msg_verify_code.html:16
 msgid "The validity period of the verification code is"
@@ -1844,28 +2097,30 @@ msgid ""
 "security issues"
 msgstr "如果这次密码更新不是由你发起的，那么你的账号可能存在安全问题"
 
-#: system/utils/auth.py:39
+#: system/utils/auth.py:43
 msgid "Captcha validation failed. Please try again"
 msgstr "图片验证码校验失败，请稍后重试"
 
-#: system/utils/auth.py:45
+#: system/utils/auth.py:49
 msgid "Temporary Token validation failed. Please try again"
 msgstr "临时Token校验失败，请稍后重试"
 
-#: system/utils/auth.py:71
+#: system/utils/auth.py:75
+#, python-brace-format
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
-#: system/utils/auth.py:75 system/utils/auth.py:132
+#: system/utils/auth.py:79 system/utils/auth.py:136
 #: system/views/auth/login.py:48
+#, python-brace-format
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 
-#: system/utils/auth.py:127
+#: system/utils/auth.py:131
 #, python-brace-format
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
@@ -2044,6 +2299,7 @@ msgid ""
 msgstr "字段值必须包含给定的单个键，通常用于 JSON 字段"
 
 #: system/views/admin/file.py:87
+#, python-brace-format
 msgid "upload file size cannot exceed {}"
 msgstr "文件大小不能超过 {}"
 
@@ -2069,9 +2325,13 @@ msgstr ""
 "您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
 "被临时 锁定 {block_time} 分钟)"
 
-#: system/views/auth/login.py:97 system/views/auth/login.py:179
+#: system/views/auth/login.py:108 system/views/auth/login.py:197
 msgid "Login forbidden"
 msgstr "禁止登录"
+
+#: system/views/auth/mfa.py:39
+msgid "Login verification expired, please log in again"
+msgstr "登录验证已过期，请重新登录"
 
 #: system/views/auth/register.py:62
 msgid "Registration forbidden"
@@ -2085,34 +2345,30 @@ msgstr "用户已经存在，请换个试试"
 msgid "Reset password success, return to login page"
 msgstr "重置密码成功，返回到登录页面"
 
-#: system/views/auth/verify_code.py:125
+#: system/views/auth/verify_code.py:128
 msgid "Forbidden send verification code"
 msgstr "禁止发送验证码"
 
-#: system/views/auth/verify_code.py:174
-msgid "The verification code has been sent"
-msgstr "验证码已发送"
-
-#: system/views/auth/verify_code.py:226
+#: system/views/auth/verify_code.py:237
 msgid "Phone already exist"
 msgstr "手机号已经存在"
 
-#: system/views/auth/verify_code.py:228
+#: system/views/auth/verify_code.py:239
 msgid "Email already exist"
 msgstr "邮件已经存在"
 
-#: system/views/auth/verify_code.py:230
+#: system/views/auth/verify_code.py:241
 msgid "Username already exist"
 msgstr "用户名已经存在"
 
-#: system/views/auth/verify_code.py:241
+#: system/views/auth/verify_code.py:252
 msgid "Phone does not exist"
 msgstr "手机号不存在"
 
-#: system/views/auth/verify_code.py:243
+#: system/views/auth/verify_code.py:254
 msgid "Email does not exist"
 msgstr "邮件不存在"
 
-#: system/views/auth/verify_code.py:245
+#: system/views/auth/verify_code.py:256
 msgid "Username does not exist"
 msgstr "用户名不存在"

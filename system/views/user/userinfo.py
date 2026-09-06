@@ -13,10 +13,14 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
 from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
+from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
+from mfa.cache import UserConfirmStateCache
+from mfa.confirm import UserConfirmation
+from mfa.const import ConfirmType
 from settings.services import ResetBlockUtil
 from system.models import UserInfo
 from system.notifications import ResetPasswordSuccessMsg
@@ -47,13 +51,16 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         })
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=['post'], detail=False, url_path='reset-password', serializer_class=ChangePasswordSerializer)
+    @action(methods=['post'], detail=False, url_path='reset-password', serializer_class=ChangePasswordSerializer,
+            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
     def reset_password(self, request, *args, **kwargs):
-        """修改{cls}密码"""
+        """修改{cls}密码（敏感操作：需密码二次确认）"""
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        # 密码变更后清除旧确认状态（密码本身是确认方式之一）
+        UserConfirmStateCache(request.user).clear()
         ResetPasswordSuccessMsg(instance, request).publish_async()
         return ApiResponse()
 
@@ -80,9 +87,10 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         ),
         responses=get_default_response_schema()
     )
-    @action(methods=['post'], detail=False, url_path='bind')
+    @action(methods=['post'], detail=False, url_path='bind',
+            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
     def bind(self, request, *args, **kwargs):
-        """绑定{cls}邮箱或手机"""
+        """绑定{cls}邮箱或手机（敏感操作：需密码二次确认）"""
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         instance = UserInfo.objects.filter(**{query_key: target}).first()
         if instance:
@@ -90,5 +98,7 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
             instance.save(update_fields=(query_key,))
         setattr(request.user, query_key, target)
         request.user.save(update_fields=(query_key,))
+        # 手机/邮箱变更影响短信、邮件验证方式可用性，清除旧确认状态
+        UserConfirmStateCache(request.user).clear()
         TokenTempCache.expired_cache_token(verify_token)
         return ApiResponse()

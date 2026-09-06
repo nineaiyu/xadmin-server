@@ -49,6 +49,11 @@ VERIFY_CODE_LIMIT = 1000
 # 默认阈值（50 次/30min）会把本机 IP 整体封禁，导致后续所有用例无法登录
 SECURITY_LOGIN_IP_LIMIT_COUNT = 100000
 
+# MFA 敏感操作二次验证固定关闭：用户删除等敏感 API 未确认时返回 412，前端拦截层
+# 会唤起验证弹窗并挂起原请求，既有 CRUD 用例（删除用户）没有该交互会全部落空。
+# 412 协议/验证链路由 tests/integration/test_mfa_api.py 30 例覆盖，E2E 不重复验证。
+SECURITY_MFA_CONFIRM_ENABLED = False
+
 # 放开登录限流：E2E 套件 20+ 用例共享 127.0.0.1 的 login 50/h 配额，
 # 打满后 rules/login 全部 429，登录页会退化为「当前服务器不允许登录」
 #

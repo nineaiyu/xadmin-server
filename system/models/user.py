@@ -21,6 +21,10 @@ class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract)
         MALE = 1, _("Male")
         FEMALE = 2, _("Female")
 
+    class MFALevelChoices(models.IntegerChoices):
+        DISABLED = 0, _("Disabled")
+        ENABLED = 1, _("Enabled")
+
     avatar = ProcessedImageField(verbose_name=_("Avatar"), null=True, blank=True,
                                  upload_to=upload_directory_path,
                                  processors=[ResizeToFill(512, 512)],  # 默认存储像素大小
@@ -31,6 +35,11 @@ class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract)
     gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name=_("Gender"))
     phone = models.CharField(verbose_name=_("Phone"), max_length=16, default='', blank=True, db_index=True)
     email = models.EmailField(verbose_name=_("Email"), default='', blank=True, db_index=True)
+
+    # MFA 二次验证（登录 MFA 开关 + OTP 密钥，密钥泄露即可重置密码，无需加密存储）
+    mfa_level = models.IntegerField(verbose_name=_("MFA level"), choices=MFALevelChoices.choices,
+                                    default=MFALevelChoices.DISABLED)
+    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default='', blank=True)
 
     roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
@@ -44,3 +53,8 @@ class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract)
 
     def __str__(self):
         return f"{self.nickname}({self.username})"
+
+    @property
+    def mfa_enabled(self):
+        """是否已启用登录 MFA 二次验证（OTP 绑定成功后自动开启）"""
+        return self.mfa_level == self.MFALevelChoices.ENABLED and bool(self.otp_secret_key)

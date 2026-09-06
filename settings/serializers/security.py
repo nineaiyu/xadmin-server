@@ -315,3 +315,61 @@ class SecurityCaptchaCodeSerializer(serializers.Serializer):
     CAPTCHA_NOISE_FUNCTIONS = serializers.MultipleChoiceField(label=_('Noise functions'),
                                                               default=NoiseFunctionsChoices.FUNCTION_NULL,
                                                               choices=NoiseFunctionsChoices.choices)
+
+
+class SecurityMFASerializer(serializers.Serializer):
+    """MFA / 敏感操作二次验证设置"""
+
+    SECURITY_MFA_CONFIRM_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_('Sensitive operation verification'),
+        help_text=_("Require re-verification of identity before performing sensitive operations")
+    )
+
+    SECURITY_MFA_CONFIRM_BACKENDS = serializers.ListField(
+        default=['otp', 'sms', 'email', 'password'], label=_('Verification methods'),
+        allow_empty=True,
+        child=serializers.ChoiceField(choices=[
+            ('otp', _('OTP verification code')),
+            ('sms', _('SMS verification code')),
+            ('email', _('Email verification code')),
+            ('password', _('Login password')),
+        ]),
+        help_text=_("Verification methods allowed to be used for sensitive operation verification")
+    )
+
+    SECURITY_MFA_VERIFY_TTL = serializers.IntegerField(
+        min_value=60, max_value=60 * 60 * 24, default=60 * 60,
+        label=_('MFA confirm validity period (second)'),
+        help_text=_(
+            'After passing the verification via OTP/SMS/Email, sensitive operations '
+            'do not need to be verified again within the validity period'
+        )
+    )
+
+    SECURITY_MFA_PASSWORD_CONFIRM_TTL = serializers.IntegerField(
+        min_value=60, max_value=60 * 60 * 24, default=300,
+        label=_('Password confirm validity period (second)'),
+        help_text=_('After passing the verification via password')
+    )
+
+    SECURITY_MFA_LOGIN_PROTECT_ENABLED = serializers.BooleanField(
+        required=False, default=True, label=_('Login MFA'),
+        help_text=_('Force MFA verification at login for users who have bound OTP')
+    )
+
+    SECURITY_MFA_LOGIN_TOKEN_TTL = serializers.IntegerField(
+        min_value=60, max_value=60 * 60, default=300,
+        label=_('Login MFA token validity period (second)'),
+        help_text=_('Validity period of the temporary token during login MFA verification')
+    )
+
+    SECURITY_MFA_OTP_VALID_WINDOW = serializers.IntegerField(
+        min_value=0, max_value=10, default=1,
+        label=_('OTP valid window'),
+        help_text=_('The number of time periods allowed before and after the OTP verification')
+    )
+
+    SECURITY_MFA_OTP_ISSUER = serializers.CharField(
+        max_length=64, default='XAdmin', label=_('OTP issuer'),
+        help_text=_('The issuer name in the otpauth binding URI')
+    )

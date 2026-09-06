@@ -19,11 +19,15 @@ from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
+from common.utils import get_logger
 from common.utils.request import get_request_ip
+from mfa.services import generate_login_mfa_token, get_login_mfa_methods, is_login_mfa_required
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import get_username_password, get_token_lifetime, check_is_block, check_token_and_captcha, \
     save_login_log, verify_sms_email_code, check_different_city_login_if_need, ValidateError
+
+logger = get_logger(__name__)
 
 
 def login_failed(request, username):
@@ -49,15 +53,30 @@ def login_failed(request, username):
     raise ValidateError(detail)
 
 
-def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME, save_log=True):
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(user_obj.username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
     login_block_util.clean_failed_count()
     login_ip_block.clean_block_if_need()
+    if not save_log:
+        # 登录 MFA 待验证：密码阶段已通过，锁定计数需清理；登录日志与异地提醒在二次验证通过后记录
+        return
     request.user = user_obj
     check_different_city_login_if_need(user_obj, ipaddr)
     save_login_log(request, login_type=login_type)
+
+
+def login_mfa_if_required(request, user_obj):
+    """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）"""
+    if not is_login_mfa_required(user_obj):
+        return False
+    if not get_login_mfa_methods(user_obj, request):
+        # 已开启 MFA 但无可用验证方式（如管理员关闭了全部方式），降级放行避免登录死锁
+        logger.warning("Login MFA required but no available method, skip. user: %s", user_obj.username)
+        return False
+    login_success(request, user_obj, save_log=False)
+    return True
 
 
 class BasicLoginAPIView(TokenObtainPairView):
@@ -108,9 +127,16 @@ class BasicLoginAPIView(TokenObtainPairView):
             serializer.is_valid(raise_exception=True)
         except Exception:
             return login_failed(request, username)
+        user = serializer.user
+        if login_mfa_if_required(request, user):
+            return ApiResponse(data={
+                'mfa_required': True,
+                'mfa_token': generate_login_mfa_token(user),
+                'methods': get_login_mfa_methods(user, request),
+            })
         data = serializer.validated_data
-        data.update(get_token_lifetime(serializer.user))
-        login_success(request, serializer.user)
+        data.update(get_token_lifetime(user))
+        login_success(request, user)
         return ApiResponse(data=data)
 
     @extend_schema(
@@ -187,7 +213,14 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             user = authenticate(**{query_key: target}, password=password)
             if not user:
                 login_failed(request, target)
+            if login_mfa_if_required(request, user):
+                return ApiResponse(data={
+                    'mfa_required': True,
+                    'mfa_token': generate_login_mfa_token(user),
+                    'methods': get_login_mfa_methods(user, request),
+                })
         else:
+            # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA
             user = UserInfo.objects.get(**{query_key: target})
 
         refresh = RefreshToken.for_user(user)

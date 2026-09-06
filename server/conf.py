@@ -139,6 +139,15 @@ class Config(dict):
         'SECURITY_BIND_PHONE_CAPTCHA_ENABLED': True,
         'SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED': True,
         'SECURITY_BIND_PHONE_ENCRYPTED_ENABLED': True,
+        # MFA / 敏感操作二次验证
+        'SECURITY_MFA_CONFIRM_ENABLED': True,  # 敏感操作二次验证总开关
+        'SECURITY_MFA_CONFIRM_BACKENDS': ['otp', 'sms', 'email', 'password'],  # 允许的验证方式
+        'SECURITY_MFA_VERIFY_TTL': 3600,  # MFA 方式确认有效期（秒）
+        'SECURITY_MFA_PASSWORD_CONFIRM_TTL': 300,  # 密码方式确认有效期（秒）
+        'SECURITY_MFA_LOGIN_PROTECT_ENABLED': True,  # 绑定 OTP 的用户登录时强制二次验证
+        'SECURITY_MFA_LOGIN_TOKEN_TTL': 300,  # 登录 MFA 临时令牌有效期（秒）
+        'SECURITY_MFA_OTP_VALID_WINDOW': 1,  # OTP 容错窗口（前后各 N 个周期）
+        'SECURITY_MFA_OTP_ISSUER': 'XAdmin',  # OTP 绑定 URI 中的签发方名称
         # 基本配置
         'SITE_URL': 'http://127.0.0.1:8000',
         'FRONT_END_WEB_WATERMARK_ENABLED': False,  # 前端水印展示

@@ -10,6 +10,7 @@ from settings.utils.password import check_password_rules, get_password_check_rul
 from settings.utils.security import (
     LoginBlockUtil,
     LoginIpBlockUtil,
+    MFABlockUtils,
     RegisterBlockUtil,
     ResetBlockUtil,
     SendVerifyCodeBlockUtil,
@@ -20,6 +21,7 @@ __all__ = [
     "get_password_check_rules",
     "LoginBlockUtil",
     "LoginIpBlockUtil",
+    "MFABlockUtils",
     "RegisterBlockUtil",
     "ResetBlockUtil",
     "SendVerifyCodeBlockUtil",

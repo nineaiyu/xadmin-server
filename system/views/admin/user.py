@@ -14,9 +14,13 @@ from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
+from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from mfa.cache import UserConfirmStateCache
+from mfa.confirm import UserConfirmation
+from mfa.const import ConfirmType
 from message.services import send_logout_msg
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
@@ -47,6 +51,13 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
     filterset_class = UserFilter
 
     # export_as_zip = True  导出zip压缩包，密码是用户名
+
+    def get_permissions(self):
+        """删除用户（单删/批量删）为敏感操作，需先通过密码二次确认"""
+        permissions = super().get_permissions()
+        if self.action in ('destroy', 'batch_destroy'):
+            permissions.append(UserConfirmation.require(ConfirmType.PASSWORD)())
+        return permissions
 
     def perform_destroy(self, instance):
         if instance.is_superuser:
@@ -87,6 +98,19 @@ class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, Im
         instance = self.get_object()
         LoginBlockUtil.unblock_user(instance.username)
         return ApiResponse()
+
+    @extend_schema(responses=get_default_response_schema(), request=None)
+    @action(methods=["post"], detail=True, url_path='reset-mfa',
+            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
+    def reset_mfa(self, request, *args, **kwargs):
+        """重置{cls}MFA（清除 OTP 绑定，敏感操作：需密码二次确认）"""
+        instance = self.get_object()
+        instance.otp_secret_key = ''
+        instance.mfa_level = UserInfo.MFALevelChoices.DISABLED
+        instance.save(update_fields=['otp_secret_key', 'mfa_level'])
+        UserConfirmStateCache(instance).clear()
+        LoginBlockUtil.unblock_user(instance.username)
+        return ApiResponse(detail=_("The user's MFA has been reset"))
 
     @extend_schema(
         request=OpenApiRequest(
