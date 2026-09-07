@@ -11,7 +11,10 @@ from django.utils.encoding import force_str
 from rest_framework import exceptions, serializers
 from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
+from rest_framework.relations import ManyRelatedField
 from rest_framework.request import clone_request
+
+from common.core.fields import BasePrimaryKeyRelatedField
 
 
 class SimpleMetadataWithFilters(SimpleMetadata):
@@ -70,12 +73,13 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             tp = "labeled_multiple_choice"
         elif class_name == "JSONField":
             tp = 'json'
-        elif class_name == "BasePrimaryKeyRelatedField":
+        elif isinstance(field, BasePrimaryKeyRelatedField):
+            # isinstance 而非精确类名匹配，业务侧子类（如 DisplayRelatedField）同样生效
             tp = "object_related_field"
-        elif class_name == "ManyRelatedField":
-            child_relation_class_name = field.child_relation.__class__.__name__
-            if child_relation_class_name == "BasePrimaryKeyRelatedField":
-                tp = "m2m_related_field"
+        elif isinstance(field, ManyRelatedField) and isinstance(
+                field.child_relation, BasePrimaryKeyRelatedField
+        ):
+            tp = "m2m_related_field"
         return tp
 
     @staticmethod

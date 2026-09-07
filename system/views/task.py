@@ -40,7 +40,8 @@ class DisplayRelatedField(BasePrimaryKeyRelatedField):
     def to_representation(self, value):
         data = super().to_representation(value)
         if isinstance(data, dict):
-            data.setdefault("label", self.label_builder(value))
+            # 基类已把 label 兜底为 pk，这里必须覆盖而非 setdefault，否则 label_builder 永不生效
+            data["label"] = self.label_builder(value)
         return data
 
 
@@ -97,13 +98,16 @@ class PeriodicTaskSerializer(BaseModelSerializer):
 
 
 class PeriodicTaskFilter(filters.FilterSet):
-    """PeriodicTask 无 creator/dept 等审计字段，不继承 BaseFilterSet（其声明的过滤器引用不存在的字段）。"""
+    """PeriodicTask 无 creator/dept 等审计字段，不继承 BaseFilterSet（其声明的过滤器引用不存在的字段）。
+
+    声明式过滤器必须同步列入 Meta.fields，search-fields 元数据才会计入（get_fields 仅取 Meta.fields）。
+    """
     name = filters.CharFilter(field_name='name', lookup_expr='icontains')
     task = filters.CharFilter(field_name='task', lookup_expr='icontains')
 
     class Meta:
         model = PeriodicTask
-        fields = ['enabled', 'one_off', 'queue']
+        fields = ['name', 'task', 'enabled', 'one_off', 'queue']
 
 
 class CrontabScheduleFilter(filters.FilterSet):
