@@ -167,7 +167,7 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 5. **滚动重启**：`docker compose up -d` 逐服务重建，观察 healthz 四项全 `true` 再继续；
 6. **验证**：登录冒烟（登录 → 菜单加载 → 任一列表页 → 一次导入导出）。
 
-> 历史版本注意：4.2.5 起 compose 不再内置数据库/Redis 默认密码，升级前先在 `.env` 配置 `DB_PASSWORD`、`REDIS_PASSWORD`；队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat` 三个容器并移除旧 `celery` 容器。
+> 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——**生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml 为应用运行时唯一定义处）；队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat` 三个容器并移除旧 `celery` 容器。
 
 ### 6.2 回滚
 
