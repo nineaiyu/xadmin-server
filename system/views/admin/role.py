@@ -12,6 +12,7 @@ from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBi
 from common.utils import get_logger
 from system.models import UserRole
 from system.serializers.role import RoleSerializer, ListRoleSerializer
+from system.utils.modelset import RolePreviewAction
 
 logger = get_logger(__name__)
 
@@ -25,7 +26,7 @@ class RoleFilter(BaseFilterSet):
         fields = ['name', 'code', 'is_active', 'description']
 
 
-class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
+class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction, RolePreviewAction):
     """角色（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer

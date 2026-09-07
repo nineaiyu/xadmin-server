@@ -16,6 +16,7 @@ from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import UserRole, DataPermission, SystemConfig
+from system.utils.permission_preview import get_role_preview, get_user_preview, run_data_trial
 
 
 class ChangeRolePermissionAction(object):
@@ -56,6 +57,48 @@ class ChangeRolePermissionAction(object):
                 instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get('pk') for rule in rules]).all())
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+
+
+class PermissionPreviewAction(object):
+    """用户权限预览（可见菜单/API 码/数据权限规则解码/字段权限矩阵 + 实时试算）。
+
+    取数全部直查 DB，不经过 24h/10s 权限缓存，确保反映当前配置
+    （详见 system/utils/permission_preview.py 模块注释）。
+    """
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=['get'], detail=True, url_path='preview')
+    def preview(self, request, *args, **kwargs):
+        """获取{cls}的权限预览"""
+        return ApiResponse(data=get_user_preview(self.get_object()))
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                required=['model'],
+                properties={
+                    'model': build_basic_type(OpenApiTypes.STR),
+                    'menu': build_basic_type(OpenApiTypes.STR),
+                }
+            )
+        ),
+        responses=get_default_response_schema()
+    )
+    @action(methods=['post'], detail=True, url_path='preview/trial')
+    def preview_trial(self, request, *args, **kwargs):
+        """试算{cls}的数据权限过滤（命中行数 + 最终 SQL）"""
+        return ApiResponse(data=run_data_trial(
+            self.get_object(), request.data.get('model'), request.data.get('menu') or None))
+
+
+class RolePreviewAction(object):
+    """角色授权预览（授权菜单树 / 字段权限 / 持有用户采样）。"""
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=['get'], detail=True, url_path='preview')
+    def preview(self, request, *args, **kwargs):
+        """获取{cls}的授权预览"""
+        return ApiResponse(data=get_role_preview(self.get_object(), request.user))
 
 
 class InvalidConfigCacheAction(object):

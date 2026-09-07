@@ -5214,5 +5214,71 @@
       "method": "DELETE",
       "model": []
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b60457ee-d4fc-42f6-a3d4-b69d274a33e4",
+    "fields": {
+      "created_time": "2026-09-07T00:00:00.000Z",
+      "updated_time": "2026-09-07T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "menu_type": 2,
+      "component": null,
+      "is_active": true,
+      "model": [],
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "name": "preview:SystemUser",
+      "rank": 15,
+      "path": "api/system/user/(?P<pk>[^/.]+)/preview$",
+      "meta": "b60457ee-d4fc-42f6-a3d4-b69d274a33e4",
+      "method": "GET"
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "96f95ebb-3ea4-4bb1-bf19-ed072a0232b2",
+    "fields": {
+      "created_time": "2026-09-07T00:00:00.000Z",
+      "updated_time": "2026-09-07T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "menu_type": 2,
+      "component": null,
+      "is_active": true,
+      "model": [],
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "name": "previewTrial:SystemUser",
+      "rank": 16,
+      "path": "api/system/user/(?P<pk>[^/.]+)/preview/trial$",
+      "meta": "96f95ebb-3ea4-4bb1-bf19-ed072a0232b2",
+      "method": "POST"
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c8f215fa-dc48-4e2a-a0d5-2068f80336ae",
+    "fields": {
+      "created_time": "2026-09-07T00:00:00.000Z",
+      "updated_time": "2026-09-07T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "menu_type": 2,
+      "component": null,
+      "is_active": true,
+      "model": [],
+      "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+      "name": "preview:SystemRole",
+      "rank": 73,
+      "path": "api/system/role/(?P<pk>[^/.]+)/preview$",
+      "meta": "c8f215fa-dc48-4e2a-a0d5-2068f80336ae",
+      "method": "GET"
+    }
   }
 ]

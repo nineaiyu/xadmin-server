@@ -26,7 +26,7 @@ from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
 from system.models import UserInfo
 from system.serializers.user import UserSerializer, ResetPasswordSerializer
-from system.utils.modelset import ChangeRolePermissionAction
+from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 
 logger = get_logger(__name__)
 
@@ -42,7 +42,7 @@ class UserFilter(BaseFilterSet):
 
 
 class UserViewSet(RecycleBinAction, BaseModelSet, UploadFileAction, ChangeRolePermissionAction,
-                  ImportExportDataAction):
+                  PermissionPreviewAction, ImportExportDataAction):
     """用户（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
