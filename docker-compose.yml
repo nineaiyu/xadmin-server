@@ -23,12 +23,15 @@ services:
     image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8
     container_name: xadmin-postgresql
     restart: always
-    command: [ "postgres","-c","max_connections=8000" ]
+    # PERF-3：8000 远超应用实际需求（CONN_MAX_AGE 持久连接 × worker 数），
+    # 仅徒增 PG 内存基线；确需更高并发时引入 pgbouncer（见 ADR-005 同类预案）
+    command: [ "postgres","-c","max_connections=200" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
       POSTGRES_USER: ${DB_USER:-server}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
+      # DEP-5：密码不设兜底值，缺失时直接报错；本机部署在 .env 中配置（见 .env.example）
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required (see .env.example)}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
     healthcheck:
@@ -45,11 +48,11 @@ services:
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
-    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:-nineven}", "--port", "${REDIS_PORT:-6379}" ]
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required (see .env.example)}", "--port", "${REDIS_PORT:-6379}" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-nineven}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required (see .env.example)}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-redis/data:/data
     healthcheck:
@@ -71,7 +74,7 @@ services:
       PGHOST: postgresql
       PGPORT: 5432
       PGUSER: ${DB_USER:-server}
-      PGPASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
+      PGPASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required (see .env.example)}
       PGDATABASE: ${DB_DATABASE:-xadmin}
       BACKUP_DIR: /backups
       KEEP_DAYS: 7

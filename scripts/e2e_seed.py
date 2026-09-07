@@ -95,6 +95,24 @@ def grant_field_permission(role, excluded_field):
     return fp
 
 
+def seed_periodic_task():
+    """FEAT-1：定时任务管理页 E2E 用的演示周期任务（默认停用，启停循环后复原）。"""
+    from django_celery_beat.models import CrontabSchedule, PeriodicTask
+
+    schedule, _ = CrontabSchedule.objects.get_or_create(
+        minute="0", hour="3", day_of_week="*", day_of_month="*", month_of_year="*",
+        defaults={"timezone": "Asia/Shanghai"},
+    )
+    PeriodicTask.objects.get_or_create(
+        name="E2E-演示清理任务",
+        defaults={
+            "task": "system.utils.ctasks.auto_clean_tmp_file",
+            "crontab": schedule,
+            "enabled": False,
+        },
+    )
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -110,7 +128,10 @@ def main() -> None:
 
     from django.core import management
 
-    management.call_command("migrate", verbosity=0, interactive=False)
+    # run_syncdb=True 对齐 Django 测试库行为（settings_test 启用的 demo app
+    # 迁移文件已移除，run-syncdb 按当前模型直接建表；否则级联删除触及
+    # demo_book 时报 no such table，用户/部门删除接口 500）
+    management.call_command("migrate", run_syncdb=True, verbosity=0, interactive=False)
     print("migrate done")
 
     # 初始化基础数据（菜单/角色/超管），密码取 XADMIN_ADMIN_PASSWORD
@@ -174,6 +195,9 @@ def main() -> None:
             # 字段白名单（除 phone 外全部字段）
             grant_field_permission(fp_role, excluded_field="phone")
             print("field permission seeded for e2e_fp (phone hidden)")
+
+    # ---- FEAT-1：定时任务管理页演示数据 ----
+    seed_periodic_task()
 
     print("E2E seed done")
 

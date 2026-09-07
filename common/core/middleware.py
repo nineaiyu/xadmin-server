@@ -98,6 +98,9 @@ def build_operation_log_info(request, response, request_start_time):
         'status_code': response_data.get('code'),
         'request_uuid': getattr(request, 'request_uuid', None),
         'exec_time': time.time() - request_start_time,
+        # FEAT-4：字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
+        'changes': json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:MAX_LOG_FIELD]
+        if (changes := getattr(request, 'operation_log_changes', None)) else None,
         'response_result': json.dumps(
             {"code": response_data.get('code'), "data": response_data.get('data'),
              "detail": response_data.get('detail')}, cls=encoders.JSONEncoder, default=str,

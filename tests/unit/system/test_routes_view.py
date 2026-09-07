@@ -51,6 +51,25 @@ def _menu_tree(db):
     return parent
 
 
+def _all_child_names(result):
+    """路由响应顶层为目录分组（path/meta/children），菜单项在 children 内；
+    汇总所有分组下的菜单名，规避分组顺序差异。"""
+    return [
+        child["name"]
+        for node in result["data"]
+        for child in (node.get("children") or [])
+    ]
+
+
+def _fixture_group_children(result):
+    """取 fixture 建的"系统管理"目录所在分组（其 children 即 用户管理/角色管理）"""
+    for node in result["data"]:
+        children = node.get("children") or []
+        if any(child["name"] == "用户管理" for child in children):
+            return children
+    return []
+
+
 class TestRoutesResponseCache:
     def test_second_call_served_from_cache(self, auth_client):
         with CaptureQueriesContext(connection) as first_ctx:
@@ -72,13 +91,15 @@ class TestRoutesResponseCache:
         normal_result = payload(api_client.get(ROUTES_URL))
 
         # 超管能看到全部菜单，普通用户无菜单授权 -> 空树
-        assert len(super_result["data"]) == 1
+        # 断言锚定 fixture 建的"系统管理"而非顶层数量：FEAT-1 的菜单种子迁移
+        # （system/migrations/0008_seed_task_menus）会额外建顶层菜单
+        assert "用户管理" in _all_child_names(super_result)
         assert normal_result["data"] == []
 
     def test_response_contains_menu_meta(self, auth_client):
         """首刷响应包含 meta 信息（PERF-17 的 select_related 不改变输出）"""
         result = payload(auth_client.get(ROUTES_URL))
-        children = result["data"][0]["children"]
+        children = _fixture_group_children(result)
         assert [child["name"] for child in children] == ["用户管理", "角色管理"]
         for child in children:
             assert child["meta"]["title"] == child["name"]

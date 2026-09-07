@@ -13,7 +13,14 @@ from rest_framework.decorators import action
 
 from common.base.magic import temporary_disable_signal
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin
+from common.core.modelset import (
+    BaseModelSet,
+    RankAction,
+    ImportExportDataAction,
+    ChoicesAction,
+    CacheListResponseMixin,
+    RecycleBinAction,
+)
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.core.utils import get_all_url_dict
@@ -35,13 +42,30 @@ class MenuFilter(BaseFilterSet):
         fields = ['name']
 
 
-class MenuViewSet(BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin):
-    """菜单"""
+class MenuViewSet(RecycleBinAction, BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction,
+                  CacheListResponseMixin):
+    """菜单（FEAT-2：删除进入回收站，目录删除级联标记后代，成组恢复/清除；
+    batch-destroy 复用通用逐行实现，Menu.delete() 自带级联软删后代）"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ['updated_time', 'name', 'created_time', 'rank']
     filterset_class = MenuFilter
+
+    def get_recycle_restore_queryset(self, pks):
+        """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""
+        selected = self.filter_queryset(Menu.all_objects.filter(deleted_at__isnull=False, pk__in=pks))
+        timestamps = list(selected.values_list('deleted_at', flat=True))
+        return Menu.all_objects.filter(deleted_at__in=timestamps)
+
+    def get_recycle_purge_queryset(self, pks):
+        """成组清除：后代先于父级物理清除，避免父级删除后子级被外键置空悬挂。"""
+        queryset = super().get_recycle_purge_queryset(pks)
+        instances = []
+        for directory in queryset:
+            instances.extend(directory.get_deleted_descendants().order_by('-pk'))
+            instances.append(directory)
+        return instances
 
     # @cache_response(timeout=600, key_func='get_cache_key')
     # def list(self, request, *args, **kwargs):

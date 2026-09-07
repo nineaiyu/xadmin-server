@@ -12,7 +12,7 @@ from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
-from common.core.modelset import BaseModelSet, ListDeleteModelSet
+from common.core.modelset import BaseModelSet, ListDeleteModelSet, RecycleBinAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from notifications.models import MessageContent, MessageUserRead
@@ -29,8 +29,8 @@ class NoticeMessageFilter(BaseFilterSet):
         fields = ['pk', 'title', 'message', 'notice_type', 'level', 'publish']
 
 
-class NoticeMessageViewSet(BaseModelSet):
-    """消息通知"""
+class NoticeMessageViewSet(RecycleBinAction, BaseModelSet):
+    """消息通知（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     queryset = MessageContent.objects.all()
     serializer_class = NoticeMessageSerializer
 

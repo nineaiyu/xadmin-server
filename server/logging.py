@@ -4,12 +4,19 @@
 # filename : logging
 # author : ly_13
 # date : 10/18/2024
+import json
 import logging
 import os
-from datetime import datetime, timedelta
+import re
+import shutil
+from datetime import datetime, timedelta, timezone
 from logging.handlers import TimedRotatingFileHandler
 
 from server.utils import get_current_request
+
+# DEP-4：按天目录滚动（rotator 把旧日志移入 日期/ 子目录）后，
+# TimedRotatingFileHandler 标准的 backupCount 清理逻辑扫不到子目录，需自行按目录清理
+_DATED_DIR_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
 class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
@@ -19,6 +26,24 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
         if os.path.exists(source) and not os.path.exists(dest):
             # 存在多个服务进程时, 保证只有一个进程成功 rotate
             os.rename(source, dest)
+        self._prune_dated_dirs(source)
+
+    def _prune_dated_dirs(self, source):
+        """DEP-4：超出 backupCount 的历史日期目录整体清理（0 或负数表示不清理）。"""
+        backup_count = getattr(self, 'backupCount', 0) or 0
+        if backup_count <= 0:
+            return
+        log_dir = os.path.dirname(source)
+        try:
+            dated_dirs = sorted(
+                (name for name in os.listdir(log_dir)
+                 if _DATED_DIR_RE.match(name) and os.path.isdir(os.path.join(log_dir, name))),
+                reverse=True,
+            )
+        except OSError:
+            return
+        for name in dated_dirs[backup_count:]:
+            shutil.rmtree(os.path.join(log_dir, name), ignore_errors=True)
 
     @staticmethod
     def _get_rotate_dest_filename(source):
@@ -35,6 +60,32 @@ class ServerFormatter(logging.Formatter):
         record.requestUser = str(current_request.user if current_request else 'SYSTEM')[:16]
         record.requestUuid = str(getattr(current_request, 'request_uuid', ""))
         return super().format(record)
+
+
+class JsonFormatter(logging.Formatter):
+    """DEP-3：结构化 JSON 日志（LOG_FORMAT=json 时启用），供 Loki/ELK 等采集端解析。
+
+    每条记录固定携带 request_uuid / request_user，与响应头 X-Request-Id 对应，
+    便于按请求串联网关日志、应用日志与错误上报。
+    """
+
+    def format(self, record):
+        current_request = get_current_request()
+        payload = {
+            'time': datetime.fromtimestamp(
+                record.created, tz=timezone.utc).astimezone().isoformat(timespec='milliseconds'),
+            'level': record.levelname,
+            'logger': record.name,
+            'module': f'{record.pathname}:{record.lineno}',
+            'process': record.process,
+            'thread': record.thread,
+            'request_uuid': str(getattr(current_request, 'request_uuid', '') or ''),
+            'request_user': str(current_request.user if current_request else 'SYSTEM')[:16],
+            'message': record.getMessage(),
+        }
+        if record.exc_info:
+            payload['exception'] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=False, default=str)
 
 
 class ColorHandler(logging.StreamHandler):

@@ -61,7 +61,9 @@ class TestHasFileCleanup:
 
 
 class TestOwnFileCleanup:
-    def test_delete_removes_file_from_storage(self, superuser):
+    def test_soft_delete_keeps_file_hard_delete_removes(self, superuser):
+        """FEAT-2：UploadFile.delete() 为软删除（文件保留、行进回收站）；
+        hard_delete() 才清理底层文件。"""
         from django.conf import settings
         import os
 
@@ -72,22 +74,35 @@ class TestOwnFileCleanup:
 
         f.delete()
 
+        # 软删除：物理文件保留，行仅打标记
+        assert os.path.exists(stored_path)
+        assert UploadFile.all_objects.filter(pk=f.pk, deleted_at__isnull=False).exists()
+
+        f.hard_delete()
+
+        # 物理删除：文件与行一并清理
         assert not os.path.exists(stored_path)
+        assert not UploadFile.all_objects.filter(pk=f.pk).exists()
 
     def test_delete_removes_row(self, superuser, upload_file):
         pk = upload_file.pk
         upload_file.delete()
+        # FEAT-2：默认管理器排除已软删除数据
         assert not UploadFile.objects.filter(pk=pk).exists()
+        assert UploadFile.all_objects.filter(pk=pk).exists()
 
 
 class TestRelatedFileCleanup:
     def test_book_delete_cascades_uploadfile(self, superuser, upload_file, dept):
-        """Book.file -> UploadFile：删除 Book 会触发附件记录清理（PERF-19 保留逐行的原因）"""
+        """Book.file -> UploadFile：Book 非 SoftDeleteModel，删除仍为物理删除；
+        级联清理的附件记录按 FEAT-2 语义软删除（由 purge_soft_deleted 周期任务兜底物理清除），
+        物理文件不再随级联立即删除。"""
         book = Book.objects.create(name="书", isbn="i1", author="a",
                                    admin=superuser, admin2=superuser, file=upload_file)
         book.delete()
         assert not Book.objects.filter(pk=book.pk).exists()
-        assert not UploadFile.objects.filter(pk=upload_file.pk).exists()
+        # 附件记录软删除进入回收站，等待周期任务清除
+        assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=False).exists()
 
     def test_m2m_files_cleaned_on_owner_delete(self, superuser, upload_file, dept):
         owner = UserInfo.objects.create_user(username="fileowner", password="Xadmin@123456", dept=dept)

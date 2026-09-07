@@ -50,9 +50,50 @@
      全部返回 999，`01-login.js` 的 `login_throttled` 指标非零即为命中）；
    - 数据库指向压测专用库（PG/MySQL 均可，但基线多轮对比必须同库同机）。
 2. **安装 k6**：`brew install k6`（或参考 [k6 安装文档](https://k6.io/docs/get-started/installation/)）。
-3. **启动服务**：`python manage.py runserver` 仅适合冒烟；正式测定用
-   `python manage.py services gunicorn`（或 compose 拉起），并记录 worker 数/机器规格——
+3. **启动服务**：`python manage.py runserver` 仅适合冒烟；正式测定用 gunicorn（与生产同参，
+   `python manage.py services gunicorn`），并记录 worker 数/机器规格——
    这些是基线的环境元数据，换环境后基线不可比。
+
+### 3.1 可复现压测环境（2026-09-06 首测实际采用）
+
+无需改动日常 config.yml，两步拉起完全隔离的专用环境：
+
+```bash
+# ① 一次性专用容器（仅绑 127.0.0.1，与日常开发库/Redis 完全隔离）
+docker run -d --name xadmin-loadtest-pg \
+  -e POSTGRES_USER=server -e POSTGRES_PASSWORD=loadtest -e POSTGRES_DB=xadmin_loadtest \
+  -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8 \
+  postgres -c max_connections=500
+docker run -d --name xadmin-loadtest-redis \
+  -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.3 \
+  redis-server --requirepass loadtest --port 6379
+
+# ② 以压测专用 settings 执行 migrate + 初始化 + 种子（密码仅本地压测环境）
+export DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest XADMIN_ADMIN_PASSWORD='<压测密码>'
+.venv/bin/python manage.py migrate
+.venv/bin/python utils/init_data.py        # 默认超管用户名为 xadmin
+.venv/bin/python loadtest/seed_users.py --count 1000
+
+# ③ 生产同参启动被测服务后按 §四 压测；结束后 docker rm -f 两个容器
+DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest .venv/bin/gunicorn \
+  server.asgi:application -b 127.0.0.1:8896 -k uvicorn.workers.UvicornWorker \
+  -w 4 --max-requests 10240 --max-requests-jitter 2048 --graceful-timeout 30
+```
+
+`loadtest/settings_loadtest.py` 职责：注入专用 DB/Redis 连接、关闭登录三开关、
+放开 anon/user/login 限流、固定 SILK_ENABLED=False、celery broker 指向专用 Redis
+独立 db 15（无 worker 时导入导出经探针自动走直接执行分支）。
+
+**⚠️ ASGI 每请求新建 DB 连接（T3.1 首测最重要发现）**：Django 的 ASGIHandler 为每个
+请求创建独立线程（ThreadSensitiveContext），线程随请求结束消亡，其 DB 连接随之丢弃
+——base.py 虽配置 `CONN_MAX_AGE=600`，但该机制在 ASGI 形态下**无效**，等效于每请求
+新建 PG 连接；psycopg2 不支持 Django 5.1+ 的 server 端连接池（仅 psycopg3）。
+持续 ~600rps 时临时端口耗尽（macOS 宿主机与 Linux 容器均实测
+`Cannot assign requested address`）→ routes 端点 13-27% 请求 500。
+首测环境处理：压测容器加 `--sysctl net.ipv4.tcp_tw_reuse=1` + 扩大临时端口段
+（`net.ipv4.ip_local_port_range="1024 65535"`）后 0% 失败完成测量（每请求连接开销
+保留在基线数据中，符合生产现状）。**根因修复另立技术债**：psycopg3 + `OPTIONS.pool`
+连接池或 pgbouncer，并复核 ASGI/WSGI 形态取舍。
 
 ## 四、基线测定流程（每次执行）
 
@@ -70,6 +111,10 @@ BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD=<压测环境密码> ./ru
 
 # 4. 重复第 3 步共 3 轮（间隔 1 分钟），单指标取三轮中位数登记
 ```
+
+> **macOS 注意**：`USERNAME` 是 zsh 魔法参数（固定为本机登录名），命令行内联
+> `USERNAME=admin k6 run ...` 传不进 k6 子进程（实测登录被打成系统用户名）。
+> macOS 下统一用 `env` 注入：`env BASE_URL=... USERNAME=admin PASSWORD=... ./run-all.sh`。
 
 执行注意：
 

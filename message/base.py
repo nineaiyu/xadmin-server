@@ -90,6 +90,7 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
                 logger.error(f"action not exists. so close. {content}")
                 await asyncio.sleep(3)
                 await self.close()
+                return
             if mid := content.get('mid'):
                 set_mid_result_to_cache(mid, content)
             data = content.get('data', {})

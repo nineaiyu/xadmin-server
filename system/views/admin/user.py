@@ -13,7 +13,7 @@ from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction
+from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction, RecycleBinAction
 from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -41,8 +41,9 @@ class UserFilter(BaseFilterSet):
         fields = ['username', 'nickname', 'phone', 'email', 'is_active', 'gender', 'pk', 'mode_type', 'dept']
 
 
-class UserViewSet(BaseModelSet, UploadFileAction, ChangeRolePermissionAction, ImportExportDataAction):
-    """用户"""
+class UserViewSet(RecycleBinAction, BaseModelSet, UploadFileAction, ChangeRolePermissionAction,
+                  ImportExportDataAction):
+    """用户（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer

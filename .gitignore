@@ -10,6 +10,8 @@ common/utils/ip/geoip/GeoLite2-City.mmdb
 common/utils/ip/ipip/ipipfree.ipdb
 config.yml
 .venv/
+# DEP-5：本机部署真实密码，禁止入库（模板见 .env.example）
+.env
 .pytest_cache/
 .ruff_cache/
 .coverage
@@ -19,3 +21,4 @@ htmlcov/
 
 # k6 压测结果（T3.1 性能基线，不入库）
 loadtest/results/
+loadtest/k6/results

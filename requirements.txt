@@ -41,3 +41,7 @@ ipip-ipdb==1.6.1
 requests==2.33.0
 html2text==2025.4.15
 pyotp==2.9.0
+bleach==6.4.0
+tinycss2==1.5.1
+sentry-sdk==2.68.1
+uvicorn-worker==0.4.0

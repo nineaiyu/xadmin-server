@@ -146,7 +146,8 @@ class TestAutoCleanFileMixinSave:
         assert AutoCleanFileMixin.has_file_cleanup(Book) is True         # 关联 UploadFile
 
     def test_viewset_file_cleanup_detection(self):
-        assert BookViewSet()._has_file_cleanup() is True
+        # Book 非软删模型，逐行判定只由文件清理副作用驱动
+        assert BookViewSet()._needs_rowwise_delete() is True
 
 
 class TestRankBatch:
@@ -205,6 +206,6 @@ class TestBatchDestroy:
         class NoQuerysetView:
             queryset = None
 
-            _has_file_cleanup = BookViewSet._has_file_cleanup
+            _needs_rowwise_delete = BookViewSet._needs_rowwise_delete
 
-        assert NoQuerysetView()._has_file_cleanup() is True
+        assert NoQuerysetView()._needs_rowwise_delete() is True

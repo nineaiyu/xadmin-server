@@ -8,7 +8,7 @@
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBinAction
 from common.utils import get_logger
 from system.models import UserRole
 from system.serializers.role import RoleSerializer, ListRoleSerializer
@@ -25,8 +25,8 @@ class RoleFilter(BaseFilterSet):
         fields = ['name', 'code', 'is_active', 'description']
 
 
-class RoleViewSet(BaseModelSet, ImportExportDataAction):
-    """角色"""
+class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction):
+    """角色（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer

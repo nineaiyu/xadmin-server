@@ -31,13 +31,24 @@ class MenuSerializer(BaseModelSerializer):
     class Meta:
         model = Menu
         fields = [
-            'pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active', 'model', 'method'
+            'pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active', 'model', 'method',
+            'deleted_at'
         ]
         # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
         extra_kwargs = {
             'parent': {'attrs': ['pk', 'name'], 'allow_null': True, 'required': False},
             'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
         }
+
+    # FEAT-2：name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
+    # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError
+    def validate_name(self, value):
+        queryset = Menu.objects.filter(name=value)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError(_("This field already exists"))
+        return value
 
     def update(self, instance, validated_data):
         with transaction.atomic():

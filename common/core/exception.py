@@ -79,7 +79,17 @@ def common_exception_handler(exc, context):
         if isinstance(ret.data, list):
             ret.data = {'detail': ret.data}
         if not ret.data.get('detail'):
-            ret.data['detail'] = str(exc)
+            # UX-2：字段级校验错误（{field: [errors]}）拼成可读文案；
+            # 结构化错误保留在 errors 中，供前端做表单内联展示
+            if isinstance(ret.data, dict):
+                errors = {k: v for k, v in ret.data.items() if k not in ('status', 'code', 'errors')}
+                ret.data['errors'] = errors
+                ret.data['detail'] = '; '.join(
+                    f"{key}: {'; '.join(map(str, value)) if isinstance(value, (list, tuple)) else value}"
+                    for key, value in errors.items()
+                ) or str(exc)
+            else:
+                ret.data['detail'] = str(exc)
         ret.data['status'] = ret.status_code
         # 业务码优先：Throttled 的 999 / InvalidToken 的 40001 不被 HTTP 状态码覆盖
         ret.data['code'] = business_code or (ret.code if hasattr(ret, 'code') else ret.status_code)

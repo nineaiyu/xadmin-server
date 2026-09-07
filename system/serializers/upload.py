@@ -21,8 +21,9 @@ logger = get_logger(__name__)
 class UploadFileSerializer(BaseModelSerializer):
     class Meta:
         model = UploadFile
-        fields = ['pk', 'filename', 'filesize', 'mime_type', 'md5sum', 'file_url', 'access_url', 'is_tmp', 'is_upload']
-        read_only_fields = ["pk", "is_upload"]
+        fields = ['pk', 'filename', 'filesize', 'mime_type', 'md5sum', 'file_url', 'access_url', 'is_tmp', 'is_upload',
+                  'deleted_at']
+        read_only_fields = ["pk", "is_upload", "deleted_at"]
         table_fields = ['pk', 'filename', 'filesize', 'mime_type', 'access_url', 'is_tmp', 'is_upload', 'md5sum']
 
     access_url = serializers.SerializerMethodField(label=_("Access URL"))

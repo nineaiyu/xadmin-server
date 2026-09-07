@@ -40,7 +40,7 @@ class ServicesUtil(object):
         if 'gunicorn' in [service.name for service in self._services]:
             server_prepare()
             check_db_status = True
-        if not check_db_status and {'celery_default', 'beat'} & set([service.name for service in self._services]):
+        if not check_db_status and {'celery_default', 'beat', 'celery_heavy'} & set([service.name for service in self._services]):
             celery_prepare()
         for service in self._services:
             service: BaseService

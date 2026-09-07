@@ -5,17 +5,37 @@
 # author : ly_13
 # date : 8/10/2024
 
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
-from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin
+from common.core.models import (
+    SoftDeleteManager,
+    SoftDeleteModel,
+    SoftDeleteQuerySet,
+    upload_directory_path,
+    DbAuditModel,
+    AutoCleanFileMixin,
+)
 from common.fields.image import ProcessedImageField
 from system.models import ModeTypeAbstract
 
 
-class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract):
+class SoftDeleteUserManager(SoftDeleteManager, UserManager):
+    """FEAT-2：用户软删除管理器——默认查询过滤已删除用户，
+    同时保留 UserManager 的 create_user / create_superuser 等能力。"""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
+
+
+class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract):
+    """FEAT-2：用户软删除——删除进入回收站可恢复；
+    登录/鉴权走默认管理器（过滤 deleted_at），软删除用户的存量 JWT 立即失效。"""
+
+    objects = SoftDeleteUserManager()
+
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("Unknown")
         MALE = 1, _("Male")
@@ -50,6 +70,9 @@ class UserInfo(AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract)
         verbose_name = _("Userinfo")
         verbose_name_plural = verbose_name
         ordering = ("-date_joined",)
+        # 注意：username 不做"未删除数据"条件唯一（Django auth.E003 要求
+        # USERNAME_FIELD 全局唯一，部分唯一约束不满足检查），
+        # 已删除用户的用户名在 DB 层仍被占用，序列化器按 all_objects 拦截并给出可读提示
 
     def __str__(self):
         return f"{self.nickname}({self.username})"

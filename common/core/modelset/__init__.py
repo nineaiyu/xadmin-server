@@ -12,6 +12,7 @@
 - input_types.py    字段 input_type 推断辅助（get_format_intput_type 等）
 - import_export.py  OnlyExportDataAction / ImportExportDataAction（含 Celery 异步导入分发）
 - upload.py         UploadFileAction（单文件上传，按需混入）
+- recycle.py        RecycleBinAction（软删除回收站：列表/恢复/物理清除，FEAT-2）
 - cache.py          CacheDetailResponseMixin / CacheListResponseMixin（响应缓存 key/失效）
 - viewsets.py       预组合 ViewSet：BaseModelSet / ListDeleteModelSet / OnlyListModelSet /
                     DetailUpdateModelSet / NoDetailModelSet
@@ -25,6 +26,7 @@ from common.core.modelset.import_export import ImportExportDataAction, OnlyExpor
 from common.core.modelset.input_types import get_format_intput_type, get_upload_input_type_suffix
 from common.core.modelset.metadata import ChoicesAction, SearchColumnsAction, SearchFieldsAction
 from common.core.modelset.upload import UploadFileAction
+from common.core.modelset.recycle import RecycleBinAction
 from common.core.modelset.viewsets import (
     BaseModelSet,
     DetailUpdateModelSet,
@@ -57,6 +59,8 @@ __all__ = [
     "run_view_by_celery_task",
     # upload
     "UploadFileAction",
+    # recycle bin
+    "RecycleBinAction",
     # cache
     "CacheDetailResponseMixin",
     "CacheListResponseMixin",

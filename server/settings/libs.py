@@ -27,7 +27,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'common.core.auth.CookieJWTAuthentication',
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",  # 允许basic授权，方便调试使用
+        # SEC-4：Basic 认证为 base64 明文凭证，仅限本地调试按需开启（BASIC_AUTH_ENABLED）
+        *(['rest_framework.authentication.BasicAuthentication'] if CONFIG.BASIC_AUTH_ENABLED else []),
     ],
     'EXCEPTION_HANDLER': 'common.core.exception.common_exception_handler',
     'DEFAULT_METADATA_CLASS': 'common.drf.metadata.SimpleMetadataWithFilters',

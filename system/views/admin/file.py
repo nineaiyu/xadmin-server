@@ -16,7 +16,7 @@ from rest_framework.parsers import MultiPartParser
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from common.swagger.utils import get_default_response_schema
@@ -39,8 +39,8 @@ class UploadFileFilter(BaseFilterSet):
         fields = ['filename', 'mime_type', 'md5sum', 'description', 'is_upload', 'is_tmp']
 
 
-class UploadFileViewSet(BaseModelSet):
-    """文件"""
+class UploadFileViewSet(RecycleBinAction, BaseModelSet):
+    """文件（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
     ordering_fields = ['created_time', 'filesize']

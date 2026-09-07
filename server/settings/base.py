@@ -102,7 +102,9 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    # SEC-1（ADR-001 修订）：/admin/ 站点已启用且依赖 Session+CSRF，必须恢复该中间件；
+    # DRF API 视图自带 csrf_exempt，Bearer 接口不受影响
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -326,7 +328,15 @@ HTTP_BIND_HOST = CONFIG.HTTP_BIND_HOST
 HTTP_LISTEN_PORT = CONFIG.HTTP_LISTEN_PORT
 GUNICORN_MAX_WORKER = CONFIG.GUNICORN_MAX_WORKER
 CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT
+# PERF-1：heavy 队列 worker 配置（见 conf.py 说明）
+CELERY_HEAVY_POOL = CONFIG.CELERY_HEAVY_POOL
+CELERY_HEAVY_CONCURRENCY = CONFIG.CELERY_HEAVY_CONCURRENCY
 # celery flower 任务监控配置
 CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT
 CELERY_FLOWER_HOST = CONFIG.CELERY_FLOWER_HOST
 CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH
+
+# DEP-3：错误聚合（SENTRY_DSN 为空时零开销），在 settings 加载期尽早初始化
+from ..monitoring import init_monitoring  # noqa: E402
+
+init_monitoring()

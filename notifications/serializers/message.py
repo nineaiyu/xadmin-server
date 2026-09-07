@@ -27,11 +27,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
         model = MessageContent
         fields = ['pk', 'title', 'level', "publish", 'notice_type', "notice_user", 'notice_dept', 'notice_role',
-                  'message', "created_time", "user_count", "read_user_count", 'extra_json', "files"]
+                  'message', "created_time", "user_count", "read_user_count", 'extra_json', "files", 'deleted_at']
 
         table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
         extra_kwargs = {
             'extra_json': {'read_only': True},
+            'deleted_at': {'read_only': True},
             'notice_user': {'attrs': ['pk', 'username'], 'many': True, 'format': '{username}', 'read_only': False,
                             'input_type': 'api-search-user', 'queryset': UserInfo.objects},
             'notice_dept': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-dept'},
@@ -41,6 +42,12 @@ class NoticeMessageSerializer(BaseModelSerializer):
     files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
+
+    def validate_message(self, value):
+        # SEC-3：公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
+        # 防止持权账号之间注入脚本（存储型 XSS）
+        from common.utils.sanitize import sanitize_rich_text
+        return sanitize_rich_text(value)
 
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):

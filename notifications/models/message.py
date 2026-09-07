@@ -8,10 +8,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel, AutoCleanFileMixin
+from common.core.models import DbAuditModel, AutoCleanFileMixin, SoftDeleteModel
 
 
-class MessageContent(AutoCleanFileMixin, DbAuditModel):
+class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     class NoticeChoices(models.IntegerChoices):
         SYSTEM = 0, _("System notification")
         NOTICE = 1, _("System announcement")

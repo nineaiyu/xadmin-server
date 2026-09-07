@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import QuerySet
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -156,6 +157,50 @@ class DbAuditModel(DbBaseModel):
 
     class Meta:
         abstract = True
+
+
+class SoftDeleteQuerySet(models.QuerySet):
+    def delete(self):
+        """批量软删除：只做标记，不触发级联与文件清理（逐行清理请走回收站 purge）。
+
+        返回值对齐 Django 约定的 (total, per_model_dict) 元组，
+        调用方（如 batch-destroy 的解包）才不会因返回 int 而崩溃。
+        """
+        rows = self.update(deleted_at=timezone.now())
+        return rows, {self.model._meta.label: rows}
+
+
+class SoftDeleteManager(models.Manager):
+    """FEAT-2：默认排除已软删除数据，回收站场景使用 all_objects。"""
+
+    def get_queryset(self):
+        return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
+
+
+class SoftDeleteModel(models.Model):
+    """FEAT-2：软删除基类。delete() 只标记 deleted_at，回收站可恢复；
+    hard_delete() 沿 MRO 走原有 delete() 链（含文件清理与级联），供物理清除使用。
+
+    使用时必须放在 MRO 首位（如 class Foo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel)），
+    使 delete() 优先于 AutoCleanFileMixin.delete 解析，软删除不清理物理文件。
+    """
+    deleted_at = models.DateTimeField(verbose_name=_("Deleted at"), null=True, blank=True, db_index=True)
+
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        """软删除：标记 deleted_at 并触发 post_save 信号（权限缓存失效依赖此链路）。"""
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['deleted_at'])
+        return 1
+
+    def hard_delete(self, *args, **kwargs):
+        """物理删除：跳过软删除标记，走原始 delete() 链（文件清理/级联照常生效）。"""
+        return super().delete(*args, **kwargs)
 
 
 def upload_directory_path(instance, filename):

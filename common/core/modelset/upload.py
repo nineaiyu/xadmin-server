@@ -20,6 +20,13 @@ from common.swagger.utils import get_default_response_schema
 
 class UploadFileAction(object):
     FILE_UPLOAD_TYPE = ["png", "jpeg", "jpg", "gif"]
+    # SEC-5：扩展名可伪造，按文件头魔数做二次校验；扩展新类型时需同步补充签名
+    FILE_UPLOAD_MAGIC = {
+        "png": b"\x89PNG\r\n\x1a\n",
+        "jpeg": b"\xff\xd8\xff",
+        "jpg": b"\xff\xd8\xff",
+        "gif": b"GIF8",  # GIF87a / GIF89a 公共前缀
+    }
     FILE_UPLOAD_FIELD = "avatar"
     FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
 
@@ -35,18 +42,18 @@ class UploadFileAction(object):
         """上传头像"""
         self.FILE_UPLOAD_SIZE = self.get_upload_size()
         files = request.FILES.getlist("file", [])
+        if not files:
+            return ApiResponse(code=1002, detail=_("Please select the file to upload"))
         instance = self.get_object()
         file_obj = files[0]
-        try:
-            file_type = file_obj.name.split(".")[-1]
-            if file_type not in self.FILE_UPLOAD_TYPE:
-                raise
-            if file_obj.size > self.FILE_UPLOAD_SIZE:
-                return ApiResponse(code=1003, detail=_("Image size cannot exceed {}").format(self.FILE_UPLOAD_SIZE))
-        except Exception:
-            return ApiResponse(
-                code=1002, detail=_("Wrong image type, the type should be {}").format(",".join(self.FILE_UPLOAD_TYPE))
-            )
+        wrong_type_detail = _("Wrong image type, the type should be {}").format(",".join(self.FILE_UPLOAD_TYPE))
+        file_type = file_obj.name.split(".")[-1].lower()
+        magic = self.FILE_UPLOAD_MAGIC.get(file_type)
+        if magic is None or not file_obj.read(len(magic)).startswith(magic):
+            return ApiResponse(code=1002, detail=wrong_type_detail)
+        file_obj.seek(0)  # 魔数读取移动了文件指针，复位后再交给存储后端，避免保存被截断的内容
+        if file_obj.size > self.FILE_UPLOAD_SIZE:
+            return ApiResponse(code=1003, detail=_("Image size cannot exceed {}").format(self.FILE_UPLOAD_SIZE))
         setattr(instance, self.FILE_UPLOAD_FIELD, file_obj)
         instance.modifier = request.user
         instance.save(update_fields=[self.FILE_UPLOAD_FIELD, "modifier"])

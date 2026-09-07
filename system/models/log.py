@@ -70,6 +70,8 @@ class OperationLog(DbAuditModel):
     status_code = models.IntegerField(verbose_name=_("Status code"), null=True, blank=True)
     request_uuid = models.UUIDField(verbose_name=_("Request ID"), null=True, blank=True)
     exec_time = models.FloatField(verbose_name=_("Execution time"), null=True, blank=True)
+    # FEAT-4：字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
+    changes = models.TextField(verbose_name=_("Changed fields"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("Operation log")

@@ -12,6 +12,10 @@ SERVER_LOG_FILE = os.path.join(LOG_DIR, 'server.log')
 DRF_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'drf_exception.log')
 UNEXPECTED_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, 'unexpected_exception.log')
 LOG_LEVEL = CONFIG.LOG_LEVEL
+# DEP-3：LOG_FORMAT=text（默认，人类可读）/ json（结构化，供采集端解析）
+FILE_FORMATTER = 'json' if str(CONFIG.LOG_FORMAT).lower() == 'json' else 'main'
+# DEP-4：按天滚动的历史日志保留天数（0 表示不清理）
+LOG_BACKUP_COUNT = int(CONFIG.LOG_BACKUP_COUNT or 0)
 
 LOGGING = {
     'version': 1,
@@ -31,6 +35,9 @@ LOGGING = {
             'datefmt': '%Y-%m-%d %H:%M:%S',
             'format': '\n%(asctime)s.%(msecs)03d [%(requestUuid)s %(levelname)s %(requestUser)s] %(message)s',
         },
+        'json': {
+            '()': 'server.logging.JsonFormatter',
+        },
         'simple': {
             'format': '%(levelname)s %(message)s'
         },
@@ -43,31 +50,34 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'server.logging.ColorHandler',
-            'formatter': 'main'
+            'formatter': FILE_FORMATTER
         },
         'server': {
             'encoding': 'utf8',
             'level': 'DEBUG',
             'class': 'server.logging.DailyTimedRotatingFileHandler',
             'when': 'midnight',
-            'formatter': 'main',
+            'formatter': FILE_FORMATTER,
             'filename': SERVER_LOG_FILE,
+            'backupCount': LOG_BACKUP_COUNT,
         },
         'drf_exception': {
             'encoding': 'utf8',
             'level': 'DEBUG',
             'class': 'server.logging.DailyTimedRotatingFileHandler',
             'when': 'midnight',
-            'formatter': 'exception',
+            'formatter': 'exception' if FILE_FORMATTER == 'main' else FILE_FORMATTER,
             'filename': DRF_EXCEPTION_LOG_FILE,
+            'backupCount': LOG_BACKUP_COUNT,
         },
         'unexpected_exception': {
             'encoding': 'utf8',
             'level': 'DEBUG',
             'class': 'server.logging.DailyTimedRotatingFileHandler',
             'when': 'midnight',
-            'formatter': 'exception',
+            'formatter': 'exception' if FILE_FORMATTER == 'main' else FILE_FORMATTER,
             'filename': UNEXPECTED_EXCEPTION_LOG_FILE,
+            'backupCount': LOG_BACKUP_COUNT,
         }
     },
     'loggers': {

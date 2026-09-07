@@ -94,6 +94,16 @@ sh utils/db_restore.sh ../xadmin-db-backups/xadmin_20260904_205752.sql.gz xadmin
 ```
 
 - 建议定期将 `xadmin-db-backups` 目录同步到异地/对象存储；恢复流程至少每季度演练一次（RTO 目标 ≤30 分钟，见半年规划 P5）。
+- 演练记录：2026-09-07 T5.4 首次正式演练通过（RTO 0.88s、52 表逐行一致），报告与遗留缺口见 [backup-drill-2026-09.md](backup-drill-2026-09.md)。
+- **备份/恢复检查清单**（部署验收与季度演练用）：
+
+```markdown
+- [ ] db-backup 容器 healthy 且 xadmin-db-backups/ 有当日 .sql.gz
+- [ ] 恢复演练：sh utils/db_restore.sh <备份包> <验证库名> 后逐表行数核对，演练完 DROP 验证库
+- [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）
+- [ ] data/upload 媒体目录是否纳入当日备份（当前需手工 tar）
+- [ ] 异地副本策略是否已启用（当前未启用）
+```
 
 生产 `config.yml` 建议：
 

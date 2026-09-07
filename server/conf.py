@@ -46,6 +46,14 @@ class Config(dict):
         # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
         'SILK_ENABLED': False,
         'LOG_LEVEL': "WARNING",
+        # DEP-3：应用日志格式 text（默认）/ json（结构化，供 Loki/ELK 采集）
+        'LOG_FORMAT': 'text',
+        # DEP-4：按天滚动的日志保留天数，超出后整体清理日期目录（0 表示不清理）
+        'LOG_BACKUP_COUNT': 30,
+        # DEP-3：Sentry 错误聚合；DSN 为空时完全不初始化（sentry-sdk 已在 requirements.txt）
+        'SENTRY_DSN': '',
+        'SENTRY_ENVIRONMENT': 'production',
+        'SENTRY_TRACES_SAMPLE_RATE': 0.0,
         'XADMIN_APPS': [],
         # 表前缀 abc_
         'DB_PREFIX': '',
@@ -75,6 +83,14 @@ class Config(dict):
         'HTTP_LISTEN_PORT': 8896,
         'GUNICORN_MAX_WORKER': 4,
         'CELERY_WORKER_COUNT': 10,
+        # PERF-1：heavy 队列（导入/导出/批量重任务）worker 配置。
+        # CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）；
+        # 默认维持 threads，与 default 队列保持相同的运行时状态共享行为
+        'CELERY_HEAVY_POOL': 'threads',
+        'CELERY_HEAVY_CONCURRENCY': 4,
+        # DRF BasicAuthentication 总开关（SEC-4）：base64 明文凭证，默认关闭；
+        # 本地调试需要时在 config.yml 显式开启
+        'BASIC_AUTH_ENABLED': False,
         # celery flower 任务监控配置
         'CELERY_FLOWER_PORT': 5566,
         'CELERY_FLOWER_HOST': '127.0.0.1',
@@ -91,11 +107,11 @@ class Config(dict):
     }
     settings = {
         # 密码安全配置
-        'SECURITY_PASSWORD_MIN_LENGTH': 6,
+        'SECURITY_PASSWORD_MIN_LENGTH': 10,
         'SECURITY_ADMIN_USER_PASSWORD_MIN_LENGTH': 6,
-        'SECURITY_PASSWORD_UPPER_CASE': False,
+        'SECURITY_PASSWORD_UPPER_CASE': True,
         'SECURITY_PASSWORD_LOWER_CASE': False,
-        'SECURITY_PASSWORD_NUMBER': False,
+        'SECURITY_PASSWORD_NUMBER': True,
         'SECURITY_PASSWORD_SPECIAL_CHAR': False,
         # 用户登录限制的规则
         'SECURITY_LOGIN_LIMIT_COUNT': 7,
@@ -155,6 +171,11 @@ class Config(dict):
         'PERMISSION_DATA_ENABLED': True,  # 数据权限控制
         'REFERER_CHECK_ENABLED': False,  # referer 校验
         'EXPORT_MAX_LIMIT': 20000,  # 限制导出数据数量
+        # FEAT-2：软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
+        'RECYCLE_BIN_RETENTION_DAYS': 30,
+        # FEAT-4：字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
+        # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
+        'AUDIT_DIFF_MODELS': [],
         # 验证码配置
         'VERIFY_CODE_TTL': 5 * 60,  # Unit: second
         'VERIFY_CODE_LIMIT': 60,

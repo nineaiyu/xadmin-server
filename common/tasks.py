@@ -183,3 +183,32 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
                     BatchDeleteDataMessage(getattr(request, "user"), task_info).publish()
 
     return task_info
+
+
+@shared_task(
+    verbose_name=_('Purge soft deleted data'),
+    description=_("FEAT-2: physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS")
+)
+@register_as_period_task(interval=86400)
+@after_app_ready_start
+def purge_soft_deleted():
+    """物理清除回收站中超过保留期的软删除数据（含底层文件/级联清理）。"""
+    from django.apps import apps
+
+    from common.core.models import SoftDeleteModel
+
+    retention_days = getattr(settings, 'RECYCLE_BIN_RETENTION_DAYS', 30)
+    cutoff = timezone.now() - datetime.timedelta(days=retention_days)
+    total = 0
+    for model in apps.get_models():
+        if not issubclass(model, SoftDeleteModel):
+            continue
+        count = 0
+        for instance in model.all_objects.filter(deleted_at__lt=cutoff).iterator():
+            instance.hard_delete()
+            count += 1
+        if count:
+            logger.info(f'purge {count} soft deleted data. model: {model._meta.label}')
+        total += count
+    logger.info(f'purge soft deleted data done. retention_days: {retention_days}, total: {total}')
+    return total
