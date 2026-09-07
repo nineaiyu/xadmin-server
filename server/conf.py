@@ -71,6 +71,13 @@ class Config(dict):
         'DB_DATABASE': 'xadmin',
         'DB_USER': 'server',
         'DB_PASSWORD': '',
+        # TD-25/ADR-006：PostgreSQL server 端连接池（Django 5.1+，需 psycopg3）。
+        # 仅 DB_ENGINE=postgresql 生效；开启后 CONN_MAX_AGE 自动归零（连接生命周期由池管理）。
+        # 容量核算：GUNICORN_MAX_WORKER × DB_POOL_MAX_SIZE + celery 子进程数 × DB_POOL_MAX_SIZE
+        # 应小于 PG max_connections
+        'DB_POOL': True,
+        'DB_POOL_MIN_SIZE': 2,
+        'DB_POOL_MAX_SIZE': 8,
         # HOST 校验白名单，生产环境必须配置，如 ['xadmin.example.com']；DEBUG 模式默认放行
         'ALLOWED_HOSTS': [],
         # CORS 跨域配置，同源部署（nginx 反代）无需配置；跨域部署请配置白名单

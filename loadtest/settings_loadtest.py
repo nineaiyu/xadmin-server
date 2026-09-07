@@ -53,10 +53,9 @@ DEBUG_DEV = False
 # ASGI 连接风暴（T3.1 首测发现，重要）：Django 的 ASGIHandler 为每个请求创建独立
 # 线程（ThreadSensitiveContext），线程随请求结束消亡，其 DB 连接随之丢弃——
 # base.py 的 CONN_MAX_AGE=600 在此形态下无效，等效于每请求新建 PG 连接；
-# psycopg2 不支持 Django 5.1+ 的 server 端连接池（仅 psycopg3）。
 # 持续 ~600rps 时临时端口耗尽（macOS/Linux 容器均实测 EADDRNOTAVAIL）→ 13-27% 500。
-# 压测容器以 tcp_tw_reuse=1 + 扩大临时端口段缓解以完成测量（连接开销保留在
-# 基线数据中，符合生产现状）；根因修复（psycopg3 连接池/pgbouncer）另立技术债。
+# 【已根因修复（2026-09-07，TD-25/ADR-006）】：psycopg3 + Django server 端连接池
+# （OPTIONS.pool，默认开启），before/after 压测对比见 docs/ops/performance-baseline.md
 
 
 # 登录三开关全关（performance-baseline.md §三）：否则脚本无法完成登录

@@ -169,6 +169,8 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 
 > 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——**生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml 为应用运行时唯一定义处）；队列拆分后首次升级，`docker compose up -d` 会新增 `celery-worker`/`celery-heavy`/`celery-beat` 三个容器并移除旧 `celery` 容器。
 
+> **PostgreSQL 部署升级注意（TD-25/ADR-006，2026-09-07）**：驱动由 `psycopg2-binary` 切换为 `psycopg[binary,pool]`（psycopg3），`DB_ENGINE=postgresql` 时默认启用 Django server 端连接池（`OPTIONS.pool`），连接生命周期由池管理（`CONN_MAX_AGE` 自动归零）。新增可选配置 `DB_POOL`（默认 true）/ `DB_POOL_MIN_SIZE`（2）/ `DB_POOL_MAX_SIZE`（8）；如需回退旧行为设 `DB_POOL: false`。容量核算：`GUNICORN_MAX_WORKER × DB_POOL_MAX_SIZE + celery 子进程数 × DB_POOL_MAX_SIZE` 应小于 PG `max_connections`。MySQL 部署不受影响。
+
 ### 6.2 回滚
 
 - 镜像回滚：`docker compose` 中把镜像 tag 固定到上一版本 `up -d`（Release 附件中的镜像 tag 见 release 页面）；

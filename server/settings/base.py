@@ -197,6 +197,18 @@ elif DB_ENGINE == 'vastbase':
 else:
     ENGINE = CONFIG.DB_ENGINE
 
+# TD-25/ADR-006：ASGI 形态下 ASGIHandler 为每请求创建独立线程（ThreadSensitiveContext），
+# 线程随请求结束消亡，持久连接机制（CONN_MAX_AGE）在此形态下无效，等效每请求新建 DB
+# 连接——压测 ~600rps 时临时端口耗尽致 13-27% 500。postgresql 引擎默认启用 Django 5.1+
+# server 端连接池（psycopg3 + psycopg_pool）；池模式下 CONN_MAX_AGE 必须为 0，
+# CONN_HEALTH_CHECKS 使池在取用连接前做轻量存活校验
+DB_POOL_ENABLED = DB_ENGINE == 'postgresql' and bool(CONFIG.DB_POOL)
+if DB_POOL_ENABLED:
+    DB_OPTIONS['pool'] = {
+        'min_size': int(CONFIG.DB_POOL_MIN_SIZE),
+        'max_size': max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),
+    }
+
 DATABASES = {
     'default': {
         'ENGINE': ENGINE,
@@ -206,7 +218,8 @@ DATABASES = {
         'USER': CONFIG.DB_USER,
         'PASSWORD': CONFIG.DB_PASSWORD,
         'ATOMIC_REQUESTS': True,
-        'CONN_MAX_AGE': 600,
+        'CONN_MAX_AGE': 0 if DB_POOL_ENABLED else 600,
+        'CONN_HEALTH_CHECKS': DB_POOL_ENABLED,
         'OPTIONS': DB_OPTIONS
     }
 }
