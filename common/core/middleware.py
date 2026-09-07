@@ -21,10 +21,13 @@ from system.services import OperationLog
 
 logger = get_logger(__name__)
 
-# PERF-05：日志大字段截断上限，避免大请求体/大响应整包入库
+# 日志大字段截断上限，避免大请求体/大响应整包入库
 MAX_LOG_FIELD = 4096
-# PERF-18：操作日志脱敏字段清单
+# 操作日志脱敏字段清单
 SENSITIVE_FIELDS = {'password', 'old_password', 'access', 'refresh'}
+# module 列的防御性截断：视图 docstring/模型标签超长时按字段上限截断，
+# 避免写日志失败放大成整个请求 500（mfa confirm 曾因此全挂）
+OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field('module').max_length
 
 
 def desensitize_body(body):
@@ -40,9 +43,9 @@ def desensitize_body(body):
 
 
 def write_operation_log(operation_log_id, info):
-    """PERF-05 Step1：主键已知，用 UPDATE 替代 update_or_create（省 1 条 SELECT）。
+    """主键已知，用 UPDATE 替代 update_or_create（省 1 条 SELECT）。
 
-    PERF-05 Step3：该函数通过 transaction.on_commit 在请求事务提交后执行，
+    该函数通过 transaction.on_commit 在请求事务提交后执行，
     请求事务回滚时占位行一并消失，UPDATE 影响 0 行，不再产生孤儿日志写；
     事务中断也不会再连带整个请求失败。
     """
@@ -59,7 +62,7 @@ def build_operation_log_info(request, response, request_start_time):
     request / ORM 实例引用，因此可以安全地延迟到 on_commit 回调中执行。
     """
     body = desensitize_body(getattr(request, 'request_data', {}))
-    # PERF-05：非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
+    # 非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
     # 无法可靠还原 data，解析了也不用，只会白白序列化一遍大响应
     response_data = getattr(response, 'data', None)
     if not isinstance(response_data, dict):
@@ -82,7 +85,7 @@ def build_operation_log_info(request, response, request_start_time):
     else:
         action_doc = request_module
     return {
-        'module': action_doc,
+        'module': action_doc[:OPERATION_LOG_MODULE_MAX] if action_doc else action_doc,
         # 预取主键而非持有实例：on_commit 回调中不再延迟访问 request/ORM
         'creator_id': getattr(user, 'pk', None) if not isinstance(user, AnonymousUser) else None,
         'dept_belong_id': getattr(request.user, 'dept_id', None),
@@ -92,13 +95,13 @@ def build_operation_log_info(request, response, request_start_time):
         'body': json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict)
                 else str(body)[:MAX_LOG_FIELD],
         'response_code': response.status_code,
-        # PERF-05 Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
+        # Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
         'system': get_os(request),
         'browser': get_browser(request),
         'status_code': response_data.get('code'),
         'request_uuid': getattr(request, 'request_uuid', None),
         'exec_time': time.time() - request_start_time,
-        # FEAT-4：字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
+        # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
         'changes': json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:MAX_LOG_FIELD]
         if (changes := getattr(request, 'operation_log_changes', None)) else None,
         'response_result': json.dumps(
@@ -136,7 +139,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             return
 
         info = build_operation_log_info(request, response, request_start_time)
-        # PERF-05 Step3：移出请求事务，提交后再写日志
+        # Step3：移出请求事务，提交后再写日志
         transaction.on_commit(lambda: write_operation_log(operation_log_id, info))
         logger.debug(f"request end. {request.method} {request.path} {getattr(request, 'request_data', {})} log:{info}")
         return True
@@ -153,7 +156,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                         v = settings.API_MODEL_MAP.get(request.path, v)
                         if not v and model:
                             v = model._meta.label
-                    log = OperationLog(module=v)
+                    log = OperationLog(module=str(v)[:OPERATION_LOG_MODULE_MAX])
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
                     setattr(request, 'request_module', v)

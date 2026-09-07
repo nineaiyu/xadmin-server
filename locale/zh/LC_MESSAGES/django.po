@@ -1409,6 +1409,38 @@ msgstr "OTP 签发方名称"
 msgid "The issuer name in the otpauth binding URI"
 msgstr "otpauth 绑定 URI 中的签发方名称"
 
+#: settings/serializers/security.py:383
+msgid "Disk usage threshold (%)"
+msgstr "磁盘使用率阈值（%）"
+
+#: settings/serializers/security.py:384
+msgid "Send an alert email to the administrator when the disk usage exceeds this threshold"
+msgstr "磁盘使用率超过该阈值时，向管理员发送告警邮件"
+
+#: settings/serializers/security.py:388
+msgid "Memory usage threshold (%)"
+msgstr "内存使用率阈值（%）"
+
+#: settings/serializers/security.py:389
+msgid "Send an alert email to the administrator when the memory usage exceeds this threshold"
+msgstr "内存使用率超过该阈值时，向管理员发送告警邮件"
+
+#: settings/serializers/security.py:393
+msgid "CPU usage threshold (%)"
+msgstr "CPU 使用率阈值（%）"
+
+#: settings/serializers/security.py:394
+msgid "Send an alert email to the administrator when the CPU usage exceeds this threshold"
+msgstr "CPU 使用率超过该阈值时，向管理员发送告警邮件"
+
+#: settings/serializers/security.py:399
+msgid "CPU load threshold (single core)"
+msgstr "CPU 负载阈值（单核）"
+
+#: settings/serializers/security.py:400
+msgid "Send an alert email to the administrator when the single-core CPU load exceeds this threshold"
+msgstr "单核 CPU 负载超过该阈值时，向管理员发送告警邮件"
+
 #: settings/serializers/sms.py:18 settings/serializers/sms.py:25
 msgid "SMS"
 msgstr "短信"

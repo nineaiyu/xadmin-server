@@ -54,7 +54,7 @@ DEBUG_DEV = False
 # 线程（ThreadSensitiveContext），线程随请求结束消亡，其 DB 连接随之丢弃——
 # base.py 的 CONN_MAX_AGE=600 在此形态下无效，等效于每请求新建 PG 连接；
 # 持续 ~600rps 时临时端口耗尽（macOS/Linux 容器均实测 EADDRNOTAVAIL）→ 13-27% 500。
-# 【已根因修复（2026-09-07】：psycopg3 + Django server 端连接池
+# 【已根因修复（2026-09-07）】：psycopg3 + Django server 端连接池
 # （OPTIONS.pool，默认开启），before/after 压测对比见 docs/ops/performance-baseline.md
 
 

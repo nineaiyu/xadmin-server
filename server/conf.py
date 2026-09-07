@@ -71,7 +71,7 @@ class Config(dict):
         'DB_DATABASE': 'xadmin',
         'DB_USER': 'server',
         'DB_PASSWORD': '',
-        # TD-25/ADR-006：PostgreSQL server 端连接池（Django 5.1+，需 psycopg3）。
+        # PostgreSQL server 端连接池（Django 5.1+，需 psycopg3）。
         # 仅 DB_ENGINE=postgresql 生效；开启后 CONN_MAX_AGE 自动归零（连接生命周期由池管理）。
         # 容量核算：GUNICORN_MAX_WORKER × DB_POOL_MAX_SIZE + celery 子进程数 × DB_POOL_MAX_SIZE
         # 应小于 PG max_connections
@@ -90,7 +90,7 @@ class Config(dict):
         'HTTP_LISTEN_PORT': 8896,
         'GUNICORN_MAX_WORKER': 4,
         'CELERY_WORKER_COUNT': 10,
-        # PERF-1：heavy 队列（导入/导出/批量重任务）worker 配置。
+        # heavy 队列（导入/导出/批量重任务）worker 配置。
         # CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）；
         # 默认维持 threads，与 default 队列保持相同的运行时状态共享行为
         'CELERY_HEAVY_POOL': 'threads',
@@ -171,6 +171,11 @@ class Config(dict):
         'SECURITY_MFA_LOGIN_TOKEN_TTL': 300,  # 登录 MFA 临时令牌有效期（秒）
         'SECURITY_MFA_OTP_VALID_WINDOW': 1,  # OTP 容错窗口（前后各 N 个周期）
         'SECURITY_MFA_OTP_ISSUER': 'XAdmin',  # OTP 绑定 URI 中的签发方名称
+        # 资源告警阈值（check_server_performance_period 周期检查，超标时邮件/站内信通知超管）
+        'SECURITY_MONITOR_DISK_USED_MAX': 80,  # 磁盘使用率阈值（%）
+        'SECURITY_MONITOR_MEMORY_USED_MAX': 85,  # 内存使用率阈值（%）
+        'SECURITY_MONITOR_CPU_PERCENT_MAX': 80,  # CPU 使用率阈值（%）
+        'SECURITY_MONITOR_CPU_LOAD_MAX': 5,  # 单核 CPU 负载阈值
         # 基本配置
         'SITE_URL': 'http://127.0.0.1:8000',
         'FRONT_END_WEB_WATERMARK_ENABLED': False,  # 前端水印展示
@@ -178,9 +183,9 @@ class Config(dict):
         'PERMISSION_DATA_ENABLED': True,  # 数据权限控制
         'REFERER_CHECK_ENABLED': False,  # referer 校验
         'EXPORT_MAX_LIMIT': 20000,  # 限制导出数据数量
-        # FEAT-2：软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
+        # 软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
         'RECYCLE_BIN_RETENTION_DAYS': 30,
-        # FEAT-4：字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
+        # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
         # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
         'AUDIT_DIFF_MODELS': [],
         # 验证码配置

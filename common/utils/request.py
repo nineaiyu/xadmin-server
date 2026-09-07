@@ -116,7 +116,7 @@ def get_request_path(request, *args, **kwargs):
 
 def get_user_agent(request):
     """
-    解析 User-Agent。PERF-05：每个请求只解析一次（user_agents.parse 是重型正则），
+    解析 User-Agent。每个请求只解析一次（user_agents.parse 是重型正则），
     结果挂在 request 上复用；缺失 UA 头不再抛 KeyError。
     """
     ua_string = request.META.get('HTTP_USER_AGENT', '')
@@ -154,7 +154,9 @@ def get_verbose_name(queryset=None, view=None, model=None):
     verbose_name = ''
     try:
         if view is not None and hasattr(view, '__doc__'):
-            verbose_name = getattr(view, '__doc__')
+            # docstring 可能是多行长说明（如 mfa.UserConfirmViewSet 的 412 交互流程），
+            # 操作日志 module 列只有 64 字符且多行文本不可读，这里只取首行
+            verbose_name = (getattr(view, '__doc__') or '').strip().splitlines()[0].strip()
         if queryset is not None and hasattr(queryset, 'model'):
             model = queryset.model
         elif view and hasattr(view.get_queryset(), 'model'):

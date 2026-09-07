@@ -373,3 +373,31 @@ class SecurityMFASerializer(serializers.Serializer):
         max_length=64, default='XAdmin', label=_('OTP issuer'),
         help_text=_('The issuer name in the otpauth binding URI')
     )
+
+
+class SecurityMonitorSerializer(serializers.Serializer):
+    """资源告警阈值设置（check_server_performance_period 周期检查使用）"""
+
+    SECURITY_MONITOR_DISK_USED_MAX = serializers.IntegerField(
+        min_value=1, max_value=100, default=80,
+        label=_('Disk usage threshold (%)'),
+        help_text=_('Send an alert email to the administrator when the disk usage exceeds this threshold')
+    )
+
+    SECURITY_MONITOR_MEMORY_USED_MAX = serializers.IntegerField(
+        min_value=1, max_value=100, default=85,
+        label=_('Memory usage threshold (%)'),
+        help_text=_('Send an alert email to the administrator when the memory usage exceeds this threshold')
+    )
+
+    SECURITY_MONITOR_CPU_PERCENT_MAX = serializers.IntegerField(
+        min_value=1, max_value=100, default=80,
+        label=_('CPU usage threshold (%)'),
+        help_text=_('Send an alert email to the administrator when the CPU usage exceeds this threshold')
+    )
+
+    SECURITY_MONITOR_CPU_LOAD_MAX = serializers.IntegerField(
+        min_value=1, max_value=100, default=5,
+        label=_('CPU load threshold (single core)'),
+        help_text=_('Send an alert email to the administrator when the single-core CPU load exceeds this threshold')
+    )

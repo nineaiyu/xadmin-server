@@ -5280,5 +5280,123 @@
       "meta": "c8f215fa-dc48-4e2a-a0d5-2068f80336ae",
       "method": "GET"
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3e72bf19-4080-416e-b7aa-0a40be940963",
+    "fields": {
+      "created_time": "2026-09-07T13:28:31.000Z",
+      "updated_time": "2026-09-07T13:28:31.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "retrieve:SecurityMFA",
+      "rank": 169,
+      "path": "api/settings/mfa/auth$",
+      "component": null,
+      "is_active": true,
+      "meta": "b795db6c-8454-4cd3-8692-52cdf8843dfb",
+      "method": "GET",
+      "model": [
+        "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "aac5fe06-79b0-439f-80a1-5f8e494114c2",
+    "fields": {
+      "created_time": "2026-09-07T13:28:31.000Z",
+      "updated_time": "2026-09-07T13:28:31.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "partialUpdate:SecurityMFA",
+      "rank": 170,
+      "path": "api/settings/mfa/auth$",
+      "component": null,
+      "is_active": true,
+      "meta": "295f33fc-046d-47aa-a63a-102168002771",
+      "method": "PATCH",
+      "model": [
+        "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "34f0df51-4a9b-40e6-af44-0a710ffe48e7",
+    "fields": {
+      "created_time": "2026-09-07T13:28:31.000Z",
+      "updated_time": "2026-09-07T13:28:31.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "resetMfa:SystemUser",
+      "rank": 17,
+      "path": "api/system/user/(?P<pk>[^/.]+)/reset-mfa$",
+      "component": null,
+      "is_active": true,
+      "meta": "03591c30-84aa-4174-913c-0f2867e43baf",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "cc5dc590-85e8-4f21-970f-73b45b3e2ab6",
+    "fields": {
+      "created_time": "2026-09-07T13:55:09.000Z",
+      "updated_time": "2026-09-07T13:55:09.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "retrieve:SecurityMonitor",
+      "rank": 171,
+      "path": "api/settings/monitor/auth$",
+      "component": null,
+      "is_active": true,
+      "meta": "cd656a71-aa50-425c-99d4-e80fc093c4e7",
+      "method": "GET",
+      "model": [
+        "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+      ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2f639b6f-4de4-4dc9-9962-94e4726ab363",
+    "fields": {
+      "created_time": "2026-09-07T13:55:09.000Z",
+      "updated_time": "2026-09-07T13:55:09.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": null,
+      "dept_belong": null,
+      "parent": "4c5c555d-90ad-42c3-9186-6a8fe48c0d38",
+      "menu_type": 2,
+      "name": "partialUpdate:SecurityMonitor",
+      "rank": 172,
+      "path": "api/settings/monitor/auth$",
+      "component": null,
+      "is_active": true,
+      "meta": "81b26af5-f7c8-4a98-a0ca-3a7fc057e7af",
+      "method": "PATCH",
+      "model": [
+        "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+      ]
+    }
   }
 ]

@@ -13,7 +13,7 @@ from settings.views.email import EmailServerSettingViewSet
 from settings.views.security import SecurityPasswordRuleViewSet, SecurityLoginLimitViewSet, \
     SecurityLoginAuthViewSet, SecurityRegisterAuthViewSet, SecurityResetPasswordAuthViewSet, \
     SecurityBindEmailAuthViewSet, SecurityBindPhoneAuthViewSet, SecurityVerifyCodeViewSet, \
-    SecurityCaptchaCodeViewSet, SecurityMFAViewSet
+    SecurityCaptchaCodeViewSet, SecurityMFAViewSet, SecurityMonitorViewSet
 from settings.views.settings import SettingViewSet
 from settings.views.sms import SmsSettingViewSet, SmsConfigViewSet
 
@@ -39,6 +39,7 @@ no_detail_router.register('bind/email', SecurityBindEmailAuthViewSet, basename='
 no_detail_router.register('bind/phone', SecurityBindPhoneAuthViewSet, basename='security-bind-phone-auth')
 
 no_detail_router.register('mfa/auth', SecurityMFAViewSet, basename='security-mfa-auth')
+no_detail_router.register('monitor/auth', SecurityMonitorViewSet, basename='security-monitor-auth')
 
 no_detail_router.register('sms', SmsSettingViewSet, basename='sms-settings')
 

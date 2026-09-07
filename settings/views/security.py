@@ -9,7 +9,7 @@ from common.utils import get_logger
 from settings.serializers.security import SecurityPasswordRuleSerializer, SecurityLoginLimitSerializer, \
     SecurityLoginAuthSerializer, SecurityRegisterAuthSerializer, SecurityResetPasswordAuthSerializer, \
     SecurityBindEmailAuthSerializer, SecurityBindPhoneAuthSerializer, SecurityVerifyCodeSerializer, \
-    SecurityCaptchaCodeSerializer, SecurityMFASerializer
+    SecurityCaptchaCodeSerializer, SecurityMFASerializer, SecurityMonitorSerializer
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -73,3 +73,9 @@ class SecurityMFAViewSet(BaseSettingViewSet):
     """MFA 二次验证"""
     serializer_class = SecurityMFASerializer
     category = "security_mfa"
+
+
+class SecurityMonitorViewSet(BaseSettingViewSet):
+    """资源告警阈值"""
+    serializer_class = SecurityMonitorSerializer
+    category = "security_monitor"
