@@ -31,7 +31,7 @@ def test_get_verbose_name_takes_first_line_only():
 
 
 def test_mfa_confirm_not_broken_by_log_middleware(auth_client, superuser):
-    """POST /api/mfa/confirm 不再因写日志 500，且明文密码不落操作日志。"""
+    """POST /api/mfa/confirm 不再因写日志 500，日志占位行正常生成。"""
     # 解绑 OTP 的 412 要求 confirm_type=password，密码方式在该级别可验证
     resp = auth_client.post(
         MFA_CONFIRM_URL,
@@ -41,8 +41,36 @@ def test_mfa_confirm_not_broken_by_log_middleware(auth_client, superuser):
     assert resp.status_code == 200
     assert resp.data["code"] == 1000
 
-    # 确认提交体里的 code 是明文登录密码，已在 API_LOG_IGNORE 中排除
-    assert not OperationLog.objects.filter(module="敏感操作二次验证").exists()
+    # 二次验证必须留痕（path/body 由 on_commit 回填，pytest 事务内断言 module 即可）
+    log = OperationLog.objects.filter(module="敏感操作二次验证").first()
+    assert log is not None
+    assert len(log.module) <= 64
+
+
+def test_confirm_body_password_desensitized(rf, superuser):
+    """二次验证提交体里的 code 字段是明文登录密码，落日志前必须掩码。"""
+    import json
+
+    from common.core.middleware import build_operation_log_info
+
+    request = rf.post(MFA_CONFIRM_URL, data={})
+    request.user = superuser
+    request.request_data = {
+        "confirm_type": "password",
+        "method": "password",
+        "code": "Admin@123456",
+    }
+    request.request_ip = "127.0.0.1"
+
+    class FakeResponse:
+        status_code = 200
+        renderer_context = {}
+        data = {"code": 1000, "detail": "ok"}
+
+    info = build_operation_log_info(request, FakeResponse(), 0.0)
+    assert "Admin@123456" not in info["body"]
+    assert "************" in info["body"]
+    assert json.loads(info["body"])["method"] == "password"
 
 
 def test_menu_post_module_truncated_not_500(auth_client, superuser):

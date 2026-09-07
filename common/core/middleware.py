@@ -24,7 +24,9 @@ logger = get_logger(__name__)
 # 日志大字段截断上限，避免大请求体/大响应整包入库
 MAX_LOG_FIELD = 4096
 # 操作日志脱敏字段清单
-SENSITIVE_FIELDS = {'password', 'old_password', 'access', 'refresh'}
+# code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
+# 严禁明文落日志
+SENSITIVE_FIELDS = {'password', 'old_password', 'access', 'refresh', 'code'}
 # module 列的防御性截断：视图 docstring/模型标签超长时按字段上限截断，
 # 避免写日志失败放大成整个请求 500（mfa confirm 曾因此全挂）
 OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field('module').max_length
@@ -71,7 +73,7 @@ def build_operation_log_info(request, response, request_start_time):
     request_module = getattr(request, 'request_module', '')
     if hasattr(response, 'renderer_context'):
         # 视图实例可能没有与 HTTP 动词同名的方法（如 ViewSet 的 405/detail 误配路径），
-        # getattr 必须带兜底，否则操作日志会把业务响应改写成 500（TD-24）
+        # getattr 必须带兜底，否则操作日志会把业务响应改写成 500
         view = response.renderer_context.get('view')
         handler = getattr(view, request.method.lower(), None) if view else None
         action_doc = getattr(handler, '__doc__', None)
