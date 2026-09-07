@@ -18,7 +18,7 @@ from common.cache.storage import WebSocketMsgResultCache
 
 channel_layer = get_channel_layer()
 
-# PERF-08：在线信息快照缓存时长（秒）。在线列表接口与推送共用同一份快照，
+# 在线信息快照缓存时长（秒）。在线列表接口与推送共用同一份快照，
 # 避免多端同时刷新/推送时重复做在线统计。
 ONLINE_INFO_CACHE_TTL = 5
 ONLINE_INFO_CACHE_KEY = "online_info_snapshot"
@@ -38,7 +38,7 @@ def parse_online_user_pk(group):
 async def get_online_info():
     """在线用户与 channel 列表。
 
-    PERF-08：优先走反向索引 online:users（一条 ZRANGEBYSCORE）+ 批量 pipeline 取
+    优先走反向索引 online:users（一条 ZRANGEBYSCORE）+ 批量 pipeline 取
     各组 channel，不再 SCAN 全库 + 逐 group 串行往返；结果整体缓存为快照。
     反向索引为空时（Redis 重启后首个心跳尚未到来的窗口）回退到 get_groups 重建。
     """
@@ -76,7 +76,7 @@ async def async_push_message(user_pk: str | int, message: Dict, message_type='pu
 
 
 async def async_push_messages(user_pks, message: Dict, message_type='push_message'):
-    """PERF-08：批量推送。整批收进一个 async 函数，只做一次同步桥接；
+    """批量推送。整批收进一个 async 函数，只做一次同步桥接；
     message 仅序列化一次，不再对每个用户做 json.loads(json.dumps(...)) 深拷贝。"""
     for user_pk in dict.fromkeys(user_pks):
         await async_push_message(user_pk, message, message_type)
@@ -101,7 +101,7 @@ async def get_online_users_layers(user_pks):
 
 @async_to_sync
 async def get_online_users():
-    """在线用户 pk 列表（PERF-08：反向索引一条命令，SCAN 仅作降级路径）"""
+    """在线用户 pk 列表（反向索引一条命令，SCAN 仅作降级路径）"""
     if hasattr(channel_layer, "get_online_user_pks"):
         online_user_pks = await channel_layer.get_online_user_pks()
         if online_user_pks:

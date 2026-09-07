@@ -47,8 +47,10 @@ class MenuMeta(DbAuditModel, DbUuidModel):
 
 
 class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
-    """FEAT-2：菜单软删除——删除进入回收站可恢复；
-    目录删除会级联标记全部后代菜单（同一时间戳，恢复/清除时成组处理）。"""
+    """
+    菜单软删除——删除进入回收站可恢复；
+    目录删除会级联标记全部后代菜单（同一时间戳，恢复/清除时成组处理）。
+    """
     class MenuChoices(models.IntegerChoices):
         DIRECTORY = 0, _("Directory")
         MENU = 1, _("Menu")
@@ -65,7 +67,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
                                blank=True)
     menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY,
                                          verbose_name=_("Menu type"))
-    # FEAT-2：unique=True 降级为"未删除数据"条件约束（见 Meta.constraints），
+    # unique=True 降级为"未删除数据"条件约束（见 Meta.constraints），
     # 已删除菜单释放组件名/权限码，可被新菜单复用
     name = models.CharField(verbose_name=_("Component name or permission code"), max_length=128)
     rank = models.IntegerField(verbose_name=_("Rank"), default=9999)

@@ -54,7 +54,7 @@ class UserSerializer(BaseModelSerializer):
     online_count = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='number',
                                                                     label=_("Online count"))
 
-    # FEAT-2：username 在 DB 层保持全局唯一（auth.E003 约束 USERNAME_FIELD 必须 unique），
+    # username 在 DB 层保持全局唯一（auth.E003 约束 USERNAME_FIELD 必须 unique），
     # 模型字段 unique=True 使 DRF 自动生成的 UniqueValidator 只查活跃数据（默认管理器），
     # 会放过回收站中的同名用户造成 IntegrityError——这里显式按 all_objects 拦截，
     # 回收站用户名视为占用并返回可读 400
@@ -85,8 +85,8 @@ class UserSerializer(BaseModelSerializer):
         password = attrs.get('password')
         if password:
             if self.request.method == 'POST':
-                # FEAT-3 注意：密码规则必须校验解密后的明文。前端提交的是
-                # AESCipherV2(username) 加密串，若拿提交原文校验，FEAT-3 收紧
+                # 注意：密码规则必须校验解密后的明文。前端提交的是
+                # AESCipherV2(username) 加密串，若拿提交原文校验，收紧
                 # 大小写/数字规则后密文无法稳定满足（hex/base64 形态随机），
                 # 会导致合法密码被拒。加密失败时提交值即为明文（导入等场景）
                 try:

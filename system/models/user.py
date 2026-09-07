@@ -23,7 +23,7 @@ from system.models import ModeTypeAbstract
 
 
 class SoftDeleteUserManager(SoftDeleteManager, UserManager):
-    """FEAT-2：用户软删除管理器——默认查询过滤已删除用户，
+    """用户软删除管理器——默认查询过滤已删除用户，
     同时保留 UserManager 的 create_user / create_superuser 等能力。"""
 
     def get_queryset(self):
@@ -31,7 +31,7 @@ class SoftDeleteUserManager(SoftDeleteManager, UserManager):
 
 
 class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract):
-    """FEAT-2：用户软删除——删除进入回收站可恢复；
+    """用户软删除——删除进入回收站可恢复；
     登录/鉴权走默认管理器（过滤 deleted_at），软删除用户的存量 JWT 立即失效。"""
 
     objects = SoftDeleteUserManager()

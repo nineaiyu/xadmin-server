@@ -187,7 +187,7 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
 
 @shared_task(
     verbose_name=_('Purge soft deleted data'),
-    description=_("FEAT-2: physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS")
+    description=_("Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS")
 )
 @register_as_period_task(interval=86400)
 @after_app_ready_start

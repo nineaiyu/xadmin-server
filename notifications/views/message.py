@@ -30,7 +30,7 @@ class NoticeMessageFilter(BaseFilterSet):
 
 
 class NoticeMessageViewSet(RecycleBinAction, BaseModelSet):
-    """消息通知（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
+    """消息通知"""
     queryset = MessageContent.objects.all()
     serializer_class = NoticeMessageSerializer
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FEAT-2 扩展：菜单软删除与回收站（目录级联标记后代、成组恢复/清除、名称释放）。"""
+"""扩展：菜单软删除与回收站（目录级联标记后代、成组恢复/清除、名称释放）。"""
 import pytest
 
 from system.models import Menu, MenuMeta

@@ -70,7 +70,7 @@ class DestroyAction(mixins.DestroyModelMixin):
 
 
 class UpdateAction(mixins.UpdateModelMixin):
-    # FEAT-4：diff 中忽略的审计/时间字段
+    # diff 中忽略的审计/时间字段
     AUDIT_DIFF_IGNORED_FIELDS = {'created_time', 'updated_time', 'date_changed', 'pk', 'id'}
 
     def update(self, request, *args, **kwargs):
@@ -82,7 +82,7 @@ class UpdateAction(mixins.UpdateModelMixin):
         return ApiResponse(data=data)
 
     def _audit_diff_old_values(self, pk):
-        """FEAT-4：AUDIT_DIFF_MODELS 白名单模型的 update 路径，取更新前快照用于计算 diff。
+        """AUDIT_DIFF_MODELS 白名单模型的 update 路径，取更新前快照用于计算 diff。
 
         白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
         （更新前快照 + 更新后回读），按需开启。

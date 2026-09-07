@@ -99,7 +99,7 @@ class IsAuthenticated(BasePermission):
                     request.ignore_field_permission = True
                     return True
             try:
-                # PERF-01：缓存基建修复后异常不再被吞掉（不再缓存空权限），此处 fail-closed
+                # 缓存基建修复后异常不再被吞掉（不再缓存空权限），此处 fail-closed
                 # 兜底：依赖瞬时故障（如 DB 抖动）时不放行、也不 500，下一次请求自动重试
                 permission_data = get_user_permission(request.user, request.method)
             except Exception as e:

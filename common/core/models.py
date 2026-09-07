@@ -44,7 +44,7 @@ class AutoCleanFileMixin(object):
         if kwargs.get('force_insert', None):
             filelist = []
         elif update_fields and not (set(update_fields) & self._file_field_names):
-            # PERF-11：本次保存不涉及文件字段时，文件内容不可能变化，
+            # 本次保存不涉及文件字段时，文件内容不可能变化，
             # 跳过 diff 前置 SELECT。UserInfo 每次登录更新 last_login、
             # MessageContent 每条消息保存都因此少一次查询。
             filelist = []
@@ -65,7 +65,7 @@ class AutoCleanFileMixin(object):
 
     @classmethod
     def has_file_cleanup(cls, model=None):
-        """PERF-19：模型是否存在需要逐行 delete() 才能清理的文件/附件。
+        """模型是否存在需要逐行 delete() 才能清理的文件/附件。
 
         - 自身含文件字段（ImageField/FileField）；或
         - 与 system.UploadFile 存在关联（delete() 时级联清理附件记录）。
@@ -160,25 +160,25 @@ class DbAuditModel(DbBaseModel):
 
 
 class SoftDeleteQuerySet(models.QuerySet):
+    """
+    批量软删除：只做标记，不触发级联与文件清理（逐行清理请走回收站 purge）。
+    返回值对齐 Django 约定的 (total, per_model_dict) 元组，
+    调用方（如 batch-destroy 的解包）才不会因返回 int 而崩溃。
+    """
     def delete(self):
-        """批量软删除：只做标记，不触发级联与文件清理（逐行清理请走回收站 purge）。
-
-        返回值对齐 Django 约定的 (total, per_model_dict) 元组，
-        调用方（如 batch-destroy 的解包）才不会因返回 int 而崩溃。
-        """
+        """批量软删除"""
         rows = self.update(deleted_at=timezone.now())
         return rows, {self.model._meta.label: rows}
 
 
 class SoftDeleteManager(models.Manager):
-    """FEAT-2：默认排除已软删除数据，回收站场景使用 all_objects。"""
 
     def get_queryset(self):
         return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
 
 
 class SoftDeleteModel(models.Model):
-    """FEAT-2：软删除基类。delete() 只标记 deleted_at，回收站可恢复；
+    """软删除基类。delete() 只标记 deleted_at，回收站可恢复；
     hard_delete() 沿 MRO 走原有 delete() 链（含文件清理与级联），供物理清除使用。
 
     使用时必须放在 MRO 首位（如 class Foo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel)），

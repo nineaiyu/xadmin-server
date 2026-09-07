@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PERF-07：search-columns / search-fields 关联列 choices 行数上限测试。
+"""search-columns / search-fields 关联列 choices 行数上限测试。
 
 覆盖：
 1. 未超上限（小表）时行为不变，不产生 choices_truncated；

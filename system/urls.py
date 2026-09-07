@@ -100,7 +100,7 @@ router.register('logs/login', LoginLogViewSet, basename='login_log')
 # 文件管理
 router.register('file', UploadFileViewSet, basename='file')
 
-# 定时任务管理（django_celery_beat，FEAT-1）
+# 定时任务管理（django_celery_beat）
 router.register('tasks/periodic', PeriodicTaskViewSet, basename='periodic_task')
 router.register('tasks/crontab', CrontabScheduleViewSet, basename='crontab_schedule')
 router.register('tasks/interval', IntervalScheduleViewSet, basename='interval_schedule')

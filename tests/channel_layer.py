@@ -4,7 +4,7 @@
 生产环境使用 common.cache.channel.RedisChannelLayer（带 get_layers /
 get_groups / get_online_user_pks / get_layers_for_groups 用于在线状态统计）。
 内存版补齐同名方法，以便 message.utils 等模块在测试中可复用，并按
-PERF-08 的反向索引语义维护在线用户表。
+反向索引语义维护在线用户表。
 """
 import time
 
@@ -15,7 +15,7 @@ class TestInMemoryChannelLayer(InMemoryChannelLayer):
     def __init__(self, **kwargs):
         self.layer_expire = kwargs.pop("layer_expire", 30)
         super().__init__(**kwargs)
-        # PERF-08：全局在线用户反向索引（user_pk -> 最后心跳时间戳）
+        # 全局在线用户反向索引（user_pk -> 最后心跳时间戳）
         self._online_users = {}
 
     async def get_layers(self, group):

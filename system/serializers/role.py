@@ -45,7 +45,7 @@ class RoleSerializer(BaseModelSerializer):
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
     fields = serializers.DictField(write_only=True, label=_("Fields"))
 
-    # FEAT-2：name/code 的唯一性已改为"未删除数据"条件约束（见 Meta.constraints），
+    # name/code 的唯一性已改为"未删除数据"条件约束（见 Meta.constraints），
     # DRF 不会为带 condition 的 UniqueConstraint 自动生成校验器，这里显式校验，
     # 保证重复时返回 400 而非数据库 IntegrityError；已软删除的角色不占用名称/编码
     def _validate_active_unique(self, field_name, value):

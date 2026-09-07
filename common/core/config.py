@@ -174,12 +174,12 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def OPERATION_LOG_RETENTION_DAYS(self):
-        """操作日志保留天数（PERF-04 清理保留期配置化，默认 180 天）"""
+        """操作日志保留天数（清理保留期配置化，默认 180 天）"""
         return self.get_value('OPERATION_LOG_RETENTION_DAYS', 30 * 6)
 
     @property
     def SEARCH_CHOICES_MAX_COUNT(self):
-        """search-columns / search-fields 关联列 choices 的最大返回条数（PERF-07，默认 200）。
+        """search-columns / search-fields 关联列 choices 的最大返回条数（默认 200）。
 
         大表关联字段请务必自定义 input_type='api-search-*'（远程搜索），否则超出的
         选项不会出现在下拉里，且接口会带出 choices_truncated 标记。
@@ -209,7 +209,7 @@ SysConfig = ConfigCache()
 
 
 def batch_user_config(user_pks, key, default=None):
-    """PERF-08：批量读取多个用户的同一配置项，返回 {user_pk: value}。
+    """批量读取多个用户的同一配置项，返回 {user_pk: value}。
 
     逐用户 UserConfig(pk).key 会产生 N 次缓存读 + N 次 DB 回源；这里一次 get_many
     批量取缓存，缺失项只回源一次系统级默认值。系统公告/性能告警等全量推送场景

@@ -102,7 +102,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.locale.LocaleMiddleware',
-    # SEC-1（ADR-001 修订）：/admin/ 站点已启用且依赖 Session+CSRF，必须恢复该中间件；
+    # /admin/ 站点已启用且依赖 Session+CSRF，必须恢复该中间件；
     # DRF API 视图自带 csrf_exempt，Bearer 接口不受影响
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -197,7 +197,7 @@ elif DB_ENGINE == 'vastbase':
 else:
     ENGINE = CONFIG.DB_ENGINE
 
-# TD-25/ADR-006：ASGI 形态下 ASGIHandler 为每请求创建独立线程（ThreadSensitiveContext），
+# ASGI 形态下 ASGIHandler 为每请求创建独立线程（ThreadSensitiveContext），
 # 线程随请求结束消亡，持久连接机制（CONN_MAX_AGE）在此形态下无效，等效每请求新建 DB
 # 连接——压测 ~600rps 时临时端口耗尽致 13-27% 500。postgresql 引擎默认启用 Django 5.1+
 # server 端连接池（psycopg3 + psycopg_pool）；池模式下 CONN_MAX_AGE 必须为 0，
@@ -341,7 +341,7 @@ HTTP_BIND_HOST = CONFIG.HTTP_BIND_HOST
 HTTP_LISTEN_PORT = CONFIG.HTTP_LISTEN_PORT
 GUNICORN_MAX_WORKER = CONFIG.GUNICORN_MAX_WORKER
 CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT
-# PERF-1：heavy 队列 worker 配置（见 conf.py 说明）
+# heavy 队列 worker 配置（见 conf.py 说明）
 CELERY_HEAVY_POOL = CONFIG.CELERY_HEAVY_POOL
 CELERY_HEAVY_CONCURRENCY = CONFIG.CELERY_HEAVY_CONCURRENCY
 # celery flower 任务监控配置

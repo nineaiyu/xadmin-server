@@ -36,7 +36,7 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         user_obj = request.user
         menu_type = [Menu.MenuChoices.DIRECTORY, Menu.MenuChoices.MENU]
         if user_obj.is_superuser:
-            # PERF-17：嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
+            # 嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
             route_list = RouteSerializer(
                 Menu.objects.filter(is_active=True, menu_type__in=menu_type).select_related('meta').order_by('rank'),
                 many=True, ignore_field_permission=True).data

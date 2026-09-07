@@ -12,7 +12,7 @@ from channels_redis.core import RedisChannelLayer as _RedisChannelLayer
 class RedisChannelLayer(_RedisChannelLayer):
     layer_expire = 30  # 需要心跳方式发送在线状态，否则将channel移除
 
-    # PERF-08：全局在线用户反向索引（ZSET，member=user_pk, score=最后心跳时间）。
+    # 全局在线用户反向索引（ZSET，member=user_pk, score=最后心跳时间）。
     # 用一条 ZRANGEBYSCORE 替代 SCAN 全库 + 逐 group 往返，在线统计不再与消息吞吐耦合。
     ONLINE_USERS_SUFFIX = "online:users"
 
@@ -76,7 +76,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         return [self._decode(x) for x in await connection.zrange(key, 0, -1)]
 
     async def update_active_layers(self, group, channel):
-        """心跳更新（PERF-08/15）：group ZSET 维护与全局在线索引并入一次 pipeline 往返。"""
+        """心跳更新：group ZSET 维护与全局在线索引并入一次 pipeline 往返。"""
         key = self._group_key(group)
         index = self.consistent_hash(group)
         connection = self.connection(index)
@@ -116,7 +116,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         return result
 
     async def get_layers_for_groups(self, groups):
-        """批量获取多个 group 的 channel 列表（PERF-08）。
+        """批量获取多个 group 的 channel 列表。
 
         同一节点的 group 合并进一个 pipeline，单 Redis 部署下整个请求只有一次往返，
         替代旧实现的逐 group 串行 ZREMRANGEBYSCORE + ZRANGE。

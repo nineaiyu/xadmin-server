@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""FEAT-2：软删除模型的回收站 Action（recycle 列表 / restore 恢复 / purge 物理清除）。
+"""软删除模型的回收站 Action（recycle 列表 / restore 恢复 / purge 物理清除）。
 
 仅对混入本类且模型继承 SoftDeleteModel 的视图集生效：
 - recycle:  查看 all_objects 中已软删除的数据（数据权限过滤照常生效）；

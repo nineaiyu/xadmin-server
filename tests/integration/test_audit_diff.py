@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FEAT-4：字段级审计 diff 集成测试（白名单模型的 update 写入 OperationLog.changes）。"""
+"""字段级审计 diff 集成测试（白名单模型的 update 写入 OperationLog.changes）。"""
 import json
 
 import pytest

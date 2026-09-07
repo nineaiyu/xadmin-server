@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PERF-08：Redis 在线统计测试。
+"""Redis 在线统计测试。
 
 覆盖：
 1. 反向索引（online:users）驱动 get_online_users / get_online_info，
@@ -31,7 +31,7 @@ def _clear_snapshot():
 
 @pytest.fixture
 def layer(settings):
-    """测试用内存 channel layer（tests/channel_layer.py 提供 PERF-08 同名方法）。"""
+    """测试用内存 channel layer（tests/channel_layer.py 提供同名方法）。"""
     from channels.layers import get_channel_layer
 
     layer = get_channel_layer()
@@ -165,7 +165,7 @@ class TestBatchPush:
         assert pushes == []
 
     def test_push_notice_messages_uses_single_bridge(self, monkeypatch):
-        """PERF-08：批量推送只调用一次 push_messages，而非每用户一次桥接"""
+        """批量推送只调用一次 push_messages，而非每用户一次桥接"""
         msg = self._make_message()
         monkeypatch.setattr("notifications.message.get_online_users", lambda: list(range(50)))
         calls = {"push_messages": 0}
@@ -178,7 +178,7 @@ class TestBatchPush:
         assert calls == {"push_messages": 1}
 
     def test_batch_user_config_single_get_many(self, monkeypatch):
-        """PERF-08：N 个用户的配置读取只有一次 get_many"""
+        """N 个用户的配置读取只有一次 get_many"""
         from django.core import cache as django_cache_mod
 
         calls = {"get_many": 0}

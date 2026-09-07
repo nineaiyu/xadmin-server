@@ -43,7 +43,7 @@ class UserFilter(BaseFilterSet):
 
 class UserViewSet(RecycleBinAction, BaseModelSet, UploadFileAction, ChangeRolePermissionAction,
                   PermissionPreviewAction, ImportExportDataAction):
-    """用户（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
+    """用户"""
     FILE_UPLOAD_FIELD = 'avatar'
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer

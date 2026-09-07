@@ -96,7 +96,7 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
             data = content.get('data', {})
             match action:
                 case 'ping':
-                    # PERF-14：心跳直收。旧实现先把 ping 投进 channel layer 队列再由
+                    # 心跳直收。旧实现先把 ping 投进 channel layer 队列再由
                     # consumer 收回处理，每心跳多 2 条 Redis 命令；1000 连接时即
                     # 200 cmd/s 的纯开销。这里直接调用本 consumer 处理。
                     await self.ping({"type": "ping", "data": data, "mid": content.get('mid')})

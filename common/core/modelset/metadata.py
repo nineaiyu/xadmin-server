@@ -119,7 +119,7 @@ class SearchFieldsAction(object):
                 choices = list(getattr(widget, "choices", []))
                 if choices and len(choices) > 0 and choices[0][0] == "":
                     choices.pop(0)
-                # PERF-07：关联字段的 widget.choices 同样会全量求值，这里做同样的行数上限
+                # 关联字段的 widget.choices 同样会全量求值，这里做同样的行数上限
                 max_choices = get_search_choices_max_count()
                 choices_truncated = False
                 if max_choices and len(choices) > max_choices:
@@ -236,7 +236,7 @@ class SearchColumnsAction(object):
                 choices_owner = value
             if tp and tp.endswith("related_field"):
                 setattr(value, "is_column", True)
-                # PERF-07：超上限时仅返回前 SEARCH_CHOICES_MAX_COUNT 条，并带出截断标记供前端降级
+                # 超上限时仅返回前 SEARCH_CHOICES_MAX_COUNT 条，并带出截断标记供前端降级
                 info["choices"] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
                 if getattr(choices_owner, "choices_truncated", False):
                     info["choices_truncated"] = True

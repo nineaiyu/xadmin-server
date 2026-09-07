@@ -27,7 +27,7 @@ class RoleFilter(BaseFilterSet):
 
 
 class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction, RolePreviewAction):
-    """角色（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
+    """角色"""
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer

@@ -34,7 +34,7 @@ class RankAction(object):
         """{cls}排序"""
         pks = list(request.data)
         if pks:
-            # PERF-12：Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
+            # Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
             queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
             queryset.update(
                 rank=Case(
@@ -64,7 +64,7 @@ class BatchDestroyAction(object):
 
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
         if not self._needs_rowwise_delete():
-            # PERF-19：模型无逐行副作用时直接走批量 delete()，单条 SQL 完成
+            # 模型无逐行副作用时直接走批量 delete()，单条 SQL 完成
             # （旧实现逐行 instance.delete()，N 行 = N 次级联删除事务）
             deleted, _rows_count = queryset.delete()
             return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(deleted))

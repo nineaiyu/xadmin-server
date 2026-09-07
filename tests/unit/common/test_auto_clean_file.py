@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""AutoCleanFileMixin 文件清理测试（PERF-11 关联逻辑的另一半）。
+"""AutoCleanFileMixin 文件清理测试。
 
 覆盖 delete() 路径：
 1. 自身文件字段：删除对象时同步删除底层文件；
 2. 与 system.UploadFile 的关联（FK/M2M）：删除对象时级联清理附件记录；
-3. 批量删除路径不走模型 delete()，附件清理需逐行触发（PERF-19 的前提）。
+3. 批量删除路径不走模型 delete()，附件清理需逐行触发。
 """
 import pytest
 from django.core.files.base import ContentFile
@@ -62,7 +62,7 @@ class TestHasFileCleanup:
 
 class TestOwnFileCleanup:
     def test_soft_delete_keeps_file_hard_delete_removes(self, superuser):
-        """FEAT-2：UploadFile.delete() 为软删除（文件保留、行进回收站）；
+        """UploadFile.delete() 为软删除（文件保留、行进回收站）；
         hard_delete() 才清理底层文件。"""
         from django.conf import settings
         import os
@@ -87,7 +87,7 @@ class TestOwnFileCleanup:
     def test_delete_removes_row(self, superuser, upload_file):
         pk = upload_file.pk
         upload_file.delete()
-        # FEAT-2：默认管理器排除已软删除数据
+        # 默认管理器排除已软删除数据
         assert not UploadFile.objects.filter(pk=pk).exists()
         assert UploadFile.all_objects.filter(pk=pk).exists()
 
@@ -95,7 +95,7 @@ class TestOwnFileCleanup:
 class TestRelatedFileCleanup:
     def test_book_delete_cascades_uploadfile(self, superuser, upload_file, dept):
         """Book.file -> UploadFile：Book 非 SoftDeleteModel，删除仍为物理删除；
-        级联清理的附件记录按 FEAT-2 语义软删除（由 purge_soft_deleted 周期任务兜底物理清除），
+        级联清理的附件记录按 语义软删除（由 purge_soft_deleted 周期任务兜底物理清除），
         物理文件不再随级联立即删除。"""
         book = Book.objects.create(name="书", isbn="i1", author="a",
                                    admin=superuser, admin2=superuser, file=upload_file)
@@ -125,7 +125,7 @@ class TestRelatedFileCleanup:
 
 class TestDeleteQueryProfile:
     def test_batch_delete_is_cheaper_than_per_row(self, superuser, upload_file):
-        """PERF-19：无文件清理需求的模型可走批量 delete（这里以 SQL 条数佐证差异来源）"""
+        """无文件清理需求的模型可走批量 delete（这里以 SQL 条数佐证差异来源）"""
         books = [Book.objects.create(name=f"B{i}", isbn=str(i), author="a",
                                      admin=superuser, admin2=superuser, file=upload_file)
                  for i in range(3)]

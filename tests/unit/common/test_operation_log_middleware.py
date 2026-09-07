@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""操作日志写入路径测试（PERF-05 / PERF-18）。
+"""操作日志写入路径测试。
 
 覆盖：
 1. 写入用 UPDATE 而非 update_or_create（主键已知，省 1 条 SELECT）；

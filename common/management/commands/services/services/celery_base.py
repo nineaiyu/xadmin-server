@@ -39,7 +39,7 @@ class CeleryBaseService(BaseService):
             '-n', f'{self.queue}@{server_hostname}',
             '--without-mingle',
         ]
-        # PERF-1：长任务队列固定 prefetch=1，避免单线程囤积任务造成其他任务饥饿
+        # 长任务队列固定 prefetch=1，避免单线程囤积任务造成其他任务饥饿
         if self.prefetch is not None:
             cmd += ['--prefetch', str(self.prefetch)]
         return cmd

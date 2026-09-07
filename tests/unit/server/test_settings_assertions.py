@@ -2,20 +2,20 @@
 # -*- coding:utf-8 -*-
 """settings 静态断言：把"配置组合"类架构决策固化为可回归的测试。
 
-ADR-001 修订（SEC-1）：启用 django.contrib.admin 时必须存在 CsrfViewMiddleware。
+修订（SEC-1）：启用 django.contrib.admin 时必须存在 CsrfViewMiddleware。
 后续同类断言（如 SECRET_KEY 拒启、SILK_ENABLED 仅限 DEBUG）可继续沉淀在本文件。
 """
 
 
 def test_csrf_middleware_required_when_admin_enabled():
-    """ADR-001 修订：/admin/ 站点依赖 Session+CSRF，启用 Admin 时禁止移除 CSRF 中间件。"""
+    """修订：/admin/ 站点依赖 Session+CSRF，启用 Admin 时禁止移除 CSRF 中间件。"""
     from django.conf import settings
 
     middleware = list(settings.MIDDLEWARE)
     if 'django.contrib.admin' in settings.INSTALLED_APPS:
         assert 'django.middleware.csrf.CsrfViewMiddleware' in middleware, (
             'django.contrib.admin 已启用（/admin/ 依赖 Session+CSRF），'
-            '禁止移除 CsrfViewMiddleware——若确需移除，请先关闭 Admin 站点并修订 ADR-001'
+            '禁止移除 CsrfViewMiddleware——若确需移除，请先关闭 Admin 站点'
         )
 
 

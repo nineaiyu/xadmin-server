@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PERF-04 索引迁移测试：确认高增长表的过滤/排序字段已建立索引。"""
+"""索引迁移测试：确认高增长表的过滤/排序字段已建立索引。"""
 import pytest
 from django.db import connection
 

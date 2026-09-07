@@ -38,7 +38,7 @@ def auto_clean_tmp_file(clean_day=1):
     clean_time = timezone.now() - datetime.timedelta(days=clean_day)
     _rows_count = 0
     for instance in UploadFile.all_objects.filter(created_time__lte=clean_time, is_tmp=True):
-        # FEAT-2：临时文件无回收价值，必须物理删除（含底层文件清理），
+        # 临时文件无回收价值，必须物理删除（含底层文件清理），
         # 否则软删除标记会导致磁盘泄漏
         instance.hard_delete()
         _rows_count += 1

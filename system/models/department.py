@@ -17,7 +17,7 @@ from system.models import ModeTypeAbstract
 
 
 class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
-    # PERF-09：部门树缓存有效期（秒）。部门变更通过信号即时失效，TTL 仅兜底。
+    # 部门树缓存有效期（秒）。部门变更通过信号即时失效，TTL 仅兜底。
     DEPT_TREE_CACHE_TTL = 60
 
     name = models.CharField(verbose_name=_("Department name"), max_length=128)
@@ -36,7 +36,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     def recursion_dept_info(cls, dept_id, dept_all_list=None, dept_list=None, is_parent=False):
         """递归获取部门（含自身）及其全部下级（is_parent=True 时向上级方向）。
 
-        PERF-09：全量部门表 + O(n²) 递归扫描被数据权限过滤的每个请求调用。
+        全量部门表 + O(n²) 递归扫描被数据权限过滤的每个请求调用。
         这里按 (dept_id, is_parent) 维度缓存结果，DeptInfo 变更时通过信号失效。
         传入自定义 dept_all_list/dept_list 的调用（仅递归内部使用）不走缓存。
         """
@@ -69,7 +69,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
 
     @classmethod
     def invalid_dept_tree_cache(cls):
-        """PERF-09：部门树缓存失效（DeptInfo 增删改时调用）。"""
+        """部门树缓存失效（DeptInfo 增删改时调用）。"""
         cache.delete_pattern("dept_recursion_*")
 
     class Meta:

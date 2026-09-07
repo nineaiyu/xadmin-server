@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""MagicCacheData 缓存基建可靠性测试（PERF-01）。
+"""MagicCacheData 缓存基建可靠性测试。
 
 覆盖三个必须保证的场景：
 1. func 抛异常时不缓存空结果，下一次调用重新执行 func，且异常向上传播；

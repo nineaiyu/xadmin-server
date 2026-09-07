@@ -52,7 +52,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     @extend_schema_field(serializers.IntegerField)
     def get_read_user_count(self, obj):
         if obj.notice_type in MessageContent.get_user_choices():
-            # PERF-06：整页一次聚合查询，替代每条消息一次 COUNT
+            # 整页一次聚合查询，替代每条消息一次 COUNT
             counts = self._page_read_counts()
             if counts is None:
                 return MessageUserRead.objects.filter(notice=obj, unread=False,
@@ -172,7 +172,7 @@ class UserNoticeSerializer(BaseModelSerializer):
 
     @extend_schema_field(serializers.BooleanField)
     def get_unread(self, obj):
-        # PERF-06：整页一次查询当前用户的已读记录，查询数与消息条数解耦。
+        # 整页一次查询当前用户的已读记录，查询数与消息条数解耦。
         # 语义与旧实现逐字段对齐（owner + notice 唯一，每条消息至多一行）：
         # - USER/SYSTEM：存在 unread=True 的记录 -> 未读；
         # - NOTICE/DEPT/ROLE：不存在任何记录 -> 未读（公告创建时不生成 read 行）。

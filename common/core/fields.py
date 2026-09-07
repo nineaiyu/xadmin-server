@@ -35,7 +35,7 @@ _CHOICES_MAX_CACHE = {"value": None, "expires": 0.0}
 
 
 def get_search_choices_max_count(default=200, ttl=60):
-    """PERF-07：读取关联列 choices 的行数上限（系统配置 SEARCH_CHOICES_MAX_COUNT）。
+    """读取关联列 choices 的行数上限（系统配置 SEARCH_CHOICES_MAX_COUNT）。
 
     局部导入避免潜在的循环依赖；配置读取失败时退回默认值，绝不让下拉数据影响主流程。
     search-columns / search-fields 会对每个关联字段调用一次，这里做进程内短 TTL 缓存，
@@ -186,7 +186,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             # even when accessed with a read-only field.
             return [] if is_column else {}
 
-        # PERF-07：关联列全量序列化 choices 会随关联表增大线性恶化（每次打开表格页都触发），
+        # 关联列全量序列化 choices 会随关联表增大线性恶化（每次打开表格页都触发），
         # 这里在 queryset 层截断：只序列化上限+1 行，多余的一行仅用于判定是否发生了截断。
         max_count = get_search_choices_max_count()
         if cutoff is not None:
@@ -274,7 +274,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         return data
 
     def _get_related_memo(self):
-        """PERF-10：请求级关联对象缓存。
+        """请求级关联对象缓存。
 
         导入 R 行 × F 个关联字段时，旧实现每字段每行执行一次 SELECT（超管 R×F 条，
         非超管叠加数据权限最坏 5×R×F 条）。memo 挂在请求级（thread-local request 对象

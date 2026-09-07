@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""FEAT-1：定时任务管理（django_celery_beat 业务侧 CRUD）。
+"""定时任务管理（django_celery_beat 业务侧 CRUD）。
 
 提供周期任务 / crontab 表达式 / 固定间隔三类资源的管理接口，
 替代此前仅能经 Django Admin 兜底管理的方式。启停变更由 beat 的

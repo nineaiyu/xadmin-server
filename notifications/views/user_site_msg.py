@@ -121,7 +121,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
         return ApiResponse(data={'results': results, 'total': sum([item.get('total', 0) for item in results])})
 
     def read_message(self, pks, request):
-        """批量已读：固定 3 条 SQL，与 pks 数量无关（PERF-06，旧实现为 2N 条）"""
+        """批量已读：固定 3 条 SQL，与 pks 数量无关（旧实现为 2N 条）"""
         pks = list(set(pks))
         if not pks:
             return ApiResponse()

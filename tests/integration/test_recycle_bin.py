@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FEAT-2：软删除与回收站集成测试（notice / upload）。"""
+"""软删除与回收站集成测试（notice / upload）。"""
 from datetime import timedelta
 
 import pytest

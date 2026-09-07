@@ -154,7 +154,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         若模式为或模式，并存在全部数据，则直接返回queryset
         若模式为且模式，则 返回queryset.filter(规则)
 
-    PERF-09：部门权限规则一次查询后按部门分组（旧实现循环每个上级部门各查一次，
+    部门权限规则一次查询后按部门分组（旧实现循环每个上级部门各查一次，
     SQL 数 = 部门树深度 + 2）；个人授权判断改用 exists()，避免全量计数。
     """
     if not settings.PERMISSION_DATA_ENABLED or queryset is None:
@@ -173,7 +173,7 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
     if dept_obj:
         # 存在部门，递归获取部门，类似树结构，部门权限需要且模式，将获取到的所有部门的数据规则通过且操作
         dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
-        # PERF-09：一次取出整棵部门树上的全部有效授权并按部门分组（2 条 SQL），
+        # 一次取出整棵部门树上的全部有效授权并按部门分组（2 条 SQL），
         # 替代旧实现"每个部门各查一次"（SQL 数 = 部门树深度 + 1）
         dept_permissions = {}
         if dept_pks:

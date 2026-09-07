@@ -6,7 +6,7 @@
 2. 缓存 key 按用户隔离；
 3. 4xx / request.no_cache 不写缓存；
 4. invalid_cache 失效后重新计算；
-5. 路由输出包含 meta 信息（PERF-17 的 select_related 不改变输出）。
+5. 路由输出包含 meta 信息（select_related 不改变输出）。
 """
 import json
 
@@ -91,13 +91,13 @@ class TestRoutesResponseCache:
         normal_result = payload(api_client.get(ROUTES_URL))
 
         # 超管能看到全部菜单，普通用户无菜单授权 -> 空树
-        # 断言锚定 fixture 建的"系统管理"而非顶层数量：FEAT-1 的菜单种子迁移
+        # 断言锚定 fixture 建的"系统管理"而非顶层数量：的菜单种子迁移
         # （system/migrations/0008_seed_task_menus）会额外建顶层菜单
         assert "用户管理" in _all_child_names(super_result)
         assert normal_result["data"] == []
 
     def test_response_contains_menu_meta(self, auth_client):
-        """首刷响应包含 meta 信息（PERF-17 的 select_related 不改变输出）"""
+        """首刷响应包含 meta 信息（select_related 不改变输出）"""
         result = payload(auth_client.get(ROUTES_URL))
         children = _fixture_group_children(result)
         assert [child["name"] for child in children] == ["用户管理", "角色管理"]

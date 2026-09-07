@@ -44,8 +44,7 @@ class MenuFilter(BaseFilterSet):
 
 class MenuViewSet(RecycleBinAction, BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction,
                   CacheListResponseMixin):
-    """菜单（FEAT-2：删除进入回收站，目录删除级联标记后代，成组恢复/清除；
-    batch-destroy 复用通用逐行实现，Menu.delete() 自带级联软删后代）"""
+    """菜单"""
     queryset = Menu.objects.order_by('rank').all()
     serializer_class = MenuSerializer
     pagination_class = DynamicPageNumber(1000)

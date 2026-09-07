@@ -96,7 +96,7 @@ def grant_field_permission(role, excluded_field):
 
 
 def seed_periodic_task():
-    """FEAT-1：定时任务管理页 E2E 用的演示周期任务（默认停用，启停循环后复原）。"""
+    """定时任务管理页 E2E 用的演示周期任务（默认停用，启停循环后复原）。"""
     from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
     schedule, _ = CrontabSchedule.objects.get_or_create(
@@ -196,7 +196,7 @@ def main() -> None:
             grant_field_permission(fp_role, excluded_field="phone")
             print("field permission seeded for e2e_fp (phone hidden)")
 
-    # ---- FEAT-1：定时任务管理页演示数据 ----
+    # ---- 定时任务管理页演示数据 ----
     seed_periodic_task()
 
     print("E2E seed done")

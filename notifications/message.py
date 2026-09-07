@@ -36,7 +36,7 @@ class SiteMessageUtil:
         targets = set(pks) & online_pks
         if not targets:
             return notify_obj
-        # PERF-08：整个推送循环一次桥接完成，用户开关一次批量读取，
+        # 整个推送循环一次桥接完成，用户开关一次批量读取，
         # 不再出现"每用户一次桥接 + ~4 条命令 + 双重序列化"的串行放大
         enabled = batch_user_config(sorted(targets), 'PUSH_MESSAGE_NOTICE', True)
         push_messages([pk for pk in sorted(targets) if enabled.get(pk, True)], notice_message)

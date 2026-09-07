@@ -29,7 +29,7 @@ class DataPermissionSerializer(BaseModelSerializer):
         table_fields = ['pk', 'name', "mode_type", "is_active", "description", "created_time"]
         extra_kwargs = {
             'menu': {
-                # PERF-07：菜单关联行数超过 SEARCH_CHOICES_MAX_COUNT，choices 会被截断，
+                # 菜单关联行数超过 SEARCH_CHOICES_MAX_COUNT，choices 会被截断，
                 # 标记 api-search-* 走远程搜索口径，由前端按页自定义渲染（数据权限页用全量菜单树级联）
                 'attrs': ['pk', 'name', 'parent_id', 'meta__title'],
                 'many': True, 'required': False, 'queryset': get_menu_queryset(),

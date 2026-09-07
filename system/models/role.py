@@ -12,7 +12,7 @@ from common.core.models import DbAuditModel, DbUuidModel, SoftDeleteModel
 
 
 class UserRole(SoftDeleteModel, DbAuditModel, DbUuidModel):
-    """FEAT-2：角色软删除——删除进入回收站，post_save 信号自动失效权限缓存，
+    """角色软删除——删除进入回收站，post_save 信号自动失效权限缓存，
     回收站可恢复；name/code 唯一约束仅作用于未删除数据（见 Meta.constraints），
     已删除角色释放其名称与编码。
     """

@@ -12,7 +12,7 @@
 - input_types.py    字段 input_type 推断辅助（get_format_intput_type 等）
 - import_export.py  OnlyExportDataAction / ImportExportDataAction（含 Celery 异步导入分发）
 - upload.py         UploadFileAction（单文件上传，按需混入）
-- recycle.py        RecycleBinAction（软删除回收站：列表/恢复/物理清除，FEAT-2）
+- recycle.py        RecycleBinAction（软删除回收站：列表/恢复/物理清除）
 - cache.py          CacheDetailResponseMixin / CacheListResponseMixin（响应缓存 key/失效）
 - viewsets.py       预组合 ViewSet：BaseModelSet / ListDeleteModelSet / OnlyListModelSet /
                     DetailUpdateModelSet / NoDetailModelSet

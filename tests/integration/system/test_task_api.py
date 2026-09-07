@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FEAT-1：定时任务管理接口集成测试（django_celery_beat）。"""
+"""定时任务管理接口集成测试（django_celery_beat）。"""
 import pytest
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 

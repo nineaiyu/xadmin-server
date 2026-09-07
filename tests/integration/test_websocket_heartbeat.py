@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""PERF-14：心跳直收测试。
+"""心跳直收测试。
 
 旧实现 receive() 把 ping 投进 channel layer 队列（2 条 Redis 命令），
 再由 consumer 收回处理；现在 receive() 直接调用 self.ping()，

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FEAT-2 扩展：角色软删除与回收站（权限缓存失效依赖 post_save 信号）。"""
+"""扩展：角色软删除与回收站（权限缓存失效依赖 post_save 信号）。"""
 import pytest
 from unittest.mock import patch
 

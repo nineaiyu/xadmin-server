@@ -47,7 +47,7 @@ class TestIndexUsage:
         assert "owner_id=?" in plan and "unread=?" in plan, plan
 
     def test_upload_file_cleanup_query_uses_composite_index(self):
-        """每日清理任务（PERF-13）按 (is_tmp, created_time) 扫描。"""
+        """每日清理任务按 (is_tmp, created_time) 扫描。"""
         plan = explain_plan(
             "SELECT id FROM system_uploadfile "
             "WHERE is_tmp = %s AND created_time < %s",

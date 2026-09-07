@@ -40,7 +40,7 @@ class MenuSerializer(BaseModelSerializer):
             'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
         }
 
-    # FEAT-2：name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
+    # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
     # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError
     def validate_name(self, value):
         queryset = Menu.objects.filter(name=value)

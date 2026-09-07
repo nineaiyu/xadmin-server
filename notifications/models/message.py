@@ -54,7 +54,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         verbose_name_plural = verbose_name
         ordering = ('-created_time',)
         indexes = [
-            # PERF-04：消息中心列表默认按 created_time 排序，且 BaseFilterSet 提供时间范围过滤
+            # 消息中心列表默认按 created_time 排序，且 BaseFilterSet 提供时间范围过滤
             models.Index(fields=['created_time'], name='idx_msg_created'),
         ]
 
@@ -65,7 +65,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 class MessageUserRead(DbAuditModel):
     owner = models.ForeignKey("system.UserInfo", on_delete=models.CASCADE, verbose_name=_("User"))
     notice = models.ForeignKey(MessageContent, on_delete=models.CASCADE, verbose_name=_("Notice"))
-    # PERF-04：单列 db_index 与下方 (owner, unread) 复合索引的左前缀重复，属冗余索引，删除单列保留复合
+    # 单列 db_index 与下方 (owner, unread) 复合索引的左前缀重复，属冗余索引，删除单列保留复合
     unread = models.BooleanField(verbose_name=_("Unread"), default=True, blank=False)
 
     class Meta:

@@ -80,7 +80,7 @@ class DashboardViewSet(GenericViewSet):
     queryset = UserLoginLog.objects.all()
     serializer_class = LoginLogSerializer
     ordering_fields = ['created_time']
-    # PERF-02：面板数据对实时性不敏感，短缓存避免多端同时刷新时重复全表聚合
+    # 面板数据对实时性不敏感，短缓存避免多端同时刷新时重复全表聚合
     dashboard_cache_timeout = 60
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):

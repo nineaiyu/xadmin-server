@@ -1,5 +1,6 @@
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
+from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -44,34 +45,45 @@ class ServerPerformanceMessage(SystemMessage):
         subscription.receive_backends = [BACKEND.EMAIL]
         subscription.save()
 
+    def publish(self, is_async=False):
+        """发布告警；收件人为空时自愈补齐活跃超管（订阅创建早于超管初始化的存量库）"""
+        subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
+        if not subscription.users.exists():
+            self.post_insert_to_db(subscription)
+        super().publish(is_async=is_async)
+
     @classmethod
     def gen_test_msg(cls):
         pass
 
 
 class ServerPerformanceCheckUtil(object):
-    items_mapper = {
-        "disk_used": {
-            "default": 0,
-            "max_threshold": 80,
-            "alarm_msg_format": _("Disk used more than {max_threshold}%: => {value}"),
-        },
-        "memory_used": {
-            "default": 0,
-            "max_threshold": 85,
-            "alarm_msg_format": _("Memory used more than {max_threshold}%: => {value}"),
-        },
-        "cpu_load": {
-            "default": 0,
-            "max_threshold": 5,
-            "alarm_msg_format": _("CPU load more than {max_threshold}: => {value}"),
-        },
-        "cpu_percent": {
-            "default": 0,
-            "max_threshold": 80,
-            "alarm_msg_format": _("CPU percent more than {max_threshold}: => {value}"),
-        },
-    }
+    # 阈值可在后台「系统设置 → 安全设置 → 资源告警」配置（settings/serializers/security.py）；
+    # Setting 行会经 django_ready/pubsub 实时回写 settings，这里必须每次检查时读取
+    @property
+    def items_mapper(self):
+        return {
+            "disk_used": {
+                "default": 0,
+                "max_threshold": settings.SECURITY_MONITOR_DISK_USED_MAX,
+                "alarm_msg_format": _("Disk used more than {max_threshold}%: => {value}"),
+            },
+            "memory_used": {
+                "default": 0,
+                "max_threshold": settings.SECURITY_MONITOR_MEMORY_USED_MAX,
+                "alarm_msg_format": _("Memory used more than {max_threshold}%: => {value}"),
+            },
+            "cpu_load": {
+                "default": 0,
+                "max_threshold": settings.SECURITY_MONITOR_CPU_LOAD_MAX,
+                "alarm_msg_format": _("CPU load more than {max_threshold}: => {value}"),
+            },
+            "cpu_percent": {
+                "default": 0,
+                "max_threshold": settings.SECURITY_MONITOR_CPU_PERCENT_MAX,
+                "alarm_msg_format": _("CPU percent more than {max_threshold}: => {value}"),
+            },
+        }
 
     def __init__(self):
         self.terms_with_errors = []

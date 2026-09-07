@@ -40,7 +40,7 @@ class UploadFileFilter(BaseFilterSet):
 
 
 class UploadFileViewSet(RecycleBinAction, BaseModelSet):
-    """文件（FEAT-2：删除进入回收站，recycle/restore/purge 管理回收数据）"""
+    """文件"""
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
     ordering_fields = ['created_time', 'filesize']

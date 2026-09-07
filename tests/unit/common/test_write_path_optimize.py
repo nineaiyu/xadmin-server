@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""写路径优化测试（PERF-10 / PERF-11 / PERF-12 / PERF-19）。
+"""写路径优化测试。
 
 覆盖：
-1. PERF-10 导入路径 request 级 memo：字段校验查询数与行数解耦，
+1. 导入路径 request 级 memo：字段校验查询数与行数解耦，
    且 (field, pk) 严格隔离，不同字段互不串用；
-2. PERF-11 AutoCleanFileMixin.save 非文件字段保存跳过 diff 前置查询；
-3. PERF-12 rank 批量排序：单条 UPDATE；
-4. PERF-19 batch_destroy：无文件清理需求的模型走批量 delete()。
+2. AutoCleanFileMixin.save 非文件字段保存跳过 diff 前置查询；
+3. rank 批量排序：单条 UPDATE；
+4. batch_destroy：无文件清理需求的模型走批量 delete()。
 """
 import pytest
 from django.db import connection
@@ -117,7 +117,7 @@ class TestAutoCleanFileMixinSave:
                                       md5sum="b" * 32, creator=superuser)
         with CaptureQueriesContext(connection) as ctx:
             f.save(update_fields=["filename"])
-        # 仅 1 条 UPDATE，无前置 SELECT（PERF-11）
+        # 仅 1 条 UPDATE，无前置 SELECT
         assert len(_business_queries(ctx)) == 1
         f.refresh_from_db()
         assert f.filename == "a.png"
@@ -152,7 +152,7 @@ class TestAutoCleanFileMixinSave:
 
 class TestRankBatch:
     def test_rank_uses_single_update(self, auth_client, menu_factory):
-        """rank 使用 Case/When 单条批量 UPDATE（PERF-12），不再逐条 filter+update"""
+        """rank 使用 Case/When 单条批量 UPDATE，不再逐条 filter+update"""
         menus = [menu_factory(f"菜单{i}") for i in range(3)]
         payload = [str(menus[2].pk), str(menus[0].pk)]
 
