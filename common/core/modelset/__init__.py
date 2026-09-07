@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通用 ViewSet 组合模块（T2.1 由单文件 modelset.py 拆分而来）。
+"""通用 ViewSet 组合模块（由单文件 modelset.py 拆分而来）。
 
 按职责拆分为组合模块（组合优先于继承），每个模块 ≤300 行；
 对外导入路径与拆分前完全一致，业务视图无需改动：

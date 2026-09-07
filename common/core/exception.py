@@ -79,7 +79,7 @@ def common_exception_handler(exc, context):
         if isinstance(ret.data, list):
             ret.data = {'detail': ret.data}
         if not ret.data.get('detail'):
-            # UX-2：字段级校验错误（{field: [errors]}）拼成可读文案；
+            # 字段级校验错误（{field: [errors]}）拼成可读文案；
             # 结构化错误保留在 errors 中，供前端做表单内联展示
             if isinstance(ret.data, dict):
                 errors = {k: v for k, v in ret.data.items() if k not in ('status', 'code', 'errors')}

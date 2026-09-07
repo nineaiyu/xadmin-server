@@ -21,7 +21,7 @@ class GunicornService(BaseService):
         cmd = [
             'gunicorn', 'server.asgi:application',
             '-b', bind,
-            # DEP-2：uvicorn.workers 自 0.30 起弃用，官方迁至独立包 uvicorn-worker
+            # uvicorn.workers 自 0.30 起弃用，官方迁至独立包 uvicorn-worker
             '-k', 'uvicorn_worker.UvicornWorker',
             '-w', str(self.worker),
             '--max-requests', '10240',

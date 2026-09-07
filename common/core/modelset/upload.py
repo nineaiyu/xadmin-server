@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """文件上传 Action：单文件（头像/封面）上传端点。
 
-各视图按需混入（BaseModelSet 默认不包含）。拆分自 modelset.py（T2.1）。
+各视图按需混入（BaseModelSet 默认不包含）。拆分自 modelset.py。
 """
 
 from django.conf import settings
@@ -20,7 +20,7 @@ from common.swagger.utils import get_default_response_schema
 
 class UploadFileAction(object):
     FILE_UPLOAD_TYPE = ["png", "jpeg", "jpg", "gif"]
-    # SEC-5：扩展名可伪造，按文件头魔数做二次校验；扩展新类型时需同步补充签名
+    # 扩展名可伪造，按文件头魔数做二次校验；扩展新类型时需同步补充签名
     FILE_UPLOAD_MAGIC = {
         "png": b"\x89PNG\r\n\x1a\n",
         "jpeg": b"\xff\xd8\xff",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""SEC-3：富文本 HTML 白名单净化（服务端为主，前端 DOMPurify 兜底）。
+"""富文本 HTML 白名单净化（服务端为主，前端 DOMPurify 兜底）。
 
 用于公告/站内信等 wangEditor 产出的 HTML 内容：入库前剥离 script/iframe、
 事件属性（on*）与 javascript: 等危险协议，保留正常排版所需的标签与属性。

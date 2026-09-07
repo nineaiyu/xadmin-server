@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BaseModelSet 组合 Action 的接口级边界测试（T2.1 拆分护航）。
+"""BaseModelSet 组合 Action 的接口级边界测试（拆分护航）。
 
 以 demo BookViewSet 为载体，覆盖既有测试未触达的组合 Action 路径：
 - ChoicesAction.choices_dict：choices 字段聚合（BookViewSet 未混入，用组合视图直调）
@@ -179,7 +179,7 @@ class TestImportDataAction:
 
 
 class TestInlineMetadata:
-    """T3.2：with_meta=1 内联元数据，首开合并请求。"""
+    """with_meta=1 内联元数据，首开合并请求。"""
 
     def test_list_with_meta_includes_both_metadata(self, auth_client):
         resp = auth_client.get(f"{BOOK_LIST_URL}?with_meta=1")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""跨 app 横向 import 静态门禁（T2.2）。
+"""跨 app 横向 import 静态门禁。
 
 扫描所有 app 内模块级（顶格）对其他 app 的 models / serializers / views /
 notifications / backends / signal(s) 直接 import——这是契约层收口的坏味道。

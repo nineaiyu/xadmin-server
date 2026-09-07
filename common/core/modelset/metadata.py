@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """元数据 Action：choices 聚合 / search-fields / search-columns。
 
-前端 RePlusPage 注册表渲染依赖的三大元数据接口。拆分自 modelset.py（T2.1）。
+前端 RePlusPage 注册表渲染依赖的三大元数据接口。拆分自 modelset.py。
 """
 
 import json

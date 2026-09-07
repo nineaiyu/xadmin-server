@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""元数据接口契约测试（T2.3）。
+"""元数据接口契约测试。
 
 search-columns / search-fields 的 data 载荷必须符合 docs/schema/ 下的
 JSON Schema——这是前后端元数据协议（RePlusPage 渲染契约）的门禁。

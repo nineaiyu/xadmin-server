@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """字段输入类型辅助：根据 serializer 字段推断前端渲染用的 input_type。
 
-供元数据 Action（search-columns / search-fields）使用。拆分自 modelset.py（T2.1）。
+供元数据 Action（search-columns / search-fields）使用。拆分自 modelset.py。
 """
 
 from common.core.serializers import BasePrimaryKeyRelatedField

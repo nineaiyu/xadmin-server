@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """settings 静态断言：把"配置组合"类架构决策固化为可回归的测试。
 
-修订（SEC-1）：启用 django.contrib.admin 时必须存在 CsrfViewMiddleware。
+修订：启用 django.contrib.admin 时必须存在 CsrfViewMiddleware。
 后续同类断言（如 SECRET_KEY 拒启、SILK_ENABLED 仅限 DEBUG）可继续沉淀在本文件。
 """
 

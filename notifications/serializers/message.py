@@ -44,7 +44,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     read_user_count = serializers.SerializerMethodField(read_only=True, label=_("Read user count"))
 
     def validate_message(self, value):
-        # SEC-3：公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
+        # 公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
         # 防止持权账号之间注入脚本（存储型 XSS）
         from common.utils.sanitize import sanitize_rich_text
         return sanitize_rich_text(value)

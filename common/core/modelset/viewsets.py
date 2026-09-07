@@ -3,7 +3,7 @@
 """预组合的通用 ViewSet 集合。
 
 对外提供 BaseModelSet 等标准组合，业务视图按需选用。
-拆分自 modelset.py（T2.1），组合顺序与拆分前保持一致，MRO 不变。
+拆分自 modelset.py，组合顺序与拆分前保持一致，MRO 不变。
 """
 
 from rest_framework.viewsets import GenericViewSet

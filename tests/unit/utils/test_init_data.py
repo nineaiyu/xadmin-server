@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""init_data 引导脚本测试（TD-22）。
+"""init_data 引导脚本测试。
 
 超管初始密码不允许硬编码默认值：环境变量 XADMIN_ADMIN_PASSWORD 显式注入优先，
 未设置时必须随机生成，杜绝 `xAdminPwd!` 类可猜测凭据随镜像分发。

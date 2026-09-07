@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BaseViewSet / 组合 Action 的边界单测（T2.1 拆分护航）。
+"""BaseViewSet / 组合 Action 的边界单测（拆分护航）。
 
 覆盖 modelset 核心装配行为，这些行为在拆分重构前后必须保持一致：
 - action 级 serializer 选择（{action}_serializer_class）

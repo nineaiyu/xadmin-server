@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """批量操作 Action：排序（rank）与批量删除（batch-destroy）。
 
-拆分自 modelset.py（T2.1）。
+拆分自 modelset.py。
 """
 
 from typing import Callable

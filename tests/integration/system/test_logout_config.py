@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""登出黑名单与用户配置视图测试（T4.1）。"""
+"""登出黑名单与用户配置视图测试。"""
 import hashlib
 
 import pytest

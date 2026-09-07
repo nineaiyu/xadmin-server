@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """响应缓存 Mixin：详情 / 列表缓存 key 规则与失效方法。
 
-配合 common.base.magic.cache_response 使用。拆分自 modelset.py（T2.1）。
+配合 common.base.magic.cache_response 使用。拆分自 modelset.py。
 """
 
 import json

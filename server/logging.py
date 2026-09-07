@@ -14,7 +14,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 from server.utils import get_current_request
 
-# DEP-4：按天目录滚动（rotator 把旧日志移入 日期/ 子目录）后，
+# 按天目录滚动（rotator 把旧日志移入 日期/ 子目录）后，
 # TimedRotatingFileHandler 标准的 backupCount 清理逻辑扫不到子目录，需自行按目录清理
 _DATED_DIR_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
@@ -29,7 +29,7 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
         self._prune_dated_dirs(source)
 
     def _prune_dated_dirs(self, source):
-        """DEP-4：超出 backupCount 的历史日期目录整体清理（0 或负数表示不清理）。"""
+        """超出 backupCount 的历史日期目录整体清理（0 或负数表示不清理）。"""
         backup_count = getattr(self, 'backupCount', 0) or 0
         if backup_count <= 0:
             return
@@ -63,7 +63,7 @@ class ServerFormatter(logging.Formatter):
 
 
 class JsonFormatter(logging.Formatter):
-    """DEP-3：结构化 JSON 日志（LOG_FORMAT=json 时启用），供 Loki/ELK 等采集端解析。
+    """结构化 JSON 日志（LOG_FORMAT=json 时启用），供 Loki/ELK 等采集端解析。
 
     每条记录固定携带 request_uuid / request_user，与响应头 X-Request-Id 对应，
     便于按请求串联网关日志、应用日志与错误上报。

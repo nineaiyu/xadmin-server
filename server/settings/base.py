@@ -114,7 +114,7 @@ MIDDLEWARE = [
     'server.middleware.EndMiddleware'
 ]
 
-# django-silk 性能剖析（T3.1 性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
+# django-silk 性能剖析（性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
 # 仅限 DEBUG/DEBUG_DEV 环境；剖析开销较大，k6 基线测定必须在关闭 silk 的状态下执行，
 # silk 仅用于低并发下的单接口 SQL/profiling 剖析。开启后需 `python manage.py migrate` 创建 silk 表
 if CONFIG.SILK_ENABLED:
@@ -349,7 +349,7 @@ CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT
 CELERY_FLOWER_HOST = CONFIG.CELERY_FLOWER_HOST
 CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH
 
-# DEP-3：错误聚合（SENTRY_DSN 为空时零开销），在 settings 加载期尽早初始化
+# 错误聚合（SENTRY_DSN 为空时零开销），在 settings 加载期尽早初始化
 from ..monitoring import init_monitoring  # noqa: E402
 
 init_monitoring()

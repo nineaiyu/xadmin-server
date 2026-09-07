@@ -42,15 +42,15 @@ class Config(dict):
         'SECRET_KEY': '',
         'DEBUG': False,
         'DEBUG_DEV': False,
-        # django-silk 性能剖析开关（T3.1 性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
+        # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
         # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
         'SILK_ENABLED': False,
         'LOG_LEVEL': "WARNING",
-        # DEP-3：应用日志格式 text（默认）/ json（结构化，供 Loki/ELK 采集）
+        # 应用日志格式 text（默认）/ json（结构化，供 Loki/ELK 采集）
         'LOG_FORMAT': 'text',
-        # DEP-4：按天滚动的日志保留天数，超出后整体清理日期目录（0 表示不清理）
+        # 按天滚动的日志保留天数，超出后整体清理日期目录（0 表示不清理）
         'LOG_BACKUP_COUNT': 30,
-        # DEP-3：Sentry 错误聚合；DSN 为空时完全不初始化（sentry-sdk 已在 requirements.txt）
+        # Sentry 错误聚合；DSN 为空时完全不初始化（sentry-sdk 已在 requirements.txt）
         'SENTRY_DSN': '',
         'SENTRY_ENVIRONMENT': 'production',
         'SENTRY_TRACES_SAMPLE_RATE': 0.0,
@@ -95,7 +95,7 @@ class Config(dict):
         # 默认维持 threads，与 default 队列保持相同的运行时状态共享行为
         'CELERY_HEAVY_POOL': 'threads',
         'CELERY_HEAVY_CONCURRENCY': 4,
-        # DRF BasicAuthentication 总开关（SEC-4）：base64 明文凭证，默认关闭；
+        # DRF BasicAuthentication 总开关：base64 明文凭证，默认关闭；
         # 本地调试需要时在 config.yml 显式开启
         'BASIC_AUTH_ENABLED': False,
         # celery flower 任务监控配置

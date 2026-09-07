@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """CRUD 五个基础 Action：Create / Detail / List / Destroy / Update。
 
-统一将 DRF 原生响应包装为 ApiResponse。拆分自 modelset.py（T2.1）。
+统一将 DRF 原生响应包装为 ApiResponse。拆分自 modelset.py。
 """
 
 from django.conf import settings
@@ -34,7 +34,7 @@ class ListAction(mixins.ListModelMixin):
         """获取{cls}的列表"""
         data = super().list(request, *args, **kwargs).data
         if isinstance(data, dict) and request.query_params.get("with_meta", "").lower() in ("1", "true", "yes"):
-            # T3.2：按 with_meta=1 内联元数据，页面首开把
+            # 按 with_meta=1 内联元数据，页面首开把
             # list / search-columns / search-fields 三个请求合并为一个
             self.inline_metadata(request, data)
         return ApiResponse(data=data)

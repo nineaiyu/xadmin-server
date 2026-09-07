@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""SEC-3：富文本净化白名单与 XSS 样本回归。"""
+"""富文本净化白名单与 XSS 样本回归。"""
 import pytest
 
 from common.utils.sanitize import sanitize_rich_text

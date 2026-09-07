@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""可观测性初始化（DEP-3）：Sentry 错误聚合，DSN 未配置时零开销。
+"""可观测性初始化：Sentry 错误聚合，DSN 未配置时零开销。
 
 在 server/settings/base.py 加载末尾调用；config.yml 示例：
     SENTRY_DSN: "https://<key>@<host>/<project>"

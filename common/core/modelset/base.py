@@ -3,7 +3,7 @@
 """BaseViewSet：所有 ViewSet 的公共基类。
 
 查询集优化（select_related / prefetch_related 自动推断）、action 级 serializer
-选择、文件导出绕过分页。拆分自 modelset.py（T2.1），行为保持不变。
+选择、文件导出绕过分页。拆分自 modelset.py，行为保持不变。
 """
 
 from typing import Callable

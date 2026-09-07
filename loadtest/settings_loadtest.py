@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-性能基线压测专用配置（T3.1，docs/ops/performance-baseline.md）。
+性能基线压测专用配置（docs/ops/performance-baseline.md）。
 
 与日常开发/生产数据完全隔离：数据库与 Redis 均指向一次性专用容器
 （见 docker run 命令于 performance-baseline.md §三），绝不指向日常 config.yml
@@ -50,7 +50,7 @@ from server.settings import *  # noqa: F401,F403,E402
 DEBUG = False
 DEBUG_DEV = False
 
-# ASGI 连接风暴（T3.1 首测发现，重要）：Django 的 ASGIHandler 为每个请求创建独立
+# ASGI 连接风暴（首测发现，重要）：Django 的 ASGIHandler 为每个请求创建独立
 # 线程（ThreadSensitiveContext），线程随请求结束消亡，其 DB 连接随之丢弃——
 # base.py 的 CONN_MAX_AGE=600 在此形态下无效，等效于每请求新建 PG 连接；
 # 持续 ~600rps 时临时端口耗尽（macOS/Linux 容器均实测 EADDRNOTAVAIL）→ 13-27% 500。

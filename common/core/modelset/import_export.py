@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """导入导出 Action：文件导出（export-data）与数据导入（import-data）。
 
-含 Celery 异步导入分发（run_view_by_celery_task）。拆分自 modelset.py（T2.1）。
+含 Celery 异步导入分发（run_view_by_celery_task）。拆分自 modelset.py。
 """
 
 import itertools

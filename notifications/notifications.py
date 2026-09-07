@@ -14,7 +14,7 @@ from system.services import UserInfo, get_superusers, get_users_by_pks
 
 logger = get_logger(__name__)
 
-# 消息类型显式注册表（T2.4：替代元类隐式收集）。
+# 消息类型显式注册表（替代元类隐式收集）。
 # 消息子类用 @register_message 装饰后进入对应注册表；
 # 结构与历史版本一致：{message_type, message_type_label, category, category_label}
 SYSTEM_MESSAGE_REGISTRY: list[dict] = []
@@ -23,7 +23,7 @@ USER_MESSAGE_REGISTRY: list[dict] = []
 system_msgs = SYSTEM_MESSAGE_REGISTRY
 user_msgs = USER_MESSAGE_REGISTRY
 
-# 后端消息渲染方法注册表（T2.4：新增后端不再修改 Message 基类）。
+# 后端消息渲染方法注册表（新增后端不再修改 Message 基类）。
 # key: BACKEND 成员；value: Message 实例上的渲染方法名；未注册的后端回退 get_common_msg
 BACKEND_MSG_RENDERERS: dict = {}
 
@@ -282,7 +282,7 @@ class UserMessage(Message):
 
 
 def register_message(cls):
-    """消息类型显式注册（T2.4）：装饰在 Message 子类上，替代元类隐式收集。
+    """消息类型显式注册：装饰在 Message 子类上，替代元类隐式收集。
 
     子类需定义 message_type_label / category / category_label；
     注册信息由消息订阅视图消费（notifications/views/notifications.py）。

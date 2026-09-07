@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""索引命中回归测试（T3.3）。
+"""索引命中回归测试。
 
 以 EXPLAIN QUERY PLAN 断言高频列表/清理查询命中索引，防止后续模型改动
 无意间退化成全表扫描。索引清单与评审结论见 docs/architecture/indexes.md。

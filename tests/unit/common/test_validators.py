@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""通用校验器测试（T4.1）。"""
+"""通用校验器测试。"""
 import pytest
 from rest_framework import serializers
 
