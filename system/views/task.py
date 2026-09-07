@@ -20,9 +20,37 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
-from common.core.serializers import BaseModelSerializer
+from common.core.serializers import (
+    BasePrimaryKeyRelatedField,
+    BaseModelSerializer,
+)
 from common.core.modelset import BaseModelSet
 from common.swagger.utils import get_default_response_schema
+
+
+class DisplayRelatedField(BasePrimaryKeyRelatedField):
+    """对象关联字段展示增强：补充 label（默认 str(instance)），
+    供前端列表/详情/下拉直接可读，避免展示裸外键主键（周期任务页的
+    crontab/interval 原先显示 1/2/3 这种数字主键，无法辨认）。"""
+
+    def __init__(self, *args, label_builder=str, **kwargs):
+        self.label_builder = label_builder
+        super().__init__(*args, **kwargs)
+
+    def to_representation(self, value):
+        data = super().to_representation(value)
+        if isinstance(data, dict):
+            data.setdefault("label", self.label_builder(value))
+        return data
+
+
+def crontab_display(value: CrontabSchedule) -> str:
+    """标准 cron 文本序（分 时 日 月 周），并附时区；替代含文档噪声的 __str__。"""
+    tz = f" ({value.timezone})" if value.timezone else ""
+    return (
+        f"{value.minute} {value.hour} {value.day_of_month} "
+        f"{value.month_of_year} {value.day_of_week}{tz}"
+    )
 
 
 class CrontabScheduleSerializer(BaseModelSerializer):
@@ -44,6 +72,23 @@ class IntervalScheduleSerializer(BaseModelSerializer):
 
 
 class PeriodicTaskSerializer(BaseModelSerializer):
+    # 调度关联默认只序列化 {pk}，前端显示为数字主键不可读；
+    # 换用带 label 的关联字段：列表/详情/下拉直接显示
+    # "0 4 * * * (Asia/Shanghai)" / "每 60 秒"（str 走 gettext 本地化）
+    crontab = DisplayRelatedField(
+        queryset=CrontabSchedule.objects.all(),
+        label_builder=crontab_display,
+        required=False,
+        allow_null=True,
+        label=_("Crontab"),
+    )
+    interval = DisplayRelatedField(
+        queryset=IntervalSchedule.objects.all(),
+        required=False,
+        allow_null=True,
+        label=_("Interval"),
+    )
+
     class Meta:
         model = PeriodicTask
         fields = "__all__"
