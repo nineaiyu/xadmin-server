@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""WebSocket 协议 Schema 测试（ADR-003）。
+"""WebSocket 协议 Schema 测试。
 
 覆盖 MessageAction 枚举完整性、出站帧携带协议版本 v 与通用字段，
 防止新增 action 或改帧结构时契约静默漂移。

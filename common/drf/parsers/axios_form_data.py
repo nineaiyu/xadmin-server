@@ -36,7 +36,7 @@ axios 配置如下：
       formSerializer: { indexes: null, dots: true }
     };
 
-FormData 上传协议 v1（ADR-007，权威文档见 xadmin-docs
+FormData 上传协议 v1（权威文档见 xadmin-docs
 `advanced/form-data-upload.md`）：axios form-data 反向解析器，将点分键
 （`.` 分层、数字段为数组下标、顶层 `pks` 批量 getlist）还原为嵌套结构。
 将form-data数据：

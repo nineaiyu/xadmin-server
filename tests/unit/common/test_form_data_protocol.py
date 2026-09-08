@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""FormData 上传协议 v1（ADR-007）还原测试。
+"""FormData 上传协议 v1 还原测试。
 
 覆盖 AxiosMultiPartParser.format_data 的点分键展开规则：
 嵌套 dict / 数组下标（含乱序补齐）/ 顶层 pks 批量 / 空值与混合形态。
