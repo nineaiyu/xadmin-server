@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "xadmin/schemas/search-columns.schema.json",
   "title": "SearchColumnsData",
-  "description": "GET /api/<resource>/search-columns 响应中 data 字段的载荷（展示字段元数据）。T2.3 契约固化；服务端由 tests/unit/common/test_metadata_schema.py 持续校验。",
+  "description": "GET /api/<resource>/search-columns 响应中 data 字段的载荷（展示字段元数据）。契约固化；服务端由 tests/unit/common/test_metadata_schema.py 持续校验。",
   "type": "array",
   "items": {
     "type": "object",
@@ -73,7 +73,7 @@
       },
       "choices_truncated": {
         "type": "boolean",
-        "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true（PERF-07）"
+        "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true"
       },
       "multiple": {
         "type": "boolean",
