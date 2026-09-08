@@ -349,3 +349,56 @@ def test_destroy_execution_removes_log_file(monkeypatch, tmp_path):
     assert response.data["code"] == 1000
     assert not log_file.exists()
     assert TaskExecution.objects.filter(pk=execution.pk).exists() is False
+
+
+def test_clean_orphan_periodic_tasks():
+    from system.signal_task_execution import clean_orphan_periodic_tasks
+
+    _make_periodic_task()  # 已注册任务：保留
+    PeriodicTask.objects.create(
+        name="orphan-periodic-job",
+        task="dead.tasks.nope",
+        crontab=CrontabSchedule.objects.create(
+            minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
+        ),
+        args="[]", kwargs="{}",
+    )
+
+    class FakeApp:
+        tasks = {"system.tasks.auto_clean_operation_job": object()}
+
+    with (
+        mock.patch("system.signal_task_execution.app", FakeApp()),
+        mock.patch("system.signal_task_execution.cache") as cache_mock,
+        mock.patch("system.signal_task_execution.PeriodicTasks.update_changed") as update_changed,
+    ):
+        # 模型 save/delete 已触发过 update_changed，这里只统计 handler 期间的调用
+        update_changed.reset_mock()
+        cache_mock.get.return_value = 0
+        clean_orphan_periodic_tasks()
+
+    assert PeriodicTask.objects.filter(name="orphan-periodic-job").exists() is False
+    assert PeriodicTask.objects.filter(name="test-periodic-job").exists() is True
+    update_changed.assert_called()
+
+
+def test_clean_orphan_periodic_tasks_cache_guard():
+    from system.signal_task_execution import clean_orphan_periodic_tasks
+
+    orphan = PeriodicTask.objects.create(
+        name="orphan-periodic-job-2",
+        task="dead.tasks.nope",
+        crontab=CrontabSchedule.objects.create(
+            minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
+        ),
+        args="[]", kwargs="{}",
+    )
+    with (
+        mock.patch("system.signal_task_execution.cache") as cache_mock,
+        mock.patch("system.signal_task_execution.app.tasks", new={"x.tasks.alive": object()}),
+    ):
+        cache_mock.get.return_value = 1  # 其他 worker 已执行过清理，本次直接返回
+        clean_orphan_periodic_tasks()
+
+    assert PeriodicTask.objects.filter(pk=orphan.pk).exists() is True
+    cache_mock.set.assert_not_called()
