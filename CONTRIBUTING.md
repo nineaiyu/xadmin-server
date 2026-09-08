@@ -46,9 +46,15 @@ python manage.py start all
 
 ## 4. 提交前门禁（本地自查，CI 同款）
 
+pre-commit 钩子会自动对暂存的 Python 文件执行 `ruff format`（重新暂存）+ `ruff check`（不通过则拦截提交），首次克隆后安装一次：
+
+```bash
+ln -sf "$PWD/scripts/hooks/pre-commit" .git/hooks/pre-commit
+```
+
 | 门禁       | 命令                                                 | 说明                                                  |
 |----------|----------------------------------------------------|-----------------------------------------------------|
-| 代码风格     | `ruff check .`                                     | lint.yml 强制                                         |
+| 代码风格     | `ruff check .` / `ruff format --check .`           | lint.yml 强制                                         |
 | 测试 + 覆盖率 | `pytest -n auto --cov --cov-fail-under=75`         | 覆盖率门禁 75%（T4.1）                                     |
 | 跨 app 引用 | `python scripts/check_cross_app_imports.py`        | 业务层必须走 `<app>.services` 契约层                         |
 | 契约测试     | `pytest tests/unit/common/test_metadata_schema.py` | 改动元数据接口时必跑，schema 同步更新 [docs/schema/](docs/schema/) |

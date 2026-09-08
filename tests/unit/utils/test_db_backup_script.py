@@ -204,11 +204,14 @@ class TestDbBackupScript:
         stale.write_bytes(b"x")
         os.utime(stale, (0, 0))
 
-        assert run_script(
-            sandbox,
-            BACKUP_REMOTE_TYPE="local",
-            BACKUP_REMOTE_TARGET=str(sandbox["remote_dir"]),
-        ).returncode == 0
+        assert (
+            run_script(
+                sandbox,
+                BACKUP_REMOTE_TYPE="local",
+                BACKUP_REMOTE_TARGET=str(sandbox["remote_dir"]),
+            ).returncode
+            == 0
+        )
         assert not stale.exists()
 
     def test_failed_dump_leaves_no_partial(self, sandbox):

@@ -36,19 +36,13 @@ def seeded_platform_config(normal_user):
 
 class TestPartialUpdateMerge:
     def test_existing_key_is_updated(self, authed_client, normal_user, seeded_platform_config):
-        resp = authed_client.patch(
-            f"{CONFIG_BASE_URL}/{seeded_platform_config}", data={"Grey": True}, format="json"
-        )
+        resp = authed_client.patch(f"{CONFIG_BASE_URL}/{seeded_platform_config}", data={"Grey": True}, format="json")
         assert resp.status_code == 200
         config = UserConfig(normal_user).get_value(seeded_platform_config)
         assert config["Grey"] is True
 
-    def test_existing_keys_not_in_request_are_preserved(
-        self, authed_client, normal_user, seeded_platform_config
-    ):
-        resp = authed_client.patch(
-            f"{CONFIG_BASE_URL}/{seeded_platform_config}", data={"Grey": True}, format="json"
-        )
+    def test_existing_keys_not_in_request_are_preserved(self, authed_client, normal_user, seeded_platform_config):
+        resp = authed_client.patch(f"{CONFIG_BASE_URL}/{seeded_platform_config}", data={"Grey": True}, format="json")
         assert resp.status_code == 200
         config = UserConfig(normal_user).get_value(seeded_platform_config)
         assert config["Weak"] is False

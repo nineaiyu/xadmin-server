@@ -1,0 +1,38 @@
+#!/bin/sh
+# pre-commit: 等效于 client 的 lint-staged——对暂存的 Python 文件先 ruff format 再 ruff check
+# 安装：ln -sf "$PWD/scripts/hooks/pre-commit" .git/hooks/pre-commit
+
+# 定位 ruff：优先项目 venv，其次 PATH
+if [ -x ".venv/bin/ruff" ]; then
+    RUFF=".venv/bin/ruff"
+elif command -v ruff >/dev/null 2>&1; then
+    RUFF="ruff"
+else
+    echo "pre-commit: 未找到 ruff（尝试 .venv/bin/ruff 或 PATH），跳过检查"
+    exit 0
+fi
+
+# 收集暂存的 Python 文件（排除删除/改名移出的文件）
+FILES=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py')
+if [ -z "$FILES" ]; then
+    exit 0
+fi
+
+# 格式化并重新暂存被修改的文件
+echo "pre-commit: ruff format 暂存的 Python 文件..."
+"$RUFF" format -- $FILES
+CHANGED=$(git diff --name-only -- $FILES)
+if [ -n "$CHANGED" ]; then
+    echo "$CHANGED" | xargs git add --
+    echo "pre-commit: 以下文件已自动格式化并重新暂存："
+    echo "$CHANGED"
+fi
+
+# lint 检查，不通过则拦截提交
+echo "pre-commit: ruff check 暂存的 Python 文件..."
+"$RUFF" check -- $FILES || {
+    echo "pre-commit: ruff check 未通过，请修复后重新提交（或运行 .venv/bin/ruff check --fix）"
+    exit 1
+}
+
+exit 0
