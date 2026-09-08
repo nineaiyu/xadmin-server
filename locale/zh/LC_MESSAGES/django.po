@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 01:36+0800\n"
+"POT-Creation-Date: 2026-09-08 11:05+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,17 @@ msgid "Celery task failure"
 msgstr "Celery 任务失败"
 
 #: common/celery/failure_handler.py:38
+#, python-brace-format
 msgid "Celery task failure alert: {}"
 msgstr "Celery 任务失败告警：{}"
+
+#: common/celery/failure_handler.py:40
+msgid "Task"
+msgstr "任务"
+
+#: common/celery/failure_handler.py:41
+msgid "Error"
+msgstr "错误"
 
 #: common/celery/flower.py:41
 msgid ""
@@ -43,6 +52,7 @@ msgid "Your visit is too fast, please visit again later"
 msgstr "您的手速太快啦，请稍后再访问"
 
 #: common/core/exception.py:39
+#, python-brace-format
 msgid "Your visit is too fast, please visit again in {} seconds"
 msgstr "您的手速太快啦，请 {} 秒后再次访问"
 
@@ -52,6 +62,7 @@ msgid ""
 msgstr "请求地址不正确或数据权限不允许"
 
 #: common/core/exception.py:68
+#, python-brace-format
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
@@ -95,7 +106,7 @@ msgstr "更新时间"
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:151
+#: common/core/models.py:151 system/serializers/task.py:161
 msgid "Creator"
 msgstr "创建人"
 
@@ -116,6 +127,7 @@ msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
 #: common/core/modelset/batch.py:70 common/core/modelset/batch.py:85
+#, python-brace-format
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
@@ -124,11 +136,12 @@ msgid "Task add success"
 msgstr "任务添加成功"
 
 #: common/core/modelset/import_export.py:153
+#, python-brace-format
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
 #: common/core/modelset/import_export.py:154 system/utils/auth.py:109
-#: system/utils/modelset.py:59 system/views/auth/mfa.py:41
+#: system/utils/modelset.py:59 system/views/auth/mfa.py:44
 #: system/views/auth/register.py:69 system/views/auth/reset.py:47
 #: system/views/auth/verify_code.py:142 system/views/auth/verify_code.py:169
 msgid "Operation failed. Abnormal data"
@@ -139,27 +152,31 @@ msgid "Please select the data to restore"
 msgstr "请选择要恢复的数据"
 
 #: common/core/modelset/recycle.py:83
+#, python-brace-format
 msgid "Restored {} data"
 msgstr "已恢复 {} 条数据"
 
 #: common/core/modelset/recycle.py:85
+#, python-brace-format
 msgid "Skipped {} data with unique conflicts"
 msgstr "因唯一冲突跳过 {} 条数据"
 
 #: common/core/modelset/recycle.py:102
+#, python-brace-format
 msgid "Purged {} data"
 msgstr "已清除 {} 条数据"
 
 #: common/core/modelset/upload.py:46
-#| msgid "Please enter the Email verification code"
 msgid "Please select the file to upload"
 msgstr "请输入邮箱验证码"
 
 #: common/core/modelset/upload.py:49
+#, python-brace-format
 msgid "Wrong image type, the type should be {}"
 msgstr "错误的图片类型, 类型应该为 {}"
 
 #: common/core/modelset/upload.py:56
+#, python-brace-format
 msgid "Image size cannot exceed {}"
 msgstr "图片大小不能超过 {}"
 
@@ -181,10 +198,12 @@ msgid "The phone number format is incorrect"
 msgstr "手机号格式不正确"
 
 #: common/drf/parsers/axios_form_data.py:129
+#, python-brace-format
 msgid "Multipart form parse error - {}"
 msgstr "表单数据解析异常 - {}"
 
 #: common/drf/parsers/base.py:21
+#, python-brace-format
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr "文件内容太大 (最大长度 `{}` 字节)"
 
@@ -193,10 +212,12 @@ msgid "The resource does not support imports!"
 msgstr "该资源不支持导入"
 
 #: common/drf/parsers/base.py:227
+#, python-brace-format
 msgid "Parse file error: {}"
 msgstr "文件解析失败 {}"
 
 #: common/drf/parsers/excel.py:14
+#, python-brace-format
 msgid "Invalid excel file {}"
 msgstr "错误的Excel文件 {}"
 
@@ -205,6 +226,7 @@ msgid "Yes/No"
 msgstr "是/否"
 
 #: common/drf/renders/base.py:156
+#, python-brace-format
 msgid "Text, max length {}"
 msgstr "文本，最大长度 {}"
 
@@ -213,18 +235,22 @@ msgid "Long text, no length limit"
 msgstr "长文本，无长度限制"
 
 #: common/drf/renders/base.py:160
+#, python-brace-format
 msgid "Number, min {}, max {}"
 msgstr "数字, 最小 {}, 最大 {}"
 
 #: common/drf/renders/base.py:162
+#, python-brace-format
 msgid "Float, min {}, max {}"
 msgstr "浮点数, 最小 {}, 最大 {}"
 
 #: common/drf/renders/base.py:164
+#, python-brace-format
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr "固定精度的数, 最小 {}, 最大 {}, 最大位数（小数和整数）{}, 小数位数 {}"
 
 #: common/drf/renders/base.py:169
+#, python-brace-format
 msgid "Datetime format {}"
 msgstr "日期时间格式 {}"
 
@@ -234,12 +260,14 @@ msgid "IP"
 msgstr "IP"
 
 #: common/drf/renders/base.py:175
+#, python-brace-format
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr "选项，格式: 名称(值)，名称是可选的，方便阅读，值是必填的，可选项有 {}"
 
 #: common/drf/renders/base.py:178
+#, python-brace-format
 msgid "Choices, options {}"
 msgstr "选项，可选项有 {}"
 
@@ -264,8 +292,9 @@ msgstr "关联项，格式是 id"
 msgid ""
 "Objects, format [\"name(id)\", ...], name is optional for human read, id is "
 "requisite"
-msgstr "对象列表，格式为 [\"name(id)\", ...]，name 供人阅读可省略，id 必填"
-"多关联项，格式: [\"名称(id)\", ...], 名称是可选的，方便阅读，id 是必填的"
+msgstr ""
+"对象列表，格式为 [\"name(id)\", ...]，name 供人阅读可省略，id 必填多关联项，"
+"格式: [\"名称(id)\", ...], 名称是可选的，方便阅读，id 是必填的"
 
 #: common/drf/renders/base.py:192
 msgid ""
@@ -285,12 +314,14 @@ msgid "UUID4"
 msgstr "UUID4"
 
 #: common/drf/renders/base.py:307
+#, python-brace-format
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
 msgstr "{} - 未设置加密密码 - 请前往个人信息 -> 文件加密密码中设置加密密码"
 
 #: common/fields/char.py:59
+#, python-brace-format
 msgid "{} is not a valid value for AESCharField"
 msgstr "{} 不支持的AES加密类型"
 
@@ -351,6 +382,7 @@ msgid "Import data message"
 msgstr "导入数据通知"
 
 #: common/notifications.py:168
+#, python-brace-format
 msgid "Import {} data {} message"
 msgstr "导入{}数据{}通知"
 
@@ -359,6 +391,7 @@ msgid "Batch delete data message"
 msgstr "批量删除数据通知"
 
 #: common/notifications.py:180
+#, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr "批量删除{}数据{}通知"
 
@@ -371,6 +404,7 @@ msgid "Alibaba cloud"
 msgstr "阿里云"
 
 #: common/sdk/sms/endpoint.py:33
+#, python-brace-format
 msgid "SMS provider not support: {}"
 msgstr "短信服务商不支持：{}"
 
@@ -387,6 +421,7 @@ msgid "The verification code is incorrect"
 msgstr "验证码错误"
 
 #: common/sdk/sms/exceptions.py:24 common/sdk/sms/exceptions.py:32
+#, python-brace-format
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
@@ -429,9 +464,10 @@ msgid ""
 "        be modified. Therefore, upon system startup, tasks will be "
 "registered or the parameters \n"
 "        of scheduled tasks will be updated"
-msgstr "随版本迭代可能新增任务，或调整任务名称与执行周期。因此在系统启动时统一注册/更新定时任务参数"
-"随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以在系统启动时，"
-"将会注册任务或者更新定时任务参数"
+msgstr ""
+"随版本迭代可能新增任务，或调整任务名称与执行周期。因此在系统启动时统一注册/更"
+"新定时任务参数随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以"
+"在系统启动时，将会注册任务或者更新定时任务参数"
 
 #: common/tasks.py:134
 msgid "Periodic check service performance"
@@ -443,9 +479,10 @@ msgid ""
 "memory, \n"
 "        and disk usage exceed the thresholds, and send an alert message to "
 "the administrator"
-msgstr "定期检查各组件是否离线、CPU/内存/磁盘使用是否超过阈值，超限时向管理员发送告警消息"
-"每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送消息"
-"预警"
+msgstr ""
+"定期检查各组件是否离线、CPU/内存/磁盘使用是否超过阈值，超限时向管理员发送告警"
+"消息每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送"
+"消息预警"
 
 #: common/tasks.py:145
 msgid "Run background task view set"
@@ -555,7 +592,7 @@ msgstr "OTP 动态验证码"
 msgid "Please enter the 6-digit dynamic code"
 msgstr "请输入 6 位动态验证码"
 
-#: mfa/backends/otp.py:30
+#: mfa/backends/otp.py:30 mfa/views.py:157 mfa/views.py:195
 msgid "OTP is not bound"
 msgstr "OTP 未绑定"
 
@@ -563,7 +600,7 @@ msgstr "OTP 未绑定"
 msgid "The verification code has already been used"
 msgstr "验证码已被使用"
 
-#: mfa/backends/otp.py:35 mfa/views.py:137
+#: mfa/backends/otp.py:35 mfa/views.py:138 mfa/views.py:178 mfa/views.py:205
 msgid "The OTP verification code is incorrect"
 msgstr "OTP 动态验证码错误"
 
@@ -622,13 +659,14 @@ msgid "Verification code / password"
 msgstr "验证码 / 密码"
 
 #: mfa/services.py:41
+#, python-brace-format
 msgid ""
 "Too many failures, the account has been locked (please contact admin to "
 "unlock it or try again after {} minutes)"
 msgstr "失败次数过多，账号已被锁定（请联系管理员解锁或 {} 分钟后重试）"
 
 #: mfa/services.py:65 mfa/services.py:80 mfa/services.py:94
-#: system/views/auth/mfa.py:68 system/views/auth/mfa.py:111
+#: system/views/auth/mfa.py:71 system/views/auth/mfa.py:114
 msgid "The verification method is unavailable"
 msgstr "该验证方式不可用"
 
@@ -640,32 +678,40 @@ msgstr "该验证方式不满足本次验证的安全级别要求"
 msgid "This method does not need a verification code to be sent"
 msgstr "该验证方式无需发送验证码"
 
-#: mfa/views.py:78
+#: mfa/views.py:78 mfa/views.py:207
 msgid "Verification successful"
 msgstr "验证通过"
 
-#: mfa/views.py:89 system/views/auth/mfa.py:72
+#: mfa/views.py:89 system/views/auth/mfa.py:75
 #: system/views/auth/verify_code.py:185
 msgid "The verification code has been sent"
 msgstr "验证码已发送"
 
-#: mfa/views.py:110 mfa/views.py:124
+#: mfa/views.py:111 mfa/views.py:125
 msgid "OTP is already bound"
 msgstr "OTP 已绑定"
 
-#: mfa/views.py:127
+#: mfa/views.py:128 mfa/views.py:168
 msgid "Please start binding first"
 msgstr "请先发起绑定"
 
-#: mfa/views.py:134
+#: mfa/views.py:135 mfa/views.py:175 mfa/views.py:202
 msgid "Too many failures, the account has been locked"
 msgstr "失败次数过多，账号已被锁定"
 
-#: mfa/views.py:144
+#: mfa/views.py:145
 msgid "OTP binding successful"
 msgstr "OTP 绑定成功"
 
-#: mfa/views.py:156
+#: mfa/views.py:160
+msgid "Login MFA disabled"
+msgstr "登录 MFA 已关闭"
+
+#: mfa/views.py:183
+msgid "Login MFA enabled"
+msgstr "登录 MFA 已开启"
+
+#: mfa/views.py:219
 msgid "OTP unbinding successful"
 msgstr "OTP 解绑成功"
 
@@ -796,6 +842,7 @@ msgid "User message subscription"
 msgstr "用户消息订阅"
 
 #: notifications/models/notification.py:25
+#, python-brace-format
 msgid "{} subscription"
 msgstr "{} 订阅"
 
@@ -969,9 +1016,10 @@ msgid ""
 "Whether to use an implicit TLS (secure) connection when talking to the SMTP "
 "server. In most email documentation this type of TLS connection is referred "
 "to as SSL. It is generally used on port 465"
-msgstr "与 SMTP 服务器通信时是否使用隐式 TLS（安全连接）。大多数邮件服务商的 465 端口使用该方式"
-"与 SMTP 服务器通信时是否使用隐式 TLS（安全）连接。在大多数电子邮件文档中，这"
-"种类型的 TLS 连接称为 SSL。它通常在端口 465 上使用"
+msgstr ""
+"与 SMTP 服务器通信时是否使用隐式 TLS（安全连接）。大多数邮件服务商的 465 端口"
+"使用该方式与 SMTP 服务器通信时是否使用隐式 TLS（安全）连接。在大多数电子邮件"
+"文档中，这种类型的 TLS 连接称为 SSL。它通常在端口 465 上使用"
 
 #: settings/serializers/email.py:41
 msgid "Use TLS"
@@ -981,9 +1029,10 @@ msgstr "使用 TLS"
 msgid ""
 "Whether to use a TLS (secure) connection when talking to the SMTP server. "
 "This is used for explicit TLS connections, generally on port 587"
-msgstr "与 SMTP 服务器通信时是否使用显式 TLS（安全连接），即通常 587 端口的 STARTTLS 方式"
-"与 SMTP 服务器通信时是否使用 TLS（安全）连接。这用于显式 TLS 连接，通常在端"
-"口 587 上"
+msgstr ""
+"与 SMTP 服务器通信时是否使用显式 TLS（安全连接），即通常 587 端口的 STARTTLS "
+"方式与 SMTP 服务器通信时是否使用 TLS（安全）连接。这用于显式 TLS 连接，通常在"
+"端口 587 上"
 
 #: settings/serializers/email.py:47
 msgid "Recipient"
@@ -1027,11 +1076,14 @@ msgstr "当用户登录失败次数达到限制后，那么在此间隔内禁止
 msgid ""
 "With * indicating a match all. Such as: 192.168.10.1, 192.168.1.0/24, "
 "10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64 "
-msgstr "匹配 * 表示全部。支持格式：192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:db8:2de::e13, 2001:db8:1a:1110::/64"
-"* 表示匹配所有。例如: 192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:"
-"db8:2de::e13, 2001:db8:1a:1110::/64  (支持网域)"
+msgstr ""
+"匹配 * 表示全部。支持格式：192.168.10.1, 192.168.1.0/24, 10.1.1.1-10.1.1.20, "
+"2001:db8:2de::e13, 2001:db8:1a:1110::/64* 表示匹配所有。例如: 192.168.10.1, "
+"192.168.1.0/24, 10.1.1.1-10.1.1.20, 2001:db8:2de::e13, "
+"2001:db8:1a:1110::/64  (支持网域)"
 
 #: settings/serializers/security.py:56
+#, python-brace-format
 msgid "IP address invalid: `{}`"
 msgstr "IP 地址无效: `{}`"
 
@@ -1044,9 +1096,10 @@ msgid ""
 "The system determines whether the login IP address belongs to a common login "
 "city. If the account is logged in from a common login city, the system sends "
 "a remote login reminder"
-msgstr "系统判断登录 IP 是否属于常登录城市；若账号在非常用城市登录，将发送异地登录提醒"
-"根据登录 IP 是否所属常用登录城市进行判断，若账号在非常用城市登录，会发送异地"
-"登录提醒"
+msgstr ""
+"系统判断登录 IP 是否属于常登录城市；若账号在非常用城市登录，将发送异地登录提"
+"醒根据登录 IP 是否所属常用登录城市进行判断，若账号在非常用城市登录，会发送异"
+"地登录提醒"
 
 #: settings/serializers/security.py:70
 msgid "User login failures count"
@@ -1379,70 +1432,75 @@ msgstr "通过密码方式验证后"
 msgid "Login MFA"
 msgstr "强制登录二次验证"
 
-#: settings/serializers/security.py:357
-msgid "Force MFA verification at login for users who have bound OTP"
-msgstr "已绑定 OTP 的用户登录时强制二次验证"
+#: settings/serializers/security.py:358
+msgid ""
+"Accounts with personal MFA enabled always require verification at login. "
+"When enabled, accounts bound to OTP are forced to verify even if they closed "
+"it themselves"
+msgstr ""
+"个人已开启 MFA 的账号登录时始终要求验证；开启后，已绑定 OTP 的账号即使自行关闭 "
+"也会被强制验证"
 
-#: settings/serializers/security.py:362
+#: settings/serializers/security.py:366
 msgid "Login MFA token validity period (second)"
 msgstr "登录二次验证临时令牌有效期（秒）"
 
-#: settings/serializers/security.py:363
+#: settings/serializers/security.py:367
 msgid "Validity period of the temporary token during login MFA verification"
 msgstr "登录二次验证过程中临时令牌的有效期"
 
-#: settings/serializers/security.py:368
+#: settings/serializers/security.py:372
 msgid "OTP valid window"
 msgstr "OTP 容错窗口"
 
-#: settings/serializers/security.py:369
+#: settings/serializers/security.py:373
 msgid ""
 "The number of time periods allowed before and after the OTP verification"
 msgstr "OTP 验证允许前后容错的时间周期数"
 
-#: settings/serializers/security.py:373
+#: settings/serializers/security.py:377
 msgid "OTP issuer"
 msgstr "OTP 签发方名称"
 
-#: settings/serializers/security.py:374
+#: settings/serializers/security.py:378
 msgid "The issuer name in the otpauth binding URI"
 msgstr "otpauth 绑定 URI 中的签发方名称"
 
-#: settings/serializers/security.py:383
+#: settings/serializers/security.py:387
 msgid "Disk usage threshold (%)"
 msgstr "磁盘使用率阈值（%）"
 
-#: settings/serializers/security.py:384
+#: settings/serializers/security.py:388
 msgid ""
 "Send an alert email to the administrator when the disk usage exceeds this "
 "threshold"
 msgstr "磁盘使用率超过该阈值时，向管理员发送告警邮件"
 
-#: settings/serializers/security.py:389
+#: settings/serializers/security.py:393
 msgid "Memory usage threshold (%)"
 msgstr "内存使用率阈值（%）"
 
-#: settings/serializers/security.py:390
+#: settings/serializers/security.py:394
 msgid ""
 "Send an alert email to the administrator when the memory usage exceeds this "
 "threshold"
 msgstr "内存使用率超过该阈值时，向管理员发送告警邮件"
 
-#: settings/serializers/security.py:395
+#: settings/serializers/security.py:399
 msgid "CPU usage threshold (%)"
 msgstr "CPU 使用率阈值（%）"
 
-#: settings/serializers/security.py:396
+#: settings/serializers/security.py:400
 msgid ""
 "Send an alert email to the administrator when the CPU usage exceeds this "
 "threshold"
 msgstr "CPU 使用率超过该阈值时，向管理员发送告警邮件"
 
-#: settings/serializers/security.py:401
+#: settings/serializers/security.py:405
 msgid "CPU load threshold (single core)"
 msgstr "CPU 负载阈值（单核）"
 
-#: settings/serializers/security.py:402
+#: settings/serializers/security.py:406
 msgid ""
 "Send an alert email to the administrator when the single-core CPU load "
 "exceeds this threshold"
@@ -1489,6 +1547,7 @@ msgid "Test smtp setting"
 msgstr "测试 smtp 设置"
 
 #: settings/views/email.py:67
+#, python-brace-format
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
 
@@ -1516,9 +1575,9 @@ msgstr "数据权限模式"
 msgid ""
 "Permission mode, and the mode indicates that the data needs to satisfy each "
 "rule in the rule list at the same time, or the mode satisfies any rule"
-msgstr "权限模式，mode 表示数据需同时满足规则列表中的每一条规则"
-"权限模式, 且模式表示数据需要同时满足规则列表中的每条规则，或模式即满足任意一"
-"条规则即可"
+msgstr ""
+"权限模式，mode 表示数据需同时满足规则列表中的每一条规则权限模式, 且模式表示数"
+"据需要同时满足规则列表中的每条规则，或模式即满足任意一条规则即可"
 
 #: system/models/config.py:16
 msgid "Config value"
@@ -1931,6 +1990,60 @@ msgstr "角色标识"
 msgid "User role"
 msgstr "用户角色"
 
+#: system/models/task.py:29
+msgid "Waiting"
+msgstr "等待中"
+
+#: system/models/task.py:30
+msgid "Running"
+msgstr "运行中"
+
+#: system/models/task.py:31
+msgid "Success"
+msgstr "成功"
+
+#: system/models/task.py:32
+msgid "Failure"
+msgstr "失败"
+
+#: system/models/task.py:33
+msgid "Revoked"
+msgstr "已撤销"
+
+#: system/models/task.py:36
+msgid "Task Name"
+msgstr "任务名称"
+
+#: system/models/task.py:38 system/serializers/task.py:155
+msgid "Periodic Task"
+msgstr "周期任务"
+
+#: system/models/task.py:41 system/serializers/task.py:132
+#: system/serializers/task.py:133
+msgid "Positional Args"
+msgstr "位置参数"
+
+#: system/models/task.py:42 system/serializers/task.py:136
+#: system/serializers/task.py:137
+msgid "Keyword Args"
+msgstr "关键字参数"
+
+#: system/models/task.py:44
+msgid "Status"
+msgstr "状态"
+
+#: system/models/task.py:47
+msgid "Start Time"
+msgstr "开始时间"
+
+#: system/models/task.py:48
+msgid "Finish Time"
+msgstr "结束时间"
+
+#: system/models/task.py:52
+msgid "Task Execution"
+msgstr "任务执行"
+
 #: system/models/upload.py:17
 msgid "Filepath"
 msgstr "文件路径"
@@ -2049,7 +2162,6 @@ msgstr "在线"
 
 #: system/serializers/menu.py:50 system/serializers/role.py:56
 #: system/serializers/user.py:66
-#| msgid "Phone already exist"
 msgid "This field already exists"
 msgstr "手机号已经存在"
 
@@ -2060,6 +2172,37 @@ msgstr "权限规则不能为空"
 #: system/serializers/role.py:45 system/serializers/role.py:46
 msgid "Fields"
 msgstr "字段"
+
+#: system/serializers/task.py:56
+msgid "Timezone"
+msgstr "时间"
+
+#: system/serializers/task.py:80
+#, python-brace-format
+msgid "Invalid crontab expression: {}"
+msgstr "无效的 crontab 表达式：{}"
+
+#: system/serializers/task.py:100
+#, python-format
+msgid "%(label)s must be a valid JSON string"
+msgstr "%(label)s 必须是有效的 JSON 字符串"
+
+#: system/serializers/task.py:104
+#, python-format
+msgid "%(label)s must be JSON %(type)s"
+msgstr "%(label)s 必须是 JSON %(type)s"
+
+#: system/serializers/task.py:121
+msgid "Crontab"
+msgstr "Crontab 表达式"
+
+#: system/serializers/task.py:127
+msgid "Interval"
+msgstr "执行间隔"
+
+#: system/serializers/task.py:163
+msgid "Time Cost"
+msgstr "耗时"
 
 #: system/serializers/upload.py:29
 msgid "Access URL"
@@ -2154,6 +2297,7 @@ msgid "Temporary Token validation failed. Please try again"
 msgstr "临时Token校验失败，请稍后重试"
 
 #: system/utils/auth.py:75
+#, python-brace-format
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -2161,6 +2305,7 @@ msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
 #: system/utils/auth.py:79 system/utils/auth.py:136
 #: system/views/auth/login.py:51
+#, python-brace-format
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -2171,7 +2316,8 @@ msgstr "账号已被锁定 (请联系管理员解锁或{}分钟后重试)"
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
 "account will be temporarily locked for {block_time} minutes)"
-msgstr "{error} 请重新输入。还可以尝试 {times_try} 次（超出后账号将被临时锁定）"
+msgstr ""
+"{error} 请重新输入。还可以尝试 {times_try} 次（超出后账号将被临时锁定）"
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
 
@@ -2234,8 +2380,9 @@ msgstr "字段值必须以给定的字符串开头（大小写敏感）"
 msgid ""
 "Case-insensitive start with, the field value must start with the given "
 "string (case-insensitive)."
-msgstr "不区分大小写的 starts-with：字段值须以给定字符串开头（忽略大小写）"
-"不区分大小写的以某个字符串开头，字段值必须以给定的字符串开头（不区分大小写）"
+msgstr ""
+"不区分大小写的 starts-with：字段值须以给定字符串开头（忽略大小写）不区分大小"
+"写的以某个字符串开头，字段值必须以给定的字符串开头（不区分大小写）"
 
 #: system/utils/modelfield.py:128
 msgid "The field value must end with the given string (case-sensitive)."
@@ -2245,8 +2392,9 @@ msgstr "字段值必须以给定的字符串结尾（大小写敏感）"
 msgid ""
 "Case-insensitive end with, the field value must end with the given string "
 "(case-insensitive)."
-msgstr "不区分大小写的 ends-with：字段值须以给定字符串结尾（忽略大小写）"
-"不区分大小写的以某个字符串结尾，字段值必须以给定的字符串结尾（不区分大小写）"
+msgstr ""
+"不区分大小写的 ends-with：字段值须以给定字符串结尾（忽略大小写）不区分大小写"
+"的以某个字符串结尾，字段值必须以给定的字符串结尾（不区分大小写）"
 
 #: system/utils/modelfield.py:130
 msgid ""
@@ -2345,6 +2493,7 @@ msgid ""
 msgstr "字段值必须包含给定的单个键，通常用于 JSON 字段"
 
 #: system/views/admin/file.py:87
+#, python-brace-format
 msgid "upload file size cannot exceed {}"
 msgstr "文件大小不能超过 {}"
 
@@ -2361,7 +2510,6 @@ msgid "The super administrator disallows deletion"
 msgstr "超级管理员禁止删除"
 
 #: system/views/admin/user.py:114
-#| msgid "The verification code has been sent"
 msgid "The user's MFA has been reset"
 msgstr "验证码已发送"
 
@@ -2371,15 +2519,16 @@ msgid ""
 "The username or password you entered is incorrect, please enter it again. "
 "You can also try {times_try} times (The account will be temporarily locked "
 "for {block_time} minutes)"
-msgstr "用户名或密码错误，请重新输入。还可以尝试 {times_try} 次（超出后账号将被临时锁定）"
-"您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账号将"
-"被临时 锁定 {block_time} 分钟)"
+msgstr ""
+"用户名或密码错误，请重新输入。还可以尝试 {times_try} 次（超出后账号将被临时锁"
+"定）您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账"
+"号将被临时 锁定 {block_time} 分钟)"
 
 #: system/views/auth/login.py:115 system/views/auth/login.py:204
 msgid "Login forbidden"
 msgstr "禁止登录"
 
-#: system/views/auth/mfa.py:39
+#: system/views/auth/mfa.py:42
 msgid "Login verification expired, please log in again"
 msgstr "登录验证已过期，请重新登录"
 
@@ -2423,21 +2572,19 @@ msgstr "邮件不存在"
 msgid "Username does not exist"
 msgstr "用户名不存在"
 
-#: system/views/task.py:59
-#| msgid "Time"
-msgid "Timezone"
-msgstr "时间"
+#: system/views/task.py:158
+#, python-brace-format
+msgid "Task \"{}\" is not registered"
+msgstr "任务 \"{}\" 未注册"
 
-#: system/views/task.py:83
-msgid "Crontab"
-msgstr "Crontab 表达式"
+#: system/views/task.py:163
+msgid "Task arguments are not valid JSON"
+msgstr "任务参数不是有效的 JSON"
 
-#: system/views/task.py:89
-msgid "Interval"
-msgstr "执行间隔"
+#: system/views/task.py:246
+#, python-brace-format
+msgid "Batch execution submitted: {} success, {} failed"
+msgstr "批量执行已提交：{} 成功，{} 失败"
 
-#~ msgid "Task"
-#~ msgstr "任务"
-
-#~ msgid "Error"
-#~ msgstr "错误"
+#~ msgid "Force MFA verification at login for users who have bound OTP"
+#~ msgstr "已绑定 OTP 的用户登录时强制二次验证"

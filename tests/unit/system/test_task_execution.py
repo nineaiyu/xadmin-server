@@ -21,12 +21,8 @@ from system.signal_task_execution import (
     task_execution_on_revoked,
     task_execution_on_start,
 )
-from system.views.task import (
-    CrontabScheduleSerializer,
-    PeriodicTaskViewSet,
-    TaskExecutionSerializer,
-    TaskExecutionViewSet,
-)
+from system.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
+from system.views.task import PeriodicTaskViewSet, TaskExecutionViewSet
 
 pytestmark = pytest.mark.django_db
 

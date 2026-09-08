@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 01:36+0800\n"
+"POT-Creation-Date: 2026-09-08 11:05+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -28,7 +28,16 @@ msgid "Celery task failure"
 msgstr ""
 
 #: common/celery/failure_handler.py:38
+#, python-brace-format
 msgid "Celery task failure alert: {}"
+msgstr ""
+
+#: common/celery/failure_handler.py:40
+msgid "Task"
+msgstr ""
+
+#: common/celery/failure_handler.py:41
+msgid "Error"
 msgstr ""
 
 #: common/celery/flower.py:41
@@ -50,6 +59,7 @@ msgid "Your visit is too fast, please visit again later"
 msgstr ""
 
 #: common/core/exception.py:39
+#, python-brace-format
 msgid "Your visit is too fast, please visit again in {} seconds"
 msgstr ""
 
@@ -59,6 +69,7 @@ msgid ""
 msgstr ""
 
 #: common/core/exception.py:68
+#, python-brace-format
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr ""
 
@@ -102,7 +113,7 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: common/core/models.py:151
+#: common/core/models.py:151 system/serializers/task.py:161
 msgid "Creator"
 msgstr ""
 
@@ -123,6 +134,7 @@ msgid "Sorting saved successfully"
 msgstr ""
 
 #: common/core/modelset/batch.py:70 common/core/modelset/batch.py:85
+#, python-brace-format
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
@@ -131,11 +143,12 @@ msgid "Task add success"
 msgstr ""
 
 #: common/core/modelset/import_export.py:153
+#, python-brace-format
 msgid "Operation successful. Import {} data"
 msgstr ""
 
 #: common/core/modelset/import_export.py:154 system/utils/auth.py:109
-#: system/utils/modelset.py:59 system/views/auth/mfa.py:41
+#: system/utils/modelset.py:59 system/views/auth/mfa.py:44
 #: system/views/auth/register.py:69 system/views/auth/reset.py:47
 #: system/views/auth/verify_code.py:142 system/views/auth/verify_code.py:169
 msgid "Operation failed. Abnormal data"
@@ -146,14 +159,17 @@ msgid "Please select the data to restore"
 msgstr ""
 
 #: common/core/modelset/recycle.py:83
+#, python-brace-format
 msgid "Restored {} data"
 msgstr ""
 
 #: common/core/modelset/recycle.py:85
+#, python-brace-format
 msgid "Skipped {} data with unique conflicts"
 msgstr ""
 
 #: common/core/modelset/recycle.py:102
+#, python-brace-format
 msgid "Purged {} data"
 msgstr ""
 
@@ -162,10 +178,12 @@ msgid "Please select the file to upload"
 msgstr ""
 
 #: common/core/modelset/upload.py:49
+#, python-brace-format
 msgid "Wrong image type, the type should be {}"
 msgstr ""
 
 #: common/core/modelset/upload.py:56
+#, python-brace-format
 msgid "Image size cannot exceed {}"
 msgstr ""
 
@@ -187,10 +205,12 @@ msgid "The phone number format is incorrect"
 msgstr ""
 
 #: common/drf/parsers/axios_form_data.py:129
+#, python-brace-format
 msgid "Multipart form parse error - {}"
 msgstr ""
 
 #: common/drf/parsers/base.py:21
+#, python-brace-format
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr ""
 
@@ -199,10 +219,12 @@ msgid "The resource does not support imports!"
 msgstr ""
 
 #: common/drf/parsers/base.py:227
+#, python-brace-format
 msgid "Parse file error: {}"
 msgstr ""
 
 #: common/drf/parsers/excel.py:14
+#, python-brace-format
 msgid "Invalid excel file {}"
 msgstr ""
 
@@ -211,6 +233,7 @@ msgid "Yes/No"
 msgstr ""
 
 #: common/drf/renders/base.py:156
+#, python-brace-format
 msgid "Text, max length {}"
 msgstr ""
 
@@ -219,18 +242,22 @@ msgid "Long text, no length limit"
 msgstr ""
 
 #: common/drf/renders/base.py:160
+#, python-brace-format
 msgid "Number, min {}, max {}"
 msgstr ""
 
 #: common/drf/renders/base.py:162
+#, python-brace-format
 msgid "Float, min {}, max {}"
 msgstr ""
 
 #: common/drf/renders/base.py:164
+#, python-brace-format
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr ""
 
 #: common/drf/renders/base.py:169
+#, python-brace-format
 msgid "Datetime format {}"
 msgstr ""
 
@@ -240,12 +267,14 @@ msgid "IP"
 msgstr ""
 
 #: common/drf/renders/base.py:175
+#, python-brace-format
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr ""
 
 #: common/drf/renders/base.py:178
+#, python-brace-format
 msgid "Choices, options {}"
 msgstr ""
 
@@ -290,12 +319,14 @@ msgid "UUID4"
 msgstr ""
 
 #: common/drf/renders/base.py:307
+#, python-brace-format
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
 msgstr ""
 
 #: common/fields/char.py:59
+#, python-brace-format
 msgid "{} is not a valid value for AESCharField"
 msgstr ""
 
@@ -356,6 +387,7 @@ msgid "Import data message"
 msgstr ""
 
 #: common/notifications.py:168
+#, python-brace-format
 msgid "Import {} data {} message"
 msgstr ""
 
@@ -364,6 +396,7 @@ msgid "Batch delete data message"
 msgstr ""
 
 #: common/notifications.py:180
+#, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr ""
 
@@ -376,6 +409,7 @@ msgid "Alibaba cloud"
 msgstr ""
 
 #: common/sdk/sms/endpoint.py:33
+#, python-brace-format
 msgid "SMS provider not support: {}"
 msgstr ""
 
@@ -392,6 +426,7 @@ msgid "The verification code is incorrect"
 msgstr ""
 
 #: common/sdk/sms/exceptions.py:24 common/sdk/sms/exceptions.py:32
+#, python-brace-format
 msgid "Please wait {} seconds before sending"
 msgstr ""
 
@@ -556,7 +591,7 @@ msgstr ""
 msgid "Please enter the 6-digit dynamic code"
 msgstr ""
 
-#: mfa/backends/otp.py:30
+#: mfa/backends/otp.py:30 mfa/views.py:157 mfa/views.py:195
 msgid "OTP is not bound"
 msgstr ""
 
@@ -564,7 +599,7 @@ msgstr ""
 msgid "The verification code has already been used"
 msgstr ""
 
-#: mfa/backends/otp.py:35 mfa/views.py:137
+#: mfa/backends/otp.py:35 mfa/views.py:138 mfa/views.py:178 mfa/views.py:205
 msgid "The OTP verification code is incorrect"
 msgstr ""
 
@@ -623,13 +658,14 @@ msgid "Verification code / password"
 msgstr ""
 
 #: mfa/services.py:41
+#, python-brace-format
 msgid ""
 "Too many failures, the account has been locked (please contact admin to "
 "unlock it or try again after {} minutes)"
 msgstr ""
 
 #: mfa/services.py:65 mfa/services.py:80 mfa/services.py:94
-#: system/views/auth/mfa.py:68 system/views/auth/mfa.py:111
+#: system/views/auth/mfa.py:71 system/views/auth/mfa.py:114
 msgid "The verification method is unavailable"
 msgstr ""
 
@@ -641,32 +677,40 @@ msgstr ""
 msgid "This method does not need a verification code to be sent"
 msgstr ""
 
-#: mfa/views.py:78
+#: mfa/views.py:78 mfa/views.py:207
 msgid "Verification successful"
 msgstr ""
 
-#: mfa/views.py:89 system/views/auth/mfa.py:72
+#: mfa/views.py:89 system/views/auth/mfa.py:75
 #: system/views/auth/verify_code.py:185
 msgid "The verification code has been sent"
 msgstr ""
 
-#: mfa/views.py:110 mfa/views.py:124
+#: mfa/views.py:111 mfa/views.py:125
 msgid "OTP is already bound"
 msgstr ""
 
-#: mfa/views.py:127
+#: mfa/views.py:128 mfa/views.py:168
 msgid "Please start binding first"
 msgstr ""
 
-#: mfa/views.py:134
+#: mfa/views.py:135 mfa/views.py:175 mfa/views.py:202
 msgid "Too many failures, the account has been locked"
 msgstr ""
 
-#: mfa/views.py:144
+#: mfa/views.py:145
 msgid "OTP binding successful"
 msgstr ""
 
-#: mfa/views.py:156
+#: mfa/views.py:160
+msgid "Login MFA disabled"
+msgstr ""
+
+#: mfa/views.py:183
+msgid "Login MFA enabled"
+msgstr ""
+
+#: mfa/views.py:219
 msgid "OTP unbinding successful"
 msgstr ""
 
@@ -797,6 +841,7 @@ msgid "User message subscription"
 msgstr ""
 
 #: notifications/models/notification.py:25
+#, python-brace-format
 msgid "{} subscription"
 msgstr ""
 
@@ -1027,6 +1072,7 @@ msgid ""
 msgstr ""
 
 #: settings/serializers/security.py:56
+#, python-brace-format
 msgid "IP address invalid: `{}`"
 msgstr ""
 
@@ -1372,70 +1418,73 @@ msgstr ""
 msgid "Login MFA"
 msgstr ""
 
-#: settings/serializers/security.py:357
-msgid "Force MFA verification at login for users who have bound OTP"
+#: settings/serializers/security.py:358
+msgid ""
+"Accounts with personal MFA enabled always require verification at login. "
+"When enabled, accounts bound to OTP are forced to verify even if they closed "
+"it themselves"
 msgstr ""
 
-#: settings/serializers/security.py:362
+#: settings/serializers/security.py:366
 msgid "Login MFA token validity period (second)"
 msgstr ""
 
-#: settings/serializers/security.py:363
+#: settings/serializers/security.py:367
 msgid "Validity period of the temporary token during login MFA verification"
 msgstr ""
 
-#: settings/serializers/security.py:368
+#: settings/serializers/security.py:372
 msgid "OTP valid window"
 msgstr ""
 
-#: settings/serializers/security.py:369
+#: settings/serializers/security.py:373
 msgid ""
 "The number of time periods allowed before and after the OTP verification"
 msgstr ""
 
-#: settings/serializers/security.py:373
+#: settings/serializers/security.py:377
 msgid "OTP issuer"
 msgstr ""
 
-#: settings/serializers/security.py:374
+#: settings/serializers/security.py:378
 msgid "The issuer name in the otpauth binding URI"
 msgstr ""
 
-#: settings/serializers/security.py:383
+#: settings/serializers/security.py:387
 msgid "Disk usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:384
+#: settings/serializers/security.py:388
 msgid ""
 "Send an alert email to the administrator when the disk usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:389
+#: settings/serializers/security.py:393
 msgid "Memory usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:390
+#: settings/serializers/security.py:394
 msgid ""
 "Send an alert email to the administrator when the memory usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:395
+#: settings/serializers/security.py:399
 msgid "CPU usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:396
+#: settings/serializers/security.py:400
 msgid ""
 "Send an alert email to the administrator when the CPU usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:401
+#: settings/serializers/security.py:405
 msgid "CPU load threshold (single core)"
 msgstr ""
 
-#: settings/serializers/security.py:402
+#: settings/serializers/security.py:406
 msgid ""
 "Send an alert email to the administrator when the single-core CPU load "
 "exceeds this threshold"
@@ -1482,6 +1531,7 @@ msgid "Test smtp setting"
 msgstr ""
 
 #: settings/views/email.py:67
+#, python-brace-format
 msgid "Test mail sent to {}, please check"
 msgstr ""
 
@@ -1922,6 +1972,60 @@ msgstr ""
 msgid "User role"
 msgstr ""
 
+#: system/models/task.py:29
+msgid "Waiting"
+msgstr ""
+
+#: system/models/task.py:30
+msgid "Running"
+msgstr ""
+
+#: system/models/task.py:31
+msgid "Success"
+msgstr ""
+
+#: system/models/task.py:32
+msgid "Failure"
+msgstr ""
+
+#: system/models/task.py:33
+msgid "Revoked"
+msgstr ""
+
+#: system/models/task.py:36
+msgid "Task Name"
+msgstr ""
+
+#: system/models/task.py:38 system/serializers/task.py:155
+msgid "Periodic Task"
+msgstr ""
+
+#: system/models/task.py:41 system/serializers/task.py:132
+#: system/serializers/task.py:133
+msgid "Positional Args"
+msgstr ""
+
+#: system/models/task.py:42 system/serializers/task.py:136
+#: system/serializers/task.py:137
+msgid "Keyword Args"
+msgstr ""
+
+#: system/models/task.py:44
+msgid "Status"
+msgstr ""
+
+#: system/models/task.py:47
+msgid "Start Time"
+msgstr ""
+
+#: system/models/task.py:48
+msgid "Finish Time"
+msgstr ""
+
+#: system/models/task.py:52
+msgid "Task Execution"
+msgstr ""
+
 #: system/models/upload.py:17
 msgid "Filepath"
 msgstr ""
@@ -2051,6 +2155,37 @@ msgstr ""
 msgid "Fields"
 msgstr ""
 
+#: system/serializers/task.py:56
+msgid "Timezone"
+msgstr ""
+
+#: system/serializers/task.py:80
+#, python-brace-format
+msgid "Invalid crontab expression: {}"
+msgstr ""
+
+#: system/serializers/task.py:100
+#, python-format
+msgid "%(label)s must be a valid JSON string"
+msgstr ""
+
+#: system/serializers/task.py:104
+#, python-format
+msgid "%(label)s must be JSON %(type)s"
+msgstr ""
+
+#: system/serializers/task.py:121
+msgid "Crontab"
+msgstr ""
+
+#: system/serializers/task.py:127
+msgid "Interval"
+msgstr ""
+
+#: system/serializers/task.py:163
+msgid "Time Cost"
+msgstr ""
+
 #: system/serializers/upload.py:29
 msgid "Access URL"
 msgstr ""
@@ -2144,6 +2279,7 @@ msgid "Temporary Token validation failed. Please try again"
 msgstr ""
 
 #: system/utils/auth.py:75
+#, python-brace-format
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -2151,6 +2287,7 @@ msgstr ""
 
 #: system/utils/auth.py:79 system/utils/auth.py:136
 #: system/views/auth/login.py:51
+#, python-brace-format
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -2331,6 +2468,7 @@ msgid ""
 msgstr ""
 
 #: system/views/admin/file.py:87
+#, python-brace-format
 msgid "upload file size cannot exceed {}"
 msgstr ""
 
@@ -2362,7 +2500,7 @@ msgstr ""
 msgid "Login forbidden"
 msgstr ""
 
-#: system/views/auth/mfa.py:39
+#: system/views/auth/mfa.py:42
 msgid "Login verification expired, please log in again"
 msgstr ""
 
@@ -2406,14 +2544,16 @@ msgstr ""
 msgid "Username does not exist"
 msgstr ""
 
-#: system/views/task.py:59
-msgid "Timezone"
+#: system/views/task.py:158
+#, python-brace-format
+msgid "Task \"{}\" is not registered"
 msgstr ""
 
-#: system/views/task.py:83
-msgid "Crontab"
+#: system/views/task.py:163
+msgid "Task arguments are not valid JSON"
 msgstr ""
 
-#: system/views/task.py:89
-msgid "Interval"
+#: system/views/task.py:246
+#, python-brace-format
+msgid "Batch execution submitted: {} success, {} failed"
 msgstr ""
