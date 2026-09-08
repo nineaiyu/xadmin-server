@@ -1377,7 +1377,7 @@ msgstr "通过密码方式验证后"
 
 #: settings/serializers/security.py:356
 msgid "Login MFA"
-msgstr "登录二次验证"
+msgstr "强制登录二次验证"
 
 #: settings/serializers/security.py:357
 msgid "Force MFA verification at login for users who have bound OTP"

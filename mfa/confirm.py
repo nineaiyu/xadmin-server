@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : confirm
-"""敏感操作二次身份验证的通用接入点（仿 JumpServer UserConfirmation）
+"""敏感操作二次身份验证的通用接入点
 
 三种使用方式：
 1. DRF ViewSet：permission_classes = [IsAuthenticated, UserConfirmation.require(ConfirmType.MFA)]

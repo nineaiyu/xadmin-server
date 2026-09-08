@@ -16,6 +16,9 @@ SEND_CODE_URL = "/api/mfa/confirm/send-code"
 OTP_URL = "/api/mfa/otp"
 OTP_START_URL = "/api/mfa/otp/start"
 OTP_CONFIRM_URL = "/api/mfa/otp/confirm"
+OTP_CLOSE_URL = "/api/mfa/otp/close"
+OTP_OPEN_URL = "/api/mfa/otp/open"
+OTP_TEST_URL = "/api/mfa/otp/test"
 OTP_DISABLE_URL = "/api/mfa/otp/disable"
 
 
@@ -129,6 +132,73 @@ class TestSensitiveOperation:
         assert resp.status_code == 412
         assert resp.data["type"] == "user_confirm_required"
         assert resp.data["confirm_type"] == "password"
+
+    def test_close_keeps_secret_and_open_without_rescan(self, otp_user):
+        """关闭仅停用开关（密钥保留），重新开启校验动态码即可，无需重新扫码。"""
+        user, client, secret = otp_user
+        resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.post(OTP_CLOSE_URL)
+        assert resp.data["code"] == 1000, resp.data
+        user.refresh_from_db()
+        assert user.mfa_enabled is False
+        assert user.otp_secret_key == secret
+
+        # 状态接口：bound 仍为 True，enabled 为 False
+        resp = client.get(OTP_URL)
+        assert resp.data["data"]["bound"] is True
+        assert resp.data["data"]["enabled"] is False
+
+        # 重新开启：动态码校验通过即恢复，无需重新绑定
+        resp = client.post(OTP_OPEN_URL, {"code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1000, resp.data
+        user.refresh_from_db()
+        assert user.mfa_enabled is True
+        assert user.otp_secret_key == secret
+
+    def test_open_with_wrong_code_rejected(self, otp_user):
+        _, client, _ = otp_user
+        client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        client.post(OTP_CLOSE_URL)
+        resp = client.post(OTP_OPEN_URL, {"code": "000000"})
+        assert resp.data["code"] == 1002
+
+    def test_close_without_bound_rejected(self, authed_client):
+        """未绑定密钥时关闭接口先被敏感操作协议拦截（412，同解绑）。"""
+        resp = authed_client.post(OTP_CLOSE_URL)
+        assert resp.status_code == 412
+
+    def test_test_code_does_not_change_state(self, otp_user):
+        """校验接口：正确码通过、错误码 1002，且无论成败都不改变任何状态。"""
+        user, client, secret = otp_user
+        level_before = user.mfa_level
+
+        resp = client.post(OTP_TEST_URL, {"code": "000000"})
+        assert resp.data["code"] == 1002, resp.data
+
+        resp = client.post(OTP_TEST_URL, {"code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1000, resp.data
+
+        user.refresh_from_db()
+        assert user.mfa_level == level_before
+        assert user.otp_secret_key == secret
+
+    def test_test_code_increments_block_counter(self, otp_user):
+        """校验接口失败同样计入防爆破计数（达到阈值锁定）。"""
+        from django.conf import settings as dj_settings
+
+        user, client, _ = otp_user
+        limit = int(dj_settings.SECURITY_LOGIN_LIMIT_COUNT)
+        for _ in range(limit):
+            resp = client.post(OTP_TEST_URL, {"code": "000000"})
+            assert resp.data["code"] == 1002
+        # 计数已达阈值：即使提交正确码也直接拒绝（锁定中）
+        user.refresh_from_db()
+        secret = user.otp_secret_key
+        import pyotp as _pyotp
+
+        resp = client.post(OTP_TEST_URL, {"code": _pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1001, resp.data
 
     def test_disable_after_confirm(self, otp_user):
         user, client, _ = otp_user
@@ -336,9 +406,57 @@ class TestLoginMFA:
         resp = api_client.post(LOGIN_MFA_VERIFY_URL, payload, format="json")
         assert resp.status_code == 400
 
-    def test_login_mfa_disabled_by_setting(self, otp_user, api_client, settings, login_free):
+    def test_login_mfa_personal_enabled_ignores_global_switch(
+        self, otp_user, api_client, settings, login_free
+    ):
+        """个人开启 MFA 的账号登录必须验证，全局「登录 MFA 强制」关闭也不放行。"""
         settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED = False
-        user, _, _ = otp_user
+        user, _, secret = otp_user
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(
+            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
+        )
+        data = resp.data["data"]
+        assert data["mfa_required"] is True
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL,
+            {"mfa_token": data["mfa_token"], "method": "otp", "code": pyotp.TOTP(secret).now()},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_login_mfa_global_forces_closed_account(self, otp_user, api_client, login_free):
+        """全局强制开启时，已绑定但个人关闭的账号登录也要验证（密钥保留，可验证）。"""
+        user, client, secret = otp_user
+        resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.post(OTP_CLOSE_URL)
+        assert resp.data["code"] == 1000, resp.data
+        user.refresh_from_db()
+        assert user.mfa_enabled is False
+
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(
+            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
+        )
+        data = resp.data["data"]
+        assert data["mfa_required"] is True
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL,
+            {"mfa_token": data["mfa_token"], "method": "otp", "code": pyotp.TOTP(secret).now()},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_login_mfa_skipped_when_closed_and_global_off(self, otp_user, api_client, settings, login_free):
+        """个人关闭且全局强制关闭：登录不要求验证。"""
+        settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED = False
+        user, client, _ = otp_user
+        resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.post(OTP_CLOSE_URL)
+        assert resp.data["code"] == 1000, resp.data
+
         api_client.force_authenticate(user=None)
         resp = api_client.post(
             BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"

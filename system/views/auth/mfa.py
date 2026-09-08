@@ -33,11 +33,14 @@ CHALLENGE_METHODS = ['sms', 'email']
 
 
 def _get_mfa_user(request):
-    """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常"""
+    """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常。
+
+    只要求已绑定密钥：全局强制场景下允许验证"个人已关闭但被强制"的账号。
+    """
     user = validate_login_mfa_token(request.data.get('mfa_token'))
     if not user:
         raise ValidateError(_('Login verification expired, please log in again'))
-    if not user.mfa_enabled:
+    if not user.otp_secret_key:
         raise ValidateError(_('Operation failed. Abnormal data'))
     return user
 

@@ -98,10 +98,16 @@ def send_user_mfa_code(user, method, request=None):
 
 
 def is_login_mfa_required(user) -> bool:
-    """判断用户登录是否需要 MFA 二次验证（绑定 OTP 后自动生效，全局开关可关闭）"""
-    if not settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED:
+    """登录 MFA 判定：
+    - 个人开启（mfa_enabled）→ 必须验证。这是用户自身的安全配置，不受全局开关影响；
+    - 全局「登录 MFA 强制」开启 → 已绑定 OTP 的账号一律验证（含个人已关闭的）；
+    - 未绑定密钥无法验证，不拦截。
+    """
+    if user.mfa_enabled:
+        return True
+    if not user.otp_secret_key:
         return False
-    return user.mfa_enabled
+    return settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED
 
 
 def generate_login_mfa_token(user) -> str:

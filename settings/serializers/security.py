@@ -354,7 +354,11 @@ class SecurityMFASerializer(serializers.Serializer):
 
     SECURITY_MFA_LOGIN_PROTECT_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_('Login MFA'),
-        help_text=_('Force MFA verification at login for users who have bound OTP')
+        help_text=_(
+            'Accounts with personal MFA enabled always require verification at login. '
+            'When enabled, accounts bound to OTP are forced to verify even if they '
+            'closed it themselves'
+        )
     )
 
     SECURITY_MFA_LOGIN_TOKEN_TTL = serializers.IntegerField(

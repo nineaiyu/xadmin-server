@@ -98,6 +98,7 @@ class UserOTPViewSet(GenericViewSet):
         """获取绑定状态"""
         return ApiResponse(data={
             'enabled': request.user.mfa_enabled,
+            'bound': bool(request.user.otp_secret_key),
             'phone': request.user.phone,
             'email': request.user.email,
         })
@@ -142,6 +143,68 @@ class UserOTPViewSet(GenericViewSet):
         user.save(update_fields=['otp_secret_key', 'mfa_level'])
         OtpBindCache(user).clear()
         return ApiResponse(detail=_('OTP binding successful'))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=['post'], detail=False, url_path='close',
+            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
+    def close(self, request, *args, **kwargs):
+        """关闭登录二次验证（敏感操作：需先通过二次验证，未验证时返回 412）。
+
+        仅停用开关，保留已绑定的密钥，重新开启时校验动态码即可，无需重新扫码。
+        """
+        user = request.user
+        if not user.otp_secret_key:
+            return ApiResponse(code=1001, detail=_('OTP is not bound'))
+        user.mfa_level = get_user_model().MFALevelChoices.DISABLED
+        user.save(update_fields=['mfa_level'])
+        return ApiResponse(detail=_('Login MFA disabled'))
+
+    @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
+    @action(methods=['post'], detail=False, url_path='open', serializer_class=OtpBindConfirmSerializer)
+    def open(self, request, *args, **kwargs):
+        """重新开启登录二次验证（密钥保留时校验一次动态码证明持有，无需重新扫码）"""
+        user = request.user
+        if not user.otp_secret_key:
+            return ApiResponse(code=1001, detail=_('Please start binding first'))
+
+        serializer = OtpBindConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        block = MFABlockUtils(user.username, get_request_ip(request))
+        if block.is_block():
+            return ApiResponse(code=1001, detail=_('Too many failures, the account has been locked'))
+        if not OtpBackend.verify_code(user.otp_secret_key, serializer.validated_data['code']):
+            block.incr_failed_count()
+            return ApiResponse(code=1002, detail=_('The OTP verification code is incorrect'))
+        block.clean_failed_count()
+
+        user.mfa_level = get_user_model().MFALevelChoices.ENABLED
+        user.save(update_fields=['mfa_level'])
+        return ApiResponse(detail=_('Login MFA enabled'))
+
+    @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
+    @action(methods=['post'], detail=False, url_path='test', serializer_class=OtpBindConfirmSerializer)
+    def test(self, request, *args, **kwargs):
+        """校验已绑定密钥的动态码是否正确（不改变任何状态，失败计入防爆破锁定）。
+
+        供关闭登录二次验证后自检密钥可用性（换设备 / 手机时间漂移场景），
+        避免重新开启时才发现码不对而连续失败触发锁定。
+        """
+        user = request.user
+        if not user.otp_secret_key:
+            return ApiResponse(code=1001, detail=_('OTP is not bound'))
+
+        serializer = OtpBindConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        block = MFABlockUtils(user.username, get_request_ip(request))
+        if block.is_block():
+            return ApiResponse(code=1001, detail=_('Too many failures, the account has been locked'))
+        if not OtpBackend.verify_code(user.otp_secret_key, serializer.validated_data['code']):
+            block.incr_failed_count()
+            return ApiResponse(code=1002, detail=_('The OTP verification code is incorrect'))
+        block.clean_failed_count()
+        return ApiResponse(detail=_('Verification successful'))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=['post'], detail=False, url_path='disable',
