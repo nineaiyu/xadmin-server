@@ -94,8 +94,7 @@ def build_operation_log_info(request, response, request_start_time):
         'ipaddress': getattr(request, 'request_ip'),
         'method': request.method,
         'path': request.path,
-        'body': json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict)
-                else str(body)[:MAX_LOG_FIELD],
+        'body': json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict) else str(body)[:MAX_LOG_FIELD],
         'response_code': response.status_code,
         # Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
         'system': get_os(request),

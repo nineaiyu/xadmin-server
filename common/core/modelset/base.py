@@ -50,7 +50,7 @@ class BaseViewSet(object):
         """
         auto_enabled = self.auto_prefetch_related and getattr(self, "action", None) in self.auto_prefetch_actions
         if not isinstance(queryset, QuerySet) or not (
-            auto_enabled or self.select_related_fields or self.prefetch_related_fields
+                auto_enabled or self.select_related_fields or self.prefetch_related_fields
         ):
             return queryset
         select_fields = list(self.select_related_fields or ())

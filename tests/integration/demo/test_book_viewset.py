@@ -79,7 +79,8 @@ class TestBookCrudSmoke:
         assert Book.objects.count() == 0
 
     def test_search_filter_by_name(self, auth_client, superuser, upload_file):
-        Book.objects.create(name="Python入门", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file)
+        Book.objects.create(name="Python入门", isbn="i1", author="a", admin=superuser, admin2=superuser,
+                            file=upload_file)
         Book.objects.create(name="Go进阶", isbn="i2", author="a", admin=superuser, admin2=superuser, file=upload_file)
         resp = auth_client.get(BOOK_LIST_URL, {"name": "Python"})
         assert resp.data["data"]["total"] == 1
@@ -111,14 +112,16 @@ class TestBookExportSmoke:
 
 
 class TestBookDataPermissionIntegration:
-    def test_non_owner_user_only_sees_own_books(self, api_client, normal_user, role, menu_factory, superuser, upload_file):
+    def test_non_owner_user_only_sees_own_books(self, api_client, normal_user, role, menu_factory, superuser,
+                                                upload_file):
         """接口权限 + 数据权限 + 字段权限联动：普通用户只能看到自己名下的书籍。"""
         from system.models import FieldPermission, ModelLabelField
 
         menu = menu_factory("p-list", path="api/demo/book$", method="GET")
         role.menu.add(menu)
         dp = DataPermission.objects.create(
-            name="own", rules=[{"table": "demo.book", "field": "admin", "type": "value.user.id", "value": "*", "match": "exact"}]
+            name="own",
+            rules=[{"table": "demo.book", "field": "admin", "type": "value.user.id", "value": "*", "match": "exact"}]
         )
         normal_user.rules.add(dp)
 
@@ -127,7 +130,8 @@ class TestBookDataPermissionIntegration:
             name="demo.book", label="书籍", field_type=ModelLabelField.FieldChoices.ROLE
         )
         children = [
-            ModelLabelField.objects.create(name=n, label=n, parent=model_field, field_type=ModelLabelField.FieldChoices.ROLE)
+            ModelLabelField.objects.create(name=n, label=n, parent=model_field,
+                                           field_type=ModelLabelField.FieldChoices.ROLE)
             for n in ["pk", "name", "isbn"]
         ]
         fp = FieldPermission.objects.create(role=role, menu=menu)

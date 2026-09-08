@@ -10,8 +10,8 @@
 import io
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from demo.models import Book

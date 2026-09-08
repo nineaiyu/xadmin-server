@@ -90,7 +90,7 @@ jobs:
           ignore-unfixed: true
 
   build-and-push-image:
-    needs: [check-version, security-scan]
+    needs: [ check-version, security-scan ]
     runs-on: ubuntu-latest
 
     steps:

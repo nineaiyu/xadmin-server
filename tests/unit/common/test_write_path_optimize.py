@@ -142,8 +142,8 @@ class TestAutoCleanFileMixinSave:
         assert f._file_field_names is f._file_field_names
 
     def test_has_file_cleanup_detection(self):
-        assert AutoCleanFileMixin.has_file_cleanup(UploadFile) is True   # 自身文件字段
-        assert AutoCleanFileMixin.has_file_cleanup(Book) is True         # 关联 UploadFile
+        assert AutoCleanFileMixin.has_file_cleanup(UploadFile) is True  # 自身文件字段
+        assert AutoCleanFileMixin.has_file_cleanup(Book) is True  # 关联 UploadFile
 
     def test_viewset_file_cleanup_detection(self):
         # Book 非软删模型，逐行判定只由文件清理副作用驱动

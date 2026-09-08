@@ -4,6 +4,7 @@ import pytest
 
 from server.conf import Config, ConfigManager, DoesNotExist, import_string
 
+
 # 说明：load_user_config 被 tests/settings_test.py 全局替换为测试配置，
 # 不直接对入口函数断言，回退链以组件方法重建验证（见 TestConfigManager 末尾）。
 

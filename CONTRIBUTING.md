@@ -4,11 +4,11 @@
 
 ## 1. 分支模型
 
-| 分支 | 用途 | 保护 |
-|------|------|------|
-| `main` | 稳定发布分支，tag `v*` 触发发布流水线 | 禁止直推，经 dev 验证后合并 |
-| `dev` | 集成分支，CI 门禁挂载于此 | PR 合入；push 自动触发 test/lint |
-| `feat/*` `fix/*` `docs/*` | 功能/修复/文档开发分支 | 从 dev 切出，合回 dev |
+| 分支                        | 用途                      | 保护                        |
+|---------------------------|-------------------------|---------------------------|
+| `main`                    | 稳定发布分支，tag `v*` 触发发布流水线 | 禁止直推，经 dev 验证后合并          |
+| `dev`                     | 集成分支，CI 门禁挂载于此          | PR 合入；push 自动触发 test/lint |
+| `feat/*` `fix/*` `docs/*` | 功能/修复/文档开发分支            | 从 dev 切出，合回 dev           |
 
 升级、大规模重构等高风险变更（如 Django 大版本，见 ADR-004）必须在独立分支 + 全量门禁通过后合入。
 
@@ -20,7 +20,8 @@
 <type>(<scope>): <subject>
 ```
 
-- 允许的 type：`feat` `fix` `perf` `style` `docs` `test` `refactor` `build` `ci` `chore` `revert` `wip` `workflow` `types` `release`；
+- 允许的 type：`feat` `fix` `perf` `style` `docs` `test` `refactor` `build` `ci` `chore` `revert` `wip` `workflow`
+  `types` `release`；
 - scope 用模块名（如 `system`、`common`、`modelset`、`notifications`）；
 - 关联半年规划任务的，在 subject 或 body 中带上任务号（如 `T2.1`）或债务号（`TD-xx`）。
 
@@ -45,17 +46,18 @@ python manage.py start all
 
 ## 4. 提交前门禁（本地自查，CI 同款）
 
-| 门禁 | 命令 | 说明 |
-|------|------|------|
-| 代码风格 | `ruff check .` | lint.yml 强制 |
-| 测试 + 覆盖率 | `pytest -n auto --cov --cov-fail-under=75` | 覆盖率门禁 75%（T4.1） |
-| 跨 app 引用 | `python scripts/check_cross_app_imports.py` | 业务层必须走 `<app>.services` 契约层 |
-| 契约测试 | `pytest tests/unit/common/test_metadata_schema.py` | 改动元数据接口时必跑，schema 同步更新 [docs/schema/](docs/schema/) |
+| 门禁       | 命令                                                 | 说明                                                  |
+|----------|----------------------------------------------------|-----------------------------------------------------|
+| 代码风格     | `ruff check .`                                     | lint.yml 强制                                         |
+| 测试 + 覆盖率 | `pytest -n auto --cov --cov-fail-under=75`         | 覆盖率门禁 75%（T4.1）                                     |
+| 跨 app 引用 | `python scripts/check_cross_app_imports.py`        | 业务层必须走 `<app>.services` 契约层                         |
+| 契约测试     | `pytest tests/unit/common/test_metadata_schema.py` | 改动元数据接口时必跑，schema 同步更新 [docs/schema/](docs/schema/) |
 
 约束清单：
 
 - 新增错误码必须先登记 [docs/exception-handling.md](docs/exception-handling.md)；未预期异常返回通用文案，详情只进日志；
-- 改动权限/缓存相关代码，先读 [docs/architecture/permission.md](docs/architecture/permission.md) 与 [docs/architecture/cache.md](docs/architecture/cache.md)（绕过 ORM 的信号失效红线）；
+- 改动权限/缓存相关代码，先读 [docs/architecture/permission.md](docs/architecture/permission.md)
+  与 [docs/architecture/cache.md](docs/architecture/cache.md)（绕过 ORM 的信号失效红线）；
 - 涉及模型字段变更，评估索引必要性并对照 [docs/architecture/indexes.md](docs/architecture/indexes.md) 评审记录；
 - 生产安全相关配置（密钥、密码、认证）一律配置化，禁止硬编码默认值（见 [docs/security-review.md](docs/security-review.md)）。
 

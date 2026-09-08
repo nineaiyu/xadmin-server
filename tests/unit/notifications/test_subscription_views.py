@@ -23,11 +23,11 @@ class TestMessageRegistry:
         user_types = {info["message_type"] for info in USER_MESSAGE_REGISTRY}
         assert {"ServerPerformanceMessage", "TaskFailureMessage"} <= system_types
         assert {
-            "DifferentCityLoginMessage",
-            "ResetPasswordSuccessMsg",
-            "ImportDataMessage",
-            "BatchDeleteDataMessage",
-        } <= user_types
+                   "DifferentCityLoginMessage",
+                   "ResetPasswordSuccessMsg",
+                   "ImportDataMessage",
+                   "BatchDeleteDataMessage",
+               } <= user_types
 
     def test_registry_entries_carry_cls(self):
         """注册表必须携带类引用（post_migrate 补建订阅回调 post_insert_to_db）。"""

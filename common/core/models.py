@@ -137,6 +137,7 @@ class AutoCleanFileMixin(object):
         for file in filelist:
             file.delete()
 
+
 class DbBaseModel(models.Model):
     created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"), null=True, blank=True)
     updated_time = models.DateTimeField(auto_now=True, verbose_name=_("Updated time"), null=True, blank=True)
@@ -165,6 +166,7 @@ class SoftDeleteQuerySet(models.QuerySet):
     返回值对齐 Django 约定的 (total, per_model_dict) 元组，
     调用方（如 batch-destroy 的解包）才不会因返回 int 而崩溃。
     """
+
     def delete(self):
         """批量软删除"""
         rows = self.update(deleted_at=timezone.now())

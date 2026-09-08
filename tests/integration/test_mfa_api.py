@@ -2,8 +2,8 @@
 """MFA / 敏感操作二次验证接口集成测试。"""
 import pyotp
 import pytest
-from django.core.cache import cache
 from django.core import mail
+from django.core.cache import cache
 
 from common.base.utils import AESCipherV2
 
@@ -236,8 +236,10 @@ class TestBuiltinSensitiveOperations:
         api_client.post(
             CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"}
         )
+
         def enc(v):
             return AESCipherV2(superuser.username).encrypt(v.encode()).decode()
+
         resp = api_client.post(
             "/api/system/userinfo/reset-password",
             {"old_password": enc("Admin@123456"), "sure_password": enc("New@123456")},
@@ -407,7 +409,7 @@ class TestLoginMFA:
         assert resp.status_code == 400
 
     def test_login_mfa_personal_enabled_ignores_global_switch(
-        self, otp_user, api_client, settings, login_free
+            self, otp_user, api_client, settings, login_free
     ):
         """个人开启 MFA 的账号登录必须验证，全局「登录 MFA 强制」关闭也不放行。"""
         settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED = False

@@ -27,7 +27,6 @@ class BookViewSetFilter(BaseFilterSet):
     # 关联关系搜索的时候，默认是主键pk
     managers = PkMultipleFilter(input_type='input')
 
-
     class Meta:
         model = Book
         fields = ['name', 'isbn', 'author', 'publisher', 'is_active', 'publication_date', 'price',

@@ -1,6 +1,6 @@
+from django.conf import settings
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
-from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 

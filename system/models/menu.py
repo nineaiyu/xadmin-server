@@ -51,6 +51,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
     菜单软删除——删除进入回收站可恢复；
     目录删除会级联标记全部后代菜单（同一时间戳，恢复/清除时成组处理）。
     """
+
     class MenuChoices(models.IntegerChoices):
         DIRECTORY = 0, _("Directory")
         MENU = 1, _("Menu")

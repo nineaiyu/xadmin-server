@@ -16,8 +16,8 @@ import os
 
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
-from django_filters import rest_framework as filters
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
+from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest

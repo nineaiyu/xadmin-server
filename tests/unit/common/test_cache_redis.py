@@ -127,7 +127,7 @@ class TestCacheSortedSet:
         cache.push({"a": "1", "b": "2"})
         # 已知行为：exist 基于 bool(zrank)，rank 0 的最低分成员被视为不存在
         assert cache.exist("a") is False  # a 分数最低，rank 0
-        assert cache.exist("b") is True   # b 分数最高，rank 1
+        assert cache.exist("b") is True  # b 分数最高，rank 1
 
 
 class TestCacheHash:

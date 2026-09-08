@@ -34,12 +34,12 @@ class TestCheckCaptcha:
         result = CaptchaAuth().generate()
         captcha = CaptchaStore.objects.get(hashkey=result["captcha_key"])
         assert (
-            check_captcha(
-                need=True,
-                captcha_key=result["captcha_key"],
-                captcha_code=captcha.response,
-            )
-            is True
+                check_captcha(
+                    need=True,
+                    captcha_key=result["captcha_key"],
+                    captcha_code=captcha.response,
+                )
+                is True
         )
 
     def test_wrong_captcha_raises(self):

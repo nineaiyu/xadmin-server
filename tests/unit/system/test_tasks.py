@@ -20,6 +20,7 @@ def _real_remove_expired(clean_day=None, batch_size=2000):
     """直接调用模型层实现，绕过 ctasks 的日志封装。"""
     return OperationLog.remove_expired(clean_day=clean_day, batch_size=batch_size)
 
+
 pytestmark = pytest.mark.django_db
 
 

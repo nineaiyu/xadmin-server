@@ -15,13 +15,13 @@ from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from system import tasks as system_tasks
 from system.models.task import TaskExecution
 from system.models.user import UserInfo
+from system.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
 from system.signal_task_execution import (
     task_execution_on_finish,
     task_execution_on_publish,
     task_execution_on_revoked,
     task_execution_on_start,
 )
-from system.serializers.task import CrontabScheduleSerializer, TaskExecutionSerializer
 from system.views.task import PeriodicTaskViewSet, TaskExecutionViewSet
 
 pytestmark = pytest.mark.django_db
@@ -306,7 +306,7 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with mock.patch("system.views.task.app.send_task") as send_task, mock.patch(
-        "system.views.task.app.autodiscover_tasks"
+            "system.views.task.app.autodiscover_tasks"
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)

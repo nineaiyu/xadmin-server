@@ -5,12 +5,12 @@
 
 ## 一、能力概览
 
-| 能力 | 说明 |
-|------|------|
-| 敏感操作二次验证 | 任意 DRF API 一行声明即成为"敏感操作"，未验证返回 HTTP 412，验证通过后有效期内免重复验证 |
+| 能力        | 说明                                                                        |
+|-----------|---------------------------------------------------------------------------|
+| 敏感操作二次验证  | 任意 DRF API 一行声明即成为"敏感操作"，未验证返回 HTTP 412，验证通过后有效期内免重复验证                    |
 | 验证方式（可配置） | `otp`（TOTP 动态口令）/ `sms`（短信验证码）/ `email`（邮件验证码）/ `password`（登录密码），后台设置页可启停 |
-| 登录 MFA | 绑定 OTP 的用户登录时强制二次验证（`mfa_required` + 一次性 `mfa_token`，通过后才签发 JWT） |
-| OTP 绑定管理 | 个人中心发起绑定（otpauth URI 渲染二维码）→ 动态码确认 → 解绑（本身即敏感操作） |
+| 登录 MFA    | 绑定 OTP 的用户登录时强制二次验证（`mfa_required` + 一次性 `mfa_token`，通过后才签发 JWT）          |
+| OTP 绑定管理  | 个人中心发起绑定（otpauth URI 渲染二维码）→ 动态码确认 → 解绑（本身即敏感操作）                          |
 
 ## 二、核心设计
 
@@ -143,28 +143,28 @@ def reset_user_api_key(request, user_id):
 默认值在 `server/conf.py`（`Config.settings`），映射在 `server/settings/setting.py`，
 后台"系统设置 → 安全设置 → MFA 二次验证"（`/api/settings/mfa/auth`）可在线修改：
 
-| 配置 | 默认 | 说明 |
-|------|------|------|
-| `SECURITY_MFA_CONFIRM_ENABLED` | `True` | 敏感操作二次验证总开关（应急关闭） |
-| `SECURITY_MFA_CONFIRM_BACKENDS` | 四种全开 | 允许的验证方式列表 |
-| `SECURITY_MFA_VERIFY_TTL` | `3600` | MFA 方式确认有效期（秒） |
-| `SECURITY_MFA_PASSWORD_CONFIRM_TTL` | `300` | 密码方式确认有效期（秒） |
-| `SECURITY_MFA_LOGIN_PROTECT_ENABLED` | `True` | 绑定 OTP 的用户登录时强制二次验证 |
-| `SECURITY_MFA_LOGIN_TOKEN_TTL` | `300` | 登录 MFA 临时令牌有效期（秒） |
-| `SECURITY_MFA_OTP_VALID_WINDOW` | `1` | TOTP 容错周期数 |
-| `SECURITY_MFA_OTP_ISSUER` | `XAdmin` | otpauth URI 签发方名称 |
+| 配置                                   | 默认       | 说明                  |
+|--------------------------------------|----------|---------------------|
+| `SECURITY_MFA_CONFIRM_ENABLED`       | `True`   | 敏感操作二次验证总开关（应急关闭）   |
+| `SECURITY_MFA_CONFIRM_BACKENDS`      | 四种全开     | 允许的验证方式列表           |
+| `SECURITY_MFA_VERIFY_TTL`            | `3600`   | MFA 方式确认有效期（秒）      |
+| `SECURITY_MFA_PASSWORD_CONFIRM_TTL`  | `300`    | 密码方式确认有效期（秒）        |
+| `SECURITY_MFA_LOGIN_PROTECT_ENABLED` | `True`   | 绑定 OTP 的用户登录时强制二次验证 |
+| `SECURITY_MFA_LOGIN_TOKEN_TTL`       | `300`    | 登录 MFA 临时令牌有效期（秒）   |
+| `SECURITY_MFA_OTP_VALID_WINDOW`      | `1`      | TOTP 容错周期数          |
+| `SECURITY_MFA_OTP_ISSUER`            | `XAdmin` | otpauth URI 签发方名称   |
 
 ## 六、内置敏感操作接入点
 
 以下系统内的高危操作已声明为敏感操作（未验证时统一 412，客户端自动弹验证窗）：
 
-| 操作 | API | 验证级别 |
-|------|-----|----------|
-| 修改密码（个人中心） | `POST /api/system/userinfo/reset-password` | password |
-| 绑定/换绑邮箱、手机 | `POST /api/system/userinfo/bind` | password |
+| 操作           | API                                                                  | 验证级别     |
+|--------------|----------------------------------------------------------------------|----------|
+| 修改密码（个人中心）   | `POST /api/system/userinfo/reset-password`                           | password |
+| 绑定/换绑邮箱、手机   | `POST /api/system/userinfo/bind`                                     | password |
 | 删除用户（单删/批量删） | `DELETE /api/system/user/{pk}`、`POST /api/system/user/batch-destroy` | password |
-| 解绑 OTP（个人） | `POST /api/mfa/otp/disable` | password |
-| 管理员重置用户 MFA | `POST /api/system/user/{pk}/reset-mfa` | password |
+| 解绑 OTP（个人）   | `POST /api/mfa/otp/disable`                                          | password |
+| 管理员重置用户 MFA  | `POST /api/system/user/{pk}/reset-mfa`                               | password |
 
 状态生命周期：
 

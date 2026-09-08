@@ -19,7 +19,6 @@ def get_logger(name='') -> logging.Logger:
     return logging.getLogger(f'xadmin.{name}')
 
 
-
 def get_disk_usage(path):
     return psutil.disk_usage(path=path).percent
 

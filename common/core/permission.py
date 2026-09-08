@@ -69,6 +69,7 @@ def get_user_permission(user_obj, method):
         menus = menu_queryset.filter(**filter_kwargs).values_list('path', 'pk', 'model').distinct()
     return dict([(menu[0], menu[1:]) for menu in menus])
 
+
 def get_menu_pk(permission_data, url):
     # 1.直接get api/system/permission$   /api/system/config/system
     p_data = permission_data.get(f"{url[1:]}$")

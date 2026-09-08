@@ -128,7 +128,6 @@ class NoticeMessageSerializer(BaseModelSerializer):
             attrs['file'] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
-
     def update(self, instance, validated_data):
         validated_data.pop('notice_type', None)  # 不能修改消息类型
         if instance.notice_type == MessageContent.NoticeChoices.SYSTEM:  # 系统通知不允许修改

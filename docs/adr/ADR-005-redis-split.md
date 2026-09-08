@@ -7,11 +7,11 @@
 
 当前单实例 Redis 以 db 编号承载三个用途（`server/settings/base.py`）：
 
-| 用途 | db | 关键配置 |
-|------|----|----------|
-| Django 缓存（权限/元数据/SysConfig） | `DEFAULT_CACHE_ID`（默认 1） | `CACHES["default"]` |
-| Channels channel layer（WS 推送/在线心跳） | `CHANNEL_LAYERS_CACHE_ID`（默认 2） | `CHANNEL_LAYERS` |
-| Celery broker | `CELERY_BROKER_CACHE_ID`（默认 3） | `CELERY_BROKER_URL` |
+| 用途                                 | db                              | 关键配置                |
+|------------------------------------|---------------------------------|---------------------|
+| Django 缓存（权限/元数据/SysConfig）        | `DEFAULT_CACHE_ID`（默认 1）        | `CACHES["default"]` |
+| Channels channel layer（WS 推送/在线心跳） | `CHANNEL_LAYERS_CACHE_ID`（默认 2） | `CHANNEL_LAYERS`    |
+| Celery broker                      | `CELERY_BROKER_CACHE_ID`（默认 3）  | `CELERY_BROKER_URL` |
 
 三者共用同一实例，故障域共享：broker 阻塞或大 key 慢查询会同时波及缓存命中与 WS 推送。
 
@@ -25,7 +25,8 @@
 
 ## 拆分顺序（触发后执行）
 
-1. **优先拆 Channels**：channel layer 的 pubsub 与心跳写放大最明显，独立实例后两侧行为均不受对方影响；仅需改 `CHANNEL_LAYERS` 的 hosts 指向新实例；
+1. **优先拆 Channels**：channel layer 的 pubsub 与心跳写放大最明显，独立实例后两侧行为均不受对方影响；仅需改
+   `CHANNEL_LAYERS` 的 hosts 指向新实例；
 2. **再拆 Celery broker**：broker 迁移需滚动重启 worker，选择低峰窗口；改 `CELERY_BROKER_URL`；
 3. **缓存实例最后**：迁移只需切换 `CACHES["default"]`，配合 `expire_caches` 管理命令预热。
 

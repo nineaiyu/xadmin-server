@@ -17,8 +17,8 @@ from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
 from message.services import get_online_users_layers
-from settings.services import check_password_rules
 from settings.services import LoginBlockUtil
+from settings.services import check_password_rules
 from system.models import UserInfo
 
 logger = get_logger(__name__)

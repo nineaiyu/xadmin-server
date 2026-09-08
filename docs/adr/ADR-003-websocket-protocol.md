@@ -5,7 +5,8 @@
 
 ## 背景
 
-消息推送使用自定义 WS 协议 `{action, data, mid}`（`message/base.py`），前端 `src/utils/websocket` 对应解析。此前分析（XADMIN_FRAMEWORK_ANALYSIS.md §5.2.9）指出该协议无标准约束、action 字符串匹配缺乏类型安全。
+消息推送使用自定义 WS 协议 `{action, data, mid}`（`message/base.py`），前端 `src/utils/websocket`
+对应解析。此前分析（XADMIN_FRAMEWORK_ANALYSIS.md §5.2.9）指出该协议无标准约束、action 字符串匹配缺乏类型安全。
 
 ## 备选方案
 

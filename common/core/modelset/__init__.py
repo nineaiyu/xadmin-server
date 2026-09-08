@@ -25,8 +25,8 @@ from common.core.modelset.crud import CreateAction, DestroyAction, DetailAction,
 from common.core.modelset.import_export import ImportExportDataAction, OnlyExportDataAction, run_view_by_celery_task
 from common.core.modelset.input_types import get_format_intput_type, get_upload_input_type_suffix
 from common.core.modelset.metadata import ChoicesAction, SearchColumnsAction, SearchFieldsAction
-from common.core.modelset.upload import UploadFileAction
 from common.core.modelset.recycle import RecycleBinAction
+from common.core.modelset.upload import UploadFileAction
 from common.core.modelset.viewsets import (
     BaseModelSet,
     DetailUpdateModelSet,

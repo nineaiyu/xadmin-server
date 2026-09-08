@@ -9,10 +9,10 @@
 
 建立六个关键接口的 P50/P95 基线，让性能可度量、可回归（对应风险 R5「无性能基线」）。两个工具分工明确：
 
-| 工具 | 用途 | 何时用 |
-|------|------|--------|
-| k6（`loadtest/k6/`） | 压测定基线：RPS、客户端观测的 P50/P95、错误率 | 基线测定与回归对比，**必须关闭 silk** |
-| django-silk | 单接口剖析：SQL 逐条耗时、N+1、Python profiling | 基线劣化归因、优化前定位热点，低并发下使用 |
+| 工具                 | 用途                                  | 何时用                     |
+|--------------------|-------------------------------------|-------------------------|
+| k6（`loadtest/k6/`） | 压测定基线：RPS、客户端观测的 P50/P95、错误率        | 基线测定与回归对比，**必须关闭 silk** |
+| django-silk        | 单接口剖析：SQL 逐条耗时、N+1、Python profiling | 基线劣化归因、优化前定位热点，低并发下使用   |
 
 **核心原则：silk 有侵入开销（每请求记录 + 落库），k6 基线测定时必须关闭**，否则数据被污染；
 先 k6 测出「哪里慢」，再开 silk 看「为什么慢」。
@@ -21,14 +21,14 @@
 
 规划 T3.1 指定的关键接口 → k6 脚本映射（目标模块默认用户管理，可用 `LIST_PATH` 切换）：
 
-| # | 接口 | 方法与路径 | 脚本 | 默认档位 | 前置条件 |
-|---|------|-----------|------|---------|---------|
-| 1 | 登录 | POST `/api/system/login/basic` | `01-login.js` | 5 VU / 30s | 压测环境关闭登录三开关 + 放开 login 限流（见 §三） |
-| 2 | 菜单/路由 | GET `/api/system/routes` | `02-routes.js` | 20 VU / 1m | 普通登录态即可（白名单路由） |
-| 3 | 列表页 | GET `/api/system/user?page=1&size=20` | `03-list.js` | 20 VU / 1m | 种子数据（`seed_users.py`） |
-| 4 | 元数据 | GET `search-columns` / `search-fields` / `?with_meta=1` | `04-metadata.js` | 20 VU / 1m | 同上；with_meta 组用于验证 T3.2 内联优化收益 |
-| 5 | 导出 | GET `/api/system/user/export-data?type=xlsx` | `05-export.js` | 5 VU / 1m | 种子数据 + `EXPORT_FILTER` 绑定导出范围 |
-| 6 | 导入 | POST `/api/system/user/import-data?action=update&task=false` | `06-import.js` | 5 VU / 1m | 种子数据（update 模式）或短时 create 模式 |
+| # | 接口    | 方法与路径                                                        | 脚本               | 默认档位       | 前置条件                            |
+|---|-------|--------------------------------------------------------------|------------------|------------|---------------------------------|
+| 1 | 登录    | POST `/api/system/login/basic`                               | `01-login.js`    | 5 VU / 30s | 压测环境关闭登录三开关 + 放开 login 限流（见 §三） |
+| 2 | 菜单/路由 | GET `/api/system/routes`                                     | `02-routes.js`   | 20 VU / 1m | 普通登录态即可（白名单路由）                  |
+| 3 | 列表页   | GET `/api/system/user?page=1&size=20`                        | `03-list.js`     | 20 VU / 1m | 种子数据（`seed_users.py`）           |
+| 4 | 元数据   | GET `search-columns` / `search-fields` / `?with_meta=1`      | `04-metadata.js` | 20 VU / 1m | 同上；with_meta 组用于验证 T3.2 内联优化收益  |
+| 5 | 导出    | GET `/api/system/user/export-data?type=xlsx`                 | `05-export.js`   | 5 VU / 1m  | 种子数据 + `EXPORT_FILTER` 绑定导出范围   |
+| 6 | 导入    | POST `/api/system/user/import-data?action=update&task=false` | `06-import.js`   | 5 VU / 1m  | 种子数据（update 模式）或短时 create 模式    |
 
 脚本约定：
 
@@ -43,12 +43,12 @@
 压测必须使用**专用环境与专用数据库**，不得指向日常开发/生产数据：
 
 1. **config.yml 关键项**（压测专用副本，勿改日常 config.yml）：
-   - `SILK_ENABLED` 保持缺省 false（见 §一）；
-   - `SECURITY_LOGIN_CAPTCHA_ENABLED: false`、`SECURITY_LOGIN_ENCRYPTED_ENABLED: false`、
-     `SECURITY_LOGIN_TEMP_TOKEN_ENABLED: false`——否则脚本无法完成登录；
-   - 登录限流放开：`DEFAULT_THROTTLE_RATES: { login: '100000/h' }`（默认 50/h 会在 50 次后
-     全部返回 999，`01-login.js` 的 `login_throttled` 指标非零即为命中）；
-   - 数据库指向压测专用库（PG/MySQL 均可，但基线多轮对比必须同库同机）。
+    - `SILK_ENABLED` 保持缺省 false（见 §一）；
+    - `SECURITY_LOGIN_CAPTCHA_ENABLED: false`、`SECURITY_LOGIN_ENCRYPTED_ENABLED: false`、
+      `SECURITY_LOGIN_TEMP_TOKEN_ENABLED: false`——否则脚本无法完成登录；
+    - 登录限流放开：`DEFAULT_THROTTLE_RATES: { login: '100000/h' }`（默认 50/h 会在 50 次后
+      全部返回 999，`01-login.js` 的 `login_throttled` 指标非零即为命中）；
+    - 数据库指向压测专用库（PG/MySQL 均可，但基线多轮对比必须同库同机）。
 2. **安装 k6**：`brew install k6`（或参考 [k6 安装文档](https://k6.io/docs/get-started/installation/)）。
 3. **启动服务**：`python manage.py runserver` 仅适合冒烟；正式测定用 gunicorn（与生产同参，
    `python manage.py services gunicorn`），并记录 worker 数/机器规格——
@@ -144,11 +144,11 @@ python manage.py migrate          # 创建 silk 三张表
 
 ## 六、结果登记口径（回填 metrics.md）
 
-| 字段 | 口径 |
-|------|------|
-| 数值 | 三轮中位数；P50/P95 为主，异常轮次（有 throttled/5xx）整轮作废 |
-| 环境 | 机器规格 / worker 数 / DB 引擎与版本 / 种子规模 / 压测日期 |
-| 档位 | 各脚本默认档位（§二表），改动过需注明 |
+| 字段  | 口径                                         |
+|-----|--------------------------------------------|
+| 数值  | 三轮中位数；P50/P95 为主，异常轮次（有 throttled/5xx）整轮作废 |
+| 环境  | 机器规格 / worker 数 / DB 引擎与版本 / 种子规模 / 压测日期   |
+| 档位  | 各脚本默认档位（§二表），改动过需注明                        |
 | 观测点 | k6 客户端口径（含网络与本机回环）；服务端 SQL 定位用 silk，不混入基线表 |
 
 metrics.md 的「五、性能基线」占位表逐行回填，形如：

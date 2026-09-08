@@ -1,6 +1,7 @@
 import json
 
 import pytest
+
 from system.models import Menu, MenuMeta
 
 pytestmark = pytest.mark.django_db

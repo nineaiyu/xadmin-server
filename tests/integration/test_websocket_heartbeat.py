@@ -51,7 +51,6 @@ def _make_consumer(ws_layer, superuser):
 
 
 def test_ping_replies_pong_and_keeps_online(ws_layer, superuser):
-
     async def scenario():
         consumer, captured = _make_consumer(ws_layer, superuser)
         await ws_layer.group_add(consumer.group_name, consumer.channel_name)
@@ -67,7 +66,6 @@ def test_ping_replies_pong_and_keeps_online(ws_layer, superuser):
 
 
 def test_ping_with_mid_is_answered(ws_layer, superuser):
-
     async def scenario():
         consumer, captured = _make_consumer(ws_layer, superuser)
         await consumer.receive(json.dumps({"action": "ping", "data": "", "mid": "mid-1"}))

@@ -42,8 +42,8 @@ def _per_row_count_queries(ctx):
     return [
         q for q in ctx.captured_queries
         if "COUNT(*)" in q["sql"].upper()
-        and "system_userinfo" in q["sql"]
-        and "system_deptinfo" not in q["sql"]
+           and "system_userinfo" in q["sql"]
+           and "system_deptinfo" not in q["sql"]
     ]
 
 

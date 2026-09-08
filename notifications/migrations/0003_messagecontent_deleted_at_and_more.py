@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('notifications', '0002_initial'),
         ('system', '0003_userloginlog_channel_name_and_more'),

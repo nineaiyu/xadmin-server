@@ -7,11 +7,32 @@
   "items": {
     "type": "object",
     "additionalProperties": false,
-    "required": ["key", "label", "input_type", "choices", "default"],
+    "required": [
+      "key",
+      "label",
+      "input_type",
+      "choices",
+      "default"
+    ],
     "properties": {
-      "key": { "type": "string", "description": "过滤字段名；排序聚合项固定为 ordering" },
-      "label": { "type": ["string", "null"], "description": "展示名" },
-      "help_text": { "type": ["string", "null"], "description": "字段说明；ordering 聚合项无此键" },
+      "key": {
+        "type": "string",
+        "description": "过滤字段名；排序聚合项固定为 ordering"
+      },
+      "label": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "展示名"
+      },
+      "help_text": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "字段说明；ordering 聚合项无此键"
+      },
       "input_type": {
         "type": "string",
         "description": "前端渲染器类型：text/select/select-multiple/number/datetime/datetimerange/input/api-search-user/select-ordering 等"
@@ -21,16 +42,26 @@
         "items": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["value", "label"],
+          "required": [
+            "value",
+            "label"
+          ],
           "properties": {
             "value": {},
             "label": {},
-            "disabled": { "type": "boolean" }
+            "disabled": {
+              "type": "boolean"
+            }
           }
         }
       },
-      "default": { "description": "默认值：multiple 类型为空数组，其余为字符串" },
-      "choices_truncated": { "type": "boolean", "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true（PERF-07）" }
+      "default": {
+        "description": "默认值：multiple 类型为空数组，其余为字符串"
+      },
+      "choices_truncated": {
+        "type": "boolean",
+        "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true（PERF-07）"
+      }
     }
   }
 }

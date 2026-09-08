@@ -116,10 +116,10 @@ def invalid_dept_roles_m2m_cache_handler(sender, instance, action, **kwargs):
         return
     batch_invalid_cache(instance.userinfo_set.values_list('pk', flat=True).distinct())
 
+
 @receiver(pre_delete, sender=TaskExecution)
 def delete_task_execution_log_handler(sender, **kwargs):
     # 执行历史删除（含批量删除）时联动清理落盘日志文件
     instance = kwargs.get('instance')
     if instance:
         remove_file(get_celery_task_log_path(str(instance.pk)))
-

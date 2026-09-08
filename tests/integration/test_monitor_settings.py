@@ -59,11 +59,11 @@ class TestMonitorSettingsAPI:
         assert resp.data["code"] == 1000
         keys = {col["key"] for col in resp.data["data"]}
         assert {
-            "SECURITY_MONITOR_DISK_USED_MAX",
-            "SECURITY_MONITOR_MEMORY_USED_MAX",
-            "SECURITY_MONITOR_CPU_PERCENT_MAX",
-            "SECURITY_MONITOR_CPU_LOAD_MAX",
-        } <= keys
+                   "SECURITY_MONITOR_DISK_USED_MAX",
+                   "SECURITY_MONITOR_MEMORY_USED_MAX",
+                   "SECURITY_MONITOR_CPU_PERCENT_MAX",
+                   "SECURITY_MONITOR_CPU_LOAD_MAX",
+               } <= keys
 
 
 class TestServerPerformanceCheck:

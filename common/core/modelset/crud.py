@@ -46,8 +46,8 @@ class ListAction(mixins.ListModelMixin):
         只记录日志并降级省略，绝不影响列表本身。
         """
         for action_name, key in (
-            ("search_columns", "search_columns"),
-            ("search_fields", "search_fields"),
+                ("search_columns", "search_columns"),
+                ("search_fields", "search_fields"),
         ):
             action = getattr(self, action_name, None)
             if action is None:

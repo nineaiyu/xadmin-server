@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """扩展：角色软删除与回收站（权限缓存失效依赖 post_save 信号）。"""
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 import system.signal_handler
 from system.models import UserRole

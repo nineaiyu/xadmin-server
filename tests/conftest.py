@@ -60,12 +60,12 @@ def menu_factory(db):
     """创建菜单的工厂。权限类型菜单需绑定 path（正则，不带前导斜杠）与 method。"""
 
     def _make(
-        name,
-        path=None,
-        method=None,
-        menu_type=Menu.MenuChoices.PERMISSION,
-        parent=None,
-        is_active=True,
+            name,
+            path=None,
+            method=None,
+            menu_type=Menu.MenuChoices.PERMISSION,
+            parent=None,
+            is_active=True,
     ):
         meta = MenuMeta.objects.create(title=name)
         return Menu.objects.create(

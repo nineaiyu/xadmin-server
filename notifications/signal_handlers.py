@@ -93,7 +93,6 @@ def clean_m2m_notify_cache_handler(sender, instance, **kwargs):
         if isinstance(instance, MessageContent):
             invalid_notify_caches(instance, kwargs.get("pk_set", []))
 
-
 # @receiver([post_save, pre_delete])
 # def clean_notify_cache_handler(sender, instance, **kwargs):
 #     if issubclass(sender, MessageUserRead):

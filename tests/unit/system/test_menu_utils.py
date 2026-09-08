@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """system.utils.menu 中的 get_view_permissions 单元测试（URL registry 依赖真实路由）。"""
-import server.urls  # noqa: F401  # 预加载 urlconf，让 get_all_url_dict 的 import_string 生效
-
 import pytest
 
+import server.urls  # noqa: F401  # 预加载 urlconf，让 get_all_url_dict 的 import_string 生效
 from system.utils.menu import get_view_permissions
 
 pytestmark = pytest.mark.django_db

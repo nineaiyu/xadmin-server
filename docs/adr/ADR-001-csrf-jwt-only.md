@@ -23,14 +23,18 @@
 
 ## 修订记录（2026-09-06，SEC-1）
 
-技术审查发现：`/admin/` 站点实际已挂载（`server/urls.py`）且 `SessionMiddleware` 开启，上述前提第 3 条**已被打破**——Admin 的登录与全部 POST 操作处于无 CSRF 防护状态。
+技术审查发现：`/admin/` 站点实际已挂载（`server/urls.py`）且 `SessionMiddleware` 开启，上述前提第 3 条**已被打破**——Admin
+的登录与全部 POST 操作处于无 CSRF 防护状态。
 
 按原决策预设的恢复路径执行：
 
 1. `CsrfViewMiddleware` 恢复启用（`server/settings/base.py`），位于 LocaleMiddleware 与 AuthenticationMiddleware 之间；
-2. API 路由无需逐个豁免：DRF 对全部 APIView 施加 `csrf_exempt`，Bearer/Cookie JWT 路径行为不变，SessionAuthentication 自带 `enforce_csrf`；
-3. CI 增加静态断言测试（`tests/unit/server/test_settings_assertions.py`）：启用 `django.contrib.admin` 时禁止移除 `CsrfViewMiddleware`，防止回归；
-4. 防护分层调整：Admin 站点由 CSRF 中间件承担；API 继续由 CORS 白名单 + RefererCheckMiddleware + XFrameOptionsMiddleware 承担。
+2. API 路由无需逐个豁免：DRF 对全部 APIView 施加 `csrf_exempt`，Bearer/Cookie JWT 路径行为不变，SessionAuthentication 自带
+   `enforce_csrf`；
+3. CI 增加静态断言测试（`tests/unit/server/test_settings_assertions.py`）：启用 `django.contrib.admin` 时禁止移除
+   `CsrfViewMiddleware`，防止回归；
+4. 防护分层调整：Admin 站点由 CSRF 中间件承担；API 继续由 CORS 白名单 + RefererCheckMiddleware + XFrameOptionsMiddleware
+   承担。
 
 ## 后果
 

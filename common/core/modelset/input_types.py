@@ -13,9 +13,9 @@ def get_upload_input_type_suffix(value, default):
         value = value.child_relation
     try:
         if (
-            value.queryset.model._meta.label == "system.UploadFile"
-            and isinstance(value, BasePrimaryKeyRelatedField)
-            and default in ["object_related_field", "m2m_related_field"]
+                value.queryset.model._meta.label == "system.UploadFile"
+                and isinstance(value, BasePrimaryKeyRelatedField)
+                and default in ["object_related_field", "m2m_related_field"]
         ):
             return "_file"
     except Exception:

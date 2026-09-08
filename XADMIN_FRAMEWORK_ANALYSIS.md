@@ -1,22 +1,23 @@
 # XAdmin 框架架构分析报告
 
-> 本报告针对 xadmin-client（前端）与 xadmin-server（后端）两大项目的整体框架设计进行深入分析，涵盖权限体系、架构模式、搜索机制、API 设计、响应规范等核心模块，旨在为使用其他语言重新开发提供完整的架构参考。
+> 本报告针对 xadmin-client（前端）与 xadmin-server（后端）两大项目的整体框架设计进行深入分析，涵盖权限体系、架构模式、搜索机制、API
+> 设计、响应规范等核心模块，旨在为使用其他语言重新开发提供完整的架构参考。
 
 ---
 
 ## 一、项目概览
 
-| 维度 | 前端 (xadmin-client) | 后端 (xadmin-server) |
-|------|----------------------|----------------------|
-| 语言 | TypeScript / Vue 3 | Python / Django 5.2 |
-| 框架 | Vue 3 + Vite 7 + Pinia + Element Plus | Django + DRF 3.16 + SimpleJWT |
-| 状态管理 | Pinia | Django ORM + Redis 缓存 |
-| 路由 | Vue Router 4 (动态路由) | DRF Router (SimpleRouter + 自定义) |
-| HTTP 通信 | Axios (封装 PureHttp) | DRF ViewSet + GenericAPIView |
-| UI 组件 | Element Plus + PlusProComponents | - |
-| 构建 | Vite 7 + pnpm | Gunicorn / Uvicorn / Daphne |
-| 实时通信 | WebSocket (原生封装) | Django Channels + Redis |
-| 国际化 | vue-i18n | Django i18n |
+| 维度      | 前端 (xadmin-client)                    | 后端 (xadmin-server)              |
+|---------|---------------------------------------|---------------------------------|
+| 语言      | TypeScript / Vue 3                    | Python / Django 5.2             |
+| 框架      | Vue 3 + Vite 7 + Pinia + Element Plus | Django + DRF 3.16 + SimpleJWT   |
+| 状态管理    | Pinia                                 | Django ORM + Redis 缓存           |
+| 路由      | Vue Router 4 (动态路由)                   | DRF Router (SimpleRouter + 自定义) |
+| HTTP 通信 | Axios (封装 PureHttp)                   | DRF ViewSet + GenericAPIView    |
+| UI 组件   | Element Plus + PlusProComponents      | -                               |
+| 构建      | Vite 7 + pnpm                         | Gunicorn / Uvicorn / Daphne     |
+| 实时通信    | WebSocket (原生封装)                      | Django Channels + Redis         |
+| 国际化     | vue-i18n                              | Django i18n                     |
 
 ---
 
@@ -65,21 +66,25 @@ XAdmin 实现了**菜单权限 + 数据权限 + 字段权限**的三层权限体
 2. 菜单模型 `Menu` 有三种类型：`DIRECTORY(0)` 目录、`MENU(1)` 菜单页面、`PERMISSION(2)` 权限按钮
 3. 每个权限类型的菜单绑定 HTTP Method（GET/POST/PUT/DELETE/PATCH）和 API 路径（path）
 4. 请求进入时，`IsAuthenticated.has_permission()` 执行以下流程：
-   - 超级管理员直接放行
+    - 超级管理员直接放行
+
 - 白名单 URL 直接放行
 - 根据当前用户 + 请求方法，获取该用户所有权限菜单（`get_user_permission`）
 - 用正则匹配当前请求 URL 与权限路径
 - 匹配成功则放行，失败则抛出 `PermissionDenied`
+
 5. 权限数据通过 `MagicCacheData` 缓存 24 小时，菜单数据缓存 10 秒
 
 **数据模型关系**:
+
 ```
 User ←→ UserRole ←→ Menu (PERMISSION类型)
                  ↑
              DeptInfo (部门关联角色)
 ```
 
-**关键设计**: 菜单权限通过 `Menu.path` 字段存储 API 路径，`Menu.method` 存储 HTTP 方法，`Menu.name` 存储权限编码（如 `list:UserViewSet`）。前端通过 `/api/system/routes` 获取路由和权限列表。
+**关键设计**: 菜单权限通过 `Menu.path` 字段存储 API 路径，`Menu.method` 存储 HTTP 方法，`Menu.name` 存储权限编码（如
+`list:UserViewSet`）。前端通过 `/api/system/routes` 获取路由和权限列表。
 
 #### 2.2.2 数据权限（Data Permission）
 
@@ -90,19 +95,20 @@ User ←→ UserRole ←→ Menu (PERMISSION类型)
 1. 数据权限规则存储在 `DataPermission` 模型中，`rules` 字段为 JSON 格式
 2. 每条规则包含：目标表名（table）、过滤类型（type）、匹配方式（match）、值（value）
 3. 支持的过滤类型：
-   - `ALL` — 全部数据
-   - `OWNER` — 仅本人创建
-   - `OWNER_DEPARTMENT` — 本部门
-   - `OWNER_DEPARTMENTS` — 本部门及下级
-   - `DEPARTMENTS` — 指定部门
-   - `DATE` / `DATETIME` / `DATETIME_RANGE` — 时间范围
-   - `TABLE_USER/TABLE_MENU/TABLE_ROLE/TABLE_DEPT` — 关联表过滤
-   - `JSON` — JSON 字段过滤
+    - `ALL` — 全部数据
+    - `OWNER` — 仅本人创建
+    - `OWNER_DEPARTMENT` — 本部门
+    - `OWNER_DEPARTMENTS` — 本部门及下级
+    - `DEPARTMENTS` — 指定部门
+    - `DATE` / `DATETIME` / `DATETIME_RANGE` — 时间范围
+    - `TABLE_USER/TABLE_MENU/TABLE_ROLE/TABLE_DEPT` — 关联表过滤
+    - `JSON` — JSON 字段过滤
 4. 规则支持 AND/OR 两种模式（`mode_type`），可组合多条规则
 5. 数据权限按部门和用户两个维度授权，部门规则 AND 操作，个人规则与部门规则 OR 操作
 6. 数据权限可绑定到特定菜单（`menu` 多对多），实现同一模型在不同页面有不同的数据范围
 
 **执行流程**:
+
 ```
 请求 → ViewSet.filter_queryset() → BaseDataPermissionFilter.filter_queryset()
      → get_filter_queryset(queryset, user)
@@ -113,7 +119,8 @@ User ←→ UserRole ←→ Menu (PERMISSION类型)
 
 #### 2.2.3 字段权限（Field Permission）
 
-**核心文件**: `common/core/serializers.py` — `BaseModelSerializer.get_allow_fields()` + `common/core/fields.py` — `BasePrimaryKeyRelatedField.get_allow_fields()`
+**核心文件**: `common/core/serializers.py` — `BaseModelSerializer.get_allow_fields()` + `common/core/fields.py` —
+`BasePrimaryKeyRelatedField.get_allow_fields()`
 
 **工作原理**:
 
@@ -125,6 +132,7 @@ User ←→ UserRole ←→ Menu (PERMISSION类型)
 6. 超级管理员或 `ignore_field_permission=True` 时跳过字段权限检查
 
 **字段权限数据结构**:
+
 ```python
 request.fields = {
     "system.userinfo": {"username", "nickname", "email"},  # 允许的字段集合
@@ -137,6 +145,7 @@ request.fields = {
 **核心文件**: `common/core/response.py` — `ApiResponse`
 
 **统一响应格式**:
+
 ```json
 {
     "code": 1000,          // 业务状态码，1000=成功
@@ -148,6 +157,7 @@ request.fields = {
 ```
 
 **异常处理**: `common/core/exception.py` — `common_exception_handler()`
+
 - 所有异常统一转换为 `ApiResponse` 格式
 - 特殊处理：`InvalidToken(40001/40002)`、`Throttled(999)`、`ProtectedError(998)`
 - 未知异常返回 `code=500`
@@ -157,11 +167,13 @@ request.fields = {
 **核心文件**: `common/core/routers.py` + `common/core/utils.py`
 
 **路由注册方式**:
+
 1. **SimpleRouter**: 标准 DRF 路由，自动生成 CRUD 路由
 2. **NoDetailRouter**: 自定义路由，将所有操作合并到单一 URL（无 `/{pk}/` 路径），适合非标准 CRUD 接口
 3. **自动注册**: `auto_register_app_url()` 函数扫描 `XADMIN_APPS` 中的插件应用，自动加载其 URL 配置
 
 **典型 URL 结构**:
+
 ```
 GET    /api/system/user/              → list
 POST   /api/system/user/              → create
@@ -187,6 +199,7 @@ POST   /api/system/user/import-data    → import_data
 前端通过这些元数据接口自动渲染搜索表单和表格列，无需硬编码字段定义。
 
 **过滤实现**: 基于 `django-filter` 的 `BaseFilterSet`，支持：
+
 - 精确过滤、模糊搜索（icontains）
 - 时间范围过滤（DateTimeFromToRangeFilter）
 - SPM 资源定位过滤（通过 Redis 缓存的 ID 列表）
@@ -198,20 +211,21 @@ POST   /api/system/user/import-data    → import_data
 
 `BaseModelSet` 是整个后端最核心的类，通过 Mixin 组合提供以下能力：
 
-| Mixin / Action | 功能 |
-|---|---|
-| `BaseViewSet` | 基础过滤、分页跳过（导出时）、动态序列化器选择 |
-| `SearchColumnsAction` | 返回字段元数据（驱动前端表单/表格渲染） |
-| `SearchFieldsAction` | 返回搜索字段元数据（驱动前端搜索表单） |
-| `ChoicesAction` | 返回选项字典 |
-| `BatchDestroyAction` | 批量删除 |
-| `UploadFileAction` | 文件上传（头像等） |
-| `RankAction` | 排序 |
-| `ImportExportDataAction` | 数据导入导出（CSV/Excel） |
-| `CacheDetailResponseMixin` | 详情接口缓存 |
-| `CacheListResponseMixin` | 列表接口缓存 |
+| Mixin / Action             | 功能                      |
+|----------------------------|-------------------------|
+| `BaseViewSet`              | 基础过滤、分页跳过（导出时）、动态序列化器选择 |
+| `SearchColumnsAction`      | 返回字段元数据（驱动前端表单/表格渲染）    |
+| `SearchFieldsAction`       | 返回搜索字段元数据（驱动前端搜索表单）     |
+| `ChoicesAction`            | 返回选项字典                  |
+| `BatchDestroyAction`       | 批量删除                    |
+| `UploadFileAction`         | 文件上传（头像等）               |
+| `RankAction`               | 排序                      |
+| `ImportExportDataAction`   | 数据导入导出（CSV/Excel）       |
+| `CacheDetailResponseMixin` | 详情接口缓存                  |
+| `CacheListResponseMixin`   | 列表接口缓存                  |
 
 **新增一个完整 CRUD 页面的后端代码量极小**:
+
 ```python
 class UserViewSet(BaseModelSet, UploadFileAction, ImportExportDataAction):
     queryset = UserInfo.objects.all()
@@ -240,13 +254,13 @@ SysConfig.set_value('KEY', value, is_active=True)
 
 ### 2.8 中间件体系
 
-| 中间件 | 功能 |
-|---|---|
-| `RequestMiddleware` | 注入 request_uuid，设置当前请求上下文 |
-| `ApiLoggingMiddleware` | API 操作日志记录（请求/响应/耗时/SQL） |
-| `RefererCheckMiddleware` | CSRF Referer 检查 |
-| `SQLCountMiddleware` | DEBUG 模式下统计 SQL 查询次数 |
-| `StartMiddleware / EndMiddleware` | DEBUG_DEV 模式下计算各阶段耗时 |
+| 中间件                               | 功能                        |
+|-----------------------------------|---------------------------|
+| `RequestMiddleware`               | 注入 request_uuid，设置当前请求上下文 |
+| `ApiLoggingMiddleware`            | API 操作日志记录（请求/响应/耗时/SQL）  |
+| `RefererCheckMiddleware`          | CSRF Referer 检查           |
+| `SQLCountMiddleware`              | DEBUG 模式下统计 SQL 查询次数      |
+| `StartMiddleware / EndMiddleware` | DEBUG_DEV 模式下计算各阶段耗时      |
 
 ### 2.9 认证体系
 
@@ -273,14 +287,15 @@ SysConfig.set_value('KEY', value, is_active=True)
 
 #### 2.11.1 文件解析器（导入）
 
-| 解析器 | 文件 | 说明 |
-|---|---|---|
-| `BaseFileParser` | `common/drf/parsers/base.py` | 解析器基类，定义列标题映射、行数据处理、字段值解析等通用逻辑 |
-| `CSVFileParser` | `common/drf/parsers/csv.py` | CSV 文件解析，支持编码自动检测（chardet） |
-| `ExcelFileParser` | `common/drf/parsers/excel.py` | Excel 文件解析，基于 pyexcel 库 |
+| 解析器                    | 文件                                      | 说明                                                 |
+|------------------------|-----------------------------------------|----------------------------------------------------|
+| `BaseFileParser`       | `common/drf/parsers/base.py`            | 解析器基类，定义列标题映射、行数据处理、字段值解析等通用逻辑                     |
+| `CSVFileParser`        | `common/drf/parsers/csv.py`             | CSV 文件解析，支持编码自动检测（chardet）                         |
+| `ExcelFileParser`      | `common/drf/parsers/excel.py`           | Excel 文件解析，基于 pyexcel 库                            |
 | `AxiosMultiPartParser` | `common/drf/parsers/axios_form_data.py` | 自定义 multipart 解析器，将 Axios dot-notation 格式反序列化为嵌套对象 |
 
 **BaseFileParser 核心流程**:
+
 1. 从 ViewSet 获取序列化器类和字段定义
 2. 读取文件流，按格式（CSV/Excel）生成行数据
 3. 第一行作为列标题，通过 `convert_to_field_names()` 映射为序列化器字段名
@@ -288,18 +303,20 @@ SysConfig.set_value('KEY', value, is_active=True)
 5. 支持中文引号转换、JSON 字符串解析、关联对象 `name(pk)` 格式解析
 
 **AxiosMultiPartParser 设计亮点**:
-Axios 发送 form-data 时使用 dot-notation 格式（如 `admin.pk=1&admin.label=test`），标准 DRF 解析器无法处理。`AxiosMultiPartParser` 通过 `format_data()` 递归函数将扁平的 dot-notation 键值对反序列化为嵌套的字典/列表结构。
+Axios 发送 form-data 时使用 dot-notation 格式（如 `admin.pk=1&admin.label=test`），标准 DRF 解析器无法处理。
+`AxiosMultiPartParser` 通过 `format_data()` 递归函数将扁平的 dot-notation 键值对反序列化为嵌套的字典/列表结构。
 
 #### 2.11.2 文件渲染器（导出）
 
-| 渲染器 | 文件 | 说明 |
-|---|---|---|
-| `BaseFileRenderer` | `common/drf/renders/base.py` | 渲染器基类，定义字段渲染、帮助文本、ZIP 加密等通用逻辑 |
-| `CSVFileRenderer` | `common/drf/renders/csv.py` | CSV 文件渲染，BOM 头 + UTF-8 编码 |
-| `ExcelFileRenderer` | `common/drf/renders/excel.py` | Excel 文件渲染，支持数据验证下拉框、自动列宽、表格样式 |
-| `PassthroughRenderer` | `common/drf/renders/__init__.py` | 透传渲染器，直接返回原始数据 |
+| 渲染器                   | 文件                               | 说明                             |
+|-----------------------|----------------------------------|--------------------------------|
+| `BaseFileRenderer`    | `common/drf/renders/base.py`     | 渲染器基类，定义字段渲染、帮助文本、ZIP 加密等通用逻辑  |
+| `CSVFileRenderer`     | `common/drf/renders/csv.py`      | CSV 文件渲染，BOM 头 + UTF-8 编码      |
+| `ExcelFileRenderer`   | `common/drf/renders/excel.py`    | Excel 文件渲染，支持数据验证下拉框、自动列宽、表格样式 |
+| `PassthroughRenderer` | `common/drf/renders/__init__.py` | 透传渲染器，直接返回原始数据                 |
 
 **BaseFileRenderer 核心流程**:
+
 1. 从 ViewSet 获取序列化器，根据 `template` 参数决定导出模式（`import`/`update`/`export`）
 2. `get_rendered_fields()`: 根据 template 过滤字段（导入模板排除只读字段，导出排除只写字段）
 3. `render_value()`: 将字段值转换为文件格式（布尔→Yes/No，关联对象→`name(pk)`，选择→`label(value)`）
@@ -307,6 +324,7 @@ Axios 发送 form-data 时使用 dot-notation 格式（如 `admin.pk=1&admin.lab
 5. `compress_into_zip_file()`: 支持 AES 加密的 ZIP 压缩（密码为用户名）
 
 **ExcelFileRenderer 高级特性**:
+
 - 自动生成数据验证下拉框（布尔字段、选择字段、关联字段）
 - 隐藏的 `data` 工作表存储验证数据
 - 自动调整列宽（最小 30，最大 300）
@@ -327,19 +345,21 @@ Axios 发送 form-data 时使用 dot-notation 格式（如 `admin.pk=1&admin.lab
 
 XAdmin 通过 Django 信号机制实现了**权限缓存自动失效**，这是权限系统与缓存系统协同工作的关键：
 
-| 信号 | 触发时机 | 失效范围 |
-|---|---|---|
-| `post_save/pre_delete(Menu)` | 菜单变更 | 所有超级用户 + 关联角色的用户 + 关联部门的用户 |
-| `post_save/pre_delete(UserRole)` | 角色变更 | 角色下的所有用户 + 关联部门的所有用户 |
-| `post_save/pre_delete(DeptInfo)` | 部门变更 | 部门下的所有用户 |
-| `post_save/pre_delete(UserInfo)` | 用户变更 | 该用户自身 |
-| `post_save/pre_delete(SystemConfig)` | 系统配置变更 | 对应配置项缓存 |
-| `invalid_user_cache_signal` | 自定义触发 | 指定用户 |
-| `user_logged_out` | 用户登出 | 该用户自身 |
+| 信号                                   | 触发时机   | 失效范围                       |
+|--------------------------------------|--------|----------------------------|
+| `post_save/pre_delete(Menu)`         | 菜单变更   | 所有超级用户 + 关联角色的用户 + 关联部门的用户 |
+| `post_save/pre_delete(UserRole)`     | 角色变更   | 角色下的所有用户 + 关联部门的所有用户       |
+| `post_save/pre_delete(DeptInfo)`     | 部门变更   | 部门下的所有用户                   |
+| `post_save/pre_delete(UserInfo)`     | 用户变更   | 该用户自身                      |
+| `post_save/pre_delete(SystemConfig)` | 系统配置变更 | 对应配置项缓存                    |
+| `invalid_user_cache_signal`          | 自定义触发  | 指定用户                       |
+| `user_logged_out`                    | 用户登出   | 该用户自身                      |
 
-**批量失效机制**: `batch_invalid_cache()` 函数同时清理 `MagicCacheData`（权限数据缓存）和 `cache_response`（视图响应缓存），使用 `itertools.batched()` 分批执行，避免一次性删除过多 Redis 键。
+**批量失效机制**: `batch_invalid_cache()` 函数同时清理 `MagicCacheData`（权限数据缓存）和 `cache_response`（视图响应缓存），使用
+`itertools.batched()` 分批执行，避免一次性删除过多 Redis 键。
 
 **Celery 信号**:
+
 - `worker_ready`: Worker 启动时执行注册的定时任务和清理任务
 - `worker_shutdown`: Worker 关闭时清理不再需要的定时任务
 - `pre_delete(TaskResult)`: 删除 Celery 任务记录时，同时清理日志文件
@@ -367,11 +387,11 @@ Message (基类, metaclass=MessageType)
 
 #### 2.13.2 通知后端
 
-| 后端 | 文件 | 说明 |
-|---|---|---|
-| `SiteMessage` | `notifications/backends/site_msg.py` | 站内信（必须发送，始终启用） |
-| `Email` | `notifications/backends/email.py` | 邮件通知（通过 Celery 异步发送） |
-| `SMS` | `notifications/backends/sms.py` | 短信通知（支持阿里云 SMS） |
+| 后端            | 文件                                   | 说明                   |
+|---------------|--------------------------------------|----------------------|
+| `SiteMessage` | `notifications/backends/site_msg.py` | 站内信（必须发送，始终启用）       |
+| `Email`       | `notifications/backends/email.py`    | 邮件通知（通过 Celery 异步发送） |
+| `SMS`         | `notifications/backends/sms.py`      | 短信通知（支持阿里云 SMS）      |
 
 **后端注册机制**: `BACKEND` 枚举类通过 `importlib` 动态导入后端模块，支持运行时扩展。
 
@@ -387,6 +407,7 @@ Message (基类, metaclass=MessageType)
 #### 2.13.4 消息格式适配
 
 每种后端支持不同的消息格式：
+
 - `get_email_msg()` → HTML 格式（带签名）
 - `get_site_msg_msg()` → HTML 格式（无签名）
 - `get_sms_msg()` → 纯文本格式（带签名）
@@ -401,6 +422,7 @@ Message (基类, metaclass=MessageType)
 `AsyncJsonWebsocket` 是所有 WebSocket 消费者的基类：
 
 **消息格式**:
+
 ```json
 {
     "action": "chat_message|ping|push_message|userinfo",
@@ -410,6 +432,7 @@ Message (基类, metaclass=MessageType)
 ```
 
 **响应格式**:
+
 ```json
 {
     "code": 1000,
@@ -422,6 +445,7 @@ Message (基类, metaclass=MessageType)
 ```
 
 **支持的动作**:
+
 - `ping` → 返回 `pong`（心跳检测，同时更新活跃连接）
 - `userinfo` → 返回当前用户信息
 - `push_message` → 系统推送消息（通知、告警等）
@@ -432,14 +456,17 @@ Message (基类, metaclass=MessageType)
 **路由**: `ws/message/{group_name}/{username}`
 
 **连接逻辑**:
+
 - 如果 `username` 与当前用户不同：加入公共聊天室 `message_system_default_0`
 - 如果 `username` 与当前用户相同：加入个人消息推送组，同时记录 WebSocket 登录日志
 
 **聊天功能**:
+
 - 支持 `@用户名` 提及功能，被提及用户会收到推送通知
 - 消息广播到当前聊天室的所有成员
 
 **任务日志查看**:
+
 - 通过 `task_log` 动作实时查看 Celery 任务日志
 - 使用 `aiofiles` 异步读取日志文件，实时推送到客户端
 
@@ -449,22 +476,22 @@ Message (基类, metaclass=MessageType)
 
 #### 2.15.1 任务装饰器
 
-| 装饰器 | 功能 |
-|---|---|
+| 装饰器                                                     | 功能                                  |
+|---------------------------------------------------------|-------------------------------------|
 | `@register_as_period_task(crontab=None, interval=None)` | 注册定时任务，支持 crontab 和 interval 两种调度方式 |
-| `@after_app_ready_start` | Worker 启动时自动执行（用于初始化任务） |
-| `@after_app_shutdown_clean_periodic` | Worker 关闭时清理定时任务 |
+| `@after_app_ready_start`                                | Worker 启动时自动执行（用于初始化任务）             |
+| `@after_app_shutdown_clean_periodic`                    | Worker 关闭时清理定时任务                    |
 
 **设计思路**: 通过装饰器声明式注册定时任务，系统启动时自动创建/更新 `PeriodicTask` 记录，无需手动配置。
 
 #### 2.15.2 内置定时任务
 
-| 任务 | 间隔 | 功能 |
-|---|---|---|
-| `auto_clean_monitor_logs` | 1 小时 | 清理 30 天前的监控日志 |
-| `clean_celery_periodic_tasks` | 启动时 | 清理不存在的定时任务 |
-| `create_or_update_registered_periodic_tasks` | 启动时 | 创建/更新注册的定时任务 |
-| `check_server_performance_period` | 60 秒 | 检查服务器性能，超阈值告警 |
+| 任务                                           | 间隔   | 功能            |
+|----------------------------------------------|------|---------------|
+| `auto_clean_monitor_logs`                    | 1 小时 | 清理 30 天前的监控日志 |
+| `clean_celery_periodic_tasks`                | 启动时  | 清理不存在的定时任务    |
+| `create_or_update_registered_periodic_tasks` | 启动时  | 创建/更新注册的定时任务  |
+| `check_server_performance_period`            | 60 秒 | 检查服务器性能，超阈值告警 |
 
 #### 2.15.3 异步邮件发送
 
@@ -475,14 +502,14 @@ Message (基类, metaclass=MessageType)
 
 **核心文件**: `common/core/throttle.py`
 
-| 限流类 | 类型 | 范围 | 用途 |
-|---|---|---|---|
-| `RegisterThrottle` | 匿名用户 | `register` | 注册接口限流 |
+| 限流类                     | 类型   | 范围               | 用途     |
+|-------------------------|------|------------------|--------|
+| `RegisterThrottle`      | 匿名用户 | `register`       | 注册接口限流 |
 | `ResetPasswordThrottle` | 匿名用户 | `reset_password` | 重置密码限流 |
-| `LoginThrottle` | 匿名用户 | `login` | 登录接口限流 |
-| `UploadThrottle` | 认证用户 | `upload` | 上传速率限制 |
-| `Download1Throttle` | 认证用户 | `download1` | 下载速率限制 |
-| `Download2Throttle` | 认证用户 | `download2` | 下载速率限制 |
+| `LoginThrottle`         | 匿名用户 | `login`          | 登录接口限流 |
+| `UploadThrottle`        | 认证用户 | `upload`         | 上传速率限制 |
+| `Download1Throttle`     | 认证用户 | `download1`      | 下载速率限制 |
+| `Download2Throttle`     | 认证用户 | `download2`      | 下载速率限制 |
 
 限流配置在 Django settings 中的 `REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']` 定义。
 
@@ -490,15 +517,16 @@ Message (基类, metaclass=MessageType)
 
 **核心文件**: `common/core/fields.py`
 
-| 字段类 | 功能 | 前端 input_type |
-|---|---|---|
-| `LabeledChoiceField` | 选择字段，序列化为 `{value, label}` 对象 | `labeled_choice` |
-| `LabeledMultipleChoiceField` | 多选字段，序列化为 `[{value, label}]` 数组 | `labeled_multiple_choice` |
-| `BasePrimaryKeyRelatedField` | 关联字段，支持字段权限、数据权限过滤、自定义属性 | `object_related_field` / `m2m_related_field` |
-| `PhoneField` | 手机号字段，自动解析国际区号 | `phone` |
-| `ColorField` | 颜色选择字段 | `color` |
+| 字段类                          | 功能                              | 前端 input_type                                |
+|------------------------------|---------------------------------|----------------------------------------------|
+| `LabeledChoiceField`         | 选择字段，序列化为 `{value, label}` 对象   | `labeled_choice`                             |
+| `LabeledMultipleChoiceField` | 多选字段，序列化为 `[{value, label}]` 数组 | `labeled_multiple_choice`                    |
+| `BasePrimaryKeyRelatedField` | 关联字段，支持字段权限、数据权限过滤、自定义属性        | `object_related_field` / `m2m_related_field` |
+| `PhoneField`                 | 手机号字段，自动解析国际区号                  | `phone`                                      |
+| `ColorField`                 | 颜色选择字段                          | `color`                                      |
 
 **BasePrimaryKeyRelatedField 设计亮点**:
+
 - `get_queryset()`: 自动应用数据权限过滤，确保用户只能选择有权限的关联对象
 - `get_allow_fields()`: 根据字段权限动态裁剪关联对象的返回字段
 - `to_representation()`: 支持通过 `attrs` 参数自定义返回字段，支持 `label_format` 格式化标签
@@ -512,17 +540,17 @@ Message (基类, metaclass=MessageType)
 
 系统安全配置按类别分组管理，每个类别对应一个 ViewSet：
 
-| ViewSet | 类别 | 功能 |
-|---|---|---|
-| `SecurityPasswordRuleViewSet` | `security_password` | 密码复杂度规则 |
-| `SecurityLoginLimitViewSet` | `security_login_limit` | 登录失败次数限制 |
-| `SecurityLoginAuthViewSet` | `security_login_auth` | 登录认证方式配置 |
-| `SecurityRegisterAuthViewSet` | `security_register_auth` | 注册认证配置 |
-| `SecurityResetPasswordAuthViewSet` | `security_reset_password_auth` | 重置密码配置 |
-| `SecurityBindEmailAuthViewSet` | `security_bind_email_auth` | 绑定邮箱配置 |
-| `SecurityBindPhoneAuthViewSet` | `security_bind_phone_auth` | 绑定手机配置 |
-| `SecurityVerifyCodeViewSet` | `verify` | 验证码规则配置 |
-| `SecurityCaptchaCodeViewSet` | `captcha` | 图片验证码配置 |
+| ViewSet                            | 类别                             | 功能       |
+|------------------------------------|--------------------------------|----------|
+| `SecurityPasswordRuleViewSet`      | `security_password`            | 密码复杂度规则  |
+| `SecurityLoginLimitViewSet`        | `security_login_limit`         | 登录失败次数限制 |
+| `SecurityLoginAuthViewSet`         | `security_login_auth`          | 登录认证方式配置 |
+| `SecurityRegisterAuthViewSet`      | `security_register_auth`       | 注册认证配置   |
+| `SecurityResetPasswordAuthViewSet` | `security_reset_password_auth` | 重置密码配置   |
+| `SecurityBindEmailAuthViewSet`     | `security_bind_email_auth`     | 绑定邮箱配置   |
+| `SecurityBindPhoneAuthViewSet`     | `security_bind_phone_auth`     | 绑定手机配置   |
+| `SecurityVerifyCodeViewSet`        | `verify`                       | 验证码规则配置  |
+| `SecurityCaptchaCodeViewSet`       | `captcha`                      | 图片验证码配置  |
 
 所有安全配置通过 `BaseSettingViewSet` 统一管理，配置值存储在 `SystemConfig` 表中，通过 `SysConfig` 缓存访问。
 
@@ -540,21 +568,23 @@ Message (基类, metaclass=MessageType)
 
 **核心文件**: `common/decorators.py`
 
-| 装饰器/工具 | 功能 |
-|---|---|
-| `@on_transaction_commit` | 延迟到数据库事务提交后执行（解决 M2M 字段创建问题） |
-| `@Singleton` | 单例模式装饰器 |
-| `@delay_run(ttl=5)` | 延迟执行，在 ttl 秒内只执行最后一次（防抖） |
-| `@merge_delay_run(ttl=5, key=func)` | 延迟执行并合并参数（批量操作优化） |
-| `@cached_method(ttl=20)` | 内存缓存装饰器，缓存方法返回值 |
+| 装饰器/工具                              | 功能                           |
+|-------------------------------------|------------------------------|
+| `@on_transaction_commit`            | 延迟到数据库事务提交后执行（解决 M2M 字段创建问题） |
+| `@Singleton`                        | 单例模式装饰器                      |
+| `@delay_run(ttl=5)`                 | 延迟执行，在 ttl 秒内只执行最后一次（防抖）     |
+| `@merge_delay_run(ttl=5, key=func)` | 延迟执行并合并参数（批量操作优化）            |
+| `@cached_method(ttl=20)`            | 内存缓存装饰器，缓存方法返回值              |
 
-**merge_delay_run 设计思路**: 适用于批量操作场景。例如权限变更时，短时间内可能触发多次缓存失效，通过 `merge_delay_run` 将多次操作合并为一次，减少 Redis 操作次数。
+**merge_delay_run 设计思路**: 适用于批量操作场景。例如权限变更时，短时间内可能触发多次缓存失效，通过 `merge_delay_run`
+将多次操作合并为一次，减少 Redis 操作次数。
 
 ### 2.21 数据库路由
 
 **核心文件**: `common/core/db/router.py`
 
-`DBRouter` 实现了 Django 多数据库路由接口（`db_for_read`/`db_for_write`/`allow_relation`/`allow_migrate`），当前默认返回 `None`（使用默认数据库），预留了分库分表扩展能力。
+`DBRouter` 实现了 Django 多数据库路由接口（`db_for_read`/`db_for_write`/`allow_relation`/`allow_migrate`），当前默认返回
+`None`（使用默认数据库），预留了分库分表扩展能力。
 
 ### 2.22 SMS SDK
 
@@ -639,6 +669,7 @@ class BaseApi extends BaseRequest {
 用于单条记录的视图型接口（如用户信息、系统配置），不使用 pk 路径。
 
 **关键设计**: `BaseApi` 封装了完整的 CRUD + 元数据 + 导入导出接口，前端新增一个页面只需：
+
 ```typescript
 export const userApi = new BaseApi("/api/system/user");
 ```
@@ -650,29 +681,31 @@ export const userApi = new BaseApi("/api/system/user");
 这是前端最核心的组件，实现了**元数据驱动的声明式页面开发**：
 
 **工作流程**:
+
 1. 组件挂载时，调用 `api.columns()` 获取字段元数据（search-columns）
 2. 同时调用 `api.fields()` 获取搜索字段元数据（search-fields）
 3. `useBaseColumns()` 根据元数据自动生成：
-   - `listColumns` — 表格列定义
-   - `searchColumns` — 搜索表单字段
-   - `addOrEditColumns` — 新增/编辑表单字段
-   - `detailColumns` — 详情展示字段
-   - `addOrEditRules` — 表单验证规则
-   - `searchDefaultValue` — 搜索默认值
-   - `addOrEditDefaultValue` — 新增/编辑默认值
+    - `listColumns` — 表格列定义
+    - `searchColumns` — 搜索表单字段
+    - `addOrEditColumns` — 新增/编辑表单字段
+    - `detailColumns` — 详情展示字段
+    - `addOrEditRules` — 表单验证规则
+    - `searchDefaultValue` — 搜索默认值
+    - `addOrEditDefaultValue` — 新增/编辑默认值
 4. 根据 `input_type` 自动选择渲染组件：
-   - `string` → Input
-   - `boolean` → Segmented/Radio
-   - `datetime` → DatePicker
-   - `select/multiple choice` → Select
-   - `object_related_field` → 远程搜索 Select
-   - `phone` → PhoneInput
-   - `json` → JsonEditor
-   - `image upload/file upload` → Upload
-   - `color` → ColorPicker
-   - `api-search-user/dept/role` → 自定义搜索组件
+    - `string` → Input
+    - `boolean` → Segmented/Radio
+    - `datetime` → DatePicker
+    - `select/multiple choice` → Select
+    - `object_related_field` → 远程搜索 Select
+    - `phone` → PhoneInput
+    - `json` → JsonEditor
+    - `image upload/file upload` → Upload
+    - `color` → ColorPicker
+    - `api-search-user/dept/role` → 自定义搜索组件
 
 **新增一个完整 CRUD 页面的前端代码量极小**:
+
 ```vue
 <template>
   <RePlusPage :api="userApi" :auth="auth" />
@@ -692,14 +725,15 @@ const auth = getDefaultAuths("UserViewSet");
 **核心文件**: `src/router/utils.ts` + `src/store/modules/permission.ts`
 
 **工作流程**:
+
 1. 用户登录后，调用 `/api/system/routes` 获取动态路由和权限列表
 2. 后端返回的数据包含：
-   - `data`: 菜单路由树（目录 + 菜单页面）
-   - `auths`: 权限编码列表（如 `["list:UserViewSet", "create:UserViewSet"]`）
+    - `data`: 菜单路由树（目录 + 菜单页面）
+    - `auths`: 权限编码列表（如 `["list:UserViewSet", "create:UserViewSet"]`）
 3. `handleAsyncRoutes()` 处理动态路由：
-   - 将后端路由转换为 Vue Router 路由
-   - 通过 `import.meta.glob` 动态匹配组件
-   - 添加到路由实例
+    - 将后端路由转换为 Vue Router 路由
+    - 通过 `import.meta.glob` 动态匹配组件
+    - 添加到路由实例
 4. `permissionAuths` 存储所有权限编码，用于按钮级权限判断
 
 #### 3.4.2 按钮级权限
@@ -725,6 +759,7 @@ const auth = getDefaultAuths("UserViewSet");
 **核心文件**: `src/utils/http/index.ts`
 
 **核心特性**:
+
 1. **Token 无感刷新**: 请求拦截器检测 Token 过期，自动使用 refresh_token 刷新
 2. **请求排队**: Token 刷新期间，后续请求排队等待，刷新成功后批量执行
 3. **自动文件上传检测**: 检测 data 中是否包含 File 对象，自动切换 multipart/form-data
@@ -754,18 +789,18 @@ const auth = getDefaultAuths("UserViewSet");
 
 前端布局系统包含以下核心模块：
 
-| 组件 | 文件 | 功能 |
-|---|---|---|
+| 组件            | 文件                        | 功能                  |
+|---------------|---------------------------|---------------------|
 | `lay-sidebar` | `components/lay-sidebar/` | 侧边栏导航（垂直/水平/混合三种模式） |
-| `lay-tag` | `components/lay-tag/` | 多标签页导航栏 |
-| `lay-navbar` | `components/lay-navbar/` | 顶部导航栏 |
-| `lay-search` | `components/lay-search/` | 全局搜索（支持菜单搜索 + 搜索历史） |
-| `lay-notice` | `components/lay-notice/` | 通知中心（站内信 + 公告，实时推送） |
-| `lay-panel` | `components/lay-panel/` | 配置面板（布局/主题/组件设置） |
-| `lay-setting` | `components/lay-setting/` | 系统设置面板 |
-| `lay-content` | `components/lay-content/` | 内容区域（路由视图容器） |
-| `lay-frame` | `components/lay-frame/` | iframe 嵌套页面容器 |
-| `lay-footer` | `components/lay-footer/` | 页脚 |
+| `lay-tag`     | `components/lay-tag/`     | 多标签页导航栏             |
+| `lay-navbar`  | `components/lay-navbar/`  | 顶部导航栏               |
+| `lay-search`  | `components/lay-search/`  | 全局搜索（支持菜单搜索 + 搜索历史） |
+| `lay-notice`  | `components/lay-notice/`  | 通知中心（站内信 + 公告，实时推送） |
+| `lay-panel`   | `components/lay-panel/`   | 配置面板（布局/主题/组件设置）    |
+| `lay-setting` | `components/lay-setting/` | 系统设置面板              |
+| `lay-content` | `components/lay-content/` | 内容区域（路由视图容器）        |
+| `lay-frame`   | `components/lay-frame/`   | iframe 嵌套页面容器       |
+| `lay-footer`  | `components/lay-footer/`  | 页脚                  |
 
 #### 3.8.1 主题/暗黑模式
 
@@ -810,35 +845,35 @@ const auth = getDefaultAuths("UserViewSet");
 
 **核心文件**: `src/directives/`
 
-| 指令 | 功能 |
-|---|---|
-| `v-auth` | 权限控制，无权限时移除 DOM 元素 |
-| `v-copy` | 一键复制文本到剪贴板 |
-| `v-longpress` | 长按事件绑定 |
-| `v-optimize` | 性能优化（防抖/节流） |
-| `v-ripple` | Material Design 水波纹效果 |
+| 指令            | 功能                    |
+|---------------|-----------------------|
+| `v-auth`      | 权限控制，无权限时移除 DOM 元素    |
+| `v-copy`      | 一键复制文本到剪贴板            |
+| `v-longpress` | 长按事件绑定                |
+| `v-optimize`  | 性能优化（防抖/节流）           |
+| `v-ripple`    | Material Design 水波纹效果 |
 
 ### 3.11 前端插件系统
 
 **核心文件**: `src/plugins/`
 
-| 插件 | 文件 | 功能 |
-|---|---|---|
-| `elementPlus.ts` | Element Plus 按需引入配置 | UI 组件库 |
+| 插件                     | 文件                   | 功能        |
+|------------------------|----------------------|-----------|
+| `elementPlus.ts`       | Element Plus 按需引入配置  | UI 组件库    |
 | `plusProComponents.ts` | PlusProComponents 配置 | 增强表格/表单组件 |
-| `echarts.ts` | ECharts 按需引入配置 | 图表库 |
-| `i18n.ts` | vue-i18n 配置 | 国际化 |
+| `echarts.ts`           | ECharts 按需引入配置       | 图表库       |
+| `i18n.ts`              | vue-i18n 配置          | 国际化       |
 
 ### 3.12 前端 Store 模块
 
-| Store | 文件 | 功能 |
-|---|---|---|
-| `user` | `store/modules/user.ts` | 用户信息、Token、WebSocket 连接、通知计数 |
-| `permission` | `store/modules/permission.ts` | 动态路由、菜单树、权限编码映射 |
-| `app` | `store/modules/app.ts` | 布局模式、侧边栏状态 |
-| `multiTags` | `store/modules/multiTags.ts` | 多标签页管理 |
-| `settings` | `store/modules/settings.ts` | 系统设置（标题、固定头部、隐藏侧边栏） |
-| `epTheme` | `store/modules/epTheme.ts` | Element Plus 主题色 |
+| Store        | 文件                            | 功能                           |
+|--------------|-------------------------------|------------------------------|
+| `user`       | `store/modules/user.ts`       | 用户信息、Token、WebSocket 连接、通知计数 |
+| `permission` | `store/modules/permission.ts` | 动态路由、菜单树、权限编码映射              |
+| `app`        | `store/modules/app.ts`        | 布局模式、侧边栏状态                   |
+| `multiTags`  | `store/modules/multiTags.ts`  | 多标签页管理                       |
+| `settings`   | `store/modules/settings.ts`   | 系统设置（标题、固定头部、隐藏侧边栏）          |
+| `epTheme`    | `store/modules/epTheme.ts`    | Element Plus 主题色             |
 
 ### 3.13 WebSocket 实时通知
 
@@ -916,6 +951,7 @@ const auth = getDefaultAuths("UserViewSet");
 #### 5.1.1 元数据驱动的低代码设计（最大亮点）
 
 前后端通过 `search-columns` 和 `search-fields` 两个元数据接口实现了**字段级的前后端协同**：
+
 - 后端定义模型和序列化器后，前端自动获取字段信息并渲染
 - 新增一个完整 CRUD 页面，前后端各只需约 10-20 行代码
 - 字段变更只需修改后端，前端自动适配
@@ -978,10 +1014,12 @@ const auth = getDefaultAuths("UserViewSet");
 
 - 三层权限的组合关系复杂，调试困难
 - 数据权限的 JSON 规则格式不够直观，配置门槛高
-- 权限缓存已有信号驱动失效（`system/signal_handler.py` 监听 Menu/UserRole/DeptInfo/UserInfo/SystemConfig 变更及登出信号），但该链路缺测试保护，且绕过 API 的 ORM 直改 M2M（如 `role.menu.set()` 不保存实例）不触发失效
+- 权限缓存已有信号驱动失效（`system/signal_handler.py` 监听 Menu/UserRole/DeptInfo/UserInfo/SystemConfig
+  变更及登出信号），但该链路缺测试保护，且绕过 API 的 ORM 直改 M2M（如 `role.menu.set()` 不保存实例）不触发失效
 - 字段权限与序列化器耦合，增加了序列化器的复杂度
 
-**改进建议**: 
+**改进建议**:
+
 - 提供权限可视化配置界面
 - 为信号失效链路补充回归测试，评估挂接 `m2m_changed` 关闭 ORM 直改缺口
 - 将字段权限逻辑从序列化器中解耦
@@ -993,7 +1031,8 @@ const auth = getDefaultAuths("UserViewSet");
 - 权限编码格式（`action:ViewSetName`）是硬编码约定
 - 路由数据结构是前后端紧耦合的
 
-**改进建议**: 
+**改进建议**:
+
 - 定义标准化的元数据 Schema（如 JSON Schema）
 - 使用 OpenAPI 规范自动生成前端接口
 - 权限编码可改为更灵活的字符串匹配
@@ -1005,7 +1044,8 @@ const auth = getDefaultAuths("UserViewSet");
 - `get_filter_queryset()` 函数逻辑复杂，嵌套层级深
 - 前端 `columns.tsx` 文件过长（800+ 行），switch-case 过多
 
-**改进建议**: 
+**改进建议**:
+
 - 使用组合模式替代部分 Mixin 继承
 - 将大型函数拆分为更小的策略函数
 - 使用策略模式替代 switch-case
@@ -1071,25 +1111,26 @@ const auth = getDefaultAuths("UserViewSet");
 
 ### 6.3 技术选型参考
 
-| 模块 | Go 方案 | Java 方案 | Rust 方案 |
-|------|---------|-----------|-----------|
-| Web 框架 | Gin / Fiber | Spring Boot | Actix-web / Axum |
-| ORM | GORM / Ent | MyBatis-Plus / JPA | Diesel / SeaORM |
-| 认证 | golang-jwt | Spring Security | jsonwebtoken |
-| 缓存 | go-redis | Spring Cache + Redis | redis-rs |
-| 权限 | Casbin | Sa-Token / Casbin | casbin-rs |
-| 任务队列 | Asynq | Quartz / XXL-Job | tokio + redis |
-| WebSocket | gorilla/websocket | Spring WebSocket | tokio-tungstenite |
-| API 文档 | Swag | SpringDoc | utoipa |
-| 通知 | 自建（多后端策略模式） | 自建 / 第三方 SDK | 自建（多后端策略模式） |
-| 导入导出 | excelize | EasyExcel / Alibaba EasyExcel | calamine + rust_xlsxwriter |
-| 限流 | tollbooth / ratelimit | Bucket4j / Resilience4j | governor |
-| 验证码 | base64captcha | kaptcha | 自建 |
-| 短信 | aliyun-go-sdk | aliyun-java-sdk | aliyun-rust-sdk |
+| 模块        | Go 方案                 | Java 方案                       | Rust 方案                    |
+|-----------|-----------------------|-------------------------------|----------------------------|
+| Web 框架    | Gin / Fiber           | Spring Boot                   | Actix-web / Axum           |
+| ORM       | GORM / Ent            | MyBatis-Plus / JPA            | Diesel / SeaORM            |
+| 认证        | golang-jwt            | Spring Security               | jsonwebtoken               |
+| 缓存        | go-redis              | Spring Cache + Redis          | redis-rs                   |
+| 权限        | Casbin                | Sa-Token / Casbin             | casbin-rs                  |
+| 任务队列      | Asynq                 | Quartz / XXL-Job              | tokio + redis              |
+| WebSocket | gorilla/websocket     | Spring WebSocket              | tokio-tungstenite          |
+| API 文档    | Swag                  | SpringDoc                     | utoipa                     |
+| 通知        | 自建（多后端策略模式）           | 自建 / 第三方 SDK                  | 自建（多后端策略模式）                |
+| 导入导出      | excelize              | EasyExcel / Alibaba EasyExcel | calamine + rust_xlsxwriter |
+| 限流        | tollbooth / ratelimit | Bucket4j / Resilience4j       | governor                   |
+| 验证码       | base64captcha         | kaptcha                       | 自建                         |
+| 短信        | aliyun-go-sdk         | aliyun-java-sdk               | aliyun-rust-sdk            |
 
 ### 6.4 关键接口规范（跨语言通用）
 
 #### 统一响应格式
+
 ```json
 {
     "code": 1000,
@@ -1103,6 +1144,7 @@ const auth = getDefaultAuths("UserViewSet");
 #### 元数据接口格式
 
 **search-columns 响应**:
+
 ```json
 {
     "code": 1000,
@@ -1124,6 +1166,7 @@ const auth = getDefaultAuths("UserViewSet");
 ```
 
 **search-fields 响应**:
+
 ```json
 {
     "code": 1000,
@@ -1141,6 +1184,7 @@ const auth = getDefaultAuths("UserViewSet");
 ```
 
 #### 路由接口格式
+
 ```json
 {
     "code": 1000,
@@ -1165,40 +1209,41 @@ const auth = getDefaultAuths("UserViewSet");
 
 #### input_type 类型映射表
 
-| input_type | 前端组件 | 说明 |
-|---|---|---|
-| `string` | Input | 文本输入 |
-| `integer` | InputNumber | 整数输入 |
-| `float` | InputNumber | 浮点数输入 |
-| `boolean` | Segmented/Radio | 布尔选择 |
-| `datetime` | DatePicker | 日期时间选择 |
-| `date` | DatePicker | 日期选择 |
-| `datetimerange` | DatePicker(range) | 时间范围选择 |
-| `select` | Select | 下拉选择 |
-| `select-multiple` | Select(multiple) | 多选下拉 |
-| `select-ordering` | Select | 排序选择 |
-| `choice` | Select | 枚举选择 |
-| `labeled_choice` | Select(value-key) | 带标签枚举选择 |
-| `labeled_multiple_choice` | Select(multiple) | 多选带标签枚举 |
-| `object_related_field` | Select(远程搜索) | 外键关联 |
-| `object_related_field_file` | Upload(image) | 文件型外键关联 |
-| `m2m_related_field` | Select(远程多选) | 多对多关联 |
-| `m2m_related_field_file` | Upload(file, multiple) | 文件型多对多关联 |
-| `textarea` | Textarea | 多行文本 |
-| `json` | JsonEditor | JSON 编辑器 |
-| `phone` | PhoneInput | 手机号输入 |
-| `color` | ColorPicker | 颜色选择 |
-| `image upload` | Upload(image) | 图片上传 |
-| `file upload` | Upload(file) | 文件上传 |
-| `api-search-user` | SearchUser | 用户搜索组件 |
-| `api-search-dept` | SearchDept | 部门搜索组件 |
-| `api-search-role` | SearchRole | 角色搜索组件 |
+| input_type                  | 前端组件                   | 说明       |
+|-----------------------------|------------------------|----------|
+| `string`                    | Input                  | 文本输入     |
+| `integer`                   | InputNumber            | 整数输入     |
+| `float`                     | InputNumber            | 浮点数输入    |
+| `boolean`                   | Segmented/Radio        | 布尔选择     |
+| `datetime`                  | DatePicker             | 日期时间选择   |
+| `date`                      | DatePicker             | 日期选择     |
+| `datetimerange`             | DatePicker(range)      | 时间范围选择   |
+| `select`                    | Select                 | 下拉选择     |
+| `select-multiple`           | Select(multiple)       | 多选下拉     |
+| `select-ordering`           | Select                 | 排序选择     |
+| `choice`                    | Select                 | 枚举选择     |
+| `labeled_choice`            | Select(value-key)      | 带标签枚举选择  |
+| `labeled_multiple_choice`   | Select(multiple)       | 多选带标签枚举  |
+| `object_related_field`      | Select(远程搜索)           | 外键关联     |
+| `object_related_field_file` | Upload(image)          | 文件型外键关联  |
+| `m2m_related_field`         | Select(远程多选)           | 多对多关联    |
+| `m2m_related_field_file`    | Upload(file, multiple) | 文件型多对多关联 |
+| `textarea`                  | Textarea               | 多行文本     |
+| `json`                      | JsonEditor             | JSON 编辑器 |
+| `phone`                     | PhoneInput             | 手机号输入    |
+| `color`                     | ColorPicker            | 颜色选择     |
+| `image upload`              | Upload(image)          | 图片上传     |
+| `file upload`               | Upload(file)           | 文件上传     |
+| `api-search-user`           | SearchUser             | 用户搜索组件   |
+| `api-search-dept`           | SearchDept             | 部门搜索组件   |
+| `api-search-role`           | SearchRole             | 角色搜索组件   |
 
 #### WebSocket 消息接口规范
 
 **连接**: `ws/message/{group_name}/{username}`
 
 **客户端发送格式**:
+
 ```json
 {
     "action": "ping|userinfo|push_message|chat_message|task_log",
@@ -1208,6 +1253,7 @@ const auth = getDefaultAuths("UserViewSet");
 ```
 
 **服务端响应格式**:
+
 ```json
 {
     "code": 1000,
@@ -1220,6 +1266,7 @@ const auth = getDefaultAuths("UserViewSet");
 ```
 
 **系统推送消息格式**:
+
 ```json
 {
     "action": "push_message",
@@ -1236,6 +1283,7 @@ const auth = getDefaultAuths("UserViewSet");
 #### 通知接口规范
 
 **获取未读通知**: `GET /api/system/notice/unread`
+
 ```json
 {
     "code": 1000,
@@ -1278,7 +1326,8 @@ PUT  /api/settings/security-password/       → 更新密码规则
 
 XAdmin 框架的核心设计理念是**元数据驱动 + 权限精细控制 + 高度封装**。其中最值得借鉴的设计是：
 
-1. **元数据驱动的前后端协同**: 通过 `search-columns` 和 `search-fields` 两个接口，实现了前端表单/表格的自动渲染，极大降低了开发成本。这是整个框架最有价值的设计，用任何语言重写都应保留。
+1. **元数据驱动的前后端协同**: 通过 `search-columns` 和 `search-fields`
+   两个接口，实现了前端表单/表格的自动渲染，极大降低了开发成本。这是整个框架最有价值的设计，用任何语言重写都应保留。
 
 2. **三层权限体系**: 菜单权限控制访问、数据权限控制可见范围、字段权限控制字段级可见性，覆盖了企业级应用的完整权限需求。
 
@@ -1286,4 +1335,5 @@ XAdmin 框架的核心设计理念是**元数据驱动 + 权限精细控制 + �
 
 需要改进的方向主要是：降低权限系统复杂度、标准化元数据格式、增强测试覆盖、优化缓存策略。
 
-用其他语言重写时，建议优先实现元数据驱动和统一响应规范，其次实现权限体系，最后实现各种 Action Mixin。前端可以保留 Vue 3 + RePlusPage 的架构，只需对接新的后端接口即可。
+用其他语言重写时，建议优先实现元数据驱动和统一响应规范，其次实现权限体系，最后实现各种 Action Mixin。前端可以保留 Vue 3 +
+RePlusPage 的架构，只需对接新的后端接口即可。

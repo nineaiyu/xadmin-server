@@ -18,10 +18,10 @@ from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from message.services import send_logout_msg
 from mfa.cache import UserConfirmStateCache
 from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
-from message.services import send_logout_msg
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
 from system.models import UserInfo

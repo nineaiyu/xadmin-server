@@ -21,8 +21,8 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger, random_string
 from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
-from settings.services import get_password_check_rules
 from settings.services import SendVerifyCodeBlockUtil, LoginIpBlockUtil
+from settings.services import get_password_check_rules
 from system.models import UserInfo
 from system.utils.auth import ValidateError, check_token_and_captcha, check_is_block
 

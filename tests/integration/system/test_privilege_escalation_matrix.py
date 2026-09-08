@@ -180,7 +180,7 @@ class TestVerticalSelfEscalation:
     """M10：垂直越权——借管理接口自提权。"""
 
     def test_self_role_grant_blocked_by_related_field_filter(
-        self, api_client, normal_user, role, menu_factory
+            self, api_client, normal_user, role, menu_factory
     ):
         """M10：持有用户管理 PATCH 权限的用户，无法给自己授予数据权限不可见的角色。
 
@@ -261,7 +261,7 @@ class TestHorizontalDataPermission:
         assert Book.objects.filter(pk=other.pk).exists()
 
     def test_default_deny_without_data_permission(
-        self, api_client, normal_user, role, menu_factory, books
+            self, api_client, normal_user, role, menu_factory, books
     ):
         """M15：有接口授权但未配置数据权限时默认拒绝——本人数据同样不可见。"""
         grant_menu(role, menu_factory, LIST_PATH, "GET")
@@ -275,7 +275,7 @@ class TestHorizontalDataPermission:
         assert resp.status_code == 400
 
     def test_menu_scoped_grant_does_not_leak_to_other_menu(
-        self, api_client, normal_user, role, menu_factory, books
+            self, api_client, normal_user, role, menu_factory, books
     ):
         """M16：菜单作用域授权不跨菜单泄漏——数据权限绑定其他菜单时本菜单不生效。"""
         grant_menu(role, menu_factory, LIST_PATH, "GET")
@@ -289,7 +289,7 @@ class TestHorizontalDataPermission:
         assert resp.data["data"]["total"] == 0
 
     def test_menu_scoped_grant_applies_on_bound_menu(
-        self, api_client, normal_user, role, menu_factory, books
+            self, api_client, normal_user, role, menu_factory, books
     ):
         """M16 正向对照：数据权限绑定到当前菜单时正常生效（排除误伤回归）。"""
         menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
@@ -309,7 +309,7 @@ class TestFieldPermission:
     """M17：字段权限——白名单同时约束读与写。"""
 
     def test_read_response_trimmed_to_whitelist(
-        self, api_client, normal_user, role, menu_factory, books
+            self, api_client, normal_user, role, menu_factory, books
     ):
         """M17 读侧：列表响应字段被裁剪为白名单（pk/name），敏感字段不外泄。"""
         menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
@@ -323,7 +323,7 @@ class TestFieldPermission:
         assert set(results[0].keys()) == {"pk", "name"}
 
     def test_write_of_unauthorized_field_ignored(
-        self, api_client, normal_user, role, menu_factory, books
+            self, api_client, normal_user, role, menu_factory, books
     ):
         """M17 写侧：白名单外字段（price）在写入路径被忽略，白名单内字段正常更新。"""
         menu = grant_menu(role, menu_factory, DETAIL_PATH, "PATCH", name="p-book-detail-patch")
