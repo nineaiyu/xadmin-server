@@ -46,9 +46,10 @@ jobs:
           pip install -r requirements.txt
           pip install pip-audit
 
-      # 依赖高危门禁：待 T5.1 依赖升级窗口清零存量后，移除 `|| true` 切换为发布阻断
+      # 依赖高危门禁：存量已于 2026-09-07 清零（45→0），移除 `|| true` 切为发布阻断。
+      # pip-audit 发现任一已知漏洞即非零退出，阻断后续 build-and-push-image
       - name: Generate SBOM (CycloneDX) and dependency audit
-        run: pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json || true
+        run: pip-audit -f cyclonedx-json -o sbom/sbom-server.cdx.json
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
