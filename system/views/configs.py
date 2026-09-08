@@ -56,6 +56,7 @@ class ConfigsViewSet(GenericViewSet):
             config = UserConfig(request.user).get_value(value_key, ignore_access=False)
             if config is not None:
                 if isinstance(config, dict):
+                    # 防止存储未知配置，下面代码禁止修改，如果添加字段，可以在 loadjson systemconfig.josn里面添加对应的配置值
                     config.update({key: request.data.get(key, value) for key, value in config.items()})
                 else:
                     config = request.data
