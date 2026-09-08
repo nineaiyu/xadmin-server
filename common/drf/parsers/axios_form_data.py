@@ -17,7 +17,7 @@ from rest_framework.parsers import BaseParser, DataAndFiles
 
 def format_data(data: QueryDict | dict):
     """
-    axios 配置如下：
+axios 配置如下：
 
     const defaultConfig: AxiosRequestConfig = {
       baseURL: import.meta.env.VITE_API_DOMAIN,
@@ -36,8 +36,10 @@ def format_data(data: QueryDict | dict):
       formSerializer: { indexes: null, dots: true }
     };
 
-    axios form-data 反向解析器
-    将form-data数据：
+FormData 上传协议 v1（ADR-007，权威文档见 xadmin-docs
+`advanced/form-data-upload.md`）：axios form-data 反向解析器，将点分键
+（`.` 分层、数字段为数组下标、顶层 `pks` 批量 getlist）还原为嵌套结构。
+将form-data数据：
     {
         'category.value': '0',
         'admin.value': '1',
@@ -77,7 +79,11 @@ def format_data(data: QueryDict | dict):
                     new_data[key_split[0]] = [{}]
                     result = format_data({".".join(key_split[1:]): value})
                     lk = list(result.keys())
-                    new_data[key_split[0]][int(lk[0])] = result.get(lk[0])
+                    index = int(lk[0])
+                    # 乱序下标补位（如仅出现 covers.1 时先占位 0），避免 list 越界
+                    while len(new_data[key_split[0]]) <= index:
+                        new_data[key_split[0]].append({})
+                    new_data[key_split[0]][index] = result.get(lk[0])
                 else:
                     result = format_data({".".join(key_split[1:]): value})
                     lk = list(result.keys())
