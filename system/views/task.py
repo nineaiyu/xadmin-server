@@ -15,6 +15,7 @@ DatabaseScheduler 在 --max-interval（启动参数默认 60s）内感知生效�
 import json
 import os
 
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
@@ -171,15 +172,27 @@ def _dispatch_periodic_run(instance):
         kwargs=kwargs,
     )
     # on_commit 保证记录先落库，publisher 进程的 after_task_publish 才能命中既有记录
-    transaction.on_commit(
-        lambda: app.send_task(
+    def _dispatch():
+        app.send_task(
             instance.task,
             args=args,
             kwargs=kwargs,
             task_id=str(execution.pk),
             headers={"periodic_task_name": instance.name},
         )
-    )
+
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        # 测试/E2E：task_always_eager 对 send_task 无效（AlwaysEagerIgnored，
+        # 消息投 memory broker 无人消费，执行记录永远停在 PENDING）；改走
+        # apply 同步执行，触发 prerun/postrun 信号完成状态流转
+        app.tasks[instance.task].apply(
+            args=args,
+            kwargs=kwargs,
+            task_id=str(execution.pk),
+            headers={"periodic_task_name": instance.name},
+        )
+    else:
+        transaction.on_commit(_dispatch)
     return execution
 
 

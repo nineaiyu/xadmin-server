@@ -101,7 +101,9 @@ def test_revoked_transition():
     assert execution.status == TaskExecution.Status.REVOKED
 
 
-def test_run_action_creates_execution_and_publishes(django_capture_on_commit_callbacks):
+def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_on_commit_callbacks):
+    # 生产投递分支：eager 关闭 → on_commit send_task（settings_test 默认 eager，需按用例还原）
+    monkeypatch.setattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
@@ -118,6 +120,24 @@ def test_run_action_creates_execution_and_publishes(django_capture_on_commit_cal
     assert execution.status == TaskExecution.Status.PENDING
     send_task.assert_called_once()
     assert send_task.call_args.kwargs["task_id"] == str(execution.pk)
+
+
+def test_run_action_eager_applies_synchronously(monkeypatch):
+    """E2E/测试：eager 下 send_task 无效（AlwaysEagerIgnored），改走 apply 同步执行，
+    执行记录应流转到 SUCCESS 且带耗时。"""
+    user = _make_user()
+    instance = _make_periodic_task()
+    factory = APIRequestFactory()
+    request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
+    force_authenticate(request, user=user)
+    view = PeriodicTaskViewSet.as_view({"post": "run"})
+    response = view(request, pk=str(instance.pk))
+    assert response.data["code"] == 1000
+    execution = TaskExecution.objects.get(pk=response.data["data"]["task_id"])
+    assert execution.status == TaskExecution.Status.SUCCESS
+    assert execution.date_start is not None
+    assert execution.date_finished is not None
+    assert execution.time_cost is not None
 
 
 def test_run_action_rejects_unregistered_task():
@@ -288,6 +308,7 @@ def test_ws_push_once_waits_when_file_missing(monkeypatch, tmp_path):
 
 
 def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_commit_callbacks):
+    monkeypatch.setattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
