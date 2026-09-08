@@ -161,6 +161,9 @@ CELERY_WORKER_AUTOSCALE = [10, 3]  # which needs two numbers: the maximum and mi
 CELERYD_FORCE_EXECV = True  # 非常重要,有些情况下可以防止死
 CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 
+# 任务执行历史（TaskExecution/TaskResult）及日志保留天数
+TASK_EXECUTION_KEEP_DAYS = int(CONFIG.get("TASK_EXECUTION_KEEP_DAYS", 30))
+
 CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
 CELERY_WORKER_PREFETCH_MULTIPLIER = 60  # celery worker 每次去redis取任务的数量
 

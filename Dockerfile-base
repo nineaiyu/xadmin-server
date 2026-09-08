@@ -6,6 +6,7 @@ ARG DEPENDENCIES="                    \
         g++                           \
         make                          \
         pkg-config                    \
+        procps                        \
         libmariadb-dev                \
         gettext"
 

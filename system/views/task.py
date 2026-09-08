@@ -9,23 +9,37 @@ DatabaseScheduler 在 --max-interval（启动参数默认 60s）内感知生效�
 数据权限沿用全局默认（未配置 DataPermission 规则的非超管不可见，默认拒绝），
 按钮/菜单权限经菜单管理按 list:create:retrieve:partialUpdate:destroy:enable 配置。
 """
+import json
+import os
+
+from celery.schedules import crontab_parser
 from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
-from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework import serializers
 from rest_framework.decorators import action
 
+from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from common.core.response import ApiResponse
 from common.core.serializers import (
     BasePrimaryKeyRelatedField,
     BaseModelSerializer,
 )
-from common.core.modelset import BaseModelSet
+from common.core.modelset import ListDeleteModelSet, BaseModelSet
 from common.swagger.utils import get_default_response_schema
+from server.celery import app
+from system.models.task import TaskExecution
+
+# celery crontab_parser 各字段的取值跨度（min-max 由 parser 按 steps 推导）
+_CRONTAB_STEPS = {
+    "minute": 60, "hour": 24, "day_of_week": 7,
+    "day_of_month": 32, "month_of_year": 13,
+}
 
 
 class DisplayRelatedField(BasePrimaryKeyRelatedField):
@@ -64,12 +78,53 @@ class CrontabScheduleSerializer(BaseModelSerializer):
         fields = "__all__"
         table_fields = ['pk', 'minute', 'hour', 'day_of_week', 'day_of_month', 'month_of_year', 'timezone']
 
+    def validate(self, attrs):
+        """五字段合法性校验，防止存入 beat 无法解析的 crontab。
+
+        编辑（PUT/PATCH 部分字段）时 attrs 可能缺某字段，用 instance 兜底；
+        创建时五字段全量校验。
+        """
+        instance = self.instance
+        for field in ("minute", "hour", "day_of_week", "day_of_month", "month_of_year"):
+            value = attrs.get(field)
+            if value is None and instance:
+                value = getattr(instance, field)
+            if value in (None, ""):
+                continue
+            try:
+                crontab_parser(_CRONTAB_STEPS[field]).parse(str(value))
+            except ValueError as exc:
+                raise serializers.ValidationError(
+                    {field: _('Invalid crontab expression: {}').format(exc)}
+                )
+        return attrs
+
 
 class IntervalScheduleSerializer(BaseModelSerializer):
     class Meta:
         model = IntervalSchedule
         fields = "__all__"
         table_fields = ['pk', 'every', 'period']
+
+
+def _validate_json_string(raw, expect_type, field_label):
+    """args/kwargs 以 JSON 字符串落库（django_celery_beat 约定），入库前校验可解析且类型正确。"""
+    if raw in (None, ""):
+        return raw
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        raise serializers.ValidationError(
+            _('%(label)s must be a valid JSON string') % {'label': field_label}
+        )
+    if not isinstance(data, expect_type):
+        raise serializers.ValidationError(
+            _('%(label)s must be JSON %(type)s') % {
+                'label': field_label,
+                'type': 'array' if expect_type is list else 'object',
+            }
+        )
+    return raw
 
 
 class PeriodicTaskSerializer(BaseModelSerializer):
@@ -89,12 +144,118 @@ class PeriodicTaskSerializer(BaseModelSerializer):
         allow_null=True,
         label=_("Interval"),
     )
+    # args/kwargs 为 JSON 字符串（TextField），显式声明以校验可解析且类型正确；
+    # required=False + allow_blank=True 与模型 default '[]'/'{}' 兼容（缺省走模型默认）
+    args = serializers.CharField(
+        required=False, allow_blank=True, label=_("Positional Args"),
+        validators=[lambda raw: _validate_json_string(raw, list, _("Positional Args"))],
+    )
+    kwargs = serializers.CharField(
+        required=False, allow_blank=True, label=_("Keyword Args"),
+        validators=[lambda raw: _validate_json_string(raw, dict, _("Keyword Args"))],
+    )
 
     class Meta:
         model = PeriodicTask
         fields = "__all__"
         table_fields = ['pk', 'name', 'task', 'crontab', 'interval', 'enabled', 'one_off',
                         'last_run_at', 'total_run_count', 'date_changed', 'description']
+
+
+class TaskExecutionSerializer(BaseModelSerializer):
+    # 执行历史为只读资源，关联字段显式声明为带 label 的展示字段（显式声明
+    # 不受 Meta.read_only_fields 作用，必须自带 read_only=True；DRF 禁止
+    # read_only 字段携带 queryset），前端列表直接显示任务名 / 昵称(用户名)，
+    # 而非裸数字主键。PeriodicTask.__str__ 附带 schedule 噪声，这里仅取任务名
+    periodic_task = DisplayRelatedField(
+        read_only=True,
+        allow_null=True,
+        label=_("Periodic Task"),
+        label_builder=lambda value: value.name,
+    )
+    creator = DisplayRelatedField(
+        read_only=True,
+        allow_null=True,
+        label=_("Creator"),
+    )
+    time_cost = serializers.SerializerMethodField(label=_("Time Cost"))
+
+    class Meta:
+        model = TaskExecution
+        fields = ['pk', 'name', 'periodic_task', 'args', 'kwargs', 'status',
+                  'creator', 'time_cost', 'created_time', 'date_start', 'date_finished']
+        table_fields = ['pk', 'name', 'periodic_task', 'status', 'creator',
+                        'time_cost', 'created_time', 'date_start', 'date_finished']
+        read_only_fields = fields
+
+    def get_time_cost(self, obj):
+        cost = obj.time_cost
+        return round(cost, 3) if cost is not None else None
+
+
+class TaskExecutionFilter(filters.FilterSet):
+    """执行历史过滤：任务名模糊 + 状态/关联任务/触发人精确 + 时间范围。"""
+    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    created_time = filters.DateTimeFromToRangeFilter()
+
+    class Meta:
+        model = TaskExecution
+        fields = ['name', 'status', 'periodic_task', 'creator', 'created_time']
+
+
+class TaskExecutionViewSet(ListDeleteModelSet):
+    """任务执行历史（只读 + 删除/批量删除，不允许创建和修改）。
+
+    删除时日志文件由 common/signal_handlers.py 的 pre_delete 信号联动清理。
+    """
+    queryset = TaskExecution.objects.all()
+    serializer_class = TaskExecutionSerializer
+    filterset_class = TaskExecutionFilter
+    ordering = ['-created_time']
+    ordering_fields = ['created_time', 'date_start', 'date_finished']
+
+    LOG_READ_CHUNK = 64 * 1024
+
+    @extend_schema(
+        responses=get_default_response_schema(
+            {
+                'offset': build_basic_type(OpenApiTypes.NUMBER),
+                'finished': build_basic_type(OpenApiTypes.BOOL),
+                'content': build_basic_type(OpenApiTypes.STR),
+            }
+        )
+    )
+    @action(methods=['get'], detail=True, url_path='log')
+    def log(self, request, *args, **kwargs):
+        """增量读取执行日志：前端携带上次返回的 ?offset= 续读。
+
+        日志文件由 CeleryThreadTaskFileHandler 按 task_id 落盘，结束符为
+        CELERY_LOG_MAGIC_MARK（5 个 \\x00），读到即认为执行输出完成。
+        """
+        execution = self.get_object()
+        offset = max(0, int(request.query_params.get('offset') or 0))
+        path = get_celery_task_log_path(str(execution.pk))
+        if not os.path.exists(path):
+            return ApiResponse(data={
+                'offset': 0,
+                'finished': execution.date_finished is not None,
+                'content': '',
+            })
+        size = os.path.getsize(path)
+        offset = min(offset, size)
+        with open(path, 'rb') as fp:
+            fp.seek(offset)
+            chunk = fp.read(self.LOG_READ_CHUNK)
+        next_offset = offset + len(chunk)
+        finished = CELERY_LOG_MAGIC_MARK in chunk
+        if finished:
+            # 结束标记是落盘控制符，不能作为日志内容返回
+            chunk = chunk.replace(CELERY_LOG_MAGIC_MARK, b'')
+        return ApiResponse(data={
+            'offset': next_offset,
+            'finished': finished,
+            'content': chunk.decode('utf-8', errors='replace'),
+        })
 
 
 class PeriodicTaskFilter(filters.FilterSet):
@@ -140,6 +301,34 @@ class IntervalScheduleViewSet(BaseModelSet):
     ordering_fields = ['id']
 
 
+def _dispatch_periodic_run(instance):
+    """为周期任务派发一次立即执行，返回新建的 TaskExecution。
+
+    Raises:
+        ValueError: 任务未注册或 args/kwargs 不是合法 JSON。
+    """
+    if instance.task not in app.tasks:
+        # web 进程不启动 worker，任务模块（autodiscover）按需懒加载注册
+        app.autodiscover_tasks(force=True)
+    if instance.task not in app.tasks:
+        raise ValueError(_('Task "{}" is not registered').format(instance.task))
+    try:
+        args = json.loads(instance.args or '[]')
+        kwargs = json.loads(instance.kwargs or '{}')
+    except (json.JSONDecodeError, TypeError):
+        raise ValueError(_('Task arguments are not valid JSON'))
+    execution = TaskExecution.objects.create(
+        name=instance.task, periodic_task=instance, args=args, kwargs=kwargs,
+    )
+    # on_commit 保证记录先落库，publisher 进程的 after_task_publish 才能命中既有记录
+    transaction.on_commit(lambda: app.send_task(
+        instance.task, args=args, kwargs=kwargs,
+        task_id=str(execution.pk),
+        headers={'periodic_task_name': instance.name},
+    ))
+    return execution
+
+
 class PeriodicTaskViewSet(BaseModelSet):
     """周期任务管理"""
     queryset = PeriodicTask.objects.all().order_by('name')
@@ -160,3 +349,55 @@ class PeriodicTaskViewSet(BaseModelSet):
         instance.enabled = (not instance.enabled) if enabled is None else bool(enabled)
         instance.save()
         return ApiResponse(data={'pk': instance.pk, 'enabled': instance.enabled})
+
+    @extend_schema(
+        request=None,
+        responses=get_default_response_schema(),
+    )
+    @action(methods=['get'], detail=False, url_path='registered')
+    def registered(self, request, *args, **kwargs):
+        """已注册任务列表（新增任务时任务路径下拉数据源）"""
+        # web 进程不启动 worker，任务模块（autodiscover）按需懒加载注册；
+        # 进程内可能已零散注册部分业务任务但缺 system.tasks 等，故每次强制补齐
+        app.autodiscover_tasks(force=True)
+        items = []
+        for name, task in sorted(app.tasks.items()):
+            if name.startswith('celery.'):
+                continue
+            verbose_name = getattr(task, 'verbose_name', None) or ''
+            items.append({'name': name, 'verbose_name': str(verbose_name)})
+        return ApiResponse(data=items)
+
+    @extend_schema(
+        request=None,
+        responses=get_default_response_schema(),
+    )
+    @action(methods=['post'], detail=True, url_path='run')
+    def run(self, request, *args, **kwargs):
+        """立即执行一次{cls}任务"""
+        try:
+            execution = _dispatch_periodic_run(self.get_object())
+        except ValueError as exc:
+            return ApiResponse(code=400, detail=str(exc))
+        return ApiResponse(data={'task_id': str(execution.pk)})
+
+    @extend_schema(
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=['post'], detail=False, url_path='batch-run')
+    def batch_run(self, request, *args, **kwargs):
+        """批量立即执行{cls}任务（请求体为主键数组，逐个派发互不阻塞）"""
+        success, failed = 0, []
+        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
+        for instance in queryset:
+            try:
+                _dispatch_periodic_run(instance)
+            except ValueError as exc:
+                failed.append({'pk': str(instance.pk), 'name': instance.name, 'detail': str(exc)})
+            else:
+                success += 1
+        return ApiResponse(
+            data={'success': success, 'failed': failed},
+            detail=_('Batch execution submitted: {} success, {} failed').format(success, len(failed)),
+        )

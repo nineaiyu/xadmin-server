@@ -14,5 +14,6 @@ from .log import *
 from .menu import *
 from .permission import *
 from .role import *
+from .task import *
 from .upload import *
 from .user import *

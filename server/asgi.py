@@ -28,8 +28,9 @@ django_asgi_app = get_asgi_application()
 
 # 写到上面会导致gunicorn启动失败
 from message.routing import urlpatterns as message_urlpatterns
+from system.routing import urlpatterns as system_urlpatterns
 
-urlpatterns = message_urlpatterns
+urlpatterns = message_urlpatterns + system_urlpatterns
 
 
 @database_sync_to_async

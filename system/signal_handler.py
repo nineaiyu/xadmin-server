@@ -11,9 +11,11 @@ from django.db.models.signals import m2m_changed, post_save, pre_delete
 from django.dispatch import receiver
 
 from common.base.magic import cache_response, MagicCacheData
+from common.base.utils import remove_file
+from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.utils import get_logger
-from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig
+from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution
 from system.signal import invalid_user_cache_signal
 
 logger = get_logger(__name__)
@@ -113,3 +115,11 @@ def invalid_dept_roles_m2m_cache_handler(sender, instance, action, **kwargs):
     if action not in M2M_CHANGED_ACTIONS:
         return
     batch_invalid_cache(instance.userinfo_set.values_list('pk', flat=True).distinct())
+
+@receiver(pre_delete, sender=TaskExecution)
+def delete_task_execution_log_handler(sender, **kwargs):
+    # 执行历史删除（含批量删除）时联动清理落盘日志文件
+    instance = kwargs.get('instance')
+    if instance:
+        remove_file(get_celery_task_log_path(str(instance.pk)))
+

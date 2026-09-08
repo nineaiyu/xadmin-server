@@ -7,4 +7,5 @@ class SystemConfig(AppConfig):
 
     def ready(self):
         from . import signal_handler  # noqa
+        from . import signal_task_execution  # noqa
         super().ready()

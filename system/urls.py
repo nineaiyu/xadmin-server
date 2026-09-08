@@ -34,7 +34,12 @@ from system.views.search.dept import SearchDeptViewSet
 from system.views.search.menu import SearchMenuViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
-from system.views.task import CrontabScheduleViewSet, IntervalScheduleViewSet, PeriodicTaskViewSet
+from system.views.task import (
+    CrontabScheduleViewSet,
+    IntervalScheduleViewSet,
+    PeriodicTaskViewSet,
+    TaskExecutionViewSet,
+)
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.userinfo import UserInfoViewSet
 
@@ -103,6 +108,7 @@ router.register('file', UploadFileViewSet, basename='file')
 # 定时任务管理（django_celery_beat）
 router.register('tasks/periodic', PeriodicTaskViewSet, basename='periodic_task')
 router.register('tasks/crontab', CrontabScheduleViewSet, basename='crontab_schedule')
+router.register('tasks/executions', TaskExecutionViewSet, basename='task_execution')
 router.register('tasks/interval', IntervalScheduleViewSet, basename='interval_schedule')
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
