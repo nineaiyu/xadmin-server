@@ -62,10 +62,10 @@
 # ① 一次性专用容器（仅绑 127.0.0.1，与日常开发库/Redis 完全隔离）
 docker run -d --name xadmin-loadtest-pg \
   -e POSTGRES_USER=server -e POSTGRES_PASSWORD=loadtest -e POSTGRES_DB=xadmin_loadtest \
-  -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8 \
+  -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:17.11 \
   postgres -c max_connections=500
 docker run -d --name xadmin-loadtest-redis \
-  -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.3 \
+  -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.11 \
   redis-server --requirepass loadtest --port 6379
 
 # ② 以压测专用 settings 执行 migrate + 初始化 + 种子（密码仅本地压测环境）

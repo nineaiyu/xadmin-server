@@ -8,7 +8,7 @@ networks:
 
 services:
   nginx:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/nginx:1.24-bullseye
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/nginx:1.31.5-alpine
     container_name: xadmin-nginx
     restart: always
     volumes:
@@ -20,7 +20,7 @@ services:
       - net
 
   postgresql:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:17.11
     container_name: xadmin-postgresql
     restart: always
     # PERF-3：8000 远超应用实际需求（CONN_MAX_AGE 持久连接 × worker 数），
@@ -45,7 +45,7 @@ services:
       - net
 
   redis:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.3
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.11
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
@@ -66,7 +66,7 @@ services:
       - net
 
   db-backup:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:16.8
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:17.11
     container_name: xadmin-db-backup
     restart: always
     entrypoint: [ "bash", "/utils/db_backup.sh" ]

@@ -7,7 +7,7 @@
 
 | 项 | 内容 |
 |----|------|
-| 备份任务 | compose `db-backup` 服务（postgres:16.8 容器内 pg_dump + gzip，启动即备份 + 每 86400s 一次，滚动保留 7 天，落 `../xadmin-db-backups/`） |
+| 备份任务 | compose `db-backup` 服务（postgres:17.11 容器内 pg_dump + gzip，启动即备份 + 每 86400s 一次，滚动保留 7 天，落 `../xadmin-db-backups/`） |
 | 触发方式 | `docker restart xadmin-db-backup`（走真实任务链路，非手工 pg_dump） |
 | 恢复目标 | 同实例独立验证库 `xadmin_restore_test`（db_restore.sh 支持 `[目标库]` 参数，先 DROP 再 CREATE，不触碰源库） |
 | 一致性验证 | ① 表数（information_schema）；② 全部 52 表逐表行数对比；③ 关键业务表抽查（system_userinfo / system_menu / django_migrations） |
