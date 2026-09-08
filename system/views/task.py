@@ -171,6 +171,7 @@ def _dispatch_periodic_run(instance):
         args=args,
         kwargs=kwargs,
     )
+
     # on_commit 保证记录先落库，publisher 进程的 after_task_publish 才能命中既有记录
     def _dispatch():
         app.send_task(
@@ -194,6 +195,34 @@ def _dispatch_periodic_run(instance):
     else:
         transaction.on_commit(_dispatch)
     return execution
+
+
+def _clean_pks(pks) -> list:
+    """清洗主键列表：PeriodicTask 主键为整型，非法值直接忽略而非查询报错"""
+    valid = []
+    for pk in pks or []:
+        try:
+            valid.append(int(pk))
+        except (TypeError, ValueError):
+            continue
+    return valid
+
+
+def _clone_periodic_task(instance: PeriodicTask) -> PeriodicTask:
+    """克隆周期任务：复制调度与参数，生成唯一名称，默认停用（避免克隆即执行）"""
+    base_name = f"{instance.name}-copy"
+    name, index = base_name, 2
+    while PeriodicTask.objects.filter(name=name).exists():
+        name = f"{base_name}-{index}"
+        index += 1
+    clone = PeriodicTask.objects.get(pk=instance.pk)
+    clone.pk = None
+    clone.name = name
+    clone.enabled = False
+    clone.last_run_at = None
+    clone.total_run_count = 0
+    clone.save()  # 触发 django_celery_beat 信号，beat 感知新任务
+    return clone
 
 
 class PeriodicTaskViewSet(BaseModelSet):
@@ -257,7 +286,7 @@ class PeriodicTaskViewSet(BaseModelSet):
     def batch_run(self, request, *args, **kwargs):
         """批量立即执行{cls}任务"""
         success, failed = 0, []
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
+        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=_clean_pks(request.data))
         for instance in queryset:
             try:
                 _dispatch_periodic_run(instance)
@@ -268,4 +297,47 @@ class PeriodicTaskViewSet(BaseModelSet):
         return ApiResponse(
             data={"success": success, "failed": failed},
             detail=_("Batch execution submitted: {} success, {} failed").format(success, len(failed)),
+        )
+
+    @extend_schema(
+        request=build_object_type(
+            properties={
+                "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                "enabled": build_basic_type(OpenApiTypes.BOOL),
+            }
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-enable")
+    def batch_enable(self, request, *args, **kwargs):
+        """批量启用或停用{cls}任务
+
+        body: {"pks": [...], "enabled": bool}；enabled 省略时按各任务当前状态取反。
+        逐个 save 而非 queryset.update：触发 django_celery_beat 信号让 beat 感知变更。
+        """
+        pks = request.data.get("pks") or []
+        enabled = request.data.get("enabled")
+        success = 0
+        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=_clean_pks(pks))
+        for instance in queryset:
+            instance.enabled = (not instance.enabled) if enabled is None else bool(enabled)
+            instance.save()
+            success += 1
+        return ApiResponse(
+            data={"success": success, "failed": []},
+            detail=_("Batch update submitted: {} success").format(success),
+        )
+
+    @extend_schema(
+        request=None,
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True, url_path="clone")
+    def clone(self, request, *args, **kwargs):
+        """克隆{cls}任务（复制计划与参数，默认停用，避免克隆即执行）"""
+        instance = self.get_object()
+        clone = _clone_periodic_task(instance)
+        return ApiResponse(
+            data={"pk": str(clone.pk), "name": clone.name},
+            detail=_("Task cloned: {}").format(clone.name),
         )

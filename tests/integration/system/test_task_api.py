@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """定时任务管理接口集成测试（django_celery_beat）。"""
 
+import uuid
+
 import pytest
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
@@ -73,6 +75,78 @@ class TestPeriodicTaskCrud:
         _create_task(auth_client, crontab_pk, name="任务A")
         resp = auth_client.get(TASK_URL, {"enabled": "true"})
         assert resp.data["data"]["total"] >= 1
+
+
+class TestBatchEnable:
+    def test_batch_enable_with_explicit_flag(self, auth_client, crontab_pk):
+        pk1 = _create_task(auth_client, crontab_pk, name="批量启停-任务A")
+        pk2 = _create_task(auth_client, crontab_pk, name="批量启停-任务B")
+        PeriodicTask.objects.filter(pk__in=[pk1, pk2]).update(enabled=False)
+
+        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1, pk2], "enabled": True}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["success"] == 2
+        assert PeriodicTask.objects.get(pk=pk1).enabled is True
+        assert PeriodicTask.objects.get(pk=pk2).enabled is True
+
+    def test_batch_disable(self, auth_client, crontab_pk):
+        pk1 = _create_task(auth_client, crontab_pk, name="批量停用-任务A")
+        pk2 = _create_task(auth_client, crontab_pk, name="批量停用-任务B")
+
+        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1, pk2], "enabled": False}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert PeriodicTask.objects.get(pk=pk1).enabled is False
+        assert PeriodicTask.objects.get(pk=pk2).enabled is False
+
+    def test_batch_enable_toggle_without_flag(self, auth_client, crontab_pk):
+        pk1 = _create_task(auth_client, crontab_pk, name="批量取反-任务A")
+        PeriodicTask.objects.filter(pk=pk1).update(enabled=False)
+
+        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk1]}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert PeriodicTask.objects.get(pk=pk1).enabled is True
+
+    def test_batch_enable_ignores_unknown_pk(self, auth_client, crontab_pk):
+        pk = _create_task(auth_client, crontab_pk, name="批量未知主键")
+        bogus = str(uuid.uuid4())
+
+        resp = auth_client.post(f"{TASK_URL}/batch-enable", {"pks": [pk, bogus], "enabled": False}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["success"] == 1
+        assert PeriodicTask.objects.get(pk=pk).enabled is False
+
+
+class TestClone:
+    def test_clone_copies_schedule_and_disables(self, auth_client, crontab_pk):
+        pk = _create_task(auth_client, crontab_pk, name="克隆源任务")
+        original = PeriodicTask.objects.get(pk=pk)
+
+        resp = auth_client.post(f"{TASK_URL}/{pk}/clone", format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+
+        clone = PeriodicTask.objects.get(pk=resp.data["data"]["pk"])
+        assert clone.pk != original.pk
+        assert clone.name.startswith(f"{original.name}-copy")
+        assert clone.enabled is False  # 克隆默认停用，避免克隆即执行
+        assert clone.task == original.task
+        assert clone.crontab_id == original.crontab_id  # 调度复用不复制
+        assert clone.description == original.description
+        assert clone.total_run_count == 0
+        assert clone.last_run_at is None
+        # 源任务保持原状
+        original.refresh_from_db()
+        assert original.enabled is True
+
+    def test_clone_generates_unique_name(self, auth_client, crontab_pk):
+        pk = _create_task(auth_client, crontab_pk, name="克隆重名任务")
+        names = set()
+        for _ in range(2):
+            resp = auth_client.post(f"{TASK_URL}/{pk}/clone", format="json")
+            assert resp.data["code"] == 1000, resp.data
+            names.add(resp.data["data"]["name"])
+        assert len(names) == 2
+        assert PeriodicTask.objects.filter(name__in=names).count() == 2
 
 
 class TestCrontabCrud:
