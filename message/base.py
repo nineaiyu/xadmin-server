@@ -15,6 +15,7 @@ from rest_framework.utils import encoders
 
 from common.decorators import cached_method
 from common.utils import get_logger
+from message.protocol import MessageAction, PROTOCOL_VERSION
 from message.utils import set_mid_result_to_cache
 from system.services import serialize_user_info
 
@@ -70,6 +71,7 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
             'action': action,
             'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
             'timestamp': str(datetime.datetime.now()),
+            'v': PROTOCOL_VERSION,
         }
         if data:
             content['data'] = data
@@ -95,12 +97,12 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
                 set_mid_result_to_cache(mid, content)
             data = content.get('data', {})
             match action:
-                case 'ping':
+                case MessageAction.PING.value:
                     # 心跳直收。旧实现先把 ping 投进 channel layer 队列再由
                     # consumer 收回处理，每心跳多 2 条 Redis 命令；1000 连接时即
                     # 200 cmd/s 的纯开销。这里直接调用本 consumer 处理。
                     await self.ping({"type": "ping", "data": data, "mid": content.get('mid')})
-                case 'userinfo' | 'push_message':
+                case MessageAction.USERINFO.value | MessageAction.PUSH_MESSAGE.value:
                     await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
                 case _:
                     await self.receive_json(action, data, content, **kwargs)

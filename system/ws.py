@@ -19,6 +19,7 @@ from channels.db import database_sync_to_async
 from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
+from message.protocol import MessageAction
 from system.models.task import TaskExecution
 
 logger = get_logger(__name__)
@@ -94,7 +95,7 @@ class TaskLogNotify(AsyncJsonWebsocket):
                 'utf-8', errors='replace'
             )
             finished = self.offset >= size and await _tail_has_mark(path)
-            await self.send_base_json('task_log', {
+            await self.send_base_json(MessageAction.TASK_LOG.value, {
                 'offset': self.offset, 'content': content, 'finished': finished,
             })
             return finished
@@ -102,7 +103,7 @@ class TaskLogNotify(AsyncJsonWebsocket):
         finished = await _tail_has_mark(path) if size else False
         if not finished:
             finished = await _execution_finished(self.pk)
-        await self.send_base_json('task_log', {
+        await self.send_base_json(MessageAction.TASK_LOG.value, {
             'offset': self.offset, 'content': '', 'finished': finished,
         })
         return finished

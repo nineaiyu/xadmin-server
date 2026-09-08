@@ -82,8 +82,9 @@ async def async_push_messages(user_pks, message: Dict, message_type='push_messag
         await async_push_message(user_pk, message, message_type)
 
 
-def push_messages(user_pks, message: Dict, message_type='push_message'):
-    return async_push_messages(user_pks, message, message_type)
+@async_to_sync
+async def push_messages(user_pks, message: Dict, message_type='push_message'):
+    await async_push_messages(user_pks, message, message_type)
 
 
 async def get_layers_form_group(group):
