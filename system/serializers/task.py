@@ -109,6 +109,46 @@ def _validate_json_string(raw, expect_type, field_label):
     return raw
 
 
+def _task_routing_options():
+    """从 celery 配置推导可投递的队列（单一事实源，避免前端手填拼错）。
+
+    取值 = 默认队列（CELERY_TASK_DEFAULT_QUEUE，缺省 celery）+ CELERY_TASK_ROUTES
+    中显式路由到的队列；新增队列只需在 settings 配置，下拉选项自动跟随。
+    """
+    routes = getattr(settings, 'CELERY_TASK_ROUTES', None) or {}
+    options = []
+    default_queue = getattr(settings, 'CELERY_TASK_DEFAULT_QUEUE', None) or 'celery'
+    if default_queue:
+        options.append(default_queue)
+    for route in routes.values():
+        # CELERY_TASK_ROUTES 值可为 dict（{'queue': ...}）或字符串（直接指定队列名）
+        queue = route.get('queue') if isinstance(route, dict) else route
+        if queue and queue not in options:
+            options.append(queue)
+    return options
+
+
+def _queue_choices():
+    # 留空表示 celery 默认路由（对应 beat 模型 queue=None）
+    return [('', _('Default queue'))] + [(queue, queue) for queue in _task_routing_options()]
+
+
+def _routing_key_choices():
+    # 默认路由键即队列名，选项与队列一致
+    return [('', _('Default routing key'))] + [(queue, queue) for queue in _task_routing_options()]
+
+
+def _exchange_choices():
+    # 项目 broker 为默认直接交换机（空名），未配置命名交换机时仅保留默认项
+    routes = getattr(settings, 'CELERY_TASK_ROUTES', None) or {}
+    options = []
+    for route in routes.values():
+        exchange = route.get('exchange') if isinstance(route, dict) else None
+        if exchange and exchange not in options:
+            options.append(exchange)
+    return [('', _('Default exchange'))] + [(exchange, exchange) for exchange in options]
+
+
 class PeriodicTaskSerializer(BaseModelSerializer):
     # 调度关联默认只序列化 {pk}，前端显示为数字主键不可读；
     # 换用带 label 的关联字段：列表/详情/下拉直接显示
@@ -135,6 +175,18 @@ class PeriodicTaskSerializer(BaseModelSerializer):
     kwargs = serializers.CharField(
         required=False, allow_blank=True, label=_("Keyword Args"),
         validators=[lambda raw: _validate_json_string(raw, dict, _("Keyword Args"))],
+    )
+    # 队列/路由键/交换机改为配置驱动下拉（choices 由 celery 配置推导），
+    # 避免前端手填拼写错误；留空均表示默认路由
+    queue = serializers.ChoiceField(
+        choices=_queue_choices(), required=False, allow_null=True, label=_("Queue"),
+    )
+    routing_key = serializers.ChoiceField(
+        choices=_routing_key_choices(), required=False, allow_null=True,
+        label=_("Routing Key"),
+    )
+    exchange = serializers.ChoiceField(
+        choices=_exchange_choices(), required=False, allow_null=True, label=_("Exchange"),
     )
 
     class Meta:

@@ -2588,3 +2588,15 @@ msgstr "批量执行已提交：{} 成功，{} 失败"
 
 #~ msgid "Force MFA verification at login for users who have bound OTP"
 #~ msgstr "已绑定 OTP 的用户登录时强制二次验证"
+
+#: system/serializers/task.py
+msgid "Default queue"
+msgstr "默认队列"
+
+#: system/serializers/task.py
+msgid "Default routing key"
+msgstr "默认路由键"
+
+#: system/serializers/task.py
+msgid "Default exchange"
+msgstr "默认交换机"

@@ -2459,7 +2459,7 @@
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
-      "title": "任务管理",
+      "title": "menus.taskManage",
       "icon": "ri:list-settings-fill",
       "r_svg_name": "",
       "is_show_menu": true,
