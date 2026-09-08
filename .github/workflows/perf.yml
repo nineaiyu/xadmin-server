@@ -1,0 +1,140 @@
+name: Performance Baseline
+
+# 压测基线回归：起 PG/Redis 一次性服务 → gunicorn 生产同参 → k6 六脚本 → 基线比对。
+# 只在夜间定时与手动触发（单次约 10-15 分钟），不挂 dev push，避免拖慢日常反馈。
+#
+# 判定口径（重要）：GitHub runner 规格与本机固定环境不可比，绝对吞吐（RPS）在
+# runner 上必然偏低，因此 CI 只跑「断崖档」——跳过 RPS 项、P95 容差放宽到 3 倍，
+# 用于拦截数量级劣化；精确回归（P95 1.2 倍 + RPS 0.8 倍）在本机固定环境执行，
+# 见 docs/ops/performance-baseline.md §八。
+on:
+  workflow_dispatch:
+    inputs:
+      seed_count:
+        description: 种子用户数（与基线快照一致才有可比性）
+        required: false
+        default: "1000"
+      tolerance:
+        description: P95 容差倍数（CI 断崖档默认 3.0）
+        required: false
+        default: "3.0"
+  schedule:
+    - cron: "0 3 * * 1"
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: server
+          POSTGRES_PASSWORD: loadtest
+          POSTGRES_DB: xadmin_loadtest
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4
+        ports:
+          - 56379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SETTINGS_MODULE: loadtest.settings_loadtest
+      LOADTEST_DB_HOST: 127.0.0.1
+      LOADTEST_DB_PORT: "55432"
+      LOADTEST_REDIS_HOST: 127.0.0.1
+      LOADTEST_REDIS_PORT: "56379"
+      # CI 的 redis 服务不设密码，覆盖 settings_loadtest 默认的 loadtest
+      LOADTEST_REDIS_PASSWORD: ""
+      LOADTEST_WORKERS: "2"
+      LOADTEST_PASSWORD: LoadTest-CI-2026!
+      K6_VERSION: v2.0.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^mysqlclient' requirements.txt > /tmp/requirements-perf.txt
+          pip install -r /tmp/requirements-perf.txt -r requirements-dev.txt
+
+      - name: Install k6
+        run: |
+          curl -fsSL "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz" \
+            | tar xz --strip-components 1 -C /tmp
+          sudo install -m 755 /tmp/k6 /usr/local/bin/k6
+          k6 version
+
+      - name: Migrate and seed
+        run: |
+          export XADMIN_ADMIN_PASSWORD="$LOADTEST_PASSWORD"
+          python manage.py migrate
+          python utils/init_data.py
+          python loadtest/seed_users.py --count "${{ github.event.inputs.seed_count || '1000' }}"
+
+      - name: Start server (gunicorn + uvicorn worker)
+        run: |
+          python -m gunicorn server.asgi:application \
+            -b 127.0.0.1:8896 -k uvicorn.workers.UvicornWorker \
+            -w "${LOADTEST_WORKERS}" --graceful-timeout 30 &
+          for _ in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8896/api/common/api/health > /dev/null; then
+              echo "server ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "server 启动超时" >&2
+          exit 1
+
+      - name: Run k6 suites
+        working-directory: loadtest/k6
+        run: |
+          env BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD="$LOADTEST_PASSWORD" \
+            RESULT_DIR=results ./run-all.sh
+
+      - name: Compare with baseline (CI 断崖档)
+        id: compare
+        run: |
+          set -o pipefail
+          python loadtest/check_baseline.py \
+            --results loadtest/k6/results \
+            --checks p95,error \
+            --tolerance "${{ github.event.inputs.tolerance || '3.0' }}" \
+            --format md | tee perf-report.md
+          {
+            echo "### 压测基线回归（CI 断崖档）"
+            cat perf-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: |
+            loadtest/k6/results/
+            perf-report.md
+          if-no-files-found: warn

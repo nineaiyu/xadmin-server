@@ -167,3 +167,64 @@ metrics.md 的「五、性能基线」占位表逐行回填，形如：
   PR 自查项加「是否跑过基线回归」；
 - 每阶段结束（双周回顾）若架构有实质变更（如 T2.1 拆分、T3.2 内联），重新测定并覆盖登记，
   旧基线在回填记录中留痕。
+
+## 八、基线快照与自动比对（2026-09-08，N5 性能防退化）
+
+§七 的判定此前靠人工查表，本節把它固化成可执行的门禁：基线数值入快照文件，
+k6 跑完由脚本自动比对并给出退出码。
+
+**组成**
+
+| 文件 | 职责 |
+|------|------|
+| `loadtest/baseline.json` | 基线快照：六用例的 P95 / RPS 基线 + 环境元数据 + 容差（三轮中位数，来源 metrics.md §五） |
+| `loadtest/check_baseline.py` | 比对脚本：读 `loadtest/k6/results/*.json` 与快照比对，输出表格/markdown/JSON，劣化非 0 退出 |
+| `loadtest/k6/run-all.sh` | `CHECK=1` 时跑完自动调比对（`CHECK_PYTHON` / `CHECK_FORMAT` / `CHECK_ARGS` 可覆盖） |
+| `.github/workflows/perf.yml` | 夜间 + 手动触发的 CI 压测档（PG/Redis service + gunicorn + k6 + 比对） |
+
+**判定口径**（快照 `tolerance` 可改，命令行亦可覆盖）
+
+| 项 | 判定 | 默认容差 |
+|----|------|---------|
+| P95 | 当前 > 基线 × `p95_ratio` | 1.2（劣化 20%） |
+| RPS | 当前 < 基线 × `rps_ratio` | 0.8 |
+| 错误率 | 当前 > `max_error_rate` | 0.01 |
+| Trend 分档 | 04 元数据三变体各自按 P95 同口径判定 | 同 `p95_ratio` |
+
+> k6 v2 移除了 group 子指标，同一脚本内的多接口（如 04 三变体）改由显式 `Trend`
+> 分档登记（`meta_columns_duration` / `meta_fields_duration` / `meta_with_meta_duration`），
+> 否则混跑时某个变体劣化会被整体 `_all` 拉平而漏报。
+
+**用法**
+
+```bash
+cd xadmin-server
+
+# 常规回归（固定环境跑完 k6 后）：默认比对 loadtest/k6/results 与 baseline.json
+.venv/bin/python loadtest/check_baseline.py
+
+# 跑完即比对（run-all.sh 内置）
+cd loadtest/k6 && env BASE_URL=... USERNAME=admin PASSWORD=xxx CHECK=1 ./run-all.sh
+
+# 输出 markdown 贴 PR / step summary
+.venv/bin/python loadtest/check_baseline.py --format md
+
+# CI 断崖档：跳过 RPS（与环境强相关），P95 容差放宽
+.venv/bin/python loadtest/check_baseline.py --checks p95,error --tolerance 3.0
+
+# 固定环境重新测定（三轮中位数）后刷新快照
+.venv/bin/python loadtest/check_baseline.py --update --update-note "2026-xx-xx 复测，环境：xxx"
+```
+
+退出码：`0` 通过 / `1` 存在劣化 / `2` 输入错误（缺基线或结果目录）。
+
+**两档的定位差异（重要）**
+
+- **本机固定环境档**：机器规格、worker 数、PG/Redis 版本、种子规模与快照 `env` 一致时才可比，
+  是精确回归（P95 1.2 倍 + RPS 0.8 倍）的唯一可信来源；
+- **CI 档（perf.yml）**：GitHub runner 规格与快照环境不同，绝对吞吐天然偏低，
+  故只跳过 RPS、P95 容差放宽到 3 倍，用于拦截**数量级**劣化并留档趋势报告，
+  **不代表精确回归结论**。首轮 CI 跑完后按实测调整 `tolerance` 入参并在此登记。
+
+**快照刷新纪律**：改动 `common/core/`、元数据接口、索引、连接池、缓存策略后，
+在固定环境重跑三轮并 `--update` 刷新快照，同时在 metrics.md §三 回填记录中写明环境与方法。

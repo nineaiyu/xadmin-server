@@ -4,6 +4,7 @@
 //   - list?with_meta=1：内联元数据（T3.2 优化后的单请求路径），用于对比验证优化收益
 import http from 'k6/http';
 import {group} from 'k6';
+import {Trend} from 'k6/metrics';
 import {
     apiUrl,
     baseOptions,
@@ -19,6 +20,13 @@ import {
 
 export const options = baseOptions(20, '1m');
 
+// 三个变体各自的耗时档位：k6 v2 移除 group 子指标（group:::）后，
+// 只有自选 Trend 才能在 summary 中分变体登记（makeSummary 收进 trends 字段）。
+// 基线回归按这三个 Trend 的 P95 分别判定（见 loadtest/baseline.json）。
+const columnsTrend = new Trend('meta_columns_duration', true);
+const fieldsTrend = new Trend('meta_fields_duration', true);
+const withMetaTrend = new Trend('meta_with_meta_duration', true);
+
 export function setup() {
     return {token: loginOnce()};
 }
@@ -27,10 +35,12 @@ export default function (data) {
     group('04a search-columns', () => {
         const res = http.get(apiUrl(`${LIST_PATH}/search-columns`), {headers: jsonHeaders(data.token)});
         checkBusinessCode(res);
+        columnsTrend.add(res.timings.duration);
     });
     group('04b search-fields', () => {
         const res = http.get(apiUrl(`${LIST_PATH}/search-fields`), {headers: jsonHeaders(data.token)});
         checkBusinessCode(res);
+        fieldsTrend.add(res.timings.duration);
     });
     group('04c list-with-meta', () => {
         const res = http.get(
@@ -38,6 +48,7 @@ export default function (data) {
             {headers: jsonHeaders(data.token)},
         );
         checkBusinessCode(res);
+        withMetaTrend.add(res.timings.duration);
     });
 }
 

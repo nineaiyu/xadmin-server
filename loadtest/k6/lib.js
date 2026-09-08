@@ -103,22 +103,55 @@ function groupOf(metricName) {
     return m ? m[1] : '_all';
 }
 
+// 内置 Trend 指标：makeSummary 已按固定字段导出，不重复进 trends
+const BUILTIN_TRENDS = new Set([
+    'http_req_duration',
+    'http_req_blocked',
+    'http_req_connecting',
+    'http_req_tls_handshaking',
+    'http_req_sending',
+    'http_req_waiting',
+    'http_req_receiving',
+    'iteration_duration',
+    'group_duration',
+]);
+
+/** Trend 指标判定：k6 v2 的 summary 数据在 values 中带 p(95) 等分位键 */
+function isTrend(metric) {
+    const values = metric && metric.values;
+    return !!values && 'p(95)' in values;
+}
+
 export function makeSummary(data) {
     const durations = {};
     const failedRates = {};
+    // 自定义 Trend 分档：k6 v2 移除 group 子指标（group:::），同一脚本内的
+    // 多个变体（如 04 元数据的 columns/fields/with_meta）改由显式 Trend 分档登记
+    const trends = {};
     for (const [name, metric] of Object.entries(data.metrics)) {
-        if (name === 'http_req_duration' || name.startsWith('http_req_duration{')) {
-            durations[groupOf(name)] = pct(metric.values);
+        if (isTrend(metric)) {
+            if (name === 'http_req_duration' || name.startsWith('http_req_duration{')) {
+                durations[groupOf(name)] = pct(metric.values);
+            } else if (!BUILTIN_TRENDS.has(name) && !name.startsWith('iteration_duration')) {
+                trends[name] = pct(metric.values);
+            }
         } else if (name === 'http_req_failed' || name.startsWith('http_req_failed{')) {
             failedRates[groupOf(name)] = metric.values.rate;
         }
     }
+    // RPS 与时长：基线回归除 P95 外还要看吞吐，且 RPS 需与时长配套才可跨轮比较
+    const durationMs = (data.state && data.state.testRunDurationMs) || 0;
+    const reqs = data.metrics.http_reqs ? data.metrics.http_reqs.values.count : 0;
     return {
         recorded_at: new Date().toISOString(),
         base_url: BASE_URL,
         iterations: data.metrics.iterations ? data.metrics.iterations.values.count : 0,
+        http_reqs: reqs,
+        duration_ms: durationMs,
+        rps: durationMs > 0 ? Number((reqs / (durationMs / 1000)).toFixed(2)) : 0,
         http_req_duration: durations,
         http_req_failed_rate: failedRates,
+        trends,
     };
 }
 

@@ -22,4 +22,14 @@ done
 
 echo ""
 echo "六轮压测完成，结果见 ${RESULT_DIR:-results}/。"
-echo "回填口径见 docs/ops/performance-baseline.md，登记到 docs/metrics.md。"
+
+# 可选：跑完直接做基线回归比对（CHECK=1 开启，CI 由 perf.yml 调用 check_baseline.py）。
+# 比对口径见 docs/ops/performance-baseline.md §八。
+if [[ "${CHECK:-0}" == "1" ]]; then
+  echo ""
+  echo "=== 基线回归比对 ==="
+  "${CHECK_PYTHON:-../../.venv/bin/python}" ../check_baseline.py \
+    --results "${RESULT_DIR:-results}" \
+    --format "${CHECK_FORMAT:-table}" \
+    ${CHECK_ARGS:-}
+fi
