@@ -1,0 +1,90 @@
+name: Renovate
+
+# renovate.json 此前已提交，但 GitHub Renovate App 未安装 → 配置从未生效。
+# 本 workflow 用自托管方式（renovatebot/github-action）让配置真正跑起来，
+# 不依赖 App 安装；App 若日后启用，两者互斥，届时删除本 workflow 即可。
+#
+# 令牌二选一（仓库 Settings → Secrets）：
+#   RENOVATE_TOKEN            PAT（需 repo + workflow 权限）
+#   RENOVATE_APP_ID + RENOVATE_APP_PRIVATE_KEY  GitHub App 凭据（更推荐）
+# 均未配置时本 workflow 打印告警并以 0 退出，避免 CI 常红。
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate-config:
+    name: Validate renovate.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # 配置写错直接红：无需任何令牌，纯静态校验
+      - name: renovate-config-validator
+        run: npx --yes --package renovate -- renovate-config-validator
+
+  renovate:
+    name: Run Renovate
+    needs: validate-config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve token
+        id: token
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+          RENOVATE_APP_ID: ${{ secrets.RENOVATE_APP_ID }}
+          RENOVATE_APP_PRIVATE_KEY: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "${RENOVATE_TOKEN}" ]; then
+            echo "mode=token" >> "$GITHUB_OUTPUT"
+          elif [ -n "${RENOVATE_APP_ID}" ] && [ -n "${RENOVATE_APP_PRIVATE_KEY}" ]; then
+            echo "mode=app" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip when no credentials configured
+        if: steps.token.outputs.mode == 'none'
+        run: |
+          echo "::warning::未配置 RENOVATE_TOKEN 或 RENOVATE_APP_ID/PRIVATE_KEY，跳过本次 Renovate 运行（配置校验已在上一 job 通过）"
+
+      - name: Generate App token
+        if: steps.token.outputs.mode == 'app'
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        if: steps.token.outputs.mode != 'none'
+
+      - name: Renovate (PAT)
+        if: steps.token.outputs.mode == 'token'
+        uses: renovatebot/github-action@v41
+        with:
+          configurationFile: renovate.json
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          LOG_LEVEL: info
+
+      - name: Renovate (GitHub App)
+        if: steps.token.outputs.mode == 'app'
+        uses: renovatebot/github-action@v41
+        with:
+          configurationFile: renovate.json
+          token: ${{ steps.app-token.outputs.token }}
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          LOG_LEVEL: info

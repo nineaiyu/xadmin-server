@@ -7,6 +7,7 @@
     ":semanticCommitTypeAll(chore)",
     "helpers:pinGitHubActionDigests"
   ],
+  "timezone": "Asia/Shanghai",
   "schedule": [
     "before 6am on monday"
   ],
@@ -15,6 +16,20 @@
   ],
   "rangeStrategy": "pin",
   "separateMajorMinor": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "rebaseWhen": "behind-base-branch",
+  "automergeSchedule": [
+    "at any time"
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "dependencies",
+      "security"
+    ]
+  },
+  "osvVulnerabilityAlerts": true,
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": [
@@ -52,6 +67,16 @@
         "openpyxl"
       ],
       "ignoreUnstable": true
+    },
+    {
+      "description": "GitHub Actions 汇总为一个 PR，降低噪声",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
     }
   ]
 }
