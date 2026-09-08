@@ -79,10 +79,23 @@ services:
       PGDATABASE: ${DB_DATABASE:-xadmin}
       BACKUP_DIR: /backups
       KEEP_DAYS: 7
-      BACKUP_INTERVAL: 86400
+      # RPO 目标 6h（21600s，原 24h）；仍需更短窗口则走 WAL 归档/PITR（独立立项）
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-21600}
+      # 媒体目录入备份（只读挂载 ./data/upload）
+      BACKUP_MEDIA: ${BACKUP_MEDIA:-true}
+      MEDIA_DIR: /media
+      # 异地副本。local=挂载第二块盘/NFS；rsync=远端主机；rclone=云对象存储。
+      # 留空表示未启用（脚本跳过同步，仅本地保留）
+      BACKUP_REMOTE_TYPE: ${BACKUP_REMOTE_TYPE:-}
+      BACKUP_REMOTE_TARGET: ${BACKUP_REMOTE_TARGET:-}
+      BACKUP_REMOTE_KEEP_DAYS: ${BACKUP_REMOTE_KEEP_DAYS:-7}
     volumes:
       - ./utils/db_backup.sh:/utils/db_backup.sh:ro
+      - ./data/upload:/media:ro
       - ${VOLUME_DIR:-../}/xadmin-db-backups:/backups
+      # local 异地副本的目标挂载点（BACKUP_REMOTE_TYPE=local 时容器写入此目录）。
+      # 生产应指向独立磁盘/NFS，而非与源库同盘的目录
+      - ${VOLUME_DIR:-../}/xadmin-db-backups-remote:/remote
     depends_on:
       postgresql:
         condition: service_healthy

@@ -81,32 +81,54 @@ docker compose up -d
 | celery-worker      | 默认队列 worker            | 心跳文件（celery 队列）                    |
 | celery-heavy       | heavy 队列 worker        | 心跳文件（heavy 队列）                     |
 | celery-beat        | 定时调度                   | 进程探活                               |
-| db-backup          | 每日 pg_dump 备份，滚动保留 7 天 | 日志（`docker logs xadmin-db-backup`） |
+| db-backup          | 每 6h pg_dump 备份 + 媒体目录 + 异地副本，滚动保留 7 天 | 日志（`docker logs xadmin-db-backup`） |
 | postgresql / redis | 存储与 broker             | 内置                                 |
 
 ### 3.1 数据库备份与恢复
 
-- 备份：`db-backup` 服务每日自动执行 `pg_dump | gzip`，产出 `${VOLUME_DIR}/xadmin-db-backups/<库名>_<时间戳>.sql.gz`，滚动保留
-  7 天（`KEEP_DAYS` 可调）。
-- 手动备份：`docker exec xadmin-db-backup bash -c 'source /utils/db_backup.sh'` 不可用（脚本为常驻循环），直接执行：
-  `docker exec xadmin-postgresql pg_dump -U server -d xadmin | gzip > backup_$(date +%Y%m%d).sql.gz`
+> 2026-09-08 收口：异地副本、媒体目录、RPO 6h 三项已落地（下期规划 N1/L1），
+> 详见 [backup-drill-2027-03.md](backup-drill-2027-03.md)。
+
+- 备份：`db-backup` 服务每 **6 小时**（`BACKUP_INTERVAL`，原 24h）自动执行 `pg_dump | gzip`，产出
+  `${VOLUME_DIR}/xadmin-db-backups/<库名>_<时间戳>.sql.gz`，滚动保留 7 天（`KEEP_DAYS`）。
+  每个包附带 `.sha256` 校验和，落盘即做 `gzip -t` 完整性校验，损坏包不落正式名。
+- 媒体目录：`BACKUP_MEDIA=true`（默认）时把 `./data/upload` 打包为同名 `.media.tar.gz` 一并备份。
+- 异地副本：`BACKUP_REMOTE_TYPE` 支持 `local`（独立磁盘/NFS 挂载点）、`rsync`（远端主机）、`rclone`（云对象存储）；
+  留空表示未启用。**生产必须指向与源库不同故障域的存储**，否则同盘故障仍会双丢。
+- 手动/单次备份（脚本已支持单次模式，无需再手写 pg_dump）：
+
+```shell
+docker exec -e BACKUP_ONCE=1 xadmin-db-backup bash /utils/db_backup.sh
+```
+
 - 恢复（宿主机执行，会**清空重建**目标库，请先确认）：
 
 ```shell
 sh utils/db_restore.sh ../xadmin-db-backups/xadmin_20260904_205752.sql.gz xadmin
+# 演练/自动化：YES_I_KNOW=1 跳过交互确认；RESTORE_MEDIA=1 同时解包媒体目录
+YES_I_KNOW=1 RESTORE_MEDIA=1 sh utils/db_restore.sh <备份包> xadmin_restore_test
 ```
 
-- 建议定期将 `xadmin-db-backups` 目录同步到异地/对象存储；恢复流程至少每季度演练一次（RTO 目标 ≤30 分钟，见半年规划 P5）。
-- 演练记录：2026-09-07 T5.4 首次正式演练通过（RTO 0.88s、52
-  表逐行一致），报告与遗留缺口见 [backup-drill-2026-09.md](backup-drill-2026-09.md)。
+- 一键演练（备份 → 异地校验 → 恢复验证库 → 逐表行数对比 → 输出报告，约 2s）：
+
+```shell
+bash utils/backup_drill.sh
+BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含异地副本校验
+```
+
+- 演练记录：2026-09-07 首次正式演练通过（RTO 0.88s、52 表逐行一致，见
+  [backup-drill-2026-09.md](backup-drill-2026-09.md)）；2026-09-08 异地副本收口演练通过
+  （RTO 0.89s、53 表 0 不一致、异地 sha256 一致，见 [backup-drill-2027-03.md](backup-drill-2027-03.md)）。
 - **备份/恢复检查清单**（部署验收与季度演练用）：
 
 ```markdown
-- [ ] db-backup 容器 healthy 且 xadmin-db-backups/ 有当日 .sql.gz
-- [ ] 恢复演练：sh utils/db_restore.sh <备份包> <验证库名> 后逐表行数核对，演练完 DROP 验证库
+- [ ] db-backup 容器 healthy 且 xadmin-db-backups/ 有当日 .sql.gz（6h 一备，非每日）
+- [ ] BACKUP_REMOTE_TYPE/TARGET 已配置，且异地目标位于独立故障域（非同盘目录）
+- [ ] 异地副本有当日同名文件且 sha256 与本地一致
+- [ ] BACKUP_MEDIA=true 且 .media.tar.gz 随数据库包一起产出（生产有附件时必查）
+- [ ] 演练：bash utils/backup_drill.sh 全项 PASS（尤其「逐表行数一致」不得为 0 表）
 - [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）
-- [ ] data/upload 媒体目录是否纳入当日备份（当前需手工 tar）
-- [ ] 异地副本策略是否已启用（当前未启用）
+- [ ] 备份与异地同步失败已接入告警（当前仅落 WARN 日志）
 ```
 
 生产 `config.yml` 建议：

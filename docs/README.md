@@ -46,6 +46,8 @@ docs/
 | [deployment.md](ops/deployment.md)                     | 配置项详解、Docker 部署、备份恢复、升级回滚、监控告警                  |
 | [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
 | [performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（T3.1）：silk 剖析接入 + k6 六接口压测 + 登记口径与回归判定 |
+| [backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份演练（异地副本/媒体目录/RPO 6h 收口）：`utils/backup_drill.sh` 一键闭环与结果 |
+| [backup-drill-2026-09.md](ops/backup-drill-2026-09.md) | 首次备份演练记录（RTO 0.88s、52 表一致）与当时遗留缺口                 |
 
 ## 架构决策记录（adr/）
 
