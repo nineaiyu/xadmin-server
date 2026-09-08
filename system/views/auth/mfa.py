@@ -8,6 +8,7 @@
 1. POST /api/system/login/mfa/send-code  挑战型方式（短信/邮件）下发验证码；
 2. POST /api/system/login/mfa/verify     提交验证码，通过后签发正式 JWT。
 """
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -28,8 +29,8 @@ from system.views.auth.login import login_success
 logger = get_logger(__name__)
 
 # 登录 MFA 允许的验证方式（密码方式在登录场景无意义）
-LOGIN_MFA_METHODS = ['otp', 'sms', 'email']
-CHALLENGE_METHODS = ['sms', 'email']
+LOGIN_MFA_METHODS = ["otp", "sms", "email"]
+CHALLENGE_METHODS = ["sms", "email"]
 
 
 def _get_mfa_user(request):
@@ -37,16 +38,17 @@ def _get_mfa_user(request):
 
     只要求已绑定密钥：全局强制场景下允许验证"个人已关闭但被强制"的账号。
     """
-    user = validate_login_mfa_token(request.data.get('mfa_token'))
+    user = validate_login_mfa_token(request.data.get("mfa_token"))
     if not user:
-        raise ValidateError(_('Login verification expired, please log in again'))
+        raise ValidateError(_("Login verification expired, please log in again"))
     if not user.otp_secret_key:
-        raise ValidateError(_('Operation failed. Abnormal data'))
+        raise ValidateError(_("Operation failed. Abnormal data"))
     return user
 
 
 class LoginMFASendCodeAPIView(APIView):
     """发送登录 MFA 挑战验证码"""
+
     permission_classes = []
     authentication_classes = []
     throttle_classes = [LoginThrottle]
@@ -55,28 +57,29 @@ class LoginMFASendCodeAPIView(APIView):
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    'mfa_token': build_basic_type(OpenApiTypes.STR),
-                    'method': build_basic_type(OpenApiTypes.STR),
+                    "mfa_token": build_basic_type(OpenApiTypes.STR),
+                    "method": build_basic_type(OpenApiTypes.STR),
                 },
-                required=['mfa_token', 'method'],
+                required=["mfa_token", "method"],
             )
         ),
-        responses=get_default_response_schema()
+        responses=get_default_response_schema(),
     )
     def post(self, request, *args, **kwargs):
         """发送登录 MFA 验证码"""
         user = _get_mfa_user(request)
-        method = request.data.get('method')
+        method = request.data.get("method")
         if method not in CHALLENGE_METHODS:
-            raise ValidateError(_('The verification method is unavailable'))
+            raise ValidateError(_("The verification method is unavailable"))
         ok, msg = send_user_mfa_code(user, method, request)
         if not ok:
             raise ValidateError(msg)
-        return ApiResponse(detail=_('The verification code has been sent'))
+        return ApiResponse(detail=_("The verification code has been sent"))
 
 
 class LoginMFAVerifyAPIView(APIView):
     """登录 MFA 二次验证，通过后签发正式 JWT"""
+
     permission_classes = []
     authentication_classes = []
     throttle_classes = [LoginThrottle]
@@ -85,46 +88,46 @@ class LoginMFAVerifyAPIView(APIView):
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    'mfa_token': build_basic_type(OpenApiTypes.STR),
-                    'method': build_basic_type(OpenApiTypes.STR),
-                    'code': build_basic_type(OpenApiTypes.STR),
+                    "mfa_token": build_basic_type(OpenApiTypes.STR),
+                    "method": build_basic_type(OpenApiTypes.STR),
+                    "code": build_basic_type(OpenApiTypes.STR),
                 },
-                required=['mfa_token', 'method', 'code'],
+                required=["mfa_token", "method", "code"],
             )
         ),
         responses=get_default_response_schema(
             {
-                'data': build_object_type(
+                "data": build_object_type(
                     properties={
-                        'refresh': build_basic_type(OpenApiTypes.STR),
-                        'access': build_basic_type(OpenApiTypes.STR),
-                        'access_token_lifetime': build_basic_type(OpenApiTypes.NUMBER),
-                        'refresh_token_lifetime': build_basic_type(OpenApiTypes.NUMBER)
+                        "refresh": build_basic_type(OpenApiTypes.STR),
+                        "access": build_basic_type(OpenApiTypes.STR),
+                        "access_token_lifetime": build_basic_type(OpenApiTypes.NUMBER),
+                        "refresh_token_lifetime": build_basic_type(OpenApiTypes.NUMBER),
                     }
                 )
             }
-        )
+        ),
     )
     def post(self, request, *args, **kwargs):
         """提交登录 MFA 验证码"""
         user = _get_mfa_user(request)
-        method = request.data.get('method')
-        code = request.data.get('code')
+        method = request.data.get("method")
+        code = request.data.get("code")
         if method not in LOGIN_MFA_METHODS:
-            raise ValidateError(_('The verification method is unavailable'))
+            raise ValidateError(_("The verification method is unavailable"))
 
         ok, msg = check_user_mfa_code(user, method, code, request)
         if not ok:
             raise ValidateError(msg)
 
-        TokenTempCache.expired_cache_token(request.data.get('mfa_token'))
+        TokenTempCache.expired_cache_token(request.data.get("mfa_token"))
         refresh = RefreshToken.for_user(user)
         result = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
         }
         result.update(get_token_lifetime(user))
         user.last_login = timezone.now()
-        user.save(update_fields=['last_login'])
+        user.save(update_fields=["last_login"])
         login_success(request, user)
         return ApiResponse(data=result)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 核心序列化器单元测试（必填字段 / 唯一性 / 密码规则 / 保存）。"""
+
 import pytest
 from django.test import RequestFactory
 
@@ -62,18 +63,14 @@ class TestRoleSerializer:
         assert "fields" in serializer.errors
 
     def test_valid_with_empty_fields(self, post_request):
-        serializer = RoleSerializer(
-            data={"name": "角色", "code": "role", "fields": {}}, ignore_field_permission=True
-        )
+        serializer = RoleSerializer(data={"name": "角色", "code": "role", "fields": {}}, ignore_field_permission=True)
         assert serializer.is_valid(), serializer.errors
 
     def test_duplicate_code_invalid(self, post_request):
         from system.models import UserRole
 
         UserRole.objects.create(name="已有", code="dup")
-        serializer = RoleSerializer(
-            data={"name": "新角色", "code": "dup", "fields": {}}, ignore_field_permission=True
-        )
+        serializer = RoleSerializer(data={"name": "新角色", "code": "dup", "fields": {}}, ignore_field_permission=True)
         assert not serializer.is_valid()
         assert "code" in serializer.errors
 
@@ -85,9 +82,7 @@ class TestDeptSerializer:
         assert "name" in serializer.errors
 
     def test_valid_create_defaults_parent_to_user_dept(self, post_request, superuser):
-        serializer = DeptSerializer(
-            data={"name": "测试部门", "code": "test_dept"}, ignore_field_permission=True
-        )
+        serializer = DeptSerializer(data={"name": "测试部门", "code": "test_dept"}, ignore_field_permission=True)
         assert serializer.is_valid(), serializer.errors
         instance = serializer.save()
         # 未传 parent 时，validate 会落到 request.user.dept（超管无部门 → None）

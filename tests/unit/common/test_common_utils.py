@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/utils/common.py：系统信息采集与 HTML 转 Markdown。"""
+
 import socket
 
 from common.utils import common as common_utils

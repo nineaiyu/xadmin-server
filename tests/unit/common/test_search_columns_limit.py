@@ -8,6 +8,7 @@
 4. 显式 cutoff 时沿用调用方行为，不做二次截断；
 5. 配置读取失败时的降级行为。
 """
+
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -33,18 +34,17 @@ def _reset_choices_max_cache():
 
 @pytest.fixture
 def many_users(db):
-    UserInfo.objects.bulk_create([
-        UserInfo(username=f"bulk{i:03d}", nickname=f"u{i}",
-                 password="md5$unused$hash-for-bulk-creation")  # noqa: S106
-        for i in range(TOTAL_USERS)
-    ])
+    UserInfo.objects.bulk_create(
+        [
+            UserInfo(username=f"bulk{i:03d}", nickname=f"u{i}", password="md5$unused$hash-for-bulk-creation")  # noqa: S106
+            for i in range(TOTAL_USERS)
+        ]
+    )
     return UserInfo.objects.filter(username__startswith="bulk")
 
 
 def _field(queryset):
-    return BasePrimaryKeyRelatedField(
-        attrs=["pk", "username"], queryset=queryset, many=False
-    )
+    return BasePrimaryKeyRelatedField(attrs=["pk", "username"], queryset=queryset, many=False)
 
 
 class TestChoicesMaxCount:
@@ -72,8 +72,7 @@ class TestChoicesMaxCount:
         assert any("LIMIT 201" in q["sql"] for q in ctx.captured_queries)
 
     def test_truncation_uses_config_value(self, many_users, monkeypatch):
-        monkeypatch.setattr(type(SysConfig), "SEARCH_CHOICES_MAX_COUNT",
-                            property(lambda self: 10), raising=False)
+        monkeypatch.setattr(type(SysConfig), "SEARCH_CHOICES_MAX_COUNT", property(lambda self: 10), raising=False)
         field = _field(many_users)
         field.is_column = True
         choices = field.get_choices()
@@ -82,8 +81,7 @@ class TestChoicesMaxCount:
 
     def test_dict_choices_truncated(self, many_users, monkeypatch):
         """非 column（dict 形式 choices）同样被截断并标记"""
-        monkeypatch.setattr(type(SysConfig), "SEARCH_CHOICES_MAX_COUNT",
-                            property(lambda self: 10), raising=False)
+        monkeypatch.setattr(type(SysConfig), "SEARCH_CHOICES_MAX_COUNT", property(lambda self: 10), raising=False)
         field = _field(many_users)
         choices = field.get_choices()
         assert len(choices) == 10
@@ -101,9 +99,12 @@ class TestChoicesMaxCount:
         import common.core.fields as fields_mod
 
         monkeypatch.setattr(fields_mod, "_CHOICES_MAX_CACHE", {"value": None, "expires": 0.0})
-        monkeypatch.setattr(type(SysConfig), "SEARCH_CHOICES_MAX_COUNT",
-                            property(lambda self: (_ for _ in ()).throw(RuntimeError("boom"))),
-                            raising=False)
+        monkeypatch.setattr(
+            type(SysConfig),
+            "SEARCH_CHOICES_MAX_COUNT",
+            property(lambda self: (_ for _ in ()).throw(RuntimeError("boom"))),
+            raising=False,
+        )
         assert get_search_choices_max_count() == 200
         # 再次调用仍不使用缓存的异常结果
         assert get_search_choices_max_count() == 200

@@ -20,27 +20,29 @@ from system.utils.auth import get_token_lifetime
 
 class TempTokenAPIView(GenericAPIView):
     """临时Token"""
+
     permission_classes = []
     authentication_classes = []
 
-    @extend_schema(responses=get_default_response_schema({'token': build_basic_type(OpenApiTypes.STR)}))
+    @extend_schema(responses=get_default_response_schema({"token": build_basic_type(OpenApiTypes.STR)}))
     def get(self, request):
         """获取{cls}"""
-        token = make_token_cache(get_request_ident(request), time_limit=600, force_new=True).encode('utf-8')
+        token = make_token_cache(get_request_ident(request), time_limit=600, force_new=True).encode("utf-8")
         return ApiResponse(token=token)
 
 
 class CaptchaAPIView(GenericAPIView):
     """图片验证码"""
+
     permission_classes = []
     authentication_classes = []
 
     @extend_schema(
         responses=get_default_response_schema(
             {
-                'captcha_image': build_basic_type(OpenApiTypes.STR),
-                'captcha_key': build_basic_type(OpenApiTypes.STR),
-                'length': build_basic_type(OpenApiTypes.NUMBER)
+                "captcha_image": build_basic_type(OpenApiTypes.STR),
+                "captcha_key": build_basic_type(OpenApiTypes.STR),
+                "length": build_basic_type(OpenApiTypes.NUMBER),
             }
         )
     )

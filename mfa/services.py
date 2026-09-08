@@ -7,6 +7,7 @@
 其他 app 需要使用敏感操作二次验证 / 登录 MFA 能力时，只允许从本模块导入。
 核心用法见 docs/architecture/mfa.md。
 """
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
@@ -23,24 +24,25 @@ logger = get_logger(__name__)
 
 
 def _get_request_ip(request):
-    return get_request_ip(request) if request else ''
+    return get_request_ip(request) if request else ""
 
 
 def _serialize_backend(backend):
     return {
-        'name': backend.name,
-        'display_name': str(backend.display_name),
-        'placeholder': str(backend.placeholder),
-        'challenge_required': backend.challenge_required,
+        "name": backend.name,
+        "display_name": str(backend.display_name),
+        "placeholder": str(backend.placeholder),
+        "challenge_required": backend.challenge_required,
     }
 
 
 def _check_mfa_block(user, ipaddr):
     """MFA 验证防爆破锁定校验，返回锁定提示文案（未锁定返回 None）"""
     if MFABlockUtils(user.username, ipaddr).is_block():
-        return _('Too many failures, the account has been locked '
-                 '(please contact admin to unlock it or try again after {} minutes)'
-                 ).format(settings.SECURITY_LOGIN_LIMIT_TIME)
+        return _(
+            "Too many failures, the account has been locked "
+            "(please contact admin to unlock it or try again after {} minutes)"
+        ).format(settings.SECURITY_LOGIN_LIMIT_TIME)
     return None
 
 
@@ -62,13 +64,13 @@ def check_user_mfa_code(user, method, code, request=None):
 
     backend = get_backend(user, method, request=request)
     if not backend:
-        return False, _('The verification method is unavailable')
+        return False, _("The verification method is unavailable")
 
     ok, msg = backend.check_code(code)
     block = MFABlockUtils(user.username, ipaddr)
     if ok:
         block.clean_failed_count()
-        return True, ''
+        return True, ""
     block.incr_failed_count()
     return False, msg
 
@@ -77,9 +79,9 @@ def verify_user_confirm(user, method, code, request=None, confirm_type=ConfirmTy
     """校验验证码并写入二次确认状态（有效期内敏感操作免重复验证）"""
     backend = get_backend(user, method, request=request)
     if not backend:
-        return False, _('The verification method is unavailable')
+        return False, _("The verification method is unavailable")
     if CONFIRM_TYPE_LEVEL[backend.confirm_level] < CONFIRM_TYPE_LEVEL[confirm_type]:
-        return False, _('The verification method does not meet the security requirements')
+        return False, _("The verification method does not meet the security requirements")
 
     ok, msg = check_user_mfa_code(user, method, code, request=request)
     if ok:
@@ -91,9 +93,9 @@ def send_user_mfa_code(user, method, request=None):
     """下发挑战验证码（短信/邮件），返回 (是否成功, 失败原因)"""
     backend = get_backend(user, method, request=request)
     if not backend:
-        return False, _('The verification method is unavailable')
+        return False, _("The verification method is unavailable")
     if not backend.challenge_required:
-        return False, _('This method does not need a verification code to be sent')
+        return False, _("This method does not need a verification code to be sent")
     return backend.send_challenge()
 
 
@@ -113,16 +115,16 @@ def is_login_mfa_required(user) -> bool:
 def generate_login_mfa_token(user) -> str:
     """生成登录 MFA 临时令牌（不含任何真实凭证，一次性使用）"""
     return TokenTempCache.generate_cache_token(
-        settings.SECURITY_MFA_LOGIN_TOKEN_TTL, {'user_id': user.pk, 'scene': 'login_mfa'}
+        settings.SECURITY_MFA_LOGIN_TOKEN_TTL, {"user_id": user.pk, "scene": "login_mfa"}
     )
 
 
 def validate_login_mfa_token(token):
     """校验登录 MFA 临时令牌，返回对应用户（无效或已禁用返回 None）"""
     data = TokenTempCache.validate_cache_token(token)
-    if not data or data.get('scene') != 'login_mfa':
+    if not data or data.get("scene") != "login_mfa":
         return None
-    return get_user_model().objects.filter(pk=data.get('user_id'), is_active=True).first()
+    return get_user_model().objects.filter(pk=data.get("user_id"), is_active=True).first()
 
 
 def get_login_mfa_methods(user, request=None):

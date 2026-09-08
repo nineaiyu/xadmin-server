@@ -15,10 +15,11 @@ from system.serializers.log import UserLoginLogSerializer
 
 class UserLoginLogViewSet(ListModelMixin, SearchColumnsAction, GenericViewSet):
     """用户登录日志"""
+
     queryset = UserLoginLog.objects.all()
     serializer_class = UserLoginLogSerializer
 
-    ordering_fields = ['created_time']
+    ordering_fields = ["created_time"]
 
     def get_queryset(self):
         return self.queryset.filter(creator=self.request.user)

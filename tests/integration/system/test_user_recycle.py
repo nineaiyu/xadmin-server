@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """扩展：用户软删除与回收站（登录即时失效、恢复复活、回收站用户名占用、物理清除）。"""
+
 import pytest
 from django.contrib.auth import authenticate
 from django.test import override_settings
@@ -43,9 +44,7 @@ class TestUserRecycleBin:
         auth_client.delete(f"{USER_URL}/{victim.pk}")
         assert UserInfo.all_objects.get(pk=victim.pk).deleted_at is not None
 
-        resp = auth_client.post(
-            USER_URL, {"username": "leaver", "password": "Test@123456"}, format="json"
-        )
+        resp = auth_client.post(USER_URL, {"username": "leaver", "password": "Test@123456"}, format="json")
         assert resp.data["code"] != 1000, resp.data
 
     @MFA_OFF

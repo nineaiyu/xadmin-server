@@ -24,15 +24,16 @@ from system.serializers.log import LoginLogSerializer
 
 class ValidateError(APIException):
     """校验类失败统一返回 HTTP 400，避免登录失败触发前端 401 处理导致页面刷新"""
+
     status_code = 400
 
 
 def get_token_lifetime(user_obj):
-    access_token_lifetime = settings.SIMPLE_JWT.get('ACCESS_TOKEN_LIFETIME')
-    refresh_token_lifetime = settings.SIMPLE_JWT.get('REFRESH_TOKEN_LIFETIME')
+    access_token_lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+    refresh_token_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
     return {
-        'access_token_lifetime': int(access_token_lifetime.total_seconds()),
-        'refresh_token_lifetime': int(refresh_token_lifetime.total_seconds()),
+        "access_token_lifetime": int(access_token_lifetime.total_seconds()),
+        "refresh_token_lifetime": int(refresh_token_lifetime.total_seconds()),
         # 'username': user_obj.username
     }
 
@@ -51,9 +52,9 @@ def check_tmp_token(need, token, client_id, success_once=True):
 
 def check_token_and_captcha(request, token_enable, captcha_enable, success_once=True):
     client_id = get_request_ident(request)
-    token = request.data.get('token')
-    captcha_key = request.data.get('captcha_key')
-    captcha_code = request.data.get('captcha_code')
+    token = request.data.get("token")
+    captcha_key = request.data.get("captcha_key")
+    captcha_code = request.data.get("captcha_code")
 
     check_tmp_token(token_enable, token, client_id, success_once)
     check_captcha(captcha_enable, captcha_key, captcha_code)
@@ -61,8 +62,8 @@ def check_token_and_captcha(request, token_enable, captcha_enable, success_once=
 
 
 def get_username_password(need, request, token):
-    username = request.data.get('username')
-    password = request.data.get('password')
+    username = request.data.get("username")
+    password = request.data.get("password")
     if need:
         username = AESCipherV2(token).decrypt(username)
         password = AESCipherV2(token).decrypt(password)
@@ -72,27 +73,33 @@ def get_username_password(need, request, token):
 def check_is_block(username, ipaddr, ip_block=LoginIpBlockUtil, login_block=LoginBlockUtil):
     if ip_block and ip_block(ipaddr).is_block():
         ip_block(ipaddr).set_block_if_need()
-        raise ValidateError(_("The address has been locked (please contact admin to unlock it or try"
-                              " again after {} minutes)").format(settings.SECURITY_LOGIN_IP_LIMIT_TIME))
+        raise ValidateError(
+            _("The address has been locked (please contact admin to unlock it or try again after {} minutes)").format(
+                settings.SECURITY_LOGIN_IP_LIMIT_TIME
+            )
+        )
 
     if login_block and login_block(username, ipaddr).is_block():
-        raise ValidateError(_("The account has been locked (please contact admin to unlock it or try"
-                              " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME))
+        raise ValidateError(
+            _("The account has been locked (please contact admin to unlock it or try again after {} minutes)").format(
+                settings.SECURITY_LOGIN_LIMIT_TIME
+            )
+        )
 
 
 def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, status=True, channel_name=""):
-    login_ip = get_request_ip(request) if request else ''
-    login_ip = login_ip or '0.0.0.0'
+    login_ip = get_request_ip(request) if request else ""
+    login_ip = login_ip or "0.0.0.0"
     login_city = get_ip_city(login_ip) or _("Unknown")
     data = {
-        'ipaddress': login_ip,
-        'city': str(login_city),
-        'browser': get_browser(request),
-        'system': get_os(request),
-        'channel_name': channel_name or getattr(request, "channel_name", ""),
-        'status': status,
-        'agent': str(get_user_agent(request)) if request else '',
-        'login_type': login_type
+        "ipaddress": login_ip,
+        "city": str(login_city),
+        "browser": get_browser(request),
+        "system": get_os(request),
+        "channel_name": channel_name or getattr(request, "channel_name", ""),
+        "status": status,
+        "agent": str(get_user_agent(request)) if request else "",
+        "login_type": login_type,
     }
     serializer = LoginLogSerializer(data=data, ignore_field_permission=True)
     serializer.is_valid(raise_exception=True)
@@ -100,8 +107,8 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
 
 
 def verify_sms_email_code(request, block_utils):
-    verify_token = request.data.get('verify_token')
-    verify_code = request.data.get('verify_code')
+    verify_token = request.data.get("verify_token")
+    verify_code = request.data.get("verify_code")
     ipaddr = get_request_ip(request)
     ip_block = LoginIpBlockUtil(ipaddr)
 
@@ -111,10 +118,10 @@ def verify_sms_email_code(request, block_utils):
     data = TokenTempCache.validate_cache_token(verify_token)
     if not data:
         ip_block.set_block_if_need()
-        raise ValidateError(_('Token is invalid or expired'))
+        raise ValidateError(_("Token is invalid or expired"))
 
-    target = data.get('target')
-    query_key = data.get('query_key')
+    target = data.get("target")
+    query_key = data.get("query_key")
     check_is_block(target, ipaddr, login_block=block_utils)
     block_util = block_utils(target, ipaddr)
 
@@ -133,8 +140,9 @@ def verify_sms_email_code(request, block_utils):
                 "(The account will be temporarily locked for {block_time} minutes)"
             ).format(times_try=times_remainder, block_time=settings.SECURITY_LOGIN_LIMIT_TIME, error=str(e))
         else:
-            detail = _("The account has been locked (please contact admin to unlock it or try"
-                       " again after {} minutes)").format(settings.SECURITY_LOGIN_LIMIT_TIME)
+            detail = _(
+                "The account has been locked (please contact admin to unlock it or try again after {} minutes)"
+            ).format(settings.SECURITY_LOGIN_LIMIT_TIME)
 
         raise ValidateError(detail)
 
@@ -142,16 +150,14 @@ def verify_sms_email_code(request, block_utils):
 
 
 def check_different_city_login_if_need(user, ipaddr):
-    if not settings.SECURITY_CHECK_DIFFERENT_CITY_LOGIN or ipaddr == 'unknown':
+    if not settings.SECURITY_CHECK_DIFFERENT_CITY_LOGIN or ipaddr == "unknown":
         return
 
-    city_white = [_('LAN'), 'LAN']
+    city_white = [_("LAN"), "LAN"]
     is_private = ipaddress.ip_address(ipaddr).is_private
     if is_private:
         return
-    last_user_login = UserLoginLog.objects.exclude(
-        city__in=city_white
-    ).filter(creator=user, status=True).first()
+    last_user_login = UserLoginLog.objects.exclude(city__in=city_white).filter(creator=user, status=True).first()
     if not last_user_login:
         return
 

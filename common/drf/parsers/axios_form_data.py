@@ -17,63 +17,63 @@ from rest_framework.parsers import BaseParser, DataAndFiles
 
 def format_data(data: QueryDict | dict):
     """
-axios 配置如下：
+    axios 配置如下：
 
-    const defaultConfig: AxiosRequestConfig = {
-      baseURL: import.meta.env.VITE_API_DOMAIN,
-      // 请求超时时间
-      timeout: 30000,
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      // 数组格式参数序列化（https://github.com/axios/axios/issues/5142）
-      // 自动转换为ids=1&ids=2&ids=3这种形式
-      paramsSerializer: params => {
-        return stringify(params, { arrayFormat: "repeat" });
-      },
-      formSerializer: { indexes: null, dots: true }
-    };
+        const defaultConfig: AxiosRequestConfig = {
+          baseURL: import.meta.env.VITE_API_DOMAIN,
+          // 请求超时时间
+          timeout: 30000,
+          headers: {
+            Accept: "application/json, text/plain, */*",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          // 数组格式参数序列化（https://github.com/axios/axios/issues/5142）
+          // 自动转换为ids=1&ids=2&ids=3这种形式
+          paramsSerializer: params => {
+            return stringify(params, { arrayFormat: "repeat" });
+          },
+          formSerializer: { indexes: null, dots: true }
+        };
 
-FormData 上传协议 v1（权威文档见 xadmin-docs
-`advanced/form-data-upload.md`）：axios form-data 反向解析器，将点分键
-（`.` 分层、数字段为数组下标、顶层 `pks` 批量 getlist）还原为嵌套结构。
-将form-data数据：
-    {
-        'category.value': '0',
-        'admin.value': '1',
-        'admin.label': '(isummer)',
-        'admin.pk': '1',
-        'covers.0.value': '2',
-        'covers.0.label': '1111',
-        'covers.0.pk': '2',
-        'covers.1.value': '11112',
-        'covers.1.label': '11111111',
-        'covers.1.pk': '11112',
-    }
-    解析为：
-    {
-        'category': {'value': '0'},
-        'admin': {'value': '1', 'label': '(isummer)', 'pk': '1'},
-        'covers': [
-            {'value': '2', 'label': '1111', 'pk': '2'},
-            {'value': '11112', 'label': '11111111', 'pk': '11112'}
-        ]
-    }
+    FormData 上传协议 v1（权威文档见 xadmin-docs
+    `advanced/form-data-upload.md`）：axios form-data 反向解析器，将点分键
+    （`.` 分层、数字段为数组下标、顶层 `pks` 批量 getlist）还原为嵌套结构。
+    将form-data数据：
+        {
+            'category.value': '0',
+            'admin.value': '1',
+            'admin.label': '(isummer)',
+            'admin.pk': '1',
+            'covers.0.value': '2',
+            'covers.0.label': '1111',
+            'covers.0.pk': '2',
+            'covers.1.value': '11112',
+            'covers.1.label': '11111111',
+            'covers.1.pk': '11112',
+        }
+        解析为：
+        {
+            'category': {'value': '0'},
+            'admin': {'value': '1', 'label': '(isummer)', 'pk': '1'},
+            'covers': [
+                {'value': '2', 'label': '1111', 'pk': '2'},
+                {'value': '11112', 'label': '11111111', 'pk': '11112'}
+            ]
+        }
     """
     new_data = {}
     for key, value in data.items():
-        key_split = key.split('.')
+        key_split = key.split(".")
         if len(key_split) == 1:  # 直接key
-            if key_split[0] == 'pks':  # 用于批量操作
+            if key_split[0] == "pks":  # 用于批量操作
                 try:
                     value = data.getlist(key_split[0])
                 except Exception:
                     value = data.get(key_split[0])
             new_data[key_split[0]] = value
         else:
-            if re.match(r'\d+', key_split[1]):  # 列表
+            if re.match(r"\d+", key_split[1]):  # 列表
                 info: list = new_data.get(key_split[0])
                 if not info:
                     new_data[key_split[0]] = [{}]
@@ -104,7 +104,8 @@ class AxiosMultiPartParser(BaseParser):
     """
     Parser for multipart form data, which may include file data.
     """
-    media_type = 'multipart/form-data'
+
+    media_type = "multipart/form-data"
 
     def parse(self, stream, media_type=None, parser_context=None):
         """
@@ -115,16 +116,16 @@ class AxiosMultiPartParser(BaseParser):
         `.files` will be a `QueryDict` containing all the form files.
         """
         parser_context = parser_context or {}
-        request = parser_context['request']
-        encoding = parser_context.get('encoding', settings.DEFAULT_CHARSET)
+        request = parser_context["request"]
+        encoding = parser_context.get("encoding", settings.DEFAULT_CHARSET)
         meta = request.META.copy()
-        meta['CONTENT_TYPE'] = media_type
+        meta["CONTENT_TYPE"] = media_type
         upload_handlers = request.upload_handlers
 
         try:
             parser = DjangoMultiPartParser(meta, stream, upload_handlers, encoding)
             data, files = parser.parse()
-            new_data = QueryDict('', mutable=True)
+            new_data = QueryDict("", mutable=True)
             for key, value in format_data(data).items():
                 if isinstance(value, list):  # list一般为manytomany, 需要通过setlist进行设置
                     new_data.setlist(key, value)

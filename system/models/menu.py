@@ -16,26 +16,45 @@ from common.core.models import SoftDeleteModel, DbAuditModel, DbUuidModel
 class MenuMeta(DbAuditModel, DbUuidModel):
     title = models.CharField(verbose_name=_("Menu title"), max_length=255, null=True, blank=True)
     icon = models.CharField(verbose_name=_("Left icon"), max_length=255, null=True, blank=True)
-    r_svg_name = models.CharField(verbose_name=_("Right icon"), max_length=255, null=True, blank=True,
-                                  help_text=_("Additional icon to the right of menu name"))
+    r_svg_name = models.CharField(
+        verbose_name=_("Right icon"),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_("Additional icon to the right of menu name"),
+    )
     is_show_menu = models.BooleanField(verbose_name=_("Show menu"), default=True)
     is_show_parent = models.BooleanField(verbose_name=_("Show parent menu"), default=False)
-    is_keepalive = models.BooleanField(verbose_name=_("Keepalive"), default=True,
-                                       help_text=_(
-                                           "When enabled, the entire state of the page is saved, and when refreshed, the state is cleared"))
-    frame_url = models.CharField(verbose_name=_("Iframe URL"), max_length=255, null=True, blank=True,
-                                 help_text=_("The embedded iframe link address"))
+    is_keepalive = models.BooleanField(
+        verbose_name=_("Keepalive"),
+        default=True,
+        help_text=_("When enabled, the entire state of the page is saved, and when refreshed, the state is cleared"),
+    )
+    frame_url = models.CharField(
+        verbose_name=_("Iframe URL"),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_("The embedded iframe link address"),
+    )
     frame_loading = models.BooleanField(verbose_name=_("Iframe loading"), default=False)
 
     transition_enter = models.CharField(verbose_name=_("Enter animation"), max_length=255, null=True, blank=True)
     transition_leave = models.CharField(verbose_name=_("Leave animation"), max_length=255, null=True, blank=True)
 
-    is_hidden_tag = models.BooleanField(verbose_name=_("Hidden tag"), default=False, help_text=_(
-        "The current menu name or custom information is prohibited from being added to the TAB"))
-    fixed_tag = models.BooleanField(verbose_name=_("Fixed tag"), default=False, help_text=_(
-        "Whether the current menu name is fixed to the TAB and cannot be closed"))
-    dynamic_level = models.IntegerField(verbose_name=_("Dynamic level"), default=0,
-                                        help_text=_("Maximum number of dynamic routes that can be opened"))
+    is_hidden_tag = models.BooleanField(
+        verbose_name=_("Hidden tag"),
+        default=False,
+        help_text=_("The current menu name or custom information is prohibited from being added to the TAB"),
+    )
+    fixed_tag = models.BooleanField(
+        verbose_name=_("Fixed tag"),
+        default=False,
+        help_text=_("Whether the current menu name is fixed to the TAB and cannot be closed"),
+    )
+    dynamic_level = models.IntegerField(
+        verbose_name=_("Dynamic level"), default=0, help_text=_("Maximum number of dynamic routes that can be opened")
+    )
 
     class Meta:
         verbose_name = _("Menu meta")
@@ -58,16 +77,18 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         PERMISSION = 2, _("Permission")
 
     class MethodChoices(models.TextChoices):
-        GET = 'GET', _("GET")
-        POST = 'POST', _("POST")
-        PUT = 'PUT', _("PUT")
-        DELETE = 'DELETE', _("DELETE")
-        PATCH = 'PATCH', _("PATCH")
+        GET = "GET", _("GET")
+        POST = "POST", _("POST")
+        PUT = "PUT", _("PUT")
+        DELETE = "DELETE", _("DELETE")
+        PATCH = "PATCH", _("PATCH")
 
-    parent = models.ForeignKey('system.Menu', on_delete=models.SET_NULL, verbose_name=_("Parent menu"), null=True,
-                               blank=True)
-    menu_type = models.SmallIntegerField(choices=MenuChoices, default=MenuChoices.DIRECTORY,
-                                         verbose_name=_("Menu type"))
+    parent = models.ForeignKey(
+        "system.Menu", on_delete=models.SET_NULL, verbose_name=_("Parent menu"), null=True, blank=True
+    )
+    menu_type = models.SmallIntegerField(
+        choices=MenuChoices, default=MenuChoices.DIRECTORY, verbose_name=_("Menu type")
+    )
     # unique=True 降级为"未删除数据"条件约束（见 Meta.constraints），
     # 已删除菜单释放组件名/权限码，可被新菜单复用
     name = models.CharField(verbose_name=_("Component name or permission code"), max_length=128)
@@ -88,7 +109,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         """软删除：标记自身并级联标记全部后代菜单（同一时间戳，成组恢复/清除）。"""
         deleted_at = timezone.now()
         self.deleted_at = deleted_at
-        self.save(update_fields=['deleted_at'])
+        self.save(update_fields=["deleted_at"])
         self._cascade_soft_delete_descendants(deleted_at)
         return 1
 
@@ -103,7 +124,7 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         """按广度优先把未删除的后代菜单标记为同一 deleted_at。"""
         frontier = [self.pk]
         while frontier:
-            children = list(Menu.objects.filter(parent_id__in=frontier).values_list('pk', flat=True))
+            children = list(Menu.objects.filter(parent_id__in=frontier).values_list("pk", flat=True))
             if not children:
                 break
             Menu.objects.filter(pk__in=children, deleted_at__isnull=True).update(deleted_at=deleted_at)
@@ -120,8 +141,9 @@ class Menu(SoftDeleteModel, DbAuditModel, DbUuidModel):
         verbose_name_plural = verbose_name
         ordering = ("-created_time",)
         constraints = [
-            models.UniqueConstraint(fields=['name'], condition=models.Q(deleted_at__isnull=True),
-                                    name='uniq_menu_name_active'),
+            models.UniqueConstraint(
+                fields=["name"], condition=models.Q(deleted_at__isnull=True), name="uniq_menu_name_active"
+            ),
         ]
 
     def __str__(self):

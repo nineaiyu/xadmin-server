@@ -8,6 +8,7 @@
 4. invalid_cache 失效后重新计算；
 5. 路由输出包含 meta 信息（select_related 不改变输出）。
 """
+
 import json
 
 import pytest
@@ -42,23 +43,24 @@ def _business_queries(ctx):
 def _menu_tree(db):
     """两级菜单树，parent/child 均带 meta"""
     parent_meta = MenuMeta.objects.create(title="系统管理")
-    parent = Menu.objects.create(name="系统管理", path="system", menu_type=Menu.MenuChoices.DIRECTORY,
-                                 meta=parent_meta)
+    parent = Menu.objects.create(name="系统管理", path="system", menu_type=Menu.MenuChoices.DIRECTORY, meta=parent_meta)
     for i, name in enumerate(["用户管理", "角色管理"]):
         meta = MenuMeta.objects.create(title=name)
-        Menu.objects.create(name=name, path=f"api/system/{'user' if i == 0 else 'role'}$",
-                            method="GET", menu_type=Menu.MenuChoices.MENU, parent=parent, meta=meta)
+        Menu.objects.create(
+            name=name,
+            path=f"api/system/{'user' if i == 0 else 'role'}$",
+            method="GET",
+            menu_type=Menu.MenuChoices.MENU,
+            parent=parent,
+            meta=meta,
+        )
     return parent
 
 
 def _all_child_names(result):
     """路由响应顶层为目录分组（path/meta/children），菜单项在 children 内；
     汇总所有分组下的菜单名，规避分组顺序差异。"""
-    return [
-        child["name"]
-        for node in result["data"]
-        for child in (node.get("children") or [])
-    ]
+    return [child["name"] for node in result["data"] for child in (node.get("children") or [])]
 
 
 def _fixture_group_children(result):

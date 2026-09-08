@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """server/conf.py：Config 取值优先级与类型转换、ConfigManager 多来源加载。"""
+
 import pytest
 
 from server.conf import Config, ConfigManager, DoesNotExist, import_string
@@ -12,6 +13,7 @@ from server.conf import Config, ConfigManager, DoesNotExist, import_string
 class TestImportString:
     def test_valid_path(self):
         from server.conf import Config as Target
+
         assert import_string("server.conf.Config") is Target
 
     def test_no_dot_raises_import_error(self):

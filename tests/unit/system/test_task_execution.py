@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """TaskExecution 执行记录：信号记账 + run action + log action 单元测试。"""
+
 import json
 import uuid
 from datetime import timedelta
@@ -33,21 +34,20 @@ def _make_user():
 
 
 def _make_periodic_task():
-    crontab = CrontabSchedule.objects.create(
-        minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
-    )
+    crontab = CrontabSchedule.objects.create(minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*")
     return PeriodicTask.objects.create(
         name="test-periodic-job",
         task="system.tasks.auto_clean_operation_job",
-        crontab=crontab, args=json.dumps([]), kwargs=json.dumps({}),
+        crontab=crontab,
+        args=json.dumps([]),
+        kwargs=json.dumps({}),
     )
 
 
 def test_publish_creates_pending_execution():
     task_id = str(uuid.uuid4())
     task_execution_on_publish(
-        headers={"id": task_id, "task": "common.tasks.foo",
-                 "periodic_task_name": "some-periodic"},
+        headers={"id": task_id, "task": "common.tasks.foo", "periodic_task_name": "some-periodic"},
         body=([1, 2], {"k": "v"}),
     )
     execution = TaskExecution.objects.get(pk=task_id)
@@ -63,9 +63,7 @@ def test_publish_keeps_manual_creator():
     """手动执行场景：投递前已建记录（带 creator），publish 信号不得覆盖。"""
     user = _make_user()
     execution = TaskExecution.objects.create(name="x.tasks.y", creator=user)
-    task_execution_on_publish(
-        headers={"id": str(execution.pk), "task": "x.tasks.y"}, body=([], {})
-    )
+    task_execution_on_publish(headers={"id": str(execution.pk), "task": "x.tasks.y"}, body=([], {}))
     execution.refresh_from_db()
     assert execution.creator == user
 
@@ -170,9 +168,7 @@ def test_execution_serializer_related_fields_display():
     """执行历史关联字段序列化为 {pk,label}：列表页直接可读，不展示裸数字主键。"""
     user = _make_user()
     instance = _make_periodic_task()
-    execution = TaskExecution.objects.create(
-        name="x.tasks.display", periodic_task=instance, creator=user
-    )
+    execution = TaskExecution.objects.create(name="x.tasks.display", periodic_task=instance, creator=user)
     data = TaskExecutionSerializer(execution).data
     assert data["periodic_task"] == {"pk": instance.pk, "label": "test-periodic-job"}
     assert data["creator"]["pk"] == user.pk
@@ -202,15 +198,18 @@ def test_registered_action_lists_user_tasks():
 def test_periodic_task_args_must_be_json_list():
     # payload 必须携带合法 crontab，否则模型 clean 的 schedule 缺失校验先行 500，
     # 测不到 args JSON 校验本身
-    crontab = CrontabSchedule.objects.create(
-        minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
-    )
+    crontab = CrontabSchedule.objects.create(minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*")
     user = _make_user()
     factory = APIRequestFactory()
     request = factory.post(
         "/api/system/tasks/periodic",
-        data={"name": "bad-args", "task": "system.tasks.auto_clean_operation_job",
-              "crontab": crontab.pk, "args": "{not-json}", "kwargs": "{}"},
+        data={
+            "name": "bad-args",
+            "task": "system.tasks.auto_clean_operation_job",
+            "crontab": crontab.pk,
+            "args": "{not-json}",
+            "kwargs": "{}",
+        },
         format="json",
     )
     force_authenticate(request, user=user)
@@ -221,8 +220,7 @@ def test_periodic_task_args_must_be_json_list():
 
 def test_crontab_serializer_rejects_bad_expression():
     serializer = CrontabScheduleSerializer(
-        data={"minute": "abc", "hour": "*", "day_of_week": "*",
-              "day_of_month": "*", "month_of_year": "*"}
+        data={"minute": "abc", "hour": "*", "day_of_week": "*", "day_of_month": "*", "month_of_year": "*"}
     )
     assert not serializer.is_valid()
     assert "minute" in serializer.errors
@@ -230,9 +228,7 @@ def test_crontab_serializer_rejects_bad_expression():
 
 def test_auto_clean_task_execution():
     old = TaskExecution.objects.create(name="x.tasks.old")
-    TaskExecution.objects.filter(pk=old.pk).update(
-        created_time=timezone.now() - timedelta(days=40)
-    )
+    TaskExecution.objects.filter(pk=old.pk).update(created_time=timezone.now() - timedelta(days=40))
     TaskExecution.objects.create(name="x.tasks.new")
     with mock.patch.object(system_tasks.settings, "TASK_EXECUTION_KEEP_DAYS", 30):
         removed = system_tasks.auto_clean_task_execution_job.run()
@@ -253,8 +249,7 @@ def _make_log_consumer(execution_pk):
     consumer.disconnected = False
     captured = []
 
-    async def fake_send_base_json(action, data=None, mid=None, code=1000,
-                                  detail=None, close=False, **kwargs):
+    async def fake_send_base_json(action, data=None, mid=None, code=1000, detail=None, close=False, **kwargs):
         captured.append({"action": action, "data": data})
 
     consumer.send_base_json = fake_send_base_json
@@ -267,9 +262,7 @@ def test_ws_push_once_streams_until_mark(monkeypatch, tmp_path):
     log_file.write_bytes("hello\nworld\n".encode() + CELERY_LOG_MAGIC_MARK)
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
 
-    finished = async_to_sync(consumer.push_once)(
-        get_celery_task_log_path(consumer.pk)
-    )
+    finished = async_to_sync(consumer.push_once)(get_celery_task_log_path(consumer.pk))
     assert finished is True
     frame = captured[-1]
     assert frame["action"] == "task_log"
@@ -289,9 +282,7 @@ def test_ws_push_once_waits_when_file_missing(monkeypatch, tmp_path):
     assert captured[-1]["data"]["finished"] is False
 
     # 执行已结束但文件始终未落盘 → finished
-    TaskExecution.objects.filter(pk=execution.pk).update(
-        date_finished=timezone.now()
-    )
+    TaskExecution.objects.filter(pk=execution.pk).update(date_finished=timezone.now())
     finished = async_to_sync(consumer.push_once)(path)
     assert finished is True
 
@@ -300,13 +291,12 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
-    request = factory.post(
-        "/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json"
-    )
+    request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("system.views.task.app.send_task") as send_task, mock.patch(
-            "system.views.task.app.autodiscover_tasks"
+    with (
+        mock.patch("system.views.task.app.send_task") as send_task,
+        mock.patch("system.views.task.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -321,9 +311,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     PeriodicTask.objects.filter(pk=instance.pk).update(task="no.exist.task")
     instance.refresh_from_db()
     factory = APIRequestFactory()
-    request = factory.post(
-        "/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json"
-    )
+    request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with mock.patch("system.views.task.app.autodiscover_tasks"):
@@ -361,7 +349,8 @@ def test_clean_orphan_periodic_tasks():
         crontab=CrontabSchedule.objects.create(
             minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
         ),
-        args="[]", kwargs="{}",
+        args="[]",
+        kwargs="{}",
     )
 
     class FakeApp:
@@ -391,7 +380,8 @@ def test_clean_orphan_periodic_tasks_cache_guard():
         crontab=CrontabSchedule.objects.create(
             minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*"
         ),
-        args="[]", kwargs="{}",
+        args="[]",
+        kwargs="{}",
     )
     with (
         mock.patch("system.signal_task_execution.cache") as cache_mock,

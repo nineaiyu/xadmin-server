@@ -17,11 +17,15 @@ class DataPermission(DbAuditModel, ModeTypeAbstract, DbUuidModel):
     name = models.CharField(verbose_name=_("Name"), max_length=255, unique=True)
     rules = models.JSONField(verbose_name=_("Rules"), max_length=10240)
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
-    menu = models.ManyToManyField("system.Menu", verbose_name=_("Menu"), blank=True,
-                                  help_text=_("If a menu exists, it only applies to the selected menu permission"))
+    menu = models.ManyToManyField(
+        "system.Menu",
+        verbose_name=_("Menu"),
+        blank=True,
+        help_text=_("If a menu exists, it only applies to the selected menu permission"),
+    )
 
     class Meta:
-        ordering = ('-created_time',)
+        ordering = ("-created_time",)
         verbose_name = _("Data permission")
         verbose_name_plural = verbose_name
 

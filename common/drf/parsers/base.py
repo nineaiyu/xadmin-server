@@ -17,8 +17,8 @@ logger = get_logger(__name__)
 
 class FileContentOverflowedError(APIException):
     status_code = status.HTTP_400_BAD_REQUEST
-    default_code = 'file_content_overflowed'
-    default_detail = _('The file content overflowed (The maximum length `{}` bytes)')
+    default_code = "file_content_overflowed"
+    default_detail = _("The file content overflowed (The maximum length `{}` bytes)")
 
 
 class BaseFileParser(BaseParser):
@@ -26,10 +26,10 @@ class BaseFileParser(BaseParser):
 
     serializer_cls = None
     serializer_fields = None
-    obj_pattern = re.compile(r'^(.+)\(([a-z0-9-]+)\)$')
+    obj_pattern = re.compile(r"^(.+)\(([a-z0-9-]+)\)$")
 
     def check_content_length(self, meta):
-        content_length = int(meta.get('CONTENT_LENGTH', meta.get('HTTP_CONTENT_LENGTH', 0)))
+        content_length = int(meta.get("CONTENT_LENGTH", meta.get("HTTP_CONTENT_LENGTH", 0)))
         if content_length > self.FILE_CONTENT_MAX_LENGTH:
             msg = FileContentOverflowedError.default_detail.format(self.FILE_CONTENT_MAX_LENGTH)
             logger.error(msg)
@@ -53,19 +53,16 @@ class BaseFileParser(BaseParser):
         fields = self.serializer_fields
         for k, v in fields.items():
             # id 是只读的, 导入更新资产平台会失败
-            if v.read_only and k not in ['id', 'pk']:
+            if v.read_only and k not in ["id", "pk"]:
                 continue
-            fields_map.update({
-                v.label: k,
-                k: k
-            })
+            fields_map.update({v.label: k, k: k})
         lowercase_fields_map = {k.lower(): v for k, v in fields_map.items()}
         field_names = []
         for column_title in column_titles:
             if "(" in column_title and column_title.endswith(")"):
-                field = column_title.strip('*').strip(")").split('(')[-1]
+                field = column_title.strip("*").strip(")").split("(")[-1]
             else:
-                field = lowercase_fields_map.get(column_title.strip('*').lower(), '')
+                field = lowercase_fields_map.get(column_title.strip("*").lower(), "")
             field_names.append(field)
         return field_names
 
@@ -73,13 +70,7 @@ class BaseFileParser(BaseParser):
     def _replace_chinese_quote(s):
         if not isinstance(s, str):
             return s
-        trans_table = str.maketrans({
-            '“': '"',
-            '”': '"',
-            '‘': '"',
-            '’': '"',
-            '\'': '"'
-        })
+        trans_table = str.maketrans({"“": '"', "”": '"', "‘": '"', "’": '"', "'": '"'})
         return s.translate(trans_table)
 
     @classmethod
@@ -93,14 +84,13 @@ class BaseFileParser(BaseParser):
             col = cls._replace_chinese_quote(col)
             # 列表/字典转换
             if isinstance(col, str) and (
-                    (col.startswith('[') and col.endswith(']')) or
-                    (col.startswith("{") and col.endswith("}"))
+                (col.startswith("[") and col.endswith("]")) or (col.startswith("{") and col.endswith("}"))
             ):
                 try:
                     col = json.loads(col)
                 except json.JSONDecodeError as e:
-                    logger.error('Json load error: ', e)
-                    logger.error('col: ', col)
+                    logger.error("Json load error: ", e)
+                    logger.error("col: ", col)
             new_row.append(col)
         return new_row
 
@@ -113,15 +103,15 @@ class BaseFileParser(BaseParser):
         obj_name, obj_id = matched.groups()
         if obj_id.isdigit():
             obj_id = int(obj_id)
-        return {'pk': obj_id, 'name': obj_name}
+        return {"pk": obj_id, "name": obj_name}
 
     def parse_value(self, field, value):
-        if value == '-' and field and field.allow_null:
+        if value == "-" and field and field.allow_null:
             return None
-        elif hasattr(field, 'to_file_internal_value'):
+        elif hasattr(field, "to_file_internal_value"):
             value = field.to_file_internal_value(value)
         elif isinstance(field, serializers.BooleanField):
-            value = value.lower() in ['true', '1', 'yes']
+            value = value.lower() in ["true", "1", "yes"]
         elif isinstance(field, serializers.ChoiceField):
             value = value
         elif isinstance(field, BasePrimaryKeyRelatedField):
@@ -131,8 +121,8 @@ class BaseFileParser(BaseParser):
                 value = self.id_name_to_obj(value)
         elif isinstance(field, LabeledChoiceField):
             value = self.id_name_to_obj(value)
-            if isinstance(value, dict) and 'pk' in value:
-                value = value.get('pk')
+            if isinstance(value, dict) and "pk" in value:
+                value = value.get("pk")
         elif isinstance(field, serializers.ListSerializer):
             value = [self.parse_value(field.child, v) for v in value]
         elif isinstance(field, serializers.Serializer):
@@ -143,9 +133,9 @@ class BaseFileParser(BaseParser):
             value = [self.parse_value(field.child, v) for v in value]
         elif isinstance(field, serializers.JSONField):
             if isinstance(value, str):
-                if value.lower() in ['yes']:
+                if value.lower() in ["yes"]:
                     return True
-                elif value.lower() in ['no']:
+                elif value.lower() in ["no"]:
                     return False
             try:
                 value = json.loads(value)
@@ -187,14 +177,14 @@ class BaseFileParser(BaseParser):
         rows = list(rows)
         if not rows:
             return rows
-        if rows[0][0].startswith('#Help'):
+        if rows[0][0].startswith("#Help"):
             rows.pop(0)
         return rows
 
     def parse(self, stream, media_type=None, parser_context=None):
-        assert parser_context is not None, '`parser_context` should not be `None`'
+        assert parser_context is not None, "`parser_context` should not be `None`"
 
-        view = parser_context['view']
+        view = parser_context["view"]
         request = view.request
 
         try:
@@ -215,9 +205,9 @@ class BaseFileParser(BaseParser):
             # 给 `common.mixins.api.RenderToJsonMixin` 提供，暂时只能耦合
             column_title_field_pairs = list(zip(column_titles, field_names))
             column_title_field_pairs = [(k, v) for k, v in column_title_field_pairs if k and v]
-            if not hasattr(request, 'jms_context'):
+            if not hasattr(request, "jms_context"):
                 request.jms_context = {}
-            request.jms_context['column_title_field_pairs'] = column_title_field_pairs
+            request.jms_context["column_title_field_pairs"] = column_title_field_pairs
 
             rows = self.pop_help_text_if_need(rows)
             data = self.generate_data(field_names, rows)

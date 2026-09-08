@@ -13,10 +13,10 @@ import html2text
 import psutil
 
 
-def get_logger(name='') -> logging.Logger:
-    if '/' in name:
-        name = os.path.basename(name).replace('.py', '')
-    return logging.getLogger(f'xadmin.{name}')
+def get_logger(name="") -> logging.Logger:
+    if "/" in name:
+        name = os.path.basename(name).replace(".py", "")
+    return logging.getLogger(f"xadmin.{name}")
 
 
 def get_disk_usage(path):
@@ -35,29 +35,29 @@ def get_cpu_load():
     cpu_load_1, cpu_load_5, cpu_load_15 = psutil.getloadavg()
     cpu_count = psutil.cpu_count()
     single_cpu_load_1 = cpu_load_1 / cpu_count
-    single_cpu_load_1 = '%.2f' % single_cpu_load_1
+    single_cpu_load_1 = "%.2f" % single_cpu_load_1
     return float(single_cpu_load_1)
 
 
 def get_docker_mem_usage_if_limit():
     try:
-        with open('/sys/fs/cgroup/memory/memory.limit_in_bytes') as f:
+        with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:
             limit_in_bytes = int(f.readline())
             total = psutil.virtual_memory().total
             if limit_in_bytes >= total:
-                raise ValueError('Not limit')
+                raise ValueError("Not limit")
 
-        with open('/sys/fs/cgroup/memory/memory.usage_in_bytes') as f:
+        with open("/sys/fs/cgroup/memory/memory.usage_in_bytes") as f:
             usage_in_bytes = int(f.readline())
 
-        with open('/sys/fs/cgroup/memory/memory.stat') as f:
+        with open("/sys/fs/cgroup/memory/memory.stat") as f:
             inactive_file = 0
             for line in f:
-                if line.startswith('total_inactive_file'):
+                if line.startswith("total_inactive_file"):
                     name, inactive_file = line.split()
                     break
 
-                if line.startswith('inactive_file'):
+                if line.startswith("inactive_file"):
                     name, inactive_file = line.split()
                     continue
 
@@ -93,6 +93,6 @@ def convert_html_to_markdown(html_str):
     h.ignore_links = False
 
     markdown = h.handle(html_str)
-    markdown = markdown.replace('\n\n', '\n')
-    markdown = markdown.replace('\n ', '\n')
+    markdown = markdown.replace("\n\n", "\n")
+    markdown = markdown.replace("\n ", "\n")
     return markdown

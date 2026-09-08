@@ -32,63 +32,84 @@ def get_upload_max_size(user_obj):
 
 
 class UploadFileFilter(BaseFilterSet):
-    filename = filters.CharFilter(field_name='filename', lookup_expr='icontains')
+    filename = filters.CharFilter(field_name="filename", lookup_expr="icontains")
 
     class Meta:
         model = UploadFile
-        fields = ['filename', 'mime_type', 'md5sum', 'description', 'is_upload', 'is_tmp']
+        fields = ["filename", "mime_type", "md5sum", "description", "is_upload", "is_tmp"]
 
 
 class UploadFileViewSet(RecycleBinAction, BaseModelSet):
     """文件"""
+
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
-    ordering_fields = ['created_time', 'filesize']
+    ordering_fields = ["created_time", "filesize"]
     filterset_class = UploadFileFilter
 
     @extend_schema(
-        responses=get_default_response_schema({
-            'data': build_object_type(
-                properties={
-                    'file_upload_size': build_basic_type(OpenApiTypes.NUMBER),
-                }
-            )
-        })
+        responses=get_default_response_schema(
+            {
+                "data": build_object_type(
+                    properties={
+                        "file_upload_size": build_basic_type(OpenApiTypes.NUMBER),
+                    }
+                )
+            }
+        )
     )
-    @action(methods=['get'], detail=False)
+    @action(methods=["get"], detail=False)
     def config(self, request, *args, **kwargs):
         """获取上传配置"""
-        return ApiResponse(data={'file_upload_size': get_upload_max_size(request.user)})
+        return ApiResponse(data={"file_upload_size": get_upload_max_size(request.user)})
 
     @extend_schema(
         description="文件上传",
         request=OpenApiRequest(
-            build_object_type(properties={'file': build_array_type(build_basic_type(OpenApiTypes.BINARY))})
+            build_object_type(properties={"file": build_array_type(build_basic_type(OpenApiTypes.BINARY))})
         ),
         responses={
-            200: inline_serializer(name='result', fields={
-                'code': serializers.IntegerField(),
-                'detail': serializers.CharField(),
-                'data': UploadFileSerializer(many=True)
-            })
-        }
+            200: inline_serializer(
+                name="result",
+                fields={
+                    "code": serializers.IntegerField(),
+                    "detail": serializers.CharField(),
+                    "data": UploadFileSerializer(many=True),
+                },
+            )
+        },
     )
-    @action(methods=['post'], detail=False, throttle_classes=[UploadThrottle, ], parser_classes=(MultiPartParser,))
+    @action(
+        methods=["post"],
+        detail=False,
+        throttle_classes=[
+            UploadThrottle,
+        ],
+        parser_classes=(MultiPartParser,),
+    )
     def upload(self, request, *args, **kwargs):
         """上传文件"""
 
-        files = request.FILES.getlist('file', [])
+        files = request.FILES.getlist("file", [])
         result = []
         file_upload_max_size = get_upload_max_size(request.user)
         for file_obj in files:
             try:
                 if file_obj.size > file_upload_max_size:
-                    return ApiResponse(code=1003,
-                                       detail=_("upload file size cannot exceed {}").format(file_upload_max_size))
+                    return ApiResponse(
+                        code=1003, detail=_("upload file size cannot exceed {}").format(file_upload_max_size)
+                    )
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
                 return ApiResponse(code=1002, detail=_("Wrong upload file type"))
-            obj = UploadFile.objects.create(creator=request.user, filename=file_obj.name, is_upload=True, is_tmp=True,
-                                            filepath=file_obj, mime_type=file_obj.content_type, filesize=file_obj.size)
+            obj = UploadFile.objects.create(
+                creator=request.user,
+                filename=file_obj.name,
+                is_upload=True,
+                is_tmp=True,
+                filepath=file_obj,
+                mime_type=file_obj.content_type,
+                filesize=file_obj.size,
+            )
             result.append(obj)
         return ApiResponse(data=self.get_serializer(result, many=True).data)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system.utils.menu 单元测试（权限名公共前缀、关联模型探测）。"""
+
 import pytest
 
 from demo.models import Book

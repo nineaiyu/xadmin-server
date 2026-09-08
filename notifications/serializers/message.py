@@ -26,17 +26,38 @@ logger = get_logger(__name__)
 class NoticeMessageSerializer(BaseModelSerializer):
     class Meta:
         model = MessageContent
-        fields = ['pk', 'title', 'level', "publish", 'notice_type', "notice_user", 'notice_dept', 'notice_role',
-                  'message', "created_time", "user_count", "read_user_count", 'extra_json', "files", 'deleted_at']
+        fields = [
+            "pk",
+            "title",
+            "level",
+            "publish",
+            "notice_type",
+            "notice_user",
+            "notice_dept",
+            "notice_role",
+            "message",
+            "created_time",
+            "user_count",
+            "read_user_count",
+            "extra_json",
+            "files",
+            "deleted_at",
+        ]
 
-        table_fields = ['pk', 'title', 'notice_type', "read_user_count", "publish", "created_time"]
+        table_fields = ["pk", "title", "notice_type", "read_user_count", "publish", "created_time"]
         extra_kwargs = {
-            'extra_json': {'read_only': True},
-            'deleted_at': {'read_only': True},
-            'notice_user': {'attrs': ['pk', 'username'], 'many': True, 'format': '{username}', 'read_only': False,
-                            'input_type': 'api-search-user', 'queryset': UserInfo.objects},
-            'notice_dept': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-dept'},
-            'notice_role': {'attrs': ['pk', 'name'], 'many': True, 'format': '{name}', 'input_type': 'api-search-role'},
+            "extra_json": {"read_only": True},
+            "deleted_at": {"read_only": True},
+            "notice_user": {
+                "attrs": ["pk", "username"],
+                "many": True,
+                "format": "{username}",
+                "read_only": False,
+                "input_type": "api-search-user",
+                "queryset": UserInfo.objects,
+            },
+            "notice_dept": {"attrs": ["pk", "name"], "many": True, "format": "{name}", "input_type": "api-search-dept"},
+            "notice_role": {"attrs": ["pk", "name"], "many": True, "format": "{name}", "input_type": "api-search-role"},
         }
 
     files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
@@ -47,6 +68,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
         # 公告/站内信内容以 v-html 渲染（前端 NoticeShow），入库前按白名单净化，
         # 防止持权账号之间注入脚本（存储型 XSS）
         from common.utils.sanitize import sanitize_rich_text
+
         return sanitize_rich_text(value)
 
     @extend_schema_field(serializers.IntegerField)
@@ -55,8 +77,9 @@ class NoticeMessageSerializer(BaseModelSerializer):
             # 整页一次聚合查询，替代每条消息一次 COUNT
             counts = self._page_read_counts()
             if counts is None:
-                return MessageUserRead.objects.filter(notice=obj, unread=False,
-                                                      owner_id__in=obj.notice_user.all()).count()
+                return MessageUserRead.objects.filter(
+                    notice=obj, unread=False, owner_id__in=obj.notice_user.all()
+                ).count()
             return counts.get(obj.pk, 0)
 
         elif obj.notice_type in MessageContent.get_notice_choices():
@@ -81,62 +104,64 @@ class NoticeMessageSerializer(BaseModelSerializer):
         page = [item for item in page if item.notice_type in MessageContent.get_user_choices()]
         if not page:
             return None
-        cached = self.context.get('_page_read_counts')
+        cached = self.context.get("_page_read_counts")
         if cached is not None:
             return cached
         # notice_user 走 MessageUserRead through 表，messageuserread__unread=False 过滤
         # 已读行；两次 join 各自独立，distinct 去重后即等价于逐对象的
         # MessageUserRead.objects.filter(notice=obj, unread=False, owner_id__in=obj.notice_user.all()).count()
-        rows = MessageContent.objects.filter(pk__in=[item.pk for item in page]).annotate(
-            read_count=Count('notice_user', filter=Q(messageuserread__unread=False), distinct=True)
-        ).values_list('pk', 'read_count')
+        rows = (
+            MessageContent.objects.filter(pk__in=[item.pk for item in page])
+            .annotate(read_count=Count("notice_user", filter=Q(messageuserread__unread=False), distinct=True))
+            .values_list("pk", "read_count")
+        )
         counts = dict(rows)
-        self.context['_page_read_counts'] = counts
+        self.context["_page_read_counts"] = counts
         return counts
 
     def validate_notice_type(self, val):
-        if MessageContent.NoticeChoices.NOTICE == val and self.request.method == 'POST':
+        if MessageContent.NoticeChoices.NOTICE == val and self.request.method == "POST":
             raise ValidationError(_("Parameter error. System announcement cannot be created"))
         return val
 
     def validate(self, attrs):
-        notice_type = attrs.get('notice_type')
+        notice_type = attrs.get("notice_type")
 
         if notice_type == MessageContent.NoticeChoices.ROLE:
-            attrs.pop('notice_dept', None)
-            attrs.pop('notice_user', None)
-            if not attrs.get('notice_role'):
+            attrs.pop("notice_dept", None)
+            attrs.pop("notice_user", None)
+            if not attrs.get("notice_role"):
                 raise ValidationError(_("The notice role cannot be null"))
 
         if notice_type == MessageContent.NoticeChoices.DEPT:
-            attrs.pop('notice_user', None)
-            attrs.pop('notice_role', None)
-            if not attrs.get('notice_dept'):
+            attrs.pop("notice_user", None)
+            attrs.pop("notice_role", None)
+            if not attrs.get("notice_dept"):
                 raise ValidationError(_("The notice department cannot be null"))
 
         if notice_type == MessageContent.NoticeChoices.USER:
-            attrs.pop('notice_role', None)
-            attrs.pop('notice_dept', None)
-            if not attrs.get('notice_user'):
+            attrs.pop("notice_role", None)
+            attrs.pop("notice_dept", None)
+            if not attrs.get("notice_user"):
                 raise ValidationError(_("The notice user cannot be null"))
 
-        files = attrs.get('files')
+        files = attrs.get("files")
         if files is not None:
-            del attrs['files']
+            del attrs["files"]
             queryset = UploadFile.objects.filter(
-                filepath__in=[file.split(os.path.join('/', settings.MEDIA_URL))[-1] for file in files])
-            attrs['file'] = get_filter_queryset(queryset, self.request.user).all()
+                filepath__in=[file.split(os.path.join("/", settings.MEDIA_URL))[-1] for file in files]
+            )
+            attrs["file"] = get_filter_queryset(queryset, self.request.user).all()
         return attrs
 
     def update(self, instance, validated_data):
-        validated_data.pop('notice_type', None)  # 不能修改消息类型
+        validated_data.pop("notice_type", None)  # 不能修改消息类型
         if instance.notice_type == MessageContent.NoticeChoices.SYSTEM:  # 系统通知不允许修改
             raise ValidationError(_("The system notice cannot be update"))
         return super().update(instance, validated_data)
 
 
 class AnnouncementSerializer(NoticeMessageSerializer):
-
     def validate_notice_type(self, val):
         if MessageContent.NoticeChoices.NOTICE == val:
             return val
@@ -146,16 +171,18 @@ class AnnouncementSerializer(NoticeMessageSerializer):
 class NoticeUserReadMessageSerializer(BaseModelSerializer):
     class Meta:
         model = MessageUserRead
-        fields = ['pk', 'notice_info', 'notice_type', 'owner', "unread", "updated_time"]
+        fields = ["pk", "notice_info", "notice_type", "owner", "unread", "updated_time"]
         read_only_fields = [x.name for x in MessageUserRead._meta.fields]
-        extra_kwargs = {
-            'owner': {'attrs': ['pk', 'username'], 'read_only': True}
-        }
+        extra_kwargs = {"owner": {"attrs": ["pk", "username"], "read_only": True}}
 
-    notice_type = serializers.CharField(source='notice.get_notice_type_display', read_only=True, label=_("Notice type"))
+    notice_type = serializers.CharField(source="notice.get_notice_type_display", read_only=True, label=_("Notice type"))
 
-    notice_info = NoticeMessageSerializer(fields=['pk', 'level', 'title', 'notice_type', 'message', 'publish'],
-                                          read_only=True, source='notice', label=_("Notice message"))
+    notice_info = NoticeMessageSerializer(
+        fields=["pk", "level", "title", "notice_type", "message", "publish"],
+        read_only=True,
+        source="notice",
+        label=_("Notice message"),
+    )
 
 
 class UserNoticeSerializer(BaseModelSerializer):
@@ -163,9 +190,9 @@ class UserNoticeSerializer(BaseModelSerializer):
 
     class Meta:
         model = MessageContent
-        fields = ['pk', 'level', 'title', 'message', "created_time", 'unread', 'notice_type']
-        table_fields = ['pk', 'title', 'unread', 'notice_type', "created_time"]
-        read_only_fields = ['pk', 'notice_user', 'notice_type']
+        fields = ["pk", "level", "title", "message", "created_time", "unread", "notice_type"]
+        table_fields = ["pk", "title", "unread", "notice_type", "created_time"]
+        read_only_fields = ["pk", "notice_user", "notice_type"]
 
     unread = serializers.SerializerMethodField(label=_("Unread"))
 
@@ -175,14 +202,15 @@ class UserNoticeSerializer(BaseModelSerializer):
         # 语义与旧实现逐字段对齐（owner + notice 唯一，每条消息至多一行）：
         # - USER/SYSTEM：存在 unread=True 的记录 -> 未读；
         # - NOTICE/DEPT/ROLE：不存在任何记录 -> 未读（公告创建时不生成 read 行）。
-        owner = self.context.get('request').user
-        cache_key = f'_user_read_map_{owner.pk}'
+        owner = self.context.get("request").user
+        cache_key = f"_user_read_map_{owner.pk}"
         read_map = self.context.get(cache_key)
         if read_map is None:
             read_map = {}
             page = self.get_page_instances(obj)
-            rows = MessageUserRead.objects.filter(
-                owner=owner, notice_id__in=[item.pk for item in page]).values_list('notice_id', 'unread')
+            rows = MessageUserRead.objects.filter(owner=owner, notice_id__in=[item.pk for item in page]).values_list(
+                "notice_id", "unread"
+            )
             for notice_id, unread in rows:
                 has_any_row, has_unread_row = read_map.get(notice_id, (False, False))
                 read_map[notice_id] = (True, has_unread_row or unread)

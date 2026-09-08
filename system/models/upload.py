@@ -15,14 +15,22 @@ from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFil
 
 class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     filepath = models.FileField(verbose_name=_("Filepath"), null=True, blank=True, upload_to=upload_directory_path)
-    file_url = models.URLField(verbose_name=_("Internet URL"), max_length=255, blank=True, null=True,
-                               help_text=_("Usually an address accessible to the outside Internet"))
+    file_url = models.URLField(
+        verbose_name=_("Internet URL"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("Usually an address accessible to the outside Internet"),
+    )
     filename = models.CharField(verbose_name=_("Filename"), max_length=255)
     filesize = models.IntegerField(verbose_name=_("Filesize"))
     mime_type = models.CharField(max_length=255, verbose_name=_("Mime type"))
     md5sum = models.CharField(max_length=36, verbose_name=_("File md5sum"))
-    is_tmp = models.BooleanField(verbose_name=_("Tmp file"), default=False,
-                                 help_text=_("Temporary files are automatically cleared by scheduled tasks"))
+    is_tmp = models.BooleanField(
+        verbose_name=_("Tmp file"),
+        default=False,
+        help_text=_("Temporary files are automatically cleared by scheduled tasks"),
+    )
     is_upload = models.BooleanField(verbose_name=_("Upload file"), default=False)
 
     def save(self, *args, **kwargs):
@@ -42,8 +50,8 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         indexes = [
             # 列表过滤（is_tmp）与每日清理（is_tmp + created_time）共用复合索引；
             # md5sum 用于精确匹配（秒传/去重）
-            models.Index(fields=['is_tmp', 'created_time'], name='idx_uploadfile_tmp_created'),
-            models.Index(fields=['md5sum'], name='idx_uploadfile_md5sum'),
+            models.Index(fields=["is_tmp", "created_time"], name="idx_uploadfile_tmp_created"),
+            models.Index(fields=["md5sum"], name="idx_uploadfile_md5sum"),
         ]
 
     def __str__(self):

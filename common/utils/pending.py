@@ -18,12 +18,21 @@ logger = get_logger(__name__)
 def set_pending_cache(unique_key, cache_data, cache_obj, timeout):
     if unique_key in cache_data:
         cache_data.remove(unique_key)
-    logger.warning(f'return unique_key:{unique_key}  cache_data: {cache_data}  ')
+    logger.warning(f"return unique_key:{unique_key}  cache_data: {cache_data}  ")
     cache_obj.set_storage_cache(cache_data, timeout)
 
 
-def get_pending_result(func, expect_func, loop_count=10, sleep_time=3, unique_key='default_key',
-                       run_func_count=2, pop_first=True, *args, **kwargs):
+def get_pending_result(
+    func,
+    expect_func,
+    loop_count=10,
+    sleep_time=3,
+    unique_key="default_key",
+    run_func_count=2,
+    pop_first=True,
+    *args,
+    **kwargs,
+):
     """
     :param func:            将要运行的函数对象
     :param expect_func:     期待的运行结果函数
@@ -36,7 +45,7 @@ def get_pending_result(func, expect_func, loop_count=10, sleep_time=3, unique_ke
     :param kwargs:
     :return:
     """
-    locker_key = kwargs.pop('locker_key')
+    locker_key = kwargs.pop("locker_key")
     cache_timeout = loop_count * sleep_time * (run_func_count + 1)
     cache_obj = PendingStateCache(locker_key)
     cache_data = cache_obj.get_storage_cache()
@@ -55,29 +64,29 @@ def get_pending_result(func, expect_func, loop_count=10, sleep_time=3, unique_ke
 
     cache_obj.set_storage_cache(cache_data, cache_timeout)
     if not pop_first and len(cache_data) == run_func_count and is_pop:
-        logger.warning(f'unique_key:{unique_key}  cache_data: {cache_data}  ')
-        return True, {'err_msg': '请求重复,请稍后再试'}
+        logger.warning(f"unique_key:{unique_key}  cache_data: {cache_data}  ")
+        return True, {"err_msg": "请求重复,请稍后再试"}
     try:
         with cache.lock(f"get_pending_result_{locker_key}", timeout=loop_count * sleep_time):
             count = 1
             while True:
                 cache_data = cache_obj.get_storage_cache()
-                logger.warning(f'unique_key:{unique_key}  cache_data: {cache_data}  ')
+                logger.warning(f"unique_key:{unique_key}  cache_data: {cache_data}  ")
                 if cache_data and isinstance(cache_data, list) and unique_key in cache_data:
                     result = func(*args, **kwargs)
                     if expect_func(result, *args, **kwargs):
                         set_pending_cache(unique_key, cache_data, cache_obj, cache_timeout)
-                        return True, {'data': result}
+                        return True, {"data": result}
                     time.sleep(sleep_time)
                     if loop_count < count:
                         set_pending_cache(unique_key, cache_data, cache_obj, cache_timeout)
-                        return False, {'err_msg': '请求超时'}
+                        return False, {"err_msg": "请求超时"}
                     count += 1
                 else:
                     set_pending_cache(unique_key, cache_data, cache_obj, cache_timeout)
-                    return True, {'err_msg': '请求重复,请稍后再试'}
+                    return True, {"err_msg": "请求重复,请稍后再试"}
 
     except Exception as e:
-        logger.warning(f'get pending result exception: {e}')
+        logger.warning(f"get pending result exception: {e}")
         set_pending_cache(unique_key, cache_data, cache_obj, cache_timeout)
-        return False, {'err_msg': '内部错误'}
+        return False, {"err_msg": "内部错误"}

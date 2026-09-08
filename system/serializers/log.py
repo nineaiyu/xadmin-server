@@ -20,16 +20,38 @@ class OperationLogSerializer(BaseModelSerializer):
     class Meta:
         model = OperationLog
         fields = [
-            "pk", "module", "creator", "ipaddress", "path", "method", "browser", "system", "request_uuid", "exec_time",
-            "response_code", "status_code", "body", "response_result", "created_time"
+            "pk",
+            "module",
+            "creator",
+            "ipaddress",
+            "path",
+            "method",
+            "browser",
+            "system",
+            "request_uuid",
+            "exec_time",
+            "response_code",
+            "status_code",
+            "body",
+            "response_result",
+            "created_time",
         ]
 
         table_fields = [
-            "pk", "module", "creator", "ipaddress", "path", "method", "browser", "system", "exec_time", "status_code",
-            "created_time"
+            "pk",
+            "module",
+            "creator",
+            "ipaddress",
+            "path",
+            "method",
+            "browser",
+            "system",
+            "exec_time",
+            "status_code",
+            "created_time",
         ]
         read_only_fields = ["pk"] + list(set([x.name for x in OperationLog._meta.fields]))
-        extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
+        extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}
 
     response_result = serializers.JSONField()
     body = serializers.JSONField()
@@ -39,15 +61,34 @@ class LoginLogSerializer(BaseModelSerializer):
     class Meta:
         model = UserLoginLog
         fields = [
-            'pk', 'creator', 'ipaddress', 'city', 'online', 'channel_name', 'login_type', 'browser', 'system', 'agent',
-            'status', 'created_time'
+            "pk",
+            "creator",
+            "ipaddress",
+            "city",
+            "online",
+            "channel_name",
+            "login_type",
+            "browser",
+            "system",
+            "agent",
+            "status",
+            "created_time",
         ]
         table_fields = [
-            'pk', 'creator', 'ipaddress', 'city', 'online', 'channel_name', 'login_type', 'browser', 'system', 'status',
-            'created_time'
+            "pk",
+            "creator",
+            "ipaddress",
+            "city",
+            "online",
+            "channel_name",
+            "login_type",
+            "browser",
+            "system",
+            "status",
+            "created_time",
         ]
-        read_only_fields = ['pk', 'creator']
-        extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
+        read_only_fields = ["pk", "creator"]
+        extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}
 
     online = serializers.SerializerMethodField(read_only=True, label=_("Online"))
 
@@ -57,23 +98,23 @@ class LoginLogSerializer(BaseModelSerializer):
             if not obj.creator:
                 return -1
             # 以整页 creator 为单位批量查询在线 layers，结果缓存在 context 中（同页同一 creator 的多条日志可复用）
-            if 'login_log_online_layers' not in self.context:
+            if "login_log_online_layers" not in self.context:
                 pks = [instance.creator.pk for instance in self.get_page_instances(obj) if instance.creator]
-                self.context['login_log_online_layers'] = get_online_users_layers(pks)
-            return obj.channel_name in self.context['login_log_online_layers'].get(obj.creator.pk, [])
+                self.context["login_log_online_layers"] = get_online_users_layers(pks)
+            return obj.channel_name in self.context["login_log_online_layers"].get(obj.creator.pk, [])
         return -1
 
 
 class UserLoginLogSerializer(LoginLogSerializer):
     class Meta:
         model = UserLoginLog
-        fields = ['created_time', 'status', 'agent', 'city', 'login_type', 'system', 'browser', 'ipaddress']
+        fields = ["created_time", "status", "agent", "city", "login_type", "system", "browser", "ipaddress"]
         read_only_fields = [x.name for x in UserLoginLog._meta.fields]
 
 
 class UserOnlineSerializer(LoginLogSerializer):
     class Meta:
         model = UserLoginLog
-        fields = ['pk', 'creator', 'channel_name', 'agent', 'city', 'system', 'browser', 'ipaddress', 'created_time']
+        fields = ["pk", "creator", "channel_name", "agent", "city", "system", "browser", "ipaddress", "created_time"]
         read_only_fields = [x.name for x in UserLoginLog._meta.fields]
-        extra_kwargs = {'creator': {'attrs': ['pk', 'username'], 'read_only': True, 'format': '{username}'}}
+        extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}

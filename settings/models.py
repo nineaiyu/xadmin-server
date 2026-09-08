@@ -14,8 +14,8 @@ from common.core.models import DbAuditModel, DbUuidModel
 class Setting(DbAuditModel, DbUuidModel):
     name = models.CharField(max_length=128, unique=True, verbose_name=_("Name"))
     value = models.TextField(verbose_name=_("Value"), null=True, blank=True)
-    category = models.CharField(max_length=128, default="default", verbose_name=_('Category'))
-    encrypted = models.BooleanField(default=False, verbose_name=_('Encrypted'))
+    category = models.CharField(max_length=128, default="default", verbose_name=_("Category"))
+    encrypted = models.BooleanField(default=False, verbose_name=_("Encrypted"))
     is_active = models.BooleanField(default=True, verbose_name=_("Is active"))
 
     def __str__(self):
@@ -41,7 +41,7 @@ class Setting(DbAuditModel, DbUuidModel):
                 item = list(item)
             v = json.dumps(item)
             if self.encrypted:
-                v = signer.encrypt(v.encode('utf-8')).decode('utf-8')
+                v = signer.encrypt(v.encode("utf-8")).decode("utf-8")
             self.value = v
         except json.JSONDecodeError as e:
             raise ValueError("Json dump error: {}".format(str(e)))
@@ -64,13 +64,13 @@ class Setting(DbAuditModel, DbUuidModel):
     @classmethod
     def save_to_file(cls, value: InMemoryUploadedFile):
         filename = value.name
-        filepath = f'upload/settings/{filename}'
+        filepath = f"upload/settings/{filename}"
         path = default_storage.save(filepath, ContentFile(value.read()))
         url = default_storage.url(path)
         return url
 
     @classmethod
-    def update_or_create(cls, name='', value='', encrypted=False, category='', user=None):
+    def update_or_create(cls, name="", value="", encrypted=False, category="", user=None):
         """
         不能使用 Model 提供的，update_or_create 因为这里有 encrypted 和 cleaned_value
         :return: (changed, instance)

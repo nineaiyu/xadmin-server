@@ -8,6 +8,7 @@
 约定（与越权矩阵一致）：权限结果按用户+方法缓存 24h，授权布置在首个请求前完成；
 preview 取数直查 DB，故"先请求后补授权"用例用于验证缓存旁路。
 """
+
 import json
 
 import pytest
@@ -54,9 +55,7 @@ def make_user_self_scope(name="仅本人用户"):
 
 def make_book_registry():
     """demo.book 数据权限注册表根节点（试算白名单）。"""
-    return ModelLabelField.objects.create(
-        name="demo.book", label="书籍", field_type=ModelLabelField.FieldChoices.DATA
-    )
+    return ModelLabelField.objects.create(name="demo.book", label="书籍", field_type=ModelLabelField.FieldChoices.DATA)
 
 
 def make_owner_book_permission(name="仅本人书籍"):
@@ -157,10 +156,21 @@ def test_decode_role_ids_and_exclude(normal_user, role):
     dp = DataPermission.objects.create(
         name="指定角色",
         rules=[
-            {"table": "demo.book", "field": "name", "type": "value.table.role.ids",
-             "value": json.dumps([str(role.pk)]), "match": "in"},
-            {"table": "demo.book", "field": "isbn", "type": "value.text", "value": "secret", "match": "exact",
-             "exclude": True},
+            {
+                "table": "demo.book",
+                "field": "name",
+                "type": "value.table.role.ids",
+                "value": json.dumps([str(role.pk)]),
+                "match": "in",
+            },
+            {
+                "table": "demo.book",
+                "field": "isbn",
+                "type": "value.text",
+                "value": "secret",
+                "match": "exact",
+                "exclude": True,
+            },
         ],
     )
     from system.utils.permission_preview import decode_data_permission
@@ -203,6 +213,7 @@ def test_decode_all_ignored_in_and_mode(normal_user):
 
 
 # ---------- 数据权限分组与缓存旁路 ----------
+
 
 def test_data_permission_dept_chain_grouping(normal_user, role, dept):
     """部门链分组：self 与 ancestor 分层展示；个人授权单独一组。"""
@@ -256,8 +267,9 @@ def test_trial_rejects_invisible_menu(api_client, normal_user, role, menu_factor
     make_book_registry()
     other_menu = menu_factory(name="SystemBook", path="/demo/book/index", method=None, menu_type=1)
     api_client.force_authenticate(user=normal_user)
-    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "menu": str(other_menu.pk)},
-                               format="json")
+    response = api_client.post(
+        trial_url(normal_user), {"model": "demo.book", "menu": str(other_menu.pk)}, format="json"
+    )
     assert response.status_code == 400
 
 
@@ -306,8 +318,9 @@ def test_role_preview_contract(auth_client, role, normal_user, menu_factory):
     model_field = ModelLabelField.objects.create(
         name="demo.book", label="书籍", field_type=ModelLabelField.FieldChoices.ROLE
     )
-    child = ModelLabelField.objects.create(name="name", label="书名", parent=model_field,
-                                           field_type=ModelLabelField.FieldChoices.ROLE)
+    child = ModelLabelField.objects.create(
+        name="name", label="书名", parent=model_field, field_type=ModelLabelField.FieldChoices.ROLE
+    )
     fp = FieldPermission.objects.create(role=role, menu=page_menu)
     fp.field.add(child)
 
@@ -328,11 +341,14 @@ def test_role_preview_filters_users_by_caller_scope(api_client, normal_user, rol
     preview_role_menu = menu_factory(name="preview:SystemRole", path=ROLE_PREVIEW_PATH, method="GET")
     role.menu.add(preview_role_menu)
     # 授予 system.userrole 上 code=common 的可见范围（否则 get_object 404），但不授予 system.user 范围
-    normal_user.rules.add(DataPermission.objects.create(
-        name="仅本角色可见",
-        rules=[{"table": "system.userrole", "field": "code", "type": "value.text", "value": "common",
-                "match": "exact"}],
-    ))
+    normal_user.rules.add(
+        DataPermission.objects.create(
+            name="仅本角色可见",
+            rules=[
+                {"table": "system.userrole", "field": "code", "type": "value.text", "value": "common", "match": "exact"}
+            ],
+        )
+    )
     api_client.force_authenticate(user=normal_user)
     response = api_client.get(role_preview_url(role))
     assert response.status_code == 200

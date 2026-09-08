@@ -10,8 +10,12 @@ from common.swagger.utils import get_default_response_schema
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from notifications.notifications import system_msgs, user_msgs
-from notifications.serializers import SystemMsgSubscriptionSerializer, SystemMsgSubscriptionByCategorySerializer, \
-    UserMsgSubscriptionSerializer, UserMsgSubscriptionByCategorySerializer
+from notifications.serializers import (
+    SystemMsgSubscriptionSerializer,
+    SystemMsgSubscriptionByCategorySerializer,
+    UserMsgSubscriptionSerializer,
+    UserMsgSubscriptionByCategorySerializer,
+)
 
 
 class MsgSubscriptionBackend(object):
@@ -19,27 +23,29 @@ class MsgSubscriptionBackend(object):
         parameters=None,
         responses=get_default_response_schema(
             {
-                'data': build_array_type(
+                "data": build_array_type(
                     build_object_type(
                         properties={
-                            'value': build_basic_type(OpenApiTypes.STR),
-                            'label': build_basic_type(OpenApiTypes.STR)
+                            "value": build_basic_type(OpenApiTypes.STR),
+                            "label": build_basic_type(OpenApiTypes.STR),
                         }
                     )
                 )
             }
-        )
+        ),
     )
-    @action(methods=['get'], detail=False)
+    @action(methods=["get"], detail=False)
     def backends(self, request, *args, **kwargs):
         """获取消息通知后端"""
         return ApiResponse(
-            data=[{'value': backend, 'label': backend.label} for backend in BACKEND if backend.is_enable])
+            data=[{"value": backend, "label": backend.label} for backend in BACKEND if backend.is_enable]
+        )
 
 
 class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
     """系统消息订阅"""
-    lookup_field = 'message_type'
+
+    lookup_field = "message_type"
     queryset = SystemMsgSubscription.objects.all()
     serializer_class = SystemMsgSubscriptionSerializer
     list_serializer_class = SystemMsgSubscriptionByCategorySerializer
@@ -56,19 +62,15 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
             msg_type_sub_mapper[sub.message_type] = sub
 
         for msg in system_msgs:
-            message_type = msg['message_type']
-            message_type_label = msg['message_type_label']
-            category = msg['category']
-            category_label = msg['category_label']
+            message_type = msg["message_type"]
+            message_type_label = msg["message_type_label"]
+            category = msg["category"]
+            category_label = msg["category_label"]
 
             if category not in category_children_mapper:
                 children = []
 
-                data.append({
-                    'category': category,
-                    'category_label': category_label,
-                    'children': children
-                })
+                data.append({"category": category, "category_label": category_label, "children": children})
                 category_children_mapper[category] = children
 
             sub = msg_type_sub_mapper[message_type]
@@ -81,7 +83,8 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
 
 class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
     """用户消息订阅"""
-    lookup_field = 'message_type'
+
+    lookup_field = "message_type"
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer
     queryset = UserMsgSubscription.objects.all()
@@ -99,24 +102,21 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
             msg_type_sub_mapper[sub.message_type] = sub
 
         for msg in user_msgs:
-            message_type = msg['message_type']
-            message_type_label = msg['message_type_label']
-            category = msg['category']
-            category_label = msg['category_label']
+            message_type = msg["message_type"]
+            message_type_label = msg["message_type_label"]
+            category = msg["category"]
+            category_label = msg["category_label"]
 
             if category not in category_children_mapper:
                 children = []
-                data.append({
-                    'category': category,
-                    'category_label': category_label,
-                    'children': children
-                })
+                data.append({"category": category, "category_label": category_label, "children": children})
                 category_children_mapper[category] = children
 
             sub = msg_type_sub_mapper.get(message_type)
             if not sub:
-                sub = UserMsgSubscription.objects.create(user=request.user, message_type=message_type,
-                                                         receive_backends=[])
+                sub = UserMsgSubscription.objects.create(
+                    user=request.user, message_type=message_type, receive_backends=[]
+                )
             sub.message_type_label = message_type_label
             category_children_mapper[category].append(sub)
         serializer = self.get_serializer(data, many=True)

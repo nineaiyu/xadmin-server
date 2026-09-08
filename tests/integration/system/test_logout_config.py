@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """登出黑名单与用户配置视图测试。"""
+
 import hashlib
 
 import pytest
@@ -36,9 +37,7 @@ class TestLogout:
         response, access = self._request(superuser)
         assert response.data["code"] == 1000
         # 视图键派生：md5(auth.token)，auth.token 即请求携带的原始 token 串
-        cache = BlackAccessTokenCache(
-            str(superuser.pk), hashlib.md5(str(access).encode()).hexdigest()
-        )
+        cache = BlackAccessTokenCache(str(superuser.pk), hashlib.md5(str(access).encode()).hexdigest())
         assert cache.get_storage_cache() == 1
 
     def test_logout_blacklists_refresh_token(self, superuser):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """字段级审计 diff 集成测试（白名单模型的 update 写入 OperationLog.changes）。"""
+
 import json
 
 import pytest

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/utils/media.py：媒体文件响应（目录拒绝、404、304 与文件流）。"""
+
 import pytest
 from django.http import Http404, HttpResponseNotModified
 from django.test import RequestFactory
@@ -48,9 +49,7 @@ class TestMediaServe:
     def test_not_modified_returns_304(self, rf, media_root, image_file):
         from django.utils.http import http_date
 
-        request = rf.get(
-            "/media/logo.png", HTTP_IF_MODIFIED_SINCE=http_date(image_file.stat().st_mtime + 10)
-        )
+        request = rf.get("/media/logo.png", HTTP_IF_MODIFIED_SINCE=http_date(image_file.stat().st_mtime + 10))
         response = media_serve(request, "logo.png", document_root=str(media_root))
         assert isinstance(response, HttpResponseNotModified)
 

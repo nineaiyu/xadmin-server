@@ -8,6 +8,7 @@ Schema 变更属于破坏性契约变更，需同步前端生成类型并评审�
 覆盖两个真实视图集：demo.BookViewSet（演示模型，字段形态最全）与
 system.UserViewSet（业务模型，字段最复杂）。
 """
+
 import json
 from pathlib import Path
 
@@ -44,9 +45,7 @@ def _assert_matches_schema(payload, schema_name: str):
     wire_payload = json.loads(json.dumps(payload, cls=encoders.JSONEncoder))
     schema = _load_schema(schema_name)
     errors = sorted(Draft7Validator(schema).iter_errors(wire_payload), key=lambda e: list(e.path))
-    assert not errors, "\n".join(
-        f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors
-    )
+    assert not errors, "\n".join(f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}" for e in errors)
 
 
 @pytest.mark.parametrize(

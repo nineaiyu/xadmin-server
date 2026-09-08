@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+
 import os
 
 from django.core.exceptions import ImproperlyConfigured
@@ -28,8 +29,7 @@ DEBUG = CONFIG.DEBUG
 # 生产环境为空会导致任意伪造 token，直接拒绝启动；DEBUG 模式允许为空便于本地调试
 if not SECRET_KEY and not DEBUG:
     raise ImproperlyConfigured(
-        'SECRET_KEY is required when DEBUG is disabled. '
-        'Set it in config.yml or the SECRET_KEY environment variable.'
+        "SECRET_KEY is required when DEBUG is disabled. Set it in config.yml or the SECRET_KEY environment variable."
     )
 
 # SECURITY WARNING: If you run with debug turned on, more debug msg with be log
@@ -65,53 +65,53 @@ XADMIN_APPS = CONFIG.XADMIN_APPS
 DB_PREFIX = CONFIG.DB_PREFIX
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'system.apps.SystemConfig',  # 系统管理
-    'settings.apps.SettingsConfig',  # 设置相关
-    'mfa.apps.MfaConfig',  # MFA / 敏感操作二次验证
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "system.apps.SystemConfig",  # 系统管理
+    "settings.apps.SettingsConfig",  # 设置相关
+    "mfa.apps.MfaConfig",  # MFA / 敏感操作二次验证
     "notifications.apps.NotificationsConfig",  # 消息通知相关
-    'captcha.apps.CaptchaConfig',  # 图片验证码
-    'message.apps.MessageConfig',  # websocket 消息
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-    'rest_framework',
-    'django_filters',
-    'django_celery_results',
-    'django_celery_beat',
-    'imagekit',
-    'drf_spectacular',
-    'drf_spectacular_sidecar',
+    "captcha.apps.CaptchaConfig",  # 图片验证码
+    "message.apps.MessageConfig",  # websocket 消息
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
+    "rest_framework",
+    "django_filters",
+    "django_celery_results",
+    "django_celery_beat",
+    "imagekit",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     *XADMIN_APPS,
-    'common.apps.CommonConfig',  # 这个放到最后, django ready
+    "common.apps.CommonConfig",  # 这个放到最后, django ready
 ]
 
 if DEBUG or DEBUG_DEV:
-    INSTALLED_APPS.insert(0, 'daphne')  # 支持websocket
+    INSTALLED_APPS.insert(0, "daphne")  # 支持websocket
 
 MIDDLEWARE = [
-    'server.middleware.StartMiddleware',
-    'server.middleware.RequestMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
+    "server.middleware.StartMiddleware",
+    "server.middleware.RequestMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     # /admin/ 站点已启用且依赖 Session+CSRF，必须恢复该中间件；
     # DRF API 视图自带 csrf_exempt，Bearer 接口不受影响
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'server.middleware.RefererCheckMiddleware',
-    'server.middleware.SQLCountMiddleware',
-    'common.core.middleware.ApiLoggingMiddleware',
-    'server.middleware.EndMiddleware'
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "server.middleware.RefererCheckMiddleware",
+    "server.middleware.SQLCountMiddleware",
+    "common.core.middleware.ApiLoggingMiddleware",
+    "server.middleware.EndMiddleware",
 ]
 
 # django-silk 性能剖析（性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
@@ -119,34 +119,31 @@ MIDDLEWARE = [
 # silk 仅用于低并发下的单接口 SQL/profiling 剖析。开启后需 `python manage.py migrate` 创建 silk 表
 if CONFIG.SILK_ENABLED:
     if not (DEBUG or DEBUG_DEV):
-        raise ImproperlyConfigured(
-            'SILK_ENABLED 仅允许在 DEBUG/DEBUG_DEV 环境开启（性能剖析工具不可用于生产）'
-        )
-    if 'silk' not in INSTALLED_APPS:
-        INSTALLED_APPS.append('silk')
-        MIDDLEWARE.insert(0, 'silk.middleware.SilkyMiddleware')
+        raise ImproperlyConfigured("SILK_ENABLED 仅允许在 DEBUG/DEBUG_DEV 环境开启（性能剖析工具不可用于生产）")
+    if "silk" not in INSTALLED_APPS:
+        INSTALLED_APPS.append("silk")
+        MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
     SILKY_AUTHENTICATION = True  # /silk 面板要求登录
     SILKY_AUTHORISATION = True  # 且要求员工/超级管理员权限
     SILKY_MAX_RECORDED_REQUESTS = 10_000
     SILKY_MAX_RECORDED_REQUESTS_CHECK_PERCENT = 5  # 降低落库概率检查频率，减少剖析自身开销
     SILKY_PYTHON_PROFILER = True  # 请求级 Python profiling；压测排查时如干扰明显可关闭
-    SILKY_PYTHON_PROFILER_RESULT_PATH = os.path.join(PROJECT_DIR, 'tmp', 'silk_profiles')
-    SILKY_IGNORE_PATHS = ('/api/health', '/api/static', '^/media', '^/api/system/auth/captcha')
+    SILKY_PYTHON_PROFILER_RESULT_PATH = os.path.join(PROJECT_DIR, "tmp", "silk_profiles")
+    SILKY_IGNORE_PATHS = ("/api/health", "/api/static", "^/media", "^/api/system/auth/captcha")
 
-ROOT_URLCONF = 'server.urls'
+ROOT_URLCONF = "server.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(PROJECT_DIR, 'templates')]
-        ,
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(PROJECT_DIR, "templates")],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -190,10 +187,10 @@ CACHES = {
 
 DB_OPTIONS = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
-if DB_ENGINE in ['mysql', 'oracle', 'postgresql', 'sqlite3']:
-    ENGINE = 'django.db.backends.{}'.format(DB_ENGINE)
-elif DB_ENGINE == 'vastbase':
-    ENGINE = 'django_vastbase_backend'
+if DB_ENGINE in ["mysql", "oracle", "postgresql", "sqlite3"]:
+    ENGINE = "django.db.backends.{}".format(DB_ENGINE)
+elif DB_ENGINE == "vastbase":
+    ENGINE = "django_vastbase_backend"
 else:
     ENGINE = CONFIG.DB_ENGINE
 
@@ -202,32 +199,32 @@ else:
 # 连接——压测 ~600rps 时临时端口耗尽致 13-27% 500。postgresql 引擎默认启用 Django 5.1+
 # server 端连接池（psycopg3 + psycopg_pool）；池模式下 CONN_MAX_AGE 必须为 0，
 # CONN_HEALTH_CHECKS 使池在取用连接前做轻量存活校验
-DB_POOL_ENABLED = DB_ENGINE == 'postgresql' and bool(CONFIG.DB_POOL)
+DB_POOL_ENABLED = DB_ENGINE == "postgresql" and bool(CONFIG.DB_POOL)
 if DB_POOL_ENABLED:
-    DB_OPTIONS['pool'] = {
-        'min_size': int(CONFIG.DB_POOL_MIN_SIZE),
-        'max_size': max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),
+    DB_OPTIONS["pool"] = {
+        "min_size": int(CONFIG.DB_POOL_MIN_SIZE),
+        "max_size": max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),
     }
 
 DATABASES = {
-    'default': {
-        'ENGINE': ENGINE,
-        'NAME': CONFIG.DB_DATABASE,
-        'HOST': CONFIG.DB_HOST,
-        'PORT': CONFIG.DB_PORT,
-        'USER': CONFIG.DB_USER,
-        'PASSWORD': CONFIG.DB_PASSWORD,
-        'ATOMIC_REQUESTS': True,
-        'CONN_MAX_AGE': 0 if DB_POOL_ENABLED else 600,
-        'CONN_HEALTH_CHECKS': DB_POOL_ENABLED,
-        'OPTIONS': DB_OPTIONS
+    "default": {
+        "ENGINE": ENGINE,
+        "NAME": CONFIG.DB_DATABASE,
+        "HOST": CONFIG.DB_HOST,
+        "PORT": CONFIG.DB_PORT,
+        "USER": CONFIG.DB_USER,
+        "PASSWORD": CONFIG.DB_PASSWORD,
+        "ATOMIC_REQUESTS": True,
+        "CONN_MAX_AGE": 0 if DB_POOL_ENABLED else 600,
+        "CONN_HEALTH_CHECKS": DB_POOL_ENABLED,
+        "OPTIONS": DB_OPTIONS,
     }
 }
 
-if DB_ENGINE == 'mysql':
-    DB_OPTIONS['init_command'] = "SET sql_mode='STRICT_TRANS_TABLES'"
-    DB_OPTIONS['charset'] = "utf8mb4"
-    DB_OPTIONS['collation'] = "utf8mb4_bin"
+if DB_ENGINE == "mysql":
+    DB_OPTIONS["init_command"] = "SET sql_mode='STRICT_TRANS_TABLES'"
+    DB_OPTIONS["charset"] = "utf8mb4"
+    DB_OPTIONS["collation"] = "utf8mb4_bin"
 
 # https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
 # 读写分离 可能会出现 the current database router prevents this relation.
@@ -240,7 +237,7 @@ if DB_ENGINE == 'mysql':
 # >>> p = Person(name="Fred")
 # >>> p.save(using="second")  # (statement 2)
 
-DATABASE_ROUTERS = ['common.core.db.router.DBRouter']
+DATABASE_ROUTERS = ["common.core.db.router.DBRouter"]
 
 # websocket 消息需要用到redis的消息发布订阅
 CHANNEL_LAYERS = {
@@ -258,16 +255,16 @@ CHANNEL_LAYERS = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -288,7 +285,7 @@ AUTH_USER_MODEL = "system.UserInfo"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'api/static/'
+STATIC_URL = "api/static/"
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 STATIC_ROOT = os.path.join(DATA_DIR, "static")
 
@@ -313,26 +310,26 @@ FILE_UPLOAD_HANDLERS = [
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # I18N translation
 LOCALE_PATHS = [
-    os.path.join(PROJECT_DIR, 'locale'),
+    os.path.join(PROJECT_DIR, "locale"),
 ]
 
 CACHE_KEY_TEMPLATE = {
-    'config_key': 'config',
-    'make_token_key': 'make_token',
-    'download_url_key': 'download_url',
-    'pending_state_key': 'pending_state',
-    'websocket_group_key': 'websocket_group',
-    'upload_part_info_key': 'upload_part_info',
-    'black_access_token_key': 'black_access_token',
-    'common_resource_ids_key': 'common_resource_ids',
-    'websocket_message_result_key': 'websocket_message_result',
-    'mfa_confirm_state_key': 'mfa_confirm_state',
-    'mfa_otp_bind_key': 'mfa_otp_bind',
-    'mfa_otp_used_key': 'mfa_otp_used'
+    "config_key": "config",
+    "make_token_key": "make_token",
+    "download_url_key": "download_url",
+    "pending_state_key": "pending_state",
+    "websocket_group_key": "websocket_group",
+    "upload_part_info_key": "upload_part_info",
+    "black_access_token_key": "black_access_token",
+    "common_resource_ids_key": "common_resource_ids",
+    "websocket_message_result_key": "websocket_message_result",
+    "mfa_confirm_state_key": "mfa_confirm_state",
+    "mfa_otp_bind_key": "mfa_otp_bind",
+    "mfa_otp_used_key": "mfa_otp_used",
 }
 
 APPEND_SLASH = False

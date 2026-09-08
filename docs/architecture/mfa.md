@@ -49,6 +49,7 @@ mfa/
 from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
 
+
 class SecretViewSet(BaseModelSet):
     permission_classes = [IsAuthenticated, UserConfirmation.require(ConfirmType.MFA)]
     # 高敏感操作用 ConfirmType.MFA（otp/sms/email）；一般操作用 ConfirmType.PASSWORD
@@ -63,6 +64,7 @@ class SecretViewSet(BaseModelSet):
 from mfa.confirm import ensure_user_confirmed
 from mfa.const import ConfirmType
 
+
 def export_secret(request):
     ensure_user_confirmed(request, ConfirmType.MFA)
     ...
@@ -74,9 +76,9 @@ def export_secret(request):
 from mfa.confirm import require_user_confirmation
 from mfa.const import ConfirmType
 
+
 @require_user_confirmation(ConfirmType.PASSWORD)
-def reset_user_api_key(request, user_id):
-    ...
+def reset_user_api_key(request, user_id): ...
 ```
 
 ## 四、前端对接契约（客户端已实现，见下方说明）

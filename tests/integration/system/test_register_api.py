@@ -5,6 +5,7 @@
 通道 dryrun 回显验证码；注册校验真实读取缓存中的验证码。默认配置下
 注册加密开启，因此相关用例统一关闭加密以便直接传明文密码。
 """
+
 import pytest
 
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
@@ -41,9 +42,15 @@ def _send_verify(api_client, target):
 def _manual_verify(target):
     """为已存在用户目标手工构造验证码流程（发送接口对已注册用户会拒绝）。"""
     SendAndVerifyCodeUtil(target, code="654321", backend="username", dryrun=True).gen_and_send()
-    token = TokenTempCache.generate_cache_token(300, {
-        "target": target, "form_type": "username", "query_key": "username", "extra": {},
-    })
+    token = TokenTempCache.generate_cache_token(
+        300,
+        {
+            "target": target,
+            "form_type": "username",
+            "query_key": "username",
+            "extra": {},
+        },
+    )
     return token, "654321"
 
 

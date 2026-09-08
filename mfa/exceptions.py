@@ -13,13 +13,14 @@ class MFAConfirmRequired(APIException):
 
     响应体: {"code": 412, "type": "user_confirm_required", "confirm_type": "mfa", "detail": "..."}
     """
+
     status_code = 412
-    default_detail = _('This action requires identity verification')
+    default_detail = _("This action requires identity verification")
 
     def __init__(self, confirm_type=ConfirmType.MFA, detail=None):
         data = {
-            'detail': str(detail or self.default_detail),
-            'type': 'user_confirm_required',
-            'confirm_type': confirm_type,
+            "detail": str(detail or self.default_detail),
+            "type": "user_confirm_required",
+            "confirm_type": confirm_type,
         }
         super().__init__(data)

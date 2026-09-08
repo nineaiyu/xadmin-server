@@ -2,7 +2,7 @@ from django.conf import settings
 
 from .celery_base import CeleryBaseService
 
-__all__ = ['CeleryHeavyService']
+__all__ = ["CeleryHeavyService"]
 
 
 class CeleryHeavyService(CeleryBaseService):
@@ -15,8 +15,8 @@ class CeleryHeavyService(CeleryBaseService):
     """
 
     def __init__(self, **kwargs):
-        kwargs['queue'] = 'heavy'
-        kwargs.setdefault('pool', settings.CELERY_HEAVY_POOL)
-        kwargs.setdefault('concurrency', settings.CELERY_HEAVY_CONCURRENCY)
-        kwargs['prefetch'] = 1
+        kwargs["queue"] = "heavy"
+        kwargs.setdefault("pool", settings.CELERY_HEAVY_POOL)
+        kwargs.setdefault("concurrency", settings.CELERY_HEAVY_CONCURRENCY)
+        kwargs["prefetch"] = 1
         super().__init__(**kwargs)

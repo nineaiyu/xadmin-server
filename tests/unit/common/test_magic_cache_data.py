@@ -6,6 +6,7 @@
 2. 缓存中存在僵尸占位（status='ready'）时能自行计算，不无限阻塞；
 3. 并发调用时 func 只执行一次，结果一致。
 """
+
 import threading
 import time
 

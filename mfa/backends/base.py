@@ -19,9 +19,9 @@ class BaseMFA(abc.ABC):
     之后即可被敏感操作二次验证与登录 MFA 自动识别，无需改动框架代码。
     """
 
-    name = ''
-    display_name = ''
-    placeholder = ''
+    name = ""
+    display_name = ""
+    placeholder = ""
     # True: 服务端先下发验证码（短信/邮件），前端需要先调 send-code
     challenge_required = False
     # 该方式验证通过后可满足的确认级别
@@ -42,7 +42,7 @@ class BaseMFA(abc.ABC):
 
     def send_challenge(self) -> tuple:
         """下发挑战验证码，返回 (是否成功, 失败原因)"""
-        return False, _('This method does not support sending verification codes')
+        return False, _("This method does not support sending verification codes")
 
     @abc.abstractmethod
     def check_code(self, code) -> tuple:

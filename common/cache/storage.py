@@ -23,9 +23,9 @@ class RedisCacheBase(object):
     def __getattribute__(self, item):
         # f-string 会先求值再传参，即使日志级别过滤掉输出，字符串拼接开销也逃不掉。
         # 该类被 JWT 黑名单校验等热路径继承，必须用 isEnabledFor 守卫，DEBUG 关闭时零开销。
-        if logger.isEnabledFor(logging.DEBUG) and isinstance(item, str) and item != 'cache_key':
+        if logger.isEnabledFor(logging.DEBUG) and isinstance(item, str) and item != "cache_key":
             if hasattr(self, "cache_key"):
-                logger.debug(f'act:{item} cache_key:{super().__getattribute__("cache_key")}')
+                logger.debug(f"act:{item} cache_key:{super().__getattribute__('cache_key')}")
         return super().__getattribute__(item)
 
     def get_storage_cache(self, defaults=None):
@@ -55,7 +55,7 @@ class RedisCacheBase(object):
         return cache.expire(self.cache_key, timeout=timeout)
 
     def iter_keys(self):
-        if not self.cache_key.endswith('*'):
+        if not self.cache_key.endswith("*"):
             self.cache_key = f"{self.cache_key}*"
         return cache.iter_keys(self.cache_key)
 

@@ -14,20 +14,21 @@ from system.serializers.log import UserOnlineSerializer
 
 
 class UserOnlineFilter(BaseFilterSet):
-    creator_id = PkMultipleFilter(input_type='api-search-user')
+    creator_id = PkMultipleFilter(input_type="api-search-user")
 
     class Meta:
         model = UserLoginLog
-        fields = ['creator_id']
+        fields = ["creator_id"]
 
 
 class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
     """websocket在线日志"""
+
     queryset = UserLoginLog.objects.filter(login_type=UserLoginLog.LoginTypeChoices.WEBSOCKET).all()
     serializer_class = UserOnlineSerializer
     pagination_class = DynamicPageNumber(1000)
     filterset_class = UserOnlineFilter
-    ordering_fields = ['created_time']
+    ordering_fields = ["created_time"]
 
     def get_queryset(self):
         online_user_pks, online_user_sockets = get_online_info()

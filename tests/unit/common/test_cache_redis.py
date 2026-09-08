@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/cache/redis.py：Redis 数据结构封装（基于测试 FakeRedis 后端）。"""
+
 import pytest
 
 from common.cache.redis import (
@@ -16,7 +17,7 @@ from common.cache.redis import (
 def test_format_return_decodes_json_bytes():
     assert format_return(b'{"a": 1}') == {"a": 1}
     assert format_return('["x"]') == ["x"]
-    assert format_return(b'123') == 123
+    assert format_return(b"123") == 123
 
 
 def test_format_return_non_json_passthrough():

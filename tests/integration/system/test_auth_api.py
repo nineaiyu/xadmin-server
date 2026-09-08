@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 登录 / 认证接口集成测试（关闭验证码、加密、临时 token 便于直接断言）。"""
+
 import pytest
 
 pytestmark = pytest.mark.django_db

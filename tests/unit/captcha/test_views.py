@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """captcha 视图集成测试（图片 / 刷新 / 过期处理）。"""
+
 import pytest
 
 from captcha.models import CaptchaStore
@@ -35,9 +36,7 @@ class TestCaptchaImage:
 
 class TestCaptchaRefresh:
     def test_xhr_returns_new_key(self, api_client):
-        resp = api_client.get(
-            "/api/system/captcha/refresh/", HTTP_X_REQUESTED_WITH="XMLHttpRequest"
-        )
+        resp = api_client.get("/api/system/captcha/refresh/", HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         assert resp.status_code == 200
         data = resp.json()
         assert data["key"]

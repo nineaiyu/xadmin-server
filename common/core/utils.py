@@ -50,20 +50,19 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 name = "%s:%s" % (pre_namespace, item.name)
             else:
                 name = item.name
-            url = pre_url + item.pattern.regex.pattern.lstrip('^')
+            url = pre_url + item.pattern.regex.pattern.lstrip("^")
             # url = url.replace('^', '').replace('$', '')
 
             if check_show_url(url) and not ignore_white_url(url):
-                url_ordered_dict[name] = {'name': name, 'url': url, 'view': item.lookup_str}
+                url_ordered_dict[name] = {"name": name, "url": url, "view": item.lookup_str}
                 try:
                     view_set = import_string(item.lookup_str)
-                    url_ordered_dict[name]['label'] = view_set.__doc__
+                    url_ordered_dict[name]["label"] = view_set.__doc__
                 except Exception:
                     pass
 
-
         elif isinstance(item, URLResolver):  # 路由分发，递归操作
-            new_pre_url = pre_url + item.pattern.regex.pattern.lstrip('^')
+            new_pre_url = pre_url + item.pattern.regex.pattern.lstrip("^")
             if not check_show_url(new_pre_url):
                 continue
             if pre_namespace:
@@ -80,13 +79,13 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
 
 
 @cached_method(ttl=-1)
-def get_all_url_dict(pre_url='/'):
+def get_all_url_dict(pre_url="/"):
     """
-       获取项目中所有的URL（必须有name别名）
+    获取项目中所有的URL（必须有name别名）
     """
     url_ordered_dict = OrderedDict()
     md = import_string(settings.ROOT_URLCONF)
-    url_ordered_dict['#'] = {'name': '#', 'url': '#', 'view': '#', 'label': '#'}
+    url_ordered_dict["#"] = {"name": "#", "url": "#", "view": "#", "label": "#"}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
 
@@ -94,7 +93,7 @@ def get_all_url_dict(pre_url='/'):
 def auto_register_app_url(urlpatterns):
     xadmin_apps = []
     for app in settings.XADMIN_APPS:
-        if '.' in app:
+        if "." in app:
             xadmin_apps.append(import_string(app).name)
         else:
             xadmin_apps.append(app)
@@ -111,7 +110,7 @@ def auto_register_app_url(urlpatterns):
         if urls:
             urlpatterns.extend(urls)
             for url in urls:
-                settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip('^'))
+                settings.PERMISSION_SHOW_PREFIX.append(url.pattern.regex.pattern.lstrip("^"))
             settings.PERMISSION_DATA_AUTH_APPS.append(name)
 
         try:
@@ -124,29 +123,32 @@ def auto_register_app_url(urlpatterns):
 
 def get_query_post_pks(request):
     if isinstance(request.data, QueryDict):
-        pks = request.data.getlist('pks', [])
+        pks = request.data.getlist("pks", [])
     else:
-        pks = request.data.get('pks', [])
+        pks = request.data.get("pks", [])
     return pks
 
 
 class PrintLogFormat(object):
-    def __init__(self, base_str='', title_width=80, body_width=60, logger_enable=False):
+    def __init__(self, base_str="", title_width=80, body_width=60, logger_enable=False):
         self.base_str = base_str
         self.logger_enable = logger_enable
         self.title_width = title_width
         self.body_width = body_width
-        self.bold_error = make_style(opts=('bold',), fg='magenta')
-        self._info = make_style(fg='green')
-        self._error = make_style(fg='red')
-        self._warning = make_style(fg='yellow')
-        self._debug = make_style(fg='blue')
+        self.bold_error = make_style(opts=("bold",), fg="magenta")
+        self._info = make_style(fg="green")
+        self._error = make_style(fg="red")
+        self._warning = make_style(fg="yellow")
+        self._debug = make_style(fg="blue")
 
     def __print(self, title, body):
-        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print(f"{now} {title}" if self.title_width < 1 else '{0: <{title_width}}'.format(f"{now} {title}",
-                                                                                         title_width=self.title_width),
-              body if self.body_width < 1 else '{0: >{body_width}}'.format(body, body_width=self.body_width))
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(
+            f"{now} {title}"
+            if self.title_width < 1
+            else "{0: <{title_width}}".format(f"{now} {title}", title_width=self.title_width),
+            body if self.body_width < 1 else "{0: >{body_width}}".format(body, body_width=self.body_width),
+        )
 
     def info(self, msg, *args, **kwargs):
         if self.logger_enable:
@@ -173,7 +175,7 @@ class PrintLogFormat(object):
             self.__print(self.bold_error(self.base_str), self._warning(msg))
 
 
-def topological_sort(data, pk='pk', parent='parent'):
+def topological_sort(data, pk="pk", parent="parent"):
     # 构建图和入度表
     graph = defaultdict(list)
     in_degree = {item[pk]: 0 for item in data}
@@ -215,5 +217,10 @@ def has_self_fields(model, keys):
     仅仅支持判断 ForeignKey 自关联，不支持多对对自关联判断
     """
     for field in model._meta.fields:
-        if field.is_relation and field.related_model is not None and field.related_model == model and field.name in keys:
+        if (
+            field.is_relation
+            and field.related_model is not None
+            and field.related_model == model
+            and field.name in keys
+        ):
             return field.name

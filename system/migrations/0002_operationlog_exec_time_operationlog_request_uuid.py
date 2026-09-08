@@ -5,18 +5,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('system', '0001_initial'),
+        ("system", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='operationlog',
-            name='exec_time',
-            field=models.FloatField(blank=True, null=True, verbose_name='Execution time'),
+            model_name="operationlog",
+            name="exec_time",
+            field=models.FloatField(blank=True, null=True, verbose_name="Execution time"),
         ),
         migrations.AddField(
-            model_name='operationlog',
-            name='request_uuid',
-            field=models.UUIDField(blank=True, null=True, verbose_name='Request ID'),
+            model_name="operationlog",
+            name="request_uuid",
+            field=models.UUIDField(blank=True, null=True, verbose_name="Request ID"),
         ),
     ]

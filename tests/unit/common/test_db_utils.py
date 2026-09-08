@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/core/db/utils.py：数据权限 Q 表达式构建与连接管理器。"""
+
 import pytest
 from django.db import connection, transaction
 from django.db.models import Q
@@ -59,63 +60,43 @@ class TestGetFilterAttrsQs:
         assert RelatedManager.get_filter_attrs_qs([{"field": "ip"}]) == []
 
     def test_match_all_returns_empty_q(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "ip", "value": "x", "match": "all"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "ip", "value": "x", "match": "all"}])
         assert filters == [Q()]
 
     def test_contains_lookup(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "name", "value": "abc", "match": "contains"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "name", "value": "abc", "match": "contains"}])
         assert filters == [Q(name__contains="abc")]
 
     def test_regex_invalid_falls_back_to_empty_set(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "name", "value": "([bad", "match": "regex"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "name", "value": "([bad", "match": "regex"}])
         assert filters == [Q(pk__isnull=True)]
 
     def test_m2m_all_expands_per_value(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "roles", "value": [1, 2], "match": "m2m_all"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "roles", "value": [1, 2], "match": "m2m_all"}])
         assert filters == [Q(roles__in=[1]), Q(roles__in=[2])]
 
     def test_m2m_single_lookup(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "roles", "value": 3, "match": "m2m"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "roles", "value": 3, "match": "m2m"}])
         assert filters == [Q(roles__in=[3])]
 
     def test_in_lookup_wildcard_matches_all(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "id", "value": ["*"], "match": "in"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "id", "value": ["*"], "match": "in"}])
         assert filters == [Q()]
 
     def test_in_lookup_scalar_wrapped(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "id", "value": 7, "match": "in"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "id", "value": 7, "match": "in"}])
         assert filters == [Q(id__in=[7])]
 
     def test_default_match_uses_exact_by_field_name(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "name", "value": "x"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "name", "value": "x"}])
         assert filters == [Q(name__exact="x")]
 
     def test_wildcard_value_matches_all(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "name", "value": "*"}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "name", "value": "*"}])
         assert filters == [Q()]
 
     def test_exclude_negates(self):
-        filters = RelatedManager.get_filter_attrs_qs(
-            [{"field": "name", "value": "x", "exclude": True}]
-        )
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "name", "value": "x", "exclude": True}])
         assert filters == [~Q(name__exact="x")]
 
 

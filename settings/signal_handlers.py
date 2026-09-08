@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 
 class SettingSubPub(LazyObject):
     def _setup(self):
-        self._wrapped = RedisPubSub('settings')
+        self._wrapped = RedisPubSub("settings")
 
 
 setting_pub_sub = SettingSubPub()

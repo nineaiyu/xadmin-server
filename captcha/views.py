@@ -46,9 +46,7 @@ def captcha_image(request, key, scale=1):
     elif isinstance(settings.CAPTCHA_FONT_PATH, (list, tuple)):
         fontpath = random.choice(settings.CAPTCHA_FONT_PATH)
     else:
-        raise ImproperlyConfigured(
-            "settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts"
-        )
+        raise ImproperlyConfigured("settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts")
 
     if fontpath.lower().strip().endswith("ttf"):
         font = ImageFont.truetype(fontpath, settings.CAPTCHA_FONT_SIZE * scale)
@@ -153,9 +151,7 @@ def captcha_audio(request, key):
 
         # Add arbitrary noise if sox is installed
         if settings.CAPTCHA_SOX_PATH:
-            arbnoisepath = str(
-                os.path.join(tempfile.gettempdir(), "%s_arbitrary.wav") % key
-            )
+            arbnoisepath = str(os.path.join(tempfile.gettempdir(), "%s_arbitrary.wav") % key)
             mergedpath = str(os.path.join(tempfile.gettempdir(), "%s_merged.wav") % key)
             subprocess.call(
                 [
@@ -189,12 +185,8 @@ def captcha_audio(request, key):
             os.rename(mergedpath, path)
 
         if os.path.isfile(path):
-            response = RangedFileResponse(
-                request, open(path, "rb"), content_type="audio/wav"
-            )
-            response["Content-Disposition"] = 'attachment; filename="{}.wav"'.format(
-                key
-            )
+            response = RangedFileResponse(request, open(path, "rb"), content_type="audio/wav")
+            response["Content-Disposition"] = 'attachment; filename="{}.wav"'.format(key)
             return response
     raise Http404
 
@@ -208,8 +200,6 @@ def captcha_refresh(request):
     to_json_response = {
         "key": new_key,
         "image_url": captcha_image_url(new_key),
-        "audio_url": captcha_audio_url(new_key)
-        if settings.CAPTCHA_FLITE_PATH
-        else None,
+        "audio_url": captcha_audio_url(new_key) if settings.CAPTCHA_FLITE_PATH else None,
     }
     return HttpResponse(json.dumps(to_json_response), content_type="application/json")

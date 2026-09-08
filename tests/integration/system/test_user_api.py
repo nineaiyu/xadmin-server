@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 用户接口集成测试。"""
+
 import pytest
 
 from common.base.utils import AESCipherV2
@@ -57,9 +58,7 @@ class TestUserCrudSmoke:
 
     def test_create_duplicate_username(self, auth_client):
         _create_user(auth_client, username="lisi")
-        resp = auth_client.post(
-            USER_URL, {"username": "lisi", "password": "Test@123456"}, format="json"
-        )
+        resp = auth_client.post(USER_URL, {"username": "lisi", "password": "Test@123456"}, format="json")
         assert resp.data["code"] != 1000
 
     def test_search_filter_by_nickname(self, auth_client):
@@ -73,9 +72,7 @@ class TestUserCrudSmoke:
 class TestUserActionsSmoke:
     def test_delete_superuser_forbidden(self, confirmed_client):
         auth_client = confirmed_client
-        pk = UserInfo.objects.create_superuser(
-            username="admin2", email="a2@example.com", password="Admin@123456"
-        ).pk
+        pk = UserInfo.objects.create_superuser(username="admin2", email="a2@example.com", password="Admin@123456").pk
         resp = auth_client.delete(f"{USER_URL}/{pk}")
         assert resp.status_code == 500
         assert UserInfo.objects.filter(pk=pk).exists()
@@ -86,9 +83,7 @@ class TestUserActionsSmoke:
         super_pk = UserInfo.objects.create_superuser(
             username="admin2", email="a2@example.com", password="Admin@123456"
         ).pk
-        resp = auth_client.post(
-            f"{USER_URL}/batch-destroy", [normal_pk, super_pk], format="json"
-        )
+        resp = auth_client.post(f"{USER_URL}/batch-destroy", [normal_pk, super_pk], format="json")
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
         assert not UserInfo.objects.filter(pk=normal_pk).exists()
@@ -97,9 +92,7 @@ class TestUserActionsSmoke:
     def test_reset_password(self, auth_client):
         pk = _create_user(auth_client, username="lisi")
         encrypted = AESCipherV2("lisi").encrypt(b"NewPass@123456").decode()
-        resp = auth_client.post(
-            f"{USER_URL}/{pk}/reset-password", {"password": encrypted}, format="json"
-        )
+        resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypted}, format="json")
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")

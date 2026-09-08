@@ -66,7 +66,7 @@ class BlockUtilBase:
 
     @classmethod
     def unblock_user(cls, username):
-        key_limit = cls.LIMIT_KEY_TMPL.format(username, '*')
+        key_limit = cls.LIMIT_KEY_TMPL.format(username, "*")
         key_block = cls.BLOCK_KEY_TMPL.format(username)
         # Redis 尽量不要用通配
         cache.delete_pattern(key_limit)

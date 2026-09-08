@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 角色接口集成测试。"""
+
 import pytest
 
 from system.models import UserRole
@@ -31,9 +32,7 @@ class TestRoleCrudSmoke:
         assert resp.status_code == 200
         assert resp.data["data"]["code"] == "test_role"
 
-        resp = auth_client.patch(
-            f"{ROLE_URL}/{pk}", {"description": "新描述", "fields": {}}, format="json"
-        )
+        resp = auth_client.patch(f"{ROLE_URL}/{pk}", {"description": "新描述", "fields": {}}, format="json")
         assert resp.status_code == 200, resp.data
         assert resp.data["data"]["description"] == "新描述"
 
@@ -44,9 +43,7 @@ class TestRoleCrudSmoke:
 
     def test_create_duplicate_code(self, auth_client):
         _create_role(auth_client, name="角色A", code="dup_code")
-        resp = auth_client.post(
-            ROLE_URL, {"name": "角色B", "code": "dup_code", "fields": {}}, format="json"
-        )
+        resp = auth_client.post(ROLE_URL, {"name": "角色B", "code": "dup_code", "fields": {}}, format="json")
         assert resp.data["code"] != 1000
 
     def test_filter_by_code(self, auth_client):
@@ -71,9 +68,7 @@ class TestRoleMenuBinding:
         pk = _create_role(auth_client)
         permission_menu = menu_factory("p-list", path="api/demo/book$", method="GET")
 
-        resp = auth_client.patch(
-            f"{ROLE_URL}/{pk}", {"menu": [permission_menu.pk], "fields": {}}, format="json"
-        )
+        resp = auth_client.patch(f"{ROLE_URL}/{pk}", {"menu": [permission_menu.pk], "fields": {}}, format="json")
         assert resp.status_code == 200, resp.data
         menu_pks = [m["pk"] for m in resp.data["data"]["menu"]]
         assert permission_menu.pk in menu_pks

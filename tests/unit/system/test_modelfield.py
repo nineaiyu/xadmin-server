@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system/utils/modelfield.py：字段 lookup 说明与模型字段同步。"""
+
 import pytest
 
 from system.utils.modelfield import get_field_lookup_info
@@ -30,13 +31,9 @@ class TestSyncModelField:
 
         sync_model_field()
         # 数据权限维度：所有表/所有字段节点存在
-        assert ModelLabelField.objects.filter(
-            field_type=ModelLabelField.FieldChoices.DATA, parent=None
-        ).exists()
+        assert ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.DATA, parent=None).exists()
         # 角色字段权限维度：按序列化器生成
-        assert ModelLabelField.objects.filter(
-            field_type=ModelLabelField.FieldChoices.ROLE
-        ).exists()
+        assert ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE).exists()
 
         # 幂等：重复执行不报错且数量收敛（旧记录被清理）
         count = ModelLabelField.objects.count()
@@ -49,9 +46,7 @@ class TestSyncModelField:
 
         get_app_model_fields()
         names = set(
-            ModelLabelField.objects.filter(
-                field_type=ModelLabelField.FieldChoices.DATA
-            ).values_list("name", flat=True)
+            ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.DATA).values_list("name", flat=True)
         )
         assert "*" in names
         assert any(name.startswith("system.") for name in names)

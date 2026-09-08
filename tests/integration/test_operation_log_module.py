@@ -10,6 +10,7 @@ process_view 写占位日志时 DataError，整个请求 500——敏感操作�
 注：path/body 等字段由 transaction.on_commit 的 UPDATE 回填，pytest 事务
 内不提交，因此占位行仅 module 有值。
 """
+
 import pytest
 
 from system.models import OperationLog

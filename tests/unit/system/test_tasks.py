@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 定时任务清理逻辑单元测试（system/utils/ctasks.py 与 system/tasks.py）。"""
+
 import datetime
 import uuid
 
@@ -102,8 +103,7 @@ class TestAutoCleanOperationLog:
         from common.core.config import SysConfig
 
         old = _make_operation_log(created_days_ago=100)
-        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_RETENTION_DAYS",
-                            property(lambda self: 30), raising=False)
+        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_RETENTION_DAYS", property(lambda self: 30), raising=False)
 
         auto_clean_operation_log()
 

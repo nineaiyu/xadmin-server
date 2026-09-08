@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 
 class EmailServerSettingViewSet(BaseSettingViewSet):
     """邮件服务"""
+
     serializer_class = EmailSettingSerializer
     category = "email"
 
@@ -35,25 +36,25 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
         email_host_password = settings.EMAIL_HOST_PASSWORD
         email_use_ssl = settings.EMAIL_USE_SSL
         email_use_tls = settings.EMAIL_USE_TLS
-        email_recipient = serializer.validated_data.get('EMAIL_RECIPIENT')
+        email_recipient = serializer.validated_data.get("EMAIL_RECIPIENT")
 
         try:
-            subject = settings.EMAIL_SUBJECT_PREFIX or '' + "Test"
+            subject = settings.EMAIL_SUBJECT_PREFIX or "" + "Test"
             message = _("Test smtp setting")
             email_recipient = email_recipient or email_host_user
             connection = get_connection(
-                host=email_host, port=email_port,
-                username=email_host_user, password=email_host_password,
-                use_tls=email_use_tls, use_ssl=email_use_ssl,
+                host=email_host,
+                port=email_port,
+                username=email_host_user,
+                password=email_host_password,
+                use_tls=email_use_tls,
+                use_ssl=email_use_ssl,
             )
-            send_mail(
-                subject, message, email_host_user, [email_recipient],
-                connection=connection
-            )
+            send_mail(subject, message, email_host_user, [email_recipient], connection=connection)
         except SMTPSenderRefused as e:
             error = e.smtp_error
             if isinstance(error, bytes):
-                for coding in ('gbk', 'utf8'):
+                for coding in ("gbk", "utf8"):
                     try:
                         error = error.decode(coding)
                     except UnicodeDecodeError:

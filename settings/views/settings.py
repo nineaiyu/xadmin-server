@@ -27,7 +27,7 @@ class BaseSettingViewSet(NoDetailModelSet):
     def get_serializer_class(self):
         if not self.serializer_class_mapper:
             return super().get_serializer_class()
-        self.category = self.request.query_params.get('category', 'basic')
+        self.category = self.request.query_params.get("category", "basic")
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 
@@ -52,46 +52,44 @@ class BaseSettingViewSet(NoDetailModelSet):
         encrypted_items = [name for name, field in fields.items() if field.write_only]
         for name, value in serializer.validated_data.items():
             encrypted = name in encrypted_items
-            if encrypted and value in ['', None]:
+            if encrypted and value in ["", None]:
                 continue
-            data.append({
-                'name': name, 'value': value,
-                'encrypted': encrypted, 'category': self.category
-            })
+            data.append({"name": name, "value": value, "encrypted": encrypted, "category": self.category})
         return data
 
     def perform_update(self, serializer):
         post_data_names = list(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
-        serializer_data = getattr(serializer, 'data', {})
+        serializer_data = getattr(serializer, "data", {})
         change_fields = []
         for item in settings_items:
-            if item['name'] not in post_data_names:
+            if item["name"] not in post_data_names:
                 continue
             changed, setting = Setting.update_or_create(**item, user=self.request.user)
             if not changed:
                 continue
             change_fields.append(setting.name)
             serializer_data[setting.name] = setting.cleaned_value
-        setattr(serializer, '_data', serializer_data)
-        setattr(serializer, '_change_fields', change_fields)
-        if hasattr(serializer, 'post_save'):
+        setattr(serializer, "_data", serializer_data)
+        setattr(serializer, "_change_fields", change_fields)
+        if hasattr(serializer, "post_save"):
             serializer.post_save()
 
 
 class SettingFilter(BaseFilterSet):
-    pk = filters.UUIDFilter(field_name='id')
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
-    value = filters.CharFilter(field_name='value', lookup_expr='icontains')
+    pk = filters.UUIDFilter(field_name="id")
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    value = filters.CharFilter(field_name="value", lookup_expr="icontains")
 
     class Meta:
         model = Setting
-        fields = ['pk', 'is_active', 'name', 'category', 'value']
+        fields = ["pk", "is_active", "name", "category", "value"]
 
 
 class SettingViewSet(ListDeleteModelSet, ImportExportDataAction):
     """系统设置"""
+
     queryset = Setting.objects.all()
     serializer_class = SettingSerializer
-    ordering_fields = ['created_time', 'category']
+    ordering_fields = ["created_time", "category"]
     filterset_class = SettingFilter

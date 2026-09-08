@@ -9,14 +9,14 @@
 5. 敏感字段脱敏清单扩展；
 6. 集成：写请求日志真实落库（UPDATE 生效）。
 """
+
 import json
 
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
-from common.core.middleware import (MAX_LOG_FIELD, build_operation_log_info,
-                                    desensitize_body, write_operation_log)
+from common.core.middleware import MAX_LOG_FIELD, build_operation_log_info, desensitize_body, write_operation_log
 from common.utils.request import get_browser, get_os
 from system.models import OperationLog
 
@@ -48,8 +48,13 @@ class TestWriteOperationLog:
 
 class TestFieldTruncation:
     def test_desensitize_only_mutates_copy(self):
-        body = {"password": "secret", "old_password": "old-secret", "access": "token-a", "refresh": "token-r",
-                "name": "keep"}
+        body = {
+            "password": "secret",
+            "old_password": "old-secret",
+            "access": "token-a",
+            "refresh": "token-r",
+            "name": "keep",
+        }
         masked = desensitize_body(body)
         assert masked["password"] == "******"
         assert masked["old_password"] == "**********"
@@ -65,20 +70,28 @@ class TestFieldTruncation:
     def test_large_fields_are_truncated(self, superuser):
         """大请求体 / 大响应整包入库会被截断到 MAX_LOG_FIELD"""
         huge = "x" * (MAX_LOG_FIELD * 4)
-        request = type("R", (), {
-            "META": {"HTTP_USER_AGENT": "pytest-agent"},
-            "method": "POST",
-            "path": DEMO_URL,
-            "request_data": {"data": huge},
-            "request_ip": "127.0.0.1",
-            "request_module": "demo",
-            "request_uuid": None,
-            "user": superuser,
-        })()
-        response = type("R", (), {
-            "status_code": 200,
-            "data": {"code": 1000, "data": {"items": [huge]}, "detail": None},
-        })()
+        request = type(
+            "R",
+            (),
+            {
+                "META": {"HTTP_USER_AGENT": "pytest-agent"},
+                "method": "POST",
+                "path": DEMO_URL,
+                "request_data": {"data": huge},
+                "request_ip": "127.0.0.1",
+                "request_module": "demo",
+                "request_uuid": None,
+                "user": superuser,
+            },
+        )()
+        response = type(
+            "R",
+            (),
+            {
+                "status_code": 200,
+                "data": {"code": 1000, "data": {"items": [huge]}, "detail": None},
+            },
+        )()
 
         info = build_operation_log_info(request, response, 0)
 
@@ -88,15 +101,19 @@ class TestFieldTruncation:
 
     def test_non_dict_response_does_not_parse_body(self, superuser):
         """非 dict 响应不再整包解析 content（旧实现解析后直接丢弃）"""
-        request = type("R", (), {
-            "META": {"HTTP_USER_AGENT": "pytest-agent"},
-            "method": "POST",
-            "path": DEMO_URL,
-            "request_data": {},
-            "request_ip": "127.0.0.1",
-            "request_module": "demo",
-            "user": superuser,
-        })()
+        request = type(
+            "R",
+            (),
+            {
+                "META": {"HTTP_USER_AGENT": "pytest-agent"},
+                "method": "POST",
+                "path": DEMO_URL,
+                "request_data": {},
+                "request_ip": "127.0.0.1",
+                "request_module": "demo",
+                "user": superuser,
+            },
+        )()
         response = type("R", (), {"status_code": 302, "content": b"raw-bytes"})()
 
         info = build_operation_log_info(request, response, 0)

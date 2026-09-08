@@ -16,18 +16,19 @@ from settings.services import get_password_check_rules
 
 class PasswordRulesAPIView(GenericAPIView):
     """密码规则配置信息"""
+
     permission_classes = []
 
     @extend_schema(
         responses=get_default_response_schema(
             {
-                'data': build_object_type(
+                "data": build_object_type(
                     properties={
-                        'password_rules': build_array_type(
+                        "password_rules": build_array_type(
                             build_object_type(
                                 properties={
-                                    'key': build_basic_type(OpenApiTypes.STR),
-                                    'value': build_basic_type(OpenApiTypes.NUMBER),
+                                    "key": build_basic_type(OpenApiTypes.STR),
+                                    "value": build_basic_type(OpenApiTypes.NUMBER),
                                 }
                             )
                         )

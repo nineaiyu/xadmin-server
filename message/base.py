@@ -67,16 +67,16 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         mid: 消息ID，该ID和发送端的mid保持一致
         """
         content = {
-            'code': code,
-            'action': action,
-            'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
-            'timestamp': str(datetime.datetime.now()),
-            'v': PROTOCOL_VERSION,
+            "code": code,
+            "action": action,
+            "detail": detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
+            "timestamp": str(datetime.datetime.now()),
+            "v": PROTOCOL_VERSION,
         }
         if data:
-            content['data'] = data
+            content["data"] = data
         if mid:
-            content['mid'] = mid
+            content["mid"] = mid
         content.update(kwargs)
         await self.send_json(content, close)
 
@@ -87,21 +87,21 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
             except Exception as e:
                 logger.error("failed to decode json", exc_info=e)
                 return
-            action = content.get('action')
+            action = content.get("action")
             if not action:
                 logger.error(f"action not exists. so close. {content}")
                 await asyncio.sleep(3)
                 await self.close()
                 return
-            if mid := content.get('mid'):
+            if mid := content.get("mid"):
                 set_mid_result_to_cache(mid, content)
-            data = content.get('data', {})
+            data = content.get("data", {})
             match action:
                 case MessageAction.PING.value:
                     # 心跳直收。旧实现先把 ping 投进 channel layer 队列再由
                     # consumer 收回处理，每心跳多 2 条 Redis 命令；1000 连接时即
                     # 200 cmd/s 的纯开销。这里直接调用本 consumer 处理。
-                    await self.ping({"type": "ping", "data": data, "mid": content.get('mid')})
+                    await self.ping({"type": "ping", "data": data, "mid": content.get("mid")})
                 case MessageAction.USERINFO.value | MessageAction.PUSH_MESSAGE.value:
                     await self.channel_layer.send(self.channel_name, {"type": action, "data": data})
                 case _:
@@ -113,7 +113,7 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
         raise ValueError("No text section for incoming WebSocket frame!")
 
     async def _send_base(self, event):
-        data = event['data']
+        data = event["data"]
         if isinstance(data, str):
             await self.send_base_json(event["type"], data, mid=event.get("mid"))
         else:
@@ -121,11 +121,11 @@ class AsyncJsonWebsocket(AsyncWebsocketConsumer):
 
     async def ping(self, event):
         await self.channel_layer.update_active_layers(self.group_name, self.channel_name)
-        event['data'] = 'pong'
+        event["data"] = "pong"
         await self._send_base(event)
 
     async def userinfo(self, event):
-        event['data'] = await get_userinfo(self.user)
+        event["data"] = await get_userinfo(self.user)
         await self._send_base(event)
 
     # 系统推送消息到客户端，推送消息格式如下：{"timestamp": 1709714533.5625794, "action": "push_message", "data": {"message_type": 11}}

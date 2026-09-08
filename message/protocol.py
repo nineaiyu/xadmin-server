@@ -14,6 +14,7 @@
 出站帧（send_base_json）额外含 code / detail / timestamp。
 新增 action 必须：① 在此登记枚举；② 补充对应 Payload TypedDict。
 """
+
 from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict
 

@@ -33,13 +33,13 @@ def run_function_by_locker(timeout=60 * 5, lock_func=None):
             if lock_func:
                 locker = lock_func(*args, **kwargs)
             else:
-                locker = kwargs.get('locker', {})
+                locker = kwargs.get("locker", {})
                 if locker:
-                    kwargs.pop('locker')
-            t_locker = {'timeout': timeout, 'locker_key': func.__name__}
+                    kwargs.pop("locker")
+            t_locker = {"timeout": timeout, "locker_key": func.__name__}
             t_locker.update(locker)
-            new_locker_key = t_locker.pop('locker_key')
-            new_timeout = t_locker.pop('timeout')
+            new_locker_key = t_locker.pop("locker_key")
+            new_timeout = t_locker.pop("timeout")
             if locker and new_timeout and new_locker_key:
                 with cache.lock(new_locker_key, timeout=new_timeout, **t_locker):
                     logger.info(f"{new_locker_key} exec {func} start. now time:{time.time()}")
@@ -66,13 +66,14 @@ def call_function_try_attempts(try_attempts=3, sleep_time=2, failed_callback=Non
                 if status:
                     return res
                 else:
-                    logger.warning(f'exec {func} failed. {try_attempts} times in total. now {sleep_time} later try '
-                                   f'again...{i}')
+                    logger.warning(
+                        f"exec {func} failed. {try_attempts} times in total. now {sleep_time} later try again...{i}"
+                    )
                 time.sleep(sleep_time)
             if not res[0]:
-                logger.error(f'exec {func} failed after the maximum number of attempts. Failed:{res[1]}')
+                logger.error(f"exec {func} failed after the maximum number of attempts. Failed:{res[1]}")
                 if failed_callback:
-                    logger.error(f'exec {func} failed and exec failed callback {failed_callback.__name__}')
+                    logger.error(f"exec {func} failed and exec failed callback {failed_callback.__name__}")
                     failed_callback(*args, **kwargs, result=res)
             logger.debug(f"exec {func} finished. time:{time.time() - start_time} result:{res}")
             return res
@@ -96,7 +97,7 @@ def import_from_string(dotted_path):
     last name in the path. Raise ImportError if the import failed.
     """
     try:
-        module_path, class_name = dotted_path.rsplit('.', 1)
+        module_path, class_name = dotted_path.rsplit(".", 1)
     except ValueError as err:
         raise ImportError(f"{dotted_path} doesn't look like a module path") from err
 
@@ -112,13 +113,15 @@ def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            cache_key = f'magic_call_in_times_{func.__name__}'
+            cache_key = f"magic_call_in_times_{func.__name__}"
             if key:
-                cache_key = f'{cache_key}_{key(*args, **kwargs)}'
+                cache_key = f"{cache_key}_{key(*args, **kwargs)}"
             cache_data = cache.get(cache_key)
             if cache_data:
                 if cache_data > call_limit:
-                    err_msg = f'{func} not yet started. cache_key:{cache_key} call over limit {call_limit} in {call_time}'
+                    err_msg = (
+                        f"{func} not yet started. cache_key:{cache_key} call over limit {call_limit} in {call_time}"
+                    )
                     logger.warning(err_msg)
                     return False, err_msg
                 else:
@@ -129,7 +132,8 @@ def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
             try:
                 res = func(*args, **kwargs)
                 logger.debug(
-                    f"exec {func} finished. time:{time.time() - start_time}  cache_key:{cache_key} result:{res}")
+                    f"exec {func} finished. time:{time.time() - start_time}  cache_key:{cache_key} result:{res}"
+                )
                 status = True
             except Exception as e:
                 res = str(e)
@@ -172,9 +176,9 @@ class MagicCacheData(object):
         def decorator(func):
             @wraps(func)
             def wrapper(*args, **kwargs):
-                cache_key = f'magic_cache_data_{func.__name__}'
+                cache_key = f"magic_cache_data_{func.__name__}"
                 if key_func:
-                    cache_key = f'{cache_key}_{key_func(*args, **kwargs)}'
+                    cache_key = f"{cache_key}_{key_func(*args, **kwargs)}"
 
                 cache_time = timeout
                 if timeout_func:
@@ -184,27 +188,28 @@ class MagicCacheData(object):
                 placeholder_ttl = max(min(MagicCacheData.PLACEHOLDER_TTL, valid_time), 1)
 
                 def is_valid(res, now):
-                    return bool(res) and res.get('status') == 'ok' and now - res.get('c_time', 0) < valid_time
+                    return bool(res) and res.get("status") == "ok" and now - res.get("c_time", 0) < valid_time
 
                 n_time = time.time()
                 res = cache.get(cache_key)
                 if is_valid(res, n_time):
                     logger.debug(
-                        f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist")
-                    return res['data']
+                        f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist"
+                    )
+                    return res["data"]
 
-                with cache.lock(f"locker_{cache_key}", timeout=placeholder_ttl,
-                                blocking_timeout=placeholder_ttl + 5):
+                with cache.lock(f"locker_{cache_key}", timeout=placeholder_ttl, blocking_timeout=placeholder_ttl + 5):
                     # 双重检查：等待锁期间可能已有其他进程完成计算并写入缓存
                     n_time = time.time()
                     res = cache.get(cache_key)
                     if is_valid(res, n_time):
                         logger.debug(
-                            f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist")
-                        return res['data']
+                            f"exec {func} finished. cache_time:{cache_time} cache_key:{cache_key} cache data exist"
+                        )
+                        return res["data"]
 
                     # 占位使用短 TTL：崩溃后最多影响 placeholder_ttl 秒
-                    cache.set(cache_key, {'status': 'ready', 'c_time': n_time}, placeholder_ttl)
+                    cache.set(cache_key, {"status": "ready", "c_time": n_time}, placeholder_ttl)
                     try:
                         data = func(*args, **kwargs)
                     except Exception as e:
@@ -212,12 +217,14 @@ class MagicCacheData(object):
                         cache.delete(cache_key)
                         logger.error(
                             f"exec {func} failed. time:{time.time() - n_time} cache_time:{cache_time} "
-                            f"cache_key:{cache_key} Exception:{e}")
+                            f"cache_key:{cache_key} Exception:{e}"
+                        )
                         raise
-                    cache.set(cache_key, {'status': 'ok', 'c_time': time.time(), 'data': data}, cache_time)
+                    cache.set(cache_key, {"status": "ok", "c_time": time.time(), "data": data}, cache_time)
                     logger.debug(
                         f"exec {func} finished. time:{time.time() - n_time} cache_time:{cache_time} "
-                        f"cache_key:{cache_key}")
+                        f"cache_key:{cache_key}"
+                    )
                     return data
 
             return wrapper
@@ -226,16 +233,17 @@ class MagicCacheData(object):
 
     @staticmethod
     def invalid_cache(key):
-        cache_key = f'magic_cache_data_{key}'
+        cache_key = f"magic_cache_data_{key}"
         count = cache.delete_pattern(cache_key)
         logger.warning(f"invalid_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
     def invalid_caches(keys):
-        delete_keys = [f'magic_cache_data_{key}' for key in keys]
+        delete_keys = [f"magic_cache_data_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
         logger.warning(
-            f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
+            f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"
+        )
 
 
 class MagicCacheResponse(object):
@@ -246,16 +254,17 @@ class MagicCacheResponse(object):
 
     @staticmethod
     def invalid_cache(key):
-        cache_key = f'magic_cache_response_{key}'
+        cache_key = f"magic_cache_response_{key}"
         count = cache.delete_pattern(cache_key)
         logger.warning(f"invalid_response_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
     def invalid_caches(keys):
-        delete_keys = [f'magic_cache_response_{key}' for key in keys]
+        delete_keys = [f"magic_cache_response_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
         logger.warning(
-            f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
+            f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"
+        )
 
     def __call__(self, func):
         this = self
@@ -272,34 +281,25 @@ class MagicCacheResponse(object):
 
         return inner
 
-    def process_cache_response(self,
-                               view_instance,
-                               view_method,
-                               request,
-                               args,
-                               kwargs):
+    def process_cache_response(self, view_instance, view_method, request, args, kwargs):
         func_key = self.calculate_key(
-            view_instance=view_instance,
-            view_method=view_method,
-            request=request,
-            args=args,
-            kwargs=kwargs
+            view_instance=view_instance, view_method=view_method, request=request, args=args, kwargs=kwargs
         )
-        cache_key = 'magic_cache_response'
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        cache_key = "magic_cache_response"
+        func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         if func_key:
-            cache_key = f'{cache_key}_{func_key}'
+            cache_key = f"{cache_key}_{func_key}"
         else:
-            cache_key = f'{cache_key}_{func_name}'
+            cache_key = f"{cache_key}_{func_name}"
         timeout = self.calculate_timeout(view_instance=view_instance)
         n_time = time.time()
-        if getattr(request, 'no_cache', False):
+        if getattr(request, "no_cache", False):
             res = None
         else:
             res = cache.get(cache_key)
-        if res and n_time - res.get('c_time', n_time) < timeout - self.invalid_time:
+        if res and n_time - res.get("c_time", n_time) < timeout - self.invalid_time:
             logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
-            content, status, headers = res['data']
+            content, status, headers = res["data"]
             response = HttpResponse(content=content, status=status)
             response.renderer_context = view_instance.get_renderer_context()
             for k, v in headers.values():
@@ -309,28 +309,20 @@ class MagicCacheResponse(object):
             response = view_instance.finalize_response(request, response, *args, **kwargs)
             response.render()
 
-            if not response.status_code >= 400 and not getattr(request, 'no_cache', False):
-                data = (
-                    response.rendered_content,
-                    response.status_code,
-                    {k: (k, v) for k, v in response.items()}
-                )
-                res = {'c_time': n_time, 'data': data}
+            if not response.status_code >= 400 and not getattr(request, "no_cache", False):
+                data = (response.rendered_content, response.status_code, {k: (k, v) for k, v in response.items()})
+                res = {"c_time": n_time, "data": data}
                 cache.set(cache_key, res, timeout)
                 logger.debug(
-                    f"exec {func_name} finished. time:{time.time() - n_time}  cache_key:{cache_key} result:{res}")
+                    f"exec {func_name} finished. time:{time.time() - n_time}  cache_key:{cache_key} result:{res}"
+                )
 
-        if not hasattr(response, '_closable_objects'):
+        if not hasattr(response, "_closable_objects"):
             response._closable_objects = []
 
         return response
 
-    def calculate_key(self,
-                      view_instance,
-                      view_method,
-                      request,
-                      args,
-                      kwargs):
+    def calculate_key(self, view_instance, view_method, request, args, kwargs):
         if isinstance(self.key_func, str):
             key_func = getattr(view_instance, self.key_func)
         else:
@@ -357,9 +349,9 @@ def handle_db_connections(func):
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         close_old_connections()
-        logger.info(f'{func.__name__} run before do close old connection')
+        logger.info(f"{func.__name__} run before do close old connection")
         result = func(*args, **kwargs)
-        logger.info(f'{func.__name__} run after do close old connection')
+        logger.info(f"{func.__name__} run after do close old connection")
         close_old_connections()
 
         return result

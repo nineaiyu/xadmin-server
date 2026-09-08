@@ -19,10 +19,10 @@ logger = get_logger(__name__)
 class MenuMetaSerializer(BaseModelSerializer):
     class Meta:
         model = MenuMeta
-        exclude = ['creator', 'modifier', 'id']
-        read_only_fields = ['creator', 'modifier', 'dept_belong', 'id']
+        exclude = ["creator", "modifier", "id"]
+        read_only_fields = ["creator", "modifier", "dept_belong", "id"]
 
-    pk = serializers.UUIDField(source='id', read_only=True)
+    pk = serializers.UUIDField(source="id", read_only=True)
 
 
 class MenuSerializer(BaseModelSerializer):
@@ -31,13 +31,23 @@ class MenuSerializer(BaseModelSerializer):
     class Meta:
         model = Menu
         fields = [
-            'pk', 'name', 'rank', 'path', 'component', 'meta', 'parent', 'menu_type', 'is_active', 'model', 'method',
-            'deleted_at'
+            "pk",
+            "name",
+            "rank",
+            "path",
+            "component",
+            "meta",
+            "parent",
+            "menu_type",
+            "is_active",
+            "model",
+            "method",
+            "deleted_at",
         ]
         # read_only_fields = ['pk'] # 用于文件导入导出时，不丢失上级节点
         extra_kwargs = {
-            'parent': {'attrs': ['pk', 'name'], 'allow_null': True, 'required': False},
-            'model': {'attrs': ['pk', 'name', 'label'], 'allow_null': True, 'required': False},
+            "parent": {"attrs": ["pk", "name"], "allow_null": True, "required": False},
+            "model": {"attrs": ["pk", "name", "label"], "allow_null": True, "required": False},
         }
 
     # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
@@ -52,15 +62,16 @@ class MenuSerializer(BaseModelSerializer):
 
     def update(self, instance, validated_data):
         with transaction.atomic():
-            serializer = MenuMetaSerializer(instance.meta, data=validated_data.pop('meta'), partial=True,
-                                            context=self.context)
+            serializer = MenuMetaSerializer(
+                instance.meta, data=validated_data.pop("meta"), partial=True, context=self.context
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return super().update(instance, validated_data)
 
     def create(self, validated_data):
         with transaction.atomic():
-            serializer = MenuMetaSerializer(data=validated_data.pop('meta'), context=self.context)
+            serializer = MenuMetaSerializer(data=validated_data.pop("meta"), context=self.context)
             serializer.is_valid(raise_exception=True)
-            validated_data['meta'] = serializer.save()
+            validated_data["meta"] = serializer.save()
             return super().create(validated_data)

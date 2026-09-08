@@ -19,26 +19,27 @@ logger = get_logger(__name__)
 
 
 class SearchDeptFilter(BaseFilterSet):
-    pk = filters.UUIDFilter(field_name='id')
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    pk = filters.UUIDFilter(field_name="id")
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
 
     class Meta:
         model = DeptInfo
-        fields = ['name', 'is_active', 'code', 'description']
+        fields = ["name", "is_active", "code", "description"]
 
 
 class SearchDeptSerializer(DeptSerializer):
     class Meta:
         model = DeptInfo
-        fields = ['name', 'pk', 'code', 'parent', 'is_active', 'user_count', 'auto_bind', 'description', 'created_time']
-        table_fields = ['name', 'code', 'is_active', 'user_count', 'auto_bind', 'description', 'created_time', 'pk']
+        fields = ["name", "pk", "code", "parent", "is_active", "user_count", "auto_bind", "description", "created_time"]
+        table_fields = ["name", "code", "is_active", "user_count", "auto_bind", "description", "created_time", "pk"]
         read_only_fields = [x.name for x in DeptInfo._meta.fields]
 
 
 class SearchDeptViewSet(AnnotateUserCountMixin, OnlyListModelSet):
     """部门搜索"""
+
     queryset = DeptInfo.objects.all()
     serializer_class = SearchDeptSerializer
     pagination_class = DynamicPageNumber(1000)
-    ordering_fields = ['created_time', 'rank']
+    ordering_fields = ["created_time", "rank"]
     filterset_class = SearchDeptFilter

@@ -40,8 +40,8 @@ class AutoCleanFileMixin(object):
     """
 
     def save(self, *args, **kwargs):
-        update_fields = kwargs.get('update_fields')
-        if kwargs.get('force_insert', None):
+        update_fields = kwargs.get("update_fields")
+        if kwargs.get("force_insert", None):
             filelist = []
         elif update_fields and not (set(update_fields) & self._file_field_names):
             # 本次保存不涉及文件字段时，文件内容不可能变化，
@@ -56,10 +56,9 @@ class AutoCleanFileMixin(object):
 
     @property
     def _file_field_names(self):
-        if not hasattr(self, '_cached_file_field_names'):
+        if not hasattr(self, "_cached_file_field_names"):
             self._cached_file_field_names = {
-                field.name for field in self._meta.fields
-                if isinstance(field, (models.ImageField, models.FileField))
+                field.name for field in self._meta.fields if isinstance(field, (models.ImageField, models.FileField))
             }
         return self._cached_file_field_names
 
@@ -74,9 +73,11 @@ class AutoCleanFileMixin(object):
         if any(isinstance(field, (models.ImageField, models.FileField)) for field in model._meta.fields):
             return True
         return any(
-            field.is_relation and field.related_model is not None
+            field.is_relation
+            and field.related_model is not None
             and field.related_model._meta.label == "system.UploadFile"
-            for field in model._meta.get_fields() if field.is_relation
+            for field in model._meta.get_fields()
+            if field.is_relation
         )
 
     def delete(self, *args, **kwargs):
@@ -148,13 +149,33 @@ class DbBaseModel(models.Model):
 
 
 class DbAuditModel(DbBaseModel):
-    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='creator_query', null=True, blank=True,
-                                verbose_name=_("Creator"), on_delete=models.SET_NULL, related_name='+')
-    modifier = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='modifier_query', null=True,
-                                 blank=True, verbose_name=_("Modifier"), on_delete=models.SET_NULL, related_name='+')
-    dept_belong = models.ForeignKey(to="system.DeptInfo", related_query_name='dept_belong_query', null=True, blank=True,
-                                    verbose_name=_("Data ownership department"), on_delete=models.SET_NULL,
-                                    related_name='+')
+    creator = models.ForeignKey(
+        to=settings.AUTH_USER_MODEL,
+        related_query_name="creator_query",
+        null=True,
+        blank=True,
+        verbose_name=_("Creator"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    modifier = models.ForeignKey(
+        to=settings.AUTH_USER_MODEL,
+        related_query_name="modifier_query",
+        null=True,
+        blank=True,
+        verbose_name=_("Modifier"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    dept_belong = models.ForeignKey(
+        to="system.DeptInfo",
+        related_query_name="dept_belong_query",
+        null=True,
+        blank=True,
+        verbose_name=_("Data ownership department"),
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
 
     class Meta:
         abstract = True
@@ -174,7 +195,6 @@ class SoftDeleteQuerySet(models.QuerySet):
 
 
 class SoftDeleteManager(models.Manager):
-
     def get_queryset(self):
         return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
 
@@ -186,6 +206,7 @@ class SoftDeleteModel(models.Model):
     使用时必须放在 MRO 首位（如 class Foo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel)），
     使 delete() 优先于 AutoCleanFileMixin.delete 解析，软删除不清理物理文件。
     """
+
     deleted_at = models.DateTimeField(verbose_name=_("Deleted at"), null=True, blank=True, db_index=True)
 
     objects = SoftDeleteManager()
@@ -197,7 +218,7 @@ class SoftDeleteModel(models.Model):
     def delete(self, *args, **kwargs):
         """软删除：标记 deleted_at 并触发 post_save 信号（权限缓存失效依赖此链路）。"""
         self.deleted_at = timezone.now()
-        self.save(update_fields=['deleted_at'])
+        self.save(update_fields=["deleted_at"])
         return 1
 
     def hard_delete(self, *args, **kwargs):
@@ -206,10 +227,10 @@ class SoftDeleteModel(models.Model):
 
 
 def upload_directory_path(instance, filename):
-    prefix = filename.split('.')[-1]
+    prefix = filename.split(".")[-1]
     tmp_name = f"{filename}_{time.time()}"
     new_filename = f"{uuid.uuid5(uuid.NAMESPACE_DNS, tmp_name).__str__().replace('-', '')}.{prefix}"
-    labels = instance._meta.label_lower.split('.')
+    labels = instance._meta.label_lower.split(".")
     if creator := getattr(instance, "creator", None):
         creator_pk = creator.pk
     else:

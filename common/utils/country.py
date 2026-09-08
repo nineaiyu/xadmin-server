@@ -34,9 +34,7 @@ def get_country_phone_choices(locales=None):
     choices = []
     german = None
     if locales:
-        german = gettext.translation(
-            "iso3166-1", pycountry.LOCALES_DIR, languages=[locales]
-        )
+        german = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=[locales])
     for code, phone in codes:
         country = get_country(code)
         if not country:
@@ -44,20 +42,22 @@ def get_country_phone_choices(locales=None):
         country_name = country.name
         flag = country.flag
 
-        if country.name == 'China':
-            country_name = _('China')
+        if country.name == "China":
+            country_name = _("China")
 
-        if code == 'TW':
-            country_name = 'Taiwan'
-            flag = get_country('CN').flag
-        choices.append({
-            'name': german.gettext(country_name) if german else country_name,
-            'phone_code': f'+{phone}',
-            'flag': flag,
-            'code': code,
-        })
+        if code == "TW":
+            country_name = "Taiwan"
+            flag = get_country("CN").flag
+        choices.append(
+            {
+                "name": german.gettext(country_name) if german else country_name,
+                "phone_code": f"+{phone}",
+                "flag": flag,
+                "code": code,
+            }
+        )
 
-    choices.sort(key=lambda x: x['name'])
+    choices.sort(key=lambda x: x["name"])
     return choices
 
 

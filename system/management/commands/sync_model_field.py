@@ -10,7 +10,7 @@ from system.utils.modelfield import sync_model_field
 
 
 class Command(BaseCommand):
-    help = 'Sync Model Field'
+    help = "Sync Model Field"
 
     def handle(self, *args, **options):
         sync_model_field()

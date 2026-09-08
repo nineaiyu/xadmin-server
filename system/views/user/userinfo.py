@@ -32,8 +32,9 @@ logger = get_logger(__name__)
 
 class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     """个人"""
+
     serializer_class = UserInfoSerializer
-    FILE_UPLOAD_FIELD = 'avatar'
+    FILE_UPLOAD_FIELD = "avatar"
     choices_models = [UserInfo]
     queryset = UserInfo.objects.none()
 
@@ -46,13 +47,16 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     def retrieve(self, request, *args, **kwargs):
         """获取{cls}信息"""
         data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(**data, config={
-            'FRONT_END_WEB_WATERMARK_ENABLED': settings.FRONT_END_WEB_WATERMARK_ENABLED
-        })
+        return ApiResponse(**data, config={"FRONT_END_WEB_WATERMARK_ENABLED": settings.FRONT_END_WEB_WATERMARK_ENABLED})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=['post'], detail=False, url_path='reset-password', serializer_class=ChangePasswordSerializer,
-            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
+    @action(
+        methods=["post"],
+        detail=False,
+        url_path="reset-password",
+        serializer_class=ChangePasswordSerializer,
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def reset_password(self, request, *args, **kwargs):
         """修改{cls}密码（敏感操作：需密码二次确认）"""
         instance = self.get_object()
@@ -65,12 +69,10 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         return ApiResponse()
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(properties={'file': build_basic_type(OpenApiTypes.BINARY)})
-        ),
-        responses=get_default_response_schema()
+        request=OpenApiRequest(build_object_type(properties={"file": build_basic_type(OpenApiTypes.BINARY)})),
+        responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=False, parser_classes=(MultiPartParser,))
+    @action(methods=["post"], detail=False, parser_classes=(MultiPartParser,))
     def upload(self, request, *args, **kwargs):
         """上传{cls}头像"""
         return super().upload(request, *args, **kwargs)
@@ -79,22 +81,26 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    'verify_token': build_basic_type(OpenApiTypes.STR),
-                    'verify_code': build_basic_type(OpenApiTypes.STR),
+                    "verify_token": build_basic_type(OpenApiTypes.STR),
+                    "verify_code": build_basic_type(OpenApiTypes.STR),
                 },
-                required=['verify_token', 'verify_code'],
+                required=["verify_token", "verify_code"],
             )
         ),
-        responses=get_default_response_schema()
+        responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=False, url_path='bind',
-            permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)])
+    @action(
+        methods=["post"],
+        detail=False,
+        url_path="bind",
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
     def bind(self, request, *args, **kwargs):
         """绑定{cls}邮箱或手机（敏感操作：需密码二次确认）"""
         query_key, target, verify_token = verify_sms_email_code(request, ResetBlockUtil)
         instance = UserInfo.objects.filter(**{query_key: target}).first()
         if instance:
-            setattr(instance, query_key, '')
+            setattr(instance, query_key, "")
             instance.save(update_fields=(query_key,))
         setattr(request.user, query_key, target)
         request.user.save(update_fields=(query_key,))

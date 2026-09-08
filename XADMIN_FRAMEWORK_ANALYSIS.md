@@ -136,7 +136,7 @@ User ←→ UserRole ←→ Menu (PERMISSION类型)
 ```python
 request.fields = {
     "system.userinfo": {"username", "nickname", "email"},  # 允许的字段集合
-    "system.role": {"name", "code"}
+    "system.role": {"name", "code"},
 }
 ```
 
@@ -231,7 +231,7 @@ class UserViewSet(BaseModelSet, UploadFileAction, ImportExportDataAction):
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer
     filterset_class = UserFilter
-    ordering_fields = ['date_joined', 'last_login']
+    ordering_fields = ["date_joined", "last_login"]
 ```
 
 ### 2.7 配置系统
@@ -243,10 +243,10 @@ class UserViewSet(BaseModelSet, UploadFileAction, ImportExportDataAction):
 ```python
 # 获取配置值
 SysConfig.FILE_UPLOAD_SIZE  # 属性访问方式
-SysConfig.get_value('KEY', default)  # 方法访问方式
+SysConfig.get_value("KEY", default)  # 方法访问方式
 
 # 设置配置值
-SysConfig.set_value('KEY', value, is_active=True)
+SysConfig.set_value("KEY", value, is_active=True)
 
 # 支持配置间引用
 # 数据库中: {"key": "MAX_SIZE", "value": "{{ BASE_SIZE }}"}  # 引用其他配置
@@ -603,7 +603,7 @@ Message (基类, metaclass=MessageType)
 
 ```python
 UserConfig(pk).PUSH_MESSAGE_NOTICE  # 用户是否接收消息推送
-UserConfig(pk).PUSH_CHAT_MESSAGE    # 用户是否接收聊天消息推送
+UserConfig(pk).PUSH_CHAT_MESSAGE  # 用户是否接收聊天消息推送
 ```
 
 支持属性访问和缓存，与 `SysConfig` 共享相同的缓存机制。

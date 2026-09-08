@@ -16,9 +16,9 @@ from system.models import *
 
 def get_fields(model):
     if issubclass(model, FieldPermission):
-        exclude_fields = ['updated_time', 'created_time']
+        exclude_fields = ["updated_time", "created_time"]
     elif issubclass(model, ModelLabelField):
-        exclude_fields = ['updated_time']
+        exclude_fields = ["updated_time"]
     else:
         exclude_fields = []
 
@@ -26,20 +26,29 @@ def get_fields(model):
 
 
 class Command(BaseCommand):
-    help = 'dump init json data'
-    model_names = [UserRole, DeptInfo, Menu, MenuMeta, SystemConfig, DataPermission, FieldPermission, ModelLabelField,
-                   Setting]
+    help = "dump init json data"
+    model_names = [
+        UserRole,
+        DeptInfo,
+        Menu,
+        MenuMeta,
+        SystemConfig,
+        DataPermission,
+        FieldPermission,
+        ModelLabelField,
+        Setting,
+    ]
 
     def save_json(self, queryset, filename):
-        stream = open(filename, 'w', encoding='utf8')
+        stream = open(filename, "w", encoding="utf8")
         try:
             serializers.serialize(
-                'json',
+                "json",
                 queryset,
                 indent=2,
                 stream=stream or self.stdout,
                 object_count=queryset.count(),
-                fields=get_fields(queryset.model)
+                fields=get_fields(queryset.model),
             )
         except Exception as e:
             print(f"{queryset.model._meta.model_name} {filename} dump failed {e}")
@@ -50,5 +59,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         for model in self.model_names:
-            self.save_json(model.objects.all().order_by('pk'),
-                           os.path.join(file_root, f"{model._meta.model_name}.json"))
+            self.save_json(
+                model.objects.all().order_by("pk"), os.path.join(file_root, f"{model._meta.model_name}.json")
+            )

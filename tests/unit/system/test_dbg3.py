@@ -13,8 +13,14 @@ def tree(db):
     parent = Menu.objects.create(name="系统管理", path="system", menu_type=Menu.MenuChoices.DIRECTORY, meta=pm)
     for i, name in enumerate(["用户管理", "角色管理"]):
         m = MenuMeta.objects.create(title=name)
-        Menu.objects.create(name=name, path=f"api/system/{'user' if i == 0 else 'role'}$",
-                            method="GET", menu_type=Menu.MenuChoices.MENU, parent=parent, meta=m)
+        Menu.objects.create(
+            name=name,
+            path=f"api/system/{'user' if i == 0 else 'role'}$",
+            method="GET",
+            menu_type=Menu.MenuChoices.MENU,
+            parent=parent,
+            meta=m,
+        )
     return parent
 
 

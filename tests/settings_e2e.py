@@ -12,6 +12,7 @@ eager celery），但差异点：
 
 同样不能放在 server/settings/ 包内，避免父包 __init__ 强制加载 config.yml。
 """
+
 import os
 
 from server.conf import ConfigManager
@@ -23,9 +24,7 @@ from tests import settings_test as _base
 # 本模块尾部的显式覆盖区（见文件下方）。
 _test_config = _base._test_config
 
-ConfigManager.load_user_config = classmethod(
-    lambda cls, root_path=None, config_class=None: _test_config
-)
+ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _test_config)
 
 from server.settings import *  # noqa: F401,F403,E402
 
@@ -82,11 +81,7 @@ DATABASES = {
         # 让并发写排队而非直接报错（Django 5.1+ sqlite OPTIONS）
         "OPTIONS": {
             "transaction_mode": "IMMEDIATE",
-            "init_command": (
-                "PRAGMA journal_mode=WAL;"
-                "PRAGMA busy_timeout=15000;"
-                "PRAGMA synchronous=NORMAL;"
-            ),
+            "init_command": ("PRAGMA journal_mode=WAL;PRAGMA busy_timeout=15000;PRAGMA synchronous=NORMAL;"),
         },
     }
 }

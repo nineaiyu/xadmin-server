@@ -16,12 +16,12 @@ from server.utils import get_current_request
 
 # 按天目录滚动（rotator 把旧日志移入 日期/ 子目录）后，
 # TimedRotatingFileHandler 标准的 backupCount 清理逻辑扫不到子目录，需自行按目录清理
-_DATED_DIR_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_DATED_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
     def rotator(self, source, dest):
-        """ Override the original method to rotate the log file daily."""
+        """Override the original method to rotate the log file daily."""
         dest = self._get_rotate_dest_filename(source)
         if os.path.exists(source) and not os.path.exists(dest):
             # 存在多个服务进程时, 保证只有一个进程成功 rotate
@@ -30,14 +30,17 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
 
     def _prune_dated_dirs(self, source):
         """超出 backupCount 的历史日期目录整体清理（0 或负数表示不清理）。"""
-        backup_count = getattr(self, 'backupCount', 0) or 0
+        backup_count = getattr(self, "backupCount", 0) or 0
         if backup_count <= 0:
             return
         log_dir = os.path.dirname(source)
         try:
             dated_dirs = sorted(
-                (name for name in os.listdir(log_dir)
-                 if _DATED_DIR_RE.match(name) and os.path.isdir(os.path.join(log_dir, name))),
+                (
+                    name
+                    for name in os.listdir(log_dir)
+                    if _DATED_DIR_RE.match(name) and os.path.isdir(os.path.join(log_dir, name))
+                ),
                 reverse=True,
             )
         except OSError:
@@ -47,7 +50,7 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
 
     @staticmethod
     def _get_rotate_dest_filename(source):
-        date_yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        date_yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         path = [os.path.dirname(source), date_yesterday, os.path.basename(source)]
         filename = os.path.join(*path)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -57,8 +60,8 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
 class ServerFormatter(logging.Formatter):
     def format(self, record):
         current_request = get_current_request()
-        record.requestUser = str(current_request.user if current_request else 'SYSTEM')[:16]
-        record.requestUuid = str(getattr(current_request, 'request_uuid', ""))
+        record.requestUser = str(current_request.user if current_request else "SYSTEM")[:16]
+        record.requestUuid = str(getattr(current_request, "request_uuid", ""))
         return super().format(record)
 
 
@@ -72,19 +75,20 @@ class JsonFormatter(logging.Formatter):
     def format(self, record):
         current_request = get_current_request()
         payload = {
-            'time': datetime.fromtimestamp(
-                record.created, tz=timezone.utc).astimezone().isoformat(timespec='milliseconds'),
-            'level': record.levelname,
-            'logger': record.name,
-            'module': f'{record.pathname}:{record.lineno}',
-            'process': record.process,
-            'thread': record.thread,
-            'request_uuid': str(getattr(current_request, 'request_uuid', '') or ''),
-            'request_user': str(current_request.user if current_request else 'SYSTEM')[:16],
-            'message': record.getMessage(),
+            "time": datetime.fromtimestamp(record.created, tz=timezone.utc)
+            .astimezone()
+            .isoformat(timespec="milliseconds"),
+            "level": record.levelname,
+            "logger": record.name,
+            "module": f"{record.pathname}:{record.lineno}",
+            "process": record.process,
+            "thread": record.thread,
+            "request_uuid": str(getattr(current_request, "request_uuid", "") or ""),
+            "request_user": str(current_request.user if current_request else "SYSTEM")[:16],
+            "message": record.getMessage(),
         }
         if record.exc_info:
-            payload['exception'] = self.formatException(record.exc_info)
+            payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, ensure_ascii=False, default=str)
 
 
@@ -104,7 +108,7 @@ class ColorHandler(logging.StreamHandler):
                 logging.INFO: self.GREEN,
                 logging.WARNING: self.YELLOW,
                 logging.ERROR: self.RED,
-                logging.CRITICAL: self.PURPLE
+                logging.CRITICAL: self.PURPLE,
             }
 
             csi = f"{chr(27)}["  # 控制序列引入符

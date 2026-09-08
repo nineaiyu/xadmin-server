@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """软删除与回收站集成测试（notice / upload）。"""
+
 from datetime import timedelta
 
 import pytest
@@ -17,8 +18,15 @@ NOTICE_URL = "/api/notifications/notice-messages"
 def _create_notice_via_api(auth_client, superuser, title="回收站测试公告"):
     resp = auth_client.post(
         NOTICE_URL,
-        {"title": title, "message": "<p>hello</p>", "notice_type": 2, "level": "info",
-         "publish": True, "notice_user": [superuser.pk], "files": []},
+        {
+            "title": title,
+            "message": "<p>hello</p>",
+            "notice_type": 2,
+            "level": "info",
+            "publish": True,
+            "notice_user": [superuser.pk],
+            "files": [],
+        },
         format="json",
     )
     assert resp.status_code == 200, resp.data
@@ -75,8 +83,12 @@ class TestSoftDeleteModel:
     def test_upload_soft_delete_keeps_file(self, auth_client):
         """UploadFile 软删除仅做标记，物理文件与行保留在回收站。"""
         upload = UploadFile.objects.create(
-            filename="a.txt", filesize=1, mime_type="text/plain", md5sum="x" * 32,
-            filepath=SimpleUploadedFile("a.txt", b"hello"), is_upload=True,
+            filename="a.txt",
+            filesize=1,
+            mime_type="text/plain",
+            md5sum="x" * 32,
+            filepath=SimpleUploadedFile("a.txt", b"hello"),
+            is_upload=True,
         )
         upload.delete()
         assert UploadFile.objects.filter(pk=upload.pk).count() == 0
@@ -84,8 +96,12 @@ class TestSoftDeleteModel:
 
     def test_hard_delete_removes_row(self, auth_client):
         upload = UploadFile.objects.create(
-            filename="b.txt", filesize=1, mime_type="text/plain", md5sum="y" * 32,
-            filepath=SimpleUploadedFile("b.txt", b"world"), is_upload=True,
+            filename="b.txt",
+            filesize=1,
+            mime_type="text/plain",
+            md5sum="y" * 32,
+            filepath=SimpleUploadedFile("b.txt", b"world"),
+            is_upload=True,
         )
         upload.hard_delete()
         assert UploadFile.all_objects.filter(pk=upload.pk).count() == 0

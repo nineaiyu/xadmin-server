@@ -12,6 +12,7 @@
 未通过验证时统一抛出 HTTP 412（type=user_confirm_required），由前端拦截并弹出
 验证弹窗；验证通过后确认状态写入 Redis（JWT 无 session），有效期内免重复验证。
 """
+
 import functools
 
 from django.conf import settings
@@ -54,15 +55,15 @@ class UserConfirmation(BasePermission):
     @classmethod
     def require(cls, confirm_type=ConfirmType.MFA):
         """按验证类型动态生成权限类（级别语义见 ConfirmType）"""
-        name = f'UserConfirmationLevel{CONFIRM_TYPE_LEVEL[confirm_type]}'
-        return type(name, (cls,), {'min_type': confirm_type})
+        name = f"UserConfirmationLevel{CONFIRM_TYPE_LEVEL[confirm_type]}"
+        return type(name, (cls,), {"min_type": confirm_type})
 
 
 def ensure_user_confirmed(request, confirm_type=ConfirmType.MFA):
     """非 DRF 视图场景（业务方法/定时任务回调等）手动执行二次确认校验"""
-    user = getattr(request, 'user', None)
+    user = getattr(request, "user", None)
     if not (user and user.is_authenticated):
-        raise MFAConfirmRequired(confirm_type, detail=_('Authentication required'))
+        raise MFAConfirmRequired(confirm_type, detail=_("Authentication required"))
     check_user_confirm(user, confirm_type)
 
 
@@ -75,11 +76,11 @@ def require_user_confirmation(confirm_type=ConfirmType.MFA):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            request = next((arg for arg in args if hasattr(arg, 'user')), None)
+            request = next((arg for arg in args if hasattr(arg, "user")), None)
             if request is None:
-                request = kwargs.get('request')
+                request = kwargs.get("request")
             if request is None:
-                raise MFAConfirmRequired(confirm_type, detail=_('Request object not found'))
+                raise MFAConfirmRequired(confirm_type, detail=_("Request object not found"))
             ensure_user_confirmed(request, confirm_type)
             return func(*args, **kwargs)
 

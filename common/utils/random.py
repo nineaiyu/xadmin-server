@@ -10,7 +10,7 @@ import socket
 import string
 import struct
 
-string_punctuation = '!#$%&()*+,-.:;<=?@[]_~'
+string_punctuation = "!#$%&()*+,-.:;<=?@[]_~"
 
 
 def random_datetime(date_start, date_end):
@@ -19,7 +19,7 @@ def random_datetime(date_start, date_end):
 
 
 def random_ip():
-    return socket.inet_ntoa(struct.pack('>I', random.randint(1, 0xffffffff)))
+    return socket.inet_ntoa(struct.pack(">I", random.randint(1, 0xFFFFFFFF)))
 
 
 def random_replace_char(seq, chars, length):
@@ -37,41 +37,40 @@ def random_replace_char(seq, chars, length):
 
 def remove_exclude_char(s, exclude_chars):
     for i in exclude_chars:
-        s = s.replace(i, '')
+        s = s.replace(i, "")
     return s
 
 
 def random_string(
-        length: int, lower=True, upper=True, digit=True,
-        special_char=False, exclude_chars='', symbols=string_punctuation
+    length: int, lower=True, upper=True, digit=True, special_char=False, exclude_chars="", symbols=string_punctuation
 ):
     if not any([lower, upper, digit]):
-        raise ValueError('At least one of `lower`, `upper`, `digit` must be `True`')
+        raise ValueError("At least one of `lower`, `upper`, `digit` must be `True`")
     if length < 4:
-        raise ValueError('The length of the string must be greater than 3')
+        raise ValueError("The length of the string must be greater than 3")
 
     char_list = []
     if lower:
         lower_chars = remove_exclude_char(string.ascii_lowercase, exclude_chars)
         if not lower_chars:
-            raise ValueError('After excluding characters, no lowercase letters are available.')
+            raise ValueError("After excluding characters, no lowercase letters are available.")
         char_list.append(lower_chars)
 
     if upper:
         upper_chars = remove_exclude_char(string.ascii_uppercase, exclude_chars)
         if not upper_chars:
-            raise ValueError('After excluding characters, no uppercase letters are available.')
+            raise ValueError("After excluding characters, no uppercase letters are available.")
         char_list.append(upper_chars)
 
     if digit:
         digit_chars = remove_exclude_char(string.digits, exclude_chars)
         if not digit_chars:
-            raise ValueError('After excluding characters, no digits are available.')
+            raise ValueError("After excluding characters, no digits are available.")
         char_list.append(digit_chars)
 
     secret_chars = [secrets.choice(chars) for chars in char_list]
 
-    all_chars = ''.join(char_list)
+    all_chars = "".join(char_list)
 
     remaining_length = length - len(secret_chars)
     seq = [secrets.choice(all_chars) for _ in range(remaining_length)]
@@ -79,10 +78,10 @@ def random_string(
     if special_char:
         special_chars = remove_exclude_char(symbols, exclude_chars)
         if not special_chars:
-            raise ValueError('After excluding characters, no special characters are available.')
+            raise ValueError("After excluding characters, no special characters are available.")
         symbol_num = length // 16 + 1
         seq = random_replace_char(seq, special_chars, symbol_num)
     secret_chars += seq
 
     secrets.SystemRandom().shuffle(secret_chars)
-    return ''.join(secret_chars)
+    return "".join(secret_chars)

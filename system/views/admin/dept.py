@@ -18,18 +18,19 @@ logger = get_logger(__name__)
 
 
 class DeptFilter(BaseFilterSet):
-    pk = filters.UUIDFilter(field_name='id')
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+    pk = filters.UUIDFilter(field_name="id")
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
 
     class Meta:
         model = DeptInfo
-        fields = ['pk', 'is_active', 'code', 'mode_type', 'auto_bind', 'name', 'description']
+        fields = ["pk", "is_active", "code", "mode_type", "auto_bind", "name", "description"]
 
 
 class DeptViewSet(AnnotateUserCountMixin, BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
     """部门"""
+
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
     pagination_class = DynamicPageNumber(1000)
-    ordering_fields = ['created_time', 'rank']
+    ordering_fields = ["created_time", "rank"]
     filterset_class = DeptFilter

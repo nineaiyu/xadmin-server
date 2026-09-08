@@ -15,7 +15,6 @@ logger = get_logger(__name__)
 
 
 class CacheBaseState(object):
-
     def __init__(self, key, value=time.time(), timeout=3600 * 24):
         self.key = f"CacheBaseState_{self.__class__.__name__}_{key}"
         self.value = value
@@ -42,9 +41,7 @@ class CacheBaseState(object):
         logger.info(f"cache base state __exit__ {exc_type}, {exc_val}, {exc_tb}")
 
 
-class SyncDriveSizeState(CacheBaseState):
-    ...
+class SyncDriveSizeState(CacheBaseState): ...
 
 
-class GetDriveAuthCache(CacheBaseState):
-    ...
+class GetDriveAuthCache(CacheBaseState): ...

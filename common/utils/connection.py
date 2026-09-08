@@ -59,10 +59,12 @@ class Subscription:
         msgs = self.sub.listen()
 
         if error is None:
+
             def error(m, i):
                 return None
 
         if complete is None:
+
             def complete():
                 return None
 
@@ -72,26 +74,26 @@ class Subscription:
                     continue
                 item = None
                 try:
-                    item_json = msg['data'].decode()
+                    item_json = msg["data"].decode()
                     item = json.loads(item_json)
 
                     with safe_db_connection():
                         _next(item)
                 except Exception as e:
                     error(msg, item)
-                    logger.error('Subscribe handler handle msg error: {}'.format(e))
+                    logger.error("Subscribe handler handle msg error: {}".format(e))
         except Exception as e:
             if self.unsubscribed:
-                logger.debug('Subscription unsubscribed')
+                logger.debug("Subscription unsubscribed")
             else:
-                logger.error('Consume msg error: {}'.format(e))
+                logger.error("Consume msg error: {}".format(e))
                 self.retry(_next, error, complete)
                 return
 
         try:
             complete()
         except Exception as e:
-            logger.error('Complete subscribe error: {}'.format(e))
+            logger.error("Complete subscribe error: {}".format(e))
             pass
 
         try:
@@ -111,10 +113,10 @@ class Subscription:
         try:
             self.sub.close()
         except Exception as e:
-            logger.warning('Unsubscribe msg error: {}'.format(e))
+            logger.warning("Unsubscribe msg error: {}".format(e))
 
     def retry(self, _next, error, complete):
-        logger.info('Retry subscribe channel: {}'.format(self.ch))
+        logger.info("Retry subscribe channel: {}".format(self.ch))
         times = 0
 
         while True:
@@ -123,6 +125,6 @@ class Subscription:
                 self.pb.resubscribe(_next, error, complete)
                 break
             except Exception as e:
-                logger.error('Retry #{} {} subscribe channel error: {}'.format(times, self.ch, e))
+                logger.error("Retry #{} {} subscribe channel error: {}".format(times, self.ch, e))
                 times += 1
                 time.sleep(times * 2)

@@ -24,8 +24,9 @@ class SQLCountMiddleware:
 
     def __call__(self, request):
         from django.db import connection
+
         response = self.get_response(request)
-        response['X-SQL-COUNT'] = len(connection.queries) - 2
+        response["X-SQL-COUNT"] = len(connection.queries) - 2
         return response
 
 
@@ -39,14 +40,14 @@ class StartMiddleware:
         request._s_time_start = time.time()
         response = self.get_response(request)
         request._s_time_end = time.time()
-        if request.path == '/api/common/api/health':
+        if request.path == "/api/common/api/health":
             data = response.data
-            data['pre_middleware_time'] = request._e_time_start - request._s_time_start
-            data['api_time'] = request._e_time_end - request._e_time_start
-            data['post_middleware_time'] = request._s_time_end - request._e_time_end
+            data["pre_middleware_time"] = request._e_time_start - request._s_time_start
+            data["api_time"] = request._e_time_end - request._e_time_start
+            data["post_middleware_time"] = request._s_time_end - request._e_time_end
             response.content = json.dumps(data)
-            response.headers['Content-Length'] = str(len(response.content))
-            response.headers['Content-Type'] = "application/json"
+            response.headers["Content-Length"] = str(len(response.content))
+            response.headers["Content-Type"] = "application/json"
         return response
 
 
@@ -70,7 +71,7 @@ class RequestMiddleware:
     @staticmethod
     def get_request_uuid(request):
         # 优先沿用网关/上游传入的请求 ID，便于跨服务日志串联；无则生成新的
-        upstream_id = re.sub(r'[^0-9a-zA-Z\-_]', '', request.headers.get('X-Request-Id', ''))[:64]
+        upstream_id = re.sub(r"[^0-9a-zA-Z\-_]", "", request.headers.get("X-Request-Id", ""))[:64]
         return upstream_id or uuid.uuid4()
 
     def __call__(self, request):
@@ -78,7 +79,7 @@ class RequestMiddleware:
         set_current_request(request)
         response = self.get_response(request)
         # 回写响应头，便于前端/网关按请求 ID 关联日志与反馈问题
-        response['X-Request-Id'] = str(request.request_uuid)
+        response["X-Request-Id"] = str(request.request_uuid)
         return response
 
 
@@ -87,11 +88,11 @@ class RefererCheckMiddleware:
         if not settings.REFERER_CHECK_ENABLED:
             raise MiddlewareNotUsed
         self.get_response = get_response
-        self.http_pattern = re.compile('https?://')
+        self.http_pattern = re.compile("https?://")
 
     def check_referer(self, request):
-        referer = request.META.get('HTTP_REFERER', '')
-        referer = self.http_pattern.sub('', referer)
+        referer = request.META.get("HTTP_REFERER", "")
+        referer = self.http_pattern.sub("", referer)
         if not referer:
             return True
         remote_host = request.get_host()
@@ -100,6 +101,6 @@ class RefererCheckMiddleware:
     def __call__(self, request):
         match = self.check_referer(request)
         if not match:
-            return HttpResponseForbidden('CSRF CHECK ERROR')
+            return HttpResponseForbidden("CSRF CHECK ERROR")
         response = self.get_response(request)
         return response

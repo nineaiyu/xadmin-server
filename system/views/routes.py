@@ -23,14 +23,14 @@ def get_auths(user):
         menu_obj = get_user_menu_queryset(user)
     if not menu_obj:
         menu_obj = Menu.objects.none()
-    return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list('name', flat=True).distinct()
+    return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list("name", flat=True).distinct()
 
 
 class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
     """获取菜单路由"""
 
     @extend_schema(exclude=True)
-    @cache_response(timeout=3600 * 24, key_func='get_cache_key')
+    @cache_response(timeout=3600 * 24, key_func="get_cache_key")
     def get(self, request):
         route_list = []
         user_obj = request.user
@@ -38,15 +38,19 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         if user_obj.is_superuser:
             # 嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
             route_list = RouteSerializer(
-                Menu.objects.filter(is_active=True, menu_type__in=menu_type).select_related('meta').order_by('rank'),
-                many=True, ignore_field_permission=True).data
+                Menu.objects.filter(is_active=True, menu_type__in=menu_type).select_related("meta").order_by("rank"),
+                many=True,
+                ignore_field_permission=True,
+            ).data
 
             return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
         else:
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
                 route_list = RouteSerializer(
-                    menu_queryset.filter(menu_type__in=menu_type).select_related('meta').distinct().order_by('rank'),
-                    many=True, ignore_field_permission=True).data
+                    menu_queryset.filter(menu_type__in=menu_type).select_related("meta").distinct().order_by("rank"),
+                    many=True,
+                    ignore_field_permission=True,
+                ).data
 
         return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))

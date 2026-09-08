@@ -12,15 +12,14 @@
 会先执行并触发 config.yml 强制加载。放在独立模块中，可在导入正式
 settings 之前先注入内存配置绕过文件依赖。
 """
+
 from server.conf import Config, ConfigManager
 
 _test_config = Config()
 _test_config["SECRET_KEY"] = "test-only-secret-key-0123456789abcdef"
 _test_config["XADMIN_APPS"] = ["demo"]  # 启用 demo app，供 BaseModelSet 冒烟测试使用
 
-ConfigManager.load_user_config = classmethod(
-    lambda cls, root_path=None, config_class=None: _test_config
-)
+ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _test_config)
 
 from server.settings import *  # noqa: F401,F403,E402
 

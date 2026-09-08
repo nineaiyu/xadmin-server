@@ -3,8 +3,8 @@ from .base import BackendBase
 
 
 class SMS(BackendBase):
-    account_field = 'phone'
-    is_enable_field_in_settings = 'SMS_ENABLED'
+    account_field = "phone"
+    is_enable_field_in_settings = "SMS_ENABLED"
 
     def __init__(self):
         # 注意：此前直接引用 SMS 会因类名遮蔽 import 而递归实例化自身，

@@ -9,6 +9,7 @@
 注意：Setting 保存会经 pubsub 订阅者把值回写到进程级 django.conf.settings，
 测试内一律用 override_settings 固定阈值，避免跨用例污染。
 """
+
 import pytest
 from django.core import mail
 from django.test import override_settings
@@ -59,11 +60,11 @@ class TestMonitorSettingsAPI:
         assert resp.data["code"] == 1000
         keys = {col["key"] for col in resp.data["data"]}
         assert {
-                   "SECURITY_MONITOR_DISK_USED_MAX",
-                   "SECURITY_MONITOR_MEMORY_USED_MAX",
-                   "SECURITY_MONITOR_CPU_PERCENT_MAX",
-                   "SECURITY_MONITOR_CPU_LOAD_MAX",
-               } <= keys
+            "SECURITY_MONITOR_DISK_USED_MAX",
+            "SECURITY_MONITOR_MEMORY_USED_MAX",
+            "SECURITY_MONITOR_CPU_PERCENT_MAX",
+            "SECURITY_MONITOR_CPU_LOAD_MAX",
+        } <= keys
 
 
 class TestServerPerformanceCheck:
@@ -99,9 +100,7 @@ class TestServerPerformanceCheck:
     @override_settings(SECURITY_MONITOR_DISK_USED_MAX=80, EMAIL_ENABLED=True)
     def test_publish_self_heals_empty_receivers(self, superuser):
         """存量缺陷：订阅创建早于超管初始化时收件人为空，publish 需自愈而非静默丢弃。"""
-        subscription, _ = SystemMsgSubscription.objects.get_or_create(
-            message_type="ServerPerformanceMessage"
-        )
+        subscription, _ = SystemMsgSubscription.objects.get_or_create(message_type="ServerPerformanceMessage")
         subscription.users.clear()
         subscription.receive_backends = ["email"]
         subscription.save()

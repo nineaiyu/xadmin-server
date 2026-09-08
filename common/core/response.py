@@ -15,13 +15,13 @@ from server.utils import get_current_request
 class ApiResponse(Response):
     def __init__(self, code=1000, detail=None, data=None, status=None, headers=None, content_type=None, **kwargs):
         dic = {
-            'code': code,
-            'detail': detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
-            'requestId': str(getattr(get_current_request(), 'request_uuid', "")),
-            'timestamp': str(datetime.datetime.now()),
+            "code": code,
+            "detail": detail if detail else (_("Operation successful") if code == 1000 else _("Operation failed")),
+            "requestId": str(getattr(get_current_request(), "request_uuid", "")),
+            "timestamp": str(datetime.datetime.now()),
         }
         if data is not None:
-            dic['data'] = data
+            dic["data"] = data
         dic.update(kwargs)
         self._data = data
         # 对象来调用对象的绑定方法，会自动传值

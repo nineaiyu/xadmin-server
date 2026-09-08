@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/utils/pending.py：并发等待队列（pending result）。"""
+
 from common.cache.storage import PendingStateCache
 from common.utils.pending import get_pending_result, set_pending_cache
 
@@ -109,6 +110,4 @@ class TestGetPendingResult:
         import pytest
 
         with pytest.raises(KeyError):
-            get_pending_result(
-                lambda: 1, lambda r: True, loop_count=1, sleep_time=0.01
-            )
+            get_pending_result(lambda: 1, lambda r: True, loop_count=1, sleep_time=0.01)

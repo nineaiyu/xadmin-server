@@ -15,8 +15,14 @@ from django.utils.deprecation import MiddlewareMixin
 from rest_framework.utils import encoders
 
 from common.utils import get_logger
-from common.utils.request import get_request_user, get_request_ip, get_request_data, get_os, \
-    get_browser, get_verbose_name
+from common.utils.request import (
+    get_request_user,
+    get_request_ip,
+    get_request_data,
+    get_os,
+    get_browser,
+    get_verbose_name,
+)
 from system.services import OperationLog
 
 logger = get_logger(__name__)
@@ -26,10 +32,10 @@ MAX_LOG_FIELD = 4096
 # 操作日志脱敏字段清单
 # code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
 # 严禁明文落日志
-SENSITIVE_FIELDS = {'password', 'old_password', 'access', 'refresh', 'code'}
+SENSITIVE_FIELDS = {"password", "old_password", "access", "refresh", "code"}
 # module 列的防御性截断：视图 docstring/模型标签超长时按字段上限截断，
 # 避免写日志失败放大成整个请求 500（mfa confirm 曾因此全挂）
-OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field('module').max_length
+OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
 
 
 def desensitize_body(body):
@@ -40,7 +46,7 @@ def desensitize_body(body):
     for field in SENSITIVE_FIELDS:
         value = masked.get(field)
         if value:
-            masked[field] = '*' * len(str(value))
+            masked[field] = "*" * len(str(value))
     return masked
 
 
@@ -63,20 +69,20 @@ def build_operation_log_info(request, response, request_start_time):
     所有字段在此一次性求值（包括 UA 解析与用户主键），返回值不再持有
     request / ORM 实例引用，因此可以安全地延迟到 on_commit 回调中执行。
     """
-    body = desensitize_body(getattr(request, 'request_data', {}))
+    body = desensitize_body(getattr(request, "request_data", {}))
     # 非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
     # 无法可靠还原 data，解析了也不用，只会白白序列化一遍大响应
-    response_data = getattr(response, 'data', None)
+    response_data = getattr(response, "data", None)
     if not isinstance(response_data, dict):
         response_data = {}
     user = get_request_user(request)
-    request_module = getattr(request, 'request_module', '')
-    if hasattr(response, 'renderer_context'):
+    request_module = getattr(request, "request_module", "")
+    if hasattr(response, "renderer_context"):
         # 视图实例可能没有与 HTTP 动词同名的方法（如 ViewSet 的 405/detail 误配路径），
         # getattr 必须带兜底，否则操作日志会把业务响应改写成 500
-        view = response.renderer_context.get('view')
+        view = response.renderer_context.get("view")
         handler = getattr(view, request.method.lower(), None) if view else None
-        action_doc = getattr(handler, '__doc__', None)
+        action_doc = getattr(handler, "__doc__", None)
         if action_doc:
             try:
                 action_doc = action_doc.format(cls=request_module)
@@ -87,39 +93,44 @@ def build_operation_log_info(request, response, request_start_time):
     else:
         action_doc = request_module
     return {
-        'module': action_doc[:OPERATION_LOG_MODULE_MAX] if action_doc else action_doc,
+        "module": action_doc[:OPERATION_LOG_MODULE_MAX] if action_doc else action_doc,
         # 预取主键而非持有实例：on_commit 回调中不再延迟访问 request/ORM
-        'creator_id': getattr(user, 'pk', None) if not isinstance(user, AnonymousUser) else None,
-        'dept_belong_id': getattr(request.user, 'dept_id', None),
-        'ipaddress': getattr(request, 'request_ip'),
-        'method': request.method,
-        'path': request.path,
-        'body': json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict) else str(body)[:MAX_LOG_FIELD],
-        'response_code': response.status_code,
+        "creator_id": getattr(user, "pk", None) if not isinstance(user, AnonymousUser) else None,
+        "dept_belong_id": getattr(request.user, "dept_id", None),
+        "ipaddress": getattr(request, "request_ip"),
+        "method": request.method,
+        "path": request.path,
+        "body": json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict) else str(body)[:MAX_LOG_FIELD],
+        "response_code": response.status_code,
         # Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
-        'system': get_os(request),
-        'browser': get_browser(request),
-        'status_code': response_data.get('code'),
-        'request_uuid': getattr(request, 'request_uuid', None),
-        'exec_time': time.time() - request_start_time,
+        "system": get_os(request),
+        "browser": get_browser(request),
+        "status_code": response_data.get("code"),
+        "request_uuid": getattr(request, "request_uuid", None),
+        "exec_time": time.time() - request_start_time,
         # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
-        'changes': json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:MAX_LOG_FIELD]
-        if (changes := getattr(request, 'operation_log_changes', None)) else None,
-        'response_result': json.dumps(
-            {"code": response_data.get('code'), "data": response_data.get('data'),
-             "detail": response_data.get('detail')}, cls=encoders.JSONEncoder, default=str,
+        "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:MAX_LOG_FIELD]
+        if (changes := getattr(request, "operation_log_changes", None))
+        else None,
+        "response_result": json.dumps(
+            {
+                "code": response_data.get("code"),
+                "data": response_data.get("data"),
+                "detail": response_data.get("detail"),
+            },
+            cls=encoders.JSONEncoder,
+            default=str,
         )[:MAX_LOG_FIELD],
     }
 
 
 class ApiLoggingMiddleware(MiddlewareMixin):
-
     def __init__(self, get_response=None):
         super().__init__(get_response)
-        self.enable = getattr(settings, 'API_LOG_ENABLE', None) or False
-        self.methods = getattr(settings, 'API_LOG_METHODS', None) or set()
-        self.ignores = getattr(settings, 'API_LOG_IGNORE', None) or {}
-        self.operation_log_id = '__operation_log_id'
+        self.enable = getattr(settings, "API_LOG_ENABLE", None) or False
+        self.methods = getattr(settings, "API_LOG_METHODS", None) or set()
+        self.ignores = getattr(settings, "API_LOG_IGNORE", None) or {}
+        self.operation_log_id = "__operation_log_id"
 
     @classmethod
     def __handle_request(cls, request):
@@ -129,11 +140,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         logger.debug(f"request start. {request.method} {request.path} {getattr(request, 'request_data', {})}")
 
     def __handle_response(self, request, response):
-        request_start_time = getattr(request, 'request_start_time', None)
+        request_start_time = getattr(request, "request_start_time", None)
         exec_time = time.time() - request_start_time
         if exec_time > 1:
             logger.warning(
-                f"exec time {exec_time} over 1s. {request.method} {request.path} {getattr(request, 'request_data', {})}")
+                f"exec time {exec_time} over 1s. {request.method} {request.path} {getattr(request, 'request_data', {})}"
+            )
         # 判断有无log_id属性，使用All记录时，会出现此情况
         operation_log_id = getattr(request, self.operation_log_id, None)
         if operation_log_id is None:
@@ -146,12 +158,13 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         return True
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if hasattr(view_func, 'cls') and hasattr(view_func.cls, 'queryset'):
+        if hasattr(view_func, "cls") and hasattr(view_func.cls, "queryset"):
             if self.enable:
-                if self.methods == 'ALL' or request.method in self.methods:
+                if self.methods == "ALL" or request.method in self.methods:
                     model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
                     if (model and request.method in self.ignores.get(model._meta.label, [])) or (
-                            request.method in self.ignores.get(request.path, [])):
+                        request.method in self.ignores.get(request.path, [])
+                    ):
                         return
                     if not v:
                         v = settings.API_MODEL_MAP.get(request.path, v)
@@ -160,12 +173,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                     log = OperationLog(module=str(v)[:OPERATION_LOG_MODULE_MAX])
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
-                    setattr(request, 'request_module', v)
+                    setattr(request, "request_module", v)
 
         return
 
     def process_request(self, request):
-        if request.path == '/api/common/api/health':
+        if request.path == "/api/common/api/health":
             return
         self.__handle_request(request)
 
@@ -175,11 +188,11 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         :param response:
         :return:
         """
-        if request.path == '/api/common/api/health':
+        if request.path == "/api/common/api/health":
             return response
         show = False
         if self.enable:
-            if self.methods == 'ALL' or request.method in self.methods:
+            if self.methods == "ALL" or request.method in self.methods:
                 show = self.__handle_response(request, response)
         if not show:
             logger.debug(f" request end. {request.method} {request.path} {getattr(response, 'data', {})}")

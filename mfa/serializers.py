@@ -14,17 +14,21 @@ _CHALLENGE_CHOICES = [(cls.name, str(cls.display_name)) for cls in MFA_BACKEND_C
 
 class ConfirmSerializer(serializers.Serializer):
     """敏感操作二次验证提交"""
-    confirm_type = serializers.ChoiceField(choices=ConfirmType.choices, default=ConfirmType.MFA,
-                                           label=_("Confirm type"))
+
+    confirm_type = serializers.ChoiceField(
+        choices=ConfirmType.choices, default=ConfirmType.MFA, label=_("Confirm type")
+    )
     method = serializers.ChoiceField(choices=_METHOD_CHOICES, label=_("Verification method"))
     code = serializers.CharField(max_length=128, label=_("Verification code / password"))
 
 
 class SendCodeSerializer(serializers.Serializer):
     """发送挑战验证码（短信/邮件）"""
+
     method = serializers.ChoiceField(choices=_CHALLENGE_CHOICES, label=_("Verification method"))
 
 
 class OtpBindConfirmSerializer(serializers.Serializer):
     """OTP 绑定确认"""
+
     code = serializers.CharField(max_length=16, label=_("OTP verification code"))

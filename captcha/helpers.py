@@ -83,9 +83,7 @@ def noise_arcs(draw, image):
     size = image.size
     color = get_format_color(settings.CAPTCHA_FOREGROUND_COLOR)
     draw.arc([-20, -20, size[0], 20], 0, 295, fill=color)
-    draw.line(
-        [-20, 20, size[0] + 20, size[1] - 20], fill=color
-    )
+    draw.line([-20, 20, size[0] + 20, size[1] - 20], fill=color)
     draw.line([-20, 0, size[0] + 20, size[1]], fill=color)
     return draw
 

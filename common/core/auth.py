@@ -33,7 +33,7 @@ class ServerAccessToken(AccessToken):
     """
 
     def verify(self):
-        user_id = self.payload.get('user_id')
+        user_id = self.payload.get("user_id")
         if BlackAccessTokenCache(user_id, hashlib.md5(self.token).hexdigest()).get_storage_cache():
             raise TokenError(_("Token is invalid or expired"))
         super().verify()
@@ -51,9 +51,9 @@ class CookieJWTAuthentication(JWTAuthentication):
     def get_header(self, request):
         header = super().get_header(request)
         if not header:
-            cookies = request.META.get('HTTP_COOKIE')
+            cookies = request.META.get("HTTP_COOKIE")
             if cookies:
                 cookie_dict = parse_cookie(cookies)
-                if cookie_dict and cookie_dict.get('X-Token'):
-                    header = f"Bearer {cookie_dict.get('X-Token')}".encode('utf-8')
+                if cookie_dict and cookie_dict.get("X-Token"):
+                    header = f"Bearer {cookie_dict.get('X-Token')}".encode("utf-8")
         return header

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """扩展：菜单软删除与回收站（目录级联标记后代、成组恢复/清除、名称释放）。"""
+
 import pytest
 
 from system.models import Menu, MenuMeta
@@ -12,8 +13,7 @@ MENU_URL = "/api/system/menu"
 class TestMenuRecycleBin:
     def _tree(self, menu_factory):
         directory = menu_factory(name="系统目录", menu_type=Menu.MenuChoices.DIRECTORY)
-        page = menu_factory(name="用户页面", menu_type=Menu.MenuChoices.MENU, parent=directory,
-                            path="api/system/user$")
+        page = menu_factory(name="用户页面", menu_type=Menu.MenuChoices.MENU, parent=directory, path="api/system/user$")
         button = menu_factory(name="list:User", parent=page, path=r"api/system/user$", method="GET")
         return directory, page, button
 
@@ -67,8 +67,13 @@ class TestMenuRecycleBin:
         auth_client.delete(f"{MENU_URL}/{button.pk}")
         resp = auth_client.post(
             MENU_URL,
-            {"name": button.name, "path": r"api/system/user$", "method": "GET",
-             "menu_type": Menu.MenuChoices.PERMISSION, "meta": {"title": "同名新菜单"}},
+            {
+                "name": button.name,
+                "path": r"api/system/user$",
+                "method": "GET",
+                "menu_type": Menu.MenuChoices.PERMISSION,
+                "meta": {"title": "同名新菜单"},
+            },
             format="json",
         )
         assert resp.data["code"] == 1000, resp.data
@@ -77,8 +82,13 @@ class TestMenuRecycleBin:
         directory, page, button = self._tree(menu_factory)
         resp = auth_client.post(
             MENU_URL,
-            {"name": button.name, "path": r"api/system/user$", "method": "GET",
-             "menu_type": Menu.MenuChoices.PERMISSION, "meta": {"title": "重复名"}},
+            {
+                "name": button.name,
+                "path": r"api/system/user$",
+                "method": "GET",
+                "menu_type": Menu.MenuChoices.PERMISSION,
+                "meta": {"title": "重复名"},
+            },
             format="json",
         )
         assert resp.data["code"] != 1000

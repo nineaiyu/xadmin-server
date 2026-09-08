@@ -30,6 +30,7 @@
 （MagicCacheData 24h），因此每个用例在发起首个请求前完成全部授权布置，
 同一用例内不先请求再改权限。
 """
+
 import pytest
 
 from demo.models import Book
@@ -179,9 +180,7 @@ class TestVerticalApiPermission:
 class TestVerticalSelfEscalation:
     """M10：垂直越权——借管理接口自提权。"""
 
-    def test_self_role_grant_blocked_by_related_field_filter(
-            self, api_client, normal_user, role, menu_factory
-    ):
+    def test_self_role_grant_blocked_by_related_field_filter(self, api_client, normal_user, role, menu_factory):
         """M10：持有用户管理 PATCH 权限的用户，无法给自己授予数据权限不可见的角色。
 
         roles 关联字段写入受字段白名单约束：用户无 system.userrole 字段白名单 →
@@ -194,9 +193,7 @@ class TestVerticalSelfEscalation:
         normal_user.rules.add(make_owner_permission("self-userinfo", "system.userinfo", "pk"))
         target_role = UserRole.objects.create(name="管理员", code="admin")
         api_client.force_authenticate(user=normal_user)
-        api_client.patch(
-            f"{USER_LIST_URL}/{normal_user.pk}", {"roles": [target_role.pk]}, format="json"
-        )
+        api_client.patch(f"{USER_LIST_URL}/{normal_user.pk}", {"roles": [target_role.pk]}, format="json")
         normal_user.refresh_from_db()
         assert target_role not in normal_user.roles.all()
         assert set(normal_user.roles.all()) == {role}
@@ -243,9 +240,7 @@ class TestHorizontalDataPermission:
         normal_user.rules.add(make_owner_permission("own-book", "demo.book", "admin"))
         other, _ = books
         api_client.force_authenticate(user=normal_user)
-        resp = api_client.patch(
-            f"{BOOK_LIST_URL}/{other.pk}", {"name": "被篡改"}, format="json"
-        )
+        resp = api_client.patch(f"{BOOK_LIST_URL}/{other.pk}", {"name": "被篡改"}, format="json")
         assert resp.status_code == 400
         other.refresh_from_db()
         assert other.name == "别人的书"
@@ -260,9 +255,7 @@ class TestHorizontalDataPermission:
         assert resp.status_code == 400
         assert Book.objects.filter(pk=other.pk).exists()
 
-    def test_default_deny_without_data_permission(
-            self, api_client, normal_user, role, menu_factory, books
-    ):
+    def test_default_deny_without_data_permission(self, api_client, normal_user, role, menu_factory, books):
         """M15：有接口授权但未配置数据权限时默认拒绝——本人数据同样不可见。"""
         grant_menu(role, menu_factory, LIST_PATH, "GET")
         grant_menu(role, menu_factory, DETAIL_PATH, "GET", name="p-book-detail")
@@ -274,9 +267,7 @@ class TestHorizontalDataPermission:
         resp = api_client.get(f"{BOOK_LIST_URL}/{own.pk}")
         assert resp.status_code == 400
 
-    def test_menu_scoped_grant_does_not_leak_to_other_menu(
-            self, api_client, normal_user, role, menu_factory, books
-    ):
+    def test_menu_scoped_grant_does_not_leak_to_other_menu(self, api_client, normal_user, role, menu_factory, books):
         """M16：菜单作用域授权不跨菜单泄漏——数据权限绑定其他菜单时本菜单不生效。"""
         grant_menu(role, menu_factory, LIST_PATH, "GET")
         foreign_menu = grant_menu(role, menu_factory, "api/other/stuff$", "GET", name="p-foreign")
@@ -288,9 +279,7 @@ class TestHorizontalDataPermission:
         assert resp.status_code == 200
         assert resp.data["data"]["total"] == 0
 
-    def test_menu_scoped_grant_applies_on_bound_menu(
-            self, api_client, normal_user, role, menu_factory, books
-    ):
+    def test_menu_scoped_grant_applies_on_bound_menu(self, api_client, normal_user, role, menu_factory, books):
         """M16 正向对照：数据权限绑定到当前菜单时正常生效（排除误伤回归）。"""
         menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
         make_field_whitelist(role, menu, ["pk", "name", "isbn"])
@@ -308,9 +297,7 @@ class TestHorizontalDataPermission:
 class TestFieldPermission:
     """M17：字段权限——白名单同时约束读与写。"""
 
-    def test_read_response_trimmed_to_whitelist(
-            self, api_client, normal_user, role, menu_factory, books
-    ):
+    def test_read_response_trimmed_to_whitelist(self, api_client, normal_user, role, menu_factory, books):
         """M17 读侧：列表响应字段被裁剪为白名单（pk/name），敏感字段不外泄。"""
         menu = grant_menu(role, menu_factory, LIST_PATH, "GET")
         normal_user.rules.add(make_owner_permission("own-book", "demo.book", "admin"))
@@ -322,18 +309,14 @@ class TestFieldPermission:
         assert results, "数据权限应放行本人数据"
         assert set(results[0].keys()) == {"pk", "name"}
 
-    def test_write_of_unauthorized_field_ignored(
-            self, api_client, normal_user, role, menu_factory, books
-    ):
+    def test_write_of_unauthorized_field_ignored(self, api_client, normal_user, role, menu_factory, books):
         """M17 写侧：白名单外字段（price）在写入路径被忽略，白名单内字段正常更新。"""
         menu = grant_menu(role, menu_factory, DETAIL_PATH, "PATCH", name="p-book-detail-patch")
         normal_user.rules.add(make_owner_permission("own-book", "demo.book", "admin"))
         make_field_whitelist(role, menu, ["pk", "name"])
         _, own = books
         api_client.force_authenticate(user=normal_user)
-        resp = api_client.patch(
-            f"{BOOK_LIST_URL}/{own.pk}", {"name": "改名成功", "price": 0.01}, format="json"
-        )
+        resp = api_client.patch(f"{BOOK_LIST_URL}/{own.pk}", {"name": "改名成功", "price": 0.01}, format="json")
         assert resp.status_code == 200
         assert resp.data["data"]["name"] == "改名成功"
         own.refresh_from_db()

@@ -16,9 +16,18 @@ from system.models import *
 
 
 class Command(LoadCommand):
-    help = 'load init json data'
-    model_names = [MenuMeta, Menu, SystemConfig, DataPermission, UserRole, FieldPermission, ModelLabelField, DeptInfo,
-                   Setting]
+    help = "load init json data"
+    model_names = [
+        MenuMeta,
+        Menu,
+        SystemConfig,
+        DataPermission,
+        UserRole,
+        FieldPermission,
+        ModelLabelField,
+        DeptInfo,
+        Setting,
+    ]
     missing_args_message = None
 
     def add_arguments(self, parser):

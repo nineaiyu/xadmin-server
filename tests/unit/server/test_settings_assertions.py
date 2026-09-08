@@ -12,10 +12,10 @@ def test_csrf_middleware_required_when_admin_enabled():
     from django.conf import settings
 
     middleware = list(settings.MIDDLEWARE)
-    if 'django.contrib.admin' in settings.INSTALLED_APPS:
-        assert 'django.middleware.csrf.CsrfViewMiddleware' in middleware, (
-            'django.contrib.admin 已启用（/admin/ 依赖 Session+CSRF），'
-            '禁止移除 CsrfViewMiddleware——若确需移除，请先关闭 Admin 站点'
+    if "django.contrib.admin" in settings.INSTALLED_APPS:
+        assert "django.middleware.csrf.CsrfViewMiddleware" in middleware, (
+            "django.contrib.admin 已启用（/admin/ 依赖 Session+CSRF），"
+            "禁止移除 CsrfViewMiddleware——若确需移除，请先关闭 Admin 站点"
         )
 
 
@@ -24,6 +24,6 @@ def test_csrf_middleware_position():
     from django.conf import settings
 
     middleware = settings.MIDDLEWARE
-    csrf_idx = middleware.index('django.middleware.csrf.CsrfViewMiddleware')
-    assert csrf_idx > middleware.index('django.contrib.sessions.middleware.SessionMiddleware')
-    assert csrf_idx < middleware.index('django.contrib.auth.middleware.AuthenticationMiddleware')
+    csrf_idx = middleware.index("django.middleware.csrf.CsrfViewMiddleware")
+    assert csrf_idx > middleware.index("django.contrib.sessions.middleware.SessionMiddleware")
+    assert csrf_idx < middleware.index("django.contrib.auth.middleware.AuthenticationMiddleware")

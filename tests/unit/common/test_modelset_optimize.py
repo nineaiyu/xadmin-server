@@ -6,6 +6,7 @@
 2. optimize_queryset 的 action 白名单、显式声明、开关行为；
 3. 列表接口 SQL 数量不随行数线性增长，且优化前后响应数据一致。
 """
+
 import pytest
 from django.contrib.auth.hashers import make_password
 from django.db import connection

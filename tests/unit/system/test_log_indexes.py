@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """索引迁移测试：确认高增长表的过滤/排序字段已建立索引。"""
+
 import pytest
 from django.db import connection
 
@@ -9,10 +10,10 @@ from system.models import OperationLog, UploadFile, UserLoginLog
 pytestmark = pytest.mark.django_db
 
 EXPECTED = {
-    OperationLog: {'idx_oplog_created', 'idx_oplog_module_created', 'idx_oplog_request_uuid'},
-    UserLoginLog: {'idx_loginlog_created'},
-    UploadFile: {'idx_uploadfile_tmp_created', 'idx_uploadfile_md5sum'},
-    MessageContent: {'idx_msg_created'},
+    OperationLog: {"idx_oplog_created", "idx_oplog_module_created", "idx_oplog_request_uuid"},
+    UserLoginLog: {"idx_loginlog_created"},
+    UploadFile: {"idx_uploadfile_tmp_created", "idx_uploadfile_md5sum"},
+    MessageContent: {"idx_msg_created"},
 }
 
 
@@ -29,9 +30,12 @@ def test_message_user_read_single_column_unread_index_removed():
     with connection.cursor() as cursor:
         constraints = connection.introspection.get_constraints(cursor, MessageUserRead._meta.db_table)
     indexes = {name: item for name, item in constraints.items() if item.get("index")}
-    single_unread = [name for name, item in indexes.items()
-                     if item.get("columns") == ["unread"] or item.get("columns") == ["unread"]]
+    single_unread = [
+        name for name, item in indexes.items() if item.get("columns") == ["unread"] or item.get("columns") == ["unread"]
+    ]
     assert not single_unread
     # unique_together (owner, notice) 之外，还应保留 (owner, unread) 复合索引
-    assert any(list(item.get("columns", []))[-2:] == ["owner_id", "unread"] or
-               item.get("columns") == ["owner", "unread"] for item in indexes.values())
+    assert any(
+        list(item.get("columns", []))[-2:] == ["owner_id", "unread"] or item.get("columns") == ["owner", "unread"]
+        for item in indexes.values()
+    )

@@ -11,6 +11,6 @@ from common.celery.decorator import register_as_period_task
 
 
 @shared_task
-@register_as_period_task(crontab='12 2 * * *')
+@register_as_period_task(crontab="12 2 * * *")
 def auto_clean_expired_captcha_job():
     CaptchaStore.remove_expired()

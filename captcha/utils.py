@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 
 class CaptchaAuth(object):
-    def __init__(self, captcha_key='', request=None):
+    def __init__(self, captcha_key="", request=None):
         self.captcha_key = captcha_key
         self.request = request
 

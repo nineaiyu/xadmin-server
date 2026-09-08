@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 部门接口集成测试。"""
+
 import pytest
 
 from system.models import DeptInfo, UserInfo

@@ -30,7 +30,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         """从个人消息推送组名中解析用户 pk；聊天室等非个人组返回 None。"""
         prefix = self._online_group_prefix()
         if group and group.startswith(prefix):
-            tail = group[len(prefix):]
+            tail = group[len(prefix) :]
             if tail.isdigit():
                 return int(tail)
         return None
@@ -65,9 +65,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         connection = self.connection(self.consistent_hash(group))
 
         # Discard old channels based on group_expiry
-        await connection.zremrangebyscore(
-            key, min=0, max=int(time.time()) - self.layer_expire
-        )
+        await connection.zremrangebyscore(key, min=0, max=int(time.time()) - self.layer_expire)
 
         return connection, key
 
@@ -104,9 +102,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         """在线用户 pk 列表：一条 ZRANGEBYSCORE，天然复用 30s 心跳过期语义。"""
         connection = self.connection(self.consistent_hash(self.online_users_key))
         now = time.time()
-        rows = await connection.zrangebyscore(
-            self.online_users_key, now - self.layer_expire, "+inf"
-        )
+        rows = await connection.zrangebyscore(self.online_users_key, now - self.layer_expire, "+inf")
         result = []
         for row in rows:
             try:

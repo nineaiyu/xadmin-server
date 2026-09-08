@@ -7,8 +7,8 @@ client_name_mapper = {}
 
 
 class BACKEND(models.TextChoices):
-    EMAIL = 'email', _('Email')
-    SITE_MSG = 'site_msg', _('Site message')
+    EMAIL = "email", _("Email")
+    SITE_MSG = "site_msg", _("Site message")
 
     # DINGTALK = 'dingtalk', _('DingTalk')
     # SMS = 'sms', _('SMS')
@@ -31,5 +31,5 @@ class BACKEND(models.TextChoices):
 
 
 for b in BACKEND:
-    m = importlib.import_module(f'.{b}', __package__)
+    m = importlib.import_module(f".{b}", __package__)
     client_name_mapper[b] = m.backend

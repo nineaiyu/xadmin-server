@@ -5,6 +5,7 @@
 ?field=keyword 单字段过滤与多字段组合过滤。注意：superuser 跳过数据权限过滤，
 因此结果稳定。
 """
+
 import pytest
 
 from system.models import UserInfo

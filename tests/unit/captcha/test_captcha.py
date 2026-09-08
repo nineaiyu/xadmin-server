@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """captcha 验证码单元测试（生成 / 大小写不敏感校验 / 一次性消费）。"""
+
 import datetime
 
 import pytest

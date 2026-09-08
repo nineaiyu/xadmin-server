@@ -21,11 +21,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
     """Override SimpleMetadata, adding info about filters"""
 
     methods = {"PUT", "POST", "GET", "PATCH"}
-    attrs = [
-        "read_only", "label", "help_text",
-        "min_length", "max_length", "min_value",
-        "max_value", "write_only"
-    ]
+    attrs = ["read_only", "label", "help_text", "min_length", "max_length", "min_value", "max_value", "write_only"]
 
     def determine_actions(self, request, view):
         """
@@ -61,7 +57,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         """
         Given a field, return a string representing the type of the field.
         """
-        tp = getattr(field, 'input_type', None)
+        tp = getattr(field, "input_type", None)
         if tp:
             return tp
         tp = self.label_lookup[field]
@@ -72,13 +68,11 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         if class_name == "LabeledMultipleChoiceField":
             tp = "labeled_multiple_choice"
         elif class_name == "JSONField":
-            tp = 'json'
+            tp = "json"
         elif isinstance(field, BasePrimaryKeyRelatedField):
             # isinstance 而非精确类名匹配，业务侧子类（如 DisplayRelatedField）同样生效
             tp = "object_related_field"
-        elif isinstance(field, ManyRelatedField) and isinstance(
-                field.child_relation, BasePrimaryKeyRelatedField
-        ):
+        elif isinstance(field, ManyRelatedField) and isinstance(field.child_relation, BasePrimaryKeyRelatedField):
             tp = "m2m_related_field"
         return tp
 
@@ -120,8 +114,8 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         elif isinstance(field, serializers.ChoiceField):
             self.set_choices_field(field, field_info)
 
-        if field.field_name == 'id':
-            field_info['label'] = 'ID'
+        if field.field_name == "id":
+            field_info["label"] = "ID"
 
         return field_info
 
@@ -137,9 +131,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         elif hasattr(view, "get_filterset_fields"):
             fields = view.get_filterset_fields(request)
         elif hasattr(view, "filterset_class"):
-            fields = list(view.filterset_class.Meta.fields) + list(
-                view.filterset_class.declared_filters.keys()
-            )
+            fields = list(view.filterset_class.Meta.fields) + list(view.filterset_class.declared_filters.keys())
 
         if hasattr(view, "custom_filter_fields"):
             # 不能写 fields += view.custom_filter_fields
@@ -160,9 +152,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         return fields
 
     def determine_metadata(self, request, view):
-        metadata = super(SimpleMetadataWithFilters, self).determine_metadata(
-            request, view
-        )
+        metadata = super(SimpleMetadataWithFilters, self).determine_metadata(request, view)
         filterset_fields = self.get_filters_fields(request, view)
         order_fields = self.get_ordering_fields(request, view)
 

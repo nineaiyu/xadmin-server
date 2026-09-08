@@ -11,6 +11,7 @@ DatabaseScheduler 在 --max-interval（启动参数默认 60s）内感知生效�
 
 序列化器已拆分至 system.serializers.task；本模块仅保留 Filter/ViewSet/action。
 """
+
 import json
 import os
 
@@ -39,60 +40,66 @@ from system.serializers.task import (
 
 class TaskExecutionFilter(filters.FilterSet):
     """执行历史过滤：任务名模糊 + 状态/关联任务/触发人精确 + 时间范围。"""
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
+
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
     created_time = filters.DateTimeFromToRangeFilter()
 
     class Meta:
         model = TaskExecution
-        fields = ['name', 'status', 'periodic_task', 'creator', 'created_time']
+        fields = ["name", "status", "periodic_task", "creator", "created_time"]
 
 
 class TaskExecutionViewSet(ListDeleteModelSet):
     """任务执行历史"""
+
     queryset = TaskExecution.objects.all()
     serializer_class = TaskExecutionSerializer
     filterset_class = TaskExecutionFilter
-    ordering = ['-created_time']
-    ordering_fields = ['created_time', 'date_start', 'date_finished']
+    ordering = ["-created_time"]
+    ordering_fields = ["created_time", "date_start", "date_finished"]
 
     LOG_READ_CHUNK = 64 * 1024
 
     @extend_schema(
         responses=get_default_response_schema(
             {
-                'offset': build_basic_type(OpenApiTypes.NUMBER),
-                'finished': build_basic_type(OpenApiTypes.BOOL),
-                'content': build_basic_type(OpenApiTypes.STR),
+                "offset": build_basic_type(OpenApiTypes.NUMBER),
+                "finished": build_basic_type(OpenApiTypes.BOOL),
+                "content": build_basic_type(OpenApiTypes.STR),
             }
         )
     )
-    @action(methods=['get'], detail=True, url_path='log')
+    @action(methods=["get"], detail=True, url_path="log")
     def log(self, request, *args, **kwargs):
         """增量读取执行日志"""
         execution = self.get_object()
-        offset = max(0, int(request.query_params.get('offset') or 0))
+        offset = max(0, int(request.query_params.get("offset") or 0))
         path = get_celery_task_log_path(str(execution.pk))
         if not os.path.exists(path):
-            return ApiResponse(data={
-                'offset': 0,
-                'finished': execution.date_finished is not None,
-                'content': '',
-            })
+            return ApiResponse(
+                data={
+                    "offset": 0,
+                    "finished": execution.date_finished is not None,
+                    "content": "",
+                }
+            )
         size = os.path.getsize(path)
         offset = min(offset, size)
-        with open(path, 'rb') as fp:
+        with open(path, "rb") as fp:
             fp.seek(offset)
             chunk = fp.read(self.LOG_READ_CHUNK)
         next_offset = offset + len(chunk)
         finished = CELERY_LOG_MAGIC_MARK in chunk
         if finished:
             # 结束标记是落盘控制符，不能作为日志内容返回
-            chunk = chunk.replace(CELERY_LOG_MAGIC_MARK, b'')
-        return ApiResponse(data={
-            'offset': next_offset,
-            'finished': finished,
-            'content': chunk.decode('utf-8', errors='replace'),
-        })
+            chunk = chunk.replace(CELERY_LOG_MAGIC_MARK, b"")
+        return ApiResponse(
+            data={
+                "offset": next_offset,
+                "finished": finished,
+                "content": chunk.decode("utf-8", errors="replace"),
+            }
+        )
 
 
 class PeriodicTaskFilter(filters.FilterSet):
@@ -100,42 +107,45 @@ class PeriodicTaskFilter(filters.FilterSet):
 
     声明式过滤器必须同步列入 Meta.fields，search-fields 元数据才会计入（get_fields 仅取 Meta.fields）。
     """
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
-    task = filters.CharFilter(field_name='task', lookup_expr='icontains')
+
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    task = filters.CharFilter(field_name="task", lookup_expr="icontains")
 
     class Meta:
         model = PeriodicTask
-        fields = ['name', 'task', 'enabled', 'one_off', 'queue']
+        fields = ["name", "task", "enabled", "one_off", "queue"]
 
 
 class CrontabScheduleFilter(filters.FilterSet):
     class Meta:
         model = CrontabSchedule
-        fields = ['minute', 'hour', 'day_of_week', 'month_of_year']
+        fields = ["minute", "hour", "day_of_week", "month_of_year"]
 
 
 class IntervalScheduleFilter(filters.FilterSet):
     class Meta:
         model = IntervalSchedule
-        fields = ['every', 'period']
+        fields = ["every", "period"]
 
 
 class CrontabScheduleViewSet(BaseModelSet):
     """crontab 表达式管理"""
-    queryset = CrontabSchedule.objects.all().order_by('minute', 'hour', 'day_of_week', 'month_of_year')
+
+    queryset = CrontabSchedule.objects.all().order_by("minute", "hour", "day_of_week", "month_of_year")
     serializer_class = CrontabScheduleSerializer
     filterset_class = CrontabScheduleFilter
-    ordering = ['id']
-    ordering_fields = ['id']
+    ordering = ["id"]
+    ordering_fields = ["id"]
 
 
 class IntervalScheduleViewSet(BaseModelSet):
     """固定间隔调度管理"""
-    queryset = IntervalSchedule.objects.all().order_by('every', 'period')
+
+    queryset = IntervalSchedule.objects.all().order_by("every", "period")
     serializer_class = IntervalScheduleSerializer
     filterset_class = IntervalScheduleFilter
-    ordering = ['id']
-    ordering_fields = ['id']
+    ordering = ["id"]
+    ordering_fields = ["id"]
 
 
 def _dispatch_periodic_run(instance):
@@ -150,48 +160,56 @@ def _dispatch_periodic_run(instance):
     if instance.task not in app.tasks:
         raise ValueError(_('Task "{}" is not registered').format(instance.task))
     try:
-        args = json.loads(instance.args or '[]')
-        kwargs = json.loads(instance.kwargs or '{}')
+        args = json.loads(instance.args or "[]")
+        kwargs = json.loads(instance.kwargs or "{}")
     except (json.JSONDecodeError, TypeError):
-        raise ValueError(_('Task arguments are not valid JSON'))
+        raise ValueError(_("Task arguments are not valid JSON"))
     execution = TaskExecution.objects.create(
-        name=instance.task, periodic_task=instance, args=args, kwargs=kwargs,
+        name=instance.task,
+        periodic_task=instance,
+        args=args,
+        kwargs=kwargs,
     )
     # on_commit 保证记录先落库，publisher 进程的 after_task_publish 才能命中既有记录
-    transaction.on_commit(lambda: app.send_task(
-        instance.task, args=args, kwargs=kwargs,
-        task_id=str(execution.pk),
-        headers={'periodic_task_name': instance.name},
-    ))
+    transaction.on_commit(
+        lambda: app.send_task(
+            instance.task,
+            args=args,
+            kwargs=kwargs,
+            task_id=str(execution.pk),
+            headers={"periodic_task_name": instance.name},
+        )
+    )
     return execution
 
 
 class PeriodicTaskViewSet(BaseModelSet):
     """周期任务管理"""
-    queryset = PeriodicTask.objects.all().order_by('name')
+
+    queryset = PeriodicTask.objects.all().order_by("name")
     serializer_class = PeriodicTaskSerializer
     filterset_class = PeriodicTaskFilter
-    ordering = ['name']
-    ordering_fields = ['name', 'enabled', 'date_changed']
+    ordering = ["name"]
+    ordering_fields = ["name", "enabled", "date_changed"]
 
     @extend_schema(
-        request=build_object_type(properties={'enabled': build_basic_type(OpenApiTypes.BOOL)}),
+        request=build_object_type(properties={"enabled": build_basic_type(OpenApiTypes.BOOL)}),
         responses=get_default_response_schema(),
     )
-    @action(methods=['patch'], detail=True)
+    @action(methods=["patch"], detail=True)
     def enable(self, request, *args, **kwargs):
         """启用或停用{cls}任务"""
         instance = self.get_object()
-        enabled = request.data.get('enabled')
+        enabled = request.data.get("enabled")
         instance.enabled = (not instance.enabled) if enabled is None else bool(enabled)
         instance.save()
-        return ApiResponse(data={'pk': instance.pk, 'enabled': instance.enabled})
+        return ApiResponse(data={"pk": instance.pk, "enabled": instance.enabled})
 
     @extend_schema(
         request=None,
         responses=get_default_response_schema(),
     )
-    @action(methods=['get'], detail=False, url_path='registered')
+    @action(methods=["get"], detail=False, url_path="registered")
     def registered(self, request, *args, **kwargs):
         """已注册任务列表"""
         # web 进程不启动 worker，任务模块（autodiscover）按需懒加载注册；
@@ -199,30 +217,30 @@ class PeriodicTaskViewSet(BaseModelSet):
         app.autodiscover_tasks(force=True)
         items = []
         for name, task in sorted(app.tasks.items()):
-            if name.startswith('celery.'):
+            if name.startswith("celery."):
                 continue
-            verbose_name = getattr(task, 'verbose_name', None) or ''
-            items.append({'name': name, 'verbose_name': str(verbose_name)})
+            verbose_name = getattr(task, "verbose_name", None) or ""
+            items.append({"name": name, "verbose_name": str(verbose_name)})
         return ApiResponse(data=items)
 
     @extend_schema(
         request=None,
         responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=True, url_path='run')
+    @action(methods=["post"], detail=True, url_path="run")
     def run(self, request, *args, **kwargs):
         """立即执行一次{cls}任务"""
         try:
             execution = _dispatch_periodic_run(self.get_object())
         except ValueError as exc:
             return ApiResponse(code=400, detail=str(exc))
-        return ApiResponse(data={'task_id': str(execution.pk)})
+        return ApiResponse(data={"task_id": str(execution.pk)})
 
     @extend_schema(
         request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
         responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=False, url_path='batch-run')
+    @action(methods=["post"], detail=False, url_path="batch-run")
     def batch_run(self, request, *args, **kwargs):
         """批量立即执行{cls}任务"""
         success, failed = 0, []
@@ -231,10 +249,10 @@ class PeriodicTaskViewSet(BaseModelSet):
             try:
                 _dispatch_periodic_run(instance)
             except ValueError as exc:
-                failed.append({'pk': str(instance.pk), 'name': instance.name, 'detail': str(exc)})
+                failed.append({"pk": str(instance.pk), "name": instance.name, "detail": str(exc)})
             else:
                 success += 1
         return ApiResponse(
-            data={'success': success, 'failed': failed},
-            detail=_('Batch execution submitted: {} success, {} failed').format(success, len(failed)),
+            data={"success": success, "failed": failed},
+            detail=_("Batch execution submitted: {} success, {} failed").format(success, len(failed)),
         )

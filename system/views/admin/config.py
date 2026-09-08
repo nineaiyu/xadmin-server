@@ -13,28 +13,32 @@ from common.core.modelset import BaseModelSet, ImportExportDataAction
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig
-from system.serializers.config import SystemConfigSerializer, UserPersonalConfigSerializer, \
-    UserPersonalConfigExportImportSerializer
+from system.serializers.config import (
+    SystemConfigSerializer,
+    UserPersonalConfigSerializer,
+    UserPersonalConfigExportImportSerializer,
+)
 from system.utils.modelset import InvalidConfigCacheAction
 
 logger = get_logger(__name__)
 
 
 class SystemConfigFilter(BaseFilterSet):
-    pk = filters.UUIDFilter(field_name='id')
-    key = filters.CharFilter(field_name='key', lookup_expr='icontains')
-    value = filters.CharFilter(field_name='value', lookup_expr='icontains')
+    pk = filters.UUIDFilter(field_name="id")
+    key = filters.CharFilter(field_name="key", lookup_expr="icontains")
+    value = filters.CharFilter(field_name="value", lookup_expr="icontains")
 
     class Meta:
         model = SystemConfig
-        fields = ['pk', 'is_active', 'key', 'inherit', 'access', 'value', 'description']
+        fields = ["pk", "is_active", "key", "inherit", "access", "value", "description"]
 
 
 class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDataAction):
     """系统配置"""
+
     queryset = SystemConfig.objects.all()
     serializer_class = SystemConfigSerializer
-    ordering_fields = ['created_time']
+    ordering_fields = ["created_time"]
     filterset_class = SystemConfigFilter
 
     @extend_schema(request=None, responses=get_default_response_schema())
@@ -45,20 +49,21 @@ class SystemConfigViewSet(BaseModelSet, InvalidConfigCacheAction, ImportExportDa
 
 
 class UserPersonalConfigFilter(SystemConfigFilter):
-    pk = filters.UUIDFilter(field_name='id')
-    username = filters.CharFilter(field_name='owner__username')
-    owner_id = PkMultipleFilter(input_type='api-search-user')
+    pk = filters.UUIDFilter(field_name="id")
+    username = filters.CharFilter(field_name="owner__username")
+    owner_id = PkMultipleFilter(input_type="api-search-user")
 
     class Meta:
         model = UserPersonalConfig
-        fields = ['pk', 'is_active', 'key', 'access', 'username', 'owner_id', 'value', 'description']
+        fields = ["pk", "is_active", "key", "access", "username", "owner_id", "value", "description"]
 
 
 class UserPersonalConfigViewSet(SystemConfigViewSet):
     """用户配置"""
+
     queryset = UserPersonalConfig.objects.all()
     serializer_class = UserPersonalConfigSerializer
-    ordering_fields = ['created_time']
+    ordering_fields = ["created_time"]
     filterset_class = UserPersonalConfigFilter
     import_data_serializer_class = UserPersonalConfigExportImportSerializer
     export_data_serializer_class = UserPersonalConfigExportImportSerializer

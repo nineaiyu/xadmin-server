@@ -19,17 +19,17 @@ from common.utils.timezone import local_now
 logger = get_logger(__name__)
 
 # celery 日志完成之后，写入的魔法字符，作为结束标记
-CELERY_LOG_MAGIC_MARK = b'\x00\x00\x00\x00\x00'
+CELERY_LOG_MAGIC_MARK = b"\x00\x00\x00\x00\x00"
 
 
 def make_dirs(name, mode=0o755, exist_ok=False):
-    """ 默认权限设置为 0o755 """
+    """默认权限设置为 0o755"""
     return os.makedirs(name, mode=mode, exist_ok=exist_ok)
 
 
 def get_task_log_path(base_path, task_id, level=0):
     task_id = str(task_id)
-    rel_path = os.path.join(*task_id[:level], task_id + '.log')
+    rel_path = os.path.join(*task_id[:level], task_id + ".log")
     path = os.path.join(base_path, rel_path)
     make_dirs(os.path.dirname(path), exist_ok=True)
     return path
@@ -71,7 +71,7 @@ def create_or_update_celery_periodic_tasks(tasks):
 
         if isinstance(detail.get("interval"), int):
             kwargs = dict(
-                every=detail['interval'],
+                every=detail["interval"],
                 period=IntervalSchedule.SECONDS,
             )
             # 不能使用 get_or_create，因为可能会有多个
@@ -86,8 +86,12 @@ def create_or_update_celery_periodic_tasks(tasks):
                 logger.error("crontab is not valid")
                 return
             kwargs = dict(
-                minute=minute, hour=hour, day_of_week=week,
-                day_of_month=day, month_of_year=month, timezone=timezone.get_current_timezone()
+                minute=minute,
+                hour=hour,
+                day_of_week=week,
+                day_of_month=day,
+                month_of_year=month,
+                timezone=timezone.get_current_timezone(),
             )
             crontab = CrontabSchedule.objects.filter(**kwargs).first()
             if crontab is None:
@@ -100,17 +104,18 @@ def create_or_update_celery_periodic_tasks(tasks):
             interval=interval,
             crontab=crontab,
             name=name,
-            task=detail['task'],
-            args=json.dumps(detail.get('args', [])),
-            kwargs=json.dumps(detail.get('kwargs', {})),
-            description=detail.get('description') or '',
+            task=detail["task"],
+            args=json.dumps(detail.get("args", [])),
+            kwargs=json.dumps(detail.get("kwargs", {})),
+            description=detail.get("description") or "",
             last_run_at=last_run_at,
         )
-        enabled = detail.get('enabled')
+        enabled = detail.get("enabled")
         if enabled is not None:
             defaults["enabled"] = enabled
         task = PeriodicTask.objects.update_or_create(
-            defaults=defaults, name=name,
+            defaults=defaults,
+            name=name,
         )
         PeriodicTasks.update_changed()
         return task
@@ -118,17 +123,20 @@ def create_or_update_celery_periodic_tasks(tasks):
 
 def disable_celery_periodic_task(task_name):
     from django_celery_beat.models import PeriodicTask
+
     PeriodicTask.objects.filter(name=task_name).update(enabled=False)
     PeriodicTasks.update_changed()
 
 
 def delete_celery_periodic_task(task_name):
     from django_celery_beat.models import PeriodicTask
+
     PeriodicTask.objects.filter(name=task_name).delete()
     PeriodicTasks.update_changed()
 
 
 def get_celery_periodic_task(task_name):
     from django_celery_beat.models import PeriodicTask
+
     task = PeriodicTask.objects.filter(name=task_name).first()
     return task

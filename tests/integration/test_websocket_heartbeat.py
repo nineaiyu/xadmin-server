@@ -5,6 +5,7 @@
 再由 consumer 收回处理；现在 receive() 直接调用 self.ping()，
 心跳不再产生额外 Redis 往返，且在线索引随心跳续期。
 """
+
 import json
 
 import pytest

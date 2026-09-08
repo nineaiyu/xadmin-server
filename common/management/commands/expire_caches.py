@@ -4,7 +4,7 @@ from common.cache.storage import RedisCacheBase
 
 
 class Command(BaseCommand):
-    help = 'Expire Caches'
+    help = "Expire Caches"
 
     def add_arguments(self, parser):
         parser.add_argument(

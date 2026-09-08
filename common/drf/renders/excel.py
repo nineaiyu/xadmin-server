@@ -33,10 +33,10 @@ class ExcelFileRenderer(BaseFileRenderer):
         for cell_value in row:
             # 处理非法字符
             column_count += 1
-            cell_value = ILLEGAL_CHARACTERS_RE.sub(r'', str(cell_value))
+            cell_value = ILLEGAL_CHARACTERS_RE.sub(r"", str(cell_value))
             cell = self.ws.cell(row=self.row_count, column=column_count, value=str(cell_value))
             # 设置单元格格式为纯文本, 防止执行公式
-            cell.data_type = 's'
+            cell.data_type = "s"
 
     def format_values(self, data, related=False):
         result = []
@@ -48,7 +48,7 @@ class ExcelFileRenderer(BaseFileRenderer):
         return json.loads(json.dumps(result, cls=encoders.JSONEncoder, ensure_ascii=False))
 
     def add_validation(self, rendered_fields):
-        if self.template not in ['import', 'update']:
+        if self.template not in ["import", "update"]:
             return
         validation_data_dict = {}
         w_data = self.wb.create_sheet("data", 1)
@@ -58,13 +58,14 @@ class ExcelFileRenderer(BaseFileRenderer):
         for index, field in enumerate(rendered_fields):
             name = field.label
             if field.required:
-                name = '*' + name
+                name = "*" + name
             name = str(name)
             if isinstance(field, serializers.BooleanField):
                 validation_data_dict[name] = self.format_values(boolean_choices)
-            if hasattr(field, 'choices'):
-                validation_data_dict[name] = self.format_values(getattr(field, 'choices'),
-                                                                isinstance(field, BasePrimaryKeyRelatedField))
+            if hasattr(field, "choices"):
+                validation_data_dict[name] = self.format_values(
+                    getattr(field, "choices"), isinstance(field, BasePrimaryKeyRelatedField)
+                )
             if validation_data_dict.get(name) is not None:
                 column_letter = get_column_letter(len(validation_data_dict))
                 ## 数据验证不支持多选，后期优化
@@ -111,11 +112,11 @@ class ExcelFileRenderer(BaseFileRenderer):
             self.ws.add_table(tab)
 
     def get_rendered_value(self):
-        if os.name == 'nt':
+        if os.name == "nt":
             ## 针对 windows 平台，解决 NamedTemporaryFile 方法 权限异常
             tmp_name = mktemp()
             self.wb.save(tmp_name)
-            with open(tmp_name, 'rb') as tmp:
+            with open(tmp_name, "rb") as tmp:
                 value = tmp.read()
             os.unlink(tmp_name)
             return value

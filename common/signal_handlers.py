@@ -34,7 +34,7 @@ def safe_str(x):
     return x
 
 
-pattern = re.compile(r'FROM `(\w+)`')
+pattern = re.compile(r"FROM `(\w+)`")
 
 
 @worker_ready.connect
@@ -60,14 +60,14 @@ def after_app_shutdown_periodic_tasks(sender=None, **kwargs):
     cache.set("CELERY_APP_SHUTDOWN", 1, 10)
     tasks = get_after_app_shutdown_clean_tasks()
     logger.debug("Worker shutdown signal recv")
-    logger.debug("Clean period tasks: [{}]".format(', '.join(tasks)))
+    logger.debug("Clean period tasks: [{}]".format(", ".join(tasks)))
     PeriodicTask.objects.filter(name__in=tasks).delete()
 
 
 @receiver(pre_delete, sender=TaskResult)
 def delete_file_handler(sender, **kwargs):
     # 清理任务记录，同时并清理日志文件
-    instance = kwargs.get('instance')
+    instance = kwargs.get("instance")
     if instance:
         task_id = instance.task_id
         if task_id:
@@ -106,23 +106,23 @@ def on_request_finished_logging_db_query(sender, **kwargs):
     counters = defaultdict(Counter)
     table_queries = defaultdict(list)
     for query in queries:
-        if not query['sql'] or not query['sql'].startswith('SELECT'):
+        if not query["sql"] or not query["sql"].startswith("SELECT"):
             continue
-        tables = pattern.findall(query['sql'])
-        table_name = ''.join(tables)
-        time = query['time']
+        tables = pattern.findall(query["sql"])
+        table_name = "".join(tables)
+        time = query["time"]
         counters[table_name].counter += 1
         counters[table_name].time += float(time)
-        counters['total'].counter += 1
-        counters['total'].time += float(time)
+        counters["total"].counter += 1
+        counters["total"].time += float(time)
         table_queries[table_name].append(query)
 
     counters = sorted(counters.items(), key=lambda x: x[1])
     if not counters:
         return
 
-    method = 'GET'
-    path = '/Unknown'
+    method = "GET"
+    path = "/Unknown"
     current_request = get_current_request()
     if current_request:
         method = current_request.method
@@ -131,9 +131,7 @@ def on_request_finished_logging_db_query(sender, **kwargs):
     print(">>>. [{}] {}".format(method, path))
 
     for name, counter in counters:
-        logger.debug("Query {:3} times using {:.2f}s {}".format(
-            counter.counter, counter.time, name)
-        )
+        logger.debug("Query {:3} times using {:.2f}s {}".format(counter.counter, counter.time, name))
 
 
 def _get_request_user():
@@ -144,22 +142,22 @@ def _get_request_user():
 
 @receiver(pre_save)
 def on_create_set_creator(sender, instance=None, **kwargs):
-    if getattr(instance, '_ignore_auto_creator', False):
+    if getattr(instance, "_ignore_auto_creator", False):
         return
-    if not hasattr(instance, 'creator') or instance.creator:
+    if not hasattr(instance, "creator") or instance.creator:
         return
     creator = _get_request_user()
     if creator:
         instance.creator = creator
-        if hasattr(instance, 'dept_belong'):
+        if hasattr(instance, "dept_belong"):
             instance.dept_belong = creator.dept
 
 
 @receiver(pre_save)
 def on_update_set_modifier(sender, instance=None, **kwargs):
-    if getattr(instance, '_ignore_auto_modifier', False):
+    if getattr(instance, "_ignore_auto_modifier", False):
         return
-    if hasattr(instance, 'modifier'):
+    if hasattr(instance, "modifier"):
         modifier = _get_request_user()
         if modifier:
             instance.modifier = modifier
@@ -171,4 +169,4 @@ if settings.DEBUG_DEV:
 
 @receiver(django_ready)
 def clear_response_cache(sender, **kwargs):
-    cache.delete_pattern('magic_cache_response_*')
+    cache.delete_pattern("magic_cache_response_*")

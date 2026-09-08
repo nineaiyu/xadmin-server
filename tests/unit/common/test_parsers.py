@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/drf/parsers/base.py：导入文件解析器（行列转换、字段映射、值解析）。"""
+
 import io
 from csv import reader as csv_reader
 from unittest.mock import MagicMock
@@ -27,7 +28,12 @@ class RowSerializer(serializers.Serializer):
 
     class Meta:
         fields = [
-            "id", "name", "enabled", "config", "remark", "tags",
+            "id",
+            "name",
+            "enabled",
+            "config",
+            "remark",
+            "tags",
         ]
 
 
@@ -64,9 +70,7 @@ class TestContentLength:
     def test_overflow_raises(self):
         parser = CsvParser()
         with pytest.raises(FileContentOverflowedError):
-            parser.check_content_length(
-                {"CONTENT_LENGTH": str(parser.FILE_CONTENT_MAX_LENGTH + 1)}
-            )
+            parser.check_content_length({"CONTENT_LENGTH": str(parser.FILE_CONTENT_MAX_LENGTH + 1)})
 
     def test_http_header_fallback(self):
         parser = CsvParser()
@@ -133,7 +137,8 @@ class TestIdNameToObj:
     def test_uuid_pattern_kept_string(self):
         uuid = "3f2b1c6e-1a2b-3c4d-5e6f-7a8b9c0d1e2f"
         assert self.parser.id_name_to_obj(f"obj({uuid})") == {
-            "pk": uuid, "name": "obj",
+            "pk": uuid,
+            "name": "obj",
         }
 
     def test_no_match_returns_value(self):
@@ -174,13 +179,15 @@ class TestParseValue:
     def test_related_field_single(self):
         field = ChoiceSerializer().fields["user"]
         assert self.choice_parser.parse_value(field, "张三(2)") == {
-            "pk": 2, "name": "张三",
+            "pk": 2,
+            "name": "张三",
         }
 
     def test_related_field_many(self):
         field = ChoiceSerializer().fields["users"]
         assert self.choice_parser.parse_value(field, ["a(1)", "b(2)"]) == [
-            {"pk": 1, "name": "a"}, {"pk": 2, "name": "b"},
+            {"pk": 1, "name": "a"},
+            {"pk": 2, "name": "b"},
         ]
 
     def test_labeled_choice_hits_choicefield_branch(self):
@@ -220,12 +227,7 @@ class TestGenerateData:
 class TestFullParse:
     def test_parse_csv_stream(self):
         # 行序：表头（被 get_column_titles 消费）→ #Help 行（被 pop 跳过）→ 数据
-        content = (
-            "名称,启用,配置,备注\n"
-            "#Help 导入说明\n"
-            "任务A,true,{\"k\": 1},-\n"
-            "任务B,0,\"[1,2]\",\n"
-        )
+        content = '名称,启用,配置,备注\n#Help 导入说明\n任务A,true,{"k": 1},-\n任务B,0,"[1,2]",\n'
         parser = CsvParser()
         view = make_view({"CONTENT_LENGTH": str(len(content))})
         data = parser.parse(

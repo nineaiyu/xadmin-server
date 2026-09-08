@@ -18,18 +18,19 @@ logger = get_logger(__name__)
 
 
 class RoleFilter(BaseFilterSet):
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
-    code = filters.CharFilter(field_name='code', lookup_expr='icontains')
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    code = filters.CharFilter(field_name="code", lookup_expr="icontains")
 
     class Meta:
         model = UserRole
-        fields = ['name', 'code', 'is_active', 'description']
+        fields = ["name", "code", "is_active", "description"]
 
 
 class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction, RolePreviewAction):
     """角色"""
+
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer
     list_serializer_class = ListRoleSerializer
-    ordering_fields = ['updated_time', 'name', 'created_time']
+    ordering_fields = ["updated_time", "name", "created_time"]
     filterset_class = RoleFilter

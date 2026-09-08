@@ -5,6 +5,7 @@
 注意：权限结果按用户以 24h 缓存（MagicCacheData），因此"无权限->403"和
 "有权限->200"必须在不同的测试方法中验证，以免同方法内缓存污染。
 """
+
 import pytest
 
 from demo.models import Book

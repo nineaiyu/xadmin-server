@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/core/serializers.py 字段权限裁剪单元测试。"""
+
 import pytest
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -13,9 +14,27 @@ pytestmark = pytest.mark.django_db
 factory = APIRequestFactory()
 
 ALL_FIELDS = {
-    "pk", "block", "name", "isbn", "category", "is_active", "author", "publisher",
-    "publication_date", "price", "created_time", "updated_time",
-    "admin", "admin2", "managers", "managers2", "avatar", "cover", "book_file", "file", "files",
+    "pk",
+    "block",
+    "name",
+    "isbn",
+    "category",
+    "is_active",
+    "author",
+    "publisher",
+    "publication_date",
+    "price",
+    "created_time",
+    "updated_time",
+    "admin",
+    "admin2",
+    "managers",
+    "managers2",
+    "avatar",
+    "cover",
+    "book_file",
+    "file",
+    "files",
 }
 
 

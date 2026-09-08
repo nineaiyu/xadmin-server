@@ -33,15 +33,16 @@ class UserLoginLog(DbAuditModel):
     system = models.CharField(max_length=64, verbose_name=_("System"), null=True, blank=True)
     agent = models.CharField(max_length=128, verbose_name=_("Agent"), null=True, blank=True)
     channel_name = models.CharField(max_length=128, verbose_name=_("Channel name"), null=True, blank=True)
-    login_type = models.SmallIntegerField(default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices,
-                                          verbose_name=_("Login type"))
+    login_type = models.SmallIntegerField(
+        default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices, verbose_name=_("Login type")
+    )
 
     class Meta:
         verbose_name = _("User login log")
         verbose_name_plural = verbose_name
-        ordering = ('-created_time',)
+        ordering = ("-created_time",)
         indexes = [
-            models.Index(fields=['created_time'], name='idx_loginlog_created'),
+            models.Index(fields=["created_time"], name="idx_loginlog_created"),
         ]
 
     @staticmethod
@@ -78,9 +79,9 @@ class OperationLog(DbAuditModel):
         verbose_name_plural = verbose_name
         ordering = ("-created_time",)
         indexes = [
-            models.Index(fields=['created_time'], name='idx_oplog_created'),
-            models.Index(fields=['module', 'created_time'], name='idx_oplog_module_created'),
-            models.Index(fields=['request_uuid'], name='idx_oplog_request_uuid'),
+            models.Index(fields=["created_time"], name="idx_oplog_created"),
+            models.Index(fields=["module", "created_time"], name="idx_oplog_module_created"),
+            models.Index(fields=["request_uuid"], name="idx_oplog_request_uuid"),
         ]
 
     @classmethod
@@ -101,8 +102,7 @@ class OperationLog(DbAuditModel):
         clean_time = timezone.now() - datetime.timedelta(days=clean_day)
         total = 0
         while True:
-            pks = list(cls.objects.filter(created_time__lt=clean_time)
-                       .values_list('pk', flat=True)[:batch_size])
+            pks = list(cls.objects.filter(created_time__lt=clean_time).values_list("pk", flat=True)[:batch_size])
             if not pks:
                 break
             with transaction.atomic():

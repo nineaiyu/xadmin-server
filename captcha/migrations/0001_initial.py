@@ -6,18 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='CaptchaStore',
+            name="CaptchaStore",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('challenge', models.CharField(max_length=32)),
-                ('response', models.CharField(max_length=32)),
-                ('hashkey', models.CharField(max_length=40, unique=True)),
-                ('expiration', models.DateTimeField()),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("challenge", models.CharField(max_length=32)),
+                ("response", models.CharField(max_length=32)),
+                ("hashkey", models.CharField(max_length=40, unique=True)),
+                ("expiration", models.DateTimeField()),
             ],
         ),
     ]

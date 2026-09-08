@@ -16,20 +16,23 @@ class UserRole(SoftDeleteModel, DbAuditModel, DbUuidModel):
     回收站可恢复；name/code 唯一约束仅作用于未删除数据（见 Meta.constraints），
     已删除角色释放其名称与编码。
     """
+
     name = models.CharField(max_length=128, verbose_name=_("Role name"))
     code = models.CharField(max_length=128, verbose_name=_("Role code"))
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
-    menu = models.ManyToManyField('system.Menu', verbose_name=_("Menu"), blank=True)
+    menu = models.ManyToManyField("system.Menu", verbose_name=_("Menu"), blank=True)
 
     class Meta:
         verbose_name = _("User role")
         verbose_name_plural = verbose_name
         ordering = ("-created_time",)
         constraints = [
-            models.UniqueConstraint(fields=['name'], condition=models.Q(deleted_at__isnull=True),
-                                    name='uniq_userrole_name_active'),
-            models.UniqueConstraint(fields=['code'], condition=models.Q(deleted_at__isnull=True),
-                                    name='uniq_userrole_code_active'),
+            models.UniqueConstraint(
+                fields=["name"], condition=models.Q(deleted_at__isnull=True), name="uniq_userrole_name_active"
+            ),
+            models.UniqueConstraint(
+                fields=["code"], condition=models.Q(deleted_at__isnull=True), name="uniq_userrole_code_active"
+            ),
         ]
 
     def __str__(self):

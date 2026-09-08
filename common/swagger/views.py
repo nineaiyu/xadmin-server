@@ -11,8 +11,10 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import (
-    SpectacularSwaggerView, SpectacularRedocView,
-    SpectacularYAMLAPIView, SpectacularJSONAPIView
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+    SpectacularYAMLAPIView,
+    SpectacularJSONAPIView,
 )
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
@@ -23,6 +25,7 @@ from common.core.response import ApiResponse
 
 class ApiLogin(GenericAPIView):
     """接口文档的登录接口"""
+
     permission_classes = ()
     serializer_class = TokenObtainSerializer
 
@@ -59,12 +62,12 @@ class ApiLogout(GenericAPIView):
 
 class SchemaMixin:
     @xframe_options_exempt
-    @cache_response(timeout=60 * 5, key_func='get_cache_key')
+    @cache_response(timeout=60 * 5, key_func="get_cache_key")
     def get(self, *args, **kwargs):
         return super().get(*args, **kwargs)
 
     def get_cache_key(self, view_instance, view_method, request, args, kwargs):
-        func_name = f'{view_instance.__class__.__name__}_{view_method.__name__}'
+        func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
         return f"{func_name}_{request.user.pk}"
 
 

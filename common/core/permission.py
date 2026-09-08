@@ -25,10 +25,10 @@ def get_user_menu_queryset(user_obj):
     q = Q()
     has_role = False
     if user_obj.roles.exists():
-        q |= (Q(userrole__in=user_obj.roles.all()) & Q(userrole__is_active=True))
+        q |= Q(userrole__in=user_obj.roles.all()) & Q(userrole__is_active=True)
         has_role = True
     if user_obj.dept:
-        q |= (Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True))
+        q |= Q(userrole__deptinfo=user_obj.dept) & Q(userrole__deptinfo__is_active=True)
         has_role = True
     if has_role:
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
@@ -43,15 +43,15 @@ def get_user_field_queryset(user_obj, menu):
     data = {}
     has_q = False
     if user_obj.roles.count():
-        q |= (Q(role__in=user_obj.roles.all()) & Q(role__is_active=True))
+        q |= Q(role__in=user_obj.roles.all()) & Q(role__is_active=True)
         has_q = True
     if user_obj.dept:
-        q |= (Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True))
+        q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
         has_q = True
     if has_q:
         # queryset = get_filter_queryset(FieldPermission.objects.filter(q), user_obj).filter(menu=menu)
         queryset = FieldPermission.objects.filter(q).filter(menu=menu)  # 用户查询用户权限，无需使用权限过滤
-        for val in queryset.values_list('field__parent__name', 'field__name').distinct():
+        for val in queryset.values_list("field__parent__name", "field__name").distinct():
             info = data.get(val[0], set())
             if info:
                 info.add(val[1])
@@ -66,7 +66,7 @@ def get_user_permission(user_obj, method):
     menu_queryset = get_user_menu_queryset(user_obj)
     if menu_queryset:
         filter_kwargs = {"menu_type": Menu.MenuChoices.PERMISSION, "method": method}
-        menus = menu_queryset.filter(**filter_kwargs).values_list('path', 'pk', 'model').distinct()
+        menus = menu_queryset.filter(**filter_kwargs).values_list("path", "pk", "model").distinct()
     return dict([(menu[0], menu[1:]) for menu in menus])
 
 
@@ -96,7 +96,7 @@ class IsAuthenticated(BasePermission):
                 return True
             url = request.path_info
             for w_url, method in settings.PERMISSION_WHITE_URL.items():
-                if re.match(w_url, url) and ('*' in method or request.method in method):
+                if re.match(w_url, url) and ("*" in method or request.method in method):
                     request.ignore_field_permission = True
                     return True
             try:
@@ -109,14 +109,14 @@ class IsAuthenticated(BasePermission):
             # 处理search-columns字段权限和list权限一致
             match_group = re.match("(?P<url>.*)/search-columns$", url)
             if match_group:
-                url = match_group.group('url')
+                url = match_group.group("url")
             p_data = p_data_new = get_menu_pk(permission_data, url)
 
             if p_data:
                 # 导入导出功能，若未绑定模型，则使用list, create菜单
                 match_group = re.match("(?P<url>.*)/(export|import)-data$", url)
                 if match_group and p_data[1] is None:
-                    url = match_group.group('url')
+                    url = match_group.group("url")
                     p_data_new = get_menu_pk(permission_data, url)
                 if not p_data_new:
                     p_data_new = p_data
@@ -127,7 +127,8 @@ class IsAuthenticated(BasePermission):
                         request.fields = get_user_field_queryset(request.user, p_data_new[0])
                     except Exception as e:
                         logger.error(
-                            f"get user field permission failed. user:{request.user} menu:{p_data_new[0]} error:{e}")
+                            f"get user field permission failed. user:{request.user} menu:{p_data_new[0]} error:{e}"
+                        )
                         raise PermissionDenied(_("Permission denied"))
                 return True
 

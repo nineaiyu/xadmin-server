@@ -11,6 +11,7 @@
 步骤：删除旧库 → migrate → utils/init_data 初始化（菜单/角色/超管）→
 创建 E2E 场景用户（普通用户 / 受限用户 / 数据权限 / 字段权限 / 锁定测试）。
 """
+
 import os
 import sys
 
@@ -31,15 +32,20 @@ E2E_USERS = [
 
 # 数据权限规则：用户列表仅可见「id 等于本人」的记录（运行时 value 被替换为当前用户 pk）
 DATA_PERMISSION_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.user.id",
-     "match": "exact", "value": "", "exclude": False}
+    {
+        "table": "system.userinfo",
+        "field": "id",
+        "type": "value.user.id",
+        "match": "exact",
+        "value": "",
+        "exclude": False,
+    }
 ]
 
 # 数据权限规则：全部数据（value.all），用于字段权限场景放行行可见性
 # （数据权限默认拒绝：无任何授权的用户列表返回 none，见 common/core/filter.py）
 DATA_PERMISSION_ALL_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.all",
-     "match": "", "value": "", "exclude": False}
+    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "", "value": "", "exclude": False}
 ]
 
 
@@ -100,7 +106,11 @@ def seed_periodic_task():
     from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
     schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute="0", hour="3", day_of_week="*", day_of_month="*", month_of_year="*",
+        minute="0",
+        hour="3",
+        day_of_week="*",
+        day_of_month="*",
+        month_of_year="*",
         defaults={"timezone": "Asia/Shanghai"},
     )
     PeriodicTask.objects.get_or_create(
@@ -140,17 +150,13 @@ def main() -> None:
     sys.argv = ["init_data"]
     init_data_main()
 
-    from system.models import (
-        DataPermission, UserInfo, UserRole
-    )
+    from system.models import DataPermission, UserInfo, UserRole
 
     created_users = {}
     for username, password, nickname, is_superuser, role_code in E2E_USERS:
         if UserInfo.objects.filter(username=username).exists():
             continue
-        user = UserInfo.objects.create_user(
-            username=username, password=password, nickname=nickname
-        )
+        user = UserInfo.objects.create_user(username=username, password=password, nickname=nickname)
         if role_code:
             role, _ = UserRole.objects.get_or_create(name=f"E2E-{role_code}", code=role_code)
             user.roles.add(role)
@@ -164,8 +170,7 @@ def main() -> None:
     if e2e_dp:
         dp, _ = DataPermission.objects.get_or_create(
             name="E2E-仅本人用户数据",
-            defaults={"rules": DATA_PERMISSION_RULES, "mode_type": DataPermission.ModeChoices.OR,
-                      "is_active": True},
+            defaults={"rules": DATA_PERMISSION_RULES, "mode_type": DataPermission.ModeChoices.OR, "is_active": True},
         )
         dp.menu.clear()
         e2e_dp.rules.add(dp)
@@ -186,8 +191,11 @@ def main() -> None:
             # 行可见性：数据权限默认拒绝，需授予「全部数据」规则
             dp_all, _ = DataPermission.objects.get_or_create(
                 name="E2E-全部用户数据",
-                defaults={"rules": DATA_PERMISSION_ALL_RULES, "mode_type": DataPermission.ModeChoices.OR,
-                          "is_active": True},
+                defaults={
+                    "rules": DATA_PERMISSION_ALL_RULES,
+                    "mode_type": DataPermission.ModeChoices.OR,
+                    "is_active": True,
+                },
             )
             dp_all.menu.clear()
             e2e_fp.rules.add(dp_all)

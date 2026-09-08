@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/decorators.py：单例、内存缓存、延迟防抖与合并参数装饰器。"""
+
 import asyncio
 import time
 
@@ -75,6 +76,7 @@ class TestCachedMethod:
 class TestDelayRun:
     def test_requires_zero_args(self):
         with pytest.raises(ValueError):
+
             @delay_run(ttl=1)
             def bad(a):  # noqa
                 pass
@@ -97,11 +99,13 @@ class TestDelayRun:
 class TestMergeDelayRun:
     def test_requires_one_tuple_default_arg(self):
         with pytest.raises(ValueError):
+
             @merge_delay_run(ttl=1)
             def no_args():  # noqa
                 pass
 
         with pytest.raises(ValueError):
+
             @merge_delay_run(ttl=1)
             def bad_default(users=[]):  # noqa
                 pass

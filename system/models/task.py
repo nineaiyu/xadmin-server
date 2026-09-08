@@ -13,6 +13,7 @@
 - creator 经全局 pre_save 信号自动记录（common/signal_handlers.py），
   定时调度无请求上下文，creator 为空即系统调度。
 """
+
 import uuid
 
 from django.db import models
@@ -35,14 +36,20 @@ class TaskExecution(DbAuditModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(_("Task Name"), max_length=255, db_index=True)
     periodic_task = models.ForeignKey(
-        PeriodicTask, verbose_name=_("Periodic Task"), on_delete=models.SET_NULL,
-        null=True, blank=True,
+        PeriodicTask,
+        verbose_name=_("Periodic Task"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
     args = models.JSONField(_("Positional Args"), default=list, blank=True)
     kwargs = models.JSONField(_("Keyword Args"), default=dict, blank=True)
     status = models.CharField(
-        _("Status"), max_length=16, choices=Status.choices,
-        default=Status.PENDING, db_index=True,
+        _("Status"),
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
     )
     date_start = models.DateTimeField(_("Start Time"), null=True, blank=True)
     date_finished = models.DateTimeField(_("Finish Time"), null=True, blank=True)

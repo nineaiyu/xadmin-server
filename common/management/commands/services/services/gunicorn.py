@@ -2,13 +2,12 @@ from common.startup import CoreTerminal
 from .base import BaseService
 from ..hands import *
 
-__all__ = ['GunicornService']
+__all__ = ["GunicornService"]
 
 
 class GunicornService(BaseService):
-
     def __init__(self, **kwargs):
-        self.worker = kwargs['worker_gunicorn']
+        self.worker = kwargs["worker_gunicorn"]
         super().__init__(**kwargs)
 
     @property
@@ -16,22 +15,31 @@ class GunicornService(BaseService):
         print("\n- Start Gunicorn ASGI HTTP Server")
 
         log_format = '%(h)s %(t)s %(L)ss "%(r)s" %(s)s %(b)s '
-        bind = f'{HTTP_HOST}:{HTTP_PORT}'
+        bind = f"{HTTP_HOST}:{HTTP_PORT}"
 
         cmd = [
-            'gunicorn', 'server.asgi:application',
-            '-b', bind,
+            "gunicorn",
+            "server.asgi:application",
+            "-b",
+            bind,
             # uvicorn.workers 自 0.30 起弃用，官方迁至独立包 uvicorn-worker
-            '-k', 'uvicorn_worker.UvicornWorker',
-            '-w', str(self.worker),
-            '--max-requests', '10240',
-            '--max-requests-jitter', '2048',
-            '--graceful-timeout', '30',
-            '--access-logformat', log_format,
-            '--access-logfile', '-'
+            "-k",
+            "uvicorn_worker.UvicornWorker",
+            "-w",
+            str(self.worker),
+            "--max-requests",
+            "10240",
+            "--max-requests-jitter",
+            "2048",
+            "--graceful-timeout",
+            "30",
+            "--access-logformat",
+            log_format,
+            "--access-logfile",
+            "-",
         ]
         if DEBUG:
-            cmd.append('--reload')
+            cmd.append("--reload")
         return cmd
 
     @property

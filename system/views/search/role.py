@@ -17,24 +17,25 @@ logger = get_logger(__name__)
 
 
 class SearchRoleFilter(BaseFilterSet):
-    name = filters.CharFilter(field_name='name', lookup_expr='icontains')
-    code = filters.CharFilter(field_name='code', lookup_expr='icontains')
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    code = filters.CharFilter(field_name="code", lookup_expr="icontains")
 
     class Meta:
         model = UserRole
-        fields = ['name', 'code', 'is_active', 'description']
+        fields = ["name", "code", "is_active", "description"]
 
 
 class SearchRoleSerializer(RoleSerializer):
     class Meta:
         model = UserRole
-        fields = ['pk', 'name', 'code', 'is_active', 'description', 'updated_time']
+        fields = ["pk", "name", "code", "is_active", "description", "updated_time"]
         read_only_fields = [x.name for x in UserRole._meta.fields]
 
 
 class SearchRoleViewSet(OnlyListModelSet):
     """角色搜索"""
+
     queryset = UserRole.objects.all()
     serializer_class = SearchRoleSerializer
-    ordering_fields = ['updated_time', 'name', 'created_time']
+    ordering_fields = ["updated_time", "name", "created_time"]
     filterset_class = SearchRoleFilter

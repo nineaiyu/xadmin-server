@@ -13,6 +13,7 @@ django 标准的 LocMemCache 不支持这些能力，而 django-redis 6.0 又难
 - client 属性伪装 django_redis 的 DefaultClient，将 redis 命令转发给
   fakeredis.FakeStrictRedis（common/cache/redis.py 的 CacheList 等使用）
 """
+
 import fnmatch
 import threading
 

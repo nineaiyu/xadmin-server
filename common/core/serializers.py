@@ -31,8 +31,8 @@ class BaseModelSerializer(ModelSerializer):
     def get_field_names(self, declared_fields, info):
         """将默认的id字段 转换为 pk"""
         fields = super().get_field_names(declared_fields, info)
-        if 'id' in fields:
-            return ['pk'] + [f for f in fields if f != 'id']
+        if "id" in fields:
+            return ["pk"] + [f for f in fields if f != "id"]
         return fields
 
     def get_value(self, dictionary):
@@ -53,8 +53,11 @@ class BaseModelSerializer(ModelSerializer):
         if fields is None:
             fields = _fields
 
-        if self.ignore_field_permission or ignore_field_permission or (
-                self.request and hasattr(self.request, "ignore_field_permission")):
+        if (
+            self.ignore_field_permission
+            or ignore_field_permission
+            or (self.request and hasattr(self.request, "ignore_field_permission"))
+        ):
             return set(fields) & _fields
 
         allow_fields = []
@@ -79,8 +82,8 @@ class BaseModelSerializer(ModelSerializer):
         :param ignore_field_permission: 忽略字段权限控制
         """
         super().__init__(instance, data, **kwargs)
-        meta = getattr(self, 'Meta', None)
-        if meta and hasattr(meta, 'tabs') and meta.fields != '__all__':
+        meta = getattr(self, "Meta", None)
+        if meta and hasattr(meta, "tabs") and meta.fields != "__all__":
             meta.fields = meta.fields + self.get_fields_from_tabs(meta.tabs)
 
         self.request: Request = get_current_request()
@@ -107,15 +110,18 @@ class BaseModelSerializer(ModelSerializer):
         做整页批量查询；整页对象与当前对象类型不一致（嵌套序列化场景）或单对象序列化时，
         退化为 [default]，保持与逐对象查询相同的行为。
         """
-        instances = getattr(getattr(self, 'parent', None), 'instance', None)
-        if isinstance(instances, (list, tuple)) and instances and all(
-                isinstance(instance, default.__class__) for instance in instances):
+        instances = getattr(getattr(self, "parent", None), "instance", None)
+        if (
+            isinstance(instances, (list, tuple))
+            and instances
+            and all(isinstance(instance, default.__class__) for instance in instances)
+        ):
             return instances
         return [default] if default is not None else []
 
     def build_standard_field(self, field_name, model_field):
         field_class, field_kwargs = super().build_standard_field(field_name, model_field)
-        default = getattr(model_field, 'default', NOT_PROVIDED)
+        default = getattr(model_field, "default", NOT_PROVIDED)
         if default != NOT_PROVIDED:
             # 将model中的默认值同步到序列化中
             if isfunction(default):
@@ -137,8 +143,8 @@ class BaseModelSerializer(ModelSerializer):
         result = super().create(validated_data)
 
         for n_file in n_file_objs:
-            setattr(n_file, 'is_tmp', False)
-            n_file.save(update_fields=['is_tmp'])
+            setattr(n_file, "is_tmp", False)
+            n_file.save(update_fields=["is_tmp"])
         return result
 
     def update(self, instance, validated_data):
@@ -150,9 +156,11 @@ class BaseModelSerializer(ModelSerializer):
                     file_data = validated_data[field.name]
                     if isinstance(file_data, (list, QuerySet)):
                         d_file_objs.extend(
-                            set(getattr(instance, field.name).all()) - set(validated_data.get(field.name)))
+                            set(getattr(instance, field.name).all()) - set(validated_data.get(field.name))
+                        )
                         n_file_objs.extend(
-                            set(validated_data.get(field.name)) - set(getattr(instance, field.name).all()))
+                            set(validated_data.get(field.name)) - set(getattr(instance, field.name).all())
+                        )
                     else:
                         o_file_obj = getattr(instance, field.name)
                         n_file_obj = validated_data.get(field.name)
@@ -165,16 +173,15 @@ class BaseModelSerializer(ModelSerializer):
         for d_file in d_file_objs:
             d_file.delete()
         for n_file in n_file_objs:
-            setattr(n_file, 'is_tmp', False)
-            n_file.save(update_fields=['is_tmp'])
+            setattr(n_file, "is_tmp", False)
+            n_file.save(update_fields=["is_tmp"])
         return result
 
 
 class TabsColumn(object):
-
     def __init__(self, label: str, fields: List[str]):
         self.label = label
         self.fields = fields
 
     def __str__(self):
-        return {'label': self.label, 'fields': self.fields}
+        return {"label": self.label, "fields": self.fields}

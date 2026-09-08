@@ -43,16 +43,21 @@ def get_sub_serializer_fields():
         count = [0, 0]
 
         delete = True
-        obj, created = ModelLabelField.objects.update_or_create(name=model._meta.label_lower, field_type=field_type,
-                                                                parent=None,
-                                                                defaults={'label': model._meta.verbose_name})
+        obj, created = ModelLabelField.objects.update_or_create(
+            name=model._meta.label_lower,
+            field_type=field_type,
+            parent=None,
+            defaults={"label": model._meta.verbose_name},
+        )
         count[int(not created)] += 1
         for name, field in instance.fields.items():
-            _, created = ModelLabelField.objects.update_or_create(name=name, parent=obj, field_type=field_type,
-                                                                  defaults={'label': field.label})
+            _, created = ModelLabelField.objects.update_or_create(
+                name=name, parent=obj, field_type=field_type, defaults={"label": field.label}
+            )
             count[int(not created)] += 1
         PrintLogFormat(f"Model:({model._meta.label_lower})").warning(
-            f"update_or_create role permission, created:{count[0]} updated:{count[1]}")
+            f"update_or_create role permission, created:{count[0]} updated:{count[1]}"
+        )
 
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
@@ -63,14 +68,20 @@ def get_app_model_fields():
     delete = False
     now = timezone.now()
     field_type = ModelLabelField.FieldChoices.DATA
-    obj, created = ModelLabelField.objects.update_or_create(name="*", field_type=field_type,
-                                                            defaults={'label': _("All tables")}, parent=None)
-    ModelLabelField.objects.update_or_create(name="*", field_type=field_type, parent=obj,
-                                             defaults={'label': _("All fields")})
+    obj, created = ModelLabelField.objects.update_or_create(
+        name="*", field_type=field_type, defaults={"label": _("All tables")}, parent=None
+    )
+    ModelLabelField.objects.update_or_create(
+        name="*", field_type=field_type, parent=obj, defaults={"label": _("All fields")}
+    )
 
     for field in DbAuditModel._meta.fields:
-        ModelLabelField.objects.update_or_create(name=field.name, field_type=field_type, parent=obj,
-                                                 defaults={'label': getattr(field, 'verbose_name', field.name)})
+        ModelLabelField.objects.update_or_create(
+            name=field.name,
+            field_type=field_type,
+            parent=obj,
+            defaults={"label": getattr(field, "verbose_name", field.name)},
+        )
 
     for app_name, app in apps.app_configs.items():
         if app_name not in settings.PERMISSION_DATA_AUTH_APPS:
@@ -81,20 +92,23 @@ def get_app_model_fields():
             delete = True
             model_name = model._meta.model_name
             verbose_name = model._meta.verbose_name
-            if not hasattr(model, 'Meta'):  # 虚拟 model 判断, 不包含Meta的模型，是系统生成的第三方模型，包含 relationship
+            if not hasattr(
+                model, "Meta"
+            ):  # 虚拟 model 判断, 不包含Meta的模型，是系统生成的第三方模型，包含 relationship
                 continue
-            obj, created = ModelLabelField.objects.update_or_create(name=f"{app_name}.{model_name}",
-                                                                    field_type=field_type,
-                                                                    parent=None, defaults={'label': verbose_name})
+            obj, created = ModelLabelField.objects.update_or_create(
+                name=f"{app_name}.{model_name}", field_type=field_type, parent=None, defaults={"label": verbose_name}
+            )
             count[int(not created)] += 1
             # for field in model._meta.get_fields():
             for field in model._meta.fields + model._meta.many_to_many:
-                _obj, created = ModelLabelField.objects.update_or_create(name=field.name, parent=obj,
-                                                                         field_type=field_type,
-                                                                         defaults={'label': field.verbose_name})
+                _obj, created = ModelLabelField.objects.update_or_create(
+                    name=field.name, parent=obj, field_type=field_type, defaults={"label": field.verbose_name}
+                )
                 count[int(not created)] += 1
             PrintLogFormat(f"Model:({app_name}.{model_name})").warning(
-                f"update_or_create data permission, created:{count[0]} updated:{count[1]}")
+                f"update_or_create data permission, created:{count[0]} updated:{count[1]}"
+            )
     if delete:
         deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
         PrintLogFormat("Sync Data permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
@@ -116,7 +130,8 @@ def get_field_lookup_info(fields):
         "iexact": _("Case-insensitive exact match."),
         "contains": _("The field value must contain the given substring (case-sensitive)."),
         "icontains": _(
-            "Case-insensitive containment, the field value must contain the given substring (case-insensitive)."),
+            "Case-insensitive containment, the field value must contain the given substring (case-insensitive)."
+        ),
         "in": _("The field value must be within the given list, tuple, or queryset."),
         "gt": _("Greater than, the field value must be greater than the given value."),
         "gte": _("Greater than or equal to, the field value must be greater than or equal to the given value."),
@@ -124,7 +139,8 @@ def get_field_lookup_info(fields):
         "lte": _("Less than or equal to, the field value must be less than or equal to the given value."),
         "startswith": _("The field value must start with the given string (case-sensitive)."),
         "istartswith": _(
-            "Case-insensitive start with, the field value must start with the given string (case-insensitive)."),
+            "Case-insensitive start with, the field value must start with the given string (case-insensitive)."
+        ),
         "endswith": _("The field value must end with the given string (case-sensitive)."),
         "iendswith": _("Case-insensitive end with, the field value must end with the given string (case-insensitive)."),
         "range": _("Within a range, the field value must be between the two given values (inclusive)."),
@@ -145,10 +161,12 @@ def get_field_lookup_info(fields):
         "regex": _("The field value must match the given regular expression (case-sensitive)."),
         "iregex": _("The field value must match the given regular expression (case-insensitive)."),
         "contained_by": _(
-            "The field value must be a subset of the given value, typically used with array or JSON fields."),
+            "The field value must be a subset of the given value, typically used with array or JSON fields."
+        ),
         "has_any_keys": _(
-            "The field value must contain at least one of the given keys, typically used with JSON fields."),
+            "The field value must contain at least one of the given keys, typically used with JSON fields."
+        ),
         "has_keys": _("The field value must contain all the given keys, typically used with JSON fields."),
-        "has_key": _("The field value must contain the given single key, typically used with JSON fields.")
+        "has_key": _("The field value must contain the given single key, typically used with JSON fields."),
     }
     return [{"value": field, "label": field_info.get(field, field)} for field in fields]

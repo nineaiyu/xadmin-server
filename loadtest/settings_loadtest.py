@@ -17,14 +17,13 @@
 config.yml。SECURITY_* 常量在 custom.py 导入时即从 CONFIG 冻结，因此
 差异项统一放在本模块尾部（star-import 之后）显式覆盖。
 """
+
 import os
 
 from server.conf import Config, ConfigManager
 
 _loadtest_config = Config()
-_loadtest_config["SECRET_KEY"] = os.environ.get(
-    "LOADTEST_SECRET_KEY", "loadtest-only-not-for-production"
-)
+_loadtest_config["SECRET_KEY"] = os.environ.get("LOADTEST_SECRET_KEY", "loadtest-only-not-for-production")
 _loadtest_config["DEBUG"] = False
 _loadtest_config["DEBUG_DEV"] = False
 _loadtest_config["SILK_ENABLED"] = False
@@ -41,9 +40,7 @@ _loadtest_config["REDIS_PASSWORD"] = os.environ.get("LOADTEST_REDIS_PASSWORD", "
 _loadtest_config["ALLOWED_HOSTS"] = ["127.0.0.1", "localhost"]
 _loadtest_config["GUNICORN_MAX_WORKER"] = int(os.environ.get("LOADTEST_WORKERS", "4"))
 
-ConfigManager.load_user_config = classmethod(
-    lambda cls, root_path=None, config_class=None: _loadtest_config
-)
+ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _loadtest_config)
 
 from server.settings import *  # noqa: F401,F403,E402
 

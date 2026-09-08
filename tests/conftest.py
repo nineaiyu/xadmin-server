@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """公共测试 fixtures。"""
+
 import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
@@ -31,9 +32,7 @@ def api_client():
 
 @pytest.fixture
 def superuser(db):
-    return UserInfo.objects.create_superuser(
-        username="admin", email="admin@example.com", password="Admin@123456"
-    )
+    return UserInfo.objects.create_superuser(username="admin", email="admin@example.com", password="Admin@123456")
 
 
 @pytest.fixture
@@ -48,9 +47,7 @@ def dept(db):
 
 @pytest.fixture
 def normal_user(db, role):
-    user = UserInfo.objects.create_user(
-        username="zhangsan", password="Test@123456", nickname="张三"
-    )
+    user = UserInfo.objects.create_user(username="zhangsan", password="Test@123456", nickname="张三")
     user.roles.add(role)
     return user
 
@@ -60,12 +57,12 @@ def menu_factory(db):
     """创建菜单的工厂。权限类型菜单需绑定 path（正则，不带前导斜杠）与 method。"""
 
     def _make(
-            name,
-            path=None,
-            method=None,
-            menu_type=Menu.MenuChoices.PERMISSION,
-            parent=None,
-            is_active=True,
+        name,
+        path=None,
+        method=None,
+        menu_type=Menu.MenuChoices.PERMISSION,
+        parent=None,
+        is_active=True,
     ):
         meta = MenuMeta.objects.create(title=name)
         return Menu.objects.create(

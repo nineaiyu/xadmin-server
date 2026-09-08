@@ -158,9 +158,9 @@ from django.contrib.auth import get_user_model
 from common.core.permission import get_user_permission, get_user_field_queryset
 
 user = get_user_model().objects.get(username="xxx")
-get_user_permission(user, "GET")                 # 该用户全部 API 权限映射
-get_user_field_queryset(user, menu)              # 指定菜单下字段权限
-user.rules.all()                                 # 用户直接挂载的数据权限
+get_user_permission(user, "GET")  # 该用户全部 API 权限映射
+get_user_field_queryset(user, menu)  # 指定菜单下字段权限
+user.rules.all()  # 用户直接挂载的数据权限
 [user_role.rules.all() for user_role in user.roles.all()]  # 经角色挂载的数据权限
 ```
 

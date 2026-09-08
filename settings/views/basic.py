@@ -14,5 +14,6 @@ logger = get_logger(__name__)
 
 class BasicSettingViewSet(BaseSettingViewSet):
     """基本设置"""
+
     serializer_class = BasicSettingSerializer
     category = "basic"

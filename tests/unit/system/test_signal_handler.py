@@ -5,6 +5,7 @@
 用户权限缓存（MagicCacheData / MagicCacheResponse）。本文件通过直接调用
 handler（含参数对齐）与触发真实 post_save 信号两种方式，断言缓存键被清除。
 """
+
 from unittest import mock
 
 import pytest

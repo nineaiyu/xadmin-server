@@ -29,17 +29,17 @@ class ResourcesIDCacheAPIView(GenericAPIView):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={'resources': build_array_type(build_basic_type(OpenApiTypes.STR))},
-                required=['resources'],
-                description="主键列表"
+                properties={"resources": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=["resources"],
+                description="主键列表",
             )
         ),
-        responses=get_default_response_schema({'spm': build_basic_type(OpenApiTypes.STR)})
+        responses=get_default_response_schema({"spm": build_basic_type(OpenApiTypes.STR)}),
     )
     def post(self, request, *args, **kwargs):
         """添加临时资源数据"""
         spm = str(uuid.uuid4())
-        resources = request.data.get('resources')
+        resources = request.data.get("resources")
         if resources is not None:
             CommonResourceIDsCache(spm).set_storage_cache(resources, 300)
         return ApiResponse(spm=spm)
@@ -47,18 +47,19 @@ class ResourcesIDCacheAPIView(GenericAPIView):
 
 class CountryListAPIView(GenericAPIView):
     """城市列表"""
+
     permission_classes = (AllowAny,)
 
     @extend_schema(
         responses=get_default_response_schema(
             {
-                'data': build_array_type(
+                "data": build_array_type(
                     build_object_type(
                         properties={
-                            'name': build_basic_type(OpenApiTypes.STR),
-                            'phone_code': build_basic_type(OpenApiTypes.STR),
-                            'flag': build_basic_type(OpenApiTypes.STR),
-                            'code': build_basic_type(OpenApiTypes.STR)
+                            "name": build_basic_type(OpenApiTypes.STR),
+                            "phone_code": build_basic_type(OpenApiTypes.STR),
+                            "flag": build_basic_type(OpenApiTypes.STR),
+                            "code": build_basic_type(OpenApiTypes.STR),
                         }
                     )
                 )
@@ -68,7 +69,7 @@ class CountryListAPIView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         """获取城市手机号列表"""
         current_lang = translation.get_language()
-        if current_lang == 'zh-hans':
+        if current_lang == "zh-hans":
             return ApiResponse(data=COUNTRY_CALLING_CODES_ZH)
         else:
             return ApiResponse(data=COUNTRY_CALLING_CODES)
@@ -76,6 +77,7 @@ class CountryListAPIView(GenericAPIView):
 
 class HealthCheckAPIView(GenericAPIView):
     """获取服务健康状态"""
+
     permission_classes = (AllowAny,)
 
     @staticmethod
@@ -85,8 +87,9 @@ class HealthCheckAPIView(GenericAPIView):
         t1 = time.time()
         try:
             from django.db import connection
+
             with connection.cursor() as cursor:
-                cursor.execute('SELECT 1')
+                cursor.execute("SELECT 1")
                 cursor.fetchone()
             t2 = time.time()
             return True, t2 - t1
@@ -95,18 +98,18 @@ class HealthCheckAPIView(GenericAPIView):
 
     @staticmethod
     def get_redis_status():
-        key = 'HEALTH_CHECK'
+        key = "HEALTH_CHECK"
 
         t1 = time.time()
         try:
-            value = '1'
-            cache.set(key, '1', 10)
+            value = "1"
+            cache.set(key, "1", 10)
             got = cache.get(key)
             t2 = time.time()
 
             if value == got:
                 return True, t2 - t1
-            return False, 'Value not match'
+            return False, "Value not match"
         except Exception as e:
             return False, str(e)
 
@@ -114,12 +117,13 @@ class HealthCheckAPIView(GenericAPIView):
     def get_celery_status():
         # E2E/单进程模式（memory broker + eager celery）没有可探测的 worker 协议，
         # inspect ping 在 memory:// 上会无限阻塞，允许通过设置显式跳过
-        if getattr(settings, 'HEALTH_CHECK_SKIP_CELERY', False):
+        if getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False):
             return False, 0.0
         # 探测是否存在在线 worker（inspect ping 最长阻塞 1 秒，healthcheck 轮询间隔下可接受）
         t1 = time.time()
         try:
             from server.celery import app
+
             workers = app.control.inspect(timeout=1).ping()
             t2 = time.time()
             return bool(workers), t2 - t1
@@ -131,14 +135,14 @@ class HealthCheckAPIView(GenericAPIView):
             200: OpenApiResponse(
                 build_object_type(
                     properties={
-                        'status': build_basic_type(OpenApiTypes.BOOL),
-                        'db_status': build_basic_type(OpenApiTypes.BOOL),
-                        'redis_status': build_basic_type(OpenApiTypes.BOOL),
-                        'celery_status': build_basic_type(OpenApiTypes.BOOL),
-                        'time': build_basic_type(OpenApiTypes.FLOAT),
-                        'db_time': build_basic_type(OpenApiTypes.FLOAT),
-                        'redis_time': build_basic_type(OpenApiTypes.FLOAT),
-                        'celery_time': build_basic_type(OpenApiTypes.FLOAT),
+                        "status": build_basic_type(OpenApiTypes.BOOL),
+                        "db_status": build_basic_type(OpenApiTypes.BOOL),
+                        "redis_status": build_basic_type(OpenApiTypes.BOOL),
+                        "celery_status": build_basic_type(OpenApiTypes.BOOL),
+                        "time": build_basic_type(OpenApiTypes.FLOAT),
+                        "db_time": build_basic_type(OpenApiTypes.FLOAT),
+                        "redis_time": build_basic_type(OpenApiTypes.FLOAT),
+                        "celery_time": build_basic_type(OpenApiTypes.FLOAT),
                     }
                 )
             )
@@ -152,13 +156,13 @@ class HealthCheckAPIView(GenericAPIView):
         # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）
         status = all([redis_status, db_status])
         data = {
-            'status': status,
-            'db_status': db_status,
-            'redis_status': redis_status,
-            'celery_status': celery_status,
-            'time': int(time.time()),
-            'db_time': db_time,
-            'redis_time': redis_time,
-            'celery_time': celery_time,
+            "status": status,
+            "db_status": db_status,
+            "redis_status": redis_status,
+            "celery_status": celery_status,
+            "time": int(time.time()),
+            "db_time": db_time,
+            "redis_time": redis_time,
+            "celery_time": celery_time,
         }
         return Response(data)

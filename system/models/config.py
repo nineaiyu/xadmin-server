@@ -15,8 +15,9 @@ from common.core.models import DbAuditModel, DbUuidModel
 class BaseConfig(DbAuditModel):
     value = models.JSONField(max_length=10240, verbose_name=_("Config value"))
     is_active = models.BooleanField(default=True, verbose_name=_("Is active"))
-    access = models.BooleanField(default=False, verbose_name=_("API access"),
-                                 help_text=_("Allows API interfaces to access this config"))
+    access = models.BooleanField(
+        default=False, verbose_name=_("API access"), help_text=_("Allows API interfaces to access this config")
+    )
 
     class Meta:
         abstract = True
@@ -24,8 +25,9 @@ class BaseConfig(DbAuditModel):
 
 class SystemConfig(BaseConfig, DbUuidModel):
     key = models.CharField(max_length=255, unique=True, verbose_name=_("Config name"))
-    inherit = models.BooleanField(default=False, verbose_name=_("User inherit"),
-                                  help_text=_("Allows users to inherit this config"))
+    inherit = models.BooleanField(
+        default=False, verbose_name=_("User inherit"), help_text=_("Allows users to inherit this config")
+    )
 
     class Meta:
         verbose_name = _("System config")
@@ -42,7 +44,7 @@ class UserPersonalConfig(BaseConfig):
     class Meta:
         verbose_name = _("User config")
         verbose_name_plural = verbose_name
-        unique_together = (('owner', 'key'),)
+        unique_together = (("owner", "key"),)
 
     def __str__(self):
         return "%s-%s" % (self.key, self.description)

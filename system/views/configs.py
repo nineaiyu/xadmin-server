@@ -19,15 +19,16 @@ from system.serializers.config import UserPersonalConfigSerializer
 
 
 def config_response_schema():
-    return get_default_response_schema({'config': build_object_type(), 'auth': build_basic_type(OpenApiTypes.STR)})
+    return get_default_response_schema({"config": build_object_type(), "auth": build_basic_type(OpenApiTypes.STR)})
 
 
 class ConfigsViewSet(GenericViewSet):
     """配置信息"""
+
     queryset = UserPersonalConfig.objects.none()
     serializer_class = UserPersonalConfigSerializer
-    ordering_fields = ['created_time']
-    lookup_field = 'key'
+    ordering_fields = ["created_time"]
+    lookup_field = "key"
     permission_classes = []
     filter_backends = [OwnerUserFilter]
 
@@ -42,7 +43,7 @@ class ConfigsViewSet(GenericViewSet):
                 config = SysConfig.get_value(value_key, ignore_access=False)
             if config is not None:
                 if not isinstance(config, dict):
-                    config = {'value': config, 'key': self.kwargs[self.lookup_field]}
+                    config = {"value": config, "key": self.kwargs[self.lookup_field]}
                 return ApiResponse(config=config, auth=f"{request.user}")
         return ApiResponse(config={}, auth=f"{request.user}")
 

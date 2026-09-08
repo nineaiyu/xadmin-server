@@ -49,21 +49,19 @@ class RecycleBinAction(object):
         if pks:
             queryset = queryset.filter(pk__in=pks)
         else:
-            retention_days = getattr(settings, 'RECYCLE_BIN_RETENTION_DAYS', 30)
+            retention_days = getattr(settings, "RECYCLE_BIN_RETENTION_DAYS", 30)
             cutoff = timezone.now() - timedelta(days=retention_days)
             queryset = queryset.filter(deleted_at__lt=cutoff)
         return self.filter_queryset(queryset)
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(properties={'pks': _PKS_ARRAY})
-        ),
+        request=OpenApiRequest(build_object_type(properties={"pks": _PKS_ARRAY})),
         responses=get_default_response_schema(),
     )
-    @action(methods=['patch'], detail=False, url_path='recycle/restore')
+    @action(methods=["patch"], detail=False, url_path="recycle/restore")
     def recycle_restore(self, request, *args, **kwargs):
         """从回收站恢复{cls}数据"""
-        pks = request.data.get('pks') or []
+        pks = request.data.get("pks") or []
         if not pks:
             return ApiResponse(code=1001, detail=_("Please select the data to restore"))
         count = 0
@@ -73,7 +71,7 @@ class RecycleBinAction(object):
             try:
                 # ATOMIC_REQUESTS 开启时这里是 savepoint，单行冲突不毒化整个请求事务
                 with transaction.atomic():
-                    instance.save(update_fields=['deleted_at'])
+                    instance.save(update_fields=["deleted_at"])
                 count += 1
             except IntegrityError:
                 # 活跃数据已占用唯一键（如角色 code、菜单 name）时跳过该行，
@@ -86,15 +84,13 @@ class RecycleBinAction(object):
         return ApiResponse(detail=detail)
 
     @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(properties={'pks': _PKS_ARRAY})
-        ),
+        request=OpenApiRequest(build_object_type(properties={"pks": _PKS_ARRAY})),
         responses=get_default_response_schema(),
     )
-    @action(methods=['delete'], detail=False, url_path='recycle/purge')
+    @action(methods=["delete"], detail=False, url_path="recycle/purge")
     def recycle_purge(self, request, *args, **kwargs):
         """物理清除{cls}回收站数据（不传 pks 时清除全部超过保留期的数据）"""
-        queryset = self.get_recycle_purge_queryset(request.data.get('pks') or [])
+        queryset = self.get_recycle_purge_queryset(request.data.get("pks") or [])
         count = 0
         for instance in queryset.iterator() if hasattr(queryset, "iterator") else queryset:
             instance.hard_delete()  # 走原始 delete 链，物理文件/级联照常清理
@@ -102,15 +98,15 @@ class RecycleBinAction(object):
         return ApiResponse(detail=_("Purged {} data").format(count))
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=['get'], detail=False, url_path='recycle')
+    @action(methods=["get"], detail=False, url_path="recycle")
     def recycle(self, request, *args, **kwargs):
         """获取{cls}回收站列表"""
         model = self.get_queryset().model
-        self.queryset = model.all_objects.filter(deleted_at__isnull=False).order_by('-deleted_at')
+        self.queryset = model.all_objects.filter(deleted_at__isnull=False).order_by("-deleted_at")
         # 借用 list action 的口径：list_serializer_class 选择（回收站列需含 deleted_at）
         # 与 auto_prefetch 的 N+1 优化（recycle 同为逐行序列化的列表路径）
-        self.action = 'list'
+        self.action = "list"
         try:
             return self.list(request, *args, **kwargs)
         finally:
-            self.action = 'recycle'
+            self.action = "recycle"

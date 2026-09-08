@@ -7,6 +7,7 @@
 3. 未预期异常不向客户端泄漏内部细节（统一 500）；
 4. list 形式的错误详情被包装进 detail 字段。
 """
+
 import pytest
 from django.db.models import ProtectedError
 from django.http import Http404

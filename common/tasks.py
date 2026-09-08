@@ -20,8 +20,12 @@ from django_celery_beat.models import PeriodicTask
 
 from common.cache.redis import CacheList
 from common.celery.decorator import register_as_period_task, after_app_ready_start
-from common.celery.utils import delete_celery_periodic_task, disable_celery_periodic_task, get_celery_periodic_task, \
-    create_or_update_celery_periodic_tasks
+from common.celery.utils import (
+    delete_celery_periodic_task,
+    disable_celery_periodic_task,
+    get_celery_periodic_task,
+    create_or_update_celery_periodic_tasks,
+)
 from common.models import Monitor
 from common.notifications import ServerPerformanceCheckUtil, ImportDataMessage, BatchDeleteDataMessage
 from common.utils.timezone import local_now_display
@@ -32,7 +36,7 @@ logger = get_task_logger(__name__)
 
 @shared_task(verbose_name=_("Send email"))
 def send_mail_async(*args, **kwargs):
-    """ Using celery to send email async
+    """Using celery to send email async
 
     You can use it as django send_mail function
 
@@ -52,8 +56,8 @@ def send_mail_async(*args, **kwargs):
 
     args = tuple(args)
 
-    subject = args[0] if len(args) > 0 else kwargs.get('subject')
-    recipient_list = args[3] if len(args) > 3 else kwargs.get('recipient_list')
+    subject = args[0] if len(args) > 0 else kwargs.get("subject")
+    recipient_list = args[3] if len(args) > 3 else kwargs.get("recipient_list")
     logger.info(f"send_mail_async called with subject={subject}, recipients={recipient_list}")
 
     try:
@@ -84,7 +88,7 @@ def send_mail_attachment_async(subject, message, recipient_list, attachment_list
         logger.error("Sending mail attachment error: {}".format(e))
 
 
-@shared_task(verbose_name=_('Periodic delete monitor'))
+@shared_task(verbose_name=_("Periodic delete monitor"))
 @register_as_period_task(interval=3600)
 @after_app_ready_start
 def auto_clean_monitor_logs():
@@ -93,39 +97,40 @@ def auto_clean_monitor_logs():
 
 
 @shared_task(
-    verbose_name=_('Clear celery periodic tasks'),
-    description=_("At system startup, clean up celery tasks that no longer exist")
+    verbose_name=_("Clear celery periodic tasks"),
+    description=_("At system startup, clean up celery tasks that no longer exist"),
 )
 @after_app_ready_start
 def clean_celery_periodic_tasks():
-    logger.info('Start clean celery periodic tasks.')
+    logger.info("Start clean celery periodic tasks.")
     register_tasks = PeriodicTask.objects.all()
     for task in register_tasks:
         if task.task in app.tasks:
             continue
 
         task_name = task.name
-        logger.info('Start clean task: {}'.format(task_name))
+        logger.info("Start clean task: {}".format(task_name))
         disable_celery_periodic_task(task_name)
         delete_celery_periodic_task(task_name)
         task = get_celery_periodic_task(task_name)
         if task is None:
-            logger.info('Clean task success: {}'.format(task_name))
+            logger.info("Clean task success: {}".format(task_name))
         else:
-            logger.info('Clean task failure: {}'.format(task))
+            logger.info("Clean task failure: {}".format(task))
 
 
 @shared_task(
-    verbose_name=_('Create or update periodic tasks'),
+    verbose_name=_("Create or update periodic tasks"),
     description=_(
         """With version iterations, new tasks may be added, or task names and execution times may 
         be modified. Therefore, upon system startup, tasks will be registered or the parameters 
         of scheduled tasks will be updated"""
-    )
+    ),
 )
 @after_app_ready_start
 def create_or_update_registered_periodic_tasks():
     from .celery.decorator import get_register_period_tasks
+
     for task in get_register_period_tasks():
         create_or_update_celery_periodic_tasks(task)
 
@@ -135,7 +140,7 @@ def create_or_update_registered_periodic_tasks():
     description=_(
         """Check every hour whether each component is offline and whether the CPU, memory, 
         and disk usage exceed the thresholds, and send an alert message to the administrator"""
-    )
+    ),
 )
 @register_as_period_task(interval=60)
 def check_server_performance_period():
@@ -144,11 +149,11 @@ def check_server_performance_period():
 
 @shared_task(verbose_name=_("Run background task view set"))
 def background_task_view_set_job(view: str, meta: dict, data: str, action_map: dict):
-    cache = CacheList(f"view_task_{meta.get("task_id").split("_")[0]}", timeout=3600 * 24)
+    cache = CacheList(f"view_task_{meta.get('task_id').split('_')[0]}", timeout=3600 * 24)
     task_info = {
         "start_time": local_now_display(),
         "task_id": meta.get("task_id"),
-        "task_index": meta.get("task_index")
+        "task_index": meta.get("task_index"),
     }
     view_func = import_string(view)
     b_data = data.encode("utf-8")
@@ -174,7 +179,7 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
                 "view_doc": view_func.__doc__,
                 "state": state,
                 "status": _("Operation successful") if state else _("Operation failed"),
-                "tasks": sorted(task_results, key=lambda task: task["task_index"])
+                "tasks": sorted(task_results, key=lambda task: task["task_index"]),
             }
             match meta["action"]:
                 case "import_data":
@@ -186,8 +191,8 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
 
 
 @shared_task(
-    verbose_name=_('Purge soft deleted data'),
-    description=_("Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS")
+    verbose_name=_("Purge soft deleted data"),
+    description=_("Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"),
 )
 @register_as_period_task(interval=86400)
 @after_app_ready_start
@@ -197,7 +202,7 @@ def purge_soft_deleted():
 
     from common.core.models import SoftDeleteModel
 
-    retention_days = getattr(settings, 'RECYCLE_BIN_RETENTION_DAYS', 30)
+    retention_days = getattr(settings, "RECYCLE_BIN_RETENTION_DAYS", 30)
     cutoff = timezone.now() - datetime.timedelta(days=retention_days)
     total = 0
     for model in apps.get_models():
@@ -208,7 +213,7 @@ def purge_soft_deleted():
             instance.hard_delete()
             count += 1
         if count:
-            logger.info(f'purge {count} soft deleted data. model: {model._meta.label}')
+            logger.info(f"purge {count} soft deleted data. model: {model._meta.label}")
         total += count
-    logger.info(f'purge soft deleted data done. retention_days: {retention_days}, total: {total}')
+    logger.info(f"purge soft deleted data done. retention_days: {retention_days}, total: {total}")
     return total

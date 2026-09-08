@@ -20,23 +20,24 @@ from system.serializers.log import LoginLogSerializer
 
 
 class LoginLogFilter(BaseFilterSet):
-    ipaddress = filters.CharFilter(field_name='ipaddress', lookup_expr='icontains')
-    city = filters.CharFilter(field_name='city', lookup_expr='icontains')
-    system = filters.CharFilter(field_name='system', lookup_expr='icontains')
-    agent = filters.CharFilter(field_name='agent', lookup_expr='icontains')
-    creator_id = PkMultipleFilter(input_type='api-search-user')
+    ipaddress = filters.CharFilter(field_name="ipaddress", lookup_expr="icontains")
+    city = filters.CharFilter(field_name="city", lookup_expr="icontains")
+    system = filters.CharFilter(field_name="system", lookup_expr="icontains")
+    agent = filters.CharFilter(field_name="agent", lookup_expr="icontains")
+    creator_id = PkMultipleFilter(input_type="api-search-user")
 
     class Meta:
         model = UserLoginLog
-        fields = ['login_type', 'ipaddress', 'city', 'system', 'creator_id', 'status', 'agent', 'created_time']
+        fields = ["login_type", "ipaddress", "city", "system", "creator_id", "status", "agent", "created_time"]
 
 
 class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     """登录日志"""
+
     queryset = UserLoginLog.objects.all()
     serializer_class = LoginLogSerializer
 
-    ordering_fields = ['created_time']
+    ordering_fields = ["created_time"]
     filterset_class = LoginLogFilter
 
     @extend_schema(responses=get_default_response_schema(), request=None)

@@ -7,6 +7,7 @@
 3. read_message 固定 3 条 SQL，与 pks 数量无关；
 4. read_message 幂等且结果正确。
 """
+
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -37,10 +38,12 @@ def message_page(db, normal_user):
     """6 条用户通知：3 未读、3 已读；外加 1 条公告"""
     messages = []
     for i in range(6):
-        messages.append(_make_message(normal_user, MessageContent.NoticeChoices.USER, f"user-msg-{i}",
-                                      unread=(i % 2 == 0)))
-    notice = MessageContent.objects.create(title="notice-0", message="m",
-                                           notice_type=MessageContent.NoticeChoices.NOTICE)
+        messages.append(
+            _make_message(normal_user, MessageContent.NoticeChoices.USER, f"user-msg-{i}", unread=(i % 2 == 0))
+        )
+    notice = MessageContent.objects.create(
+        title="notice-0", message="m", notice_type=MessageContent.NoticeChoices.NOTICE
+    )
     messages.append(notice)
     return messages
 
@@ -72,8 +75,7 @@ class TestUnreadBatching:
         assert unread_by_title["notice-0"] is True
 
     def test_announcement_becomes_read_after_read_row_created(self, normal_user):
-        notice = MessageContent.objects.create(title="n", message="m",
-                                               notice_type=MessageContent.NoticeChoices.NOTICE)
+        notice = MessageContent.objects.create(title="n", message="m", notice_type=MessageContent.NoticeChoices.NOTICE)
         context = {"request": type("R", (), {"user": normal_user})()}
         assert UserNoticeSerializer(notice, context=context).data["unread"] is True
 

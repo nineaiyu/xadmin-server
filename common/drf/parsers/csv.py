@@ -10,7 +10,7 @@ from ..const import CSV_FILE_ESCAPE_CHARS
 
 
 class CSVFileParser(BaseFileParser):
-    media_type = 'text/csv'
+    media_type = "text/csv"
 
     @cached_property
     def match_escape_chars(self):

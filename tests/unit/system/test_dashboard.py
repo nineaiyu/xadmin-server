@@ -8,6 +8,7 @@
 
 同时覆盖：操作日志卡片改为窗口内计数（避免全表 COUNT）与面板短缓存。
 """
+
 import datetime
 import json
 
@@ -38,17 +39,13 @@ def payload(response):
 
 def _make_login_log(user, days_ago):
     obj = UserLoginLog.objects.create(creator=user, ipaddress="127.0.0.1")
-    UserLoginLog.objects.filter(pk=obj.pk).update(
-        created_time=timezone.now() - datetime.timedelta(days=days_ago)
-    )
+    UserLoginLog.objects.filter(pk=obj.pk).update(created_time=timezone.now() - datetime.timedelta(days=days_ago))
     return obj
 
 
 def _make_operation_log(days_ago):
     obj = OperationLog.objects.create(module="test", method="GET", path="/api/demo")
-    OperationLog.objects.filter(pk=obj.pk).update(
-        created_time=timezone.now() - datetime.timedelta(days=days_ago)
-    )
+    OperationLog.objects.filter(pk=obj.pk).update(created_time=timezone.now() - datetime.timedelta(days=days_ago))
     return obj
 
 

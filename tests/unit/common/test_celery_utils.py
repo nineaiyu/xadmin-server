@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/celery/utils.py：任务日志路径与定时任务注册。"""
+
 from datetime import timedelta
 
 import pytest
@@ -93,16 +94,12 @@ class TestPeriodicTasks:
     def test_invalid_schedule_returns_none(self):
         from common.celery.utils import create_or_update_celery_periodic_tasks
 
-        assert create_or_update_celery_periodic_tasks(
-            {"bad": {"task": "x", "interval": "not-int"}}
-        ) is None
+        assert create_or_update_celery_periodic_tasks({"bad": {"task": "x", "interval": "not-int"}}) is None
 
     def test_invalid_crontab_returns_none(self):
         from common.celery.utils import create_or_update_celery_periodic_tasks
 
-        assert create_or_update_celery_periodic_tasks(
-            {"bad": {"task": "x", "crontab": "not-a-crontab"}}
-        ) is None
+        assert create_or_update_celery_periodic_tasks({"bad": {"task": "x", "crontab": "not-a-crontab"}}) is None
 
     def test_disable_and_delete_periodic_task(self):
         from django_celery_beat.models import PeriodicTask
@@ -114,9 +111,7 @@ class TestPeriodicTasks:
             get_celery_periodic_task,
         )
 
-        create_or_update_celery_periodic_tasks(
-            {"test-lifecycle-task": {"task": "x", "interval": 60}}
-        )
+        create_or_update_celery_periodic_tasks({"test-lifecycle-task": {"task": "x", "interval": 60}})
         disable_celery_periodic_task("test-lifecycle-task")
         assert get_celery_periodic_task("test-lifecycle-task").enabled is False
         delete_celery_periodic_task("test-lifecycle-task")

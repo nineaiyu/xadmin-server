@@ -10,6 +10,7 @@
 - 读文件循环采用 message/notify.py 既有 tail 模式（aiofiles + asyncio.sleep），
   但必须以独立 task 运行（connect 内阻塞会导致 disconnect 事件永远排队）。
 """
+
 import asyncio
 import os
 
@@ -31,9 +32,7 @@ PUSH_INTERVAL = 1
 @database_sync_to_async
 def _execution_finished(pk):
     """执行是否已有终态时间（文件缺失或无结束标记时判断是否还需等待）。"""
-    finished = TaskExecution.objects.filter(pk=pk).values_list(
-        'date_finished', flat=True
-    ).first()
+    finished = TaskExecution.objects.filter(pk=pk).values_list("date_finished", flat=True).first()
     return finished is not None
 
 
@@ -42,7 +41,7 @@ async def _tail_has_mark(path):
     size = os.path.getsize(path)
     if size < len(CELERY_LOG_MAGIC_MARK):
         return False
-    async with aiofiles.open(path, 'rb') as fp:
+    async with aiofiles.open(path, "rb") as fp:
         await fp.seek(size - len(CELERY_LOG_MAGIC_MARK))
         return await fp.read(len(CELERY_LOG_MAGIC_MARK)) == CELERY_LOG_MAGIC_MARK
 
@@ -87,23 +86,31 @@ class TaskLogNotify(AsyncJsonWebsocket):
         """推送一次增量，返回 True 表示输出已完成、循环可结束。"""
         size = os.path.getsize(path) if os.path.exists(path) else 0
         if self.offset < size:
-            async with aiofiles.open(path, 'rb') as fp:
+            async with aiofiles.open(path, "rb") as fp:
                 await fp.seek(self.offset)
                 chunk = await fp.read(LOG_READ_CHUNK)
             self.offset += len(chunk)
-            content = chunk.replace(CELERY_LOG_MAGIC_MARK, b'').decode(
-                'utf-8', errors='replace'
-            )
+            content = chunk.replace(CELERY_LOG_MAGIC_MARK, b"").decode("utf-8", errors="replace")
             finished = self.offset >= size and await _tail_has_mark(path)
-            await self.send_base_json(MessageAction.TASK_LOG.value, {
-                'offset': self.offset, 'content': content, 'finished': finished,
-            })
+            await self.send_base_json(
+                MessageAction.TASK_LOG.value,
+                {
+                    "offset": self.offset,
+                    "content": content,
+                    "finished": finished,
+                },
+            )
             return finished
         # 已读到文件尾（或文件尚未创建）
         finished = await _tail_has_mark(path) if size else False
         if not finished:
             finished = await _execution_finished(self.pk)
-        await self.send_base_json(MessageAction.TASK_LOG.value, {
-            'offset': self.offset, 'content': '', 'finished': finished,
-        })
+        await self.send_base_json(
+            MessageAction.TASK_LOG.value,
+            {
+                "offset": self.offset,
+                "content": "",
+                "finished": finished,
+            },
+        )
         return finished

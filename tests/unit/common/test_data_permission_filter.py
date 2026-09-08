@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common/core/filter.py 数据权限过滤单元测试（以 demo.Book 模型为载体）。"""
+
 import pytest
 
 from common.core.filter import get_filter_queryset
@@ -31,9 +32,7 @@ def books(superuser, normal_user, upload_file):
     """b1/b2 归 superuser，b3 归 normal_user（admin 字段判定归属）。"""
 
     def _make(name, isbn, owner):
-        return Book.objects.create(
-            name=name, isbn=isbn, author=isbn, admin=owner, admin2=owner, file=upload_file
-        )
+        return Book.objects.create(name=name, isbn=isbn, author=isbn, admin=owner, admin2=owner, file=upload_file)
 
     b1 = _make("A", "i1", superuser)
     b2 = _make("B", "i2", superuser)
@@ -71,9 +70,7 @@ class TestGetFilterQueryset:
         )
         normal_user.dept = dept
         normal_user.save(update_fields=["dept"])
-        normal_user.rules.add(
-            make_permission("dept-own", [make_rule("admin__dept", "value.user.dept.id")])
-        )
+        normal_user.rules.add(make_permission("dept-own", [make_rule("admin__dept", "value.user.dept.id")]))
         qs = get_filter_queryset(Book.objects.all(), normal_user)
         # b3 的 owner 也是该部门成员，一并可见
         assert list(qs) == [books[2], b4]

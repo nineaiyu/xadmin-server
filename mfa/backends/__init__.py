@@ -7,14 +7,23 @@
 新增验证方式：实现 BaseMFA 子类后加入 MFA_BACKEND_CLASSES 即可，
 配置层面通过 SECURITY_MFA_CONFIRM_BACKENDS 控制启用哪些方式。
 """
+
 from mfa.backends.base import BaseMFA
 from mfa.backends.email import EmailBackend
 from mfa.backends.otp import OtpBackend
 from mfa.backends.password import PasswordBackend
 from mfa.backends.sms import SmsBackend
 
-__all__ = ['BaseMFA', 'OtpBackend', 'SmsBackend', 'EmailBackend', 'PasswordBackend',
-           'MFA_BACKEND_CLASSES', 'get_backend', 'get_enabled_backends']
+__all__ = [
+    "BaseMFA",
+    "OtpBackend",
+    "SmsBackend",
+    "EmailBackend",
+    "PasswordBackend",
+    "MFA_BACKEND_CLASSES",
+    "get_backend",
+    "get_enabled_backends",
+]
 
 MFA_BACKEND_CLASSES = [OtpBackend, SmsBackend, EmailBackend, PasswordBackend]
 

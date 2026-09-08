@@ -5,6 +5,7 @@
 合法值切页、非法 size 回退默认、超大 size 按 max_page_size 截断，以及
 分页行为（项目未实现 no_page 全量返回参数）。
 """
+
 import pytest
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
@@ -22,10 +23,7 @@ def make_request(params):
 
 
 def make_users(count):
-    users = [
-        UserInfo.objects.create_user(username=f"user_{i}", password="Test@123456")
-        for i in range(count)
-    ]
+    users = [UserInfo.objects.create_user(username=f"user_{i}", password="Test@123456") for i in range(count)]
     return [u.pk for u in users]
 
 

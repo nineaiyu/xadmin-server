@@ -14,7 +14,7 @@ from common.local import thread_local
 
 
 def set_current_request(request):
-    setattr(thread_local, 'current_request', request)
+    setattr(thread_local, "current_request", request)
 
 
 def _find(attr):
@@ -22,7 +22,7 @@ def _find(attr):
 
 
 def get_current_request():
-    return _find('current_request')
+    return _find("current_request")
 
 
 def add_db_prefix(sender, **kwargs):

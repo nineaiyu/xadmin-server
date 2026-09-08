@@ -11,8 +11,8 @@ from ..const import CSV_FILE_ESCAPE_CHARS
 
 
 class CSVFileRenderer(BaseFileRenderer):
-    media_type = 'text/csv'
-    format = 'csv'
+    media_type = "text/csv"
+    format = "csv"
     writer = None
     buffer = None
 
@@ -21,7 +21,7 @@ class CSVFileRenderer(BaseFileRenderer):
     def initial_writer(self):
         csv_buffer = BytesIO()
         csv_buffer.write(codecs.BOM_UTF8)
-        csv_writer = unicodecsv.writer(csv_buffer, encoding='utf-8')
+        csv_writer = unicodecsv.writer(csv_buffer, encoding="utf-8")
         self.buffer = csv_buffer
         self.writer = csv_writer
 

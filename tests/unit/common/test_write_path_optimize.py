@@ -8,6 +8,7 @@
 3. rank 批量排序：单条 UPDATE；
 4. batch_destroy：无文件清理需求的模型走批量 delete()。
 """
+
 import pytest
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -41,9 +42,18 @@ def upload_file(superuser):
 
 
 def _import_rows(admin_pk, file_pk, count, start=0):
-    return [{"name": f"书{n}", "isbn": f"isbn{n}", "author": "a",
-             "admin": admin_pk, "admin2": admin_pk, "managers": [admin_pk], "file": file_pk}
-            for n in range(start, start + count)]
+    return [
+        {
+            "name": f"书{n}",
+            "isbn": f"isbn{n}",
+            "author": "a",
+            "admin": admin_pk,
+            "admin2": admin_pk,
+            "managers": [admin_pk],
+            "file": file_pk,
+        }
+        for n in range(start, start + count)
+    ]
 
 
 class TestRelatedMemo:
@@ -83,8 +93,7 @@ class TestRelatedMemo:
             assert Book.objects.count() == count
             Book.objects.all().delete()
             # 只统计 to_internal_value 的关联校验 SELECT（排除 M2M set() 的簿记查询）
-            return len([q for q in _business_queries(ctx)
-                        if "system_userinfo" in q and "demo_book_managers" not in q])
+            return len([q for q in _business_queries(ctx) if "system_userinfo" in q and "demo_book_managers" not in q])
 
         one = measure(1)
         many = measure(7)
@@ -96,9 +105,16 @@ class TestRelatedMemo:
     def test_import_missing_pk_fails_for_each_row(self, auth_client, admin_user, upload_file):
         """memo 不得掩盖校验失败：不存在的 pk 每行都报错"""
         url = f"{BOOK_URL}/import-data?action=create&task=false&ignore_error=true"
-        rows = [{"name": f"书{n}", "isbn": f"x{n}", "author": "a",
-                 "admin": "00000000-0000-0000-0000-000000000000", "file": upload_file.pk}
-                for n in range(2)]
+        rows = [
+            {
+                "name": f"书{n}",
+                "isbn": f"x{n}",
+                "author": "a",
+                "admin": "00000000-0000-0000-0000-000000000000",
+                "file": upload_file.pk,
+            }
+            for n in range(2)
+        ]
         resp = auth_client.post(url, rows, format="json")
         assert resp.status_code == 200
         assert Book.objects.count() == 0
@@ -106,15 +122,17 @@ class TestRelatedMemo:
 
 class TestAutoCleanFileMixinSave:
     def test_save_without_update_fields_keeps_file_diff(self, superuser):
-        f = UploadFile.objects.create(filename="a.png", filesize=1, mime_type="image/png",
-                                      md5sum="b" * 32, creator=superuser)
+        f = UploadFile.objects.create(
+            filename="a.png", filesize=1, mime_type="image/png", md5sum="b" * 32, creator=superuser
+        )
         with CaptureQueriesContext(connection) as ctx:
             f.save()
         assert len(_business_queries(ctx)) >= 2  # diff 查询 + 更新
 
     def test_save_with_unrelated_update_fields_skips_diff_query(self, superuser):
-        f = UploadFile.objects.create(filename="a.png", filesize=1, mime_type="image/png",
-                                      md5sum="b" * 32, creator=superuser)
+        f = UploadFile.objects.create(
+            filename="a.png", filesize=1, mime_type="image/png", md5sum="b" * 32, creator=superuser
+        )
         with CaptureQueriesContext(connection) as ctx:
             f.save(update_fields=["filename"])
         # 仅 1 条 UPDATE，无前置 SELECT
@@ -123,8 +141,9 @@ class TestAutoCleanFileMixinSave:
         assert f.filename == "a.png"
 
     def test_save_with_file_update_field_still_diffs(self, superuser):
-        f = UploadFile.objects.create(filename="a.png", filesize=1, mime_type="image/png",
-                                      md5sum="b" * 32, creator=superuser)
+        f = UploadFile.objects.create(
+            filename="a.png", filesize=1, mime_type="image/png", md5sum="b" * 32, creator=superuser
+        )
         with CaptureQueriesContext(connection) as ctx:
             f.save(update_fields=["filepath"])
         assert len(_business_queries(ctx)) >= 2
@@ -181,8 +200,9 @@ class TestRankBatch:
 class TestBatchDestroy:
     def test_batch_destroy_bulk_path(self, auth_client, superuser, upload_file):
         for i in range(4):
-            Book.objects.create(name=f"书{i}", isbn=f"i{i}", author="a",
-                                admin=superuser, admin2=superuser, file=upload_file)
+            Book.objects.create(
+                name=f"书{i}", isbn=f"i{i}", author="a", admin=superuser, admin2=superuser, file=upload_file
+            )
         pks = [str(b.pk) for b in Book.objects.all()]
 
         with CaptureQueriesContext(connection) as ctx:
@@ -195,8 +215,7 @@ class TestBatchDestroy:
         assert len(deletes) >= 1
 
     def test_batch_destroy_ignores_unknown_pks(self, auth_client, superuser, upload_file):
-        b = Book.objects.create(name="书", isbn="i1", author="a",
-                                admin=superuser, admin2=superuser, file=upload_file)
+        b = Book.objects.create(name="书", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file)
         resp = auth_client.post(f"{BOOK_URL}/batch-destroy", [str(b.pk), "999999999"], format="json")
         assert resp.status_code == 200
         assert resp.data["code"] == 1000

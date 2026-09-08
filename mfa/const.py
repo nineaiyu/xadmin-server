@@ -11,8 +11,9 @@ class ConfirmType(TextChoices):
 
     级别递增：PASSWORD < MFA，高级别方式确认通过后，可同时满足低级别要求。
     """
-    PASSWORD = 'password', _('Password')
-    MFA = 'mfa', _('MFA')
+
+    PASSWORD = "password", _("Password")
+    MFA = "mfa", _("MFA")
 
 
 # 各验证类型对应的确认级别
@@ -23,6 +24,6 @@ CONFIRM_TYPE_LEVEL = {
 
 # 各验证类型确认有效期（秒）对应的 Django settings 配置项
 CONFIRM_TYPE_TTL_SETTING = {
-    ConfirmType.PASSWORD: 'SECURITY_MFA_PASSWORD_CONFIRM_TTL',
-    ConfirmType.MFA: 'SECURITY_MFA_VERIFY_TTL',
+    ConfirmType.PASSWORD: "SECURITY_MFA_PASSWORD_CONFIRM_TTL",
+    ConfirmType.MFA: "SECURITY_MFA_VERIFY_TTL",
 }

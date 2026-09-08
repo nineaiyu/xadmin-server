@@ -6,6 +6,7 @@
 2. 与 system.UploadFile 的关联（FK/M2M）：删除对象时级联清理附件记录；
 3. 批量删除路径不走模型 delete()，附件清理需逐行触发。
 """
+
 import pytest
 from django.core.files.base import ContentFile
 from django.db import connection
@@ -30,8 +31,9 @@ def _business_queries(ctx):
 
 @pytest.fixture
 def upload_file(superuser):
-    f = UploadFile(filename="cover.png", filesize=len(PNG_BYTES), mime_type="image/png",
-                   md5sum="a" * 32, creator=superuser)
+    f = UploadFile(
+        filename="cover.png", filesize=len(PNG_BYTES), mime_type="image/png", md5sum="a" * 32, creator=superuser
+    )
     f.filepath.save("cover.png", ContentFile(PNG_BYTES), save=False)
     f.save()
     return f
@@ -97,8 +99,9 @@ class TestRelatedFileCleanup:
         """Book.file -> UploadFile：Book 非 SoftDeleteModel，删除仍为物理删除；
         级联清理的附件记录按 语义软删除（由 purge_soft_deleted 周期任务兜底物理清除），
         物理文件不再随级联立即删除。"""
-        book = Book.objects.create(name="书", isbn="i1", author="a",
-                                   admin=superuser, admin2=superuser, file=upload_file)
+        book = Book.objects.create(
+            name="书", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file
+        )
         book.delete()
         assert not Book.objects.filter(pk=book.pk).exists()
         # 附件记录软删除进入回收站，等待周期任务清除
@@ -108,8 +111,9 @@ class TestRelatedFileCleanup:
         owner = UserInfo.objects.create_user(username="fileowner", password="Xadmin@123456", dept=dept)
         files = []
         for i in range(2):
-            f = UploadFile(filename=f"m{i}.png", filesize=1, mime_type="image/png",
-                           md5sum=f"{i}" * 32, creator=superuser)
+            f = UploadFile(
+                filename=f"m{i}.png", filesize=1, mime_type="image/png", md5sum=f"{i}" * 32, creator=superuser
+            )
             f.filepath.save(f"m{i}.png", ContentFile(PNG_BYTES), save=True)
             f.save()
             files.append(f)
@@ -126,9 +130,12 @@ class TestRelatedFileCleanup:
 class TestDeleteQueryProfile:
     def test_batch_delete_is_cheaper_than_per_row(self, superuser, upload_file):
         """无文件清理需求的模型可走批量 delete（这里以 SQL 条数佐证差异来源）"""
-        books = [Book.objects.create(name=f"B{i}", isbn=str(i), author="a",
-                                     admin=superuser, admin2=superuser, file=upload_file)
-                 for i in range(3)]
+        books = [
+            Book.objects.create(
+                name=f"B{i}", isbn=str(i), author="a", admin=superuser, admin2=superuser, file=upload_file
+            )
+            for i in range(3)
+        ]
         pks = [b.pk for b in books]
 
         with CaptureQueriesContext(connection) as per_row_ctx:

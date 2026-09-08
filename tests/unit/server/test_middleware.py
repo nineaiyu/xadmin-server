@@ -7,13 +7,19 @@
 3. RequestMiddleware 生成/透传 X-Request-Id 并设置 thread-local request；
 4. RefererCheckMiddleware 的放行与拦截分支。
 """
+
 import pytest
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
 
-from server.middleware import EndMiddleware, RefererCheckMiddleware, RequestMiddleware, SQLCountMiddleware, \
-    StartMiddleware
+from server.middleware import (
+    EndMiddleware,
+    RefererCheckMiddleware,
+    RequestMiddleware,
+    SQLCountMiddleware,
+    StartMiddleware,
+)
 from server.utils import get_current_request
 
 pytestmark = pytest.mark.django_db

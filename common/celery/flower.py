@@ -18,7 +18,7 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-flower_url = f'{settings.CELERY_FLOWER_HOST}:{settings.CELERY_FLOWER_PORT}'
+flower_url = f"{settings.CELERY_FLOWER_HOST}:{settings.CELERY_FLOWER_PORT}"
 
 
 class CeleryFlowerAPIView(GenericAPIView):
@@ -28,14 +28,10 @@ class CeleryFlowerAPIView(GenericAPIView):
     @xframe_options_exempt
     def get(self, request, path):
         """获取{cls}"""
-        remote_url = 'http://{}/api/flower/{}'.format(flower_url, path)
+        remote_url = "http://{}/api/flower/{}".format(flower_url, path)
         try:
-            basic_auth = base64.b64encode(settings.CELERY_FLOWER_AUTH.encode('utf-8')).decode('utf-8')
-            response = proxy_view(request, remote_url, {
-                'headers': {
-                    'Authorization': f"Basic {basic_auth}"
-                }
-            })
+            basic_auth = base64.b64encode(settings.CELERY_FLOWER_AUTH.encode("utf-8")).decode("utf-8")
+            response = proxy_view(request, remote_url, {"headers": {"Authorization": f"Basic {basic_auth}"}})
         except Exception as e:
             logger.warning(f"celery flower service unavailable. {e}")
             msg = _("<h3>Celery flower service unavailable. Please contact the administrator</h3>")

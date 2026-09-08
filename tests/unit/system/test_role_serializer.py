@@ -4,6 +4,7 @@
 验证字段权限的序列化/反序列化、RoleSerializer.save_fields 建立关系、update
 替换旧关系，以及 get_field 输出的 {menu: [field,...]} 结构。
 """
+
 import pytest
 
 from system.models import FieldPermission, Menu, ModelLabelField, UserRole
@@ -17,13 +18,9 @@ def field_tree(db):
     """返回 (parent, [children])，模拟某个模型的字段标签树。"""
 
     def _build(model="demo.book"):
-        parent = ModelLabelField.objects.create(
-            name=model, label="Book", field_type=ModelLabelField.FieldChoices.ROLE
-        )
+        parent = ModelLabelField.objects.create(name=model, label="Book", field_type=ModelLabelField.FieldChoices.ROLE)
         children = [
-            ModelLabelField.objects.create(
-                name=n, label=n, parent=parent, field_type=ModelLabelField.FieldChoices.ROLE
-            )
+            ModelLabelField.objects.create(name=n, label=n, parent=parent, field_type=ModelLabelField.FieldChoices.ROLE)
             for n in ["pk", "name", "isbn"]
         ]
         return parent, children

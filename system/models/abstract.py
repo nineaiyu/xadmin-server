@@ -14,10 +14,14 @@ class ModeTypeAbstract(models.Model):
         OR = 0, _("Or mode")
         AND = 1, _("And mode")
 
-    mode_type = models.SmallIntegerField(choices=ModeChoices, default=ModeChoices.OR,
-                                         verbose_name=_("Data permission mode"),
-                                         help_text=_(
-                                             "Permission mode, and the mode indicates that the data needs to satisfy each rule in the rule list at the same time, or the mode satisfies any rule"))
+    mode_type = models.SmallIntegerField(
+        choices=ModeChoices,
+        default=ModeChoices.OR,
+        verbose_name=_("Data permission mode"),
+        help_text=_(
+            "Permission mode, and the mode indicates that the data needs to satisfy each rule in the rule list at the same time, or the mode satisfies any rule"
+        ),
+    )
 
     class Meta:
         abstract = True

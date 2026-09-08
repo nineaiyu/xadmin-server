@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """server.utils 单元测试（thread-local 请求上下文、DB 表前缀）。"""
+
 from types import SimpleNamespace
 
 import pytest

@@ -33,15 +33,13 @@ class CaptchaStore(models.Model):
     def save(self, *args, **kwargs):
         self.response = self.response.lower()
         if not self.expiration:
-            self.expiration = timezone.now() + datetime.timedelta(
-                minutes=int(settings.CAPTCHA_TIMEOUT)
-            )
+            self.expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_TIMEOUT))
         if not self.hashkey:
             key_ = (
-                    smart_str(randrange(0, MAX_RANDOM_KEY))
-                    + smart_str(time.time())
-                    + smart_str(self.challenge, errors="ignore")
-                    + smart_str(self.response, errors="ignore")
+                smart_str(randrange(0, MAX_RANDOM_KEY))
+                + smart_str(time.time())
+                + smart_str(self.challenge, errors="ignore")
+                + smart_str(self.response, errors="ignore")
             ).encode("utf8")
             self.hashkey = hashlib.sha1(key_).hexdigest()
             del key_
@@ -72,12 +70,8 @@ class CaptchaStore(models.Model):
             return cls.generate_key()
 
         # Pick up a random item from pool
-        minimum_expiration = timezone.now() + datetime.timedelta(
-            minutes=int(settings.CAPTCHA_GET_FROM_POOL_TIMEOUT)
-        )
-        store = (
-            cls.objects.filter(expiration__gt=minimum_expiration).order_by("?").first()
-        )
+        minimum_expiration = timezone.now() + datetime.timedelta(minutes=int(settings.CAPTCHA_GET_FROM_POOL_TIMEOUT))
+        store = cls.objects.filter(expiration__gt=minimum_expiration).order_by("?").first()
 
         return (store and store.hashkey) or fallback()
 

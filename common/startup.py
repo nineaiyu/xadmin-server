@@ -19,14 +19,13 @@ from common.utils import get_cpu_load, get_memory_usage, get_disk_usage, get_boo
 
 
 class BaseTerminal(object):
-
     def __init__(self, suffix_name, _type):
-        server_hostname = os.environ.get('SERVER_HOSTNAME') or ''
+        server_hostname = os.environ.get("SERVER_HOSTNAME") or ""
         hostname = socket.gethostname()
         if server_hostname:
-            name = f'[{suffix_name}]-{server_hostname}'
+            name = f"[{suffix_name}]-{server_hostname}"
         else:
-            name = f'[{suffix_name}]-{hostname}'
+            name = f"[{suffix_name}]-{hostname}"
         self.name = name
         self.interval = 30
         self.remote_addr = self.get_remote_addr(hostname)
@@ -37,21 +36,21 @@ class BaseTerminal(object):
         try:
             return socket.gethostbyname(hostname)
         except socket.gaierror:
-            return '127.0.0.1'
+            return "127.0.0.1"
 
     def start_heartbeat_thread(self):
-        print(f'- Start heartbeat thread => ({self.name})')
+        print(f"- Start heartbeat thread => ({self.name})")
         t = threading.Thread(target=self.start_heartbeat, daemon=True)
         t.start()
 
     def start_heartbeat(self):
         while True:
             heartbeat_data = {
-                'cpu_load': get_cpu_load(),
-                'cpu_percent': get_cpu_percent(),
-                'memory_used': get_memory_usage(),
-                'disk_used': get_disk_usage(path=settings.PROJECT_DIR),
-                'boot_time': get_boot_time(),
+                "cpu_load": get_cpu_load(),
+                "cpu_percent": get_cpu_percent(),
+                "memory_used": get_memory_usage(),
+                "disk_used": get_disk_usage(path=settings.PROJECT_DIR),
+                "boot_time": get_boot_time(),
             }
             status_serializer = MonitorSerializer(data=heartbeat_data)
             status_serializer.is_valid()
@@ -68,6 +67,5 @@ class BaseTerminal(object):
 
 @Singleton
 class CoreTerminal(BaseTerminal):
-
     def __init__(self):
-        super().__init__(suffix_name='Core', _type='core')
+        super().__init__(suffix_name="Core", _type="core")

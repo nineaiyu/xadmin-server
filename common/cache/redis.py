@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 def format_return(data):
     try:
         if isinstance(data, bytes):
-            data = data.decode(encoding='utf-8')
+            data = data.decode(encoding="utf-8")
         return json.loads(data)
     except Exception:
         return data
@@ -31,7 +31,6 @@ def format_input(data):
 
 
 class CacheRedis(object):
-
     def __init__(self, key):
         self.connect = get_redis_connection("default")
         self.key = key
@@ -44,7 +43,6 @@ class CacheRedis(object):
 
 
 class CacheList(CacheRedis):
-
     def __init__(self, key, max_size=1024, timeout=None):
         super().__init__(key)
         self.max_size = max_size
@@ -81,7 +79,6 @@ class CacheList(CacheRedis):
 
 
 class CacheSet(CacheRedis):
-
     def __init__(self, key):
         super().__init__(key)
 
@@ -108,7 +105,6 @@ class CacheSet(CacheRedis):
 
 
 class CacheSortedSet(CacheRedis):
-
     def __init__(self, key):
         super().__init__(key)
 
@@ -154,7 +150,6 @@ class CacheSortedSet(CacheRedis):
 
 
 class CacheHash(CacheRedis):
-
     def __init__(self, key):
         super().__init__(key)
 

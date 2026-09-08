@@ -25,18 +25,22 @@ class UserConfirmStateCache:
 
     def __init__(self, user):
         self.user = user
-        self.cache_key = f'{_cache_prefix("mfa_confirm_state_key", "mfa_confirm_state")}_{user.pk}'
+        self.cache_key = f"{_cache_prefix('mfa_confirm_state_key', 'mfa_confirm_state')}_{user.pk}"
 
     def get(self):
         return cache.get(self.cache_key)
 
     def set(self, confirm_type, method):
-        cache.set(self.cache_key, {
-            'level': CONFIRM_TYPE_LEVEL[confirm_type],
-            'type': confirm_type,
-            'method': method,
-            'time': time.time(),
-        }, int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[confirm_type])))
+        cache.set(
+            self.cache_key,
+            {
+                "level": CONFIRM_TYPE_LEVEL[confirm_type],
+                "type": confirm_type,
+                "method": method,
+                "time": time.time(),
+            },
+            int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[confirm_type])),
+        )
 
     def clear(self):
         cache.delete(self.cache_key)
@@ -46,10 +50,10 @@ class UserConfirmStateCache:
         state = self.get()
         if not state:
             return False
-        if state.get('level', 0) < CONFIRM_TYPE_LEVEL[confirm_type]:
+        if state.get("level", 0) < CONFIRM_TYPE_LEVEL[confirm_type]:
             return False
-        ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state['type']]))
-        return time.time() - state.get('time', 0) <= ttl
+        ttl = int(getattr(settings, CONFIRM_TYPE_TTL_SETTING[state["type"]]))
+        return time.time() - state.get("time", 0) <= ttl
 
 
 class OtpBindCache:
@@ -59,7 +63,7 @@ class OtpBindCache:
 
     def __init__(self, user):
         self.user = user
-        self.cache_key = f'{_cache_prefix("mfa_otp_bind_key", "mfa_otp_bind")}_{user.pk}'
+        self.cache_key = f"{_cache_prefix('mfa_otp_bind_key', 'mfa_otp_bind')}_{user.pk}"
 
     def get_secret(self):
         return cache.get(self.cache_key)
@@ -78,7 +82,7 @@ class UsedOtpCodeCache:
 
     def __init__(self, user, code):
         code_md5 = hashlib.md5(str(code).encode()).hexdigest()
-        self.cache_key = f'{_cache_prefix("mfa_otp_used_key", "mfa_otp_used")}_{user.pk}_{code_md5}'
+        self.cache_key = f"{_cache_prefix('mfa_otp_used_key', 'mfa_otp_used')}_{user.pk}_{code_md5}"
 
     def exists(self):
         return bool(cache.get(self.cache_key))

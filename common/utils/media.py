@@ -20,9 +20,9 @@ from common.fields.image import ProcessedImageField, get_thumbnail
 
 
 def get_media_path(path):
-    path_list = path.split('/')
+    path_list = path.split("/")
     if len(path_list) == 5:
-        pic_names = path_list[4].split('_')
+        pic_names = path_list[4].split("_")
         if len(pic_names) != 2:
             return
         model = apps.get_model(path_list[0], path_list[1])
@@ -40,7 +40,7 @@ def get_media_path(path):
             if obj:
                 pic = getattr(obj, field.name)
                 if os.path.isfile(pic.path):
-                    index = pic_names[1].split('.')
+                    index = pic_names[1].split(".")
                     if pic and len(index) > 0:
                         return get_thumbnail(pic, int(index[0]))
 
@@ -60,9 +60,7 @@ def media_serve(request, path, document_root=None, show_indexes=False):
             raise Http404(_("“%(path)s” does not exist") % {"path": fullpath})
     # Respect the If-Modified-Since header.
     statobj = fullpath.stat()
-    if not was_modified_since(
-            request.META.get("HTTP_IF_MODIFIED_SINCE"), statobj.st_mtime
-    ):
+    if not was_modified_since(request.META.get("HTTP_IF_MODIFIED_SINCE"), statobj.st_mtime):
         return HttpResponseNotModified()
     content_type, encoding = mimetypes.guess_type(str(fullpath))
     content_type = content_type or "application/octet-stream"

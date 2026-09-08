@@ -20,13 +20,25 @@ class BookSerializer(BaseModelSerializer):
 
         ############### 1.使用简易 tabs 表单 #############
         tabs = [
-            TabsColumn('基本信息',
-                       ['name', 'isbn', 'category', 'is_active', 'author', 'publisher', 'publication_date', 'price',
-                        'created_time', 'updated_time']),
-            TabsColumn('管理员', ['admin', 'admin2', 'managers', 'managers2']),
-            TabsColumn('文件信息', ['avatar', 'cover', 'book_file', 'file', 'files'])
+            TabsColumn(
+                "基本信息",
+                [
+                    "name",
+                    "isbn",
+                    "category",
+                    "is_active",
+                    "author",
+                    "publisher",
+                    "publication_date",
+                    "price",
+                    "created_time",
+                    "updated_time",
+                ],
+            ),
+            TabsColumn("管理员", ["admin", "admin2", "managers", "managers2"]),
+            TabsColumn("文件信息", ["avatar", "cover", "book_file", "file", "files"]),
         ]
-        fields = ['pk', 'block']
+        fields = ["pk", "block"]
         ########### 单表单结束 ################
 
         ############### 2.默认的单表单 ##############
@@ -40,8 +52,19 @@ class BookSerializer(BaseModelSerializer):
         ## 仅用于前端table表格字段有顺序的展示，如果没定义，默认使用 fields 定义的变量
         ## 为啥要有这个变量？ 一般情况下，前端table表格宽度不够，不需要显示太多字段，就可以通过这个变量来控制显示的字段
         table_fields = [
-            'pk', 'cover', 'category', 'name', 'is_active', 'isbn', 'author', 'publisher', 'publication_date', 'price',
-            'book_file', 'file', 'files'
+            "pk",
+            "cover",
+            "category",
+            "name",
+            "is_active",
+            "isbn",
+            "author",
+            "publisher",
+            "publication_date",
+            "price",
+            "book_file",
+            "file",
+            "files",
         ]
 
         # fields_unexport = ['pk']  # 导入导出文件时，忽略该字段
@@ -52,32 +75,45 @@ class BookSerializer(BaseModelSerializer):
         # # extra_kwargs包含了admin 单对多的两种方式，managers 多对多的两种方式，区别在于自定义的input_type，
         # # 观察前端页面变化和 search-columns 请求的数据
         extra_kwargs = {
-            'pk': {'read_only': True},  # 表示pk字段只读
-            'admin': {
-                'attrs': ['pk', 'username'], 'required': True, 'format': "{username}({pk})",
-                'input_type': 'api-search-user'
+            "pk": {"read_only": True},  # 表示pk字段只读
+            "admin": {
+                "attrs": ["pk", "username"],
+                "required": True,
+                "format": "{username}({pk})",
+                "input_type": "api-search-user",
             },
-            'admin2': {
-                'attrs': ['pk', 'username'], 'required': True, 'format': "{username}({pk})",
+            "admin2": {
+                "attrs": ["pk", "username"],
+                "required": True,
+                "format": "{username}({pk})",
             },
-            'managers': {
-                'attrs': ['pk', 'username'], 'required': True, 'format': "{username}({pk})",
-                'input_type': 'api-search-user'
+            "managers": {
+                "attrs": ["pk", "username"],
+                "required": True,
+                "format": "{username}({pk})",
+                "input_type": "api-search-user",
             },
-            'managers2': {
-                'attrs': ['pk', 'username'], 'required': False, 'format': "{username}({pk})",
+            "managers2": {
+                "attrs": ["pk", "username"],
+                "required": False,
+                "format": "{username}({pk})",
             },
             # 多文件关联默认的 input_type为 m2m_related_field_file
-            'files': {
-                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': False, 'format': "{filename}({pk})",
-                'ignore_field_permission': True
+            "files": {
+                "attrs": ["pk", "filepath", "filesize", "filename"],
+                "required": False,
+                "format": "{filename}({pk})",
+                "ignore_field_permission": True,
             },
             # 单文件关联默认的 input_type为 object_related_field_file  ，为了让前端支持图片上传后回显，需要添加 'input_type_suffix': 'image'
             # ignore_field_permission 忽略上传文件的字段控制权限
-            'file': {
-                'attrs': ['pk', 'filepath', 'filesize', 'filename'], 'required': True, 'format': "{filename}({pk})",
-                'ignore_field_permission': True, 'input_type_suffix': 'image'
-            }
+            "file": {
+                "attrs": ["pk", "filepath", "filesize", "filename"],
+                "required": True,
+                "format": "{filename}({pk})",
+                "ignore_field_permission": True,
+                "input_type_suffix": "image",
+            },
         }
 
     # # 该方法定义了管理字段，和 extra_kwargs 定义的 admin 含义一样，该字段会被序列化为
@@ -105,8 +141,9 @@ class BookSerializer(BaseModelSerializer):
     # input_type 仅是前端组件渲染识别用， 可以自定义input_type ,但是前端组件得对定义的input_type 进行渲染
     # 前端自定义组件库 src/components/RePlusPage/src/components
     # 渲染组件定义 src/components/RePlusPage/src/utils/columns.tsx
-    block = input_wrapper(serializers.SerializerMethodField)(read_only=True, input_type='boolean',
-                                                             label="自定义input_type")
+    block = input_wrapper(serializers.SerializerMethodField)(
+        read_only=True, input_type="boolean", label="自定义input_type"
+    )
 
     def get_block(self, obj) -> bool:
         return obj.is_active

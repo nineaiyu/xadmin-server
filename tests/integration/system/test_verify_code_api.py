@@ -4,6 +4,7 @@
 验证码发送走 username/basic 通道（dryrun），响应直接回显 verify_code，
 避免依赖邮件/短信网关（默认 EMAIL_ENABLED/SMS_ENABLED 均为 False）。
 """
+
 import pytest
 from django.core.cache import cache
 

@@ -28,7 +28,7 @@ def parse_online_user_pk(group):
     """从个人消息推送组名中解析用户 pk，非法组名返回 None（不再混入 pk=0）。"""
     prefix = f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_"
     if group and group.startswith(prefix):
-        tail = group[len(prefix):]
+        tail = group[len(prefix) :]
         if tail.isdigit():
             return int(tail)
     return None
@@ -71,11 +71,11 @@ def get_user_layer_group_name(user_pk):
     return f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_{user_pk}"
 
 
-async def async_push_message(user_pk: str | int, message: Dict, message_type='push_message'):
-    await channel_layer.group_send(get_user_layer_group_name(user_pk), {'type': message_type, 'data': message})
+async def async_push_message(user_pk: str | int, message: Dict, message_type="push_message"):
+    await channel_layer.group_send(get_user_layer_group_name(user_pk), {"type": message_type, "data": message})
 
 
-async def async_push_messages(user_pks, message: Dict, message_type='push_message'):
+async def async_push_messages(user_pks, message: Dict, message_type="push_message"):
     """批量推送。整批收进一个 async 函数，只做一次同步桥接；
     message 仅序列化一次，不再对每个用户做 json.loads(json.dumps(...)) 深拷贝。"""
     for user_pk in dict.fromkeys(user_pks):
@@ -83,7 +83,7 @@ async def async_push_messages(user_pks, message: Dict, message_type='push_messag
 
 
 @async_to_sync
-async def push_messages(user_pks, message: Dict, message_type='push_message'):
+async def push_messages(user_pks, message: Dict, message_type="push_message"):
     await async_push_messages(user_pks, message, message_type)
 
 
@@ -110,8 +110,8 @@ async def get_online_users():
     return [pk for pk in (parse_online_user_pk(g) for g in await channel_layer.get_groups()) if pk is not None]
 
 
-async def async_push_layer_message(channel_name: str, message: Dict, message_type='push_message'):
-    await channel_layer.send(channel_name, {'type': message_type, "data": message})
+async def async_push_layer_message(channel_name: str, message: Dict, message_type="push_message"):
+    await channel_layer.send(channel_name, {"type": message_type, "data": message})
 
 
 @async_to_sync
@@ -126,7 +126,7 @@ async def send_logout_msg(user_pk: str | int, channel_names: List[str] = None):
 
 
 @async_to_sync
-async def push_message(user_pk: str | int, message: Dict, message_type='push_message'):
+async def push_message(user_pk: str | int, message: Dict, message_type="push_message"):
     return await async_push_message(user_pk, message, message_type)
 
 
@@ -144,14 +144,15 @@ def set_mid_result_to_cache(mid, content, timeout=10):
 
 
 @async_to_sync
-async def push_message_and_wait_result(channel_name: str, message: Dict, message_type='push_message', mid=None,
-                                       timeout=5):
+async def push_message_and_wait_result(
+    channel_name: str, message: Dict, message_type="push_message", mid=None, timeout=5
+):
     """
     客户端返回结果必须和发送的mid一致，否则拿不到数据
     """
     if mid is None:
         mid = uuid.uuid4().hex
-    await channel_layer.send(channel_name, {'type': message_type, "data": message, 'mid': mid})
+    await channel_layer.send(channel_name, {"type": message_type, "data": message, "mid": mid})
     try:
         return await asyncio.wait_for(wait_for_mid_result(mid), timeout=timeout)
     except asyncio.TimeoutError:

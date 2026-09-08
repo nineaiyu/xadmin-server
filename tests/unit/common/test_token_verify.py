@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """common.utils.token 缓存 token 单元测试（基于 FakeRedis 默认缓存）。"""
+
 import pytest
 
 from common.utils.token import make_token_cache, verify_token_cache

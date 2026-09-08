@@ -7,6 +7,7 @@
 3. 列表接口逐行 COUNT 归零，且优化前后响应数据一致；
 4. serializer 在有/无 annotate 两条路径下结果一致。
 """
+
 import pytest
 from django.db import connection
 from django.db.models import Count
@@ -40,10 +41,9 @@ def _per_row_count_queries(ctx):
     以及 annotate 主查询（LEFT JOIN 了 system_userinfo，但同时涉及 system_deptinfo）。
     """
     return [
-        q for q in ctx.captured_queries
-        if "COUNT(*)" in q["sql"].upper()
-           and "system_userinfo" in q["sql"]
-           and "system_deptinfo" not in q["sql"]
+        q
+        for q in ctx.captured_queries
+        if "COUNT(*)" in q["sql"].upper() and "system_userinfo" in q["sql"] and "system_deptinfo" not in q["sql"]
     ]
 
 

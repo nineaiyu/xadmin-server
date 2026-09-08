@@ -46,8 +46,8 @@ class ListAction(mixins.ListModelMixin):
         只记录日志并降级省略，绝不影响列表本身。
         """
         for action_name, key in (
-                ("search_columns", "search_columns"),
-                ("search_fields", "search_fields"),
+            ("search_columns", "search_columns"),
+            ("search_fields", "search_fields"),
         ):
             action = getattr(self, action_name, None)
             if action is None:
@@ -71,11 +71,11 @@ class DestroyAction(mixins.DestroyModelMixin):
 
 class UpdateAction(mixins.UpdateModelMixin):
     # diff 中忽略的审计/时间字段
-    AUDIT_DIFF_IGNORED_FIELDS = {'created_time', 'updated_time', 'date_changed', 'pk', 'id'}
+    AUDIT_DIFF_IGNORED_FIELDS = {"created_time", "updated_time", "date_changed", "pk", "id"}
 
     def update(self, request, *args, **kwargs):
         """整体更新{cls}信息"""
-        old_values = self._audit_diff_old_values(kwargs.get('pk'))
+        old_values = self._audit_diff_old_values(kwargs.get("pk"))
         data = super().update(request, *args, **kwargs).data
         if old_values is not None:
             self._stash_audit_changes(old_values)
@@ -87,15 +87,15 @@ class UpdateAction(mixins.UpdateModelMixin):
         白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
         （更新前快照 + 更新后回读），按需开启。
         """
-        whitelist = getattr(settings, 'AUDIT_DIFF_MODELS', None) or []
-        model = getattr(getattr(self, 'queryset', None), 'model', None)
+        whitelist = getattr(settings, "AUDIT_DIFF_MODELS", None) or []
+        model = getattr(getattr(self, "queryset", None), "model", None)
         if not whitelist or not pk or model is None or model._meta.label not in whitelist:
             return None
         return self.get_queryset().filter(pk=pk).values().first()
 
     def _stash_audit_changes(self, old_values):
         """对比更新前后字段值，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。"""
-        pk = old_values.get('pk') or old_values.get('id')
+        pk = old_values.get("pk") or old_values.get("id")
         new_values = self.get_queryset().filter(pk=pk).values().first()
         if not new_values:
             return
@@ -106,8 +106,8 @@ class UpdateAction(mixins.UpdateModelMixin):
             new = new_values[field]
             if old != new:
                 changes[field] = {
-                    'old': str(old) if old is not None else None,
-                    'new': str(new) if new is not None else None,
+                    "old": str(old) if old is not None else None,
+                    "new": str(new) if new is not None else None,
                 }
         if changes:
             current_request = get_current_request()
@@ -115,8 +115,8 @@ class UpdateAction(mixins.UpdateModelMixin):
                 # threadlocal 中可能是 DRF Request 包装（IsAuthenticated 会覆盖写入），
                 # 统一落到原始 Django request 上，ApiLoggingMiddleware 才能读到；
                 # DRF Request.__getattr__ 代理 _request，读侧不受影响
-                target = getattr(current_request, '_request', current_request)
-                setattr(target, 'operation_log_changes', changes)
+                target = getattr(current_request, "_request", current_request)
+                setattr(target, "operation_log_changes", changes)
 
     def partial_update(self, request, *args, **kwargs):
         """部分更新{cls}信息"""

@@ -20,21 +20,26 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         ROLE = 4, _("Role notification")
 
     class LevelChoices(models.TextChoices):
-        DEFAULT = 'info', _("Ordinary notices")
-        PRIMARY = 'primary', _("General notices")
-        SUCCESS = 'success', _("Success notices")
-        DANGER = 'danger', _("Important notices")
+        DEFAULT = "info", _("Ordinary notices")
+        PRIMARY = "primary", _("General notices")
+        SUCCESS = "success", _("Success notices")
+        DANGER = "danger", _("Important notices")
 
-    notice_user = models.ManyToManyField("system.UserInfo", through="MessageUserRead", blank=True,
-                                         through_fields=('notice', 'owner'), verbose_name=_("The notified user"))
-    notice_dept = models.ManyToManyField("system.DeptInfo", blank=True,
-                                         verbose_name=_("The notified department"))
-    notice_role = models.ManyToManyField("system.UserRole", blank=True,
-                                         verbose_name=_("The notified role"))
-    level = models.CharField(verbose_name=_("Notice level"), choices=LevelChoices, default=LevelChoices.DEFAULT,
-                             max_length=20)
-    notice_type = models.SmallIntegerField(verbose_name=_("Notice type"), choices=NoticeChoices,
-                                           default=NoticeChoices.USER)
+    notice_user = models.ManyToManyField(
+        "system.UserInfo",
+        through="MessageUserRead",
+        blank=True,
+        through_fields=("notice", "owner"),
+        verbose_name=_("The notified user"),
+    )
+    notice_dept = models.ManyToManyField("system.DeptInfo", blank=True, verbose_name=_("The notified department"))
+    notice_role = models.ManyToManyField("system.UserRole", blank=True, verbose_name=_("The notified role"))
+    level = models.CharField(
+        verbose_name=_("Notice level"), choices=LevelChoices, default=LevelChoices.DEFAULT, max_length=20
+    )
+    notice_type = models.SmallIntegerField(
+        verbose_name=_("Notice type"), choices=NoticeChoices, default=NoticeChoices.USER
+    )
     title = models.CharField(verbose_name=_("Notice title"), max_length=255)
     message = models.TextField(verbose_name=_("Notice message"), blank=True, null=True)
     extra_json = models.JSONField(verbose_name=_("Additional json data"), blank=True, null=True)
@@ -52,10 +57,10 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     class Meta:
         verbose_name = _("Message content")
         verbose_name_plural = verbose_name
-        ordering = ('-created_time',)
+        ordering = ("-created_time",)
         indexes = [
             # 消息中心列表默认按 created_time 排序，且 BaseFilterSet 提供时间范围过滤
-            models.Index(fields=['created_time'], name='idx_msg_created'),
+            models.Index(fields=["created_time"], name="idx_msg_created"),
         ]
 
     def __str__(self):
@@ -69,8 +74,8 @@ class MessageUserRead(DbAuditModel):
     unread = models.BooleanField(verbose_name=_("Unread"), default=True, blank=False)
 
     class Meta:
-        ordering = ('-created_time',)
+        ordering = ("-created_time",)
         verbose_name = _("User read message")
         verbose_name_plural = verbose_name
-        indexes = [models.Index(fields=['owner', 'unread'])]
-        unique_together = ('owner', 'notice')
+        indexes = [models.Index(fields=["owner", "unread"])]
+        unique_together = ("owner", "notice")

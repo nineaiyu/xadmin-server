@@ -6,24 +6,24 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('notifications', '0002_initial'),
-        ('system', '0003_userloginlog_channel_name_and_more'),
+        ("notifications", "0002_initial"),
+        ("system", "0003_userloginlog_channel_name_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='messagecontent',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, db_index=True, null=True, verbose_name='Deleted at'),
+            model_name="messagecontent",
+            name="deleted_at",
+            field=models.DateTimeField(blank=True, db_index=True, null=True, verbose_name="Deleted at"),
         ),
         migrations.AlterField(
-            model_name='messageuserread',
-            name='unread',
-            field=models.BooleanField(default=True, verbose_name='Unread'),
+            model_name="messageuserread",
+            name="unread",
+            field=models.BooleanField(default=True, verbose_name="Unread"),
         ),
         migrations.AddIndex(
-            model_name='messagecontent',
-            index=models.Index(fields=['created_time'], name='idx_msg_created'),
+            model_name="messagecontent",
+            index=models.Index(fields=["created_time"], name="idx_msg_created"),
         ),
     ]

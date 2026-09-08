@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """system 菜单接口集成测试。"""
+
 import pytest
 
 from system.models import Menu
@@ -27,9 +28,7 @@ class TestMenuCrudSmoke:
 
     def test_create_child_menu_with_parent(self, auth_client):
         parent_pk = _create_menu(auth_client, name="parent-menu")
-        child_pk = _create_menu(
-            auth_client, name="child-menu", title="子菜单", parent=parent_pk, path="/child"
-        )
+        child_pk = _create_menu(auth_client, name="child-menu", title="子菜单", parent=parent_pk, path="/child")
         resp = auth_client.get(f"{MENU_URL}/{child_pk}")
         assert str(resp.data["data"]["parent"]["pk"]) == parent_pk
 

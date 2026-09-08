@@ -13,28 +13,29 @@ from mfa.const import ConfirmType
 
 class OtpBackend(BaseMFA):
     """OTP(TOTP) 动态口令验证"""
-    name = 'otp'
-    display_name = _('OTP verification code')
-    placeholder = _('Please enter the 6-digit dynamic code')
+
+    name = "otp"
+    display_name = _("OTP verification code")
+    placeholder = _("Please enter the 6-digit dynamic code")
     confirm_level = ConfirmType.MFA
 
     @classmethod
     def global_enabled(cls) -> bool:
-        return 'otp' in settings.SECURITY_MFA_CONFIRM_BACKENDS
+        return "otp" in settings.SECURITY_MFA_CONFIRM_BACKENDS
 
     def is_active(self) -> bool:
         return bool(self.user.otp_secret_key)
 
     def check_code(self, code) -> tuple:
         if not self.user.otp_secret_key:
-            return False, _('OTP is not bound')
+            return False, _("OTP is not bound")
         used = UsedOtpCodeCache(self.user, code)
         if used.exists():
-            return False, _('The verification code has already been used')
+            return False, _("The verification code has already been used")
         if not self.verify_code(self.user.otp_secret_key, code):
-            return False, _('The OTP verification code is incorrect')
+            return False, _("The OTP verification code is incorrect")
         used.mark()
-        return True, ''
+        return True, ""
 
     @staticmethod
     def verify_code(secret, code) -> bool:
@@ -48,6 +49,4 @@ class OtpBackend(BaseMFA):
     @staticmethod
     def get_provisioning_uri(user, secret) -> str:
         """生成 otpauth 绑定 URI，前端据此渲染二维码"""
-        return pyotp.TOTP(secret).provisioning_uri(
-            name=user.username, issuer_name=settings.SECURITY_MFA_OTP_ISSUER
-        )
+        return pyotp.TOTP(secret).provisioning_uri(name=user.username, issuer_name=settings.SECURITY_MFA_OTP_ISSUER)

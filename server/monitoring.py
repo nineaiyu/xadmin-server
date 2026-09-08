@@ -7,11 +7,12 @@
     SENTRY_ENVIRONMENT: "production"
     SENTRY_TRACES_SAMPLE_RATE: 0.0
 """
+
 import logging
 
 from .const import CONFIG
 
-logger = logging.getLogger('xadmin.monitoring')
+logger = logging.getLogger("xadmin.monitoring")
 
 
 def init_monitoring():
@@ -26,11 +27,13 @@ def init_monitoring():
     integrations = []
     try:
         from sentry_sdk.integrations.django import DjangoIntegration
+
         integrations.append(DjangoIntegration())
     except ImportError:
         pass
     try:
         from sentry_sdk.integrations.celery import CeleryIntegration
+
         integrations.append(CeleryIntegration())
     except ImportError:
         pass

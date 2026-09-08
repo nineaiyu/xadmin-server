@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """定时任务管理接口集成测试（django_celery_beat）。"""
+
 import pytest
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
@@ -12,7 +13,8 @@ CRONTAB_URL = "/api/system/tasks/crontab"
 @pytest.fixture
 def crontab_pk(auth_client):
     resp = auth_client.post(
-        CRONTAB_URL, {"minute": "0", "hour": "3", "day_of_week": "*", "day_of_month": "*", "month_of_year": "*"},
+        CRONTAB_URL,
+        {"minute": "0", "hour": "3", "day_of_week": "*", "day_of_month": "*", "month_of_year": "*"},
         format="json",
     )
     assert resp.status_code == 200, resp.data

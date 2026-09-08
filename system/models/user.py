@@ -45,26 +45,37 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser, 
         DISABLED = 0, _("Disabled")
         ENABLED = 1, _("Enabled")
 
-    avatar = ProcessedImageField(verbose_name=_("Avatar"), null=True, blank=True,
-                                 upload_to=upload_directory_path,
-                                 processors=[ResizeToFill(512, 512)],  # 默认存储像素大小
-                                 scales=[1, 2, 3, 4],  # 缩略图可缩小倍数，
-                                 format='png')
+    avatar = ProcessedImageField(
+        verbose_name=_("Avatar"),
+        null=True,
+        blank=True,
+        upload_to=upload_directory_path,
+        processors=[ResizeToFill(512, 512)],  # 默认存储像素大小
+        scales=[1, 2, 3, 4],  # 缩略图可缩小倍数，
+        format="png",
+    )
 
     nickname = models.CharField(verbose_name=_("Nickname"), max_length=150, blank=True)
     gender = models.IntegerField(choices=GenderChoices, default=GenderChoices.UNKNOWN, verbose_name=_("Gender"))
-    phone = models.CharField(verbose_name=_("Phone"), max_length=16, default='', blank=True, db_index=True)
-    email = models.EmailField(verbose_name=_("Email"), default='', blank=True, db_index=True)
+    phone = models.CharField(verbose_name=_("Phone"), max_length=16, default="", blank=True, db_index=True)
+    email = models.EmailField(verbose_name=_("Email"), default="", blank=True, db_index=True)
 
     # MFA 二次验证（登录 MFA 开关 + OTP 密钥，密钥泄露即可重置密码，无需加密存储）
-    mfa_level = models.IntegerField(verbose_name=_("MFA level"), choices=MFALevelChoices.choices,
-                                    default=MFALevelChoices.DISABLED)
-    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default='', blank=True)
+    mfa_level = models.IntegerField(
+        verbose_name=_("MFA level"), choices=MFALevelChoices.choices, default=MFALevelChoices.DISABLED
+    )
+    otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
 
     roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
-    dept = models.ForeignKey(to="system.DeptInfo", verbose_name=_("Department"), on_delete=models.PROTECT, blank=True,
-                             null=True, related_query_name="dept_query")
+    dept = models.ForeignKey(
+        to="system.DeptInfo",
+        verbose_name=_("Department"),
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+        related_query_name="dept_query",
+    )
 
     class Meta:
         verbose_name = _("Userinfo")

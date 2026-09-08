@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MFA / 敏感操作二次验证接口集成测试。"""
+
 import pyotp
 import pytest
 from django.core import mail
@@ -95,16 +96,12 @@ class TestUserConfirm:
         assert resp.data["data"]["confirmed"] is True
 
     def test_confirm_wrong_password(self, authed_client):
-        resp = authed_client.post(
-            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Wrong@123"}
-        )
+        resp = authed_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Wrong@123"})
         assert resp.data["code"] == 1002
 
     def test_password_method_cannot_satisfy_mfa_level(self, authed_client):
         """密码确认级别低于 MFA，不能用于 MFA 级别的敏感操作。"""
-        resp = authed_client.post(
-            CONFIRM_URL, {"confirm_type": "mfa", "method": "password", "code": "Test@123456"}
-        )
+        resp = authed_client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "password", "code": "Test@123456"})
         assert resp.data["code"] == 1002
 
     def test_confirm_with_otp(self, otp_user):
@@ -233,9 +230,7 @@ class TestBuiltinSensitiveOperations:
 
     def test_reset_password_after_confirm_clears_state(self, api_client, superuser):
         api_client.force_authenticate(user=superuser)
-        api_client.post(
-            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"}
-        )
+        api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
 
         def enc(v):
             return AESCipherV2(superuser.username).encrypt(v.encode()).decode()
@@ -260,9 +255,7 @@ class TestBuiltinSensitiveOperations:
 
     def test_destroy_user_after_confirm(self, api_client, superuser, normal_user):
         api_client.force_authenticate(user=superuser)
-        api_client.post(
-            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"}
-        )
+        api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
         resp = api_client.delete(f"/api/system/user/{normal_user.pk}")
         assert resp.status_code == 200
 
@@ -273,9 +266,7 @@ class TestBuiltinSensitiveOperations:
         resp = api_client.post(f"/api/system/user/{user.pk}/reset-mfa")
         assert resp.status_code == 412
 
-        resp = api_client.post(
-            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"}
-        )
+        resp = api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
         assert resp.data["code"] == 1000, resp.data
         resp = api_client.post(f"/api/system/user/{user.pk}/reset-mfa")
         assert resp.data["code"] == 1000, resp.data
@@ -288,16 +279,12 @@ class TestBuiltinSensitiveOperations:
         user, _, _ = otp_user
         settings.SECURITY_MFA_CONFIRM_BACKENDS = ["password"]
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         assert resp.data["data"]["access"]
         assert "mfa_required" not in resp.data["data"]
 
     def test_logout_clears_confirm_state(self, authed_client):
-        authed_client.post(
-            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"}
-        )
+        authed_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
         resp = authed_client.get(CONFIRM_URL, {"confirm_type": "password"})
         assert resp.data["data"]["confirmed"] is True
 
@@ -337,9 +324,7 @@ class TestChallengeCode:
 
 class TestLoginMFA:
     def test_login_without_mfa_unaffected(self, api_client, normal_user, login_free):
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": "zhangsan", "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": "zhangsan", "password": "Test@123456"}, format="json")
         assert resp.data["code"] == 1000
         assert resp.data["data"]["access"]
         assert "mfa_required" not in resp.data["data"]
@@ -348,9 +333,7 @@ class TestLoginMFA:
         """绑定 OTP 后登录返回 mfa_required + mfa_token，不再直接签发 JWT。"""
         user, _, secret = otp_user
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         assert resp.data["code"] == 1000
         data = resp.data["data"]
         assert data["mfa_required"] is True
@@ -370,9 +353,7 @@ class TestLoginMFA:
     def test_login_mfa_verify_wrong_code(self, otp_user, api_client, login_free):
         user, _, _ = otp_user
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         mfa_token = resp.data["data"]["mfa_token"]
         resp = api_client.post(
             LOGIN_MFA_VERIFY_URL, {"mfa_token": mfa_token, "method": "otp", "code": "000000"}, format="json"
@@ -382,9 +363,7 @@ class TestLoginMFA:
     def test_login_mfa_verify_rejects_password_method(self, otp_user, api_client, login_free):
         user, _, _ = otp_user
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         mfa_token = resp.data["data"]["mfa_token"]
         resp = api_client.post(
             LOGIN_MFA_VERIFY_URL,
@@ -397,9 +376,7 @@ class TestLoginMFA:
         """mfa_token 一次性使用，验证成功后即销毁。"""
         user, _, secret = otp_user
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         mfa_token = resp.data["data"]["mfa_token"]
         payload = {"mfa_token": mfa_token, "method": "otp", "code": pyotp.TOTP(secret).now()}
         resp = api_client.post(LOGIN_MFA_VERIFY_URL, payload, format="json")
@@ -408,16 +385,12 @@ class TestLoginMFA:
         resp = api_client.post(LOGIN_MFA_VERIFY_URL, payload, format="json")
         assert resp.status_code == 400
 
-    def test_login_mfa_personal_enabled_ignores_global_switch(
-            self, otp_user, api_client, settings, login_free
-    ):
+    def test_login_mfa_personal_enabled_ignores_global_switch(self, otp_user, api_client, settings, login_free):
         """个人开启 MFA 的账号登录必须验证，全局「登录 MFA 强制」关闭也不放行。"""
         settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED = False
         user, _, secret = otp_user
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         data = resp.data["data"]
         assert data["mfa_required"] is True
         resp = api_client.post(
@@ -438,9 +411,7 @@ class TestLoginMFA:
         assert user.mfa_enabled is False
 
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         data = resp.data["data"]
         assert data["mfa_required"] is True
         resp = api_client.post(
@@ -460,8 +431,6 @@ class TestLoginMFA:
         assert resp.data["code"] == 1000, resp.data
 
         api_client.force_authenticate(user=None)
-        resp = api_client.post(
-            BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json"
-        )
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         assert resp.data["data"]["access"]
         assert "mfa_required" not in resp.data["data"]

@@ -19,16 +19,16 @@ from common.utils import get_logger, random_string
 logger = get_logger(__name__)
 
 
-@shared_task(verbose_name=_('Send SMS code'))
+@shared_task(verbose_name=_("Send SMS code"))
 def send_sms_async(target, code):
     SMS().send_verify_code(target, code)
 
 
 class SendAndVerifyCodeUtil(object):
-    KEY_TMPL = 'auth_verify_code_{}'
-    RATE_KEY_TMPL = 'auth_verify_code_send_at_{}'
+    KEY_TMPL = "auth_verify_code_{}"
+    RATE_KEY_TMPL = "auth_verify_code_send_at_{}"
 
-    def __init__(self, target, code=None, key=None, backend='email', timeout=None, limit=None, dryrun=False, **kwargs):
+    def __init__(self, target, code=None, key=None, backend="email", timeout=None, limit=None, dryrun=False, **kwargs):
         self.code = code
         self.target = target
         self.backend = backend
@@ -79,8 +79,12 @@ class SendAndVerifyCodeUtil(object):
         return cache.get(self.key)
 
     def __generate(self):
-        code = random_string(settings.VERIFY_CODE_LENGTH, lower=settings.VERIFY_CODE_LOWER_CASE,
-                             upper=settings.VERIFY_CODE_UPPER_CASE, digit=settings.VERIFY_CODE_DIGIT_CASE)
+        code = random_string(
+            settings.VERIFY_CODE_LENGTH,
+            lower=settings.VERIFY_CODE_LOWER_CASE,
+            upper=settings.VERIFY_CODE_UPPER_CASE,
+            digit=settings.VERIFY_CODE_DIGIT_CASE,
+        )
         self.code = code
         return code
 
@@ -88,11 +92,10 @@ class SendAndVerifyCodeUtil(object):
         send_sms_async.apply_async(args=(self.target, self.code), priority=100)
 
     def __send_with_email(self):
-        subject = self.other_args.get('subject', '')
-        message = self.other_args.get('message', '')
+        subject = self.other_args.get("subject", "")
+        message = self.other_args.get("message", "")
         send_mail_async.apply_async(
-            args=(subject, message, [self.target]),
-            kwargs={'html_message': message}, priority=100
+            args=(subject, message, [self.target]), kwargs={"html_message": message}, priority=100
         )
 
     def __send(self):
@@ -100,14 +103,14 @@ class SendAndVerifyCodeUtil(object):
         发送信息的方法，如果有错误直接抛出 api 异常
         """
         if not self.dryrun:
-            if self.backend == 'sms':
+            if self.backend == "sms":
                 self.__send_with_sms()
             else:
                 self.__send_with_email()
 
         cache.set(self.key, self.code, self.timeout)
         cache.set(self.limit_key, self.code, self.limit)
-        logger.debug(f'Send verify code to {self.target}')
+        logger.debug(f"Send verify code to {self.target}")
 
 
 class TokenTempCache(object):
@@ -117,7 +120,7 @@ class TokenTempCache(object):
     def generate_cache_token(cls, timeout=3600, data=None):
         token = random_string(50)
         key = cls.CACHE_KEY_TOKEN_TEMP_PREFIX.format(token)
-        cache.set(key, {"time": time.time(), 'data': data}, timeout)
+        cache.set(key, {"time": time.time(), "data": data}, timeout)
         return token
 
     @classmethod
@@ -129,7 +132,7 @@ class TokenTempCache(object):
         if not value:
             return None
         try:
-            return value.get('data', None)
+            return value.get("data", None)
         except Exception as e:
             logger.error(e, exc_info=True)
             return None

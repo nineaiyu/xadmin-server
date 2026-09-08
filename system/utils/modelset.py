@@ -20,41 +20,42 @@ from system.utils.permission_preview import get_role_preview, get_user_preview, 
 
 
 class ChangeRolePermissionAction(object):
-
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                required=['roles', 'rules', 'mode_type'],
+                required=["roles", "rules", "mode_type"],
                 properties={
-                    'roles': build_array_type(build_basic_type(OpenApiTypes.STR)),
-                    'rules': build_array_type(build_basic_type(OpenApiTypes.STR)),
-                    'mode_type': build_basic_type(OpenApiTypes.NUMBER),
-                }
+                    "roles": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "rules": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "mode_type": build_basic_type(OpenApiTypes.NUMBER),
+                },
             )
         ),
-        responses=get_default_response_schema()
+        responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=True)
+    @action(methods=["post"], detail=True)
     def empower(self, request, *args, **kwargs):
         """给{cls}分配角色-数据权限"""
         instance = self.get_object()
-        roles = request.data.get('roles')
-        rules = request.data.get('rules')
-        mode_type = request.data.get('mode_type', instance.mode_type)
+        roles = request.data.get("roles")
+        rules = request.data.get("rules")
+        mode_type = request.data.get("mode_type", instance.mode_type)
         if isinstance(mode_type, dict):
-            mode_type = mode_type.get('value')
+            mode_type = mode_type.get("value")
         if roles is not None or rules is not None:
             if roles is not None:
                 instance.roles.set(
-                    get_filter_queryset(UserRole.objects.filter(pk__in=[role.get('pk') for role in roles]),
-                                        request.user).all())
+                    get_filter_queryset(
+                        UserRole.objects.filter(pk__in=[role.get("pk") for role in roles]), request.user
+                    ).all()
+                )
             if rules is not None:
                 instance.mode_type = mode_type
                 instance.modifier = request.user
-                instance.save(update_fields=['mode_type', 'modifier'])
+                instance.save(update_fields=["mode_type", "modifier"])
                 # instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
                 # 数据权限是部门进行并查询过滤，可以直接进行查询
-                instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get('pk') for rule in rules]).all())
+                instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get("pk") for rule in rules]).all())
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
@@ -67,7 +68,7 @@ class PermissionPreviewAction(object):
     """
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=['get'], detail=True, url_path='preview')
+    @action(methods=["get"], detail=True, url_path="preview")
     def preview(self, request, *args, **kwargs):
         """获取{cls}的权限预览"""
         return ApiResponse(data=get_user_preview(self.get_object()))
@@ -75,43 +76,43 @@ class PermissionPreviewAction(object):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                required=['model'],
+                required=["model"],
                 properties={
-                    'model': build_basic_type(OpenApiTypes.STR),
-                    'menu': build_basic_type(OpenApiTypes.STR),
-                }
+                    "model": build_basic_type(OpenApiTypes.STR),
+                    "menu": build_basic_type(OpenApiTypes.STR),
+                },
             )
         ),
-        responses=get_default_response_schema()
+        responses=get_default_response_schema(),
     )
-    @action(methods=['post'], detail=True, url_path='preview/trial')
+    @action(methods=["post"], detail=True, url_path="preview/trial")
     def preview_trial(self, request, *args, **kwargs):
         """试算{cls}的数据权限过滤（命中行数 + 最终 SQL）"""
-        return ApiResponse(data=run_data_trial(
-            self.get_object(), request.data.get('model'), request.data.get('menu') or None))
+        return ApiResponse(
+            data=run_data_trial(self.get_object(), request.data.get("model"), request.data.get("menu") or None)
+        )
 
 
 class RolePreviewAction(object):
     """角色授权预览（授权菜单树 / 字段权限 / 持有用户采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=['get'], detail=True, url_path='preview')
+    @action(methods=["get"], detail=True, url_path="preview")
     def preview(self, request, *args, **kwargs):
         """获取{cls}的授权预览"""
         return ApiResponse(data=get_role_preview(self.get_object(), request.user))
 
 
 class InvalidConfigCacheAction(object):
-
     @extend_schema(request=None, responses=get_default_response_schema())
-    @action(methods=['post'], detail=True)
+    @action(methods=["post"], detail=True)
     def invalid(self, request, *args, **kwargs):
         """使{cls}缓存失效"""
         instance = self.get_object()
 
         if isinstance(instance, SystemConfig):
             SysConfig.invalid_config_cache(key=instance.key)
-            owner = '*'
+            owner = "*"
         else:
             owner = instance.owner
         UserConfig(owner).invalid_config_cache(key=instance.key)
@@ -130,11 +131,11 @@ class AnnotateUserCountMixin(object):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        if getattr(self, 'action', None) in getattr(self, 'auto_prefetch_actions', ()):
+        if getattr(self, "action", None) in getattr(self, "auto_prefetch_actions", ()):
             # annotate 产生 GROUP BY 后 Django 不再套用 Meta.ordering，需显式补回，
             # 否则分页顺序不稳定；前端传 ordering 时 OrderingFilter 会在其后覆盖
             ordering = queryset.query.order_by or queryset.model._meta.ordering
-            queryset = queryset.annotate(user_count=Count('dept_query'))
+            queryset = queryset.annotate(user_count=Count("dept_query"))
             if ordering:
                 queryset = queryset.order_by(*ordering)
         return queryset

@@ -11,5 +11,5 @@ from settings.models import Setting
 class SettingSerializer(BaseModelSerializer):
     class Meta:
         model = Setting
-        fields = ['pk', 'name', 'value', 'category', 'is_active', 'encrypted', 'created_time']
-        read_only_fields = ['pk']
+        fields = ["pk", "name", "value", "category", "is_active", "encrypted", "created_time"]
+        read_only_fields = ["pk"]

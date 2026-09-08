@@ -9,6 +9,7 @@
 4. 批量推送：一次桥接完成全部在线用户推送，且只读一次用户配置；
 5. 组名解析防御：非个人组名（聊天室）不混入结果、不再抛 ValueError。
 """
+
 import time
 
 import pytest
@@ -129,10 +130,12 @@ class TestBatchPush:
 
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2, 3])
         pushes = []
-        monkeypatch.setattr("notifications.message.push_messages",
-                            lambda pks, message: pushes.append((list(pks), message)))
-        monkeypatch.setattr("notifications.message.batch_user_config",
-                            lambda pks, key, default=None: {pk: True for pk in pks})
+        monkeypatch.setattr(
+            "notifications.message.push_messages", lambda pks, message: pushes.append((list(pks), message))
+        )
+        monkeypatch.setattr(
+            "notifications.message.batch_user_config", lambda pks, key, default=None: {pk: True for pk in pks}
+        )
 
         SiteMessageUtil.push_notice_messages(msg, [1, 2, 5])
 
@@ -145,11 +148,11 @@ class TestBatchPush:
 
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2])
         pushes = []
-        monkeypatch.setattr("notifications.message.push_messages",
-                            lambda pks, message: pushes.append(list(pks)))
+        monkeypatch.setattr("notifications.message.push_messages", lambda pks, message: pushes.append(list(pks)))
         # notifications.message 通过 from-import 绑定名字，需 patch 其自身命名空间
-        monkeypatch.setattr("notifications.message.batch_user_config",
-                            lambda pks, key, default=None: {1: False, 2: True})
+        monkeypatch.setattr(
+            "notifications.message.batch_user_config", lambda pks, key, default=None: {1: False, 2: True}
+        )
 
         SiteMessageUtil.push_notice_messages(msg, [1, 2])
         assert pushes == [[2]]
@@ -158,8 +161,7 @@ class TestBatchPush:
         msg = self._make_message()
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [])
         pushes = []
-        monkeypatch.setattr("notifications.message.push_messages",
-                            lambda pks, message: pushes.append(list(pks)))
+        monkeypatch.setattr("notifications.message.push_messages", lambda pks, message: pushes.append(list(pks)))
 
         SiteMessageUtil.push_notice_messages(msg, [1, 2])
         assert pushes == []
@@ -169,10 +171,13 @@ class TestBatchPush:
         msg = self._make_message()
         monkeypatch.setattr("notifications.message.get_online_users", lambda: list(range(50)))
         calls = {"push_messages": 0}
-        monkeypatch.setattr("notifications.message.push_messages",
-                            lambda pks, message: calls.__setitem__("push_messages", calls["push_messages"] + 1))
-        monkeypatch.setattr("notifications.message.batch_user_config",
-                            lambda pks, key, default=None: {pk: True for pk in pks})
+        monkeypatch.setattr(
+            "notifications.message.push_messages",
+            lambda pks, message: calls.__setitem__("push_messages", calls["push_messages"] + 1),
+        )
+        monkeypatch.setattr(
+            "notifications.message.batch_user_config", lambda pks, key, default=None: {pk: True for pk in pks}
+        )
 
         SiteMessageUtil.push_notice_messages(msg, list(range(50)))
         assert calls == {"push_messages": 1}
@@ -192,9 +197,7 @@ class TestBatchPush:
         result = msg_utils  # noqa: F841  保持导入
         import common.core.config as config_mod
 
-        assert config_mod.batch_user_config([1, 2, 3], "PUSH_MESSAGE_NOTICE", True) == {
-            1: True, 2: True, 3: True
-        }
+        assert config_mod.batch_user_config([1, 2, 3], "PUSH_MESSAGE_NOTICE", True) == {1: True, 2: True, 3: True}
         assert calls["get_many"] == 1
 
     def test_batch_user_config_empty(self):
@@ -208,7 +211,8 @@ class TestBatchPush:
         from common.cache.storage import UserSystemConfigCache
 
         UserSystemConfigCache("user_9_PUSH_MESSAGE_NOTICE").set_storage_cache(
-            {"key": "PUSH_MESSAGE_NOTICE", "value": False, "access": True})
+            {"key": "PUSH_MESSAGE_NOTICE", "value": False, "access": True}
+        )
         try:
             assert config_mod.batch_user_config([9], "PUSH_MESSAGE_NOTICE", True) == {9: False}
         finally:

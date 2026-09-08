@@ -10,26 +10,26 @@ from rest_framework.exceptions import APIException
 
 
 class CodeExpired(APIException):
-    default_code = 'verify_code_expired'
-    default_detail = _('The verification code has expired. Please resend it')
+    default_code = "verify_code_expired"
+    default_detail = _("The verification code has expired. Please resend it")
 
 
 class CodeError(APIException):
-    default_code = 'verify_code_error'
-    default_detail = _('The verification code is incorrect')
+    default_code = "verify_code_error"
+    default_detail = _("The verification code is incorrect")
 
 
 class CodeSendTooFrequently(APIException):
-    default_code = 'code_send_too_frequently'
-    default_detail = _('Please wait {} seconds before sending')
+    default_code = "code_send_too_frequently"
+    default_detail = _("Please wait {} seconds before sending")
 
     def __init__(self, ttl):
         super().__init__(detail=self.default_detail.format(ttl))
 
 
 class CodeSendOverRate(APIException):
-    default_code = 'code_send_over_rate'
-    default_detail = _('Please wait {} seconds before sending')
+    default_code = "code_send_over_rate"
+    default_detail = _("Please wait {} seconds before sending")
 
     def __init__(self, ttl):
         super().__init__(detail=self.default_detail.format(ttl))

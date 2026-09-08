@@ -7,6 +7,7 @@
 3. 个人授权判断改用 exists()（无 COUNT 聚合查询）；
 4. 数据权限行为不因缓存而改变。
 """
+
 import pytest
 from django.core.cache import cache
 from django.db import connection
@@ -39,9 +40,7 @@ def upload_file(superuser):
 @pytest.fixture
 def books(superuser, normal_user, upload_file):
     def _make(name, isbn, owner):
-        return Book.objects.create(
-            name=name, isbn=isbn, author=isbn, admin=owner, admin2=owner, file=upload_file
-        )
+        return Book.objects.create(name=name, isbn=isbn, author=isbn, admin=owner, admin2=owner, file=upload_file)
 
     return [_make("A", "i1", superuser), _make("B", "i2", superuser), _make("C", "i3", normal_user)]
 
@@ -159,7 +158,8 @@ class TestPermissionBehaviorUnchanged:
         )
         for code in ("m0", "m1", "m2"):
             DeptInfo.objects.get(code=code).rules.add(
-                make_permission(f"perm-{code}", [make_rule("admin", "value.user.id")]))
+                make_permission(f"perm-{code}", [make_rule("admin", "value.user.id")])
+            )
         cache.delete_pattern("dept_recursion_*")
 
         result = list(get_filter_queryset(Book.objects.all(), normal_user))
@@ -170,8 +170,7 @@ class TestPermissionBehaviorUnchanged:
         leaf = _make_dept_chain(2, "n")
         normal_user.dept = leaf
         normal_user.save(update_fields=["dept"])
-        DeptInfo.objects.get(code="n0").rules.add(
-            make_permission("perm-root", [make_rule("admin", "value.user.id")]))
+        DeptInfo.objects.get(code="n0").rules.add(make_permission("perm-root", [make_rule("admin", "value.user.id")]))
         cache.delete_pattern("dept_recursion_*")
 
         assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0

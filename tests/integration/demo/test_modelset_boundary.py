@@ -210,7 +210,10 @@ class TestInlineMetadata:
             serializer_class = BookSerializer
 
         resp = _call(
-            BareListSet, {"get": "list"}, "get", f"{BOOK_LIST_URL}?with_meta=1",
+            BareListSet,
+            {"get": "list"},
+            "get",
+            f"{BOOK_LIST_URL}?with_meta=1",
             superuser,
         )
         assert resp.status_code == 200

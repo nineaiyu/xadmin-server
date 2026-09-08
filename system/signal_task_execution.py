@@ -12,6 +12,7 @@
 - task_revoked：REVOKED。
 handler 均用幂等 update/get_or_create，重复触发无副作用。
 """
+
 from celery.signals import (
     after_task_publish,
     task_postrun,
@@ -53,9 +54,7 @@ def task_execution_on_publish(sender=None, headers=None, body=None, **kwargs):
     }
     periodic_task_name = headers.get("periodic_task_name")
     if periodic_task_name:
-        defaults["periodic_task"] = PeriodicTask.objects.filter(
-            name=periodic_task_name
-        ).first()
+        defaults["periodic_task"] = PeriodicTask.objects.filter(name=periodic_task_name).first()
     try:
         TaskExecution.objects.get_or_create(pk=task_id, defaults=defaults)
     except Exception:  # 记账失败不能影响任务投递
@@ -66,9 +65,7 @@ def task_execution_on_publish(sender=None, headers=None, body=None, **kwargs):
 def task_execution_on_start(task_id=None, task=None, **kwargs):
     if not task_id:
         return
-    TaskExecution.objects.filter(pk=task_id).update(
-        status=TaskExecution.Status.RUNNING, date_start=timezone.now()
-    )
+    TaskExecution.objects.filter(pk=task_id).update(status=TaskExecution.Status.RUNNING, date_start=timezone.now())
 
 
 @task_postrun.connect
@@ -88,9 +85,7 @@ def task_execution_on_revoked(request=None, terminated=None, expired=None, **kwa
     task_id = getattr(request, "id", None)
     if not task_id:
         return
-    TaskExecution.objects.filter(pk=task_id).update(
-        status=TaskExecution.Status.REVOKED, date_finished=timezone.now()
-    )
+    TaskExecution.objects.filter(pk=task_id).update(status=TaskExecution.Status.REVOKED, date_finished=timezone.now())
 
 
 @worker_ready.connect
@@ -107,7 +102,6 @@ def clean_orphan_periodic_tasks(sender=None, **kwargs):
     orphans = PeriodicTask.objects.exclude(task__in=registered)
     count = orphans.count()
     if count:
-        logger.warning("Clean orphan periodic tasks: %s",
-                       list(orphans.values_list("name", flat=True)))
+        logger.warning("Clean orphan periodic tasks: %s", list(orphans.values_list("name", flat=True)))
         orphans.delete()
         PeriodicTasks.update_changed()
