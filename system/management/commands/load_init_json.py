@@ -13,6 +13,7 @@ from django.db.models.signals import ModelSignal
 
 from settings.models import Setting
 from system.models import *
+from system.utils.dict import invalid_dict_cache
 
 
 class Command(LoadCommand):
@@ -47,3 +48,6 @@ class Command(LoadCommand):
         options["exclude"] = []
         options["format"] = "json"
         super(Command, self).handle(*fixture_labels, **options)
+        # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
+        # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
+        invalid_dict_cache()

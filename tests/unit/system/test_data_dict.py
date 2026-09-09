@@ -239,7 +239,9 @@ def test_dict_choice_field_merge_fallback_and_color():
 
 
 def test_export_status_dict_integration():
-    """下载中心 status 接入字典：未配置时回退模型枚举（默认行为不变）。"""
+    """下载中心 status 接入字典（merge 模式）：字典项优先、枚举补缺——
+    只配部分项时其余枚举标签不缺（部分配置不再隐藏未配置项的标签）；
+    未配置时回退模型枚举（默认行为不变）。"""
     from system.models.export import ExportRecord
     from system.serializers.export import ExportRecordSerializer
 
@@ -250,7 +252,56 @@ def test_export_status_dict_integration():
     parent = DataDict.objects.create(code="export_status", label="导出状态")
     DataDict.objects.create(parent=parent, code="success", label="已完成", value="SUCCESS", color="#67c23a")
     field2 = ExportRecordSerializer().fields["status"]
-    assert field2.choices == {"SUCCESS": "已完成"}
+    assert field2.choices["SUCCESS"] == "已完成"
+    assert set(field2.choices) == set(dict(ExportRecord.Status.choices))
+    assert field2.to_representation("SUCCESS") == {"value": "SUCCESS", "label": "已完成", "color": "#67c23a"}
+
+
+def test_import_and_task_status_dict_integration():
+    """导入记录 status/action / 定时任务执行历史 status 接入字典（merge 模式，同下载中心口径）。"""
+    from system.models.import_ import ImportRecord
+    from system.models.task import TaskExecution
+    from system.serializers.import_ import ImportRecordSerializer
+    from system.serializers.task import TaskExecutionSerializer
+
+    cache.clear()
+    import_field = ImportRecordSerializer().fields["status"]
+    assert set(import_field.choices) == set(dict(ImportRecord.Status.choices))
+
+    task_field = TaskExecutionSerializer().fields["status"]
+    assert set(task_field.choices) == set(dict(TaskExecution.Status.choices))
+
+    parent = DataDict.objects.create(code="task_status", label="执行状态")
+    DataDict.objects.create(parent=parent, code="revoked", label="已终止", value="REVOKED", color="#e6a23c")
+    task_field2 = TaskExecutionSerializer().fields["status"]
+    assert task_field2.choices["REVOKED"] == "已终止"
+    # 未配置的枚举项由 fallback 补缺
+    assert task_field2.choices["PENDING"] == dict(TaskExecution.Status.choices)["PENDING"]
+    assert task_field2.choice_colors == {"REVOKED": "#e6a23c"}
+
+    # 导入动作 action 同口径字典化
+    action_field = ImportRecordSerializer().fields["action"]
+    assert set(action_field.choices) == set(dict(ImportRecord.Action.choices))
+
+
+def test_notice_level_dict_integration():
+    """通知级别 level 接入字典（merge 模式）：公告管理与用户通知同口径。"""
+    from notifications.models.message import MessageContent
+    from notifications.serializers.message import NoticeMessageSerializer, UserNoticeSerializer
+
+    cache.clear()
+    field = NoticeMessageSerializer().fields["level"]
+    assert set(field.choices) == set(dict(MessageContent.LevelChoices.choices))
+
+    user_field = UserNoticeSerializer().fields["level"]
+    assert set(user_field.choices) == set(dict(MessageContent.LevelChoices.choices))
+
+    parent = DataDict.objects.create(code="notice_level", label="通知级别")
+    DataDict.objects.create(parent=parent, code="danger", label="紧急", value="danger", color="#f56c6c")
+    field2 = NoticeMessageSerializer().fields["level"]
+    assert field2.choices["danger"] == "紧急"
+    assert field2.choices["info"] == dict(MessageContent.LevelChoices.choices)["info"]
+    assert field2.choice_colors == {"danger": "#f56c6c"}
 
 
 def test_dict_choice_field_write_path_accepts_enum_values():

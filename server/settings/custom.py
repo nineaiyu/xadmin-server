@@ -16,6 +16,7 @@ PERMISSION_WHITE_URL = {
     "^/api/system/dashboard/": ["*"],
     "^/api/.*choices$": ["*"],
     "^/api/.*search-fields$": ["*"],
+    "^/api/system/dict/items$": ["GET"],  # 数据字典消费端（前端 useDict 下拉），同 choices 口径
     "^/api/common/resources/cache$": ["*"],
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限

@@ -24,7 +24,21 @@ class ImportRecordSerializer(BaseModelSerializer):
     )
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Creator"))
     report_filesize = serializers.SerializerMethodField(label=_("Report size"))
-    status = DictChoiceField(dict_code="import_status", fallback_choices=ImportRecord.Status.choices, read_only=True)
+    # 状态走数据字典 import_status（管理员可维护文案/颜色，默认项随种子下发）；
+    # 未配置回退模型枚举，merge 保证只配部分项时其余枚举标签不缺
+    status = DictChoiceField(
+        dict_code="import_status",
+        fallback_choices=ImportRecord.Status.choices,
+        merge_fallback=True,
+        read_only=True,
+    )
+    # 导入动作（create/update）同样字典化（import_action）：列表彩色 tag 与文案可运营
+    action = DictChoiceField(
+        dict_code="import_action",
+        fallback_choices=ImportRecord.Action.choices,
+        merge_fallback=True,
+        read_only=True,
+    )
 
     class Meta:
         model = ImportRecord
@@ -35,6 +49,7 @@ class ImportRecordSerializer(BaseModelSerializer):
             "path",
             "action",
             "status",
+            "progress",
             "total",
             "success_rows",
             "failed_rows",
@@ -52,6 +67,7 @@ class ImportRecordSerializer(BaseModelSerializer):
             "module",
             "action",
             "status",
+            "progress",
             "total",
             "success_rows",
             "failed_rows",

@@ -17,6 +17,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BasePrimaryKeyRelatedField, BaseModelSerializer
 from system.models.task import TaskExecution
+from system.serializers.fields import DictChoiceField
 
 # celery crontab_parser 各字段的取值跨度（min-max 由 parser 按 steps 推导）
 _CRONTAB_STEPS = {
@@ -233,6 +234,14 @@ class TaskExecutionSerializer(BaseModelSerializer):
         read_only=True,
         allow_null=True,
         label=_("Creator"),
+    )
+    # 执行状态字典化：管理员可在数据字典 task_status 维护文案/颜色（默认项随种子下发），
+    # merge 保证字典项被删/未配齐时枚举标签兜底
+    status = DictChoiceField(
+        dict_code="task_status",
+        fallback_choices=TaskExecution.Status.choices,
+        merge_fallback=True,
+        read_only=True,
     )
     time_cost = serializers.SerializerMethodField(label=_("Time Cost"))
 

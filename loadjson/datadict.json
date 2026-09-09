@@ -64,6 +64,470 @@
   },
   {
     "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e56",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "导入任务状态（ImportRecord.status 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "import_status",
+      "label": "导入状态",
+      "value": null,
+      "sort": 3,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Import status"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "定时任务执行状态（TaskExecution.status 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "task_status",
+      "label": "执行状态",
+      "value": null,
+      "sort": 4,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Execution status"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e58",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e55",
+      "code": "PENDING",
+      "label": "等待中",
+      "value": "PENDING",
+      "sort": 0,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Waiting"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e59",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e55",
+      "code": "RUNNING",
+      "label": "导出中",
+      "value": "RUNNING",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Running"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5a",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e55",
+      "code": "SUCCESS",
+      "label": "成功",
+      "value": "SUCCESS",
+      "sort": 2,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Success"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5b",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e55",
+      "code": "FAILURE",
+      "label": "失败",
+      "value": "FAILURE",
+      "sort": 3,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Failure"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5c",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e56",
+      "code": "PENDING",
+      "label": "等待中",
+      "value": "PENDING",
+      "sort": 0,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Waiting"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5d",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e56",
+      "code": "RUNNING",
+      "label": "导入中",
+      "value": "RUNNING",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Running"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5e",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e56",
+      "code": "SUCCESS",
+      "label": "成功",
+      "value": "SUCCESS",
+      "sort": 2,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Success"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e56",
+      "code": "FAILURE",
+      "label": "失败",
+      "value": "FAILURE",
+      "sort": 3,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Failure"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e60",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+      "code": "PENDING",
+      "label": "等待中",
+      "value": "PENDING",
+      "sort": 0,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Waiting"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e61",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+      "code": "RUNNING",
+      "label": "执行中",
+      "value": "RUNNING",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Running"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e62",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+      "code": "SUCCESS",
+      "label": "成功",
+      "value": "SUCCESS",
+      "sort": 2,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Success"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e63",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+      "code": "FAILURE",
+      "label": "失败",
+      "value": "FAILURE",
+      "sort": 3,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Failure"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e64",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e57",
+      "code": "REVOKED",
+      "label": "已撤销",
+      "value": "REVOKED",
+      "sort": 4,
+      "color": "#e6a23c",
+      "is_active": true,
+      "label_en": "Revoked"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e65",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "导入动作（ImportRecord.action 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "import_action",
+      "label": "导入动作",
+      "value": null,
+      "sort": 5,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Import action"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e66",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e65",
+      "code": "create",
+      "label": "创建",
+      "value": "create",
+      "sort": 0,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Create"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e67",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e65",
+      "code": "update",
+      "label": "更新",
+      "value": "update",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Update"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "通知级别（MessageContent.level 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "notice_level",
+      "label": "通知级别",
+      "value": null,
+      "sort": 6,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Notice level"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e69",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+      "code": "info",
+      "label": "普遍通知",
+      "value": "info",
+      "sort": 0,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Ordinary notices"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6a",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+      "code": "primary",
+      "label": "一般通知",
+      "value": "primary",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "General notices"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6b",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+      "code": "success",
+      "label": "成功通知",
+      "value": "success",
+      "sort": 2,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Success notices"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6c",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e68",
+      "code": "danger",
+      "label": "重要通知",
+      "value": "danger",
+      "sort": 3,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Important notices"
+    }
+  },
+  {
+    "model": "system.datadict",
     "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e51",
     "fields": {
       "created_time": "2026-09-09T00:00:00.000Z",

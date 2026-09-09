@@ -18,12 +18,22 @@ from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from notifications.models import MessageUserRead, MessageContent
+from system.serializers.fields import DictChoiceField
 from system.services import UploadFile, UserInfo
 
 logger = get_logger(__name__)
 
 
 class NoticeMessageSerializer(BaseModelSerializer):
+    # 通知级别字典化（notice_level）：管理员可维护文案/颜色，默认项随种子下发
+    # （value 本身即 el-text 类型色，color 作为前端渲染的首选色源）；
+    # merge 保证字典未配置/项被清时回退模型枚举
+    level = DictChoiceField(
+        dict_code="notice_level",
+        fallback_choices=MessageContent.LevelChoices.choices,
+        merge_fallback=True,
+    )
+
     class Meta:
         model = MessageContent
         fields = [
@@ -187,6 +197,14 @@ class NoticeUserReadMessageSerializer(BaseModelSerializer):
 
 class UserNoticeSerializer(BaseModelSerializer):
     ignore_field_permission = True
+
+    # 同公告管理口径：级别字典化（用户通知页标题色/文案），只读资源
+    level = DictChoiceField(
+        dict_code="notice_level",
+        fallback_choices=MessageContent.LevelChoices.choices,
+        merge_fallback=True,
+        read_only=True,
+    )
 
     class Meta:
         model = MessageContent
