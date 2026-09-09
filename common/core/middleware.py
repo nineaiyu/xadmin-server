@@ -15,6 +15,7 @@ from django.utils.deprecation import MiddlewareMixin
 from rest_framework.utils import encoders
 
 from common.core.config import SysConfig
+from common.core.utils import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
     get_request_user,
@@ -83,7 +84,8 @@ def build_operation_log_info(request, response, request_start_time):
         # getattr 必须带兜底，否则操作日志会把业务响应改写成 500
         view = response.renderer_context.get("view")
         handler = getattr(view, request.method.lower(), None) if view else None
-        action_doc = getattr(handler, "__doc__", None)
+        # 视图方法 docstring 只取首行：多行长说明（如 412 交互流程）会撑爆 module 列且不可读
+        action_doc = get_doc_first_line(getattr(handler, "__doc__", None)) if handler else ""
         if action_doc:
             try:
                 action_doc = action_doc.format(cls=request_module)

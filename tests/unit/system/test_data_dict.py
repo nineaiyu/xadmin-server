@@ -4,6 +4,7 @@
 import pytest
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models.dict import DataDict
@@ -291,6 +292,175 @@ def test_user_gender_choices_from_dict():
     DataDict.objects.create(parent=parent, code="secret", label="保密", value="9")
     field2 = UserSerializer().fields["gender"]
     assert field2.choices == {9: "保密"}
+
+
+def test_is_type_filter_narrows_to_dict_types(superuser):
+    """is_type 过滤：true 只看类型层，false 只看字典项。"""
+    DataDict.objects.create(code="only_type", label="纯类型")
+    parent = DataDict.objects.create(code="with_item", label="带子项的类型")
+    DataDict.objects.create(parent=parent, code="item", label="字典项")
+
+    types = _call("list", superuser, params={"is_type": "true"})
+    assert {row["code"] for row in types.data["data"]["results"]} == {"only_type", "with_item"}
+    items = _call("list", superuser, params={"is_type": "false"})
+    assert {row["code"] for row in items.data["data"]["results"]} == {"item"}
+
+
+def test_color_field_renders_as_color_picker():
+    """守护：color 字段必须是 ColorField（input_type=color）。
+
+    前端按 input_type 查渲染器注册表，input_type=color 才渲染成颜色选择器；
+    模型 CharField 默认推断为 string，会被渲染成普通文本框。
+    """
+    from common.drf.metadata import SimpleMetadataWithFilters
+    from system.serializers.dict import DataDictSerializer
+
+    field = DataDictSerializer().fields["color"]
+    assert getattr(field, "input_type", None) == "color"
+    # 前端按元数据 type 查渲染器注册表，这里锚定 search-columns 下发的类型
+    assert SimpleMetadataWithFilters().get_field_info(field)["type"] == "color"
+
+
+def test_list_annotates_children_count(superuser):
+    parent = DataDict.objects.create(code="count_type", label="计数类型")
+    DataDict.objects.create(parent=parent, code="a", label="A")
+    DataDict.objects.create(parent=parent, code="b", label="B")
+    response = _call("list", superuser)
+    rows = {row["code"]: row for row in response.data["data"]["results"]}
+    assert rows["count_type"]["children_count"] == 2
+    assert rows["a"]["children_count"] == 0
+
+
+def test_create_by_parent_code_for_import(superuser):
+    """导入场景：用字典类型编码定位父级（parent 主键跨环境无意义）。"""
+    DataDict.objects.create(code="imp_type", label="导入类型")
+    response = _call(
+        "create",
+        superuser,
+        method="post",
+        data={"parent_code": "imp_type", "code": "x", "label": "X", "value": "x"},
+    )
+    assert response.data["code"] == 1000, response.data
+    assert DataDict.objects.filter(code="x", parent__code="imp_type").exists()
+
+
+def test_create_by_unknown_parent_code_rejected(superuser):
+    response = _call(
+        "create",
+        superuser,
+        method="post",
+        data={"parent_code": "not_exists", "code": "x", "label": "X"},
+    )
+    assert response.data["code"] != 1000
+
+
+def test_batch_active_toggles_and_invalidates_cache(superuser):
+    cache.clear()
+    parent = DataDict.objects.create(code="ba_type", label="批量启停")
+    first = DataDict.objects.create(parent=parent, code="a", label="A", value="a")
+    second = DataDict.objects.create(parent=parent, code="b", label="B", value="b")
+    assert len(get_dict_items("ba_type")) == 2
+
+    response = _call(
+        "batch_active",
+        superuser,
+        method="post",
+        data={"pks": [str(first.pk)], "is_active": False},
+    )
+    assert response.data["code"] == 1000
+    first.refresh_from_db()
+    assert first.is_active is False
+    # 逐个 save 触发信号 → 缓存失效，消费端立即只剩启用项
+    assert [item["value"] for item in get_dict_items("ba_type")] == ["b"]
+
+    # is_active 省略时按当前状态取反
+    _call("batch_active", superuser, method="post", data={"pks": [str(first.pk)]})
+    first.refresh_from_db()
+    assert first.is_active is True
+    assert {item["value"] for item in get_dict_items("ba_type")} == {"a", "b"}
+    assert second.is_active is True
+
+
+def test_move_swaps_sibling_sort(superuser):
+    cache.clear()
+    parent = DataDict.objects.create(code="move_type", label="排序类型")
+    first = DataDict.objects.create(parent=parent, code="a", label="A", value="a", sort=0)
+    second = DataDict.objects.create(parent=parent, code="b", label="B", value="b", sort=1)
+
+    response = _call("move", superuser, method="post", data={"direction": "down"}, pk=first.pk)
+    assert response.data["code"] == 1000
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.sort > second.sort
+    # update() 绕过信号，缓存由 action 显式失效：消费端顺序同步
+    assert [item["value"] for item in get_dict_items("move_type")] == ["b", "a"]
+
+    _call("move", superuser, method="post", data={"direction": "up"}, pk=first.pk)
+    assert [item["value"] for item in get_dict_items("move_type")] == ["a", "b"]
+
+
+def test_move_at_boundary_is_noop(superuser):
+    parent = DataDict.objects.create(code="edge_type", label="边界类型")
+    first = DataDict.objects.create(parent=parent, code="a", label="A", value="a", sort=0)
+    DataDict.objects.create(parent=parent, code="b", label="B", value="b", sort=1)
+    response = _call("move", superuser, method="post", data={"direction": "up"}, pk=first.pk)
+    assert response.data["code"] == 1000
+    first.refresh_from_db()
+    assert first.sort == 0
+
+
+def test_move_rejects_unknown_direction(superuser):
+    instance = DataDict.objects.create(code="bad_move", label="非法方向")
+    response = _call("move", superuser, method="post", data={"direction": "side"}, pk=instance.pk)
+    assert response.data["code"] != 1000
+
+
+def test_refresh_cache_action_clears_all(superuser):
+    cache.clear()
+    parent = DataDict.objects.create(code="rc_type", label="刷新缓存")
+    DataDict.objects.create(parent=parent, code="a", label="A", value="a")
+    assert len(get_dict_items("rc_type")) == 1
+    # 绕过信号直改 DB（模拟外部改库），缓存仍是旧值
+    DataDict.objects.filter(code="a").update(label="AA")
+    assert get_dict_items("rc_type")[0]["label"] == "A"
+    response = _call("refresh_cache", superuser, method="post")
+    assert response.data["code"] == 1000
+    assert get_dict_items("rc_type")[0]["label"] == "AA"
+
+
+def test_locked_dict_cannot_be_deleted(superuser):
+    locked = DataDict.objects.create(code="builtin_type", label="内置类型", is_locked=True)
+    # 直接调用视图时 ATOMIC_REQUESTS 会把 400 的回滚标记打到测试事务上，
+    # 用 savepoint 隔离，断言才能在错误响应后继续查库
+    with transaction.atomic():
+        response = _call("destroy", superuser, method="delete", pk=locked.pk)
+    assert response.data["code"] != 1000
+    assert "is_locked" in response.data
+    assert DataDict.objects.filter(pk=locked.pk).exists()
+
+
+def test_batch_destroy_skips_locked(superuser):
+    locked = DataDict.objects.create(code="keep_type", label="内置", is_locked=True)
+    normal = DataDict.objects.create(code="drop_type", label="可删")
+    response = _call("batch_destroy", superuser, method="post", data=[str(locked.pk), str(normal.pk)])
+    assert response.data["code"] == 1000
+    assert DataDict.objects.filter(pk=locked.pk).exists()
+    assert not DataDict.objects.filter(pk=normal.pk).exists()
+
+
+def test_locked_dict_code_and_parent_are_readonly(superuser):
+    """内置字典被代码按 code 引用（DictChoiceField）：改 code / 换父级等于让引用断链。"""
+    locked = DataDict.objects.create(code="builtin_code", label="内置", is_locked=True)
+    other = DataDict.objects.create(code="other_type", label="其它类型")
+    with transaction.atomic():
+        response = _call("partial_update", superuser, method="patch", data={"code": "renamed"}, pk=locked.pk)
+    assert response.data["code"] != 1000
+    with transaction.atomic():
+        response = _call("partial_update", superuser, method="patch", data={"parent": str(other.pk)}, pk=locked.pk)
+    assert response.data["code"] != 1000
+    locked.refresh_from_db()
+    assert locked.code == "builtin_code"
+    assert locked.parent_id is None
 
 
 def test_dict_items_localized_by_language():

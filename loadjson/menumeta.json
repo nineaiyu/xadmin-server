@@ -7348,5 +7348,80 @@
       "fixed_tag": false,
       "dynamic_level": 0
     }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2001",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "批量启停字典",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2002",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "刷新字典缓存",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2003",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "字典上移下移",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
   }
 ]

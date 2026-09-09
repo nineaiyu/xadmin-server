@@ -90,7 +90,7 @@ class OnlyExportDataAction(ListAction):
     )
     @action(methods=["post"], detail=False, url_path="export-async")
     def export_async(self, request, *args, **kwargs):
-        """异步导出{cls}数据（大数据量，产物在下载中心获取）"""
+        """异步导出{cls}数据"""
         from django.apps import apps
         from django.db import transaction
         from django.utils import timezone as dj_timezone

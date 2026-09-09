@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-09 14:37+0800\n"
+"POT-Creation-Date: 2026-09-09 20:17+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -128,7 +128,7 @@ msgstr "数据归属部门"
 msgid "Deleted at"
 msgstr "删除时间"
 
-#: common/core/modelset/batch.py:45
+#: common/core/modelset/batch.py:45 system/views/admin/dict.py:149
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
@@ -157,9 +157,10 @@ msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
 #: common/core/modelset/import_export.py:216 system/utils/auth.py:116
-#: system/utils/modelset.py:60 system/views/auth/mfa.py:46
-#: system/views/auth/register.py:71 system/views/auth/reset.py:48
-#: system/views/auth/verify_code.py:149 system/views/auth/verify_code.py:176
+#: system/utils/modelset.py:60 system/views/admin/dict.py:131
+#: system/views/auth/mfa.py:46 system/views/auth/register.py:71
+#: system/views/auth/reset.py:48 system/views/auth/verify_code.py:149
+#: system/views/auth/verify_code.py:176
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
@@ -201,12 +202,12 @@ msgstr "图片大小不能超过 {}"
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
-#: system/tasks.py:241
+#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
+#: system/tasks.py:241 system/views/admin/dict.py:156
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
 #: system/tasks.py:241
 msgid "Operation failed"
 msgstr "操作失败"
@@ -461,31 +462,31 @@ msgstr "用户名或密码错误"
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
-#: common/tasks.py:37
+#: common/tasks.py:38
 msgid "Send email"
 msgstr "发件邮件"
 
-#: common/tasks.py:69
+#: common/tasks.py:70
 msgid "Send email attachment"
 msgstr "发送邮件附件"
 
-#: common/tasks.py:91
+#: common/tasks.py:92
 msgid "Periodic delete monitor"
 msgstr "周期清理监控日志"
 
-#: common/tasks.py:118
+#: common/tasks.py:119
 msgid "Clear celery periodic tasks"
 msgstr "清理周期任务"
 
-#: common/tasks.py:119
+#: common/tasks.py:120
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr "系统启动时，清理已经不存在的celery任务"
 
-#: common/tasks.py:141
+#: common/tasks.py:142
 msgid "Create or update periodic tasks"
 msgstr "创建或更新周期任务"
 
-#: common/tasks.py:143
+#: common/tasks.py:144
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -497,11 +498,11 @@ msgstr ""
 "新定时任务参数随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以"
 "在系统启动时，将会注册任务或者更新定时任务参数"
 
-#: common/tasks.py:157
+#: common/tasks.py:158
 msgid "Periodic check service performance"
 msgstr "周期检测服务性能"
 
-#: common/tasks.py:159
+#: common/tasks.py:160
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -512,15 +513,15 @@ msgstr ""
 "消息每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送"
 "消息预警"
 
-#: common/tasks.py:168
+#: common/tasks.py:169
 msgid "Run background task view set"
 msgstr "通过任务方式执行视图"
 
-#: common/tasks.py:212
+#: common/tasks.py:213
 msgid "Purge soft deleted data"
 msgstr "物理清除软删除数据"
 
-#: common/tasks.py:213
+#: common/tasks.py:214
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr "物理清除回收站中超过保留期（RECYCLE_BIN_RETENTION_DAYS）的软删除数据"
 
@@ -940,7 +941,7 @@ msgid "Encrypted"
 msgstr "加密的"
 
 #: settings/models.py:19 system/models/config.py:17
-#: system/models/department.py:43 system/models/dict.py:36
+#: system/models/department.py:43 system/models/dict.py:37
 #: system/models/menu.py:98 system/models/permission.py:19
 #: system/models/role.py:22
 msgid "Is active"
@@ -1675,39 +1676,43 @@ msgstr "注册参数channel的值和该部门code一致，则该用户会自动�
 msgid "Department"
 msgstr "部门"
 
-#: system/models/dict.py:28 system/serializers/dict.py:22
+#: system/models/dict.py:29 system/serializers/dict.py:28
 msgid "Parent dict"
 msgstr "上级字典"
 
-#: system/models/dict.py:30
+#: system/models/dict.py:31
 msgid "Dict code"
 msgstr "字典编码"
 
-#: system/models/dict.py:31
+#: system/models/dict.py:32
 msgid "Dict label"
 msgstr "字典标签"
 
-#: system/models/dict.py:32
+#: system/models/dict.py:33
 msgid "Dict label (EN)"
 msgstr "字典标签（英文）"
 
-#: system/models/dict.py:33
+#: system/models/dict.py:34
 msgid "Dict value"
 msgstr "字典值"
 
-#: system/models/dict.py:34
+#: system/models/dict.py:35
 msgid "Sort"
 msgstr "排序"
 
-#: system/models/dict.py:35
+#: system/models/dict.py:36 system/serializers/dict.py:30
 msgid "Tag color"
 msgstr "标签颜色"
 
 #: system/models/dict.py:40
+msgid "Is locked"
+msgstr "系统内置"
+
+#: system/models/dict.py:44
 msgid "Data dict"
 msgstr "数据字典"
 
-#: system/models/dict.py:70 system/serializers/dict.py:81
+#: system/models/dict.py:74 system/serializers/dict.py:127
 msgid "Dict code already exists"
 msgstr "字典编码已存在"
 
@@ -2304,7 +2309,23 @@ msgstr "用户不能为空"
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
 
-#: system/serializers/dict.py:74
+#: system/serializers/dict.py:32 system/views/admin/dict.py:27
+msgid "Parent code"
+msgstr "上级编码"
+
+#: system/serializers/dict.py:33
+msgid "Children count"
+msgstr "字典项数量"
+
+#: system/serializers/dict.py:97
+msgid "Parent dict does not exist"
+msgstr "所属字典类型不存在"
+
+#: system/serializers/dict.py:112 system/serializers/dict.py:114
+msgid "Locked dict cannot be modified"
+msgstr "内置字典禁止修改编码与所属类型"
+
+#: system/serializers/dict.py:120
 msgid "Parent dict cannot be itself"
 msgstr "父级字典不能是自身"
 
@@ -2677,13 +2698,22 @@ msgid ""
 "fields."
 msgstr "字段值必须包含给定的单个键，通常用于 JSON 字段"
 
-#: system/views/admin/dict.py:25
-msgid "Parent code"
-msgstr "上级编码"
+#: system/views/admin/dict.py:29
+msgid "Is dict type"
+msgstr "仅字典类型"
 
-#: system/views/admin/dict.py:61
+#: system/views/admin/dict.py:53
+msgid "Locked dict cannot be deleted"
+msgstr "内置字典禁止删除"
+
+#: system/views/admin/dict.py:82
 msgid "Dict code is required"
 msgstr "字典编码为必填项"
+
+#: system/views/admin/dict.py:111 system/views/task.py:304
+#, python-brace-format
+msgid "Batch update submitted: {} success"
+msgstr "批量更新已提交：{} 成功"
 
 #: system/views/admin/export.py:72 system/views/admin/export.py:75
 msgid "Export file not found"
@@ -2807,11 +2837,6 @@ msgstr "任务参数不是有效的 JSON"
 #, python-brace-format
 msgid "Batch execution submitted: {} success, {} failed"
 msgstr "批量执行已提交：{} 成功，{} 失败"
-
-#: system/views/task.py:304
-#, python-brace-format
-msgid "Batch update submitted: {} success"
-msgstr "批量更新已提交：{} 成功"
 
 #: system/views/task.py:318
 #, python-brace-format

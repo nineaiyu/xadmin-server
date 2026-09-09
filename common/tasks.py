@@ -20,6 +20,7 @@ from django_celery_beat.models import PeriodicTask
 
 from common.cache.redis import CacheList
 from common.celery.decorator import register_as_period_task, after_app_ready_start
+from common.core.utils import get_doc_first_line
 from common.celery.utils import (
     delete_celery_periodic_task,
     disable_celery_periodic_task,
@@ -194,7 +195,7 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
             state = all([task["status"] for task in task_results])
             task_info = {
                 "task_name": view,
-                "view_doc": view_func.__doc__,
+                "view_doc": get_doc_first_line(view_func.__doc__),
                 "state": state,
                 "status": _("Operation successful") if state else _("Operation failed"),
                 "tasks": sorted(task_results, key=lambda task: task["task_index"]),

@@ -22,6 +22,14 @@ from common.decorators import cached_method
 logger = logging.getLogger(__name__)
 
 
+def get_doc_first_line(doc):
+    """取 docstring 首行；多行长说明只保留首行，供操作日志/菜单权限等单行字段使用。"""
+    if not doc:
+        return ""
+    lines = str(doc).strip().splitlines()
+    return lines[0].strip() if lines else ""
+
+
 def check_show_url(url):
     for prefix in settings.PERMISSION_SHOW_PREFIX:
         if re.match(prefix, url):
@@ -57,7 +65,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 url_ordered_dict[name] = {"name": name, "url": url, "view": item.lookup_str}
                 try:
                     view_set = import_string(item.lookup_str)
-                    url_ordered_dict[name]["label"] = view_set.__doc__
+                    url_ordered_dict[name]["label"] = get_doc_first_line(view_set.__doc__)
                 except Exception:
                     pass
 

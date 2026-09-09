@@ -229,7 +229,9 @@ class SystemMessage(Message):
         receive_backends = subscription.receive_backends
         receive_backends = BACKEND.filter_enable_backends(receive_backends)
 
-        receive_user_ids = subscription.users.values_list("pk", flat=True).all()
+        # 必须物化为 list：软删除模型的 related manager 返回 SoftDeleteQuerySet，
+        # 直接把 QuerySet 传给 celery delay 会因 JSON 序列化失败抛 EncodeError
+        receive_user_ids = list(subscription.users.values_list("pk", flat=True))
         if not receive_user_ids:
             logger.warning(f"send system msg failed. No receive users found for {self}")
             return

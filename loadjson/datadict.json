@@ -16,7 +16,50 @@
       "sort": 0,
       "color": null,
       "is_active": true,
+      "is_locked": true,
       "label_en": "User gender"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e54",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "登录方式（UserLoginLog/UserSession.login_type 的文案来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "login_type",
+      "label": "登录方式",
+      "value": null,
+      "sort": 1,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Login type"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e55",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "导出任务状态（ExportRecord.status 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "export_status",
+      "label": "导出状态",
+      "value": null,
+      "sort": 2,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Export status"
     }
   },
   {

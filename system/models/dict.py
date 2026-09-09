@@ -6,6 +6,7 @@
 供表单 choices / 前端下拉消费（system/utils/dict.py 的 get_dict_items 带缓存）。
 
 parent=None 为字典类型（code 全局唯一，代码层校验），parent 非空为字典项。
+is_locked 标记被代码引用的内置字典，禁止删除与改 code（见 serializer / viewset 校验）。
 """
 
 from django.core.exceptions import ValidationError
@@ -34,6 +35,9 @@ class DataDict(DbAuditModel, DbUuidModel):
     sort = models.IntegerField(_("Sort"), default=0)
     color = models.CharField(_("Tag color"), max_length=32, blank=True, null=True)
     is_active = models.BooleanField(_("Is active"), default=True)
+    # 被代码引用的内置字典（user_gender / login_type / export_status 等）：禁止删除
+    # 与改 code，避免误操作让 DictChoiceField 取不到选项、业务字段写入报 invalid_choice
+    is_locked = models.BooleanField(_("Is locked"), default=False)
 
     class Meta:
         ordering = ("sort", "created_time")

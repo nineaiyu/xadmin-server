@@ -146,6 +146,75 @@
   },
   {
     "model": "system.menu",
+    "pk": "a30f1c20-5d5f-5b1e-9a11-6d1a0e7c1001",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "batchActive:SystemDataDict",
+      "rank": 2,
+      "path": "api/system/dict/batch-active$",
+      "component": null,
+      "is_active": true,
+      "meta": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2001",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a30f1c20-5d5f-5b1e-9a11-6d1a0e7c1002",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "refreshCache:SystemDataDict",
+      "rank": 3,
+      "path": "api/system/dict/refresh-cache$",
+      "component": null,
+      "is_active": true,
+      "meta": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2002",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a30f1c20-5d5f-5b1e-9a11-6d1a0e7c1003",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "move:SystemDataDict",
+      "rank": 4,
+      "path": "api/system/dict/(?P<pk>[^/.]+)/move$",
+      "component": null,
+      "is_active": true,
+      "meta": "b41f2d31-6e6f-5c2f-8b22-7e2b1f8d2003",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
     "fields": {
       "created_time": "2024-01-22T09:32:15.632Z",

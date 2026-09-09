@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-09 14:37+0800\n"
+"POT-Creation-Date: 2026-09-09 20:17+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,7 +135,7 @@ msgstr ""
 msgid "Deleted at"
 msgstr ""
 
-#: common/core/modelset/batch.py:45
+#: common/core/modelset/batch.py:45 system/views/admin/dict.py:149
 msgid "Sorting saved successfully"
 msgstr ""
 
@@ -164,9 +164,10 @@ msgid "Operation successful. Import {} data"
 msgstr ""
 
 #: common/core/modelset/import_export.py:216 system/utils/auth.py:116
-#: system/utils/modelset.py:60 system/views/auth/mfa.py:46
-#: system/views/auth/register.py:71 system/views/auth/reset.py:48
-#: system/views/auth/verify_code.py:149 system/views/auth/verify_code.py:176
+#: system/utils/modelset.py:60 system/views/admin/dict.py:131
+#: system/views/auth/mfa.py:46 system/views/auth/register.py:71
+#: system/views/auth/reset.py:48 system/views/auth/verify_code.py:149
+#: system/views/auth/verify_code.py:176
 msgid "Operation failed. Abnormal data"
 msgstr ""
 
@@ -208,12 +209,12 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
-#: system/tasks.py:241
+#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
+#: system/tasks.py:241 system/views/admin/dict.py:156
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
 #: system/tasks.py:241
 msgid "Operation failed"
 msgstr ""
@@ -466,31 +467,31 @@ msgstr ""
 msgid "Please enter your account information to log in"
 msgstr ""
 
-#: common/tasks.py:37
+#: common/tasks.py:38
 msgid "Send email"
 msgstr ""
 
-#: common/tasks.py:69
+#: common/tasks.py:70
 msgid "Send email attachment"
 msgstr ""
 
-#: common/tasks.py:91
+#: common/tasks.py:92
 msgid "Periodic delete monitor"
 msgstr ""
 
-#: common/tasks.py:118
+#: common/tasks.py:119
 msgid "Clear celery periodic tasks"
 msgstr ""
 
-#: common/tasks.py:119
+#: common/tasks.py:120
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr ""
 
-#: common/tasks.py:141
+#: common/tasks.py:142
 msgid "Create or update periodic tasks"
 msgstr ""
 
-#: common/tasks.py:143
+#: common/tasks.py:144
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -499,11 +500,11 @@ msgid ""
 "        of scheduled tasks will be updated"
 msgstr ""
 
-#: common/tasks.py:157
+#: common/tasks.py:158
 msgid "Periodic check service performance"
 msgstr ""
 
-#: common/tasks.py:159
+#: common/tasks.py:160
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -511,15 +512,15 @@ msgid ""
 "the administrator"
 msgstr ""
 
-#: common/tasks.py:168
+#: common/tasks.py:169
 msgid "Run background task view set"
 msgstr ""
 
-#: common/tasks.py:212
+#: common/tasks.py:213
 msgid "Purge soft deleted data"
 msgstr ""
 
-#: common/tasks.py:213
+#: common/tasks.py:214
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr ""
 
@@ -939,7 +940,7 @@ msgid "Encrypted"
 msgstr ""
 
 #: settings/models.py:19 system/models/config.py:17
-#: system/models/department.py:43 system/models/dict.py:36
+#: system/models/department.py:43 system/models/dict.py:37
 #: system/models/menu.py:98 system/models/permission.py:19
 #: system/models/role.py:22
 msgid "Is active"
@@ -1657,39 +1658,43 @@ msgstr ""
 msgid "Department"
 msgstr ""
 
-#: system/models/dict.py:28 system/serializers/dict.py:22
+#: system/models/dict.py:29 system/serializers/dict.py:28
 msgid "Parent dict"
 msgstr ""
 
-#: system/models/dict.py:30
+#: system/models/dict.py:31
 msgid "Dict code"
 msgstr ""
 
-#: system/models/dict.py:31
+#: system/models/dict.py:32
 msgid "Dict label"
 msgstr ""
 
-#: system/models/dict.py:32
+#: system/models/dict.py:33
 msgid "Dict label (EN)"
 msgstr ""
 
-#: system/models/dict.py:33
+#: system/models/dict.py:34
 msgid "Dict value"
 msgstr ""
 
-#: system/models/dict.py:34
+#: system/models/dict.py:35
 msgid "Sort"
 msgstr ""
 
-#: system/models/dict.py:35
+#: system/models/dict.py:36 system/serializers/dict.py:30
 msgid "Tag color"
 msgstr ""
 
 #: system/models/dict.py:40
+msgid "Is locked"
+msgstr ""
+
+#: system/models/dict.py:44
 msgid "Data dict"
 msgstr ""
 
-#: system/models/dict.py:70 system/serializers/dict.py:81
+#: system/models/dict.py:74 system/serializers/dict.py:127
 msgid "Dict code already exists"
 msgstr ""
 
@@ -2286,7 +2291,23 @@ msgstr ""
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/dict.py:74
+#: system/serializers/dict.py:32 system/views/admin/dict.py:27
+msgid "Parent code"
+msgstr ""
+
+#: system/serializers/dict.py:33
+msgid "Children count"
+msgstr ""
+
+#: system/serializers/dict.py:97
+msgid "Parent dict does not exist"
+msgstr ""
+
+#: system/serializers/dict.py:112 system/serializers/dict.py:114
+msgid "Locked dict cannot be modified"
+msgstr ""
+
+#: system/serializers/dict.py:120
 msgid "Parent dict cannot be itself"
 msgstr ""
 
@@ -2652,12 +2673,21 @@ msgid ""
 "fields."
 msgstr ""
 
-#: system/views/admin/dict.py:25
-msgid "Parent code"
+#: system/views/admin/dict.py:29
+msgid "Is dict type"
 msgstr ""
 
-#: system/views/admin/dict.py:61
+#: system/views/admin/dict.py:53
+msgid "Locked dict cannot be deleted"
+msgstr ""
+
+#: system/views/admin/dict.py:82
 msgid "Dict code is required"
+msgstr ""
+
+#: system/views/admin/dict.py:111 system/views/task.py:304
+#, python-brace-format
+msgid "Batch update submitted: {} success"
 msgstr ""
 
 #: system/views/admin/export.py:72 system/views/admin/export.py:75
@@ -2778,11 +2808,6 @@ msgstr ""
 #: system/views/task.py:275
 #, python-brace-format
 msgid "Batch execution submitted: {} success, {} failed"
-msgstr ""
-
-#: system/views/task.py:304
-#, python-brace-format
-msgid "Batch update submitted: {} success"
 msgstr ""
 
 #: system/views/task.py:318

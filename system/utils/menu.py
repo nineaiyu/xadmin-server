@@ -11,7 +11,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from common.core.modelset import NoDetailModelSet
 from common.core.routers import NoDetailRouter
-from common.core.utils import get_all_url_dict
+from common.core.utils import get_all_url_dict, get_doc_first_line
 from common.utils import get_logger
 
 router = SimpleRouter(False)
@@ -85,7 +85,7 @@ def get_view_permissions(view_string, code_suffix=""):
         logger.warning(f"Exception while getting permissions for {view_string}: {e}")
         return permissions
 
-    view_doc = view_set.__doc__
+    view_doc = get_doc_first_line(view_set.__doc__)
 
     for url_path in url_paths:
         methods = route_info.get(url_path.get("name"), {})
@@ -93,13 +93,16 @@ def get_view_permissions(view_string, code_suffix=""):
             if is_view_set and method.lower() == "put":  # 忽略view set的put请求，使用patch请求
                 continue
             try:
-                action_doc = getattr(view_set, func_name if is_view_set else method).__doc__
+                action_doc = get_doc_first_line(getattr(view_set, func_name if is_view_set else method).__doc__)
             except Exception as e:
                 logger.warning(f"Exception while getting action doc for {view_string}: {e}")
                 continue
-            try:
-                action_doc = action_doc.format(cls=view_doc)
-            except Exception:
+            if action_doc:
+                try:
+                    action_doc = action_doc.format(cls=view_doc)
+                except Exception:
+                    action_doc = view_doc
+            else:
                 action_doc = view_doc
 
             code = func_name.title().replace("_", "").replace("-", "")
