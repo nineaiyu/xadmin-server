@@ -67,6 +67,21 @@ class SecurityLoginLimitSerializer(serializers.Serializer):
         label=_("User login failure period (minute)"),
         help_text=login_ip_limit_time_help_text,
     )
+    SECURITY_ABNORMAL_LOGIN_ALERT_ENABLED = serializers.BooleanField(
+        required=False,
+        label=_("New device login alert"),
+        help_text=_(
+            "When an account logs in with a new IP address or a new device (browser/system) "
+            "compared to the recent login history, a site message and email reminder is sent"
+        ),
+    )
+    SECURITY_LOGIN_BASELINE_DAYS = serializers.IntegerField(
+        min_value=1,
+        max_value=365,
+        required=False,
+        label=_("Login baseline window (days)"),
+        help_text=_("The system compares the current login against the successful logins of the last N days"),
+    )
 
     SECURITY_LOGIN_IP_LIMIT_COUNT = serializers.IntegerField(
         min_value=3, max_value=99999, label=_("IP login failures count")

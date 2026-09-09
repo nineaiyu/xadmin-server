@@ -5,7 +5,6 @@
 统一将 DRF 原生响应包装为 ApiResponse。拆分自 modelset.py。
 """
 
-from django.conf import settings
 from rest_framework import mixins
 
 from common.core.response import ApiResponse
@@ -85,9 +84,12 @@ class UpdateAction(mixins.UpdateModelMixin):
         """AUDIT_DIFF_MODELS 白名单模型的 update 路径，取更新前快照用于计算 diff。
 
         白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
-        （更新前快照 + 更新后回读），按需开启。
+        （更新前快照 + 更新后回读），按需开启。白名单走 SysConfig.AUDIT_DIFF_MODELS
+        （系统配置优先，未登记回退 settings），管理员可运行时扩容。
         """
-        whitelist = getattr(settings, "AUDIT_DIFF_MODELS", None) or []
+        from common.core.config import SysConfig
+
+        whitelist = SysConfig.AUDIT_DIFF_MODELS or []
         model = getattr(getattr(self, "queryset", None), "model", None)
         if not whitelist or not pk or model is None or model._meta.label not in whitelist:
             return None

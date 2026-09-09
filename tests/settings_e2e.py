@@ -53,6 +53,14 @@ SECURITY_LOGIN_IP_LIMIT_COUNT = 100000
 # 412 协议/验证链路由 tests/integration/test_mfa_api.py 30 例覆盖，E2E 不重复验证。
 SECURITY_MFA_CONFIRM_ENABLED = False
 
+# 敏感操作告警固定关闭：删除类用例会触发 WS 站内信实时弹窗，恰好盖在抽屉
+# 操作按钮上造成点击「element is not stable」（回收站恢复用例实测命中）。
+# 告警链路由 tests/unit/system/test_operation_log_enhance.py 覆盖，E2E 不重复验证
+SENSITIVE_OPERATION_METHODS = []
+
+# 字段级审计 diff：E2E 的「变更历史」用例需要 diff 断言（生产按需经 config.yml 开启）
+AUDIT_DIFF_MODELS = ["system.UserInfo"]
+
 # 放开登录限流：E2E 套件 20+ 用例共享 127.0.0.1 的 login 50/h 配额，
 # 打满后 rules/login 全部 429，登录页会退化为「当前服务器不允许登录」
 #

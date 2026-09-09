@@ -9,6 +9,8 @@ import datetime
 from io import BytesIO
 from urllib.parse import urlencode
 
+from django.db import models, transaction
+
 from celery import shared_task
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
@@ -22,6 +24,7 @@ from common.celery.decorator import register_as_period_task
 from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
+from server.utils import set_current_request
 from system.models.task import TaskExecution
 from system.utils.ctasks import auto_clean_operation_log, auto_clean_black_token, auto_clean_tmp_file
 
@@ -95,6 +98,29 @@ def auto_clean_export_record_job():
 
 
 @shared_task
+@register_as_period_task(crontab="58 2 * * *")
+def auto_clean_import_record_job():
+    """清理超过保留期的异步导入记录、源文件与错误报告（IMPORT_RECORD_KEEP_DAYS，默认 30 天）。"""
+    from system.models.import_ import ImportRecord
+
+    from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> system.services）
+
+    keep_days = SysConfig.IMPORT_RECORD_KEEP_DAYS
+    deadline = timezone.now() - datetime.timedelta(days=keep_days)
+    removed = 0
+    for record in ImportRecord.objects.filter(created_time__lt=deadline).iterator():
+        source_file, error_report = record.source_file, record.error_report
+        record.delete()
+        for upload in (source_file, error_report):
+            if upload:
+                # 硬删除才会清理底层文件（UploadFile 为软删除模型）
+                upload.hard_delete()
+        removed += 1
+    logger.info("Clean import record: %s rows, keep_days: %s", removed, keep_days)
+    return removed
+
+
+@shared_task
 @register_as_period_task(interval=300)
 def auto_expire_user_session_job():
     """HTTP 会话活跃窗口（SESSION_ONLINE_TIMEOUT，默认 300s）外置离线。
@@ -119,6 +145,21 @@ def auto_clean_user_session_job():
     removed = clean_expired_sessions()
     if removed:
         logger.info("Clean user session: %s rows", removed)
+    return removed
+
+
+@shared_task
+@register_as_period_task(crontab="22 3 * * *")
+def auto_clean_pat_job():
+    """清理个人访问令牌：过期超 30 天的凭证，以及停用且 30 天未更新的凭证。"""
+    from system.models.token import PersonalAccessToken
+
+    deadline = timezone.now() - datetime.timedelta(days=30)
+    removed = PersonalAccessToken.objects.filter(
+        models.Q(expired_at__lt=deadline) | models.Q(is_active=False, updated_time__lt=deadline)
+    ).delete()[0]
+    if removed:
+        logger.info("Clean personal access tokens: %s rows", removed)
     return removed
 
 
@@ -252,3 +293,233 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
             except Exception:
                 logger.warning("Send export data message failed", exc_info=True)
     return record.rows
+
+
+class _ImportAborted(Exception):
+    """失败率超限中止：触发外层事务回滚（成功行一并撤销）。"""
+
+
+def _upload_import_error_report(record, user, column_titles, errors):
+    """失败行错误报告落 UploadFile(is_tmp=True)，返回实例。"""
+    import os
+    import tempfile
+
+    from django.core.files.base import ContentFile
+
+    from system.models.upload import UploadFile
+    from system.utils.import_report import build_error_report
+
+    fd, tmp_path = tempfile.mkstemp(suffix=".xlsx")
+    os.close(fd)
+    try:
+        build_error_report(tmp_path, column_titles, errors)
+        with open(tmp_path, "rb") as fp:
+            content = fp.read()
+    finally:
+        os.remove(tmp_path)
+    filename = f"{record.name}_errors.xlsx"
+    upload = UploadFile(
+        filename=filename,
+        filesize=len(content),
+        mime_type=EXPORT_MIME_TYPES["xlsx"],
+        is_tmp=True,
+        is_upload=False,
+        creator=user,
+    )
+    upload.filepath.save(filename, ContentFile(content), save=False)
+    upload.save()
+    return upload
+
+
+def _import_row(view, action_type, row):
+    """单行导入：校验 + 写入，失败抛异常由调用方 savepoint 回滚。"""
+    from rest_framework.exceptions import ValidationError
+
+    if action_type == "update":
+        instance = view.filter_queryset(view.get_queryset()).filter(pk=row.get("pk")).first()
+        if instance is None:
+            raise ValidationError(_("Object not found: {}").format(row.get("pk")))
+        serializer = view.get_serializer(instance, data=row, partial=True)
+    else:
+        serializer = view.get_serializer(data=row)
+    serializer.is_valid(raise_exception=True)
+    if action_type == "update":
+        view.perform_update(serializer)
+    else:
+        view.perform_create(serializer)
+
+
+@shared_task(bind=True, verbose_name=_("Async import data"))
+def async_import_data_task(self, record_id, view_path, user_pk):
+    """异步执行数据导入：任务内解析源文件，逐行 savepoint 导入并生成失败行报告。
+
+    - 记录状态在任务内推进（PENDING → RUNNING → SUCCESS/FAILURE）；同 pk 的
+      TaskExecution 在同步执行（apply/EAGER）时补建，执行历史/增量日志双环境可用；
+    - 逐行独立 savepoint：单行失败回滚该行继续下一行；失败率超
+      IMPORT_FAIL_RATE_LIMIT（默认 0.5，0=不限制）时中止并回滚全部成功行；
+    - 校验/写入复用目标视图的 serializer（字段权限/联动校验同源），
+      threadlocal 请求注入保证 creator 信号正常赋值。
+    """
+    from rest_framework.request import Request
+
+    from common.core.config import SysConfig
+    from common.notifications import ImportDataMessage
+    from system.models.import_ import ImportRecord
+    from system.models.task import TaskExecution
+    from system.models.user import UserInfo
+
+    record = ImportRecord.objects.filter(pk=record_id).first()
+    if record is None:
+        logger.warning("Import record not found: %s", record_id)
+        return 0
+    TaskExecution.objects.get_or_create(
+        pk=record_id,
+        defaults={"name": "system.tasks.async_import_data_task", "args": [record.name], "kwargs": record.params or {}},
+    )
+    user = UserInfo.objects.filter(pk=user_pk).first() if user_pk else None
+    record.status = ImportRecord.Status.RUNNING
+    record.save(update_fields=["status", "updated_time"])
+    start_time, state = local_now_display(), True
+    total = success_rows = 0
+    errors, column_titles = [], []
+    aborted, abort_reason = False, None
+    try:
+        if not record.source_file or not record.source_file.filepath:
+            raise ValueError(_("Import source file not found"))
+        source_path = record.source_file.filepath.path
+
+        view_cls = import_string(view_path)
+        view = view_cls()
+        environ = {
+            "REQUEST_METHOD": "POST",
+            "SCRIPT_NAME": "",
+            "PATH_INFO": record.path or "/",
+            "SERVER_NAME": "xadmin",
+            "SERVER_PORT": "80",
+            "SERVER_PROTOCOL": "HTTP/1.1",
+            "HTTP_HOST": "xadmin",
+            "wsgi.input": BytesIO(b""),
+            "wsgi.errors": BytesIO(),
+            "wsgi.url_scheme": "http",
+        }
+        request = WSGIRequest(environ)
+        if user:
+            request._force_auth_user = user
+        drf_request = Request(request, parsers=[])
+        if user:
+            drf_request.user = user
+        view.request = drf_request
+        view.action = "import_data"
+        view.kwargs = {}
+        # get_serializer_context 依赖 format_kwarg（导出重放装配同款坑）
+        view.format_kwarg = None
+        set_current_request(drf_request)
+
+        # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）
+        import json
+
+        with open(source_path, "r", encoding="utf-8") as fp:
+            rows = json.load(fp)
+        column_titles = (record.params or {}).get("column_titles") or []
+        total = len(rows)
+        if rows:
+            # 自关联依赖拓扑排序（与同步导入 import_data 同口径，父行先建）
+            from common.core.utils import has_self_fields, topological_sort
+
+            self_field = has_self_fields(view.get_queryset().model, rows[0].keys())
+            if self_field:
+                rows = topological_sort(rows, parent=self_field)
+
+        fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
+        try:
+            with transaction.atomic():
+                for idx, row in enumerate(rows, start=1):
+                    try:
+                        with transaction.atomic():
+                            _import_row(view, record.action, row)
+                        success_rows += 1
+                    except Exception as exc:
+                        errors.append(
+                            {
+                                "row": idx,
+                                "values": {str(k): row.get(k) for k in list(row)[:32]},
+                                "error": str(exc)[:500],
+                            }
+                        )
+                        if fail_rate_limit and fail_rate_limit > 0 and failed_rate(errors, total) > fail_rate_limit:
+                            aborted = True
+                            abort_reason = _("Aborted: failure rate exceeds limit ({}/{} rows failed)").format(
+                                len(errors), total
+                            )
+                            break
+                if aborted:
+                    # 外层事务回滚：已写入的成功行一并撤销
+                    raise _ImportAborted(abort_reason)
+        except _ImportAborted:
+            pass
+    except Exception as exc:
+        state = False
+        record.status = ImportRecord.Status.FAILURE
+        record.error = str(exc)[:2000]
+        record.total = record.total or total
+        record.save(update_fields=["status", "error", "total", "updated_time"])
+        logger.exception("async import failed: %s", record_id)
+        raise
+    finally:
+        set_current_request(None)
+
+    # 走到这里：解析成功（含失败率中止回滚场景），推进终态与报告
+    try:
+        record.total = total
+        record.success_rows = 0 if aborted else success_rows
+        record.failed_rows = len(errors)
+        if aborted:
+            record.status = ImportRecord.Status.FAILURE
+            record.error = abort_reason
+        else:
+            record.status = ImportRecord.Status.SUCCESS
+            record.error = None
+        if errors and column_titles:
+            record.error_report = _upload_import_error_report(record, user, column_titles, errors)
+        record.save(
+            update_fields=["total", "success_rows", "failed_rows", "status", "error", "error_report", "updated_time"]
+        )
+        logger.info(
+            "async import done: total %s, success %s, failed %s, aborted %s",
+            total,
+            record.success_rows,
+            record.failed_rows,
+            aborted,
+        )
+    except Exception:
+        logger.exception("async import finalize failed: %s", record_id)
+        raise
+    finally:
+        if user:
+            try:
+                ImportDataMessage(
+                    user,
+                    {
+                        "task_name": record.name,
+                        "view_doc": record.module or record.name,
+                        "state": state,
+                        "status": _("Operation successful") if state else _("Operation failed"),
+                        "tasks": [
+                            {
+                                "task_id": str(record.pk),
+                                "start_time": start_time,
+                                "end_time": local_now_display(),
+                                "result": record.error
+                                or _("Imported {} rows, {} failed").format(record.success_rows, record.failed_rows),
+                            }
+                        ],
+                    },
+                ).publish()
+            except Exception:
+                logger.warning("Send import data message failed", exc_info=True)
+    return record.success_rows
+
+
+def failed_rate(errors, total):
+    """当前失败率（total 防零）。"""
+    return len(errors) / max(total, 1)

@@ -122,6 +122,9 @@ class Config(dict):
         "SECURITY_LOGIN_LIMIT_COUNT": 7,
         "SECURITY_LOGIN_LIMIT_TIME": 30,  # Unit: minute
         "SECURITY_CHECK_DIFFERENT_CITY_LOGIN": True,
+        # 新设备/新 IP 登录提醒（异常登录提醒第二维度，与异地城市提醒互补；默认关闭渐进启用）
+        "SECURITY_ABNORMAL_LOGIN_ALERT_ENABLED": False,
+        "SECURITY_LOGIN_BASELINE_DAYS": 30,  # 判定基线窗口（近 N 天成功登录历史）
         # 登录IP限制的规则
         "SECURITY_LOGIN_IP_BLACK_LIST": [],
         "SECURITY_LOGIN_IP_WHITE_LIST": [],
@@ -183,6 +186,11 @@ class Config(dict):
         "EXPORT_MAX_LIMIT": 20000,  # 限制导出数据数量
         # 异步导出记录与产物保留天数（下载中心），超期由 auto_clean_export_record_job 清理
         "EXPORT_FILE_KEEP_DAYS": 7,
+        # 异步导入记录/源文件/错误报告保留天数（下载中心），超期由 auto_clean_import_record_job 清理
+        "IMPORT_RECORD_KEEP_DAYS": 30,
+        "IMPORT_FAIL_RATE_LIMIT": 0.5,  # 异步导入失败率中止阈值；0 表示不按失败率中止
+        "IMPORT_ASYNC_MAX_RUNNING": 3,  # 同一用户同时进行中的异步导入任务上限；0 表示不限制
+        "IMPORT_VALIDATE_ERROR_LIMIT": 200,  # 导入前校验返回的错误行明细上限
         # 软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
         "RECYCLE_BIN_RETENTION_DAYS": 30,
         # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；

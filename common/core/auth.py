@@ -9,7 +9,8 @@ import hashlib
 
 from django.http.cookie import parse_cookie
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed, NotAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
@@ -84,3 +85,56 @@ class CookieJWTAuthentication(JWTAuthentication):
             except Exception:  # noqa: BLE001 会话刷新失败不影响认证
                 pass
         return result
+
+
+class PersonalAccessTokenAuthentication(BaseAuthentication):
+    """个人访问令牌（PAT）认证：`Authorization: Pat <token>`。
+
+    - 与 JWT 认证链并列（DEFAULT_AUTHENTICATION_CLASSES 末位）：无 PAT 头时静默
+      返回 None，完全不影响既有认证方式；带了 PAT 头但无效则显式 401（fail-closed）。
+    - PAT 完全继承所属用户（creator）既有权限：三层权限/数据权限/审计全链路天然生效，
+      不能越过用户权限。
+    - 不建 UserSession、不受 UserTokenRevokedCache 影响（按 iat 只针对 JWT）；
+      吊销 = 置 is_active=False，每次认证查库即时生效。
+    - last_used_time 经 Redis 60s 节流更新，防止高频机器请求刷库。
+    """
+
+    keyword = "pat"
+    LAST_USED_THROTTLE_SECONDS = 60
+
+    @staticmethod
+    def hash_token(raw_token: str) -> str:
+        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    def authenticate(self, request):
+        header = request.META.get("HTTP_AUTHORIZATION", "")
+        if not header:
+            return None
+        parts = header.split()
+        if len(parts) != 2 or parts[0].lower() != self.keyword:
+            return None
+
+        from django.apps import apps
+        from django.core.cache import cache
+        from django.utils import timezone
+
+        token_model = apps.get_model("system", "PersonalAccessToken")
+        pat = (
+            token_model.objects.filter(token_hash=self.hash_token(parts[1]), is_active=True)
+            .select_related("creator")
+            .first()
+        )
+        if pat is None:
+            raise AuthenticationFailed(_("Token is invalid or expired"))
+        now = timezone.now()
+        if pat.expired_at and pat.expired_at <= now:
+            raise AuthenticationFailed(_("Token is invalid or expired"))
+        user = pat.creator
+        if user is None or not user.is_active:
+            raise AuthenticationFailed(_("User account is disabled"))
+
+        # last_used_time 节流更新：cache.add 原子占位，60s 内多次请求只回写一次
+        throttle_key = f"pat_last_used_{pat.pk}"
+        if cache.add(throttle_key, 1, self.LAST_USED_THROTTLE_SECONDS):
+            token_model.objects.filter(pk=pat.pk).update(last_used_time=now)
+        return (user, pat)

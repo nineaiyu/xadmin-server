@@ -55,6 +55,55 @@ class DifferentCityLoginMessage(UserMessage):
 
 
 @register_message
+class AbnormalLoginMessage(UserMessage):
+    """新设备/新 IP 登录提醒（异常登录第二维度，与异地城市提醒互补）。"""
+
+    category = "AccountSecurity"
+    category_label = _("Account Security")
+    message_type_label = _("New device login reminder")
+
+    def __init__(self, user, dimensions, info):
+        # dimensions: 新维度清单（如 ["ip", "device"]）
+        self.dimensions = dimensions
+        self.info = info
+        super().__init__(user)
+
+    def get_html_msg(self) -> dict:
+        subject = _("New device login reminder")
+        dimension_texts = {
+            "ip": _("New IP address"),
+            "city": _("New city"),
+            "device": _("New device (browser/system)"),
+        }
+        info = self.info or {}
+        context = dict(
+            subject=subject,
+            name=self.user.nickname,
+            username=self.user.username,
+            # 维度清单在 Python 侧翻译好后传入模板，模板不再做带参数的翻译
+            dimensions=[dimension_texts.get(d, d) for d in self.dimensions],
+            ip=info.get("ip") or "-",
+            city=info.get("city") or "-",
+            browser=info.get("browser") or "-",
+            system=info.get("system") or "-",
+            time=info.get("time") or "-",
+        )
+        message = render_to_string("notify/msg_abnormal_login.html", context)
+        return {"subject": subject, "message": message}
+
+    @classmethod
+    def gen_test_msg(cls):
+        from system.models import UserInfo
+
+        user = UserInfo.objects.first()
+        return cls(
+            user,
+            ["ip", "device"],
+            {"ip": "8.8.8.8", "browser": "Chrome", "system": "macOS", "time": local_now_display()},
+        )
+
+
+@register_message
 class ResetPasswordSuccessMsg(UserMessage):
     category = "AccountSecurity"
     category_label = _("Account Security")
@@ -97,11 +146,15 @@ class SensitiveOperationMessage(SystemMessage):
     def get_html_msg(self) -> dict:
         op = self.operation
         subject = _("Sensitive operation alert: {} {}").format(op.get("method"), op.get("path"))
-        message = (
-            f"<p>{_('Module')}: {op.get('module') or '-'}</p>"
-            f"<p>{_('Request path')}: <code>{op.get('method')} {op.get('path')}</code></p>"
-            f"<p>{_('IpAddress')}: {op.get('ipaddress') or '-'}</p>"
-            f"<p>{_('Time')}: {op.get('created_time') or '-'}</p>"
+        message = render_to_string(
+            "notify/msg_sensitive_operation.html",
+            {
+                "module": op.get("module") or "-",
+                "method": op.get("method") or "-",
+                "path": op.get("path") or "-",
+                "ipaddress": op.get("ipaddress") or "-",
+                "time": op.get("created_time") or "-",
+            },
         )
         return {"subject": subject, "message": message}
 

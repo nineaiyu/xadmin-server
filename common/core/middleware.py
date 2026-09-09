@@ -187,7 +187,14 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                         v = settings.API_MODEL_MAP.get(request.path, v)
                         if not v and model:
                             v = model._meta.label
-                    log = OperationLog(module=str(v)[:OPERATION_LOG_MODULE_MAX])
+                    log = OperationLog(
+                        module=str(v)[:OPERATION_LOG_MODULE_MAX],
+                        # 行级变更历史：detail 路由从 URL kwargs 提取对象主键（pk 兜底 id），
+                        # list/create 等无 pk 路由留空；转 str 兼容 UUID/整型主键
+                        object_pk=str(object_pk)
+                        if (object_pk := view_kwargs.get("pk") or view_kwargs.get("id"))
+                        else None,
+                    )
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
                     setattr(request, "request_module", v)

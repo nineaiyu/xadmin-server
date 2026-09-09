@@ -43,7 +43,11 @@ def get_signature_user(scope):
     for backend_str in settings.REST_FRAMEWORK.get("DEFAULT_AUTHENTICATION_CLASSES"):
         try:
             backend = import_string(backend_str)
-            user, auth = backend().authenticate(request)
+            result = backend().authenticate(request)
+            # DRF 语义：认证类可返回 None（未命中该凭证类型，交由下一个后端）
+            if result is None:
+                continue
+            user, auth = result
             if user:
                 user.auth = auth
                 request.user = user

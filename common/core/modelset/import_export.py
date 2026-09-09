@@ -31,6 +31,24 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
+def _flatten_row_errors(row, ser_errors, limit):
+    """把 DRF serializer.errors 展开为字段级条目 [{row, field, message}]，最多 limit 条。
+
+    嵌套序列化器（dict 值）无法定位单一字段，整体 JSON 序列化进 message。
+    """
+    items = []
+    for field, msgs in (ser_errors or {}).items():
+        if not isinstance(msgs, list):
+            msgs = [msgs]
+        for msg in msgs:
+            if isinstance(msg, dict):
+                msg = json.dumps(msg, ensure_ascii=False, default=str)
+            items.append({"row": row, "field": field, "message": str(msg)[:200]})
+            if len(items) >= limit:
+                return items
+    return items
+
+
 def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
     task = kwargs.get(
         "task", request.query_params.get("task", "true").lower() in ["true", "1", "yes"]
@@ -145,7 +163,169 @@ class OnlyExportDataAction(ListAction):
         )
 
 
-class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
+class ImportAsyncAction(object):
+    """导入前校验与异步导入（大数据量场景，记录与错误报告在下载中心获取）。
+
+    协议与同步 import-data 完全同源：请求体即文件原始内容（Content-Type
+    text/csv / text/xlsx），由同一套文件解析器（ExcelFileParser/CSVFileParser）
+    解析为行数据；`action` 走查询参数。差异仅在后续处理：
+    - import-validate：逐行校验不落库，同步返回错误行定位；
+    - import-async：行数据序列化为 JSON 落 UploadFile(is_tmp=True)，任务内
+      直接读行导入（大文件不塞 broker 消息，也不重复解析）。
+    """
+
+    def _get_rows_and_titles(self, request):
+        """从文件解析器产物中取行数据与原表头。"""
+        rows = request.data
+        if isinstance(rows, dict):
+            rows = [rows]
+        pairs = getattr(request, "jms_context", {}).get("column_title_field_pairs") or []
+        column_titles = [title for title, _field in pairs if title]
+        return rows, column_titles
+
+    def _import_context(self, request):
+        """提取导入上下文：目标模型、视图路径、提交者。"""
+        model = self.get_queryset().model
+        view_path = f"{self.__class__.__module__}.{self.__class__.__name__}"
+        return model, view_path, getattr(request.user, "pk", None)
+
+    def _check_running_limit(self, request):
+        """同用户并发上限（IMPORT_ASYNC_MAX_RUNNING，0=不限制），超限返回提示文案。"""
+        from django.apps import apps
+
+        from common.core.config import SysConfig
+
+        max_running = SysConfig.IMPORT_ASYNC_MAX_RUNNING
+        if max_running <= 0:
+            return None
+        import_record_model = apps.get_model("system", "ImportRecord")
+        running = import_record_model.objects.filter(
+            creator=request.user,
+            status__in=[import_record_model.Status.PENDING, import_record_model.Status.RUNNING],
+        ).count()
+        if running >= max_running:
+            return _("Too many import tasks in progress (limit {}), please wait for them to finish").format(max_running)
+        return None
+
+    @staticmethod
+    def _save_rows_file(rows, user, filename):
+        """行数据序列化为 JSON 落 UploadFile(is_tmp=True)，供任务内读取。"""
+        import json
+
+        from django.apps import apps
+        from django.core.files.base import ContentFile
+
+        upload_model = apps.get_model("system", "UploadFile")
+        content = json.dumps(rows, ensure_ascii=False, default=str).encode("utf-8")
+        instance = upload_model(
+            filename=filename,
+            filesize=len(content),
+            mime_type="application/json",
+            is_tmp=True,
+            is_upload=False,
+            creator=user,
+        )
+        instance.filepath.save(filename, ContentFile(content), save=False)
+        instance.save()
+        return instance
+
+    def _create_import_record(self, request, model, action_type, column_titles):
+        from django.apps import apps
+        from django.utils import timezone as dj_timezone
+
+        import_record_model = apps.get_model("system", "ImportRecord")
+        name = "import_{}".format(dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
+        return import_record_model.objects.create(
+            name=name,
+            module=str(model._meta.verbose_name),
+            path=request.path,
+            action=action_type,
+            params={"action": action_type, "column_titles": column_titles},
+            # 显式赋值消除 threadlocal 注入的时序依赖（OwnerFilter 依赖 creator）
+            creator=request.user if getattr(request.user, "pk", None) else None,
+        )
+
+    @extend_schema(
+        request=OpenApiRequest(build_basic_type(OpenApiTypes.BINARY)),
+        responses=get_default_response_schema(
+            {
+                "total": build_basic_type(OpenApiTypes.NUMBER),
+                "valid_count": build_basic_type(OpenApiTypes.NUMBER),
+                "invalid_count": build_basic_type(OpenApiTypes.NUMBER),
+                "errors_truncated": build_basic_type(OpenApiTypes.BOOL),
+                "errors": build_object_type(
+                    properties={
+                        "row": build_basic_type(OpenApiTypes.NUMBER),
+                        "field": build_basic_type(OpenApiTypes.STR),
+                        "message": build_basic_type(OpenApiTypes.STR),
+                    }
+                ),
+            }
+        ),
+    )
+    @action(methods=["post"], detail=False, url_path="import-validate")
+    def import_validate(self, request, *args, **kwargs):
+        """导入前校验{cls}数据（逐行校验不落库，返回字段级错误定位）"""
+        from common.core.config import SysConfig
+
+        rows, _column_titles = self._get_rows_and_titles(request)
+        errors, limit = [], SysConfig.IMPORT_VALIDATE_ERROR_LIMIT
+        invalid_count = 0
+        for idx, row in enumerate(rows, start=1):
+            serializer = self.get_serializer(data=row)
+            if not serializer.is_valid():
+                invalid_count += 1
+                if len(errors) < limit:
+                    # 字段级展开：{row, field, message}，前端可精确定位到具体字段
+                    errors.extend(_flatten_row_errors(idx, serializer.errors, limit - len(errors)))
+        return ApiResponse(
+            data={
+                "total": len(rows),
+                "valid_count": len(rows) - invalid_count,
+                "invalid_count": invalid_count,
+                "errors_truncated": invalid_count > 0 and len(errors) >= limit,
+                "errors": errors,
+            }
+        )
+
+    @extend_schema(
+        request=OpenApiRequest(build_basic_type(OpenApiTypes.BINARY)),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="import-async")
+    def import_async(self, request, *args, **kwargs):
+        """异步导入{cls}数据（大数据量，进度与错误报告在下载中心获取）"""
+        from django.db import transaction
+        from django.utils.module_loading import import_string
+
+        action_type = request.query_params.get("action") or "create"
+        if action_type not in ("create", "update"):
+            return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
+        rows, column_titles = self._get_rows_and_titles(request)
+        if not rows:
+            return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
+        limit_tip = self._check_running_limit(request)
+        if limit_tip:
+            return ApiResponse(code=1001, detail=limit_tip)
+        model, view_path, user_pk = self._import_context(request)
+        record = self._create_import_record(request, model, action_type, column_titles)
+        # 行数据落 UploadFile(is_tmp=True)：任务内直接读 JSON，不重复解析原文件
+        record.source_file = self._save_rows_file(rows, request.user, f"{record.pk}_rows.json")
+        record.save(update_fields=["source_file", "updated_time"])
+        args = [str(record.pk), view_path, user_pk]
+        task = import_string("system.tasks.async_import_data_task")
+        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+            # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
+            task.apply(args=args, task_id=str(record.pk))
+        else:
+            transaction.on_commit(lambda: task.apply_async(args=args, task_id=str(record.pk)))
+        return ApiResponse(
+            data={"record_id": str(record.pk), "task_id": str(record.pk)},
+            detail=_("Import task submitted"),
+        )
+
+
+class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, OnlyExportDataAction):
     filter_queryset: Callable
     get_queryset: Callable
     get_serializer: Callable
@@ -188,6 +368,8 @@ class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):
                 return response
 
         # 同步导入数据
+        # Deprecated：ignore_error=true 会静默丢弃失败行（无任何痕迹），仅为兼容保留；
+        # 需要失败行定位/错误报告请改走 import-validate + import-async（异步导入 2.0）
         act = request.query_params.get("action")
         ignore_error = request.query_params.get("ignore_error", "false") == "true"
         if act and data:

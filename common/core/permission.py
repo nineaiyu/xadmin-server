@@ -113,8 +113,8 @@ class IsAuthenticated(BasePermission):
             p_data = p_data_new = get_menu_pk(permission_data, url)
 
             if p_data:
-                # 导入导出功能，若未绑定模型，则使用list, create菜单（异步导出同此规则）
-                match_group = re.match("(?P<url>.*)/(export|import)-(data|async)$", url)
+                # 导入导出功能，若未绑定模型，则使用list, create菜单（异步导出/校验/异步导入同此规则）
+                match_group = re.match("(?P<url>.*)/(export|import)-(data|async|validate)$", url)
                 if match_group and p_data[1] is None:
                     url = match_group.group("url")
                     p_data_new = get_menu_pk(permission_data, url)

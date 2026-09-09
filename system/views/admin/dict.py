@@ -121,8 +121,8 @@ class DataDictViewSet(BaseModelSet, ImportExportDataAction):
     )
     @action(methods=["post"], detail=True, url_path="move")
     def move(self, request, *args, **kwargs):
-        """同层内上移/下移一位（重排同层 sort，列表与消费端均按 sort 升序）
-
+        """同层内上移/下移一位
+        （重排同层 sort，列表与消费端均按 sort 升序）
         body: {"direction": "up" | "down"}。已在边界时不做变更并正常返回（幂等）。
         """
         instance = self.get_object()
@@ -151,6 +151,8 @@ class DataDictViewSet(BaseModelSet, ImportExportDataAction):
     @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="refresh-cache")
     def refresh_cache(self, request, *args, **kwargs):
-        """清空全部字典缓存：直连改库等绕过信号的场景手动触发立即生效。"""
+        """清空全部字典缓存
+        直连改库等绕过信号的场景手动触发立即生效。
+        """
         invalid_dict_cache()
         return ApiResponse(detail=_("Operation successful"))

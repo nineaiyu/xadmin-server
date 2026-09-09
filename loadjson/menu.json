@@ -6732,5 +6732,166 @@
       "method": "GET",
       "model": []
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "199f3351-cc88-5273-9629-b6c78177c4e8",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "list:SystemImportRecord",
+      "rank": 10012,
+      "path": "api/system/imports$",
+      "component": null,
+      "is_active": true,
+      "meta": "6c8c299b-1a61-5bfc-9d2e-34b8ffa1271e",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "02e2c4d5-2a16-5331-952c-e197c80681d2",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "retrieve:SystemImportRecord",
+      "rank": 10013,
+      "path": "api/system/imports/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "0a70fef2-5f0e-52bb-8051-44669d7a8ade",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "4e0ca513-2e8e-566b-90b1-d8956fca38a6",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "destroy:SystemImportRecord",
+      "rank": 10014,
+      "path": "api/system/imports/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "af29708d-6208-5503-a346-9282cc329ada",
+      "method": "DELETE",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "abc905f8-ffe0-53f4-bf64-6d7728475e3c",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "batchDestroy:SystemImportRecord",
+      "rank": 10015,
+      "path": "api/system/imports/batch-destroy$",
+      "component": null,
+      "is_active": true,
+      "meta": "ab418ac4-9116-5f40-a0d0-147b53510e02",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "43ed3032-93a0-54dc-8d26-a19f297cddfb",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "download:SystemImportRecord",
+      "rank": 10016,
+      "path": "api/system/imports/(?P<pk>[^/.]+)/download$",
+      "component": null,
+      "is_active": true,
+      "meta": "f3c957d3-eb90-5765-9e13-95e9bd757e7e",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2c73b2cb-5370-5464-9a33-cef152a02943",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "log:SystemImportRecord",
+      "rank": 10017,
+      "path": "api/system/imports/(?P<pk>[^/.]+)/log$",
+      "component": null,
+      "is_active": true,
+      "meta": "c53453e2-16b5-5972-8658-c16e1061fead",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "fea4e689-f2a7-54d5-a611-5bf92fd431b2",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+      "menu_type": 2,
+      "name": "changeHistory:SystemUser",
+      "rank": 10018,
+      "path": "api/system/logs/operation$",
+      "component": null,
+      "is_active": true,
+      "meta": "6b82029d-4c7e-55d6-9675-2a337ed1f7c4",
+      "method": "GET",
+      "model": []
+    }
   }
 ]

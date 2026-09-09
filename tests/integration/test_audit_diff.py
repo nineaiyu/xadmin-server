@@ -18,8 +18,14 @@ def notice(db, superuser):
     return MessageContent.objects.create(title="审计测试", message="<p>v1</p>", notice_type=2)
 
 
-def test_update_records_changes(auth_client, notice, settings, django_capture_on_commit_callbacks):
-    settings.AUDIT_DIFF_MODELS = ["notifications.MessageContent"]
+def test_update_records_changes(auth_client, notice, monkeypatch, django_capture_on_commit_callbacks):
+    # SysConfig 有存储级缓存（settings 回退值只在首读时生效），
+    # 单测内扩容白名单走 patch property（与 test_export_record 的 SysConfig 覆写范式一致）
+    from common.core.config import SysConfig
+
+    monkeypatch.setattr(
+        type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["notifications.MessageContent"]), raising=False
+    )
     with django_capture_on_commit_callbacks(execute=True):
         resp = auth_client.patch(f"{NOTICE_URL}/{notice.pk}", {"title": "审计测试v2"}, format="json")
     assert resp.status_code == 200, resp.data
@@ -28,6 +34,8 @@ def test_update_records_changes(auth_client, notice, settings, django_capture_on
     changes = json.loads(log.changes)
     assert changes["title"]["old"] == "审计测试"
     assert changes["title"]["new"] == "审计测试v2"
+    # 中间件从 detail 路由 URL kwargs 提取对象主键（转 str 存储）
+    assert log.object_pk == str(notice.pk)
 
 
 def test_whitelist_off_by_default(auth_client, notice, django_capture_on_commit_callbacks):
@@ -38,3 +46,16 @@ def test_whitelist_off_by_default(auth_client, notice, django_capture_on_commit_
 
     log = OperationLog.objects.filter(path__icontains="notice-messages", method="PATCH").latest("id")
     assert not log.changes
+
+
+def test_list_request_has_no_object_pk(auth_client, django_capture_on_commit_callbacks):
+    """计划 Task 2.3：list/create 等无 pk 路由的日志行 object_pk 留空（仅 detail 路由提取）。
+
+    GET 不在 API_LOG_METHODS 白名单，用 POST create（同样无 pk kwargs）验证。
+    """
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.post("/api/system/dict", {"code": "oplog-pk-none", "label": "对象定位"}, format="json")
+    assert resp.status_code == 200, resp.data
+
+    log = OperationLog.objects.filter(path="/api/system/dict", method="POST").latest("id")
+    assert not log.object_pk

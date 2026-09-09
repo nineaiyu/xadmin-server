@@ -1,0 +1,20 @@
+{% load i18n %}
+<p>
+    {% trans 'Hello' %} {{ name }},
+</p>
+<p>
+    {% trans 'Your account has been logged in from a new device or IP, please pay attention' %}
+</p>
+<ul>
+    {% for item in dimensions %}<li>{{ item }}</li>{% endfor %}
+</ul>
+<p>
+    <b>{% trans 'IpAddress' %}:</b> {{ ip }}<br>
+    <b>{% trans 'Login city' %}:</b> {{ city }}<br>
+    <b>{% trans 'Browser' %}:</b> {{ browser }}<br>
+    <b>{% trans 'System' %}:</b> {{ system }}<br>
+    <b>{% trans 'Login Date' %}:</b> {{ time }}
+</p>
+<p>
+    {% trans 'If you suspect that the login behavior is abnormal, please modify the account password in time.' %}
+</p>

@@ -20,7 +20,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from common.utils.request import get_request_ip
+from common.utils.ip import get_ip_city
+from common.utils.request import get_request_ip, get_browser, get_os
 from mfa.services import generate_login_mfa_token, get_login_mfa_methods, is_login_mfa_required
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
 from system.models import UserInfo, UserLoginLog
@@ -105,6 +106,18 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         return
     request.user = user_obj
     check_different_city_login_if_need(user_obj, ipaddr)
+    if login_type != UserLoginLog.LoginTypeChoices.WEBSOCKET:
+        # 新设备/新 IP/新城市登录提醒（默认关闭；内部全吞异常，绝不影响登录）。
+        # WS 接入不触发：页面伴随登录已提醒过，WS 再提醒只制造重复噪音（计划登记边界）
+        from system.utils.login_alert import maybe_alert_abnormal_login
+
+        maybe_alert_abnormal_login(
+            user_obj,
+            ipaddr,
+            str(get_ip_city(ipaddr) or ""),
+            get_browser(request),
+            get_os(request),
+        )
     save_login_log(request, login_type=login_type)
 
 

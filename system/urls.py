@@ -14,6 +14,7 @@ from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
+from system.views.admin.import_ import ImportRecordViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 from system.views.admin.online import UserOnlineViewSet
@@ -44,6 +45,7 @@ from system.views.task import (
     TaskExecutionViewSet,
 )
 from system.views.user.login_log import UserLoginLogViewSet
+from system.views.user.token import PersonalAccessTokenViewSet
 from system.views.user.userinfo import UserInfoViewSet
 
 app_name = "system"
@@ -87,6 +89,7 @@ router.register("search/menu", SearchMenuViewSet, basename="SearchMenu")
 no_detail_router.register("userinfo", UserInfoViewSet, basename="userinfo")
 router.register("user/log", UserLoginLogViewSet, basename="user_login_log")
 router.register("configs", ConfigsViewSet, basename="configs")
+router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="personal_access_token")
 
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
@@ -111,6 +114,8 @@ router.register("file", UploadFileViewSet, basename="file")
 
 # 导出下载中心
 router.register("exports", ExportRecordViewSet, basename="export_record")
+# 导入记录（下载中心「导入记录」页签）
+router.register("imports", ImportRecordViewSet, basename="import_record")
 
 # 定时任务管理（django_celery_beat）
 router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")

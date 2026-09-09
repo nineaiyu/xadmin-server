@@ -21,6 +21,10 @@ class OperationLogFilter(BaseFilterSet):
     path = filters.CharFilter(field_name="path", lookup_expr="icontains")
     module = filters.CharFilter(field_name="module", lookup_expr="icontains")
     method = filters.CharFilter(field_name="method")
+    # 行级变更历史：按对象主键精确回溯该行全部操作日志（中间件从 detail 路由
+    # URL kwargs 提取 object_pk；模块维度可再用 module 过滤缩小范围）
+    object_pk = filters.CharFilter(field_name="object_pk", lookup_expr="exact", label=_("Object pk"))
+    path_exact = filters.CharFilter(field_name="path", lookup_expr="exact", label=_("Exact path"))
     response_code = filters.NumberFilter(field_name="response_code", label=_("Response code"))
     exec_time_min = filters.NumberFilter(field_name="exec_time", lookup_expr="gte", label=_("Exec time from"))
     exec_time_max = filters.NumberFilter(field_name="exec_time", lookup_expr="lte", label=_("Exec time to"))
@@ -53,6 +57,8 @@ class OperationLogFilter(BaseFilterSet):
             "response_code",
             "method",
             "path",
+            "path_exact",
+            "object_pk",
             "exec_time_min",
             "exec_time_max",
             "has_changes",

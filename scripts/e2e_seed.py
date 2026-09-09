@@ -207,6 +207,14 @@ def main() -> None:
     # ---- 定时任务管理页演示数据 ----
     seed_periodic_task()
 
+    # ---- 敏感操作告警关闭：删除类用例触发 WS 站内信实时弹窗，盖在抽屉按钮上 ----
+    # 造成点击「element is not stable」（回收站恢复用例实测命中）；告警链路由单测覆盖。
+    # 注意：方法清单为空 =「不按方法过滤」（全告警），须用永不命中的哨兵值关闭
+    from common.core.config import SysConfig
+
+    SysConfig.set_value("SENSITIVE_OPERATION_METHODS", ["__E2E_DISABLED__"])
+    print("sensitive operation alert disabled")
+
     print("E2E seed done")
 
 

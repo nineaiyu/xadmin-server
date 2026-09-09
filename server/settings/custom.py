@@ -19,6 +19,7 @@ PERMISSION_WHITE_URL = {
     "^/api/common/resources/cache$": ["*"],
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
+    "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
 }
 
 # 前端权限路由 忽略配置

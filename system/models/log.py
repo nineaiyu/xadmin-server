@@ -61,6 +61,9 @@ class UserLoginLog(DbAuditModel):
 class OperationLog(DbAuditModel):
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
     path = models.CharField(max_length=400, verbose_name=_("URL path"), null=True, blank=True)
+    # 行级变更历史对象定位：detail 路由由中间件从 URL kwargs 提取（pk 兜底 id），
+    # list/create 等无 pk 路由留空；转 str 存储兼容 UUID/整型主键
+    object_pk = models.CharField(max_length=64, verbose_name=_("Object pk"), null=True, blank=True)
     body = models.TextField(verbose_name=_("Request body"), null=True, blank=True)
     method = models.CharField(max_length=8, verbose_name=_("Request method"), null=True, blank=True)
     ipaddress = models.GenericIPAddressField(verbose_name=_("IpAddress"), null=True, blank=True)
@@ -84,6 +87,10 @@ class OperationLog(DbAuditModel):
             models.Index(fields=["request_uuid"], name="idx_oplog_request_uuid"),
             # 慢请求检索（监控面板 slow / exec_time 区间过滤）
             models.Index(fields=["exec_time"], name="idx_oplog_exec_time"),
+            # 行级变更历史（RePlusPage「变更历史」按 module + object_pk 回溯该行全部操作）
+            models.Index(fields=["module", "object_pk"], name="idx_oplog_module_objectpk"),
+            # path 前缀检索（操作日志页 path 过滤）
+            models.Index(fields=["path"], name="idx_oplog_path"),
         ]
 
     @classmethod

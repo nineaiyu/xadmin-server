@@ -214,6 +214,19 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("SENSITIVE_OPERATION_PATHS", [])
 
     @property
+    def AUDIT_DIFF_MODELS(self):
+        """字段级审计 diff 白名单（模型 _meta.label JSON 清单，默认空 = 关闭）。
+
+        优先读系统配置（管理员可运行时扩容），未登记时回退 django settings
+        （config.yml 链路 / settings_e2e.py 的 AUDIT_DIFF_MODELS 仍然生效）。
+        注意必须用 django.conf.settings 惰性对象：本模块顶部的 `from server
+        import settings` 是 conf 静态模块，读不到 settings_e2e 尾部的显式覆盖。
+        """
+        from django.conf import settings as dj_settings
+
+        return self.get_value("AUDIT_DIFF_MODELS", getattr(dj_settings, "AUDIT_DIFF_MODELS", []) or [])
+
+    @property
     def EXPORT_FILE_KEEP_DAYS(self):
         """异步导出记录与产物保留天数（下载中心，默认 7 天）。"""
         return int(self.get_value("EXPORT_FILE_KEEP_DAYS", getattr(settings, "EXPORT_FILE_KEEP_DAYS", 7)))
@@ -237,6 +250,26 @@ class BaseConfCache(ConfigCacheBase):
     def USER_SESSION_RETENTION_DAYS(self):
         """已结束会话记录保留天数（在线用户/会话管理，默认 30 天）。"""
         return int(self.get_value("USER_SESSION_RETENTION_DAYS", 30))
+
+    @property
+    def IMPORT_RECORD_KEEP_DAYS(self):
+        """异步导入记录、源文件与错误报告保留天数（下载中心，默认 30 天）。"""
+        return int(self.get_value("IMPORT_RECORD_KEEP_DAYS", 30))
+
+    @property
+    def IMPORT_FAIL_RATE_LIMIT(self):
+        """异步导入失败率中止阈值（默认 0.5；0 表示不按失败率中止）。"""
+        return float(self.get_value("IMPORT_FAIL_RATE_LIMIT", 0.5))
+
+    @property
+    def IMPORT_ASYNC_MAX_RUNNING(self):
+        """同一用户同时进行中的异步导入任务上限（默认 3；0 表示不限制）。"""
+        return int(self.get_value("IMPORT_ASYNC_MAX_RUNNING", 3))
+
+    @property
+    def IMPORT_VALIDATE_ERROR_LIMIT(self):
+        """导入前校验返回的错误行明细上限（默认 200，超出截断并标记）。"""
+        return int(self.get_value("IMPORT_VALIDATE_ERROR_LIMIT", 200))
 
 
 class MessagePushConfCache(ConfigCacheBase):
