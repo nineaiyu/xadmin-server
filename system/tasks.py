@@ -192,6 +192,14 @@ def build_export_request(record, query_params, user):
     return request
 
 
+def _save_progress(record, percent):
+    """运行中进度落库（0-100）：进度条数据源，终态由任务结束分支覆盖。"""
+    percent = max(0, min(100, int(percent)))
+    if record.progress != percent:
+        record.progress = percent
+        record.save(update_fields=["progress", "updated_time"])
+
+
 @shared_task(bind=True, verbose_name=_("Async export data"))
 def async_export_data_task(self, record_id, view_path, query_params, user_pk):
     """异步执行数据导出：重放 export_data 视图，产物落 UploadFile 供下载中心取用。
@@ -220,7 +228,10 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
     )
     user = UserInfo.objects.filter(pk=user_pk).first() if user_pk else None
     record.status = ExportRecord.Status.RUNNING
-    record.save(update_fields=["status", "updated_time"])
+    # 导出为视图整体重放，无法逐行上报，仅里程碑粒度：RUNNING 10 → 计数完成 30 →
+    # 内容渲染完成 80 → SUCCESS 100
+    record.progress = 10
+    record.save(update_fields=["status", "progress", "updated_time"])
     start_time, total, state = local_now_display(), 0, True
     try:
         request = build_export_request(record, query_params, user)
@@ -239,12 +250,14 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
             probe.request.user = user
         total = probe.filter_queryset(probe.get_queryset()).count()
         logger.info("async export %s total rows: %s", view_path, total)
+        _save_progress(record, 30)
 
         response = view_cls.as_view({"get": "export_data"})(request)
         response.render()
         if response.status_code != 200:
             raise ValueError(f"export view returned status {response.status_code}")
         content = response.content
+        _save_progress(record, 80)
 
         filename = f"{record.name}.{record.file_format}"
         upload = UploadFile(
@@ -260,8 +273,9 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
         record.file = upload
         record.rows = min(total, getattr(settings, "EXPORT_MAX_LIMIT", total))
         record.status = ExportRecord.Status.SUCCESS
+        record.progress = 100
         record.error = None
-        record.save(update_fields=["file", "rows", "status", "error", "updated_time"])
+        record.save(update_fields=["file", "rows", "status", "progress", "error", "updated_time"])
         logger.info("async export done: %s bytes, rows: %s", len(content), record.rows)
     except Exception as exc:
         state = False
@@ -452,6 +466,14 @@ def async_import_data_task(self, record_id, view_path, user_pk):
                                 len(errors), total
                             )
                             break
+                    # 分批上报进度（1% 粒度）与实时行数统计，供下载中心进度条展示
+                    percent = int(idx / max(total, 1) * 100)
+                    if percent != record.progress:
+                        record.progress = percent
+                        record.total = total
+                        record.success_rows = success_rows
+                        record.failed_rows = len(errors)
+                        record.save(update_fields=["progress", "total", "success_rows", "failed_rows", "updated_time"])
                 if aborted:
                     # 外层事务回滚：已写入的成功行一并撤销
                     raise _ImportAborted(abort_reason)
@@ -478,11 +500,21 @@ def async_import_data_task(self, record_id, view_path, user_pk):
             record.error = abort_reason
         else:
             record.status = ImportRecord.Status.SUCCESS
+            record.progress = 100
             record.error = None
         if errors and column_titles:
             record.error_report = _upload_import_error_report(record, user, column_titles, errors)
         record.save(
-            update_fields=["total", "success_rows", "failed_rows", "status", "error", "error_report", "updated_time"]
+            update_fields=[
+                "total",
+                "success_rows",
+                "failed_rows",
+                "status",
+                "progress",
+                "error",
+                "error_report",
+                "updated_time",
+            ]
         )
         logger.info(
             "async import done: total %s, success %s, failed %s, aborted %s",

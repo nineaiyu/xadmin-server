@@ -59,6 +59,7 @@ def test_export_async_runs_task_when_eager(superuser):
     record.refresh_from_db()
     assert record.status == ExportRecord.Status.SUCCESS
     assert record.rows >= 1
+    assert record.progress == 100
     assert record.file_id is not None
     record.file.refresh_from_db()
     assert record.file.filesize > 0
@@ -84,6 +85,8 @@ def test_export_task_failure_records_error(superuser):
     record.refresh_from_db()
     assert record.status == ExportRecord.Status.FAILURE
     assert "boom" in record.error
+    # 失败任务不伪造完成度（里程碑进度保留，绝不到 100）
+    assert record.progress < 100
 
 
 def test_download_action_streams_file(superuser, normal_user):

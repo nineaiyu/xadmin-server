@@ -48,6 +48,8 @@ class ImportRecord(DbAuditModel):
     total = models.IntegerField(_("Total rows"), null=True, blank=True)
     success_rows = models.IntegerField(_("Success rows"), default=0)
     failed_rows = models.IntegerField(_("Failed rows"), default=0)
+    # 运行中按已处理行数分批上报（0-100），终态 SUCCESS 置 100；运行中同步刷新行数统计
+    progress = models.PositiveSmallIntegerField(_("Progress"), default=0)
     source_file = models.ForeignKey(
         "system.UploadFile",
         on_delete=models.SET_NULL,

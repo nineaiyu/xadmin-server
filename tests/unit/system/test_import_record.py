@@ -89,6 +89,7 @@ def test_import_async_runs_task_when_eager(superuser):
     assert record.total == 2
     assert record.success_rows == 1
     assert record.failed_rows == 1
+    assert record.progress == 100
     # savepoint 隔离：非法行不影响合法行入库
     from system.models.dict import DataDict
 
@@ -115,6 +116,8 @@ def test_import_async_aborts_when_fail_rate_exceeded(superuser, monkeypatch):
     assert record.status == ImportRecord.Status.FAILURE
     assert record.success_rows == 0
     assert record.error and "Aborted" in record.error
+    # 中止发生在首个失败行（3 行/0.3 阈值），未及写入进度
+    assert record.progress == 0
     assert record.error_report_id is not None
     from system.models.dict import DataDict
 

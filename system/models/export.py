@@ -41,6 +41,8 @@ class ExportRecord(DbAuditModel):
         db_index=True,
     )
     rows = models.IntegerField(_("Row count"), null=True, blank=True)
+    # 运行中分批上报（0-100），终态 SUCCESS 置 100；导出为整体渲染，仅里程碑粒度
+    progress = models.PositiveSmallIntegerField(_("Progress"), default=0)
     file = models.ForeignKey(
         "system.UploadFile",
         on_delete=models.SET_NULL,

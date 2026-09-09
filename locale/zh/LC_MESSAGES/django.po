@@ -1757,6 +1757,10 @@ msgstr "状态"
 msgid "Row count"
 msgstr "行数"
 
+#: system/models/export.py system/models/import_.py
+msgid "Progress"
+msgstr "进度"
+
 #: system/models/export.py:49 system/serializers/export.py:20
 msgid "Export file"
 msgstr "导出文件"
