@@ -29,6 +29,7 @@ class MessageAction(str, Enum):
     PUSH_MESSAGE = "push_message"  # 站内信/通知推送
     CHAT_MESSAGE = "chat_message"  # 聊天室消息（双向）
     TASK_LOG = "task_log"  # 任务执行日志增量推送（system/ws.py）
+    MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
 
 
 class InboundMessage(TypedDict, total=False):
@@ -89,3 +90,19 @@ class TaskLogPayload(TypedDict):
     offset: int
     content: str
     finished: bool
+
+
+class MonitorPushPayload(TypedDict, total=False):
+    """监控指标推送帧（system/ws_monitor.py）。
+
+    section=live：主机实时快照（高频，psutil 直读）；
+    section=panel：服务健康 / Redis / Celery / 慢请求 / 趋势（低频重采集）。
+    """
+
+    section: str
+    live: Dict[str, Any]
+    services: Dict[str, Any]
+    redis: Dict[str, Any]
+    celery: Dict[str, Any]
+    slow: Dict[str, Any]
+    trend: List[Dict[str, Any]]

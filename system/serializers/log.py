@@ -11,7 +11,8 @@ from rest_framework import serializers
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
-from system.models import UserLoginLog, OperationLog
+from system.models import UserLoginLog, OperationLog, UserSession
+from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)
 
@@ -34,6 +35,8 @@ class OperationLogSerializer(BaseModelSerializer):
             "status_code",
             "body",
             "response_result",
+            # 字段级审计 diff 进详情/导出（表格列仍保持精简）
+            "changes",
             "created_time",
         ]
 
@@ -55,6 +58,7 @@ class OperationLogSerializer(BaseModelSerializer):
 
     response_result = serializers.JSONField()
     body = serializers.JSONField()
+    changes = serializers.JSONField(required=False, allow_null=True)
 
 
 class LoginLogSerializer(BaseModelSerializer):
@@ -91,6 +95,14 @@ class LoginLogSerializer(BaseModelSerializer):
         extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}
 
     online = serializers.SerializerMethodField(read_only=True, label=_("Online"))
+    # 登录类型字典化：管理员可在数据字典 login_type 维护文案/颜色；merge 模式
+    # 保证字典只配部分选项时，其余枚举值（写入路径 save_login_log）不受影响
+    login_type = DictChoiceField(
+        dict_code="login_type",
+        fallback_choices=UserLoginLog.LoginTypeChoices.choices,
+        value_cast=int,
+        merge_fallback=True,
+    )
 
     @extend_schema_field(serializers.IntegerField)
     def get_online(self, obj):
@@ -112,9 +124,49 @@ class UserLoginLogSerializer(LoginLogSerializer):
         read_only_fields = [x.name for x in UserLoginLog._meta.fields]
 
 
-class UserOnlineSerializer(LoginLogSerializer):
+class UserSessionSerializer(BaseModelSerializer):
+    """在线会话（统一数据源）：WS 会话 + 纯 HTTP 会话。
+
+    字段与旧版 UserOnlineSerializer（UserLoginLog）保持同名兼容，前端零改动；
+    行主键从登录日志 pk 变为 UserSession pk（行维度「下线」按会话失效）。
+    """
+
+    # 登录类型字典化（与登录日志页同口径：字典未配置回退枚举，merge 保写入兼容）
+    login_type = DictChoiceField(
+        dict_code="login_type",
+        fallback_choices=UserLoginLog.LoginTypeChoices.choices,
+        value_cast=int,
+        merge_fallback=True,
+    )
+
     class Meta:
-        model = UserLoginLog
-        fields = ["pk", "creator", "channel_name", "agent", "city", "system", "browser", "ipaddress", "created_time"]
-        read_only_fields = [x.name for x in UserLoginLog._meta.fields]
+        model = UserSession
+        fields = [
+            "pk",
+            "creator",
+            "channel_name",
+            "login_type",
+            "agent",
+            "city",
+            "system",
+            "browser",
+            "ipaddress",
+            "status",
+            "last_active",
+            "created_time",
+        ]
+        table_fields = [
+            "pk",
+            "creator",
+            "ipaddress",
+            "city",
+            "channel_name",
+            "login_type",
+            "browser",
+            "system",
+            "status",
+            "last_active",
+            "created_time",
+        ]
+        read_only_fields = ["pk", "creator"]
         extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}

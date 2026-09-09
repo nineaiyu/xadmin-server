@@ -10,6 +10,8 @@ from rest_framework.routers import SimpleRouter
 from common.core.routers import NoDetailRouter
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.dept import DeptViewSet
+from system.views.admin.dict import DataDictViewSet
+from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.menu import MenuViewSet
@@ -29,6 +31,7 @@ from system.views.auth.token import RefreshTokenAPIView, CaptchaAPIView, TempTok
 from system.views.auth.verify_code import SendVerifyCodeAPIView
 from system.views.configs import ConfigsViewSet
 from system.views.dashboard import DashboardViewSet
+from system.views.monitor import MonitorViewSet
 from system.views.routes import UserRoutesAPIView
 from system.views.search.dept import SearchDeptViewSet
 from system.views.search.menu import SearchMenuViewSet
@@ -72,6 +75,7 @@ router_url = [
 ]
 # 面板信息
 router.register("dashboard", DashboardViewSet, basename="dashboard")
+router.register("monitor", MonitorViewSet, basename="monitor")
 
 # 仅数据搜索
 router.register("search/user", SearchUserViewSet, basename="SearchUser")
@@ -91,6 +95,7 @@ router.register("menu", MenuViewSet, basename="menu")
 router.register("role", RoleViewSet, basename="role")
 router.register("permission", DataPermissionViewSet, basename="permission")
 router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
+router.register("dict", DataDictViewSet, basename="data_dict")
 router.register("online", UserOnlineViewSet, basename="online_socket")
 
 # 配置相关
@@ -103,6 +108,9 @@ router.register("logs/login", LoginLogViewSet, basename="login_log")
 
 # 文件管理
 router.register("file", UploadFileViewSet, basename="file")
+
+# 导出下载中心
+router.register("exports", ExportRecordViewSet, basename="export_record")
 
 # 定时任务管理（django_celery_beat）
 router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")

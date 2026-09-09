@@ -4,10 +4,11 @@
 
 from django.urls import re_path
 
-from . import ws
+from . import ws, ws_monitor
 
 app_name = "system"
 
 urlpatterns = [
     re_path(r"ws/tasks/log/(?P<pk>[0-9a-f]{32}|[0-9a-f\-]{36})$", ws.TaskLogNotify.as_asgi()),
+    re_path(r"ws/system/monitor/$", ws_monitor.MonitorNotify.as_asgi()),
 ]

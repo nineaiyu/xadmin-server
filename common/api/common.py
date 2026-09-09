@@ -7,8 +7,6 @@
 import time
 import uuid
 
-from django.conf import settings
-from django.core.cache import cache
 from django.utils import translation
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
 from drf_spectacular.types import OpenApiTypes
@@ -21,6 +19,7 @@ from common.cache.storage import CommonResourceIDsCache
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.country import COUNTRY_CALLING_CODES, COUNTRY_CALLING_CODES_ZH
+from common.utils.health import probe_celery, probe_db, probe_redis
 
 
 class ResourcesIDCacheAPIView(GenericAPIView):
@@ -80,55 +79,18 @@ class HealthCheckAPIView(GenericAPIView):
 
     permission_classes = (AllowAny,)
 
+    # 探测逻辑已抽至 common/utils/health.py（与监控面板共用），此处保留方法名以兼容既有调用方
     @staticmethod
     def get_db_status():
-        # 使用最基础的 SELECT 1 探测数据库连通性，
-        # 不依赖任何业务表（此前依赖 Monitor 表，在未启用 celery monitor 时会误报 db_status=false）
-        t1 = time.time()
-        try:
-            from django.db import connection
-
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-            t2 = time.time()
-            return True, t2 - t1
-        except Exception as e:
-            return False, str(e)
+        return probe_db()
 
     @staticmethod
     def get_redis_status():
-        key = "HEALTH_CHECK"
-
-        t1 = time.time()
-        try:
-            value = "1"
-            cache.set(key, "1", 10)
-            got = cache.get(key)
-            t2 = time.time()
-
-            if value == got:
-                return True, t2 - t1
-            return False, "Value not match"
-        except Exception as e:
-            return False, str(e)
+        return probe_redis()
 
     @staticmethod
     def get_celery_status():
-        # E2E/单进程模式（memory broker + eager celery）没有可探测的 worker 协议，
-        # inspect ping 在 memory:// 上会无限阻塞，允许通过设置显式跳过
-        if getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False):
-            return False, 0.0
-        # 探测是否存在在线 worker（inspect ping 最长阻塞 1 秒，healthcheck 轮询间隔下可接受）
-        t1 = time.time()
-        try:
-            from server.celery import app
-
-            workers = app.control.inspect(timeout=1).ping()
-            t2 = time.time()
-            return bool(workers), t2 - t1
-        except Exception as e:
-            return False, str(e)
+        return probe_celery()
 
     @extend_schema(
         responses={

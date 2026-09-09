@@ -157,6 +157,18 @@ class TaskMessage(object):
 
 
 @register_message
+class ExportDataMessage(TaskMessage, UserMessage):
+    category = "Task Message"
+    category_label = _("Task Message")
+    message_type_label = _("Export data message")
+
+    def __init__(self, user, task):
+        super().__init__(user)
+        self.task = task
+        self.subject = _("Export {} data {} message").format(self.task.get("task_name"), self.task.get("status"))
+
+
+@register_message
 class ImportDataMessage(TaskMessage, UserMessage):
     category = "Task Message"
     category_label = _("Task Message")

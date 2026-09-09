@@ -101,5 +101,194 @@
       "key": "WEB_SITE_CONFIG",
       "inherit": true
     }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e5a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b8c",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "慢请求阈值（秒），超过则记录 warning 日志",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 1.0,
+      "is_active": true,
+      "access": false,
+      "key": "SLOW_REQUEST_THRESHOLD",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e6a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b01",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "错误操作日志额外保留天数（0 = 跟随全量保留期）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 365,
+      "is_active": true,
+      "access": false,
+      "key": "OPERATION_LOG_ERROR_RETENTION_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e7a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b02",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "敏感操作告警的 HTTP 方法清单（ALL 或空表示不按方法过滤）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": [
+        "DELETE"
+      ],
+      "is_active": true,
+      "access": false,
+      "key": "SENSITIVE_OPERATION_METHODS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e8a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b03",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "敏感操作告警的路径正则清单（空表示不按路径过滤）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": [],
+      "is_active": true,
+      "access": false,
+      "key": "SENSITIVE_OPERATION_PATHS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b04",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "操作日志全量保留天数（超过由清理任务分批删除）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 180,
+      "is_active": true,
+      "access": false,
+      "key": "OPERATION_LOG_RETENTION_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b05",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "关联列下拉选项的最大返回条数，超出截断并标记 choices_truncated",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 200,
+      "is_active": true,
+      "access": false,
+      "key": "SEARCH_CHOICES_MAX_COUNT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b06",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "异步导出记录与产物保留天数（下载中心）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 7,
+      "is_active": true,
+      "access": false,
+      "key": "EXPORT_FILE_KEEP_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b07",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "同一用户同时进行中的异步导出任务上限（0 表示不限制）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 3,
+      "is_active": true,
+      "access": false,
+      "key": "EXPORT_ASYNC_MAX_RUNNING",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b08",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "主机监控心跳历史保留天数（30s 一条心跳）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 30,
+      "is_active": true,
+      "access": false,
+      "key": "MONITOR_RETENTION_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b09",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "纯 HTTP 会话在线判定窗口（秒）：超过无活动视为离线",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 300,
+      "is_active": true,
+      "access": false,
+      "key": "SESSION_ONLINE_TIMEOUT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b0a",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "已结束会话记录保留天数（在线用户/会话管理）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 30,
+      "is_active": true,
+      "access": false,
+      "key": "USER_SESSION_RETENTION_DAYS",
+      "inherit": false
+    }
   }
 ]

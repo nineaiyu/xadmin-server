@@ -11,9 +11,10 @@ import math
 import uuid
 from typing import Callable
 
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRequest, OpenApiResponse
 from rest_framework.decorators import action
@@ -21,6 +22,7 @@ from rest_framework.decorators import action
 from common.core.modelset.crud import CreateAction, ListAction, UpdateAction
 from common.core.response import ApiResponse
 from common.core.utils import has_self_fields, topological_sort
+from common.swagger.utils import get_default_response_schema
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
 from common.tasks import background_task_view_set_job
@@ -81,6 +83,66 @@ class OnlyExportDataAction(ListAction):
         request.accepted_renderer = None
         data = self.list(request, *args, **kwargs)
         return data
+
+    @extend_schema(
+        request=OpenApiRequest(build_object_type(properties={"type": build_basic_type(OpenApiTypes.STR)})),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="export-async")
+    def export_async(self, request, *args, **kwargs):
+        """异步导出{cls}数据（大数据量，产物在下载中心获取）"""
+        from django.apps import apps
+        from django.db import transaction
+        from django.utils import timezone as dj_timezone
+        from django.utils.module_loading import import_string
+
+        from common.core.config import SysConfig
+
+        params = dict(request.data) if isinstance(request.data, dict) else {}
+        for key, value in request.query_params.items():
+            params.setdefault(key, value)
+        file_format = params.get("type") or "xlsx"
+        model = self.get_queryset().model
+        name = "{}_{}".format(model._meta.model_name, dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
+        # 跨 app 惰性取模型/任务：common 层不直接依赖 system（契约层约束，见 check_cross_app_imports）
+        export_record_model = apps.get_model("system", "ExportRecord")
+        # 同用户并发上限：导出是最重的后台任务，防止重复点击/脚本刷爆 worker
+        max_running = SysConfig.EXPORT_ASYNC_MAX_RUNNING
+        if max_running > 0:
+            running = export_record_model.objects.filter(
+                creator=request.user,
+                status__in=[export_record_model.Status.PENDING, export_record_model.Status.RUNNING],
+            ).count()
+            if running >= max_running:
+                return ApiResponse(
+                    code=1001,
+                    detail=_("Too many export tasks in progress (limit {}), please wait for them to finish").format(
+                        max_running
+                    ),
+                )
+        record = export_record_model.objects.create(
+            name=name,
+            module=str(model._meta.verbose_name),
+            path=request.path,
+            file_format=file_format,
+            params=params,
+        )
+        args = [
+            str(record.pk),
+            f"{self.__class__.__module__}.{self.__class__.__name__}",
+            params,
+            getattr(request.user, "pk", None),
+        ]
+        task = import_string("system.tasks.async_export_data_task")
+        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+            # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
+            task.apply(args=args, task_id=str(record.pk))
+        else:
+            transaction.on_commit(lambda: task.apply_async(args=args, task_id=str(record.pk)))
+        return ApiResponse(
+            data={"record_id": str(record.pk), "task_id": str(record.pk)},
+            detail=_("Export task submitted"),
+        )
 
 
 class ImportExportDataAction(CreateAction, UpdateAction, OnlyExportDataAction):

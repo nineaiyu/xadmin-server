@@ -20,11 +20,22 @@ from message.services import get_online_users_layers
 from settings.services import LoginBlockUtil
 from settings.services import check_password_rules
 from system.models import UserInfo
+from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)
 
 
 class UserSerializer(BaseModelSerializer):
+    # gender 下拉由数据字典驱动（字典类型 user_gender）：标签/选项在字典页维护即时生效；
+    # 字典未配置时回退模型 GenderChoices，value 回调整型适配 IntegerField
+    gender = DictChoiceField(
+        dict_code="user_gender",
+        value_cast=int,
+        fallback_choices=UserInfo.GenderChoices.choices,
+        required=False,  # 模型 default=UNKNOWN 兜底；显式声明不继承 build_standard_field 的 default
+        label=_("Gender"),
+    )
+
     class Meta:
         model = UserInfo
         fields = [

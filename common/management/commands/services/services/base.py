@@ -1,8 +1,10 @@
 import abc
 import datetime
 import shutil
+import signal
 import subprocess
 import threading
+import time
 
 import psutil
 
@@ -120,10 +122,33 @@ class BaseService(object):
         if self.is_running:
             self.show_status()
             return
+        # pid 文件可能仍指向在跑的旧进程（如其他容器误删 pid 文件导致 watcher
+        # 误判已停止）：先终止旧进程再拉起，避免同名 worker 堆积引发
+        # DuplicateNodenameWarning（控制广播收到同一节点多个回复）
+        self._terminate_stale()
         self.remove_pid()
         self.open_subprocess()
         self.write_pid()
         self.start_other()
+
+    def _terminate_stale(self):
+        pid = self.pid
+        if pid <= 0:
+            return
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return
+        for _ in range(self.STOP_TIMEOUT):
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return
+            time.sleep(1)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
 
     def start_other(self):
         pass

@@ -17,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
 from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.filters import BaseFilterBackend
 
 from common.base.magic import timeit, count_sql_queries
@@ -254,7 +255,9 @@ class BaseFilterSet(filters.FilterSet):
         pks = CommonResourceIDsCache(value).get_storage_cache()
         if pks:
             return queryset.filter(pk__in=pks)
-        return queryset
+        # spm 缺失/过期必须 fail-closed：selected 范围绝不能静默放行为全量
+        # （异步导出重放在队列积压超过 spm TTL 时，曾因此把勾选导出退化成全量导出）
+        raise RestValidationError(_("Resource selection has expired, please reselect"))
 
 
 class PkMultipleChoiceField(MultipleChoiceField):

@@ -123,6 +123,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "04f3ac58-8c9f-56ed-9a55-17259173c051",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "items:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/items$",
+      "component": null,
+      "is_active": true,
+      "meta": "fdcb74a7-82ef-5b49-b74c-2da1a025f656",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
     "fields": {
       "created_time": "2024-01-22T09:32:15.632Z",
@@ -536,6 +559,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "14563bb8-beb9-5c66-a856-ddbcde6b03bc",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "retrieve:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "f8b2f943-8a54-5d3e-b033-3f992a6ee3a1",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "14622100-4732-4f48-ae6f-7189a3407c89",
     "fields": {
       "created_time": "2024-01-22T09:32:09.958Z",
@@ -943,6 +989,29 @@
       "model": [
         "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "2b3c4d5e-6f70-4819-93a4-b5c6d7e8f001",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "list:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports$",
+      "component": null,
+      "is_active": true,
+      "meta": "3c4d5e6f-7081-492a-a4b5-c6d7e8f00211",
+      "method": "GET",
+      "model": []
     }
   },
   {
@@ -1372,6 +1441,29 @@
       "is_active": true,
       "meta": "d95d4ae2-749c-4bc1-8c19-f5a1d04642f5",
       "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "3b47ab2c-86c4-54a9-b5a5-e1479ea16b6c",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "forceLogout:SystemUserOnline",
+      "rank": 1,
+      "path": "api/system/online/(?P<pk>[^/.]+)/force-logout$",
+      "component": null,
+      "is_active": true,
+      "meta": "b8764771-777a-5f0b-ae5e-2752135d19f1",
+      "method": "POST",
       "model": []
     }
   },
@@ -1862,6 +1954,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "4d5e6f70-8192-4a3b-b5c6-d7e8f0031122",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "retrieve:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "5e6f7081-92a3-4b4c-c6d7-e8f004112233",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "4e1c19f4-da2d-47ff-a956-c801474a77d7",
     "fields": {
       "created_time": "2026-09-07T00:00:00Z",
@@ -1972,6 +2087,29 @@
       "is_active": true,
       "meta": "6f544438-96eb-4db7-ab8d-52f06b28442f",
       "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "5040e2fb-9cd8-5a8d-8603-1d3beb8c419a",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "partialUpdate:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "086f157b-fb59-537b-82c4-2522e9d9a39a",
+      "method": "PATCH",
       "model": []
     }
   },
@@ -2260,6 +2398,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "5fc54566-0556-4ddb-a597-115b0e8a1337",
+    "fields": {
+      "created_time": "2026-09-08T00:00:00Z",
+      "updated_time": "2026-09-08T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
+      "menu_type": 2,
+      "name": "batchEnable:SystemTask",
+      "rank": 10005,
+      "path": "api/system/tasks/periodic/batch-enable$",
+      "component": null,
+      "is_active": true,
+      "meta": "1a1e7886-38e7-4801-bef1-81e9f5b6824a",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "602e20d6-9893-44ae-876a-443cbfa90703",
     "fields": {
       "created_time": "2024-01-22T09:32:05.751Z",
@@ -2304,6 +2465,29 @@
       "model": [
         "16a823b0-c4fb-40cd-af63-9aed309823aa"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "630d3d4d-6e26-5676-abb6-38db695a2546",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "importData:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/import-data$",
+      "component": null,
+      "is_active": true,
+      "meta": "f88968af-c4e5-5898-a362-23e03911f9c3",
+      "method": "POST",
+      "model": []
     }
   },
   {
@@ -2593,6 +2777,75 @@
   },
   {
     "model": "system.menu",
+    "pk": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemExportRecord",
+      "rank": 177,
+      "path": "/system/export/index",
+      "component": "system/export/index",
+      "is_active": true,
+      "meta": "1a2b3c4d-5e6f-4071-8293-a4b5c6d7e8f0",
+      "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6f708192-a3b4-4c5d-d7e8-f00511223344",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "destroy:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "708192a3-b4c5-4d6e-e8f0-061122334455",
+      "method": "DELETE",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "6f969065-6715-5ba9-9107-3f27867a9d76",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "exportData:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/export-data$",
+      "component": null,
+      "is_active": true,
+      "meta": "067bc75f-9163-5d3a-ad7a-31fd9f1586f3",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "6fbc9578-58a1-4d28-8339-6a3742b30461",
     "fields": {
       "created_time": "2024-01-22T09:32:05.121Z",
@@ -2732,6 +2985,29 @@
       "is_active": true,
       "meta": "fe2c5efd-ca5a-49ad-ad5e-b499e294f1f5",
       "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "74bac617-657c-577f-8a27-ab38a438b930",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemDataDict",
+      "rank": 179,
+      "path": "/system/dict/index",
+      "component": "system/dict/index",
+      "is_active": true,
+      "meta": "98380b56-dddb-501b-a272-92989ca3ce89",
+      "method": null,
       "model": []
     }
   },
@@ -2954,6 +3230,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "7ed9aa2b-1bda-599e-b6db-ade710d1a648",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "create:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict$",
+      "component": null,
+      "is_active": true,
+      "meta": "e6f107b3-2e72-556e-ab32-a25544246a28",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "7f02571e-499d-4c28-aec7-d5ca5a518c02",
     "fields": {
       "created_time": "2026-09-08T00:00:00Z",
@@ -3018,6 +3317,29 @@
       "is_active": true,
       "meta": "d6251644-a612-4ac3-9f78-c60a36d861d7",
       "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "8192a3b4-c5d6-4e7f-f001-122334455667",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "batchDestroy:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports/batch-destroy$",
+      "component": null,
+      "is_active": true,
+      "meta": "92a3b4c5-d6e7-4f80-1122-334455667788",
+      "method": "POST",
       "model": []
     }
   },
@@ -3644,6 +3966,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "9a9ef582-9eb7-5e89-8516-069ad108ff26",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "batchDestroy:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/batch-destroy$",
+      "component": null,
+      "is_active": true,
+      "meta": "29dc20eb-6b66-52be-8b06-82627a1c4e34",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "9aeef7b7-d637-4935-b2f6-a7b965f1b7e9",
     "fields": {
       "created_time": "2024-01-22T09:32:04.487Z",
@@ -3692,6 +4037,29 @@
       "model": [
         "585d2a2a-1c9b-42de-9b69-113e150da4a2"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9d02fec3-0a00-5031-bbd1-000480654bbe",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "destroy:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "dca607d9-ab83-5cff-b635-bb29f73a498f",
+      "method": "DELETE",
+      "model": []
     }
   },
   {
@@ -3814,6 +4182,29 @@
       "model": [
         "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "a3b4c5d6-e7f8-4091-1223-344556677889",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "download:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports/(?P<pk>[^/.]+)/download$",
+      "component": null,
+      "is_active": true,
+      "meta": "b4c5d6e7-f809-4102-2334-45566778899a",
+      "method": "GET",
+      "model": []
     }
   },
   {
@@ -4151,6 +4542,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "b2c3d4e5-f6a7-4890-9bcd-ef0123456789",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+      "menu_type": 2,
+      "name": "list:SystemMonitor",
+      "rank": 1,
+      "path": "api/system/monitor/overview$",
+      "component": null,
+      "is_active": true,
+      "meta": "c3d4e5f6-a7b8-4901-abcd-ef012345678a",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "b33d5c82-133a-483e-a37f-6b08e5971499",
     "fields": {
       "created_time": "2026-09-06T00:00:00Z",
@@ -4217,6 +4631,29 @@
       "is_active": true,
       "meta": "d01d4946-f805-4968-bddc-f7ce494a2243",
       "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b5eb1a82-5477-4ee8-afb1-38c20c2a75ea",
+    "fields": {
+      "created_time": "2026-09-08T00:00:00Z",
+      "updated_time": "2026-09-08T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
+      "menu_type": 2,
+      "name": "clone:SystemTask",
+      "rank": 10011,
+      "path": "api/system/tasks/periodic/(?P<pk>[^/.]+)/clone$",
+      "component": null,
+      "is_active": true,
+      "meta": "e5381e9b-f2ec-420a-9a21-7bbbeba42d93",
+      "method": "POST",
       "model": []
     }
   },
@@ -4357,6 +4794,29 @@
       "is_active": true,
       "meta": "bc08feaf-e914-4546-bc7e-1a5d7295dfc1",
       "method": "PATCH",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b8c9d0e1-f2a3-4e56-f012-3456789abcde",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+      "menu_type": 2,
+      "name": "celeryInfo:SystemMonitor",
+      "rank": 1,
+      "path": "api/system/monitor/celery$",
+      "component": null,
+      "is_active": true,
+      "meta": "c9d0e1f2-a3b4-4f67-0123-456789abcdef",
+      "method": "GET",
       "model": []
     }
   },
@@ -4596,6 +5056,29 @@
       "component": null,
       "is_active": true,
       "meta": "91336fe2-7343-469f-8dbf-f2dcc454897f",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c5d6e7f8-0912-4213-3445-566778899aab",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "log:SystemExportRecord",
+      "rank": 1,
+      "path": "api/system/exports/(?P<pk>[^/.]+)/log$",
+      "component": null,
+      "is_active": true,
+      "meta": "d6e7f809-1234-4324-4556-6778899aabbc",
       "method": "GET",
       "model": []
     }
@@ -4872,6 +5355,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "d0e1f2a3-b4c5-4068-1234-56789abcdef0",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+      "menu_type": 2,
+      "name": "slowList:SystemMonitor",
+      "rank": 1,
+      "path": "api/system/monitor/slow$",
+      "component": null,
+      "is_active": true,
+      "meta": "e1f2a3b4-c5d6-4179-2345-6789abcdef01",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "d29bfc9a-3334-4e12-84f3-65de82b0862c",
     "fields": {
       "created_time": "2024-11-01T04:33:25.988Z",
@@ -4941,6 +5447,29 @@
       "model": [
         "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "d4e5f6a7-b8c9-4a12-bcde-f0123456789b",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+      "menu_type": 2,
+      "name": "services:SystemMonitor",
+      "rank": 1,
+      "path": "api/system/monitor/services$",
+      "component": null,
+      "is_active": true,
+      "meta": "e5f6a7b8-c9d0-4b23-cdef-0123456789ac",
+      "method": "GET",
+      "model": []
     }
   },
   {
@@ -5619,6 +6148,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "ec04599f-1862-41a7-8220-7c845b0a68db",
+    "fields": {
+      "created_time": "2026-09-08T00:00:00Z",
+      "updated_time": "2026-09-08T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
+      "menu_type": 2,
+      "name": "batchDisable:SystemTask",
+      "rank": 10006,
+      "path": "api/system/tasks/periodic/batch-enable$",
+      "component": null,
+      "is_active": true,
+      "meta": "9bd8ac51-0d91-46cd-acb3-4b91b2dfff72",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "ec617cfc-6e12-49d6-b6e0-1700862606d0",
     "fields": {
       "created_time": "2026-09-07T00:00:00Z",
@@ -5760,6 +6312,29 @@
   },
   {
     "model": "system.menu",
+    "pk": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+      "menu_type": 1,
+      "name": "SystemMonitor",
+      "rank": 178,
+      "path": "/system/monitor/index",
+      "component": "system/monitor/index",
+      "is_active": true,
+      "meta": "a9b8c7d6-e5f4-4321-8765-fedcba987654",
+      "method": null,
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "f2107787-4453-4bc3-898c-a1449e39bf67",
     "fields": {
       "created_time": "2024-03-01T02:43:16.147Z",
@@ -5835,6 +6410,52 @@
   },
   {
     "model": "system.menu",
+    "pk": "f2be4851-95e0-57e7-a6fc-11b8c73db10f",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+      "menu_type": 2,
+      "name": "list:SystemDataDict",
+      "rank": 1,
+      "path": "api/system/dict$",
+      "component": null,
+      "is_active": true,
+      "meta": "e25274bd-42ad-55d5-89d9-ad4a7aadb355",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f459163e-bdbb-5ca4-9838-a31023ef00a6",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+      "menu_type": 2,
+      "name": "batchForceLogout:SystemUserOnline",
+      "rank": 1,
+      "path": "api/system/online/batch-force-logout$",
+      "component": null,
+      "is_active": true,
+      "meta": "66b4b82a-c0ea-59f6-89d3-951ff36743a9",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
     "pk": "f61b845e-46c3-453f-910e-a2f82d3622b9",
     "fields": {
       "created_time": "2026-09-08T00:00:00Z",
@@ -5880,6 +6501,29 @@
         "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
         "11ad085f-8749-4098-be4c-9ca685fd21b7"
       ]
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "f6a7b8c9-d0e1-4c34-def0-123456789abd",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+      "menu_type": 2,
+      "name": "redisInfo:SystemMonitor",
+      "rank": 1,
+      "path": "api/system/monitor/redis-info$",
+      "component": null,
+      "is_active": true,
+      "meta": "a7b8c9d0-e1f2-4d45-ef01-23456789abce",
+      "method": "GET",
+      "model": []
     }
   },
   {
@@ -6017,72 +6661,6 @@
       "is_active": true,
       "meta": "e22be42e-7ce2-4a86-b625-38fdadca0531",
       "method": "GET",
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": "5fc54566-0556-4ddb-a597-115b0e8a1337",
-    "fields": {
-      "created_time": "2026-09-08T00:00:00Z",
-      "updated_time": "2026-09-08T00:00:00Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
-      "menu_type": 2,
-      "name": "batchEnable:SystemTask",
-      "rank": 10005,
-      "path": "api/system/tasks/periodic/batch-enable$",
-      "component": null,
-      "is_active": true,
-      "meta": "1a1e7886-38e7-4801-bef1-81e9f5b6824a",
-      "method": "POST",
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": "b5eb1a82-5477-4ee8-afb1-38c20c2a75ea",
-    "fields": {
-      "created_time": "2026-09-08T00:00:00Z",
-      "updated_time": "2026-09-08T00:00:00Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
-      "menu_type": 2,
-      "name": "clone:SystemTask",
-      "rank": 10011,
-      "path": "api/system/tasks/periodic/(?P<pk>[^/.]+)/clone$",
-      "component": null,
-      "is_active": true,
-      "meta": "e5381e9b-f2ec-420a-9a21-7bbbeba42d93",
-      "method": "POST",
-      "model": []
-    }
-  },
-  {
-    "model": "system.menu",
-    "pk": "ec04599f-1862-41a7-8220-7c845b0a68db",
-    "fields": {
-      "created_time": "2026-09-08T00:00:00Z",
-      "updated_time": "2026-09-08T00:00:00Z",
-      "description": null,
-      "creator": 1,
-      "modifier": 1,
-      "dept_belong": null,
-      "parent": "cad6c60d-48c7-4aed-b1fa-3896a301ce1e",
-      "menu_type": 2,
-      "name": "batchDisable:SystemTask",
-      "rank": 10006,
-      "path": "api/system/tasks/periodic/batch-enable$",
-      "component": null,
-      "is_active": true,
-      "meta": "9bd8ac51-0d91-46cd-acb3-4b91b2dfff72",
-      "method": "POST",
       "model": []
     }
   }

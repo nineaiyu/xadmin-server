@@ -113,6 +113,14 @@ class SimpleMetadataWithFilters(SimpleMetadata):
 
         elif isinstance(field, serializers.ChoiceField):
             self.set_choices_field(field, field_info)
+            # 数据字典驱动字段（DictChoiceField）携带的颜色映射：choices 附带
+            # color，前端据此渲染彩色 tag；普通 ChoiceField 无该属性，零开销跳过
+            colors = getattr(field, "choice_colors", None)
+            if colors:
+                for choice in field_info.get("choices", []):
+                    color = colors.get(str(choice.get("value")))
+                    if color:
+                        choice["color"] = color
 
         if field.field_name == "id":
             field_info["label"] = "ID"

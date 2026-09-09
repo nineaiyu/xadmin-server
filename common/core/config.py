@@ -193,6 +193,51 @@ class BaseConfCache(ConfigCacheBase):
         """
         return self.get_value("SEARCH_CHOICES_MAX_COUNT", 200)
 
+    @property
+    def SLOW_REQUEST_THRESHOLD(self):
+        """慢请求阈值（秒）：超阈值打 warning 日志，监控面板 slow 接口同口径（默认 1.0）。"""
+        return float(self.get_value("SLOW_REQUEST_THRESHOLD", 1.0))
+
+    @property
+    def OPERATION_LOG_ERROR_RETENTION_DAYS(self):
+        """错误操作日志（status_code != 1000）额外保留天数（默认 365；0/空 = 跟随全量保留期）。"""
+        return self.get_value("OPERATION_LOG_ERROR_RETENTION_DAYS", 365)
+
+    @property
+    def SENSITIVE_OPERATION_METHODS(self):
+        """敏感操作告警的 HTTP 方法清单（默认 ["DELETE"]；"ALL" 或空表示不按方法过滤）。"""
+        return self.get_value("SENSITIVE_OPERATION_METHODS", ["DELETE"])
+
+    @property
+    def SENSITIVE_OPERATION_PATHS(self):
+        """敏感操作告警的路径正则清单（默认空 = 不按路径过滤，与方法清单 AND 组合）。"""
+        return self.get_value("SENSITIVE_OPERATION_PATHS", [])
+
+    @property
+    def EXPORT_FILE_KEEP_DAYS(self):
+        """异步导出记录与产物保留天数（下载中心，默认 7 天）。"""
+        return int(self.get_value("EXPORT_FILE_KEEP_DAYS", getattr(settings, "EXPORT_FILE_KEEP_DAYS", 7)))
+
+    @property
+    def EXPORT_ASYNC_MAX_RUNNING(self):
+        """同一用户同时进行中的异步导出任务上限（默认 3；0 表示不限制）。"""
+        return int(self.get_value("EXPORT_ASYNC_MAX_RUNNING", 3))
+
+    @property
+    def MONITOR_RETENTION_DAYS(self):
+        """主机监控心跳历史保留天数（common.Monitor 30s 一条，默认 30 天）。"""
+        return int(self.get_value("MONITOR_RETENTION_DAYS", 30))
+
+    @property
+    def SESSION_ONLINE_TIMEOUT(self):
+        """纯 HTTP 会话的在线判定窗口（秒）：last_active 超过该窗口视为离线（默认 300）。"""
+        return int(self.get_value("SESSION_ONLINE_TIMEOUT", 300))
+
+    @property
+    def USER_SESSION_RETENTION_DAYS(self):
+        """已结束会话记录保留天数（在线用户/会话管理，默认 30 天）。"""
+        return int(self.get_value("USER_SESSION_RETENTION_DAYS", 30))
+
 
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):

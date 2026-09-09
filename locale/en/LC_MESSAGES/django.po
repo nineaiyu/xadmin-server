@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-08 22:12+0800\n"
+"POT-Creation-Date: 2026-09-09 14:37+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,12 +45,13 @@ msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr ""
 
-#: common/core/auth.py:25 common/core/filter.py:228 common/core/filter.py:235
+#: common/core/auth.py:25 common/core/filter.py:229 common/core/filter.py:236
 #: common/core/permission.py:137
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:38 system/utils/auth.py:121
+#: common/core/auth.py:40 common/core/auth.py:45 common/core/auth.py:50
+#: system/utils/auth.py:121
 msgid "Token is invalid or expired"
 msgstr ""
 
@@ -95,6 +96,10 @@ msgstr ""
 msgid "The query set is empty."
 msgstr ""
 
+#: common/core/filter.py:260
+msgid "Resource selection has expired, please reselect"
+msgstr ""
+
 #: common/core/models.py:24 common/core/models.py:31
 #: settings/serializers/security.py:267
 msgid "ID"
@@ -113,7 +118,8 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: common/core/models.py:157 system/serializers/task.py:235
+#: common/core/models.py:157 system/serializers/export.py:22
+#: system/serializers/task.py:235
 msgid "Creator"
 msgstr ""
 
@@ -138,18 +144,28 @@ msgstr ""
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
-#: common/core/modelset/import_export.py:61
+#: common/core/modelset/import_export.py:63
 msgid "Task add success"
 msgstr ""
 
-#: common/core/modelset/import_export.py:153
+#: common/core/modelset/import_export.py:119
+#, python-brace-format
+msgid ""
+"Too many export tasks in progress (limit {}), please wait for them to finish"
+msgstr ""
+
+#: common/core/modelset/import_export.py:144
+msgid "Export task submitted"
+msgstr ""
+
+#: common/core/modelset/import_export.py:215
 #, python-brace-format
 msgid "Operation successful. Import {} data"
 msgstr ""
 
-#: common/core/modelset/import_export.py:154 system/utils/auth.py:116
-#: system/utils/modelset.py:60 system/views/auth/mfa.py:45
-#: system/views/auth/register.py:70 system/views/auth/reset.py:48
+#: common/core/modelset/import_export.py:216 system/utils/auth.py:116
+#: system/utils/modelset.py:60 system/views/auth/mfa.py:46
+#: system/views/auth/register.py:71 system/views/auth/reset.py:48
 #: system/views/auth/verify_code.py:149 system/views/auth/verify_code.py:176
 msgid "Operation failed. Abnormal data"
 msgstr ""
@@ -192,11 +208,13 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:181 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
+#: system/tasks.py:241
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:181 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:199 message/base.py:72
+#: system/tasks.py:241
 msgid "Operation failed"
 msgstr ""
 
@@ -379,23 +397,33 @@ msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr ""
 
 #: common/notifications.py:162 common/notifications.py:174
+#: common/notifications.py:186
 msgid "Task Message"
 msgstr ""
 
 #: common/notifications.py:163
-msgid "Import data message"
+msgid "Export data message"
 msgstr ""
 
 #: common/notifications.py:168
 #, python-brace-format
-msgid "Import {} data {} message"
+msgid "Export {} data {} message"
 msgstr ""
 
 #: common/notifications.py:175
-msgid "Batch delete data message"
+msgid "Import data message"
 msgstr ""
 
 #: common/notifications.py:180
+#, python-brace-format
+msgid "Import {} data {} message"
+msgstr ""
+
+#: common/notifications.py:187
+msgid "Batch delete data message"
+msgstr ""
+
+#: common/notifications.py:192
 #, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr ""
@@ -450,19 +478,19 @@ msgstr ""
 msgid "Periodic delete monitor"
 msgstr ""
 
-#: common/tasks.py:100
+#: common/tasks.py:118
 msgid "Clear celery periodic tasks"
 msgstr ""
 
-#: common/tasks.py:101
+#: common/tasks.py:119
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr ""
 
-#: common/tasks.py:123
+#: common/tasks.py:141
 msgid "Create or update periodic tasks"
 msgstr ""
 
-#: common/tasks.py:125
+#: common/tasks.py:143
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -471,11 +499,11 @@ msgid ""
 "        of scheduled tasks will be updated"
 msgstr ""
 
-#: common/tasks.py:139
+#: common/tasks.py:157
 msgid "Periodic check service performance"
 msgstr ""
 
-#: common/tasks.py:141
+#: common/tasks.py:159
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -483,15 +511,15 @@ msgid ""
 "the administrator"
 msgstr ""
 
-#: common/tasks.py:150
+#: common/tasks.py:168
 msgid "Run background task view set"
 msgstr ""
 
-#: common/tasks.py:194
+#: common/tasks.py:212
 msgid "Purge soft deleted data"
 msgstr ""
 
-#: common/tasks.py:195
+#: common/tasks.py:213
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr ""
 
@@ -531,7 +559,7 @@ msgstr ""
 
 #: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
 #: common/utils/ip/geoip/utils.py:51 system/models/log.py:27
-#: system/models/user.py:40 system/utils/auth.py:93
+#: system/models/user.py:40 system/utils/auth.py:93 system/utils/session.py:72
 msgid "Unknown"
 msgstr ""
 
@@ -633,7 +661,7 @@ msgid "Request object not found"
 msgstr ""
 
 #: mfa/const.py:15 settings/serializers/email.py:26
-#: system/serializers/user.py:142
+#: system/serializers/user.py:153
 msgid "Password"
 msgstr ""
 
@@ -665,7 +693,7 @@ msgid ""
 msgstr ""
 
 #: mfa/services.py:67 mfa/services.py:82 mfa/services.py:96
-#: system/views/auth/mfa.py:73 system/views/auth/mfa.py:117
+#: system/views/auth/mfa.py:74 system/views/auth/mfa.py:118
 msgid "The verification method is unavailable"
 msgstr ""
 
@@ -681,7 +709,7 @@ msgstr ""
 msgid "Verification successful"
 msgstr ""
 
-#: mfa/views.py:97 system/views/auth/mfa.py:77
+#: mfa/views.py:97 system/views/auth/mfa.py:78
 #: system/views/auth/verify_code.py:192
 msgid "The verification code has been sent"
 msgstr ""
@@ -853,7 +881,7 @@ msgstr ""
 msgid "Publish the station message"
 msgstr ""
 
-#: notifications/notifications.py:185
+#: notifications/notifications.py:185 system/notifications.py:104
 msgid "Time"
 msgstr ""
 
@@ -911,8 +939,9 @@ msgid "Encrypted"
 msgstr ""
 
 #: settings/models.py:19 system/models/config.py:17
-#: system/models/department.py:43 system/models/menu.py:98
-#: system/models/permission.py:19 system/models/role.py:22
+#: system/models/department.py:43 system/models/dict.py:36
+#: system/models/menu.py:98 system/models/permission.py:19
+#: system/models/role.py:22
 msgid "Is active"
 msgstr ""
 
@@ -1628,6 +1657,99 @@ msgstr ""
 msgid "Department"
 msgstr ""
 
+#: system/models/dict.py:28 system/serializers/dict.py:22
+msgid "Parent dict"
+msgstr ""
+
+#: system/models/dict.py:30
+msgid "Dict code"
+msgstr ""
+
+#: system/models/dict.py:31
+msgid "Dict label"
+msgstr ""
+
+#: system/models/dict.py:32
+msgid "Dict label (EN)"
+msgstr ""
+
+#: system/models/dict.py:33
+msgid "Dict value"
+msgstr ""
+
+#: system/models/dict.py:34
+msgid "Sort"
+msgstr ""
+
+#: system/models/dict.py:35
+msgid "Tag color"
+msgstr ""
+
+#: system/models/dict.py:40
+msgid "Data dict"
+msgstr ""
+
+#: system/models/dict.py:70 system/serializers/dict.py:81
+msgid "Dict code already exists"
+msgstr ""
+
+#: system/models/export.py:26 system/models/task.py:30
+msgid "Waiting"
+msgstr ""
+
+#: system/models/export.py:27 system/models/task.py:31
+msgid "Running"
+msgstr ""
+
+#: system/models/export.py:28 system/models/task.py:32
+msgid "Success"
+msgstr ""
+
+#: system/models/export.py:29 system/models/task.py:33
+msgid "Failure"
+msgstr ""
+
+#: system/models/export.py:32
+msgid "File name"
+msgstr ""
+
+#: system/models/export.py:33
+msgid "Source module"
+msgstr ""
+
+#: system/models/export.py:34
+msgid "Source path"
+msgstr ""
+
+#: system/models/export.py:35
+msgid "File format"
+msgstr ""
+
+#: system/models/export.py:37 system/models/session.py:33
+#: system/models/task.py:48
+msgid "Status"
+msgstr ""
+
+#: system/models/export.py:43
+msgid "Row count"
+msgstr ""
+
+#: system/models/export.py:49 system/serializers/export.py:20
+msgid "Export file"
+msgstr ""
+
+#: system/models/export.py:51
+msgid "Error message"
+msgstr ""
+
+#: system/models/export.py:52
+msgid "Export params"
+msgstr ""
+
+#: system/models/export.py:56
+msgid "Export record"
+msgstr ""
+
 #: system/models/field.py:16
 msgid "Text"
 msgstr ""
@@ -1720,20 +1842,21 @@ msgstr ""
 msgid "Login status"
 msgstr ""
 
-#: system/models/log.py:30 system/models/log.py:66
+#: system/models/log.py:30 system/models/log.py:66 system/notifications.py:103
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:31 system/templates/notify/msg_different_city.html:11
+#: system/models/log.py:31 system/models/session.py:37
+#: system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr ""
 
-#: system/models/log.py:32 system/models/log.py:67
+#: system/models/log.py:32 system/models/log.py:67 system/models/session.py:38
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr ""
 
-#: system/models/log.py:33 system/models/log.py:68
+#: system/models/log.py:33 system/models/log.py:68 system/models/session.py:39
 msgid "System"
 msgstr ""
 
@@ -1745,7 +1868,7 @@ msgstr ""
 msgid "Channel name"
 msgstr ""
 
-#: system/models/log.py:37
+#: system/models/log.py:37 system/models/session.py:42
 msgid "Login type"
 msgstr ""
 
@@ -1753,7 +1876,7 @@ msgstr ""
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:62
+#: system/models/log.py:62 system/notifications.py:101
 msgid "Module"
 msgstr ""
 
@@ -1769,7 +1892,7 @@ msgstr ""
 msgid "Request method"
 msgstr ""
 
-#: system/models/log.py:69
+#: system/models/log.py:69 system/views/admin/operationlog.py:24
 msgid "Response code"
 msgstr ""
 
@@ -1793,7 +1916,7 @@ msgstr ""
 msgid "Changed fields"
 msgstr ""
 
-#: system/models/log.py:78
+#: system/models/log.py:78 system/notifications.py:134
 msgid "Operation log"
 msgstr ""
 
@@ -1972,20 +2095,32 @@ msgstr ""
 msgid "User role"
 msgstr ""
 
-#: system/models/task.py:30
-msgid "Waiting"
+#: system/models/session.py:29 system/serializers/log.py:97
+msgid "Online"
 msgstr ""
 
-#: system/models/task.py:31
-msgid "Running"
+#: system/models/session.py:30
+msgid "Offline"
 msgstr ""
 
-#: system/models/task.py:32
-msgid "Success"
+#: system/models/session.py:35
+msgid "WS channel"
 msgstr ""
 
-#: system/models/task.py:33
-msgid "Failure"
+#: system/models/session.py:36
+msgid "Login IP"
+msgstr ""
+
+#: system/models/session.py:40
+msgid "User agent"
+msgstr ""
+
+#: system/models/session.py:44
+msgid "Last active"
+msgstr ""
+
+#: system/models/session.py:48
+msgid "User session"
 msgstr ""
 
 #: system/models/task.py:34
@@ -2008,10 +2143,6 @@ msgstr ""
 #: system/models/task.py:46 system/serializers/task.py:179
 #: system/serializers/task.py:180
 msgid "Keyword Args"
-msgstr ""
-
-#: system/models/task.py:48
-msgid "Status"
 msgstr ""
 
 #: system/models/task.py:54
@@ -2090,7 +2221,7 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
-#: system/models/user.py:59
+#: system/models/user.py:59 system/serializers/user.py:36
 msgid "Gender"
 msgstr ""
 
@@ -2106,20 +2237,37 @@ msgstr ""
 msgid "Userinfo"
 msgstr ""
 
-#: system/notifications.py:12 system/notifications.py:47
+#: system/notifications.py:25 system/notifications.py:60
 msgid "Account Security"
 msgstr ""
 
-#: system/notifications.py:13 system/notifications.py:22
+#: system/notifications.py:26 system/notifications.py:35
 msgid "Different city login reminder"
 msgstr ""
 
-#: system/notifications.py:48
+#: system/notifications.py:61
 msgid "Reset password reminder"
 msgstr ""
 
-#: system/notifications.py:58
+#: system/notifications.py:71
 msgid "Reset password success"
+msgstr ""
+
+#: system/notifications.py:91
+msgid "Audit"
+msgstr ""
+
+#: system/notifications.py:92
+msgid "Sensitive operation alert"
+msgstr ""
+
+#: system/notifications.py:99
+#, python-brace-format
+msgid "Sensitive operation alert: {} {}"
+msgstr ""
+
+#: system/notifications.py:102
+msgid "Request path"
 msgstr ""
 
 #: system/serializers/config.py:31
@@ -2138,12 +2286,16 @@ msgstr ""
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
-#: system/serializers/log.py:93
-msgid "Online"
+#: system/serializers/dict.py:74
+msgid "Parent dict cannot be itself"
+msgstr ""
+
+#: system/serializers/export.py:23
+msgid "File size"
 msgstr ""
 
 #: system/serializers/menu.py:60 system/serializers/role.py:52
-#: system/serializers/user.py:102
+#: system/serializers/user.py:113
 msgid "This field already exists"
 msgstr ""
 
@@ -2218,21 +2370,21 @@ msgstr ""
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:87
+#: system/serializers/user.py:98
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:90
+#: system/serializers/user.py:101
 msgid "Online count"
 msgstr ""
 
-#: system/serializers/user.py:134 system/serializers/user.py:147
-#: system/serializers/userinfo.py:52 system/views/auth/register.py:76
+#: system/serializers/user.py:145 system/serializers/user.py:158
+#: system/serializers/userinfo.py:52 system/views/auth/register.py:77
 #: system/views/auth/reset.py:55
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:137
+#: system/serializers/user.py:148
 msgid "Abnormal password field"
 msgstr ""
 
@@ -2246,6 +2398,15 @@ msgstr ""
 
 #: system/serializers/userinfo.py:50
 msgid "Old password verification failed"
+msgstr ""
+
+#: system/tasks.py:154
+msgid "Async export data"
+msgstr ""
+
+#: system/tasks.py:247
+#, python-brace-format
+msgid "Exported {} rows"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:16
@@ -2310,7 +2471,7 @@ msgid ""
 msgstr ""
 
 #: system/utils/auth.py:84 system/utils/auth.py:144
-#: system/views/auth/login.py:60
+#: system/views/auth/login.py:92
 #, python-brace-format
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
@@ -2491,6 +2652,18 @@ msgid ""
 "fields."
 msgstr ""
 
+#: system/views/admin/dict.py:25
+msgid "Parent code"
+msgstr ""
+
+#: system/views/admin/dict.py:61
+msgid "Dict code is required"
+msgstr ""
+
+#: system/views/admin/export.py:72 system/views/admin/export.py:75
+msgid "Export file not found"
+msgstr ""
+
 #: system/views/admin/file.py:100
 #, python-brace-format
 msgid "upload file size cannot exceed {}"
@@ -2500,7 +2673,32 @@ msgstr ""
 msgid "Wrong upload file type"
 msgstr ""
 
-#: system/views/admin/operationlog.py:21
+#: system/views/admin/online.py:89
+msgid "User not found"
+msgstr ""
+
+#: system/views/admin/online.py:93
+msgid "User forced offline (all sessions revoked)"
+msgstr ""
+
+#: system/views/admin/online.py:126
+#, python-brace-format
+msgid "Batch force offline submitted: {} users"
+msgstr ""
+
+#: system/views/admin/operationlog.py:25
+msgid "Exec time from"
+msgstr ""
+
+#: system/views/admin/operationlog.py:26
+msgid "Exec time to"
+msgstr ""
+
+#: system/views/admin/operationlog.py:27
+msgid "Has field changes"
+msgstr ""
+
+#: system/views/admin/operationlog.py:28
 msgid "Error status"
 msgstr ""
 
@@ -2512,7 +2710,7 @@ msgstr ""
 msgid "The user's MFA has been reset"
 msgstr ""
 
-#: system/views/auth/login.py:53
+#: system/views/auth/login.py:85
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -2520,19 +2718,19 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/auth/login.py:125 system/views/auth/login.py:218
+#: system/views/auth/login.py:158 system/views/auth/login.py:251
 msgid "Login forbidden"
 msgstr ""
 
-#: system/views/auth/mfa.py:43
+#: system/views/auth/mfa.py:44
 msgid "Login verification expired, please log in again"
 msgstr ""
 
-#: system/views/auth/register.py:63
+#: system/views/auth/register.py:64
 msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/auth/register.py:85
+#: system/views/auth/register.py:86
 msgid "The account already exists, please try another one"
 msgstr ""
 
@@ -2568,26 +2766,26 @@ msgstr ""
 msgid "Username does not exist"
 msgstr ""
 
-#: system/views/task.py:162
+#: system/views/task.py:138
 #, python-brace-format
 msgid "Task \"{}\" is not registered"
 msgstr ""
 
-#: system/views/task.py:167
+#: system/views/task.py:143
 msgid "Task arguments are not valid JSON"
 msgstr ""
 
-#: system/views/task.py:299
+#: system/views/task.py:275
 #, python-brace-format
 msgid "Batch execution submitted: {} success, {} failed"
 msgstr ""
 
-#: system/views/task.py:328
+#: system/views/task.py:304
 #, python-brace-format
 msgid "Batch update submitted: {} success"
 msgstr ""
 
-#: system/views/task.py:342
+#: system/views/task.py:318
 #, python-brace-format
 msgid "Task cloned: {}"
 msgstr ""

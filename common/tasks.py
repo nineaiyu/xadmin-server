@@ -92,8 +92,26 @@ def send_mail_attachment_async(subject, message, recipient_list, attachment_list
 @register_as_period_task(interval=3600)
 @after_app_ready_start
 def auto_clean_monitor_logs():
-    old_times = timezone.now() - datetime.timedelta(days=30)
-    Monitor.objects.filter(created_time__lt=old_times).delete()
+    """心跳历史保留期清理（MONITOR_RETENTION_DAYS，默认 30 天），按 pk 分批删除。
+
+    心跳 30s 一条长期落库，单批一次性 DELETE 在大保留期下会长时间锁表，
+    沿用 OperationLog.remove_expired 的分批范式。
+    """
+    from common.core.config import SysConfig
+
+    retention_days = SysConfig.MONITOR_RETENTION_DAYS
+    if retention_days <= 0:
+        return 0
+    old_times = timezone.now() - datetime.timedelta(days=retention_days)
+    removed = 0
+    batch_size = 2000
+    while True:
+        pks = list(Monitor.objects.filter(created_time__lt=old_times).values_list("pk", flat=True)[:batch_size])
+        if not pks:
+            break
+        removed += Monitor.objects.filter(pk__in=pks).delete()[0]
+    logger.info("Clean monitor heartbeat history: %s rows (retention %s days)", removed, retention_days)
+    return removed
 
 
 @shared_task(

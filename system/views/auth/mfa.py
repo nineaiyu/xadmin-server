@@ -23,6 +23,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
 from mfa.services import check_user_mfa_code, send_user_mfa_code, validate_login_mfa_token
+from system.models import UserLoginLog
 from system.utils.auth import ValidateError, get_token_lifetime
 from system.views.auth.login import login_success
 
@@ -121,11 +122,24 @@ class LoginMFAVerifyAPIView(APIView):
             raise ValidateError(msg)
 
         TokenTempCache.expired_cache_token(request.data.get("mfa_token"))
+        # 会话登记 + sid claim 绑定（同账密/验证码登录；失败不影响登录主流程）
+        session = None
+        try:
+            from system.utils.session import bind_session_claim, register_user_session
+
+            session = register_user_session(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
+        except Exception:  # noqa: BLE001 会话管理属附加能力
+            logger.warning("register user session failed", exc_info=True)
         refresh = RefreshToken.for_user(user)
-        result = {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
+        if session:
+            try:
+                refresh_str, access_str = bind_session_claim(refresh, session.pk)
+                result = {"refresh": refresh_str, "access": access_str}
+            except Exception:  # noqa: BLE001
+                logger.warning("bind session claim failed", exc_info=True)
+                result = {"refresh": str(refresh), "access": str(refresh.access_token)}
+        else:
+            result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         result.update(get_token_lifetime(user))
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])

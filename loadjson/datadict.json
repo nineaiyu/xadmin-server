@@ -1,0 +1,82 @@
+[
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e50",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": "用户性别（UserSerializer.gender 下拉的数据来源，value 对应 GenderChoices 整型）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "user_gender",
+      "label": "用户性别",
+      "value": null,
+      "sort": 0,
+      "color": null,
+      "is_active": true,
+      "label_en": "User gender"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e51",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e50",
+      "code": "unknown",
+      "label": "未知",
+      "value": "0",
+      "sort": 0,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Unknown"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e52",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e50",
+      "code": "male",
+      "label": "男",
+      "value": "1",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Male"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e53",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00.000Z",
+      "updated_time": "2026-09-09T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e50",
+      "code": "female",
+      "label": "女",
+      "value": "2",
+      "sort": 2,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Female"
+    }
+  }
+]

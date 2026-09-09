@@ -17,7 +17,13 @@ from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
 from message.utils import async_push_message, get_user_layer_group_name
 from server.utils import get_current_request
-from system.services import UserLoginLog, get_active_user_pk_by_username, login_success
+from system.services import (
+    UserLoginLog,
+    get_active_user_pk_by_username,
+    login_success,
+    register_user_session,
+    websocket_session_logout,
+)
 
 logger = get_logger(__name__)
 
@@ -58,6 +64,17 @@ def websocket_login_success(user_obj, channel_name):
     request = get_current_request()
     request.channel_name = channel_name
     login_success(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET)
+    # 会话登记（UserSession）：WS 会话在线判定走 channel 存活，登记供在线列表
+    # 统一数据源与会话管理使用；失败仅告警不影响 WS 接入
+    try:
+        register_user_session(request, user_obj, UserLoginLog.LoginTypeChoices.WEBSOCKET, channel_name=channel_name)
+    except Exception:  # noqa: BLE001 会话管理属附加能力
+        logger.warning("register websocket session failed", exc_info=True)
+
+
+@database_sync_to_async
+def websocket_logout_success(channel_name):
+    websocket_session_logout(channel_name)
 
 
 class MessageNotify(AsyncJsonWebsocket):
@@ -66,6 +83,7 @@ class MessageNotify(AsyncJsonWebsocket):
         self.group_name = ""
         self.disconnected = True
         self.user = None
+        self.ws_session_registered = False
 
     async def connect(self):
         self.user = self.scope["user"]
@@ -83,6 +101,7 @@ class MessageNotify(AsyncJsonWebsocket):
             else:  # 加入个人消息推送组
                 self.group_name = get_user_layer_group_name(self.user.pk)
                 await websocket_login_success(self.user, self.channel_name)
+                self.ws_session_registered = True
 
             self.disconnected = False
             # Join room group
@@ -93,6 +112,12 @@ class MessageNotify(AsyncJsonWebsocket):
         self.disconnected = True
         if self.group_name:
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if self.ws_session_registered:
+            # 优雅断开：按 channel 置会话离线（异常残留由保留期清理兜底）
+            try:
+                await websocket_logout_success(self.channel_name)
+            except Exception:  # noqa: BLE001
+                logger.warning("websocket session logout failed", exc_info=True)
 
         logger.info(f"{self.user} disconnect")
 

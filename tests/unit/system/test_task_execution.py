@@ -296,7 +296,6 @@ def test_ws_push_once_waits_when_file_missing(monkeypatch, tmp_path):
     consumer, captured, async_to_sync = _make_log_consumer(execution.pk)
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
     path = get_celery_task_log_path(consumer.pk)
-
     finished = async_to_sync(consumer.push_once)(path)
     assert finished is False
     assert captured[-1]["data"]["finished"] is False
@@ -413,3 +412,27 @@ def test_clean_orphan_periodic_tasks_cache_guard():
 
     assert PeriodicTask.objects.filter(pk=orphan.pk).exists() is True
     cache_mock.set.assert_not_called()
+
+
+def test_ws_log_permission_owner_and_superuser(normal_user, superuser):
+    """守护：WS 日志读取按归属判定——本人/超管可读，他人与未知 pk 拒绝。"""
+    from system.ws import can_read_task_log
+
+    execution = TaskExecution.objects.create(name="x.tasks.perm", creator=normal_user)
+    assert can_read_task_log(normal_user, str(execution.pk)) is True
+    assert can_read_task_log(superuser, str(execution.pk)) is True
+    other = UserInfo.objects.create_user(username="ws-other", password="x")
+    assert can_read_task_log(other, str(execution.pk)) is False
+    assert can_read_task_log(other, "0" * 32) is False
+
+
+def test_ws_log_permission_export_record_owner(normal_user, superuser):
+    """守护：导出记录日志同口径（本人/超管可读），与 HTTP download 归属过滤一致。"""
+    from system.models.export import ExportRecord
+    from system.ws import can_read_task_log
+
+    record = ExportRecord.objects.create(name="x", file_format="csv", creator=normal_user)
+    assert can_read_task_log(normal_user, str(record.pk)) is True
+    assert can_read_task_log(superuser, str(record.pk)) is True
+    other = UserInfo.objects.create_user(username="ws-other-2", password="x")
+    assert can_read_task_log(other, str(record.pk)) is False

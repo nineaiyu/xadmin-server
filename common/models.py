@@ -15,7 +15,7 @@ class Monitor(models.Model):
     memory_used = models.FloatField(verbose_name=_("Memory Used"))
     disk_used = models.FloatField(verbose_name=_("Disk Used"), default=0)
     boot_time = models.FloatField(verbose_name=_("Boot Time"), default=0)
-    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"))
+    created_time = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_("Created time"))
 
     class Meta:
         verbose_name = _("Monitor")

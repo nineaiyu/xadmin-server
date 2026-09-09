@@ -114,3 +114,21 @@ def serialize_user_info(user) -> dict:
     from system.serializers.userinfo import UserInfoSerializer
 
     return UserInfoSerializer(instance=user).data
+
+
+def register_user_session(request, user, login_type, channel_name=""):
+    """登录/WS 接入时登记会话（system.utils.session 契约导出，供 message app 使用）。"""
+    from system.utils.session import register_user_session as _register
+
+    return _register(request, user, login_type, channel_name=channel_name)
+
+
+def websocket_session_logout(channel_name):
+    """WS 优雅断开时按 channel 置会话离线（异常残留由保留期清理任务兜底）。"""
+    from django.utils import timezone
+
+    from system.models import UserSession
+
+    UserSession.objects.filter(channel_name=channel_name, status=UserSession.Status.ONLINE).update(
+        status=UserSession.Status.OFFLINE, last_active=timezone.now()
+    )

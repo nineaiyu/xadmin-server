@@ -15,8 +15,9 @@ from common.base.utils import remove_file
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.utils import get_logger
-from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution
+from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution, DataDict
 from system.signal import invalid_user_cache_signal
+from system.utils.dict import invalid_dict_cache
 
 logger = get_logger(__name__)
 
@@ -123,3 +124,13 @@ def delete_task_execution_log_handler(sender, **kwargs):
     instance = kwargs.get("instance")
     if instance:
         remove_file(get_celery_task_log_path(str(instance.pk)))
+
+
+@receiver([post_save, pre_delete], sender=DataDict)
+def invalid_dict_cache_handler(sender, instance, **kwargs):
+    # 字典类型变更失效该 code 缓存；类型删除需失效其下字典项缓存，全量失效更稳
+    if instance.parent_id:
+        invalid_dict_cache(instance.parent.code)
+    else:
+        invalid_dict_cache()
+    logger.info(f"invalid dict cache {instance}")

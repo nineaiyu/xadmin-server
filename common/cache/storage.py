@@ -97,6 +97,37 @@ class BlackAccessTokenCache(RedisCacheBase):
         super().__init__(self.cache_key)
 
 
+class UserTokenRevokedCache(RedisCacheBase):
+    """用户级令牌失效时间戳：强制下线时写入，iat 早于该值的 access token 一律拒绝。
+
+    服务端拿不到用户的 access token 清单（黑名单按单 token md5 存），「踢全部会话」
+    只能用时间戳比较。TTL 取 access token 寿命 + 缓冲：超过后旧 token 已自然过期，
+    无需继续保留该键；refresh 轮换后新签发的 access iat 更新，不受影响。
+    """
+
+    def __init__(self, user_id):
+        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('user_token_revoked_key')}_{user_id}"
+        lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+        timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
+        super().__init__(self.cache_key, timeout=timeout)
+
+
+class SessionTokenRevokedCache(RedisCacheBase):
+    """会话级令牌失效标记：单会话下线时写入，按 token 自定义 claim sid 精确拒绝。
+
+    与 UserTokenRevokedCache（用户级、按 iat 时间戳）互补：行维度「下线」只踢
+    目标会话，不影响该用户其他在用登录。sid 在登录签发时写入 refresh token 的
+    自定义 claim（access 派生/refresh 轮换自动继承），因此 refresh 续命也一起失效。
+    TTL 与用户级一致（access 寿命 + 缓冲，过后 token 自然过期）。
+    """
+
+    def __init__(self, session_pk):
+        self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('session_token_revoked_key')}_{session_pk}"
+        lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+        timeout = int(lifetime.total_seconds()) + 60 if lifetime else 3660
+        super().__init__(self.cache_key, timeout=timeout)
+
+
 class UserSystemConfigCache(RedisCacheBase):
     def __init__(self, prefix_key):
         self.cache_key = f"{settings.CACHE_KEY_TEMPLATE.get('config_key')}_{prefix_key}"

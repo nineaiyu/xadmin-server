@@ -108,6 +108,11 @@ class TestOptimizeQuerysetBehavior:
 
 class TestListQueryCount:
     def test_user_list_query_count_and_response(self, auth_client, user_page, monkeypatch):
+        # 预热 gender 字典缓存（UserSerializer.gender 的 DictChoiceField bind 时固定读一次），
+        # 避免该次读取落入基线/优化任一窗口，造成 16 的差值漂移
+        from system.utils.dict import get_dict_items
+
+        get_dict_items("user_gender")
         monkeypatch.setattr(UserViewSet, "auto_prefetch_related", False)
         with CaptureQueriesContext(connection) as ctx_base:
             resp_base = auth_client.get(USER_URL, {"page": 1, "size": 10})

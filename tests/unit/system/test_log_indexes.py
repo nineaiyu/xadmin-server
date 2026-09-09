@@ -10,7 +10,12 @@ from system.models import OperationLog, UploadFile, UserLoginLog
 pytestmark = pytest.mark.django_db
 
 EXPECTED = {
-    OperationLog: {"idx_oplog_created", "idx_oplog_module_created", "idx_oplog_request_uuid"},
+    OperationLog: {
+        "idx_oplog_created",
+        "idx_oplog_module_created",
+        "idx_oplog_request_uuid",
+        "idx_oplog_exec_time",
+    },
     UserLoginLog: {"idx_loginlog_created"},
     UploadFile: {"idx_uploadfile_tmp_created", "idx_uploadfile_md5sum"},
     MessageContent: {"idx_msg_created"},

@@ -35,7 +35,39 @@ from system.utils.auth import (
     ValidateError,
 )
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+from system.utils.session import bind_session_claim, register_user_session
+
 logger = get_logger(__name__)
+
+
+def _register_session_safe(request, user, login_type):
+    """登记会话（失败仅告警不影响登录）。返回 UserSession 或 None。"""
+    try:
+        return register_user_session(request, user, login_type)
+    except Exception:  # noqa: BLE001 会话管理属附加能力
+        logger.warning("register user session failed", exc_info=True)
+        return None
+
+
+class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """账密登录用：签发后登记会话，并把 sid claim 写入 token（refresh/access 同源继承）。
+
+    super().validate 返回的是已编码 token 串，按原串重新解码补 claim 再编码
+    （jti/exp 均保留，OutstandingToken 按 jti 关联不受影响）。
+    """
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        session = _register_session_safe(self.context.get("request"), self.user, UserLoginLog.LoginTypeChoices.USERNAME)
+        if session:
+            try:
+                refresh = RefreshToken(data["refresh"])
+                data["refresh"], data["access"] = bind_session_claim(refresh, session.pk)
+            except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
+                logger.warning("bind session claim failed", exc_info=True)
+        return data
 
 
 def login_failed(request, username):
@@ -92,6 +124,7 @@ class BasicLoginAPIView(TokenObtainPairView):
     """用户登录"""
 
     throttle_classes = [LoginThrottle]
+    serializer_class = SessionTokenObtainPairSerializer
 
     @extend_schema(
         request=OpenApiRequest(
@@ -239,13 +272,20 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA
             user = UserInfo.objects.get(**{query_key: target})
 
+        login_type = UserLoginLog.get_login_type(query_key)
+        session = _register_session_safe(request, user, login_type)
         refresh = RefreshToken.for_user(user)
-        result = {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
+        if session:
+            try:
+                refresh_str, access_str = bind_session_claim(refresh, session.pk)
+                result = {"refresh": refresh_str, "access": access_str}
+            except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
+                logger.warning("bind session claim failed", exc_info=True)
+                result = {"refresh": str(refresh), "access": str(refresh.access_token)}
+        else:
+            result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
         result.update(**get_token_lifetime(user))
-        login_success(request, user, login_type=UserLoginLog.get_login_type(query_key))
+        login_success(request, user, login_type=login_type)
         return ApiResponse(data=result)

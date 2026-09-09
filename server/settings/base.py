@@ -245,7 +245,18 @@ CHANNEL_LAYERS = {
         "BACKEND": "common.cache.channel.RedisChannelLayer",
         # "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
         "CONFIG": {
-            "hosts": [f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CHANNEL_LAYERS_CACHE_ID}"],
+            # 注意：这里必须用 dict 形式的 host，channels_redis 会把额外 kwargs
+            # 透传给 redis-py ConnectionPool。redis-py 8.x 起默认 socket_timeout
+            # 从 None 改为 5s，而 channels_redis 的 receive() 使用 BZPOPMIN
+            # 服务端阻塞 5s 长轮询，两个 5s 竞速会导致偶发
+            # "Timeout reading from redis" 并杀死整个 websocket consumer。
+            # 显式关闭 socket_timeout 以恢复无限阻塞等待。
+            "hosts": [
+                {
+                    "address": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CHANNEL_LAYERS_CACHE_ID}",
+                    "socket_timeout": None,
+                }
+            ],
         },
     },
 }
@@ -330,6 +341,8 @@ CACHE_KEY_TEMPLATE = {
     "mfa_confirm_state_key": "mfa_confirm_state",
     "mfa_otp_bind_key": "mfa_otp_bind",
     "mfa_otp_used_key": "mfa_otp_used",
+    "user_token_revoked_key": "user_token_revoked",
+    "session_token_revoked_key": "session_token_revoked",
 }
 
 APPEND_SLASH = False

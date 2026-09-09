@@ -181,6 +181,8 @@ class Config(dict):
         "PERMISSION_DATA_ENABLED": True,  # 数据权限控制
         "REFERER_CHECK_ENABLED": False,  # referer 校验
         "EXPORT_MAX_LIMIT": 20000,  # 限制导出数据数量
+        # 异步导出记录与产物保留天数（下载中心），超期由 auto_clean_export_record_job 清理
+        "EXPORT_FILE_KEEP_DAYS": 7,
         # 软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
         "RECYCLE_BIN_RETENTION_DAYS": 30,
         # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；

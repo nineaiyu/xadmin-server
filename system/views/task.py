@@ -13,7 +13,6 @@ DatabaseScheduler 在 --max-interval（启动参数默认 60s）内感知生效�
 """
 
 import json
-import os
 
 from django.conf import settings
 from django.db import transaction
@@ -25,7 +24,6 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
-from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 from common.core.modelset import ListDeleteModelSet, BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -37,6 +35,7 @@ from system.serializers.task import (
     PeriodicTaskSerializer,
     TaskExecutionSerializer,
 )
+from system.utils.task_log import read_task_log_chunk
 
 
 class TaskExecutionFilter(filters.FilterSet):
@@ -59,8 +58,6 @@ class TaskExecutionViewSet(ListDeleteModelSet):
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "date_start", "date_finished"]
 
-    LOG_READ_CHUNK = 64 * 1024
-
     @extend_schema(
         responses=get_default_response_schema(
             {
@@ -74,33 +71,12 @@ class TaskExecutionViewSet(ListDeleteModelSet):
     def log(self, request, *args, **kwargs):
         """增量读取执行日志"""
         execution = self.get_object()
-        offset = max(0, int(request.query_params.get("offset") or 0))
-        path = get_celery_task_log_path(str(execution.pk))
-        if not os.path.exists(path):
-            return ApiResponse(
-                data={
-                    "offset": 0,
-                    "finished": execution.date_finished is not None,
-                    "content": "",
-                }
-            )
-        size = os.path.getsize(path)
-        offset = min(offset, size)
-        with open(path, "rb") as fp:
-            fp.seek(offset)
-            chunk = fp.read(self.LOG_READ_CHUNK)
-        next_offset = offset + len(chunk)
-        finished = CELERY_LOG_MAGIC_MARK in chunk
-        if finished:
-            # 结束标记是落盘控制符，不能作为日志内容返回
-            chunk = chunk.replace(CELERY_LOG_MAGIC_MARK, b"")
-        return ApiResponse(
-            data={
-                "offset": next_offset,
-                "finished": finished,
-                "content": chunk.decode("utf-8", errors="replace"),
-            }
+        data = read_task_log_chunk(
+            execution.pk,
+            offset=request.query_params.get("offset") or 0,
+            finished_hint=execution.date_finished is not None,
         )
+        return ApiResponse(data=data)
 
 
 class PeriodicTaskFilter(filters.FilterSet):

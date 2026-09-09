@@ -21,8 +21,9 @@ from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from settings.services import RegisterBlockUtil
 from settings.services import check_password_rules
-from system.models import DeptInfo, UserInfo
+from system.models import DeptInfo, UserInfo, UserLoginLog
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
+from system.utils.session import bind_session_claim, register_user_session
 
 
 class RegisterViewAPIView(GenericAPIView):
@@ -97,11 +98,21 @@ class RegisterViewAPIView(GenericAPIView):
                 user.dept_belong = dept
                 update_fields.extend(["dept_belong", "dept", "creator"])
 
+        # 注册即登录：登记会话并绑定 sid claim（失败不影响注册主流程）
+        session = None
+        try:
+            session = register_user_session(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
+        except Exception:  # noqa: BLE001 会话管理属附加能力
+            pass
         refresh = RefreshToken.for_user(user)
-        result = {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
+        if session:
+            try:
+                refresh_str, access_str = bind_session_claim(refresh, session.pk)
+                result = {"refresh": refresh_str, "access": access_str}
+            except Exception:  # noqa: BLE001
+                result = {"refresh": str(refresh), "access": str(refresh.access_token)}
+        else:
+            result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         user.last_login = timezone.now()
         user.save(update_fields=update_fields)
         result.update(**get_token_lifetime(user))

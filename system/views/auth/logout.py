@@ -8,6 +8,7 @@ import hashlib
 import time
 
 from django.contrib.auth import logout
+from django.utils import timezone
 from drf_spectacular.plumbing import build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
@@ -40,6 +41,17 @@ class LogoutAPIView(GenericAPIView):
         user_id = auth.payload.get("user_id")
         timeout = exp - time.time()
         BlackAccessTokenCache(user_id, hashlib.md5(auth.token).hexdigest()).set_storage_cache(1, timeout)
+        # 自己的会话（登录时登记，token claim sid 关联）置离线，在线列表立即消失
+        sid = auth.payload.get("sid")
+        if sid:
+            try:
+                from system.models import UserSession
+
+                UserSession.objects.filter(pk=sid, status=UserSession.Status.ONLINE).update(
+                    status=UserSession.Status.OFFLINE, last_active=timezone.now()
+                )
+            except Exception:  # noqa: BLE001 会话管理属附加能力
+                pass
         if request.data.get("refresh"):
             try:
                 token = RefreshToken(request.data.get("refresh"))

@@ -21,6 +21,7 @@ class Command(LoadCommand):
         MenuMeta,
         Menu,
         SystemConfig,
+        DataDict,
         DataPermission,
         UserRole,
         FieldPermission,

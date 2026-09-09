@@ -14,6 +14,7 @@ from django.db import transaction
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.utils import encoders
 
+from common.core.config import SysConfig
 from common.utils import get_logger
 from common.utils.request import (
     get_request_user,
@@ -140,20 +141,34 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         logger.debug(f"request start. {request.method} {request.path} {getattr(request, 'request_data', {})}")
 
     def __handle_response(self, request, response):
-        request_start_time = getattr(request, "request_start_time", None)
+        request_start_time = getattr(request, "request_start_time", time.time())
         exec_time = time.time() - request_start_time
-        if exec_time > 1:
+        # 慢请求阈值走系统配置（默认 1.0s），与监控面板 slow 接口同口径
+        threshold = SysConfig.SLOW_REQUEST_THRESHOLD
+        if exec_time > threshold:
             logger.warning(
-                f"exec time {exec_time} over 1s. {request.method} {request.path} {getattr(request, 'request_data', {})}"
+                f"exec time {exec_time} over {threshold}s. {request.method} {request.path} "
+                f"{getattr(request, 'request_data', {})} request_id:{getattr(request, 'request_uuid', None)}"
             )
         # 判断有无log_id属性，使用All记录时，会出现此情况
         operation_log_id = getattr(request, self.operation_log_id, None)
         if operation_log_id is None:
-            return
+            return None
 
         info = build_operation_log_info(request, response, request_start_time)
-        # Step3：移出请求事务，提交后再写日志
-        transaction.on_commit(lambda: write_operation_log(operation_log_id, info))
+
+        def _after_commit():
+            # Step3：移出请求事务，提交后再写日志；日志落库后做敏感操作告警判定
+            write_operation_log(operation_log_id, info)
+            try:
+                from system.notifications import maybe_alert_sensitive_operation
+
+                maybe_alert_sensitive_operation(info)
+            except Exception:
+                # 告警链路异常不影响响应，也不影响日志本身
+                logger.warning("sensitive operation alert failed", exc_info=True)
+
+        transaction.on_commit(_after_commit)
         logger.debug(f"request end. {request.method} {request.path} {getattr(request, 'request_data', {})} log:{info}")
         return True
 

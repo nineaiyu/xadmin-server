@@ -293,7 +293,11 @@ class MagicCacheResponse(object):
             cache_key = f"{cache_key}_{func_name}"
         timeout = self.calculate_timeout(view_instance=view_instance)
         n_time = time.time()
-        if getattr(request, "no_cache", False):
+        # no_cache 旁路：代码内标记（export_data）或显式查询参数（监控面板手动刷新）。
+        # 仅需登录的只读接口使用，绕过读取并跳过回写，避免刷新拿到窗口内旧数据
+        query = getattr(request, "query_params", None) or getattr(request, "GET", {})
+        no_cache = bool(getattr(request, "no_cache", False)) or query.get("no_cache") in ("1", "true")
+        if no_cache:
             res = None
         else:
             res = cache.get(cache_key)
@@ -309,7 +313,7 @@ class MagicCacheResponse(object):
             response = view_instance.finalize_response(request, response, *args, **kwargs)
             response.render()
 
-            if not response.status_code >= 400 and not getattr(request, "no_cache", False):
+            if not response.status_code >= 400 and not no_cache:
                 data = (response.rendered_content, response.status_code, {k: (k, v) for k, v in response.items()})
                 res = {"c_time": n_time, "data": data}
                 cache.set(cache_key, res, timeout)

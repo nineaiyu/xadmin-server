@@ -82,30 +82,56 @@ class OperationLog(DbAuditModel):
             models.Index(fields=["created_time"], name="idx_oplog_created"),
             models.Index(fields=["module", "created_time"], name="idx_oplog_module_created"),
             models.Index(fields=["request_uuid"], name="idx_oplog_request_uuid"),
+            # 慢请求检索（监控面板 slow / exec_time 区间过滤）
+            models.Index(fields=["exec_time"], name="idx_oplog_exec_time"),
         ]
 
     @classmethod
     def remove_expired(cls, clean_day=None, batch_size=CLEAN_BATCH_SIZE):
-        """分批删除过期日志，避免一次性大 DELETE 造成长事务与锁表。
+        """分批删除过期日志（分层留存），避免一次性大 DELETE 造成长事务与锁表。
 
-        :param clean_day: 保留天数；缺省读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天）
+        :param clean_day: 全量保留天数；缺省读取系统配置 OPERATION_LOG_RETENTION_DAYS（默认 180 天）
         :param batch_size: 每批删除的行数
         :return: 删除的总行数
-        """
-        if clean_day is None:
-            # 局部导入避免 system.models <-> common.core.config 的循环依赖
-            from common.core.config import SysConfig
 
+        分层留存：错误日志（status_code != 1000）按 OPERATION_LOG_ERROR_RETENTION_DAYS
+        （默认 365 天，0 = 跟随全量）额外保留——先删过全量保留期的全部日志，
+        再删超过错误保留期的剩余（错误）日志。
+        """
+        # 局部导入避免 system.models <-> common.core.config 的循环依赖
+        from common.core.config import SysConfig
+
+        if clean_day is None:
             clean_day = SysConfig.OPERATION_LOG_RETENTION_DAYS
         if not clean_day or clean_day <= 0:
             return 0
-        clean_time = timezone.now() - datetime.timedelta(days=clean_day)
+        now = timezone.now()
+        clean_time = now - datetime.timedelta(days=clean_day)
+        error_days = SysConfig.OPERATION_LOG_ERROR_RETENTION_DAYS
+        if not error_days or error_days <= clean_day:
+            # 0/空/不大于全量保留期：分层关闭，错误日志跟随全量窗口删除
+            error_clean_time = clean_time
+        else:
+            error_clean_time = now - datetime.timedelta(days=error_days)
         total = 0
-        while True:
-            pks = list(cls.objects.filter(created_time__lt=clean_time).values_list("pk", flat=True)[:batch_size])
-            if not pks:
-                break
-            with transaction.atomic():
-                deleted, _rows_count = cls.objects.filter(pk__in=pks).delete()
-            total += deleted
+
+        def _delete(queryset):
+            nonlocal total
+            while True:
+                pks = list(queryset.values_list("pk", flat=True)[:batch_size])
+                if not pks:
+                    break
+                with transaction.atomic():
+                    deleted, _rows = cls.objects.filter(pk__in=pks).delete()
+                total += deleted
+
+        # 1) 过全量保留期：删除成功日志（status_code=1000 或未写入；错误日志留给错误保留期窗口）
+        _delete(
+            cls.objects.filter(created_time__lt=clean_time).filter(
+                models.Q(status_code=1000) | models.Q(status_code__isnull=True)
+            )
+        )
+        # 2) 补删超过错误保留期的剩余行（即错误日志）：error_clean_time 恒早于等于
+        #    clean_time（365 天前 <= 180 天前），分层关闭时窗口与全量一致，等价跟随全量
+        _delete(cls.objects.filter(created_time__lt=error_clean_time))
         return total

@@ -14,7 +14,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
-from common.cache.storage import BlackAccessTokenCache
+from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
 
 
 def auth_required(view_func):
@@ -34,7 +34,19 @@ class ServerAccessToken(AccessToken):
 
     def verify(self):
         user_id = self.payload.get("user_id")
-        if BlackAccessTokenCache(user_id, hashlib.md5(self.token).hexdigest()).get_storage_cache():
+        # token 在认证链路为 bytes，兼容 str 入参（测试/工具直调）
+        raw_token = self.token if isinstance(self.token, bytes) else str(self.token).encode()
+        if BlackAccessTokenCache(user_id, hashlib.md5(raw_token).hexdigest()).get_storage_cache():
+            raise TokenError(_("Token is invalid or expired"))
+        # 强制下线（踢全部会话）：服务端拿不到用户的 token 清单，用「失效时间戳 +
+        # iat 比较」拒绝被踢时刻之前签发的所有 access token
+        revoked_at = UserTokenRevokedCache(user_id).get_storage_cache()
+        if revoked_at and float(self.payload.get("iat", 0)) <= float(revoked_at):
+            raise TokenError(_("Token is invalid or expired"))
+        # 单会话下线（在线用户页行维度）：按登录时写入的 sid claim 精确拒绝，
+        # 不影响该用户其他在用登录；旧 token 无 sid 自然跳过
+        sid = self.payload.get("sid")
+        if sid and SessionTokenRevokedCache(sid).get_storage_cache():
             raise TokenError(_("Token is invalid or expired"))
         super().verify()
 
@@ -57,3 +69,18 @@ class CookieJWTAuthentication(JWTAuthentication):
                 if cookie_dict and cookie_dict.get("X-Token"):
                     header = f"Bearer {cookie_dict.get('X-Token')}".encode("utf-8")
         return header
+
+    def authenticate(self, request):
+        result = super().authenticate(request)
+        if result:
+            # 会话活跃刷新（登录即登记的 UserSession）：节流门控在 touch 内部，
+            # 失败静默——会话管理属附加能力，不能影响认证主链路
+            try:
+                sid = result[1].payload.get("sid")
+                if sid:
+                    from django.apps import apps
+
+                    apps.get_model("system", "UserSession").touch(sid)
+            except Exception:  # noqa: BLE001 会话刷新失败不影响认证
+                pass
+        return result
