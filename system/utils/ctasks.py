@@ -43,3 +43,38 @@ def auto_clean_tmp_file(clean_day=1):
         instance.hard_delete()
         _rows_count += 1
     logger.info(f"clean {_rows_count} upload tmp file")
+
+
+def auto_clean_upload_file(keep_days=None, batch_size=2000):
+    """分批清理超过保留期的正式上传文件（FILE_KEEP_DAYS，0 = 不清理）。
+
+    - 只处理非临时文件（临时文件由 auto_clean_tmp_file 按天清理）；
+    - 有业务引用的记录整体跳过：删除记录会把业务外键 SET_NULL，造成附件断链；
+    - 物理文件删除走 ``UploadFile.file_still_referenced`` 守护：同 md5 / 同路径的
+      其他活动记录仍在时只删记录、保留磁盘文件；
+    - 跳过的记录在后续轮次不再扫描，避免「整批都被引用」时反复空转。
+    """
+    from common.core.config import SysConfig
+
+    days = SysConfig.FILE_KEEP_DAYS if keep_days is None else keep_days
+    if not days or days <= 0:
+        return 0
+    deadline = timezone.now() - datetime.timedelta(days=days)
+    skipped = set()
+    removed = 0
+    while True:
+        records = list(
+            UploadFile.objects.filter(is_tmp=False, created_time__lte=deadline)
+            .exclude(pk__in=skipped)
+            .order_by("created_time")[:batch_size]
+        )
+        if not records:
+            break
+        for record in records:
+            if record.has_business_reference():
+                skipped.add(record.pk)
+                continue
+            record.hard_delete()
+            removed += 1
+    logger.info(f"clean {removed} upload file, keep_days {days}")
+    return removed

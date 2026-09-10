@@ -216,6 +216,8 @@ class Config(dict):
         "FILE_STORAGE_QUOTA_MB": 0,
         # 个人上传文件数量上限（0 = 不限）
         "FILE_UPLOAD_COUNT_LIMIT": 0,
+        # 正式上传文件保留天数（0 = 不清理）：仅清理非临时、无业务引用的历史文件
+        "FILE_KEEP_DAYS": 0,
         # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
         # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
         "AUDIT_DIFF_MODELS": [],

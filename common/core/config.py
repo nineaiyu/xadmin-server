@@ -263,6 +263,14 @@ class BaseConfCache(ConfigCacheBase):
         return int(self.get_value("FILE_STORAGE_QUOTA_MB", 0))
 
     @property
+    def FILE_KEEP_DAYS(self):
+        """正式上传文件保留天数（默认 0 = 不清理）。
+
+        仅清理「非临时、无业务引用」的历史文件；物理文件删除由磁盘引用守护兜底。
+        """
+        return int(self.get_value("FILE_KEEP_DAYS", 0))
+
+    @property
     def FILE_UPLOAD_COUNT_LIMIT(self):
         """个人上传文件数量上限（默认 0 = 不限）：上传前按 creator 计数校验。"""
         return int(self.get_value("FILE_UPLOAD_COUNT_LIMIT", 0))

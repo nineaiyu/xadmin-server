@@ -497,6 +497,23 @@
   },
   {
     "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b17",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "正式上传文件保留天数（0 = 不清理）：仅清理非临时、无业务引用的历史文件；物理文件删除走磁盘引用守护",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 0,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_KEEP_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
     "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b18",
     "fields": {
       "created_time": "2026-09-10T00:00:00Z",

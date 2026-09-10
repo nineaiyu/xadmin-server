@@ -129,6 +129,128 @@ class TestPhysicalFileGuard:
         assert not os.path.exists(disk_path)
 
 
+class TestUploadDedup:
+    """上传去重：同属主同 md5 复用物理文件（只建引用记录），跨用户不复用。"""
+
+    def test_same_file_reuses_physical_copy(self, superuser):
+        """同用户重复上传同一文件：新建记录但复用同一 filepath（不再落盘）。"""
+        import os
+
+        first = _uploaded_file(superuser, "dup.txt", content=b"dedup-bytes")
+        assert os.path.exists(first.filepath.path)
+
+        response = _upload(superuser, _mkfile("dup-copy.txt", b"dedup-bytes"))
+        assert response.data["code"] == 1000, response.data
+        second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
+
+        assert second.md5sum == first.md5sum
+        assert second.filepath.name == first.filepath.name
+        # 两条记录共享同一物理文件（磁盘只有一份）
+        assert UploadFile.objects.filter(md5sum=first.md5sum).count() == 2
+        assert os.path.exists(first.filepath.path)
+
+    def test_same_file_from_other_user_not_reused(self, superuser):
+        """跨用户不复用：避免越权复用他人文件的存储路径。
+
+        第二个属主用另一位超管：普通用户走 RBAC 菜单链路，测试里没有上传菜单权限。
+        """
+        from system.models import UserInfo
+
+        other = UserInfo.objects.create_superuser(username="other_super", password="Test@123456")
+        first = _uploaded_file(superuser, "cross.txt", content=b"cross-bytes")
+
+        response = _upload(other, _mkfile("cross.txt", b"cross-bytes"))
+        assert response.data["code"] == 1000, response.data
+        second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
+
+        assert second.md5sum == first.md5sum
+        assert second.filepath.name != first.filepath.name
+
+    def test_soft_deleted_source_not_reused(self, superuser):
+        """回收站中的文件不参与复用（软删除记录不算活动副本）。"""
+        first = _uploaded_file(superuser, "trash.txt", content=b"trash-bytes")
+        first.delete()  # 软删除
+
+        response = _upload(superuser, _mkfile("trash.txt", b"trash-bytes"))
+        assert response.data["code"] == 1000, response.data
+        second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
+
+        assert second.filepath.name != first.filepath.name
+
+
+class TestKeepDaysCleanup:
+    """保留期清理（FILE_KEEP_DAYS）：只清非临时、无业务引用的历史文件，并走磁盘守护。"""
+
+    @staticmethod
+    def _formal_file(user, name, content, age_days=0):
+        """构造一条「已挂到业务上」的正式文件（is_tmp=False），可选置为历史时间。"""
+        import datetime
+
+        from django.utils import timezone
+
+        record = _uploaded_file(user, name=name, content=content)
+        UploadFile.all_objects.filter(pk=record.pk).update(is_tmp=False)
+        if age_days:
+            UploadFile.all_objects.filter(pk=record.pk).update(
+                created_time=timezone.now() - datetime.timedelta(days=age_days)
+            )
+        record.refresh_from_db()
+        return record
+
+    def test_zero_means_no_cleanup(self, superuser):
+        """0 = 不清理（默认值，避免误删历史文件）。"""
+        from system.utils.ctasks import auto_clean_upload_file
+
+        record = self._formal_file(superuser, "keep-zero.txt", b"keep-zero", age_days=30)
+        assert auto_clean_upload_file(keep_days=0) == 0
+        assert UploadFile.objects.filter(pk=record.pk).exists()
+
+    def test_removes_expired_unreferenced(self, superuser):
+        """超保留期且无引用：记录与磁盘文件一并清理。"""
+        import os
+
+        from system.utils.ctasks import auto_clean_upload_file
+
+        record = self._formal_file(superuser, "expired.txt", b"expired-bytes", age_days=30)
+        disk_path = record.filepath.path
+        assert os.path.exists(disk_path)
+
+        assert auto_clean_upload_file(keep_days=7) == 1
+        assert not UploadFile.objects.filter(pk=record.pk).exists()
+        assert not os.path.exists(disk_path)
+
+    def test_keeps_business_referenced(self, superuser):
+        """有业务引用：记录与磁盘文件都保留（否则外键 SET_NULL 断链）。"""
+        import os
+
+        from system.models import ExportRecord
+        from system.utils.ctasks import auto_clean_upload_file
+
+        record = self._formal_file(superuser, "referenced.txt", b"referenced-bytes", age_days=30)
+        ExportRecord.objects.create(name="keep.xlsx", file=record)
+        disk_path = record.filepath.path
+
+        assert auto_clean_upload_file(keep_days=7) == 0
+        assert UploadFile.objects.filter(pk=record.pk).exists()
+        assert os.path.exists(disk_path)
+
+    def test_ignores_tmp_and_recent(self, superuser):
+        """临时文件与未到期文件不归本任务处理。"""
+        import datetime
+
+        from django.utils import timezone
+
+        from system.utils.ctasks import auto_clean_upload_file
+
+        tmp = _uploaded_file(superuser, name="tmp.txt", content=b"tmp-bytes")  # is_tmp=True
+        UploadFile.all_objects.filter(pk=tmp.pk).update(created_time=timezone.now() - datetime.timedelta(days=30))
+        recent = self._formal_file(superuser, "recent.txt", b"recent-bytes")
+
+        assert auto_clean_upload_file(keep_days=7) == 0
+        assert UploadFile.objects.filter(pk=tmp.pk).exists()
+        assert UploadFile.objects.filter(pk=recent.pk).exists()
+
+
 def test_upload_without_quota_unlimited(superuser):
     """默认 0 = 不限：正常上传落库。"""
     response = _upload(superuser, _mkfile("a.txt"))
