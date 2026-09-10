@@ -17,15 +17,18 @@ from rest_framework.viewsets import ViewSet
 from common.core.approval import ApprovalRequired
 from common.core.response import ApiResponse
 from system.models.approval import ApprovalRequest
-from system.tasks import auto_clean_approval_job, auto_expire_approval_job
+from system.tasks import auto_clean_approval_job, auto_expire_approval_job, auto_remind_approval_job
 from system.utils.approval import (
+    approval_stats,
     approve_request,
     can_approve,
     cancel_request,
     clean_expired_approvals,
     create_approval,
     expire_pending_approvals,
+    pending_count_for,
     reject_request,
+    remind_pending_approvals,
 )
 from system.views.admin.approval import ApprovalRequestViewSet
 
@@ -391,6 +394,122 @@ class TestApprovalActions:
         assert ApprovalRequest.objects.get(pk=approval_id).status == ApprovalRequest.Status.REJECTED
 
 
+class TestApprovalOperations:
+    """批量驳回 / 待办计数 / 统计（第四期 F4 运营增强）。"""
+
+    def test_batch_reject_requires_reason_and_selection(self, superuser, normal_user, api_client):
+        _enable_interception()
+        approval_id = _submit(normal_user).data["data"]["approval_id"]
+        api_client.force_authenticate(user=superuser)
+
+        no_reason = api_client.post("/api/system/approvals/batch-reject", {"pks": [approval_id]}, format="json")
+        assert no_reason.status_code == 400
+        no_pks = api_client.post("/api/system/approvals/batch-reject", {"reason": "风险操作"}, format="json")
+        assert no_pks.status_code == 400
+        assert ApprovalRequest.objects.get(pk=approval_id).status == PENDING_STATUS
+
+    def test_batch_reject_mixed_results(self, superuser, normal_user, api_client):
+        """批量驳回：PENDING 成功、非 PENDING 进 failed 明细（单号前 8 位大写）。"""
+        _enable_interception()
+        first = _submit(normal_user, path="/api/test/1").data["data"]["approval_id"]
+        second = _submit(normal_user, path="/api/test/2").data["data"]["approval_id"]
+        # 先通过第二单：它已不是 PENDING，驳回必然失败
+        approve_request(ApprovalRequest.objects.get(pk=second), superuser)
+
+        api_client.force_authenticate(user=superuser)
+        response = api_client.post(
+            "/api/system/approvals/batch-reject",
+            {"pks": [first, second], "reason": "风险操作"},
+            format="json",
+        )
+        assert response.data["code"] == 1000
+        assert response.data["data"]["succeeded"] == 1
+        failed = response.data["data"]["failed"]
+        assert [item["no"] for item in failed] == [str(second)[:8].upper()]
+        # 明细带上服务端可读原因（具体文案随语言，断言非空即可）
+        assert failed[0]["reason"]
+        approval = ApprovalRequest.objects.get(pk=first)
+        assert approval.status == ApprovalRequest.Status.REJECTED
+        assert approval.reason == "风险操作"
+
+    def test_batch_reject_requires_approver(self, superuser, normal_user):
+        """批量驳回同样要求审批人身份（与单条 reject 口径一致）。"""
+        _enable_interception()
+        approval_id = _submit(normal_user).data["data"]["approval_id"]
+
+        from rest_framework.request import Request as DRFRequest
+
+        request = DRFRequest(
+            _request(
+                normal_user, "post", "/api/system/approvals/batch-reject", data={"pks": [approval_id], "reason": "x"}
+            )
+        )
+        view = ApprovalRequestViewSet()
+        view.request = request
+        view.format_kwarg = None
+        with pytest.raises(PermissionDenied):
+            view.batch_reject(request)
+        assert ApprovalRequest.objects.get(pk=approval_id).status == PENDING_STATUS
+
+    def test_pending_count_scope(self, superuser, normal_user):
+        """待办计数：只算「他人发起的 PENDING」；非审批人恒为 0（10s 缓存需先清）。"""
+        from django.core.cache import cache
+
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/1", creator=superuser)
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/2", creator=normal_user)
+        cache.clear()
+
+        assert pending_count_for(superuser) == 1  # 自己发起的不计入
+        assert pending_count_for(normal_user) == 0  # 非审批人
+
+        # 已处理的单不计入
+        ApprovalRequest.objects.filter(creator=normal_user).update(status=APPROVED_STATUS)
+        cache.clear()
+        assert pending_count_for(superuser) == 0
+
+        # 审批动作后计数缓存自动失效（不等 TTL 也能读到新值）
+        target = ApprovalRequest.objects.create(
+            module="x", method="DELETE", path="/api/system/user/3", creator=normal_user
+        )
+        cache.clear()
+        assert pending_count_for(superuser) == 1
+        approve_request(target, superuser)
+        assert pending_count_for(superuser) == 0  # 未手动清缓存
+
+    def test_approval_stats_window(self, superuser, normal_user):
+        """统计窗口：我提交 / 我通过 / 我驳回 / 平均时长；窗口外不计入。"""
+        from django.core.cache import cache
+
+        _enable_interception()
+        first = _submit(normal_user, path="/api/test/1").data["data"]["approval_id"]
+        second = _submit(normal_user, path="/api/test/2").data["data"]["approval_id"]
+        approve_request(ApprovalRequest.objects.get(pk=first), superuser)
+        reject_request(ApprovalRequest.objects.get(pk=second), superuser, "风险操作")
+        cache.clear()
+
+        stats = approval_stats(superuser, days=30)
+        assert stats["submitted"] == 0  # 超管未发起
+        assert stats["approved"] == 1
+        assert stats["rejected"] == 1
+        assert stats["avg_approval_seconds"] is not None
+        assert stats["days"] == 30
+
+        assert approval_stats(normal_user, days=30)["submitted"] == 2
+        assert approval_stats(superuser, days=0)["approved"] == 0  # 窗口外
+
+    def test_pending_count_and_stats_endpoints(self, superuser, normal_user, api_client):
+        """轻量接口协议：pending-count / stats。"""
+        from django.core.cache import cache
+
+        _enable_interception()
+        _submit(normal_user)
+        cache.clear()
+        api_client.force_authenticate(user=superuser)
+        assert api_client.get("/api/system/approvals/pending-count").data["data"]["pending"] == 1
+        stats = api_client.get("/api/system/approvals/stats").data["data"]
+        assert {"days", "submitted", "approved", "rejected", "avg_approval_seconds", "pending"} <= set(stats)
+
+
 class TestLifecycleJobs:
     """超时过期与保留期清理。"""
 
@@ -419,9 +538,52 @@ class TestLifecycleJobs:
         assert ApprovalRequest.objects.exists() is False
         assert clean_expired_approvals(keep_days=0) == 0
 
+    def test_remind_pending_approvals(self, superuser, normal_user, monkeypatch):
+        """超时未处理才提醒；已提醒不重复；0 = 不提醒；非 PENDING 不提醒；推送失败不占位。"""
+        from django.core.cache import cache
+
+        from system.notifications import ApprovalRequestMessage
+
+        cache.clear()
+        published = []
+        monkeypatch.setattr(
+            ApprovalRequestMessage, "publish", lambda self, *args, **kwargs: published.append(self.event)
+        )
+
+        stale = ApprovalRequest.objects.create(
+            module="x", method="DELETE", path="/api/system/user/1", creator=normal_user
+        )
+        ApprovalRequest.objects.filter(pk=stale.pk).update(created_time=timezone.now() - datetime.timedelta(hours=30))
+        ApprovalRequest.objects.create(module="x", method="DELETE", path="/api/system/user/2", creator=normal_user)
+
+        # 阈值 24h：仅超时单被提醒一次；重复调用不重复提醒（占位生效）
+        assert remind_pending_approvals(24) == 1
+        assert remind_pending_approvals(24) == 0
+        assert published == ["remind"]
+
+        # 0 = 不提醒
+        assert remind_pending_approvals(0) == 0
+
+        # 非 PENDING 不提醒
+        cache.clear()
+        ApprovalRequest.objects.filter(pk=stale.pk).update(status=APPROVED_STATUS)
+        assert remind_pending_approvals(24) == 0
+
+        # 推送失败：不占位（下次仍会重试）且不抛错
+        cache.clear()
+        ApprovalRequest.objects.filter(pk=stale.pk).update(status=PENDING_STATUS)
+
+        def _boom(self, *args, **kwargs):
+            raise RuntimeError("publish failed")
+
+        monkeypatch.setattr(ApprovalRequestMessage, "publish", _boom)
+        assert remind_pending_approvals(24) == 0
+        assert remind_pending_approvals(24) == 0
+
     def test_periodic_tasks_wired(self, superuser, normal_user):
-        """两个周期任务可执行（crontab 由 register_as_period_task 登记）。"""
+        """三个周期任务可执行（crontab 由 register_as_period_task 登记）。"""
         _enable_interception()
         _submit(normal_user)
         assert auto_expire_approval_job.apply().get() == 0
+        assert auto_remind_approval_job.apply().get() == 0  # 刚建的单未超阈值
         assert auto_clean_approval_job.apply().get() == 0

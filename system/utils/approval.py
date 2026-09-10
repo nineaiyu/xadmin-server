@@ -38,6 +38,12 @@ APPROVAL_PENDING_CODE = 1002
 
 # 重复提交节流窗口（秒），仿 maybe_alert_sensitive_operation 的 cache.add 原子占位
 APPROVAL_NOTIFY_THROTTLE_SECONDS = 60
+# 待办计数短缓存（秒）：顶栏角标/页签角标高频轮询，10s 内的多次读取共用一次聚合
+APPROVAL_PENDING_COUNT_CACHE_SECONDS = 10
+# 提醒占位保留期（秒）：同一单只提醒一次（占位仅在同一单被处理后自然过期）
+APPROVAL_REMIND_CACHE_SECONDS = 60 * 60 * 24 * 30
+# 审批统计默认回看窗口（天）
+APPROVAL_STATS_WINDOW_DAYS = 30
 
 
 def canonical_params(params) -> str:
@@ -203,6 +209,7 @@ def create_approval(view, request):
         params=params,
         creator=request.user,
     )
+    invalidate_pending_count_cache()
     notify_approvers(approval, approvers)
     return approval
 
@@ -304,6 +311,7 @@ def approve_request(approval, user):
     approval.approved_at = timezone.now()
     approval.expired_at = approval.approved_at + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL))
     approval.save(update_fields=["status", "approver", "approved_at", "expired_at", "updated_time"])
+    invalidate_pending_count_cache()
     notify_applicant(approval, "approved")
     return True, None
 
@@ -323,6 +331,7 @@ def reject_request(approval, user, reason: str):
     approval.approved_at = timezone.now()
     approval.reason = (reason or "")[:255]
     approval.save(update_fields=["status", "approver", "approved_at", "reason", "updated_time"])
+    invalidate_pending_count_cache()
     notify_applicant(approval, "rejected")
     return True, None
 
@@ -337,6 +346,7 @@ def cancel_request(approval, user):
         return False, _("Only pending requests can be cancelled")
     approval.status = ApprovalRequest.Status.CANCELLED
     approval.save(update_fields=["status", "updated_time"])
+    invalidate_pending_count_cache()
     return True, None
 
 
@@ -357,7 +367,122 @@ def expire_pending_approvals(pending_days: int = None) -> int:
     count = ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING, created_time__lt=deadline).update(
         status=ApprovalRequest.Status.EXPIRED, updated_time=timezone.now()
     )
+    if count:
+        invalidate_pending_count_cache()
     return count
+
+
+def pending_count_for(user) -> int:
+    """待我审批数（PENDING 且非本人发起；非审批人恒为 0），10s 短缓存。
+
+    与「待我审批」页签同口径：本人发起的单在「我发起」页签处理，不计入待办，
+    否则角标数与页签行数会不一致。
+    """
+    from django.core.cache import cache
+
+    from system.models.approval import ApprovalRequest
+
+    if not (user and getattr(user, "is_authenticated", False)):
+        return 0
+    if not (user.is_superuser or can_approve(user)):
+        return 0
+
+    def _load():
+        return ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING).exclude(creator=user).count()
+
+    return cache.get_or_set(f"approval_pending_count_{user.pk}", _load, APPROVAL_PENDING_COUNT_CACHE_SECONDS)
+
+
+def invalidate_pending_count_cache():
+    """失效各审批人的待办计数缓存（审批单状态变化后调用）。
+
+    计数缓存按用户键存储，键空间 = 可审批人集合（超管或配置角色成员，规模有界），
+    因此直接全量删除；否则角标会在 TTL 内与列表不一致（写操作后刷新读到的仍是旧值）。
+    """
+    from django.core.cache import cache
+
+    try:
+        pks = list(get_approver_queryset().values_list("pk", flat=True))
+    except Exception:  # noqa: BLE001 审批人配置异常不影响主流程
+        return
+    if pks:
+        cache.delete_many([f"approval_pending_count_{pk}" for pk in pks])
+
+
+def approval_stats(user, days: int = APPROVAL_STATS_WINDOW_DAYS) -> dict:
+    """审批统计（近 N 天）：我提交 / 我通过 / 我驳回 / 平均审批时长 / 我的待办。
+
+    平均审批时长在 Python 侧求值（sqlite 对 DurationField 聚合支持不一，
+    审批单量级小、窗口有界，遍历开销可忽略）。
+    """
+    import datetime
+
+    from django.utils import timezone
+
+    from system.models.approval import ApprovalRequest
+
+    since = timezone.now() - datetime.timedelta(days=days)
+    window = ApprovalRequest.objects.filter(created_time__gte=since)
+    durations = [
+        (approved_at - created_time).total_seconds()
+        for created_time, approved_at in window.filter(approved_at__isnull=False).values_list(
+            "created_time", "approved_at"
+        )
+        if created_time and approved_at
+    ]
+    return {
+        "days": days,
+        "submitted": window.filter(creator=user).count(),
+        "approved": window.filter(approver=user, status=ApprovalRequest.Status.APPROVED).count(),
+        "rejected": window.filter(approver=user, status=ApprovalRequest.Status.REJECTED).count(),
+        "avg_approval_seconds": round(sum(durations) / len(durations)) if durations else None,
+        "pending": pending_count_for(user),
+    }
+
+
+def remind_pending_approvals(remind_hours: int = None) -> int:
+    """超时未处理的 PENDING 单向审批人补发一次提醒，返回提醒过的单数。
+
+    - 阈值 = APPROVAL_REMIND_HOURS（默认 24h，0 = 不提醒）；
+    - 同一单只提醒一次（缓存占位；仅在至少成功推送给一个审批人后占位，
+      通知链路瞬时故障不会让该单永久失去提醒）；
+    - 单条推送失败只记日志，不阻断其余单。
+    """
+    import datetime
+
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    from common.core.config import SysConfig
+    from system.models.approval import ApprovalRequest
+    from system.notifications import ApprovalRequestMessage
+
+    hours = int(SysConfig.APPROVAL_REMIND_HOURS) if remind_hours is None else int(remind_hours)
+    if not hours or hours <= 0:
+        return 0
+    deadline = timezone.now() - datetime.timedelta(hours=hours)
+    reminded = 0
+    queryset = (
+        ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING, created_time__lt=deadline)
+        .select_related("creator")
+        .order_by("created_time")
+    )
+    for approval in queryset.iterator():
+        cache_key = f"approval_remind_{approval.pk}"
+        if cache.get(cache_key):
+            continue
+        approvers = resolve_approvers(approval.creator) if approval.creator else get_approver_queryset()
+        delivered = False
+        for user in approvers:
+            try:
+                ApprovalRequestMessage(user, "remind", approval).publish(is_async=True)
+                delivered = True
+            except Exception:  # noqa: BLE001 单条推送失败不阻断其余单
+                logger.warning("send approval remind failed. approval:%s user:%s", approval.pk, user.pk, exc_info=True)
+        if delivered:
+            cache.set(cache_key, 1, APPROVAL_REMIND_CACHE_SECONDS)
+            reminded += 1
+    return reminded
 
 
 def clean_expired_approvals(keep_days: int = None, batch_size: int = 2000) -> int:

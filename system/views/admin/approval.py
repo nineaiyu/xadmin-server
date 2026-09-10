@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""审批中心：审批单查询 / 通过 / 驳回 / 撤回 / 批量通过。
+"""审批中心：审批单查询 / 通过 / 驳回 / 撤回 / 批量通过 / 批量驳回 / 待办计数 / 统计。
 
 取值域不走通用数据权限：超管可见全部，普通用户可见「我发起的 + 待我审批
-（PENDING）+ 我审批过的」，与待审批页签口径一致。
+（PENDING，不含本人发起）+ 我审批过的」，与待办口径一致。
 """
 
 from django.db.models import Q
@@ -25,7 +25,14 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models.approval import ApprovalRequest
 from system.serializers.approval import ApprovalRequestSerializer
-from system.utils.approval import approve_request, can_approve, cancel_request, reject_request
+from system.utils.approval import (
+    approval_stats,
+    approve_request,
+    can_approve,
+    cancel_request,
+    pending_count_for,
+    reject_request,
+)
 
 logger = get_logger(__name__)
 
@@ -56,7 +63,9 @@ class ApprovalScopeFilter(BaseFilterBackend):
             return queryset.none()
         scope = request.query_params.get("scope")
         if scope == "pending":
-            return queryset.filter(status=ApprovalRequest.Status.PENDING)
+            # 待办口径 = 我可审批且非本人发起（本人发起在「我发起」页签处理）：
+            # 与 pending_count_for 保持一致，避免角标数与页签行数不符
+            return queryset.filter(status=ApprovalRequest.Status.PENDING).exclude(creator=user)
         if scope == "mine":
             return queryset.filter(creator=user)
         if user.is_superuser:
@@ -123,6 +132,56 @@ class ApprovalRequestViewSet(
             data={"succeeded": succeeded, "failed": failed},
             detail=_("Operation successful. Approved {} data").format(succeeded),
         )
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "reason": build_basic_type(OpenApiTypes.STR),
+                },
+                required=["pks", "reason"],
+                description="主键列表 + 驳回原因",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-reject")
+    def batch_reject(self, request, *args, **kwargs):
+        """批量驳回审批单（原因必填；逐单校验状态与审批人，返回成功数与被拒明细）"""
+        # 与单条 reject 同口径：批量入口同样先校验审批权限与原因
+        if not (request.user.is_superuser or can_approve(request.user)):
+            raise PermissionDenied(_("Permission denied"))
+        reason = (request.data.get("reason") or "").strip()
+        if not reason:
+            raise ValidationError(_("Rejection reason is required"))
+        pks = request.data.get("pks") or []
+        if not pks:
+            raise ValidationError(_("Please select the data to operate"))
+        succeeded, failed = 0, []
+        for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+            ok, detail = reject_request(approval, request.user, reason)
+            if ok:
+                succeeded += 1
+            else:
+                # 与 batch-approve 的「单号: 原因」等价的可读明细（前端逐条展示）
+                failed.append({"no": str(approval.pk)[:8].upper(), "reason": str(detail)})
+        return ApiResponse(
+            data={"succeeded": succeeded, "failed": failed},
+            detail=_("Operation successful. Rejected {} data").format(succeeded),
+        )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="pending-count")
+    def pending_count(self, request, *args, **kwargs):
+        """待我审批数（轻量接口：供顶栏/页签角标轮询，服务端 10s 短缓存，非审批人返回 0）"""
+        return ApiResponse(data={"pending": pending_count_for(request.user)})
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False)
+    def stats(self, request, *args, **kwargs):
+        """审批统计（近 30 天：我提交 / 我通过 / 我驳回 / 平均审批时长 / 我的待办）"""
+        return ApiResponse(data=approval_stats(request.user))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True)
