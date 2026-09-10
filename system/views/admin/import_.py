@@ -10,6 +10,7 @@
 （与导出记录共用，避免两份逐字重复的实现各自漂移）。
 """
 
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,14 +18,19 @@ from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.decorators import action
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ListDeleteModelSet
+from common.core.modelset import BaseModelSet, ListDeleteModelSet
 from common.swagger.utils import get_default_response_schema
-from system.models.import_ import ImportRecord
-from system.serializers.import_ import ImportRecordSerializer
-from system.views.admin.record_base import RecordFileDownloadMixin, RecordOwnerFilter, RecordTaskLogMixin
+from system.models.import_ import ImportRecord, ImportTemplate
+from system.serializers.import_ import ImportRecordSerializer, ImportTemplateSerializer
+from system.views.admin.record_base import (
+    RecordFileDownloadMixin,
+    RecordOwnerFilter,
+    RecordStatsMixin,
+    RecordTaskLogMixin,
+)
 
 
 class ImportRecordFilter(BaseFilterSet):
@@ -37,7 +43,7 @@ class ImportRecordFilter(BaseFilterSet):
         fields = ["name", "status", "action", "module", "creator", "created_time"]
 
 
-class ImportRecordViewSet(RecordFileDownloadMixin, RecordTaskLogMixin, ListDeleteModelSet):
+class ImportRecordViewSet(RecordStatsMixin, RecordFileDownloadMixin, RecordTaskLogMixin, ListDeleteModelSet):
     """导入记录（下载中心）"""
 
     queryset = ImportRecord.objects.all()
@@ -71,3 +77,52 @@ class ImportRecordViewSet(RecordFileDownloadMixin, RecordTaskLogMixin, ListDelet
     def log(self, request, *args, **kwargs):
         """增量读取导入任务日志"""
         return self.read_record_task_log(request)
+
+
+class ImportTemplateFilter(BaseFilterSet):
+    """导入模板过滤：名称模糊 + 目标模型 / 共享标记精确。"""
+
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = ImportTemplate
+        fields = ["name", "model", "is_shared", "creator"]
+
+
+class ImportTemplateScopeFilter(BaseFilterBackend):
+    """模板取值域：超管全部；普通用户 = 共享模板 + 本人模板。
+
+    不走通用数据权限（默认拒绝会让普通用户看不到自己的模板）。
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return queryset.none()
+        if user.is_superuser:
+            return queryset
+        return queryset.filter(Q(is_shared=True) | Q(creator=user))
+
+
+class ImportTemplateViewSet(BaseModelSet):
+    """导入列映射模板（个人 / 全局共享两档，按目标模型隔离）"""
+
+    queryset = ImportTemplate.objects.all()
+    serializer_class = ImportTemplateSerializer
+    filterset_class = ImportTemplateFilter
+    filter_backends = (DjangoFilterBackend, OrderingFilter, ImportTemplateScopeFilter)
+    ordering = ["-created_time"]
+    ordering_fields = ["created_time"]
+
+    def get_queryset(self):
+        """共享模板对普通用户只读：写操作（改/删）看不到共享模板，直接 404。
+
+        取值域过滤（读）仍包含共享模板——导入时套用共享模板是普通用户的核心用法。
+        """
+        queryset = super().get_queryset()
+        request = getattr(self, "request", None)
+        user = getattr(request, "user", None)
+        if request and getattr(request, "method", None) in ("PUT", "PATCH", "DELETE"):
+            if not getattr(user, "is_superuser", False):
+                return queryset.filter(is_shared=False)
+        return queryset

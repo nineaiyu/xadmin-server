@@ -10,6 +10,7 @@ from rest_framework.exceptions import ParseError, APIException
 from rest_framework.parsers import BaseParser
 
 from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.core.import_mapping import resolve_headers
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -167,7 +168,8 @@ class BaseFileParser(BaseParser):
             if not any(row):
                 continue
             row = self.load_row(row)
-            row_data = dict(zip(fields_name, row))
+            # 空字段名 = 该列未映射到任何字段（含显式忽略列）：不进入行数据
+            row_data = {k: v for k, v in zip(fields_name, row) if k}
             row_data = self.process_row_data(row_data)
             data.append(row_data)
         return data
@@ -200,7 +202,19 @@ class BaseFileParser(BaseParser):
             stream_data = self.get_stream_data(stream)
             rows = self.generate_rows(stream_data)
             column_titles = self.get_column_titles(rows)
-            field_names = self.convert_to_field_names(column_titles)
+            # 列映射（可选）：视图在解析前把映射写入 jms_context，三入口共用同一实现
+            mapping_conf = (getattr(request, "jms_context", None) or {}).get("import_mapping")
+            if mapping_conf:
+                field_names, unmatched = resolve_headers(
+                    column_titles,
+                    mapping_conf.get("mapping"),
+                    self.serializer_fields,
+                    mapping_conf.get("ignore_unknown", True),
+                )
+                # 未映射列（ignore_unknown=False 时保留原表头）供上层给出可读提示/错误报告
+                request.jms_context["import_unmatched_columns"] = unmatched
+            else:
+                field_names = self.convert_to_field_names(column_titles)
 
             # 给 `common.mixins.api.RenderToJsonMixin` 提供，暂时只能耦合
             column_title_field_pairs = list(zip(column_titles, field_names))

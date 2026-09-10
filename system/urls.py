@@ -15,7 +15,7 @@ from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
-from system.views.admin.import_ import ImportRecordViewSet
+from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
@@ -120,6 +120,8 @@ router.register("file", UploadFileViewSet, basename="file")
 router.register("exports", ExportRecordViewSet, basename="export_record")
 # 导入记录（下载中心「导入记录」页签）
 router.register("imports", ImportRecordViewSet, basename="import_record")
+# 导入列映射模板（个人 / 全局共享，导入弹窗内维护，无独立页面）
+router.register("import-templates", ImportTemplateViewSet, basename="import_template")
 
 # 定时任务管理（django_celery_beat）
 router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")

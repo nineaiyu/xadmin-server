@@ -7399,5 +7399,97 @@
       "method": "GET",
       "model": []
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b1c2d3e4-f506-4718-829a-b1c2d3e4f501",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "list:SystemImportTemplate",
+      "rank": 1,
+      "path": "api/system/import-templates$",
+      "component": null,
+      "is_active": true,
+      "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a601",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b1c2d3e4-f506-4718-829a-b1c2d3e4f502",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "create:SystemImportTemplate",
+      "rank": 2,
+      "path": "api/system/import-templates$",
+      "component": null,
+      "is_active": true,
+      "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a602",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b1c2d3e4-f506-4718-829a-b1c2d3e4f503",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "retrieve:SystemImportTemplate",
+      "rank": 3,
+      "path": "api/system/import-templates/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a603",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "b1c2d3e4-f506-4718-829a-b1c2d3e4f504",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "destroy:SystemImportTemplate",
+      "rank": 4,
+      "path": "api/system/import-templates/(?P<pk>[^/.]+)$",
+      "component": null,
+      "is_active": true,
+      "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a604",
+      "method": "DELETE",
+      "model": []
+    }
   }
 ]

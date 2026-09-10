@@ -8148,5 +8148,105 @@
       "fixed_tag": false,
       "dynamic_level": 0
     }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a601",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "U-获取导入模板列表",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a602",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "U-新增导入模板",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a603",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "U-获取导入模板详情",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a604",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "U-删除导入模板",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
   }
 ]

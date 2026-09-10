@@ -232,7 +232,7 @@ class IsAuthenticated(BasePermission):
         两条 URL 特例集中在此处，便于审计：
         1. ``search-columns`` 与对应 list 权限同口径；
         2. 导入导出接口未单独绑定模型时，回退到 list / create 菜单
-           （异步导出/校验/异步导入同此规则）。
+           （异步导出/校验/异步导入/表头读取同此规则）。
         """
         url = request.path_info
         match_group = re.match("(?P<url>.*)/search-columns$", url)
@@ -241,7 +241,7 @@ class IsAuthenticated(BasePermission):
         p_data = menu_data = get_menu_pk(permission_data, url)
         if not p_data:
             raise PermissionDenied(_("Permission denied"))
-        match_group = re.match("(?P<url>.*)/(export|import)-(data|async|validate)$", url)
+        match_group = re.match("(?P<url>.*)/(export|import)-(data|async|validate|headers)$", url)
         if match_group and p_data[1] is None:
             url = match_group.group("url")
             menu_data = get_menu_pk(permission_data, url)

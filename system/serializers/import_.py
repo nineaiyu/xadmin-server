@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
-from system.models.import_ import ImportRecord
+from system.models.import_ import ImportRecord, ImportTemplate
 from system.serializers.fields import DictChoiceField
 from system.serializers.task import DisplayRelatedField
 
@@ -92,3 +92,82 @@ class ImportRecordSerializer(BaseModelSerializer):
             if cached is not None:
                 return cached
         return obj.progress
+
+
+class ImportTemplateSerializer(BaseModelSerializer):
+    """导入列映射模板：mapping/options 形态清洗 + 共享模板仅超管可维护。
+
+    ``mapping`` 的目标字段合法性不在此处校验：字段随目标模型而定，解释权在
+    导入链路的 ``common/core/import_mapping.build_field_index``（未知目标按未匹配处理）。
+    """
+
+    MAPPING_MAX_ITEMS = 200
+    OPTIONS_KEYS = ("ignore_unknown",)
+
+    class Meta:
+        model = ImportTemplate
+        fields = [
+            "pk",
+            "model",
+            "name",
+            "mapping",
+            "options",
+            "is_shared",
+            "creator",
+            "created_time",
+            "updated_time",
+        ]
+        table_fields = ["pk", "model", "name", "is_shared", "creator", "created_time"]
+        read_only_fields = ["creator"]
+
+    def get_unique_together_validators(self):
+        """禁用 DRF 对 (model, name, creator) 约束生成的 UniqueTogetherValidator。
+
+        creator 由框架按登录用户自动赋值（只读），DRF 会把可空的 creator 误判为
+        必填；唯一性由 validate() 显式查重，DB 唯一约束兜底并发。
+        """
+        return []
+
+    @staticmethod
+    def _is_superuser(request):
+        return bool(getattr(getattr(request, "user", None), "is_superuser", False))
+
+    def validate_mapping(self, value):
+        if value in (None, ""):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError(_("Invalid import mapping"))
+        if len(value) > self.MAPPING_MAX_ITEMS:
+            raise serializers.ValidationError(_("Too many columns in mapping (max {})").format(self.MAPPING_MAX_ITEMS))
+        cleaned = {}
+        for key, target in value.items():
+            if not isinstance(key, str) or not key.strip():
+                raise serializers.ValidationError(_("Invalid import mapping"))
+            cleaned[key.strip()] = "" if target is None else str(target).strip()
+        return cleaned
+
+    def validate_options(self, value):
+        if value in (None, ""):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError(_("Operation failed. Abnormal data"))
+        return {key: value[key] for key in self.OPTIONS_KEYS if key in value}
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+        if not self._is_superuser(request):
+            # 共享模板对普通用户只读：既不能新建/改为共享，也不能改/删既有共享模板
+            if attrs.get("is_shared") or (self.instance and self.instance.is_shared):
+                raise serializers.ValidationError({"is_shared": _("Only superuser can manage shared templates")})
+        model = attrs.get("model") or getattr(self.instance, "model", None)
+        name = attrs.get("name") or getattr(self.instance, "name", None)
+        if model and name:
+            queryset = ImportTemplate.objects.filter(model=model, name=name)
+            if self.instance:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            else:
+                queryset = queryset.filter(creator=getattr(request, "user", None))
+            if queryset.exists():
+                raise serializers.ValidationError({"name": _("Template name already exists")})
+        return attrs

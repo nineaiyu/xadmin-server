@@ -3535,3 +3535,52 @@ msgstr "任务已克隆：{}"
 
 #~ msgid "Rule %(index)d has a malformed value"
 #~ msgstr "规则 %(index)d 的值格式不正确"
+
+#: system/models/import_.py
+msgid "Import template"
+msgstr "导入模板"
+
+#: system/models/import_.py
+msgid "Target model"
+msgstr "目标模型"
+
+#: system/models/import_.py
+msgid "Template name"
+msgstr "模板名称"
+
+#: system/models/import_.py
+msgid "Column mapping"
+msgstr "列映射"
+
+#: system/models/import_.py
+msgid "Import options"
+msgstr "导入选项"
+
+#: system/models/import_.py
+msgid "Shared"
+msgstr "共享"
+
+#: common/core/modelset/import_export.py
+msgid "Import template not found"
+msgstr "导入模板不存在"
+
+#: common/core/modelset/import_export.py system/serializers/import_.py
+msgid "Invalid import mapping"
+msgstr "导入列映射不合法"
+
+#: common/core/modelset/import_export.py
+msgid "Unsupported file type"
+msgstr "不支持的文件类型"
+
+#: system/serializers/import_.py
+msgid "Only superuser can manage shared templates"
+msgstr "仅超级管理员可维护共享模板"
+
+#: system/serializers/import_.py
+msgid "Template name already exists"
+msgstr "模板名称已存在"
+
+#: system/serializers/import_.py
+#, python-brace-format
+msgid "Too many columns in mapping (max {})"
+msgstr "映射列数过多（最多 {} 列）"

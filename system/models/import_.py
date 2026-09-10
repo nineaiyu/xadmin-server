@@ -15,7 +15,7 @@ import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel
+from common.core.models import DbAuditModel, DbUuidModel
 
 
 class ImportRecord(DbAuditModel):
@@ -81,3 +81,35 @@ class ImportRecord(DbAuditModel):
     def report_filesize(self):
         """错误报告字节数，未生成或文件缺失时返回 None。"""
         return getattr(self.error_report, "filesize", None) if self.error_report_id else None
+
+
+class ImportTemplate(DbUuidModel, DbAuditModel):
+    """导入列映射模板：把「原始表头 → 目标字段」的映射持久化复用。
+
+    - 按目标模型（label_lower）隔离，避免跨模型误用；
+    - 个人模板（creator 可见）+ 全局共享模板（is_shared，仅超管可建改）两档；
+    - 映射为显式字典，不做模糊/语义推断（见 common/core/import_mapping.py）。
+    """
+
+    model = models.CharField(
+        _("Target model"), max_length=128, db_index=True, help_text=_("Model label like system.userinfo")
+    )
+    name = models.CharField(_("Template name"), max_length=64)
+    mapping = models.JSONField(_("Column mapping"), default=dict, blank=True)
+    options = models.JSONField(_("Import options"), default=dict, blank=True)
+    is_shared = models.BooleanField(_("Shared"), default=False, db_index=True)
+
+    class Meta:
+        ordering = ["-created_time"]
+        verbose_name = _("Import template")
+        indexes = [models.Index(fields=["model", "is_shared"], name="idx_import_tpl_model_shared")]
+        constraints = [
+            # 同一模型下同名模板唯一（按创建人隔离）。creator 为可空外键，
+            # 唯一性由 serializer.validate() 显式查重，DB 约束兜底并发
+            models.UniqueConstraint(
+                fields=["model", "name", "creator"], name="uniq_import_template_model_name_creator"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name}({self.model})"

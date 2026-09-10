@@ -247,11 +247,12 @@ def test_auto_clean_import_record_removes_files(superuser):
 
 
 def test_permission_fallback_covers_import_validate_and_async():
-    """权限 fallback 正则覆盖 import-validate / import-async（未绑定模型时落 list 权限）。"""
-    pattern = r"(?P<url>.*)/(export|import)-(data|async|validate)$"
+    """权限 fallback 正则覆盖 import-validate / import-async / import-headers（未绑定模型时落 list 权限）。"""
+    pattern = r"(?P<url>.*)/(export|import)-(data|async|validate|headers)$"
     for url in (
         "/api/system/dict/import-validate",
         "/api/system/dict/import-async",
+        "/api/system/dict/import-headers",
         "/api/system/dict/export-async",
     ):
         assert re.match(pattern, url), url
