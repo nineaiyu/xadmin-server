@@ -27,7 +27,9 @@ django-imagekit==6.1.0
 pilkit==3.0
 drf-spectacular==0.30.0
 drf-spectacular-sidecar==2026.9.1
-openpyxl==3.2.0b1
+openpyxl==3.1.5
+# Prometheus 指标（METRICS_ENABLED=true 时启用；缺失时自动降级为 no-op）
+prometheus-client>=0.21
 pyzipper==0.4.0
 unicodecsv==0.14.1
 chardet==7.6.0
