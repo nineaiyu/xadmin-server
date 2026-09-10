@@ -27,13 +27,9 @@ class TestGetIpInQ:
         q = RelatedManager.get_ip_in_q("ip", ["10.0.0.1", "10.0.0.2"])
         assert len(q.children) == 2
 
-    def test_wildcard_string_matches_prefix(self, redis_conn=None):
-        # 已知行为：get_ip_in_q 的 ['*'] 守卫要求嵌套列表形态，普通 ["*"] 走 startswith
-        q = RelatedManager.get_ip_in_q("ip", ["*"])
-        assert child_keys(q) == ["ip__startswith"]
-
-    def test_wildcard_nested_list_matches_all(self):
-        assert RelatedManager.get_ip_in_q("ip", [["*"]]) == Q()
+    def test_wildcard_matches_all(self):
+        # ip_in 通配守卫修复：普通 ["*"] 即视为不限（旧实现要求嵌套 [["*"]]）
+        assert RelatedManager.get_ip_in_q("ip", ["*"]) == Q()
 
     def test_cidr_network_uses_in_lookup(self):
         q = RelatedManager.get_ip_in_q("ip", ["10.0.0.0/30"])
@@ -72,8 +68,9 @@ class TestGetFilterAttrsQs:
         assert filters == [Q(pk__isnull=True)]
 
     def test_m2m_all_expands_per_value(self):
-        filters = RelatedManager.get_filter_attrs_qs([{"field": "roles", "value": [1, 2], "match": "m2m_all"}])
-        assert filters == [Q(roles__in=[1]), Q(roles__in=[2])]
+        # m2m_all 单 Q 化：包含全部 = 逐值 AND（不再依赖外层组合模式，单规则也正确表达）
+        filters = RelatedManager.get_filter_attrs_qs([{"field": "managers", "value": [1, 2], "match": "m2m_all"}])
+        assert filters == [Q(managers__in=[1]) & Q(managers__in=[2])]
 
     def test_m2m_single_lookup(self):
         filters = RelatedManager.get_filter_attrs_qs([{"field": "roles", "value": 3, "match": "m2m"}])

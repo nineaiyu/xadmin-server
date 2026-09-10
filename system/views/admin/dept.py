@@ -12,7 +12,7 @@ from common.core.pagination import DynamicPageNumber
 from common.utils import get_logger
 from system.models import DeptInfo
 from system.serializers.department import DeptSerializer
-from system.utils.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction
+from system.utils.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction, DeptPreviewAction
 
 logger = get_logger(__name__)
 
@@ -23,10 +23,12 @@ class DeptFilter(BaseFilterSet):
 
     class Meta:
         model = DeptInfo
-        fields = ["pk", "is_active", "code", "mode_type", "auto_bind", "name", "description"]
+        fields = ["pk", "is_active", "code", "auto_bind", "leader", "name", "description"]
 
 
-class DeptViewSet(AnnotateUserCountMixin, BaseModelSet, ChangeRolePermissionAction, ImportExportDataAction):
+class DeptViewSet(
+    AnnotateUserCountMixin, BaseModelSet, ChangeRolePermissionAction, DeptPreviewAction, ImportExportDataAction
+):
     """部门"""
 
     queryset = DeptInfo.objects.all()

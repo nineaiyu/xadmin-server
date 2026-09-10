@@ -23,6 +23,8 @@ class ModelLabelField(DbAuditModel, DbUuidModel):
         OWNER_DEPARTMENT = "value.user.dept.id", _("My department ID")
         OWNER_DEPARTMENTS = "value.user.dept.ids", _("My department ID and data below the department")
         DEPARTMENTS = "value.dept.ids", _("Department ID and data below the department")
+        LEADER_DEPARTMENTS = "value.leader.dept.ids", _("My led departments and their descendants")
+        LEADER_USERS = "value.leader.user.ids", _("Members of my led departments")
         TABLE_USER = "value.table.user.ids", _("Select the user ID")
         TABLE_MENU = "value.table.menu.ids", _("Select menu ID")
         TABLE_ROLE = "value.table.role.ids", _("Select role ID")

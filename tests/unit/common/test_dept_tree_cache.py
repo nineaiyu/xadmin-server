@@ -165,15 +165,19 @@ class TestPermissionBehaviorUnchanged:
         result = list(get_filter_queryset(Book.objects.all(), normal_user))
         assert books[2] in result and b4 in result
 
-    def test_ancestor_only_grant_blocked_by_and_mode(self, normal_user, books, upload_file):
-        """部门权限按且模式组合：树上存在无授权部门时整体不放行（与旧实现一致的既有语义）"""
+    def test_ancestor_only_grant_now_applies(self, normal_user, superuser, books, upload_file):
+        """合并语义改「取最宽」：仅祖先部门有授权时祖先授权直接生效（旧逐层 AND 实现为全灭）。"""
         leaf = _make_dept_chain(2, "n")
         normal_user.dept = leaf
         normal_user.save(update_fields=["dept"])
-        DeptInfo.objects.get(code="n0").rules.add(make_permission("perm-root", [make_rule("admin", "value.user.id")]))
+        DeptInfo.objects.get(code="n0").rules.add(
+            make_permission(
+                "perm-root", [make_rule("admin", "value.table.user.ids", value='[{"pk": %s}]' % superuser.pk)]
+            )
+        )
         cache.delete_pattern("dept_recursion_*")
 
-        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0
+        assert set(get_filter_queryset(Book.objects.all(), normal_user)) == {books[0], books[1]}
 
     def test_permission_shared_across_depts_counted_once_per_dept(self, dept, normal_user, books, upload_file):
         """同一条授权挂在多个部门时，按部门分组后各自生效"""

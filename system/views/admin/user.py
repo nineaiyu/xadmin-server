@@ -39,7 +39,7 @@ class UserFilter(BaseFilterSet):
 
     class Meta:
         model = UserInfo
-        fields = ["username", "nickname", "phone", "email", "is_active", "gender", "pk", "mode_type", "dept"]
+        fields = ["username", "nickname", "phone", "email", "is_active", "gender", "pk", "dept"]
 
 
 class UserViewSet(

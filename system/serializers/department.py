@@ -25,12 +25,12 @@ class DeptSerializer(BaseModelSerializer):
             "name",
             "code",
             "parent",
+            "leader",
             "rank",
             "is_active",
             "roles",
             "user_count",
             "rules",
-            "mode_type",
             "auto_bind",
             "description",
             "created_time",
@@ -42,9 +42,9 @@ class DeptSerializer(BaseModelSerializer):
             "code",
             "user_count",
             "rank",
-            "mode_type",
             "auto_bind",
             "is_active",
+            "leader",
             "roles",
             "rules",
             "created_time",
@@ -58,16 +58,22 @@ class DeptSerializer(BaseModelSerializer):
                 "format": "{name}",
                 "many": True,
             },
+            "leader": {
+                "required": False,
+                "attrs": ["pk", "nickname", "username"],
+                "format": "{nickname}({username})",
+                # 用户表易超 SEARCH_CHOICES_MAX_COUNT 截断阈值，必须走远程搜索
+                "input_type": "api-search-user",
+            },
             "parent": {"required": False, "attrs": ["pk", "name", "parent_id"]},
         }
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     def validate(self, attrs):
-        # 权限需要其他接口设置，下面三个参数忽略
+        # 权限需要其他接口设置，下面两个参数忽略
         attrs.pop("rules", None)
         attrs.pop("roles", None)
-        attrs.pop("mode_type", None)
         # 上级部门必须存在，否则会出现数据权限问题
         parent = attrs.get("parent", self.instance.parent if self.instance else None)
         if not parent:

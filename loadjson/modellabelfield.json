@@ -6376,21 +6376,6 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "aa6d2bba-632b-4335-94f8-61c4899d252c",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.378Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "14071ee3-6725-4fcc-962d-ad7898efa284",
-      "name": "mode_type",
-      "label": "数据权限模式"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "aaaae515-1739-4d73-9302-2f182f4b6fcc",
     "fields": {
       "created_time": "2024-01-22T09:54:40.358Z",
@@ -6537,21 +6522,6 @@
       "parent": "474738ad-a005-41b6-bc24-0ce8043bbbd5",
       "name": "modifier",
       "label": "修改人"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "aca12fce-7a08-4495-ab22-0d6064af1f92",
-    "fields": {
-      "created_time": "2024-01-22T09:56:44.524Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 1,
-      "parent": "0e59abba-0206-42ce-b538-570c8714d6d9",
-      "name": "mode_type",
-      "label": "数据权限模式"
     }
   },
   {
@@ -7002,21 +6972,6 @@
       "parent": "c815d624-b4b5-45d6-88a0-f4a9b2135908",
       "name": "last_active",
       "label": "最近活跃"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
-    "pk": "b6e0d458-cda3-458c-8b02-2fed016d5ff6",
-    "fields": {
-      "created_time": "2024-01-22T09:54:40.246Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 0,
-      "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
-      "name": "mode_type",
-      "label": "数据权限模式"
     }
   },
   {
@@ -9541,21 +9496,6 @@
   },
   {
     "model": "system.modellabelfield",
-    "pk": "f8bd5752-f499-4b0e-80ce-12ecb87ed749",
-    "fields": {
-      "created_time": "2024-01-22T09:56:44.974Z",
-      "description": null,
-      "creator": null,
-      "modifier": null,
-      "dept_belong": null,
-      "field_type": 1,
-      "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
-      "name": "mode_type",
-      "label": "数据权限模式"
-    }
-  },
-  {
-    "model": "system.modellabelfield",
     "pk": "f8c5c88b-2fd2-4b4d-9183-4d04c0049eea",
     "fields": {
       "created_time": "2024-09-16T09:09:26.924Z",
@@ -9732,6 +9672,36 @@
       "parent": "738ac5ed-c2fa-4ca2-984c-e74a9eb00f38",
       "name": "dept_belong",
       "label": "数据归属部门"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "3f0f1d4e-8f9a-4c2e-9a1b-1c2d3e4f5a6b",
+    "fields": {
+      "created_time": "2026-09-10T12:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 1,
+      "parent": "5700a0ac-2b66-4e5d-b907-13500272c4d9",
+      "name": "leader",
+      "label": "部门主管"
+    }
+  },
+  {
+    "model": "system.modellabelfield",
+    "pk": "4a1b2c3d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "fields": {
+      "created_time": "2026-09-10T12:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "field_type": 0,
+      "parent": "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+      "name": "leader",
+      "label": "部门主管"
     }
   }
 ]

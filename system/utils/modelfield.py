@@ -168,5 +168,24 @@ def get_field_lookup_info(fields):
         ),
         "has_keys": _("The field value must contain all the given keys, typically used with JSON fields."),
         "has_key": _("The field value must contain the given single key, typically used with JSON fields."),
+        # 框架自定义匹配符（不在 Django class lookups 里，见 common/core/data_scope.SPECIAL_MATCHES）
+        "m2m": _("Many-to-many: the field contains any of the given values."),
+        "m2m_all": _("Many-to-many: the field contains all of the given values."),
+        "ip_in": _("IP address is inside the given network / range, * means no restriction."),
     }
     return [{"value": field, "label": field_info.get(field, field)} for field in fields]
+
+
+def get_extra_field_lookups(field) -> list:
+    """按字段类型返回框架自定义匹配符（与 data_scope.SPECIAL_MATCHES 同源）。
+
+    只对适用字段暴露，避免在 CharField 等字段的 match 下拉里出现 m2m_all/ip_in 造成误导。
+    """
+    from common.core.data_scope import SPECIAL_MATCHES
+
+    extras = []
+    if getattr(field, "many_to_many", False):
+        extras.extend(("m2m", "m2m_all"))
+    if field.get_internal_type() == "GenericIPAddressField":
+        extras.append("ip_in")
+    return [item for item in extras if item in SPECIAL_MATCHES]

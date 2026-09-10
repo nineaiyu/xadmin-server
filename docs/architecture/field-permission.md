@@ -21,7 +21,6 @@
 class BaseRoleRuleInfo(BaseModelSerializer):
     roles_info = RoleSerializer(fields=["pk", "name"], many=True, read_only=True, source="roles")
     rules_info = DataPermissionSerializer(fields=["pk", "name"], many=True, read_only=True, source="rules")
-    mode_type = LabeledChoiceField(choices=models.ModeTypeAbstract.ModeChoices.choices)
 
 
 class UserSerializer(BaseRoleRuleInfo):
@@ -45,7 +44,6 @@ class UserSerializer(BaseRoleRuleInfo):
             "description",
             "dept_info",
             "rules_info",
-            "mode_type",
         ]
         extra_kwargs = {
             "last_login": {"read_only": True},

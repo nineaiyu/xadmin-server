@@ -56,7 +56,6 @@ class UserSerializer(BaseModelSerializer):
             "date_joined",
             "roles",
             "rules",
-            "mode_type",
             "deleted_at",
         ]
         read_only_fields = ["pk", "deleted_at"] + list(set([x.name for x in UserInfo._meta.fields]) - set(fields))

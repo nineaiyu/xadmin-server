@@ -19,7 +19,6 @@ from common.core.models import (
     AutoCleanFileMixin,
 )
 from common.fields.image import ProcessedImageField
-from system.models import ModeTypeAbstract
 
 
 class SoftDeleteUserManager(SoftDeleteManager, UserManager):
@@ -30,7 +29,7 @@ class SoftDeleteUserManager(SoftDeleteManager, UserManager):
         return SoftDeleteQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
 
 
-class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser, ModeTypeAbstract):
+class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     """用户软删除——删除进入回收站可恢复；
     登录/鉴权走默认管理器（过滤 deleted_at），软删除用户的存量 JWT 立即失效。"""
 

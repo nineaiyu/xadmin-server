@@ -3,7 +3,7 @@
 
 import pytest
 
-from system.utils.modelfield import get_field_lookup_info
+from system.utils.modelfield import get_extra_field_lookups, get_field_lookup_info
 
 
 def test_lookup_info_covers_known_lookups():
@@ -12,6 +12,29 @@ def test_lookup_info_covers_known_lookups():
     assert [r["value"] for r in result] == fields
     for item in result:
         assert item["label"]  # 已知 lookup 必须有翻译说明
+
+
+def test_framework_special_lookups_have_labels():
+    """框架自定义匹配符（m2m/m2m_all/ip_in）必须有中文/可读说明，供前端 match 下拉展示。"""
+    result = get_field_lookup_info(["m2m", "m2m_all", "ip_in"])
+    assert [r["value"] for r in result] == ["m2m", "m2m_all", "ip_in"]
+    for item in result:
+        assert item["label"] != item["value"]  # 不得回退为裸 lookup 名
+
+
+@pytest.mark.django_db
+def test_extra_lookups_by_field_type():
+    """自定义匹配符按字段类型暴露：多对多给 m2m/m2m_all，IP 字段给 ip_in，普通字段不给。"""
+    from system.models import UserInfo, UserLoginLog
+
+    m2m_field = UserInfo._meta.get_field("roles")
+    assert get_extra_field_lookups(m2m_field) == ["m2m", "m2m_all"]
+
+    ip_field = UserLoginLog._meta.get_field("ipaddress")
+    assert get_extra_field_lookups(ip_field) == ["ip_in"]
+
+    char_field = UserInfo._meta.get_field("username")
+    assert get_extra_field_lookups(char_field) == []
 
 
 def test_lookup_info_unknown_lookup_falls_back_to_name():

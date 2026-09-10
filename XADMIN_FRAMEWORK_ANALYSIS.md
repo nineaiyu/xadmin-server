@@ -103,18 +103,18 @@ User ←→ UserRole ←→ Menu (PERMISSION类型)
     - `DATE` / `DATETIME` / `DATETIME_RANGE` — 时间范围
     - `TABLE_USER/TABLE_MENU/TABLE_ROLE/TABLE_DEPT` — 关联表过滤
     - `JSON` — JSON 字段过滤
-4. 规则支持 AND/OR 两种模式（`mode_type`），可组合多条规则
-5. 数据权限按部门和用户两个维度授权，部门规则 AND 操作，个人规则与部门规则 OR 操作
+4. 规则支持 AND/OR 两种模式（`DataPermission.mode_type`，组内多规则组合；部门/用户维度不再有独立模式开关）
+5. 数据权限按部门和用户两个维度授权，各授权组结果「或」合并（取最宽生效）
 6. 数据权限可绑定到特定菜单（`menu` 多对多），实现同一模型在不同页面有不同的数据范围
+7. 部门主管规则：`LEADER_DEPARTMENTS`（主管的部门及下级）/ `LEADER_USERS`（主管部门成员），由 `DeptInfo.leader` 驱动
 
 **执行流程**:
 
 ```
 请求 → ViewSet.filter_queryset() → BaseDataPermissionFilter.filter_queryset()
      → get_filter_queryset(queryset, user)
-     → 构建部门规则 Q 对象 (AND)
-     → 构建个人规则 Q 对象 (OR)
-     → queryset.filter(q)
+     → 收集部门祖先链 + 个人授权（common/core/data_scope.py 编译为 ScopeResult）
+     → 各组「或」合并 → queryset 过滤（无授权返回 none）
 ```
 
 #### 2.2.3 字段权限（Field Permission）

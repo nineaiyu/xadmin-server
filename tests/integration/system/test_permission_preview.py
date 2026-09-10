@@ -184,7 +184,7 @@ def test_decode_role_ids_and_exclude(normal_user, role):
 
 
 def test_decode_single_rule_forced_or(normal_user):
-    """单条规则的授权强制或模式（get_filter_q_base L35-36 语义）。"""
+    """单条规则的授权展示为或模式（单条规则且/或行为等价，展示口径保留）。"""
     dp = DataPermission.objects.create(
         name="且模式单规则",
         mode_type=ModeTypeAbstract.ModeChoices.AND,
@@ -197,7 +197,7 @@ def test_decode_single_rule_forced_or(normal_user):
 
 
 def test_decode_all_ignored_in_and_mode(normal_user):
-    """且模式下 value.all 被忽略（get_filter_q_base L40-41 语义）；需两条规则才保持且模式。"""
+    """且模式下 value.all 被忽略（data_scope 代数：ALLOW 是 AND 单位元）；需两条规则才保持且模式。"""
     dp = DataPermission.objects.create(
         name="且模式含all",
         mode_type=ModeTypeAbstract.ModeChoices.AND,
@@ -356,3 +356,245 @@ def test_role_preview_filters_users_by_caller_scope(api_client, normal_user, rol
     assert data["role"]["pk"] == str(role.pk)
     assert data["users"]["total"] == 0
     assert data["users"]["list"] == []
+
+
+# ---------- 预览与运行时的口径一致性（第三轮复核） ----------
+
+
+def test_inactive_dept_grant_not_effective(normal_user, dept):
+    """停用部门上的授权不参与实际过滤：标 effective=False，且不计入 has_any_grant。
+
+    守护：运行时 filter.py 只把 active 部门加入 active_chain，预览曾无条件展示整条祖先链。
+    """
+    dept.is_active = False
+    dept.save(update_fields=["is_active"])
+    dept.rules.add(make_owner_book_permission("停用部门规则"))
+    normal_user.dept = dept
+    normal_user.save()
+
+    from system.utils.permission_preview import get_user_data_permissions
+
+    result = get_user_data_permissions(normal_user)
+    assert result["has_any_grant"] is False
+    self_row = result["dept_chain"][0]
+    assert self_row["is_active"] is False
+    assert self_row["effective"] is False
+    # 授权仍列出便于定位配置（不隐藏、但不误导为生效）
+    assert len(self_row["permissions"]) == 1
+
+
+def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
+    """祖先层停用同上（祖先链只保留 active 层）。"""
+    parent = type(dept).objects.create(name="停用总公司", code="hq-inactive", is_active=False)
+    dept.parent = parent
+    dept.save()
+    parent.rules.add(make_owner_book_permission("停用上级规则"))
+    normal_user.dept = dept
+    normal_user.save()
+
+    from system.utils.permission_preview import get_user_data_permissions
+
+    result = get_user_data_permissions(normal_user)
+    assert result["has_any_grant"] is False
+    assert result["dept_chain"][1]["relation"] == "ancestor"
+    assert result["dept_chain"][1]["effective"] is False
+
+
+def test_menu_scoped_grant_flagged_not_general_effective(normal_user, menu_factory):
+    """绑定菜单的授权仅在对应菜单上下文生效：标 menu_scoped，不计入通用 has_any_grant。"""
+    from system.models import Menu
+
+    from system.utils.permission_preview import get_user_data_permissions
+
+    dp = make_owner_book_permission("绑定菜单规则")
+    dp.menu.add(menu_factory(name="书籍列表", menu_type=Menu.MenuChoices.MENU))
+    normal_user.rules.add(dp)
+    result = get_user_data_permissions(normal_user)
+    assert result["personal"][0]["menu_scoped"] is True
+    assert result["has_any_grant"] is False
+
+    # 再补一条不绑菜单的同类授权 → 通用上下文下有生效授权
+    normal_user.rules.add(make_owner_book_permission("通用规则"))
+    assert get_user_data_permissions(normal_user)["has_any_grant"] is True
+
+
+def test_menu_count_counts_all_nodes(auth_client, normal_user, role, menu_factory):
+    """summary.menu_count 统计全部页面菜单节点（含子节点），不再只算根节点。"""
+    from system.models import Menu
+
+    parent = menu_factory(name="系统管理", menu_type=Menu.MenuChoices.DIRECTORY)
+    child = menu_factory(name="用户管理", menu_type=Menu.MenuChoices.MENU, parent=parent)
+    role.menu.add(parent, child)
+
+    response = auth_client.get(preview_url(normal_user))
+    assert response.status_code == 200
+    assert response.data["data"]["summary"]["menu_count"] == 2
+
+
+def test_role_preview_keeps_ancestor_of_bound_child(api_client, superuser, role, menu_factory):
+    """角色只绑子菜单时预览树补齐祖先，避免孤儿子节点被当成根。"""
+    from system.models import Menu
+
+    parent = menu_factory(name="系统管理", menu_type=Menu.MenuChoices.DIRECTORY)
+    child = menu_factory(name="用户管理", menu_type=Menu.MenuChoices.MENU, parent=parent)
+    role.menu.add(child)
+
+    api_client.force_authenticate(user=superuser)
+    response = api_client.get(role_preview_url(role))
+    assert response.status_code == 200
+    tree = response.data["data"]["menu_tree"]
+    assert len(tree) == 1
+    assert tree[0]["title"] == "系统管理"
+    assert tree[0]["children"][0]["title"] == "用户管理"
+
+
+DEPT_PREVIEW_PATH = "api/system/dept/(?P<pk>[^/.]+)/preview$"
+
+
+def dept_preview_url(dept) -> str:
+    return f"/api/system/dept/{dept.pk}/preview"
+
+
+def test_dept_preview_requires_code(api_client, normal_user, dept):
+    """无 preview:SystemDept 权限码 → 403（与用户/角色预览同口径）。"""
+    api_client.force_authenticate(user=normal_user)
+    assert api_client.get(dept_preview_url(dept)).status_code == 403
+
+
+def test_dept_preview_contract(auth_client, dept, role, normal_user, menu_factory):
+    from system.models import Menu
+
+    dept.leader = normal_user
+    dept.save(update_fields=["leader"])
+    normal_user.dept = dept
+    normal_user.save(update_fields=["dept"])
+    dept.roles.add(role)
+    dept.rules.add(make_owner_book_permission("部门规则"))
+    type(dept).objects.create(name="子部门", code="dept-child-1", parent=dept)
+    role.menu.add(menu_factory(name="SystemDept", menu_type=Menu.MenuChoices.MENU))
+
+    response = auth_client.get(dept_preview_url(dept))
+    assert response.status_code == 200
+    data = response.data["data"]
+    assert data["dept"]["name"] == "研发部"
+    assert data["dept"]["leader"]["username"] == "zhangsan"
+    assert data["dept"]["child_count"] == 1
+    assert data["dept"]["active_child_count"] == 1
+    assert [item["code"] for item in data["roles"]] == ["common"]
+    assert data["menu_tree"][0]["name"] == "SystemDept"
+    assert data["field_permission_enabled"] in (True, False)
+    assert data["notes"]
+
+    # 部门维度主语是「部门成员」，不依赖某个具体用户
+    rule = data["data_permissions"]["rules"][0]["rules"][0]
+    assert rule["type_text"] == "目标用户本人"
+    assert rule["value_text"] == "部门成员本人（各自）"
+    assert data["data_permissions"]["has_any_grant"] is True
+    assert data["users"]["total"] >= 1
+
+
+def test_dept_preview_filters_users_by_caller_scope(api_client, normal_user, dept, menu_factory):
+    """水平越权防线：调用者数据范围内看不到部门成员时，成员列表为空。"""
+    role = normal_user.roles.first()
+    role.menu.add(menu_factory(name="preview:SystemDept", path=DEPT_PREVIEW_PATH, method="GET"))
+    # 授予 system.deptinfo 的可见范围（否则 get_object 404），但不授予 system.userinfo 范围
+    normal_user.rules.add(
+        DataPermission.objects.create(
+            name="仅本部门可见",
+            rules=[
+                {
+                    "table": "system.deptinfo",
+                    "field": "code",
+                    "type": "value.text",
+                    "value": "dev",
+                    "match": "exact",
+                }
+            ],
+        )
+    )
+    api_client.force_authenticate(user=normal_user)
+
+    response = api_client.get(dept_preview_url(dept))
+    assert response.status_code == 200, response.data
+    # normal_user 对 system.userinfo 无任何授权 → 看不到部门成员
+    assert response.data["data"]["users"]["total"] == 0
+
+
+# ---------- 试算草稿（配置页即时验证影响面） ----------
+
+
+def test_trial_draft_rules_apply_and_widen_scope(api_client, normal_user, role, menu_factory, books):
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    normal_user.rules.add(make_user_self_scope())  # 让调用者能看到自己（否则 get_object 404）
+    api_client.force_authenticate(user=normal_user)
+
+    # 无任何授权：看不到数据
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book"}, format="json")
+    assert response.status_code == 200
+    assert response.data["data"]["count"] == 0
+    assert response.data["data"]["draft_applied"] is False
+
+    # 草稿「全部数据」不落库，但参与本次试算
+    draft = {
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "mode_type": ModeTypeAbstract.ModeChoices.OR,
+    }
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["draft_applied"] is True
+    assert data["count"] == 2
+    # 草稿不入库：库存授权数量不变
+    assert not DataPermission.objects.filter(name="__draft__").exists()
+
+
+def test_trial_draft_invalid_rules_rejected(api_client, normal_user, role, menu_factory, books):
+    """草稿与保存走同一套写入校验，不能成为绕过校验的后门。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    normal_user.rules.add(make_user_self_scope())
+    api_client.force_authenticate(user=normal_user)
+    draft = {"rules": [{"table": "demo.book", "field": "creat0r", "type": "value.text", "value": "x"}]}
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
+    assert response.status_code == 400
+
+
+def test_trial_draft_menu_scoped_only_in_matching_context(api_client, normal_user, role, menu_factory, books):
+    """草稿绑定了菜单：仅在对应菜单上下文参与试算，通用上下文不生效。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    menu = menu_factory(name="demo.book", menu_type=2)
+    normal_user.rules.add(make_user_self_scope())
+    api_client.force_authenticate(user=normal_user)
+    draft = {
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "menu": str(menu.pk),
+    }
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "draft": draft}, format="json")
+    assert response.status_code == 200, response.data
+    assert response.data["data"]["draft_applied"] is False
+
+
+def test_decode_dirty_value_falls_back(normal_user):
+    """历史脏值（非法 JSON / 非预期结构）解码不抛异常，回退原始文案（预览不 500）。"""
+    dp = DataPermission.objects.create(
+        name="脏值规则",
+        rules=[
+            {"table": "demo.book", "field": "name", "type": "value.date", "value": "not-json", "match": "exact"},
+            {
+                "table": "demo.book",
+                "field": "name",
+                "type": "value.datetime.range",
+                "value": "oops",
+                "match": "exact",
+            },
+            {"table": "demo.book", "field": "name", "type": "value.table.role.ids", "value": "not-json", "match": "in"},
+        ],
+    )
+    from system.utils.permission_preview import decode_data_permission
+
+    decoded = decode_data_permission(dp, normal_user)
+    assert decoded["rules"][0]["value_text"] == "not-json"
+    assert decoded["rules"][1]["value_text"] == "oops"
+    assert decoded["rules"][2]["value_text"] == "（无）"

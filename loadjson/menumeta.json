@@ -8123,5 +8123,30 @@
       "fixed_tag": false,
       "dynamic_level": 0
     }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "b7c2f5a1-3d4e-4f6a-8b9c-1d2e3f4a5b6c",
+    "fields": {
+      "created_time": "2026-09-10T12:00:00Z",
+      "updated_time": "2026-09-10T12:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "U-部门权限预览",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
   }
 ]

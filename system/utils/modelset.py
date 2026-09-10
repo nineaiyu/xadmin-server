@@ -16,7 +16,7 @@ from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import UserRole, DataPermission, SystemConfig
-from system.utils.permission_preview import get_role_preview, get_user_preview, run_data_trial
+from system.utils.permission_preview import get_dept_preview, get_role_preview, get_user_preview, run_data_trial
 
 
 def _extract_pks(items):
@@ -40,11 +40,10 @@ class ChangeRolePermissionAction(object):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                required=["roles", "rules", "mode_type"],
+                required=["roles", "rules"],
                 properties={
                     "roles": build_array_type(build_object_type(properties={"pk": build_basic_type(OpenApiTypes.STR)})),
                     "rules": build_array_type(build_object_type(properties={"pk": build_basic_type(OpenApiTypes.STR)})),
-                    "mode_type": build_basic_type(OpenApiTypes.NUMBER),
                 },
             )
         ),
@@ -56,9 +55,6 @@ class ChangeRolePermissionAction(object):
         instance = self.get_object()
         roles = request.data.get("roles")
         rules = request.data.get("rules")
-        mode_type = request.data.get("mode_type", instance.mode_type)
-        if isinstance(mode_type, dict):
-            mode_type = mode_type.get("value")
         if roles is not None or rules is not None:
             # 非法入参返回可读业务失败，而不是在遍历时抛 500
             if (roles is not None and not isinstance(roles, (list, tuple))) or (
@@ -70,10 +66,7 @@ class ChangeRolePermissionAction(object):
                     get_filter_queryset(UserRole.objects.filter(pk__in=_extract_pks(roles)), request.user).all()
                 )
             if rules is not None:
-                instance.mode_type = mode_type
-                instance.modifier = request.user
-                instance.save(update_fields=["mode_type", "modifier"])
-                # 数据权限是部门进行并查询过滤，可以直接进行查询
+                # 数据权限按「或」合并（取最宽生效），无需附加模式开关
                 instance.rules.set(DataPermission.objects.filter(pk__in=_extract_pks(rules)).all())
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
@@ -106,10 +99,29 @@ class PermissionPreviewAction(object):
     )
     @action(methods=["post"], detail=True, url_path="preview/trial")
     def preview_trial(self, request, *args, **kwargs):
-        """试算{cls}的数据权限过滤（命中行数 + 最终 SQL）"""
+        """试算{cls}的数据权限过滤（命中行数 + 最终 SQL）
+
+        draft（可选）：未保存的规则草稿 {rules, mode_type, menu}，用于配置页即时验证影响面；
+        草稿经写入侧同一套 validate_rules，不落库。
+        """
         return ApiResponse(
-            data=run_data_trial(self.get_object(), request.data.get("model"), request.data.get("menu") or None)
+            data=run_data_trial(
+                self.get_object(),
+                request.data.get("model"),
+                request.data.get("menu") or None,
+                draft=request.data.get("draft") or None,
+            )
         )
+
+
+class DeptPreviewAction(object):
+    """部门维度授权预览（挂载角色 / 数据权限 / 字段权限 / 成员采样）。"""
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="preview")
+    def preview(self, request, *args, **kwargs):
+        """获取{cls}的授权预览"""
+        return ApiResponse(data=get_dept_preview(self.get_object(), request.user))
 
 
 class RolePreviewAction(object):

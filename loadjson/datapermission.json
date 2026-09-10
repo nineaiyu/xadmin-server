@@ -23,7 +23,7 @@
         {
           "type": "value.all",
           "field": "id",
-          "match": "exact",
+          "match": "all",
           "table": "system.fieldpermission",
           "value": "",
           "exclude": false
@@ -168,7 +168,7 @@
         {
           "type": "value.all",
           "field": "id",
-          "match": "exact",
+          "match": "all",
           "table": "system.systemconfig",
           "value": "",
           "exclude": false
@@ -176,7 +176,7 @@
         {
           "type": "value.all",
           "field": "id",
-          "match": "exact",
+          "match": "all",
           "table": "system.datapermission",
           "value": "",
           "exclude": false
@@ -184,7 +184,7 @@
         {
           "type": "value.all",
           "field": "id",
-          "match": "exact",
+          "match": "all",
           "table": "system.modellabelfield",
           "value": "",
           "exclude": false
@@ -192,7 +192,7 @@
         {
           "type": "value.all",
           "field": "id",
-          "match": "exact",
+          "match": "all",
           "table": "system.uploadfile",
           "value": "",
           "exclude": false
@@ -258,7 +258,7 @@
         {
           "type": "value.all",
           "field": "*",
-          "match": "*",
+          "match": "all",
           "table": "*",
           "value": "*",
           "exclude": false

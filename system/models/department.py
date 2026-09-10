@@ -13,10 +13,9 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.utils import encoders
 
 from common.core.models import DbAuditModel, DbUuidModel
-from system.models import ModeTypeAbstract
 
 
-class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
+class DeptInfo(DbAuditModel, DbUuidModel):
     # 部门树缓存有效期（秒）。部门变更通过信号即时失效，TTL 仅兜底。
     DEPT_TREE_CACHE_TTL = 60
 
@@ -29,6 +28,15 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         null=True,
         blank=True,
         related_query_name="parent_query",
+    )
+    leader = models.ForeignKey(
+        "system.UserInfo",
+        on_delete=models.SET_NULL,
+        verbose_name=_("Leader"),
+        null=True,
+        blank=True,
+        related_name="leader_depts",
+        help_text=_("Department leader, who can be granted data permissions of the led departments"),
     )
     roles = models.ManyToManyField("system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField("system.DataPermission", verbose_name=_("Data permission"), blank=True)
@@ -61,7 +69,7 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         return cls._recursion_dept_info(dept_id, dept_all_list, dept_list, is_parent)
 
     @classmethod
-    def _recursion_dept_info(cls, dept_id, dept_all_list, dept_list, is_parent=False):
+    def _recursion_dept_info(cls, dept_id, dept_all_list, dept_list=None, is_parent=False):
         parent = "parent"
         pk = "pk"
         if is_parent:
@@ -71,7 +79,11 @@ class DeptInfo(DbAuditModel, ModeTypeAbstract, DbUuidModel):
         if dept_list is None:
             dept_list = [dept_id]
         for dept in dept_all_list:
-            if dept.get(parent) == dept_id:
+            # str 归一比较：规则 value 经 JSON 反序列化得到的是字符串主键，
+            # values() 取出的是 UUID 对象（旧实现直接 == 比较，str 入参永远匹配不上，
+            # 「部门及下级」规则从未展开过子树）
+            dept_parent = dept.get(parent)
+            if dept_parent is not None and str(dept_parent) == str(dept_id):
                 if dept.get(pk):
                     dept_list.append(dept.get(pk))
                     cls._recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)

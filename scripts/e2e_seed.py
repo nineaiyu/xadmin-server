@@ -28,6 +28,9 @@ E2E_USERS = [
     ("e2e_dp", "E2E-DataPerm-2026!", "E2E数据权限用户", False, "e2e_dp"),
     ("e2e_fp", "E2E-FieldPer-2026!", "E2E字段权限用户", False, "e2e_fp"),
     ("e2e_lock", "E2E-Lock-2026!", "E2E锁定测试用户", False, None),
+    # 部门主管场景：e2e_leader 主管测试部门（本人兼成员），用户列表可见本人 + 部门成员
+    ("e2e_leader", "E2E-Leader-2026!", "E2E主管用户", False, "e2e_leader"),
+    ("e2e_member", "E2E-Member-2026!", "E2E部门成员", False, None),
     # 审批人：第二超管（申请人 xadmin 不能自审，审批中心用例以其身份通过审批单）
     ("e2e_approver", "E2E-Approver-2026!", "E2E审批人", True, None),
 ]
@@ -44,10 +47,22 @@ DATA_PERMISSION_RULES = [
     }
 ]
 
+# 部门主管规则：用户列表可见「主管部门成员」（运行时解析为 leader 部门递归成员 pk）
+DATA_PERMISSION_LEADER_RULES = [
+    {
+        "table": "system.userinfo",
+        "field": "id",
+        "type": "value.leader.user.ids",
+        "match": "in",
+        "value": "*",
+        "exclude": False,
+    }
+]
+
 # 数据权限规则：全部数据（value.all），用于字段权限场景放行行可见性
 # （数据权限默认拒绝：无任何授权的用户列表返回 none，见 common/core/filter.py）
 DATA_PERMISSION_ALL_RULES = [
-    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "", "value": "", "exclude": False}
+    {"table": "system.userinfo", "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
 ]
 
 
@@ -207,6 +222,37 @@ def main() -> None:
             # 字段权限白名单（全字段）：否则行内容被裁剪成空对象
             grant_field_permission(dp_role, excluded_field=None)
         print("data permission seeded for e2e_dp")
+
+    # ---- 部门主管场景：e2e_leader 主管测试部门（本人兼成员），列表可见本人 + 部门成员 ----
+    from system.models import DeptInfo
+
+    e2e_leader = created_users.get("e2e_leader") or UserInfo.objects.filter(username="e2e_leader").first()
+    e2e_member = created_users.get("e2e_member") or UserInfo.objects.filter(username="e2e_member").first()
+    if e2e_leader and e2e_member:
+        dept, _ = DeptInfo.objects.get_or_create(code="e2e_leader_dept", defaults={"name": "E2E-主管测试部"})
+        if dept.leader_id != e2e_leader.pk:
+            dept.leader = e2e_leader
+            dept.save(update_fields=["leader"])
+        for member in (e2e_leader, e2e_member):
+            if member.dept_id != dept.pk:
+                member.dept = dept
+                member.save(update_fields=["dept"])
+        leader_dp, _ = DataPermission.objects.get_or_create(
+            name="E2E-主管部门成员",
+            defaults={
+                "rules": DATA_PERMISSION_LEADER_RULES,
+                "mode_type": DataPermission.ModeChoices.OR,
+                "is_active": True,
+            },
+        )
+        leader_dp.menu.clear()
+        e2e_leader.rules.add(leader_dp)
+        leader_role = e2e_leader.roles.filter(code="e2e_leader").first()
+        if leader_role:
+            grant_user_management_menus(leader_role)
+            # 字段权限白名单（全字段）：否则行内容被裁剪成空对象
+            grant_field_permission(leader_role, excluded_field=None)
+        print("leader data permission seeded for e2e_leader")
 
     # ---- 字段权限场景：e2e_fp 的用户列表隐藏「手机」列 ----
     # 选 phone 而非 email：UserInfo 序列化器 table_fields 不含 email（列默认不渲染，

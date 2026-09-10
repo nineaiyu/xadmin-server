@@ -4,15 +4,9 @@
 # filename : filter
 # author : ly_13
 # date : 6/2/2023
-import datetime
-import json
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q, QuerySet
-from django.forms.utils import from_current_timezone
-from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
@@ -20,152 +14,30 @@ from rest_framework.exceptions import NotAuthenticated
 from rest_framework.exceptions import ValidationError as RestValidationError
 from rest_framework.filters import BaseFilterBackend
 
-from common.base.magic import timeit, count_sql_queries
+from common.base.magic import count_sql_queries, timeit
 from common.cache.storage import CommonResourceIDsCache
-from common.core.db.utils import RelatedManager
+from common.core.data_scope import ScopeResult, combine, compile_grant
 from common.utils import get_logger
-from system.services import UserInfo, DataPermission, ModeTypeAbstract, DeptInfo, ModelLabelField
+from system.services import DataPermission, DeptInfo
 
 logger = get_logger(__name__)
 
 
-def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
-    results = []
-    for obj in permission:
-        # 拷贝 rules 再改写：obj.rules 是 JSONField 反序列化出的同一 Python 对象，
-        # 就地 pop("type")/覆盖 value 会让结果依赖"上一次调用留下的变异"
-        # （同一 DataPermission 实例会被多个部门分组重复传入）
-        obj_rules = [dict(rule) for rule in obj.rules]
-        # 单一规则时该规则链按"或"模式处理；用局部变量，不再回写 ORM 实例
-        mode_type = ModeTypeAbstract.ModeChoices.OR if len(obj_rules) == 1 else obj.mode_type
-        rules = []
-        for rule in obj_rules:
-            if rule.get("table") in [model._meta.label_lower, "*"]:
-                if rule.get("type") == ModelLabelField.KeyChoices.ALL:
-                    if mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
-                        continue
-                    else:  # 或模式，存在* 则该规则表仅*生效
-                        rules = [rule]
-                        break
-                rules.append(rule)
-        if rules:
-            results.append({"mode": mode_type, "rules": rules})
-    or_qs = []
-    if not results:
-        return Q(id=0)
-    for result in results:
-        for rule in result.get("rules"):
-            f_type = rule.get("type")
-            if f_type == ModelLabelField.KeyChoices.OWNER:
-                if user_obj:
-                    rule["value"] = user_obj.id
-                else:
-                    rule["value"] = "0"
-            elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENT:
-                if user_obj:
-                    rule["value"] = str(user_obj.dept_id)
-                else:
-                    rule["value"] = "0"
-            elif f_type == ModelLabelField.KeyChoices.OWNER_DEPARTMENTS:
-                rule["match"] = "in"
-                if dept_obj:
-                    rule["value"] = DeptInfo.recursion_dept_info(dept_obj.pk)
-                else:
-                    rule["value"] = []
-            elif f_type == ModelLabelField.KeyChoices.DEPARTMENTS:
-                rule["match"] = "in"
-                if dept_obj:
-                    rule["value"] = DeptInfo.recursion_dept_info(json.loads(rule["value"]))
-                else:
-                    rule["value"] = []
-            elif f_type == ModelLabelField.KeyChoices.ALL:
-                rule["match"] = "all"
-                if ModeTypeAbstract.ModeChoices.OR == result.get("mode"):
-                    if (dept_obj and dept_obj.mode_type == ModeTypeAbstract.ModeChoices.OR) or not dept_obj:
-                        logger.info(f"{model._meta.label_lower} : all queryset")
-                        return Q()  # 全部数据直接返回 queryset
-            elif f_type == ModelLabelField.KeyChoices.DATE:
-                val = json.loads(rule["value"])
-                if val < 0:
-                    rule["value"] = timezone.now() - datetime.timedelta(seconds=-val)
-                else:
-                    rule["value"] = timezone.now() + datetime.timedelta(seconds=val)
-            elif f_type == ModelLabelField.KeyChoices.DATETIME_RANGE:
-                if isinstance(rule["value"], list) and len(rule["value"]) == 2:
-                    rule["value"] = [
-                        from_current_timezone(parse_datetime(rule["value"][0])),
-                        from_current_timezone(parse_datetime(rule["value"][1])),
-                    ]
-            elif f_type == ModelLabelField.KeyChoices.DATETIME:
-                if isinstance(rule["value"], str):
-                    rule["value"] = from_current_timezone(parse_datetime(rule["value"]))
-            elif f_type in [
-                ModelLabelField.KeyChoices.TABLE_USER,
-                ModelLabelField.KeyChoices.TABLE_MENU,
-                ModelLabelField.KeyChoices.TABLE_ROLE,
-                ModelLabelField.KeyChoices.TABLE_DEPT,
-            ]:
-                value = []
-                for item in json.loads(rule["value"]):
-                    if isinstance(item, dict) and "pk" in item:
-                        value.append(item["pk"])
-                    else:
-                        value.append(item)
-                rule["value"] = value
-            elif f_type == ModelLabelField.KeyChoices.JSON:
-                rule["value"] = json.loads(rule["value"])
-            rule.pop("type", None)
-
-        #  ((0, '或模式'), (1, '且模式'))
-        qs = RelatedManager.get_filter_attrs_qs(result.get("rules"))
-        q = Q()
-        if result.get("mode") == ModeTypeAbstract.ModeChoices.AND:
-            for a in set(qs):
-                if a == Q():
-                    continue
-                q &= a
-        else:
-            for a in set(qs):
-                if a == Q():
-                    q = Q()
-                    break
-                q |= a
-        or_qs.append(q)
-    q1 = Q()
-    if not dept_obj:
-        for q in set(or_qs):
-            q1 |= q
-    else:
-        for q in set(or_qs):
-            if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND:
-                if q == Q():
-                    continue
-                q1 &= q
-            else:
-                if q == Q():
-                    return q
-                q1 |= q
-        if dept_obj.mode_type == ModeTypeAbstract.ModeChoices.AND and q1 == Q():
-            return Q(id=0)
-    logger.info(f"{model._meta.label_lower} : {q1}")
-    return q1
-
-
 @timeit
 @count_sql_queries
-def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
-    """
-    1.获取所有数据权限规则
-    2.循环判断规则
-    a.循环判断最内层规则，根据模式和全部数据进行判断【如果规则数量为一个，则模式该规则链为或模式】
-        如果模式为或模式，并存在全部数据，则该规则链其他规则失效，仅保留该规则
-        如果模式为且模式，并且存在全部数据，则该改则失效
-    b.判断外层规则 【如果规则数量为一个，则模式该规则链为或模式】
-        若模式为或模式，并存在全部数据，则直接返回queryset
-        若模式为且模式，则 返回queryset.filter(规则)
+def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
+    """数据权限过滤入口（薄壳；规则编译与代数在 common/core/data_scope.py）。
 
-    部门权限规则一次查询后按部门分组（旧实现循环每个上级部门各查一次，
-    SQL 数 = 部门树深度 + 2）；个人授权判断改用 exists()，避免全量计数。
+    合并语义（对齐行业「取最宽生效」）：
+    - 部门祖先链（含本部门，仅启用部门）与个人授权汇入同一授权池；
+    - 池内各授权组的结果统一「或」合并，组内多规则仍按授权自身 mode_type；
+    - 菜单上下文：授权 menu 为空 = 通用，否则须匹配当前菜单（menu 属性由
+      IsAuthenticated 在权限校验时写入 request.user）；
+    - 无任何适用授权 → none()（fail-closed 保留）；
+    - 「全部数据」规则 = ALLOW_ALL 哨兵，在任何层级正确生效。
+
+    extra_grants：额外参与本次编译的授权（如试算草稿的未落库 DataPermission 实例）。
+    调用方需自行保证其菜单上下文已判定；该参数不改变正常请求路径的行为。
     """
     if not settings.PERMISSION_DATA_ENABLED or queryset is None:
         return queryset
@@ -174,56 +46,50 @@ def get_filter_queryset(queryset: QuerySet, user_obj: UserInfo):
         logger.info(f"superuser: {user_obj.username}. return all queryset {queryset.model._meta.label_lower}")
         return queryset
 
-    dept_obj = user_obj.dept
-    q = Q()
-    # menu 属性由 IsAuthenticated 在权限校验时写入 request.user（当前生效的功能菜单），
-    # 用于把授权限定到"通用授权 + 当前菜单授权"，并非无效条件
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, "menu", None))
-    has_dept = False
-    if dept_obj:
-        # 存在部门，递归获取部门，类似树结构，部门权限需要且模式，将获取到的所有部门的数据规则通过且操作
-        dept_pks = DeptInfo.recursion_dept_info(dept_obj.pk, is_parent=True)
-        # 一次取出整棵部门树上的全部有效授权并按部门分组（2 条 SQL），
-        # 替代旧实现"每个部门各查一次"（SQL 数 = 部门树深度 + 1）
-        dept_permissions = {}
-        if dept_pks:
-            # recursion_dept_info 返回 JSON 序列化后的主键（UUID 为字符串），统一成 str 便于比对
-            dept_pks = [str(pk) for pk in dept_pks]
-            dept_pk_set = set(dept_pks)
-            for item in (
-                DataPermission.objects.filter(is_active=True)
-                .filter(deptinfo__in=dept_pks)
-                .filter(dq)
-                .distinct()
-                .prefetch_related("deptinfo_set")
-            ):
-                for dept in item.deptinfo_set.all():
-                    if str(dept.pk) in dept_pk_set:
-                        dept_permissions.setdefault(dept.pk, []).append(item)
-        for p_dept_obj in DeptInfo.objects.filter(pk__in=dept_pks, is_active=True):
-            # 将数据权限且操作
-            q &= get_filter_q_base(queryset.model, dept_permissions.get(p_dept_obj.pk, []), user_obj, dept_obj)
-            has_dept = True
-        if not has_dept and q == Q():
-            q = Q(id=0)
-        if has_dept and q == Q():
-            return queryset
-    # 获取个人单独授权规则
-    permission = DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
-    # 不存在个人单独授权，则返回部门规则授权（exists() 替代 count()，不再做全量计数）
-    if not permission.exists():
-        logger.info(f"get filter end. {queryset.model._meta.label} : {q}")
-        if has_dept:
-            return queryset.filter(q)
-        else:
-            return queryset.none()  # 没有任何授权，返回 none
-    q1 = get_filter_q_base(queryset.model, permission, user_obj, dept_obj)
-    if q1 == Q():
-        q = q1
-    else:
-        q |= q1  # 存在部门规则和个人规则，或操作
-    logger.info(f"get filter end. {queryset.model._meta.label} : {q}")
-    return queryset.filter(q)
+
+    grants = []
+    dept = user_obj.dept
+    if dept and dept.pk:
+        # 递归取祖先链（含自身，树缓存 60s），仅启用部门上的授权生效
+        chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk, is_parent=True)]
+        active_chain = [
+            str(pk) for pk in DeptInfo.objects.filter(pk__in=chain, is_active=True).values_list("pk", flat=True)
+        ]
+        if active_chain:
+            grants.extend(
+                DataPermission.objects.filter(is_active=True).filter(deptinfo__in=active_chain).filter(dq).distinct()
+            )
+    # 个人授权与部门授权同池「或」合并
+    grants.extend(DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq))
+    if extra_grants:
+        # 试算草稿等临时授权：不落库，直接参与本次编译
+        grants.extend(extra_grants)
+
+    if not grants:
+        logger.info(f"get filter end. {queryset.model._meta.label} : no grant, return none")
+        return queryset.none()
+
+    model = queryset.model
+    results = []
+    for dp in grants:
+        result = compile_grant(dp, model, user_obj)
+        if result is None:
+            # 组内规则均与当前模型无关（或全部无效被跳过），该授权不参与
+            continue
+        results.append(result)
+    if not results:
+        return queryset.none()
+
+    combined = combine(results)
+    if combined.kind == ScopeResult.KIND_ALLOW:
+        logger.info(f"{model._meta.label_lower} : all queryset")
+        return queryset
+    if combined.kind == ScopeResult.KIND_DENY:
+        logger.info(f"get filter end. {model._meta.label} : deny all")
+        return queryset.none()
+    logger.info(f"get filter end. {model._meta.label} : {combined.q}")
+    return queryset.filter(combined.q)
 
 
 class OwnerUserFilter(BaseFilterBackend):

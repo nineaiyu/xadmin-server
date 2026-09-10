@@ -6,9 +6,8 @@
 # date : 8/10/2024
 
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
 
+from common.core.data_scope import validate_rules
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import DataPermission, Menu
@@ -41,8 +40,9 @@ class DataPermissionSerializer(BaseModelSerializer):
 
     def validate(self, attrs):
         rules = attrs.get("rules", [] if not self.instance else self.instance.rules)
-        if not rules:
-            raise ValidationError(_("The rule cannot be null"))
+        # 写入侧结构校验：字段名手滑/非法匹配符等坏规则在保存时被拒，
+        # 而不是让绑定用户的列表接口在读取时 500（编译器读侧另有 fail-closed 兜底）
+        validate_rules(rules)
         if len(rules) < 2:
             attrs["mode_type"] = DataPermission.ModeChoices.OR
         return attrs

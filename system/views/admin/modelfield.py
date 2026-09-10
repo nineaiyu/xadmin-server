@@ -21,7 +21,8 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
 from system.serializers.field import ModelLabelFieldSerializer, ModelLabelFieldImportSerializer
-from system.utils.modelfield import sync_model_field, get_field_lookup_info
+from system.utils.modelfield import sync_model_field, get_field_lookup_info, get_extra_field_lookups
+from system.utils.rule_meta import RULE_TYPE_TEXTS
 
 logger = get_logger(__name__)
 
@@ -80,6 +81,9 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
             ModelLabelField.KeyChoices.DEPARTMENTS,
         ]
         result = get_choices_dict(ModelLabelField.KeyChoices.choices, disabled_choices=disabled_choices)
+        for item in result:
+            # 规则类型只显示「注入什么值」不够，补一条过滤语义说明供配置页展示
+            item["hint"] = RULE_TYPE_TEXTS.get(item["value"], "")
         return ApiResponse(choices_dict={"choices": result})
 
     @extend_schema(
@@ -107,7 +111,8 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
                 if mt:
                     mf = mt._meta.get_field(field)
                     if mf:
-                        return ApiResponse(data=get_field_lookup_info(mf.get_class_lookups().keys()))
+                        lookups = list(mf.get_class_lookups().keys()) + get_extra_field_lookups(mf)
+                        return ApiResponse(data=get_field_lookup_info(lookups))
         return ApiResponse(code=1001)
 
     @extend_schema(responses=get_default_response_schema())
