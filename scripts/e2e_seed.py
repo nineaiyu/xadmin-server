@@ -82,8 +82,23 @@ def get_user_list_api_menu():
     ).first()
 
 
+def get_user_detail_api_menu():
+    """「用户详情」GET 接口权限菜单（api/system/user/{pk}$）。
+
+    编辑态取原文（?mask=false）走的就是详情 GET，字段白名单必须同样覆盖该菜单，
+    否则响应被裁剪成空对象，编辑表单只能拿到列表里的掩码值。
+    """
+    from system.models import Menu
+
+    return Menu.objects.filter(
+        path="api/system/user/(?P<pk>[^/.]+)$",
+        menu_type=Menu.MenuChoices.PERMISSION,
+        method="GET",
+    ).first()
+
+
 def grant_field_permission(role, excluded_field):
-    """为角色授予用户列表字段白名单（除 excluded_field 外全部 userinfo 字段）。
+    """为用户列表 / 详情的字段白名单授权（除 excluded_field 外全部 userinfo 字段）。
 
     字段权限为白名单制：角色+菜单没有任何 FieldPermission 时序列化字段全被
     裁剪（tests/unit/common/test_serializer_field_permission.py 锁定的语义），
@@ -98,8 +113,13 @@ def grant_field_permission(role, excluded_field):
     if not (role and list_menu and root):
         print(f"skip field permission: role={bool(role)} menu={bool(list_menu)} root={bool(root)}")
         return None
-    fp, _ = FieldPermission.objects.get_or_create(role=role, menu=list_menu)
-    fp.field.set(ModelLabelField.objects.filter(parent=root).exclude(name=excluded_field))
+    fields = ModelLabelField.objects.filter(parent=root).exclude(name=excluded_field)
+    fp = None
+    for menu in [list_menu, get_user_detail_api_menu()]:
+        if not menu:
+            continue
+        fp, _ = FieldPermission.objects.get_or_create(role=role, menu=menu)
+        fp.field.set(fields)
     return fp
 
 
