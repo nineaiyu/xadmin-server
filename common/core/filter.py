@@ -32,20 +32,24 @@ logger = get_logger(__name__)
 def get_filter_q_base(model, permission, user_obj=None, dept_obj=None):
     results = []
     for obj in permission:
+        # 拷贝 rules 再改写：obj.rules 是 JSONField 反序列化出的同一 Python 对象，
+        # 就地 pop("type")/覆盖 value 会让结果依赖"上一次调用留下的变异"
+        # （同一 DataPermission 实例会被多个部门分组重复传入）
+        obj_rules = [dict(rule) for rule in obj.rules]
+        # 单一规则时该规则链按"或"模式处理；用局部变量，不再回写 ORM 实例
+        mode_type = ModeTypeAbstract.ModeChoices.OR if len(obj_rules) == 1 else obj.mode_type
         rules = []
-        if len(obj.rules) == 1:
-            obj.mode_type = ModeTypeAbstract.ModeChoices.OR
-        for rule in obj.rules:
+        for rule in obj_rules:
             if rule.get("table") in [model._meta.label_lower, "*"]:
                 if rule.get("type") == ModelLabelField.KeyChoices.ALL:
-                    if obj.mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
+                    if mode_type == ModeTypeAbstract.ModeChoices.AND:  # 且模式，存在*，则忽略该规则
                         continue
                     else:  # 或模式，存在* 则该规则表仅*生效
                         rules = [rule]
                         break
                 rules.append(rule)
         if rules:
-            results.append({"mode": obj.mode_type, "rules": rules})
+            results.append({"mode": mode_type, "rules": rules})
     or_qs = []
     if not results:
         return Q(id=0)

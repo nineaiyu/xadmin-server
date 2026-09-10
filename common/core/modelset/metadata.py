@@ -9,6 +9,7 @@ import json
 from typing import Callable
 
 from django.forms.widgets import DateTimeInput, SelectMultiple
+from django.utils.translation import gettext_lazy as _
 from django_filters.utils import get_model_field
 from django_filters.widgets import DateRangeWidget
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -102,9 +103,16 @@ class SearchFieldsAction(object):
         try:
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
-            for field_name, value in filterset_class.items():
-                if field_name not in filter_fields:
-                    continue
+        except Exception as e:
+            # 整体无法构建（filterset 配置异常等）：返回失败码，
+            # 而不是 HTTP 200 + code=1000 的"成功但残缺"元数据让前端静默降级
+            logger.error(f"get search-field failed {e}")
+            return ApiResponse(code=500, detail=_("Failed to get search fields"))
+        for field_name, value in filterset_class.items():
+            if field_name not in filter_fields:
+                continue
+            # 单字段异常只跳过该字段并记录，不牵连其余字段的元数据
+            try:
                 widget = value.field.widget
                 if isinstance(widget, SelectMultiple):
                     widget.input_type = "select-multiple"
@@ -141,6 +149,10 @@ class SearchFieldsAction(object):
                         **({"choices_truncated": True} if choices_truncated else {}),
                     }
                 )
+            except Exception as e:
+                logger.error(f"get search-field failed. field:{field_name} error:{e}")
+                continue
+        try:
             order_choices = []
             ordering_fields = list(getattr(self, "ordering_fields", []))
             for choice in ordering_fields:
@@ -168,7 +180,8 @@ class SearchFieldsAction(object):
                     }
                 )
         except Exception as e:
-            logger.error(f"get search-field failed {e}")
+            # ordering 段失败不影响已收集的字段元数据
+            logger.error(f"get search-field ordering failed {e}")
         return ApiResponse(data=results)
 
 

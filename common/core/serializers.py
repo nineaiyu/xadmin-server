@@ -32,10 +32,20 @@ class BaseModelSerializer(ModelSerializer):
         tabs = []
 
     def get_field_names(self, declared_fields, info):
-        """将默认的id字段 转换为 pk"""
+        """将默认的id字段 转换为 pk，并并入 Meta.tabs 声明的分组字段。
+
+        tabs 字段在实例级合并，而不是改写类级 ``Meta.fields``：``Meta`` 是类属性，
+        就地追加会随实例化次数不断膨胀，且只对"下一次"实例化生效（首次实例化丢字段）。
+        """
         fields = super().get_field_names(declared_fields, info)
         if "id" in fields:
-            return ["pk"] + [f for f in fields if f != "id"]
+            fields = ["pk"] + [f for f in fields if f != "id"]
+        meta = getattr(self, "Meta", None)
+        tabs = getattr(meta, "tabs", None)
+        if tabs and getattr(meta, "fields", None) != "__all__":
+            for name in self.get_fields_from_tabs(tabs):
+                if name not in fields:
+                    fields.append(name)
         return fields
 
     def get_value(self, dictionary):
@@ -85,10 +95,6 @@ class BaseModelSerializer(ModelSerializer):
         :param ignore_field_permission: 忽略字段权限控制
         """
         super().__init__(instance, data, **kwargs)
-        meta = getattr(self, "Meta", None)
-        if meta and hasattr(meta, "tabs") and meta.fields != "__all__":
-            meta.fields = meta.fields + self.get_fields_from_tabs(meta.tabs)
-
         self.request: Request = get_current_request()
         if self.request is None:
             return
@@ -134,52 +140,59 @@ class BaseModelSerializer(ModelSerializer):
             field_kwargs.setdefault("default", default)
         return field_class, field_kwargs
 
+    def _iter_upload_file_fields(self, validated_data):
+        """产出 ``(字段名, 值, 是否多值)``：仅限关联 ``system.UploadFile`` 的字段。
+
+        create / update 共用同一份关联文件识别逻辑，避免两处判定条件各自漂移。
+        """
+        for field in self.Meta.model._meta.get_fields():
+            if not (field.is_relation and field.related_model._meta.label == "system.UploadFile"):
+                continue
+            if field.name not in validated_data:
+                continue
+            file_data = validated_data[field.name]
+            yield field.name, file_data, isinstance(file_data, (list, QuerySet))
+
+    @staticmethod
+    def _mark_upload_files_used(file_objs):
+        """新关联的文件由临时态转正式态（未被引用的临时文件会被清理任务回收）。"""
+        for file_obj in file_objs:
+            setattr(file_obj, "is_tmp", False)
+            file_obj.save(update_fields=["is_tmp"])
+
     def create(self, validated_data):
         n_file_objs = []
-        for field in self.Meta.model._meta.get_fields():
-            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
-                if field.name in validated_data:
-                    file_data = validated_data[field.name]
-                    if isinstance(file_data, (list, QuerySet)):
-                        n_file_objs.extend(validated_data.get(field.name))
-                    else:
-                        n_file_objs.append(validated_data.get(field.name))
+        for _name, file_data, many in self._iter_upload_file_fields(validated_data):
+            if many:
+                n_file_objs.extend(file_data)
+            else:
+                n_file_objs.append(file_data)
 
         result = super().create(validated_data)
-
-        for n_file in n_file_objs:
-            setattr(n_file, "is_tmp", False)
-            n_file.save(update_fields=["is_tmp"])
+        self._mark_upload_files_used(n_file_objs)
         return result
 
     def update(self, instance, validated_data):
         n_file_objs = []
         d_file_objs = []
-        for field in self.Meta.model._meta.get_fields():
-            if field.is_relation and field.related_model._meta.label == "system.UploadFile":
-                if field.name in validated_data:
-                    file_data = validated_data[field.name]
-                    if isinstance(file_data, (list, QuerySet)):
-                        d_file_objs.extend(
-                            set(getattr(instance, field.name).all()) - set(validated_data.get(field.name))
-                        )
-                        n_file_objs.extend(
-                            set(validated_data.get(field.name)) - set(getattr(instance, field.name).all())
-                        )
-                    else:
-                        o_file_obj = getattr(instance, field.name)
-                        n_file_obj = validated_data.get(field.name)
-                        if o_file_obj.pk != n_file_obj.pk:
-                            d_file_objs.append(o_file_obj)
-                            n_file_objs.append(n_file_obj)
+        for name, file_data, many in self._iter_upload_file_fields(validated_data):
+            if many:
+                # 关联实例各取一次，避免原来 set(...all()) 两次触发同一查询
+                old_file_objs = set(getattr(instance, name).all())
+                new_file_objs = set(file_data)
+                d_file_objs.extend(old_file_objs - new_file_objs)
+                n_file_objs.extend(new_file_objs - old_file_objs)
+            else:
+                o_file_obj = getattr(instance, name)
+                n_file_obj = file_data
+                if o_file_obj.pk != n_file_obj.pk:
+                    d_file_objs.append(o_file_obj)
+                    n_file_objs.append(n_file_obj)
 
         result = super().update(instance, validated_data)
-
         for d_file in d_file_objs:
             d_file.delete()
-        for n_file in n_file_objs:
-            setattr(n_file, "is_tmp", False)
-            n_file.save(update_fields=["is_tmp"])
+        self._mark_upload_files_used(n_file_objs)
         return result
 
     def _mask_exempt(self, request, user):

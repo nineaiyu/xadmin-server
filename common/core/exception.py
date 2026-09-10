@@ -75,16 +75,21 @@ def common_exception_handler(exc, context):
             ret.data = {"detail": ret.data}
         if not ret.data.get("detail"):
             # 字段级校验错误（{field: [errors]}）拼成可读文案；
-            # 结构化错误保留在 errors 中，供前端做表单内联展示
+            # 结构化错误保留在 errors 中，供前端做表单内联展示。
+            # 注意：不回退到 str(exc)——异常原文可能带内部实现细节，只进服务端日志。
+            fallback_detail = _("Operation failed, please check the submitted data")
             if isinstance(ret.data, dict):
                 errors = {k: v for k, v in ret.data.items() if k not in ("status", "code", "errors")}
                 ret.data["errors"] = errors
-                ret.data["detail"] = "; ".join(
-                    f"{key}: {'; '.join(map(str, value)) if isinstance(value, (list, tuple)) else value}"
-                    for key, value in errors.items()
-                ) or str(exc)
+                ret.data["detail"] = (
+                    "; ".join(
+                        f"{key}: {'; '.join(map(str, value)) if isinstance(value, (list, tuple)) else value}"
+                        for key, value in errors.items()
+                    )
+                    or fallback_detail
+                )
             else:
-                ret.data["detail"] = str(exc)
+                ret.data["detail"] = fallback_detail
         ret.data["status"] = ret.status_code
         # 业务码优先：Throttled 的 999 / InvalidToken 的 40001 不被 HTTP 状态码覆盖
         ret.data["code"] = business_code or (ret.code if hasattr(ret, "code") else ret.status_code)

@@ -20,6 +20,9 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
+# 排序入参上限：Case/When 的 WHEN 数随列表线性增长，超大列表会撑爆 SQL 参数/表达式上限
+RANK_MAX_ITEMS = 1000
+
 
 class RankAction(object):
     filter_queryset: Callable
@@ -32,7 +35,12 @@ class RankAction(object):
     @action(methods=["post"], detail=False, url_path="rank")
     def rank(self, request, *args, **kwargs):
         """{cls}排序"""
-        pks = list(request.data)
+        # 入参必须是主键列表：dict 会被 list() 解包成键列表，非法形态直接返回可读错误
+        if not isinstance(request.data, (list, tuple)):
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        pks = [pk for pk in request.data if pk not in (None, "")]
+        if len(pks) > RANK_MAX_ITEMS:
+            return ApiResponse(code=1004, detail=_("Too many items to sort (max {})").format(RANK_MAX_ITEMS))
         if pks:
             # Case/When 单条批量 UPDATE，替代逐条 filter(pk=pk).update(rank=rank)
             queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
@@ -57,10 +65,6 @@ class BatchDestroyAction(object):
     @action(methods=["post"], detail=False, url_path="batch-destroy")
     def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
-
-        # response = run_view_by_celery_task(self, request, kwargs, request.data, batch_length=30)
-        # if response:
-        #     return response
 
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
         if not self._needs_rowwise_delete():

@@ -220,7 +220,9 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             self.attrs = fields
         extra_fields = set(self.attrs) - set(fields)  # 这些字段不在model内，并且不受权限控制
 
-        if self.ignore_field_permission or (self.request and hasattr(self.request, "ignore_field_permission")):
+        # 与 BaseModelSerializer.get_allow_fields 保持同一口径：按取值判断而非 hasattr，
+        # 避免 request.ignore_field_permission 被显式置为 False 时仍被当作豁免
+        if self.ignore_field_permission or getattr(self.request, "ignore_field_permission", False):
             return set(self.attrs)
 
         allow_fields = []
@@ -292,10 +294,6 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         return memo
 
     def to_internal_value(self, data):
-        queryset = self.get_queryset()
-        if queryset is None:
-            return self.fail("queryset_none")
-
         memo = self._get_related_memo()
         if isinstance(data, Model):
             pk = data.pk
@@ -307,6 +305,12 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         memo_key = (self.field_name, str(pk))
         if memo is not None and memo_key in memo:
             return memo[memo_key]
+
+        # 仅在缓存未命中时才构造 queryset：非超管会在此触发数据权限 SQL，
+        # 提前构造会让导入 R 行 × F 字段的权限查询仍是 R×F 次（memo 只能省掉最终 .get()）
+        queryset = self.get_queryset()
+        if queryset is None:
+            return self.fail("queryset_none")
 
         try:
             if isinstance(data, bool):

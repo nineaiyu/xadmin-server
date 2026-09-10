@@ -92,6 +92,8 @@ class RecycleBinAction(object):
         """物理清除{cls}回收站数据（不传 pks 时清除全部超过保留期的数据）"""
         queryset = self.get_recycle_purge_queryset(request.data.get("pks") or [])
         count = 0
+        # 经 filter_queryset 后不保证是 QuerySet（过滤器/取值域可返回 list），
+        # 因此保留 iterator 能力判断：是 QuerySet 时走游标分批，否则按可迭代对象处理
         for instance in queryset.iterator() if hasattr(queryset, "iterator") else queryset:
             instance.hard_delete()  # 走原始 delete 链，物理文件/级联照常清理
             count += 1
@@ -104,7 +106,9 @@ class RecycleBinAction(object):
         model = self.get_queryset().model
         self.queryset = model.all_objects.filter(deleted_at__isnull=False).order_by("-deleted_at")
         # 借用 list action 的口径：list_serializer_class 选择（回收站列需含 deleted_at）
-        # 与 auto_prefetch 的 N+1 优化（recycle 同为逐行序列化的列表路径）
+        # 与 auto_prefetch 的 N+1 优化（recycle 同为逐行序列化的列表路径）。
+        # self.action 是请求级实例属性（DRF 每请求新建 ViewSet 实例），改写不会跨请求泄漏；
+        # 且经 finally 复位，异常路径也不影响同一实例内的后续调用。
         self.action = "list"
         try:
             return self.list(request, *args, **kwargs)

@@ -162,8 +162,10 @@ class ConfigCacheBase(object):
             return ""
         try:
             return object.__getattribute__(self, name)
-        except Exception as e:
-            logger.error(f"__getattribute__ Error  {e}  {name}")
+        except AttributeError as e:
+            # 属性访问即"读同名配置"是本类的设计；此处只兜底 AttributeError，
+            # 避免把 property 内部的真实异常（TypeError/KeyError 等）也吞成"读配置"
+            logger.debug(f"__getattribute__ fallback to config. name:{name} error:{e}")
             return self.get_value(name)
 
 

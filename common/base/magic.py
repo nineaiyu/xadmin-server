@@ -10,6 +10,7 @@ import time
 from functools import wraps, WRAPPER_ASSIGNMENTS
 from importlib import import_module
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import close_old_connections, connection
 from django.http.response import HttpResponse
@@ -380,12 +381,20 @@ def temporary_disable_signal(signal, receiver, *args, **kwargs):
     return decorator
 
 
-import functools
+def _diagnostics_enabled():
+    """诊断装饰器仅在 DEBUG / DEBUG_DEV 下生效。
+
+    ``timeit`` / ``count_sql_queries`` 挂在数据权限过滤这类热路径上，
+    生产环境每次都打 INFO 日志、并在每次 SQL 执行上挂钩子，属纯开销。
+    """
+    return bool(getattr(settings, "DEBUG", False) or getattr(settings, "DEBUG_DEV", False))
 
 
 def timeit(func):
-    @functools.wraps(func)
+    @wraps(func)
     def wrapper(*args, **kwargs):
+        if not _diagnostics_enabled():
+            return func(*args, **kwargs)
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
@@ -405,8 +414,10 @@ class SQLCounter:
 
 
 def count_sql_queries(func):
-    @functools.wraps(func)
+    @wraps(func)
     def wrapper(*args, **kwargs):
+        if not _diagnostics_enabled():
+            return func(*args, **kwargs)
         sql_counter = SQLCounter()
         with connection.execute_wrapper(sql_counter):
             result = func(*args, **kwargs)

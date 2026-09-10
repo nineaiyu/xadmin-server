@@ -236,35 +236,14 @@ def merge_delay_run(ttl=5, key=None):
     return inner
 
 
-@delay_run(ttl=5)
-def test_delay_run():
-    print("Hello,  now is %s" % time.time())
-
-
-@merge_delay_run(ttl=5, key=lambda users=(): users[0][0])
-def test_merge_delay_run(users=()):
-    name = ",".join(users)
-    time.sleep(2)
-    print("Hello, %s, now is %s" % (name, time.time()))
-
-
-def do_test():
-    s = time.time()
-    print("start : %s" % time.time())
-    for i in range(100):
-        # test_delay_run('test', year=i)
-        test_merge_delay_run(users=["test %s" % i])
-        test_merge_delay_run(users=["best %s" % i])
-        test_delay_run("test run %s" % i)
-
-    end = time.time()
-    using = end - s
-    print("end : %s, using: %s" % (end, using))
-
-
 def cached_method(ttl=20):
     """
-    内存缓存，ttl为缓存时间，-1 表示缓存时间永久
+    进程内内存缓存，ttl 为缓存时间，-1 表示永久。
+
+    使用限制（避免误用）：
+    - 仅适用于参数可哈希的调用（list/dict/request 等会直接 TypeError）；
+    - 缓存只增不主动清理，进程内长期驻留，不要用于大对象或高基数 key；
+    - 多进程/多 worker 之间不共享，不保证一致性。
     """
     _cache = {}
 
