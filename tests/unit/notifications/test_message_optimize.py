@@ -133,3 +133,67 @@ class TestReadMessage:
         resp = view.read_message([], FakeRequest())
         assert resp.status_code == 200
         assert MessageUserRead.objects.count() == 0
+
+
+NOTICE_MSG_URL = "/api/notifications/notice-messages"
+
+
+def _per_row_user_count_queries(ctx):
+    """筛出 user_count 的逐行 COUNT(notice_user)。
+
+    排除整页聚合查询（带 GROUP BY），后者是本次优化期望出现的唯一一次统计。
+    """
+    return [
+        q
+        for q in _business_queries(ctx)
+        if "COUNT(*)" in q["sql"].upper() and "notice_user" in q["sql"] and "GROUP BY" not in q["sql"].upper()
+    ]
+
+
+@pytest.fixture
+def notice_page(db, normal_user):
+    """5 条用户通知（各 1 个接收人）+ 1 条公告（无接收人）"""
+    messages = []
+    for i in range(5):
+        msg = MessageContent.objects.create(title=f"n-{i}", message="m", notice_type=MessageContent.NoticeChoices.USER)
+        msg.notice_user.add(normal_user)
+        messages.append(msg)
+    messages.append(
+        MessageContent.objects.create(title="notice", message="m", notice_type=MessageContent.NoticeChoices.NOTICE)
+    )
+    return messages
+
+
+class TestNoticeMessageCountBatching:
+    """消息通知管理列表的 user_count / read_user_count 整页聚合。
+
+    回归点：`get_page_instances()` 不传参会恒返回 []（依赖 default 的类型判断
+    当前是否整页序列化），一旦漏传，批量化会静默失效退回逐行 COUNT。
+    """
+
+    def test_user_count_not_queried_per_row(self, auth_client, notice_page):
+        with CaptureQueriesContext(connection) as ctx:
+            resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        assert resp.status_code == 200
+        per_row = _per_row_user_count_queries(ctx)
+        assert per_row == [], per_row
+
+    def test_user_count_values_match(self, auth_client, notice_page):
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+
+        for i in range(5):
+            assert results[f"n-{i}"]["user_count"] == 1
+        # 公告类接收人由 notice_user 表达，此处未添加接收人
+        assert results["notice"]["user_count"] == 0
+
+    def test_read_user_count_values_match(self, auth_client, notice_page, normal_user):
+        first = notice_page[0]
+        # notice_user 的 through 表即 MessageUserRead：add 已建行，这里改为已读
+        MessageUserRead.objects.filter(owner=normal_user, notice=first).update(unread=False)
+
+        resp = auth_client.get(NOTICE_MSG_URL, {"page": 1, "size": 50, "page_size": 50})
+        results = {item["title"]: item for item in resp.data["data"]["results"]}
+
+        assert results["n-0"]["read_user_count"] == 1
+        assert results["n-1"]["read_user_count"] == 0

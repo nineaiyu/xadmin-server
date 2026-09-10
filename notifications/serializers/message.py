@@ -85,7 +85,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
     def get_read_user_count(self, obj):
         if obj.notice_type in MessageContent.get_user_choices():
             # 整页一次聚合查询，替代每条消息一次 COUNT
-            counts = self._page_read_counts()
+            counts = self._page_read_counts(obj)
             if counts is None:
                 return MessageUserRead.objects.filter(
                     notice=obj, unread=False, owner_id__in=obj.notice_user.all()
@@ -103,14 +103,47 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
         if obj.notice_type == MessageContent.NoticeChoices.ROLE:
             return UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
-        return obj.notice_user.count()
+        # 以 notice_user 表达接收人的类型（USER/SYSTEM/NOTICE）：整页一次聚合查询，
+        # 替代逐行 count()（列表页每行一次 COUNT 的 N+1）
+        counts = self._page_user_counts(obj)
+        if counts is None:
+            return obj.notice_user.count()
+        return counts.get(obj.pk, 0)
 
-    def _page_read_counts(self):
+    def _page_user_counts(self, obj):
+        """整页消息的接收人数，一次聚合查询得到 {notice_pk: user_count}。
+
+        与 `_page_read_counts` 同思路，仅覆盖以 notice_user 表达接收人的类型；
+        DEPT/ROLE 的接收人需按部门/角色实时展开去重（`UserInfo.objects.filter(dept__in=...)`），
+        无法在单条聚合里精确等价，仍逐对象查询。
+        非整页序列化（单对象/嵌套）返回 None，退回逐对象查询。
+        """
+        # 必须传 obj：get_page_instances 依赖 default 的类型判定当前是否为整页序列化，
+        # 不传参（default=None）时恒返回 []，批量化会静默失效退回逐行查询
+        page = self.get_page_instances(obj)
+        batch_types = set(MessageContent.get_user_choices()) | {MessageContent.NoticeChoices.NOTICE}
+        page = [item for item in page if item.notice_type in batch_types]
+        if not page:
+            return None
+        cached = self.context.get("_page_user_counts")
+        if cached is not None:
+            return cached
+        rows = (
+            MessageContent.objects.filter(pk__in=[item.pk for item in page])
+            .annotate(user_total=Count("notice_user", distinct=True))
+            .values_list("pk", "user_total")
+        )
+        counts = dict(rows)
+        self.context["_page_user_counts"] = counts
+        return counts
+
+    def _page_read_counts(self, obj):
         """整页消息的已读人数，一次聚合查询得到 {notice_pk: read_count}。
 
         仅对"按用户通知"类型有效；非整页序列化（单对象/嵌套）返回 None，退回逐对象查询。
         """
-        page = self.get_page_instances()
+        # 同上：必须传 obj，否则 get_page_instances 恒返回 []，批量化静默失效
+        page = self.get_page_instances(obj)
         page = [item for item in page if item.notice_type in MessageContent.get_user_choices()]
         if not page:
             return None

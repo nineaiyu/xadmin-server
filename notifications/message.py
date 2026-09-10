@@ -38,7 +38,14 @@ class SiteMessageUtil:
         ).data
         notice_message["message_type"] = "notify_message"
         online_pks = set(get_online_users())
-        targets = set(pks) & online_pks
+        if not online_pks:
+            return notify_obj
+        if isinstance(pks, QuerySet):
+            # 目标为全量用户（如系统公告）时交给数据库求交集，
+            # 避免把整张用户表物化成 Python set 后再与在线集合比对
+            targets = set(pks.filter(pk__in=online_pks).values_list("pk", flat=True))
+        else:
+            targets = set(pks) & online_pks
         if not targets:
             return notify_obj
         # 整个推送循环一次桥接完成，用户开关一次批量读取，

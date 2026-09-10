@@ -141,9 +141,12 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
             MessageUserRead.objects.filter(notice__id__in=pks, owner=request.user).values_list("notice_id", flat=True)
         )
         # 3. 仅对尚无记录的消息补建"已读"行
-        MessageUserRead.objects.bulk_create(
-            [MessageUserRead(owner=request.user, notice_id=pk, unread=False) for pk in pks if pk not in exist_ids]
-        )
+        new_reads = [
+            MessageUserRead(owner=request.user, notice_id=pk, unread=False) for pk in pks if pk not in exist_ids
+        ]
+        # 未读量大（如系统公告全量下发）时一次性 bulk_create 会生成超大 INSERT：分批写入
+        for start in range(0, len(new_reads), 1000):
+            MessageUserRead.objects.bulk_create(new_reads[start : start + 1000])
         return ApiResponse()
 
     @extend_schema(
