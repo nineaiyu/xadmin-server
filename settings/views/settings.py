@@ -91,5 +91,8 @@ class SettingViewSet(ListDeleteModelSet, ImportExportDataAction):
 
     queryset = Setting.objects.all()
     serializer_class = SettingSerializer
+    # 默认排序：模型无 Meta.ordering，缺省时 DRF 分页会抛 UnorderedObjectListWarning
+    # 且跨页结果可能重复/丢失（orderng_fields 只放开 ?ordering= 参数，不提供默认值）
+    ordering = ["-created_time"]
     ordering_fields = ["created_time", "category"]
     filterset_class = SettingFilter
