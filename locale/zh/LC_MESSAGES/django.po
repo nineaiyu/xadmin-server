@@ -2929,6 +2929,15 @@ msgstr "仅待审批单可以审批通过"
 msgid "Only pending requests can be rejected"
 msgstr "仅待审批单可以驳回"
 
+msgid "Approval request pending reminder"
+msgstr "审批单待处理提醒"
+
+msgid "This approval request has been pending for a long time, please handle it as soon as possible"
+msgstr "该审批单已待处理较长时间，请尽快处理"
+
+msgid "Operation successful. Rejected {} data"
+msgstr "操作成功，已驳回 {} 条数据"
+
 msgid "Only pending requests can be cancelled"
 msgstr "仅待审批单可以撤回"
 

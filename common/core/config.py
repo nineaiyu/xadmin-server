@@ -245,6 +245,14 @@ class BaseConfCache(ConfigCacheBase):
         return int(self.get_value("APPROVAL_KEEP_DAYS", 180))
 
     @property
+    def APPROVAL_REMIND_HOURS(self):
+        """待审批超时提醒阈值（小时，默认 24；0 = 不提醒）。
+
+        由每日提醒任务对「PENDING 且已超过该时长且未提醒过」的单向审批人补发一次提醒。
+        """
+        return int(self.get_value("APPROVAL_REMIND_HOURS", 24))
+
+    @property
     def PAT_RATE_LIMIT(self):
         """PAT 凭证级限流速率（SimpleRateThrottle 速率串，默认 60/min；空或 0 = 不限）。"""
         return self.get_value("PAT_RATE_LIMIT", "60/min")

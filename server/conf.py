@@ -208,6 +208,8 @@ class Config(dict):
         "APPROVAL_PENDING_TIMEOUT": 3,
         # 审批单保留天数（超过由 auto_clean_approval_job 分批删除）
         "APPROVAL_KEEP_DAYS": 180,
+        # 待审批超时提醒阈值（小时）：由每日提醒任务对未处理的单补发一次提醒；0 = 不提醒
+        "APPROVAL_REMIND_HOURS": 24,
         # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
         "PAT_RATE_LIMIT": "60/min",
         # 个人文件存储配额（MB；0 = 不限）

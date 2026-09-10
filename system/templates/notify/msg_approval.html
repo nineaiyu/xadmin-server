@@ -7,6 +7,8 @@
         {% trans 'A sensitive operation has been submitted for approval, please handle it in the approval center' %}
     {% elif event == 'approved' %}
         {% trans 'Your approval request has been approved, please retry the original operation with the token within the validity period' %}
+    {% elif event == 'remind' %}
+        {% trans 'This approval request has been pending for a long time, please handle it as soon as possible' %}
     {% else %}
         {% trans 'Your approval request has been rejected' %}
     {% endif %}

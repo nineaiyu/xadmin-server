@@ -188,6 +188,18 @@ def auto_expire_approval_job():
 
 
 @shared_task
+@register_as_period_task(crontab="0 9 * * *")
+def auto_remind_approval_job():
+    """待审批超时提醒（APPROVAL_REMIND_HOURS，默认 24h）：每日 09:00 对未处理且未提醒过的单补发一次。"""
+    from system.utils.approval import remind_pending_approvals
+
+    count = remind_pending_approvals()
+    if count:
+        logger.info("Remind pending approvals: %s rows", count)
+    return count
+
+
+@shared_task
 @register_as_period_task(crontab="52 3 * * *")
 def auto_clean_approval_job():
     """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
