@@ -2938,6 +2938,9 @@ msgstr "该审批单已待处理较长时间，请尽快处理"
 msgid "Operation successful. Rejected {} data"
 msgstr "操作成功，已驳回 {} 条数据"
 
+msgid "Upload successful, {} file(s) reused existing copies"
+msgstr "上传成功，其中 {} 个文件已复用已有副本"
+
 msgid "Only pending requests can be cancelled"
 msgstr "仅待审批单可以撤回"
 

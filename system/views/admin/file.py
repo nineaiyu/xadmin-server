@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 7/24/2024
 
+import hashlib
 import os
 import re
 
@@ -54,6 +55,29 @@ def sanitize_filename(name, max_length=255):
     if not base or base in (".", ".."):
         return str(_("Unnamed file"))
     return base[:max_length]
+
+
+def file_md5(file_obj) -> str:
+    """计算上传文件的 md5（落盘前求值：命中去重时无需再写一份磁盘文件）。
+
+    上传链路原先由 ``UploadFile.save()`` 读已落盘文件计算 md5；去重需要在落盘**之前**
+    拿到内容指纹，故此处统一改为前置计算并显式入库（save() 见 md5sum 非空即跳过）。
+    """
+    digest = hashlib.md5()
+    for chunk in file_obj.chunks():
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
+def find_dedup_source(creator, md5sum):
+    """去重来源：同属主的既有活动上传件；跨用户不复用（避免越权复用他人文件的存储路径）。
+
+    只认 ``is_upload=True`` 且未软删除的记录（回收站中的文件不参与复用），
+    空 md5（异常文件）不复用。
+    """
+    if not md5sum:
+        return None
+    return UploadFile.objects.filter(creator=creator, md5sum=md5sum, is_upload=True).order_by("-created_time").first()
 
 
 def invalidate_upload_stats_cache(user_pk):
@@ -195,19 +219,43 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
             used_count += 1
         # 统一落库：整批包在同一事务内，任一文件写入失败则整体回滚，
         # 避免「前面的已落库、后面的失败」造成部分写入（与前置全量校验配套）
+        dedup_hits = 0
         try:
             with transaction.atomic():
                 for file_obj in files:
+                    filename = sanitize_filename(file_obj.name)
+                    # md5 在落盘前求值：命中去重时不能再写一份磁盘文件
+                    md5sum = file_md5(file_obj)
+                    source = find_dedup_source(request.user, md5sum)
+                    if source:
+                        # 去重命中：复用既有物理文件，仅新建引用记录（不落盘）。
+                        # 归属语义不受影响（新记录仍是本次属主的上传件），删除任一记录时
+                        # 物理文件由 UploadFile.file_still_referenced 守护保留
+                        dedup_hits += 1
+                        result.append(
+                            UploadFile.objects.create(
+                                creator=request.user,
+                                filename=filename,
+                                is_upload=True,
+                                is_tmp=True,
+                                filepath=source.filepath.name,
+                                mime_type=file_obj.content_type,
+                                filesize=file_obj.size,
+                                md5sum=md5sum,
+                            )
+                        )
+                        continue
                     result.append(
                         UploadFile.objects.create(
                             creator=request.user,
                             # 客户端原始文件名不可信：去掉路径部分并做非法字符/长度清洗
-                            filename=sanitize_filename(file_obj.name),
+                            filename=filename,
                             is_upload=True,
                             is_tmp=True,
                             filepath=file_obj,
                             mime_type=file_obj.content_type,
                             filesize=file_obj.size,
+                            md5sum=md5sum,
                         )
                     )
         except Exception as e:
@@ -216,4 +264,7 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
             invalidate_upload_stats_cache(request.user.pk)
-        return ApiResponse(data=self.get_serializer(result, many=True).data)
+        detail = _("Upload successful")
+        if dedup_hits:
+            detail = _("Upload successful, {} file(s) reused existing copies").format(dedup_hits)
+        return ApiResponse(data=self.get_serializer(result, many=True).data, detail=detail)
