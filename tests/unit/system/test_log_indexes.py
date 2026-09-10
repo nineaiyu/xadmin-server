@@ -17,6 +17,7 @@ EXPECTED = {
         "idx_oplog_exec_time",
         "idx_oplog_module_objectpk",
         "idx_oplog_path",
+        "idx_oplog_token_created",
     },
     UserLoginLog: {"idx_loginlog_created"},
     UploadFile: {"idx_uploadfile_tmp_created", "idx_uploadfile_md5sum"},

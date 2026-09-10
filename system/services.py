@@ -27,6 +27,7 @@ __all__ = [
     "SystemConfig",  # noqa: F822
     "UserPersonalConfig",  # noqa: F822
     "OperationLog",  # noqa: F822
+    "PersonalAccessToken",  # noqa: F822
     "Menu",  # noqa: F822
     "FieldPermission",  # noqa: F822
     "DataPermission",  # noqa: F822
@@ -53,6 +54,7 @@ _LAZY_EXPORTS = {
     "SystemConfig": "system.models",
     "UserPersonalConfig": "system.models",
     "OperationLog": "system.models",
+    "PersonalAccessToken": "system.models",
     "Menu": "system.models",
     "FieldPermission": "system.models",
     "DataPermission": "system.models",

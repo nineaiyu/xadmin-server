@@ -59,6 +59,10 @@ class UserLoginLog(DbAuditModel):
 
 
 class OperationLog(DbAuditModel):
+    class AuthType(models.TextChoices):
+        JWT = "jwt", _("JWT")
+        PAT = "pat", _("Personal access token")
+
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
     path = models.CharField(max_length=400, verbose_name=_("URL path"), null=True, blank=True)
     # 行级变更历史对象定位：detail 路由由中间件从 URL kwargs 提取（pk 兜底 id），
@@ -76,6 +80,14 @@ class OperationLog(DbAuditModel):
     exec_time = models.FloatField(verbose_name=_("Execution time"), null=True, blank=True)
     # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
     changes = models.TextField(verbose_name=_("Changed fields"), null=True, blank=True)
+    # 凭证标识（PAT 精确审计，ADR-008 演进项销项）：PAT 请求记 pat + token_pk，
+    # JWT 请求记 jwt，匿名/白名单接口留空。token_pk 刻意不建 FK——凭证被清理任务
+    # 删除后日志不断链（主键快照本身即可回溯）；类型对齐凭证主键（大整数）。
+    # 升级前的历史行 token_pk 为空，无法归属到具体凭证。
+    auth_type = models.CharField(
+        max_length=16, choices=AuthType.choices, verbose_name=_("Auth type"), null=True, blank=True
+    )
+    token_pk = models.BigIntegerField(verbose_name=_("Token pk"), null=True, blank=True)
 
     class Meta:
         verbose_name = _("Operation log")
@@ -91,6 +103,8 @@ class OperationLog(DbAuditModel):
             models.Index(fields=["module", "object_pk"], name="idx_oplog_module_objectpk"),
             # path 前缀检索（操作日志页 path 过滤）
             models.Index(fields=["path"], name="idx_oplog_path"),
+            # 凭证维度召回（PAT 调用记录/统计按 token_pk + 时间窗过滤）
+            models.Index(fields=["token_pk", "created_time"], name="idx_oplog_token_created"),
         ]
 
     @classmethod

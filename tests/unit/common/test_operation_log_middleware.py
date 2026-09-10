@@ -122,6 +122,64 @@ class TestFieldTruncation:
         assert info["response_result"] == '{"code": null, "data": null, "detail": null}'
 
 
+class TestAuthIdentity:
+    """凭证标识（PAT 精确审计）：auth_type / token_pk 落库字段。"""
+
+    @staticmethod
+    def _request(**extra):
+        attrs = {
+            "META": {"HTTP_USER_AGENT": "pytest-agent"},
+            "method": "GET",
+            "path": DEMO_URL,
+            "request_data": {},
+            "request_ip": "127.0.0.1",
+            "request_module": "demo",
+            "user": None,
+        }
+        attrs.update(extra)
+        return type("R", (), attrs)()
+
+    @staticmethod
+    def _response(auth=..., status_code=200):
+        """DRF 响应替身：renderer_context.request.auth 即认证链写入的凭证对象。"""
+        attrs = {"status_code": status_code, "data": {"code": 1000}}
+        if auth is not ...:
+            attrs["renderer_context"] = {"request": type("Q", (), {"auth": auth})()}
+        return type("R", (), attrs)()
+
+    def test_pat_request_records_token_identity(self, superuser):
+        from system.models.token import PersonalAccessToken
+
+        token = PersonalAccessToken.objects.create(
+            creator=superuser, name="ci", token_hash="a" * 64, token_prefix="pat_identity"
+        )
+        info = build_operation_log_info(self._request(user=superuser), self._response(token), 0)
+        assert info["auth_type"] == OperationLog.AuthType.PAT
+        assert info["token_pk"] == token.pk
+
+    def test_failed_pat_auth_marks_type_without_token(self):
+        """PAT 认证失败（401）拿不到 request.auth：只标类型，token_pk 留空。"""
+        request = self._request(META={"HTTP_USER_AGENT": "pytest-agent", "HTTP_AUTHORIZATION": "Pat forged-value"})
+        info = build_operation_log_info(request, self._response(auth=None, status_code=401), 0)
+        assert info["auth_type"] == OperationLog.AuthType.PAT
+        assert info["token_pk"] is None
+
+    def test_jwt_and_anonymous_identity(self, superuser):
+        # JWT：auth 是 token 对象但不是凭证实体
+        info = build_operation_log_info(self._request(user=superuser), self._response(auth=object()), 0)
+        assert info["auth_type"] == OperationLog.AuthType.JWT
+        assert info["token_pk"] is None
+
+        # 响应无渲染上下文（非 DRF 响应）时退化按用户判定
+        info = build_operation_log_info(self._request(user=superuser), self._response(), 0)
+        assert info["auth_type"] == OperationLog.AuthType.JWT
+
+        # 匿名/白名单接口：留空
+        info = build_operation_log_info(self._request(), self._response(), 0)
+        assert info["auth_type"] is None
+        assert info["token_pk"] is None
+
+
 class TestUserAgent:
     def test_missing_user_agent_does_not_raise(self):
         request = type("R", (), {"META": {}})()

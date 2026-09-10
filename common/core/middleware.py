@@ -67,6 +67,40 @@ def write_operation_log(operation_log_id, info):
         logger.warning(f"write operation log failed. id:{operation_log_id} error:{e}")
 
 
+def resolve_auth_identity(request, response):
+    """本次请求的凭证标识：``(auth_type, token_pk)``。
+
+    - PAT 请求：``pat`` + 凭证主键（PAT 调用记录/统计据此精确归集）；
+    - JWT 请求：``jwt``；
+    - 匿名 / 白名单接口（登录、健康检查等）：留空。
+
+    DRF 的 ``request.auth`` 只挂在 DRF Request 包装对象上，而中间件拿到的是原始
+    HttpRequest，故优先从渲染上下文的 DRF request 取；认证失败（401）等拿不到
+    auth 的场景退化为按 Authorization 头判定类型（不反查凭证，token_pk 留空）。
+    """
+    # 惰性 import：middleware 在 common 层，避免顶层引入认证链造成循环依赖
+    from common.core.auth import PersonalAccessTokenAuthentication
+    from system.services import PersonalAccessToken
+
+    drf_request = None
+    if hasattr(response, "renderer_context"):
+        drf_request = response.renderer_context.get("request")
+    auth = getattr(drf_request, "auth", None) if drf_request is not None else None
+    if isinstance(auth, PersonalAccessToken):
+        return OperationLog.AuthType.PAT, auth.pk
+    header_parts = request.META.get("HTTP_AUTHORIZATION", "").split()
+    if header_parts and header_parts[0].lower() == PersonalAccessTokenAuthentication.keyword:
+        # 认证被拒（IP 白名单未命中/凭证失效）时认证链已清空 auth：用拒绝前的埋点归集
+        rejected_pk = getattr(drf_request, "_pat_rejected_token_pk", None) if drf_request is not None else None
+        return OperationLog.AuthType.PAT, rejected_pk
+    if auth is not None:
+        return OperationLog.AuthType.JWT, None
+    user = get_request_user(request)
+    if user and not isinstance(user, AnonymousUser):
+        return OperationLog.AuthType.JWT, None
+    return None, None
+
+
 def build_operation_log_info(request, response, request_start_time):
     """组装操作日志字段。
 
@@ -110,8 +144,12 @@ def build_operation_log_info(request, response, request_start_time):
             action_doc = request_module
     else:
         action_doc = request_module
+    auth_type, token_pk = resolve_auth_identity(request, response)
     return {
         "module": action_doc[:OPERATION_LOG_MODULE_MAX] if action_doc else action_doc,
+        # 凭证标识：PAT 精确审计的数据基础（按 token_pk 归集调用记录）
+        "auth_type": auth_type,
+        "token_pk": token_pk,
         # 预取主键而非持有实例：on_commit 回调中不再延迟访问 request/ORM
         "creator_id": getattr(user, "pk", None) if not isinstance(user, AnonymousUser) else None,
         "dept_belong_id": getattr(request.user, "dept_id", None),

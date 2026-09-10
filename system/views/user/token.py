@@ -5,8 +5,9 @@
 - 取值域严格个人：任何用户（含超管）只见本人凭证，无管理员代管（登记边界）；
 - 路由挂在 PERMISSION_WHITE_URL（个人安全操作，无需菜单权限，同 MFA 口径），
   但仍需登录（认证链生效）。
-- 调用审计不新增埋点表：OperationLog 已记录 PAT 请求（creator=属主），logs/stats
-  按「creator + 时间窗」近似关联到凭证（OperationLog 无 token 标识字段，登记边界）。
+- 调用审计不新增埋点表：OperationLog 记录 PAT 请求时写入凭证标识（auth_type=pat +
+  token_pk，见 common/core/middleware.py），logs/stats 按 token_pk 精确归集；
+  升级前（无 token_pk）的历史日志无法归属到具体凭证，不计入并在前端标注。
 """
 
 from django.utils import timezone
@@ -45,9 +46,9 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="logs")
     def logs(self, request, *args, **kwargs):
-        """凭证调用记录（近似口径：本人凭证周期内的操作日志）"""
-        self.get_object()  # 取值域保护：他人凭证 404
-        queryset = self._call_log_queryset(request)
+        """凭证调用记录（精确口径：按凭证标识 token_pk 归集）"""
+        token = self.get_object()  # 取值域保护：他人凭证 404
+        queryset = self._call_log_queryset(request, token)
         page = self.paginate_queryset(queryset)
         if page is not None:
             data = self.get_paginated_response(OperationLogSerializer(page, many=True).data).data
@@ -58,10 +59,10 @@ class PersonalAccessTokenViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="stats")
     def stats(self, request, *args, **kwargs):
-        """调用统计（近 7 天调用数 / 失败数 / 末次调用时间）"""
+        """调用统计（近 7 天调用数 / 失败数 / 末次调用时间，按凭证精确归集）"""
         token = self.get_object()
         queryset = self._call_log_queryset(
-            request, since=timezone.now() - timezone.timedelta(days=PAT_STATS_WINDOW_DAYS)
+            request, token, since=timezone.now() - timezone.timedelta(days=PAT_STATS_WINDOW_DAYS)
         )
         total = queryset.count()
         failed = queryset.exclude(status_code=API_SUCCESS_CODE).count()
@@ -75,11 +76,15 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         )
 
     @staticmethod
-    def _call_log_queryset(request, since=None):
-        """本人操作日志按时间窗/路径过滤（近似口径：无 token 标识字段）。"""
+    def _call_log_queryset(request, token, since=None):
+        """凭证调用日志按时间窗/路径过滤（精确口径：token_pk 命中即该凭证的调用）。
+
+        只按 token_pk 过滤：凭证与日志归属同一属主，且 token_pk 唯一定位凭证；
+        token_pk 为空的历史行（升级前写入）天然不计入任一凭证。
+        """
         from system.models import OperationLog
 
-        queryset = OperationLog.objects.filter(creator=request.user)
+        queryset = OperationLog.objects.filter(token_pk=token.pk)
         params = request.query_params
         if since is not None:
             queryset = queryset.filter(created_time__gte=since)

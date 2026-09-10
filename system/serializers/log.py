@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
@@ -27,6 +28,7 @@ class OperationLogSerializer(BaseModelSerializer):
             "ipaddress",
             "path",
             "method",
+            "auth_type",
             "browser",
             "system",
             "request_uuid",
@@ -47,6 +49,7 @@ class OperationLogSerializer(BaseModelSerializer):
             "ipaddress",
             "path",
             "method",
+            "auth_type",
             "browser",
             "system",
             "exec_time",
@@ -56,6 +59,8 @@ class OperationLogSerializer(BaseModelSerializer):
         read_only_fields = ["pk"] + list(set([x.name for x in OperationLog._meta.fields]))
         extra_kwargs = {"creator": {"attrs": ["pk", "username"], "read_only": True, "format": "{username}"}}
 
+    # 凭证类型：labeled_choice 下发 {value,label}，前端表格直接展示彩色/可读标签
+    auth_type = LabeledChoiceField(choices=OperationLog.AuthType.choices, required=False, allow_null=True)
     response_result = serializers.JSONField()
     body = serializers.JSONField()
     changes = serializers.JSONField(required=False, allow_null=True)
