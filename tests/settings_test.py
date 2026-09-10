@@ -30,6 +30,10 @@ SECRET_KEY = "test-only-secret-key-0123456789abcdef"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
+        # 内存库：xdist 并行（CI `pytest -n auto`）下每个 worker 独立一份，
+        # 不会出现多 worker 争抢同一个文件库导致的 `database table is locked`。
+        # 不要改成文件库——那会把并行 flaky 引回来（历史教训见 docs/metrics.md 2026-09-08 行）；
+        # 确需文件库时必须同时开 WAL + busy_timeout（口径见 tests/settings_e2e.py）。
         "NAME": ":memory:",
         "ATOMIC_REQUESTS": True,
     }
