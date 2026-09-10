@@ -6,6 +6,7 @@
 其余字段照常。属主由 pre_save 信号写入 creator，禁止客户端指定。
 """
 
+import ipaddress
 import secrets
 
 from django.utils.translation import gettext_lazy as _
@@ -21,12 +22,19 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
     token = serializers.SerializerMethodField(label=_("Token"))
     token_prefix = serializers.CharField(label=_("Token prefix"), read_only=True)
     last_used_time = serializers.DateTimeField(label=_("Last used time"), read_only=True)
-    # scope 清单：允许的路径前缀/正则（空 = 不限），update 允许改写
+    # scope 清单：允许的路径前缀/正则（可带方法前缀，空 = 不限），update 允许改写
     scopes = serializers.JSONField(
         label=_("Scopes"),
         required=False,
         allow_null=True,
         help_text=_("List of allowed path prefixes or regexes; empty means unrestricted"),
+    )
+    # IP 白名单：单个 IP 或 CIDR 网段（空 = 不限来源 IP），update 允许改写
+    ip_allowlist = serializers.JSONField(
+        label=_("Ip allowlist"),
+        required=False,
+        allow_null=True,
+        help_text=_("Allowed source IPs or CIDR networks; empty means unrestricted"),
     )
 
     class Meta:
@@ -37,6 +45,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "token",
             "token_prefix",
             "scopes",
+            "ip_allowlist",
             "description",
             "is_active",
             "expired_at",
@@ -49,6 +58,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "name",
             "token_prefix",
             "scopes",
+            "ip_allowlist",
             "is_active",
             "expired_at",
             "last_used_time",
@@ -75,6 +85,30 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             item = str(item or "").strip()
             if item and item not in cleaned:
                 cleaned.append(item)
+        return cleaned
+
+    def validate_ip_allowlist(self, value):
+        """IP 白名单清洗：去空白、去重、逐条校验 IP/CIDR 格式；None/空 = 不限。"""
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Ip allowlist must be a list of IPs or CIDR networks"))
+        cleaned = []
+        for item in value:
+            entry = str(item or "").strip()
+            if not entry:
+                continue
+            try:
+                if "/" in entry:
+                    ipaddress.ip_network(entry, strict=False)
+                else:
+                    ipaddress.ip_address(entry)
+            except ValueError as exc:
+                raise serializers.ValidationError(
+                    _("Invalid IP or CIDR network: %(entry)s") % {"entry": entry}
+                ) from exc
+            if entry not in cleaned:
+                cleaned.append(entry)
         return cleaned
 
     def create(self, validated_data):

@@ -26,6 +26,9 @@ class PersonalAccessToken(DbAuditModel):
     # （common.core.permission.IsAuthenticated），防「显式 permission_classes 覆写」
     # 与「同请求带 JWT+Pat 双 header」两种绕过路径
     scopes = models.JSONField(_("Scopes"), default=list, blank=True)
+    # IP 白名单（凭证治理）：空清单 = 不限；条目为单个 IP 或 CIDR 网段。
+    # 认证时按来源 IP（get_request_ip）校验，未命中即拒绝并留审计
+    ip_allowlist = models.JSONField(_("Ip allowlist"), default=list, blank=True)
     is_active = models.BooleanField(_("Is active"), default=True)
     expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
     last_used_time = models.DateTimeField(_("Last used time"), null=True, blank=True)

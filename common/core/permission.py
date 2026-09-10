@@ -120,16 +120,17 @@ def resolve_pat_scopes(request):
 
 
 def check_pat_scope(request) -> bool:
-    """PAT scope 判定：True 放行；False 表示当前凭证不允许访问该路径。
+    """PAT scope 判定：True 放行；False 表示当前凭证不允许访问该请求。
 
-    校验口径 = 凭证 scope（空清单 = 不限，ADR-008 向后兼容）× 请求 path。
+    校验口径 = 凭证 scope（空清单 = 不限，ADR-008 向后兼容）× 请求 path
+    （条目可带方法前缀，形如 ``GET /api/system/user``，此时同时限定 HTTP 方法）。
     """
     scopes = resolve_pat_scopes(request)
     if scopes is None:
         return True
     from common.core.auth import path_allowed_by_scopes
 
-    return path_allowed_by_scopes(request.path, scopes)
+    return path_allowed_by_scopes(request.path, scopes, getattr(request, "method", None))
 
 
 def user_can_update_menu(user, url) -> bool:

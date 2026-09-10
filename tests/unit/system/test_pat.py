@@ -2,6 +2,7 @@
 """个人访问令牌（PAT）：创建一次明文 + 哈希存储 + 认证链 + 吊销即时失效 + 清理。"""
 
 import datetime
+import json
 
 import pytest
 from django.core.cache import cache as django_cache
@@ -253,6 +254,94 @@ def _restore_pat_rate_limit():
     django_cache.clear()
 
 
+class _MethodProbeView(APIView):
+    """方法维度 scope 探针：同一路径 GET / POST 均可用。"""
+
+    authentication_classes = [PersonalAccessTokenAuthentication]
+    permission_classes = [ApiIsAuthenticated]
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        return ApiResponse(data={"ok": True})
+
+    def post(self, request, *args, **kwargs):
+        return ApiResponse(data={"ok": True})
+
+
+def test_scope_method_prefix_semantics_pure_function():
+    """``METHOD /path`` 条目：只放行该方法的该路径；纯路径条目不受方法影响。"""
+    scopes = ["GET /api/system/user", "/api/system/role"]
+    assert path_allowed_by_scopes("/api/system/user", scopes, "GET") is True
+    assert path_allowed_by_scopes("/api/system/user", scopes, "get") is True
+    assert path_allowed_by_scopes("/api/system/user", scopes, "POST") is False
+    # 无方法前缀的条目不限方法
+    assert path_allowed_by_scopes("/api/system/role", scopes, "POST") is True
+    # 请求方法未知时，方法限定条目不匹配（fail-closed）
+    assert path_allowed_by_scopes("/api/system/user", ["GET /api/system/user"]) is False
+
+
+def test_scope_method_prefix_enforced_in_request(superuser):
+    """真实请求：``GET /api/system/user`` 放行 GET、拦住 POST。"""
+    plain = _create_token(superuser, scopes=["GET /api/system/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/system/user", _MethodProbeView).status_code == 200
+    request = APIRequestFactory().post("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+    with transaction.atomic():
+        response = _MethodProbeView.as_view()(request)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_ip_allowed_by_allowlist_pure_function():
+    """IP 白名单：空 = 不限；单 IP/CIDR 命中；非法条目跳过；客户端 IP 不可解析即拒绝。"""
+    from common.core.auth import ip_allowed_by_allowlist
+
+    assert ip_allowed_by_allowlist("127.0.0.1", []) is True
+    assert ip_allowed_by_allowlist("127.0.0.1", ["127.0.0.1"]) is True
+    assert ip_allowed_by_allowlist("127.0.0.2", ["127.0.0.1"]) is False
+    assert ip_allowed_by_allowlist("10.1.2.3", ["10.0.0.0/8"]) is True
+    assert ip_allowed_by_allowlist("192.168.1.1", ["10.0.0.0/8"]) is False
+    # 非法条目跳过，其余条目照常生效
+    assert ip_allowed_by_allowlist("127.0.0.1", ["not-an-ip", "127.0.0.1"]) is True
+    assert ip_allowed_by_allowlist("127.0.0.1", ["not-an-ip"]) is False
+    # 客户端 IP 不可解析（如 get_request_ip 兜底的 unknown）：fail-closed
+    assert ip_allowed_by_allowlist("unknown", ["127.0.0.1"]) is False
+
+
+def test_pat_ip_allowlist_blocks_authentication(superuser):
+    """白名单未命中的凭证：认证阶段即拒绝（探针视图走真实认证链）。
+
+    DRF 对无 WWW-Authenticate 挑战的认证失败统一返回 403（与 scope 越界同码）。
+    """
+    blocked = _create_token(superuser, ip_allowlist=["10.0.0.1"]).data["data"]["token"]
+    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {blocked}")
+    with transaction.atomic():
+        response = _ScopeProbeView.as_view()(request)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    allowed = _create_token(superuser, name="allowed", ip_allowlist=["127.0.0.1"]).data["data"]["token"]
+    assert _probe(allowed, "/api/system/user").status_code == 200
+
+
+def test_ip_allowlist_crud_cleaning_via_api(superuser):
+    """IP 白名单编辑：去空白/去重/丢弃空串；非法格式被拒；None = 不限。"""
+    pk = _create_token(superuser).data["data"]["pk"]
+
+    def _patch(payload):
+        request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", payload, format="json")
+        force_authenticate(request, user=superuser)
+        with transaction.atomic():
+            return PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
+
+    response = _patch({"ip_allowlist": [" 127.0.0.1 ", "127.0.0.1", "", "10.0.0.0/8"]})
+    assert response.data["code"] == 1000
+    assert response.data["data"]["ip_allowlist"] == ["127.0.0.1", "10.0.0.0/8"]
+
+    invalid = _patch({"ip_allowlist": ["127.0.0.1", "999.1.1.1"]})
+    assert invalid.status_code == status.HTTP_400_BAD_REQUEST
+    assert "999.1.1.1" in json.dumps(invalid.data, ensure_ascii=False)
+
+    assert _patch({"ip_allowlist": None}).data["data"]["ip_allowlist"] == []
+
+
 def test_path_allowed_by_scopes_pure_function():
     """纯函数口径：空清单放行；前缀/正则命中；非法正则跳过不 500。"""
     assert path_allowed_by_scopes("/api/system/user/1", []) is True
@@ -379,25 +468,61 @@ def test_scopes_crud_cleaning_via_api(superuser):
     assert response.data["data"]["scopes"] == []
 
 
-def _create_operation_log(user, path="/api/system/user", status_code=1000):
-    return OperationLog.objects.create(creator=user, module="Probe", path=path, method="GET", status_code=status_code)
+def _create_operation_log(user, path="/api/system/user", status_code=1000, token_pk=None):
+    return OperationLog.objects.create(
+        creator=user,
+        module="Probe",
+        path=path,
+        method="GET",
+        status_code=status_code,
+        token_pk=token_pk,
+        auth_type=OperationLog.AuthType.PAT if token_pk else None,
+    )
 
 
-def test_logs_and_stats_creator_isolation(superuser, normal_user):
-    """调用记录/统计：严格个人取值域（他人凭证 404），只聚合本人日志。"""
-    mine = _create_token(superuser).data["data"]["pk"]
-    _create_operation_log(superuser)
-    _create_operation_log(superuser, path="/api/system/role", status_code=1001)
-    _create_operation_log(normal_user)  # 他人日志不得进入本凭证口径
+def test_operation_log_keeps_token_pk_after_token_deleted(superuser):
+    """凭证删除后审计不断链：日志仍持有 token_pk 且可查（故刻意不建 FK）。"""
+    pk = _create_token(superuser).data["data"]["pk"]
+    log = _create_operation_log(superuser, token_pk=pk)
+    PersonalAccessToken.objects.filter(pk=pk).delete()
+
+    log.refresh_from_db()
+    assert str(log.token_pk) == str(pk)
+    assert log.auth_type == OperationLog.AuthType.PAT
+
+
+def test_logs_and_stats_scoped_by_token_pk(superuser, normal_user):
+    """调用记录/统计：精确口径——同一用户的多个凭证互不混算，无凭证标识的历史行不计入。"""
+    first = _create_token(superuser).data["data"]["pk"]
+    second = _create_token(superuser, name="second").data["data"]["pk"]
+    _create_operation_log(superuser, token_pk=first)
+    _create_operation_log(superuser, path="/api/system/role", status_code=1001, token_pk=first)
+    _create_operation_log(superuser, token_pk=second)  # 另一凭证的调用，不得混算
+    _create_operation_log(superuser)  # 升级前历史行（无凭证标识），不可区分 → 不计入
 
     factory = APIRequestFactory()
-    request = factory.get(f"{TOKENS_URL}/{mine}/logs")
+    request = factory.get(f"{TOKENS_URL}/{first}/logs")
     force_authenticate(request, user=superuser)
-    response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=mine)
+    response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=first)
     assert response.data["code"] == 1000
     data = response.data["data"]
     assert data["total"] == 2
+    assert {item["path"] for item in data["results"]} == {"/api/system/user", "/api/system/role"}
     assert all(item["creator"]["pk"] == superuser.pk for item in data["results"])
+
+    # 另一凭证只见自己的那 1 条
+    request = APIRequestFactory().get(f"{TOKENS_URL}/{second}/logs")
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=second)
+    assert response.data["data"]["total"] == 1
+
+    # stats：近 7 天 total=2、失败（status_code != 1000）=1
+    request = APIRequestFactory().get(f"{TOKENS_URL}/{first}/stats")
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"get": "stats"})(request, pk=first)
+    assert response.data["code"] == 1000
+    assert response.data["data"]["total"] == 2
+    assert response.data["data"]["failed"] == 1
 
     # 他人凭证：取值域保护（项目 Http404 统一转业务 400：地址错误或数据权限不允许）
     other = _create_token(normal_user).data["data"]["pk"]
@@ -407,11 +532,3 @@ def test_logs_and_stats_creator_isolation(superuser, normal_user):
         response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=other)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == 400
-
-    # stats：近 7 天 total=2、失败（status_code != 1000）=1
-    request = APIRequestFactory().get(f"{TOKENS_URL}/{mine}/stats")
-    force_authenticate(request, user=superuser)
-    response = PersonalAccessTokenViewSet.as_view({"get": "stats"})(request, pk=mine)
-    assert response.data["code"] == 1000
-    assert response.data["data"]["total"] == 2
-    assert response.data["data"]["failed"] == 1

@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import functools
 import hashlib
+import ipaddress
 import re
 
 from django.http.cookie import parse_cookie
@@ -32,24 +33,97 @@ def auth_required(view_func):
     return wrapper
 
 
-def path_allowed_by_scopes(path: str, scopes) -> bool:
+# scope 条目可选的方法前缀：`GET /api/system/user`（方法名 + 空白 + 路径）
+SCOPE_METHOD_RE = re.compile(r"^(?P<method>[A-Za-z]{3,7})\s+(?P<path>\S.*)$")
+SCOPE_HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+
+
+def split_scope_entry(pattern) -> tuple:
+    """拆分 scope 条目为 ``(method, path)``；无方法前缀时 method 为 None。
+
+    仅当首段是合法 HTTP 方法名时才按「方法 + 路径」解析，避免把含空格的
+    路径/正则条目误判（历史条目一律按纯路径口径）。
+    """
+    text = str(pattern).strip()
+    match = SCOPE_METHOD_RE.match(text)
+    if match and match.group("method").upper() in SCOPE_HTTP_METHODS:
+        return match.group("method").upper(), match.group("path").strip()
+    return None, text
+
+
+def path_allowed_by_scopes(path: str, scopes, method: str = None) -> bool:
     """PAT scope 判定：空清单 = 不限（ADR-008 既有 token 向后兼容）。
 
-    条目语义 = 允许的路径前缀/正则（与 SENSITIVE_OPERATION_PATHS 同口径，
-    re.search 子串命中即可）；非法正则跳过并告警，不 500、不放任整清单失效。
+    条目语义（大小写不敏感，与 SENSITIVE_OPERATION_PATHS 同口径，re.search 子串命中）：
+
+    - ``METHOD /path``：仅该 HTTP 方法放行（如 ``GET /api/system/user``）；
+    - 纯路径前缀/正则：沿用旧口径，不限方法。
+
+    非法正则跳过并告警，不 500、不放任整清单失效；方法限定条目在请求方法未知时
+    不放行（fail-closed）。
     """
     if not scopes:
         return True
     for pattern in scopes:
         if not pattern:
             continue
+        entry_method, entry_path = split_scope_entry(pattern)
+        if entry_method and entry_method != (method or "").upper():
+            continue
+        if not entry_path:
+            continue
         try:
-            if re.search(pattern, path):
+            if re.search(entry_path, path):
                 return True
         except re.error:
-            logger.warning("pat scope skipped: invalid path regex %s", pattern)
+            logger.warning("pat scope skipped: invalid path regex %s", entry_path)
             continue
     return False
+
+
+def ip_allowed_by_allowlist(client_ip: str, allowlist) -> bool:
+    """PAT IP 白名单判定：空清单 = 不限；支持单个 IP 与 CIDR 网段。
+
+    fail-closed：无法解析的客户端 IP 视为不匹配；非法条目跳过并告警
+    （与 scope 非法正则同口径：不 500、也不放任整清单失效）。
+    """
+    if not allowlist:
+        return True
+    try:
+        addr = ipaddress.ip_address(str(client_ip))
+    except ValueError:
+        logger.warning("pat ip not parseable: %s", client_ip)
+        return False
+    for entry in allowlist:
+        text = str(entry or "").strip()
+        if not text:
+            continue
+        try:
+            if "/" in text:
+                if addr in ipaddress.ip_network(text, strict=False):
+                    return True
+            elif addr == ipaddress.ip_address(text):
+                return True
+        except ValueError:
+            logger.warning("pat ip allowlist skipped: invalid entry %s", text)
+            continue
+    return False
+
+
+# IP 白名单未命中的告警节流窗口（秒）：防伪造请求刷日志
+PAT_IP_REJECT_LOG_THROTTLE_SECONDS = 60
+
+
+def _log_pat_ip_rejection(pat, client_ip):
+    """IP 白名单未命中告警（按凭证节流；缓存不可用时退化为每次都记，不静默）。"""
+    from django.core.cache import cache
+
+    try:
+        first = cache.add(f"pat_ip_rejected_{pat.pk}", 1, PAT_IP_REJECT_LOG_THROTTLE_SECONDS)
+    except Exception:  # noqa: BLE001 缓存不可用时仍需留痕
+        first = True
+    if first:
+        logger.warning("pat ip not allowed. token:%s ip:%s", pat.token_prefix, client_ip)
 
 
 def hash_pat_token(raw_token: str) -> str:
@@ -152,6 +226,9 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         from django.core.cache import cache
         from django.utils import timezone
 
+        # 惰性 import：common.utils.request 顶层反向依赖本模块的 token 类
+        from common.utils.request import get_request_ip
+
         token_model = apps.get_model("system", "PersonalAccessToken")
         pat = (
             token_model.objects.filter(token_hash=self.hash_token(parts[1]), is_active=True)
@@ -166,6 +243,17 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         user = pat.creator
         if user is None or not user.is_active:
             raise AuthenticationFailed(_("User account is disabled"))
+
+        client_ip = get_request_ip(request)
+        if not ip_allowed_by_allowlist(client_ip, pat.ip_allowlist):
+            # 拒绝前埋点：认证失败会清空 request.auth，中间件据此把本次被拒请求
+            # 归集到该凭证（审计可回溯「哪个凭证从哪被拒」）
+            try:
+                request._pat_rejected_token_pk = pat.pk
+            except AttributeError:
+                pass
+            _log_pat_ip_rejection(pat, client_ip)
+            raise AuthenticationFailed(_("Token is not allowed from this IP address"))
 
         # scope 清单挂 request（消费方 = 认证后的统一权限层 PatScopePermission）：
         # 认证类内不做拒绝——双 header（JWT 优先）时本类不会被调用，拒绝逻辑必须下沉
