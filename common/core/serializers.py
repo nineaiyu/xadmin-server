@@ -195,12 +195,13 @@ class BaseModelSerializer(ModelSerializer):
         self._mark_upload_files_used(n_file_objs)
         return result
 
-    def _mask_exempt(self, request, user):
+    def _mask_exempt(self, request, user, model=None):
         """脱敏豁免判定（与 get_allow_fields 同口径）：超管 / 显式豁免 / 原文通道。
 
         原文通道 = 显式 ``?mask=false`` 且当前用户对该菜单有更新权限。编辑弹窗依赖
         列表行数据，若拿不到原文则会把掩码值回写（to_internal_value 另有兜底守护）；
         仅有更新权限的用户才被放行，只读用户的列表/详情/导出仍按规则掩码。
+        放行的原文访问会记一条审计日志（每个请求一次，含模型标识）。
         """
         if user.is_superuser or self.ignore_field_permission or getattr(request, "ignore_field_permission", False):
             return True
@@ -214,11 +215,20 @@ class BaseModelSerializer(ModelSerializer):
             # 惰性 import：common 层不引 system（跨 app 门禁许可函数内惰性 import）
             from common.core.permission import user_can_update_menu
 
-            cached = user_can_update_menu(user, getattr(user, "menu", None))
+            # 按请求地址判定「对该资源的更新权限」（GET/PUT/PATCH 是三条不同菜单，
+            # 按菜单主键比对会让 GET 详情请求永远拿不到放行）
+            cached = user_can_update_menu(
+                user, getattr(request, "path_info", None) or getattr(request, "path", "") or ""
+            )
             try:
                 request._mask_original_allowed = cached
             except AttributeError:  # 只读请求对象兜底
                 pass
+        if cached:
+            # 惰性 import：同上；审计内部按请求去重，列表逐行调用也只记一次
+            from system.utils.mask import record_original_channel_access
+
+            record_original_channel_access(request, user, model._meta.label_lower if model is not None else None)
         return cached
 
     def _mask_role_pks(self, request, user):
@@ -253,7 +263,7 @@ class BaseModelSerializer(ModelSerializer):
         user = getattr(request, "user", None)
         if user is None or not hasattr(user, "is_superuser"):
             return ret
-        if self._mask_exempt(request, user):
+        if self._mask_exempt(request, user, model):
             return ret
         # 惰性 import：common 层不引 system（跨 app 门禁许可函数内惰性 import）
         from system.utils.mask import apply_mask, get_mask_rules

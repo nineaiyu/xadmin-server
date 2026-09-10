@@ -132,24 +132,27 @@ def check_pat_scope(request) -> bool:
     return path_allowed_by_scopes(request.path, scopes)
 
 
-def user_can_update_menu(user, menu_pk) -> bool:
-    """当前用户是否拥有指定菜单的更新权限（PUT / PATCH 任一命中）。
+def user_can_update_menu(user, url) -> bool:
+    """当前用户是否拥有该请求地址对应资源的更新权限（PUT / PATCH 任一命中）。
 
     供脱敏「原文通道」门禁使用：只有具备更新权限的用户才需要原文，否则编辑弹窗
     拿到的掩码值会被回写（见 BaseModelSerializer.to_internal_value 的守护）。
+
+    **按请求地址匹配而非菜单主键**：同一 path 的 GET / PUT / PATCH 是三条独立菜单
+    （主键互不相同），按主键比对时 GET 请求永远不可能命中更新权限菜单，原文通道
+    会被无条件关死（前端不接线时不易察觉）。
     """
-    if not user or not user.pk or not menu_pk:
+    if not user or not user.pk or not url:
         return False
-    target = str(menu_pk)
     for method in ("PUT", "PATCH"):
         try:
             permission_data = get_user_permission(user, method)
         except Exception as e:  # noqa: BLE001 权限查询失败按无更新权限处理
             logger.warning(f"check update permission failed. user:{user} error:{e}")
             continue
-        for item in permission_data.values():
-            if item and str(item[0]) == target:
-                return True
+        # 与 _resolve_menu_pk 同一套地址匹配口径（精确 path$ 优先，退化到前缀正则）
+        if permission_data and get_menu_pk(permission_data, url):
+            return True
     return False
 
 
