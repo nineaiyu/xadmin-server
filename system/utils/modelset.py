@@ -19,14 +19,31 @@ from system.models import UserRole, DataPermission, SystemConfig
 from system.utils.permission_preview import get_role_preview, get_user_preview, run_data_trial
 
 
+def _extract_pks(items):
+    """归一化 empower 入参主键：兼容 ``[{"pk": x}, ...]`` 与 ``["x", ...]`` 两种形态。
+
+    历史实现直接对每个元素取 ``.get("pk")``，一旦调用方按 OpenAPI 声明的字符串数组
+    传参就会 AttributeError 500；此处统一容错，两类入参都能正确解析。
+    """
+    pks = []
+    for item in items:
+        if isinstance(item, dict):
+            pk = item.get("pk") or item.get("id")
+        else:
+            pk = item
+        if pk not in (None, ""):
+            pks.append(pk)
+    return pks
+
+
 class ChangeRolePermissionAction(object):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
                 required=["roles", "rules", "mode_type"],
                 properties={
-                    "roles": build_array_type(build_basic_type(OpenApiTypes.STR)),
-                    "rules": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "roles": build_array_type(build_object_type(properties={"pk": build_basic_type(OpenApiTypes.STR)})),
+                    "rules": build_array_type(build_object_type(properties={"pk": build_basic_type(OpenApiTypes.STR)})),
                     "mode_type": build_basic_type(OpenApiTypes.NUMBER),
                 },
             )
@@ -43,19 +60,21 @@ class ChangeRolePermissionAction(object):
         if isinstance(mode_type, dict):
             mode_type = mode_type.get("value")
         if roles is not None or rules is not None:
+            # 非法入参返回可读业务失败，而不是在遍历时抛 500
+            if (roles is not None and not isinstance(roles, (list, tuple))) or (
+                rules is not None and not isinstance(rules, (list, tuple))
+            ):
+                return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
             if roles is not None:
                 instance.roles.set(
-                    get_filter_queryset(
-                        UserRole.objects.filter(pk__in=[role.get("pk") for role in roles]), request.user
-                    ).all()
+                    get_filter_queryset(UserRole.objects.filter(pk__in=_extract_pks(roles)), request.user).all()
                 )
             if rules is not None:
                 instance.mode_type = mode_type
                 instance.modifier = request.user
                 instance.save(update_fields=["mode_type", "modifier"])
-                # instance.rules.set(get_filter_queryset(DataPermission.objects.filter(pk__in=rules), request.user).all())
                 # 数据权限是部门进行并查询过滤，可以直接进行查询
-                instance.rules.set(DataPermission.objects.filter(pk__in=[rule.get("pk") for rule in rules]).all())
+                instance.rules.set(DataPermission.objects.filter(pk__in=_extract_pks(rules)).all())
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 

@@ -5,7 +5,11 @@
 # author : ly_13
 # date : 7/24/2024
 
+import os
+import re
+
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -35,6 +39,21 @@ QUOTA_EXCEEDED_CODE = 1004
 
 def get_upload_max_size(user_obj):
     return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
+
+
+def sanitize_filename(name, max_length=255):
+    """清洗客户端文件名：去除路径部分、控制字符与首尾空白，并限制长度。
+
+    客户端提交的文件名不可信：可能携带路径分隔符（伪造存储路径）或控制字符。
+    """
+    if not name:
+        return str(_("Unnamed file"))
+    # 同时处理 POSIX(/) 与 Windows(\) 分隔符，防止路径穿越
+    base = os.path.basename(str(name).replace("\\", "/")).strip()
+    base = re.sub(r"[\x00-\x1f\x7f]", "", base)
+    if not base or base in (".", ".."):
+        return str(_("Unnamed file"))
+    return base[:max_length]
 
 
 def invalidate_upload_stats_cache(user_pk):
@@ -174,18 +193,26 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                 )
             used_size += file_size
             used_count += 1
-        for file_obj in files:
-            result.append(
-                UploadFile.objects.create(
-                    creator=request.user,
-                    filename=file_obj.name,
-                    is_upload=True,
-                    is_tmp=True,
-                    filepath=file_obj,
-                    mime_type=file_obj.content_type,
-                    filesize=file_obj.size,
-                )
-            )
+        # 统一落库：整批包在同一事务内，任一文件写入失败则整体回滚，
+        # 避免「前面的已落库、后面的失败」造成部分写入（与前置全量校验配套）
+        try:
+            with transaction.atomic():
+                for file_obj in files:
+                    result.append(
+                        UploadFile.objects.create(
+                            creator=request.user,
+                            # 客户端原始文件名不可信：去掉路径部分并做非法字符/长度清洗
+                            filename=sanitize_filename(file_obj.name),
+                            is_upload=True,
+                            is_tmp=True,
+                            filepath=file_obj,
+                            mime_type=file_obj.content_type,
+                            filesize=file_obj.size,
+                        )
+                    )
+        except Exception as e:
+            logger.exception(f"user:{request.user} upload file save failed: {e}")
+            return ApiResponse(code=1002, detail=_("Failed to save uploaded file"))
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
             invalidate_upload_stats_cache(request.user.pk)

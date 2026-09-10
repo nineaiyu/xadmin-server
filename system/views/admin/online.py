@@ -82,6 +82,12 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         与行维度的下线（destroy 单会话）互补。
         """
         user_pk = kwargs.get("pk")
+        # 该 action 的 pk 是「用户主键」（UserInfo 为 BigAutoField 整型，非会话行 UUID）：
+        # 非法入参先返回可读 400，避免 pk 字段校验抛 ValidationError 500
+        try:
+            user_pk = int(user_pk)
+        except (TypeError, ValueError):
+            return ApiResponse(code=400, detail=_("User not found"))
         if (
             not UserSession.objects.filter(creator_id=user_pk).exists()
             and not UserInfo.objects.filter(pk=user_pk).exists()

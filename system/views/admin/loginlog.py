@@ -6,6 +6,7 @@
 # date : 1/3/2024
 
 
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -45,5 +46,8 @@ class LoginLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
     def logout(self, request, *args, **kwargs):
         """强退用户"""
         instance = self.get_object()
-        send_logout_msg(instance.creator.pk, [instance.channel_name])
+        # creator / channel_name 可能为空（历史日志、系统记录）：空值返回可读错误，避免 AttributeError 500
+        if not instance.creator_id or not instance.channel_name:
+            return ApiResponse(code=400, detail=_("This login record cannot be forcibly logged out"))
+        send_logout_msg(instance.creator_id, [instance.channel_name])
         return ApiResponse()

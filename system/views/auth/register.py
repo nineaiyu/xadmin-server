@@ -82,7 +82,10 @@ class RegisterViewAPIView(GenericAPIView):
             default = {}
 
         with cache.lock("_LOCKER_REGISTER_USER", timeout=10):  # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
-            if UserInfo.objects.filter(**{query_key: target}).exists():
+            # username 在 DB 层全局唯一，回收站中的同名用户仍占用唯一约束；
+            # 必须走 all_objects 校验，否则软删除同名用户会让 create 抛 IntegrityError 500
+            # （与 UserSerializer.validate_username 口径保持一致）
+            if UserInfo.all_objects.filter(**{query_key: target}).exists():
                 return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
             user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
 

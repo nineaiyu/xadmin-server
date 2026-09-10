@@ -86,13 +86,18 @@ def auto_clean_export_record_job():
     keep_days = SysConfig.EXPORT_FILE_KEEP_DAYS
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
     removed = 0
-    for record in ExportRecord.objects.filter(created_time__lt=deadline).iterator():
-        upload = record.file
-        record.delete()
-        if upload:
-            # 硬删除才会清理底层文件（UploadFile 为软删除模型）
-            upload.hard_delete()
-        removed += 1
+    while True:
+        # 分批处理：避免逐条扫描 + 逐条两条删除，随数据累积单次任务耗时线性上升
+        records = list(ExportRecord.objects.filter(created_time__lt=deadline).select_related("file")[:500])
+        if not records:
+            break
+        for record in records:
+            upload = record.file
+            record.delete()
+            if upload:
+                # 硬删除才会清理底层文件（UploadFile 为软删除模型）
+                upload.hard_delete()
+            removed += 1
     logger.info("Clean export record: %s rows, keep_days: %s", removed, keep_days)
     return removed
 
@@ -108,14 +113,21 @@ def auto_clean_import_record_job():
     keep_days = SysConfig.IMPORT_RECORD_KEEP_DAYS
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
     removed = 0
-    for record in ImportRecord.objects.filter(created_time__lt=deadline).iterator():
-        source_file, error_report = record.source_file, record.error_report
-        record.delete()
-        for upload in (source_file, error_report):
-            if upload:
-                # 硬删除才会清理底层文件（UploadFile 为软删除模型）
-                upload.hard_delete()
-        removed += 1
+    while True:
+        # 分批处理：避免逐条扫描 + 逐条两条删除，随数据累积单次任务耗时线性上升
+        records = list(
+            ImportRecord.objects.filter(created_time__lt=deadline).select_related("source_file", "error_report")[:500]
+        )
+        if not records:
+            break
+        for record in records:
+            source_file, error_report = record.source_file, record.error_report
+            record.delete()
+            for upload in (source_file, error_report):
+                if upload:
+                    # 硬删除才会清理底层文件（UploadFile 为软删除模型）
+                    upload.hard_delete()
+            removed += 1
     logger.info("Clean import record: %s rows, keep_days: %s", removed, keep_days)
     return removed
 
