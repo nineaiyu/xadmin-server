@@ -38,6 +38,8 @@ SENSITIVE_FIELDS = {"password", "old_password", "access", "refresh", "code"}
 # module 列的防御性截断：视图 docstring/模型标签超长时按字段上限截断，
 # 避免写日志失败放大成整个请求 500（mfa confirm 曾因此全挂）
 OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
+# 健康检查端点：探针高频请求，中间件请求/响应阶段直接跳过（不落操作日志）
+HEALTH_CHECK_PATH = "/api/common/api/health"
 
 
 def desensitize_body(body):
@@ -75,6 +77,19 @@ def build_operation_log_info(request, response, request_start_time):
     # 非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
     # 无法可靠还原 data，解析了也不用，只会白白序列化一遍大响应
     response_data = getattr(response, "data", None)
+    if response_data is None:
+        # 响应缓存命中时返回的是普通 HttpResponse（无 .data）：此时才退化为解析已渲染的
+        # JSON 响应体，否则被缓存接口的操作日志会丢失 status_code / response_result。
+        # 无 content 的响应对象（含测试替身）不解析，保持"非 dict 不解析"的既有语义。
+        content = getattr(response, "content", None)
+        content_type = ""
+        if hasattr(response, "get"):
+            content_type = str(response.get("Content-Type", ""))
+        if content and content_type.startswith("application/json"):
+            try:
+                response_data = json.loads(content)
+            except Exception:
+                response_data = None
     if not isinstance(response_data, dict):
         response_data = {}
     user = get_request_user(request)
@@ -202,7 +217,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         return
 
     def process_request(self, request):
-        if request.path == "/api/common/api/health":
+        if request.path == HEALTH_CHECK_PATH:
             return
         self.__handle_request(request)
 
@@ -212,7 +227,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         :param response:
         :return:
         """
-        if request.path == "/api/common/api/health":
+        if request.path == HEALTH_CHECK_PATH:
             return response
         show = False
         if self.enable:
@@ -220,4 +235,25 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 show = self.__handle_response(request, response)
         if not show:
             logger.debug(f" request end. {request.method} {request.path} {getattr(response, 'data', {})}")
+        return response
+
+
+class MetricsMiddleware(MiddlewareMixin):
+    """HTTP 指标采集（仅在 ``METRICS_ENABLED=true`` 时由 settings 挂载）。
+
+    默认不挂载：关闭时零开销，也不会因指标依赖缺失影响请求链路。
+    """
+
+    def process_request(self, request):
+        request._metrics_start_time = time.time()
+
+    def process_response(self, request, response):
+        start = getattr(request, "_metrics_start_time", None)
+        if start is None:
+            return response
+        from common.metrics import record_http_request
+
+        match = getattr(request, "resolver_match", None)
+        view_name = getattr(match, "view_name", "") if match is not None else ""
+        record_http_request(request.method, view_name, response.status_code, time.time() - start)
         return response

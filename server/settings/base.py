@@ -114,6 +114,10 @@ MIDDLEWARE = [
     "server.middleware.EndMiddleware",
 ]
 
+# Prometheus 指标采集（默认关闭）：仅在显式启用时挂载，避免无谓开销与端点暴露
+if CONFIG.METRICS_ENABLED:
+    MIDDLEWARE.append("common.core.middleware.MetricsMiddleware")
+
 # django-silk 性能剖析（性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
 # 仅限 DEBUG/DEBUG_DEV 环境；剖析开销较大，k6 基线测定必须在关闭 silk 的状态下执行，
 # silk 仅用于低并发下的单接口 SQL/profiling 剖析。开启后需 `python manage.py migrate` 创建 silk 表

@@ -43,6 +43,10 @@ class Config(dict):
         # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
         # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
         "SILK_ENABLED": False,
+        # Prometheus 指标（默认关闭）：启用需同时配置 METRICS_TOKEN，
+        # 抓取方以 Authorization: Bearer <token> 访问 /api/common/api/metrics
+        "METRICS_ENABLED": False,
+        "METRICS_TOKEN": "",
         "LOG_LEVEL": "WARNING",
         # 应用日志格式 text（默认）/ json（结构化，供 Loki/ELK 采集）
         "LOG_FORMAT": "text",
