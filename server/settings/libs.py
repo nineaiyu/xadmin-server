@@ -6,6 +6,8 @@
 # date : 11/14/2024
 from datetime import timedelta
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import SECRET_KEY, CACHES, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, CELERY_BROKER_CACHE_ID
 from ..const import CONFIG
 
@@ -109,6 +111,14 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = CONFIG.CORS_ALLOW_ALL_ORIGINS
 CORS_ALLOWED_ORIGINS = CONFIG.CORS_ALLOWED_ORIGINS
 
+if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
+    # 「带凭证 + 任意源放行」等价于允许任意站点携带登录态调用 API（凭证外泄/CSRF 面），
+    # 属高危组合：直接拒绝启动，强制改用 CORS_ALLOWED_ORIGINS 白名单
+    raise ImproperlyConfigured(
+        "CORS_ALLOW_ALL_ORIGINS 与 CORS_ALLOW_CREDENTIALS 不能同时开启："
+        "请配置 CORS_ALLOWED_ORIGINS 域名白名单，或将 CORS_ALLOW_ALL_ORIGINS 置为 false。"
+    )
+
 CORS_ALLOW_METHODS = (
     "DELETE",
     "GET",
@@ -157,7 +167,10 @@ DJANGO_DEFAULT_CACHES = CACHES["default"]
 CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CELERY_BROKER_CACHE_ID}"
 
 # CELERY_WORKER_CONCURRENCY = 10  # worker并发数
-CELERY_WORKER_AUTOSCALE = [10, 3]  # which needs two numbers: the maximum and minimum number of pool processes
+# worker 自动扩缩容区间（最大/最小池进程数）；
+# 注意：当前 worker 启动命令未带 --autoscale（见 common/management/commands/services/services/celery_base.py），
+# 该配置暂不生效，如需启用请同步修改启动命令
+CELERY_WORKER_AUTOSCALE = [10, 3]
 
 CELERYD_FORCE_EXECV = True  # 非常重要,有些情况下可以防止死
 CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
@@ -166,7 +179,13 @@ CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 TASK_EXECUTION_KEEP_DAYS = int(CONFIG.get("TASK_EXECUTION_KEEP_DAYS", 30))
 
 CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
-CELERY_WORKER_PREFETCH_MULTIPLIER = 60  # celery worker 每次去redis取任务的数量
+# 预取须与并发量级匹配：60（≈6 倍并发）会让单 worker 囤积大量任务，
+# worker 异常退出时这些任务会被大面积重投
+CELERY_WORKER_PREFETCH_MULTIPLIER = 10
+
+# 软超时：到达后先抛 SoftTimeLimitExceeded 让任务优雅收尾（清理临时文件/回写状态），
+# 再由 CELERY_TASK_TIME_LIMIT（30min 硬超时）强制终止
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
 
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 200  # 每个worker执行了多少任务就会死掉，我建议数量可以大一些，比如200
 
