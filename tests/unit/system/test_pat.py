@@ -4,10 +4,21 @@
 import datetime
 
 import pytest
+from django.core.cache import cache as django_cache
+from django.db import transaction
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.views import APIView
 
-from common.core.auth import PersonalAccessTokenAuthentication
+from common.core.auth import PersonalAccessTokenAuthentication, path_allowed_by_scopes
+from common.core.config import SysConfig
+from common.core.permission import IsAuthenticated as ApiIsAuthenticated
+from common.core.permission import PatScopePermission
+from common.core.response import ApiResponse
+from common.core.throttle import PatThrottle
+from system.models import OperationLog
 from system.models.token import PersonalAccessToken
 from system.tasks import auto_clean_pat_job
 from system.views.user.token import PersonalAccessTokenViewSet
@@ -18,8 +29,6 @@ TOKENS_URL = "/api/system/personal-access-tokens"
 
 
 def _create_token(user, name="ci-token", **kwargs):
-    from rest_framework.test import APIRequestFactory, force_authenticate
-
     factory = APIRequestFactory()
     request = factory.post(TOKENS_URL, {"name": name, **kwargs}, format="json")
     force_authenticate(request, user=user)
@@ -27,8 +36,6 @@ def _create_token(user, name="ci-token", **kwargs):
 
 
 def _auth_request(token, user=None):
-    from rest_framework.test import APIRequestFactory
-
     factory = APIRequestFactory()
     request = factory.get(TOKENS_URL, HTTP_AUTHORIZATION=f"Pat {token}")
     return PersonalAccessTokenAuthentication().authenticate(request)
@@ -202,3 +209,209 @@ def test_pat_owner_user_inactive_rejected(superuser):
     superuser.save(update_fields=["is_active"])
     with pytest.raises(AuthenticationFailed):
         _auth_request(plain)
+
+
+# ---------------------------------------------------------------------------
+# F4：scope 与调用审计 / 限流
+# ---------------------------------------------------------------------------
+
+
+class _ScopeProbeView(APIView):
+    """scope 校验探针：真实走认证 + 权限链（限流关闭单独测）。"""
+
+    authentication_classes = [PersonalAccessTokenAuthentication]
+    permission_classes = [ApiIsAuthenticated, PatScopePermission]
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        return ApiResponse(data={"ok": True})
+
+
+class _ScopeDefaultChainProbeView(APIView):
+    """只挂 IsAuthenticated 的探针：模拟 action 级 permission_classes 覆写掉默认链。"""
+
+    authentication_classes = [PersonalAccessTokenAuthentication]
+    permission_classes = [ApiIsAuthenticated]
+    throttle_classes = []
+
+    def get(self, request, *args, **kwargs):
+        return ApiResponse(data={"ok": True})
+
+
+def _probe(plain_token, path, view_cls=_ScopeProbeView):
+    request = APIRequestFactory().get(path, HTTP_AUTHORIZATION=f"Pat {plain_token}")
+    # DRF 异常处理器会 set_rollback：包独立 atomic 块，保持外层测试事务可用
+    with transaction.atomic():
+        return view_cls.as_view()(request)
+
+
+@pytest.fixture(autouse=True)
+def _restore_pat_rate_limit():
+    """限流速率配置与节流历史按用例隔离，防止污染其他用例。"""
+    yield
+    SysConfig.set_value("PAT_RATE_LIMIT", "60/min")
+    django_cache.clear()
+
+
+def test_path_allowed_by_scopes_pure_function():
+    """纯函数口径：空清单放行；前缀/正则命中；非法正则跳过不 500。"""
+    assert path_allowed_by_scopes("/api/system/user/1", []) is True
+    assert path_allowed_by_scopes("/api/system/user/1", ["/api/system/user"]) is True
+    assert path_allowed_by_scopes("/api/system/role", ["/api/system/user"]) is False
+    assert path_allowed_by_scopes("/api/system/role", [r"/api/system/role$"]) is True
+    # 非法正则被跳过：不匹配该条，但清单内其余条目照常生效
+    assert path_allowed_by_scopes("/api/system/user", ["[invalid", "/api/system/user"]) is True
+    assert path_allowed_by_scopes("/api/system/role", ["[invalid"]) is False
+
+
+def test_scope_empty_allows_all_paths(superuser):
+    """旧 token（无 scopes）行为不变：任意路径放行。"""
+    plain = _create_token(superuser).data["data"]["token"]
+    for path in ("/api/system/user", "/api/system/role", "/api/settings/basic"):
+        assert _probe(plain, path).status_code == 200
+
+
+def test_scope_prefix_allows_hit_and_blocks_out_of_scope(superuser):
+    """scope 前缀命中放行、越界 403（scope 不做数据权限收窄，登记边界）。"""
+    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/system/user").status_code == 200
+    assert _probe(plain, "/api/system/user/1").status_code == 200
+    assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_scope_enforced_when_permission_classes_overridden(superuser):
+    """显式覆写 permission_classes（只挂 IsAuthenticated）时 scope 仍生效。
+
+    回归守护：DRF 的 action 级 permission_classes 会整体替换默认链，若 scope 校验
+    写成独立权限类就会被漏掉（改密/解绑 MFA/重置 MFA 等入口正是这种写法）。
+    """
+    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/system/user", _ScopeDefaultChainProbeView).status_code == 200
+    assert _probe(plain, "/api/system/role", _ScopeDefaultChainProbeView).status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_scope_invalid_regex_not_500(superuser):
+    """scope 含非法正则：跳过该条不 500，其余条目照常生效。"""
+    plain = _create_token(superuser, scopes=["[invalid", "/api/system/user"]).data["data"]["token"]
+    assert _probe(plain, "/api/system/user").status_code == 200
+    assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_dual_header_jwt_plus_pat_scope_still_enforced(superuser):
+    """同请求带 JWT + Pat 双 header：JWT 认证胜出（pat_scopes 未挂），scope 仍生效
+    （PatScopePermission 从原始头补解析凭证，评审复盘 P1-4）。"""
+    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
+    request = APIRequestFactory().get("/api/system/role", HTTP_AUTHORIZATION=f"Pat {plain}")
+    force_authenticate(request, user=superuser)  # 模拟 JWT 胜出：user 直挂、认证类不触发
+    with transaction.atomic():
+        response = _ScopeProbeView.as_view()(request)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+    force_authenticate(request, user=superuser)
+    assert _ScopeProbeView.as_view()(request).status_code == 200
+
+
+class _ThrottleProbeView(APIView):
+    authentication_classes = [PersonalAccessTokenAuthentication]
+    permission_classes = [ApiIsAuthenticated]
+    throttle_classes = [PatThrottle]
+
+    def get(self, request, *args, **kwargs):
+        return ApiResponse(data={"ok": True})
+
+
+def test_pat_throttle_limit_and_unlimited(superuser):
+    """限流阈值生效（超额 429）；0 = 不限；非 PAT 请求不受影响。"""
+    plain = _create_token(superuser).data["data"]["token"]
+
+    def _hit():
+        request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+        return _ThrottleProbeView.as_view()(request)
+
+    SysConfig.set_value("PAT_RATE_LIMIT", "2/min")
+    django_cache.clear()
+    assert _hit().status_code == 200
+    assert _hit().status_code == 200
+    with transaction.atomic():
+        response = _hit()
+    assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+    # 0 = 不限（清空节流历史后验证）
+    SysConfig.set_value("PAT_RATE_LIMIT", "0")
+    django_cache.clear()
+    for _ in range(4):
+        assert _hit().status_code == 200
+
+    # 限流按凭证隔离：换凭证不受上一凭证历史影响（token_hash 独立 key）
+    SysConfig.set_value("PAT_RATE_LIMIT", "1/min")
+    django_cache.clear()
+    plain2 = _create_token(superuser, name="second").data["data"]["token"]
+    request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain2}")
+    assert _ThrottleProbeView.as_view()(request).status_code == 200
+
+    # 非 PAT 请求（JWT 会话）不经过 PAT 限流
+    django_cache.clear()
+    request = APIRequestFactory().get("/api/system/user")
+    force_authenticate(request, user=superuser)
+    assert _ThrottleProbeView.as_view()(request).status_code == 200
+
+
+def test_scopes_crud_cleaning_via_api(superuser):
+    """scope 编辑：清洗空白/去重/丢弃空串；None = 不限。"""
+    response = _create_token(superuser)
+    pk = response.data["data"]["pk"]
+
+    factory = APIRequestFactory()
+    request = factory.patch(
+        f"{TOKENS_URL}/{pk}",
+        {"scopes": [" /api/system/user ", "/api/system/user", "", "/api/system/role"]},
+        format="json",
+    )
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
+    assert response.data["code"] == 1000
+    assert response.data["data"]["scopes"] == ["/api/system/user", "/api/system/role"]
+
+    request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": None}, format="json")
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
+    assert response.data["data"]["scopes"] == []
+
+
+def _create_operation_log(user, path="/api/system/user", status_code=1000):
+    return OperationLog.objects.create(creator=user, module="Probe", path=path, method="GET", status_code=status_code)
+
+
+def test_logs_and_stats_creator_isolation(superuser, normal_user):
+    """调用记录/统计：严格个人取值域（他人凭证 404），只聚合本人日志。"""
+    mine = _create_token(superuser).data["data"]["pk"]
+    _create_operation_log(superuser)
+    _create_operation_log(superuser, path="/api/system/role", status_code=1001)
+    _create_operation_log(normal_user)  # 他人日志不得进入本凭证口径
+
+    factory = APIRequestFactory()
+    request = factory.get(f"{TOKENS_URL}/{mine}/logs")
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=mine)
+    assert response.data["code"] == 1000
+    data = response.data["data"]
+    assert data["total"] == 2
+    assert all(item["creator"]["pk"] == superuser.pk for item in data["results"])
+
+    # 他人凭证：取值域保护（项目 Http404 统一转业务 400：地址错误或数据权限不允许）
+    other = _create_token(normal_user).data["data"]["pk"]
+    request = APIRequestFactory().get(f"{TOKENS_URL}/{other}/logs")
+    force_authenticate(request, user=superuser)
+    with transaction.atomic():
+        response = PersonalAccessTokenViewSet.as_view({"get": "logs"})(request, pk=other)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["code"] == 400
+
+    # stats：近 7 天 total=2、失败（status_code != 1000）=1
+    request = APIRequestFactory().get(f"{TOKENS_URL}/{mine}/stats")
+    force_authenticate(request, user=superuser)
+    response = PersonalAccessTokenViewSet.as_view({"get": "stats"})(request, pk=mine)
+    assert response.data["code"] == 1000
+    assert response.data["data"]["total"] == 2
+    assert response.data["data"]["failed"] == 1

@@ -8,6 +8,7 @@ from django.urls import re_path, include
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
+from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
@@ -16,6 +17,7 @@ from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.import_ import ImportRecordViewSet
 from system.views.admin.menu import MenuViewSet
+from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
@@ -93,12 +95,14 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
+router.register("approvals", ApprovalRequestViewSet, basename="approval_request")
 router.register("dept", DeptViewSet, basename="dept")
 router.register("menu", MenuViewSet, basename="menu")
 router.register("role", RoleViewSet, basename="role")
 router.register("permission", DataPermissionViewSet, basename="permission")
 router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
 router.register("dict", DataDictViewSet, basename="data_dict")
+router.register("mask-rules", DataMaskRuleViewSet, basename="data_mask_rule")
 router.register("online", UserOnlineViewSet, basename="online_socket")
 
 # 配置相关

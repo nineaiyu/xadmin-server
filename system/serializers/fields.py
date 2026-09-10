@@ -69,7 +69,9 @@ class DictChoiceField(LabeledChoiceField):
     def to_representation(self, key):
         if key is None:
             return key
-        data = {"value": key, "label": self.choices.get(key, key)}
+        # fallback 枚举的 label 是 gettext_lazy 代理：必须物化为 str，
+        # 否则 celery worker 里站内信 WS 推送（msgpack）抛 can not serialize '__proxy__'
+        data = {"value": key, "label": str(self.choices.get(key, key))}
         color = self.choice_colors.get(str(key))
         if color:
             data["color"] = color

@@ -40,14 +40,19 @@ def _detect_new_dimensions(user, ip, city, browser, system):
 
     days = int(getattr(settings, "SECURITY_LOGIN_BASELINE_DAYS", 30))
     since = timezone.now() - datetime.timedelta(days=days)
-    history = UserLoginLog.objects.filter(creator=user, status=True, created_time__gte=since)
+    # 单次查询取回历史四元组（原实现 exists + 3 次 values_list 共 4 次查询）
+    history = list(
+        UserLoginLog.objects.filter(creator=user, status=True, created_time__gte=since).values_list(
+            "ipaddress", "city", "browser", "system"
+        )
+    )
     # 首次登录（无历史基线）不提醒：注册即首登/新用户场景避免骚扰
-    if not history.exists():
+    if not history:
         return []
 
-    known_ips = set(history.values_list("ipaddress", flat=True).distinct())
-    known_cities = set(history.values_list("city", flat=True))
-    known_devices = set(history.values_list("browser", "system"))
+    known_ips = {row[0] for row in history}
+    known_cities = {row[1] for row in history}
+    known_devices = {(row[2], row[3]) for row in history}
     dimensions = []
     if ip and ip not in ("unknown", "0.0.0.0") and ip not in known_ips:
         dimensions.append("ip")

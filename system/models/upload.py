@@ -32,6 +32,14 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         help_text=_("Temporary files are automatically cleared by scheduled tasks"),
     )
     is_upload = models.BooleanField(verbose_name=_("Upload file"), default=False)
+    # 分类选项由数据字典 upload_category 提供（DictChoiceField 约束写入路径）
+    category = models.CharField(
+        verbose_name=_("Category"),
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text=_("Category options come from the data dictionary upload_category"),
+    )
 
     def save(self, *args, **kwargs):
         self.filename = self.filename[:255]
@@ -52,6 +60,8 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
             # md5sum 用于精确匹配（秒传/去重）
             models.Index(fields=["is_tmp", "created_time"], name="idx_uploadfile_tmp_created"),
             models.Index(fields=["md5sum"], name="idx_uploadfile_md5sum"),
+            # 个人配额聚合（creator 维度 Sum/Count）
+            models.Index(fields=["creator", "created_time"], name="idx_uploadfile_creator_created"),
         ]
 
     def __str__(self):

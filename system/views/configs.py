@@ -12,6 +12,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.core.auth import auth_required
 from common.core.config import UserConfig, SysConfig
 from common.core.filter import OwnerUserFilter
+from common.core.permission import PatScopePermission
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import UserPersonalConfig
@@ -29,7 +30,9 @@ class ConfigsViewSet(GenericViewSet):
     serializer_class = UserPersonalConfigSerializer
     ordering_fields = ["created_time"]
     lookup_field = "key"
-    permission_classes = []
+    # 匿名可读系统默认配置，故不挂 IsAuthenticated；但 PAT 凭证带 scope 时仍需校验
+    # （permission_classes 被覆写会绕过默认链，此处显式挂载 scope 校验）
+    permission_classes = [PatScopePermission]
     filter_backends = [OwnerUserFilter]
 
     @extend_schema(responses=config_response_schema())

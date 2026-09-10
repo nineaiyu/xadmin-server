@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import functools
 import hashlib
+import re
 
 from django.http.cookie import parse_cookie
 from django.utils.translation import gettext_lazy as _
@@ -16,6 +17,9 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def auth_required(view_func):
@@ -26,6 +30,35 @@ def auth_required(view_func):
         raise NotAuthenticated(_("Unauthorized authentication"))
 
     return wrapper
+
+
+def path_allowed_by_scopes(path: str, scopes) -> bool:
+    """PAT scope 判定：空清单 = 不限（ADR-008 既有 token 向后兼容）。
+
+    条目语义 = 允许的路径前缀/正则（与 SENSITIVE_OPERATION_PATHS 同口径，
+    re.search 子串命中即可）；非法正则跳过并告警，不 500、不放任整清单失效。
+    """
+    if not scopes:
+        return True
+    for pattern in scopes:
+        if not pattern:
+            continue
+        try:
+            if re.search(pattern, path):
+                return True
+        except re.error:
+            logger.warning("pat scope skipped: invalid path regex %s", pattern)
+            continue
+    return False
+
+
+def hash_pat_token(raw_token: str) -> str:
+    """PAT 明文凭证的存储哈希（sha256）。
+
+    独立成模块级函数：认证类、权限类与序列化器都要用，避免「类内静态方法 +
+    循环依赖只能在文件底部 import」的写法。
+    """
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
 class ServerAccessToken(AccessToken):
@@ -104,7 +137,8 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
 
     @staticmethod
     def hash_token(raw_token: str) -> str:
-        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+        # 保留类方法入口（既有调用点/测试引用），实现统一走 hash_pat_token
+        return hash_pat_token(raw_token)
 
     def authenticate(self, request):
         header = request.META.get("HTTP_AUTHORIZATION", "")
@@ -132,6 +166,10 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         user = pat.creator
         if user is None or not user.is_active:
             raise AuthenticationFailed(_("User account is disabled"))
+
+        # scope 清单挂 request（消费方 = 认证后的统一权限层 PatScopePermission）：
+        # 认证类内不做拒绝——双 header（JWT 优先）时本类不会被调用，拒绝逻辑必须下沉
+        request.pat_scopes = pat.scopes or []
 
         # last_used_time 节流更新：cache.add 原子占位，60s 内多次请求只回写一次
         throttle_key = f"pat_last_used_{pat.pk}"

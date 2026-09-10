@@ -80,6 +80,90 @@ def get_menu_pk(permission_data, url):
     return p_data
 
 
+def resolve_pat_scopes(request):
+    """解析本次请求的 PAT scope 清单，非 PAT 请求返回 None。
+
+    - PAT 认证胜出：PersonalAccessTokenAuthentication 已把 scopes 挂 request.pat_scopes；
+    - JWT 胜出但同请求携带 Pat 头（双 header）：认证链在首个成功认证器处短路，
+      pat_scopes 缺失——此处从原始 Authorization 头解析凭证补校验（只取未过期且
+      启用的凭证），防绕过 scope；
+    - 凭证无效时按无 scope 处理（该请求的有效凭证是 JWT，PAT 头本身认证不过）。
+    """
+    scopes = getattr(request, "pat_scopes", None)
+    if scopes is not None:
+        return scopes
+    header = request.META.get("HTTP_AUTHORIZATION", "")
+    parts = header.split()
+    if len(parts) != 2 or parts[0].lower() != "pat":
+        return None
+    from django.apps import apps
+    from django.utils import timezone
+
+    from common.core.auth import hash_pat_token
+
+    token_model = apps.get_model("system", "PersonalAccessToken")
+    pat = (
+        token_model.objects.filter(token_hash=hash_pat_token(parts[1]), is_active=True)
+        .only("scopes", "expired_at")
+        .first()
+    )
+    if pat is None or (pat.expired_at and pat.expired_at <= timezone.now()):
+        scopes = []
+    else:
+        scopes = pat.scopes or []
+    request.pat_scopes = scopes
+    return scopes
+
+
+def check_pat_scope(request) -> bool:
+    """PAT scope 判定：True 放行；False 表示当前凭证不允许访问该路径。
+
+    校验口径 = 凭证 scope（空清单 = 不限，ADR-008 向后兼容）× 请求 path。
+    """
+    scopes = resolve_pat_scopes(request)
+    if scopes is None:
+        return True
+    from common.core.auth import path_allowed_by_scopes
+
+    return path_allowed_by_scopes(request.path, scopes)
+
+
+def user_can_update_menu(user, menu_pk) -> bool:
+    """当前用户是否拥有指定菜单的更新权限（PUT / PATCH 任一命中）。
+
+    供脱敏「原文通道」门禁使用：只有具备更新权限的用户才需要原文，否则编辑弹窗
+    拿到的掩码值会被回写（见 BaseModelSerializer.to_internal_value 的守护）。
+    """
+    if not user or not user.pk or not menu_pk:
+        return False
+    target = str(menu_pk)
+    for method in ("PUT", "PATCH"):
+        try:
+            permission_data = get_user_permission(user, method)
+        except Exception as e:  # noqa: BLE001 权限查询失败按无更新权限处理
+            logger.warning(f"check update permission failed. user:{user} error:{e}")
+            continue
+        for item in permission_data.values():
+            if item and str(item[0]) == target:
+                return True
+    return False
+
+
+class PatScopePermission(BasePermission):
+    """PAT scope 校验权限类（保留供显式 permission_classes 清单引用）。
+
+    默认权限链已由 ``IsAuthenticated`` 统一校验（见其 has_permission 说明），本类
+    保留是为了：(1) 既有 `permission_classes = [IsAuthenticated, PatScopePermission]`
+    写法与测试继续有效；(2) `permission_classes` 被整体覆写为不含 IsAuthenticated
+    的视图（如仅登录即可访问的个人配置）仍可显式挂载。
+    """
+
+    message = _("PAT scope does not allow this path")
+
+    def has_permission(self, request, view):
+        return check_pat_scope(request)
+
+
 class IsAuthenticated(BasePermission):
     """
     Allows access only to authenticated users.
@@ -90,6 +174,13 @@ class IsAuthenticated(BasePermission):
         if auth:
             request.request_uuid = getattr(get_current_request(), "request_uuid", uuid.uuid4())
             set_current_request(request)
+
+            # PAT scope 统一校验：认证成功即校验，**不区分 JWT/PAT、也不区分默认链
+            # 与显式 permission_classes 清单**——DRF 中 action 级 permission_classes
+            # 会整体替换默认链，校验放在这里才不会被漏（scope 限制的是凭证本身，
+            # 因此超管用 PAT 调接口同样受限）。
+            if not check_pat_scope(request):
+                raise PermissionDenied(_("PAT scope does not allow this path"))
 
             if request.user.is_superuser:
                 request.ignore_field_permission = True

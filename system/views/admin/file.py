@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 7/24/2024
 
+from django.core.cache import cache
+from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
@@ -14,6 +16,7 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
+from common.base.magic import cache_response
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, RecycleBinAction
@@ -26,17 +29,29 @@ from system.serializers.upload import UploadFileSerializer
 
 logger = get_logger(__name__)
 
+# 超出个人配额（存储/数量）的业务码：前端按该码提示配额不足
+QUOTA_EXCEEDED_CODE = 1004
+
 
 def get_upload_max_size(user_obj):
     return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
 
 
+def invalidate_upload_stats_cache(user_pk):
+    """失效个人文件统计短缓存（键口径与 get_stats_cache_key 一致）。
+
+    上传成功后立刻刷新页面时，10s 短缓存会返回旧的使用率，故主动失效。
+    """
+    cache.delete(f"magic_cache_response_UploadFileViewSet_stats_{user_pk}")
+
+
 class UploadFileFilter(BaseFilterSet):
     filename = filters.CharFilter(field_name="filename", lookup_expr="icontains")
+    category = filters.CharFilter(field_name="category", lookup_expr="iexact")
 
     class Meta:
         model = UploadFile
-        fields = ["filename", "mime_type", "md5sum", "description", "is_upload", "is_tmp"]
+        fields = ["filename", "category", "mime_type", "md5sum", "description", "is_upload", "is_tmp"]
 
 
 class UploadFileViewSet(RecycleBinAction, BaseModelSet):
@@ -44,8 +59,44 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
 
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer
+    # 默认排序：分页器要求有序 queryset（否则抛 UnorderedObjectListWarning），
+    # 且「最新上传在前」与文件管理页使用习惯一致（同 ImportRecord/ApprovalRequest 口径）
+    ordering = ["-created_time"]
     ordering_fields = ["created_time", "filesize"]
     filterset_class = UploadFileFilter
+
+    # stats 短缓存：10s 内重复刷新不重复聚合；按用户区分缓存键
+    def get_stats_cache_key(self, view_instance, view_method, request, args, kwargs):
+        return f"{view_instance.__class__.__name__}_{view_method.__name__}_{request.user.pk}"
+
+    @extend_schema(
+        responses=get_default_response_schema(
+            {
+                "data": build_object_type(
+                    properties={
+                        "count": build_basic_type(OpenApiTypes.NUMBER),
+                        "total_size": build_basic_type(OpenApiTypes.NUMBER),
+                        "quota_mb": build_basic_type(OpenApiTypes.NUMBER),
+                        "usage_rate": build_basic_type(OpenApiTypes.NUMBER),
+                    }
+                )
+            }
+        )
+    )
+    @action(methods=["get"], detail=False, url_path="stats")
+    @cache_response(timeout=10, key_func="get_stats_cache_key")
+    def stats(self, request, *args, **kwargs):
+        """个人文件统计（数量/总大小/配额使用率）"""
+        # 配额按上传人维度聚合（creator 索引），与管理页「我的文件」口径一致
+        queryset = UploadFile.objects.filter(creator=request.user)
+        count = queryset.count()
+        total_size = queryset.aggregate(size=Sum("filesize"))["size"] or 0
+        quota_mb = SysConfig.FILE_STORAGE_QUOTA_MB or 0
+        quota_bytes = quota_mb * 1024 * 1024
+        usage_rate = round(total_size / quota_bytes * 100, 2) if quota_bytes else 0
+        return ApiResponse(
+            data={"count": count, "total_size": total_size, "quota_mb": quota_mb, "usage_rate": usage_rate}
+        )
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -93,23 +144,49 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         files = request.FILES.getlist("file", [])
         result = []
         file_upload_max_size = get_upload_max_size(request.user)
+        # 配额校验前置到落盘之前（超额 1004 且不落盘）；仅有限额配置时才查聚合
+        quota_mb = SysConfig.FILE_STORAGE_QUOTA_MB or 0
+        count_limit = SysConfig.FILE_UPLOAD_COUNT_LIMIT or 0
+        owner_files = UploadFile.objects.filter(creator=request.user)
+        used_size = (owner_files.aggregate(size=Sum("filesize"))["size"] or 0) if quota_mb else 0
+        used_count = owner_files.count() if count_limit else 0
+        # 先全量校验再统一落库：任一文件不合规直接返回错误，避免多文件上传时
+        # 「前面的已落库、后面的被拒」造成部分写入
         for file_obj in files:
             try:
-                if file_obj.size > file_upload_max_size:
-                    return ApiResponse(
-                        code=1003, detail=_("upload file size cannot exceed {}").format(file_upload_max_size)
-                    )
+                file_size = file_obj.size
             except Exception as e:
                 logger.error(f"user:{request.user} upload file type error Exception:{e}")
                 return ApiResponse(code=1002, detail=_("Wrong upload file type"))
-            obj = UploadFile.objects.create(
-                creator=request.user,
-                filename=file_obj.name,
-                is_upload=True,
-                is_tmp=True,
-                filepath=file_obj,
-                mime_type=file_obj.content_type,
-                filesize=file_obj.size,
+            if file_size > file_upload_max_size:
+                return ApiResponse(
+                    code=1003, detail=_("upload file size cannot exceed {}").format(file_upload_max_size)
+                )
+            if quota_mb and used_size + file_size > quota_mb * 1024 * 1024:
+                return ApiResponse(
+                    code=QUOTA_EXCEEDED_CODE,
+                    detail=_("Storage quota exceeded ({} MB), please clean up and retry").format(quota_mb),
+                )
+            if count_limit and used_count + 1 > count_limit:
+                return ApiResponse(
+                    code=QUOTA_EXCEEDED_CODE,
+                    detail=_("File count limit exceeded ({}), please clean up and retry").format(count_limit),
+                )
+            used_size += file_size
+            used_count += 1
+        for file_obj in files:
+            result.append(
+                UploadFile.objects.create(
+                    creator=request.user,
+                    filename=file_obj.name,
+                    is_upload=True,
+                    is_tmp=True,
+                    filepath=file_obj,
+                    mime_type=file_obj.content_type,
+                    filesize=file_obj.size,
+                )
             )
-            result.append(obj)
+        if result:
+            # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
+            invalidate_upload_stats_cache(request.user.pk)
         return ApiResponse(data=self.get_serializer(result, many=True).data)

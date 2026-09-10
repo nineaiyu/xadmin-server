@@ -585,5 +585,267 @@
       "is_active": true,
       "label_en": "Female"
     }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": "敏感操作审批单状态（ApprovalRequest.status 的文案与颜色来源，未维护字典项时回退模型枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "approval_status",
+      "label": "审批状态",
+      "value": null,
+      "sort": 7,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Approval status"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6e",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "PENDING",
+      "label": "待审批",
+      "value": "PENDING",
+      "sort": 0,
+      "color": "#e6a23c",
+      "is_active": true,
+      "label_en": "Pending"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6f",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "APPROVED",
+      "label": "已通过",
+      "value": "APPROVED",
+      "sort": 1,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Approved"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e70",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "REJECTED",
+      "label": "已驳回",
+      "value": "REJECTED",
+      "sort": 2,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Rejected"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e71",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "EXPIRED",
+      "label": "已过期",
+      "value": "EXPIRED",
+      "sort": 3,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Expired"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e72",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "CANCELLED",
+      "label": "已撤回",
+      "value": "CANCELLED",
+      "sort": 4,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Cancelled"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e73",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e6d",
+      "code": "FAILED",
+      "label": "校验失败",
+      "value": "FAILED",
+      "sort": 5,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Failed"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": "文件分类（UploadFile.category 的选项来源，DictChoiceField 约束写入路径）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "upload_category",
+      "label": "文件分类",
+      "value": null,
+      "sort": 8,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "File category"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e75",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+      "code": "image",
+      "label": "图片",
+      "value": "image",
+      "sort": 0,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Image"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e76",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+      "code": "document",
+      "label": "文档",
+      "value": "document",
+      "sort": 1,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Document"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e77",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+      "code": "video",
+      "label": "视频",
+      "value": "video",
+      "sort": 2,
+      "color": "#e6a23c",
+      "is_active": true,
+      "label_en": "Video"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e78",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+      "code": "archive",
+      "label": "压缩包",
+      "value": "archive",
+      "sort": 3,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Archive"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e79",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00.000Z",
+      "updated_time": "2026-09-10T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e74",
+      "code": "other",
+      "label": "其他",
+      "value": "other",
+      "sort": 4,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Other"
+    }
   }
 ]

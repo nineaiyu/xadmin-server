@@ -214,6 +214,50 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("SENSITIVE_OPERATION_PATHS", [])
 
     @property
+    def APPROVAL_REQUIRED_PATHS(self):
+        """敏感操作审批拦截的路径正则清单（默认空 = 审批整体休眠，渐进启用）。
+
+        仅对显式挂载 ApprovalRequired 装饰器的 action 生效；命中清单的请求需先
+        经审批中心通过后携令牌重发（一次性通行令牌）。
+        """
+        return self.get_value("APPROVAL_REQUIRED_PATHS", [])
+
+    @property
+    def APPROVAL_APPROVER_ROLES(self):
+        """审批人角色 code 清单（默认空 = 全部在用超管；申请人始终不能自审）。"""
+        return self.get_value("APPROVAL_APPROVER_ROLES", [])
+
+    @property
+    def APPROVAL_TOKEN_TTL(self):
+        """审批通过后令牌有效期（秒，默认 300）：有效期内携令牌重发一次有效。"""
+        return int(self.get_value("APPROVAL_TOKEN_TTL", 300))
+
+    @property
+    def APPROVAL_PENDING_TIMEOUT(self):
+        """待审批单超时天数（默认 3 天）：超时由清理任务置 EXPIRED。"""
+        return int(self.get_value("APPROVAL_PENDING_TIMEOUT", 3))
+
+    @property
+    def APPROVAL_KEEP_DAYS(self):
+        """审批单保留天数（默认 180）：超过由清理任务分批删除。"""
+        return int(self.get_value("APPROVAL_KEEP_DAYS", 180))
+
+    @property
+    def PAT_RATE_LIMIT(self):
+        """PAT 凭证级限流速率（SimpleRateThrottle 速率串，默认 60/min；空或 0 = 不限）。"""
+        return self.get_value("PAT_RATE_LIMIT", "60/min")
+
+    @property
+    def FILE_STORAGE_QUOTA_MB(self):
+        """个人文件存储配额（MB，默认 0 = 不限）：上传前按 creator 聚合校验。"""
+        return int(self.get_value("FILE_STORAGE_QUOTA_MB", 0))
+
+    @property
+    def FILE_UPLOAD_COUNT_LIMIT(self):
+        """个人上传文件数量上限（默认 0 = 不限）：上传前按 creator 计数校验。"""
+        return int(self.get_value("FILE_UPLOAD_COUNT_LIMIT", 0))
+
+    @property
     def AUDIT_DIFF_MODELS(self):
         """字段级审计 diff 白名单（模型 _meta.label JSON 清单，默认空 = 关闭）。
 

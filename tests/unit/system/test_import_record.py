@@ -103,6 +103,35 @@ def test_import_async_runs_task_when_eager(superuser):
 
     execution = TaskExecution.objects.get(pk=record.pk)
     assert execution.name == "system.tasks.async_import_data_task"
+    # 终态收尾清理运行期缓存进度（未清理会残留 1h）
+    from system.utils.import_progress import get_import_progress
+
+    assert get_import_progress(record.pk) is None
+
+
+def test_import_progress_served_from_cache_while_running(superuser):
+    """运行期进度读缓存通道：RUNNING 时以缓存值为准，终态回落到库内字段。
+
+    背景：任务在「外层大事务 + 逐行 savepoint」里执行，事务提交前其他连接读不到
+    库内进度，故运行期进度写缓存（见 system/utils/import_progress）。
+    """
+    from system.serializers.import_ import ImportRecordSerializer
+    from system.utils.import_progress import clear_import_progress, set_import_progress
+
+    record = ImportRecord.objects.create(
+        creator=superuser, name="progress-case", status=ImportRecord.Status.RUNNING, progress=0
+    )
+    try:
+        set_import_progress(record.pk, 42)
+        data = ImportRecordSerializer(record, ignore_field_permission=True).data
+        assert data["progress"] == 42
+
+        record.status = ImportRecord.Status.SUCCESS
+        record.progress = 100
+        data = ImportRecordSerializer(record, ignore_field_permission=True).data
+        assert data["progress"] == 100  # 终态不读缓存
+    finally:
+        clear_import_progress(record.pk)
 
 
 def test_import_async_aborts_when_fail_rate_exceeded(superuser, monkeypatch):

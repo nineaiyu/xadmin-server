@@ -11,6 +11,7 @@ import secrets
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.auth import hash_pat_token
 from common.core.serializers import BaseModelSerializer
 from system.models.token import PersonalAccessToken
 
@@ -20,6 +21,13 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
     token = serializers.SerializerMethodField(label=_("Token"))
     token_prefix = serializers.CharField(label=_("Token prefix"), read_only=True)
     last_used_time = serializers.DateTimeField(label=_("Last used time"), read_only=True)
+    # scope 清单：允许的路径前缀/正则（空 = 不限），update 允许改写
+    scopes = serializers.JSONField(
+        label=_("Scopes"),
+        required=False,
+        allow_null=True,
+        help_text=_("List of allowed path prefixes or regexes; empty means unrestricted"),
+    )
 
     class Meta:
         model = PersonalAccessToken
@@ -28,6 +36,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "name",
             "token",
             "token_prefix",
+            "scopes",
             "description",
             "is_active",
             "expired_at",
@@ -39,6 +48,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
             "pk",
             "name",
             "token_prefix",
+            "scopes",
             "is_active",
             "expired_at",
             "last_used_time",
@@ -54,10 +64,23 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
     def get_token(self, obj):
         return getattr(obj, "_plain_token", None)
 
+    def validate_scopes(self, value):
+        """scope 清单清洗：字符串清单、去空白、去重；None/空 = 不限。"""
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Scopes must be a list of path strings"))
+        cleaned = []
+        for item in value:
+            item = str(item or "").strip()
+            if item and item not in cleaned:
+                cleaned.append(item)
+        return cleaned
+
     def create(self, validated_data):
         # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串
         raw_token = "pat_{}".format(secrets.token_urlsafe(32))
-        validated_data["token_hash"] = PersonalAccessTokenAuthentication.hash_token(raw_token)
+        validated_data["token_hash"] = hash_pat_token(raw_token)
         validated_data["token_prefix"] = raw_token[:12]
         instance = super().create(validated_data)
         instance._plain_token = raw_token
@@ -68,7 +91,3 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         validated_data.pop("token_hash", None)
         validated_data.pop("token_prefix", None)
         return super().update(instance, validated_data)
-
-
-# 局部导入避免循环依赖（auth 模块按需懒加载 system 模型）
-from common.core.auth import PersonalAccessTokenAuthentication  # noqa: E402

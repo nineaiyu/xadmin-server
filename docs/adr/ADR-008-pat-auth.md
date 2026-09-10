@@ -35,10 +35,43 @@
    `updated_time < now-30d`）的凭证——两类凭证分别保留 30 天审计痕迹，
    比早期计划描述（仅过期且停用）覆盖更完整。
 
+## scope 语义与限流（2026-09-10 增补，N3 第三期 F4）
+
+7. **scope 语义 = 允许的接口路径前缀/正则清单**（`PersonalAccessToken.scopes` JSON
+   字符串数组，默认空 = 不限，一期既有 token 向后兼容）。否决了菜单级 scope
+   （菜单是前端概念）与方法级只读 scope（机器集成真实诉求是「只调某几个接口」，
+   路径前缀即可满足），判定口径与 `SENSITIVE_OPERATION_PATHS` 一致（`re.search`
+   子串命中；非法正则跳过并告警，不 500）。
+8. **校验时机下沉到认证之后的统一权限层**（`common/core.permission.IsAuthenticated`
+   的 `has_permission`，共用 `resolve_pat_scopes` / `check_pat_scope` 纯函数）：
+   认证类内只把 scopes 挂 `request.pat_scopes` 不做拒绝——DRF 认证链在首个成功
+   认证器处短路，同请求带 JWT + Pat 双 header 时 JWT 胜出会绕过认证类内的校验；
+   权限层从原始 Authorization 头补解析凭证（只认启用且未过期的凭证），对所有
+   认证方式生效（评审复盘 P1-4 口径）。
+
+   **2026-09-10 审查修正**：原实现把校验放在独立权限类 `PatScopePermission` 并追加
+   到 `DEFAULT_PERMISSION_CLASSES`，但 DRF 的 **action 级 `permission_classes`
+   会整体替换默认链**（改密/换绑/解绑 MFA/重置他人 MFA 等 6 处正是这种写法），
+   独立权限类会被漏掉，scope 形同虚设。故校验内联进 `IsAuthenticated`（默认链与
+   显式链都必经），`PatScopePermission` 保留为兼容类（显式清单仍可引用）；
+   对 `permission_classes` 覆写为不含 `IsAuthenticated` 的登录后接口
+   （如个人配置 `ConfigsViewSet`）需显式挂载该类。
+9. **scope 边界**：只做路径维度，不做数据权限收窄（与所属用户一致）与方法级
+   只读标记；越界请求 403。scope 限制的是**凭证**而非用户，超管用 PAT 调接口
+   同样受限。
+10. **凭证级限流**：`common/core.throttle.PatThrottle`（`SimpleRateThrottle`）全局
+    挂载，按 `token_hash` 取缓存 key，非 PAT 请求直接放行；速率走系统配置
+    `PAT_RATE_LIMIT`（默认 `60/min`，空或 0 = 不限）。
+11. **调用审计**：不新增埋点表——`OperationLog` 已记录 PAT 请求（creator=属主）。
+    `PersonalAccessTokenViewSet` 新增 `logs`（本人日志按时间窗/路径过滤，分页）与
+    `stats`（近 7 天调用数/失败数/末次调用）action。**近似口径**：OperationLog 无
+    token 标识字段，不同 token 的请求无法精确区分，按「creator + 时间窗」近似
+    关联（前端弹窗文案写明）；如需精确关联再评估加字段。
+
 ## 后果
 
 - 正面：第三方集成不再共享真人密码；单个凭证可独立吊销/过期；归属与审计清晰。
 - 负面/边界：PAT 权限 = 用户权限，若给集成账号授予过多菜单权限，PAT 亦随之扩大
   （建议为集成场景建专用最小权限账号）；`changes` diff 白名单等既有审计口径不变。
-- 演进：后续可加 `scopes`（菜单子集 / 只读标记）与创建时 IP 允许清单，均在
-  `PersonalAccessToken` 上扩展字段即可，无破坏性变更。
+- 演进：scope 已落地（路径维度）；后续可扩展创建时 IP 允许清单与 token 精确审计
+  标识（`OperationLog` 加 token 外键），均为无破坏性变更。

@@ -28,6 +28,8 @@ E2E_USERS = [
     ("e2e_dp", "E2E-DataPerm-2026!", "E2E数据权限用户", False, "e2e_dp"),
     ("e2e_fp", "E2E-FieldPer-2026!", "E2E字段权限用户", False, "e2e_fp"),
     ("e2e_lock", "E2E-Lock-2026!", "E2E锁定测试用户", False, None),
+    # 审批人：第二超管（申请人 xadmin 不能自审，审批中心用例以其身份通过审批单）
+    ("e2e_approver", "E2E-Approver-2026!", "E2E审批人", True, None),
 ]
 
 # 数据权限规则：用户列表仅可见「id 等于本人」的记录（运行时 value 被替换为当前用户 pk）
@@ -156,7 +158,12 @@ def main() -> None:
     for username, password, nickname, is_superuser, role_code in E2E_USERS:
         if UserInfo.objects.filter(username=username).exists():
             continue
-        user = UserInfo.objects.create_user(username=username, password=password, nickname=nickname)
+        if is_superuser:
+            user = UserInfo.objects.create_superuser(
+                username=username, email=f"{username}@example.com", password=password, nickname=nickname
+            )
+        else:
+            user = UserInfo.objects.create_user(username=username, password=password, nickname=nickname)
         if role_code:
             role, _ = UserRole.objects.get_or_create(name=f"E2E-{role_code}", code=role_code)
             user.roles.add(role)

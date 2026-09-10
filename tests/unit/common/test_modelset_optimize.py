@@ -108,11 +108,17 @@ class TestOptimizeQuerysetBehavior:
 
 class TestListQueryCount:
     def test_user_list_query_count_and_response(self, auth_client, user_page, monkeypatch):
-        # 预热 gender 字典缓存（UserSerializer.gender 的 DictChoiceField bind 时固定读一次），
-        # 避免该次读取落入基线/优化任一窗口，造成 16 的差值漂移
+        # 预热字典缓存（DictChoiceField bind 时读一次；notice_level 还会在 URL 模块
+        # 首次导入时被 UserNoticeSerializer 模块级实例化读取），避免读取落入
+        # 基线/优化任一窗口造成 16 的差值漂移
         from system.utils.dict import get_dict_items
 
         get_dict_items("user_gender")
+        get_dict_items("notice_level")
+        # 预热 PAT 限流速率配置（PatThrottle 全局挂载，首个请求会读一次系统配置）
+        from common.core.config import SysConfig
+
+        SysConfig.PAT_RATE_LIMIT
         monkeypatch.setattr(UserViewSet, "auto_prefetch_related", False)
         with CaptureQueriesContext(connection) as ctx_base:
             resp_base = auth_client.get(USER_URL, {"page": 1, "size": 10})

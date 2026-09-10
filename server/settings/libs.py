@@ -36,6 +36,8 @@ REST_FRAMEWORK = {
     "DEFAULT_METADATA_CLASS": "common.drf.metadata.SimpleMetadataWithFilters",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
+        # PAT 凭证级限流：非 PAT 请求 get_cache_key 返回 None 直接放行
+        "common.core.throttle.PatThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {  # {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
         "anon": "60/m",
@@ -51,6 +53,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "common.core.pagination.PageNumber",
     "DEFAULT_PERMISSION_CLASSES": [
         # 'rest_framework.permissions.IsAuthenticated',
+        # PAT scope 统一校验已内联在 IsAuthenticated.has_permission：
+        # action 级 permission_classes 会整体替换默认链，独立权限类会被漏掉
         "common.core.permission.IsAuthenticated",
     ],
     "DEFAULT_FILTER_BACKENDS": (

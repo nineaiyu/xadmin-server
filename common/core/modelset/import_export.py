@@ -210,8 +210,6 @@ class ImportAsyncAction(object):
     @staticmethod
     def _save_rows_file(rows, user, filename):
         """行数据序列化为 JSON 落 UploadFile(is_tmp=True)，供任务内读取。"""
-        import json
-
         from django.apps import apps
         from django.core.files.base import ContentFile
 

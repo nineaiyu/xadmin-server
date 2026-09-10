@@ -24,6 +24,9 @@ class ImportRecordSerializer(BaseModelSerializer):
     )
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Creator"))
     report_filesize = serializers.SerializerMethodField(label=_("Report size"))
+    # 运行期进度走缓存通道（任务在外层事务里执行，库内字段提交前其他连接读不到），
+    # 终态仍读模型字段（任务收尾会写 100 并清理缓存）
+    progress = serializers.SerializerMethodField(label=_("Progress"))
     # 状态走数据字典 import_status（管理员可维护文案/颜色，默认项随种子下发）；
     # 未配置回退模型枚举，merge 保证只配部分项时其余枚举标签不缺
     status = DictChoiceField(
@@ -80,3 +83,12 @@ class ImportRecordSerializer(BaseModelSerializer):
 
     def get_report_filesize(self, obj):
         return obj.report_filesize
+
+    def get_progress(self, obj):
+        if obj.status == ImportRecord.Status.RUNNING:
+            from system.utils.import_progress import get_import_progress
+
+            cached = get_import_progress(obj.pk)
+            if cached is not None:
+                return cached
+        return obj.progress

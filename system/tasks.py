@@ -163,6 +163,30 @@ def auto_clean_pat_job():
     return removed
 
 
+@shared_task
+@register_as_period_task(crontab="42 3 * * *")
+def auto_expire_approval_job():
+    """敏感操作审批单超时（APPROVAL_PENDING_TIMEOUT，默认 3 天）置 EXPIRED。"""
+    from system.utils.approval import expire_pending_approvals
+
+    count = expire_pending_approvals()
+    if count:
+        logger.info("Expire pending approvals: %s rows", count)
+    return count
+
+
+@shared_task
+@register_as_period_task(crontab="52 3 * * *")
+def auto_clean_approval_job():
+    """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
+    from system.utils.approval import clean_expired_approvals
+
+    removed = clean_expired_approvals()
+    if removed:
+        logger.info("Clean approval requests: %s rows", removed)
+    return removed
+
+
 def build_export_request(record, query_params, user):
     """构造用于重放 export_data 的原始请求。
 
@@ -381,6 +405,7 @@ def async_import_data_task(self, record_id, view_path, user_pk):
     from system.models.import_ import ImportRecord
     from system.models.task import TaskExecution
     from system.models.user import UserInfo
+    from system.utils.import_progress import clear_import_progress, set_import_progress
 
     record = ImportRecord.objects.filter(pk=record_id).first()
     if record is None:
@@ -445,6 +470,9 @@ def async_import_data_task(self, record_id, view_path, user_pk):
                 rows = topological_sort(rows, parent=self_field)
 
         fail_rate_limit = SysConfig.IMPORT_FAIL_RATE_LIMIT
+        # 运行期进度走缓存通道：本循环包在外层事务里，事务提交前其他连接读不到
+        # 库内进度（见 system/utils/import_progress 模块说明），因此不写库、只写缓存
+        last_percent = -1
         try:
             with transaction.atomic():
                 for idx, row in enumerate(rows, start=1):
@@ -456,7 +484,7 @@ def async_import_data_task(self, record_id, view_path, user_pk):
                         errors.append(
                             {
                                 "row": idx,
-                                "values": {str(k): row.get(k) for k in list(row)[:32]},
+                                "values": {str(k): row.get(k) for k in row},
                                 "error": str(exc)[:500],
                             }
                         )
@@ -466,14 +494,11 @@ def async_import_data_task(self, record_id, view_path, user_pk):
                                 len(errors), total
                             )
                             break
-                    # 分批上报进度（1% 粒度）与实时行数统计，供下载中心进度条展示
+                    # 分批上报进度（1% 粒度），供下载中心进度条展示
                     percent = int(idx / max(total, 1) * 100)
-                    if percent != record.progress:
-                        record.progress = percent
-                        record.total = total
-                        record.success_rows = success_rows
-                        record.failed_rows = len(errors)
-                        record.save(update_fields=["progress", "total", "success_rows", "failed_rows", "updated_time"])
+                    if percent != last_percent:
+                        last_percent = percent
+                        set_import_progress(record.pk, percent)
                 if aborted:
                     # 外层事务回滚：已写入的成功行一并撤销
                     raise _ImportAborted(abort_reason)
@@ -485,6 +510,7 @@ def async_import_data_task(self, record_id, view_path, user_pk):
         record.error = str(exc)[:2000]
         record.total = record.total or total
         record.save(update_fields=["status", "error", "total", "updated_time"])
+        clear_import_progress(record.pk)
         logger.exception("async import failed: %s", record_id)
         raise
     finally:
@@ -527,6 +553,8 @@ def async_import_data_task(self, record_id, view_path, user_pk):
         logger.exception("async import finalize failed: %s", record_id)
         raise
     finally:
+        # 终态已落库，清掉运行期缓存进度（序列化器 RUNNING 时才读缓存）
+        clear_import_progress(record.pk)
         if user:
             try:
                 ImportDataMessage(

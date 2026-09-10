@@ -32,6 +32,8 @@ class SystemConfig(BaseConfig, DbUuidModel):
     class Meta:
         verbose_name = _("System config")
         verbose_name_plural = verbose_name
+        # 无默认排序时分页会抛 UnorderedObjectListWarning（导出计数路径也走分页器）
+        ordering = ["created_time"]
 
     def __str__(self):
         return "%s-%s" % (self.key, self.description)

@@ -12,6 +12,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiRequest
 from rest_framework.decorators import action
 
+from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction, RecycleBinAction
 from common.core.permission import IsAuthenticated
@@ -72,6 +73,7 @@ class UserViewSet(
             raise Exception(_("The super administrator disallows deletion"))
         return instance.delete()
 
+    @ApprovalRequired()
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -87,6 +89,11 @@ class UserViewSet(
         """批量删除{cls}"""
         self.queryset = self.queryset.filter(is_superuser=False)
         return super().batch_destroy(request, *args, **kwargs)
+
+    @ApprovalRequired()
+    def destroy(self, request, *args, **kwargs):
+        """删除{cls}数据"""
+        return super().destroy(request, *args, **kwargs)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="reset-password", serializer_class=ResetPasswordSerializer)

@@ -14,7 +14,7 @@ from rest_framework.metadata import SimpleMetadata
 from rest_framework.relations import ManyRelatedField
 from rest_framework.request import clone_request
 
-from common.core.fields import BasePrimaryKeyRelatedField
+from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField, LabeledMultipleChoiceField
 
 
 class SimpleMetadataWithFilters(SimpleMetadata):
@@ -61,12 +61,15 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         if tp:
             return tp
         tp = self.label_lookup[field]
-
         class_name = field.__class__.__name__
-        if class_name == "LabeledChoiceField":
-            tp = "labeled_choice"
-        if class_name == "LabeledMultipleChoiceField":
+
+        # 用 isinstance 而非精确类名匹配：业务侧子类（如字典驱动的 DictChoiceField）
+        # 同样生效。若退化成 "choice"，前端详情列按字符串取值，而该字段实际序列化为
+        # {value,label,color} 对象，会渲染成空白。
+        if isinstance(field, LabeledMultipleChoiceField):
             tp = "labeled_multiple_choice"
+        elif isinstance(field, LabeledChoiceField):
+            tp = "labeled_choice"
         elif class_name == "JSONField":
             tp = "json"
         elif isinstance(field, BasePrimaryKeyRelatedField):

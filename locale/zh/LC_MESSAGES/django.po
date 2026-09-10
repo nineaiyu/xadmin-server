@@ -2846,3 +2846,151 @@ msgstr "批量执行已提交：{} 成功，{} 失败"
 #, python-brace-format
 msgid "Task cloned: {}"
 msgstr "任务已克隆：{}"
+
+# F1 敏感操作审批（新增 msgid；location 行由下次 makemessages 统一回填）
+msgid "Approval request"
+msgstr "审批单"
+
+msgid "Pending"
+msgstr "待审批"
+
+msgid "Approved"
+msgstr "已通过"
+
+msgid "Rejected"
+msgstr "已驳回"
+
+msgid "Expired"
+msgstr "已过期"
+
+msgid "Cancelled"
+msgstr "已撤回"
+
+msgid "Failed"
+msgstr "校验失败"
+
+msgid "Approver"
+msgstr "审批人"
+
+msgid "Applicant"
+msgstr "申请人"
+
+msgid "Object pk"
+msgstr "对象主键"
+
+msgid "Request params"
+msgstr "请求参数快照"
+
+msgid "Approved at"
+msgstr "审批时间"
+
+msgid "Token expired at"
+msgstr "令牌过期时间"
+
+msgid "Consume time"
+msgstr "消费时间"
+
+msgid "Reason"
+msgstr "原因"
+
+msgid "Invalid approval token"
+msgstr "无效的审批令牌"
+
+msgid "The approval token does not belong to the current user"
+msgstr "审批令牌不属于当前用户"
+
+msgid "Resent request does not match the approved snapshot"
+msgstr "重发请求与审批快照不一致"
+
+msgid "The resent request does not match the approved content"
+msgstr "重发请求与审批内容不一致"
+
+msgid "The approval has been {}"
+msgstr "审批单已{}"
+
+msgid "The approval was rejected: {}"
+msgstr "审批单被驳回：{}"
+
+msgid "The approval token has already been used"
+msgstr "审批令牌已被使用"
+
+msgid "The approval token has expired"
+msgstr "审批令牌已过期"
+
+msgid "Operation submitted for approval (No. {}), please retry after it is approved"
+msgstr "操作已提交审批（单号：{}），审批通过后请重试"
+
+msgid "No available approver, please contact the administrator to configure approvers"
+msgstr "暂无可用审批人，请联系管理员配置审批人"
+
+msgid "Only pending requests can be approved"
+msgstr "仅待审批单可以审批通过"
+
+msgid "Only pending requests can be rejected"
+msgstr "仅待审批单可以驳回"
+
+msgid "Only pending requests can be cancelled"
+msgstr "仅待审批单可以撤回"
+
+msgid "The applicant cannot approve their own request"
+msgstr "申请人不能审批自己的申请"
+
+msgid "Only the applicant can cancel the request"
+msgstr "仅申请人可以撤回审批单"
+
+msgid "The approval request has been approved"
+msgstr "审批单已通过"
+
+msgid "The approval request has been rejected"
+msgstr "审批单已驳回"
+
+msgid "The approval request has been cancelled"
+msgstr "审批单已撤回"
+
+msgid "Operation successful. Approved {} data"
+msgstr "操作成功，审批通过 {} 条"
+
+msgid "Sensitive operation"
+msgstr "敏感操作"
+
+msgid "Rejection reason is required"
+msgstr "驳回原因必填"
+
+msgid "Please select the data to operate"
+msgstr "请选择要操作的数据"
+
+msgid "Approval request notice"
+msgstr "审批通知"
+
+msgid "New approval request"
+msgstr "新的审批申请"
+
+msgid "Approval request approved"
+msgstr "审批申请已通过"
+
+msgid "Approval request rejected"
+msgstr "审批申请已驳回"
+
+msgid "Approval No."
+msgstr "审批单号"
+
+msgid "PAT scope does not allow this path"
+msgstr "令牌授权范围不包含该接口"
+
+msgid "Scopes"
+msgstr "接口范围"
+
+msgid "List of allowed path prefixes or regexes; empty means unrestricted"
+msgstr "允许调用的路径前缀/正则清单；留空表示不限"
+
+msgid "Scopes must be a list of path strings"
+msgstr "接口范围必须是路径字符串清单"
+
+msgid "Storage quota exceeded ({} MB), please clean up and retry"
+msgstr "存储配额已用尽（{} MB），请清理后重试"
+
+msgid "File count limit exceeded ({}), please clean up and retry"
+msgstr "文件数量已达上限（{}），请清理后重试"
+
+msgid "Category options come from the data dictionary upload_category"
+msgstr "分类选项来自数据字典 upload_category"

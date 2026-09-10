@@ -193,6 +193,23 @@ class Config(dict):
         "IMPORT_VALIDATE_ERROR_LIMIT": 200,  # 导入前校验返回的错误行明细上限
         # 软删除回收站保留天数，超过后由 purge_soft_deleted 周期任务物理清除
         "RECYCLE_BIN_RETENTION_DAYS": 30,
+        # 敏感操作审批：拦截路径正则清单（默认空 = 休眠，渐进启用；仅对显式挂载
+        # ApprovalRequired 装饰器的 action 生效），审批通过后携一次性令牌重发放行
+        "APPROVAL_REQUIRED_PATHS": [],
+        # 审批人角色 code 清单（默认空 = 全部在用超管；申请人不能自审）
+        "APPROVAL_APPROVER_ROLES": [],
+        # 审批通过后令牌有效期（秒）
+        "APPROVAL_TOKEN_TTL": 300,
+        # 待审批单超时天数（超时由 auto_expire_approval_job 置 EXPIRED）
+        "APPROVAL_PENDING_TIMEOUT": 3,
+        # 审批单保留天数（超过由 auto_clean_approval_job 分批删除）
+        "APPROVAL_KEEP_DAYS": 180,
+        # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
+        "PAT_RATE_LIMIT": "60/min",
+        # 个人文件存储配额（MB；0 = 不限）
+        "FILE_STORAGE_QUOTA_MB": 0,
+        # 个人上传文件数量上限（0 = 不限）
+        "FILE_UPLOAD_COUNT_LIMIT": 0,
         # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
         # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
         "AUDIT_DIFF_MODELS": [],

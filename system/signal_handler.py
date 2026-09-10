@@ -15,9 +15,10 @@ from common.base.utils import remove_file
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.utils import get_logger
-from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution, DataDict
+from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution, DataDict, DataMaskRule
 from system.signal import invalid_user_cache_signal
 from system.utils.dict import invalid_dict_cache
+from system.utils.mask import invalid_mask_cache
 
 logger = get_logger(__name__)
 
@@ -134,3 +135,19 @@ def invalid_dict_cache_handler(sender, instance, **kwargs):
     else:
         invalid_dict_cache()
     logger.info(f"invalid dict cache {instance}")
+
+
+@receiver([post_save, pre_delete], sender=DataMaskRule)
+def invalid_mask_cache_handler(sender, instance, **kwargs):
+    # 脱敏规则变更（含改 model/field/is_active）失效对应模型缓存
+    invalid_mask_cache(instance.model if instance.model else None)
+    logger.info(f"invalid mask cache {instance}")
+
+
+@receiver(m2m_changed, sender=DataMaskRule.roles.through)
+def invalid_mask_roles_m2m_cache_handler(sender, instance, action, **kwargs):
+    # roles 直改（绕过 save）同样失效该规则所属模型缓存
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    invalid_mask_cache(instance.model if instance.model else None)
+    logger.info(f"invalid mask cache by roles m2m {instance}")

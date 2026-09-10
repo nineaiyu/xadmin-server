@@ -193,6 +193,51 @@ class SensitiveOperationMessage(SystemMessage):
         )
 
 
+@register_message
+class ApprovalRequestMessage(UserMessage):
+    """审批中心通知：提交（发审批人）/ 通过、驳回（发申请人）三种文案。"""
+
+    category = "Audit"
+    category_label = _("Audit")
+    message_type_label = _("Approval request notice")
+
+    EVENT_TITLES = {
+        "submitted": _("New approval request"),
+        "approved": _("Approval request approved"),
+        "rejected": _("Approval request rejected"),
+    }
+
+    def __init__(self, user, event: str, approval):
+        self.event = event
+        self.approval = approval
+        super().__init__(user)
+
+    def get_html_msg(self) -> dict:
+        approval = self.approval
+        subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
+        context = dict(
+            subject=subject,
+            name=self.user.nickname,
+            event=self.event,
+            module=approval.module or "-",
+            method=approval.method or "-",
+            path=approval.path or "-",
+            approval_no=str(approval.pk)[:8].upper(),
+            reason=approval.reason or "",
+            time=local_now_display(),
+        )
+        message = render_to_string("notify/msg_approval.html", context)
+        return {"subject": subject, "message": message}
+
+    @classmethod
+    def gen_test_msg(cls):
+        from system.models import UserInfo, ApprovalRequest
+
+        user = UserInfo.objects.first()
+        approval = ApprovalRequest(module="User", method="DELETE", path="/api/system/user/1", creator=user)
+        return cls(user, "submitted", approval)
+
+
 SENSITIVE_ALERT_THROTTLE_SECONDS = 60
 
 

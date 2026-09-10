@@ -358,5 +358,141 @@
       "key": "IMPORT_VALIDATE_ERROR_LIMIT",
       "inherit": false
     }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b0f",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "敏感操作审批拦截的路径正则清单（默认空 = 休眠；仅对挂载 ApprovalRequired 的接口生效）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": [],
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_REQUIRED_PATHS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b10",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "审批人角色 code 清单（默认空 = 全部在用超管；申请人不能自审）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": [],
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_APPROVER_ROLES",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b11",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "审批通过后令牌有效期（秒）：有效期内携令牌重发一次有效",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 300,
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_TOKEN_TTL",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b12",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "待审批单超时天数（超时由清理任务置 EXPIRED）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 3,
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_PENDING_TIMEOUT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b13",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "审批单保留天数（超过由清理任务分批删除）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 180,
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_KEEP_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b14",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "个人访问令牌（PAT）凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "60/min",
+      "is_active": true,
+      "access": false,
+      "key": "PAT_RATE_LIMIT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b15",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "个人文件存储配额（MB，按上传人聚合校验；0 = 不限）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 0,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_STORAGE_QUOTA_MB",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b16",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": "个人上传文件数量上限（按上传人计数校验；0 = 不限）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 0,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_UPLOAD_COUNT_LIMIT",
+      "inherit": false
+    }
   }
 ]

@@ -238,6 +238,30 @@ def test_dict_choice_field_merge_fallback_and_color():
     assert {"value": 9, "label": "未知"} in info["choices"]
 
 
+def test_dict_choice_field_metadata_type_is_labeled_choice():
+    """守护：DictChoiceField 的 search-columns 类型必须是 labeled_choice。
+    common/drf/metadata.py 曾按精确类名匹配 LabeledChoiceField，DictChoiceField
+    作为子类被判成普通 choice：前端详情列按字符串取值，而该字段序列化为
+    {value,label,color} 对象，详情页该字段会渲染成空白（下载中心状态列即此问题）。
+    """
+    from rest_framework import serializers
+
+    from common.drf.metadata import SimpleMetadataWithFilters
+    from system.serializers.fields import DictChoiceField
+
+    cache.clear()
+    parent = DataDict.objects.create(code="meta_type_dict", label="元数据类型")
+    DataDict.objects.create(parent=parent, code="ok", label="正常", value="OK", color="#67c23a")
+
+    field = DictChoiceField(dict_code="meta_type_dict", fallback_choices=[("OK", "正常")])
+    field.bind("meta_type", None)
+    assert SimpleMetadataWithFilters().get_field_info(field)["type"] == "labeled_choice"
+
+    # 普通 ChoiceField 不受影响，仍是 choice
+    plain = serializers.ChoiceField(choices=[("OK", "正常")])
+    assert SimpleMetadataWithFilters().get_field_info(plain)["type"] == "choice"
+
+
 def test_export_status_dict_integration():
     """下载中心 status 接入字典（merge 模式）：字典项优先、枚举补缺——
     只配部分项时其余枚举标签不缺（部分配置不再隐藏未配置项的标签）；
@@ -302,6 +326,36 @@ def test_notice_level_dict_integration():
     assert field2.choices["danger"] == "紧急"
     assert field2.choices["info"] == dict(MessageContent.LevelChoices.choices)["info"]
     assert field2.choice_colors == {"danger": "#f56c6c"}
+
+
+def test_notice_level_push_payload_msgpack_safe(superuser):
+    """守护：通知 WS 推送 payload 不得含 lazy 翻译代理（__proxy__）。
+
+    历史 bug：celery worker 里异步导出完成后的站内信推送走
+    push_notice_messages -> group_send，channels-redis 用 msgpack 序列化 payload；
+    notice_level 字典未配置时 level 走 fallback 枚举（label 是 gettext_lazy），
+    msgpack 抛 can not serialize '__proxy__'（导出任务成功但通知推送失败）。
+    JSON 响应路径会隐式 force_str，掩盖了该问题。
+    """
+    import msgpack
+
+    from notifications.models.message import MessageContent
+    from notifications.serializers.message import NoticeMessageSerializer
+
+    cache.clear()  # 未配置 notice_level 字典，level 走 fallback（lazy label）
+    notice = MessageContent.objects.create(
+        title="导出完成",
+        message="ok",
+        level=MessageContent.LevelChoices.SUCCESS,
+        notice_type=MessageContent.NoticeChoices.SYSTEM,
+    )
+    notice.notice_user.set([superuser])
+    payload = NoticeMessageSerializer(
+        fields=["pk", "level", "title", "notice_type", "message"], instance=notice, ignore_field_permission=True
+    ).data
+    assert isinstance(payload["level"]["label"], str)
+    # 与 message/utils.push_messages 同构的嵌套结构，msgpack 必须可直接序列化
+    msgpack.packb({"type": "notify_message", "data": payload}, use_bin_type=True)
 
 
 def test_dict_choice_field_write_path_accepts_enum_values():

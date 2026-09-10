@@ -14,11 +14,21 @@ from common.core.serializers import BaseModelSerializer
 from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
 from system.models import UploadFile
+from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)
 
 
 class UploadFileSerializer(BaseModelSerializer):
+    # 分类选项来自数据字典 upload_category：字典约束写入路径（非法值 invalid_choice），
+    # 管理员改字典即时生效；无回退枚举（分类是纯管理口径，无历史值兼容问题）
+    category = DictChoiceField(
+        dict_code="upload_category",
+        required=False,
+        allow_null=True,
+        label=_("Category"),
+    )
+
     class Meta:
         model = UploadFile
         fields = [
@@ -27,6 +37,7 @@ class UploadFileSerializer(BaseModelSerializer):
             "filesize",
             "mime_type",
             "md5sum",
+            "category",
             "file_url",
             "access_url",
             "is_tmp",
@@ -34,7 +45,17 @@ class UploadFileSerializer(BaseModelSerializer):
             "deleted_at",
         ]
         read_only_fields = ["pk", "is_upload", "deleted_at"]
-        table_fields = ["pk", "filename", "filesize", "mime_type", "access_url", "is_tmp", "is_upload", "md5sum"]
+        table_fields = [
+            "pk",
+            "filename",
+            "filesize",
+            "mime_type",
+            "category",
+            "access_url",
+            "is_tmp",
+            "is_upload",
+            "md5sum",
+        ]
 
     access_url = serializers.SerializerMethodField(label=_("Access URL"))
 

@@ -68,7 +68,10 @@ class LabeledChoiceField(serializers.ChoiceField):
     def to_representation(self, key):
         if key is None:
             return key
-        label = self.choices.get(key, key)
+        # label 可能是 gettext_lazy 代理（模型枚举 choices）：必须物化为 str，
+        # 否则该 payload 走 channels-redis msgpack 序列化（WS 推送）会抛
+        # can not serialize '__proxy__'（JSON 路径会隐式 force_str 掩盖此问题）
+        label = str(self.choices.get(key, key))
         return {"value": key, "label": label}
 
     def to_internal_value(self, data):
