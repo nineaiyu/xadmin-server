@@ -1,0 +1,13 @@
+# 服务端本地提交钩子：与 CI 的 lint 工作流同口径（ruff check + ruff format）。
+#
+# 安装：pip install pre-commit && pre-commit install
+# 手动全量执行：pre-commit run --all-files
+#
+# rev 与 requirements-dev.txt 的 ruff 保持一致（升级 ruff 时同步更新此版本号）。
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

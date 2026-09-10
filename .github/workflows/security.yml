@@ -3,6 +3,9 @@ name: Security Audit
 on:
   schedule:
     - cron: '0 3 * * 1'
+  # PR 阶段也跑：避免带已知漏洞的依赖随合并进入主干，直到下周一才暴露
+  pull_request:
+    branches: [ main, dev ]
   workflow_dispatch:
 
 jobs:

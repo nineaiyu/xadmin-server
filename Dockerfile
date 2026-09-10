@@ -35,14 +35,19 @@ RUN set -ex \
 COPY --from=stage-build /data /data
 COPY --from=stage-build /usr/local/bin /usr/local/bin
 
-#RUN addgroup --system --gid 1001 nginx \
-#    && adduser --system --disabled-login --ingroup nginx --no-create-home --home /nonexistent --gecos "nginx user" --shell /bin/false --uid 1001 nginx
+# 以非 root 运行：容器仅需代码目录下的 tmp/（pid 文件）与 data/（日志/上传/sqlite）可写。
+# 注意：bind mount 覆盖这两个目录时，宿主目录属主需与这里一致（1001），
+# 否则容器内写入会失败；使用 named volume 时新卷会继承此处的属主。
+RUN addgroup --system --gid 1001 xadmin \
+    && adduser --system --disabled-login --ingroup xadmin --no-create-home --home /nonexistent --gecos "xadmin user" --shell /bin/false --uid 1001 xadmin \
+    && mkdir -p /data/xadmin-server/tmp /data/xadmin-server/data \
+    && chown -R 1001:1001 /data
 
 WORKDIR /data/xadmin-server
 
 VOLUME /data/xadmin-server/data
 
-#USER 1001
+USER 1001
 
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
 
