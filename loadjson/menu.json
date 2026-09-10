@@ -7307,5 +7307,74 @@
       "method": "POST",
       "model": []
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e086206a-70fe-4fce-8db7-261143406937",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "73ca8504-a7bb-40c1-9aec-2fcca56d25ba",
+      "menu_type": 2,
+      "name": "batchReject:SystemApprovalRequest",
+      "rank": 7,
+      "path": "api/system/approvals/batch-reject$",
+      "component": null,
+      "is_active": true,
+      "meta": "5577737c-dfaa-4412-b3f4-a7008e6b77b2",
+      "method": "POST",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "e47edd6f-f0eb-4274-8c41-24afb424b0ac",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "73ca8504-a7bb-40c1-9aec-2fcca56d25ba",
+      "menu_type": 2,
+      "name": "pendingCount:SystemApprovalRequest",
+      "rank": 8,
+      "path": "api/system/approvals/pending-count$",
+      "component": null,
+      "is_active": true,
+      "meta": "c79a6cfc-d797-474d-9599-c9173c80732e",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "c3e72963-9737-4d11-94cc-12d13f2b66c3",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-10T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "73ca8504-a7bb-40c1-9aec-2fcca56d25ba",
+      "menu_type": 2,
+      "name": "stats:SystemApprovalRequest",
+      "rank": 9,
+      "path": "api/system/approvals/stats$",
+      "component": null,
+      "is_active": true,
+      "meta": "4faa4069-526e-4959-932d-2f73da3cc9ff",
+      "method": "GET",
+      "model": []
+    }
   }
 ]
