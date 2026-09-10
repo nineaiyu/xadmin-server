@@ -65,6 +65,70 @@ def _patch_category_dict(code="image", label="图片"):
     return parent
 
 
+def _uploaded_file(user, name="a.txt", content=b"hello"):
+    """经真实上传接口落库一条 UploadFile（含磁盘文件），返回该记录。"""
+    response = _upload(user, _mkfile(name, content))
+    assert response.data["code"] == 1000, response.data
+    payload = response.data["data"]
+    row = payload[0] if isinstance(payload, list) else payload
+    return UploadFile.objects.get(pk=row["pk"])
+
+
+class TestPhysicalFileGuard:
+    """磁盘删除守护（先守护后功能：去重/保留期清理的前置条件）。"""
+
+    def test_shared_file_is_kept_on_disk(self, superuser):
+        """同路径/同 md5 的另一条活动记录仍在：删本条不删磁盘文件。"""
+        import os
+
+        first = _uploaded_file(superuser, content=b"same-bytes")
+        shared_path = first.filepath.name
+        # 模拟去重复用：第二条记录引用同一物理文件
+        UploadFile.objects.create(
+            creator=superuser,
+            filename="copy.txt",
+            filesize=first.filesize,
+            mime_type="text/plain",
+            md5sum=first.md5sum,
+            filepath=shared_path,
+            is_upload=True,
+            is_tmp=False,
+        )
+        disk_path = first.filepath.path
+        assert os.path.exists(disk_path)
+
+        first.hard_delete()
+
+        assert not UploadFile.objects.filter(pk=first.pk).exists()
+        assert os.path.exists(disk_path), "磁盘文件被其他记录共用时不应删除"
+
+    def test_business_referenced_file_is_kept_on_disk(self, superuser):
+        """业务反向外键仍指向该附件：只删记录、保留磁盘文件。"""
+        import os
+
+        from system.models import ExportRecord
+
+        upload = _uploaded_file(superuser, content=b"export-bytes")
+        ExportRecord.objects.create(name="e2e-export.xlsx", file=upload)
+        disk_path = upload.filepath.path
+
+        upload.hard_delete()
+
+        assert os.path.exists(disk_path), "仍被业务引用的文件不应删除"
+
+    def test_unreferenced_file_is_removed_from_disk(self, superuser):
+        """无任何引用时仍按原语义清理磁盘文件（守护不能把清理能力整体关掉）。"""
+        import os
+
+        upload = _uploaded_file(superuser, content=b"lonely-bytes")
+        disk_path = upload.filepath.path
+        assert os.path.exists(disk_path)
+
+        upload.hard_delete()
+
+        assert not os.path.exists(disk_path)
+
+
 def test_upload_without_quota_unlimited(superuser):
     """默认 0 = 不限：正常上传落库。"""
     response = _upload(superuser, _mkfile("a.txt"))

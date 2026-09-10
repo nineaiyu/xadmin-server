@@ -41,6 +41,41 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         help_text=_("Category options come from the data dictionary upload_category"),
     )
 
+    def file_still_referenced(self, file_field_name="filepath", file_name=None) -> bool:
+        """磁盘删除守护：文件被别处引用时只删记录、保留磁盘文件（三期 P0-2 销项）。
+
+        两类引用：
+        1. 物理文件被其他活动记录共用（去重复用同一 filepath，或同 md5 的活动上传记录）——
+           删掉一份记录不能连带删掉另一份仍在用的磁盘文件；
+        2. 业务反向外键仍指向本条记录（如导出产物、导入源文件）——记录删除会 SET_NULL/级联，
+           磁盘文件却可能被其他记录以同一路径引用，保守保留。
+
+        调用方 = ``AutoCleanFileMixin``（删除或替换文件字段时）。
+        """
+        name = file_name or getattr(self.filepath, "name", None)
+        if name:
+            siblings = UploadFile.objects.filter(filepath=name).exclude(pk=self.pk)
+            if self.md5sum:
+                siblings = siblings | UploadFile.objects.filter(md5sum=self.md5sum, is_upload=True).exclude(pk=self.pk)
+            if siblings.exists():
+                return True
+        return self.has_business_reference()
+
+    def has_business_reference(self) -> bool:
+        """是否存在业务模型（含软删除记录）指向本附件：存在即视为在用，保守保留磁盘文件。"""
+        for relation in self._meta.related_objects:
+            field_name = getattr(getattr(relation, "field", None), "name", None)
+            if not field_name:
+                continue
+            related_model = relation.related_model
+            manager = getattr(related_model, "all_objects", None) or related_model._default_manager
+            try:
+                if manager.filter(**{field_name: self.pk}).exists():
+                    return True
+            except Exception:  # noqa: BLE001 关系形态不适配（如自动生成的中间表）时跳过
+                continue
+        return False
+
     def save(self, *args, **kwargs):
         self.filename = self.filename[:255]
         if not self.md5sum and not self.file_url:

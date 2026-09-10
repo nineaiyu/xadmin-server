@@ -83,18 +83,38 @@ class AutoCleanFileMixin(object):
     def delete(self, *args, **kwargs):
         filelist = self.__get_filelist()
         related_filelist = self.__get_related_filelist()
+        # 磁盘删除守护必须在记录删除**之前**求值：反向外键会随 DELETE 被 SET_NULL
+        # 或级联删除，删除后再判定引用必然查不到（守护形同失效）
+        keep_flags = {name: self.file_still_referenced(field, name) for field, name, _file in filelist}
         result = super().delete(*args, **kwargs)
-        self.__delete_file(filelist)
+        self.__delete_file(filelist, keep_flags=keep_flags)
         self.__delete_related_files(related_filelist)
         return result
 
-    def __delete_file(self, filelist, is_save=False):
+    def file_still_referenced(self, file_field_name: str, file_name: str) -> bool:
+        """磁盘文件删除守护钩子：True = 文件仍被别处引用，只删记录、保留磁盘文件。
+
+        默认 False：普通模型的文件字段没有「多条记录共享同一物理文件」语义。
+        `system.UploadFile` 覆写为「同路径/同 md5 的其他活动记录 或 业务反向外键引用」检测，
+        避免去重与业务引用场景下连带删掉别人仍在用的文件。
+        """
+        return False
+
+    def __delete_file(self, filelist, is_save=False, keep_flags=None):
+        keep_flags = keep_flags or {}
         try:
             for item in filelist:
                 if is_save:
                     file = getattr(self, item[0], None)
                     if file and file.name == item[1]:
                         continue
+                    # 替换文件时同样守护：旧文件可能被去重后的其他记录共用
+                    if self.file_still_referenced(item[0], item[1]):
+                        logger.warning(f"keep referenced file on disk. {self} file:{item[1]}")
+                        continue
+                elif keep_flags.get(item[1]):
+                    logger.warning(f"keep referenced file on disk. {self} file:{item[1]}")
+                    continue
                 item[2].name = item[1]
                 item[2].delete(save=False)
         except Exception as e:
