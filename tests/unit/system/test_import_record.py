@@ -144,7 +144,11 @@ def test_import_async_aborts_when_fail_rate_exceeded(superuser, monkeypatch):
     record.refresh_from_db()
     assert record.status == ImportRecord.Status.FAILURE
     assert record.success_rows == 0
-    assert record.error and "Aborted" in record.error
+    # 文案经 gettext 翻译（本机装 .mo 为中文、CI 无 .mo 为英文源串），
+    # 断言必须与产文同源取 gettext 结果，不能写死任一语言字面量
+    from django.utils.translation import gettext as _
+
+    assert record.error and _("Aborted: failure rate exceeds limit ({}/{} rows failed)").format(1, 3) in record.error
     # 中止发生在首个失败行（3 行/0.3 阈值），未及写入进度
     assert record.progress == 0
     assert record.error_report_id is not None
