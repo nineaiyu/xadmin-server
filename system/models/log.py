@@ -64,6 +64,8 @@ class OperationLog(DbAuditModel):
     class AuthType(models.TextChoices):
         JWT = "jwt", _("JWT")
         PAT = "pat", _("Personal access token")
+        # SCIM 目录同步（S1）：独立服务凭证，写操作由 system/scim/resources.write_audit 落库
+        SCIM = "scim", _("SCIM directory sync")
 
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
     path = models.CharField(max_length=400, verbose_name=_("URL path"), null=True, blank=True)

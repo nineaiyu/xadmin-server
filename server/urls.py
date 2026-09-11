@@ -22,19 +22,26 @@ from django.views.static import serve as static_serve
 
 from common.celery.flower import CeleryFlowerAPIView
 from common.core.utils import auto_register_app_url
-from common.swagger.views import JsonApi, SwaggerUI, Redoc
+from common.swagger.views import ApiLogin, ApiLogout, JsonApi, SwaggerUI, Redoc
 from common.utils.media import media_serve
 
 swagger_apis = [
     re_path("^api-docs/schema/", JsonApi.as_view(), name="schema"),
     re_path("^api-docs/swagger/$", SwaggerUI.as_view(url_name="schema"), name="swagger-ui"),
     re_path("^api-docs/redoc/$", Redoc.as_view(url_name="schema"), name="schema-redoc"),
+    # 文档站登录/登出：ApiLogin（POST 校验并建立 session，GET 提示或跳转文档）、
+    # ApiLogout（GET 清 session 并回登录页）。缺这两条路由时 ApiLogout 的
+    # redirect("/api-docs/login/") 会打到 404，文档站登录闭环不成立
+    re_path("^api-docs/login/$", ApiLogin.as_view(), name="api-login"),
+    re_path("^api-docs/logout/$", ApiLogout.as_view(), name="api-logout"),
 ]
 
 urlpatterns = [
     re_path("^admin/", admin.site.urls),
     re_path("^api/common/", include("common.urls", namespace="common")),
     re_path("^api/system/", include("system.urls", namespace="system")),
+    # SCIM 2.0 用户目录同步（S1）：独立 Bearer Token 鉴权，不走 JWT/菜单权限链
+    re_path("^api/scim/v2/", include("system.scim.urls", namespace="scim")),
     re_path("^api/settings/", include("settings.urls", namespace="settings")),
     re_path("^api/mfa/", include("mfa.urls", namespace="mfa")),
     re_path("^api/notifications/", include("notifications.urls", namespace="notifications")),
