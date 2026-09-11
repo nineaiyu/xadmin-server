@@ -184,7 +184,9 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     translation.activate(language)
     request.LANGUAGE_CODE = translation.get_language()
     result = view_func.as_view(action_map)(request, task=False)
-    task_info["result"] = result.data.get("detail", result.data)
+    # detail 可能是 gettext 惰性代理（如兜底 500 文案），不物化会让 cache.push 的
+    # json.dumps 崩溃，进而丢掉整批分片结果
+    task_info["result"] = str(result.data.get("detail", result.data))
     task_info["end_time"] = local_now_display()
     task_info["status"] = result.data.get("code") == 1000
     cache.push(task_info)
