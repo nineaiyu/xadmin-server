@@ -35,10 +35,14 @@ from system.models import UploadFile
 from system.serializers.upload import UploadFileSerializer
 from system.utils.preview import (
     KIND_IMAGE,
+    KIND_OFFICE,
     KIND_PDF,
     KIND_TEXT,
+    PREVIEW_STATUS_PREPARING,
+    PREVIEW_STATUS_READY,
     SIZE_THUMB,
     ensure_image_cache,
+    ensure_office_pdf,
     preview_kind,
     read_text_preview,
     touch_preview_cache,
@@ -50,6 +54,8 @@ logger = get_logger(__name__)
 QUOTA_EXCEEDED_CODE = 1004
 # 不支持在线预览的业务码：前端按该码禁用预览按钮并说明原因
 PREVIEW_UNSUPPORTED_CODE = 1005
+# Office 转换中的业务码（ADR-013）：前端稍后重试预览请求
+PREVIEW_PREPARING_CODE = 1006
 
 
 def get_upload_max_size(user_obj):
@@ -192,6 +198,9 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         - PDF：`inline` 流式返回，由浏览器内嵌渲染；
         - 文本：按 `FILE_PREVIEW_TEXT_MAX_BYTES` 截断，以 `text/plain` 返回，
           截断状态放在 `X-Preview-Truncated` 响应头（前端据此提示"过大，请下载"）；
+        - Office（docx/xlsx/pptx 等，ADR-013）：LibreOffice 转 PDF 后内嵌渲染，
+          转换在 heavy 队列执行；产物未就绪返回业务码 1006（前端稍后重试），
+          转换器缺失/超限/关闭时降级为 1005；
         - 其余类型：返回业务码 1005（前端按 `preview_kind` 已提前禁用按钮）。
         """
         upload = self.get_object()
@@ -230,6 +239,21 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
             if not os.path.exists(path):
                 return ApiResponse(code=1001, detail=_("File not found"))
             return _inline_file_response(path, upload.mime_type or "application/pdf", upload.filename)
+
+        # Office：转换产物就绪即 inline 返回；转换中回 1006 由前端重试
+        if kind == KIND_OFFICE:
+            path, status = ensure_office_pdf(upload)
+            if status == PREVIEW_STATUS_READY and path:
+                touch_preview_cache(path)
+                return _inline_file_response(path, "application/pdf", upload.filename)
+            if status == PREVIEW_STATUS_PREPARING:
+                # 425 Too Early：前端按「转换中」轮询重试（http 层对该状态码不弹全局错误）
+                return ApiResponse(
+                    code=PREVIEW_PREPARING_CODE,
+                    status=425,
+                    detail=_("The document is being converted, please try again later"),
+                    data={"status": "preparing"},
+                )
 
         return ApiResponse(
             code=PREVIEW_UNSUPPORTED_CODE,

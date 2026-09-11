@@ -152,6 +152,8 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 # 避免慢任务阻塞邮件/短信/站内信等轻量任务；worker 由 start celery_heavy 拉起消费 heavy 队列
 CELERY_TASK_ROUTES = {
     "common.tasks.background_task_view_set_job": {"queue": "heavy"},
+    # Office 转 PDF 预览（ADR-013）：CPU 密集型外部进程，禁止占用默认队列
+    "system.tasks.convert_office_preview_task": {"queue": "heavy"},
 }
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
