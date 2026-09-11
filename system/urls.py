@@ -9,6 +9,7 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
+from system.views.admin.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
@@ -121,6 +122,9 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
 router.register("approvals", ApprovalRequestViewSet, basename="approval_request")
+# 全量审批流引擎（ADR-012）：流程定义 + 流程实例（流程审批中心）
+router.register("approval-flows", ApprovalFlowViewSet, basename="approval_flow")
+router.register("approval-instances", ApprovalInstanceViewSet, basename="approval_instance")
 router.register("dept", DeptViewSet, basename="dept")
 router.register("menu", MenuViewSet, basename="menu")
 router.register("role", RoleViewSet, basename="role")

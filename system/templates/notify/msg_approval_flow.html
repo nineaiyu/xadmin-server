@@ -1,0 +1,32 @@
+{% load i18n %}
+<p>
+    {% trans 'Hello' %} {{ name }},
+</p>
+<p>
+    {% if event == 'submitted' %}
+        {% trans 'A new approval application requires your approval, please handle it in the approval center' %}
+    {% elif event == 'approved' %}
+        {% trans 'Your approval application has been approved' %}
+    {% elif event == 'rejected' %}
+        {% trans 'Your approval application has been rejected' %}
+    {% elif event == 'remind' %}
+        {% trans 'This approval task has been pending for a long time, please handle it as soon as possible' %}
+    {% elif event == 'added' %}
+        {% trans 'You have been added as an approver of the approval flow' %}
+    {% else %}
+        {% trans 'The approval application has been cancelled by the applicant' %}
+    {% endif %}
+</p>
+<p>
+    <b>{% trans 'Title' %}:</b> {{ title }}<br>
+    <b>{% trans 'Flow' %}:</b> {{ flow_name }}<br>
+    <b>{% trans 'Node' %}:</b> {{ node_name }}<br>
+    <b>{% trans 'Application No.' %}:</b> {{ instance_no }}<br>
+    {% if reason %}
+        <b>{% trans 'Reason' %}:</b> {{ reason }}<br>
+    {% endif %}
+    {% if extra and not reason %}
+        <b>{% trans 'Comment' %}:</b> {{ extra }}<br>
+    {% endif %}
+    <b>{% trans 'Time' %}:</b> {{ time }}
+</p>

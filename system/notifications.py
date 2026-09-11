@@ -240,6 +240,61 @@ class ApprovalRequestMessage(UserMessage):
         return cls(user, "submitted", approval)
 
 
+@register_message
+class ApprovalFlowMessage(UserMessage):
+    """流程审批通知（ADR-012 全量审批流引擎）：
+
+    submitted（待审批，发节点审批人）/ approved、rejected（结果，发申请人）/
+    remind（节点超时提醒，发审批人）/ added（被加签，发新增审批人）/
+    cancelled（撤回，发当前节点审批人）。
+    """
+
+    category = "Audit"
+    category_label = _("Audit")
+    message_type_label = _("Approval flow notice")
+
+    EVENT_TITLES = {
+        "submitted": _("New approval application"),
+        "approved": _("Approval application approved"),
+        "rejected": _("Approval application rejected"),
+        "remind": _("Approval task pending reminder"),
+        "added": _("Added as approval approver"),
+        "cancelled": _("Approval application cancelled"),
+    }
+
+    def __init__(self, user, event: str, instance, extra: str = ""):
+        self.event = event
+        self.instance = instance
+        self.extra = extra
+        super().__init__(user)
+
+    def get_html_msg(self) -> dict:
+        instance = self.instance
+        subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
+        context = dict(
+            subject=subject,
+            name=self.user.nickname,
+            event=self.event,
+            title=instance.title or "-",
+            flow_name=instance.flow_name or "-",
+            node_name=getattr(instance.current_node, "name", "") or self.extra or "-",
+            instance_no=str(instance.pk)[:8].upper(),
+            reason=instance.reason or "",
+            extra=self.extra or "",
+            time=local_now_display(),
+        )
+        message = render_to_string("notify/msg_approval_flow.html", context)
+        return {"subject": subject, "message": message}
+
+    @classmethod
+    def gen_test_msg(cls):
+        from system.models import ApprovalInstance, ApprovalFlow, UserInfo
+
+        user = UserInfo.objects.first()
+        instance = ApprovalInstance(flow=ApprovalFlow(name="Test", code="test"), flow_name="Test", title="Test")
+        return cls(user, "submitted", instance)
+
+
 SENSITIVE_ALERT_THROTTLE_SECONDS = 60
 
 

@@ -231,6 +231,51 @@ def auto_clean_approval_job():
     return removed
 
 
+@shared_task
+@register_as_period_task(crontab="*/30 * * * *")
+def auto_remind_approval_flow_job():
+    """流程节点超时提醒（ADR-012）：节点 timeout_hours 超时未处理，向指派人补发一次（每任务每日一次）。"""
+    from system.utils.approval_flow import remind_pending_tasks
+
+    count = remind_pending_tasks()
+    if count:
+        logger.info("Remind pending approval flow tasks: %s rows", count)
+    return count
+
+
+@shared_task
+@register_as_period_task(crontab="12 4 * * *")
+def auto_clean_approval_flow_job():
+    """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天，分批删，级联任务）。"""
+    from system.utils.approval_flow import clean_finished_instances
+
+    removed = clean_finished_instances()
+    if removed:
+        logger.info("Clean approval flow instances: %s rows", removed)
+    return removed
+
+
+@shared_task
+def convert_office_preview_task(upload_pk):
+    """Office 文件转 PDF 预览（ADR-013）：走 heavy 队列，产物落预览缓存。
+
+    队列归属由 `CELERY_TASK_ROUTES` 按任务名路由；结束后释放转换锁，
+    让后续请求（转换失败的场景）可以重新触发。
+    """
+    from django.core.cache import cache
+
+    from system.models import UploadFile
+    from system.utils.preview import convert_office_to_pdf
+
+    try:
+        upload = UploadFile.all_objects.filter(pk=upload_pk).first()
+        if upload is None:
+            return False
+        return bool(convert_office_to_pdf(upload))
+    finally:
+        cache.delete(f"office_converting_{upload_pk}")
+
+
 def build_export_request(record, query_params, user):
     """构造用于重放 export_data 的原始请求。
 
