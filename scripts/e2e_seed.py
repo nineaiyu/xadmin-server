@@ -18,7 +18,7 @@ import sys
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_DIR)
 
-E2E_DB = os.path.join(PROJECT_DIR, "tmp", "e2e.sqlite3")
+E2E_DB = os.path.join(PROJECT_DIR, "tmp", os.environ.get("E2E_DB_FILENAME", "e2e.sqlite3"))
 
 # (username, password, nickname, is_superuser, role_code)
 # role_code 为 None 表示不绑定任何角色（无菜单权限）

@@ -81,7 +81,7 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(str(_base.PROJECT_DIR), "tmp", "e2e.sqlite3"),
+        "NAME": os.path.join(str(_base.PROJECT_DIR), "tmp", os.environ.get("E2E_DB_FILENAME", "e2e.sqlite3")),
         "ATOMIC_REQUESTS": True,
         # daphne 并发处理请求 + ATOMIC_REQUESTS 下裸 sqlite 会互踩写锁
         # （实测单请求可拖到 5s+ 并抛 "database is locked"）：
