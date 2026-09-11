@@ -83,3 +83,18 @@ dept_info = DeptSerializer(fields=["name", "pk"], read_only=True, source="dept")
 ```python
 roles_info = RoleSerializer(ignore_field_permission=True, many=True, read_only=True, source="roles")
 ```
+## 部署前提：详情菜单字段白名单（常见误判）
+
+**字段权限启用时，未配置白名单的模型字段会被裁剪为空（运行时不可见）**——这是既定语义
+（默认拒绝，fail-closed），但有一个容易被忽略的推论：
+
+> 角色只配置了「列表菜单」的字段白名单、没有配置「详情菜单」的白名单时，
+> 详情抽屉会渲染出一块**空白**（所有字段都被裁空），看起来像数据丢失。
+
+处置：
+
+1. 给角色 × **详情菜单**（`retrieve` 权限码所在菜单）配置字段白名单，与列表菜单同口径；
+2. 前端已在详情抽屉对「整行皆空」的情况给出可读提示（`plus.detailBlankTip`），
+   提示文案与运行时语义一致（2026-09-11 起）；
+3. 排查命令：检查 `FieldPermission` 是否绑定了 GET 详情菜单
+   （历史教训：绑到 POST 会导致白名单查询落空、行被裁空，见 E2E 种子修复记录）。

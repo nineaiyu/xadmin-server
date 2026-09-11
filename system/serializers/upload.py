@@ -15,6 +15,7 @@ from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.fields import DictChoiceField
+from system.utils.preview import preview_kind
 
 logger = get_logger(__name__)
 
@@ -43,8 +44,9 @@ class UploadFileSerializer(BaseModelSerializer):
             "is_tmp",
             "is_upload",
             "deleted_at",
+            "preview_kind",
         ]
-        read_only_fields = ["pk", "is_upload", "deleted_at"]
+        read_only_fields = ["pk", "is_upload", "deleted_at", "preview_kind"]
         table_fields = [
             "pk",
             "filename",
@@ -55,9 +57,19 @@ class UploadFileSerializer(BaseModelSerializer):
             "is_tmp",
             "is_upload",
             "md5sum",
+            "preview_kind",
         ]
 
     access_url = serializers.SerializerMethodField(label=_("Access URL"))
+    # 预览类型由后端判定并下发：前端据此禁用不支持类型的预览按钮，
+    # 避免前后端各判一次 mime（历史上这类"两端规则"必然漂移）
+    preview_kind = serializers.SerializerMethodField(label=_("Preview type"))
+
+    @extend_schema_field(serializers.CharField)
+    def get_preview_kind(self, obj):
+        if not obj.filepath:
+            return None
+        return preview_kind(obj)
 
     @extend_schema_field(serializers.CharField)
     def get_access_url(self, obj):

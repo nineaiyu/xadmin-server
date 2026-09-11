@@ -3584,3 +3584,11 @@ msgstr "模板名称已存在"
 #, python-brace-format
 msgid "Too many columns in mapping (max {})"
 msgstr "映射列数过多（最多 {} 列）"
+
+#: system/serializers/upload.py:66 system/views/admin/file.py
+msgid "Preview type"
+msgstr "预览类型"
+
+#: system/views/admin/file.py
+msgid "This file type does not support preview"
+msgstr "该文件类型不支持在线预览"

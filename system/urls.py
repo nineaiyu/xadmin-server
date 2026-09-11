@@ -27,6 +27,13 @@ from system.views.admin.user import UserViewSet
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
 from system.views.auth.mfa import LoginMFASendCodeAPIView, LoginMFAVerifyAPIView
+from system.views.auth.oauth import (
+    OAuthAuthorizeAPIView,
+    OAuthBindingsAPIView,
+    OAuthCallbackAPIView,
+    OAuthProvidersAPIView,
+    OAuthUnbindAPIView,
+)
 from system.views.auth.register import RegisterViewAPIView
 from system.views.auth.reset import ResetPasswordAPIView
 from system.views.auth.rule import PasswordRulesAPIView
@@ -66,6 +73,24 @@ no_auth_url = [
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
     re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
     re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
+    # 第三方登录：authorize/callback 必须匿名可达，故挂在 no_auth_url
+    re_path("^auth/oauth/providers$", OAuthProvidersAPIView.as_view(), name="oauth-providers"),
+    re_path(
+        "^auth/oauth/(?P<provider>[^/]+)/authorize$",
+        OAuthAuthorizeAPIView.as_view(),
+        name="oauth-authorize",
+    ),
+    re_path(
+        "^auth/oauth/(?P<provider>[^/]+)/callback$",
+        OAuthCallbackAPIView.as_view(),
+        name="oauth-callback",
+    ),
+    re_path("^auth/oauth/bindings$", OAuthBindingsAPIView.as_view(), name="oauth-bindings"),
+    re_path(
+        "^auth/oauth/bindings/(?P<pk>[^/]+)$",
+        OAuthUnbindAPIView.as_view(),
+        name="oauth-unbind",
+    ),
 ]
 
 auth_url = [

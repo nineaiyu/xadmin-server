@@ -12,10 +12,39 @@ from urllib.parse import quote
 
 from django.http import FileResponse
 from django.utils.translation import gettext_lazy as _
+from rest_framework.decorators import action
 from rest_framework.filters import BaseFilterBackend
 
+from common.base.magic import cache_response
 from common.core.response import ApiResponse
+from system.utils.record_stats import (
+    RECORD_STATS_CACHE_SECONDS,
+    record_stats,
+)
 from system.utils.task_log import read_task_log_chunk
+
+
+class RecordStatsMixin:
+    """记录类视图的统计 action 公共实现（导出 / 导入 / 任务执行）。
+
+    口径与缓存键集中在此，避免三处各自实现后漂移：
+    - 统计口径走 `system.utils.record_stats.record_stats` 纯函数；
+    - 10s 短缓存（与审批 pending-count 同范式），`?no_cache=1` 旁路由
+      `MagicCacheResponse` 内建，无需各视图重复实现。
+    """
+
+    #: 传给 `record_stats` 的差异项（默认适用于 PENDING/RUNNING + FAILURE/REVOKED/FAILED）
+    record_stats_kwargs: dict = {}
+
+    def get_stats_cache_key(self, view_instance, view_method, request, args, kwargs):
+        return f"{self.__class__.__name__}_{view_method.__name__}_{request.user.pk}"
+
+    @action(methods=["get"], detail=False)
+    @cache_response(timeout=RECORD_STATS_CACHE_SECONDS, key_func="get_stats_cache_key")
+    def stats(self, request, *args, **kwargs):
+        """近 N 天记录统计（总数 / 进行中 / 失败 / 最近一次），按「我的」收口。"""
+        model = self.queryset.model
+        return ApiResponse(data=record_stats(model.objects.all(), request.user, **self.record_stats_kwargs))
 
 
 class RecordOwnerFilter(BaseFilterBackend):

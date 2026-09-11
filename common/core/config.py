@@ -276,6 +276,39 @@ class BaseConfCache(ConfigCacheBase):
         return int(self.get_value("FILE_UPLOAD_COUNT_LIMIT", 0))
 
     @property
+    def FILE_PREVIEW_TEXT_MAX_BYTES(self):
+        """文本预览读取上限（字节，默认 256KB）：超过即截断并提示下载查看。
+
+        避免把一个几百 MB 的日志整份读进内存再回给浏览器。
+        """
+        return int(self.get_value("FILE_PREVIEW_TEXT_MAX_BYTES", 256 * 1024))
+
+    @property
+    def FILE_PREVIEW_THUMB_WIDTH(self):
+        """列表缩略图宽度（像素，默认 240）：按原图比例等比缩放，不拉伸。"""
+        return int(self.get_value("FILE_PREVIEW_THUMB_WIDTH", 240))
+
+    @property
+    def FILE_PREVIEW_IMAGE_WIDTH(self):
+        """抽屉大图宽度（像素，默认 1280）：原图更小时不放大。"""
+        return int(self.get_value("FILE_PREVIEW_IMAGE_WIDTH", 1280))
+
+    @property
+    def OAUTH_PROVIDERS(self):
+        """第三方登录 provider 列表（JSON 数组，默认空 = 整体休眠）。
+
+        每项结构见 `system/utils/oauth.py`：key/name/enabled/client_id/client_secret/
+        authorize_url/token_url/userinfo_url/scope/subject_field/auto_create。
+        密钥仅服务端可见，列表接口回传时掩码（见 `mask_providers`）。
+        """
+        return self.get_value("OAUTH_PROVIDERS", [])
+
+    @property
+    def FILE_PREVIEW_CACHE_KEEP_DAYS(self):
+        """预览缓存保留天数（默认 7）：缓存是派生产物，过期删除后按需重建。"""
+        return int(self.get_value("FILE_PREVIEW_CACHE_KEEP_DAYS", 7))
+
+    @property
     def AUDIT_DIFF_MODELS(self):
         """字段级审计 diff 白名单（模型 _meta.label JSON 清单，默认空 = 关闭）。
 

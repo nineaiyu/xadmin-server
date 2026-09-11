@@ -133,6 +133,28 @@ def login_mfa_if_required(request, user_obj):
     return True
 
 
+def complete_login(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+    """登录成功后的**唯一收口**：MFA 判定 → 会话登记 / 登录日志 / 异常提醒 / 锁定计数清理。
+
+    任何新增登录路径（本地密码 / 验证码 / WebSocket / 第三方 OAuth…）都必须调用它：
+    绕过这里等于同时绕过登录 MFA、``UserSession`` 登记、登录日志与失败计数清理
+    （历史教训：MFA 只在本地密码链路生效时，新增登录方式就是一条后门）。
+
+    :return: 需要 MFA 二次验证时返回可直接下发的 ``ApiResponse``；否则返回 ``None``，
+             由调用方继续下发自己的 token 载荷。
+    """
+    if login_mfa_if_required(request, user_obj):
+        return ApiResponse(
+            data={
+                "mfa_required": True,
+                "mfa_token": generate_login_mfa_token(user_obj),
+                "methods": get_login_mfa_methods(user_obj, request),
+            }
+        )
+    login_success(request, user_obj, login_type=login_type)
+    return None
+
+
 class BasicLoginAPIView(TokenObtainPairView):
     """用户登录"""
 
@@ -185,17 +207,11 @@ class BasicLoginAPIView(TokenObtainPairView):
         except Exception:
             return login_failed(request, username)
         user = serializer.user
-        if login_mfa_if_required(request, user):
-            return ApiResponse(
-                data={
-                    "mfa_required": True,
-                    "mfa_token": generate_login_mfa_token(user),
-                    "methods": get_login_mfa_methods(user, request),
-                }
-            )
+        mfa_response = complete_login(request, user)
+        if mfa_response:
+            return mfa_response
         data = serializer.validated_data
         data.update(get_token_lifetime(user))
-        login_success(request, user)
         return ApiResponse(data=data)
 
     @extend_schema(
@@ -273,14 +289,9 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             user = authenticate(**{query_key: target}, password=password)
             if not user:
                 login_failed(request, target)
-            if login_mfa_if_required(request, user):
-                return ApiResponse(
-                    data={
-                        "mfa_required": True,
-                        "mfa_token": generate_login_mfa_token(user),
-                        "methods": get_login_mfa_methods(user, request),
-                    }
-                )
+            mfa_response = complete_login(request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME)
+            if mfa_response:
+                return mfa_response
         else:
             # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA
             user = UserInfo.objects.get(**{query_key: target})

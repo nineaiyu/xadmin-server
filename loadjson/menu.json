@@ -7491,5 +7491,97 @@
       "method": "DELETE",
       "model": []
     }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a02",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "stats:SystemExportRecord",
+      "rank": 10021,
+      "path": "api/system/exports/stats$",
+      "component": null,
+      "is_active": true,
+      "meta": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a01",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a04",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+      "menu_type": 2,
+      "name": "stats:SystemImportRecord",
+      "rank": 10022,
+      "path": "api/system/imports/stats$",
+      "component": null,
+      "is_active": true,
+      "meta": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a03",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a06",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "7f02571e-499d-4c28-aec7-d5ca5a518c02",
+      "menu_type": 2,
+      "name": "stats:SystemTaskExecution",
+      "rank": 10023,
+      "path": "api/system/tasks/executions/stats$",
+      "component": null,
+      "is_active": true,
+      "meta": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a05",
+      "method": "GET",
+      "model": []
+    }
+  },
+  {
+    "model": "system.menu",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a07",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "deleted_at": null,
+      "parent": "56e7a4c2-97ec-42b1-a8a9-54c3f4e488f3",
+      "menu_type": 2,
+      "name": "preview:SystemUploadFile",
+      "rank": 145,
+      "path": "api/system/file/(?P<pk>[^/.]+)/preview$",
+      "component": null,
+      "is_active": true,
+      "meta": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a08",
+      "method": "GET",
+      "model": []
+    }
   }
 ]

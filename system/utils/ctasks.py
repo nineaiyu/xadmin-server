@@ -12,6 +12,7 @@ from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from system.models import OperationLog, UploadFile
+from system.utils.preview import clean_preview_cache
 
 logger = get_task_logger(__name__)
 
@@ -78,3 +79,17 @@ def auto_clean_upload_file(keep_days=None, batch_size=2000):
             removed += 1
     logger.info(f"clean {removed} upload file, keep_days {days}")
     return removed
+
+
+def auto_clean_preview_cache(keep_days=None):
+    """清理预览缓存（孤儿 + 超保留期），保留期取 FILE_PREVIEW_CACHE_KEEP_DAYS。
+
+    与上传文件清理同源纪律：缓存是派生产物，删了可按需重建，
+    因此不需要"引用守护"那一层保守判断，只保留"最近使用"淘汰。
+    """
+    result = clean_preview_cache(keep_days=keep_days)
+    logger.info(
+        f"clean preview cache scanned:{result['scanned']} "
+        f"orphan:{result['removed_orphan']} expired:{result['removed_expired']}"
+    )
+    return result["removed_orphan"] + result["removed_expired"]

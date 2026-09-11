@@ -528,5 +528,90 @@
       "key": "APPROVAL_REMIND_HOURS",
       "inherit": false
     }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b19",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "文本预览读取上限（字节）：超出即截断并提示下载查看，避免大文件整份读进内存",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 262144,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_PREVIEW_TEXT_MAX_BYTES",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1a",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "预览缩略图宽度（像素）：列表行内缩略图，按原图比例等比缩放",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 240,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_PREVIEW_THUMB_WIDTH",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1b",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "预览大图宽度（像素）：抽屉内大图，原图更小时不放大",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 1280,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_PREVIEW_IMAGE_WIDTH",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1c",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "预览缓存保留天数：缩略图等派生产物的缓存保留期，过期删除后按需重建",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 7,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_PREVIEW_CACHE_KEEP_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1d",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "第三方登录 provider 列表（JSON 数组，默认空 = 整体休眠）；密钥仅服务端可见，列表接口回传时掩码",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": [],
+      "is_active": true,
+      "access": false,
+      "key": "OAUTH_PROVIDERS",
+      "inherit": false
+    }
   }
 ]

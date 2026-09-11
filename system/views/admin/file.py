@@ -8,8 +8,10 @@
 import hashlib
 import os
 import re
+from urllib.parse import quote
 
 from django.core.cache import cache
+from django.http import FileResponse, HttpResponse
 from django.db import transaction
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
@@ -31,15 +33,39 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.upload import UploadFileSerializer
+from system.utils.preview import (
+    KIND_IMAGE,
+    KIND_PDF,
+    KIND_TEXT,
+    SIZE_THUMB,
+    ensure_image_cache,
+    preview_kind,
+    read_text_preview,
+    touch_preview_cache,
+)
 
 logger = get_logger(__name__)
 
 # 超出个人配额（存储/数量）的业务码：前端按该码提示配额不足
 QUOTA_EXCEEDED_CODE = 1004
+# 不支持在线预览的业务码：前端按该码禁用预览按钮并说明原因
+PREVIEW_UNSUPPORTED_CODE = 1005
 
 
 def get_upload_max_size(user_obj):
     return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
+
+
+def _inline_file_response(path, content_type, filename):
+    """inline 响应：浏览器直接渲染（PDF 内嵌 / 图片展示）而非下载。
+
+    `Content-Disposition: inline` + RFC 5987 文件名编码，与下载口径同源
+    （见 `views/admin/record_base.py` 的 attachment 版本）。
+    """
+    response = FileResponse(open(path, "rb"), as_attachment=False, content_type=content_type)
+    response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(filename or ""))
+    response["Access-Control-Expose-Headers"] = "Content-Disposition, X-Preview-Truncated"
+    return response
 
 
 def sanitize_filename(name, max_length=255):
@@ -156,6 +182,59 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
     def config(self, request, *args, **kwargs):
         """获取上传配置"""
         return ApiResponse(data={"file_upload_size": get_upload_max_size(request.user)})
+
+    @action(methods=["get"], detail=True, url_path="preview")
+    def preview(self, request, *args, **kwargs):
+        """在线预览：走 DRF 鉴权与数据权限（不暴露 /media/ 直链）。
+
+        类型分派由后端单一判定（序列化器同步下发 `preview_kind`）：
+        - 图片：`?size=thumb|preview`，按需生成 JPEG 缓存后 `inline` 返回；
+        - PDF：`inline` 流式返回，由浏览器内嵌渲染；
+        - 文本：按 `FILE_PREVIEW_TEXT_MAX_BYTES` 截断，以 `text/plain` 返回，
+          截断状态放在 `X-Preview-Truncated` 响应头（前端据此提示"过大，请下载"）；
+        - 其余类型：返回业务码 1005（前端按 `preview_kind` 已提前禁用按钮）。
+        """
+        upload = self.get_object()
+        kind = preview_kind(upload)
+        if kind is None or not upload.filepath:
+            return ApiResponse(
+                code=PREVIEW_UNSUPPORTED_CODE,
+                detail=_("This file type does not support preview"),
+            )
+
+        if kind == KIND_TEXT:
+            content, truncated = read_text_preview(upload)
+            if not content:
+                return ApiResponse(
+                    code=PREVIEW_UNSUPPORTED_CODE,
+                    detail=_("This file type does not support preview"),
+                )
+            response = HttpResponse(content, content_type="text/plain; charset=utf-8")
+            response["X-Preview-Truncated"] = "1" if truncated else "0"
+            return response
+
+        if kind == KIND_IMAGE:
+            size = request.query_params.get("size") or SIZE_THUMB
+            cache_path = ensure_image_cache(upload, size)
+            if not cache_path:
+                return ApiResponse(
+                    code=PREVIEW_UNSUPPORTED_CODE,
+                    detail=_("This file type does not support preview"),
+                )
+            touch_preview_cache(cache_path)
+            return _inline_file_response(cache_path, "image/jpeg", upload.filename)
+
+        # PDF：原样 inline 返回（浏览器内嵌渲染，不生成缓存）
+        if kind == KIND_PDF:
+            path = upload.filepath.path
+            if not os.path.exists(path):
+                return ApiResponse(code=1001, detail=_("File not found"))
+            return _inline_file_response(path, upload.mime_type or "application/pdf", upload.filename)
+
+        return ApiResponse(
+            code=PREVIEW_UNSUPPORTED_CODE,
+            detail=_("This file type does not support preview"),
+        )
 
     @extend_schema(
         description="文件上传",

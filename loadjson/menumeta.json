@@ -8248,5 +8248,105 @@
       "fixed_tag": false,
       "dynamic_level": 0
     }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a01",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "ExportRecordStats",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a03",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "ImportRecordStats",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a05",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "TaskExecutionStats",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
+  },
+  {
+    "model": "system.menumeta",
+    "pk": "9a1f2c30-5b6d-47e1-9f0a-7c2d3e4f5a08",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "title": "UploadFilePreview",
+      "icon": "",
+      "r_svg_name": "",
+      "is_show_menu": true,
+      "is_show_parent": false,
+      "is_keepalive": true,
+      "frame_url": "",
+      "frame_loading": false,
+      "transition_enter": "",
+      "transition_leave": "",
+      "is_hidden_tag": false,
+      "fixed_tag": false,
+      "dynamic_level": 0
+    }
   }
 ]

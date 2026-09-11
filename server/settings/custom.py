@@ -21,6 +21,9 @@ PERMISSION_WHITE_URL = {
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    # 第三方登录与绑定：登录前置（authorize/callback）必须匿名可达，绑定管理是个人凭证，
+    # 两者都无需菜单权限（视图内自行要求 DRF IsAuthenticated，见 views/auth/oauth.py）
+    "^/api/system/auth/oauth/": ["*"],
 }
 
 # 前端权限路由 忽略配置

@@ -31,6 +31,7 @@ from system.utils.ctasks import (
     auto_clean_black_token,
     auto_clean_tmp_file,
     auto_clean_upload_file,
+    auto_clean_preview_cache,
 )
 
 logger = get_logger(__name__)
@@ -66,6 +67,13 @@ def auto_clean_tmp_file_job():
 def auto_clean_upload_file_job():
     """清理超过保留期的正式上传文件（FILE_KEEP_DAYS，默认 0 = 不清理）。"""
     auto_clean_upload_file()
+
+
+@shared_task
+@register_as_period_task(crontab="4 3 * * *")
+def auto_clean_preview_cache_job():
+    """清理预览缓存（孤儿目录 + 超 FILE_PREVIEW_CACHE_KEEP_DAYS 未访问的缓存）。"""
+    auto_clean_preview_cache()
 
 
 @shared_task

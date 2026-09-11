@@ -11,6 +11,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin, SoftDeleteModel
+from system.utils.preview import remove_preview_cache_by_pk
 
 
 class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
@@ -75,6 +76,17 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
             except Exception:  # noqa: BLE001 关系形态不适配（如自动生成的中间表）时跳过
                 continue
         return False
+
+    def hard_delete(self, *args, **kwargs):
+        """物理删除：连带清理预览缓存（派生产物，源文件没了缓存即成孤儿）。
+
+        只挂在硬删除：软删除可恢复，恢复后缓存仍可直接命中。
+        """
+        # Django 删除后会把 pk 置 None，缓存目录按 pk 推导，必须提前取
+        pk = self.pk
+        result = super().hard_delete(*args, **kwargs)
+        remove_preview_cache_by_pk(pk)
+        return result
 
     def save(self, *args, **kwargs):
         self.filename = self.filename[:255]

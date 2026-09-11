@@ -36,6 +36,7 @@ from system.serializers.task import (
     TaskExecutionSerializer,
 )
 from system.utils.task_log import read_task_log_chunk
+from system.views.admin.record_base import RecordStatsMixin
 
 
 class TaskExecutionFilter(filters.FilterSet):
@@ -49,7 +50,7 @@ class TaskExecutionFilter(filters.FilterSet):
         fields = ["name", "status", "periodic_task", "creator", "created_time"]
 
 
-class TaskExecutionViewSet(ListDeleteModelSet):
+class TaskExecutionViewSet(RecordStatsMixin, ListDeleteModelSet):
     """任务执行历史"""
 
     queryset = TaskExecution.objects.all()

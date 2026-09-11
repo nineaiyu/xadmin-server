@@ -24,7 +24,12 @@ from common.core.modelset import ListDeleteModelSet
 from common.swagger.utils import get_default_response_schema
 from system.models.export import ExportRecord
 from system.serializers.export import ExportRecordSerializer
-from system.views.admin.record_base import RecordFileDownloadMixin, RecordOwnerFilter, RecordTaskLogMixin
+from system.views.admin.record_base import (
+    RecordFileDownloadMixin,
+    RecordOwnerFilter,
+    RecordStatsMixin,
+    RecordTaskLogMixin,
+)
 
 
 class ExportRecordFilter(BaseFilterSet):
@@ -37,7 +42,7 @@ class ExportRecordFilter(BaseFilterSet):
         fields = ["name", "status", "file_format", "creator", "created_time"]
 
 
-class ExportRecordViewSet(RecordFileDownloadMixin, RecordTaskLogMixin, ListDeleteModelSet):
+class ExportRecordViewSet(RecordStatsMixin, RecordFileDownloadMixin, RecordTaskLogMixin, ListDeleteModelSet):
     """导出下载中心"""
 
     queryset = ExportRecord.objects.all()

@@ -23,6 +23,8 @@ class UserLoginLog(DbAuditModel):
         SMS = 1, _("SMS verification code")
         EMAIL = 2, _("Email verification code")
         WECHAT = 4, _("Wechat scan code")
+        # 第三方 OAuth/OIDC 登录：位标记风格下的独立槽位（0/1/2/4/8/9 已占用）
+        OAUTH = 5, _("Third-party OAuth")
         WEBSOCKET = 8, _("Websocket")
         UNKNOWN = 9, _("Unknown")
 

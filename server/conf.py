@@ -218,6 +218,15 @@ class Config(dict):
         "FILE_UPLOAD_COUNT_LIMIT": 0,
         # 正式上传文件保留天数（0 = 不清理）：仅清理非临时、无业务引用的历史文件
         "FILE_KEEP_DAYS": 0,
+        # 文本预览读取上限（字节）：超出即截断并提示下载查看
+        "FILE_PREVIEW_TEXT_MAX_BYTES": 256 * 1024,
+        # 预览缩略图宽度（像素）：列表行内缩略图 / 抽屉大图
+        "FILE_PREVIEW_THUMB_WIDTH": 240,
+        "FILE_PREVIEW_IMAGE_WIDTH": 1280,
+        # 预览缓存保留天数：派生产物，过期删除后按需重建
+        "FILE_PREVIEW_CACHE_KEEP_DAYS": 7,
+        # 第三方登录 provider 列表（空 = 整体休眠，登录页不显示第三方入口）
+        "OAUTH_PROVIDERS": [],
         # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
         # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
         "AUDIT_DIFF_MODELS": [],
