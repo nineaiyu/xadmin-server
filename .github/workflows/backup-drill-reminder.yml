@@ -1,0 +1,60 @@
+# 季度备份恢复演练提醒（N5 备份演练常态化）。
+# 3/6/9/12 月 8 日（北京时间 10:00）自动开 issue 提醒执行
+# docs/ops/deployment.md §3.1 的检查清单与 utils/backup_drill.sh 演练，
+# 演练报告落 docs/ops/backup-drill-<年>-<季度>.md。
+name: backup-drill-reminder
+
+on:
+  schedule:
+    - cron: "0 2 8 3,6,9,12 *" # UTC 02:00（3/6/9/12 月 8 日）= 北京时间 10:00
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create quarterly drill reminder issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+            const year = now.getUTCFullYear();
+            const quarter = `Q${Math.floor(now.getUTCMonth() / 3) + 1}`;
+            const title = `季度备份恢复演练提醒（${year} ${quarter}）`;
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            if (existing.some((i) => i.title === title)) {
+              core.info(`提醒 issue 已存在，跳过：${title}`);
+              return;
+            }
+            const body = [
+              `## 季度备份恢复演练（${year} ${quarter}）`,
+              "",
+              "按 [docs/ops/deployment.md §3.1](../blob/main/docs/ops/deployment.md) 执行：",
+              "",
+              "- [ ] db-backup 容器 healthy 且 xadmin-db-backups/ 有当日 .sql.gz（6h 一备）",
+              "- [ ] BACKUP_REMOTE_TYPE/TARGET 已配置，异地目标位于独立故障域",
+              "- [ ] 异地副本有当日同名文件且 sha256 与本地一致",
+              "- [ ] BACKUP_MEDIA=true 且 .media.tar.gz 随数据库包一起产出",
+              "- [ ] `bash utils/backup_drill.sh` 全项 PASS（逐表行数一致不得为 0 表）",
+              "- [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）",
+              "- [ ] 演练报告写入 `docs/ops/backup-drill-" + year + "-" + quarter + ".md`",
+              "",
+              "> 完成后勾选并关闭本 issue；失败项须先修复再重跑。",
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ["operations", "backup"],
+            });

@@ -119,6 +119,11 @@ BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含
 - 演练记录：2026-09-07 首次正式演练通过（RTO 0.88s、52 表逐行一致，见
   [backup-drill-2026-09.md](backup-drill-2026-09.md)）；2026-09-08 异地副本收口演练通过
   （RTO 0.89s、53 表 0 不一致、异地 sha256 一致，见 [backup-drill-2027-03.md](backup-drill-2027-03.md)）。
+- **季度演练常态化（N5，2026-09-11 起）**：每季度执行一轮上述检查清单 + `backup_drill.sh`
+  全项演练，报告存入 `docs/ops/backup-drill-<年>-<季度>.md`（沿用现有模板：
+  范围/方法 → RTO 与一致性 → 异地副本校验 → 遗留缺口）。`backup-drill-reminder.yml`
+  workflow 在 3/6/9/12 月 8 日自动开提醒 issue（去重），按清单执行后勾选关闭；
+  若 workflow 未生效，请人工按本节清单执行，不得跳过「逐表行数一致」项。
 - **备份/恢复检查清单**（部署验收与季度演练用）：
 
 ```markdown
