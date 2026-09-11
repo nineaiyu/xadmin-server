@@ -71,7 +71,12 @@ class Message:
         backends.add(BACKEND.SITE_MSG)  # 站内信必须发
         backends_msg_mapper = {}
         for backend in backends:
-            backend = BACKEND(backend)
+            try:
+                backend = BACKEND(backend)
+            except ValueError:
+                # 订阅数据里可能残留已下线渠道（如 dingtalk），跳过而不是打断发布链路
+                logger.warning("Unknown notification backend %r, skip it", backend)
+                continue
             if not backend.is_enable:
                 continue
             method_name = BACKEND_MSG_RENDERERS.get(backend, "get_common_msg")
@@ -362,3 +367,4 @@ def register_message(cls):
 # 内置后端渲染方法注册（新增后端时在各自模块加一行 register_backend_msg 即可）
 register_backend_msg(BACKEND.EMAIL, "get_email_msg")
 register_backend_msg(BACKEND.SITE_MSG, "get_site_msg_msg")
+register_backend_msg(BACKEND.SMS, "get_sms_msg")

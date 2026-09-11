@@ -122,6 +122,14 @@ class Config(dict):
         "SECURITY_PASSWORD_LOWER_CASE": False,
         "SECURITY_PASSWORD_NUMBER": True,
         "SECURITY_PASSWORD_SPECIAL_CHAR": False,
+        # 泄露密码库校验（内置离线弱口令清单，命中即拒绝；改密/注册/重置三处接入；
+        # 默认关闭——先灰度观察清单误伤率再启用）
+        "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": False,
+        # 密码历史：最近 N 次不可复用（改密/重置时留存哈希；0 = 关闭校验，默认关闭）
+        "SECURITY_PASSWORD_HISTORY_COUNT": 0,
+        # 密码有效期（天数，超期登录被拒并提示改密；0 = 永不过期，默认关闭。
+        # 存量用户 date_password_updated 为空 = 宽限期不拦截，改密后开始计时）
+        "SECURITY_PASSWORD_EXPIRATION_DAYS": 0,
         # 用户登录限制的规则
         "SECURITY_LOGIN_LIMIT_COUNT": 7,
         "SECURITY_LOGIN_LIMIT_TIME": 30,  # Unit: minute
@@ -268,6 +276,10 @@ class Config(dict):
         "SMS_ENABLED": False,
         "SMS_BACKEND": "alibaba",
         "SMS_TEST_PHONE": "",
+        # 短信通知模板（正文走「通知模板 + 单变量」发送；签名/模板未配置时短信通知渠道自动降级为不可用）
+        "SMS_NOTIFY_SIGN_NAME": "",
+        "SMS_NOTIFY_TEMPLATE_CODE": "",
+        "SMS_NOTIFY_TEMPLATE_PARAM_KEY": "content",
         # 阿里云短信配置
         "ALIBABA_ACCESS_KEY_ID": "",
         "ALIBABA_ACCESS_KEY_SECRET": "",

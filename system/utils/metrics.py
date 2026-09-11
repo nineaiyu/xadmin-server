@@ -165,3 +165,83 @@ def collect_slow_requests():
         ]
     )
     return {"threshold": threshold, "results": list(rows)}
+
+
+TASK_HEALTH_WINDOW_DAYS = 1
+TASK_HEALTH_RECENT_FAILURES = 5
+TASK_HEALTH_TOP_TASKS = 10
+# 健康色阈值（终态成功率）：≥99% healthy / ≥90% degraded / 其余 failing；
+# 样本不足 MIN_SAMPLE 时视为 healthy（样本太少不误报）
+TASK_HEALTH_MIN_SAMPLE = 10
+
+
+def collect_task_health(days: int = None):
+    """任务执行健康度（近 N 天聚合，借鉴 jumpserver CeleryTask.summary/state）。
+
+    - 成功率按终态（SUCCESS/FAILURE/REVOKED）计算，PENDING/RUNNING 在途不计；
+    - state：healthy / degraded / failing 三档健康色，样本不足时恒 healthy；
+    - per_task 按执行次数取 Top N，供监控页定位高频异常任务。
+    """
+    from django.db.models import Count, Q
+    from system.models.task import TaskExecution
+
+    if days is None:
+        days = TASK_HEALTH_WINDOW_DAYS
+    deadline = timezone.now() - timedelta(days=days)
+    terminal = Q(status__in=[TaskExecution.Status.SUCCESS, TaskExecution.Status.FAILURE, TaskExecution.Status.REVOKED])
+    base = TaskExecution.objects.filter(created_time__gte=deadline)
+
+    by_status = dict(base.values_list("status").annotate(n=Count("pk")))
+    total = sum(by_status.values())
+    success = by_status.get(TaskExecution.Status.SUCCESS, 0)
+    failure = by_status.get(TaskExecution.Status.FAILURE, 0)
+    revoked = by_status.get(TaskExecution.Status.REVOKED, 0)
+    terminal_count = success + failure + revoked
+    success_rate = round(success / terminal_count, 4) if terminal_count else None
+
+    if terminal_count < TASK_HEALTH_MIN_SAMPLE:
+        state = "healthy"
+    elif success_rate >= 0.99:
+        state = "healthy"
+    elif success_rate >= 0.90:
+        state = "degraded"
+    else:
+        state = "failing"
+
+    # 平均耗时 Python 侧求值（sqlite 对时间差聚合支持不一，approval_stats 同策略；
+    # 有界窗口 + 截断 1000 条防大表）
+    durations = base.filter(terminal, date_start__isnull=False, date_finished__isnull=False).values_list(
+        "date_start", "date_finished"
+    )[:1000]
+    costs = [(fin - start).total_seconds() for start, fin in durations if fin and start]
+    avg_cost = round(sum(costs) / len(costs), 3) if costs else None
+    recent_failures = list(
+        base.filter(status__in=[TaskExecution.Status.FAILURE, TaskExecution.Status.REVOKED])
+        .order_by("-date_finished")
+        .values("pk", "name", "status", "date_finished")[:TASK_HEALTH_RECENT_FAILURES]
+    )
+    per_task = list(
+        base.values("name")
+        .annotate(
+            total=Count("pk"),
+            success=Count("pk", filter=Q(status=TaskExecution.Status.SUCCESS)),
+        )
+        .order_by("-total")[:TASK_HEALTH_TOP_TASKS]
+    )
+    for item in per_task:
+        item["success_rate"] = round(item.pop("success") / item["total"], 4) if item["total"] else None
+
+    return {
+        "window_days": days,
+        "total": total,
+        "success": success,
+        "failure": failure,
+        "revoked": revoked,
+        "running": by_status.get(TaskExecution.Status.RUNNING, 0),
+        "pending": by_status.get(TaskExecution.Status.PENDING, 0),
+        "success_rate": success_rate,
+        "state": state,
+        "avg_cost_seconds": avg_cost,
+        "recent_failures": recent_failures,
+        "per_task": per_task,
+    }

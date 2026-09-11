@@ -20,6 +20,9 @@ class UserRole(SoftDeleteModel, DbAuditModel, DbUuidModel):
     name = models.CharField(max_length=128, verbose_name=_("Role name"))
     code = models.CharField(max_length=128, verbose_name=_("Role code"))
     is_active = models.BooleanField(verbose_name=_("Is active"), default=True)
+    # 内置角色（system/builtin.py 定义清单，post_migrate 幂等同步）：
+    # 代码按 code 引用（审批人角色等治理配置），禁止删除与改 code，避免配置凭空失效
+    builtin = models.BooleanField(verbose_name=_("Is builtin"), default=False)
     menu = models.ManyToManyField("system.Menu", verbose_name=_("Menu"), blank=True)
 
     class Meta:

@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -13,7 +14,12 @@ from rest_framework import serializers
 from common.base.utils import AESCipherV2
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from settings.services import check_password_rules
+from settings.services import (
+    check_history_password,
+    check_leak_password,
+    check_password_rules,
+    record_password_hash,
+)
 from system import models
 from system.models import UserInfo
 
@@ -50,8 +56,16 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError(_("Old password verification failed"))
         if not check_password_rules(sure_password, instance.is_superuser):
             raise serializers.ValidationError(_("Password does not match security rules"))
+        if check_leak_password(sure_password):
+            raise serializers.ValidationError(_("Password has been leaked, please change to another one"))
+        if check_history_password(instance, sure_password):
+            raise serializers.ValidationError(
+                _("Password cannot reuse the recent %(count)s passwords")
+                % {"count": settings.SECURITY_PASSWORD_HISTORY_COUNT}
+            )
 
         instance.set_password(sure_password)
         instance.modifier = self.context.get("request").user
         instance.save(update_fields=["password", "modifier"])
+        record_password_hash(instance, instance.password)
         return instance

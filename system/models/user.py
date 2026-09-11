@@ -65,6 +65,11 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     )
     otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
 
+    # 最近一次密码更新时间（改密/重置/建号时由 record_password_hash 刷新）：
+    # 配合 SECURITY_PASSWORD_EXPIRATION_DAYS 做密码过期拦截；NULL = 未跟踪（存量
+    # 用户宽限期，不拦截），改密后开始计时
+    date_password_updated = models.DateTimeField(verbose_name=_("Password updated at"), null=True, blank=True)
+
     roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
     dept = models.ForeignKey(

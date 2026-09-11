@@ -23,7 +23,12 @@ from common.utils import get_logger
 from common.utils.ip import get_ip_city
 from common.utils.request import get_request_ip, get_browser, get_os
 from mfa.services import generate_login_mfa_token, get_login_mfa_methods, is_login_mfa_required
-from settings.services import LoginBlockUtil, LoginIpBlockUtil
+from settings.services import (
+    PASSWORD_EXPIRED_MESSAGE,
+    LoginBlockUtil,
+    LoginIpBlockUtil,
+    is_password_expired,
+)
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import (
     get_username_password,
@@ -96,6 +101,10 @@ def login_failed(request, username):
 
 
 def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME, save_log=True):
+    if is_password_expired(user_obj):
+        # 密码有效期拦截（SECURITY_PASSWORD_EXPIRATION_DAYS，默认关闭）：MFA 前收口，
+        # 待二次验证路径同样拦截；date_password_updated 为空的存量用户宽限放行
+        raise ValidateError(PASSWORD_EXPIRED_MESSAGE)
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(user_obj.username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)

@@ -18,6 +18,7 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import PeriodicTask
 
+from common.cache.lock import ReentrantLock
 from common.cache.redis import CacheList
 from common.celery.decorator import register_as_period_task, after_app_ready_start
 from common.core.utils import get_doc_first_line
@@ -190,7 +191,8 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     task_info["end_time"] = local_now_display()
     task_info["status"] = result.data.get("code") == 1000
     cache.push(task_info)
-    with cache.lock(timeout=180):
+    # 分片结果汇总判定：持锁时长随分片数浮动，看门狗自动续期防锁先于业务失效
+    with ReentrantLock(f"view_task_summary_{meta.get('task_id').split('_')[0]}", timeout=180):
         if cache.len() and cache.len() == meta["task_count"]:
             task_results = cache.get_all()
             cache.delete()

@@ -11,6 +11,7 @@
 """
 
 from django.utils import timezone
+from django_filters import rest_framework as dj_filters
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -28,14 +29,31 @@ PAT_STATS_WINDOW_DAYS = 7
 API_SUCCESS_CODE = 1000
 
 
+class PersonalAccessTokenFilter(dj_filters.FilterSet):
+    """列表过滤：名称/前缀模糊 + 启用状态精确 + 创建时间范围。
+
+    个人取值域由 get_queryset 收口为本人，过滤只做展示层收敛；
+    search-fields 元数据由该 FilterSet 自动派生。
+    """
+
+    name = dj_filters.CharFilter(field_name="name", lookup_expr="icontains")
+    token_prefix = dj_filters.CharFilter(field_name="token_prefix", lookup_expr="icontains")
+    created_time = dj_filters.DateTimeFromToRangeFilter()
+
+    class Meta:
+        model = PersonalAccessToken
+        fields = ["name", "token_prefix", "is_active", "created_time"]
+
+
 class PersonalAccessTokenViewSet(BaseModelSet):
     """个人访问令牌"""
 
     queryset = PersonalAccessToken.objects.all()
     serializer_class = PersonalAccessTokenSerializer
+    filterset_class = PersonalAccessTokenFilter
     # PAT 是个人凭证：剥离默认数据权限过滤（默认拒绝会让本人凭证不可见），
-    # 仅保留排序；取值域由 get_queryset 收口为本人
-    filter_backends = (OrderingFilter,)
+    # 仅保留字段过滤与排序；取值域由 get_queryset 收口为本人
+    filter_backends = (dj_filters.DjangoFilterBackend, OrderingFilter)
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "last_used_time", "expired_at"]
 

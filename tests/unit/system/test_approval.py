@@ -24,6 +24,7 @@ from system.utils.approval import (
     can_approve,
     cancel_request,
     clean_expired_approvals,
+    get_approver_queryset,
     create_approval,
     expire_pending_approvals,
     pending_count_for,
@@ -350,6 +351,56 @@ class TestApprovalActions:
         assert ok is True
         approval.refresh_from_db()
         assert approval.approver == normal_user
+
+    def test_approver_perm_scope(self, superuser, normal_user, role, menu_factory):
+        """职能权限反查：APPROVAL_APPROVER_PERMS 按权限码推导审批人（get_users_by_perm）。"""
+        from common.core.config import SysConfig
+        from system.services import get_users_by_perm
+
+        # 权限码挂 PERMISSION 类型菜单，经角色授权给 normal_user（role=common）
+        perm = menu_factory("approve:SystemApprovalRequest", path="api/system/approvals$", method="POST")
+        role.menu.add(perm)
+        # 停用菜单不参与反查
+        inactive = menu_factory("approve:SystemOther", path="api/system/other$", method="POST", is_active=False)
+        role.menu.add(inactive)
+
+        SysConfig.set_value("APPROVAL_APPROVER_PERMS", ["approve:SystemApprovalRequest"])
+        assert get_users_by_perm("approve:SystemApprovalRequest").filter(pk=normal_user.pk).exists()
+        assert not get_users_by_perm("approve:SystemOther").exists()
+
+        # 权限反查模式下（配置了 perms）超管不再自动兜底：未持码的 superuser 不是审批人
+        assert can_approve(normal_user) is True
+        assert can_approve(superuser) is False
+
+    def test_approver_roles_and_perms_union(self, superuser, normal_user, role, menu_factory):
+        """角色清单与权限反取并集：任一命中即审批人；两者皆空回退超管。"""
+        from common.core.config import SysConfig
+
+        other_perm = menu_factory("review:Report", path="api/system/report$", method="POST")
+        SysConfig.set_value("APPROVAL_APPROVER_ROLES", ["common"])
+        SysConfig.set_value("APPROVAL_APPROVER_PERMS", ["review:Report"])
+
+        # normal_user 命中角色清单；superuser 无角色无权限 → 两者都配置时不兜底
+        approvers = get_approver_queryset()
+        assert approvers.filter(pk=normal_user.pk).exists()
+        assert not approvers.filter(pk=superuser.pk).exists()
+
+        # 建第二个角色持权限码的用户 → 并集命中
+        from system.models import UserInfo, UserRole
+
+        auditor_role = UserRole.objects.create(name="审计员", code="auditor")
+        auditor_role.menu.add(other_perm)
+        auditor = UserInfo.objects.create_user(username="auditor1", password="Audit@123456", nickname="审计员")
+        auditor.roles.add(auditor_role)
+        approvers = get_approver_queryset()
+        assert approvers.filter(pk=auditor.pk).exists()
+        assert approvers.filter(pk=normal_user.pk).exists()
+
+        # 皆空回退超管
+        SysConfig.set_value("APPROVAL_APPROVER_ROLES", [])
+        SysConfig.set_value("APPROVAL_APPROVER_PERMS", [])
+        assert get_approver_queryset().filter(pk=superuser.pk).exists()
+        assert not get_approver_queryset().filter(pk=normal_user.pk).exists()
 
     def test_viewset_approve_and_scope_list(self, superuser, normal_user, role, menu_factory, api_client):
         """审批中心 ViewSet：通过动作 + 待我审批/我发起的取值域。"""

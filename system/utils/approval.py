@@ -102,14 +102,29 @@ def path_intercepted(path: str) -> bool:
 
 
 def get_approver_queryset():
-    """可审批人集合：角色清单（APPROVAL_APPROVER_ROLES，角色 code）限定，空 = 全部在用超管。"""
+    """可审批人集合：显式角色清单（APPROVAL_APPROVER_ROLES）∪ 职能权限反查
+    （APPROVAL_APPROVER_PERMS，get_users_by_perms 按权限码推导）；两者皆空 = 全部在用超管。
+
+    权限反查覆盖「按职能授权」场景：持有审批相关权限码（如 approve:SystemApprovalRequest）
+    的用户即审批人，无需逐个维护角色清单。申请人始终不能自审（resolve_approvers 排除）。
+    """
     from common.core.config import SysConfig
     from system.models import UserInfo
+    from system.services import get_users_by_perms
 
     role_codes = SysConfig.APPROVAL_APPROVER_ROLES or []
+    perms = SysConfig.APPROVAL_APPROVER_PERMS or []
+    if not role_codes and not perms:
+        return UserInfo.objects.filter(is_superuser=True, is_active=True)
+    queryset = UserInfo.objects.none()
     if role_codes:
-        return UserInfo.objects.filter(is_active=True, roles__is_active=True, roles__code__in=role_codes).distinct()
-    return UserInfo.objects.filter(is_superuser=True, is_active=True)
+        queryset = (
+            queryset
+            | UserInfo.objects.filter(is_active=True, roles__is_active=True, roles__code__in=role_codes).distinct()
+        )
+    if perms:
+        queryset = queryset | get_users_by_perms(perms)
+    return queryset.distinct()
 
 
 def resolve_approvers(applicant):

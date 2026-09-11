@@ -76,6 +76,13 @@ class MonitorViewSet(GenericViewSet):
 
     @extend_schema(responses=get_default_response_schema())
     @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
+    @action(methods=["get"], detail=False, url_path="task-health")
+    def task_health(self, request, *args, **kwargs):
+        """后台任务健康度（近 1 天聚合：成功率 / 健康色 / 高频任务 / 近期失败）"""
+        return ApiResponse(data=metrics.collect_task_health())
+
+    @extend_schema(responses=get_default_response_schema())
+    @cache_response(timeout=dashboard_cache_timeout, key_func="get_cache_key")
     @action(methods=["get"], detail=False, url_path="slow")
     def slow(self, request, *args, **kwargs):
         """慢请求 Top N（最近窗口内 exec_time 超阈值的操作日志）"""

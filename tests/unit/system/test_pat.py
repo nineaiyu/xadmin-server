@@ -141,6 +141,32 @@ def test_pat_queryset_scoped_to_creator(superuser, normal_user):
     assert len(pks) == 1
 
 
+def test_pat_list_search_filters(superuser, normal_user):
+    """列表过滤：名称/前缀模糊 + 启用状态精确；个人取值域不因过滤后端放宽。"""
+    mine = _create_token(superuser, name="alpha-token")
+    other = _create_token(normal_user, name="alpha-other")
+    mine_pk = str(mine.data["data"]["pk"])
+    other_pk = str(other.data["data"]["pk"])
+
+    def _list_pks(query):
+        factory = APIRequestFactory()
+        request = factory.get(TOKENS_URL, query)
+        force_authenticate(request, user=superuser)
+        response = PersonalAccessTokenViewSet.as_view({"get": "list"})(request)
+        data = response.data["data"]
+        results = data["results"] if isinstance(data, dict) else data
+        return [str(item["pk"]) for item in results]
+
+    # 模糊命中本人凭证，且他人同名凭证不出现在本人列表（个人取值域不被过滤放宽）
+    pks = _list_pks({"name": "alpha"})
+    assert mine_pk in pks
+    assert other_pk not in pks
+
+    assert _list_pks({"name": "no-such-token"}) == []
+    assert _list_pks({"token_prefix": mine.data["data"]["token_prefix"]}) == [mine_pk]
+    assert _list_pks({"is_active": "false"}) == []
+
+
 def test_pat_request_hits_api_and_revocation_blocks(superuser):
     """端到端：Pat 头调接口 200 → 吊销后 401。"""
     response = _create_token(superuser)

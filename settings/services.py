@@ -7,7 +7,15 @@ settings app 对外服务契约层。
 禁止直接 import settings.utils 等内部实现，避免 app 间横向依赖扩散。
 """
 
-from settings.utils.password import check_password_rules, get_password_check_rules
+from settings.utils.password import (
+    PASSWORD_EXPIRED_MESSAGE,
+    check_history_password,
+    check_leak_password,
+    check_password_rules,
+    get_password_check_rules,
+    is_password_expired,
+    record_password_hash,
+)
 from settings.utils.security import (
     LoginBlockUtil,
     LoginIpBlockUtil,
@@ -19,6 +27,11 @@ from settings.utils.security import (
 
 __all__ = [
     "check_password_rules",
+    "check_leak_password",
+    "check_history_password",
+    "record_password_hash",
+    "is_password_expired",
+    "PASSWORD_EXPIRED_MESSAGE",
     "get_password_check_rules",
     "LoginBlockUtil",
     "LoginIpBlockUtil",

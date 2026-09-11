@@ -66,6 +66,10 @@ class BatchDestroyAction(object):
     def batch_destroy(self, request, *args, **kwargs):
         """批量删除{cls}"""
 
+        # 入参必须是主键列表（与 rank 同口径）：防 dict 等非法形态按键误删，
+        # 且候选池核查结论——pk__in=[] 为空集，天然不存在无 id 条件的全表删除
+        if not isinstance(request.data, (list, tuple)):
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
         if not self._needs_rowwise_delete():
             # 模型无逐行副作用时直接走批量 delete()，单条 SQL 完成

@@ -6,7 +6,6 @@
 # date : 8/8/2024
 
 from django.conf import settings
-from django.core.cache import cache
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_object_type, build_basic_type
@@ -16,11 +15,12 @@ from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from common.base.utils import AESCipherV2
+from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from settings.services import RegisterBlockUtil
-from settings.services import check_password_rules
+from settings.services import check_leak_password, check_password_rules, record_password_hash
 from system.models import DeptInfo, UserInfo, UserLoginLog
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 from system.utils.session import bind_session_claim, register_user_session
@@ -75,19 +75,25 @@ class RegisterViewAPIView(GenericAPIView):
 
         if not check_password_rules(password):
             return ApiResponse(code=1001, detail=_("Password does not match security rules"))
+        if check_leak_password(password):
+            return ApiResponse(code=1001, detail=_("Password has been leaked, please change to another one"))
 
         username = target
         default = {query_key: target}
         if query_key == "username":
             default = {}
 
-        with cache.lock("_LOCKER_REGISTER_USER", timeout=10):  # 加锁是为了防止并发注册导致手机，邮箱或者用户名重复
+        # 防并发注册导致手机/邮箱/用户名重复：token 化锁安全释放（可重入、事务外立即释放）
+        with ReentrantLock("register_user", timeout=10):
             # username 在 DB 层全局唯一，回收站中的同名用户仍占用唯一约束；
             # 必须走 all_objects 校验，否则软删除同名用户会让 create 抛 IntegrityError 500
             # （与 UserSerializer.validate_username 口径保持一致）
             if UserInfo.all_objects.filter(**{query_key: target}).exists():
                 return ApiResponse(code=1002, detail=_("The account already exists, please try another one"))
             user = UserInfo.objects.create_user(username=username, password=password, nickname=username, **default)
+
+        # 注册即留存首条密码历史（建号链路统一口径）；后续改密的「最近 N 次不可复用」覆盖初始密码
+        record_password_hash(user, user.password)
 
         update_fields = ["last_login"]
 

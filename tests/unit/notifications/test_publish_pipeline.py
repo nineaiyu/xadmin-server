@@ -254,6 +254,17 @@ class TestUserMessagePublish:
         assert len(mail.outbox) == 1
         assert "zhangsan@example.com" in mail.outbox[0].to
 
+    def test_publish_email_skips_user_without_email(self, normal_user, settings):
+        """渠道可达性：未绑定邮箱的用户被邮件渠道跳过（不产生邮件、不报错）。"""
+        settings.EMAIL_ENABLED = True
+        normal_user.email = ""
+        normal_user.save(update_fields=["email"])
+        UserMsgSubscription.objects.create(
+            user=normal_user, message_type="DifferentCityLoginMessage", receive_backends=["email"]
+        )
+        DifferentCityLoginMessage(normal_user, ip="5.5.5.5", city="测试城市").publish()
+        assert len(mail.outbox) == 0
+
     def test_publish_async_delegates_to_task(self, normal_user):
         with mock.patch.object(publish_task, "delay") as fake_delay:
             DifferentCityLoginMessage(normal_user, ip="4.4.4.4", city="测试城市").publish(is_async=True)

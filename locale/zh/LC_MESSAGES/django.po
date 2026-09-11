@@ -2192,6 +2192,24 @@ msgstr "标签颜色"
 #: system/models/dict.py:40
 msgid "Is locked"
 msgstr "系统内置"
+msgid "Builtin role code cannot be changed"
+msgstr "内置角色禁止修改编码"
+
+msgid "System Administrator"
+msgstr "系统管理员"
+
+msgid "Auditor"
+msgstr "审计员"
+
+msgid "Builtin role: grants all active menus automatically on sync"
+msgstr "内置角色：同步时自动授予全部活跃菜单"
+
+msgid "Builtin role: assign audit menus manually as needed"
+msgstr "内置角色：审计菜单请按需手动配置"
+
+msgid "Is builtin"
+msgstr "内置角色"
+
 
 #: system/models/dict.py:44
 msgid "Data dict"
@@ -3425,6 +3443,24 @@ msgstr "在线数量"
 #: system/views/auth/reset.py:55
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
+
+msgid "Password has been leaked, please change to another one"
+msgstr "密码已在泄露库中，请更换密码"
+
+msgid "Password cannot reuse the recent %(count)s passwords"
+msgstr "密码不能与最近 %(count)s 次密码重复"
+
+msgid "Password has expired, please change your password before logging in"
+msgstr "密码已过期，请先修改密码后再登录"
+
+msgid "Password updated at"
+msgstr "密码更新时间"
+
+msgid "Password history"
+msgstr "密码历史"
+
+msgid "Password hash"
+msgstr "密码哈希"
 
 #: system/serializers/user.py:147
 msgid "Abnormal password field"

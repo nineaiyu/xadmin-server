@@ -28,9 +28,20 @@ class FieldPermissionSerializer(BaseModelSerializer):
 class RoleSerializer(BaseModelSerializer):
     class Meta:
         model = UserRole
-        fields = ["pk", "name", "code", "is_active", "description", "menu", "updated_time", "field", "fields"]
-        table_fields = ["pk", "name", "code", "is_active", "description", "updated_time"]
-        read_only_fields = ["pk"]
+        fields = [
+            "pk",
+            "name",
+            "code",
+            "is_active",
+            "builtin",
+            "description",
+            "menu",
+            "updated_time",
+            "field",
+            "fields",
+        ]
+        table_fields = ["pk", "name", "code", "is_active", "builtin", "description", "updated_time"]
+        read_only_fields = ["pk", "builtin"]
         extra_kwargs = {"menu": {"attrs": ["pk", "name"], "many": True, "input_type": "input"}}
 
     # 上面写的 extra_kwargs['menu'] 和下面下结果一样，但是上面写法少写了 label 和 queryset
@@ -57,6 +68,15 @@ class RoleSerializer(BaseModelSerializer):
 
     def validate_code(self, value):
         return self._validate_active_unique("code", value)
+
+    def validate(self, attrs):
+        # 内置角色不可改 code（code 被代码与治理配置引用）；create 占用内置 code
+        # 已由 validate_code 拦截，这里拦 update 改名场景
+        if self.instance is not None and self.instance.builtin:
+            new_code = attrs.get("code", self.instance.code)
+            if new_code != self.instance.code:
+                raise serializers.ValidationError({"code": _("Builtin role code cannot be changed")})
+        return attrs
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_field(self, obj):
@@ -102,6 +122,7 @@ class ListRoleSerializer(RoleSerializer):
             "is_active",
             "code",
             "menu",
+            "builtin",
             "description",
             "updated_time",
             "deleted_at",
@@ -109,7 +130,7 @@ class ListRoleSerializer(RoleSerializer):
             "fields",
         ]
         # 主列表列白名单：deleted_at（回收站口径）/ field / fields 不上主表格
-        table_fields = ["pk", "name", "is_active", "code", "menu", "description", "updated_time"]
+        table_fields = ["pk", "name", "is_active", "code", "menu", "builtin", "description", "updated_time"]
         read_only_fields = [x.name for x in UserRole._meta.fields]
 
     field = serializers.ListField(default=[], read_only=True)

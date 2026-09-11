@@ -7,7 +7,7 @@
 import itertools
 
 from django.contrib.auth import user_logged_out
-from django.db.models.signals import m2m_changed, post_save, pre_delete
+from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
 from common.base.magic import cache_response, MagicCacheData
@@ -151,3 +151,18 @@ def invalid_mask_roles_m2m_cache_handler(sender, instance, action, **kwargs):
         return
     invalid_mask_cache(instance.model if instance.model else None)
     logger.info(f"invalid mask cache by roles m2m {instance}")
+
+
+@receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_roles")
+def post_migrate_sync_builtin_roles(sender, **kwargs):
+    """migrate 后同步内置角色（幂等，借鉴 jumpserver builtin 同步）：
+    全新库 migrate 完成即有可用角色，存量库升级同样生效；同步失败不阻断 migrate。"""
+    if getattr(sender, "name", None) != "system":
+        return
+    from system.builtin import sync_builtin_roles
+
+    try:
+        changed = sync_builtin_roles()
+        logger.info("builtin roles synced via post_migrate, changed: %s", changed)
+    except Exception:
+        logger.exception("sync builtin roles failed")

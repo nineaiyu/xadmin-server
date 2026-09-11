@@ -230,6 +230,16 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("APPROVAL_APPROVER_ROLES", [])
 
     @property
+    def APPROVAL_APPROVER_PERMS(self):
+        """审批人职能权限码清单（"动作:组件名"，默认空 = 不按权限反查）。
+
+        与 APPROVAL_APPROVER_ROLES 取并集，两者皆空回退全部在用超管；持有任一
+        权限码的在用用户视为职能审批人（system.services.get_users_by_perm 反查，
+        借鉴 jumpserver 按权限反查角色的审批人推导模式）。
+        """
+        return self.get_value("APPROVAL_APPROVER_PERMS", [])
+
+    @property
     def APPROVAL_TOKEN_TTL(self):
         """审批通过后令牌有效期（秒，默认 300）：有效期内携令牌重发一次有效。"""
         return int(self.get_value("APPROVAL_TOKEN_TTL", 300))

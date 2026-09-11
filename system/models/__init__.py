@@ -18,6 +18,7 @@ from .log import *
 from .mask import *
 from .menu import *
 from .oauth import *
+from .password import *
 from .permission import *
 from .role import *
 from .session import *

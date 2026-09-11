@@ -59,3 +59,52 @@ def test_list_request_has_no_object_pk(auth_client, django_capture_on_commit_cal
 
     log = OperationLog.objects.filter(path="/api/system/dict", method="POST").latest("id")
     assert not log.object_pk
+
+
+def test_m2m_changes_recorded(auth_client, superuser, menu_factory, monkeypatch, django_capture_on_commit_callbacks):
+    """M2M 关系变更纳入 diff（角色菜单授权）：与标量字段同形态落 changes。"""
+    from common.core.config import SysConfig
+    from system.models import UserRole
+
+    monkeypatch.setattr(type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["system.UserRole"]), raising=False)
+    role = UserRole.objects.create(name="审计角色", code="audit-diff-m2m")
+    menu = menu_factory("授权菜单", path="api/audit-m2m$", method="GET")
+
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.put(
+            f"/api/system/role/{role.pk}",
+            {"name": "审计角色v2", "code": "audit-diff-m2m", "menu": [str(menu.pk)], "fields": {}},
+            format="json",
+        )
+    assert resp.status_code == 200, resp.data
+
+    log = OperationLog.objects.filter(path=f"/api/system/role/{role.pk}", method="PUT").latest("id")
+    changes = json.loads(log.changes)
+    assert changes["name"]["old"] == "审计角色"
+    assert changes["name"]["new"] == "审计角色v2"
+    assert not changes["menu"]["old"]
+    assert changes["menu"]["new"] == str(menu.pk)
+
+
+def test_m2m_unchanged_not_recorded(
+    auth_client, superuser, menu_factory, monkeypatch, django_capture_on_commit_callbacks
+):
+    """M2M 未变化的 update 不产生该字段 diff（groups 等恒空关系亦无噪声）。"""
+    from common.core.config import SysConfig
+    from system.models import UserRole
+
+    monkeypatch.setattr(type(SysConfig), "AUDIT_DIFF_MODELS", property(lambda self: ["system.UserRole"]), raising=False)
+    role = UserRole.objects.create(name="无变化角色", code="audit-diff-m2m-2")
+
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.put(
+            f"/api/system/role/{role.pk}",
+            {"name": "无变化角色v2", "code": "audit-diff-m2m-2", "fields": {}},
+            format="json",
+        )
+    assert resp.status_code == 200, resp.data
+
+    log = OperationLog.objects.filter(path=f"/api/system/role/{role.pk}", method="PUT").latest("id")
+    changes = json.loads(log.changes)
+    assert "menu" not in changes
+    assert changes["name"]["new"] == "无变化角色v2"

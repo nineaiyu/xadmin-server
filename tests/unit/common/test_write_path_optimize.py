@@ -221,6 +221,13 @@ class TestBatchDestroy:
         assert resp.data["code"] == 1000
         assert Book.objects.count() == 0
 
+    def test_batch_destroy_rejects_non_list_payload(self, auth_client, superuser, upload_file):
+        """入参形态防御（与 rank 同口径）：dict 等非法形态返回 1004，不做任何删除。"""
+        Book.objects.create(name="书", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file)
+        resp = auth_client.post(f"{BOOK_URL}/batch-destroy", {"pk": "x"}, format="json")
+        assert resp.data["code"] == 1004
+        assert Book.objects.count() == 1
+
     def test_viewset_without_queryset_defaults_to_per_row(self):
         class NoQuerysetView:
             queryset = None

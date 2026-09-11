@@ -42,6 +42,8 @@ __all__ = [
     "get_superusers",
     "get_active_superuser_queryset",
     "get_users_by_pks",
+    "get_users_by_perm",
+    "get_users_by_perms",
     "get_active_user_pk_by_username",
     "serialize_user_info",
 ]
@@ -102,6 +104,36 @@ def get_users_by_pks(pks):
     from system.models import UserInfo
 
     return UserInfo.objects.filter(id__in=pks).all()
+
+
+def get_users_by_perm(perm):
+    """按单个权限码反查在用用户（get_users_by_perms 单码薄封装）。"""
+    return get_users_by_perms([perm])
+
+
+def get_users_by_perms(perms):
+    """按权限码清单反查在用用户（任一命中，去重）。
+
+    权限码（"动作:组件名"，如 approve:SystemApprovalRequest）挂 PERMISSION 类型
+    菜单的 name，经 角色↔菜单 授权间接授予用户（jumpserver Role.get_roles_by_perm
+    同思路的"按权限反查"）。软删除角色/菜单显式排除，不依赖关联查询的管理器行为。
+
+    通用职能推导工具：审批人解析（system.utils.approval.get_approver_queryset）
+    与通知接收人解析共用，替代逐处复制"角色清单成员查询"。
+    """
+    from system.models import Menu, UserInfo
+
+    if not perms:
+        return UserInfo.objects.none()
+    return UserInfo.objects.filter(
+        is_active=True,
+        roles__is_active=True,
+        roles__deleted_at__isnull=True,
+        roles__menu__is_active=True,
+        roles__menu__deleted_at__isnull=True,
+        roles__menu__menu_type=Menu.MenuChoices.PERMISSION,
+        roles__menu__name__in=list(perms),
+    ).distinct()
 
 
 def get_active_user_pk_by_username(username):

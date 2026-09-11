@@ -86,6 +86,9 @@ class UpdateAction(mixins.UpdateModelMixin):
         白名单为空（默认）时零开销直接返回；命中白名单的更新额外产生 2 次查询
         （更新前快照 + 更新后回读），按需开启。白名单走 SysConfig.AUDIT_DIFF_MODELS
         （系统配置优先，未登记回退 settings），管理员可运行时扩容。
+
+        M2M 关系（roles 授权、角色菜单等治理操作）一并纳入快照：挂在返回行的
+        ``__m2m__`` 键下（field_name -> 有序 pk 列表），由 _stash_audit_changes 消费。
         """
         from common.core.config import SysConfig
 
@@ -93,10 +96,27 @@ class UpdateAction(mixins.UpdateModelMixin):
         model = getattr(getattr(self, "queryset", None), "model", None)
         if not whitelist or not pk or model is None or model._meta.label not in whitelist:
             return None
-        return self.get_queryset().filter(pk=pk).values().first()
+        old_values = self.get_queryset().filter(pk=pk).values().first()
+        if old_values is None:
+            return None
+        m2m_old = self._audit_m2m_snapshot(self.get_queryset().filter(pk=pk).first())
+        if m2m_old:
+            old_values["__m2m__"] = m2m_old
+        return old_values
+
+    def _audit_m2m_snapshot(self, instance):
+        """M2M 字段快照：{field_name: [str(pk)...]}（无 M2M 字段返回空 dict）。"""
+        if instance is None:
+            return {}
+        snapshot = {}
+        for field in instance._meta.many_to_many:
+            pks = sorted(str(pk) for pk in getattr(instance, field.name).values_list("pk", flat=True))
+            snapshot[field.name] = pks
+        return snapshot
 
     def _stash_audit_changes(self, old_values):
-        """对比更新前后字段值，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。"""
+        """对比更新前后字段值与 M2M 关系，把 diff 挂到当前请求上，由 ApiLoggingMiddleware 写入操作日志。"""
+        m2m_old = old_values.pop("__m2m__", None)
         pk = old_values.get("pk") or old_values.get("id")
         new_values = self.get_queryset().filter(pk=pk).values().first()
         if not new_values:
@@ -111,6 +131,17 @@ class UpdateAction(mixins.UpdateModelMixin):
                     "old": str(old) if old is not None else None,
                     "new": str(new) if new is not None else None,
                 }
+        if m2m_old:
+            # M2M 与标量字段同形态落 changes（old/new 为 pk 逗号串），前端变更历史
+            # 无需区分渲染；空清单显示 None（与脱敏空值口径一致）
+            m2m_new = self._audit_m2m_snapshot(self.get_queryset().filter(pk=pk).first())
+            for field, old_pks in m2m_old.items():
+                new_pks = m2m_new.get(field, [])
+                if old_pks != new_pks:
+                    changes[field] = {
+                        "old": ",".join(old_pks) if old_pks else None,
+                        "new": ",".join(new_pks) if new_pks else None,
+                    }
         if changes:
             current_request = get_current_request()
             if current_request is not None:

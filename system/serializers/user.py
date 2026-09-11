@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 
+from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
@@ -17,8 +18,13 @@ from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
 from message.services import get_online_users_layers
-from settings.services import LoginBlockUtil
-from settings.services import check_password_rules
+from settings.services import (
+    LoginBlockUtil,
+    check_history_password,
+    check_leak_password,
+    check_password_rules,
+    record_password_hash,
+)
 from system.models import UserInfo
 from system.serializers.fields import DictChoiceField
 
@@ -142,10 +148,19 @@ class UserSerializer(BaseModelSerializer):
                     logger.warning(f"create user and set password failed:{e}. so set default password")
                 if not check_password_rules(plain_password):
                     raise ValidationError(_("Password does not match security rules"))
+                if check_leak_password(plain_password):
+                    raise ValidationError(_("Password has been leaked, please change to another one"))
                 attrs["password"] = make_password(plain_password)
             else:
                 raise ValidationError(_("Abnormal password field"))
         return attrs
+
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        # 建号即留存首条密码历史：后续改密的「最近 N 次不可复用」覆盖初始密码
+        if validated_data.get("password"):
+            record_password_hash(instance, instance.password)
+        return instance
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -155,8 +170,16 @@ class ResetPasswordSerializer(serializers.Serializer):
         password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))
         if not check_password_rules(password, instance.is_superuser):
             raise serializers.ValidationError(_("Password does not match security rules"))
+        if check_leak_password(password):
+            raise serializers.ValidationError(_("Password has been leaked, please change to another one"))
+        if check_history_password(instance, password):
+            raise serializers.ValidationError(
+                _("Password cannot reuse the recent %(count)s passwords")
+                % {"count": settings.SECURITY_PASSWORD_HISTORY_COUNT}
+            )
 
         instance.set_password(password)
         instance.modifier = self.context.get("request").user
         instance.save(update_fields=["password", "modifier"])
+        record_password_hash(instance, instance.password)
         return instance
