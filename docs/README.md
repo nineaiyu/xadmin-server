@@ -38,6 +38,7 @@ docs/
 | [field-permission.md](architecture/field-permission.md) | 字段权限配置操作教程（配图）                               |
 | [cache.md](architecture/cache.md)                       | 缓存策略统一审计：四套缓存键规范/TTL/失效矩阵/绕过 ORM 红线          |
 | [indexes.md](architecture/indexes.md)                   | 索引评审记录：清单、不加索引的理由、EXPLAIN 回归                 |
+| [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
 
 ## 部署与运维（ops/）
 
@@ -56,7 +57,14 @@ docs/
 | [ADR-001](adr/ADR-001-csrf-jwt-only.md)      | CSRF 中间件不启用（JWT-only 架构）           |
 | [ADR-002](adr/ADR-002-demo-app.md)           | demo app 去留：保留但默认关闭                |
 | [ADR-003](adr/ADR-003-websocket-protocol.md) | WebSocket 协议保持自定义格式并补类型约束          |
-| [ADR-004](adr/ADR-004-django-60-upgrade.md)  | Django 升级：停留 5.2 LTS，窗口期评估 6.2 LTS |
+| [ADR-004](adr/ADR-004-django-60-upgrade.md)  | Django 升级：停留 5.2 LTS（6.2 升级已取消：celery 未支持） |
+| [ADR-005](adr/ADR-005-redis-split.md)        | Redis 拆分（缓存/队列/会话分实例）              |
+| [ADR-006](adr/ADR-006-asgi-db-connection-pool.md) | ASGI 形态启用 Django server 端 DB 连接池      |
+| [ADR-007](adr/ADR-007-multipart-form-data-v1-protocol.md) | FormData 上传协议 v1（点分键序列化契约）       |
+| [ADR-008](adr/ADR-008-pat-auth.md)           | 个人访问令牌（PAT）：scope + 精确审计           |
+| [ADR-009](adr/ADR-009-data-mask-exemption.md) | 数据脱敏豁免清单机制                          |
+| [ADR-010](adr/ADR-010-crypto-es.md)          | crypto-js 弃用处置：替换为 crypto-es        |
+| [ADR-011](adr/ADR-011-aes-protocol-v2.md)    | 凭证加密协议升级 v2（WebCrypto PBKDF2+AES-GCM 双格式过渡） |
 
 ## 契约与规范（schema/ + 根级）
 
@@ -65,7 +73,8 @@ docs/
 | [schema/search-columns.schema.json](schema/search-columns.schema.json) | search-columns 响应契约                 |
 | [schema/search-fields.schema.json](schema/search-fields.schema.json)   | search-fields 响应契约                  |
 | [exception-handling.md](exception-handling.md)                         | 错误脱敏原则 + 错误码登记表（新增错误码必须先登记）         |
-| [security-review.md](security-review.md)                               | 安全自查归档（Flower/XFrame/Referer/上传校验等） |
+| [security-review.md](security-review.md)                               | 安全自查归档（Flower/XFrame/Referer/上传校验/JWT 审计等） |
+| [cache-keys-audit.md](cache-keys-audit.md)                             | 缓存键审计（N5）：`scripts/check_cache_keys.py --strict` 冲突清零记录 |
 
 ## 维护约定
 
