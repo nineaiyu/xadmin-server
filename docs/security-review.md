@@ -96,3 +96,34 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | 上传 magic bytes 校验              | 按需           | 仅在扩展非图片类型上传时升级为必做                                               |
 | client pnpm audit 高危清零（40 → 0） | P5/T5.1 升级窗口 | vue3-ts-jsoneditor 3.4.1 + 构建链刷新，独立分支 + 全量门禁；crypto-js 弃用替换评估   |
 | server pip-audit               | ✅ 已清零        | 2026-09-06，见上节                                                  |
+
+## 三期自查（2026-09-11）：JWT 专项审计（N5）
+
+范围：签发/校验/吊销全链路（`common/core/auth.py`、`system/views/auth/`、
+`server/settings/libs.py` SIMPLE_JWT 配置、client 侧 token 消费）。
+
+### 审计结论：11 项达标，3 项已知边界（无需改动，记录触发条件）
+
+**达标项**
+
+| # | 项 | 现状 |
+|---|----|------|
+| 1 | token 类型限制 | `AUTH_TOKEN_CLASSES` 仅 `ServerAccessToken`，refresh token 不能当 access 用 |
+| 2 | 生命周期 | access 1h / refresh 15d，均 config.yml 可配（`conf.py` libs 默认） |
+| 3 | 轮换与黑名单 | `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION` 开启，DB 级 OutstandingToken/BlacklistedToken |
+| 4 | 登出吊销 | access 进 `BlackAccessTokenCache`（md5，按 exp 设 TTL）+ refresh 进 blacklist；MFA 二次确认状态同步清除 |
+| 5 | 强制下线（用户级） | `UserTokenRevokedCache` 失效时间戳 + access `iat` 比较，被踢时刻前签发的 token 全拒（`test_force_logout.py`） |
+| 6 | 强制下线（会话级） | token 内嵌 `sid` claim（refresh 派生自动继承），`SessionTokenRevokedCache` 按 sid 精确拒绝（`test_user_session.py`） |
+| 7 | 暴破防护 | 登录/验证码登录 `LoginThrottle` 50/h；refresh 端点走全局 `AnonRateThrottle` 60/m；PAT 有凭证级 `PAT_RATE_LIMIT` |
+| 8 | 签发密钥 | SECRET_KEY 生产拒启校验（base.py），密钥为空无法伪造 token |
+| 9 | 算法混淆 | 算法固定 HS256（simplejwt 按 settings 白名单，不接受 header 算法参数） |
+| 10 | PAT 平行通道 | sha256 存储、IP 白名单 fail-closed、scope 精确审计、吊销即时生效（ADR-008） |
+| 11 | 前端加密纵深 | AES v2 协议（ADR-011）落地，凭证传输双格式过渡 |
+
+**已知边界（记录触发条件，暂不改动）**
+
+| # | 边界 | 评估 | 触发条件 |
+|---|------|------|----------|
+| B1 | `GetUserFromAccessToken`（token_type=refresh 的 AccessToken 子类）被 API 日志中间件用于「请求体携带 refresh token 时反查用户归属」 | 仅影响审计日志归属，不参与任何授权决策；解析失败静默忽略；refresh token 本身是签名凭证，伪造无收益 | 若未来日志归属被用于计费/追责等强场景，需先 `verify()` 再归属 |
+| B2 | Cookie 认证（`X-Token` cookie → Bearer）服务于 Flower 代理等 django-proxy 页面 | 与 localStorage token 同级 XSS 暴露面（cookie 非 HttpOnly，由前端写入）；Proxy 页面为既有功能决策 | 若引入不受信任的第三方页面嵌入，需改 HttpOnly + CSRF 双提交 |
+| B3 | HS256 + `SIGNING_KEY=SECRET_KEY` 复用 | 单服务部署无密钥分发问题；轮换 = 轮换 SECRET_KEY（登出全体用户，可接受） | 服务拆分/多实例异密钥需求出现时，评估 RS256/JWK（simplejwt 原生支持） |
