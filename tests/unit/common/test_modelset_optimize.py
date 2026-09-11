@@ -116,9 +116,18 @@ class TestListQueryCount:
         get_dict_items("user_gender")
         get_dict_items("notice_level")
         # 预热 PAT 限流速率配置（PatThrottle 全局挂载，首个请求会读一次系统配置）
+        # 与 CSP 中间件的两个配置键（S3：所有响应都要读 CSP_MODE / CSP_REPORT_URI，
+        # 首次读取会各查一次 systemconfig；不预热会落进基线窗口使差值漂移）
         from common.core.config import SysConfig
 
         SysConfig.PAT_RATE_LIMIT
+        SysConfig.CSP_MODE
+        SysConfig.CSP_REPORT_URI
+        # 再打一次预热请求：序列化层除了上面显式预热的键，还有若干「首次请求才读」的
+        # 冷启动查询（字典项等），只靠显式预热覆盖不全，会让它们落进基线窗口造成差值漂移
+        # （单独运行该用例时会 +2；跑全量时被其它用例预热掩盖）。本用例只比较「逐行 N+1
+        # 差值」，首请求常数开销先预热掉，断言才与运行方式无关
+        auth_client.get(USER_URL, {"page": 1, "size": 10})
         monkeypatch.setattr(UserViewSet, "auto_prefetch_related", False)
         with CaptureQueriesContext(connection) as ctx_base:
             resp_base = auth_client.get(USER_URL, {"page": 1, "size": 10})
