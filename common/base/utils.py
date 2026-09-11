@@ -173,7 +173,18 @@ def remove_file(name):
 
 class AESCipherV2(object):
     """
-    前端操作
+    前端凭证加密解密，双格式自适应（ADR-010 / ADR-011）：
+
+    - 旧格式：OpenSSL ``Salted__`` 兼容格式（EVP_BytesToKey(MD5) + AES-256-CBC），
+      无前缀，由前端 crypto-es（原 crypto-js）产出；
+    - v2 格式：以 ``v2:`` 前缀标记，payload 为 base64(salt[16] | iv[12] | ct | tag[16])，
+      PBKDF2-HMAC-SHA256（100k 迭代）派生 AES-256-GCM 密钥，与浏览器 WebCrypto
+      subtle 对齐。
+
+    加密端（前端）优先 v2、无 WebCrypto 环境回退旧格式；解密端按前缀自适应，
+    认证失败/格式非法统一返回空串（与旧格式非法输入行为一致）。
+
+    旧格式前端操作（已由 crypto-es 替换，协议不变）：
     import CryptoJS from "crypto-js";
 
     export function AesEncrypted(key: string, msg: string): string {
@@ -186,6 +197,13 @@ class AESCipherV2(object):
       );
     }
     """
+
+    V2_PREFIX = "v2:"
+    V2_SALT_LENGTH = 16
+    V2_IV_LENGTH = 12
+    V2_TAG_LENGTH = 16
+    V2_PBKDF2_ITERATIONS = 100_000
+    V2_KEY_LENGTH = 32
 
     def __init__(self, key: str | bytes):
         self.key = key.encode("utf-8") if isinstance(key, str) else key
@@ -207,6 +225,9 @@ class AESCipherV2(object):
         return base64.b64encode(b"Salted__" + salt + cipher.encrypt(self._pack_data(raw)))
 
     def decrypt(self, enc: str | bytes) -> str:
+        text = enc.decode("utf-8", "ignore") if isinstance(enc, bytes) else enc
+        if text.startswith(self.V2_PREFIX):
+            return self._decrypt_v2(text[len(self.V2_PREFIX) :])
         data = base64.b64decode(enc)
         if data[:8] != b"Salted__":
             return ""
@@ -216,6 +237,22 @@ class AESCipherV2(object):
         iv = key_iv[32:]
         cipher = AES.new(key, AES.MODE_CBC, iv)
         return self._unpack_data(cipher.decrypt(data[AES.block_size :]))
+
+    def _decrypt_v2(self, payload_b64: str) -> str:
+        try:
+            data = base64.b64decode(payload_b64)
+            salt = data[: self.V2_SALT_LENGTH]
+            iv = data[self.V2_SALT_LENGTH : self.V2_SALT_LENGTH + self.V2_IV_LENGTH]
+            body = data[self.V2_SALT_LENGTH + self.V2_IV_LENGTH :]
+            if len(body) <= self.V2_TAG_LENGTH:
+                return ""
+            key = hashlib.pbkdf2_hmac("sha256", self.key, salt, self.V2_PBKDF2_ITERATIONS, dklen=self.V2_KEY_LENGTH)
+            cipher = AES.new(key, AES.MODE_GCM, nonce=iv)
+            plain = cipher.decrypt_and_verify(body[: -self.V2_TAG_LENGTH], body[-self.V2_TAG_LENGTH :])
+            return plain.decode("utf-8")
+        except Exception:
+            # GCM 认证失败 / 格式非法：返回空串，交由业务层按解密失败处理
+            return ""
 
     @staticmethod
     def _pack_data(s):

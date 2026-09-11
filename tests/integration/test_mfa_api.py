@@ -7,6 +7,7 @@ from django.core import mail
 from django.core.cache import cache
 
 from common.base.utils import AESCipherV2
+from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
 
@@ -244,9 +245,22 @@ class TestBuiltinSensitiveOperations:
         # 密码变更后确认状态被清除，需要重新验证
         resp = api_client.get(CONFIRM_URL, {"confirm_type": "password"})
         assert resp.data["data"]["confirmed"] is False
-        # 密码变更后确认状态被清除，需要重新验证
-        resp = api_client.get(CONFIRM_URL, {"confirm_type": "password"})
-        assert resp.data["data"]["confirmed"] is False
+
+    def test_reset_password_after_confirm_with_v2_payload(self, api_client, superuser):
+        """v2 协议（WebCrypto PBKDF2+AES-GCM）密文走真实改密链路。"""
+        api_client.force_authenticate(user=superuser)
+        api_client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Admin@123456"})
+
+        def enc(v):
+            return encrypt_v2(superuser.username, v)
+
+        resp = api_client.post(
+            "/api/system/userinfo/reset-password",
+            {"old_password": enc("Admin@123456"), "sure_password": enc("New@123456")},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert superuser.check_password("New@123456")
 
     def test_destroy_user_requires_confirm(self, api_client, superuser, normal_user):
         api_client.force_authenticate(user=superuser)

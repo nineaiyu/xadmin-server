@@ -4,6 +4,7 @@
 import pytest
 
 from common.base.utils import AESCipherV2
+from tests.integration.aes_v2 import encrypt_v2
 from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -96,6 +97,26 @@ class TestUserActionsSmoke:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")
+
+    def test_reset_password_with_v2_encrypted_payload(self, auth_client):
+        """v2 协议（WebCrypto PBKDF2+AES-GCM）密文走真实 API 解密链路。"""
+        pk = _create_user(auth_client, username="lisi")
+        encrypted = encrypt_v2("lisi", "NewPass@123456")
+        resp = auth_client.post(f"{USER_URL}/{pk}/reset-password", {"password": encrypted}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        assert UserInfo.objects.get(pk=pk).check_password("NewPass@123456")
+
+    def test_create_user_with_v2_encrypted_password(self, auth_client):
+        """新增用户密码为 v2 协议密文（前端 beforeSubmit 异步加密后提交）。"""
+        resp = auth_client.post(
+            USER_URL,
+            {"username": "v2user", "nickname": "V2", "password": encrypt_v2("v2user", "Test@123456")},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        assert UserInfo.objects.get(username="v2user").check_password("Test@123456")
 
     def test_unblock(self, auth_client):
         pk = _create_user(auth_client, username="lisi")
