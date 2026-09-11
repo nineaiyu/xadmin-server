@@ -110,9 +110,42 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "server.middleware.RefererCheckMiddleware",
     "server.middleware.SQLCountMiddleware",
+    # CSP（S3）：CSPModeMiddleware 必须排在 csp 中间件之前——响应阶段自内向外执行，
+    # 它需要在 django-csp 生成策略头之后按系统配置改写/移除（disabled/report-only/enforce）
+    "common.core.middleware.CSPModeMiddleware",
+    "csp.middleware.CSPMiddleware",
     "common.core.middleware.ApiLoggingMiddleware",
     "server.middleware.EndMiddleware",
 ]
+
+# CSP 策略（ADR-013 之外的 S3 落地）：django-csp 生成，运行期模式由
+# CSPModeMiddleware + SysConfig.CSP_MODE 决定（默认 report-only 观察，再切 enforce）。
+# - style-src 放开 'unsafe-inline'：Element Plus / 图表按需注入内联样式；
+# - connect-src 放开 ws:/wss:：应用 WebSocket（应用 ws 与 vite HMR）；
+# - img-src 放开 data:/blob:：验证码、预览 blob；
+# - frame-src 放开 blob:：Office/PDF 预览内嵌。
+_CSP_DIRECTIVES = {
+    "default-src": ("'self'",),
+    "script-src": ("'self'",),
+    "style-src": ("'self'", "'unsafe-inline'"),
+    "img-src": ("'self'", "data:", "blob:"),
+    "font-src": ("'self'", "data:"),
+    "connect-src": ("'self'", "ws:", "wss:"),
+    "frame-src": ("'self'", "blob:"),
+    "object-src": ("'none'",),
+    "base-uri": ("'self'",),
+    "form-action": ("'self'",),
+    "frame-ancestors": ("'self'",),
+}
+_CSP_EXCLUDE_PREFIXES = ("/media/", "/api/static/", "/api-docs/")
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": _CSP_DIRECTIVES,
+    "EXCLUDE_URL_PREFIXES": _CSP_EXCLUDE_PREFIXES,
+}
+CONTENT_SECURITY_POLICY_REPORT_ONLY = {
+    "DIRECTIVES": _CSP_DIRECTIVES,
+    "EXCLUDE_URL_PREFIXES": _CSP_EXCLUDE_PREFIXES,
+}
 
 # Prometheus 指标采集（默认关闭）：仅在显式启用时挂载，避免无谓开销与端点暴露
 if CONFIG.METRICS_ENABLED:

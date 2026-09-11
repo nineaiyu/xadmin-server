@@ -59,10 +59,30 @@ python manage.py start beat            # 定时任务调度
 | 队列           | 承载内容                                           | worker                 |
 |--------------|------------------------------------------------|------------------------|
 | `celery`（默认） | 邮件/短信/站内信/周期清理等轻量任务                            | `start celery_default` |
-| `heavy`      | 导入/导出/批量删除后台任务（`background_task_view_set_job`） | `start celery_heavy`   |
+| `heavy`      | 导入/导出/批量删除后台任务（`background_task_view_set_job`）、Office 转 PDF 预览（`convert_office_preview_task`） | `start celery_heavy`   |
 
 - 路由配置：`server/settings/libs.py` 的 `CELERY_TASK_ROUTES`，新增重任务在此加一行即可。
 - 健康检查：`utils/check_celery.sh [celery|heavy]`（依赖 worker 心跳文件，文件位于 `tempfile.gettempdir()`）。
+
+### 2.1 Office 在线预览（可选依赖 LibreOffice，ADR-013）
+
+docx/xlsx/pptx 等文档预览依赖 **LibreOffice headless** 把源文件转成 PDF：
+
+- 安装（二选一，默认镜像**不内置**以控制体积；未安装时 Office 文件按「不支持预览」降级，其余功能不受影响）：
+
+```shell
+# 宿主机（Debian/Ubuntu 系）
+apt-get install -y libreoffice --no-install-recommends
+# 或在业务镜像追加（Dockerfile 片段）
+RUN apt-get update && apt-get install -y --no-install-recommends libreoffice && rm -rf /var/lib/apt/lists/*
+```
+
+- 中文/常见字体缺失会导致转换后排版偏差，生产建议同时安装 `fonts-noto-cjk` 等字体包；
+- 转换器路径默认自动探测（PATH、macOS 常见安装路径），可用 `FILE_OFFICE_SOFFICE_BIN` 显式指定；
+- 相关配置：`FILE_OFFICE_PREVIEW_ENABLED`（总开关，默认开）、`FILE_OFFICE_MAX_BYTES`（默认 20MB，超限不转换）、
+  `FILE_OFFICE_CONVERT_TIMEOUT`（默认 60s）、`FILE_OFFICE_WAIT_SECONDS`（请求侧等待窗口，默认 8s）；
+- 转换产物与图片预览缓存同目录（`preview_cache/<pk>/office.pdf`），随既有预览缓存清理任务回收；
+- 首次预览需等待转换（前端显示「文档转换中」并自动重试），后续命中缓存直接打开。
 
 ## 3. Docker 部署
 
@@ -124,6 +144,8 @@ BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含
   范围/方法 → RTO 与一致性 → 异地副本校验 → 遗留缺口）。`backup-drill-reminder.yml`
   workflow 在 3/6/9/12 月 8 日自动开提醒 issue（去重），按清单执行后勾选关闭；
   若 workflow 未生效，请人工按本节清单执行，不得跳过「逐表行数一致」项。
+  **2026 Q4 报表（提前于 2026-09-11 执行）见 [backup-drill-2026-Q4.md](backup-drill-2026-Q4.md)**：
+  67 表逐表 0 不一致、RTO 0.28s，并一并验收了 S2 失败告警接线。
 - **备份/恢复检查清单**（部署验收与季度演练用）：
 
 ```markdown
@@ -133,7 +155,8 @@ BACKUP_REMOTE_DIR=../xadmin-db-backups-remote bash utils/backup_drill.sh   # 含
 - [ ] BACKUP_MEDIA=true 且 .media.tar.gz 随数据库包一起产出（生产有附件时必查）
 - [ ] 演练：bash utils/backup_drill.sh 全项 PASS（尤其「逐表行数一致」不得为 0 表）
 - [ ] 确认恢复目标库不得指向 xadmin（db_restore.sh 会先 DROP 目标库）
-- [ ] 备份与异地同步失败已接入告警（当前仅落 WARN 日志）
+- [ ] 备份与异地同步失败已接入告警（S2：`BACKUP_ALERT_URL` + `BACKUP_ALERT_TOKEN`，
+      失败点上报 `POST /api/common/api/backup-alert` → 站内信/邮件通知超管；未配置时仅落 WARN 日志）
 ```
 
 生产 `config.yml` 建议：
@@ -235,3 +258,32 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 | 验证清单   | 迁移全量通过 → 登录/验证码/图片处理（Pillow/GeoIP 库）→ 导入导出（openpyxl）→ WebSocket → 定时任务                       |
 
 > 国产化数据库替换涉及迁移文件与第三方库兼容性，属大变更：先建独立分支跑全量门禁（pytest + E2E），并登记 ADR 后再合入。
+
+## 8. 安全响应头：CSP（S3）
+
+Django 侧由 `django-csp 4.0` 生成策略，运行期模式由系统配置控制（默认**观察期**，不拦截请求）：
+
+| 配置项 | 取值 | 说明 |
+|---|---|---|
+| `CSP_MODE` | `report-only`（默认）/ `enforce` / `disabled` | report-only 只下发 `Content-Security-Policy-Report-Only`；切 `enforce` 后同一策略串改为强制头 |
+| `CSP_REPORT_URI` | 空（默认）/ `/api/common/api/csp-report` | 非空时在策略尾追加 `report-uri`，违规上报落 `data/logs/server.log`（WARNING，60s 同源节流） |
+
+- **上线节奏**：新版先跑 report-only 观察一周，在日志里按 `grep "CSP violation" data/logs/server.log`
+  统计 `directive=... blocked=...`，确认无业务阻塞（图片/字体/WS/预览内嵌均已放开）后再把
+  `CSP_MODE` 改为 `enforce`（改配置即时生效，无需重启）；
+- **策略要点**：`default-src 'self'`、`object-src 'none'`、`frame-ancestors 'self'`；
+  按需放开 `style-src 'unsafe-inline'`（Element Plus 注入内联样式）、`img-src data: blob:`、
+  `frame-src blob:`（文档预览内嵌）、`connect-src ws: wss:`（WebSocket）；`/media/`、`/api/static/`、
+  `/api-docs/` 前缀豁免；
+- **前端 SPA 的 CSP**：SPA 由 nginx 托管时，Django 的响应头不覆盖 HTML 文档，需要在 nginx 侧
+  下发同一策略串（先 report-only 观察，再切强制）：
+
+```nginx
+# 观察期（推荐先跑一周，report-uri 指向同一端点）
+add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; report-uri /api/common/api/csp-report" always;
+# 观察无阻塞后替换为上行对应的强制头
+# add_header Content-Security-Policy "<同一策略串>" always;
+```
+
+- 注意：`add_header` 在 nginx 中会**覆盖**继承的同名头，若已有 `X-Frame-Options` 等自定义头，
+  请放在同一个 `add_header` 块内统一维护，避免互相覆盖。

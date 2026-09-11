@@ -34,10 +34,37 @@ BACKUP_REMOTE_KEEP_DAYS=${BACKUP_REMOTE_KEEP_DAYS:-${KEEP_DAYS}}
 
 BACKUP_ONCE=${BACKUP_ONCE:-0}
 
+# 失败告警回调（可选；S2）：向服务端 POST 失败事件，由服务端节流（60s 同源去重）
+# 后发站内信/邮件给超管。未配置 URL/TOKEN 时静默跳过（保持纯日志模式）。
+BACKUP_ALERT_URL=${BACKUP_ALERT_URL:-}
+BACKUP_ALERT_TOKEN=${BACKUP_ALERT_TOKEN:-}
+
 LAST_BASE=""
 
 log() { echo "[$(date '+%F %T')] $*"; }
 warn() { echo "[$(date '+%F %T')] WARN: $*" >&2; }
+
+# 上报失败事件：告警投递失败只再记一条 WARN，绝不影响备份主流程
+send_alert() {
+    local event=$1 detail=${2:-}
+    if [[ -z "${BACKUP_ALERT_URL}" || -z "${BACKUP_ALERT_TOKEN}" ]]; then
+        return 0
+    fi
+    if ! command -v curl > /dev/null 2>&1; then
+        warn "报警跳过：curl 不可用（${event}）"
+        return 0
+    fi
+    local payload
+    payload=$(printf '{"source":"db-backup","event":"%s","host":"%s","time":"%s","detail":"%s"}' \
+        "${event}" "$(hostname 2>/dev/null || echo unknown)" "$(date '+%F %T')" "${detail}")
+    if ! curl -sS -m 10 -X POST "${BACKUP_ALERT_URL}" \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: xadmin-db-backup/1.0" \
+        -H "X-Backup-Token: ${BACKUP_ALERT_TOKEN}" \
+        -d "${payload}" > /dev/null 2>&1; then
+        warn "告警投递失败（备份流程不受影响）：${event}"
+    fi
+}
 
 # sha256sum 在 Debian 系容器存在，macOS 只有 shasum（本机演练/单测需要兜底）
 sha256_of() {
@@ -111,17 +138,22 @@ do_backup() {
     else
         warn "backup FAILED, remove partial file"
         rm -f "${tmp}"
+        send_alert "pg_dump failed" "database=${PGDATABASE} host=${PGHOST}:${PGPORT}"
         return 1
     fi
     if ! verify_archive "${file}"; then
         rm -f "${file}"
+        send_alert "backup archive verify failed" "file=${file}"
         return 1
     fi
     write_checksum "${file}"
     log "backup done: $(du -h "${file}" | cut -f1)"
     LAST_BASE="${base}"
     printf '%s\n' "${file}" > "${BACKUP_DIR}/.latest_backup"
-    sync_remote "${file}" || warn "异地同步失败（本地备份仍有效）: ${file}"
+    if ! sync_remote "${file}"; then
+        warn "异地同步失败（本地备份仍有效）: ${file}"
+        send_alert "remote sync failed" "file=${file} target=${BACKUP_REMOTE_TYPE}:${BACKUP_REMOTE_TARGET}"
+    fi
 }
 
 # 媒体目录打包：目录缺失仅告警，不阻断数据库备份
@@ -142,16 +174,21 @@ backup_media() {
     else
         warn "媒体目录打包失败: ${MEDIA_DIR}"
         rm -f "${tmp}"
+        send_alert "media archive failed" "media_dir=${MEDIA_DIR}"
         return 1
     fi
     if ! verify_archive "${file}"; then
         rm -f "${file}"
+        send_alert "media archive verify failed" "file=${file}"
         return 1
     fi
     write_checksum "${file}"
     log "media backup done: $(du -h "${file}" | cut -f1)"
     printf '%s\n' "${file}" >> "${BACKUP_DIR}/.latest_backup"
-    sync_remote "${file}" || warn "媒体包异地同步失败（本地备份仍有效）: ${file}"
+    if ! sync_remote "${file}"; then
+        warn "媒体包异地同步失败（本地备份仍有效）: ${file}"
+        send_alert "media remote sync failed" "file=${file} target=${BACKUP_REMOTE_TYPE}:${BACKUP_REMOTE_TARGET}"
+    fi
 }
 
 prune_local() {

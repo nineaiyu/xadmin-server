@@ -2,6 +2,7 @@ django==6.0.8
 djangorestframework==3.18.1
 django-cors-headers==4.9.0
 django-filter==26.1
+django-csp==4.0
 mysqlclient==2.2.8
 psycopg[binary,pool]==3.3.5
 django-redis==7.0.0

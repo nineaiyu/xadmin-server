@@ -127,3 +127,63 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | B1 | `GetUserFromAccessToken`（token_type=refresh 的 AccessToken 子类）被 API 日志中间件用于「请求体携带 refresh token 时反查用户归属」 | 仅影响审计日志归属，不参与任何授权决策；解析失败静默忽略；refresh token 本身是签名凭证，伪造无收益 | 若未来日志归属被用于计费/追责等强场景，需先 `verify()` 再归属 |
 | B2 | Cookie 认证（`X-Token` cookie → Bearer）服务于 Flower 代理等 django-proxy 页面 | 与 localStorage token 同级 XSS 暴露面（cookie 非 HttpOnly，由前端写入）；Proxy 页面为既有功能决策 | 若引入不受信任的第三方页面嵌入，需改 HttpOnly + CSRF 双提交 |
 | B3 | HS256 + `SIGNING_KEY=SECRET_KEY` 复用 | 单服务部署无密钥分发问题；轮换 = 轮换 SECRET_KEY（登出全体用户，可接受） | 服务拆分/多实例异密钥需求出现时，评估 RS256/JWK（simplejwt 原生支持） |
+
+## 四期登记（2026-09-11）：SCIM 目录同步 / 备份告警 / CSP
+
+### S1 SCIM 2.0 用户目录同步（`/api/scim/v2`）
+
+- **凭证分离**：独立 Bearer Token（`SCIM_TOKEN`，`secrets.compare_digest` 比较），
+  与 JWT/PAT 完全不同链路——业务身份（JWT）访问 SCIM 一律 401/403，SCIM 凭证也不进业务授权；
+- **默认休眠**：`SCIM_ENABLED=false` 默认关闭（未开启时任何请求 403），令牌未配置时 401；
+  两个配置项均 `access=false`，不对外回传；
+- **写入面收口**：仅 Users/Groups 的 CRUD + PATCH 子集，未实现 bulk/sort/etag/changePassword
+  （ServiceProviderConfig 显式声明 false，不静默忽略）；
+- **凭据不下发**：payload 无 `password` 时置不可用密码（登录走既有 OAuth2/OIDC 联邦）；
+- **停用即失效**：`active=false` / DELETE 复用 `force_logout_user`（令牌失效时间戳 + refresh
+  拉黑 + WS 踢线 + UserSession 置离线），与在线用户强制下线同一套链路；
+- **审计**：所有写操作落 `OperationLog`（`auth_type=scim`），记字段级 changes，
+  **刻意不记请求体**（可能含 password）；令牌本身不落日志；
+- **限流**：`ScimThrottle` 凭证级（`SCIM_RATE_LIMIT`，默认 600/min），凭证泄漏时爆炸半径可控。
+
+测试：`tests/integration/system/test_scim_api.py`（11 例：休眠 403 / 缺失与错误令牌 401 / 业务身份不可访问 /
+能力声明 / 凭证级限流 / Users CRUD 与 `userName eq` 过滤 / 重名 409 / 不支持的 filter 400 invalidFilter /
+停用触发会话失效 / DELETE 语义为停用 / 写操作审计（且不落请求体）/ Group 生命周期与成员增删）。
+
+### S2 备份失败告警（`POST /api/common/api/backup-alert`）
+
+- 独立令牌 `X-Backup-Token`（`BACKUP_ALERT_TOKEN`，默认空 = 端点恒 403），
+  比较用 `secrets.compare_digest`；令牌不对只返回通用 403，不泄露配置状态；
+- 60s 同源节流（防脚本循环重试刷告警）；订阅缺失/收件人为空时自愈补建（存量库 post_migrate
+  早于本消息注册时不会静默丢失告警）；
+- 告警投递失败不影响备份主流程（脚本侧只追加 WARN，退出码仍反映备份失败）；
+- 实测：本机 PG 演练库真实失败路径触发告警 + 不可达地址降级（见 `docs/ops/backup-drill-2026-Q4.md`）。
+
+### S3 CSP（django-csp 4.0 + 运行期模式开关）
+
+- **默认 report-only（观察期）**：不拦截请求，违规经 `report-uri` 上报到
+  `/api/common/api/csp-report`（只记 WARNING 日志 + 60s 节流，不落库）；
+- 模式与上报地址运行期可配（`CSP_MODE`：disabled/report-only/enforce；
+  `CSP_REPORT_URI`），观察一周后切 enforce 无需重新发版；
+- 策略：`default-src 'self'`、`object-src 'none'`、`base-uri 'self'`、`frame-ancestors 'self'`；
+  仅按需放开 `style-src 'unsafe-inline'`（Element Plus 注入内联样式）、`img-src data: blob:`、
+  `frame-src blob:`（文档预览内嵌）、`connect-src ws: wss:`（WebSocket）；
+- `/media/`、`/api/static/`、`/api-docs/` 前缀豁免（大文件/静态资源不背策略头）；
+- 已知边界：前端 SPA 由 nginx 托管时，其自身的 CSP 需在 nginx 侧下发同一策略串
+  （见 `docs/ops/deployment.md`）；本处 django-csp 覆盖 Django 渲染页与 API 响应。
+
+测试：`tests/unit/common/test_csp.py`（8 例：默认观察头/切 enforce/disabled/report-uri 注入/
+静态前缀豁免/上报落日志与节流/CSP3 信封与非法 JSON 容错）。
+
+### 依赖窗口四期复核（2026-09-11）
+
+| 项 | 结果 |
+|---|---|
+| server `pip-audit`（已安装环境，等价 CI `-r requirements.txt` 口径） | **0 漏洞** |
+| client `pnpm audit --audit-level high`（官方源，与 CI 同口径） | **0 漏洞** |
+| renovate PR 清理 | 无待处理 renovate PR（server 仅 1 个人工 PR #104，client 0 个） |
+| openpyxl | 3.1.5 = PyPI 最新，无窗口 |
+| element-plus | 当前版本即最新，无窗口 |
+| vite | 8.2.2 → 8.3.0（minor）可用，走 renovate 常规窗口升级，不在本次手工变更 |
+| typescript | 6.0.3 → 7.0.2 已评估：**暂不升级**（vue-tsc 与 TS 7 不兼容），见 ADR-014 |
+| 其他窗口 | dev 工具 minor（@iconify/json、@types/node、lint-staged、pinyin-pro）与
+  major（@iconify/vue 4→5、cropperjs 1→2、cssnano 8→9、postcss-import 16→17）交由 renovate 常规窗口 |

@@ -29,6 +29,55 @@ from system.services import OperationLog
 
 logger = get_logger(__name__)
 
+#: CSP 响应头名（与 django-csp 4.x 一致）
+CSP_HEADER = "Content-Security-Policy"
+CSP_HEADER_REPORT_ONLY = "Content-Security-Policy-Report-Only"
+
+
+class CSPModeMiddleware:
+    """CSP 运行期模式开关（ADR 落地 S3）：disabled / report-only / enforce。
+
+    django-csp 负责按 settings 生成策略（`CONTENT_SECURITY_POLICY[_REPORT_ONLY]`），
+    本中间件只做「按系统配置决定最终下发哪个头 + 注入 report-uri」：
+
+    - `CSP_MODE=disabled`：两个头都移除；
+    - `CSP_MODE=report-only`（默认）：只保留 Report-Only（观察期，不拦截）；
+    - `CSP_MODE=enforce`：把 Report-Only 改写为强制头。
+
+    挂载顺序：必须排在 `csp.middleware.CSPMiddleware` **之前**——响应阶段自内向外，
+    本中间件需要在其之后执行才能改写到已生成的策略头。
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        mode = str(getattr(SysConfig, "CSP_MODE", None) or "report-only").strip().lower()
+
+        if mode == "disabled":
+            response.headers.pop(CSP_HEADER, None)
+            response.headers.pop(CSP_HEADER_REPORT_ONLY, None)
+            return response
+
+        if mode == "enforce":
+            # 把观察策略提升为强制策略（django-csp 两套 settings 的指令一致）
+            if CSP_HEADER_REPORT_ONLY in response.headers:
+                response.headers[CSP_HEADER] = response.headers[CSP_HEADER_REPORT_ONLY]
+                response.headers.pop(CSP_HEADER_REPORT_ONLY, None)
+        else:
+            # 观察期：只保留 Report-Only（django-csp 默认也会下发强制头，这里移除）
+            response.headers.pop(CSP_HEADER, None)
+
+        # report-uri 运行期可配（默认空 = 不下发）：观察期把违规上报到本服务端点
+        report_uri = str(getattr(SysConfig, "CSP_REPORT_URI", None) or "").strip()
+        header_name = CSP_HEADER if mode == "enforce" else CSP_HEADER_REPORT_ONLY
+        policy = response.headers.get(header_name, "")
+        if report_uri and policy and "report-uri" not in policy:
+            response.headers[header_name] = f"{policy}; report-uri {report_uri}"
+        return response
+
+
 # 日志大字段截断上限，避免大请求体/大响应整包入库
 MAX_LOG_FIELD = 4096
 # 操作日志脱敏字段清单
