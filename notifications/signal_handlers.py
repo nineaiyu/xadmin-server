@@ -27,6 +27,7 @@ def create_system_messages(app_config: AppConfig, **kwargs):
     # 且 `if not created: return` 会在首个已存在订阅时中断后续补建。
     # migrate 时刻 URL 未加载，承载消息子类的模块需在此显式触发装饰器注册
     # （生产运行期它们由登录/改密/任务链路自然导入）。
+    import common.backup_alert  # noqa: F401
     import common.celery.failure_handler  # noqa: F401
     import common.notifications  # noqa: F401
     import system.notifications  # noqa: F401

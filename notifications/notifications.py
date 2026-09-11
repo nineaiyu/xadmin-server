@@ -94,14 +94,31 @@ class Message:
                 traceback.print_exc()
 
     @classmethod
-    def send_test_msg(cls):
+    def send_test_msg(cls, user=None):
+        """发送测试消息（渠道连通性自检）：收件人默认全部超管，渠道取当前已启用后端。
+
+        历史缺陷：此前传 `backends = []`（list）给 `send_msg`（期望 dict），
+        迭代 `.items()` 直接抛 AttributeError，测试消息**从未真正送达**。
+        现改为走与正式发布同一套渠道渲染（`get_backend_msg_mapper`，站内信恒可用，
+        邮件/短信按各自开关过滤），保证测试消息能真实落库/投递。
+
+        `user` 非空时只发给该用户（个人消息订阅页「发送测试」= 发给自己）。
+        """
         msg = cls.gen_test_msg()
         if not msg:
             return
-
-        users = get_superusers()
-        backends = []
-        msg.send_msg(users, backends)
+        if user is not None:
+            user_ids = [user.pk]
+        else:
+            user_ids = list(get_superusers().values_list("pk", flat=True))
+        if not user_ids:
+            logger.warning("send test msg failed. No recipient found for %s", cls.get_message_type())
+            return
+        backends_msg_mapper = msg.get_backend_msg_mapper(list(BACKEND))
+        if not backends_msg_mapper:
+            logger.warning("send test msg skipped. No enabled backend for %s", cls.get_message_type())
+            return
+        msg.send_msg(user_ids, backends_msg_mapper)
 
     @staticmethod
     def get_common_msg() -> dict:
@@ -212,11 +229,14 @@ class Message:
 
     @classmethod
     def test_all_messages(cls, ding=True, wecom=False):
-        messages_cls = cls.get_all_sub_messages()
+        """逐个消息类型发测试消息（对接方自检用）。
 
-        for _cls in messages_cls:
+        `ding`/`wecom` 为历史钉钉/企微渠道参数：渠道已下线（现仅站内信/邮件/短信），
+        `gen_test_msg` 均无参数签名，保留形参仅为兼容旧调用，不再向下传递。
+        """
+        for _cls in cls.get_all_sub_messages():
             try:
-                _cls.send_test_msg(ding=ding, wecom=wecom)
+                _cls.send_test_msg()
             except NotImplementedError:
                 continue
 
@@ -279,8 +299,39 @@ class UserMessage(Message):
         return UserInfo.objects.all().first()
 
     @classmethod
+    def send_test_msg(cls, user=None):
+        """用户消息的测试发送：收件人默认样例用户（`get_test_user`），渠道取已启用后端。
+
+        覆盖基类「发给全部超管」的语义——用户消息（如异地登录提醒）发给超管没有意义，
+        发给一个真实用户才能验证模板与渠道是否可用；`user` 非空时按指定用户发送。
+        """
+        msg = cls.gen_test_msg()
+        if not msg:
+            return
+        target = user or cls.get_test_user()
+        if target is None:
+            logger.warning("send test msg failed. No user found for %s", cls.get_message_type())
+            return
+        backends_msg_mapper = msg.get_backend_msg_mapper(list(BACKEND))
+        if not backends_msg_mapper:
+            logger.warning("send test msg skipped. No enabled backend for %s", cls.get_message_type())
+            return
+        msg.send_msg([target.pk], backends_msg_mapper)
+
+    @classmethod
     def gen_test_msg(cls):
         raise NotImplementedError
+
+
+def get_message_cls(message_type):
+    """按 message_type 取消息类（系统 + 用户注册表），未注册返回 None。
+
+    供「发送测试消息」入口按订阅行的 message_type 定位实现类。
+    """
+    for info in SYSTEM_MESSAGE_REGISTRY + USER_MESSAGE_REGISTRY:
+        if info["message_type"] == message_type:
+            return info["cls"]
+    return None
 
 
 def register_message(cls):

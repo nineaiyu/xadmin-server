@@ -1,21 +1,27 @@
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_object_type, build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 
+from common.utils import get_logger
+
 from common.core.modelset import DetailUpdateModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
-from notifications.notifications import system_msgs, user_msgs
+from notifications.notifications import get_message_cls, system_msgs, user_msgs
 from notifications.serializers import (
     SystemMsgSubscriptionSerializer,
     SystemMsgSubscriptionByCategorySerializer,
     UserMsgSubscriptionSerializer,
     UserMsgSubscriptionByCategorySerializer,
 )
+
+
+logger = get_logger(__name__)
 
 
 class MsgSubscriptionBackend(object):
@@ -40,6 +46,36 @@ class MsgSubscriptionBackend(object):
         return ApiResponse(
             data=[{"value": backend, "label": backend.label} for backend in BACKEND if backend.is_enable]
         )
+
+    #: 测试消息是否发给「当前登录用户」（个人订阅页=True；系统订阅页发给全部超管=False）
+    test_msg_to_request_user = False
+
+    @extend_schema(
+        request=build_object_type(
+            properties={"message_type": build_basic_type(OpenApiTypes.STR)},
+            required=["message_type"],
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False)
+    def test(self, request, *args, **kwargs):
+        """发送测试消息（渠道连通性自检）
+
+        按订阅行的 message_type 找到消息实现类并走真实发送链路：
+        系统消息发给全部在用超管，用户消息发给当前用户（个人订阅页）或样例用户。
+        """
+        message_type = request.data.get("message_type")
+        message_cls = get_message_cls(message_type) if message_type else None
+        if message_cls is None:
+            return ApiResponse(code=1004, detail=_("Unknown message type"))
+        try:
+            message_cls.send_test_msg(user=request.user if self.test_msg_to_request_user else None)
+        except NotImplementedError:
+            return ApiResponse(code=1004, detail=_("This message type does not support test sending"))
+        except Exception as e:  # noqa: BLE001 渠道异常不暴露内部细节
+            logger.exception("send test message failed: %s", e)
+            return ApiResponse(code=1001, detail=_("Failed to send test message"))
+        return ApiResponse(detail=_("Test message sent"))
 
 
 class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
@@ -84,6 +120,8 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
 class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscriptionBackend):
     """用户消息订阅"""
 
+    # 个人订阅页的「发送测试」发给自己（系统订阅页则发给全部超管）
+    test_msg_to_request_user = True
     lookup_field = "message_type"
     list_serializer_class = UserMsgSubscriptionByCategorySerializer
     serializer_class = UserMsgSubscriptionSerializer

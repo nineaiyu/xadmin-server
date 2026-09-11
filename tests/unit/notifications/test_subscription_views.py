@@ -86,3 +86,45 @@ class TestSubscriptionViews:
         # 其他用户的订阅不出现
         other = api_client.get(USER_SUB_URL)
         assert other.data["code"] == 1000
+
+
+class TestSendTestMessageAPI:
+    """「发送测试消息」入口：按 message_type 走真实发送链路（渠道连通性自检）。"""
+
+    def test_system_test_message_delivers_to_superuser(self, auth_client, superuser):
+        """系统消息测试：站内信落库到超管（回归 send_test_msg 从未送达的历史缺陷）。"""
+        from notifications.models import MessageContent
+
+        before = MessageContent.objects.count()
+        resp = auth_client.post(f"{SYSTEM_SUB_URL}/test", {"message_type": "TaskFailureMessage"}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        assert MessageContent.objects.count() == before + 1
+        content = MessageContent.objects.latest("created_time")
+        assert superuser in content.notice_user.all()
+
+    def test_user_test_message_delivers_to_request_user(self, auth_client, superuser):
+        """用户消息测试：发给当前登录用户（个人订阅页语义）。"""
+        from notifications.models import MessageContent
+
+        before = MessageContent.objects.count()
+        resp = auth_client.post(f"{USER_SUB_URL}/test", {"message_type": "DifferentCityLoginMessage"}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        assert MessageContent.objects.count() == before + 1
+        content = MessageContent.objects.latest("created_time")
+        assert list(content.notice_user.values_list("pk", flat=True)) == [superuser.pk]
+
+    def test_unknown_message_type_rejected(self, auth_client):
+        resp = auth_client.post(f"{SYSTEM_SUB_URL}/test", {"message_type": "NotExistMessage"}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1004
+        assert auth_client.post(f"{SYSTEM_SUB_URL}/test", {}, format="json").data["code"] == 1004
+
+    def test_test_message_requires_login(self, api_client):
+        assert api_client.post(
+            f"{SYSTEM_SUB_URL}/test", {"message_type": "TaskFailureMessage"}, format="json"
+        ).status_code in (
+            401,
+            403,
+        )
