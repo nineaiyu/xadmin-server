@@ -39,6 +39,7 @@ docs/
 | [cache.md](architecture/cache.md)                       | 缓存策略统一审计：四套缓存键规范/TTL/失效矩阵/绕过 ORM 红线          |
 | [indexes.md](architecture/indexes.md)                   | 索引评审记录：清单、不加索引的理由、EXPLAIN 回归                 |
 | [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
+| [scim.md](architecture/scim.md)                         | SCIM 2.0 用户目录同步：启用步骤 / 字段与组映射 / Okta、Entra 配置示例 / 排错 |
 
 ## 部署与运维（ops/）
 
@@ -48,6 +49,7 @@ docs/
 | [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
 | [performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（T3.1）：silk 剖析接入 + k6 六接口压测 + 登记口径与回归判定 |
 | [backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份演练（异地副本/媒体目录/RPO 6h 收口）：`utils/backup_drill.sh` 一键闭环与结果 |
+| [backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md) | 季度演练（Q4，提前执行）：67 表逐表 0 不一致、RTO 0.28s，一并验收备份失败告警（S2） |
 | [backup-drill-2026-09.md](ops/backup-drill-2026-09.md) | 首次备份演练记录（RTO 0.88s、52 表一致）与当时遗留缺口                 |
 
 ## 架构决策记录（adr/）
@@ -65,6 +67,9 @@ docs/
 | [ADR-009](adr/ADR-009-data-mask-exemption.md) | 数据脱敏豁免清单机制                          |
 | [ADR-010](adr/ADR-010-crypto-es.md)          | crypto-js 弃用处置：替换为 crypto-es        |
 | [ADR-011](adr/ADR-011-aes-protocol-v2.md)    | 凭证加密协议升级 v2（WebCrypto PBKDF2+AES-GCM 双格式过渡） |
+| [ADR-012](adr/ADR-012-approval-flow-engine.md) | 审批流引擎（模板/实例/任务/加签/催办，含触发器与数据权限） |
+| [ADR-013](adr/ADR-013-office-online-preview.md) | Office 在线预览选型：LibreOffice headless 转 PDF（重队列 + 缓存回收） |
+| [ADR-014](adr/ADR-014-typescript-7-evaluation.md) | TypeScript 7 升级评估：暂不升级（vue-tsc 与 TS 7 不兼容，附实测数据） |
 
 ## 契约与规范（schema/ + 根级）
 

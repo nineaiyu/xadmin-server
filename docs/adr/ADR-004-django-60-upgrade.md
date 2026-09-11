@@ -61,3 +61,23 @@
   beat 调度器全链路），且存在必须升级的安全或特性驱动；
 - 影响：遗留缺口 L4 关闭；「升级后启用内置 CSP」候选项一并搁置（现有
   X-Frame-Options 等响应头策略不变）；5.2 LTS 官方支持至 2028-04，无安全压力。
+
+## 复审记录（2026-09-11 第二轮，触发条件核查 → 仍未满足）
+
+按排期 D2「Django 6.2 重开条件核查（是否升级到 6.2 LTS）」复核 PyPI 现状：
+
+| 依赖 | 最新版本 | Django 支持声明 |
+|---|---|---|
+| Django | 6.1.1 | —（**6.2 尚未发布**，x.2 LTS 计划 2026-12） |
+| celery | 5.6.3 | 无 Django framework classifiers（未声明 6.x） |
+| django-celery-beat | 2.9.0 | 声明至 Django 6.0 |
+| django-celery-results | 2.6.0 | 声明至 Django 5.2 |
+
+结论：**重开条件未满足，维持「不升级」**（本仓当前运行 Django 6.0.8 + Python 3.13，
+beat/results 的声明矩阵亦未覆盖 6.0 之上版本）。下次复核时机：Django 6.2 正式发布
+（2026-12）且 celery 主线（含 beat/results）声明支持 6.2 后，再按 D2 口径复核一次。
+
+配套说明：原「升级后启用内置 CSP」的诉求已由独立方案解除绑定——S3 采用
+`django-csp 4.0` + 运行期模式开关（`CSP_MODE`：disabled/report-only/enforce）落地，
+默认 report-only 观察，观察期结束后切 enforce，无需等待框架升级（见
+`docs/ops/deployment.md` 与 `docs/security-review.md`）。

@@ -22,11 +22,13 @@
 | `magic_cache_data_` | `MagicCacheData.make_cache` | `<user.pk>_<method>` | 10s（字段权限）/ 24h（接口权限） | 信号驱动（Menu/UserRole/DeptInfo/UserInfo/SystemConfig/登出） |
 | `magic_cache_response_` | `@cache_response` | `<ViewSet>_<action>_<user.pk>`（`get_cache_key`/`get_stats_cache_key`） | 10s ~ 24h | `cache_response.invalid_cache`（modelset 写路径收口）+ `?no_cache=1` 旁路 |
 
-### 手写键（扫描输出，6 处）
+### 手写键（扫描输出 + 审计补登）
 
 | 键 | 位置 | TTL | 维度 | 失效 |
 |---|---|---|---|---|
 | `approval_pending_count_{user.pk}` | system/utils/approval.py | 10s | 用户 | `invalidate_pending_count_cache()`（审批状态变化全量删） |
+| `approval_flow_pending_count_{user.pk}` | system/utils/approval_flow.py | 10s | 用户 | `_invalidate_pending_count()`（节点推进/任务处理：全量或指定用户删） |
+| `approval_flow_remind_{task.pk}` | system/utils/approval_flow.py | 24h | 单节点任务 | TTL 到期（同一任务每日最多提醒一次的超时占位） |
 | `{DICT_CACHE_PREFIX}{code}` | system/utils/dict.py | 常量 TTL | 字典编码（全局） | 字典写路径 `cache.delete` |
 | `{MASK_CACHE_PREFIX}{model_label}` | system/utils/mask.py | 常量 TTL | 模型（全局） | 脱敏规则写路径 + roles m2m 信号 |
 | `magic_cache_response_UploadFileViewSet_stats_{user_pk}` | system/views/admin/file.py | 10s | 用户 | TTL 到期（统计口径可容忍） |
