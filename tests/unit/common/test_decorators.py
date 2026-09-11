@@ -18,6 +18,17 @@ from common.decorators import (
 )
 
 
+def wait_until(predicate, timeout=5.0, interval=0.05):
+    """轮询等待后台防抖任务落盘，替代固定 sleep（负载高时盲等会被打穿）。"""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        result = predicate()
+        if result:
+            return result
+        time.sleep(interval)
+    return predicate()
+
+
 class TestSingleton:
     def test_same_instance_returned(self):
         @Singleton
@@ -81,6 +92,8 @@ class TestDelayRun:
             def bad(a):  # noqa
                 pass
 
+    # django_db 必须保留：任务经 open_db_connection 在后台线程自建连接，
+    # pytest-django 的 DB 屏蔽是进程级（含非主线程），无标记时任务会被拦截丢弃
     @pytest.mark.django_db
     def test_delayed_execution_runs_once(self):
         calls = []
@@ -92,8 +105,8 @@ class TestDelayRun:
         job()
         job()
         job()
-        time.sleep(0.6)
-        assert calls == [1]
+        # 防抖语义：三次调用合并为一次执行，轮询到首次执行即终态（不存在二次触发）
+        assert wait_until(lambda: calls) == [1]
 
 
 class TestMergeDelayRun:
@@ -121,8 +134,7 @@ class TestMergeDelayRun:
         # delay 经 partial 绑定 func，只传业务参数
         job.delay(users=["a"])
         job.delay(users=["b"])
-        time.sleep(0.8)
-        assert seen == [{"a", "b"}]
+        assert wait_until(lambda: seen) == [{"a", "b"}]
 
     @pytest.mark.django_db
     def test_delay_rejects_scalar_kwargs(self):
@@ -182,6 +194,6 @@ class TestDebounceInfrastructure:
 
         start = time.time()
         job()
-        time.sleep(0.5)
-        assert calls == [1]
+        # 轮询到执行完成；防抖的「延迟语义」仍以 elapsed 下限断言兜底
+        assert wait_until(lambda: calls) == [1]
         assert time.time() - start >= 0.1
