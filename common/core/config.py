@@ -253,6 +253,71 @@ class BaseConfCache(ConfigCacheBase):
         return int(self.get_value("APPROVAL_REMIND_HOURS", 24))
 
     @property
+    def APPROVAL_FLOW_KEEP_DAYS(self):
+        """流程实例保留天数（默认 365，ADR-012）：超过由清理任务分批删除（级联节点任务）。"""
+        return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", 365))
+
+    @property
+    def FILE_OFFICE_PREVIEW_ENABLED(self):
+        """Office 在线预览开关（默认开，ADR-013）：关闭或未装 LibreOffice 时按不支持降级。"""
+        return self.get_value("FILE_OFFICE_PREVIEW_ENABLED", True)
+
+    @property
+    def FILE_OFFICE_MAX_BYTES(self):
+        """Office 预览转换大小上限（字节，默认 20MB）：超过不转换（保护转换进程）。"""
+        return int(self.get_value("FILE_OFFICE_MAX_BYTES", 20 * 1024 * 1024))
+
+    @property
+    def FILE_OFFICE_CONVERT_TIMEOUT(self):
+        """LibreOffice 单次转换超时（秒，默认 60）：超时杀进程并降级为不可预览。"""
+        return int(self.get_value("FILE_OFFICE_CONVERT_TIMEOUT", 60))
+
+    @property
+    def FILE_OFFICE_WAIT_SECONDS(self):
+        """请求侧等待转换产物的窗口（秒，默认 8）：未等到返回 1006 由前端重试。"""
+        return int(self.get_value("FILE_OFFICE_WAIT_SECONDS", 8))
+
+    @property
+    def FILE_OFFICE_SOFFICE_BIN(self):
+        """LibreOffice 可执行文件路径（默认空 = 自动探测 PATH 与常见安装路径）。"""
+        return self.get_value("FILE_OFFICE_SOFFICE_BIN", "")
+
+    @property
+    def SCIM_ENABLED(self):
+        """SCIM 用户目录同步总开关（默认关，S1）：开启且配置 SCIM_TOKEN 后生效。"""
+        return self.get_value("SCIM_ENABLED", False)
+
+    @property
+    def SCIM_TOKEN(self):
+        """SCIM 独立 Bearer Token（默认空 = 未配置，任何请求 401；access=false 不对外回传）。"""
+        return self.get_value("SCIM_TOKEN", "")
+
+    @property
+    def SCIM_RATE_LIMIT(self):
+        """SCIM 凭证级限流速率（SimpleRateThrottle 速率串，默认 600/min；空或 0 = 不限）。"""
+        return self.get_value("SCIM_RATE_LIMIT", "600/min")
+
+    @property
+    def SCIM_DEFAULT_ROLE_CODE(self):
+        """SCIM 新建用户的默认角色 code（默认空 = 不分配角色，由 IdP 分组另行下发）。"""
+        return self.get_value("SCIM_DEFAULT_ROLE_CODE", "")
+
+    @property
+    def BACKUP_ALERT_TOKEN(self):
+        """备份失败告警回调令牌（默认空 = 端点未启用；access=false 不对外回传）。"""
+        return self.get_value("BACKUP_ALERT_TOKEN", "")
+
+    @property
+    def CSP_MODE(self):
+        """CSP 模式（S3，默认 report-only 观察期）：disabled / report-only / enforce。"""
+        return self.get_value("CSP_MODE", "report-only")
+
+    @property
+    def CSP_REPORT_URI(self):
+        """CSP 违规上报地址（默认空 = 不下发 report-uri）：一般指向 /api/common/api/csp-report。"""
+        return self.get_value("CSP_REPORT_URI", "")
+
+    @property
     def PAT_RATE_LIMIT(self):
         """PAT 凭证级限流速率（SimpleRateThrottle 速率串，默认 60/min；空或 0 = 不限）。"""
         return self.get_value("PAT_RATE_LIMIT", "60/min")

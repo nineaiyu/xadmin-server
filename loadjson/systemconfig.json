@@ -613,5 +613,226 @@
       "key": "OAUTH_PROVIDERS",
       "inherit": false
     }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1e",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "流程实例保留天数（全量审批流引擎，ADR-012）：超过由清理任务分批删除（级联节点任务）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 365,
+      "is_active": true,
+      "access": false,
+      "key": "APPROVAL_FLOW_KEEP_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1f",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "Office 在线预览开关（ADR-013）：关闭或未安装 LibreOffice 时按「不支持预览」降级",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": true,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_OFFICE_PREVIEW_ENABLED",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b20",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "Office 预览转换大小上限（字节，默认 20MB）：超过不转换（保护转换进程）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 20971520,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_OFFICE_MAX_BYTES",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b21",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "LibreOffice 单次转换超时（秒，默认 60）：超时杀进程并降级为不可预览",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 60,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_OFFICE_CONVERT_TIMEOUT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b22",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "请求侧等待 Office 转换产物的窗口（秒，默认 8）：未等到返回 1006 由前端重试",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 8,
+      "is_active": true,
+      "access": false,
+      "key": "FILE_OFFICE_WAIT_SECONDS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b23",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "LibreOffice 可执行文件路径（默认空 = 自动探测 PATH 与常见安装路径）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_OFFICE_SOFFICE_BIN",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b24",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "SCIM 用户目录同步总开关（S1，默认关）：开启且配置 SCIM_TOKEN 后 /api/scim/v2 生效",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": false,
+      "is_active": true,
+      "access": false,
+      "key": "SCIM_ENABLED",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b25",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "SCIM 独立 Bearer Token（默认空 = 未配置则任何请求 401；仅服务端可见，不对外回传）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "SCIM_TOKEN",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b26",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "SCIM 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "600/min",
+      "is_active": true,
+      "access": false,
+      "key": "SCIM_RATE_LIMIT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b27",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "SCIM 新建用户的默认角色 code（默认空 = 不分配角色，由 IdP 分组另行下发）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "SCIM_DEFAULT_ROLE_CODE",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b28",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "备份失败告警回调令牌（S2）：db_backup 容器以 X-Backup-Token 上报；空 = 未启用",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "BACKUP_ALERT_TOKEN",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b29",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "CSP 模式（S3，ADR-004 复审后的独立方案 django-csp）：disabled / report-only（观察期，默认）/ enforce",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "report-only",
+      "is_active": true,
+      "access": false,
+      "key": "CSP_MODE",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b2a",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "CSP 违规上报地址（默认空 = 不下发 report-uri；建议填 /api/common/api/csp-report 走观察期日志）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "CSP_REPORT_URI",
+      "inherit": false
+    }
   }
 ]

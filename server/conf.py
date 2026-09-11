@@ -210,6 +210,22 @@ class Config(dict):
         "APPROVAL_KEEP_DAYS": 180,
         # 待审批超时提醒阈值（小时）：由每日提醒任务对未处理的单补发一次提醒；0 = 不提醒
         "APPROVAL_REMIND_HOURS": 24,
+        # 流程实例（全量审批流引擎，ADR-012）保留天数：超过由清理任务分批删除
+        "APPROVAL_FLOW_KEEP_DAYS": 365,
+        # Office 在线预览（ADR-013）：LibreOffice headless 转 PDF 后内嵌渲染
+        "FILE_OFFICE_PREVIEW_ENABLED": True,  # 关闭或未安装转换器时按「不支持预览」降级
+        "FILE_OFFICE_MAX_BYTES": 20 * 1024 * 1024,  # 转换大小上限（字节，默认 20MB）
+        "FILE_OFFICE_CONVERT_TIMEOUT": 60,  # 单次转换超时（秒）
+        "FILE_OFFICE_WAIT_SECONDS": 8,  # 请求侧等待产物窗口（秒）：未等到回 1006 由前端重试
+        "FILE_OFFICE_SOFFICE_BIN": "",  # 转换器路径：空 = 自动探测 PATH 与常见安装路径
+        # SCIM 2.0 用户目录同步（S1）：默认整体休眠，需显式开启并配置独立 Bearer Token
+        "SCIM_ENABLED": False,
+        "SCIM_TOKEN": "",
+        "SCIM_RATE_LIMIT": "600/min",  # 凭证级限流；空或 0 = 不限
+        "SCIM_DEFAULT_ROLE_CODE": "",  # 新建用户默认角色 code（空 = 不分配）
+        # CSP（S3）：django-csp 生成策略，模式与上报地址运行期可配
+        "CSP_MODE": "report-only",  # disabled / report-only（观察期）/ enforce
+        "CSP_REPORT_URI": "",  # 空 = 不下发 report-uri；建议 /api/common/api/csp-report
         # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
         "PAT_RATE_LIMIT": "60/min",
         # 个人文件存储配额（MB；0 = 不限）

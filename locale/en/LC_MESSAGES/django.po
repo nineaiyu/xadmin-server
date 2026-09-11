@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-09 20:17+0800\n"
+"POT-Creation-Date: 2026-09-11 21:12+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,9 +18,61 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: common/celery/failure_handler.py:29 common/models.py:21
-#: common/notifications.py:21
+#: common/api/backup.py:55
+msgid "Invalid backup alert token"
+msgstr ""
+
+#: common/api/backup.py:61
+msgid "Backup failure"
+msgstr ""
+
+#: common/api/backup.py:67
+msgid "Backup alert received"
+msgstr ""
+
+#: common/api/csp.py:78
+msgid "CSP report endpoint"
+msgstr ""
+
+#: common/backup_alert.py:33 common/celery/failure_handler.py:29
+#: common/models.py:21 common/notifications.py:21
 msgid "Monitor"
+msgstr ""
+
+#: common/backup_alert.py:34
+msgid "Backup failure alert"
+msgstr ""
+
+#: common/backup_alert.py:41
+msgid "Unknown failure"
+msgstr ""
+
+#: common/backup_alert.py:45
+#, python-brace-format
+msgid "Backup failure alert: {}"
+msgstr ""
+
+#: common/backup_alert.py:47
+msgid "Source"
+msgstr ""
+
+#: common/backup_alert.py:48
+msgid "Event"
+msgstr ""
+
+#: common/backup_alert.py:49 settings/serializers/email.py:15
+msgid "Host"
+msgstr ""
+
+#: common/backup_alert.py:50 notifications/notifications.py:202
+#: system/templates/notify/msg_approval.html:23
+#: system/templates/notify/msg_approval_flow.html:31
+#: system/templates/notify/msg_sensitive_operation.html:6
+msgid "Time"
+msgstr ""
+
+#: common/backup_alert.py:54
+msgid "Please check the backup container logs and the backup directory."
 msgstr ""
 
 #: common/celery/failure_handler.py:30
@@ -45,14 +97,117 @@ msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr ""
 
-#: common/core/auth.py:25 common/core/filter.py:229 common/core/filter.py:236
-#: common/core/permission.py:137
+#: common/core/auth.py:31 common/core/filter.py:99 common/core/filter.py:106
+#: common/core/permission.py:182
 msgid "Unauthorized authentication"
 msgstr ""
 
-#: common/core/auth.py:40 common/core/auth.py:45 common/core/auth.py:50
-#: system/utils/auth.py:121
+#: common/core/auth.py:148 common/core/auth.py:153 common/core/auth.py:158
+#: common/core/auth.py:239 common/core/auth.py:242 system/utils/auth.py:121
 msgid "Token is invalid or expired"
+msgstr ""
+
+#: common/core/auth.py:245
+msgid "User account is disabled"
+msgstr ""
+
+#: common/core/auth.py:256
+msgid "Token is not allowed from this IP address"
+msgstr ""
+
+#: common/core/data_scope.py:492
+msgid "The rule cannot be null"
+msgstr ""
+
+#: common/core/data_scope.py:495
+#, python-format
+msgid "Rule %(index)d must be an object"
+msgstr ""
+
+#: common/core/data_scope.py:498
+#, python-format
+msgid "Rule %(index)d is missing a valid table"
+msgstr ""
+
+#: common/core/data_scope.py:502
+#, python-format
+msgid "Rule %(index)d references an unknown table %(table)s"
+msgstr ""
+
+#: common/core/data_scope.py:507
+#, python-format
+msgid "Rule %(index)d has an unknown type"
+msgstr ""
+
+#: common/core/data_scope.py:511
+#, python-format
+msgid "Rule %(index)d has a non-boolean exclude flag"
+msgstr ""
+
+#: common/core/data_scope.py:518
+msgid "The wildcard field is only valid on all-data rules"
+msgstr ""
+
+#: common/core/data_scope.py:523
+msgid "Excluding all data is not a valid rule"
+msgstr ""
+
+#: common/core/data_scope.py:528
+#, python-format
+msgid "Rule %(index)d is missing a value"
+msgstr ""
+
+#: common/core/data_scope.py:530
+#, python-format
+msgid "Rule %(index)d is missing a valid field"
+msgstr ""
+
+#: common/core/data_scope.py:539
+msgid "Rules of this type only support the in match"
+msgstr ""
+
+#: common/core/data_scope.py:543
+#, python-format
+msgid "Rule %(index)d requires at least one value"
+msgstr ""
+
+#: common/core/data_scope.py:547
+msgid "Relative-time rules require a numeric value"
+msgstr ""
+
+#: common/core/data_scope.py:550
+#, python-format
+msgid "Rule %(index)d has a malformed datetime"
+msgstr ""
+
+#: common/core/data_scope.py:555
+#, python-format
+msgid "Rule %(index)d requires two datetimes"
+msgstr ""
+
+#: common/core/data_scope.py:561
+#, python-format
+msgid "Rule %(index)d has a malformed JSON value"
+msgstr ""
+
+#: common/core/data_scope.py:569
+#, python-format
+msgid "Rule %(index)d has an unsupported match %(match)s"
+msgstr ""
+
+#: common/core/data_scope.py:578
+#, python-format
+msgid "Rule %(index)d has a malformed value for match %(match)s"
+msgstr ""
+
+#: common/core/data_scope.py:581
+#, python-format
+msgid "Rule %(index)d cannot be applied with the given value"
+msgstr ""
+
+#: common/core/data_scope.py:585
+#, python-format
+msgid "Field %(field)s does not exist on %(table)s"
 msgstr ""
 
 #: common/core/exception.py:37
@@ -78,97 +233,147 @@ msgstr ""
 msgid "Server internal error, please contact administrator or try again later"
 msgstr ""
 
-#: common/core/fields.py:129
+#: common/core/exception.py:80
+msgid "Operation failed, please check the submitted data"
+msgstr ""
+
+#: common/core/fields.py:132
 msgid "This field is required."
 msgstr ""
 
-#: common/core/fields.py:130
+#: common/core/fields.py:133
 #, python-brace-format
 msgid "Invalid pk \"{pk_value}\" - object does not exist."
 msgstr ""
 
-#: common/core/fields.py:131
+#: common/core/fields.py:134
 #, python-brace-format
 msgid "Incorrect type. Expected pk value, received {data_type}."
 msgstr ""
 
-#: common/core/fields.py:132
+#: common/core/fields.py:135
 msgid "The query set is empty."
 msgstr ""
 
-#: common/core/filter.py:260
+#: common/core/filter.py:130
 msgid "Resource selection has expired, please reselect"
 msgstr ""
 
 #: common/core/models.py:24 common/core/models.py:31
-#: settings/serializers/security.py:267
+#: settings/serializers/security.py:282
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:143 common/models.py:18
-#: settings/serializers/security.py:269
+#: common/core/models.py:163 common/models.py:18
+#: settings/serializers/security.py:284
 msgid "Created time"
 msgstr ""
 
-#: common/core/models.py:144
+#: common/core/models.py:164
 msgid "Updated time"
 msgstr ""
 
-#: common/core/models.py:145
+#: common/core/models.py:165
 msgid "Description"
 msgstr ""
 
-#: common/core/models.py:157 system/serializers/export.py:22
-#: system/serializers/task.py:235
+#: common/core/models.py:177 system/serializers/approval_flow.py:47
+#: system/serializers/export.py:22 system/serializers/import_.py:25
+#: system/serializers/task.py:236
 msgid "Creator"
 msgstr ""
 
-#: common/core/models.py:166
+#: common/core/models.py:186
 msgid "Modifier"
 msgstr ""
 
-#: common/core/models.py:175
+#: common/core/models.py:195
 msgid "Data ownership department"
 msgstr ""
 
-#: common/core/models.py:210
+#: common/core/models.py:230
 msgid "Deleted at"
 msgstr ""
 
-#: common/core/modelset/batch.py:45 system/views/admin/dict.py:149
+#: common/core/modelset/batch.py:40 common/core/modelset/import_export.py:451
+#: common/core/modelset/import_export.py:454
+#: common/core/modelset/import_export.py:532 system/serializers/import_.py:153
+#: system/utils/auth.py:116 system/utils/modelset.py:63
+#: system/utils/modelset.py:72 system/views/admin/dict.py:131
+#: system/views/auth/mfa.py:46 system/views/auth/register.py:71
+#: system/views/auth/reset.py:48 system/views/auth/verify_code.py:149
+#: system/views/auth/verify_code.py:176
+msgid "Operation failed. Abnormal data"
+msgstr ""
+
+#: common/core/modelset/batch.py:43
+#, python-brace-format
+msgid "Too many items to sort (max {})"
+msgstr ""
+
+#: common/core/modelset/batch.py:53 system/views/admin/dict.py:149
 msgid "Sorting saved successfully"
 msgstr ""
 
-#: common/core/modelset/batch.py:70 common/core/modelset/batch.py:85
+#: common/core/modelset/batch.py:74 common/core/modelset/batch.py:89
 #, python-brace-format
 msgid "Operation successful. Batch deleted {} data"
 msgstr ""
 
-#: common/core/modelset/import_export.py:63
+#: common/core/modelset/import_export.py:118
 msgid "Task add success"
 msgstr ""
 
-#: common/core/modelset/import_export.py:119
+#: common/core/modelset/import_export.py:174
 #, python-brace-format
 msgid ""
 "Too many export tasks in progress (limit {}), please wait for them to finish"
 msgstr ""
 
-#: common/core/modelset/import_export.py:144
+#: common/core/modelset/import_export.py:199
 msgid "Export task submitted"
 msgstr ""
 
-#: common/core/modelset/import_export.py:215
+#: common/core/modelset/import_export.py:253
+msgid "Import template not found"
+msgstr ""
+
+#: common/core/modelset/import_export.py:261
+#: common/core/modelset/import_export.py:263 system/serializers/import_.py:139
+#: system/serializers/import_.py:145
+msgid "Invalid import mapping"
+msgstr ""
+
+#: common/core/modelset/import_export.py:292
+#, python-brace-format
+msgid ""
+"Too many import tasks in progress (limit {}), please wait for them to finish"
+msgstr ""
+
+#: common/core/modelset/import_export.py:362
+msgid "Unsupported file type"
+msgstr ""
+
+#: common/core/modelset/import_export.py:368 common/drf/parsers/base.py:198
+msgid "The resource does not support imports!"
+msgstr ""
+
+#: common/core/modelset/import_export.py:380 common/drf/parsers/base.py:231
+#, python-brace-format
+msgid "Parse file error: {}"
+msgstr ""
+
+#: common/core/modelset/import_export.py:472
+msgid "Import task submitted"
+msgstr ""
+
+#: common/core/modelset/import_export.py:531
 #, python-brace-format
 msgid "Operation successful. Import {} data"
 msgstr ""
 
-#: common/core/modelset/import_export.py:216 system/utils/auth.py:116
-#: system/utils/modelset.py:60 system/views/admin/dict.py:131
-#: system/views/auth/mfa.py:46 system/views/auth/register.py:71
-#: system/views/auth/reset.py:48 system/views/auth/verify_code.py:149
-#: system/views/auth/verify_code.py:176
-msgid "Operation failed. Abnormal data"
+#: common/core/modelset/metadata.py:110
+msgid "Failed to get search fields"
 msgstr ""
 
 #: common/core/modelset/recycle.py:66
@@ -185,7 +390,7 @@ msgstr ""
 msgid "Skipped {} data with unique conflicts"
 msgstr ""
 
-#: common/core/modelset/recycle.py:98
+#: common/core/modelset/recycle.py:100
 #, python-brace-format
 msgid "Purged {} data"
 msgstr ""
@@ -204,18 +409,24 @@ msgstr ""
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/permission.py:108 common/core/permission.py:132
-#: common/core/permission.py:135
+#: common/core/permission.py:169 common/core/permission.py:192
+msgid "PAT scope does not allow this path"
+msgstr ""
+
+#: common/core/permission.py:226 common/core/permission.py:243
+#: common/core/permission.py:261 system/scim/views.py:79
+#: system/views/admin/approval.py:99 system/views/admin/approval.py:120
+#: system/views/admin/approval.py:154 system/views/admin/approval_flow.py:355
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
-#: system/tasks.py:241 system/views/admin/dict.py:156
+#: common/core/response.py:19 common/tasks.py:202 message/base.py:72
+#: system/tasks.py:409 system/tasks.py:655 system/views/admin/dict.py:158
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:200 message/base.py:72
-#: system/tasks.py:241
+#: common/core/response.py:19 common/tasks.py:202 message/base.py:72
+#: system/tasks.py:409 system/tasks.py:655
 msgid "Operation failed"
 msgstr ""
 
@@ -228,18 +439,9 @@ msgstr ""
 msgid "Multipart form parse error - {}"
 msgstr ""
 
-#: common/drf/parsers/base.py:21
+#: common/drf/parsers/base.py:22
 #, python-brace-format
 msgid "The file content overflowed (The maximum length `{}` bytes)"
-msgstr ""
-
-#: common/drf/parsers/base.py:196
-msgid "The resource does not support imports!"
-msgstr ""
-
-#: common/drf/parsers/base.py:217
-#, python-brace-format
-msgid "Parse file error: {}"
 msgstr ""
 
 #: common/drf/parsers/excel.py:14
@@ -516,16 +718,19 @@ msgstr ""
 msgid "Run background task view set"
 msgstr ""
 
-#: common/tasks.py:213
+#: common/tasks.py:215
 msgid "Purge soft deleted data"
 msgstr ""
 
-#: common/tasks.py:214
+#: common/tasks.py:216
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr ""
 
 #: common/templates/notify/msg_task.html:3
 #: system/templates/msg_verify_code.html:9
+#: system/templates/notify/msg_abnormal_login.html:3
+#: system/templates/notify/msg_approval.html:3
+#: system/templates/notify/msg_approval_flow.html:3
 #: system/templates/notify/msg_different_city.html:3
 msgid "Hello"
 msgstr ""
@@ -559,8 +764,8 @@ msgid "China"
 msgstr ""
 
 #: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
-#: common/utils/ip/geoip/utils.py:51 system/models/log.py:27
-#: system/models/user.py:40 system/utils/auth.py:93 system/utils/session.py:72
+#: common/utils/ip/geoip/utils.py:51 system/models/log.py:29
+#: system/models/user.py:39 system/utils/auth.py:93 system/utils/session.py:72
 msgid "Unknown"
 msgstr ""
 
@@ -597,7 +802,7 @@ msgstr ""
 msgid "This method does not support sending verification codes"
 msgstr ""
 
-#: mfa/backends/email.py:20 settings/serializers/security.py:364
+#: mfa/backends/email.py:20 settings/serializers/security.py:379
 #: system/models/log.py:24
 msgid "Email verification code"
 msgstr ""
@@ -612,7 +817,7 @@ msgid "Verify code"
 msgstr ""
 
 #: mfa/backends/otp.py:18 mfa/serializers.py:34
-#: settings/serializers/security.py:362
+#: settings/serializers/security.py:377
 msgid "OTP verification code"
 msgstr ""
 
@@ -632,7 +837,7 @@ msgstr ""
 msgid "The OTP verification code is incorrect"
 msgstr ""
 
-#: mfa/backends/password.py:16 settings/serializers/security.py:365
+#: mfa/backends/password.py:16 settings/serializers/security.py:380
 msgid "Login password"
 msgstr ""
 
@@ -644,7 +849,7 @@ msgstr ""
 msgid "The password is incorrect"
 msgstr ""
 
-#: mfa/backends/sms.py:18 settings/serializers/security.py:363
+#: mfa/backends/sms.py:18 settings/serializers/security.py:378
 #: system/models/log.py:23
 msgid "SMS verification code"
 msgstr ""
@@ -662,7 +867,7 @@ msgid "Request object not found"
 msgstr ""
 
 #: mfa/const.py:15 settings/serializers/email.py:26
-#: system/serializers/user.py:153
+#: system/serializers/user.py:152 system/views/auth/oauth.py:168
 msgid "Password"
 msgstr ""
 
@@ -748,7 +953,7 @@ msgid "App Notifications"
 msgstr ""
 
 #: notifications/backends/__init__.py:10 settings/serializers/email.py:13
-#: system/models/user.py:61
+#: system/models/mask.py:23 system/models/user.py:60
 msgid "Email"
 msgstr ""
 
@@ -808,7 +1013,7 @@ msgstr ""
 msgid "Notice level"
 msgstr ""
 
-#: notifications/models/message.py:41 notifications/serializers/message.py:178
+#: notifications/models/message.py:41 notifications/serializers/message.py:221
 msgid "Notice type"
 msgstr ""
 
@@ -816,7 +1021,7 @@ msgstr ""
 msgid "Notice title"
 msgstr ""
 
-#: notifications/models/message.py:44 notifications/serializers/message.py:184
+#: notifications/models/message.py:44 notifications/serializers/message.py:227
 msgid "Notice message"
 msgstr ""
 
@@ -824,7 +1029,7 @@ msgstr ""
 msgid "Additional json data"
 msgstr ""
 
-#: notifications/models/message.py:46 notifications/serializers/message.py:63
+#: notifications/models/message.py:46 notifications/serializers/message.py:73
 msgid "Uploaded attachments"
 msgstr ""
 
@@ -839,7 +1044,8 @@ msgstr ""
 #: notifications/models/message.py:71 notifications/models/notification.py:17
 #: notifications/models/notification.py:31
 #: notifications/serializers/notifications.py:23
-#: notifications/serializers/notifications.py:48 system/models/config.py:41
+#: notifications/serializers/notifications.py:48 system/models/approval.py:126
+#: system/models/config.py:43 system/models/oauth.py:22
 msgid "User"
 msgstr ""
 
@@ -847,7 +1053,7 @@ msgstr ""
 msgid "Notice"
 msgstr ""
 
-#: notifications/models/message.py:74 notifications/serializers/message.py:197
+#: notifications/models/message.py:74 notifications/serializers/message.py:248
 msgid "Unread"
 msgstr ""
 
@@ -882,39 +1088,35 @@ msgstr ""
 msgid "Publish the station message"
 msgstr ""
 
-#: notifications/notifications.py:185 system/notifications.py:104
-msgid "Time"
-msgstr ""
-
-#: notifications/serializers/message.py:64 system/serializers/department.py:64
+#: notifications/serializers/message.py:74 system/serializers/department.py:71
 msgid "User count"
 msgstr ""
 
-#: notifications/serializers/message.py:65
+#: notifications/serializers/message.py:75
 msgid "Read user count"
 msgstr ""
 
-#: notifications/serializers/message.py:124
+#: notifications/serializers/message.py:167
 msgid "Parameter error. System announcement cannot be created"
 msgstr ""
 
-#: notifications/serializers/message.py:134
+#: notifications/serializers/message.py:177
 msgid "The notice role cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:140
+#: notifications/serializers/message.py:183
 msgid "The notice department cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:146
+#: notifications/serializers/message.py:189
 msgid "The notice user cannot be null"
 msgstr ""
 
-#: notifications/serializers/message.py:160
+#: notifications/serializers/message.py:203
 msgid "The system notice cannot be update"
 msgstr ""
 
-#: notifications/serializers/message.py:168
+#: notifications/serializers/message.py:211
 msgid "Parameter error"
 msgstr ""
 
@@ -922,8 +1124,24 @@ msgstr ""
 msgid "Message Type"
 msgstr ""
 
+#: notifications/views/notifications.py:70
+msgid "Unknown message type"
+msgstr ""
+
+#: notifications/views/notifications.py:74
+msgid "This message type does not support test sending"
+msgstr ""
+
+#: notifications/views/notifications.py:77
+msgid "Failed to send test message"
+msgstr ""
+
+#: notifications/views/notifications.py:78
+msgid "Test message sent"
+msgstr ""
+
 #: settings/models.py:15 settings/serializers/sms.py:62
-#: system/models/permission.py:17
+#: system/models/mask.py:24 system/models/permission.py:17
 msgid "Name"
 msgstr ""
 
@@ -931,7 +1149,8 @@ msgstr ""
 msgid "Value"
 msgstr ""
 
-#: settings/models.py:17
+#: settings/models.py:17 system/models/upload.py:38
+#: system/serializers/upload.py:30
 msgid "Category"
 msgstr ""
 
@@ -939,10 +1158,11 @@ msgstr ""
 msgid "Encrypted"
 msgstr ""
 
-#: settings/models.py:19 system/models/config.py:17
-#: system/models/department.py:43 system/models/dict.py:37
-#: system/models/menu.py:98 system/models/permission.py:19
-#: system/models/role.py:22
+#: settings/models.py:19 system/models/approval.py:100
+#: system/models/config.py:17 system/models/department.py:51
+#: system/models/dict.py:37 system/models/mask.py:38 system/models/menu.py:98
+#: system/models/permission.py:19 system/models/role.py:22
+#: system/models/token.py:32
 msgid "Is active"
 msgstr ""
 
@@ -976,9 +1196,9 @@ msgstr ""
 msgid "Field permissions are used to authorize access to data field display"
 msgstr ""
 
-#: settings/serializers/basic.py:40 system/models/department.py:34
-#: system/models/field.py:33 system/models/permission.py:29
-#: system/models/user.py:70
+#: settings/serializers/basic.py:40 system/models/department.py:42
+#: system/models/field.py:35 system/models/permission.py:29
+#: system/models/user.py:69
 msgid "Data permission"
 msgstr ""
 
@@ -996,10 +1216,6 @@ msgstr ""
 
 #: settings/serializers/email.py:13
 msgid "Enable Email Service (Email)"
-msgstr ""
-
-#: settings/serializers/email.py:15
-msgid "Host"
 msgstr ""
 
 #: settings/serializers/email.py:16
@@ -1073,15 +1289,15 @@ msgstr ""
 msgid "Minimum length (Admin)"
 msgstr ""
 
-#: settings/serializers/security.py:22 settings/serializers/security.py:295
+#: settings/serializers/security.py:22 settings/serializers/security.py:310
 msgid "Uppercase"
 msgstr ""
 
-#: settings/serializers/security.py:23 settings/serializers/security.py:297
+#: settings/serializers/security.py:23 settings/serializers/security.py:312
 msgid "Lowercase"
 msgstr ""
 
-#: settings/serializers/security.py:24 settings/serializers/security.py:299
+#: settings/serializers/security.py:24 settings/serializers/security.py:314
 msgid "Digits"
 msgstr ""
 
@@ -1126,395 +1342,416 @@ msgid "User login failure period (minute)"
 msgstr ""
 
 #: settings/serializers/security.py:72
-msgid "IP login failures count"
+msgid "New device login alert"
 msgstr ""
 
-#: settings/serializers/security.py:78
-msgid "IP login failure period (minute)"
+#: settings/serializers/security.py:74
+msgid ""
+"When an account logs in with a new IP address or a new device (browser/"
+"system) compared to the recent login history, a site message and email "
+"reminder is sent"
+msgstr ""
+
+#: settings/serializers/security.py:82
+msgid "Login baseline window (days)"
 msgstr ""
 
 #: settings/serializers/security.py:83
+msgid ""
+"The system compares the current login against the successful logins of the "
+"last N days"
+msgstr ""
+
+#: settings/serializers/security.py:87
+msgid "IP login failures count"
+msgstr ""
+
+#: settings/serializers/security.py:93
+msgid "IP login failure period (minute)"
+msgstr ""
+
+#: settings/serializers/security.py:98
 msgid "Login IP whitelist"
 msgstr ""
 
-#: settings/serializers/security.py:90
+#: settings/serializers/security.py:105
 msgid "Login IP blacklist"
 msgstr ""
 
-#: settings/serializers/security.py:99
+#: settings/serializers/security.py:114
 msgid "Login enabled"
 msgstr ""
 
-#: settings/serializers/security.py:99
+#: settings/serializers/security.py:114
 msgid "Enable login for user"
 msgstr ""
 
-#: settings/serializers/security.py:105
+#: settings/serializers/security.py:120
 msgid "Login captcha"
 msgstr ""
 
-#: settings/serializers/security.py:106
+#: settings/serializers/security.py:121
 msgid "Enable captcha to prevent robot authentication"
 msgstr ""
 
-#: settings/serializers/security.py:112
+#: settings/serializers/security.py:127
 msgid "Login encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:113 settings/serializers/security.py:151
-#: settings/serializers/security.py:189 settings/serializers/security.py:229
-#: settings/serializers/security.py:255
+#: settings/serializers/security.py:128 settings/serializers/security.py:166
+#: settings/serializers/security.py:204 settings/serializers/security.py:244
+#: settings/serializers/security.py:270
 msgid "Enable encryption to prevent information leakage"
 msgstr ""
 
-#: settings/serializers/security.py:119
+#: settings/serializers/security.py:134
 msgid "Login temp token"
 msgstr ""
 
-#: settings/serializers/security.py:120 settings/serializers/security.py:158
-#: settings/serializers/security.py:196 settings/serializers/security.py:236
-#: settings/serializers/security.py:262
+#: settings/serializers/security.py:135 settings/serializers/security.py:173
+#: settings/serializers/security.py:211 settings/serializers/security.py:251
+#: settings/serializers/security.py:277
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
 
-#: settings/serializers/security.py:124
+#: settings/serializers/security.py:139
 msgid "Login by email"
 msgstr ""
 
-#: settings/serializers/security.py:124 settings/serializers/security.py:162
-#: settings/serializers/security.py:203
+#: settings/serializers/security.py:139 settings/serializers/security.py:177
+#: settings/serializers/security.py:218
 msgid "Enable send email verify code to user"
 msgstr ""
 
-#: settings/serializers/security.py:128
+#: settings/serializers/security.py:143
 msgid "Login by sms"
 msgstr ""
 
-#: settings/serializers/security.py:128 settings/serializers/security.py:166
-#: settings/serializers/security.py:210
+#: settings/serializers/security.py:143 settings/serializers/security.py:181
+#: settings/serializers/security.py:225
 msgid "Enable send sms verify code to user"
 msgstr ""
 
-#: settings/serializers/security.py:132
+#: settings/serializers/security.py:147
 msgid "Login by basic"
 msgstr ""
 
-#: settings/serializers/security.py:132
+#: settings/serializers/security.py:147
 msgid "Enable basic verify to user login"
 msgstr ""
 
-#: settings/serializers/security.py:138
+#: settings/serializers/security.py:153
 msgid "Register enable"
 msgstr ""
 
-#: settings/serializers/security.py:138
+#: settings/serializers/security.py:153
 msgid "Enable register for user"
 msgstr ""
 
-#: settings/serializers/security.py:143
+#: settings/serializers/security.py:158
 msgid "Register captcha"
 msgstr ""
 
-#: settings/serializers/security.py:144
+#: settings/serializers/security.py:159
 msgid "Enable captcha to prevent robot register"
 msgstr ""
 
-#: settings/serializers/security.py:150
+#: settings/serializers/security.py:165
 msgid "Register encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:157
+#: settings/serializers/security.py:172
 msgid "Register temp token"
 msgstr ""
 
-#: settings/serializers/security.py:162
+#: settings/serializers/security.py:177
 msgid "Register by email"
 msgstr ""
 
-#: settings/serializers/security.py:166
+#: settings/serializers/security.py:181
 msgid "Register by sms"
 msgstr ""
 
-#: settings/serializers/security.py:170
+#: settings/serializers/security.py:185
 msgid "Register by basic"
 msgstr ""
 
-#: settings/serializers/security.py:170
+#: settings/serializers/security.py:185
 msgid "Enable basic verify to user register"
 msgstr ""
 
-#: settings/serializers/security.py:176
+#: settings/serializers/security.py:191
 msgid "Reset password enable"
 msgstr ""
 
-#: settings/serializers/security.py:176
+#: settings/serializers/security.py:191
 msgid "Enable reset password for user"
 msgstr ""
 
-#: settings/serializers/security.py:181
+#: settings/serializers/security.py:196
 msgid "Reset password captcha"
 msgstr ""
 
-#: settings/serializers/security.py:182 settings/serializers/security.py:222
-#: settings/serializers/security.py:248
+#: settings/serializers/security.py:197 settings/serializers/security.py:237
+#: settings/serializers/security.py:263
 msgid "Enable captcha to prevent robot reset password"
 msgstr ""
 
-#: settings/serializers/security.py:188
+#: settings/serializers/security.py:203
 msgid "Reset password encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:195
+#: settings/serializers/security.py:210
 msgid "Reset password temp token"
 msgstr ""
 
-#: settings/serializers/security.py:202
+#: settings/serializers/security.py:217
 msgid "Reset password by email"
 msgstr ""
 
-#: settings/serializers/security.py:209
+#: settings/serializers/security.py:224
 msgid "Reset password by sms"
 msgstr ""
 
-#: settings/serializers/security.py:216
+#: settings/serializers/security.py:231
 msgid "Bind email enable"
 msgstr ""
 
-#: settings/serializers/security.py:216
+#: settings/serializers/security.py:231
 msgid "Enable bind email for user"
 msgstr ""
 
-#: settings/serializers/security.py:221
+#: settings/serializers/security.py:236
 msgid "Bind email captcha"
 msgstr ""
 
-#: settings/serializers/security.py:228
+#: settings/serializers/security.py:243
 msgid "Bind email encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:235
+#: settings/serializers/security.py:250
 msgid "Bind email temp token"
 msgstr ""
 
-#: settings/serializers/security.py:242
+#: settings/serializers/security.py:257
 msgid "Bind phone enable"
 msgstr ""
 
-#: settings/serializers/security.py:242
+#: settings/serializers/security.py:257
 msgid "Enable bind phone for user"
 msgstr ""
 
-#: settings/serializers/security.py:247
+#: settings/serializers/security.py:262
 msgid "Bind phone captcha"
 msgstr ""
 
-#: settings/serializers/security.py:254
+#: settings/serializers/security.py:269
 msgid "Bind phone encrypted"
 msgstr ""
 
-#: settings/serializers/security.py:261
+#: settings/serializers/security.py:276
 msgid "Bind phone temp token"
 msgstr ""
 
-#: settings/serializers/security.py:268
+#: settings/serializers/security.py:283
 msgid "Block IP"
 msgstr ""
 
-#: settings/serializers/security.py:276
+#: settings/serializers/security.py:291
 msgid "Verify code TTL (second)"
 msgstr ""
 
-#: settings/serializers/security.py:277
+#: settings/serializers/security.py:292
 msgid "Verify code expiration time"
 msgstr ""
 
-#: settings/serializers/security.py:283
+#: settings/serializers/security.py:298
 msgid "Verify code rate (second)"
 msgstr ""
 
-#: settings/serializers/security.py:284
+#: settings/serializers/security.py:299
 msgid "Verify code send rate limit"
 msgstr ""
 
-#: settings/serializers/security.py:291
+#: settings/serializers/security.py:306
 msgid "Code length"
 msgstr ""
 
-#: settings/serializers/security.py:292
+#: settings/serializers/security.py:307
 msgid "Length of the sent verification code"
 msgstr ""
 
-#: settings/serializers/security.py:304
+#: settings/serializers/security.py:319
 msgid "Random char"
 msgstr ""
 
-#: settings/serializers/security.py:305
+#: settings/serializers/security.py:320
 msgid "Math challenge"
 msgstr ""
 
-#: settings/serializers/security.py:308
+#: settings/serializers/security.py:323
 msgid "Noise function null"
 msgstr ""
 
-#: settings/serializers/security.py:309
+#: settings/serializers/security.py:324
 msgid "Noise function arcs"
 msgstr ""
 
-#: settings/serializers/security.py:310
+#: settings/serializers/security.py:325
 msgid "Noise function dots"
 msgstr ""
 
-#: settings/serializers/security.py:315
+#: settings/serializers/security.py:330
 msgid "Challenge generator"
 msgstr ""
 
-#: settings/serializers/security.py:316
+#: settings/serializers/security.py:331
 msgid "Image verification code generation mode"
 msgstr ""
 
-#: settings/serializers/security.py:320
+#: settings/serializers/security.py:335
 msgid "Captcha code length"
 msgstr ""
 
-#: settings/serializers/security.py:320
+#: settings/serializers/security.py:335
 msgid "Length of the captcha code"
 msgstr ""
 
-#: settings/serializers/security.py:327
+#: settings/serializers/security.py:342
 msgid "Captcha font size"
 msgstr ""
 
-#: settings/serializers/security.py:328
+#: settings/serializers/security.py:343
 msgid "Font size of the captcha code"
 msgstr ""
 
-#: settings/serializers/security.py:334
+#: settings/serializers/security.py:349
 msgid "Captcha timeout (minute)"
 msgstr ""
 
-#: settings/serializers/security.py:335
+#: settings/serializers/security.py:350
 msgid "Captcha code expiration time"
 msgstr ""
 
-#: settings/serializers/security.py:338
+#: settings/serializers/security.py:353
 msgid "Captcha background color"
 msgstr ""
 
-#: settings/serializers/security.py:339
+#: settings/serializers/security.py:354
 msgid "Captcha foreground color"
 msgstr ""
 
-#: settings/serializers/security.py:342
+#: settings/serializers/security.py:357
 msgid "Noise functions"
 msgstr ""
 
-#: settings/serializers/security.py:352
+#: settings/serializers/security.py:367
 msgid "Sensitive operation verification"
-msgstr ""
-
-#: settings/serializers/security.py:353
-msgid ""
-"Require re-verification of identity before performing sensitive operations"
-msgstr ""
-
-#: settings/serializers/security.py:358
-msgid "Verification methods"
 msgstr ""
 
 #: settings/serializers/security.py:368
 msgid ""
+"Require re-verification of identity before performing sensitive operations"
+msgstr ""
+
+#: settings/serializers/security.py:373
+msgid "Verification methods"
+msgstr ""
+
+#: settings/serializers/security.py:383
+msgid ""
 "Verification methods allowed to be used for sensitive operation verification"
 msgstr ""
 
-#: settings/serializers/security.py:375
+#: settings/serializers/security.py:390
 msgid "MFA confirm validity period (second)"
 msgstr ""
 
-#: settings/serializers/security.py:377
+#: settings/serializers/security.py:392
 msgid ""
 "After passing the verification via OTP/SMS/Email, sensitive operations do "
 "not need to be verified again within the validity period"
 msgstr ""
 
-#: settings/serializers/security.py:386
+#: settings/serializers/security.py:401
 msgid "Password confirm validity period (second)"
 msgstr ""
 
-#: settings/serializers/security.py:387
+#: settings/serializers/security.py:402
 msgid "After passing the verification via password"
 msgstr ""
 
-#: settings/serializers/security.py:393
+#: settings/serializers/security.py:408
 msgid "Login MFA"
 msgstr ""
 
-#: settings/serializers/security.py:395
+#: settings/serializers/security.py:410
 msgid ""
 "Accounts with personal MFA enabled always require verification at login. "
 "When enabled, accounts bound to OTP are forced to verify even if they closed "
 "it themselves"
 msgstr ""
 
-#: settings/serializers/security.py:405
+#: settings/serializers/security.py:420
 msgid "Login MFA token validity period (second)"
 msgstr ""
 
-#: settings/serializers/security.py:406
+#: settings/serializers/security.py:421
 msgid "Validity period of the temporary token during login MFA verification"
 msgstr ""
 
-#: settings/serializers/security.py:413
+#: settings/serializers/security.py:428
 msgid "OTP valid window"
 msgstr ""
 
-#: settings/serializers/security.py:414
+#: settings/serializers/security.py:429
 msgid ""
 "The number of time periods allowed before and after the OTP verification"
 msgstr ""
 
-#: settings/serializers/security.py:420
+#: settings/serializers/security.py:435
 msgid "OTP issuer"
 msgstr ""
 
-#: settings/serializers/security.py:421
+#: settings/serializers/security.py:436
 msgid "The issuer name in the otpauth binding URI"
 msgstr ""
 
-#: settings/serializers/security.py:432
+#: settings/serializers/security.py:447
 msgid "Disk usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:433
+#: settings/serializers/security.py:448
 msgid ""
 "Send an alert email to the administrator when the disk usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:440
+#: settings/serializers/security.py:455
 msgid "Memory usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:441
+#: settings/serializers/security.py:456
 msgid ""
 "Send an alert email to the administrator when the memory usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:448
+#: settings/serializers/security.py:463
 msgid "CPU usage threshold (%)"
 msgstr ""
 
-#: settings/serializers/security.py:449
+#: settings/serializers/security.py:464
 msgid ""
 "Send an alert email to the administrator when the CPU usage exceeds this "
 "threshold"
 msgstr ""
 
-#: settings/serializers/security.py:456
+#: settings/serializers/security.py:471
 msgid "CPU load threshold (single core)"
 msgstr ""
 
-#: settings/serializers/security.py:457
+#: settings/serializers/security.py:472
 msgid ""
 "Send an alert email to the administrator when the single-core CPU load "
 "exceeds this threshold"
@@ -1528,7 +1765,7 @@ msgstr ""
 msgid "Enable Short Message Service (SMS)"
 msgstr ""
 
-#: settings/serializers/sms.py:23
+#: settings/serializers/sms.py:23 system/models/oauth.py:24
 msgid "Provider"
 msgstr ""
 
@@ -1536,7 +1773,8 @@ msgstr ""
 msgid "Short Message Service (SMS) provider or protocol"
 msgstr ""
 
-#: settings/serializers/sms.py:36 system/models/user.py:60
+#: settings/serializers/sms.py:36 system/models/mask.py:21
+#: system/models/user.py:59
 msgid "Phone"
 msgstr ""
 
@@ -1591,6 +1829,219 @@ msgid ""
 "rule in the rule list at the same time, or the mode satisfies any rule"
 msgstr ""
 
+#: system/models/approval.py:39 system/models/approval.py:167
+#: system/models/approval.py:214
+msgid "Pending"
+msgstr ""
+
+#: system/models/approval.py:40 system/models/approval.py:168
+#: system/models/approval.py:215
+msgid "Approved"
+msgstr ""
+
+#: system/models/approval.py:41 system/models/approval.py:169
+#: system/models/approval.py:216
+msgid "Rejected"
+msgstr ""
+
+#: system/models/approval.py:42
+msgid "Expired"
+msgstr ""
+
+#: system/models/approval.py:43 system/models/approval.py:170
+#: system/models/approval.py:217
+msgid "Cancelled"
+msgstr ""
+
+#: system/models/approval.py:44
+msgid "Failed"
+msgstr ""
+
+#: system/models/approval.py:47 system/models/log.py:70
+#: system/templates/notify/msg_approval.html:17
+#: system/templates/notify/msg_sensitive_operation.html:3
+msgid "Module"
+msgstr ""
+
+#: system/models/approval.py:49 system/models/menu.py:104
+msgid "Method"
+msgstr ""
+
+#: system/models/approval.py:50 system/models/log.py:71
+msgid "URL path"
+msgstr ""
+
+#: system/models/approval.py:51 system/models/log.py:74
+#: system/views/admin/operationlog.py:26
+msgid "Object pk"
+msgstr ""
+
+#: system/models/approval.py:52
+msgid "Request params"
+msgstr ""
+
+#: system/models/approval.py:54 system/models/approval.py:180
+#: system/models/approval.py:250 system/models/export.py:37
+#: system/models/import_.py:42 system/models/session.py:33
+#: system/models/task.py:48
+msgid "Status"
+msgstr ""
+
+#: system/models/approval.py:66 system/serializers/approval.py:22
+msgid "Approver"
+msgstr ""
+
+#: system/models/approval.py:68
+msgid "Approved at"
+msgstr ""
+
+#: system/models/approval.py:70
+msgid "Token expired at"
+msgstr ""
+
+#: system/models/approval.py:71
+msgid "Consume time"
+msgstr ""
+
+#: system/models/approval.py:72 system/models/approval.py:190
+#: system/templates/notify/msg_approval.html:21
+#: system/templates/notify/msg_approval_flow.html:26
+msgid "Reason"
+msgstr ""
+
+#: system/models/approval.py:76
+msgid "Approval request"
+msgstr ""
+
+#: system/models/approval.py:97 system/models/approval.py:177
+msgid "Flow name"
+msgstr ""
+
+#: system/models/approval.py:98
+msgid "Flow code"
+msgstr ""
+
+#: system/models/approval.py:99 system/serializers/approval_flow.py:210
+msgid "Form schema"
+msgstr ""
+
+#: system/models/approval.py:104
+msgid "Approval flow"
+msgstr ""
+
+#: system/models/approval.py:121
+msgid "Any approver"
+msgstr ""
+
+#: system/models/approval.py:122
+msgid "All approvers"
+msgstr ""
+
+#: system/models/approval.py:125 system/models/permission.py:37
+msgid "Role"
+msgstr ""
+
+#: system/models/approval.py:127 system/models/department.py:35
+msgid "Leader"
+msgstr ""
+
+#: system/models/approval.py:128
+msgid "Form field"
+msgstr ""
+
+#: system/models/approval.py:132 system/models/approval.py:174
+#: system/serializers/approval_flow.py:198
+#: system/templates/notify/msg_approval_flow.html:22
+msgid "Flow"
+msgstr ""
+
+#: system/models/approval.py:134 system/models/approval.py:232
+msgid "Node name"
+msgstr ""
+
+#: system/models/approval.py:135 system/models/approval.py:233
+msgid "Node order"
+msgstr ""
+
+#: system/models/approval.py:137
+msgid "Approve type"
+msgstr ""
+
+#: system/models/approval.py:140
+msgid "Assignee type"
+msgstr ""
+
+#: system/models/approval.py:142
+msgid "Assignee value"
+msgstr ""
+
+#: system/models/approval.py:144
+msgid "Condition"
+msgstr ""
+
+#: system/models/approval.py:145
+msgid "Timeout hours"
+msgstr ""
+
+#: system/models/approval.py:149
+msgid "Approval flow node"
+msgstr ""
+
+#: system/models/approval.py:178
+#: system/templates/notify/msg_approval_flow.html:21
+msgid "Title"
+msgstr ""
+
+#: system/models/approval.py:179
+msgid "Form data"
+msgstr ""
+
+#: system/models/approval.py:187 system/serializers/approval_flow.py:206
+msgid "Current node"
+msgstr ""
+
+#: system/models/approval.py:189
+msgid "Finished at"
+msgstr ""
+
+#: system/models/approval.py:194
+msgid "Approval instance"
+msgstr ""
+
+#: system/models/approval.py:221
+msgid "Instance"
+msgstr ""
+
+#: system/models/approval.py:229
+#: system/templates/notify/msg_approval_flow.html:23
+msgid "Node"
+msgstr ""
+
+#: system/models/approval.py:240 system/serializers/approval_flow.py:171
+msgid "Assignee"
+msgstr ""
+
+#: system/models/approval.py:248 system/serializers/approval_flow.py:172
+msgid "Actor"
+msgstr ""
+
+#: system/models/approval.py:251
+#: system/templates/notify/msg_approval_flow.html:29
+msgid "Comment"
+msgstr ""
+
+#: system/models/approval.py:252
+msgid "Acted at"
+msgstr ""
+
+#: system/models/approval.py:253
+msgid "Added by counter-sign"
+msgstr ""
+
+#: system/models/approval.py:257
+msgid "Approval node task"
+msgstr ""
+
 #: system/models/config.py:16
 msgid "Config value"
 msgstr ""
@@ -1603,7 +2054,7 @@ msgstr ""
 msgid "Allows API interfaces to access this config"
 msgstr ""
 
-#: system/models/config.py:27 system/models/config.py:42
+#: system/models/config.py:27 system/models/config.py:44
 msgid "Config name"
 msgstr ""
 
@@ -1619,42 +2070,47 @@ msgstr ""
 msgid "System config"
 msgstr ""
 
-#: system/models/config.py:45
+#: system/models/config.py:47
 msgid "User config"
 msgstr ""
 
-#: system/models/department.py:23
+#: system/models/department.py:22
 msgid "Department name"
 msgstr ""
 
-#: system/models/department.py:24
+#: system/models/department.py:23
 msgid "Department code"
 msgstr ""
 
-#: system/models/department.py:28
+#: system/models/department.py:27
 msgid "Superior department"
 msgstr ""
 
-#: system/models/department.py:33 system/models/field.py:32
-#: system/models/user.py:69
+#: system/models/department.py:39
+msgid ""
+"Department leader, who can be granted data permissions of the led departments"
+msgstr ""
+
+#: system/models/department.py:41 system/models/field.py:34
+#: system/models/user.py:68
 msgid "Role permission"
 msgstr ""
 
-#: system/models/department.py:35 system/models/menu.py:95
+#: system/models/department.py:43 system/models/menu.py:95
 msgid "Rank"
 msgstr ""
 
-#: system/models/department.py:37
+#: system/models/department.py:45
 msgid "Auto bind"
 msgstr ""
 
-#: system/models/department.py:40
+#: system/models/department.py:48
 msgid ""
 "If the value of the registration parameter channel is consistent with the "
 "department code, the user is automatically bound to the department"
 msgstr ""
 
-#: system/models/department.py:86 system/models/user.py:73
+#: system/models/department.py:98 system/models/user.py:72
 msgid "Department"
 msgstr ""
 
@@ -1678,7 +2134,7 @@ msgstr ""
 msgid "Dict value"
 msgstr ""
 
-#: system/models/dict.py:35
+#: system/models/dict.py:35 system/models/mask.py:39
 msgid "Sort"
 msgstr ""
 
@@ -1698,23 +2154,27 @@ msgstr ""
 msgid "Dict code already exists"
 msgstr ""
 
-#: system/models/export.py:26 system/models/task.py:30
+#: system/models/export.py:26 system/models/import_.py:25
+#: system/models/task.py:30
 msgid "Waiting"
 msgstr ""
 
-#: system/models/export.py:27 system/models/task.py:31
+#: system/models/export.py:27 system/models/import_.py:26
+#: system/models/task.py:31
 msgid "Running"
 msgstr ""
 
-#: system/models/export.py:28 system/models/task.py:32
+#: system/models/export.py:28 system/models/import_.py:27
+#: system/models/task.py:32
 msgid "Success"
 msgstr ""
 
-#: system/models/export.py:29 system/models/task.py:33
+#: system/models/export.py:29 system/models/import_.py:28
+#: system/models/task.py:33
 msgid "Failure"
 msgstr ""
 
-#: system/models/export.py:32
+#: system/models/export.py:32 system/models/import_.py:35
 msgid "File name"
 msgstr ""
 
@@ -1722,7 +2182,7 @@ msgstr ""
 msgid "Source module"
 msgstr ""
 
-#: system/models/export.py:34
+#: system/models/export.py:34 system/models/import_.py:37
 msgid "Source path"
 msgstr ""
 
@@ -1730,28 +2190,28 @@ msgstr ""
 msgid "File format"
 msgstr ""
 
-#: system/models/export.py:37 system/models/session.py:33
-#: system/models/task.py:48
-msgid "Status"
-msgstr ""
-
 #: system/models/export.py:43
 msgid "Row count"
 msgstr ""
 
-#: system/models/export.py:49 system/serializers/export.py:20
+#: system/models/export.py:45 system/models/import_.py:52
+#: system/serializers/import_.py:29
+msgid "Progress"
+msgstr ""
+
+#: system/models/export.py:51 system/serializers/export.py:20
 msgid "Export file"
 msgstr ""
 
-#: system/models/export.py:51
+#: system/models/export.py:53 system/models/import_.py:69
 msgid "Error message"
 msgstr ""
 
-#: system/models/export.py:52
+#: system/models/export.py:54
 msgid "Export params"
 msgstr ""
 
-#: system/models/export.py:56
+#: system/models/export.py:58
 msgid "Export record"
 msgstr ""
 
@@ -1796,39 +2256,119 @@ msgid "Department ID and data below the department"
 msgstr ""
 
 #: system/models/field.py:26
-msgid "Select the user ID"
+msgid "My led departments and their descendants"
 msgstr ""
 
 #: system/models/field.py:27
-msgid "Select menu ID"
+msgid "Members of my led departments"
 msgstr ""
 
 #: system/models/field.py:28
-msgid "Select role ID"
+msgid "Select the user ID"
 msgstr ""
 
 #: system/models/field.py:29
+msgid "Select menu ID"
+msgstr ""
+
+#: system/models/field.py:30
+msgid "Select role ID"
+msgstr ""
+
+#: system/models/field.py:31
 msgid "Select department ID"
 msgstr ""
 
-#: system/models/field.py:35
+#: system/models/field.py:37
 msgid "Field type"
 msgstr ""
 
-#: system/models/field.py:37
+#: system/models/field.py:39
 msgid "Parent node"
 msgstr ""
 
-#: system/models/field.py:39
+#: system/models/field.py:41
 msgid "Model/Field name"
 msgstr ""
 
-#: system/models/field.py:40
+#: system/models/field.py:42
 msgid "Model/Field label"
 msgstr ""
 
-#: system/models/field.py:45
+#: system/models/field.py:47
 msgid "Model label field"
+msgstr ""
+
+#: system/models/import_.py:31
+msgid "Create"
+msgstr ""
+
+#: system/models/import_.py:32
+msgid "Update"
+msgstr ""
+
+#: system/models/import_.py:36
+msgid "Target module"
+msgstr ""
+
+#: system/models/import_.py:39
+msgid "Import action"
+msgstr ""
+
+#: system/models/import_.py:48
+msgid "Total rows"
+msgstr ""
+
+#: system/models/import_.py:49
+msgid "Success rows"
+msgstr ""
+
+#: system/models/import_.py:50
+msgid "Failed rows"
+msgstr ""
+
+#: system/models/import_.py:59 system/serializers/import_.py:20
+msgid "Source file"
+msgstr ""
+
+#: system/models/import_.py:67 system/serializers/import_.py:23
+msgid "Error report"
+msgstr ""
+
+#: system/models/import_.py:70
+msgid "Import params"
+msgstr ""
+
+#: system/models/import_.py:74
+msgid "Import record"
+msgstr ""
+
+#: system/models/import_.py:95
+msgid "Target model"
+msgstr ""
+
+#: system/models/import_.py:95 system/models/mask.py:28
+msgid "Model label like system.userinfo"
+msgstr ""
+
+#: system/models/import_.py:97
+msgid "Template name"
+msgstr ""
+
+#: system/models/import_.py:98
+msgid "Column mapping"
+msgstr ""
+
+#: system/models/import_.py:99
+msgid "Import options"
+msgstr ""
+
+#: system/models/import_.py:100
+msgid "Shared"
+msgstr ""
+
+#: system/models/import_.py:104
+msgid "Import template"
 msgstr ""
 
 #: system/models/log.py:22
@@ -1839,90 +2379,163 @@ msgstr ""
 msgid "Wechat scan code"
 msgstr ""
 
-#: system/models/log.py:26
+#: system/models/log.py:27
+msgid "Third-party OAuth"
+msgstr ""
+
+#: system/models/log.py:28
 msgid "Websocket"
 msgstr ""
 
-#: system/models/log.py:29
+#: system/models/log.py:31
 msgid "Login status"
 msgstr ""
 
-#: system/models/log.py:30 system/models/log.py:66 system/notifications.py:103
+#: system/models/log.py:32 system/models/log.py:77
+#: system/templates/notify/msg_abnormal_login.html:12
+#: system/templates/notify/msg_sensitive_operation.html:5
 msgid "IpAddress"
 msgstr ""
 
-#: system/models/log.py:31 system/models/session.py:37
+#: system/models/log.py:33 system/models/session.py:37
+#: system/templates/notify/msg_abnormal_login.html:13
 #: system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr ""
 
-#: system/models/log.py:32 system/models/log.py:67 system/models/session.py:38
+#: system/models/log.py:34 system/models/log.py:78 system/models/session.py:38
+#: system/templates/notify/msg_abnormal_login.html:14
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr ""
 
-#: system/models/log.py:33 system/models/log.py:68 system/models/session.py:39
+#: system/models/log.py:35 system/models/log.py:79 system/models/session.py:39
+#: system/templates/notify/msg_abnormal_login.html:15
 msgid "System"
 msgstr ""
 
-#: system/models/log.py:34
+#: system/models/log.py:36
 msgid "Agent"
 msgstr ""
 
-#: system/models/log.py:35
+#: system/models/log.py:37
 msgid "Channel name"
 msgstr ""
 
-#: system/models/log.py:37 system/models/session.py:42
+#: system/models/log.py:39 system/models/session.py:42
 msgid "Login type"
 msgstr ""
 
-#: system/models/log.py:41
+#: system/models/log.py:43
 msgid "User login log"
 msgstr ""
 
-#: system/models/log.py:62 system/notifications.py:101
-msgid "Module"
-msgstr ""
-
-#: system/models/log.py:63
-msgid "URL path"
-msgstr ""
-
-#: system/models/log.py:64
-msgid "Request body"
-msgstr ""
-
 #: system/models/log.py:65
-msgid "Request method"
+msgid "JWT"
 msgstr ""
 
-#: system/models/log.py:69 system/views/admin/operationlog.py:24
-msgid "Response code"
+#: system/models/log.py:66 system/models/token.py:38
+msgid "Personal access token"
 msgstr ""
 
-#: system/models/log.py:70
-msgid "Response result"
-msgstr ""
-
-#: system/models/log.py:71
-msgid "Status code"
-msgstr ""
-
-#: system/models/log.py:72
-msgid "Request ID"
-msgstr ""
-
-#: system/models/log.py:73
-msgid "Execution time"
+#: system/models/log.py:68
+msgid "SCIM directory sync"
 msgstr ""
 
 #: system/models/log.py:75
+msgid "Request body"
+msgstr ""
+
+#: system/models/log.py:76
+msgid "Request method"
+msgstr ""
+
+#: system/models/log.py:80 system/views/admin/operationlog.py:28
+msgid "Response code"
+msgstr ""
+
+#: system/models/log.py:81
+msgid "Response result"
+msgstr ""
+
+#: system/models/log.py:82
+msgid "Status code"
+msgstr ""
+
+#: system/models/log.py:83
+msgid "Request ID"
+msgstr ""
+
+#: system/models/log.py:84
+msgid "Execution time"
+msgstr ""
+
+#: system/models/log.py:86
 msgid "Changed fields"
 msgstr ""
 
-#: system/models/log.py:78 system/notifications.py:134
+#: system/models/log.py:92
+msgid "Auth type"
+msgstr ""
+
+#: system/models/log.py:94
+msgid "Token pk"
+msgstr ""
+
+#: system/models/log.py:97 system/notifications.py:187
 msgid "Operation log"
+msgstr ""
+
+#: system/models/mask.py:22
+msgid "ID card"
+msgstr ""
+
+#: system/models/mask.py:25
+msgid "Bank card"
+msgstr ""
+
+#: system/models/mask.py:26
+msgid "Custom"
+msgstr ""
+
+#: system/models/mask.py:28 system/models/menu.py:100
+msgid "Model"
+msgstr ""
+
+#: system/models/mask.py:29 system/models/permission.py:39
+msgid "Field"
+msgstr ""
+
+#: system/models/mask.py:30
+msgid "Mask type"
+msgstr ""
+
+#: system/models/mask.py:31
+msgid "Keep head"
+msgstr ""
+
+#: system/models/mask.py:32
+msgid "Keep tail"
+msgstr ""
+
+#: system/models/mask.py:33
+msgid "Mask char"
+msgstr ""
+
+#: system/models/mask.py:34
+msgid "Custom pattern"
+msgstr ""
+
+#: system/models/mask.py:36
+msgid "Roles"
+msgstr ""
+
+#: system/models/mask.py:36
+msgid "Empty = all non-superuser"
+msgstr ""
+
+#: system/models/mask.py:43
+msgid "Data mask rule"
 msgstr ""
 
 #: system/models/menu.py:17 system/views/search/menu.py:36
@@ -2064,12 +2677,28 @@ msgstr ""
 msgid "Component path"
 msgstr ""
 
-#: system/models/menu.py:100
-msgid "Model"
+#: system/models/oauth.py:25
+msgid "Subject"
 msgstr ""
 
-#: system/models/menu.py:104
-msgid "Method"
+#: system/models/oauth.py:25
+msgid "IdP 侧唯一标识（sub）"
+msgstr ""
+
+#: system/models/oauth.py:27
+msgid "Profile"
+msgstr ""
+
+#: system/models/oauth.py:27
+msgid "IdP 返回的头像/昵称/邮箱等只读快照"
+msgstr ""
+
+#: system/models/oauth.py:31
+msgid "OAuth binding"
+msgstr ""
+
+#: system/models/oauth.py:32
+msgid "OAuth bindings"
 msgstr ""
 
 #: system/models/permission.py:18
@@ -2078,14 +2707,6 @@ msgstr ""
 
 #: system/models/permission.py:24
 msgid "If a menu exists, it only applies to the selected menu permission"
-msgstr ""
-
-#: system/models/permission.py:37
-msgid "Role"
-msgstr ""
-
-#: system/models/permission.py:39
-msgid "Field"
 msgstr ""
 
 #: system/models/role.py:20
@@ -2100,7 +2721,7 @@ msgstr ""
 msgid "User role"
 msgstr ""
 
-#: system/models/session.py:29 system/serializers/log.py:97
+#: system/models/session.py:29 system/serializers/log.py:102
 msgid "Online"
 msgstr ""
 
@@ -2136,17 +2757,17 @@ msgstr ""
 msgid "Task Name"
 msgstr ""
 
-#: system/models/task.py:40 system/serializers/task.py:229
+#: system/models/task.py:40 system/serializers/task.py:230
 msgid "Periodic Task"
 msgstr ""
 
-#: system/models/task.py:45 system/serializers/task.py:173
-#: system/serializers/task.py:174
+#: system/models/task.py:45 system/serializers/task.py:174
+#: system/serializers/task.py:175
 msgid "Positional Args"
 msgstr ""
 
-#: system/models/task.py:46 system/serializers/task.py:179
-#: system/serializers/task.py:180
+#: system/models/task.py:46 system/serializers/task.py:180
+#: system/serializers/task.py:181
 msgid "Keyword Args"
 msgstr ""
 
@@ -2162,87 +2783,120 @@ msgstr ""
 msgid "Task Execution"
 msgstr ""
 
-#: system/models/upload.py:17
+#: system/models/token.py:21
+msgid "Token name"
+msgstr ""
+
+#: system/models/token.py:22
+msgid "Token hash"
+msgstr ""
+
+#: system/models/token.py:23 system/serializers/token.py:23
+msgid "Token prefix"
+msgstr ""
+
+#: system/models/token.py:28 system/serializers/token.py:27
+msgid "Scopes"
+msgstr ""
+
+#: system/models/token.py:31 system/serializers/token.py:34
+msgid "Ip allowlist"
+msgstr ""
+
+#: system/models/token.py:33
+msgid "Expired at"
+msgstr ""
+
+#: system/models/token.py:34 system/serializers/token.py:24
+msgid "Last used time"
+msgstr ""
+
+#: system/models/upload.py:18
 msgid "Filepath"
 msgstr ""
 
-#: system/models/upload.py:19
+#: system/models/upload.py:20
 msgid "Internet URL"
 msgstr ""
 
-#: system/models/upload.py:23
+#: system/models/upload.py:24
 msgid "Usually an address accessible to the outside Internet"
 msgstr ""
 
-#: system/models/upload.py:25
+#: system/models/upload.py:26
 msgid "Filename"
 msgstr ""
 
-#: system/models/upload.py:26
+#: system/models/upload.py:27
 msgid "Filesize"
 msgstr ""
 
-#: system/models/upload.py:27
+#: system/models/upload.py:28
 msgid "Mime type"
 msgstr ""
 
-#: system/models/upload.py:28
+#: system/models/upload.py:29
 msgid "File md5sum"
 msgstr ""
 
-#: system/models/upload.py:30
+#: system/models/upload.py:31
 msgid "Tmp file"
 msgstr ""
 
-#: system/models/upload.py:32
+#: system/models/upload.py:33
 msgid "Temporary files are automatically cleared by scheduled tasks"
 msgstr ""
 
-#: system/models/upload.py:34 system/models/upload.py:48
+#: system/models/upload.py:35 system/models/upload.py:103
 msgid "Upload file"
 msgstr ""
 
-#: system/models/user.py:41
+#: system/models/upload.py:42
+msgid "Category options come from the data dictionary upload_category"
+msgstr ""
+
+#: system/models/user.py:40
 msgid "Male"
 msgstr ""
 
-#: system/models/user.py:42
+#: system/models/user.py:41
 msgid "Female"
 msgstr ""
 
-#: system/models/user.py:45
+#: system/models/user.py:44
 msgid "Disabled"
 msgstr ""
 
-#: system/models/user.py:46
+#: system/models/user.py:45
 msgid "Enabled"
 msgstr ""
 
-#: system/models/user.py:49
+#: system/models/user.py:48
 msgid "Avatar"
 msgstr ""
 
-#: system/models/user.py:58
+#: system/models/user.py:57
 msgid "Nickname"
 msgstr ""
 
-#: system/models/user.py:59 system/serializers/user.py:36
+#: system/models/user.py:58 system/serializers/user.py:36
 msgid "Gender"
 msgstr ""
 
-#: system/models/user.py:65
+#: system/models/user.py:64
 msgid "MFA level"
 msgstr ""
 
-#: system/models/user.py:67
+#: system/models/user.py:66
 msgid "OTP secret key"
 msgstr ""
 
-#: system/models/user.py:81
+#: system/models/user.py:80
 msgid "Userinfo"
 msgstr ""
 
-#: system/notifications.py:25 system/notifications.py:60
+#: system/notifications.py:25 system/notifications.py:62
+#: system/notifications.py:109
 msgid "Account Security"
 msgstr ""
 
@@ -2250,29 +2904,271 @@ msgstr ""
 msgid "Different city login reminder"
 msgstr ""
 
-#: system/notifications.py:61
+#: system/notifications.py:63 system/notifications.py:72
+msgid "New device login reminder"
+msgstr ""
+
+#: system/notifications.py:74
+msgid "New IP address"
+msgstr ""
+
+#: system/notifications.py:75
+msgid "New city"
+msgstr ""
+
+#: system/notifications.py:76
+msgid "New device (browser/system)"
+msgstr ""
+
+#: system/notifications.py:110
 msgid "Reset password reminder"
 msgstr ""
 
-#: system/notifications.py:71
+#: system/notifications.py:120
 msgid "Reset password success"
 msgstr ""
 
-#: system/notifications.py:91
+#: system/notifications.py:140 system/notifications.py:201
+#: system/notifications.py:253
 msgid "Audit"
 msgstr ""
 
-#: system/notifications.py:92
+#: system/notifications.py:141
 msgid "Sensitive operation alert"
 msgstr ""
 
-#: system/notifications.py:99
+#: system/notifications.py:148
 #, python-brace-format
 msgid "Sensitive operation alert: {} {}"
 msgstr ""
 
-#: system/notifications.py:102
-msgid "Request path"
+#: system/notifications.py:202
+msgid "Approval request notice"
+msgstr ""
+
+#: system/notifications.py:205
+msgid "New approval request"
+msgstr ""
+
+#: system/notifications.py:206
+msgid "Approval request approved"
+msgstr ""
+
+#: system/notifications.py:207
+msgid "Approval request rejected"
+msgstr ""
+
+#: system/notifications.py:209
+msgid "Approval request pending reminder"
+msgstr ""
+
+#: system/notifications.py:254
+msgid "Approval flow notice"
+msgstr ""
+
+#: system/notifications.py:257
+msgid "New approval application"
+msgstr ""
+
+#: system/notifications.py:258
+msgid "Approval application approved"
+msgstr ""
+
+#: system/notifications.py:259
+msgid "Approval application rejected"
+msgstr ""
+
+#: system/notifications.py:260
+msgid "Approval task pending reminder"
+msgstr ""
+
+#: system/notifications.py:261
+msgid "Added as approval approver"
+msgstr ""
+
+#: system/notifications.py:262
+msgid "Approval application cancelled"
+msgstr ""
+
+#: system/scim/auth.py:35
+msgid "SCIM directory sync is disabled"
+msgstr ""
+
+#: system/scim/auth.py:40
+msgid "SCIM credentials were not provided"
+msgstr ""
+
+#: system/scim/auth.py:42
+msgid "Invalid SCIM authorization header"
+msgstr ""
+
+#: system/scim/auth.py:47 system/scim/auth.py:51
+msgid "Invalid SCIM token"
+msgstr ""
+
+#: system/scim/resources.py:139
+msgid "Unsupported filter expression"
+msgstr ""
+
+#: system/scim/resources.py:142 system/scim/views.py:211
+#: system/scim/views.py:278
+msgid "Unsupported filter attribute"
+msgstr ""
+
+#: system/scim/resources.py:151
+msgid "Invalid pagination parameters"
+msgstr ""
+
+#: system/scim/resources.py:166 system/scim/resources.py:248
+#: system/scim/resources.py:251
+msgid "userName is required"
+msgstr ""
+
+#: system/scim/resources.py:185 system/scim/resources.py:222
+#: system/scim/resources.py:253 system/scim/resources.py:291
+msgid "userName already exists"
+msgstr ""
+
+#: system/scim/resources.py:274 system/scim/resources.py:375
+msgid "Invalid patch operation"
+msgstr ""
+
+#: system/scim/resources.py:279
+#, python-brace-format
+msgid "Unsupported patch op: {}"
+msgstr ""
+
+#: system/scim/resources.py:345
+msgid "displayName is required"
+msgstr ""
+
+#: system/scim/resources.py:348 system/scim/resources.py:364
+#: system/scim/resources.py:398
+msgid "Group code already exists"
+msgstr ""
+
+#: system/scim/resources.py:447
+#, python-brace-format
+msgid "Group member not found: {}"
+msgstr ""
+
+#: system/scim/views.py:77
+msgid "Authentication failed"
+msgstr ""
+
+#: system/scim/views.py:82
+msgid "Request was throttled"
+msgstr ""
+
+#: system/scim/views.py:86
+msgid "Resource not found"
+msgstr ""
+
+#: system/scim/views.py:93 system/views/admin/online.py:90
+#: system/views/admin/online.py:95
+msgid "User not found"
+msgstr ""
+
+#: system/scim/views.py:100
+msgid "Group not found"
+msgstr ""
+
+#: system/scim/views.py:251 system/scim/views.py:307
+msgid "Operations is required"
+msgstr ""
+
+#: system/serializers/approval.py:19 system/serializers/approval_flow.py:199
+msgid "Applicant"
+msgstr ""
+
+#: system/serializers/approval_flow.py:48
+msgid "Node count"
+msgstr ""
+
+#: system/serializers/approval_flow.py:75
+msgid "Form schema must be a list"
+msgstr ""
+
+#: system/serializers/approval_flow.py:79
+msgid "Form schema item must be an object"
+msgstr ""
+
+#: system/serializers/approval_flow.py:82
+#, python-brace-format
+msgid "Form field key is required (item {})"
+msgstr ""
+
+#: system/serializers/approval_flow.py:84
+#, python-brace-format
+msgid "Form field key {} is duplicated"
+msgstr ""
+
+#: system/serializers/approval_flow.py:88
+#, python-brace-format
+msgid "Unsupported form field type: {}"
+msgstr ""
+
+#: system/serializers/approval_flow.py:90
+#, python-brace-format
+msgid "Select field {} requires options"
+msgstr ""
+
+#: system/serializers/approval_flow.py:98
+msgid "The flow requires at least one node"
+msgstr ""
+
+#: system/serializers/approval_flow.py:104
+msgid "Node order must be greater than 0"
+msgstr ""
+
+#: system/serializers/approval_flow.py:107
+msgid "Node order is duplicated"
+msgstr ""
+
+#: system/serializers/approval_flow.py:110
+msgid "Node name is required"
+msgstr ""
+
+#: system/serializers/approval_flow.py:115
+#, python-brace-format
+msgid "Assignee value is required for node {}"
+msgstr ""
+
+#: system/serializers/approval_flow.py:118
+msgid "Timeout hours cannot be negative"
+msgstr ""
+
+#: system/serializers/approval_flow.py:122
+msgid "Condition requires a field"
+msgstr ""
+
+#: system/serializers/approval_flow.py:125
+#, python-brace-format
+msgid "Unsupported condition operator: {}"
+msgstr ""
+
+#: system/serializers/approval_flow.py:132
+msgid "Flow code is required"
+msgstr ""
+
+#: system/serializers/approval_flow.py:137
+msgid "The flow has pending applications, nodes cannot be changed"
+msgstr ""
+
+#: system/serializers/approval_flow.py:207
+msgid "My task"
+msgstr ""
+
+#: system/serializers/approval_flow.py:271
+msgid "Flow is required"
+msgstr ""
+
+#: system/serializers/approval_flow.py:273 system/utils/approval_flow.py:267
+msgid "The flow is disabled"
+msgstr ""
+
+#: system/serializers/approval_flow.py:275
+msgid "Title is required"
 msgstr ""
 
 #: system/serializers/config.py:31
@@ -2287,7 +3183,7 @@ msgstr ""
 msgid "User cannot be null"
 msgstr ""
 
-#: system/serializers/department.py:80
+#: system/serializers/department.py:86
 msgid "The superior department cannot be its own subordinate department"
 msgstr ""
 
@@ -2315,97 +3211,139 @@ msgstr ""
 msgid "File size"
 msgstr ""
 
-#: system/serializers/menu.py:60 system/serializers/role.py:52
-#: system/serializers/user.py:113
-msgid "This field already exists"
+#: system/serializers/import_.py:26
+msgid "Report size"
 msgstr ""
 
-#: system/serializers/permission.py:45
-msgid "The rule cannot be null"
+#: system/serializers/import_.py:141
+#, python-brace-format
+msgid "Too many columns in mapping (max {})"
+msgstr ""
+
+#: system/serializers/import_.py:162
+msgid "Only superuser can manage shared templates"
+msgstr ""
+
+#: system/serializers/import_.py:172
+msgid "Template name already exists"
+msgstr ""
+
+#: system/serializers/menu.py:60 system/serializers/role.py:52
+#: system/serializers/user.py:112
+msgid "This field already exists"
 msgstr ""
 
 #: system/serializers/role.py:41 system/serializers/role.py:42
 msgid "Fields"
 msgstr ""
 
-#: system/serializers/task.py:57
+#: system/serializers/task.py:58
 msgid "Timezone"
 msgstr ""
 
-#: system/serializers/task.py:81
+#: system/serializers/task.py:82
 #, python-brace-format
 msgid "Invalid crontab expression: {}"
 msgstr ""
 
-#: system/serializers/task.py:99
+#: system/serializers/task.py:100
 #, python-format
 msgid "%(label)s must be a valid JSON string"
 msgstr ""
 
-#: system/serializers/task.py:102
+#: system/serializers/task.py:103
 #, python-format
 msgid "%(label)s must be JSON %(type)s"
 msgstr ""
 
-#: system/serializers/task.py:132
+#: system/serializers/task.py:133
 msgid "Default queue"
 msgstr ""
 
-#: system/serializers/task.py:137
+#: system/serializers/task.py:138
 msgid "Default routing key"
 msgstr ""
 
-#: system/serializers/task.py:148
+#: system/serializers/task.py:149
 msgid "Default exchange"
 msgstr ""
 
-#: system/serializers/task.py:160
+#: system/serializers/task.py:161
 msgid "Crontab"
 msgstr ""
 
-#: system/serializers/task.py:166
+#: system/serializers/task.py:167
 msgid "Interval"
 msgstr ""
 
-#: system/serializers/task.py:188
+#: system/serializers/task.py:189
 msgid "Queue"
 msgstr ""
 
-#: system/serializers/task.py:194
+#: system/serializers/task.py:195
 msgid "Routing Key"
 msgstr ""
 
-#: system/serializers/task.py:200
+#: system/serializers/task.py:201
 msgid "Exchange"
 msgstr ""
 
-#: system/serializers/task.py:237
+#: system/serializers/task.py:246
 msgid "Time Cost"
 msgstr ""
 
-#: system/serializers/upload.py:39
+#: system/serializers/token.py:22
+msgid "Token"
+msgstr ""
+
+#: system/serializers/token.py:30
+msgid "List of allowed path prefixes or regexes; empty means unrestricted"
+msgstr ""
+
+#: system/serializers/token.py:37
+msgid "Allowed source IPs or CIDR networks; empty means unrestricted"
+msgstr ""
+
+#: system/serializers/token.py:82
+msgid "Scopes must be a list of path strings"
+msgstr ""
+
+#: system/serializers/token.py:95
+msgid "Ip allowlist must be a list of IPs or CIDR networks"
+msgstr ""
+
+#: system/serializers/token.py:108
+#, python-format
+msgid "Invalid IP or CIDR network: %(entry)s"
+msgstr ""
+
+#: system/serializers/upload.py:63
 msgid "Access URL"
 msgstr ""
 
-#: system/serializers/upload.py:47
+#: system/serializers/upload.py:66
+msgid "Preview type"
+msgstr ""
+
+#: system/serializers/upload.py:80
 msgid "Internet url cannot be null"
 msgstr ""
 
-#: system/serializers/user.py:98
+#: system/serializers/user.py:97
 msgid "Login blocked"
 msgstr ""
 
-#: system/serializers/user.py:101
+#: system/serializers/user.py:100
 msgid "Online count"
 msgstr ""
 
-#: system/serializers/user.py:145 system/serializers/user.py:158
+#: system/serializers/user.py:144 system/serializers/user.py:157
 #: system/serializers/userinfo.py:52 system/views/auth/register.py:77
 #: system/views/auth/reset.py:55
 msgid "Password does not match security rules"
 msgstr ""
 
-#: system/serializers/user.py:148
+#: system/serializers/user.py:147
 msgid "Abnormal password field"
 msgstr ""
 
@@ -2421,13 +3359,36 @@ msgstr ""
 msgid "Old password verification failed"
 msgstr ""
 
-#: system/tasks.py:154
+#: system/tasks.py:316
 msgid "Async export data"
 msgstr ""
 
-#: system/tasks.py:247
+#: system/tasks.py:415
 #, python-brace-format
 msgid "Exported {} rows"
+msgstr ""
+
+#: system/tasks.py:468
+#, python-brace-format
+msgid "Object not found: {}"
+msgstr ""
+
+#: system/tasks.py:479
+msgid "Async import data"
+msgstr ""
+
+#: system/tasks.py:516
+msgid "Import source file not found"
+msgstr ""
+
+#: system/tasks.py:582 tests/unit/system/test_import_record.py:151
+#, python-brace-format
+msgid "Aborted: failure rate exceeds limit ({}/{} rows failed)"
+msgstr ""
+
+#: system/tasks.py:662
+#, python-brace-format
+msgid "Imported {} rows, {} failed"
 msgstr ""
 
 #: system/templates/msg_verify_code.html:16
@@ -2443,6 +3404,86 @@ msgstr ""
 msgid "If you have any questions, you can contact the administrator"
 msgstr ""
 
+#: system/templates/notify/msg_abnormal_login.html:6
+msgid ""
+"Your account has been logged in from a new device or IP, please pay attention"
+msgstr ""
+
+#: system/templates/notify/msg_abnormal_login.html:16
+#: system/templates/notify/msg_different_city.html:10
+msgid "Login Date"
+msgstr ""
+
+#: system/templates/notify/msg_abnormal_login.html:19
+#: system/templates/notify/msg_different_city.html:16
+msgid ""
+"If you suspect that the login behavior is abnormal, please modify the "
+"account password in time."
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:7
+msgid ""
+"A sensitive operation has been submitted for approval, please handle it in "
+"the approval center"
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:9
+msgid ""
+"Your approval request has been approved, please retry the original operation "
+"with the token within the validity period"
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:11
+msgid ""
+"This approval request has been pending for a long time, please handle it as "
+"soon as possible"
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:13
+msgid "Your approval request has been rejected"
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:18
+#: system/templates/notify/msg_sensitive_operation.html:4
+msgid "Request path"
+msgstr ""
+
+#: system/templates/notify/msg_approval.html:19
+msgid "Approval No."
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:7
+msgid ""
+"A new approval application requires your approval, please handle it in the "
+"approval center"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:9
+msgid "Your approval application has been approved"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:11
+msgid "Your approval application has been rejected"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:13
+msgid ""
+"This approval task has been pending for a long time, please handle it as "
+"soon as possible"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:15
+msgid "You have been added as an approver of the approval flow"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:17
+msgid "The approval application has been cancelled by the applicant"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:24
+msgid "Application No."
+msgstr ""
+
 #: system/templates/notify/msg_different_city.html:6
 msgid "Your account has remote login behavior, please pay attention"
 msgstr ""
@@ -2450,16 +3491,6 @@ msgstr ""
 #: system/templates/notify/msg_different_city.html:9
 #: system/templates/notify/msg_rest_password_success.html:8
 msgid "Username"
-msgstr ""
-
-#: system/templates/notify/msg_different_city.html:10
-msgid "Login Date"
-msgstr ""
-
-#: system/templates/notify/msg_different_city.html:16
-msgid ""
-"If you suspect that the login behavior is abnormal, please modify the "
-"account password in time."
 msgstr ""
 
 #: system/templates/notify/msg_rest_password_success.html:2
@@ -2474,6 +3505,165 @@ msgstr ""
 msgid ""
 "If the password update was not initiated by you, your account may have "
 "security issues"
+msgstr ""
+
+#: system/utils/approval.py:131
+msgid "Sensitive operation"
+msgstr ""
+
+#: system/utils/approval.py:183
+#, python-brace-format
+msgid ""
+"Operation submitted for approval (No. {}), please retry after it is approved"
+msgstr ""
+
+#: system/utils/approval.py:201
+msgid ""
+"No available approver, please contact the administrator to configure "
+"approvers"
+msgstr ""
+
+#: system/utils/approval.py:228 system/utils/approval.py:231
+msgid "Invalid approval token"
+msgstr ""
+
+#: system/utils/approval.py:233
+msgid "The approval token does not belong to the current user"
+msgstr ""
+
+#: system/utils/approval.py:243
+msgid "Resent request does not match the approved snapshot"
+msgstr ""
+
+#: system/utils/approval.py:245
+msgid "The resent request does not match the approved content"
+msgstr ""
+
+#: system/utils/approval.py:252
+#, python-brace-format
+msgid "The approval has been {}"
+msgstr ""
+
+#: system/utils/approval.py:254
+#, python-brace-format
+msgid "The approval was rejected: {}"
+msgstr ""
+
+#: system/utils/approval.py:258 system/utils/approval.py:274
+msgid "The approval token has already been used"
+msgstr ""
+
+#: system/utils/approval.py:262
+msgid "The approval token has expired"
+msgstr ""
+
+#: system/utils/approval.py:306
+msgid "Only pending requests can be approved"
+msgstr ""
+
+#: system/utils/approval.py:308 system/utils/approval.py:328
+msgid "The applicant cannot approve their own request"
+msgstr ""
+
+#: system/utils/approval.py:326
+msgid "Only pending requests can be rejected"
+msgstr ""
+
+#: system/utils/approval.py:344
+msgid "Only the applicant can cancel the request"
+msgstr ""
+
+#: system/utils/approval.py:346
+msgid "Only pending requests can be cancelled"
+msgstr ""
+
+#: system/utils/approval_flow.py:179
+msgid "Form data must be an object"
+msgstr ""
+
+#: system/utils/approval_flow.py:187
+#, python-brace-format
+msgid "Field {} is required"
+msgstr ""
+
+#: system/utils/approval_flow.py:241
+msgid "No available approver, node auto-approved"
+msgstr ""
+
+#: system/utils/approval_flow.py:273
+msgid "The flow has no available node"
+msgstr ""
+
+#: system/utils/approval_flow.py:276
+#, python-brace-format
+msgid "No available approver for node {}"
+msgstr ""
+
+#: system/utils/approval_flow.py:346 system/utils/approval_flow.py:400
+msgid "The task does not exist"
+msgstr ""
+
+#: system/utils/approval_flow.py:348 system/utils/approval_flow.py:371
+#: system/utils/approval_flow.py:402 system/utils/approval_flow.py:418
+msgid "The task has been processed"
+msgstr ""
+
+#: system/utils/approval_flow.py:351 system/utils/approval_flow.py:405
+msgid "The application has been finished"
+msgstr ""
+
+#: system/utils/approval_flow.py:353 system/utils/approval_flow.py:407
+msgid "This task is not assigned to you"
+msgstr ""
+
+#: system/utils/approval_flow.py:355 system/utils/approval_flow.py:409
+msgid "The applicant cannot approve their own application"
+msgstr ""
+
+#: system/utils/approval_flow.py:357
+msgid "The task is not in the current node"
+msgstr ""
+
+#: system/utils/approval_flow.py:360 system/utils/approval_flow.py:411
+msgid "The node has been removed, please contact the administrator"
+msgstr ""
+
+#: system/utils/approval_flow.py:396 system/views/admin/approval.py:157
+#: system/views/admin/approval.py:212 system/views/admin/approval_flow.py:220
+#: system/views/admin/approval_flow.py:317
+msgid "Rejection reason is required"
+msgstr ""
+
+#: system/utils/approval_flow.py:432
+msgid "Only the applicant can cancel the application"
+msgstr ""
+
+#: system/utils/approval_flow.py:434
+msgid "Only pending applications can be cancelled"
+msgstr ""
+
+#: system/utils/approval_flow.py:457
+msgid "Only pending applications can be counter-signed"
+msgstr ""
+
+#: system/utils/approval_flow.py:459
+msgid "The application has no active node"
+msgstr ""
+
+#: system/utils/approval_flow.py:466
+msgid "Only the current node approvers can counter-sign"
+msgstr ""
+
+#: system/utils/approval_flow.py:470
+msgid "Please select the approver to add"
+msgstr ""
+
+#: system/utils/approval_flow.py:473
+msgid "No available approver for counter-sign"
+msgstr ""
+
+#: system/utils/approval_flow.py:491
+msgid "The selected approver is already in the node"
 msgstr ""
 
 #: system/utils/auth.py:44
@@ -2492,7 +3682,7 @@ msgid ""
 msgstr ""
 
 #: system/utils/auth.py:84 system/utils/auth.py:144
-#: system/views/auth/login.py:92
+#: system/views/auth/login.py:93
 #, python-brace-format
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
@@ -2504,6 +3694,10 @@ msgstr ""
 msgid ""
 "{error} please enter it again. You can also try {times_try} times (The "
 "account will be temporarily locked for {block_time} minutes)"
+msgstr ""
+
+#: system/utils/import_report.py:37
+msgid "Validation failed"
 msgstr ""
 
 #: system/utils/modelfield.py:72
@@ -2673,6 +3867,114 @@ msgid ""
 "fields."
 msgstr ""
 
+#: system/utils/modelfield.py:172
+msgid "Many-to-many: the field contains any of the given values."
+msgstr ""
+
+#: system/utils/modelfield.py:173
+msgid "Many-to-many: the field contains all of the given values."
+msgstr ""
+
+#: system/utils/modelfield.py:174
+msgid "IP address is inside the given network / range, * means no restriction."
+msgstr ""
+
+#: system/utils/oauth.py:101 system/utils/oauth.py:107
+msgid "Invalid OAuth providers configuration"
+msgstr ""
+
+#: system/utils/oauth.py:110
+#, python-brace-format
+msgid "OAuth provider is missing required fields: {}"
+msgstr ""
+
+#: system/utils/oauth.py:113
+#, python-brace-format
+msgid "Duplicate OAuth provider key: {}"
+msgstr ""
+
+#: system/utils/oauth.py:119
+#, python-brace-format
+msgid "OAuth provider url must use https: {}"
+msgstr ""
+
+#: system/utils/oauth.py:121
+msgid "Enabled OAuth provider requires client_secret"
+msgstr ""
+
+#: system/utils/oauth.py:199 system/utils/oauth.py:218
+msgid "Failed to contact the identity provider"
+msgstr ""
+
+#: system/utils/oauth.py:203
+msgid "The identity provider rejected the login request"
+msgstr ""
+
+#: system/utils/oauth.py:221
+msgid "The identity provider returned incomplete user information"
+msgstr ""
+
+#: system/views/admin/approval.py:123 system/views/admin/approval.py:160
+#: system/views/admin/approval_flow.py:181
+#: system/views/admin/approval_flow.py:223
+msgid "Please select the data to operate"
+msgstr ""
+
+#: system/views/admin/approval.py:133 system/views/admin/approval_flow.py:199
+#, python-brace-format
+msgid "Operation successful. Approved {} data"
+msgstr ""
+
+#: system/views/admin/approval.py:171 system/views/admin/approval_flow.py:240
+#, python-brace-format
+msgid "Operation successful. Rejected {} data"
+msgstr ""
+
+#: system/views/admin/approval.py:194
+msgid "The approval request has been approved"
+msgstr ""
+
+#: system/views/admin/approval.py:216
+msgid "The approval request has been rejected"
+msgstr ""
+
+#: system/views/admin/approval.py:226
+msgid "The approval request has been cancelled"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:71
+msgid "A flow with applications cannot be deleted"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:146
+msgid "Application submitted"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:160
+msgid "No pending task available for the current user"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:190
+#: system/views/admin/approval_flow.py:231
+msgid "No pending task for you"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:296
+msgid "The approval task has been approved"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:322
+msgid "The approval task has been rejected"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:332
+msgid "The application has been cancelled"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:361
+msgid "The approver has been added"
+msgstr ""
+
 #: system/views/admin/dict.py:29
 msgid "Is dict type"
 msgstr ""
@@ -2685,62 +3987,122 @@ msgstr ""
 msgid "Dict code is required"
 msgstr ""
 
-#: system/views/admin/dict.py:111 system/views/task.py:304
+#: system/views/admin/dict.py:111 system/views/task.py:305
 #, python-brace-format
 msgid "Batch update submitted: {} success"
 msgstr ""
 
-#: system/views/admin/export.py:72 system/views/admin/export.py:75
+#: system/views/admin/export.py:57
 msgid "Export file not found"
 msgstr ""
 
-#: system/views/admin/file.py:100
+#: system/views/admin/file.py:83 system/views/admin/file.py:88
+msgid "Unnamed file"
+msgstr ""
+
+#: system/views/admin/file.py:211 system/views/admin/file.py:219
+#: system/views/admin/file.py:231 system/views/admin/file.py:260
+msgid "This file type does not support preview"
+msgstr ""
+
+#: system/views/admin/file.py:240 system/views/admin/record_base.py:73
+msgid "File not found"
+msgstr ""
+
+#: system/views/admin/file.py:254
+msgid "The document is being converted, please try again later"
+msgstr ""
+
+#: system/views/admin/file.py:306
+msgid "Wrong upload file type"
+msgstr ""
+
+#: system/views/admin/file.py:309
 #, python-brace-format
 msgid "upload file size cannot exceed {}"
 msgstr ""
 
-#: system/views/admin/file.py:104
-msgid "Wrong upload file type"
+#: system/views/admin/file.py:314
+#, python-brace-format
+msgid "Storage quota exceeded ({} MB), please clean up and retry"
 msgstr ""
 
-#: system/views/admin/online.py:89
-msgid "User not found"
+#: system/views/admin/file.py:319
+#, python-brace-format
+msgid "File count limit exceeded ({}), please clean up and retry"
 msgstr ""
 
-#: system/views/admin/online.py:93
+#: system/views/admin/file.py:366
+msgid "Failed to save uploaded file"
+msgstr ""
+
+#: system/views/admin/file.py:370
+msgid "Upload successful"
+msgstr ""
+
+#: system/views/admin/file.py:372
+#, python-brace-format
+msgid "Upload successful, {} file(s) reused existing copies"
+msgstr ""
+
+#: system/views/admin/import_.py:58
+msgid "Error report not found"
+msgstr ""
+
+#: system/views/admin/loginlog.py:51
+msgid "This login record cannot be forcibly logged out"
+msgstr ""
+
+#: system/views/admin/mask.py:35
+msgid "Invalid sample values"
+msgstr ""
+
+#: system/views/admin/mask.py:79
+msgid "Invalid mask rule"
+msgstr ""
+
+#: system/views/admin/mask.py:81
+msgid "Invalid mask type"
+msgstr ""
+
+#: system/views/admin/online.py:99
 msgid "User forced offline (all sessions revoked)"
 msgstr ""
 
-#: system/views/admin/online.py:126
+#: system/views/admin/online.py:132
 #, python-brace-format
 msgid "Batch force offline submitted: {} users"
 msgstr ""
 
-#: system/views/admin/operationlog.py:25
+#: system/views/admin/operationlog.py:27
+msgid "Exact path"
+msgstr ""
+
+#: system/views/admin/operationlog.py:29
 msgid "Exec time from"
 msgstr ""
 
-#: system/views/admin/operationlog.py:26
+#: system/views/admin/operationlog.py:30
 msgid "Exec time to"
 msgstr ""
 
-#: system/views/admin/operationlog.py:27
+#: system/views/admin/operationlog.py:31
 msgid "Has field changes"
 msgstr ""
 
-#: system/views/admin/operationlog.py:28
+#: system/views/admin/operationlog.py:32
 msgid "Error status"
 msgstr ""
 
-#: system/views/admin/user.py:72
+#: system/views/admin/user.py:73
 msgid "The super administrator disallows deletion"
 msgstr ""
 
-#: system/views/admin/user.py:125
+#: system/views/admin/user.py:132
 msgid "The user's MFA has been reset"
 msgstr ""
 
-#: system/views/auth/login.py:85
+#: system/views/auth/login.py:86
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -2748,7 +4110,7 @@ msgid ""
 "for {block_time} minutes)"
 msgstr ""
 
-#: system/views/auth/login.py:158 system/views/auth/login.py:251
+#: system/views/auth/login.py:193 system/views/auth/login.py:280
 msgid "Login forbidden"
 msgstr ""
 
@@ -2756,11 +4118,43 @@ msgstr ""
 msgid "Login verification expired, please log in again"
 msgstr ""
 
+#: system/views/auth/oauth.py:79 system/views/auth/oauth.py:109
+msgid "Third-party login is not enabled"
+msgstr ""
+
+#: system/views/auth/oauth.py:105
+msgid "The login link has expired, please try again"
+msgstr ""
+
+#: system/views/auth/oauth.py:124
+msgid "This account is not bound, please login and bind it first"
+msgstr ""
+
+#: system/views/auth/oauth.py:130
+msgid "The account has been disabled"
+msgstr ""
+
+#: system/views/auth/oauth.py:174
+msgid "The binding does not exist"
+msgstr ""
+
+#: system/views/auth/oauth.py:178
+msgid "Incorrect password"
+msgstr ""
+
+#: system/views/auth/oauth.py:182
+msgid "This is the only login method, bind another one before unbinding"
+msgstr ""
+
+#: system/views/auth/oauth.py:185
+msgid "Unbound successfully"
+msgstr ""
+
 #: system/views/auth/register.py:64
 msgid "Registration forbidden"
 msgstr ""
 
-#: system/views/auth/register.py:86
+#: system/views/auth/register.py:89
 msgid "The account already exists, please try another one"
 msgstr ""
 
@@ -2796,21 +4190,21 @@ msgstr ""
 msgid "Username does not exist"
 msgstr ""
 
-#: system/views/task.py:138
+#: system/views/task.py:139
 #, python-brace-format
 msgid "Task \"{}\" is not registered"
 msgstr ""
 
-#: system/views/task.py:143
+#: system/views/task.py:144
 msgid "Task arguments are not valid JSON"
 msgstr ""
 
-#: system/views/task.py:275
+#: system/views/task.py:276
 #, python-brace-format
 msgid "Batch execution submitted: {} success, {} failed"
 msgstr ""
 
-#: system/views/task.py:318
+#: system/views/task.py:319
 #, python-brace-format
 msgid "Task cloned: {}"
 msgstr ""
