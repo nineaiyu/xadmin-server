@@ -309,7 +309,12 @@ def process_approval(view, request):
 
 
 def approve_request(approval, user):
-    """审批通过：置 APPROVED + 令牌有效期（APPROVAL_TOKEN_TTL）。返回 (ok, detail)。"""
+    """审批通过：置 APPROVED + 令牌有效期（APPROVAL_TOKEN_TTL）。返回 (ok, detail)。
+
+    状态流转以条件更新（CAS）落库：并发窗口内两个审批人各持同一 PENDING 快照时，
+    先到者赢、后到者落空返回失败，不会覆盖先到者写下的终态（sqlite/MySQL 通用，
+    不依赖 select_for_update）。
+    """
     import datetime
 
     from django.utils import timezone
@@ -321,18 +326,29 @@ def approve_request(approval, user):
         return False, _("Only pending requests can be approved")
     if approval.creator_id == user.pk:
         return False, _("The applicant cannot approve their own request")
+    now = timezone.now()
+    updated = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
+        status=ApprovalRequest.Status.APPROVED,
+        approver=user,
+        approved_at=now,
+        expired_at=now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL)),
+        updated_time=now,
+    )
+    if not updated:
+        # 并发落败：内存快照已过期，回读真实状态供调用方/序列化展示
+        approval.refresh_from_db(fields=["status"])
+        return False, _("Only pending requests can be approved")
     approval.status = ApprovalRequest.Status.APPROVED
     approval.approver = user
-    approval.approved_at = timezone.now()
-    approval.expired_at = approval.approved_at + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL))
-    approval.save(update_fields=["status", "approver", "approved_at", "expired_at", "updated_time"])
+    approval.approved_at = now
+    approval.expired_at = now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL))
     invalidate_pending_count_cache()
     notify_applicant(approval, "approved")
     return True, None
 
 
 def reject_request(approval, user, reason: str):
-    """驳回：reason 必填。返回 (ok, detail)。"""
+    """驳回：reason 必填。返回 (ok, detail)。状态流转以 CAS 落库（同 approve_request）。"""
     from django.utils import timezone
 
     from system.models.approval import ApprovalRequest
@@ -341,26 +357,43 @@ def reject_request(approval, user, reason: str):
         return False, _("Only pending requests can be rejected")
     if approval.creator_id == user.pk:
         return False, _("The applicant cannot approve their own request")
+    now = timezone.now()
+    updated = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
+        status=ApprovalRequest.Status.REJECTED,
+        approver=user,
+        approved_at=now,
+        reason=(reason or "")[:255],
+        updated_time=now,
+    )
+    if not updated:
+        approval.refresh_from_db(fields=["status"])
+        return False, _("Only pending requests can be rejected")
     approval.status = ApprovalRequest.Status.REJECTED
     approval.approver = user
-    approval.approved_at = timezone.now()
+    approval.approved_at = now
     approval.reason = (reason or "")[:255]
-    approval.save(update_fields=["status", "approver", "approved_at", "reason", "updated_time"])
     invalidate_pending_count_cache()
     notify_applicant(approval, "rejected")
     return True, None
 
 
 def cancel_request(approval, user):
-    """申请人撤回：仅本人、仅 PENDING。返回 (ok, detail)。"""
+    """申请人撤回：仅本人、仅 PENDING。返回 (ok, detail)。状态流转以 CAS 落库。"""
+    from django.utils import timezone
+
     from system.models.approval import ApprovalRequest
 
     if approval.creator_id != user.pk:
         return False, _("Only the applicant can cancel the request")
     if approval.status != ApprovalRequest.Status.PENDING:
         return False, _("Only pending requests can be cancelled")
+    updated = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
+        status=ApprovalRequest.Status.CANCELLED, updated_time=timezone.now()
+    )
+    if not updated:
+        approval.refresh_from_db(fields=["status"])
+        return False, _("Only pending requests can be cancelled")
     approval.status = ApprovalRequest.Status.CANCELLED
-    approval.save(update_fields=["status", "updated_time"])
     invalidate_pending_count_cache()
     return True, None
 

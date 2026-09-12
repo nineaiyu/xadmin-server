@@ -638,3 +638,60 @@ class TestLifecycleJobs:
         assert auto_expire_approval_job.apply().get() == 0
         assert auto_remind_approval_job.apply().get() == 0  # 刚建的单未超阈值
         assert auto_clean_approval_job.apply().get() == 0
+
+
+class TestStateTransitionConcurrency:
+    """状态流转并发防护：条件更新（CAS）落库，旧快照不能覆盖终态。"""
+
+    def test_stale_pending_snapshot_cannot_override_approved(self, superuser, normal_user):
+        """并发窗口内后到审批人持有的 PENDING 旧快照驳回失败，APPROVED 终态不被覆盖。"""
+        _enable_interception()
+        _submit(normal_user)
+        approval = _pending(normal_user)
+        ok, _ = approve_request(approval, superuser)
+        assert ok is True
+
+        # 模拟并发窗口：后到者读到的是 PENDING 旧快照
+        stale = ApprovalRequest.objects.get(pk=approval.pk)
+        stale.status = PENDING_STATUS
+        ok, detail = reject_request(stale, superuser, "late")
+        assert ok is False
+        assert detail is not None
+        # 回读真实状态供调用方展示
+        assert stale.status == APPROVED_STATUS
+
+        approval.refresh_from_db()
+        assert approval.status == APPROVED_STATUS
+        # 令牌未被驳回动作破坏：仍可按 APPROVED 消费语义处理（属主/指纹校验见消费用例）
+
+    def test_stale_pending_snapshot_cannot_cancel_approved(self, superuser, normal_user):
+        """申请人持旧快照撤回已审批单：CAS 落空，终态保持 APPROVED。"""
+        _enable_interception()
+        _submit(normal_user)
+        approval = _pending(normal_user)
+        ok, _ = approve_request(approval, superuser)
+        assert ok is True
+
+        stale = ApprovalRequest.objects.get(pk=approval.pk)
+        stale.status = PENDING_STATUS
+        ok, _ = cancel_request(stale, normal_user)
+        assert ok is False
+
+        approval.refresh_from_db()
+        assert approval.status == APPROVED_STATUS
+
+    def test_reject_then_approve_second_fails(self, superuser, normal_user):
+        """先驳回后审批：第二动作 CAS 落空，终态 REJECTED 不被覆盖。"""
+        _enable_interception()
+        _submit(normal_user)
+        approval = _pending(normal_user)
+        ok, _ = reject_request(approval, superuser, "资料不全")
+        assert ok is True
+
+        stale = ApprovalRequest.objects.get(pk=approval.pk)
+        stale.status = PENDING_STATUS
+        ok, _ = approve_request(stale, superuser)
+        assert ok is False
+
+        approval.refresh_from_db()
+        assert approval.status == ApprovalRequest.Status.REJECTED
