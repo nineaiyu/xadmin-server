@@ -16,10 +16,10 @@ import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel
+from .task import CeleryTaskRecordModel
 
 
-class ExportRecord(DbAuditModel):
+class ExportRecord(CeleryTaskRecordModel):
     """异步导出记录（pk == celery task_id，下载中心列表数据源）。"""
 
     class Status(models.TextChoices):

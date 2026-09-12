@@ -23,7 +23,21 @@ from django_celery_beat.models import PeriodicTask
 from common.core.models import DbAuditModel
 
 
-class TaskExecution(DbAuditModel):
+class CeleryTaskRecordModel(DbAuditModel):
+    """pk 即 celery task_id 的异步任务记录基类（显式化共享主键命名空间契约）。
+
+    TaskExecution 与 ExportRecord 共用同一主键取值：记录在任务投递前预创建
+    （pk = task_id），after_task_publish 信号自动补建同 pk 的 TaskExecution——
+    日志文件（CELERY_LOG_DIR/<task_id>.log）与结果因此按 task_id 零成本对齐。
+    跨表按 pk 定位记录（如 system/ws.py 的日志归属判定）依赖此契约；
+    新增承载 celery 任务的记录模型应继承本基类以纳入约定。
+    """
+
+    class Meta:
+        abstract = True
+
+
+class TaskExecution(CeleryTaskRecordModel):
     """一次 celery 任务投递的执行记录（pk == celery task_id）。"""
 
     class Status(models.TextChoices):
