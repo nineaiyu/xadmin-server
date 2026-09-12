@@ -122,14 +122,16 @@ class Config(dict):
         "SECURITY_PASSWORD_LOWER_CASE": False,
         "SECURITY_PASSWORD_NUMBER": True,
         "SECURITY_PASSWORD_SPECIAL_CHAR": False,
-        # 泄露密码库校验（内置离线弱口令清单，命中即拒绝；改密/注册/重置三处接入；
-        # 默认关闭——先灰度观察清单误伤率再启用）
-        "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": False,
-        # 密码历史：最近 N 次不可复用（改密/重置时留存哈希；0 = 关闭校验，默认关闭）
-        "SECURITY_PASSWORD_HISTORY_COUNT": 0,
-        # 密码有效期（天数，超期登录被拒并提示改密；0 = 永不过期，默认关闭。
-        # 存量用户 date_password_updated 为空 = 宽限期不拦截，改密后开始计时）
-        "SECURITY_PASSWORD_EXPIRATION_DAYS": 0,
+        # 泄露密码库校验（内置离线弱口令清单，命中即拒绝；改密/注册/重置等链路接入；
+        # 2026-09-12 灰度转正：评审确认开启，误伤反馈走 settings/data/leak_passwords.txt 清单维护）
+        "SECURITY_PASSWORD_LEAK_CHECK_ENABLED": True,
+        # 密码历史：最近 N 次不可复用（改密/重置时留存哈希；0 = 关闭校验；
+        # 2026-09-12 灰度转正：评审确认 N=3）
+        "SECURITY_PASSWORD_HISTORY_COUNT": 3,
+        # 密码有效期（天数，超期登录被拒并提示改密；0 = 永不过期。
+        # 存量用户 date_password_updated 为空 = 宽限期不拦截，改密后开始计时；
+        # 2026-09-12 灰度转正：评审确认 90 天）
+        "SECURITY_PASSWORD_EXPIRATION_DAYS": 90,
         # 用户登录限制的规则
         "SECURITY_LOGIN_LIMIT_COUNT": 7,
         "SECURITY_LOGIN_LIMIT_TIME": 30,  # Unit: minute
