@@ -33,6 +33,7 @@ docs/
 | 文档                                                      | 内容                                           |
 |---------------------------------------------------------|----------------------------------------------|
 | [overview.md](architecture/overview.md)                 | 架构总览：分层、元数据驱动、子系统速览、协作时序（1289 行深度分析文档的精炼导航版） |
+| [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
 | [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、14 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
 | [data-permission.md](architecture/data-permission.md)   | 数据权限配置操作教程（配图）                               |
 | [field-permission.md](architecture/field-permission.md) | 字段权限配置操作教程（配图）                               |
