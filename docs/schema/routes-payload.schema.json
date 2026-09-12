@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "xadmin/schemas/routes-payload.schema.json",
+  "title": "RoutesPayload",
+  "description": "动态路由接口（system/views/routes.py UserRoutesAPIView）的完整响应：ApiResponse 信封 + 路由树 data + 按钮权限码 auths。前端 initRouter/addAsyncRoutes 与 hasAuth 按钮权限体系依赖此形状。服务端由 tests/unit/common/test_contract_schemas.py 持续校验。",
+  "type": "object",
+  "required": ["code", "detail", "requestId", "timestamp", "data", "auths"],
+  "properties": {
+    "code": { "type": "integer", "const": 1000 },
+    "detail": { "type": "string" },
+    "requestId": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "auths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "按钮级权限码（动作:组件名，如 list:SystemUser），前端 permissionAuths map 的数据源"
+    },
+    "data": {
+      "$ref": "#/definitions/routeNodeList",
+      "description": "路由树（menu_list_to_tree + format_menu_data）"
+    }
+  },
+  "definitions": {
+    "routeNodeList": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/routeNode" }
+    },
+    "routeNode": {
+      "type": "object",
+      "description": "路由节点（serializer 透传字段放行，仅冻结前端路由消费依赖的键）",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "title": { "type": ["string", "null"] },
+        "meta": {
+          "type": "object",
+          "description": "format_menu_meta 仅保留 icon/title/rank/showLink 四键",
+          "properties": {
+            "icon": { "type": ["string", "null"] },
+            "title": { "type": ["string", "null"] },
+            "rank": { "type": ["integer", "null"] },
+            "showLink": { "type": ["boolean", "null"] }
+          },
+          "additionalProperties": true
+        },
+        "children": { "$ref": "#/definitions/routeNodeList" },
+        "count": { "type": "integer", "description": "menu_list_to_tree 回填的子节点计数" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

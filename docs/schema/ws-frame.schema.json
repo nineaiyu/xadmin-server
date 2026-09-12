@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "xadmin/schemas/ws-frame.schema.json",
+  "title": "WebSocketFrameV1",
+  "description": "WebSocket 消息协议 v1 帧（message/protocol.py ↔ client src/utils/websocket/protocol.ts）。上行帧仅需 action；出站帧由 send_base_json 统一携带 code/detail/timestamp/v。新增 action 必须：① 双端 MessageAction 同步登记；② 补对应 payload 定义（可在此追加 definitions 并接入 tests/unit/message/test_protocol.py）。服务端由 tests/unit/common/test_contract_schemas.py 持续校验。",
+  "definitions": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "ping",
+        "userinfo",
+        "push_message",
+        "chat_message",
+        "task_log",
+        "monitor"
+      ],
+      "description": "消息动作枚举（MessageAction）"
+    },
+    "inboundFrame": {
+      "type": "object",
+      "description": "客户端 → 服务端帧（客户端受控，键集合封闭）",
+      "required": ["action"],
+      "properties": {
+        "action": { "$ref": "#/definitions/action" },
+        "data": { "description": "载荷，由具体 action 决定" },
+        "mid": { "type": "string", "description": "客户端回显一致性标记" },
+        "v": { "type": "integer", "const": 1 }
+      },
+      "additionalProperties": false
+    },
+    "outboundFrame": {
+      "type": "object",
+      "description": "服务端 → 客户端帧；服务端可经 send_base_json kwargs 追加顶层键，故不封闭 additionalProperties",
+      "required": ["code", "action", "detail", "timestamp", "v"],
+      "properties": {
+        "code": { "type": "integer", "description": "业务码，语义同 ApiResponse.code" },
+        "action": { "$ref": "#/definitions/action" },
+        "detail": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "data": { "description": "载荷，由具体 action 决定" },
+        "mid": { "type": "string" },
+        "v": { "type": "integer", "const": 1 }
+      },
+      "additionalProperties": true
+    },
+    "taskLogPayload": {
+      "type": "object",
+      "description": "task_log 增量帧载荷（system/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
+      "required": ["offset", "content", "finished"],
+      "properties": {
+        "offset": { "type": "integer", "description": "已推送字节偏移" },
+        "content": { "type": "string", "description": "本轮新增内容（空串表示无新增）" },
+        "finished": { "type": "boolean", "description": "读到结束标记或执行已终态" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/inboundFrame" },
+    { "$ref": "#/definitions/outboundFrame" }
+  ]
+}
