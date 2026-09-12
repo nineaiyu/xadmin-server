@@ -15,8 +15,6 @@ class BACKEND(models.TextChoices):
     SITE_MSG = "site_msg", _("Site message")
     SMS = "sms", _("SMS")
 
-    # DINGTALK = 'dingtalk', _('DingTalk')
-
     @property
     def client(self):
         return client_name_mapper[self]

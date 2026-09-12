@@ -3,7 +3,7 @@
 
 覆盖 notifications/notifications.py 中未测试的分支：
 - 后端渲染方法注册表回退与禁用后端跳过；
-- markdown / text / sms / dingtalk 等渲染缓存属性；
+- text / sms 等渲染缓存属性；
 - send_msg 对渠道异常的吞噬（NotImplementedError 跳过 / 其他异常打印堆栈）；
 - SystemMessage / UserMessage 的 publish 落库路径（site_msg 渠道真实写库）。
 """
@@ -76,15 +76,12 @@ class TestMessageRenderers:
         assert base.get_common_msg() == {"subject": "", "message": ""}
         assert base.get_html_msg() == {"subject": "", "message": ""}
 
-    def test_text_markdown_and_cached_properties(self):
+    def test_text_and_cached_properties(self):
         msg = HtmlMockMessage()
         # 文本渲染：链接目标被剥离，仅保留链接文字
         text = msg.text_msg
         assert "链接文字" in text["message"]
         assert "http://example.com/x" not in text["message"]
-        # markdown 渲染
-        markdown = msg.markdown_msg
-        assert "链接文字" in markdown["message"]
         # 各 cached_property 与直接方法一致
         assert msg.common_msg["subject"] == "mock-subject"
         assert msg.html_msg["message"].startswith("<b>")
@@ -95,10 +92,6 @@ class TestMessageRenderers:
 
         text = KeepLinksMessage().text_msg
         assert "http://example.com/x" in text["message"]
-
-    def test_html_to_markdown_pure_function(self):
-        result = Message.html_to_markdown({"subject": "s", "message": "<b>x</b>"})
-        assert "x" in result["message"]
 
     def test_email_msg_appends_signature(self):
         msg = HtmlMockMessage()
@@ -113,13 +106,6 @@ class TestMessageRenderers:
         msg = HtmlMockMessage()
         sms_msg = msg.get_sms_msg()
         assert "Xadmin Server" in sms_msg["message"]
-
-    def test_dingtalk_msg_appends_time_suffix(self):
-        """钉钉渠道按天去重：消息尾部追加时间序号。"""
-        msg = HtmlMockMessage()
-        ding = msg.get_dingtalk_msg()
-        assert ding["subject"] == "mock-subject"
-        assert ding["message"].startswith(msg.markdown_msg["message"])
 
 
 class TestSendMsgErrorPaths:

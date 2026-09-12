@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
 from common.utils import get_logger
-from common.utils.timezone import local_now
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from system.services import UserInfo, get_superusers, get_users_by_pks
@@ -132,17 +131,6 @@ class Message:
     def get_html_msg(self) -> dict:
         return self.get_common_msg()
 
-    @staticmethod
-    def html_to_markdown(html_msg):
-        h = HTML2Text()
-        h.body_width = 0
-        content = html_msg["message"]
-        html_msg["message"] = h.handle(content)
-        return html_msg
-
-    def get_markdown_msg(self) -> dict:
-        return self.html_to_markdown(self.get_html_msg())
-
     def get_text_msg(self) -> dict:
         h = HTML2Text()
         h.body_width = 90
@@ -160,10 +148,6 @@ class Message:
     def text_msg(self) -> dict:
         msg = self.get_text_msg()
         return msg
-
-    @cached_property
-    def markdown_msg(self):
-        return self.get_markdown_msg()
 
     @cached_property
     def html_msg(self) -> dict:
@@ -200,14 +184,6 @@ class Message:
 
     # --------------------------------------------------------------
     # 支持不同发送消息的方式定义自己的消息内容，比如有些支持 html 标签
-    def get_dingtalk_msg(self) -> dict:
-        # 钉钉相同的消息一天只能发一次，所以给所有消息添加基于时间的序号，使他们不相同
-        message = self.markdown_msg["message"]
-        time = local_now().strftime("%Y-%m-%d %H:%M:%S")
-        suffix = "\n{}: {}".format(_("Time"), time)
-
-        return {"subject": self.markdown_msg["subject"], "message": message + suffix}
-
     def get_email_msg(self) -> dict:
         return self.html_msg_with_sign
 

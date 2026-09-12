@@ -174,7 +174,6 @@ CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CELER
 # 该配置暂不生效，如需启用请同步修改启动命令
 CELERY_WORKER_AUTOSCALE = [10, 3]
 
-CELERYD_FORCE_EXECV = True  # 非常重要,有些情况下可以防止死
 CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 
 # 任务执行历史（TaskExecution/TaskResult）及日志保留天数
