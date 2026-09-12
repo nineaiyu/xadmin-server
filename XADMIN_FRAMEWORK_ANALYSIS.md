@@ -1,5 +1,11 @@
 # XAdmin 框架架构分析报告
 
+> **⚠️ 历史参考（2026-09-12 归档声明）**：本报告写作于早期版本，部分内容已过时——
+> WS 协议已 v1 标准化（`message/protocol.py`）、元数据已支持 `with_meta` 内联、
+> 测试覆盖已大幅补齐（单元 + 集成 + E2E）、契约已 JSON Schema 冻结（`docs/schema/`）。
+> 现行权威文档请以 `docs/architecture/`、`docs/adr/` 与 `docs/schema/README.md` 为准；
+> 本文件仅作跨语言重写的背景参考，不再随代码演进更新。
+
 > 本报告针对 xadmin-client（前端）与 xadmin-server（后端）两大项目的整体框架设计进行深入分析，涵盖权限体系、架构模式、搜索机制、API
 > 设计、响应规范等核心模块，旨在为使用其他语言重新开发提供完整的架构参考。
 
