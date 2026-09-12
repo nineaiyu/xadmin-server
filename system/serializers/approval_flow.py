@@ -14,7 +14,13 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
-from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
+from system.models.approval import (
+    ApprovalFlow,
+    ApprovalFlowNode,
+    ApprovalFlowVersion,
+    ApprovalInstance,
+    ApprovalNodeTask,
+)
 from system.serializers.fields import DictChoiceField
 from system.serializers.task import DisplayRelatedField
 from system.utils.approval_flow import CONDITION_OPS
@@ -34,9 +40,12 @@ class ApprovalFlowNodeSerializer(BaseModelSerializer):
             "name",
             "order",
             "approve_type",
+            "approve_ratio",
             "assignee_type",
             "assignee_value",
             "condition",
+            "routes",
+            "layout",
             "timeout_hours",
         ]
         extra_kwargs = {"order": {"required": False}}
@@ -118,19 +127,84 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Timeout hours cannot be negative"))
             condition = node.get("condition") or {}
             if condition:
-                if not isinstance(condition, dict) or not (condition.get("field") or "").strip():
-                    raise serializers.ValidationError(_("Condition requires a field"))
-                if (condition.get("op") or "eq") not in CONDITION_OPS:
+                self._validate_condition(condition)
+            approve_type = node.get("approve_type") or ApprovalFlowNode.ApproveType.OR
+            if approve_type == ApprovalFlowNode.ApproveType.RATIO:
+                ratio = int(node.get("approve_ratio") or 0)
+                if not 1 <= ratio <= 100:
                     raise serializers.ValidationError(
-                        _("Unsupported condition operator: {}").format(condition.get("op"))
+                        _("Approve ratio must be between 1 and 100 for node {}").format(node["name"])
                     )
+            routes = node.get("routes") or []
+            if not isinstance(routes, list):
+                raise serializers.ValidationError(_("Branch routes must be a list"))
+            for route in routes:
+                if not isinstance(route, dict):
+                    raise serializers.ValidationError(_("Branch route item must be an object"))
+                condition = route.get("condition") or {}
+                if condition:
+                    self._validate_condition(condition)
         return value
+
+    def _validate_condition(self, condition):
+        """条件表达式校验：field 必填、op 白名单（routes 与节点条件共用）。"""
+        if not isinstance(condition, dict) or not (condition.get("field") or "").strip():
+            raise serializers.ValidationError(_("Condition requires a field"))
+        if (condition.get("op") or "eq") not in CONDITION_OPS:
+            raise serializers.ValidationError(_("Unsupported condition operator: {}").format(condition.get("op")))
 
     def validate_code(self, value):
         value = (value or "").strip()
         if not value:
             raise serializers.ValidationError(_("Flow code is required"))
         return value
+
+    def validate(self, attrs):
+        nodes = attrs.get("nodes") or []
+        if nodes:
+            self._validate_routes_graph(nodes)
+        return attrs
+
+    def _validate_routes_graph(self, nodes):
+        """跨节点路由校验：target 必须是同流程有效 order 且非自环；显式回跳环 DFS 拦截
+        （线性隐式边按 order 递增天然无环，仅需检测 routes 边）。"""
+        orders = {int(node["order"]) for node in nodes}
+        edges = {}
+        for node in nodes:
+            order = int(node["order"])
+            targets = []
+            for route in node.get("routes") or []:
+                target = route.get("target")
+                if target is None:
+                    raise serializers.ValidationError(
+                        _("Branch route target is required for node {}").format(node["name"])
+                    )
+                target = int(target)
+                if target not in orders:
+                    raise serializers.ValidationError(_("Branch route target {} does not exist").format(target))
+                if target == order:
+                    raise serializers.ValidationError(
+                        _("Branch route cannot point to itself (node {})").format(node["name"])
+                    )
+                targets.append(target)
+            if targets:
+                edges[order] = targets
+
+        # DFS 环检测（colors: 0 未访问 1 在栈 2 完成）
+        color = {order: 0 for order in orders}
+
+        def _visit(order):
+            if color.get(order, 0) == 1:
+                raise serializers.ValidationError(_("Branch routes contain a loop"))
+            if color.get(order, 0) == 2:
+                return
+            color[order] = 1
+            for target in edges.get(order, []):
+                _visit(target)
+            color[order] = 2
+
+        for order in edges:
+            _visit(order)
 
     def _assert_nodes_mutable(self, instance):
         if instance.instances.filter(status=ApprovalInstance.Status.PENDING).exists():
@@ -141,6 +215,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         nodes = validated_data.pop("nodes", [])
         flow = super().create(validated_data)
         self._replace_nodes(flow, nodes)
+        self._snapshot_version(flow, nodes, remark=_("Initial version"))
         return flow
 
     @transaction.atomic
@@ -151,7 +226,70 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             self._assert_nodes_mutable(flow)
             flow.nodes.all().delete()
             self._replace_nodes(flow, nodes)
+        # 定义（节点或表单）有实质变化才落版本快照（改 name 等元数据不算）
+        if nodes is not None and self._definition_changed(flow, nodes):
+            self._snapshot_version(flow, nodes, remark=_("Nodes updated"))
         return flow
+
+    def _definition_changed(self, flow, nodes) -> bool:
+        """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。"""
+        latest = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
+        if latest is None:
+            return True
+        current = self._build_snapshot(flow, nodes)
+        import json
+
+        return json.dumps(latest, sort_keys=True, ensure_ascii=False) != json.dumps(
+            current, sort_keys=True, ensure_ascii=False
+        )
+
+    def _build_snapshot(self, flow, nodes) -> dict:
+        return {
+            "name": flow.name,
+            "code": flow.code,
+            "is_active": flow.is_active,
+            "form_schema": flow.form_schema or [],
+            "nodes": [
+                {
+                    "name": (node.get("name") or "").strip()[:64],
+                    "order": int(node.get("order") or index + 1),
+                    "approve_type": node.get("approve_type") or ApprovalFlowNode.ApproveType.OR,
+                    "approve_ratio": int(node.get("approve_ratio") or 100),
+                    "assignee_type": node.get("assignee_type") or ApprovalFlowNode.AssigneeType.ROLE,
+                    "assignee_value": (node.get("assignee_value") or "").strip()[:255],
+                    "condition": node.get("condition") or {},
+                    "routes": node.get("routes") or [],
+                    "layout": node.get("layout") or {},
+                    "timeout_hours": int(node.get("timeout_hours") or 0),
+                }
+                for index, node in enumerate(nodes or [])
+            ],
+        }
+
+    def _snapshot_version(self, flow, nodes, remark):
+        """版本号 +1 并落全量快照（ADR-016 §2）。"""
+        flow.version = (flow.version or 0) + 1
+        flow.save(update_fields=["version", "updated_time"])
+        ApprovalFlowVersion.objects.create(
+            flow=flow, version=flow.version, snapshot=self._build_snapshot(flow, nodes or []), remark=str(remark)
+        )
+
+    def rollback_to_version(self, flow, version: int, remark=""):
+        """回滚到历史版本：快照写入活定义（节点/表单）并落新版本。返回 (ok, detail)。"""
+        snapshot = flow.versions.filter(version=version).values_list("snapshot", flat=True).first()
+        if snapshot is None:
+            return False, str(_("The flow version does not exist"))
+        try:
+            self._assert_nodes_mutable(flow)
+        except serializers.ValidationError as exc:
+            return False, str(exc.detail[0] if isinstance(exc.detail, list) else exc.detail)
+        nodes = snapshot.get("nodes") or []
+        flow.form_schema = snapshot.get("form_schema") or []
+        flow.save(update_fields=["form_schema", "updated_time"])
+        flow.nodes.all().delete()
+        self._replace_nodes(flow, nodes)
+        self._snapshot_version(flow, nodes, remark=remark or str(_("Rollback from version {}").format(version)))
+        return True, None
 
     def _replace_nodes(self, flow, nodes):
         for index, node in enumerate(nodes or []):
@@ -160,9 +298,12 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                 name=(node.get("name") or "").strip()[:64],
                 order=int(node.get("order") or index + 1),
                 approve_type=node.get("approve_type") or ApprovalFlowNode.ApproveType.OR,
+                approve_ratio=int(node.get("approve_ratio") or 100),
                 assignee_type=node.get("assignee_type") or ApprovalFlowNode.AssigneeType.ROLE,
                 assignee_value=(node.get("assignee_value") or "").strip()[:255],
                 condition=node.get("condition") or {},
+                routes=node.get("routes") or [],
+                layout=node.get("layout") or {},
                 timeout_hours=int(node.get("timeout_hours") or 0),
             )
 

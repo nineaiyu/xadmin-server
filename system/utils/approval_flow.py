@@ -10,7 +10,8 @@ ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审�
 - 本引擎面向业务表单（请假/报销类），无请求重放，状态机完整。
 
 关键语义（ADR-012）：
-- 条件分支：节点 condition 为真才经过该节点（不支持节点内多分支）；
+- 条件分支（二期 ADR-016）：节点 routes 为排他网关出口路由表（逐条求值首个
+  命中即跳转 target），全不命中回退一期线性语义；
 - 或签 OR：任一 APPROVED 即节点通过，其余 PENDING 行置 CANCELLED；
 - 会签 AND：全部 APPROVED 才通过；任一行 REJECTED → 实例驳回（终态）；
 - 申请人不能审批自己的节点（候选解析时剔除申请人；无候选在发起时即报错）；
@@ -163,12 +164,55 @@ def matching_nodes(flow, form_data) -> list:
     return [node for node in flow.nodes.all().order_by("order") if eval_condition(node.condition, form_data)]
 
 
-def next_node(flow, after_order, form_data):
-    """当前节点之后第一个条件命中的节点（无则返回 None = 流程结束）。"""
-    for node in flow.nodes.filter(order__gt=after_order).order_by("order"):
-        if eval_condition(node.condition, form_data):
-            return node
+def next_node(flow, after_order, form_data, node=None):
+    """当前节点的下一节点；返回 None = 流程结束。
+
+    二期路由优先（ADR-016 §1）：node.routes 逐条求值，首个命中跳转 target
+    （排他网关）；全部未命中或无 routes 时回退一期线性语义（order 之后首个
+    条件命中节点）。target 无效（节点已不存在）记日志后同样回退线性。
+    """
+    if node is not None:
+        for route in node.routes or []:
+            if not eval_condition(route.get("condition"), form_data):
+                continue
+            target_order = route.get("target")
+            target = flow.nodes.filter(order=target_order).first()
+            if target is not None:
+                return target
+            logger.warning(
+                "approval flow route target missing, fallback to linear. flow:%s node:%s target:%s",
+                flow.pk,
+                node.pk,
+                target_order,
+            )
+    for following in flow.nodes.filter(order__gt=after_order).order_by("order"):
+        if eval_condition(following.condition, form_data):
+            return following
     return None
+
+
+def simulate_path(flow, form_data, node=None) -> list:
+    """按 form_data 模拟推进，返回途经节点序列（发起预校验 + 步数兜底）。
+
+    排他网关在给定 form_data 下出口唯一，路径确定；步数上限 = 节点数 + 1，
+    超限视为路由成环（fail-closed：发起报错，环配置在保存时已被校验拦截，
+    此处兜底历史数据）。
+    """
+    nodes = matching_nodes(flow, form_data)
+    if not nodes:
+        return []
+    limit = flow.nodes.count() + 1
+    path = [nodes[0]]
+    current = nodes[0]
+    while len(path) <= limit:
+        following = next_node(flow, current.order, form_data, node=current)
+        if following is None:
+            break
+        path.append(following)
+        current = following
+    else:
+        return None
+    return path
 
 
 def validate_form(flow, form_data) -> str:
@@ -268,10 +312,12 @@ def create_instance(*, flow, applicant, title, form_data):
     error = validate_form(flow, form_data)
     if error:
         return None, error
-    nodes = matching_nodes(flow, form_data)
-    if not nodes:
+    path = simulate_path(flow, form_data)
+    if path is None:
+        return None, str(_("The flow routes contain a loop, please contact the administrator"))
+    if not path:
         return None, str(_("The flow has no available node"))
-    for node in nodes:
+    for node in path:
         if not resolve_assignees(node, applicant, form_data):
             return None, str(_("No available approver for node {}").format(node.name))
 
@@ -281,9 +327,10 @@ def create_instance(*, flow, applicant, title, form_data):
         title=(title or "").strip()[:128],
         form_data=form_data or {},
         creator=applicant,
-        current_node=nodes[0],
+        current_node=path[0],
+        flow_version=flow.version,
     )
-    _enter_node(instance, nodes[0])
+    _enter_node(instance, path[0])
     return instance, None
 
 
@@ -316,7 +363,7 @@ def _advance(instance, node):
     ApprovalInstance = _models().Instance
 
     while True:
-        following = next_node(instance.flow, node.order, instance.form_data)
+        following = next_node(instance.flow, node.order, instance.form_data, node=node)
         if following is None:
             _finish_instance(instance, ApprovalInstance.Status.APPROVED)
             _invalidate_pending_count()
@@ -372,16 +419,35 @@ def approve_task(task_pk, user, comment: str = ""):
 
     node = task.node
     instance.refresh_from_db()
+    _invalidate_pending_count()
     if node.approve_type == node.ApproveType.OR:
         # 或签：任一通过即节点通过，其余待办作废
         _cancel_pending_tasks(instance, node=node)
-        _invalidate_pending_count()
         _advance(instance, node)
+    elif node.approve_type == node.ApproveType.RATIO:
+        # 比例会签（ADR-016 §3）：通过数/候选总数 ≥ ratio% 即通过；
+        # 剩余可决人数不足以达标时提前驳回（全员拒绝必然落入此条件）
+        node_tasks = ApprovalNodeTask.objects.filter(instance=instance, node=node)
+        total = node_tasks.count()
+        approved = node_tasks.filter(status=ApprovalNodeTask.Status.APPROVED).count()
+        pending = node_tasks.filter(status=ApprovalNodeTask.Status.PENDING).count()
+        required = -(-total * (node.approve_ratio or 100) // 100)  # ceil
+        if approved >= required:
+            _cancel_pending_tasks(instance, node=node)
+            _advance(instance, node)
+        elif approved + pending < required:
+            _cancel_pending_tasks(instance)
+            _finish_instance(
+                instance,
+                ApprovalInstance.Status.REJECTED,
+                str(_("Approval ratio cannot be reached, the application is rejected")),
+            )
+            _notify([instance.creator], "rejected", instance)
+        # 其余：等待更多审批人处理
     else:
         remaining = ApprovalNodeTask.objects.filter(
             instance=instance, node=node, status=ApprovalNodeTask.Status.PENDING
         ).exists()
-        _invalidate_pending_count()
         if not remaining:
             _advance(instance, node)
     return True, None

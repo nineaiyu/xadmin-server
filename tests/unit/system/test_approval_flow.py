@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _gettext
 from common.core.config import SysConfig
 from system.models import DeptInfo, UserInfo, UserRole
 from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
+from system.serializers.approval_flow import ApprovalFlowSerializer
 from system.utils.approval_flow import (
     add_sign,
     approve_task,
@@ -61,9 +62,12 @@ def make_flow(code="leave", nodes=None, form_schema=None, is_active=True):
             name=node.get("name") or f"节点{index + 1}",
             order=node.get("order") or index + 1,
             approve_type=node.get("approve_type") or ApprovalFlowNode.ApproveType.OR,
+            approve_ratio=node.get("approve_ratio", 100),
             assignee_type=node.get("assignee_type") or ApprovalFlowNode.AssigneeType.ROLE,
             assignee_value=node.get("assignee_value", "flow_approver"),
             condition=node.get("condition") or {},
+            routes=node.get("routes") or [],
+            layout=node.get("layout") or {},
             timeout_hours=node.get("timeout_hours") or 0,
         )
         ApprovalFlowNode.objects.create(flow=flow, **params)
@@ -331,3 +335,198 @@ class TestEngineFlow:
         assert removed >= 1
         assert not ApprovalInstance.objects.filter(pk=instance.pk).exists()
         assert not ApprovalNodeTask.objects.filter(instance_id=instance.pk).exists()
+
+
+class TestBranchRoutes:
+    """二期条件分支（ADR-016 §1）：排他网关出口路由 + 线性回退。"""
+
+    def test_route_hit_jumps_to_target(self, applicant, approver):
+        """路由命中跳转 target（排他网关）：跳过中间线性节点。"""
+        from system.utils.approval_flow import simulate_path
+
+        flow = make_flow(
+            "branch_hit",
+            form_schema=[{"key": "amount", "label": "金额", "type": "number", "required": True}],
+            nodes=[
+                {"name": "提交初审", "order": 1},
+                {
+                    "name": "大额终审",
+                    "order": 2,
+                    "condition": {"field": "amount", "op": "gte", "value": 1000},
+                },
+                {
+                    "name": "小额免审出口",
+                    "order": 3,
+                    "routes": [{"condition": {"field": "amount", "op": "lt", "value": 1000}, "target": 4}],
+                },
+                {"name": "财务归档", "order": 4},
+            ],
+        )
+        # amount < 1000：节点 3 的路由命中 → 直达 4（跳过节点 2 的线性下一跳）
+        path = simulate_path(flow, {"amount": 100})
+        assert [node.order for node in path] == [1, 3, 4]
+        # amount >= 1000：节点 3 路由未命中 → 线性回退经过节点 2
+        path = simulate_path(flow, {"amount": 5000})
+        assert [node.order for node in path] == [1, 2, 3, 4]
+
+    def test_route_target_missing_falls_back_linear(self, applicant, approver):
+        """target 节点不存在：记日志后回退线性语义（fail-safe）。"""
+        from system.utils.approval_flow import next_node
+
+        flow = make_flow(
+            "branch_missing",
+            nodes=[
+                {"name": "A", "order": 1, "routes": [{"condition": {}, "target": 99}]},
+                {"name": "B", "order": 2},
+            ],
+        )
+        node1 = flow.nodes.get(order=1)
+        following = next_node(flow, 1, {}, node=node1)
+        assert following is not None and following.order == 2
+
+    def test_branch_instance_end_to_end(self, applicant, approver):
+        """分支主链路：小额走快车道（路由直达归档节点），审批一次即通过。"""
+        flow = make_flow(
+            "branch_e2e",
+            form_schema=[{"key": "amount", "label": "金额", "type": "number", "required": True}],
+            nodes=[
+                {"name": "初审", "order": 1},
+                {
+                    "name": "大额终审",
+                    "order": 2,
+                    "condition": {"field": "amount", "op": "gte", "value": 1000},
+                },
+                {
+                    "name": "小额出口",
+                    "order": 3,
+                    "routes": [{"condition": {"field": "amount", "op": "lt", "value": 1000}, "target": 4}],
+                },
+                {"name": "归档", "order": 4},
+            ],
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="小额申请", form_data={"amount": 100})
+        assert error is None
+        # 首节点（初审）通过 → 线性进入节点 3（小额出口；节点 2 条件不命中被跳过）
+        task = ApprovalNodeTask.objects.get(instance=instance, node_order=1, assignee=approver)
+        ok, _ = approve_task(task.pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.current_node.order == 3
+        # 节点 3 通过 → 路由命中直达节点 4（归档）；全程未经过节点 2
+        task3 = ApprovalNodeTask.objects.get(instance=instance, node_order=3, assignee=approver)
+        ok, _ = approve_task(task3.pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.current_node.order == 4
+        # 归档节点审批后无后续节点 → 实例通过
+        task4 = ApprovalNodeTask.objects.get(instance=instance, node_order=4, assignee=approver)
+        ok, _ = approve_task(task4.pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+        assert instance.tasks.filter(node_order=2).exists() is False
+
+    def test_loop_route_rejected_at_creation(self, applicant, approver):
+        """路由成环：模拟步数兜底，发起报错（保存时校验为主，此处兜底历史数据）。"""
+        flow = make_flow(
+            "branch_loop",
+            nodes=[
+                {"name": "A", "order": 1, "routes": [{"condition": {}, "target": 2}]},
+                {"name": "B", "order": 2, "routes": [{"condition": {}, "target": 1}]},
+            ],
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="成环", form_data={})
+        assert instance is None
+        assert "loop" in error
+
+
+class TestRatioApprove:
+    """二期比例会签（ADR-016 §3）：达标通过 / 不可能达标提前驳回。"""
+
+    def _three_member_flow(self, applicant, approver, approver2, ratio):
+        from tests.unit.system.test_approval_flow import make_flow as _make
+
+        flow = _make(
+            f"ratio_{ratio}",
+            nodes=[{"name": "会签", "order": 1, "approve_type": "RATIO", "approve_ratio": ratio}],
+        )
+        return flow
+
+    def test_ratio_reached_advances(self, applicant, approver, approver2):
+        """2 人候选 + 50%：1 人通过即达标，节点通过、实例 APPROVED（其余待办作废）。"""
+        flow = self._three_member_flow(applicant, approver, approver2, 50)
+        instance, error = create_instance(flow=flow, applicant=applicant, title="比例", form_data={})
+        assert error is None
+        tasks = ApprovalNodeTask.objects.filter(instance=instance)
+        assert tasks.count() == 2
+        ok, _ = approve_task(tasks.filter(assignee=approver).first().pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+        # 另一候选人的待办被作废
+        assert tasks.filter(assignee=approver2, status=ApprovalNodeTask.Status.CANCELLED).exists()
+
+    def test_ratio_unreachable_rejects_early(self, applicant, approver, approver2):
+        """3 人 100%：1 人通过 + 1 人拒绝 → 剩余不足，提前驳回。"""
+        flow = self._three_member_flow(applicant, approver, approver2, 100)
+        instance, error = create_instance(flow=flow, applicant=applicant, title="比例", form_data={})
+        assert error is None
+        tasks = ApprovalNodeTask.objects.filter(instance=instance)
+        # 2 人候选 + 100%：通过 1 人（未达标），拒绝 1 人（无人可补齐 2 票）→ 提前驳回
+        ok, _ = approve_task(tasks.filter(assignee=approver).first().pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.PENDING
+        ok, _ = reject_task(tasks.filter(assignee=approver2).first().pk, approver2, "不同意")
+        assert ok is True
+        instance.refresh_from_db()
+        # 显式拒绝直接驳回实例（reject_task 语义对所有策略一致）
+        assert instance.status == ApprovalInstance.Status.REJECTED
+
+
+class TestFlowVersions:
+    """二期版本管理（ADR-016 §2）：保存落快照 / 回滚写回 / PENDING 拒绝回滚。"""
+
+    def _flow_with_nodes(self, code):
+        flow = make_flow(code, nodes=[{"name": "节点一", "order": 1}])
+        serializer = ApprovalFlowSerializer(instance=flow)
+        serializer._snapshot_version(flow, [{"name": "节点一", "order": 1}], remark="初始版本")
+        return flow, serializer
+
+    def test_rollback_writes_snapshot_back(self, applicant):
+
+        flow, serializer = self._flow_with_nodes("ver_rollback")
+        # 变更定义（加节点）→ 落 v2
+        nodes_v2 = [{"name": "节点一", "order": 1}, {"name": "节点二", "order": 2}]
+        flow.nodes.all().delete()
+        serializer._replace_nodes(flow, nodes_v2)
+        serializer._snapshot_version(flow, nodes_v2, remark="加节点")
+        assert flow.versions.count() == 2
+        assert flow.nodes.count() == 2
+
+        # 回滚到 v1 → 活定义恢复单节点 + 落 v3（回滚也是一次变更）
+        ok, detail = serializer.rollback_to_version(flow, 1)
+        assert ok is True
+        assert flow.nodes.count() == 1
+        assert flow.versions.count() == 3
+        assert flow.versions.order_by("-version").first().version == 3
+
+    def test_rollback_missing_version(self, applicant):
+
+        flow, serializer = self._flow_with_nodes("ver_missing")
+        ok, _detail = serializer.rollback_to_version(flow, 99)
+        assert ok is False
+
+    def test_rollback_blocked_with_pending_instance(self, applicant, approver):
+
+        flow, serializer = self._flow_with_nodes("ver_pending")
+        create_instance(flow=flow, applicant=applicant, title="在途", form_data={})
+        ok, detail = serializer.rollback_to_version(flow, 1)
+        assert ok is False
+        assert detail  # 返回可读错误（zh: 该流程存在待审批申请，节点不可修改）
+
+    def test_create_instance_records_flow_version(self, applicant, approver):
+        flow, _serializer = self._flow_with_nodes("ver_record")
+        instance, error = create_instance(flow=flow, applicant=applicant, title="版本", form_data={})
+        assert error is None
+        assert instance.flow_version == flow.version

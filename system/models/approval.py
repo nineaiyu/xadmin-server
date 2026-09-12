@@ -98,6 +98,9 @@ class ApprovalFlow(DbAuditModel):
     code = models.CharField(_("Flow code"), max_length=64, unique=True)
     form_schema = models.JSONField(_("Form schema"), default=list, blank=True)
     is_active = models.BooleanField(_("Is active"), default=True, db_index=True)
+    # 当前定义版本号：每次节点/表单定义变化 +1，并在 ApprovalFlowVersion 落全量快照
+    # （回滚 = 把历史快照写入活定义并落新版本，见 ADR-016 §2）
+    version = models.IntegerField(_("Definition version"), default=0)
 
     class Meta:
         ordering = ["-created_time"]
@@ -120,6 +123,8 @@ class ApprovalFlowNode(DbAuditModel):
     class ApproveType(models.TextChoices):
         OR = "OR", _("Any approver")
         AND = "AND", _("All approvers")
+        # 比例会签：通过人数 / 候选总数 ≥ approve_ratio% 即节点通过（ratio=100 退化为 AND）
+        RATIO = "RATIO", _("Ratio approvers")
 
     class AssigneeType(models.TextChoices):
         ROLE = "role", _("Role")
@@ -134,14 +139,22 @@ class ApprovalFlowNode(DbAuditModel):
     name = models.CharField(_("Node name"), max_length=64)
     order = models.IntegerField(_("Node order"), default=1)
     approve_type = models.CharField(
-        _("Approve type"), max_length=4, choices=ApproveType.choices, default=ApproveType.OR
+        _("Approve type"), max_length=5, choices=ApproveType.choices, default=ApproveType.OR
     )
+    # RATIO 策略的通过比例（%）：1-100；非 RATIO 类型忽略
+    approve_ratio = models.SmallIntegerField(_("Approve ratio"), default=100)
     assignee_type = models.CharField(
         _("Assignee type"), max_length=8, choices=AssigneeType.choices, default=AssigneeType.ROLE
     )
     assignee_value = models.CharField(_("Assignee value"), max_length=255, blank=True, default="")
     # 条件表达式：{"field": "amount", "op": "gte", "value": 1000}；空 dict = 无条件
     condition = models.JSONField(_("Condition"), default=dict, blank=True)
+    # 出口路由表（排他网关，ADR-016 §1）：逐条求值首个命中即跳转 target（同流程节点
+    # order）；全部未命中回退线性语义（order 之后首个条件命中节点）。空 = 纯线性。
+    # 形态：[{"condition": {...}, "target": 3}]
+    routes = models.JSONField(_("Branch routes"), default=list, blank=True)
+    # 画布坐标（@vue-flow 节点定位）：{"x": 100, "y": 200}；仅前端布局用
+    layout = models.JSONField(_("Canvas layout"), default=dict, blank=True)
     timeout_hours = models.IntegerField(_("Timeout hours"), default=0)
 
     class Meta:
@@ -178,6 +191,8 @@ class ApprovalInstance(DbAuditModel):
     title = models.CharField(_("Title"), max_length=128)
     form_data = models.JSONField(_("Form data"), default=dict, blank=True)
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
+    # 发起时的流程定义版本号（纯追溯字段：推进仍读活定义，见 ADR-016 §2 边界）
+    flow_version = models.IntegerField(_("Flow version"), null=True, blank=True)
     current_node = models.ForeignKey(
         "system.ApprovalFlowNode",
         related_name="+",
@@ -263,3 +278,34 @@ class ApprovalNodeTask(DbAuditModel):
 
     def __str__(self):
         return f"{self.node_name} -> {self.assignee_id} [{self.status}]"
+
+
+class ApprovalFlowVersion(DbAuditModel):
+    """流程定义版本快照（ADR-016 §2）：每次节点/表单定义变化落一条全量快照。
+
+    用途 = 变更审计追溯 + 一键回滚（回滚把历史快照写回活定义并落新版本）；
+    不做「在途实例绑版本」（推进仍读活定义，靠 PENDING 锁维持一致性）。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    flow = models.ForeignKey(
+        "system.ApprovalFlow",
+        related_name="versions",
+        on_delete=models.CASCADE,
+        verbose_name=_("Flow"),
+    )
+    version = models.IntegerField(_("Version"))
+    # 全量快照：{"name", "code", "is_active", "form_schema": [...], "nodes": [...]}
+    snapshot = models.JSONField(_("Snapshot"), default=dict)
+    remark = models.CharField(_("Remark"), max_length=128, blank=True, default="")
+
+    class Meta:
+        ordering = ["-version"]
+        verbose_name = _("Approval flow version")
+        verbose_name_plural = verbose_name
+        constraints = [
+            models.UniqueConstraint(fields=["flow", "version"], name="uniq_approval_flow_version"),
+        ]
+
+    def __str__(self):
+        return f"{self.flow_id} v{self.version}"

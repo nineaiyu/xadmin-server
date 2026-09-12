@@ -128,9 +128,13 @@ class TestApprovalFlowCrud:
         assert no_value.status_code == 400
 
     def test_flow_delete_guard(self, auth_client, approver):
-        flow = make_flow(code="delete_guard", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        flow = make_flow(
+            code="delete_guard", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         # 无实例：可删除
-        free_flow = make_flow(code="free_delete", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        free_flow = make_flow(
+            code="free_delete", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         assert auth_client.delete(f"{FLOWS_URL}/{free_flow.pk}").data["code"] == 1000
 
         # 有实例：拒绝删除（PROTECT 兜底，返回可读错误）
@@ -141,12 +145,22 @@ class TestApprovalFlowCrud:
         assert ApprovalFlow.objects.filter(pk=flow.pk).exists()
 
     def test_flow_update_blocked_with_pending_instance(self, auth_client, approver):
-        flow = make_flow(code="pending_lock", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        flow = make_flow(
+            code="pending_lock", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         applicant = UserInfo.objects.create_user(username="pending_lock_user", password="Test@123456")
         ApprovalInstance.objects.create(flow=flow, flow_name=flow.name, title="x", creator=applicant)
         response = auth_client.patch(
             f"{FLOWS_URL}/{flow.pk}",
-            {"nodes": [{"name": "改节点", "assignee_type": "user", "assignee_value": "flow_approver"}]},
+            {
+                "nodes": [
+                    {
+                        "name": "改节点",
+                        "assignee_type": "user",
+                        "assignee_value": "flow_approver",
+                    }
+                ]
+            },
             format="json",
         )
         assert response.status_code == 400
@@ -196,8 +210,8 @@ class TestApprovalInstanceApi:
         flow = make_flow(
             code="lifecycle",
             nodes=[
-                {"name": "初审", "assignee_value": "flow_approver"},
-                {"name": "终审", "assignee_value": "flow_approver"},
+                {"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"},
+                {"name": "终审", "assignee_type": "user", "assignee_value": "flow_approver"},
             ],
             form_schema=[{"key": "days", "label": "天数", "type": "number", "required": True}],
         )
@@ -251,7 +265,9 @@ class TestApprovalInstanceApi:
         assert stats.data["data"]["approved"] == 2
 
     def test_reject_requires_reason_and_cancel_flow(self, applicant, approver_client, api_client, approver):
-        flow = make_flow(code="reject_api", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        flow = make_flow(
+            code="reject_api", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         api_client.force_authenticate(user=applicant)
         instance_pk = api_client.post(
             INSTANCES_URL, {"flow": str(flow.pk), "title": "报销", "form_data": {}}, format="json"
@@ -273,7 +289,12 @@ class TestApprovalInstanceApi:
         flow = make_flow(
             code="add_sign_api",
             nodes=[
-                {"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND, "assignee_value": "flow_approver"}
+                {
+                    "name": "会签",
+                    "approve_type": ApprovalFlowNode.ApproveType.AND,
+                    "assignee_type": "user",
+                    "assignee_value": "flow_approver",
+                }
             ],
         )
         api_client.force_authenticate(user=applicant)
@@ -304,7 +325,9 @@ class TestApprovalInstanceApi:
 
     def test_scope_isolation(self, applicant, approver_client, api_client, approver, role, menu_factory):
         """他人不可见：非参与用户（有列表权限）看不到实例（可见域收口）。"""
-        flow = make_flow(code="isolation", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        flow = make_flow(
+            code="isolation", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         api_client.force_authenticate(user=applicant)
         api_client.post(INSTANCES_URL, {"flow": str(flow.pk), "title": "隔离", "form_data": {}}, format="json")
 
@@ -315,7 +338,9 @@ class TestApprovalInstanceApi:
         assert api_client.get(INSTANCES_URL).data["data"]["total"] == 0
 
     def test_batch_approve_and_reject(self, applicant, approver_client, api_client):
-        flow = make_flow(code="batch_api", nodes=[{"name": "初审", "assignee_value": "flow_approver"}])
+        flow = make_flow(
+            code="batch_api", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+        )
         api_client.force_authenticate(user=applicant)
         first = api_client.post(
             INSTANCES_URL, {"flow": str(flow.pk), "title": "批一", "form_data": {}}, format="json"
@@ -334,3 +359,119 @@ class TestApprovalInstanceApi:
         assert rejected.data["data"]["succeeded"] == 1
         assert ApprovalInstance.objects.get(pk=first).status == ApprovalInstance.Status.APPROVED
         assert ApprovalInstance.objects.get(pk=second).status == ApprovalInstance.Status.REJECTED
+
+    # 二期（ADR-016）：条件分支主链路 API + 版本列表/回滚 API
+
+    def test_phase2_branch_api_lifecycle(self, api_client, applicant, approver_client, approver, menu_factory, role):
+        """金额条件分支：小额走快车道直达归档节点，全程未经过大额终审。"""
+        grant(role, menu_factory, "list:SystemApprovalFlow", "api/system/approval-flows$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalFlow", "api/system/approval-flows$", "POST")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalInstance", "api/system/approval-instances$", "POST")
+        grant(role, menu_factory, "approve:SystemApprovalInstance", "api/system/approval-instances/approve$", "POST")
+        grant(role, menu_factory, "change:SystemApprovalFlow", "api/system/approval-flows$", "PUT")
+        api_client.force_authenticate(user=applicant)
+
+        resp = api_client.post(
+            FLOWS_URL,
+            {
+                "name": "分支流程",
+                "code": "phase2_branch",
+                "form_schema": [{"key": "amount", "label": "金额", "type": "number", "required": True}],
+                "nodes": [
+                    {"name": "初审", "order": 1, "assignee_type": "user", "assignee_value": "flow_approver"},
+                    {
+                        "name": "大额终审",
+                        "order": 2,
+                        "assignee_type": "user",
+                        "assignee_value": "flow_approver",
+                        "condition": {"field": "amount", "op": "gte", "value": 1000},
+                    },
+                    {
+                        "name": "小额出口",
+                        "order": 3,
+                        "assignee_type": "user",
+                        "assignee_value": "flow_approver",
+                        "routes": [{"condition": {"field": "amount", "op": "lt", "value": 1000}, "target": 4}],
+                    },
+                    {"name": "归档", "order": 4, "assignee_type": "user", "assignee_value": "flow_approver"},
+                ],
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        flow_pk = resp.data["data"]["pk"]
+
+        resp = api_client.post(
+            INSTANCES_URL, {"flow": flow_pk, "title": "小额单", "form_data": {"amount": 100}}, format="json"
+        )
+        assert resp.status_code == 200, resp.data
+        instance_pk = resp.data["data"]["pk"]
+        # 初审通过 → 进入节点 3
+        task1 = ApprovalNodeTask.objects.get(instance_id=instance_pk, node_order=1, assignee=approver)
+        assert (
+            approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"task": str(task1.pk)}, format="json").data[
+                "code"
+            ]
+            == 1000
+        )
+        assert ApprovalInstance.objects.get(pk=instance_pk).current_node.order == 3
+        # 节点 3 通过 → 路由直达节点 4 → 归档通过后结束
+        task3 = ApprovalNodeTask.objects.get(instance_id=instance_pk, node_order=3, assignee=approver)
+        approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"task": str(task3.pk)}, format="json")
+        task4 = ApprovalNodeTask.objects.get(instance_id=instance_pk, node_order=4, assignee=approver)
+        approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"task": str(task4.pk)}, format="json")
+        assert ApprovalInstance.objects.get(pk=instance_pk).status == ApprovalInstance.Status.APPROVED
+        assert ApprovalNodeTask.objects.filter(instance_id=instance_pk, node_order=2).exists() is False
+
+    def test_phase2_versions_and_rollback_api(self, api_client, applicant, approver, menu_factory, role):
+        """版本列表 + 回滚 API：有 PENDING 实例时回滚被拒，无在途时成功。"""
+        grant(role, menu_factory, "list:SystemApprovalFlow", "api/system/approval-flows$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalFlow", "api/system/approval-flows$", "POST")
+        grant(role, menu_factory, "change:SystemApprovalFlow", "api/system/approval-flows$", "PUT")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalInstance", "api/system/approval-instances$", "POST")
+        api_client.force_authenticate(user=applicant)
+
+        resp = api_client.post(
+            FLOWS_URL,
+            {
+                "name": "版本流程",
+                "code": "phase2_ver",
+                "nodes": [{"name": "节点一", "order": 1, "assignee_type": "user", "assignee_value": "flow_approver"}],
+            },
+            format="json",
+        )
+        flow_pk = resp.data["data"]["pk"]
+
+        # 变更定义 → v2
+        api_client.put(
+            f"{FLOWS_URL}/{flow_pk}",
+            {
+                "name": "版本流程",
+                "code": "phase2_ver",
+                "nodes": [
+                    {"name": "节点一", "order": 1, "assignee_type": "user", "assignee_value": "flow_approver"},
+                    {"name": "节点二", "order": 2, "assignee_type": "user", "assignee_value": "flow_approver"},
+                ],
+            },
+            format="json",
+        )
+        versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
+        assert [item["version"] for item in versions] == [2, 1]
+
+        # 有 PENDING 实例：回滚 400
+        created = api_client.post(INSTANCES_URL, {"flow": flow_pk, "title": "在途单", "form_data": {}}, format="json")
+        assert created.data["code"] == 1000, created.data
+        instance_pk = created.data["data"]["pk"]
+        blocked = api_client.post(f"{FLOWS_URL}/{flow_pk}/rollback", {"version": 1}, format="json")
+        assert blocked.data["code"] != 1000, blocked.data
+
+        # 结束在途（撤回）→ 回滚成功：节点恢复为 1 个 + 落 v3
+        api_client.post(f"{INSTANCES_URL}/{instance_pk}/cancel", {}, format="json")
+        rolled = api_client.post(f"{FLOWS_URL}/{flow_pk}/rollback", {"version": 1, "remark": "恢复初始"}, format="json")
+        assert rolled.data["code"] == 1000, rolled.data
+        detail = api_client.get(f"{FLOWS_URL}/{flow_pk}").data["data"]
+        assert len(detail["nodes"]) == 1
+        versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
+        assert versions[0]["version"] == 3

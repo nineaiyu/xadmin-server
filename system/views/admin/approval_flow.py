@@ -76,6 +76,39 @@ class ApprovalFlowViewSet(BaseModelSet):
         self.queryset = self.queryset.filter(instances__isnull=True)
         return super().batch_destroy(request, *args, **kwargs)
 
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="versions")
+    def versions(self, request, *args, **kwargs):
+        """流程定义版本列表（ADR-016 §2：快照审计追溯）。"""
+        flow = self.get_object()
+        rows = flow.versions.order_by("-version").values("version", "remark", "created_time")
+        return ApiResponse(data=list(rows))
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "version": build_basic_type(OpenApiTypes.INT),
+                    "remark": build_basic_type(OpenApiTypes.STR),
+                }
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True, url_path="rollback")
+    def rollback(self, request, *args, **kwargs):
+        """回滚到历史版本：快照写入活定义并落新版本；有 PENDING 实例时拒绝。"""
+        version = request.data.get("version")
+        try:
+            version = int(version)
+        except (TypeError, ValueError):
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        flow = self.get_object()
+        ok, detail = self.get_serializer().rollback_to_version(flow, version, remark=request.data.get("remark") or "")
+        if not ok:
+            return ApiResponse(code=1004, detail=detail)
+        return ApiResponse(detail=detail)
+
 
 class ApprovalInstanceFilter(BaseFilterSet):
     title = filters.CharFilter(field_name="title", lookup_expr="icontains")

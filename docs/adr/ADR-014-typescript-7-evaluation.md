@@ -73,3 +73,12 @@ TypeScript 7.0（2026-07-08 发布）是用 Go 重写的原生移植版，官方
 （demo/book、system/role）先声明默认值再展开，导致 `UnwrapNestedRefs` 丢失索引签名。
 已按范式修复 `src/views/system/approval/instance/utils/hook.tsx`，typecheck 恢复全绿
 （exit 0，8.4s）。记录在此：TS 升级评估顺带暴露并消除了类型 gate 的存量红灯。
+
+## 复审记录（2026-09-12，下期 W5）
+
+- 现状实测：typescript **7.0.2** 已正式发布（原生 Go 实现）；vue-tsc 最新 **3.3.11**
+  搭配 TS 7.0.2 直接失败：`ERR_PACKAGE_PATH_NOT_EXPORTED`（TS 7 的 package exports
+  不再暴露 `./lib/tsc`，vue-tsc 3.x 的 tsc 驱动方式失效）；
+- 结论：**维持暂不升级**；触发条件更新为「vue-tsc 发布声明支持 TS 7 原生版」，
+  届时在独立分支用本仓 typecheck（tsc --noEmit && vue-tsc --noEmit）+ vitest 复测；
+- 另注：项目当前已运行 typescript 6.0.3（TS 6 线），无阻塞问题。
