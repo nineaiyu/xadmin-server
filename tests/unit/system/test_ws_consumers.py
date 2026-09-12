@@ -97,6 +97,7 @@ class FakeTaskLogConsumer:
 
     # --- 复用真实实现 ---
     push_once = property(lambda self: self._cls.push_once.__get__(self))
+    push_tick = property(lambda self: self._cls.push_tick.__get__(self))
     push_log_loop = property(lambda self: self._cls.push_log_loop.__get__(self))
 
 
@@ -152,6 +153,30 @@ class TestTaskLogPush:
         assert run(TaskLogNotify.push_once(consumer, str(path))) is False
         assert consumer.sent[-1][1]["content"] == "partial output"
 
+    def test_push_tick_backoff_and_reset(self, superuser, tmp_path):
+        """空转退避：无新输出间隔指数增长（封顶），有新输出立即回基础间隔。"""
+        from system.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, TaskLogNotify
+
+        path = tmp_path / "job.log"
+        execution = TaskExecution.objects.create(name="job", creator=superuser)
+        consumer = make_consumer(execution.pk, superuser)
+
+        # 空转（文件未落盘）：1s -> 2s -> 4s
+        finished, interval = run(TaskLogNotify.push_tick(consumer, str(path), PUSH_INTERVAL))
+        assert finished is False
+        assert interval == 2
+        _, interval = run(TaskLogNotify.push_tick(consumer, str(path), interval))
+        assert interval == 4
+
+        # 追加内容：本轮 offset 推进，间隔立即重置为基础值
+        path.write_bytes(b"hello")
+        _, interval = run(TaskLogNotify.push_tick(consumer, str(path), interval))
+        assert interval == PUSH_INTERVAL
+
+        # 已读到文件尾后持续空转：封顶不再增长
+        _, interval = run(TaskLogNotify.push_tick(consumer, str(path), PUSH_INTERVAL_MAX))
+        assert interval == PUSH_INTERVAL_MAX
+
     def test_tail_has_mark_short_file(self, tmp_path):
         from system.ws import _tail_has_mark
 
@@ -199,6 +224,25 @@ class TestTaskLogPush:
         consumer.scope = {"user": None, "url_route": {"kwargs": {"pk": "x"}}}
         run(TaskLogNotify.disconnect(consumer, 1000))
         assert consumer.disconnected is True
+
+
+class TestNextPushInterval:
+    def test_content_resets_to_base(self):
+        from system.ws import PUSH_INTERVAL, PUSH_INTERVAL_MAX, next_push_interval
+
+        assert next_push_interval(PUSH_INTERVAL_MAX, True) == PUSH_INTERVAL
+
+    def test_idle_doubles(self):
+        from system.ws import next_push_interval
+
+        assert next_push_interval(1, False) == 2
+        assert next_push_interval(2, False) == 4
+
+    def test_idle_capped(self):
+        from system.ws import PUSH_INTERVAL_MAX, next_push_interval
+
+        assert next_push_interval(PUSH_INTERVAL_MAX, False) == PUSH_INTERVAL_MAX
+        assert next_push_interval(100, False) == PUSH_INTERVAL_MAX
 
 
 # --------------------------------------------------------------------------- 监控面板

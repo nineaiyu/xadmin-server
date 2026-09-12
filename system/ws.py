@@ -10,7 +10,9 @@
   的归属过滤同口径（ExportRecord/TaskExecution 共用 task_id 命名空间，按 creator 判定）；
 - 文件未落盘时与 HTTP log action 同语义：执行已结束即 finished，否则持续等待；
 - 读文件循环采用 message/notify.py 既有 tail 模式（aiofiles + asyncio.sleep），
-  但必须以独立 task 运行（connect 内阻塞会导致 disconnect 事件永远排队）。
+  但必须以独立 task 运行（connect 内阻塞会导致 disconnect 事件永远排队）；
+- 空转退避：长任务无新输出时轮询间隔指数放大（封顶 PUSH_INTERVAL_MAX），
+  避免每秒空帧 + 每秒读文件/查执行表；一旦有新输出立即回到基础间隔。
 """
 
 import asyncio
@@ -29,6 +31,15 @@ logger = get_logger(__name__)
 
 LOG_READ_CHUNK = 64 * 1024
 PUSH_INTERVAL = 1
+# 空转退避上限（秒）：到达后按固定间隔轮询，直到出现新输出或终态
+PUSH_INTERVAL_MAX = 15
+
+
+def next_push_interval(current: float, has_new_content: bool) -> float:
+    """下一次轮询间隔：本轮有新输出立即回基础间隔，空转则指数退避封顶。"""
+    if has_new_content:
+        return PUSH_INTERVAL
+    return min(current * 2, PUSH_INTERVAL_MAX)
 
 
 def can_read_task_log(user, pk) -> bool:
@@ -87,13 +98,21 @@ class TaskLogNotify(AsyncJsonWebsocket):
         """任务日志连接不属于消息层分组（无 group_name），心跳无需登记，
         静默忽略即可；沿用基类实现会因缺少 group_name 抛 AttributeError 断连。"""
 
+    async def push_tick(self, path, interval):
+        """执行一次推送并计算下一次轮询间隔，返回 (finished, next_interval)。"""
+        offset_before = self.offset
+        finished = await self.push_once(path)
+        return finished, next_push_interval(interval, self.offset > offset_before)
+
     async def push_log_loop(self):
         path = get_celery_task_log_path(str(self.pk))
+        interval = PUSH_INTERVAL
         try:
             while not self.disconnected:
-                if await self.push_once(path):
+                finished, interval = await self.push_tick(path, interval)
+                if finished:
                     break
-                await asyncio.sleep(PUSH_INTERVAL)
+                await asyncio.sleep(interval)
         except asyncio.CancelledError:
             raise
         except Exception:
