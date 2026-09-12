@@ -228,6 +228,9 @@ class AESCipherV2(object):
         text = enc.decode("utf-8", "ignore") if isinstance(enc, bytes) else enc
         if text.startswith(self.V2_PREFIX):
             return self._decrypt_v2(text[len(self.V2_PREFIX) :])
+        if not self._v1_decrypt_enabled():
+            # ADR-011 演进：灰度开关关闭后拒绝旧格式，与非法输入同语义返回空串
+            return ""
         data = base64.b64decode(enc)
         if data[:8] != b"Salted__":
             return ""
@@ -253,6 +256,20 @@ class AESCipherV2(object):
         except Exception:
             # GCM 认证失败 / 格式非法：返回空串，交由业务层按解密失败处理
             return ""
+
+    @staticmethod
+    def _v1_decrypt_enabled() -> bool:
+        """旧格式（Salted__）解密灰度开关（SECURITY_AES_V1_DECRYPT_ENABLED，ADR-011 演进项）。
+
+        默认开启保持存量前端兼容；配置缺失（Settings 尚未加载的极端场景）按开启处理，
+        宁可多兼容不误杀。确认全量用户升级至 v2 优先前端后由运维关闭。
+        """
+        try:
+            from django.conf import settings
+
+            return bool(getattr(settings, "SECURITY_AES_V1_DECRYPT_ENABLED", True))
+        except Exception:
+            return True
 
     @staticmethod
     def _pack_data(s):

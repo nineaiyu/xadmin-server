@@ -132,6 +132,9 @@ class Config(dict):
         # 存量用户 date_password_updated 为空 = 宽限期不拦截，改密后开始计时；
         # 2026-09-12 灰度转正：评审确认 90 天）
         "SECURITY_PASSWORD_EXPIRATION_DAYS": 90,
+        # AES 旧格式（Salted__）解密灰度开关（ADR-011 演进）：默认开启保持存量前端兼容；
+        # 确认全量用户已升级至 v2 优先前端后可关闭，关闭后旧格式一律按非法输入拒绝（返回空串）
+        "SECURITY_AES_V1_DECRYPT_ENABLED": True,
         # 用户登录限制的规则
         "SECURITY_LOGIN_LIMIT_COUNT": 7,
         "SECURITY_LOGIN_LIMIT_TIME": 30,  # Unit: minute

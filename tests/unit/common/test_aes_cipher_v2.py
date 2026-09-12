@@ -42,6 +42,32 @@ class TestLegacySaltedFormat:
         assert AESCipherV2("some-key").decrypt("v2:!!!not-base64!!!") == ""
 
 
+class TestLegacyDecryptGate:
+    """SECURITY_AES_V1_DECRYPT_ENABLED 灰度开关（ADR-011 演进：v1 退役路径）。"""
+
+    def test_legacy_rejected_when_disabled(self, settings):
+        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        settings.SECURITY_AES_V1_DECRYPT_ENABLED = False
+        assert AESCipherV2("some-key").decrypt(encrypted) == ""
+
+    def test_v2_unaffected_when_disabled(self, settings):
+        """关闭旧格式只影响 Salted__ 路径，v2 主路径不受牵连。"""
+        encrypted = _encrypt_v2("some-key", "v2-payload")
+        settings.SECURITY_AES_V1_DECRYPT_ENABLED = False
+        assert AESCipherV2("some-key").decrypt(encrypted) == "v2-payload"
+
+    def test_missing_setting_defaults_to_enabled(self, settings):
+        """配置缺失（Settings 未加载的极端场景）按开启处理，宁可多兼容不误杀。"""
+        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        delattr(settings, "SECURITY_AES_V1_DECRYPT_ENABLED")
+        assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
+
+    def test_enabled_by_default_in_real_settings(self):
+        """真实 settings（conf.py 默认值注入）下旧格式仍可解密——默认行为不变。"""
+        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
+
+
 class TestV2Format:
     def test_cross_compat_with_webcrypto_vector(self):
         """真实 WebCrypto（浏览器同源实现）产出的 v2 密文可被服务端解密。"""
