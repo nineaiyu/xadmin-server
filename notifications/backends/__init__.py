@@ -14,6 +14,10 @@ class BACKEND(models.TextChoices):
     EMAIL = "email", _("Email")
     SITE_MSG = "site_msg", _("Site message")
     SMS = "sms", _("SMS")
+    # 企业 IM 渠道（ADR-019）：收件账号来自对应 flavor 的 OAuth 绑定（见 backends/im_base.py）
+    DINGTALK = "dingtalk", _("DingTalk")
+    WECOM = "wecom", _("WeCom")
+    FEISHU = "feishu", _("FeiShu")
 
     @property
     def client(self):

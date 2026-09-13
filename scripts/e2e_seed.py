@@ -160,6 +160,30 @@ def seed_periodic_task():
     )
 
 
+def seed_oauth_im_provider():
+    """登录页第三方入口 E2E 数据：启用态飞书 flavor provider（ADR-018）。
+
+    只验证「配置 → 登录页可见」链路；回调交互依赖真实 IdP，由后端集成测试
+    stub HTTP 覆盖。名称带 E2E 前缀，避免与真实配置混淆。
+    """
+    from common.core.config import SysConfig
+
+    SysConfig.set_value(
+        "OAUTH_PROVIDERS",
+        [
+            {
+                "key": "feishu",
+                "name": "E2E飞书",
+                "flavor": "feishu",
+                "client_id": "cli_e2e",
+                "client_secret": "sec_e2e",
+                "enabled": True,
+            }
+        ],
+    )
+    print("oauth im provider seeded (feishu flavor)")
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -287,6 +311,9 @@ def main() -> None:
 
     SysConfig.set_value("SENSITIVE_OPERATION_METHODS", ["__E2E_DISABLED__"])
     print("sensitive operation alert disabled")
+
+    # ---- 登录页第三方入口（feishu flavor，ADR-018）----
+    seed_oauth_im_provider()
 
     print("E2E seed done")
 

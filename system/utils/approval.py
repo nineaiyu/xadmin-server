@@ -178,6 +178,25 @@ def notify_approvers(approval, approvers):
             logger.warning("send approval notify failed. approval:%s user:%s", approval.pk, user.pk, exc_info=True)
 
 
+def _emit_approval_event(event: str, approval) -> None:
+    """出站 Webhook：审批事件（ADR-022，emit 全程吞异常，不影响审批流转）。"""
+    from system.utils.webhook import emit_webhook_event
+
+    try:
+        emit_webhook_event(
+            event,
+            {
+                "approval_id": str(approval.pk),
+                "module": approval.module,
+                "path": approval.path,
+                "status": approval.status,
+                "creator": getattr(approval.creator, "username", ""),
+            },
+        )
+    except Exception:  # noqa: BLE001 双保险（emit 自身已吞异常）
+        logger.warning("emit approval webhook failed: %s", event, exc_info=True)
+
+
 def notify_applicant(approval, event: str):
     """向申请人推送审批结果（通过/驳回）。"""
     from system.notifications import ApprovalRequestMessage
@@ -226,6 +245,7 @@ def create_approval(view, request):
     )
     invalidate_pending_count_cache()
     notify_approvers(approval, approvers)
+    _emit_approval_event("approval.submitted", approval)
     return approval
 
 
@@ -344,6 +364,7 @@ def approve_request(approval, user):
     approval.expired_at = now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL))
     invalidate_pending_count_cache()
     notify_applicant(approval, "approved")
+    _emit_approval_event("approval.approved", approval)
     return True, None
 
 
@@ -374,6 +395,7 @@ def reject_request(approval, user, reason: str):
     approval.reason = (reason or "")[:255]
     invalidate_pending_count_cache()
     notify_applicant(approval, "rejected")
+    _emit_approval_event("approval.rejected", approval)
     return True, None
 
 
@@ -395,6 +417,7 @@ def cancel_request(approval, user):
         return False, _("Only pending requests can be cancelled")
     approval.status = ApprovalRequest.Status.CANCELLED
     invalidate_pending_count_cache()
+    _emit_approval_event("approval.cancelled", approval)
     return True, None
 
 

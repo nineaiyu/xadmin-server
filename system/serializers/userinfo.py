@@ -22,6 +22,7 @@ from settings.services import (
 )
 from system import models
 from system.models import UserInfo
+from system.serializers.user import ensure_local_password_changeable
 
 logger = get_logger(__name__)
 
@@ -50,6 +51,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     )
 
     def update(self, instance, validated_data):
+        ensure_local_password_changeable(instance)
         sure_password = AESCipherV2(instance.username).decrypt(validated_data.get("sure_password"))
         old_password = AESCipherV2(instance.username).decrypt(validated_data.get("old_password"))
         if not instance.check_password(old_password):

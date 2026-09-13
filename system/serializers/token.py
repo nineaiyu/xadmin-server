@@ -14,7 +14,7 @@ from rest_framework import serializers
 
 from common.core.auth import hash_pat_token
 from common.core.serializers import BaseModelSerializer
-from system.models.token import PersonalAccessToken
+from system.models.token import ApiApplication, PersonalAccessToken
 
 
 class PersonalAccessTokenSerializer(BaseModelSerializer):
@@ -125,3 +125,63 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         validated_data.pop("token_hash", None)
         validated_data.pop("token_prefix", None)
         return super().update(instance, validated_data)
+
+
+class ApiApplicationSerializer(BaseModelSerializer):
+    """开放平台应用序列化器（ADR-030）。
+
+    client_id / client_secret_prefix 只读（由服务端生成）；client_secret 与 callback_secret
+    的明文仅在创建/重置响应中返回一次（视图层注入，不经本序列化器）。
+    """
+
+    class Meta:
+        model = ApiApplication
+        fields = [
+            "pk",
+            "name",
+            "client_id",
+            "client_secret_prefix",
+            "scopes",
+            "ip_allowlist",
+            "rate_limit_per_minute",
+            "callback_urls",
+            "token_ttl_seconds",
+            "is_active",
+            "expired_at",
+            "description",
+            "created_time",
+            "updated_time",
+        ]
+        read_only_fields = ["client_id", "client_secret_prefix"]
+        table_fields = [
+            "pk",
+            "name",
+            "client_id",
+            "client_secret_prefix",
+            "rate_limit_per_minute",
+            "is_active",
+            "created_time",
+        ]
+
+    def validate_callback_urls(self, value):
+        """回调地址写入校验：https 强制（loopback http 例外），复用 webhook 同口径。"""
+        from system.utils.webhook import validate_url
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Callback urls must be a list"))
+        return [validate_url(url) for url in value]
+
+    def validate_scopes(self, value):
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            raise serializers.ValidationError(_("Scopes must be a list of strings"))
+        return [item.strip() for item in value if item.strip()]
+
+    def validate_ip_allowlist(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError(_("Ip allowlist must be a list"))
+        return [str(item).strip() for item in value if str(item).strip()]
+
+    def validate_rate_limit_per_minute(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError(_("Rate limit cannot be negative"))
+        return value

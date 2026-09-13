@@ -61,8 +61,14 @@ class OAuthProvidersAPIView(GenericAPIView):
     @extend_schema(responses=get_default_response_schema({"data": {"providers": [{"key": "str", "name": "str"}]}}))
     def get(self, request, *args, **kwargs):
         providers = get_providers(enabled_only=True)
+        # flavor 随下发（前端未来做品牌图标用，本期登录页仍按 name 渲染文本按钮）
         return ApiResponse(
-            data={"providers": [{"key": item["key"], "name": item["name"]} for item in mask_providers(providers)]}
+            data={
+                "providers": [
+                    {"key": item["key"], "name": item["name"], "flavor": item.get("flavor", "oauth2")}
+                    for item in mask_providers(providers)
+                ]
+            }
         )
 
 
@@ -110,7 +116,8 @@ class OAuthCallbackAPIView(GenericAPIView):
 
         try:
             token_payload = exchange_code(config, code, _redirect_uri(request, provider))
-            userinfo = fetch_userinfo(config, token_payload.get("access_token"))
+            # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定（ADR-018）
+            userinfo = fetch_userinfo(config, token_payload)
         except OAuthError as exc:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
 

@@ -194,6 +194,88 @@ class SensitiveOperationMessage(SystemMessage):
 
 
 @register_message
+class LdapSyncMessage(SystemMessage):
+    """LDAP 目录同步摘要（ADR-017）：有建号/处置/冲突动作时告知全部超管。"""
+
+    category = "Audit"
+    category_label = _("Audit")
+    message_type_label = _("LDAP sync summary")
+
+    def __init__(self, summary: dict):
+        self.summary = summary
+
+    def get_html_msg(self) -> dict:
+        subject = _("LDAP sync finished")
+        lines = "".join(f"<li>{key}: {value}</li>" for key, value in self.summary.items())
+        message = f"<p>{subject}</p><ul>{lines}</ul>"
+        return {"subject": subject, "message": message}
+
+    def get_site_msg_msg(self):
+        info = self.get_html_msg()
+        info["level"] = "info"
+        return info
+
+    @classmethod
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+        subscription.users.add(*get_active_superuser_queryset())
+        subscription.receive_backends = [BACKEND.SITE_MSG]
+        subscription.save()
+
+    def publish(self, is_async=False):
+        """发布告警；订阅收件人为空时自愈补齐活跃超管（post_migrate 种子早于建号）。"""
+        subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
+        if not subscription.users.exists():
+            self.post_insert_to_db(subscription)
+        super().publish(is_async=is_async)
+
+    @classmethod
+    def gen_test_msg(cls):
+        return cls({"updated_users": 1})
+
+
+@register_message
+class WebhookFailedMessage(SystemMessage):
+    """Webhook 投递耗尽告警（ADR-022）：站内信告知全部超管。"""
+
+    category = "Audit"
+    category_label = _("Audit")
+    message_type_label = _("Webhook delivery exhausted")
+
+    def __init__(self, info: dict):
+        self.info = info
+
+    def get_html_msg(self) -> dict:
+        info = self.info
+        subject = _("Webhook delivery exhausted: {}").format(info.get("subscription"))
+        message = "<p>{}</p><ul><li>event: {}</li><li>attempts: {}</li><li>error: {}</li></ul>".format(
+            subject, info.get("event"), info.get("attempts"), info.get("error")
+        )
+        return {"subject": subject, "message": message}
+
+    def get_site_msg_msg(self):
+        info = self.get_html_msg()
+        info["level"] = "danger"
+        return info
+
+    @classmethod
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+        subscription.users.add(*get_active_superuser_queryset())
+        subscription.receive_backends = [BACKEND.SITE_MSG]
+        subscription.save()
+
+    def publish(self, is_async=False):
+        """发布告警；订阅收件人为空时自愈补齐活跃超管（post_migrate 种子早于建号）。"""
+        subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
+        if not subscription.users.exists():
+            self.post_insert_to_db(subscription)
+        super().publish(is_async=is_async)
+
+    @classmethod
+    def gen_test_msg(cls):
+        return cls({"subscription": "demo", "event": "user.login_failed", "attempts": 5, "error": "timeout"})
+
+
+@register_message
 class ApprovalRequestMessage(UserMessage):
     """审批中心通知：提交（发审批人）/ 通过、驳回（发申请人）三种文案。"""
 
@@ -340,3 +422,7 @@ def maybe_alert_sensitive_operation(info: dict):
         ).publish(is_async=True)
     except Exception:
         logger.warning("send sensitive operation alert failed", exc_info=True)
+    # 出站 Webhook：敏感操作事件（ADR-022，emit 全程吞异常）
+    from system.utils.webhook import emit_webhook_event
+
+    emit_webhook_event("security.sensitive_operation", info or {})

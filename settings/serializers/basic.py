@@ -27,6 +27,24 @@ class BasicSettingSerializer(serializers.Serializer):
         help_text=_("Enable watermark for front-end web"),
     )
 
+    FRONT_END_WEB_WATERMARK_TEXT = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        label=_("Front-end web watermark text"),
+        help_text=_("Leave empty to use 'username-nickname-time' as the watermark text"),
+    )
+
+    FRONT_END_WEB_WATERMARK_PATHS = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        label=_("Front-end web watermark pages"),
+        help_text=_(
+            "Comma-separated route path prefixes the watermark applies to; leave empty for all pages. e.g. /system/user/index,/system/role/index"
+        ),
+    )
+
     PERMISSION_FIELD_ENABLED = serializers.BooleanField(
         required=False,
         default=True,

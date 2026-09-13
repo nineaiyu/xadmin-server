@@ -26,9 +26,16 @@ from settings.services import (
     record_password_hash,
 )
 from system.models import UserInfo
+from system.models.ldap import LdapUserBinding
 from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)
+
+
+def ensure_local_password_changeable(user):
+    """LDAP 绑定用户拒绝本地改密/重置：密码由目录服务器管理（ADR-017）。"""
+    if LdapUserBinding.objects.filter(user=user).exists():
+        raise ValidationError(_("Password is managed by the LDAP directory and cannot be changed locally"))
 
 
 class UserSerializer(BaseModelSerializer):
@@ -167,6 +174,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=5, max_length=128, required=True, write_only=True, label=_("Password"))
 
     def update(self, instance, validated_data):
+        ensure_local_password_changeable(instance)
         password = AESCipherV2(instance.username).decrypt(validated_data.get("password"))
         if not check_password_rules(password, instance.is_superuser):
             raise serializers.ValidationError(_("Password does not match security rules"))

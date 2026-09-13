@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -16,8 +17,17 @@ from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig, UserInfo
+from system.utils.oauth import validate_providers
 
 logger = get_logger(__name__)
+
+
+# 系统配置写入侧校验分发表：坏配置在保存时挡住，而不是运行时才炸。
+# 校验函数返回归一化后的 value（一并持久化）。
+CONFIG_KEY_VALIDATORS = {
+    # 第三方登录 provider 列表（ADR-018：含钉钉/企微/飞书 flavor）
+    "OAUTH_PROVIDERS": lambda value: validate_providers(value),
+}
 
 
 class SystemConfigSerializer(BaseModelSerializer):
@@ -26,6 +36,15 @@ class SystemConfigSerializer(BaseModelSerializer):
         fields = ["pk", "key", "value", "cache_value", "is_active", "inherit", "access", "description", "created_time"]
         read_only_fields = ["pk"]
         fields_unexport = ["cache_value"]  # 导入导出文件时，忽略该字段
+
+    def validate(self, attrs):
+        validator = CONFIG_KEY_VALIDATORS.get(attrs.get("key"))
+        if validator and "value" in attrs:
+            try:
+                attrs["value"] = validator(attrs["value"])
+            except DjangoValidationError as exc:
+                raise ValidationError(exc.messages) from exc
+        return attrs
 
     cache_value = input_wrapper(serializers.SerializerMethodField)(
         read_only=True, label=_("Config cache value"), input_type="json"

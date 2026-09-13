@@ -57,6 +57,13 @@ def _register_session_safe(request, user, login_type):
         return None
 
 
+def _login_type_for(user) -> "UserLoginLog.LoginTypeChoices":
+    """账密登录来源：LdapBindBackend 认证成功记 LDAP，其余按本地账密（ADR-017）。"""
+    if getattr(user, "_ldap_authenticated", False):
+        return UserLoginLog.LoginTypeChoices.LDAP
+    return UserLoginLog.LoginTypeChoices.USERNAME
+
+
 class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
     """账密登录用：签发后登记会话，并把 sid claim 写入 token（refresh/access 同源继承）。
 
@@ -66,7 +73,10 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        session = _register_session_safe(self.context.get("request"), self.user, UserLoginLog.LoginTypeChoices.USERNAME)
+        # LDAP bind 认证的登录（LdapBindBackend 成功）在登录日志中标记独立来源；
+        # 本地/验证码路径不受影响（ADR-017）
+        login_type = _login_type_for(self.user)
+        session = _register_session_safe(self.context.get("request"), self.user, login_type)
         if session:
             try:
                 refresh = RefreshToken(data["refresh"])
@@ -82,6 +92,10 @@ def login_failed(request, username):
     login_ip_block = LoginIpBlockUtil(ipaddr)
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
+    # 出站 Webhook：登录失败事件（ADR-022）
+    from system.utils.webhook import emit_webhook_event
+
+    emit_webhook_event("user.login_failed", {"username": username, "ip": get_request_ip(request)})
     login_block_util.incr_failed_count()
     login_ip_block.set_block_if_need()
 
@@ -114,6 +128,10 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         # 登录 MFA 待验证：密码阶段已通过，锁定计数需清理；登录日志与异地提醒在二次验证通过后记录
         return
     request.user = user_obj
+    # 出站 Webhook：登录成功事件（ADR-022，emit 全程吞异常）
+    from system.utils.webhook import emit_webhook_event
+
+    emit_webhook_event("user.login_succeeded", {"username": user_obj.username, "ip": ipaddr})
     check_different_city_login_if_need(user_obj, ipaddr)
     if login_type != UserLoginLog.LoginTypeChoices.WEBSOCKET:
         # 新设备/新 IP/新城市登录提醒（默认关闭；内部全吞异常，绝不影响登录）。
@@ -216,7 +234,7 @@ class BasicLoginAPIView(TokenObtainPairView):
         except Exception:
             return login_failed(request, username)
         user = serializer.user
-        mfa_response = complete_login(request, user)
+        mfa_response = complete_login(request, user, login_type=_login_type_for(user))
         if mfa_response:
             return mfa_response
         data = serializer.validated_data

@@ -4,13 +4,20 @@
 # filename : urls
 # author : ly_13
 # date : 6/6/2023
-from django.urls import re_path, include
+from django.urls import include, path, re_path
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
+from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet
+from system.views.analysis import ReportViewSet, ScreenViewSet
+from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
+from system.views.search.global_search import GlobalSearchAPIView
+from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
+from system.views.dataset import DatasetViewSet, DashboardViewSet as DataDashboardViewSet
+from system.views.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
@@ -136,6 +143,21 @@ router.register("online", UserOnlineViewSet, basename="online_socket")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")
+# 数据集与仪表盘（ADR-020，可视化一期）
+router.register("datasets", DatasetViewSet, basename="dataset")
+router.register("dashboards", DataDashboardViewSet, basename="dashboards")
+# 大屏与定时报表（ADR-021）
+router.register("screens", ScreenViewSet, basename="screen")
+router.register("reports", ReportViewSet, basename="report")
+# 出站 Webhook（ADR-022）
+router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
+router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
+# 动态表单（ADR-025）
+router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
+router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
+# AI 助手（ADR-023）：配置（Setting 体系）与问答
+no_detail_router.register("ai/assistant/config", AiAssistantSettingViewSet, basename="ai-assistant-config")
+no_detail_router.register("ai/assistant", AiAssistantViewSet, basename="ai-assistant")
 router.register("config/user", UserPersonalConfigViewSet, basename="userconfig")
 
 # 日志相关
@@ -152,6 +174,9 @@ router.register("imports", ImportRecordViewSet, basename="import_record")
 # 导入列映射模板（个人 / 全局共享，导入弹窗内维护，无独立页面）
 router.register("import-templates", ImportTemplateViewSet, basename="import_template")
 
+# 开放平台应用（ADR-030，G11）：client-credentials 应用管理与回调测试
+router.register("api-applications", ApiApplicationViewSet, basename="api_application")
+
 # 定时任务管理（django_celery_beat）
 router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")
 router.register("tasks/crontab", CrontabScheduleViewSet, basename="crontab_schedule")
@@ -159,3 +184,7 @@ router.register("tasks/executions", TaskExecutionViewSet, basename="task_executi
 router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
+# 全局搜索（ADR-028，G9）：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
+urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
+# 开放平台换发端点（ADR-030，G11）：匿名可达（白名单），凭 client_secret 换 PAT 凭证
+urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]

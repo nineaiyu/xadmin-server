@@ -10,6 +10,8 @@ from common.core.routers import NoDetailRouter
 from settings.views.basic import BasicSettingViewSet
 from settings.views.block_ip import SecurityBlockIpViewSet
 from settings.views.email import EmailServerSettingViewSet
+from settings.views.ldap import LdapServerSettingViewSet
+from settings.views.notify_im import ImNotifySettingViewSet
 from settings.views.security import (
     SecurityPasswordRuleViewSet,
     SecurityLoginLimitViewSet,
@@ -33,6 +35,8 @@ no_detail_router = NoDetailRouter(False)
 
 # 设置相关
 no_detail_router.register("email", EmailServerSettingViewSet, basename="email-server")
+no_detail_router.register("ldap", LdapServerSettingViewSet, basename="ldap-server")
+no_detail_router.register("notify/im", ImNotifySettingViewSet, basename="notify-im")
 
 no_detail_router.register("basic", BasicSettingViewSet, basename="basic")
 no_detail_router.register("password", SecurityPasswordRuleViewSet, basename="security-password")

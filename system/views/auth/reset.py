@@ -24,6 +24,7 @@ from settings.services import (
     record_password_hash,
 )
 from system.models import UserInfo
+from system.models.ldap import LdapUserBinding
 from system.utils.auth import verify_sms_email_code
 
 
@@ -56,6 +57,11 @@ class ResetPasswordAPIView(GenericAPIView):
             password = AESCipherV2(verify_token).decrypt(password)
 
         instance = UserInfo.objects.get(**{query_key: target})
+        if LdapUserBinding.objects.filter(user=instance).exists():
+            # LDAP 绑定用户密码由目录管理，本地重置入口直接拒绝（ADR-017）
+            return ApiResponse(
+                code=1002, detail=_("Password is managed by the LDAP directory and cannot be changed locally")
+            )
         if not check_password_rules(password, instance.is_superuser):
             return ApiResponse(code=1002, detail=_("Password does not match security rules"))
         if check_leak_password(password):

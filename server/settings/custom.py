@@ -24,6 +24,8 @@ PERMISSION_WHITE_URL = {
     # 第三方登录与绑定：登录前置（authorize/callback）必须匿名可达，绑定管理是个人凭证，
     # 两者都无需菜单权限（视图内自行要求 DRF IsAuthenticated，见 views/auth/oauth.py）
     "^/api/system/auth/oauth/": ["*"],
+    # 开放平台换发端点（ADR-030）：凭 client_secret 认证（凭证即身份），视图内 fail-closed
+    "^/api/system/open/token$": ["*"],
 }
 
 # 前端权限路由 忽略配置

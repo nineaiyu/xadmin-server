@@ -330,6 +330,14 @@ USE_TZ = True
 
 AUTH_USER_MODEL = "system.UserInfo"
 
+# 认证 backend 链：LDAP bind 在前（ADR-017）。LdapBindBackend 内部按
+# LDAP_AUTH_ENABLED / LDAP_AUTH_PRIORITY 动态让位 ModelBackend，
+# 关闭/降级时行为与纯本地账密完全一致
+AUTHENTICATION_BACKENDS = [
+    "system.ldap.auth.LdapBindBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 

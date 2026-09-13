@@ -344,3 +344,7 @@ def register_message(cls):
 register_backend_msg(BACKEND.EMAIL, "get_email_msg")
 register_backend_msg(BACKEND.SITE_MSG, "get_site_msg_msg")
 register_backend_msg(BACKEND.SMS, "get_sms_msg")
+# IM 渠道（ADR-019）：文本消息共用 HTML 转纯文本渲染
+register_backend_msg(BACKEND.DINGTALK, "get_text_msg")
+register_backend_msg(BACKEND.WECOM, "get_text_msg")
+register_backend_msg(BACKEND.FEISHU, "get_text_msg")

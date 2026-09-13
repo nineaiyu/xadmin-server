@@ -135,6 +135,32 @@ def hash_pat_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
+def check_api_application_rate_limit(application) -> None:
+    """开放平台应用限流（ADR-030）：按应用 + 分钟窗口计数，超限抛 429；0 = 不限。
+
+    在认证成功处生效：应用凭证的每一次已认证请求都计数（含 4xx 业务响应，
+    与「按应用配额」语义一致），窗口键带分钟编号自然滚动、无需清理。
+    """
+    limit = application.rate_limit_per_minute or 0
+    if limit <= 0:
+        return
+    from django.core.cache import cache
+    from django.utils import timezone
+    from rest_framework.exceptions import Throttled
+
+    window = int(timezone.now().timestamp() // 60)
+    key = f"api_app_rate_{application.pk}_{window}"
+    if cache.add(key, 1, 60):
+        return
+    try:
+        count = cache.incr(key)
+    except ValueError:  # 窗口刚过期被清理：按首次计数处理
+        cache.add(key, 1, 60)
+        count = 1
+    if count > limit:
+        raise Throttled(detail=_("Rate limit exceeded for this application"))
+
+
 class ServerAccessToken(AccessToken):
     """
     自定义的token方法是为了登出的时候，将 access token 禁用
@@ -257,6 +283,14 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
 
         # scope 清单挂 request（消费方 = 认证后的统一权限层 PatScopePermission）：
         # 认证类内不做拒绝——双 header（JWT 优先）时本类不会被调用，拒绝逻辑必须下沉
+        # 开放平台应用（ADR-030）：应用停用/过期即凭证失效（与凭证自身状态解耦，即时生效），
+        # 并通过后按应用维度限流（超限 429，凭证仍有效）
+        if pat.api_application is not None:
+            application = pat.api_application
+            if not application.is_active or (application.expired_at and application.expired_at <= now):
+                raise AuthenticationFailed(_("Token is invalid or expired"))
+            check_api_application_rate_limit(application)
+
         request.pat_scopes = pat.scopes or []
 
         # last_used_time 节流更新：cache.add 原子占位，60s 内多次请求只回写一次

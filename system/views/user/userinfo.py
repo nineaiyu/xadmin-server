@@ -47,7 +47,15 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     def retrieve(self, request, *args, **kwargs):
         """获取{cls}信息"""
         data = super().retrieve(request, *args, **kwargs).data
-        return ApiResponse(**data, config={"FRONT_END_WEB_WATERMARK_ENABLED": settings.FRONT_END_WEB_WATERMARK_ENABLED})
+        # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue，见 ADR-029）
+        return ApiResponse(
+            **data,
+            config={
+                "FRONT_END_WEB_WATERMARK_ENABLED": settings.FRONT_END_WEB_WATERMARK_ENABLED,
+                "FRONT_END_WEB_WATERMARK_TEXT": settings.FRONT_END_WEB_WATERMARK_TEXT,
+                "FRONT_END_WEB_WATERMARK_PATHS": settings.FRONT_END_WEB_WATERMARK_PATHS,
+            },
+        )
 
     @extend_schema(responses=get_default_response_schema())
     @action(

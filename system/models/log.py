@@ -25,6 +25,9 @@ class UserLoginLog(DbAuditModel):
         WECHAT = 4, _("Wechat scan code")
         # 第三方 OAuth/OIDC 登录：位标记风格下的独立槽位（0/1/2/4/8/9 已占用）
         OAUTH = 5, _("Third-party OAuth")
+        # LDAP/AD 目录账号 bind 登录（ADR-017）：经 LdapBindBackend 认证，
+        # login_type 由 SessionTokenObtainPairSerializer 依 _ldap_authenticated 透传
+        LDAP = 3, _("LDAP directory account")
         WEBSOCKET = 8, _("Websocket")
         UNKNOWN = 9, _("Unknown")
 
@@ -66,6 +69,10 @@ class OperationLog(DbAuditModel):
         PAT = "pat", _("Personal access token")
         # SCIM 目录同步（S1）：独立服务凭证，写操作由 system/scim/resources.write_audit 落库
         SCIM = "scim", _("SCIM directory sync")
+        # LDAP 目录同步（ADR-017）：同步冲突/摘要由 system/ldap/sync 落库
+        LDAP = "ldap", _("LDAP directory sync")
+        # AI NL 查数（ADR-024）：interpret/run 语义审计由 system/utils/nl_query 落库
+        AI = "ai", _("AI assistant")
 
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
     path = models.CharField(max_length=400, verbose_name=_("URL path"), null=True, blank=True)

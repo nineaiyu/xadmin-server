@@ -71,12 +71,19 @@ def _config_providers():
 
 
 def get_providers(enabled_only: bool = False) -> list[dict]:
-    """读取 provider 配置；`enabled_only=True` 时只返回已启用且配置完整的。"""
+    """读取 provider 配置；`enabled_only=True` 时只返回已启用且配置完整的。
+
+    flavor 预设合并优先级：显式配置 > flavor 官方端点预设 > 通用默认值
+    （ADR-018：IM flavor 管理员只需填应用三元组）。
+    """
+    from system.utils.oauth_flavors import FLAVOR_PRESETS
+
     providers = []
     for item in _config_providers():
         if not isinstance(item, dict):
             continue
-        provider = {**OPTIONAL_DEFAULTS, **item}
+        flavor = item.get("flavor") or "oauth2"
+        provider = {**OPTIONAL_DEFAULTS, **FLAVOR_PRESETS.get(flavor, {}), **item, "flavor": flavor}
         if enabled_only and not (provider.get("enabled") and provider.get("client_id")):
             continue
         providers.append(provider)
@@ -94,7 +101,10 @@ def validate_providers(value) -> list[dict]:
     """写入侧校验：结构、必填键、key 唯一、URL 必须 https、启用时 secret 非空。
 
     配置错误必须在**保存时**挡住，否则会让每个用户都撞到一个看不懂的回调错误。
+    IM flavor（ADR-018）的 URL 有官方预设可不填，https 只校验显式配置的 URL。
     """
+    from system.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
+
     if value in (None, ""):
         return []
     if not isinstance(value, list):
@@ -105,7 +115,10 @@ def validate_providers(value) -> list[dict]:
     for item in value:
         if not isinstance(item, dict):
             raise ValidationError(_("Invalid OAuth providers configuration"))
-        missing = [key for key in REQUIRED_KEYS if not item.get(key)]
+        flavor = str(item.get("flavor") or "oauth2")
+        if flavor != "oauth2" and flavor not in FLAVOR_PRESETS:
+            raise ValidationError(_("Unknown OAuth provider flavor: {}").format(flavor))
+        missing = [key for key in FLAVOR_REQUIRED_KEYS.get(flavor, REQUIRED_KEYS) if not item.get(key)]
         if missing:
             raise ValidationError(_("OAuth provider is missing required fields: {}").format(", ".join(missing)))
         key = str(item["key"])
@@ -115,7 +128,7 @@ def validate_providers(value) -> list[dict]:
 
         for url_key in ("authorize_url", "token_url", "userinfo_url"):
             url = str(item.get(url_key) or "")
-            if not url.startswith("https://"):
+            if url and not url.startswith("https://"):
                 raise ValidationError(_("OAuth provider url must use https: {}").format(url_key))
         if item.get("enabled") and not item.get("client_secret"):
             raise ValidationError(_("Enabled OAuth provider requires client_secret"))
@@ -152,6 +165,13 @@ def consume_state(state: str) -> str | None:
 
 
 def build_authorize_url(provider: dict, redirect_uri: str, state: str) -> str:
+    from system.utils.oauth_flavors import build_flavor_authorize_url
+
+    # IM flavor 参数形状不同（企微 appid/agentid、飞书 app_id）；返回 None 表示
+    # 与标准形状一致（含钉钉），落回通用构造
+    flavor_url = build_flavor_authorize_url(provider, redirect_uri, state)
+    if flavor_url:
+        return flavor_url
     params = {
         "response_type": "code",
         "client_id": provider.get("client_id"),
@@ -180,7 +200,15 @@ def _default_client():
 
 
 def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None) -> dict:
-    """授权码换 token；失败统一抛 `OAuthError`（不回显 IdP 原始报文）。"""
+    """授权码换 token；失败统一抛 `OAuthError`（不回显 IdP 原始报文）。
+
+    IM flavor（钉钉/企微/飞书）由适配器处理；返回 None 落回通用表单换码。
+    """
+    from system.utils.oauth_flavors import exchange_flavor_code
+
+    adapted = exchange_flavor_code(provider, code, redirect_uri, http_client)
+    if adapted is not None:
+        return adapted
     try:
         response = _post(
             provider["token_url"],
@@ -204,12 +232,21 @@ def exchange_code(provider: dict, code: str, redirect_uri: str, http_client=None
     return payload
 
 
-def fetch_userinfo(provider: dict, access_token: str, http_client=None) -> dict:
-    """取用户信息；失败或缺少 subject 时抛 `OAuthError`。"""
+def fetch_userinfo(provider: dict, token_payload: dict, http_client=None) -> dict:
+    """取用户信息；失败或缺少 subject 时抛 `OAuthError`。
+
+    :param token_payload: `exchange_code` 的返回（oauth2 用 access_token；
+        企微的 userid 也在其中——两步式协议下身份已在换码步确定）
+    """
+    from system.utils.oauth_flavors import fetch_flavor_userinfo
+
+    adapted = fetch_flavor_userinfo(provider, token_payload, http_client)
+    if adapted is not None:
+        return adapted
     try:
         response = _get(
             provider["userinfo_url"],
-            {"Authorization": f"Bearer {access_token}"},
+            {"Authorization": f"Bearer {token_payload.get('access_token')}"},
             http_client=http_client,
         )
         payload = response.json() if hasattr(response, "json") else {}

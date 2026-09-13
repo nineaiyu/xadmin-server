@@ -1198,6 +1198,22 @@ msgstr "前端页面水印"
 msgid "Enable watermark for front-end web"
 msgstr "开启前端页面水印"
 
+#: settings/serializers/basic.py:33
+msgid "Front-end web watermark text"
+msgstr "前端水印文案"
+
+#: settings/serializers/basic.py:34
+msgid "Leave empty to use 'username-nickname-time' as the watermark text"
+msgstr "留空则使用「用户名-昵称-时间」作为水印文案"
+
+#: settings/serializers/basic.py:39
+msgid "Front-end web watermark pages"
+msgstr "前端水印生效页面"
+
+#: settings/serializers/basic.py:40
+msgid "Comma-separated route path prefixes the watermark applies to; leave empty for all pages. e.g. /system/user/index,/system/role/index"
+msgstr "水印生效的路由路径前缀，多个用英文逗号分隔；留空则全部页面生效。如：/system/user/index,/system/role/index"
+
 #: settings/serializers/basic.py:33 system/models/permission.py:42
 msgid "Field permission"
 msgstr "字段权限"
@@ -4382,3 +4398,943 @@ msgstr "任务已克隆：{}"
 
 #~ msgid "Rule %(index)d has a malformed value"
 #~ msgstr "规则 %(index)d 的值格式不正确"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP authentication"
+msgstr "LDAP 目录认证"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Enable LDAP/AD account login"
+msgstr "允许 LDAP/AD 目录账号登录"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Authentication priority"
+msgstr "认证优先级"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "local_first: local accounts with a usable password are authenticated locally first (directory password never shadows local admin); ldap_first: directory bind is tried first"
+msgstr "local_first：本地可用密码的账号先走本地认证（目录密码不遮蔽本地管理员）；ldap_first：优先尝试目录 bind"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Auto create user on first login"
+msgstr "首次登录自动建号"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Create a local user (no local password) on first successful directory bind"
+msgstr "首次目录 bind 成功时自动创建本地账号（无本地密码）"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Server URI"
+msgstr "服务器地址"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "ldap://host:389 or ldaps://host:636"
+msgstr "ldap://host:389 或 ldaps://host:636"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "StartTLS"
+msgstr "StartTLS"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Upgrade the connection to TLS after connecting (ldap:// URIs)"
+msgstr "连接后升级为 TLS（ldap:// 地址）"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Bind DN"
+msgstr "绑定 DN"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Service account DN used to search the directory; empty for anonymous bind"
+msgstr "用于搜索目录的服务账号 DN；留空为匿名 bind"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Bind password"
+msgstr "绑定密码"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Encrypted at rest; never returned by the API"
+msgstr "落库加密；API 永不回传"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Connect timeout (seconds)"
+msgstr "连接超时（秒）"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "User search base"
+msgstr "用户搜索基准"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Base DN for user search"
+msgstr "用户搜索的基础 DN"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "User filter"
+msgstr "用户过滤器"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP search filter, e.g. (objectClass=person)"
+msgstr "LDAP 搜索过滤器，如 (objectClass=person)"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Username attribute"
+msgstr "用户名属性"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "e.g. sAMAccountName / uid"
+msgstr "如 sAMAccountName / uid"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Nickname attribute"
+msgstr "昵称属性"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "e.g. cn / displayName"
+msgstr "如 cn / displayName"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Email attribute"
+msgstr "邮箱属性"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "e.g. mail"
+msgstr "如 mail"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Phone attribute"
+msgstr "手机号属性"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "e.g. telephoneNumber / mobile"
+msgstr "如 telephoneNumber / mobile"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Sync departments"
+msgstr "同步部门"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Sync organizational units under the department search base as the department tree"
+msgstr "将部门搜索基准下的组织单元同步为部门树"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Department search base"
+msgstr "部门搜索基准"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Scheduled sync"
+msgstr "定时同步"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Hourly sync of users/departments/status from the directory"
+msgstr "每小时从目录同步用户/部门/状态"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Auto create user on sync"
+msgstr "同步时自动建号"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Missing user policy"
+msgstr "目录缺失用户策略"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "deactivate: disable accounts removed from the directory (reversible); soft_delete: move them to the recycle bin; ignore: keep untouched"
+msgstr "deactivate：目录中已删除的账号置为禁用（可逆）；soft_delete：移入回收站；ignore：不做处理"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Server URI is required"
+msgstr "服务器地址不能为空"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "User search base is required"
+msgstr "用户搜索基准不能为空"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Connection OK: {user_count} users, {dept_count} departments found"
+msgstr "连接成功：找到 {user_count} 个用户、{dept_count} 个部门"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Distinguished name"
+msgstr "辨别名（DN）"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Last synced at"
+msgstr "最近同步时间"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP binding"
+msgstr "LDAP 绑定"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP bindings"
+msgstr "LDAP 绑定"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP directory account"
+msgstr "LDAP 目录账号"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP directory sync"
+msgstr "LDAP 目录同步"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP sync summary"
+msgstr "LDAP 同步摘要"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "LDAP sync finished"
+msgstr "LDAP 同步完成"
+
+#: ADR-017 LDAP directory sync (generated)
+msgid "Password is managed by the LDAP directory and cannot be changed locally"
+msgstr "密码由 LDAP 目录服务器管理，无法在本地修改"
+
+#: ADR-018 IM scan login (generated)
+msgid "Unknown OAuth provider flavor: {}"
+msgstr "未知的第三方登录类型: {}"
+
+#: ADR-019 IM notify channels (generated)
+msgid "DingTalk"
+msgstr "钉钉"
+
+#: ADR-019 IM notify channels (generated)
+msgid "WeCom"
+msgstr "企业微信"
+
+#: ADR-019 IM notify channels (generated)
+msgid "FeiShu"
+msgstr "飞书"
+
+#: ADR-019 IM notify channels (generated)
+msgid "DingTalk notification"
+msgstr "钉钉通知"
+
+#: ADR-019 IM notify channels (generated)
+msgid "Send notifications via DingTalk work message"
+msgstr "通过钉钉工作通知发送消息"
+
+#: ADR-019 IM notify channels (generated)
+msgid "DingTalk AppKey"
+msgstr "钉钉 AppKey"
+
+#: ADR-019 IM notify channels (generated)
+msgid "DingTalk AppSecret"
+msgstr "钉钉 AppSecret"
+
+#: ADR-019 IM notify channels (generated)
+msgid "DingTalk AgentId"
+msgstr "钉钉 AgentId"
+
+#: ADR-019 IM notify channels (generated)
+msgid "AgentId of the corp app used to send work messages"
+msgstr "用于发送工作通知的企业内部应用 AgentId"
+
+#: ADR-019 IM notify channels (generated)
+msgid "WeCom notification"
+msgstr "企业微信通知"
+
+#: ADR-019 IM notify channels (generated)
+msgid "Send notifications via WeCom app message"
+msgstr "通过企业微信应用消息发送消息"
+
+#: ADR-019 IM notify channels (generated)
+msgid "WeCom CorpId"
+msgstr "企业微信 CorpId"
+
+#: ADR-019 IM notify channels (generated)
+msgid "WeCom CorpSecret"
+msgstr "企业微信 CorpSecret"
+
+#: ADR-019 IM notify channels (generated)
+msgid "WeCom AgentId"
+msgstr "企业微信 AgentId"
+
+#: ADR-019 IM notify channels (generated)
+msgid "FeiShu notification"
+msgstr "飞书通知"
+
+#: ADR-019 IM notify channels (generated)
+msgid "Send notifications via FeiShu IM message"
+msgstr "通过飞书 IM 消息发送消息"
+
+#: ADR-019 IM notify channels (generated)
+msgid "FeiShu App ID"
+msgstr "飞书 App ID"
+
+#: ADR-019 IM notify channels (generated)
+msgid "FeiShu App Secret"
+msgstr "飞书 App Secret"
+
+#: ADR-019 IM notify channels (generated)
+msgid "Missing configuration: {}"
+msgstr "缺少配置：{}"
+
+#: ADR-019 IM notify channels (generated)
+msgid "OK"
+msgstr "正常"
+
+#: ADR-019 IM notify channels (generated)
+msgid "Test completed"
+msgstr "测试完成"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Dataset"
+msgstr "数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Datasets"
+msgstr "数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Dashboard"
+msgstr "仪表盘"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Dashboards"
+msgstr "仪表盘"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Personal"
+msgstr "个人"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Bound model"
+msgstr "绑定模型"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "label_lower of a whitelisted model, e.g. system.userinfo"
+msgstr "白名单模型的 label_lower，如 system.userinfo"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Columns"
+msgstr "数据列"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Whitelisted field names"
+msgstr "白名单内的字段名列表"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Filters"
+msgstr "过滤条件"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "[{field, op, value}] with whitelisted ops"
+msgstr "[{field, op, value}]，op 限白名单"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Ordering"
+msgstr "排序"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Ordering field must be in columns"
+msgstr "排序字段必须在数据列内"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Row limit"
+msgstr "行数上限"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Hard cap 5000"
+msgstr "硬上限 5000"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Row limit must be between 1 and {}"
+msgstr "行数上限必须在 1 到 {} 之间"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Config"
+msgstr "配置"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "{\"date_field\": ...} for trend"
+msgstr "{\"date_field\": ...}，趋势聚合用时间字段"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Layout"
+msgstr "布局"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "[{id, dataset, title, chart_type, ...}]"
+msgstr "[{id, dataset, title, chart_type, ...}]"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Visibility"
+msgstr "可见性"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Model {} is not available for datasets"
+msgstr "模型 {} 不可用于数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Field {}.{} is not available for datasets"
+msgstr "字段 {}.{} 不可用于数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Filter op {} is not allowed"
+msgstr "过滤操作 {} 不在允许范围"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Filter op in requires a list value"
+msgstr "过滤操作 in 要求列表值"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Filter op isnull requires a boolean value"
+msgstr "过滤操作 isnull 要求布尔值"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Dataset columns cannot be empty"
+msgstr "数据集列不能为空"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Field {} is not available for datasets"
+msgstr "字段 {} 不可用于数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Field {} is not numeric, cannot aggregate"
+msgstr "字段 {} 不是数值字段，无法聚合"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Metric {} is not allowed"
+msgstr "聚合方式 {} 不在允许范围"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Date trunc {} is not allowed"
+msgstr "时间粒度 {} 不在允许范围"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Field {} is not a datetime, cannot trend"
+msgstr "字段 {} 不是时间字段，无法做趋势聚合"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Invalid dataset filters"
+msgstr "数据集过滤条件不合法"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Invalid dashboard layout"
+msgstr "仪表盘布局不合法"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Invalid chart type: {}"
+msgstr "不支持的图表类型: {}"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Unknown dataset in layout"
+msgstr "布局中引用了未知数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Only the creator can modify a dataset"
+msgstr "仅创建者可修改数据集"
+
+#: ADR-020 dataset & dashboard (generated)
+msgid "Only the creator can modify a dashboard"
+msgstr "仅创建者可修改仪表盘"
+
+#: ADR-021 screen & report (generated)
+msgid "Screen"
+msgstr "大屏"
+
+#: ADR-021 screen & report (generated)
+msgid "Screens"
+msgstr "大屏"
+
+#: ADR-021 screen & report (generated)
+msgid "Report"
+msgstr "报表"
+
+#: ADR-021 screen & report (generated)
+msgid "Reports"
+msgstr "报表"
+
+#: ADR-021 screen & report (generated)
+msgid "Ordered dashboard pks"
+msgstr "仪表盘 pk 有序列表"
+
+#: ADR-021 screen & report (generated)
+msgid "Seconds per dashboard"
+msgstr "每个仪表盘停留秒数"
+
+#: ADR-021 screen & report (generated)
+msgid "Refresh"
+msgstr "刷新间隔"
+
+#: ADR-021 screen & report (generated)
+msgid "Data refresh seconds"
+msgstr "数据刷新秒数"
+
+#: ADR-021 screen & report (generated)
+msgid "Mode"
+msgstr "模式"
+
+#: ADR-021 screen & report (generated)
+msgid "Rows"
+msgstr "行数据"
+
+#: ADR-021 screen & report (generated)
+msgid "Aggregate"
+msgstr "聚合"
+
+#: ADR-021 screen & report (generated)
+msgid "Group by"
+msgstr "分组字段"
+
+#: ADR-021 screen & report (generated)
+msgid "Value field"
+msgstr "取值字段"
+
+#: ADR-021 screen & report (generated)
+msgid "Frequency"
+msgstr "频率"
+
+#: ADR-021 screen & report (generated)
+msgid "Daily"
+msgstr "每天"
+
+#: ADR-021 screen & report (generated)
+msgid "Weekly"
+msgstr "每周"
+
+#: ADR-021 screen & report (generated)
+msgid "Monthly"
+msgstr "每月"
+
+#: ADR-021 screen & report (generated)
+msgid "Send time"
+msgstr "发送时刻"
+
+#: ADR-021 screen & report (generated)
+msgid "HH:MM"
+msgstr "HH:MM"
+
+#: ADR-021 screen & report (generated)
+msgid "Weekday"
+msgstr "星期"
+
+#: ADR-021 screen & report (generated)
+msgid "0=Monday, weekly only"
+msgstr "0=周一，仅每周频率使用"
+
+#: ADR-021 screen & report (generated)
+msgid "Recipients"
+msgstr "收件人"
+
+#: ADR-021 screen & report (generated)
+msgid "Email addresses"
+msgstr "邮箱地址列表"
+
+#: ADR-021 screen & report (generated)
+msgid "Last run at"
+msgstr "上次运行"
+
+#: ADR-021 screen & report (generated)
+msgid "Last status"
+msgstr "上次状态"
+
+#: ADR-021 screen & report (generated)
+msgid "Invalid screen dashboards"
+msgstr "大屏仪表盘列表不合法"
+
+#: ADR-021 screen & report (generated)
+msgid "Interval must be between 5 and 3600 seconds"
+msgstr "切换间隔需在 5 到 3600 秒之间"
+
+#: ADR-021 screen & report (generated)
+msgid "Refresh must be between 10 and 3600 seconds"
+msgstr "刷新间隔需在 10 到 3600 秒之间"
+
+#: ADR-021 screen & report (generated)
+msgid "Invalid report mode"
+msgstr "报表模式不合法"
+
+#: ADR-021 screen & report (generated)
+msgid "Group by is required for aggregate reports"
+msgstr "聚合报表必须指定分组字段"
+
+#: ADR-021 screen & report (generated)
+msgid "Send time must be HH:MM"
+msgstr "发送时刻格式必须为 HH:MM"
+
+#: ADR-021 screen & report (generated)
+msgid "Weekday must be between 0 and 6"
+msgstr "星期取值需在 0 到 6 之间"
+
+#: ADR-021 screen & report (generated)
+msgid "Recipients cannot be empty"
+msgstr "收件人不能为空"
+
+#: ADR-021 screen & report (generated)
+msgid "Invalid email address: {}"
+msgstr "邮箱地址不合法: {}"
+
+#: ADR-021 screen & report (generated)
+msgid "Scheduled report {}. {} rows generated. The xlsx file is attached."
+msgstr "定时报表「{}」已生成，共 {} 行，详见附件 xlsx。"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook subscription"
+msgstr "Webhook 订阅"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook subscriptions"
+msgstr "Webhook 订阅"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook delivery"
+msgstr "Webhook 投递"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook deliveries"
+msgstr "Webhook 投递"
+
+#: ADR-022 outbound webhook (generated)
+msgid "URL"
+msgstr "地址"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Secret"
+msgstr "签名密钥"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Events"
+msgstr "订阅事件"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Subscription"
+msgstr "订阅"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Attempt"
+msgstr "尝试次数"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Response body"
+msgstr "响应内容"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Duration"
+msgstr "耗时"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Seconds"
+msgstr "秒"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Next retry at"
+msgstr "下次重试"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Failed (retrying)"
+msgstr "失败（重试中）"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Exhausted"
+msgstr "已耗尽"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook url must use https (loopback http is allowed for testing)"
+msgstr "Webhook 地址必须使用 https（联调环境允许 loopback http）"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook events cannot be empty"
+msgstr "订阅事件不能为空"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Unknown webhook event: {}"
+msgstr "未知的 Webhook 事件: {}"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Secret is required"
+msgstr "签名密钥不能为空"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Test event dispatched, check the delivery audit page"
+msgstr "测试事件已派发，请到投递审计页查看结果"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Test event was not dispatched (subscription inactive or event not subscribed)"
+msgstr "测试事件未派发（订阅未启用或未包含该事件）"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Only failed or exhausted deliveries can be retried"
+msgstr "仅失败或已耗尽的投递可以重试"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Delivery re-dispatched"
+msgstr "投递已重新派发"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook delivery exhausted"
+msgstr "Webhook 投递已耗尽"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook delivery exhausted: {}"
+msgstr "Webhook 投递已耗尽: {}"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Login succeeded"
+msgstr "登录成功"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Login failed"
+msgstr "登录失败"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Approval submitted"
+msgstr "审批已提交"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Approval approved"
+msgstr "审批已通过"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Approval rejected"
+msgstr "审批已驳回"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Approval cancelled"
+msgstr "审批已撤回"
+
+#: ADR-022 outbound webhook (generated)
+msgid "Webhook ping"
+msgstr "连接测试"
+
+#: ADR-023 AI assistant (generated)
+msgid "AI assistant"
+msgstr "AI 助手"
+
+#: ADR-023 AI assistant (generated)
+msgid "Enable the docs-based usage/development assistant"
+msgstr "启用基于文档库的使用/二开问答助手"
+
+#: ADR-023 AI assistant (generated)
+msgid "Base URL"
+msgstr "接口地址"
+
+#: ADR-023 AI assistant (generated)
+msgid "OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1"
+msgstr "OpenAI 兼容接口地址，如 https://api.deepseek.com/v1"
+
+#: ADR-023 AI assistant (generated)
+msgid "API Key"
+msgstr "API 密钥"
+
+#: ADR-023 AI assistant (generated)
+msgid "e.g. deepseek-chat"
+msgstr "如 deepseek-chat"
+
+#: ADR-023 AI assistant (generated)
+msgid "Timeout (seconds)"
+msgstr "超时（秒）"
+
+#: ADR-023 AI assistant (generated)
+msgid "AI knowledge chunk"
+msgstr "AI 知识块"
+
+#: ADR-023 AI assistant (generated)
+msgid "AI knowledge chunks"
+msgstr "AI 知识块"
+
+#: ADR-023 AI assistant (generated)
+msgid "Chunk index"
+msgstr "块序号"
+
+#: ADR-023 AI assistant (generated)
+msgid "Content"
+msgstr "内容"
+
+#: ADR-023 AI assistant (generated)
+msgid "Content hash"
+msgstr "内容哈希"
+
+#: ADR-023 AI assistant (generated)
+msgid "Synced at"
+msgstr "同步时间"
+
+#: ADR-023 AI assistant (generated)
+msgid "Base URL is required"
+msgstr "接口地址不能为空"
+
+#: ADR-023 AI assistant (generated)
+msgid "API Key and model are required"
+msgstr "API 密钥与模型不能为空"
+
+#: ADR-023 AI assistant (generated)
+msgid "AI provider OK: {}"
+msgstr "AI 服务连通正常: {}"
+
+#: ADR-023 AI assistant (generated)
+msgid "You are the xadmin usage/development assistant. Answer ONLY based on the provided reference documents, cite them as [n] markers, and say you don't know when the documents do not cover the question."
+msgstr "你是 xadmin 使用/二开助手。仅基于给出的参考文档作答，用 [n] 标注引用出处；文档未覆盖的内容请回答不知道。"
+
+#: ADR-023 AI assistant (generated)
+msgid "Question: {}"
+msgstr "问题：{}"
+
+#: ADR-023 AI assistant (generated)
+msgid "Question cannot be empty"
+msgstr "问题不能为空"
+
+#: ADR-023 AI assistant (generated)
+msgid "AI assistant is not enabled or configured"
+msgstr "AI 助手未启用或未完成配置"
+
+#: ADR-023 AI assistant (generated)
+msgid "No matching documents found for this question"
+msgstr "知识库中没有与该问题匹配的文档"
+
+#: ADR-023 AI assistant (generated)
+msgid "Sync AI assistant knowledge base from repository docs"
+msgstr "从仓库文档同步 AI 助手知识库"
+
+#: ADR-024 NL query (generated)
+msgid "The model returned malformed JSON"
+msgstr "模型返回了不合法的 JSON"
+
+#: ADR-024 NL query (generated)
+msgid "The model returned unknown DSL keys: {}"
+msgstr "模型返回了未知字段: {}"
+
+#: ADR-024 NL query (generated)
+msgid "Invalid NL query DSL"
+msgstr "NL 查询 DSL 不合法"
+
+#: ADR-024 NL query (generated)
+msgid "NL query is not enabled"
+msgstr "自然语言查数未启用"
+
+#: ADR-024 NL query (generated)
+msgid "No visible datasets for NL query"
+msgstr "没有可用于自然语言查数的数据集"
+
+#: ADR-024 NL query (generated)
+msgid "You translate the user's question into a constrained dataset query DSL. You MUST pick the dataset only from the provided catalog and fields only from the dataset columns. Output ONLY a JSON object matching the schema, no prose. Use mode=aggregate with group_by/metric for statistical questions, mode=rows for record lists. Unknown values must be answered with an empty filters list."
+msgstr "你将用户的问题转换为受限的数据集查询 DSL。只能从给出的数据集清单中选择数据集，字段只能来自该数据集的列。仅输出符合 schema 的 JSON 对象，不要输出任何解释。统计类问题用 mode=aggregate 配合 group_by/metric，明细列表用 mode=rows。无法确定的过滤条件以空 filters 列表回答。"
+
+#: ADR-024 NL query (generated)
+msgid "DSL schema: {}"
+msgstr "DSL schema：{}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Dynamic form"
+msgstr "动态表单"
+
+#: ADR-025 dynamic form (generated)
+msgid "Dynamic forms"
+msgstr "动态表单"
+
+#: ADR-025 dynamic form (generated)
+msgid "Dynamic form submission"
+msgstr "动态表单提交"
+
+#: ADR-025 dynamic form (generated)
+msgid "Dynamic form submissions"
+msgstr "动态表单提交"
+
+#: ADR-025 dynamic form (generated)
+msgid "Schema"
+msgstr "表单定义"
+
+#: ADR-025 dynamic form (generated)
+msgid "Constrained widget-set field definitions"
+msgstr "收敛控件集字段定义"
+
+#: ADR-025 dynamic form (generated)
+msgid "This form is no longer accepting submissions"
+msgstr "该表单已停用，不再接受提交"
+
+#: ADR-025 dynamic form (generated)
+msgid "Dynamic form is required"
+msgstr "动态表单不能为空"
+
+#: ADR-025 dynamic form (generated)
+msgid "Invalid form schema"
+msgstr "表单定义不合法"
+
+#: ADR-025 dynamic form (generated)
+msgid "Form schema must contain fields"
+msgstr "表单定义必须包含字段"
+
+#: ADR-025 dynamic form (generated)
+msgid "Form fields exceed the limit of {}"
+msgstr "表单字段数超过上限 {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field key {} is invalid (lowercase letters/digits/underscore)"
+msgstr "字段标识 {} 不合法（仅小写字母/数字/下划线）"
+
+#: ADR-025 dynamic form (generated)
+msgid "Duplicate field key: {}"
+msgstr "字段标识重复: {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} requires a label"
+msgstr "字段 {} 缺少标签"
+
+#: ADR-025 dynamic form (generated)
+msgid "Unknown widget type: {}"
+msgstr "未知控件类型: {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} requires options"
+msgstr "字段 {} 必须提供选项"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} has too many options"
+msgstr "字段 {} 选项过多"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} of type {} does not accept options"
+msgstr "字段 {}（类型 {}）不接受选项"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} max_length must be 1-{}"
+msgstr "字段 {} 的最大长度须在 1 到 {} 之间"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} {} must be numeric"
+msgstr "字段 {} 的 {} 必须为数值"
+
+#: ADR-025 dynamic form (generated)
+msgid "Invalid submission data"
+msgstr "提交数据不合法"
+
+#: ADR-025 dynamic form (generated)
+msgid "Unknown submission keys: {}"
+msgstr "提交数据包含未知字段: {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} must be numeric"
+msgstr "字段 {} 必须为数值"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} is below the minimum"
+msgstr "字段 {} 低于最小值"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} is above the maximum"
+msgstr "字段 {} 超过最大值"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} must be a list"
+msgstr "字段 {} 必须为列表"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} has invalid options: {}"
+msgstr "字段 {} 含无效选项: {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} must be boolean"
+msgstr "字段 {} 必须为布尔值"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} has an invalid option: {}"
+msgstr "字段 {} 含无效选项: {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} must be text"
+msgstr "字段 {} 必须为文本"
+
+#: ADR-025 dynamic form (generated)
+msgid "Field {} exceeds the max length {}"
+msgstr "字段 {} 超过最大长度 {}"
+
+#: ADR-025 dynamic form (generated)
+msgid "Only the creator can modify a submission"
+msgstr "仅提交人可修改提交"

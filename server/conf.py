@@ -106,6 +106,54 @@ class Config(dict):
         # Flower 监控 basic-auth（格式 用户:密码），生产环境必须配置；
         # 未配置时 Flower 仅允许绑定 127.0.0.1 供本机调试，绑定其他地址将拒绝启动
         "CELERY_FLOWER_AUTH": "",
+        # LDAP/AD 目录同步（ADR-017）：默认全关，行为与无 LDAP 时完全一致。
+        # 运行期经 settings app 的 Setting 体系（category=ldap）热更新覆盖
+        "LDAP_AUTH_ENABLED": False,
+        # ldap_first：先 bind 目录（本地密码兜底）；local_first：本地可用密码优先（防目录密码遮蔽本地管理员）
+        "LDAP_AUTH_PRIORITY": "local_first",
+        "LDAP_AUTH_AUTO_CREATE": True,
+        "LDAP_SERVER_URI": "",
+        "LDAP_START_TLS": False,
+        "LDAP_BIND_DN": "",
+        # 值级加密落库（Setting.encrypted），此处仅默认值
+        "LDAP_BIND_PASSWORD": "",
+        "LDAP_CONNECT_TIMEOUT": 10,
+        "LDAP_USER_SEARCH_BASE": "",
+        "LDAP_USER_FILTER": "(objectClass=person)",
+        # 字段映射（固定四键，管理页可改）：目录属性名 -> 平台字段
+        "LDAP_ATTR_USERNAME": "sAMAccountName",
+        "LDAP_ATTR_NICKNAME": "cn",
+        "LDAP_ATTR_EMAIL": "mail",
+        "LDAP_ATTR_PHONE": "telephoneNumber",
+        "LDAP_DEPT_ENABLED": True,
+        "LDAP_DEPT_SEARCH_BASE": "",
+        "LDAP_SYNC_ENABLED": False,
+        "LDAP_SYNC_AUTO_CREATE": True,
+        # 目录侧消失策略：deactivate 禁用（默认，可逆）/ soft_delete 进回收站 / ignore 不处理
+        "LDAP_SYNC_MISSING_POLICY": "deactivate",
+        # 同步分页大小（ldap3 paged search）
+        "LDAP_SYNC_PAGE_SIZE": 500,
+        # 企业 IM 通知渠道（ADR-019）：默认全关；运行期经 Setting 体系（category=notify_im）
+        # 热更新覆盖，secret 值级加密落库。开关开而凭据缺 → 渠道自动降级为不可用
+        "DINGTALK_ENABLED": False,
+        "DINGTALK_APP_KEY": "",
+        "DINGTALK_APP_SECRET": "",
+        "DINGTALK_AGENT_ID": "",
+        "WECOM_ENABLED": False,
+        "WECOM_CORP_ID": "",
+        "WECOM_CORP_SECRET": "",
+        "WECOM_AGENT_ID": "",
+        "FEISHU_ENABLED": False,
+        "FEISHU_APP_ID": "",
+        "FEISHU_APP_SECRET": "",
+        # AI 助手（ADR-023）：OpenAI 兼容协议，默认全关；API Key 值级加密落库
+        "AI_ASSISTANT_ENABLED": False,
+        "AI_BASE_URL": "",
+        "AI_API_KEY": "",
+        "AI_MODEL": "",
+        "AI_TIMEOUT": 60,
+        # AI 二期 NL 查数（ADR-024）：默认关闭灰度
+        "AI_NL_QUERY_ENABLED": False,
     }
     libs = {
         # REST_FRAMEWORK
@@ -197,6 +245,8 @@ class Config(dict):
         # 基本配置
         "SITE_URL": "http://127.0.0.1:8000",
         "FRONT_END_WEB_WATERMARK_ENABLED": False,  # 前端水印展示
+        "FRONT_END_WEB_WATERMARK_TEXT": "",  # 前端水印文案（留空 = 用户名-昵称-时间）
+        "FRONT_END_WEB_WATERMARK_PATHS": "",  # 前端水印生效页面（逗号分隔路由前缀，留空 = 全部页面）
         "PERMISSION_FIELD_ENABLED": True,  # 字段权限控制
         "PERMISSION_DATA_ENABLED": True,  # 数据权限控制
         "REFERER_CHECK_ENABLED": False,  # referer 校验

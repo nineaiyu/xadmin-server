@@ -32,6 +32,15 @@ class PersonalAccessToken(DbAuditModel):
     is_active = models.BooleanField(_("Is active"), default=True)
     expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
     last_used_time = models.DateTimeField(_("Last used time"), null=True, blank=True)
+    # 所属开放平台应用（ADR-030）：非空 = 由应用换发（应用停用/过期即失效 + 按应用限流）
+    api_application = models.ForeignKey(
+        "system.ApiApplication",
+        verbose_name=_("API application"),
+        on_delete=models.CASCADE,
+        related_name="tokens",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ("-created_time",)
@@ -45,3 +54,38 @@ class PersonalAccessToken(DbAuditModel):
 
     def __str__(self):
         return f"{self.name}({self.token_prefix})"
+
+
+class ApiApplication(DbAuditModel):
+    """开放平台应用（client-credentials，ADR-030）。
+
+    应用本身不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链，
+    三层权限 / 数据权限 / 审计（``OperationLog.auth_type=pat``）天然生效；
+    应用只负责凭证换发、范围（scopes / ip_allowlist）、按应用限流与回调登记。
+    """
+
+    name = models.CharField(_("Application name"), max_length=128)
+    client_id = models.CharField(_("Client id"), max_length=64, unique=True)
+    # 与 PAT 同口径：sha256 哈希存储，明文只在创建/重置响应中返回一次
+    client_secret_hash = models.CharField(_("Client secret hash"), max_length=64)
+    client_secret_prefix = models.CharField(_("Client secret prefix"), max_length=16)
+    # 回调签名密钥（密文存储，复用 webhook 的 encrypt_secret/decrypt_secret 口径）
+    callback_secret_encrypted = models.CharField(_("Callback secret"), max_length=256, blank=True, default="")
+    scopes = models.JSONField(_("Scopes"), default=list, blank=True)
+    ip_allowlist = models.JSONField(_("Ip allowlist"), default=list, blank=True)
+    # 0 = 不限；>0 = 每分钟允许的已认证请求数（超限 429，按应用维度计数）
+    rate_limit_per_minute = models.IntegerField(_("Rate limit per minute"), default=0)
+    callback_urls = models.JSONField(_("Callback urls"), default=list, blank=True)
+    # 换发凭证的有效期（秒）；0 = 不过期（随应用 expired_at）
+    token_ttl_seconds = models.IntegerField(_("Token ttl seconds"), default=7200)
+    is_active = models.BooleanField(_("Is active"), default=True)
+    expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_time",)
+        verbose_name = _("API application")
+        verbose_name_plural = verbose_name
+        indexes = [models.Index(fields=["client_id"], name="idx_api_app_client_id")]
+
+    def __str__(self):
+        return f"{self.name}({self.client_id})"
