@@ -38,14 +38,38 @@ def test_update_records_changes(auth_client, notice, monkeypatch, django_capture
     assert log.object_pk == str(notice.pk)
 
 
-def test_whitelist_off_by_default(auth_client, notice, django_capture_on_commit_callbacks):
-    """默认白名单为空：不记录 diff，也不额外查询。"""
+def test_non_whitelisted_model_not_recorded(auth_client, notice, django_capture_on_commit_callbacks):
+    """非白名单模型（MessageContent 不在默认清单内）：不记录 diff，也不额外查询。"""
     with django_capture_on_commit_callbacks(execute=True):
         resp = auth_client.patch(f"{NOTICE_URL}/{notice.pk}", {"title": "审计测试v3"}, format="json")
     assert resp.status_code == 200, resp.data
 
     log = OperationLog.objects.filter(path__icontains="notice-messages", method="PATCH").latest("id")
     assert not log.changes
+
+
+def test_default_whitelist_covers_user_management(settings):
+    """默认白名单覆盖「用户管理」：它是当前唯一挂「变更历史」入口的页面。
+
+    回归守护：默认清单曾被置空 → 变更历史弹窗的字段明细恒为空（前端显示「—」），
+    用户改了性别/昵称也看不到任何 diff。
+    """
+    assert "system.UserInfo" in (settings.AUDIT_DIFF_MODELS or [])
+
+
+def test_user_update_records_changes_by_default(
+    auth_client, superuser, normal_user, django_capture_on_commit_callbacks
+):
+    """默认白名单下的端到端：用户管理改性别/昵称即落 changes（变更明细可见）。"""
+    with django_capture_on_commit_callbacks(execute=True):
+        resp = auth_client.patch(f"/api/system/user/{normal_user.pk}", {"gender": 2, "nickname": "改名"}, format="json")
+    assert resp.status_code == 200, resp.data
+
+    log = OperationLog.objects.filter(path=f"/api/system/user/{normal_user.pk}", method="PATCH").latest("id")
+    changes = json.loads(log.changes)
+    assert changes["gender"]["old"] == "0"
+    assert changes["gender"]["new"] == "2"
+    assert changes["nickname"]["new"] == "改名"
 
 
 def test_list_request_has_no_object_pk(auth_client, django_capture_on_commit_callbacks):

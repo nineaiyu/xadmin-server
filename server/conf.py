@@ -306,9 +306,11 @@ class Config(dict):
         "FILE_PREVIEW_CACHE_KEEP_DAYS": 7,
         # 第三方登录 provider 列表（空 = 整体休眠，登录页不显示第三方入口）
         "OAUTH_PROVIDERS": [],
-        # 字段级审计 diff 白名单（模型 _meta.label），为空表示关闭；
-        # 命中白名单的 update 请求会额外做 2 次查询以计算 old/new，按需开启
-        "AUDIT_DIFF_MODELS": [],
+        # 字段级审计 diff 白名单（模型 _meta.label）：命中白名单的 update 请求会额外
+        # 做 2 次查询以计算 old/new。默认开「用户管理」——它是当前唯一挂了「变更历史」
+        # 入口的页面（changeHistory:SystemUser 权限菜单），关闭此项会让变更明细恒为
+        # 空（前端显示「—」）；新增带入口的页面时在此追加，置空数组 = 整体关闭
+        "AUDIT_DIFF_MODELS": ["system.UserInfo"],
         # 验证码配置
         "VERIFY_CODE_TTL": 5 * 60,  # Unit: second
         "VERIFY_CODE_LIMIT": 60,
