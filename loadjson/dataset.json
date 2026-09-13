@@ -1,0 +1,20 @@
+[
+  {
+    "model": "system.dataset",
+    "pk": "5eed0001-0000-4000-8000-000000000001",
+    "fields": {
+      "name": "示例-全部用户",
+      "description": "初始化内置示例：绑定系统用户表，供示例仪表盘/报表/大屏取数",
+      "bound_model": "system.userinfo",
+      "columns": ["username", "nickname", "gender", "is_active", "phone", "dept", "date_joined"],
+      "filters": [],
+      "ordering": "",
+      "row_limit": 1000,
+      "config": {"date_field": "date_joined"},
+      "visibility": "shared",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null
+    }
+  }
+]

@@ -1,0 +1,25 @@
+[
+  {
+    "model": "system.report",
+    "pk": "5eed0004-0000-4000-8000-000000000004",
+    "fields": {
+      "name": "示例-用户日报",
+      "dataset": "5eed0001-0000-4000-8000-000000000001",
+      "mode": "rows",
+      "group_by": "",
+      "metric": "count",
+      "date_trunc": "",
+      "value_field": "",
+      "frequency": "daily",
+      "send_time": "08:00",
+      "weekday": 0,
+      "recipients": ["admin@example.com"],
+      "is_active": false,
+      "last_run_at": null,
+      "last_status": "",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null
+    }
+  }
+]

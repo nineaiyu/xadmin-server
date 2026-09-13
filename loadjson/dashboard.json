@@ -1,0 +1,51 @@
+[
+  {
+    "model": "system.dashboard",
+    "pk": "5eed0002-0000-4000-8000-000000000002",
+    "fields": {
+      "name": "示例-运营看板",
+      "layout": [
+        {
+          "id": "card-total",
+          "dataset": "5eed0001-0000-4000-8000-000000000001",
+          "title": "用户总数",
+          "chart_type": "number",
+          "metric": "count",
+          "span": 3
+        },
+        {
+          "id": "card-active-pie",
+          "dataset": "5eed0001-0000-4000-8000-000000000001",
+          "title": "启用状态分布",
+          "chart_type": "pie",
+          "group_by": "is_active",
+          "metric": "count",
+          "span": 3
+        },
+        {
+          "id": "card-join-trend",
+          "dataset": "5eed0001-0000-4000-8000-000000000001",
+          "title": "用户增长趋势",
+          "chart_type": "line",
+          "group_by": "date_joined",
+          "date_trunc": "month",
+          "metric": "count",
+          "span": 6
+        },
+        {
+          "id": "card-gender-bar",
+          "dataset": "5eed0001-0000-4000-8000-000000000001",
+          "title": "性别分布",
+          "chart_type": "bar",
+          "group_by": "gender",
+          "metric": "count",
+          "span": 12
+        }
+      ],
+      "visibility": "shared",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null
+    }
+  }
+]
