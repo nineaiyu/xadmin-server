@@ -11,7 +11,7 @@ from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
-from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet
+from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet
 from system.views.analysis import ReportViewSet, ScreenViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from system.views.search.global_search import GlobalSearchAPIView
@@ -24,6 +24,7 @@ from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
+from system.views.admin.leave import LeaveViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
@@ -37,6 +38,7 @@ from system.views.auth.logout import LogoutAPIView
 from system.views.auth.mfa import LoginMFASendCodeAPIView, LoginMFAVerifyAPIView
 from system.views.auth.oauth import (
     OAuthAuthorizeAPIView,
+    OAuthBindAuthorizeAPIView,
     OAuthBindingsAPIView,
     OAuthCallbackAPIView,
     OAuthProvidersAPIView,
@@ -92,6 +94,12 @@ no_auth_url = [
         "^auth/oauth/(?P<provider>[^/]+)/callback$",
         OAuthCallbackAPIView.as_view(),
         name="oauth-callback",
+    ),
+    # 绑定意图的授权地址（同样是白名单路径，视图内要求 DRF IsAuthenticated）
+    re_path(
+        "^auth/oauth/(?P<provider>[^/]+)/bind-authorize$",
+        OAuthBindAuthorizeAPIView.as_view(),
+        name="oauth-bind-authorize",
     ),
     re_path("^auth/oauth/bindings$", OAuthBindingsAPIView.as_view(), name="oauth-bindings"),
     re_path(
@@ -155,9 +163,13 @@ router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook
 # 动态表单（ADR-025）
 router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
 router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
+# 请假申请（ADR-032）：审批流引擎的第一个真实业务接入方
+router.register("leaves", LeaveViewSet, basename="leave")
 # AI 助手（ADR-023）：配置（Setting 体系）与问答
 no_detail_router.register("ai/assistant/config", AiAssistantSettingViewSet, basename="ai-assistant-config")
 no_detail_router.register("ai/assistant", AiAssistantViewSet, basename="ai-assistant")
+# AI 知识库文档管理（ADR-033）：上传/预览/启停/删除 + 仓库文档重建
+router.register("ai/knowledge-documents", AiKnowledgeDocumentViewSet, basename="ai-knowledge-document")
 router.register("config/user", UserPersonalConfigViewSet, basename="userconfig")
 
 # 日志相关
