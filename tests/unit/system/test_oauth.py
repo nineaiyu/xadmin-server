@@ -15,7 +15,9 @@ from system.utils.oauth import (
     OAUTH_STATE_TTL,
     OAuthError,
     build_authorize_url,
+    consume_bind_state,
     consume_state,
+    issue_bind_state,
     issue_state,
     make_unique_username,
     validate_providers,
@@ -23,6 +25,7 @@ from system.utils.oauth import (
 from system.views.auth.login import complete_login
 from system.views.auth.oauth import (
     OAUTH_ERROR_CODE,
+    OAuthBindAuthorizeAPIView,
     OAuthBindingsAPIView,
     OAuthCallbackAPIView,
     OAuthProvidersAPIView,
@@ -303,6 +306,103 @@ class TestBindingsAndUnbind:
         response = OAuthUnbindAPIView.as_view()(request, pk=str(others.pk))
         assert response.data["code"] != 1000
         assert UserOAuthBinding.objects.filter(pk=others.pk).exists()
+
+
+class TestBindFlow:
+    """个人中心「第三方账号」绑定链路：state 归属校验 / 绑定不登录 / 唯一性兜底。
+
+    绑定与登录的区别只在 state 意图：绑定 state 由已登录用户发起、载荷带本人 pk，
+    回调命中后只建绑定不下发 token（相对地，登录 state 永远走登录链路）。
+    """
+
+    @staticmethod
+    def bind_authorize(user, provider=PROVIDER_KEY):
+        request = APIRequestFactory().get(f"/api/system/auth/oauth/{provider}/bind-authorize")
+        if user is not None:
+            force_authenticate(request, user=user)
+        return OAuthBindAuthorizeAPIView.as_view()(request, provider=provider)
+
+    def test_bind_authorize_requires_login(self, api_client):
+        """未登录不能拿绑定 state（个人凭证口径，白名单路径仍需认证）。
+
+        用 api_client 而非 APIRequestFactory：认证失败走异常处理器（set_rollback），
+        与 oauth_config 的库操作 fixture 组合会污染测试事务。
+        """
+        response = api_client.get(f"/api/system/auth/oauth/{PROVIDER_KEY}/bind-authorize")
+        assert response.status_code in (401, 403)
+
+    def test_bind_flow_binds_current_user_without_login(self, superuser, oauth_config, stub_idp):
+        stub_idp(FakeClient())
+        authorize = self.bind_authorize(superuser)
+        assert authorize.data["code"] == 1000, authorize.data
+        assert PROVIDER["authorize_url"] in authorize.data["data"]["url"]
+        state = authorize.data["data"]["state"]
+
+        response = callback(superuser, state=state)
+        assert response.data["code"] == 1000, response.data
+        assert response.data["data"]["bound"] is True
+        # 绑定不登录：不下发 token、不写登录日志
+        assert "access" not in response.data["data"]
+        assert not UserLoginLog.objects.exists()
+        binding = UserOAuthBinding.objects.get()
+        assert binding.user_id == superuser.pk
+        assert binding.subject == "subject-1"
+
+    def test_bind_state_belongs_to_issuer(self, superuser, normal_user, oauth_config, stub_idp):
+        """state 由 A 发起、回调以 B 身份完成：拒绝（防把 IdP 身份绑到他人账号）。"""
+        stub_idp(FakeClient())
+        state = issue_bind_state(PROVIDER_KEY, superuser.pk)
+        response = callback(normal_user, state=state)
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        assert not UserOAuthBinding.objects.exists()
+
+    def test_bind_requires_authenticated_request(self, superuser, oauth_config, stub_idp):
+        """回调无登录态（会话过期）：拒绝且不建绑定。"""
+        stub_idp(FakeClient())
+        state = issue_bind_state(PROVIDER_KEY, superuser.pk)
+        response = callback(None, state=state)
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        assert not UserOAuthBinding.objects.exists()
+
+    def test_bind_state_one_time(self):
+        state = issue_bind_state(PROVIDER_KEY, 1)
+        payload = consume_bind_state(state)
+        assert payload == {"provider": PROVIDER_KEY, "user_pk": "1"}
+        assert consume_bind_state(state) is None
+
+    def test_bind_idempotent_when_already_bound_to_self(self, superuser, oauth_config, stub_idp):
+        """同一 IdP 身份已绑本人：幂等成功（already=True），不产生第二条绑定。"""
+        UserOAuthBinding.objects.create(user=superuser, provider=PROVIDER_KEY, subject="subject-1")
+        stub_idp(FakeClient())
+        state = issue_bind_state(PROVIDER_KEY, superuser.pk)
+        response = callback(superuser, state=state)
+        assert response.data["code"] == 1000
+        assert response.data["data"]["already"] is True
+        assert UserOAuthBinding.objects.count() == 1
+
+    def test_bind_rejects_subject_bound_to_other_account(self, superuser, normal_user, oauth_config, stub_idp):
+        """同一 IdP 身份已绑他人：拒绝（(provider, subject) 全局唯一）。"""
+        UserOAuthBinding.objects.create(user=normal_user, provider=PROVIDER_KEY, subject="subject-1")
+        stub_idp(FakeClient())
+        state = issue_bind_state(PROVIDER_KEY, superuser.pk)
+        response = callback(superuser, state=state)
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        assert not UserOAuthBinding.objects.filter(user=superuser).exists()
+
+    def test_bind_state_not_reusable_after_provider_mismatch(self, superuser, oauth_config, stub_idp):
+        """state 与 provider 不匹配：拒绝（跨 provider 重放防护）。"""
+        stub_idp(FakeClient())
+        state = issue_bind_state("other-idp", superuser.pk)
+        response = callback(superuser, state=state)
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        assert not UserOAuthBinding.objects.exists()
+
+    def test_login_state_walks_login_path(self, superuser, oauth_config, stub_idp):
+        """登录 state（含已登录请求）不会被当成绑定：不会凭空建立绑定。"""
+        stub_idp(FakeClient())
+        response = callback(superuser, state=issue_state(PROVIDER_KEY))
+        assert response.data["code"] == OAUTH_ERROR_CODE
+        assert not UserOAuthBinding.objects.exists()
 
 
 class TestProviderConfigValidation:

@@ -6,9 +6,13 @@
 因为登录前置的 authorize/callback 必须匿名可达；绑定管理是个人凭证（同 MFA/PAT 口径），
 也不该依赖菜单权限。因此这里显式要求 DRF 的 `IsAuthenticated`，
 不能用项目的自定义 `IsAuthenticated`（后者按菜单权限校验，白名单已被绕过）。
+
+**state 两种意图**（键空间隔离、一键一用）：登录 `issue_state` / 绑定 `issue_bind_state`；
+回调先判绑定意图，命中即把 IdP 身份绑定到发起绑定的本人（不做登录）。
 """
 
 from django.contrib.auth import authenticate
+from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -27,11 +31,13 @@ from system.utils.session import bind_session_claim
 from system.utils.oauth import (
     OAuthError,
     build_authorize_url,
+    consume_bind_state,
     consume_state,
     exchange_code,
     fetch_userinfo,
     get_provider,
     get_providers,
+    issue_bind_state,
     issue_state,
     make_unique_username,
     mask_providers,
@@ -50,6 +56,73 @@ def _redirect_uri(request, provider: str) -> str:
     避免被伪造的 redirect_uri 带走 code（换取 token 时用同一份地址校验）。
     """
     return f"{request.scheme}://{request.get_host()}/#/oauth/callback?provider={provider}"
+
+
+def _fetch_identity(request, provider: str, config: dict, code: str):
+    """换码 + 取用户信息 + 解析 IdP 唯一标识（登录与绑定链路共用）。
+
+    :return: ``(subject, userinfo)``；IdP 侧失败统一抛 `OAuthError`（可读文案）。
+    """
+    token_payload = exchange_code(config, code, _redirect_uri(request, provider))
+    # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定（ADR-018）
+    userinfo = fetch_userinfo(config, token_payload)
+    return resolve_subject(config, userinfo), userinfo
+
+
+def _profile_snapshot(userinfo: dict) -> dict:
+    """绑定展示快照：只留昵称/邮箱/头像，IdP 原始报文不落库。"""
+    return {
+        "nickname": userinfo.get("nickname") or "",
+        "email": userinfo.get("email") or "",
+        "picture": userinfo.get("picture") or "",
+    }
+
+
+def _bind_identity(request, provider: str, code: str, payload: dict):
+    """绑定意图回调：把 IdP 身份绑定到**发起绑定的本人**（不登录、不签发 token）。
+
+    归属校验（state 载荷 pk == 当前登录用户）放在最前：防止把别人的 IdP 身份
+    绑到自己的账号，也防止把身份绑给他人——绑定唯一性由 (provider, subject) 约束兜底。
+    """
+    if payload.get("provider") != provider or not code:
+        return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The login link has expired, please try again"))
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated or str(payload.get("user_pk")) != str(user.pk):
+        return ApiResponse(
+            code=OAUTH_ERROR_CODE,
+            detail=_("The binding link does not belong to the current account, please login and retry"),
+        )
+    config = get_provider(provider, enabled_only=True)
+    if not config:
+        return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
+    try:
+        subject, userinfo = _fetch_identity(request, provider, config, code)
+    except OAuthError as exc:
+        return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
+
+    existing = UserOAuthBinding.objects.filter(provider=provider, subject=subject).first()
+    if existing and existing.user_id != user.pk:
+        return ApiResponse(
+            code=OAUTH_ERROR_CODE,
+            detail=_("This third-party account is already bound to another account"),
+        )
+    if not existing:
+        try:
+            UserOAuthBinding.objects.create(
+                user=user, provider=provider, subject=subject, profile=_profile_snapshot(userinfo)
+            )
+        except IntegrityError:
+            # 并发下同一 IdP 身份重复绑定：唯一约束兜底，等价于幂等分支
+            logger.info(f"oauth bind conflict tolerated. provider:{provider} user:{user.pk}")
+    return ApiResponse(
+        data={
+            "bound": True,
+            "already": bool(existing),
+            "provider": provider,
+            "provider_name": config.get("name") or provider,
+            "subject": subject,
+        }
+    )
 
 
 class OAuthProvidersAPIView(GenericAPIView):
@@ -92,9 +165,33 @@ class OAuthAuthorizeAPIView(GenericAPIView):
         )
 
 
-class OAuthCallbackAPIView(GenericAPIView):
-    """IdP 回调：校验 state → 换 token → 取 userinfo → 绑定判定 → `complete_login`。
+class OAuthBindAuthorizeAPIView(GenericAPIView):
+    """已登录用户发起绑定：返回带「绑定意图」state 的授权地址。
 
+    与登录 `authorize` 的唯一差别是 state 载荷（记录发起人 pk）：回调据此把 IdP 身份
+    绑定到本人而不是登录换 token。跳转地址（redirect_uri）与登录一致，管理员无需额外配置。
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses=get_default_response_schema({"data": {"url": "str", "state": "str"}}))
+    def get(self, request, provider, *args, **kwargs):
+        config = get_provider(provider, enabled_only=True)
+        if not config:
+            return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
+        state = issue_bind_state(provider, request.user.pk)
+        return ApiResponse(
+            data={
+                "url": build_authorize_url(config, _redirect_uri(request, provider), state),
+                "state": state,
+            }
+        )
+
+
+class OAuthCallbackAPIView(GenericAPIView):
+    """IdP 回调：校验 state → 换 token → 取 userinfo → 绑定建立 / 绑定判定 → `complete_login`。
+
+    state 命中绑定意图时只建立绑定（不登录换 token）；否则走登录链路，
     登录成功后**必须**走 `complete_login`（登录后置链路唯一入口），
     否则等于绕过登录 MFA / 会话登记 / 登录日志 / 锁定计数清理。
     """
@@ -106,6 +203,11 @@ class OAuthCallbackAPIView(GenericAPIView):
     def get(self, request, provider, *args, **kwargs):
         code = request.query_params.get("code")
         state = request.query_params.get("state")
+        # 先判绑定意图：绑定 state 与登录 state 键空间隔离，互不通用
+        bind_payload = consume_bind_state(state or "")
+        if bind_payload is not None:
+            return _bind_identity(request, provider, code, bind_payload)
+
         bound_provider = consume_state(state or "")
         if not code or bound_provider != provider:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The login link has expired, please try again"))
@@ -115,13 +217,10 @@ class OAuthCallbackAPIView(GenericAPIView):
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
 
         try:
-            token_payload = exchange_code(config, code, _redirect_uri(request, provider))
-            # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定（ADR-018）
-            userinfo = fetch_userinfo(config, token_payload)
+            subject, userinfo = _fetch_identity(request, provider, config, code)
         except OAuthError as exc:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
 
-        subject = resolve_subject(config, userinfo)
         binding = UserOAuthBinding.objects.filter(provider=provider, subject=subject).first()
 
         if not binding:
@@ -205,11 +304,7 @@ def _create_user_and_binding(provider, config, subject, userinfo):
         user=user,
         provider=provider,
         subject=subject,
-        profile={
-            "nickname": userinfo.get("nickname") or "",
-            "email": userinfo.get("email") or "",
-            "picture": userinfo.get("picture") or "",
-        },
+        profile=_profile_snapshot(userinfo),
     )
 
 

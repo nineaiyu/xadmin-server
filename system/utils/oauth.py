@@ -38,11 +38,13 @@ __all__ = [
     "OAUTH_STATE_TTL",
     "OAuthError",
     "build_authorize_url",
+    "consume_bind_state",
     "consume_state",
     "exchange_code",
     "fetch_userinfo",
     "get_provider",
     "get_providers",
+    "issue_bind_state",
     "issue_state",
     "mask_providers",
     "make_unique_username",
@@ -53,6 +55,9 @@ __all__ = [
 # state 有效期（秒）：登录跳转通常在 1 分钟内完成，5 分钟足够且限制重放窗口
 OAUTH_STATE_TTL = 300
 STATE_CACHE_KEY = "oauth_state_{state}"
+# 「绑定意图」state 走独立键空间：与登录 state 互不可用（登录不得触发绑定，反之亦然）。
+# 载荷携带发起人 pk，回调据此校验归属后才建立绑定
+BIND_STATE_CACHE_KEY = "oauth_bind_state_{state}"
 
 # 配置项的必填/可选键
 REQUIRED_KEYS = ("key", "name", "client_id", "authorize_url", "token_url", "userinfo_url")
@@ -162,6 +167,30 @@ def consume_state(state: str) -> str | None:
     provider_key = cache.get(key)
     cache.delete(key)
     return provider_key
+
+
+def issue_bind_state(provider_key: str, user_pk) -> str:
+    """生成「绑定意图」的一次性 state（载荷含发起人 pk，回调据此绑定到本人）。
+
+    与登录 state 用不同键空间：即使 state 泄露，也不能把登录流程变成绑定流程。
+    """
+    state = secrets.token_urlsafe(32)
+    cache.set(
+        BIND_STATE_CACHE_KEY.format(state=state),
+        {"provider": provider_key, "user_pk": str(user_pk)},
+        OAUTH_STATE_TTL,
+    )
+    return state
+
+
+def consume_bind_state(state: str) -> dict | None:
+    """消费绑定 state：返回载荷 ``{provider, user_pk}``；已使用/过期返回 None（一次性）。"""
+    if not state:
+        return None
+    key = BIND_STATE_CACHE_KEY.format(state=state)
+    payload = cache.get(key)
+    cache.delete(key)
+    return payload if isinstance(payload, dict) else None
 
 
 def build_authorize_url(provider: dict, redirect_uri: str, state: str) -> str:

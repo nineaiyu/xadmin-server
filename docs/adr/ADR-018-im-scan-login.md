@@ -67,6 +67,14 @@ provider 配置新增 `flavor` 字段（默认 `oauth2` = 现行为），分发�
   providers 列表接口附 `flavor` 供前端未来做品牌图标，本期前端无布局改动；
 - 三家以 `dingtalk` / `wecom` / `feishu` 为推荐 key（与 flavor 一致），
   绑定数据按 provider key 隔离。
+- **补充（2026-09-14，个人中心补齐绑定入口）**：此前绑定只能由 IdP 侧
+  `auto_create` 建号或既有绑定关系产生，「个人中心 → 第三方账号」只有解绑、无绑定入口。
+  现补 `OAuthBindAuthorizeAPIView`（已登录，`/{provider}/bind-authorize`）+ 回调内
+  `_bind_identity`：state 走独立键空间 `oauth_bind_state_{state}`（载荷含发起人 pk，
+  与登录 state 互不可用），回调命中绑定意图时只建绑定**不下发 token**（不登录），
+  归属校验以「载荷 pk == 当前登录用户」收口（防把 IdP 身份绑给他人/他人身份绑到本人），
+  同一 `(provider, subject)` 已绑他人一律拒绝、已绑本人幂等返回 `already`。
+  redirect_uri 与登录一致（同一落地页按 state 分流），管理员无需新增配置。
 
 ## 后果
 
