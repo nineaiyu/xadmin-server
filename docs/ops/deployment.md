@@ -54,6 +54,25 @@ python manage.py start celery_heavy    # heavy 队列 worker（导入/导出/批
 python manage.py start beat            # 定时任务调度
 ```
 
+### 1.4 AI 助手知识库（可选）
+
+「集成管理 → AI 助手」是基于仓库文档的问答（ADR-023，回答带引用出处，不触生产数据）。
+启用前需要两步：
+
+```shell
+python manage.py sync_ai_knowledge   # ① 同步知识库（幂等，秒级，可重复执行）
+```
+
+② 在「集成管理 → AI 配置」填写 OpenAI 兼容的 `base_url` / `api_key` / `model`
+（DeepSeek、Qwen、Kimi、vLLM、Ollama 等均可）并打开开关；助手页状态区会显示已入库知识块数量。
+
+- **文档来源（双来源，ADR-033）**：
+  - 仓库文档：`docs/**/*.md` + 根目录 `README.md` / `CONTRIBUTING.md`——把 markdown 放进 `docs/`
+    （或挂载卷覆盖该目录）后重跑 ① 即可（按内容 hash 增量更新，删除的文档同步移除）；
+  - 上传文档：管理端「集成管理 → 知识库」页自助上传（选择本地 .md 读取或直接粘贴文本，同名覆盖更新），
+    与仓库文档并存参与检索，可预览全文/分块、启停（停用即退出检索）、删除；
+- **同步时机**：仓库文档变更后重跑 ①（或管理页「同步仓库文档」按钮）；未同步时助手页会提示知识库为空，问答无召回。
+
 ## 2. Celery 队列划分
 
 | 队列           | 承载内容                                           | worker                 |

@@ -100,6 +100,7 @@ def stub_llm(monkeypatch):
 
 class TestKnowledgeSync:
     def test_sync_creates_chunks(self, tmp_path, monkeypatch, settings):
+        from system.models.ai import AiKnowledgeDocument
         from system.utils import ai as ai_utils
 
         doc = tmp_path / "docs"
@@ -109,7 +110,10 @@ class TestKnowledgeSync:
         monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
 
         summary = ai_utils.sync_knowledge()
-        assert summary["created"] == 3  # 前言 + 按 ## 边界切两节
+        # created 为文档级计数（ADR-033 起同步登记文档实体 + 重建分块）
+        assert summary["created"] == 1
+        document = AiKnowledgeDocument.objects.get(path="docs/demo.md")
+        assert document.chunk_count == 3
         chunks = AiKnowledgeChunk.objects.filter(source_path__endswith="demo.md").order_by("chunk_index")
         assert chunks[1].title == "Demo"
         assert "内容甲" in chunks[1].content
@@ -128,6 +132,7 @@ class TestKnowledgeSync:
         monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
         assert summary["removed"] == 1
+        assert not AiKnowledgeChunk.objects.filter(source_path="docs/gone.md").exists()
 
 
 class TestRetrieve:

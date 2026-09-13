@@ -37,3 +37,26 @@ def test_viewsets_with_filterset_expose_search_fields():
     assert not missing, (
         f"声明了 filterset_class 的视图集必须混入 SearchFieldsAction，否则前端搜索区没有任何输入框: {missing}"
     )
+
+
+def test_viewsets_with_table_fields_expose_search_columns():
+    """序列化器声明 table_fields（前端表格列）的视图集必须混入 SearchColumnsAction。
+
+    列元数据同样随列表响应内联下发（with_meta=1 的 search_columns）：漏混入时
+    search-columns 路由不存在，RePlusPage 列定义为空——表格行 DOM 有 tr 但无 td，
+    表现为「列表有数据却整片空单元格」（知识库页曾因此排查多轮）。
+    """
+    missing = []
+    for view in _iter_viewset_classes():
+        # 仅列表视图涉及表格列：面板统计类视图（借其他序列化器取数）不在判定范围
+        if not hasattr(view, "list"):
+            continue
+        serializer_class = getattr(view, "list_serializer_class", None) or getattr(view, "serializer_class", None)
+        meta = getattr(serializer_class, "Meta", None)
+        if not meta or not getattr(meta, "table_fields", None):
+            continue
+        if not hasattr(view, "search_columns"):
+            missing.append(f"{view.__module__}.{view.__name__}")
+    assert not missing, (
+        f"序列化器声明了 table_fields 的视图集必须混入 SearchColumnsAction，否则前端表格没有列定义: {missing}"
+    )
