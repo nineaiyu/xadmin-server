@@ -1,3 +1,4 @@
+import json
 import textwrap
 import traceback
 from functools import cached_property
@@ -83,6 +84,17 @@ class Message:
             msg = get_msg_method()
             backends_msg_mapper[backend] = msg
         return backends_msg_mapper
+
+    @staticmethod
+    def _json_safe_backends_msg_mapper(backends_msg_mapper) -> dict:
+        """消息 payload 的 JSON 序列化兜底（celery 异步通道）。
+
+        与「QuerySet 必须物化」同源的序列化边界问题：subject 常来自
+        gettext_lazy 的字典取值（EVENT_TITLES 等），是 lazy 代理对象，
+        直接进 celery delay 会抛 EncodeError，通知静默丢失（调用方 catch）。
+        统一在此物化为纯 JSON 类型。
+        """
+        return json.loads(json.dumps(backends_msg_mapper, default=str))
 
     @staticmethod
     def send_msg(receive_user_ids, backends_msg_mapper):
@@ -238,7 +250,7 @@ class SystemMessage(Message):
             return
         backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
         if is_async:
-            publish_task.delay(receive_user_ids, backends_msg_mapper)
+            publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
         else:
             self.send_msg(receive_user_ids, backends_msg_mapper)
 
@@ -271,7 +283,7 @@ class UserMessage(Message):
         backends_msg_mapper = self.get_backend_msg_mapper(receive_backends)
         receive_user_ids = [self.user.id]
         if is_async:
-            publish_task.delay(receive_user_ids, backends_msg_mapper)
+            publish_task.delay(receive_user_ids, self._json_safe_backends_msg_mapper(backends_msg_mapper))
         else:
             self.send_msg(receive_user_ids, backends_msg_mapper)
 
