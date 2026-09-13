@@ -3,7 +3,9 @@
 
 覆盖：认证边界（401）/ 接口权限（403 垂直越权、方法与路径精确匹配）/ 三层数据正确性 /
 规则解码文案 / 数据权限分组（个人 + 部门祖先链）/ 缓存旁路（授权后立即可见）/
-试算（白名单、菜单上下文校验、count+sql、超管旁路）/ 角色预览（含持有用户水平越权过滤）。
+试算（白名单、菜单上下文校验、count+sql、样本行、授权诊断、草稿多菜单、超管旁路）/
+字段权限试算（未配置=裁空、草稿并集、注册表校验、菜单可见性、超管旁路）/
+角色预览（含持有用户水平越权过滤）。
 
 约定（与越权矩阵一致）：权限结果按用户+方法缓存 24h，授权布置在首个请求前完成；
 preview 取数直查 DB，故"先请求后补授权"用例用于验证缓存旁路。
@@ -598,3 +600,192 @@ def test_decode_dirty_value_falls_back(normal_user):
     assert decoded["rules"][0]["value_text"] == "not-json"
     assert decoded["rules"][1]["value_text"] == "oops"
     assert decoded["rules"][2]["value_text"] == "（无）"
+
+
+def test_trial_rejects_malformed_menu_pk(api_client, normal_user, role, menu_factory):
+    """非法菜单 pk（非 UUID）归一为 400：诊断工具不应因非法入参抛 500。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    normal_user.rules.add(make_user_self_scope())
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book", "menu": "not-a-uuid"}, format="json")
+    assert response.status_code == 400
+    response = api_client.post(trial_url(normal_user), {"scope": "field", "menu": "not-a-uuid"}, format="json")
+    assert response.status_code == 400
+
+
+# ---------- 试算增强：样本行 / 授权诊断 / 草稿多菜单 ----------
+
+
+def test_trial_sample_elapsed_and_grant_diagnosis(api_client, normal_user, role, menu_factory, books):
+    """试算返回样本行标识、耗时与授权诊断（命中/未命中一目了然）。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    normal_user.rules.add(make_user_self_scope())  # 与 demo.book 无关 → 诊断 kind=none
+    normal_user.rules.add(make_owner_book_permission())  # 命中 1 行 → kind=condition
+    own = books[1]
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(trial_url(normal_user), {"model": "demo.book"}, format="json")
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["count"] == 1
+    # 样本行只回行标识（str(obj)），不展开字段内容
+    assert len(data["sample"]) == 1
+    assert data["sample"][0]["pk"] == str(own.pk)
+    assert data["sample"][0]["label"] == "自己的书"
+    assert data["sample_limit"] == 5  # TRIAL_SAMPLE_LIMIT：样本上限（命中不足时按实际返回）
+    assert isinstance(data["elapsed_ms"], (int, float))
+    # 授权诊断：命中的是「仅本人书籍」，无关模型授权如实标注不参与
+    diagnosis = {item["name"]: item for item in data["grants"]}
+    assert diagnosis["仅本人书籍"]["source"] == "personal"
+    assert diagnosis["仅本人书籍"]["applied"] is True
+    assert diagnosis["仅本人书籍"]["kind"] == "condition"
+    assert diagnosis["仅本人用户"]["applied"] is False
+    assert diagnosis["仅本人用户"]["kind"] == "none"
+
+
+def test_trial_draft_menu_list_matches_any_context(api_client, normal_user, role, menu_factory, books):
+    """草稿绑定多个菜单（表单可多选）：上下文命中其一即参与，否则不参与。"""
+    grant_preview_menus(role, menu_factory)
+    make_book_registry()
+    menu_a = menu_factory(name="DemoBookPageA", path="/demo/book/index", menu_type=1)
+    menu_b = menu_factory(name="DemoBookPageB", path="/demo/book/other", menu_type=1)
+    role.menu.add(menu_a, menu_b)
+    normal_user.rules.add(make_user_self_scope())
+    api_client.force_authenticate(user=normal_user)
+    draft = {
+        "rules": [{"table": "demo.book", "field": "isbn", "type": "value.all", "value": "*", "match": "all"}],
+        "menu": [str(menu_a.pk), str(menu_b.pk)],
+    }
+    # 上下文 = 绑定菜单之一 → 草稿参与，「全部数据」放行
+    response = api_client.post(
+        trial_url(normal_user), {"model": "demo.book", "menu": str(menu_a.pk), "draft": draft}, format="json"
+    )
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["draft_applied"] is True
+    assert data["count"] == 2
+    assert any(item["source"] == "draft" and item["kind"] == "all" for item in data["grants"])
+    # 换一个未绑定的可见菜单 → 草稿不参与
+    menu_c = menu_factory(name="DemoBookPageC", path="/demo/book/third", menu_type=1)
+    role.menu.add(menu_c)
+    response = api_client.post(
+        trial_url(normal_user), {"model": "demo.book", "menu": str(menu_c.pk), "draft": draft}, format="json"
+    )
+    assert response.status_code == 200, response.data
+    assert response.data["data"]["draft_applied"] is False
+
+
+# ---------- 字段权限试算（scope=field） ----------
+
+
+def make_role_field_tree(name="demo.book", label="书籍", field_names=("name", "author")):
+    """ROLE 字段权限注册表：模型根节点 + 字段子节点。"""
+    model_field = ModelLabelField.objects.create(name=name, label=label, field_type=ModelLabelField.FieldChoices.ROLE)
+    children = [
+        ModelLabelField.objects.create(
+            name=field_name, label=field_name, parent=model_field, field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        for field_name in field_names
+    ]
+    return model_field, children
+
+
+def make_demo_menu(menu_factory, role, model_field, name="DemoBookPage", path="/demo/book/index"):
+    """页面菜单 + 关联模型 + 授予目标用户角色（字段试算的菜单上下文）。"""
+    menu = menu_factory(name=name, path=path, menu_type=1)
+    menu.model.add(model_field)
+    role.menu.add(menu)
+    return menu
+
+
+def test_field_trial_unconfigured_is_empty_with_note(api_client, normal_user, role, menu_factory):
+    """未配置字段白名单：可见字段为空 + 明确提示「未配置=裁空」（避免误读成没限制）。"""
+    grant_preview_menus(role, menu_factory)
+    normal_user.rules.add(make_user_self_scope())  # 调用者需能取到自己（fail-closed 下否则 404）
+    model_field, _ = make_role_field_tree()
+    menu = make_demo_menu(menu_factory, role, model_field)
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(trial_url(normal_user), {"scope": "field", "menu": str(menu.pk)}, format="json")
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["scope"] == "field"
+    assert data["menu"]["pk"] == str(menu.pk)
+    assert data["draft_applied"] is False
+    item = data["models"][0]
+    assert item["model"] == "demo.book"
+    assert item["configured"] is False
+    assert item["fields"] == []
+    assert item["total_fields"] == 2
+    assert data["note"] and "裁空" in data["note"]
+
+
+def test_field_trial_merges_existing_and_draft(api_client, normal_user, role, menu_factory):
+    """已配置 name + 草稿叠加 author：可见字段取并集，draft_fields 标出新增。"""
+    grant_preview_menus(role, menu_factory)
+    normal_user.rules.add(make_user_self_scope())  # 调用者需能取到自己（fail-closed 下否则 404）
+    model_field, (name_field, _) = make_role_field_tree()
+    menu = make_demo_menu(menu_factory, role, model_field)
+    field_permission = FieldPermission.objects.create(role=role, menu=menu)
+    field_permission.field.add(name_field)
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(
+        trial_url(normal_user),
+        {"scope": "field", "menu": str(menu.pk), "draft": {"fields": {"demo.book": ["author"]}}},
+        format="json",
+    )
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["draft_applied"] is True
+    item = data["models"][0]
+    assert item["configured"] is True
+    assert set(item["fields"]) == {"name", "author"}
+    assert item["draft_fields"] == ["author"]
+    assert len(item["field_labels"]) == len(item["fields"])
+
+
+def test_field_trial_rejects_unregistered_draft(api_client, normal_user, role, menu_factory):
+    """草稿字段必须在 ROLE 注册表内：未注册字段/模型 → 400（试算不是绕过校验的后门）。"""
+    grant_preview_menus(role, menu_factory)
+    normal_user.rules.add(make_user_self_scope())  # 调用者需能取到自己（fail-closed 下否则 404）
+    model_field, _ = make_role_field_tree()
+    menu = make_demo_menu(menu_factory, role, model_field)
+    api_client.force_authenticate(user=normal_user)
+    response = api_client.post(
+        trial_url(normal_user),
+        {"scope": "field", "menu": str(menu.pk), "draft": {"fields": {"demo.book": ["creat0r"]}}},
+        format="json",
+    )
+    assert response.status_code == 400
+    response = api_client.post(
+        trial_url(normal_user),
+        {"scope": "field", "menu": str(menu.pk), "draft": {"fields": {"demo.none": ["name"]}}},
+        format="json",
+    )
+    assert response.status_code == 400
+
+
+def test_field_trial_requires_visible_menu(api_client, normal_user, role, menu_factory):
+    """菜单必填且必须在目标用户可见范围内。"""
+    grant_preview_menus(role, menu_factory)
+    normal_user.rules.add(make_user_self_scope())  # 调用者需能取到自己（fail-closed 下否则 404）
+    model_field, _ = make_role_field_tree()
+    make_demo_menu(menu_factory, role, model_field)
+    other_menu = menu_factory(name="NotMinePage", path="/demo/other/index", menu_type=1)
+    api_client.force_authenticate(user=normal_user)
+    assert api_client.post(trial_url(normal_user), {"scope": "field"}, format="json").status_code == 400
+    response = api_client.post(trial_url(normal_user), {"scope": "field", "menu": str(other_menu.pk)}, format="json")
+    assert response.status_code == 400
+
+
+def test_field_trial_superuser_bypass(auth_client, superuser, menu_factory):
+    """超管旁路：可见全部注册字段 + 明确提示。"""
+    model_field, _ = make_role_field_tree()
+    menu = menu_factory(name="AdminBookPage", path="/demo/book/index", menu_type=1)
+    menu.model.add(model_field)
+    response = auth_client.post(trial_url(superuser), {"scope": "field", "menu": str(menu.pk)}, format="json")
+    assert response.status_code == 200, response.data
+    data = response.data["data"]
+    assert data["superuser_bypass"] is True
+    assert set(data["models"][0]["fields"]) == {"name", "author"}
+    assert data["note"] and "超级管理员" in data["note"]

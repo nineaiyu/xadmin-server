@@ -20,15 +20,17 @@
 import copy
 import json
 import re
+import time
 
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import EmptyResultSet
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 
 from common.base.utils import menu_list_to_tree
-from common.core.data_scope import validate_rules
+from common.core.data_scope import ScopeResult, compile_grant, validate_rules
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_user_menu_queryset
 from common.utils import get_logger
@@ -49,6 +51,9 @@ PREVIEW_USER_SAMPLE_LIMIT = 20
 
 # 预览里「关联对象名称」列表的展示上限（大部门/大授权集不拉全量、不撑爆响应）
 PREVIEW_VALUE_NAME_LIMIT = 50
+
+# 试算样本行展示上限（只读诊断：给出行标识即可，不展开字段内容）
+TRIAL_SAMPLE_LIMIT = 5
 
 
 def _humanize_seconds(seconds: int) -> str:
@@ -278,6 +283,26 @@ def get_user_menu_queryset_for_preview(user_obj: UserInfo):
     return get_user_menu_queryset(user_obj)
 
 
+def _visible_menu_or_error(user_obj: UserInfo, menu_pk, menu_type=None) -> Menu:
+    """菜单 pk → 目标用户可见范围内的菜单对象（非法/不可见统一 400，不抛 500）。
+
+    非法 UUID 在 filter 时抛 Django ValidationError，需就地归一为业务错误。
+    """
+    menu_queryset = get_user_menu_queryset_for_preview(user_obj)
+    if not menu_queryset:
+        raise ValidationError("菜单不在目标用户可见范围")
+    try:
+        queryset = menu_queryset.select_related("meta").filter(pk=menu_pk)
+        if menu_type is not None:
+            queryset = queryset.filter(menu_type=menu_type)
+        menu_obj = queryset.first()
+    except (DjangoValidationError, ValueError, TypeError):
+        menu_obj = None
+    if menu_obj is None:
+        raise ValidationError("菜单不在目标用户可见范围")
+    return menu_obj
+
+
 def _serialize_menu_tree(menus) -> list:
     """页面菜单（目录/菜单）→ 前端只读树（按 rank 排序）。
 
@@ -461,11 +486,20 @@ def get_trial_candidates() -> list:
     ]
 
 
+def _normalize_pk_list(raw) -> list:
+    """兼容 str / 单值 / 列表的 pk 归一（草稿绑定菜单与上下文判定共用）。"""
+    if raw in (None, ""):
+        return []
+    items = raw if isinstance(raw, (list, tuple, set)) else [raw]
+    return [str(item) for item in items if item not in (None, "")]
+
+
 def _build_draft_grant(draft, menu_ctx):
     """试算草稿 → 未落库的 DataPermission 实例；不适用当前菜单上下文时返回 None。
 
     草稿只用于本次试算（不落库），但仍走写入侧同一套 validate_rules，
     保证「试算能过的规则保存也能过」，不成为绕过校验的后门。
+    draft.menu 支持单个 pk 或 pk 列表（表单可多选绑定菜单）：上下文命中其一即参与。
     """
     if not draft or not isinstance(draft, dict):
         return None
@@ -480,11 +514,73 @@ def _build_draft_grant(draft, menu_ctx):
         raise ValidationError("试算草稿的模式不合法")
     if mode not in (ModeTypeAbstract.ModeChoices.OR, ModeTypeAbstract.ModeChoices.AND):
         raise ValidationError("试算草稿的模式不合法")
-    draft_menu = draft.get("menu")
-    if draft_menu and str(draft_menu) != str(menu_ctx):
+    draft_menus = _normalize_pk_list(draft.get("menu"))
+    if draft_menus and str(menu_ctx or "") not in draft_menus:
         # 草稿绑定了菜单：仅在该菜单上下文下参与试算，否则与运行期语义不符
         return None
     return DataPermission(name="__draft__", rules=rules, mode_type=mode, is_active=True)
+
+
+def _grants_for_user(user_obj: UserInfo, menu_ctx) -> list:
+    """按 get_filter_queryset 的口径收集 (授权组, 来源, 部门名) 三元组。
+
+    与运行时同一数据源与过滤条件（启用授权 / 菜单上下文 / 启用部门祖先链），
+    仅用于试算诊断展示；实际过滤仍由 get_filter_queryset 独立完成。
+    """
+    dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=menu_ctx)
+    rows = []
+    dept = user_obj.dept
+    if dept and dept.pk:
+        chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk, is_parent=True)]
+        active_chain = [
+            str(pk) for pk in DeptInfo.objects.filter(pk__in=chain, is_active=True).values_list("pk", flat=True)
+        ]
+        if active_chain:
+            queryset = (
+                DataPermission.objects.filter(is_active=True).filter(deptinfo__in=active_chain).filter(dq).distinct()
+            )
+            rows.extend((dp, "dept", dept.name) for dp in queryset)
+    rows.extend(
+        (dp, "personal", None)
+        for dp in DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq)
+    )
+    return rows
+
+
+def _source_grant_diagnosis(user_obj: UserInfo, model, menu_ctx, draft_grant) -> list:
+    """试算诊断：列出本次参与编译的授权组与判定结果（解释 count 从何而来）。
+
+    kind：all=「全部数据」放行 / condition=条件过滤 / deny=恒假 / none=与当前模型无关（不参与）。
+    历史脏规则编译失败时按 none 展示，不让诊断信息使试算接口失败。
+    """
+    rows = _grants_for_user(user_obj, menu_ctx)
+    if draft_grant is not None:
+        rows.append((draft_grant, "draft", None))
+    diagnosis = []
+    for dp, source, dept_name in rows:
+        try:
+            compiled = compile_grant(dp, model, user_obj)
+        except Exception as exc:  # noqa: BLE001 诊断项失败不应让只读试算 500
+            logger.warning("diagnose grant failed. name:%s error:%s", dp.name, exc)
+            compiled = None
+        if compiled is None:
+            kind = "none"
+        elif compiled.kind == ScopeResult.KIND_ALLOW:
+            kind = "all"
+        elif compiled.kind == ScopeResult.KIND_DENY:
+            kind = "deny"
+        else:
+            kind = "condition"
+        diagnosis.append(
+            {
+                "source": source,
+                "name": dp.name,
+                "dept_name": dept_name,
+                "applied": compiled is not None,
+                "kind": kind,
+            }
+        )
+    return diagnosis
 
 
 def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict:
@@ -494,7 +590,8 @@ def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict
     1. 模型白名单 = 数据权限注册表（防任意表扫描 / 防非法 label 注入 apps.get_model）；
     2. 菜单上下文必须属于目标用户可见页面菜单（防任意构造上下文）；
     3. 只做 count 与 SQL 文本展示，SQL 不执行；count 为单条 SELECT COUNT(*)；
-    4. draft（可选）为「未保存的规则草稿」，用于配置页即时验证影响面，同样经写入校验。
+    4. 样本行只回 pk + 模型标识（str(obj)），不展开字段内容（字段权限不参与试算）；
+    5. draft（可选）为「未保存的规则草稿」，用于配置页即时验证影响面，同样经写入校验。
     """
     if not model_label:
         raise ValidationError("试算模型不能为空")
@@ -513,12 +610,11 @@ def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict
 
     menu_ctx = None
     if menu_pk:
-        menu_queryset = get_user_menu_queryset_for_preview(user_obj)
-        valid = menu_queryset and menu_queryset.filter(pk=menu_pk, menu_type=Menu.MenuChoices.MENU).exists()
-        if not valid:
-            raise ValidationError("菜单不在目标用户可见范围")
+        # 上下文必须是目标用户可见的页面菜单（非法/越界统一 400，不抛 500）
+        _visible_menu_or_error(user_obj, menu_pk, menu_type=Menu.MenuChoices.MENU)
         menu_ctx = str(menu_pk)
 
+    started = time.perf_counter()
     draft_grant = _build_draft_grant(draft, menu_ctx)
     # 与 IsAuthenticated 的 request.user.menu 注入同构（UserInfo 无 menu 字段，纯属性）
     user_obj.menu = menu_ctx
@@ -534,14 +630,169 @@ def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict
         # 无任何适用授权时 queryset 被短路为空结果集，编译 SQL 会抛 EmptyResultSet；
         # 这是正常的 fail-closed 结果，不该让「试算」这个诊断工具 500
         sql = "-- 无任何适用授权：查询被短路为空结果集，不产生 SQL"
+    count = queryset.count()
+    sample = []
+    for obj in queryset[:TRIAL_SAMPLE_LIMIT]:
+        try:
+            label = str(obj)
+        except Exception:  # noqa: BLE001 异常 __str__ 不应让诊断工具失败
+            label = ""
+        sample.append({"pk": str(obj.pk), "label": label})
     return {
+        "scope": "data",
         "model": model_label,
         "menu": menu_ctx,
-        "count": queryset.count(),
+        "count": count,
         "sql": sql,
+        "sample": sample,
+        "sample_limit": TRIAL_SAMPLE_LIMIT,
+        "grants": _source_grant_diagnosis(user_obj, model, menu_ctx, draft_grant),
+        "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
         "is_superuser": user_obj.is_superuser,
         "data_enabled": settings.PERMISSION_DATA_ENABLED,
         "draft_applied": bool(draft_grant),
+        "note": note,
+    }
+
+
+def _direct_user_field_matrix(user_obj: UserInfo, menu_pk) -> dict:
+    """字段权限生效矩阵直查（与 get_user_field_queryset 同口径，不经 10s 缓存）。
+
+    试算需反映「当前配置」，即便 10s 缓存也会让「刚改完立刻试算」失真；
+    多角色/部门角色的白名单按字段并集合并（运行时同款语义）。
+    """
+    q = Q()
+    has_q = False
+    roles = list(user_obj.roles.all())
+    if roles:
+        q |= Q(role__in=roles) & Q(role__is_active=True)
+        has_q = True
+    if user_obj.dept:
+        q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
+        has_q = True
+    data = {}
+    if not has_q:
+        return data
+    queryset = FieldPermission.objects.filter(q).filter(menu=menu_pk)
+    for model_name, field_name in queryset.values_list("field__parent__name", "field__name").distinct():
+        if not model_name or not field_name:
+            continue
+        data.setdefault(model_name, set()).add(field_name)
+    return data
+
+
+def _registered_model_fields(model_label: str) -> dict:
+    """字段权限注册表（ROLE）里某模型的注册字段 → {name: label}。"""
+    node = ModelLabelField.objects.filter(
+        field_type=ModelLabelField.FieldChoices.ROLE, parent__isnull=True, name=model_label
+    ).first()
+    if not node:
+        return {}
+    return dict(ModelLabelField.objects.filter(parent=node).values_list("name", "label"))
+
+
+def _validate_draft_fields(fields) -> dict:
+    """字段试算草稿校验：模型与字段都必须在字段权限注册表（ROLE）内。
+
+    与字段权限保存路径同口径（白名单只能来自注册表字段），
+    保证「试算能过 ⇒ 保存也能过」，不成为绕过校验的后门。
+    """
+    if not fields:
+        return {}
+    if not isinstance(fields, dict):
+        raise ValidationError("字段试算草稿格式不合法")
+    cleaned = {}
+    for model_label, names in fields.items():
+        node = ModelLabelField.objects.filter(
+            field_type=ModelLabelField.FieldChoices.ROLE, parent__isnull=True, name=model_label
+        ).first()
+        if not node:
+            raise ValidationError(f"字段试算草稿含未注册模型：{model_label}")
+        if not isinstance(names, (list, tuple, set)):
+            raise ValidationError(f"字段试算草稿的字段列表不合法：{model_label}")
+        registered = set(_registered_model_fields(model_label))
+        picked = {str(name) for name in names if name not in (None, "")}
+        invalid = picked - registered
+        if invalid:
+            raise ValidationError(f"字段试算草稿含未注册字段：{model_label}.{sorted(invalid)[0]}")
+        cleaned[model_label] = sorted(picked)
+    return cleaned
+
+
+def _menu_model_labels(menu_obj: Menu) -> dict:
+    """菜单关联模型 → 中文名（menu.model 可能指向模型根节点，也可能指向字段节点）。"""
+    labels = {}
+    for node in menu_obj.model.select_related("parent").all():
+        parent = node.parent
+        labels[parent.name if parent else node.name] = parent.label if parent else node.label
+    return labels
+
+
+def run_field_trial(user_obj: UserInfo, menu_pk, draft=None) -> dict:
+    """字段权限试算：目标用户在某菜单下的生效字段矩阵（只读，不落库）。
+
+    - 生效口径与运行时 get_user_field_queryset 同源（用户角色 ∪ 部门角色，字段并集）；
+    - 「未配置白名单 = 字段被裁空」显式标注（configured=False），避免把空矩阵误读成"没限制"；
+    - draft.fields（{model: [field]}）模拟「该菜单新增一份白名单」后的效果：经注册表校验后
+      与现有生效字段取并集，draft_fields 标出草稿带来的新增字段。
+    """
+    if not menu_pk:
+        raise ValidationError("字段试算必须指定菜单")
+    menu_obj = _visible_menu_or_error(user_obj, menu_pk)
+
+    draft_fields = _validate_draft_fields(draft.get("fields") if isinstance(draft, dict) else None)
+    current = _direct_user_field_matrix(user_obj, menu_obj.pk)
+    if user_obj.is_superuser:
+        bypass_reason = "superuser"
+    elif not settings.PERMISSION_FIELD_ENABLED:
+        bypass_reason = "disabled"
+    else:
+        bypass_reason = None
+
+    model_labels = _menu_model_labels(menu_obj)
+    for model_label in list(current.keys()) + list(draft_fields.keys()):
+        model_labels.setdefault(model_label, _model_label(model_label))
+
+    models = []
+    for model_label in sorted(model_labels):
+        registered = _registered_model_fields(model_label)
+        if bypass_reason:
+            visible = set(registered)
+        else:
+            visible = set(current.get(model_label, set()))
+        visible |= set(draft_fields.get(model_label, []))
+        ordered = [name for name in registered if name in visible]
+        # 注册表外的历史字段（脏数据）也如实展示，便于管理员定位
+        ordered += sorted(visible - set(registered))
+        models.append(
+            {
+                "model": model_label,
+                "model_label": model_labels[model_label],
+                "configured": bool(current.get(model_label)),
+                "fields": ordered,
+                "field_labels": [registered.get(name, name) for name in ordered],
+                "draft_fields": list(draft_fields.get(model_label, [])),
+                "total_fields": len(registered),
+                "total_field_labels": [registered[name] for name in registered],
+            }
+        )
+
+    unconfigured = [item["model_label"] for item in models if not bypass_reason and not item["configured"]]
+    if bypass_reason == "superuser":
+        note = "目标用户为超级管理员，字段权限旁路（可见全部字段）"
+    elif bypass_reason == "disabled":
+        note = "字段权限未启用，试算结果为全量字段"
+    elif unconfigured:
+        note = f"未配置字段白名单的模型（{'、'.join(unconfigured)}）在运行时会裁空所有字段（未配置=默认拒绝）"
+    else:
+        note = None
+    return {
+        "scope": "field",
+        "menu": {"pk": str(menu_obj.pk), "title": menu_obj.meta.title if menu_obj.meta else menu_obj.name},
+        "enabled": settings.PERMISSION_FIELD_ENABLED,
+        "superuser_bypass": user_obj.is_superuser,
+        "draft_applied": bool(draft_fields),
+        "models": models,
         "note": note,
     }
 

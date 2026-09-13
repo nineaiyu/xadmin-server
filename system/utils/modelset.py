@@ -16,7 +16,13 @@ from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import UserRole, DataPermission, SystemConfig
-from system.utils.permission_preview import get_dept_preview, get_role_preview, get_user_preview, run_data_trial
+from system.utils.permission_preview import (
+    get_dept_preview,
+    get_role_preview,
+    get_user_preview,
+    run_data_trial,
+    run_field_trial,
+)
 
 
 def _extract_pks(items):
@@ -88,10 +94,11 @@ class PermissionPreviewAction(object):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                required=["model"],
                 properties={
+                    "scope": build_basic_type(OpenApiTypes.STR),
                     "model": build_basic_type(OpenApiTypes.STR),
                     "menu": build_basic_type(OpenApiTypes.STR),
+                    "draft": build_basic_type(OpenApiTypes.OBJECT),
                 },
             )
         ),
@@ -99,17 +106,22 @@ class PermissionPreviewAction(object):
     )
     @action(methods=["post"], detail=True, url_path="preview/trial")
     def preview_trial(self, request, *args, **kwargs):
-        """试算{cls}的数据权限过滤（命中行数 + 最终 SQL）
+        """试算{cls}的数据权限/字段权限（只读 dry-run，不落库）
 
-        draft（可选）：未保存的规则草稿 {rules, mode_type, menu}，用于配置页即时验证影响面；
-        草稿经写入侧同一套 validate_rules，不落库。
+        scope=data（默认）：数据权限试算 → 命中行数 + 样本行 + 授权诊断 + 最终 SQL；
+        scope=field：字段权限试算 → 指定菜单下的生效字段矩阵（含未配置=裁空提示）。
+        draft（可选，两作用域通用）：未保存的草稿（数据规则 {rules, mode_type, menu} /
+        字段白名单 {fields}），经写入侧同一套校验，仅参与本次试算。
         """
+        draft = request.data.get("draft") or None
+        if (request.data.get("scope") or "data") == "field":
+            return ApiResponse(data=run_field_trial(self.get_object(), request.data.get("menu") or None, draft=draft))
         return ApiResponse(
             data=run_data_trial(
                 self.get_object(),
                 request.data.get("model"),
                 request.data.get("menu") or None,
-                draft=request.data.get("draft") or None,
+                draft=draft,
             )
         )
 
