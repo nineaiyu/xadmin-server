@@ -17,6 +17,31 @@ def _clean_cache():
     cache.clear()
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_settings_pubsub():
+    """测试进程内禁用 Setting 热更新 pub/sub。
+
+    生产链路是「保存 → Redis pub/sub → 后台订阅线程回写 django.conf.settings」；
+    测试里保留后台线程会让某个测试保存的配置被**异步**回灌全局 settings，
+    造成同 worker 内跨测试污染（历史上表现为偶发的 LDAP/通知设置断言失败）。
+    置为惰性桩后，需要验证回写效果的测试按
+    tests/integration/test_monitor_settings.py 的约定显式调用 refresh_setting()。
+    """
+    from settings import signal_handlers
+
+    class _NoopPubSub:
+        def publish(self, data):
+            return True
+
+        def subscribe(self, *_args, **_kwargs):
+            return None
+
+    original = signal_handlers.setting_pub_sub
+    signal_handlers.setting_pub_sub = _NoopPubSub()
+    yield
+    signal_handlers.setting_pub_sub = original
+
+
 @pytest.fixture(autouse=True)
 def _clean_thread_local():
     """每个测试后清理 thread-local 中残留的 request，避免污染序列化器测试。"""

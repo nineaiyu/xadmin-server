@@ -36,6 +36,7 @@ SKIP_DIRS = ("migrations/", ".venv", "__pycache__", "tests/", "demo/")
 # 显式例外（键 = 类名，值 = 原因）；新增例外必须在 PR 里说明理由
 EXEMPT = {
     "SecurityBlockIpViewSet": ("数据源是 Redis key 列表（非 ORM queryset），分页器不参与 ordered 判定，无需 ordering"),
+    "BaseAnalysisViewSet": ("抽象基类（ADR-021），具体 ViewSet（Screen/Report）均已声明 ordering"),
 }
 
 
