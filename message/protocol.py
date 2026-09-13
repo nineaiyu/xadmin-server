@@ -22,12 +22,20 @@ PROTOCOL_VERSION = 1
 
 
 class MessageAction(str, Enum):
-    """消息动作枚举（字符串值，方便 match/比较与载荷路由）。"""
+    """消息动作枚举（字符串值，方便 match/比较与载荷路由）。
+
+    `chat_message` 在两条通道上语义不同（历史原因，见各 Payload 文档）：
+    - `ws/message/<group>/<username>`（MessageNotify，历史通道，仅兼容保留）载荷 = ChatMessagePayload；
+    - `ws/chat/`（ChatNotify，聊天室重构 ADR-034 通道）载荷 = ChatRoomMessagePayload。
+    """
 
     PING = "ping"  # 心跳：上行 ping → 下行 data='pong'
     USERINFO = "userinfo"  # 请求/推送当前登录用户信息
     PUSH_MESSAGE = "push_message"  # 站内信/通知推送
     CHAT_MESSAGE = "chat_message"  # 聊天室消息（双向）
+    CHAT_RECALL = "chat_recall"  # 消息撤回（双向，ws/chat/）
+    CHAT_READ = "chat_read"  # 已读回执（上行 chat_read → 下行游标）
+    CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
     TASK_LOG = "task_log"  # 任务执行日志增量推送（system/ws.py）
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
 
@@ -63,12 +71,57 @@ class UserinfoPayload(TypedDict):
 
 
 class ChatMessagePayload(TypedDict, total=False):
-    """聊天气泡载荷；服务端回填 pk/username 后广播。"""
+    """历史聊天通道（ws/message/*）的气泡载荷；服务端回填 pk/username 后广播。
+
+    仅供旧 MessageNotify 兼容使用，新聊天室请用 ChatRoomMessagePayload。
+    """
 
     text: str
     pk: str
     username: str
     timestamp: str
+
+
+class ChatRoomMessagePayload(TypedDict, total=False):
+    """聊天室消息载荷（ws/chat/ 通道，ADR-034）：落库后广播的完整消息记录。
+
+    id 为自增主键（即游标），client_msg_id 供发送端做本地幂等对齐。
+    """
+
+    id: int
+    room_id: int
+    room_type: str
+    sender_pk: Optional[int]
+    sender_name: str
+    sender_avatar: str
+    message_type: str
+    content: str
+    created_time: str
+    client_msg_id: str
+    extra: Dict[str, Any]
+
+
+class ChatRecallPayload(TypedDict, total=False):
+    """消息撤回帧（上行只带 message_id；下行广播撤回结果）。"""
+
+    message_id: int
+    id: int
+    room_id: int
+    operator_pk: int
+
+
+class ChatReadPayload(TypedDict, total=False):
+    """已读帧：上行 {room_id} → 下行回执最新已读游标。"""
+
+    room_id: int
+    last_read_id: int
+
+
+class ChatUnreadPayload(TypedDict, total=False):
+    """未读红点帧（下行；仅私聊/AI 会话维护未读）。"""
+
+    room_id: int
+    unread_count: int
 
 
 class PushMessagePayload(TypedDict, total=False):

@@ -40,6 +40,8 @@ urlpatterns = [
     re_path("^admin/", admin.site.urls),
     re_path("^api/common/", include("common.urls", namespace="common")),
     re_path("^api/system/", include("system.urls", namespace="system")),
+    # 聊天室（ADR-034）：会话/历史/私聊/撤回/联系人/AI 助手
+    re_path("^api/chat/", include("message.urls", namespace="chat")),
     # SCIM 2.0 用户目录同步（S1）：独立 Bearer Token 鉴权，不走 JWT/菜单权限链
     re_path("^api/scim/v2/", include("system.scim.urls", namespace="scim")),
     re_path("^api/settings/", include("settings.urls", namespace="settings")),

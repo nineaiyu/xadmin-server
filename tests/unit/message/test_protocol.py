@@ -20,8 +20,33 @@ def test_action_enum_covers_known_actions():
     assert MessageAction.USERINFO == "userinfo"
     assert MessageAction.PUSH_MESSAGE == "push_message"
     assert MessageAction.CHAT_MESSAGE == "chat_message"
+    assert MessageAction.CHAT_RECALL == "chat_recall"
+    assert MessageAction.CHAT_READ == "chat_read"
+    assert MessageAction.CHAT_UNREAD == "chat_unread"
     assert MessageAction.TASK_LOG == "task_log"
+    assert MessageAction.MONITOR == "monitor"
     assert PROTOCOL_VERSION == 1
+
+
+def test_action_enum_matches_ws_frame_schema():
+    """三处契约同步（ADR-003）：protocol.py ↔ ws-frame.schema.json ↔ 前端 protocol.ts。"""
+    import json
+    import os
+
+    from django.conf import settings
+
+    schema_path = os.path.join(settings.PROJECT_DIR, "docs", "schema", "ws-frame.schema.json")
+    with open(schema_path, encoding="utf-8") as fp:
+        schema = json.load(fp)
+    assert sorted(schema["definitions"]["action"]["enum"]) == sorted(action.value for action in MessageAction)
+
+
+def test_chat_payloads_registered():
+    """聊天室新增载荷类型（ADR-034）必须在协议模块中有定义。"""
+    from message import protocol
+
+    for name in ("ChatRoomMessagePayload", "ChatRecallPayload", "ChatReadPayload", "ChatUnreadPayload"):
+        assert hasattr(protocol, name), f"协议缺少载荷定义 {name}"
 
 
 def test_outbound_frame_contains_version_and_common_fields():

@@ -71,6 +71,59 @@ def get_user_layer_group_name(user_pk):
     return f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_{user_pk}"
 
 
+# 聊天室通道分组（ADR-034，channel layer 命名空间，非 cache 键）：
+# - 公共聊天室广播组：全站单例；
+# - 用户聊天组：私聊/AI 消息与未读红点定向推送（多端同步）。
+# 命名刻意避开 websocket_group_ 前缀：在线索引只认个人推送组，聊天连接不参与在线计数。
+CHAT_PUBLIC_GROUP = "chat_room_public"
+CHAT_USER_GROUP_PREFIX = "chat_user"
+
+
+def get_public_chat_group_name() -> str:
+    return CHAT_PUBLIC_GROUP
+
+
+def get_chat_user_group_name(user_pk) -> str:
+    return f"{CHAT_USER_GROUP_PREFIX}_{user_pk}"
+
+
+async def async_push_chat_message(room_pks, payload: Dict, message_type="chat_message"):
+    """把聊天帧推给若干用户的聊天连接（多端同步；公共房间由调用方走公共组）。"""
+    for user_pk in dict.fromkeys(room_pks):
+        await channel_layer.group_send(get_chat_user_group_name(user_pk), {"type": message_type, "data": payload})
+
+
+def room_event_groups(room) -> List[str]:
+    """房间事件目标组（聊天室拓扑的唯一口径，同步 DB 查询）。
+
+    - 公共聊天室 → 公共广播组（全员在线连接）；
+    - 私聊 / AI → 成员各自的聊天组（多端同步）。
+    """
+    from message.models import ChatRoom, ChatRoomMember
+
+    if room.room_type == ChatRoom.RoomType.PUBLIC:
+        return [CHAT_PUBLIC_GROUP]
+    return [
+        get_chat_user_group_name(user_pk)
+        for user_pk in ChatRoomMember.objects.filter(room=room).values_list("user_id", flat=True)
+    ]
+
+
+@async_to_sync
+async def _group_broadcast(groups, payload: Dict, message_type: str):
+    for group in dict.fromkeys(groups):
+        await channel_layer.group_send(group, {"type": message_type, "data": payload})
+
+
+def push_room_event(room, payload: Dict, message_type="chat_message"):
+    """REST 侧同步广播入口（撤回 / AI 回复）。
+
+    先在同步上下文解析目标组，再做一次异步投递：不能把 DB 查询放进
+    `async_to_sync` 包裹的协程里（Django 会抛 SynchronousOnlyOperation）。
+    """
+    _group_broadcast(room_event_groups(room), payload, message_type)
+
+
 async def async_push_message(user_pk: str | int, message: Dict, message_type="push_message"):
     await channel_layer.group_send(get_user_layer_group_name(user_pk), {"type": message_type, "data": message})
 

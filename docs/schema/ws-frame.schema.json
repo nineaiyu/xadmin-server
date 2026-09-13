@@ -11,6 +11,9 @@
         "userinfo",
         "push_message",
         "chat_message",
+        "chat_recall",
+        "chat_read",
+        "chat_unread",
         "task_log",
         "monitor"
       ],
@@ -53,6 +56,25 @@
         "finished": { "type": "boolean", "description": "读到结束标记或执行已终态" }
       },
       "additionalProperties": false
+    },
+    "chatRoomMessagePayload": {
+      "type": "object",
+      "description": "聊天室消息帧载荷（ADR-034，ws/chat/ 通道 ChatNotify 落库后广播；与历史 ws/message/* 通道的 chat_message 载荷不同）",
+      "required": ["id", "room_id", "content"],
+      "properties": {
+        "id": { "type": "integer", "description": "消息自增主键（游标）" },
+        "room_id": { "type": "integer" },
+        "room_type": { "type": "string", "description": "public / private / ai" },
+        "sender_pk": { "type": ["integer", "null"] },
+        "sender_name": { "type": "string" },
+        "sender_avatar": { "type": "string" },
+        "message_type": { "type": "string", "description": "text / ai / system" },
+        "content": { "type": "string" },
+        "created_time": { "type": "string" },
+        "client_msg_id": { "type": "string", "description": "客户端幂等键" },
+        "extra": { "type": "object" }
+      },
+      "additionalProperties": true
     }
   },
   "oneOf": [
