@@ -4334,6 +4334,14 @@ msgstr "这是唯一的登录方式，请先绑定其他方式再解绑"
 msgid "Unbound successfully"
 msgstr "已成功解绑"
 
+#: system/views/auth/oauth.py:93
+msgid "The binding link does not belong to the current account, please login and retry"
+msgstr "绑定链接不属于当前账号，请重新登录后再试"
+
+#: system/views/auth/oauth.py:107
+msgid "This third-party account is already bound to another account"
+msgstr "该第三方账号已绑定到其他账号"
+
 #: system/views/auth/register.py:64
 msgid "Registration forbidden"
 msgstr "禁止注册"
@@ -5099,6 +5107,22 @@ msgstr "审批已驳回"
 msgid "Approval cancelled"
 msgstr "审批已撤回"
 
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application submitted"
+msgstr "流程申请已提交"
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application approved"
+msgstr "流程申请已通过"
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application rejected"
+msgstr "流程申请已驳回"
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application cancelled"
+msgstr "流程申请已撤回"
+
 #: ADR-022 outbound webhook (generated)
 msgid "Webhook ping"
 msgstr "连接测试"
@@ -5346,3 +5370,375 @@ msgstr "字段 {} 超过最大长度 {}"
 #: ADR-025 dynamic form (generated)
 msgid "Only the creator can modify a submission"
 msgstr "仅提交人可修改提交"
+
+#: ADR-032 leave module (generated)
+msgid "Leave request"
+msgstr "请假申请"
+
+#: ADR-032 leave module (generated)
+msgid "Leave type"
+msgstr "请假类型"
+
+#: ADR-032 leave module (generated)
+msgid "Annual leave"
+msgstr "年假"
+
+#: ADR-032 leave module (generated)
+msgid "Sick leave"
+msgstr "病假"
+
+#: ADR-032 leave module (generated)
+msgid "Personal leave"
+msgstr "事假"
+
+#: ADR-032 leave module (generated)
+msgid "Compensatory leave"
+msgstr "调休"
+
+#: ADR-032 leave module (generated)
+msgid "Marriage leave"
+msgstr "婚假"
+
+#: ADR-032 leave module (generated)
+msgid "Draft"
+msgstr "草稿"
+
+#: ADR-032 leave module (generated)
+msgid "Start date"
+msgstr "开始日期"
+
+#: ADR-032 leave module (generated)
+msgid "End date"
+msgstr "结束日期"
+
+#: ADR-032 leave module (generated)
+msgid "Days"
+msgstr "天数"
+
+#: ADR-032 leave module (generated)
+msgid "Business type"
+msgstr "业务类型"
+
+#: ADR-032 leave module (generated)
+msgid "Business id"
+msgstr "业务标识"
+
+#: ADR-032 leave module (generated)
+msgid "Start date and end date are required"
+msgstr "开始日期与结束日期必填"
+
+#: ADR-032 leave module (generated)
+msgid "End date cannot be earlier than start date"
+msgstr "结束日期不能早于开始日期"
+
+#: ADR-032 leave module (generated)
+msgid "Days must be greater than 0"
+msgstr "请假天数必须大于 0"
+
+#: ADR-032 leave module (generated)
+msgid "Days cannot exceed the date range (max {} days)"
+msgstr "请假天数不能超过起止区间（最多 {} 天）"
+
+#: ADR-032 leave module (generated)
+msgid "A leave request for {} already overlaps with this period"
+msgstr "与已有请假申请（{}）的假期区间重叠"
+
+#: ADR-032 leave module (generated)
+msgid "Only the applicant can submit this request"
+msgstr "只有申请人本人可以提交该申请"
+
+#: ADR-032 leave module (generated)
+msgid "The request is already in approval"
+msgstr "该申请正在审批中"
+
+#: ADR-032 leave module (generated)
+msgid "The request has been approved"
+msgstr "该申请已通过审批"
+
+#: ADR-032 leave module (generated)
+msgid "No leave approval flow is configured, please contact the administrator"
+msgstr "未配置请假审批流程，请联系管理员"
+
+#: ADR-032 leave module (generated)
+msgid "Application no"
+msgstr "申请单号"
+
+#: ADR-032 leave module (generated)
+msgid "Reject reason"
+msgstr "驳回原因"
+
+#: ADR-032 leave module (generated)
+msgid "Requests in approval or already approved cannot be modified"
+msgstr "审批中或已通过的申请不可修改"
+
+#: ADR-032 leave module (generated)
+msgid "Requests in approval or already approved cannot be deleted"
+msgstr "审批中或已通过的申请不可删除"
+
+#: ADR-032 leave module (generated)
+msgid "Saved as draft: {}"
+msgstr "已保存为草稿：{}"
+
+#: ADR-032 leave module (generated)
+msgid "The leave request has been submitted for approval"
+msgstr "请假申请已提交审批"
+
+#: ADR-032 leave module (generated)
+msgid "The leave request has been cancelled"
+msgstr "请假申请已撤回"
+
+#: ADR-033 knowledge documents (generated)
+msgid "AI knowledge document"
+msgstr "AI 知识库文档"
+
+#: ADR-033 knowledge documents (generated)
+msgid "AI knowledge documents"
+msgstr "AI 知识库文档"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Source type"
+msgstr "来源类型"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository docs"
+msgstr "仓库文档"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Uploaded document"
+msgstr "上传文档"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Storage path"
+msgstr "存储路径"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Chunk count"
+msgstr "分块数"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Chunks"
+msgstr "知识分块"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document uploaded"
+msgstr "文档已上传"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document updated"
+msgstr "文档已更新"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository documents are managed by sync"
+msgstr "仓库文档由同步命令维护，不支持直接删除"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository documents synced"
+msgstr "仓库文档已同步"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name is required"
+msgstr "请填写文档名称"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name cannot contain path characters"
+msgstr "文档名称不能包含路径字符"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document content cannot be empty"
+msgstr "文档内容不能为空"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Path {} conflicts with a repository document"
+msgstr "路径 {} 与仓库文档冲突"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name"
+msgstr "文档名称"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document content"
+msgstr "文档内容"
+
+#: ADR-033 knowledge documents (generated)
+msgid "Active"
+msgstr "启用"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Public chat room"
+msgstr "公共聊天室"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Private chat"
+msgstr "私聊"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room"
+msgstr "聊天室"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat rooms"
+msgstr "聊天室"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room member"
+msgstr "聊天室成员"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room members"
+msgstr "聊天室成员"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat message"
+msgstr "聊天消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat messages"
+msgstr "聊天消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Room key"
+msgstr "会话键"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Display name"
+msgstr "显示名称"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Owner"
+msgstr "所有者"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI room owner; empty for public/private rooms"
+msgstr "AI 会话归属用户；公共/私聊会话为空"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last message"
+msgstr "最后消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last message time"
+msgstr "最后消息时间"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last read message id"
+msgstr "已读消息游标"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Unread count"
+msgstr "未读数量"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI reply"
+msgstr "AI 回复"
+
+#: message app (ADR-034 chat room, generated)
+msgid "System message"
+msgstr "系统消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Sender name"
+msgstr "发送者名称"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message type"
+msgstr "消息类型"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Client message id"
+msgstr "客户端消息键"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Recalled"
+msgstr "已撤回"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Recalled time"
+msgstr "撤回时间"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Extra"
+msgstr "附加信息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Room"
+msgstr "会话"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Cannot start a private chat with yourself"
+msgstr "不能和自己发起私聊"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room not found"
+msgstr "会话不存在"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message content cannot be empty"
+msgstr "消息内容不能为空"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message is too long (max {} characters)"
+msgstr "消息过长（最多 {} 个字符）"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Only the sender can recall the message"
+msgstr "只能撤回自己发送的消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message already recalled"
+msgstr "消息已撤回"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Messages can only be recalled within {} minutes"
+msgstr "消息只能在 {} 分钟内撤回"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat opened"
+msgstr "会话已打开"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Invalid pagination cursor"
+msgstr "分页游标无效"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message recalled"
+msgstr "消息已撤回"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Not an AI assistant chat"
+msgstr "不是 AI 助手会话"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI service is temporarily unavailable"
+msgstr "AI 服务暂时不可用"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Please provide a question after /kb, e.g. /kb how to reset password"
+msgstr "请在 /kb 后输入问题，例如 /kb 如何重置密码"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI assistant is not enabled"
+msgstr "AI 助手未启用"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI assistant is not configured"
+msgstr "AI 助手未配置"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Type /kb <question> to ask the knowledge base"
+msgstr "输入 /kb 加问题可向知识库提问"
+
+#: message app (ADR-034 chat room, generated)
+msgid "New private message from {}"
+msgstr "{} 发来一条私聊消息"
+
+#: message app (ADR-034 chat room, generated)
+msgid "User {} mentioned you in the chat room"
+msgstr "用户 {} 在聊天室提到了你"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Target user"
+msgstr "目标用户"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Type /kb followed by a question to ask the knowledge base"
+msgstr "输入 /kb 加问题可向知识库提问"

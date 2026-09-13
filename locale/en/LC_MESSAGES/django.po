@@ -4166,6 +4166,14 @@ msgstr ""
 msgid "Unbound successfully"
 msgstr ""
 
+#: system/views/auth/oauth.py:93
+msgid "The binding link does not belong to the current account, please login and retry"
+msgstr ""
+
+#: system/views/auth/oauth.py:107
+msgid "This third-party account is already bound to another account"
+msgstr ""
+
 #: system/views/auth/register.py:64
 msgid "Registration forbidden"
 msgstr ""
@@ -4925,6 +4933,22 @@ msgstr ""
 msgid "Approval cancelled"
 msgstr ""
 
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application submitted"
+msgstr ""
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application approved"
+msgstr ""
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application rejected"
+msgstr ""
+
+#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
+msgid "Flow application cancelled"
+msgstr ""
+
 #: ADR-022 outbound webhook (generated)
 msgid "Webhook ping"
 msgstr ""
@@ -5172,3 +5196,259 @@ msgstr ""
 #: ADR-025 dynamic form (generated)
 msgid "Only the creator can modify a submission"
 msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "AI knowledge document"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "AI knowledge documents"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Source type"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository docs"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Uploaded document"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Storage path"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Chunk count"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Chunks"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document uploaded"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document updated"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository documents are managed by sync"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Repository documents synced"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name is required"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name cannot contain path characters"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document content cannot be empty"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Path {} conflicts with a repository document"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document name"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Document content"
+msgstr ""
+
+#: ADR-033 knowledge documents (generated)
+msgid "Active"
+msgstr ""
+
+#: message app (ADR-034 chat room, generated)
+msgid "Public chat room"
+msgstr "Public chat room"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Private chat"
+msgstr "Private chat"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room"
+msgstr "Chat room"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat rooms"
+msgstr "Chat rooms"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room member"
+msgstr "Chat room member"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room members"
+msgstr "Chat room members"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat message"
+msgstr "Chat message"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat messages"
+msgstr "Chat messages"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Room key"
+msgstr "Room key"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Display name"
+msgstr "Display name"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Owner"
+msgstr "Owner"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI room owner; empty for public/private rooms"
+msgstr "AI room owner; empty for public/private rooms"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last message"
+msgstr "Last message"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last message time"
+msgstr "Last message time"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Last read message id"
+msgstr "Last read message id"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Unread count"
+msgstr "Unread count"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI reply"
+msgstr "AI reply"
+
+#: message app (ADR-034 chat room, generated)
+msgid "System message"
+msgstr "System message"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Sender name"
+msgstr "Sender name"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message type"
+msgstr "Message type"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Client message id"
+msgstr "Client message id"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Recalled"
+msgstr "Recalled"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Recalled time"
+msgstr "Recalled time"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Extra"
+msgstr "Extra"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Room"
+msgstr "Room"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Cannot start a private chat with yourself"
+msgstr "Cannot start a private chat with yourself"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat room not found"
+msgstr "Chat room not found"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message content cannot be empty"
+msgstr "Message content cannot be empty"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message is too long (max {} characters)"
+msgstr "Message is too long (max {} characters)"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Only the sender can recall the message"
+msgstr "Only the sender can recall the message"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message already recalled"
+msgstr "Message already recalled"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Messages can only be recalled within {} minutes"
+msgstr "Messages can only be recalled within {} minutes"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Chat opened"
+msgstr "Chat opened"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Invalid pagination cursor"
+msgstr "Invalid pagination cursor"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Message recalled"
+msgstr "Message recalled"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Not an AI assistant chat"
+msgstr "Not an AI assistant chat"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI service is temporarily unavailable"
+msgstr "AI service is temporarily unavailable"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Please provide a question after /kb, e.g. /kb how to reset password"
+msgstr "Please provide a question after /kb, e.g. /kb how to reset password"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI assistant is not enabled"
+msgstr "AI assistant is not enabled"
+
+#: message app (ADR-034 chat room, generated)
+msgid "AI assistant is not configured"
+msgstr "AI assistant is not configured"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Type /kb <question> to ask the knowledge base"
+msgstr "Type /kb <question> to ask the knowledge base"
+
+#: message app (ADR-034 chat room, generated)
+msgid "New private message from {}"
+msgstr "New private message from {}"
+
+#: message app (ADR-034 chat room, generated)
+msgid "User {} mentioned you in the chat room"
+msgstr "User {} mentioned you in the chat room"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Target user"
+msgstr "Target user"
+
+#: message app (ADR-034 chat room, generated)
+msgid "Type /kb followed by a question to ask the knowledge base"
+msgstr "Type /kb followed by a question to ask the knowledge base"
