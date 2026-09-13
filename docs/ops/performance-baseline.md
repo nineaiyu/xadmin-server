@@ -1,6 +1,6 @@
 # 性能基线测定流程（T3.1）
 
-> 关联：半年规划 P3/T3.1；基线登记处 [docs/metrics.md](../../../docs/metrics.md)（工作区）；
+> 关联：半年规划（[docs/plans/](../plans/)）P3/T3.1；基线登记处 [metrics.md](../metrics.md)；
 > 缓存体系见 `docs/architecture/cache.md`，索引现状见 `docs/architecture/indexes.md`。
 > 状态：**开发侧准备完成（2026-09-06）**——silk 接入 + k6 脚本 + 本流程文档已就绪，
 > 实测待具备运行环境（压测专用 DB/Redis + k6）后按本文执行，结果回填 metrics.md。

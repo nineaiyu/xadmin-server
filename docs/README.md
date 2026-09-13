@@ -9,10 +9,14 @@
 docs/
 ├── README.md            本索引
 ├── adr/                 架构决策记录（ADR）
-├── architecture/        架构设计文档
-├── ops/                 部署与运维（deployment.md + runbook）
+├── architecture/        架构设计文档（含数据权限重构设计与行为对照）
+├── ops/                 部署与运维（deployment.md + runbook + 演练/基线记录）
+├── plans/               项目规划与治理文档（跨仓库排期/台账，见 plans/README.md）
+├── history/             历史归档（XADMIN_FRAMEWORK_ANALYSIS.md）
 ├── schema/              前后端契约 JSON Schema
 ├── imgs/                文档配图
+├── metrics.md           基线指标看板（覆盖率/体积/性能 KPI 登记与回填）
+├── 框架开发遵循准则.md    服务端 + 前端开发统一约定与检查清单
 ├── exception-handling.md  异常处理与错误码规范
 └── security-review.md   安全自查清单（按轮次追加归档）
 ```
@@ -42,6 +46,8 @@ docs/
 | [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
 | [scim.md](architecture/scim.md)                         | SCIM 2.0 用户目录同步：启用步骤 / 字段与组映射 / Okta、Entra 配置示例 / 排错 |
 | [notification-channels.md](architecture/notification-channels.md) | 通知渠道体系：三件套模型、新增渠道步骤、两层可达性过滤、短信通知模板配置与排错 |
+| [数据权限与字段权限重构方案-2026.09.md](architecture/数据权限与字段权限重构方案-2026.09.md) | 数据权限重构设计（规则编译器四段管线 + ScopeResult 布尔代数）：问题清单 / 语义决策 D1–D11 / 实施批次与测试计划 |
+| [权限行为新旧对比-2026.09.md](architecture/权限行为新旧对比-2026.09.md) | 上篇的配套交付物：同一份配置在旧/新实现下的逐场景结果对照、升级操作清单（迁移 0014 + 巡检命令） |
 
 ## 部署与运维（ops/）
 
@@ -74,6 +80,29 @@ docs/
 | [ADR-014](adr/ADR-014-typescript-7-evaluation.md) | TypeScript 7 升级评估：暂不升级（vue-tsc 与 TS 7 不兼容，附实测数据） |
 | [ADR-015](adr/ADR-015-reference-project-adoption.md) | 参考项目借鉴决策：vue-pure-admin 点状移植边界 / jumpserver 机制借鉴矩阵 / 审批流可视化不引入 |
 | [ADR-016](adr/ADR-016-approval-flow-phase2.md) | 审批流引擎二期：节点出口路由（排他网关）/ 版本快照与回滚 / RATIO 比例会签 / @vue-flow 画布 |
+| [ADR-017](adr/ADR-017-ldap-directory-sync.md) | LDAP/AD 目录同步：bind 认证接入认证链（优先级可配、降级不阻断本地）/ OU→部门树 + 用户定时同步 / 冲突审计 / 凭据值级加密 |
+| [ADR-018](adr/ADR-018-im-scan-login.md) | 企业 IM 扫码登录：钉钉/企微/飞书 flavor 适配器（官方端点预设、企微 corp token 缓存）/ 绑定唯一与 MFA 回归沿用 / OAUTH_PROVIDERS 写侧校验接线 |
+| [ADR-019](adr/ADR-019-im-notify-channels.md) | 企业 IM 消息渠道：三家发送 SDK（token 缓存/unionId 换 userid）/ 收件账号按 flavor 复用 OAuth 绑定 / notify_im 配置值级加密 |
+| [ADR-020](adr/ADR-020-dataset-dashboard-phase1.md) | 数据集 + 仪表盘一期：模型/字段/op 白名单受控查询（行级数据权限 fail-closed）/ 布局 JSON + 四种图表卡片 / 个人·共享两档 / 评估出口条款 |
+| [ADR-021](adr/ADR-021-dashboard-display-and-reports.md) | 仪表盘二期 + 报表轻量版：Screen 大屏模板与全屏轮播（后端极薄）/ Report 定时报表（复用下载中心产物 + 邮件附件，创建者权限上下文）/ 明示不做边界 |
+| [ADR-022](adr/ADR-022-outbound-webhooks.md) | 出站 Webhook：事件目录 + 唯一发射口（吞异常）/ HMAC-SHA256 时间戳签名（secret 值级加密）/ 指数退避 5 次 + 耗尽告警 / 投递审计与重试 |
+| [ADR-023](adr/ADR-023-ai-assistant-phase1.md) | AI 一期（使用/二开助手）：OpenAI 兼容供应商中立接入层 / docs/ 分块入库 + 词频检索（向量升级候选池）/ ask 引用出处 / 权限门控 + 密钥值级加密（G12 模式先行） |
+| [ADR-024](adr/ADR-024-nl-query-phase2.md) | AI 二期 NL 查数：LLM 只产出受限数据集 DSL（LLM 输出按不可信输入处理）/ 服务端白名单重校验 + 数据权限 fail-closed / 试算预览 + 限幅 + 语义审计（AuthType.AI） / 灰度默认关 |
+| [ADR-025](adr/ADR-025-dynamic-form-phase1.md) | 动态表单一期：8 种收敛控件集 JSON Schema（写入/提交双侧校验）/ 通用 JSON 存储 + creator 隔离 / 零新依赖自定义动态表格（RePlusPage 动态列登记二期） |
+| [ADR-026](adr/ADR-026-dynamic-form-approval.md) | 动态表单二期（G5b）：表单定义开关 `approval_required` + 提交复用敏感操作审批协议（412 一次性令牌重放）/ 校验在前审批在后 / 超管直提（单管理员部署防死锁）/ 前端设计器开关与填报标记 |
+| [ADR-027](adr/ADR-027-code-generator.md) | 代码生成器（G7）：`generate_crud` 管理命令（Model → 序列化器/视图/路由/配置 + 前端页面 + 菜单种子）/ 生成块幂等合并 + import 去重 / 输出即过 ruff 门禁（生成器单测含 ruff 校验） |
+| [ADR-028](adr/ADR-028-global-search.md) | 全局搜索（G9）：顶栏搜索弹窗内跨实体分组结果（用户/部门/文件/审批单/日志）/ 逐实体两道门（页面权限门 + 数据权限编译器 fail-closed）/ 检索基线 icontains（转义反破坏匹配已实证，Postgres 全文化为评估出口）/ 权限码 retrieve:SystemGlobalSearch 入种子 |
+| [ADR-029](adr/ADR-029-page-watermark.md) | 敏感页面水印（G10）：基本设置三项配置（开关 / 文案 / 生效页面路由前缀）/ 文案含时间并分钟级刷新 / 挂载与清除收敛到 App.vue（移除 store 里的水印 hack），菜单级开关与防篡改列为评估出口 |
+| [ADR-031](adr/ADR-031-multi-tenant-evaluation.md) | 多租户 go/no-go 评估（2027-09）：**结论 no-go（暂不做）**——一租户一实例为物理隔离、改造面 ≥6 窗口且与数据权限编译器高风险耦合；登记重开条件与 schema-per-tenant 预研要点 |
+| [ADR-030](adr/ADR-030-open-platform.md) | 开放平台雏形（G11）：`ApiApplication` 应用发卡机复用 PAT 认证链（sha256 口径/三层权限/审计）/ client-credentials 换发端点（明文仅一次、轮换即失效）/ 按应用限流（认证处计数 429）/ 回调注册 + HMAC 测试投递；不做应用级权限体系与 OAuth 授权码 |
+
+## 项目规划与治理（plans/）
+
+跨仓库（server + client）的项目规划文档，2026-09-12 自工作区根目录 `docs/` 迁入并二次清理
+（已完结规划删除，候选池与工作纪律并入 [plans/README.md](plans/README.md)）：
+
+- [半年回顾与下期规划初稿-2027.03-08.md](plans/半年回顾与下期规划初稿-2027.03-08.md) —— 上期回顾 + 2027.03–08 下期规划 v1.0（已评审；其排期职能已被年度计划取代，保留作历史记录）
+- [年度开发计划-2026.10-2027.09.md](plans/年度开发计划-2026.10-2027.09.md) —— **2026.10–2027.09 唯一排期事实源**（缺口分析 + 月度窗口，完成后回填状态）
 
 ## 契约与规范（schema/ + 根级）
 
@@ -84,6 +113,8 @@ docs/
 | [exception-handling.md](exception-handling.md)                         | 错误脱敏原则 + 错误码登记表（新增错误码必须先登记）         |
 | [security-review.md](security-review.md)                               | 安全自查归档（Flower/XFrame/Referer/上传校验/JWT 审计等） |
 | [cache-keys-audit.md](cache-keys-audit.md)                             | 缓存键审计（N5）：`scripts/check_cache_keys.py --strict` 冲突清零记录 |
+| [metrics.md](metrics.md)                                               | 基线指标看板（半年规划 T1.8）：测试/体积/性能 KPI 基线与各阶段实测回填 |
+| [框架开发遵循准则.md](框架开发遵循准则.md)                               | 服务端 + 前端开发统一约定与检查清单：响应/Model/Serializer/ViewSet、RePlusPage 模式、i18n、常见坑速查 |
 
 ## 维护约定
 
@@ -91,5 +122,6 @@ docs/
 - ADR 状态变更需同步更新本索引表格；
 - API 文档随版本固化（T6.3）：每次 release 自动附带静态 `openapi.json`（drf-spectacular 导出，见 `build-image.yml`），并可在部署环境访问
   `/api-docs/` 交互查阅；
-- 根目录 `XADMIN_FRAMEWORK_ANALYSIS.md` 为历史深度分析，内容已由 [architecture/overview.md](architecture/overview.md)
-  导航收录，以代码与 overview 为准。
+- `history/XADMIN_FRAMEWORK_ANALYSIS.md` 为历史深度分析（2026-09-12 自仓库根目录归档），内容已由
+  [architecture/overview.md](architecture/overview.md) 导航收录，以代码与 overview 为准；
+- 跨仓库规划/排期文档入 `plans/`（先登记 plans/README.md），架构类文档入 `architecture/`，决策类入 `adr/`。

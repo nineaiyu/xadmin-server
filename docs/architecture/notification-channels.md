@@ -7,7 +7,7 @@
 
 | 组成 | 位置 | 职责 |
 |------|------|------|
-| `BACKEND` 枚举 | `notifications/backends/__init__.py` | 渠道清单（email / site_msg / sms）；`client` 按名取渠道实现；`filter_enable_backends` 过滤可用渠道 |
+| `BACKEND` 枚举 | `notifications/backends/__init__.py` | 渠道清单（email / site_msg / sms / dingtalk / wecom / feishu，ADR-019）；`client` 按名取渠道实现；`filter_enable_backends` 过滤可用渠道 |
 | 渠道实现模块 | `notifications/backends/<name>.py` | 暴露模块级 `backend = XxxBackend`（`BackendBase` 子类）；约定式自动加载，**加载失败只告警跳过，不阻断启动** |
 | 渲染方法注册 | `notifications/notifications.py` 的 `register_backend_msg` | 声明该渠道消费哪份消息文案（`get_email_msg` / `get_sms_msg` …）；未注册的渠道回退 `get_common_msg` |
 
@@ -19,11 +19,11 @@ from .base import BackendBase
 
 
 class Wecom(BackendBase):
-    account_field = "wecom_id"                  # User 上对应的接收账号字段
+    account_field = "wecom_id"  # User 上对应的接收账号字段
     is_enable_field_in_settings = "WECOM_ENABLED"  # 渠道总开关（settings 名）
 
     def send_msg(self, users, message, subject="", **kwargs):
-        accounts, unbound, __ = self.get_accounts(users)   # 未绑定账号的用户自动跳过
+        accounts, unbound, __ = self.get_accounts(users)  # 未绑定账号的用户自动跳过
         if not accounts:
             return
         ...  # 调用渠道 SDK
@@ -62,7 +62,16 @@ backend = Wecom  # 约定：模块级 backend 变量
 
 降级语义：开关开启但模板未配置 → `SMS.is_enable()` 返回 `False`，发送链路静默跳过短信渠道，不影响邮件/站内信。
 
-## 五、排错指引
+## 五、企业 IM 渠道（钉钉 / 企业微信 / 飞书，ADR-019）
+
+三渠道收件账号**不落用户字段**：来自用户经对应 flavor provider 扫码登录留下的
+`UserOAuthBinding`（provider key 自由命名，按 flavor 归集）。钉钉发送前按
+`user/getbyunionid` 换 userid（缓存）；从未经该 IM 登录的用户不可达该渠道
+（debug 日志口径）。凭据与开关走 Setting（category=notify_im，secret 值级加密），
+管理页在「消息通知设置」的 IM 页签；`is_enable` = 开关 AND 凭据齐全（SMS 同款
+降级语义）。SDK 收口 `common/sdk/im/`，与 `common/sdk/sms` 对称。
+
+## 六、排错指引
 
 - **没收到邮件/短信**：确认订阅 `receive_backends` 含该渠道 → 渠道级开关 → 用户级 `account_field` 是否绑定（debug 日志 `skip N user(s) without ... bound`）；
 - **订阅页渠道列表**：`/api/notifications/` 的 backends 接口只下发 `is_enable` 为真的渠道（`notifications/views/notifications.py`）;

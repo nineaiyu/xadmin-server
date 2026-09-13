@@ -7,6 +7,10 @@
 
 ## 一、一个业务模块的最小组件链
 
+> 骨架可用代码生成器一键产出：`python manage.py generate_crud <app_label>.<ModelName>`
+> （序列化器/视图/路由/配置 + 前端页面三件套 + 菜单种子，见 [ADR-027](../adr/ADR-027-code-generator.md)）。
+> 生成的代码是普通仓库代码、按本页范式产出，仍需 **人工复核关联字段 `input_type` 与菜单挂载位置**后再提交。
+
 ```
 demo/models.py          模型（继承 common.core.models.DbAuditModel）
 demo/serializers/       序列化器（继承 BaseModelSerializer，声明式字段 → 驱动前端渲染）

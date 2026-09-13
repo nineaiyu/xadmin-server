@@ -2,7 +2,7 @@
 
 - 状态：已接受
 - 日期：2026-09-09
-- 关联：N3 第二期 F3（`docs/superpowers/plans/2026-09-09-n3-business-features-phase2.md`）
+- 关联：N3 第二期 F3（执行计划已随 2026-09-12 文档清理删除，交付记录见 [metrics.md](../metrics.md) 2026-09-10 行与《半年回顾》§二·补）
 
 ## 背景
 

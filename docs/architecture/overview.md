@@ -1,6 +1,6 @@
 # 架构总览
 
-> 本文是 [XADMIN_FRAMEWORK_ANALYSIS.md](../../XADMIN_FRAMEWORK_ANALYSIS.md)（1289 行深度分析，2026-09-04 撰写）的**精炼导航版
+> 本文是 [XADMIN_FRAMEWORK_ANALYSIS.md](../history/XADMIN_FRAMEWORK_ANALYSIS.md)（1289 行深度分析，2026-09-04 撰写）的**精炼导航版
 **（T6.1，2026-09-06）。
 > 深度细节、跨语言重写建议请看完整版；两文冲突时以本文（较新）与代码为准。
 > 关联：[permission.md](permission.md)（三层权限）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)
@@ -134,7 +134,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 | [ADR-003](../adr/ADR-003-websocket-protocol.md) | WebSocket 保持自定义协议，补 Schema 与类型约束            |
 | [ADR-004](../adr/ADR-004-django-60-upgrade.md)  | 停留 Django 5.2 LTS，2027-01 窗口评估 6.2 LTS      |
 
-技术债台账（TD-01 ~ TD-24）与任务看板统一维护于工作区 `docs/半年技术规划-2026.09-2027.02.md`（不在仓库内，个人规划文档）。
+技术债台账（TD-01~28）已全部销项：闭环记录见《[半年回顾与下期规划初稿-2027.03-08](../plans/半年回顾与下期规划初稿-2027.03-08.md)》与 [metrics.md](../metrics.md) 履历。
 
 ## 十、新人上手路径
 
