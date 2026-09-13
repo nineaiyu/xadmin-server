@@ -34,6 +34,11 @@ EVENT_CATALOG = {
     "approval.cancelled": _("Approval cancelled"),
     "security.sensitive_operation": _("Sensitive operation alert"),
     "system.backup_failure": _("Backup failure"),
+    # 流程审批引擎（ADR-012）：实例级事件（提交/终态），payload 只含摘要不含 form_data
+    "flow.submitted": _("Flow application submitted"),
+    "flow.approved": _("Flow application approved"),
+    "flow.rejected": _("Flow application rejected"),
+    "flow.cancelled": _("Flow application cancelled"),
     # 连接测试事件（订阅管理页「测试」按钮），不在业务信号源接线
     "webhook.ping": _("Webhook ping"),
 }

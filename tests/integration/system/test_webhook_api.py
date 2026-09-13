@@ -234,6 +234,42 @@ class TestEventWiring:
         assert cancel_request(approval, normal_user)[0] is False  # 已终态不可撤回
         assert handler.received[-1]["event"] == "approval.approved"
 
+    def test_flow_events_emit(self, receiver, superuser, normal_user):
+        """流程审批引擎（ADR-012）事件接线：提交/通过/撤回 → flow.* 投递。"""
+        url, handler = receiver
+        for event in ("flow.submitted", "flow.approved", "flow.cancelled"):
+            make_subscription(url=url, event=event)
+        from system.models import ApprovalFlow, ApprovalFlowNode, ApprovalNodeTask
+        from system.utils.approval_flow import approve_task, cancel_instance, create_instance
+
+        flow = ApprovalFlow.objects.create(name="WH测试流", code="wh_flow_test", form_schema=[])
+        ApprovalFlowNode.objects.create(
+            flow=flow,
+            name="审批",
+            order=1,
+            assignee_type=ApprovalFlowNode.AssigneeType.USER,
+            assignee_value=superuser.username,
+        )
+
+        instance, error = create_instance(flow=flow, applicant=normal_user, title="WH申请", form_data={})
+        assert error is None
+        assert WebhookDelivery.objects.filter(event="flow.submitted").exists()
+        submitted = WebhookDelivery.objects.get(event="flow.submitted")
+        # emit_webhook_event 的 payload 包装：{event, occurred_at, data}
+        assert submitted.payload["data"]["status"] == "PENDING"
+        assert submitted.payload["data"]["title"] == "WH申请"
+        assert submitted.payload["data"]["creator"] == normal_user.username
+
+        task = ApprovalNodeTask.objects.get(instance=instance, status=ApprovalNodeTask.Status.PENDING)
+        assert approve_task(task.pk, superuser)[0] is True
+        assert WebhookDelivery.objects.filter(event="flow.approved").exists()
+
+        instance2, _error = create_instance(flow=flow, applicant=normal_user, title="WH撤回申请", form_data={})
+        assert cancel_instance(instance2, normal_user)[0] is True
+        assert WebhookDelivery.objects.filter(event="flow.cancelled").exists()
+        # 本地接收端未订阅 rejected：本用例仅覆盖 submitted/approved/cancelled 三态
+        assert handler.received[-1]["event"] == "flow.cancelled"
+
 
 class _FakeView:
     """create_approval 需要 view 提供 module/object_pk 信息。"""
