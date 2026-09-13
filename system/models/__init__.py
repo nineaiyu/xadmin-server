@@ -18,6 +18,7 @@ from .export import *
 from .field import *
 from .import_ import *
 from .ldap import *
+from .leave import *
 from .log import *
 from .mask import *
 from .menu import *

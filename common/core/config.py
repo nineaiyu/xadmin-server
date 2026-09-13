@@ -268,6 +268,16 @@ class BaseConfCache(ConfigCacheBase):
         return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", 365))
 
     @property
+    def LEAVE_APPROVAL_FLOW_CODE(self):
+        """请假审批流程 code（默认 leave，ADR-032）：请假单提交时绑定的流程定义。
+
+        该 code 的流程不存在或未启用时，按「leave_<请假类型>」再回退「leave 前缀的
+        启用流程」查找（见 system/utils/leave.py:resolve_leave_flow），全找不到则拒绝
+        提交并提示管理员配置流程。
+        """
+        return self.get_value("LEAVE_APPROVAL_FLOW_CODE", "leave")
+
+    @property
     def FILE_OFFICE_PREVIEW_ENABLED(self):
         """Office 在线预览开关（默认开，ADR-013）：关闭或未装 LibreOffice 时按不支持降级。"""
         return self.get_value("FILE_OFFICE_PREVIEW_ENABLED", True)

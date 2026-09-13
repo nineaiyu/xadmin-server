@@ -275,6 +275,9 @@ class Config(dict):
         "APPROVAL_REMIND_HOURS": 24,
         # 流程实例（全量审批流引擎，ADR-012）保留天数：超过由清理任务分批删除
         "APPROVAL_FLOW_KEEP_DAYS": 365,
+        # 请假审批流程 code（ADR-032）：请假单提交时绑定的流程定义；该 code 不存在时
+        # 依次回退 leave_<请假类型> 与「leave 前缀的启用流程」
+        "LEAVE_APPROVAL_FLOW_CODE": "leave",
         # Office 在线预览（ADR-013）：LibreOffice headless 转 PDF 后内嵌渲染
         "FILE_OFFICE_PREVIEW_ENABLED": True,  # 关闭或未安装转换器时按「不支持预览」降级
         "FILE_OFFICE_MAX_BYTES": 20 * 1024 * 1024,  # 转换大小上限（字节，默认 20MB）

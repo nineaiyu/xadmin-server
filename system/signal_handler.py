@@ -16,7 +16,7 @@ from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.utils import get_logger
 from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution, DataDict, DataMaskRule
-from system.signal import invalid_user_cache_signal
+from system.signal import approval_instance_finished, invalid_user_cache_signal
 from system.utils.dict import invalid_dict_cache
 from system.utils.mask import invalid_mask_cache
 
@@ -151,6 +151,29 @@ def invalid_mask_roles_m2m_cache_handler(sender, instance, action, **kwargs):
         return
     invalid_mask_cache(instance.model if instance.model else None)
     logger.info(f"invalid mask cache by roles m2m {instance}")
+
+
+@receiver(approval_instance_finished)
+def sync_business_status_handler(sender, instance, status=None, reason="", **kwargs):
+    """流程实例终态回写业务单（ADR-032）：按 biz_type 分发给业务同步器。
+
+    目前仅请假业务（biz_type=leave）接入；新增业务在此处追加分支即可（引擎侧
+    无需改动）。回写失败只记日志——业务状态由审批结果驱动，不应反过来阻断审批。
+    """
+    biz_type = getattr(instance, "biz_type", "")
+    if not biz_type:
+        return
+    try:
+        if biz_type == "leave":
+            from system.utils.leave import sync_leave_instance
+
+            sync_leave_instance(instance, status, reason)
+        else:
+            logger.warning("no business sync handler for biz_type:%s", biz_type)
+    except Exception:
+        logger.exception(
+            "sync business status failed. instance:%s biz_type:%s", getattr(instance, "pk", None), biz_type
+        )
 
 
 @receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_roles")

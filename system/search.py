@@ -24,7 +24,7 @@ from django.db.models import Q, QuerySet
 
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_menu_pk, get_user_permission
-from system.models import ApprovalRequest, DeptInfo, OperationLog, UploadFile, UserInfo
+from system.models import ApprovalRequest, DeptInfo, Leave, OperationLog, UploadFile, UserInfo
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
@@ -42,6 +42,15 @@ def _approval_row_scope(user, queryset: QuerySet) -> QuerySet:
     if user.is_superuser:
         return queryset
     return queryset.filter(Q(creator=user) | Q(approver=user))
+
+
+def _leave_row_scope(user, queryset: QuerySet) -> QuerySet:
+    """请假单行级收紧（与请假列表口径一致）：我提交 ∪ 我审批过。"""
+    if user.is_superuser:
+        return queryset
+    return queryset.filter(
+        Q(creator=user) | Q(instance__tasks__assignee=user) | Q(instance__tasks__actor=user)
+    ).distinct()
 
 
 @dataclass(frozen=True)
@@ -132,6 +141,17 @@ SEARCH_PROVIDERS = (
         display_field="path",
         meta_fields=("module", "status"),
         row_scope=_approval_row_scope,
+    ),
+    SearchProvider(
+        key="leave",
+        label="请假申请",
+        route="/system/leave/index",
+        list_url="api/system/leaves",
+        queryset=lambda: Leave.objects.select_related("creator").order_by("-created_time"),
+        text_fields=("reason",),
+        display_field="reason",
+        meta_fields=("leave_type", "status"),
+        row_scope=_leave_row_scope,
     ),
     SearchProvider(
         key="log",

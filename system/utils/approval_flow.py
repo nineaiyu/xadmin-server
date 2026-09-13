@@ -42,6 +42,12 @@ FLOW_NOTIFY_THROTTLE_SECONDS = 60
 FLOW_STATS_WINDOW_DAYS = 30
 # 条件运算符白名单
 CONDITION_OPS = ("eq", "ne", "in", "not_in", "gt", "gte", "lt", "lte", "contains", "is_empty", "not_empty")
+# 实例终态 → 出站 Webhook 事件（flow.*，ADR-022）；PENDING 不经 _finish_instance 不映射
+_FLOW_FINISH_EVENTS = {
+    "APPROVED": "flow.approved",
+    "REJECTED": "flow.rejected",
+    "CANCELLED": "flow.cancelled",
+}
 
 
 def _models():
@@ -299,11 +305,15 @@ def _enter_node(instance, node) -> bool:
     return bool(tasks)
 
 
-def create_instance(*, flow, applicant, title, form_data):
+def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""):
     """发起申请：校验表单与全部可达节点候选，建实例并进入首节点。
 
     返回 (instance, error)：error 为 None 表示成功。候选校验 fail-closed——
     任一可达节点无人可审即拒绝发起（避免在途中卡死或静默放行）。
+
+    biz_type/biz_id（ADR-032）：业务模块挂钩点——传入后实例与业务行绑定，
+    终态时经 ``approval_instance_finished`` 信号回写业务状态；留空 = 引擎自带
+    表单的独立申请（历史行为不变）。
     """
     ApprovalInstance = _models().Instance
 
@@ -329,9 +339,37 @@ def create_instance(*, flow, applicant, title, form_data):
         creator=applicant,
         current_node=path[0],
         flow_version=flow.version,
+        biz_type=(biz_type or "")[:64],
+        biz_id=str(biz_id or "")[:64],
     )
     _enter_node(instance, path[0])
+    _emit_flow_event("flow.submitted", instance)
     return instance, None
+
+
+def _emit_flow_event(event: str, instance) -> None:
+    """出站 Webhook：流程实例事件（emit 全程吞异常，不影响审批流转）。
+
+    payload 只含摘要字段，不含 form_data——表单内容可能敏感，订阅方需要明细时
+    用自身凭证走 API 按流程取（与轻量审批 _emit_approval_event 同口径）。
+    """
+    from system.utils.webhook import emit_webhook_event
+
+    try:
+        emit_webhook_event(
+            event,
+            {
+                "instance_no": str(instance.pk)[:8].upper(),
+                "title": instance.title,
+                "flow_name": instance.flow_name,
+                "status": instance.status,
+                "creator": getattr(instance.creator, "username", ""),
+                "current_node": getattr(instance.current_node, "name", "") or "",
+                "reason": instance.reason or "",
+            },
+        )
+    except Exception:  # noqa: BLE001 双保险（emit 自身已吞异常）
+        logger.warning("emit flow webhook failed: %s", event, exc_info=True)
 
 
 def _finish_instance(instance, status, reason=None):
@@ -347,6 +385,30 @@ def _finish_instance(instance, status, reason=None):
     instance.status = status
     instance.reason = reason
     instance.current_node = None
+    event = _FLOW_FINISH_EVENTS.get(str(status))
+    if event:
+        _emit_flow_event(event, instance)
+    _notify_business_finished(instance, status, reason)
+
+
+def _notify_business_finished(instance, status, reason=None) -> None:
+    """业务回调（ADR-032）：实例到达终态时通知绑定的业务模块回写状态。
+
+    仅在 biz_type 非空时发送；接收方在 system/signal_handler.py 注册，异常只记
+    日志——业务回写失败不应影响审批主链路（与通知/Webhook 同口径）。
+    """
+    if not getattr(instance, "biz_type", ""):
+        return
+    from system.signal import approval_instance_finished
+
+    try:
+        approval_instance_finished.send(
+            sender=type(instance), instance=instance, status=str(status), reason=reason or ""
+        )
+    except Exception:  # noqa: BLE001 业务回写故障不影响审批状态机
+        logger.warning(
+            "approval flow business callback failed. instance:%s biz:%s", instance.pk, instance.biz_type, exc_info=True
+        )
 
 
 def _cancel_pending_tasks(instance, node=None):
