@@ -1,0 +1,82 @@
+[
+  {
+    "model": "system.dynamicformsubmission",
+    "pk": "5eed000a-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-09T03:00:00.000Z",
+      "updated_time": "2026-09-09T03:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "form": "5eed0009-0000-4000-8000-000000000001",
+      "data": {
+        "name": "王小明",
+        "phone": "13812345678",
+        "hire_date": "2026-09-15",
+        "dept": "研发部",
+        "self_intro": "五年后端开发经验，熟悉 Django 与 Vue。",
+        "need_laptop": true
+      }
+    }
+  },
+  {
+    "model": "system.dynamicformsubmission",
+    "pk": "5eed000a-0000-4000-8000-000000000002",
+    "fields": {
+      "created_time": "2026-09-09T03:10:00.000Z",
+      "updated_time": "2026-09-09T03:10:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "form": "5eed0009-0000-4000-8000-000000000001",
+      "data": {
+        "name": "赵晓丽",
+        "phone": "13987654321",
+        "hire_date": "2026-09-21",
+        "dept": "市场部",
+        "self_intro": null,
+        "need_laptop": false
+      }
+    }
+  },
+  {
+    "model": "system.dynamicformsubmission",
+    "pk": "5eed000a-0000-4000-8000-000000000003",
+    "fields": {
+      "created_time": "2026-09-10T05:00:00.000Z",
+      "updated_time": "2026-09-10T05:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "form": "5eed0009-0000-4000-8000-000000000002",
+      "data": {
+        "device_model": "ThinkPad X1 Carbon",
+        "quantity": 1,
+        "purpose": "开发测试",
+        "expect_date": "2026-09-16"
+      }
+    }
+  },
+  {
+    "model": "system.dynamicformsubmission",
+    "pk": "5eed000a-0000-4000-8000-000000000004",
+    "fields": {
+      "created_time": "2026-09-11T05:00:00.000Z",
+      "updated_time": "2026-09-11T05:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "form": "5eed0009-0000-4000-8000-000000000002",
+      "data": {
+        "device_model": "Dell U2723QE 显示器",
+        "quantity": 2,
+        "purpose": "日常办公",
+        "expect_date": "2026-09-18"
+      }
+    }
+  }
+]

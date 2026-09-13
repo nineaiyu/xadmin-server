@@ -1,0 +1,140 @@
+[
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-08T02:10:00.000Z",
+      "updated_time": "2026-09-08T02:10:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000001",
+      "name": "部门负责人审批",
+      "order": 1,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 220, "y": 140},
+      "timeout_hours": 24
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000002",
+    "fields": {
+      "created_time": "2026-09-08T02:10:00.000Z",
+      "updated_time": "2026-09-08T02:10:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000001",
+      "name": "人事备案",
+      "order": 2,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 480, "y": 140},
+      "timeout_hours": 0
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000005",
+    "fields": {
+      "created_time": "2026-09-14T02:20:00.000Z",
+      "updated_time": "2026-09-14T02:20:00.000Z",
+      "description": "部门负责人审批：申请人所在部门的 leader（部门未配置负责人时提交会被拒绝并给出提示）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000003",
+      "name": "直属主管审批",
+      "order": 1,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "leader",
+      "assignee_value": "",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 260, "y": 160},
+      "timeout_hours": 24
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000006",
+    "fields": {
+      "created_time": "2026-09-14T02:20:00.000Z",
+      "updated_time": "2026-09-14T02:20:00.000Z",
+      "description": "人事复核：请假超过 3 天才经过（条件节点示例）；审批人取部门负责人",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000003",
+      "name": "人事复核",
+      "order": 2,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {"field": "days", "op": "gt", "value": 3},
+      "routes": [],
+      "layout": {"x": 520, "y": 160},
+      "timeout_hours": 0
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000003",
+    "fields": {
+      "created_time": "2026-09-08T02:11:00.000Z",
+      "updated_time": "2026-09-08T02:11:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000002",
+      "name": "财务初审",
+      "order": 1,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 220, "y": 140},
+      "timeout_hours": 24
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000004",
+    "fields": {
+      "created_time": "2026-09-08T02:11:00.000Z",
+      "updated_time": "2026-09-08T02:11:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000002",
+      "name": "总经理审批",
+      "order": 2,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {"field": "amount", "op": "gte", "value": 1000},
+      "routes": [],
+      "layout": {"x": 480, "y": 140},
+      "timeout_hours": 0
+    }
+  }
+]

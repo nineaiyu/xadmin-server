@@ -16,5 +16,23 @@
       "modifier": 1,
       "dept_belong": null
     }
+  },
+  {
+    "model": "system.dataset",
+    "pk": "5eed0001-0000-4000-8000-000000000002",
+    "fields": {
+      "name": "示例-表单提交",
+      "description": "内置示例：绑定动态表单提交记录，表单采集数据进入数据分析与 AI 查数（趋势按提交时间聚合）",
+      "bound_model": "system.dynamicformsubmission",
+      "columns": ["form", "data", "creator", "created_time"],
+      "filters": [],
+      "ordering": "",
+      "row_limit": 1000,
+      "config": {"date_field": "created_time"},
+      "visibility": "shared",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null
+    }
   }
 ]

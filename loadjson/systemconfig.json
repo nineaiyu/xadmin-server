@@ -635,6 +635,23 @@
     "model": "system.systemconfig",
     "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1f",
     "fields": {
+      "created_time": "2026-09-14T00:00:00Z",
+      "updated_time": "2026-09-14T00:00:00Z",
+      "description": "请假审批流程 code（ADR-032）：请假单提交时绑定的流程定义；不存在时按 leave_<类型> 与 leave 前缀回退查找",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "leave",
+      "is_active": true,
+      "access": false,
+      "key": "LEAVE_APPROVAL_FLOW_CODE",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b20",
+    "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
       "description": "Office 在线预览开关（ADR-013）：关闭或未安装 LibreOffice 时按「不支持预览」降级",

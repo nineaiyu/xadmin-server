@@ -1,0 +1,68 @@
+[
+  {
+    "model": "system.datamaskrule",
+    "pk": "5eed0005-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-08T02:00:00.000Z",
+      "updated_time": "2026-09-08T02:00:00.000Z",
+      "description": "内置示例：用户手机号中间四位打码（138****5678），对全部非超管生效",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "model": "system.userinfo",
+      "field": "phone",
+      "mask_type": "phone",
+      "keep_head": 3,
+      "keep_tail": 4,
+      "mask_char": "*",
+      "pattern": null,
+      "roles": [],
+      "is_active": true,
+      "sort": 10
+    }
+  },
+  {
+    "model": "system.datamaskrule",
+    "pk": "5eed0005-0000-4000-8000-000000000002",
+    "fields": {
+      "created_time": "2026-09-08T02:00:00.000Z",
+      "updated_time": "2026-09-08T02:00:00.000Z",
+      "description": "内置示例：邮箱 local 部分仅保留前两位，域名全显",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "model": "system.userinfo",
+      "field": "email",
+      "mask_type": "email",
+      "keep_head": 2,
+      "keep_tail": 0,
+      "mask_char": "*",
+      "pattern": null,
+      "roles": [],
+      "is_active": true,
+      "sort": 20
+    }
+  },
+  {
+    "model": "system.datamaskrule",
+    "pk": "5eed0005-0000-4000-8000-000000000003",
+    "fields": {
+      "created_time": "2026-09-08T02:00:00.000Z",
+      "updated_time": "2026-09-08T02:00:00.000Z",
+      "description": "内置示例：姓名类字段保留首尾字符",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "model": "system.userinfo",
+      "field": "nickname",
+      "mask_type": "name",
+      "keep_head": 1,
+      "keep_tail": 1,
+      "mask_char": "*",
+      "pattern": null,
+      "roles": [],
+      "is_active": true,
+      "sort": 30
+    }
+  }
+]

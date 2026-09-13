@@ -35,6 +35,21 @@ class Command(LoadCommand):
         Dashboard,
         Screen,
         Report,
+        # 脱敏/审批/表单采集内置示例：同上按依赖顺序加载。纪律（守护测试
+        # test_builtin_seed.py）：
+        # 1) 全部 creator=1（init_data 新库首个超管，任何环境都存在），禁止引用
+        #    admin(pk=2) 等特定环境用户——E2E/新库没有该用户，loaddata 会炸；
+        # 2) 实例类数据（ApprovalInstance/ApprovalNodeTask/ApprovalRequest）需要
+        #    「申请人 ≠ 审批人」，种子造不出合规数据，由 seed_demo_flows 命令用
+        #    真实引擎动态生成，严禁加入本清单；
+        # 3) 流程节点 assignee_value 用 "xadmin,isummer" 双环境占位（字符串不做
+        #    FK 校验），seed_demo_flows 会改写为演示审批人并落新版本快照。
+        DataMaskRule,
+        ApprovalFlow,
+        ApprovalFlowNode,
+        ApprovalFlowVersion,
+        DynamicForm,
+        DynamicFormSubmission,
     ]
     missing_args_message = None
 

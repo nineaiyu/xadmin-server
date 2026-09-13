@@ -847,5 +847,267 @@
       "is_active": true,
       "label_en": "Other"
     }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": "请假类型（Leave.leave_type 的下拉与标签渲染来源，value 对应 LeaveType 枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "leave_type",
+      "label": "请假类型",
+      "value": null,
+      "sort": 0,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Leave type"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e81",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "annual",
+      "label": "年假",
+      "value": "annual",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Annual leave"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e82",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "sick",
+      "label": "病假",
+      "value": "sick",
+      "sort": 2,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Sick leave"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e83",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "personal",
+      "label": "事假",
+      "value": "personal",
+      "sort": 3,
+      "color": "#e6a23c",
+      "is_active": true,
+      "label_en": "Personal leave"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e84",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "comp_time",
+      "label": "调休",
+      "value": "comp_time",
+      "sort": 4,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Compensatory leave"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e85",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "marriage",
+      "label": "婚假",
+      "value": "marriage",
+      "sort": 5,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Marriage leave"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e86",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e80",
+      "code": "other",
+      "label": "其他",
+      "value": "other",
+      "sort": 6,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Other"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": "请假状态（Leave.status 的文案与颜色来源，value 对应 Leave.Status 枚举）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": null,
+      "code": "leave_status",
+      "label": "请假状态",
+      "value": null,
+      "sort": 0,
+      "color": null,
+      "is_active": true,
+      "is_locked": true,
+      "label_en": "Leave status"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e91",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+      "code": "draft",
+      "label": "草稿",
+      "value": "DRAFT",
+      "sort": 1,
+      "color": "#409eff",
+      "is_active": true,
+      "label_en": "Draft"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e92",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+      "code": "pending",
+      "label": "审批中",
+      "value": "PENDING",
+      "sort": 2,
+      "color": "#e6a23c",
+      "is_active": true,
+      "label_en": "Pending"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e93",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+      "code": "approved",
+      "label": "已通过",
+      "value": "APPROVED",
+      "sort": 3,
+      "color": "#67c23a",
+      "is_active": true,
+      "label_en": "Approved"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e94",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+      "code": "rejected",
+      "label": "已驳回",
+      "value": "REJECTED",
+      "sort": 4,
+      "color": "#f56c6c",
+      "is_active": true,
+      "label_en": "Rejected"
+    }
+  },
+  {
+    "model": "system.datadict",
+    "pk": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e95",
+    "fields": {
+      "created_time": "2026-09-14T00:00:00.000Z",
+      "updated_time": "2026-09-14T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "parent": "7c1e2f30-4a5b-4c6d-8e9f-0a1b2c3d4e90",
+      "code": "cancelled",
+      "label": "已撤回",
+      "value": "CANCELLED",
+      "sort": 5,
+      "color": "#909399",
+      "is_active": true,
+      "label_en": "Cancelled"
+    }
   }
 ]

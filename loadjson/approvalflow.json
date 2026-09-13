@@ -1,0 +1,63 @@
+[
+  {
+    "model": "system.approvalflow",
+    "pk": "5eed0006-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-08T02:10:00.000Z",
+      "updated_time": "2026-09-08T02:10:00.000Z",
+      "description": "内置示例：请假申请流程，审批人配置请按实际用户调整",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "示例-请假申请",
+      "code": "demo_leave",
+      "form_schema": [
+        {"key": "days", "label": "请假天数", "type": "number", "required": true, "options": []},
+        {"key": "reason", "label": "请假事由", "type": "textarea", "required": true, "options": []}
+      ],
+      "is_active": true,
+      "version": 1
+    }
+  },
+  {
+    "model": "system.approvalflow",
+    "pk": "5eed0006-0000-4000-8000-000000000003",
+    "fields": {
+      "created_time": "2026-09-14T02:20:00.000Z",
+      "updated_time": "2026-09-14T02:20:00.000Z",
+      "description": "请假审批（ADR-032 内置业务）：审批人 = 申请人所在部门负责人；天数/事由由请假单自动带入",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "请假审批",
+      "code": "leave",
+      "form_schema": [
+        {"key": "days", "label": "请假天数", "type": "number", "required": true, "options": []},
+        {"key": "reason", "label": "请假事由", "type": "textarea", "required": true, "options": []}
+      ],
+      "is_active": true,
+      "version": 1
+    }
+  },
+  {
+    "model": "system.approvalflow",
+    "pk": "5eed0006-0000-4000-8000-000000000002",
+    "fields": {
+      "created_time": "2026-09-08T02:11:00.000Z",
+      "updated_time": "2026-09-08T02:11:00.000Z",
+      "description": "内置示例：费用报销流程，金额 ≥1000 才追加总经理审批节点",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "示例-费用报销",
+      "code": "demo_expense",
+      "form_schema": [
+        {"key": "amount", "label": "报销金额", "type": "number", "required": true, "options": []},
+        {"key": "invoice_no", "label": "发票号", "type": "text", "required": false, "options": []},
+        {"key": "remark", "label": "备注", "type": "textarea", "required": false, "options": []}
+      ],
+      "is_active": true,
+      "version": 1
+    }
+  }
+]
