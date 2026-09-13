@@ -6,6 +6,8 @@
 run 动作派发契约（ExportRecord.pk == task_id）。
 """
 
+from datetime import datetime
+
 import pytest
 from django.core import mail
 from django.utils import timezone
@@ -193,6 +195,41 @@ class TestReportRun:
         assert record.status == ExportRecord.Status.SUCCESS
         sheet = load_workbook(record.file.filepath).active
         assert sheet.max_row == 1  # 只有表头：无授权 → 空结果（fail-closed）
+
+    def test_run_renders_fk_uuid_column(self, auth_client, dataset, superuser, model_registry, settings):
+        """FK 列（UUID pk）进 xlsx：单元格转字符串，不再抛 Cannot convert UUID（回归守护）。"""
+        from openpyxl import load_workbook
+
+        from system.models import DeptInfo
+        from system.models.export import ExportRecord
+
+        settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        root = ModelLabelField.objects.get(name="system.userinfo")
+        ModelLabelField.objects.get_or_create(
+            name="dept", parent=root, defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "部门"}
+        )
+        dept = DeptInfo.objects.create(name="研发部", code="dev")
+        UserInfo.objects.create_user(username="fkuser", password="Test@123456", dept=dept)
+        ModelLabelField.objects.get_or_create(
+            name="date_joined",
+            parent=root,
+            defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "加入时间"},
+        )
+        dataset.columns = ["username", "dept", "date_joined"]
+        dataset.save()
+
+        report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
+        response = auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+        assert response.status_code == 200, response.data
+        task_id = response.json()["data"]["task_id"]
+
+        record = ExportRecord.objects.get(pk=task_id)
+        assert record.status == ExportRecord.Status.SUCCESS
+        sheet = load_workbook(record.file.filepath).active
+        assert sheet.cell(row=2, column=1).value == "fkuser"
+        assert sheet.cell(row=2, column=2).value == str(dept.pk)
+        joined = sheet.cell(row=2, column=3).value
+        assert isinstance(joined, datetime) and joined.tzinfo is None
 
     def test_email_failure_degrades(self, auth_client, dataset, superuser, settings):
         """邮件失败：产物 SUCCESS 保留，last_status 标记邮件错误。"""

@@ -11,6 +11,10 @@
 """
 
 import io
+import json
+from datetime import datetime
+from datetime import time as dt_time
+from uuid import UUID
 
 from celery import shared_task
 from django.core.files.base import ContentFile
@@ -39,6 +43,20 @@ def report_due(report, now=None) -> bool:
     return now.day == 1
 
 
+def _excel_safe(value):
+    """openpyxl 仅支持基础标量：UUID（FK pk）转字符串、带时区 datetime/time 转本地
+    naive（Excel 不接受 tzinfo）、dict/list 转 JSON 文本，其余原样。"""
+    if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, datetime) and timezone.is_aware(value):
+        return timezone.localtime(value).replace(tzinfo=None)
+    if isinstance(value, dt_time) and getattr(value, "tzinfo", None) is not None:
+        return value.replace(tzinfo=None)
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, ensure_ascii=False, default=str)
+    return value
+
+
 def _render_workbook(report, user) -> tuple:
     """执行数据集并渲染 xlsx 到内存。返回 (bytes, sheet_rows)。"""
     from openpyxl import Workbook
@@ -59,11 +77,11 @@ def _render_workbook(report, user) -> tuple:
             value_field=report.value_field or None,
         )
         ws.append([_("Name"), _("Value")])
-        rows = [[item["name"], item["value"]] for item in result["series"]]
+        rows = [[_excel_safe(item["name"]), _excel_safe(item["value"])] for item in result["series"]]
     else:
         result = execute_dataset(report.dataset, user)
         ws.append(list(result["columns"]))
-        rows = [[row.get(col) for col in result["columns"]] for row in result["rows"]]
+        rows = [[_excel_safe(row.get(col)) for col in result["columns"]] for row in result["rows"]]
     for row in rows:
         ws.append(row)
     buffer = io.BytesIO()
