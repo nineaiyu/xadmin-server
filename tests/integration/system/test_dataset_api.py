@@ -201,6 +201,47 @@ class TestDatasetExecute:
         assert isinstance(body["data"]["series"], list)
         assert sum(item["value"] for item in body["data"]["series"]) >= 1
 
+    def test_aggregate_trend_groups_by_bucket(self, auth_client, dataset, model_registry):
+        """趋势聚合必须按时间桶分组：同桶多行不能裂开（annotate/values 顺序回归守护）。"""
+        from django.utils import timezone
+
+        root = ModelLabelField.objects.get(name="system.userinfo")
+        ModelLabelField.objects.get_or_create(
+            name="date_joined",
+            parent=root,
+            defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "加入时间"},
+        )
+        UserInfo.objects.create_user(username="zhaoliu", password="Test@123456")
+        # 全部用户 date_joined 压到同一时刻：聚合正确时只允许一个桶
+        fixed = timezone.now().replace(day=1, hour=12, minute=0, second=0, microsecond=0)
+        UserInfo.objects.update(date_joined=fixed)
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "date_joined", "metric": "count", "date_trunc": "month"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        series = body["data"]["series"]
+        total_users = UserInfo.objects.count()
+        assert sum(item["value"] for item in series) == total_users
+        assert len(series) == 1, f"同一时刻的行必须聚进一个桶，实际裂成 {len(series)} 桶"
+        assert series[0]["name"] == fixed.strftime("%Y-%m")
+        assert series[0]["value"] == total_users
+
+    def test_aggregate_group_label_keeps_falsy_values(self, auth_client, dataset, model_registry):
+        """falsy 分组值（is_active=False）是合法分组：桶名 "False"，不得落空串。"""
+        UserInfo.objects.update(is_active=False)
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "is_active", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        series = body["data"]["series"]
+        assert len(series) == 1
+        assert series[0]["name"] == "False"
+        assert series[0]["value"] == UserInfo.objects.count()
+
     def test_aggregate_rejects_non_numeric_sum(self, auth_client, dataset):
         body = auth_client.post(
             f"{DATASET_URL}/{dataset.pk}/aggregate",

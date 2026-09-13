@@ -104,6 +104,11 @@ def validate_dataset(instance) -> None:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(instance.bound_model, date_field))
 
 
+def _group_label(value) -> str:
+    """分组名：仅 None 落空串；False/0 等合法 falsy 分组值保留字符串形态。"""
+    return "" if value is None else str(value)
+
+
 def _check_numeric(model, field: str):
     try:
         model_field = model._meta.get_field(field)
@@ -169,18 +174,29 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
         model_field = model._meta.get_field(group_by)
         if not isinstance(model_field, DateTimeField):
             raise ValidationError(_("Field {} is not a datetime, cannot trend").format(group_by))
-        # Django 6：values(kw=注解别名) 的字符串引用被拒，统一用位置式 values
-        queryset = queryset.annotate(bucket_name=Trunc(group_by, date_trunc), agg_value=annotation)
-        rows = queryset.values("bucket_name", "agg_value").order_by("bucket_name")[:AGGREGATE_BUCKET_LIMIT]
+        # Django 6：values(kw=注解别名) 的字符串引用被拒，统一用位置式 values；
+        # 必须先 values(桶) 再 annotate 聚合（GROUP BY 桶），顺序颠倒会按
+        # (桶, 聚合值) 联合分组——每桶裂成多行，趋势图出现重复数据点
+        fmt = "%Y-%m" if date_trunc == "month" else "%Y-%m-%d"
+        rows = (
+            queryset.annotate(bucket_name=Trunc(group_by, date_trunc))
+            .values("bucket_name")
+            .annotate(agg_value=annotation)
+            .order_by("bucket_name")
+            .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
+        )
         series = [
-            {"name": str(row["bucket_name"] or ""), "value": row["agg_value"] if row["agg_value"] is not None else 0}
+            {
+                "name": row["bucket_name"].strftime(fmt) if row["bucket_name"] else "",
+                "value": row["agg_value"] if row["agg_value"] is not None else 0,
+            }
             for row in rows
         ]
     else:
         queryset = queryset.values(group_by).annotate(agg_value=annotation).order_by("-agg_value")
         rows = queryset.values(group_by, "agg_value")[:AGGREGATE_BUCKET_LIMIT]
         series = [
-            {"name": str(row[group_by] or ""), "value": row["agg_value"] if row["agg_value"] is not None else 0}
+            {"name": _group_label(row[group_by]), "value": row["agg_value"] if row["agg_value"] is not None else 0}
             for row in rows
         ]
     return {"name": group_by, "metric": metric, "series": series}
