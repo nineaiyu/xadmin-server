@@ -9,10 +9,14 @@
 - run_view_by_celery_task 的同步直执分支
 """
 
+import json
+
 import pytest
 from django.test import RequestFactory
+from rest_framework import serializers
 from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.utils import encoders
 
 from common.base.magic import cache_response
 from common.core.modelset import (
@@ -57,6 +61,45 @@ class TestActionSerializerClass:
         view = TestViewSet()
         view.action = "retrieve"
         assert view.get_serializer_class() is BookSerializer
+
+
+class TestInlineMetadataActionScope:
+    """with_meta=1 内联元数据必须按元数据 action 求值。
+
+    get_serializer_class 按 ``{action}_serializer_class`` 派发；list 请求下若不在
+    元数据 action 名下求值，会命中 list_serializer_class。列表序列化器的 read_only
+    口径与表单不同（角色页 ListRoleSerializer.menu 只读），前端 RePlusPage 会因此
+    丢掉表单列并在新增/编辑弹层报错。
+    """
+
+    @staticmethod
+    def _fetch(viewset_cls, action_map, path, superuser):
+        request = APIRequestFactory().get(path)
+        force_authenticate(request, user=superuser)
+        response = viewset_cls.as_view(action_map)(request)
+        assert response.status_code == 200, response.data
+        return json.loads(json.dumps(response.data["data"], cls=encoders.JSONEncoder))
+
+    def test_inline_metadata_matches_standalone_endpoint(self, superuser):
+        class ReadOnlyNameSerializer(BookSerializer):
+            """列表口径：name 只读（模拟 ListRoleSerializer 收窄表单列）。"""
+
+            name = serializers.CharField(read_only=True)
+
+        class TestViewSet(BookViewSet):
+            list_serializer_class = ReadOnlyNameSerializer
+
+        standalone = self._fetch(TestViewSet, {"get": "search_columns"}, "/api/demo/book/search-columns", superuser)
+        inline = self._fetch(TestViewSet, {"get": "list"}, "/api/demo/book?with_meta=1", superuser)
+
+        def normalize(payload):
+            # default 可能按调用时刻生成（如 publication_date 默认当前时间），跨调用不可比
+            return [{k: v for k, v in item.items() if k != "default"} for item in payload]
+
+        assert normalize(inline["search_columns"]) == normalize(standalone)
+        read_only = {item["key"]: item.get("read_only", False) for item in inline["search_columns"]}
+        assert read_only["name"] is False
+        assert inline["search_fields"]
 
 
 class TestPaginateExportBypass:

@@ -51,6 +51,14 @@ class ListAction(mixins.ListModelMixin):
             action = getattr(self, action_name, None)
             if action is None:
                 continue
+            # 元数据必须按自身 action 名求值：get_serializer_class 以
+            # `{action}_serializer_class` 派发，list 请求下不改写会命中
+            # list_serializer_class。列表序列化器的 read_only 口径与表单不同
+            # （如角色页 menu 只读 → 表单列缺失，前端新增/编辑弹层报错），
+            # 内联载荷必须与独立元数据接口完全一致。finally 复位，
+            # 异常路径也不影响同一实例的后续调用（视图实例与请求同生命周期）。
+            original_action = getattr(self, "action", None)
+            self.action = action_name
             try:
                 result = action(request)
                 payload = result.data.get("data")
@@ -58,6 +66,8 @@ class ListAction(mixins.ListModelMixin):
                     data[key] = payload
             except Exception as e:
                 logger.warning(f"inline metadata {action_name} failed on {self.__class__.__name__}: {e}")
+            finally:
+                self.action = original_action
 
 
 class DestroyAction(mixins.DestroyModelMixin):
