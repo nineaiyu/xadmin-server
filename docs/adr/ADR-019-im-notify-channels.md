@@ -53,9 +53,22 @@ unionId）；企微「应用消息 message/send」（touser=userid）；飞书
   `server/settings/setting.py` 暴露；
 - `is_enable` = 渠道开关 **AND** 凭据齐全（沿用 SMS 渠道降级语义：开关开而
   凭据缺 → 渠道不可用，发送链路静默跳过，不影响邮件/站内信）；
-- 管理页挂「消息通知设置」新页签（复用 SettingItem 保存/测试按钮）；
-  测试消息走既有 `send_test_msg` 链路——渠道开 + 凭据齐 + 收件人有绑定才
-  真实投递（收件人无绑定即触发既有 debug 日志，排错口径不变）。
+- 管理页在「消息通知设置」下按渠道拆三个页签（钉钉 / 企业微信 / 飞书）：复用
+  SettingItem 保存/测试按钮；后端按 `?channel=` 收敛字段集合（retrieve /
+  search-columns / partialUpdate 全链路，与 SMS 的 serializer_class_mapper 同
+  思路），各页签只读写自己的配置，消除「一个表单三家字段、单个测试按钮测的是
+  哪家」的歧义（前端另留字段白名单兜底）；
+- 必填口径：非密文字段（AppKey / AgentId / CorpId / App ID）`required=True`
+  ——前端据此渲染必填标记并在保存/测试时拦截空值，测试请求缺字段由 serializer
+  直接 400（可读的错误提示）；`*_SECRET` 回显为空，沿用邮件密码口径保持可选
+  （必填会与「不回显」死锁），凭据是否齐全由测试入口给出可读提示；
+- 测试为「实际获取一次 token」的凭据连通性校验（不做真实消息投递）：页签测试
+  按钮经 `?channel=dingtalk|wecom|feishu` 只测本渠道，detail 直接回显该渠道结果
+  （失败即可读错误，不再笼统报「测试完成」）；缺省（不带 channel）仍全量测试，
+  分渠道结果互不影响。未启用渠道标记 Disabled，但**没有任何渠道真正测通**时报
+  「渠道未启用」失败——修正「什么都没配也提示测试完成」；
+- token / userid 缓存 key 含**凭据摘要**（原先调用侧传空 dict，摘要恒为空）：
+  所有配置不再共用一条缓存，改密钥即换 key，测试也不会因命中旧 token 而假通过。
 
 ## 后果
 
@@ -71,10 +84,15 @@ unionId）；企微「应用消息 message/send」（touser=userid）；飞书
 
 ## 测试与验收
 
-- 单元（离线 stub http）：三家 token 获取与缓存（改密换 key）/ unionId→userid
-  （钉钉，含缓存命中）/ 文本发送请求体与响应判定（errcode/code 包裹）/
-  is_enable 降级（缺凭据）/ 账号解析按 flavor 归集（含未绑定跳过）；
+- 单元（离线 stub http）：三家 token 获取与缓存 / **缓存按凭据摘要隔离（改密换
+  key，token 与 userid 两处）**/ unionId→userid（钉钉，含缓存命中）/ 文本发送
+  请求体与响应判定（errcode/code 包裹）/ is_enable 降级（缺凭据）/ 账号解析按
+  flavor 归集（含未绑定跳过）/ 设置 API 渠道作用域（`?channel=` 收敛字段与
+  required 元数据、缺必填 400、未知渠道 400、只测本渠道、单渠道失败 detail
+  可读、未启用与全部未启用按失败反馈）；
 - 集成：设置 API（secret 加密不回显 / 越权 403）；测试消息链路（渠道开 +
   绑定存在时真实走 SDK stub）；
+- E2E（`notify-im.e2e.ts`）：消息设置三页签字段隔离与各页签独立测试按钮
+  （不实际外呼，连通性仅后端 stub 覆盖）；
 - 门禁：pytest / ruff / 跨 app import / i18n po；前端 typecheck / eslint /
   locale-keys；全量 E2E 回归。

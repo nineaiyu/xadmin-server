@@ -4494,6 +4494,14 @@ msgid "Missing configuration: {}"
 msgstr ""
 
 #: ADR-019 IM notify channels (generated)
+msgid "Unknown channel: {}"
+msgstr ""
+
+#: ADR-019 IM notify channels (generated)
+msgid "Channel not enabled"
+msgstr ""
+
+#: ADR-019 IM notify channels (generated)
 msgid "OK"
 msgstr ""
 

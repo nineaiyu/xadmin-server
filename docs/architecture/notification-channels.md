@@ -68,8 +68,11 @@ backend = Wecom  # 约定：模块级 backend 变量
 `UserOAuthBinding`（provider key 自由命名，按 flavor 归集）。钉钉发送前按
 `user/getbyunionid` 换 userid（缓存）；从未经该 IM 登录的用户不可达该渠道
 （debug 日志口径）。凭据与开关走 Setting（category=notify_im，secret 值级加密），
-管理页在「消息通知设置」的 IM 页签；`is_enable` = 开关 AND 凭据齐全（SMS 同款
-降级语义）。SDK 收口 `common/sdk/im/`，与 `common/sdk/sms` 对称。
+管理页在「消息通知设置」按渠道拆为钉钉 / 企业微信 / 飞书三个页签（后端按
+`?channel=` 收敛字段，非密文凭据必填、密文不回显故可选；测试按钮只测本渠道，
+未启用/未测通按失败反馈）；`is_enable` = 开关 AND 凭据齐全（SMS 同款降级语义），
+token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `common/sdk/im/`，与
+`common/sdk/sms` 对称。
 
 ## 六、排错指引
 

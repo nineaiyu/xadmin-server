@@ -22,7 +22,7 @@ class FeishuClient(BaseImClient):
     token_cache_prefix = "im_feishu_token_"
 
     def __init__(self, credentials: dict, http_client=None):
-        super().__init__(http_client=http_client)
+        super().__init__(credentials=credentials, http_client=http_client)
         self.app_id = credentials.get("app_id") or ""
         self.app_secret = credentials.get("app_secret") or ""
 
@@ -46,7 +46,7 @@ class FeishuClient(BaseImClient):
         receive_ids = [str(a) for a in accounts if a]
         if not receive_ids:
             return
-        token = self._cached_token({})
+        token = self._cached_token()
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"}
         for receive_id in receive_ids:
             try:

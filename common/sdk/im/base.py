@@ -31,7 +31,9 @@ class BaseImClient:
     # 缓存 key 前缀（子类覆盖，如 "im_dingtalk_token_"）
     token_cache_prefix = ""
 
-    def __init__(self, http_client=None):
+    def __init__(self, credentials: dict = None, http_client=None):
+        # 凭据留存实例：token 缓存 key 由凭据摘要派生（改密即换 key，不沿用旧 token）
+        self.credentials = credentials or {}
         self.http = http_client
 
     # ---------------------------------------------------------------- http
@@ -70,15 +72,17 @@ class BaseImClient:
     # ---------------------------------------------------------------- token
 
     def _credentials_digest(self, credentials: dict) -> str:
-        raw = ":".join(str(v or "") for v in credentials.values())
+        """凭据摘要（键排序 + 带键名）：与 dict 构造顺序解耦，不同渠道/不同凭据互不命中。"""
+        raw = ":".join(f"{key}={value or ''}" for key, value in sorted((credentials or {}).items()))
         return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
-    def _cached_token(self, credentials: dict):
-        cache_key = self.token_cache_prefix + self._credentials_digest(credentials)
+    def _cached_token(self) -> str:
+        """租户 token（按实例凭据缓存）：凭据变化自动换 key，避免用旧 token 掩盖配置错误。"""
+        cache_key = self.token_cache_prefix + self._credentials_digest(self.credentials)
         token = cache.get(cache_key)
         if token:
             return str(token)
-        token = self._fetch_token(credentials)
+        token = self._fetch_token(self.credentials)
         cache.set(cache_key, token, max(self.token_ttl - TOKEN_TTL_SLACK, 60))
         return token
 

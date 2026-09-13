@@ -21,7 +21,7 @@ class WeComClient(BaseImClient):
     token_cache_prefix = "im_wecom_token_"
 
     def __init__(self, credentials: dict, http_client=None):
-        super().__init__(http_client=http_client)
+        super().__init__(credentials=credentials, http_client=http_client)
         self.corp_id = credentials.get("corp_id") or ""
         self.corp_secret = credentials.get("corp_secret") or ""
         self.agent_id = credentials.get("agent_id") or ""
@@ -65,7 +65,7 @@ class WeComClient(BaseImClient):
         userids = [str(a) for a in accounts if a]
         if not userids:
             return
-        token = self._cached_token({})
+        token = self._cached_token()
         for start in range(0, len(userids), SEND_BATCH_SIZE):
             batch = userids[start : start + SEND_BATCH_SIZE]
             payload = self._send_batch(token, batch, content)

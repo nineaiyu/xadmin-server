@@ -124,17 +124,32 @@ class TestDingTalkClient:
     def test_token_fetch_and_cache(self):
         http = StubHttp({"gettoken": {"errcode": 0, "access_token": "dt-tok"}})
         client = DingTalkClient({"app_key": "k", "app_secret": "s", "agent_id": "a"}, http_client=http)
-        assert client._cached_token({}) == "dt-tok"
-        client._cached_token({})  # 命中缓存
+        assert client._cached_token() == "dt-tok"
+        client._cached_token()  # 命中缓存
         assert sum(1 for c in http.calls if "gettoken" in c[1]) == 1
         token_call = next(c for c in http.calls if "gettoken" in c[1])
         assert token_call[2] == {"appkey": "k", "appsecret": "s"}
+
+    def test_token_cache_key_follows_credentials(self):
+        """token 缓存 key 含凭据摘要：同凭据命中缓存，换凭据必须重新获取。
+
+        回归守护：曾因 `_cached_token({})` 摘要恒为空 → 所有配置共用一条缓存，
+        改密钥仍沿用旧 token，测试接口也会「秒过」掩盖配置错误。
+        """
+        http = StubHttp({"gettoken": {"errcode": 0, "access_token": "dt-tok"}})
+        DingTalkClient({"app_key": "k1", "app_secret": "s1", "agent_id": "a"}, http_client=http)._cached_token()
+        # 同凭据新实例：命中缓存
+        DingTalkClient({"app_key": "k1", "app_secret": "s1", "agent_id": "a"}, http_client=http)._cached_token()
+        assert sum(1 for c in http.calls if "gettoken" in c[1]) == 1
+        # 换 AppKey：摘要变化 → 重新获取
+        DingTalkClient({"app_key": "k2", "app_secret": "s1", "agent_id": "a"}, http_client=http)._cached_token()
+        assert sum(1 for c in http.calls if "gettoken" in c[1]) == 2
 
     def test_token_error_rejected(self):
         http = StubHttp({"gettoken": {"errcode": 40001, "errmsg": "invalid appkey"}})
         client = DingTalkClient({"app_key": "k", "app_secret": "s", "agent_id": "a"}, http_client=http)
         with pytest.raises(ImSdkError):
-            client._cached_token({})
+            client._cached_token()
 
     def test_unionid_to_userid_cached(self):
         http = StubHttp(
@@ -147,6 +162,22 @@ class TestDingTalkClient:
         assert client.get_userid_by_unionid("union-x") == "staff-1"
         assert client.get_userid_by_unionid("union-x") == "staff-1"  # 缓存命中
         assert sum(1 for c in http.calls if "getbyunionid" in c[1]) == 1
+
+    def test_unionid_cache_isolated_by_credentials(self):
+        """userid 缓存 key 含凭据摘要：换企业/换应用不串号（unionId → 各 corp 下 userid 不同）。"""
+        http = StubHttp(
+            {
+                "gettoken": {"errcode": 0, "access_token": "dt-tok"},
+                "getbyunionid": {"errcode": 0, "result": {"userid": "staff-1"}},
+            }
+        )
+        DingTalkClient({"app_key": "k1", "app_secret": "s", "agent_id": "a"}, http_client=http).get_userid_by_unionid(
+            "union-x"
+        )
+        DingTalkClient({"app_key": "k2", "app_secret": "s", "agent_id": "a"}, http_client=http).get_userid_by_unionid(
+            "union-x"
+        )
+        assert sum(1 for c in http.calls if "getbyunionid" in c[1]) == 2
 
     def test_send_text_body(self):
         http = StubHttp(
@@ -413,3 +444,76 @@ class TestNotifyImSettingsApi:
             body = auth_client.post(self.URL, payload, format="json").json()
         assert body["code"] == 1002
         assert "feishu rejected" in body["data"]["FeiShu"]
+
+    def test_connection_test_single_channel(self, auth_client):
+        """渠道级测试（?channel=feishu）：只测指定渠道，其他渠道的缺失不影响判定。"""
+        from unittest import mock
+
+        payload = {
+            "FEISHU_ENABLED": True,
+            "FEISHU_APP_ID": "cli",
+            "FEISHU_APP_SECRET": "sec",
+            # 钉钉启用但缺 AppKey：全量测试会失败，渠道级测试不应被牵连
+            "DINGTALK_ENABLED": True,
+        }
+        with mock.patch.object(FeishuClient, "_cached_token", return_value="tok"):
+            body = auth_client.post(f"{self.URL}?channel=feishu", payload, format="json").json()
+        assert body["code"] == 1000
+        assert list(body["data"]) == ["FeiShu"]
+        assert body["detail"] == str(gettext("Test completed"))
+
+    def test_connection_test_single_channel_failure_detail(self, auth_client):
+        """单渠道失败：detail 直接携带该渠道错误（页签内可见，不再是笼统的测试完成）。"""
+        from unittest import mock
+
+        payload = {"FEISHU_ENABLED": True, "FEISHU_APP_ID": "cli", "FEISHU_APP_SECRET": "bad"}
+        with mock.patch.object(FeishuClient, "_cached_token", side_effect=ImSdkError("feishu rejected: code=10014")):
+            body = auth_client.post(f"{self.URL}?channel=feishu", payload, format="json").json()
+        assert body["code"] == 1002
+        assert "feishu rejected" in body["detail"]
+
+    def test_connection_test_unknown_channel_rejected(self, auth_client):
+        """未知渠道参数：显式 400，不静默退化成全量测试。"""
+        response = auth_client.post(f"{self.URL}?channel=slack", {}, format="json")
+        assert response.status_code == 400
+
+    def test_channel_scope_retrieve_only_own_fields(self, auth_client):
+        """?channel= 作用域：retrieve 只回本渠道字段（设置页三页签各自独立的数据源）。"""
+        data = auth_client.get(f"{self.URL}?channel=wecom").json()["data"]
+        # write_only 密文不回显，只回配置项与密文以外的字段
+        assert set(data) == {"WECOM_ENABLED", "WECOM_CORP_ID", "WECOM_AGENT_ID"}
+
+    def test_channel_scope_search_columns_required(self, auth_client):
+        """?channel= 作用域：search-columns 只下发本渠道字段，非密文字段 required=True
+        （前端据此渲染必填标记并拦截空值）。"""
+        columns = auth_client.get(f"{self.URL}/search-columns?channel=dingtalk").json()["data"]
+        by_key = {item["key"]: item for item in columns}
+        assert set(by_key) == {"DINGTALK_ENABLED", "DINGTALK_APP_KEY", "DINGTALK_APP_SECRET", "DINGTALK_AGENT_ID"}
+        assert by_key["DINGTALK_APP_KEY"]["required"] is True
+        assert by_key["DINGTALK_AGENT_ID"]["required"] is True
+        # write_only 密文回显为空，必填会与「不回显」死锁（沿用邮件密码口径）
+        assert by_key["DINGTALK_APP_SECRET"]["required"] is False
+
+    def test_connection_test_missing_required_rejected(self, auth_client):
+        """渠道必填校验：缺 AppKey 时测试请求直接 400，而非静默通过或笼统报错。"""
+        response = auth_client.post(f"{self.URL}?channel=dingtalk", {"DINGTALK_AGENT_ID": "a"}, format="json")
+        assert response.status_code == 400
+        assert "DINGTALK_APP_KEY" in response.data
+
+    def test_connection_test_disabled_channel_reports_failure(self, auth_client, settings):
+        """未启用渠道：明确反馈「渠道未启用」，不再报测试完成。"""
+        settings.DINGTALK_ENABLED = False
+        payload = {"DINGTALK_APP_KEY": "k", "DINGTALK_AGENT_ID": "a"}
+        body = auth_client.post(f"{self.URL}?channel=dingtalk", payload, format="json").json()
+        assert body["code"] == 1002
+        assert body["detail"] == str(gettext("Channel not enabled"))
+
+    def test_connection_test_all_disabled_reports_failure(self, auth_client, settings):
+        """全量模式且三家都未启用：同样按失败反馈（曾把「什么都没配」报成测试完成）。"""
+        settings.DINGTALK_ENABLED = False
+        settings.WECOM_ENABLED = False
+        settings.FEISHU_ENABLED = False
+        body = auth_client.post(self.URL, {}, format="json").json()
+        assert body["code"] == 1002
+        assert body["detail"] == str(gettext("Channel not enabled"))
+        assert set(body["data"].values()) == {str(gettext("Disabled"))}

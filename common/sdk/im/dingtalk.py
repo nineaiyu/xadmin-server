@@ -23,7 +23,7 @@ class DingTalkClient(BaseImClient):
     userid_cache_prefix = "im_dingtalk_userid_"
 
     def __init__(self, credentials: dict, http_client=None):
-        super().__init__(http_client=http_client)
+        super().__init__(credentials=credentials, http_client=http_client)
         self.app_key = credentials.get("app_key") or ""
         self.app_secret = credentials.get("app_secret") or ""
         self.agent_id = credentials.get("agent_id") or ""
@@ -60,11 +60,12 @@ class DingTalkClient(BaseImClient):
         """unionId → userid（缓存）：钉钉工作通知只认 userid。"""
         from django.core.cache import cache
 
-        cache_key = f"{self.userid_cache_prefix}{union_id}"
+        # userid 是「同一 corp 内的」标识：key 含凭据摘要，换企业/换应用不串号
+        cache_key = f"{self.userid_cache_prefix}{self._credentials_digest(self.credentials)}_{union_id}"
         userid = cache.get(cache_key)
         if userid:
             return str(userid)
-        payload = self._topapi_post("/topapi/user/getbyunionid", self._cached_token({}), {"unionid": union_id})
+        payload = self._topapi_post("/topapi/user/getbyunionid", self._cached_token(), {"unionid": union_id})
         userid = str((payload.get("result") or {}).get("userid") or "")
         if not userid:
             raise ImSdkError(f"dingtalk userid not found for unionid {union_id[:8]}***")
@@ -80,5 +81,5 @@ class DingTalkClient(BaseImClient):
             "userid_list": "|".join(str(a) for a in accounts),
             "msg": {"msgtype": "text", "text": {"content": content}},
         }
-        payload = self._topapi_post("/topapi/message/corpconversation/asyncsend_v2", self._cached_token({}), body)
+        payload = self._topapi_post("/topapi/message/corpconversation/asyncsend_v2", self._cached_token(), body)
         logger.debug("dingtalk asyncsend task_id=%s", payload.get("task_id"))
