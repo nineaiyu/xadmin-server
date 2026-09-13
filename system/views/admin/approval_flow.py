@@ -22,7 +22,14 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, BaseViewSet, DetailAction, ListAction, SearchColumnsAction
+from common.core.modelset import (
+    BaseModelSet,
+    BaseViewSet,
+    DetailAction,
+    ListAction,
+    SearchColumnsAction,
+    SearchFieldsAction,
+)
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
@@ -148,6 +155,7 @@ class ApprovalInstanceViewSet(
     BaseViewSet,
     ListAction,
     DetailAction,
+    SearchFieldsAction,
     SearchColumnsAction,
     GenericViewSet,
 ):
