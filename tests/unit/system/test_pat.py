@@ -19,7 +19,7 @@ from common.core.permission import IsAuthenticated as ApiIsAuthenticated
 from common.core.permission import PatScopePermission
 from common.core.response import ApiResponse
 from common.core.throttle import PatThrottle
-from system.models import OperationLog
+from system.models import Menu, OperationLog
 from system.models.token import PersonalAccessToken
 from system.tasks import auto_clean_pat_job
 from system.views.user.token import PersonalAccessTokenViewSet
@@ -492,6 +492,99 @@ def test_scopes_crud_cleaning_via_api(superuser):
     force_authenticate(request, user=superuser)
     response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
     assert response.data["data"]["scopes"] == []
+
+
+class TestScopeOptions:
+    """接口范围选项：`scope-options` 只列本人有权限的接口，且条目与 scope 判定自洽。
+
+    用户此前只能手填路径/正则（不知道写什么），选项接口把「我有权限的接口」直接
+    列出来勾选；条目为锚定正则，钉住「只放行勾选的那一个接口」。
+    """
+
+    @staticmethod
+    def _call(user):
+        request = APIRequestFactory().get(f"{TOKENS_URL}/scope-options")
+        force_authenticate(request, user=user)
+        return PersonalAccessTokenViewSet.as_view({"get": "scope_options"})(request)
+
+    @staticmethod
+    def _values(data):
+        return [option["value"] for group in data["groups"] for option in group["options"]]
+
+    def test_superuser_lists_enabled_permission_menus(self, superuser, menu_factory):
+        """超管：全部启用的权限菜单（`IsAuthenticated` 对超管放行，不受角色有无影响）。"""
+        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
+        menu_factory("list:Disabled", path="api/system/disabled$", method="GET", is_active=False)
+
+        response = self._call(superuser)
+        assert response.data["code"] == 1000
+        data = response.data["data"]
+        values = self._values(data)
+        assert "GET ^/api/system/user/?$" in values
+        assert "GET ^/api/system/role/?$" in values
+        # 停用菜单不属于可授权范围
+        assert "GET ^/api/system/disabled/?$" not in values
+        assert data["total"] == len(values)
+
+    def test_normal_user_only_sees_granted_menus(self, normal_user, role, menu_factory):
+        """普通用户：只有角色绑定的菜单出现，未授权接口不提供选项。"""
+        granted = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
+        role.menu.add(granted)
+        django_cache.clear()  # 权限缓存 24h：授权变更后需失效再取
+
+        data = self._call(normal_user).data["data"]
+        assert self._values(data) == ["GET ^/api/system/user/?$"]
+
+    def test_scope_entry_is_anchored_to_single_api(self, superuser, menu_factory):
+        """条目锚定到单个接口：详情条目不放行列表/子路径/相似前缀，且限定方法。"""
+        menu_factory(
+            "retrieve:SystemUser",
+            path="api/system/user/(?P<pk>[^/.]+)$",
+            method="GET",
+        )
+        entry = self._values(self._call(superuser).data["data"])[0]
+        assert entry == "GET ^/api/system/user/[^/]+/?$"
+        assert path_allowed_by_scopes("/api/system/user/1", [entry], "GET") is True
+        assert path_allowed_by_scopes("/api/system/user", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/system/user/1/cancel", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/system/user-center/1", [entry], "GET") is False
+        assert path_allowed_by_scopes("/api/system/user/1", [entry], "POST") is False
+
+    def test_scope_option_display_fields(self, superuser, menu_factory):
+        """展示字段：占位符转 ``{pk}``、标题去录入标记、分组沿用父菜单标题。"""
+        parent = menu_factory("menus.userManagement", path="user/index", menu_type=Menu.MenuChoices.MENU)
+        child = menu_factory(
+            "retrieve:SystemUser",
+            path="api/system/user/(?P<pk>[^/.]+)$",
+            method="GET",
+            parent=parent,
+        )
+        child.meta.title = "U-获取用户的详情"
+        child.meta.save(update_fields=["title"])
+
+        data = self._call(superuser).data["data"]
+        group = data["groups"][0]
+        assert group["title"] == "menus.userManagement"  # i18n key 原样下发，前端 te 翻译
+        option = group["options"][0]
+        assert option["method"] == "GET"
+        assert option["path"] == "/api/system/user/{pk}"
+        assert option["label"] == "获取用户的详情"
+        assert option["code"] == "retrieve:SystemUser"
+
+    def test_scope_option_entry_enforced_in_request(self, superuser, menu_factory):
+        """勾选项落到凭证上即生效：放行该接口、拦住未勾选的兄弟接口。"""
+        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        menu_factory("list:SystemRole", path="api/system/role$", method="GET")
+        entry = "GET ^/api/system/user/?$"
+        assert entry in self._values(self._call(superuser).data["data"])
+
+        plain = _create_token(superuser, scopes=[entry]).data["data"]["token"]
+        assert _probe(plain, "/api/system/user").status_code == 200
+        with transaction.atomic():
+            response = _probe(plain, "/api/system/role")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 def _create_operation_log(user, path="/api/system/user", status_code=1000, token_pk=None):

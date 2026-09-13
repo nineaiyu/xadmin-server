@@ -22,6 +22,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models.token import PersonalAccessToken
 from system.serializers.log import OperationLogSerializer
 from system.serializers.token import PersonalAccessTokenSerializer
+from system.utils.pat_scope import scope_options_for_user
 
 # 调用统计回看窗口（近 7 天）
 PAT_STATS_WINDOW_DAYS = 7
@@ -73,6 +74,16 @@ class PersonalAccessTokenViewSet(BaseModelSet):
         else:
             data = {"total": queryset.count(), "results": OperationLogSerializer(queryset, many=True).data}
         return ApiResponse(data=data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="scope-options")
+    def scope_options(self, request, *args, **kwargs):
+        """当前用户可授权的接口范围（按菜单分组，供令牌接口范围勾选）
+
+        口径 = 请求鉴权同源的权限菜单 × 本人角色（超管为全部启用的权限菜单）；
+        条目为锚定正则（如 ``GET ^/api/system/user/?$``），只放行勾选的那一个接口。
+        """
+        return ApiResponse(data=scope_options_for_user(request.user))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="stats")
