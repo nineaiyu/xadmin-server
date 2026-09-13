@@ -57,17 +57,29 @@ def _stats(user):
     return UploadFileViewSet.as_view({"get": "stats"})(request)
 
 
-def _patch_category_dict(code="image", label="图片"):
-    """建 upload_category 字典类型 + 单项（分类写入路径约束来源）。"""
+CATEGORY_LABELS = {"image": "图片", "document": "文档", "video": "视频", "archive": "压缩包", "other": "其他"}
+
+
+def _patch_category_dict(*codes):
+    """建 upload_category 字典类型 + 给定分类项（缺省只建 image，兼容既有用例）。"""
+    codes = codes or ("image",)
     parent = DataDict.objects.create(code="upload_category", label="文件分类", is_locked=True)
-    DataDict.objects.create(parent=parent, code=code, label=label, value=code, sort=0, is_active=True)
+    for sort, code in enumerate(codes):
+        DataDict.objects.create(
+            parent=parent,
+            code=code,
+            label=CATEGORY_LABELS.get(code, code),
+            value=code,
+            sort=sort,
+            is_active=True,
+        )
     invalid_dict_cache()
     return parent
 
 
-def _uploaded_file(user, name="a.txt", content=b"hello"):
+def _uploaded_file(user, name="a.txt", content=b"hello", mime="text/plain"):
     """经真实上传接口落库一条 UploadFile（含磁盘文件），返回该记录。"""
-    response = _upload(user, _mkfile(name, content))
+    response = _upload(user, _mkfile(name, content, mime))
     assert response.data["code"] == 1000, response.data
     payload = response.data["data"]
     row = payload[0] if isinstance(payload, list) else payload
@@ -176,6 +188,100 @@ class TestUploadDedup:
         second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
 
         assert second.filepath.name != first.filepath.name
+
+
+class TestUploadAutoCategory:
+    """上传自动分类：按 MIME/扩展名推断，且只写字典中存在的分类值。
+
+    分类唯一事实来源是字典：推断结果不在字典中时回退「其他」，仍未配置则留空
+    （历史做法是让用户逐条手动挑分类，本组的守护点是「不写字典外取值」）。
+    """
+
+    def test_image_upload_auto_categorised(self, superuser):
+        _patch_category_dict("image", "other")
+        record = _uploaded_file(superuser, name="photo.png", content=b"\x89PNG-bytes", mime="image/png")
+        assert record.category == "image"
+
+    def test_document_and_archive_by_extension(self, superuser):
+        """MIME 缺失/不可信时按扩展名兜底：txt → 文档；zip → 压缩包。"""
+        _patch_category_dict("document", "archive", "other")
+        doc = _uploaded_file(superuser, name="notes.txt", content=b"hi")
+        assert doc.category == "document"
+        archive = _uploaded_file(superuser, name="pkg.zip", content=b"PK\x03\x04zip", mime="application/octet-stream")
+        assert archive.category == "archive"
+
+    def test_unknown_type_falls_back_to_other(self, superuser):
+        _patch_category_dict("image", "other")
+        record = _uploaded_file(superuser, name="blob.bin", content=b"\x00\x01", mime="application/octet-stream")
+        assert record.category == "other"
+
+    def test_audio_without_dict_item_falls_back_to_other(self, superuser):
+        """字典未配置 audio：推断结果回退「其他」，不写字典外取值。"""
+        _patch_category_dict("image", "document", "video", "archive", "other")
+        record = _uploaded_file(superuser, name="song.mp3", content=b"ID3", mime="audio/mpeg")
+        assert record.category == "other"
+
+    def test_no_dict_keeps_category_empty(self, superuser):
+        """字典未配置（或为空）：留空（None），不因缺字典数据阻断上传。"""
+        record = _uploaded_file(superuser, name="photo.png", mime="image/png")
+        assert record.category is None
+
+    def test_dedup_upload_also_auto_categorised(self, superuser):
+        """去重命中的记录同样自动分类（复用物理文件不影响分类推断）。"""
+        _patch_category_dict("image", "other")
+        first = _uploaded_file(superuser, name="pic.png", content=b"same-png", mime="image/png")
+        response = _upload(superuser, _mkfile("pic-copy.png", b"same-png", mime="image/png"))
+        second = UploadFile.objects.get(pk=response.data["data"][0]["pk"])
+        assert second.filepath.name == first.filepath.name
+        assert second.category == "image"
+
+
+class TestClassifyUploadFilesCommand:
+    """存量回填命令：默认只整理未分类记录，不覆盖人工分类（--all 才重算）。"""
+
+    def test_backfills_unclassified_only(self, superuser):
+        from django.core.management import call_command
+
+        _patch_category_dict("image", "document", "other")
+        png = UploadFile.objects.create(
+            creator=superuser, filename="a.png", filesize=1, mime_type="image/png", md5sum="3" * 32
+        )
+        manual = UploadFile.objects.create(
+            creator=superuser, filename="b.png", filesize=1, mime_type="image/png", md5sum="4" * 32, category="other"
+        )
+
+        call_command("classify_upload_files")
+
+        png.refresh_from_db()
+        manual.refresh_from_db()
+        assert png.category == "image"
+        assert manual.category == "other", "已分类记录不应被默认覆盖"
+
+    def test_dry_run_keeps_records_untouched(self, superuser):
+        from django.core.management import call_command
+
+        _patch_category_dict("image", "other")
+        record = UploadFile.objects.create(
+            creator=superuser, filename="c.png", filesize=1, mime_type="image/png", md5sum="5" * 32
+        )
+
+        call_command("classify_upload_files", "--dry-run")
+
+        record.refresh_from_db()
+        assert record.category is None
+
+    def test_all_reclassifies_manual_values(self, superuser):
+        from django.core.management import call_command
+
+        _patch_category_dict("image", "other")
+        record = UploadFile.objects.create(
+            creator=superuser, filename="d.png", filesize=1, mime_type="image/png", md5sum="6" * 32, category="other"
+        )
+
+        call_command("classify_upload_files", "--all")
+
+        record.refresh_from_db()
+        assert record.category == "image"
 
 
 class TestKeepDaysCleanup:
@@ -366,12 +472,72 @@ def test_stats_counts_size_and_usage_rate(superuser, normal_user):
     assert data["quota_mb"] == 1
     assert data["usage_rate"] == round(300 / (1024 * 1024) * 100, 2)
 
-    # 配额 0 = 不限：usage_rate 恒 0
+    # 剩余空间：有配额时为配额 - 已用
+    assert data["remaining_size"] == 1024 * 1024 - 300
+
+    # 配额 0 = 不限：usage_rate 恒 0，剩余空间为 null（前端显示「不限」）
     SysConfig.set_value("FILE_STORAGE_QUOTA_MB", 0)
     cache.clear()
     response = _stats(superuser)
     assert response.data["data"]["usage_rate"] == 0
     assert response.data["data"]["quota_mb"] == 0
+    assert response.data["data"]["remaining_size"] is None
+
+
+def test_stats_includes_category_trend_and_top_files(superuser, normal_user):
+    """stats 扩展：分类分布（含字典缺失回退与未分类）/ 7 天趋势补零 / 最大文件 TopN。"""
+    from django.core.cache import cache
+
+    _patch_category_dict("image", "document", "other")
+    UploadFile.objects.create(
+        creator=superuser, filename="pic.png", filesize=500, mime_type="image/png", md5sum="a" * 32, category="image"
+    )
+    UploadFile.objects.create(
+        creator=superuser,
+        filename="doc.txt",
+        filesize=300,
+        mime_type="text/plain",
+        md5sum="b" * 32,
+        category="document",
+    )
+    # 字典已删除该分类项的历史值：label 回退 code 本身（不因字典缺项报错）
+    UploadFile.objects.create(
+        creator=superuser,
+        filename="old.bin",
+        filesize=100,
+        mime_type="application/octet-stream",
+        md5sum="c" * 32,
+        category="legacy",
+    )
+    # 未分类（历史数据，category 为空）
+    UploadFile.objects.create(
+        creator=superuser, filename="none.bin", filesize=50, mime_type="application/octet-stream", md5sum="d" * 32
+    )
+    # 他人数据不计入
+    UploadFile.objects.create(creator=normal_user, filename="other.bin", filesize=9999, mime_type="t", md5sum="e" * 32)
+    cache.clear()
+
+    data = _stats(superuser).data["data"]
+    assert data["count"] == 4
+    assert data["total_size"] == 950
+    assert data["avg_size"] == round(950 / 4)
+
+    by_value = {row["value"]: row for row in data["category_stats"]}
+    assert by_value["image"]["count"] == 1 and by_value["image"]["size"] == 500
+    assert by_value["image"]["label"] == "图片"
+    assert by_value["legacy"]["label"] == "legacy"
+    assert by_value[None]["count"] == 1 and by_value[None]["label"] is None
+    # 分类分布按大小降序（图表按序渲染，避免同一数据两种顺序）
+    assert [row["value"] for row in data["category_stats"]] == ["image", "document", "legacy", None]
+
+    # 趋势恒为 7 天：今天 4 条，其余补 0；日期升序
+    assert len(data["recent_trend"]) == 7
+    assert data["recent_trend"][-1]["count"] == 4
+    assert all(point["count"] == 0 for point in data["recent_trend"][:-1])
+    assert [point["date"] for point in data["recent_trend"]] == sorted(point["date"] for point in data["recent_trend"])
+
+    # 最大文件 TopN：按大小降序
+    assert [row["filename"] for row in data["top_files"]] == ["pic.png", "doc.txt", "old.bin", "none.bin"]
 
 
 def test_category_filter(superuser):

@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 7/24/2024
 
+import datetime
 import hashlib
 import os
 import re
@@ -13,7 +14,9 @@ from urllib.parse import quote
 from django.core.cache import cache
 from django.http import FileResponse, HttpResponse
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
@@ -33,6 +36,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.upload import UploadFileSerializer
+from system.utils.dict import get_dict_items
 from system.utils.preview import (
     KIND_IMAGE,
     KIND_OFFICE,
@@ -47,6 +51,7 @@ from system.utils.preview import (
     read_text_preview,
     touch_preview_cache,
 )
+from system.utils.upload_category import UPLOAD_CATEGORY_DICT, resolve_upload_category
 
 logger = get_logger(__name__)
 
@@ -153,6 +158,37 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                         "total_size": build_basic_type(OpenApiTypes.NUMBER),
                         "quota_mb": build_basic_type(OpenApiTypes.NUMBER),
                         "usage_rate": build_basic_type(OpenApiTypes.NUMBER),
+                        "remaining_size": build_basic_type(OpenApiTypes.NUMBER),
+                        "avg_size": build_basic_type(OpenApiTypes.NUMBER),
+                        "category_stats": build_array_type(
+                            build_object_type(
+                                properties={
+                                    "value": build_basic_type(OpenApiTypes.STR),
+                                    "label": build_basic_type(OpenApiTypes.STR),
+                                    "color": build_basic_type(OpenApiTypes.STR),
+                                    "count": build_basic_type(OpenApiTypes.NUMBER),
+                                    "size": build_basic_type(OpenApiTypes.NUMBER),
+                                }
+                            )
+                        ),
+                        "recent_trend": build_array_type(
+                            build_object_type(
+                                properties={
+                                    "date": build_basic_type(OpenApiTypes.STR),
+                                    "count": build_basic_type(OpenApiTypes.NUMBER),
+                                    "size": build_basic_type(OpenApiTypes.NUMBER),
+                                }
+                            )
+                        ),
+                        "top_files": build_array_type(
+                            build_object_type(
+                                properties={
+                                    "pk": build_basic_type(OpenApiTypes.STR),
+                                    "filename": build_basic_type(OpenApiTypes.STR),
+                                    "filesize": build_basic_type(OpenApiTypes.NUMBER),
+                                }
+                            )
+                        ),
                     }
                 )
             }
@@ -161,17 +197,79 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
     @action(methods=["get"], detail=False, url_path="stats")
     @cache_response(timeout=10, key_func="get_stats_cache_key")
     def stats(self, request, *args, **kwargs):
-        """个人文件统计（数量/总大小/配额使用率）"""
+        """个人文件统计（数量/总大小/配额使用率 + 分类分布/近 7 天趋势/最大文件）。
+
+        顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
+        由 10s 短缓存兜住重复刷新；`?no_cache=1` 可穿透缓存取即时值。
+        """
         # 配额按上传人维度聚合（creator 索引），与管理页「我的文件」口径一致
         queryset = UploadFile.objects.filter(creator=request.user)
-        count = queryset.count()
-        total_size = queryset.aggregate(size=Sum("filesize"))["size"] or 0
+        agg = queryset.aggregate(count=Count("pk"), total_size=Sum("filesize"))
+        count = agg["count"] or 0
+        total_size = agg["total_size"] or 0
         quota_mb = SysConfig.FILE_STORAGE_QUOTA_MB or 0
         quota_bytes = quota_mb * 1024 * 1024
         usage_rate = round(total_size / quota_bytes * 100, 2) if quota_bytes else 0
         return ApiResponse(
-            data={"count": count, "total_size": total_size, "quota_mb": quota_mb, "usage_rate": usage_rate}
+            data={
+                "count": count,
+                "total_size": total_size,
+                "quota_mb": quota_mb,
+                "usage_rate": usage_rate,
+                # 剩余空间：无配额（0=不限）时给 null，前端显示「不限」
+                "remaining_size": max(quota_bytes - total_size, 0) if quota_bytes else None,
+                "avg_size": round(total_size / count) if count else 0,
+                "category_stats": self._category_stats(queryset),
+                "recent_trend": self._recent_trend(queryset),
+                "top_files": list(queryset.order_by("-filesize").values("pk", "filename", "filesize")[:5]),
+            }
         )
+
+    @staticmethod
+    def _category_stats(queryset):
+        """分类分布（数量/大小）：label/color 取自字典，字典缺失时回退分类 code。
+
+        `value=None` 表示未分类（历史数据），label/color 一并给 null，
+        展示文案（「未分类」）由前端 i18n 负责，不写进缓存载荷。
+        """
+        dict_items = {item["value"]: item for item in get_dict_items(UPLOAD_CATEGORY_DICT)}
+        rows = queryset.values("category").annotate(count=Count("pk"), size=Sum("filesize")).order_by("-size")
+        result = []
+        for row in rows:
+            item = dict_items.get(row["category"]) or {}
+            result.append(
+                {
+                    "value": row["category"],
+                    # 字典项已删除的历史值：label 回退 code 本身，保证图表仍可读
+                    "label": item.get("label") or row["category"],
+                    "color": item.get("color"),
+                    "count": row["count"],
+                    "size": row["size"] or 0,
+                }
+            )
+        return result
+
+    @staticmethod
+    def _recent_trend(queryset, days=7):
+        """近 N 天上传趋势（按天聚合，空缺日期补 0，前端无需再做日历运算）。
+
+        日期口径与 Django 当前时区一致（TruncDate 走 USE_TZ 时区转换）。
+        """
+        today = timezone.localdate()
+        start = today - datetime.timedelta(days=days - 1)
+        rows = (
+            queryset.filter(created_time__date__gte=start)
+            .annotate(day=TruncDate("created_time"))
+            .values("day")
+            .annotate(count=Count("pk"), size=Sum("filesize"))
+        )
+        by_day = {row["day"]: row for row in rows}
+        trend = []
+        for offset in range(days):
+            day = start + datetime.timedelta(days=offset)
+            row = by_day.get(day) or {}
+            trend.append({"date": day.isoformat(), "count": row.get("count", 0), "size": row.get("size") or 0})
+        return trend
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -329,6 +427,9 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                     filename = sanitize_filename(file_obj.name)
                     # md5 在落盘前求值：命中去重时不能再写一份磁盘文件
                     md5sum = file_md5(file_obj)
+                    # 自动分类：按 MIME/扩展名推断，且只写字典中存在的分类值
+                    # （去重命中与正常落盘共用同一结果，避免两条路径分类不一致）
+                    category = resolve_upload_category(filename, file_obj.content_type)
                     source = find_dedup_source(request.user, md5sum)
                     if source:
                         # 去重命中：复用既有物理文件，仅新建引用记录（不落盘）。
@@ -345,6 +446,7 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                                 mime_type=file_obj.content_type,
                                 filesize=file_obj.size,
                                 md5sum=md5sum,
+                                category=category,
                             )
                         )
                         continue
@@ -359,6 +461,7 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                             mime_type=file_obj.content_type,
                             filesize=file_obj.size,
                             md5sum=md5sum,
+                            category=category,
                         )
                     )
         except Exception as e:

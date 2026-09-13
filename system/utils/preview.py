@@ -53,6 +53,7 @@ __all__ = [
     "preview_cache_dir",
     "preview_cache_path",
     "preview_kind",
+    "preview_kind_of",
     "read_text_preview",
     "remove_preview_cache",
     "remove_preview_cache_by_pk",
@@ -171,8 +172,17 @@ def preview_kind(upload) -> str | None:
 
     Office 判定排在文本之后：csv 等"表格类文本"仍按文本预览（体验更好且零转换成本）。
     """
-    mime = (getattr(upload, "mime_type", "") or "").lower()
-    filename = (getattr(upload, "filename", "") or "").lower()
+    return preview_kind_of(getattr(upload, "mime_type", ""), getattr(upload, "filename", ""))
+
+
+def preview_kind_of(mime_type, filename) -> str | None:
+    """按 MIME + 文件名判定预览类型（纯函数）。
+
+    独立成纯函数的原因：上传自动分类（system/utils/upload_category.py）要在落库前
+    用同一套判定把 pdf/office/文本归为「文档」，避免两处规则各自演化后漂移。
+    """
+    mime = (mime_type or "").lower()
+    filename = (filename or "").lower()
     if mime.startswith("image/"):
         return KIND_IMAGE
     if mime == "application/pdf" or filename.endswith(".pdf"):
