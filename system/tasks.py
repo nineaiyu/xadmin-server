@@ -521,6 +521,13 @@ def async_import_data_task(self, record_id, view_path, user_pk):
 
         view_cls = import_string(view_path)
         view = view_cls()
+        # 手工装配重放上下文（WSGIRequest 重放，与 common/tasks.py::background_task_view_set_job 同源机制）。
+        # 下列 5 个隐式契约缺一即静默降级，改动前先读 docs/adr/ADR-036：
+        #   1) set_current_request：creator 信号赋值 + 操作审计 request_uuid；
+        #   2) drf_request.user：serializer 字段权限与视图权限上下文；
+        #   3) view.action="import_data"：serializer 行为分支（如创建时密码规则）；
+        #   4) view.format_kwarg=None：get_serializer_context 依赖（漏设直接 AttributeError）；
+        #   5) wsgi.input / CONTENT_LENGTH：DRF Request 解析（此处文件行数据已另行解析，body 为空）。
         environ = {
             "REQUEST_METHOD": "POST",
             "SCRIPT_NAME": "",
@@ -549,7 +556,7 @@ def async_import_data_task(self, record_id, view_path, user_pk):
         # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）
         import json
 
-        with open(source_path, "r", encoding="utf-8") as fp:
+        with open(source_path, encoding="utf-8") as fp:
             rows = json.load(fp)
         column_titles = (record.params or {}).get("column_titles") or []
         total = len(rows)
