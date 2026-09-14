@@ -46,7 +46,7 @@ class TestLegacyDecryptGate:
     """SECURITY_AES_V1_DECRYPT_ENABLED 灰度开关（v1 退役路径）。"""
 
     def test_legacy_rejected_when_disabled(self, settings):
-        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
         settings.SECURITY_AES_V1_DECRYPT_ENABLED = False
         assert AESCipherV2("some-key").decrypt(encrypted) == ""
 
@@ -58,13 +58,13 @@ class TestLegacyDecryptGate:
 
     def test_missing_setting_defaults_to_enabled(self, settings):
         """配置缺失（Settings 未加载的极端场景）按开启处理，宁可多兼容不误杀。"""
-        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
         delattr(settings, "SECURITY_AES_V1_DECRYPT_ENABLED")
         assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
 
     def test_enabled_by_default_in_real_settings(self):
         """真实 settings（conf.py 默认值注入）下旧格式仍可解密——默认行为不变。"""
-        encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()
+        encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
         assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
 
 

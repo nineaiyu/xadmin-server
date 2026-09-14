@@ -17,8 +17,9 @@
 规模 + 每组 LIMIT 下 icontains 无性能压力（perf.yml 基线可复核）。
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from django.db.models import Q, QuerySet
 

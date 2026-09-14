@@ -69,9 +69,9 @@ def _generate(workspace, *extra):
     call_command(
         "generate_crud",
         "demo.Book",
+        *extra,
         output=str(backend),
         frontend_root=str(client),
-        *extra,
     )
     return backend, client
 

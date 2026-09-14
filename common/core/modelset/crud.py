@@ -159,7 +159,7 @@ class UpdateAction(mixins.UpdateModelMixin):
                 # 统一落到原始 Django request 上，ApiLoggingMiddleware 才能读到；
                 # DRF Request.__getattr__ 代理 _request，读侧不受影响
                 target = getattr(current_request, "_request", current_request)
-                setattr(target, "operation_log_changes", changes)
+                target.operation_log_changes = changes
 
     def partial_update(self, request, *args, **kwargs):
         """部分更新{cls}信息"""

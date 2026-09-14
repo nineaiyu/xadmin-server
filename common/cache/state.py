@@ -14,10 +14,11 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class CacheBaseState(object):
-    def __init__(self, key, value=time.time(), timeout=3600 * 24):
+class CacheBaseState:
+    def __init__(self, key, value=None, timeout=3600 * 24):
         self.key = f"CacheBaseState_{self.__class__.__name__}_{key}"
-        self.value = value
+        # 默认值不能在参数默认值处求值（那会在模块导入时刻固定），否则所有实例共享同一时间戳
+        self.value = time.time() if value is None else value
         self.timeout = timeout
         self.active = False
 

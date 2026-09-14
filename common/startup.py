@@ -18,7 +18,7 @@ from common.serializers import MonitorSerializer
 from common.utils import get_boot_time, get_cpu_load, get_cpu_percent, get_disk_usage, get_memory_usage
 
 
-class BaseTerminal(object):
+class BaseTerminal:
     def __init__(self, suffix_name, _type):
         server_hostname = os.environ.get("SERVER_HOSTNAME") or ""
         hostname = socket.gethostname()

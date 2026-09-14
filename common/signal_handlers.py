@@ -48,7 +48,7 @@ def on_app_ready(sender=None, headers=None, **kwargs):
     for task in tasks:
         periodic_task = PeriodicTask.objects.filter(task=task).first()
         if periodic_task and not periodic_task.enabled:
-            logger.debug("Periodic task [{}] is disabled!".format(task))
+            logger.debug(f"Periodic task [{task}] is disabled!")
             continue
         signature(task).delay()
 
@@ -128,10 +128,10 @@ def on_request_finished_logging_db_query(sender, **kwargs):
         method = current_request.method
         path = current_request.get_full_path()
 
-    print(">>>. [{}] {}".format(method, path))
+    print(f">>>. [{method}] {path}")
 
     for name, counter in counters:
-        logger.debug("Query {:3} times using {:.2f}s {}".format(counter.counter, counter.time, name))
+        logger.debug(f"Query {counter.counter:3} times using {counter.time:.2f}s {name}")
 
 
 def _get_request_user():

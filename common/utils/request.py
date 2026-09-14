@@ -199,7 +199,7 @@ def get_verbose_name(queryset=None, view=None, model=None):
         if view is not None and hasattr(view, "__doc__"):
             # docstring 可能多行（如 mfa.UserConfirmViewSet 的 412 交互流程），
             # 操作日志 module 列只有 64 字符且多行文本不可读，统一只取首行
-            verbose_name = get_doc_first_line(getattr(view, "__doc__"))
+            verbose_name = get_doc_first_line(view.__doc__)
         if queryset is not None and hasattr(queryset, "model"):
             model = queryset.model
         elif view and hasattr(view.get_queryset(), "model"):
@@ -207,7 +207,7 @@ def get_verbose_name(queryset=None, view=None, model=None):
         elif view and hasattr(view.get_serializer(), "Meta") and hasattr(view.get_serializer().Meta, "model"):
             model = view.get_serializer().Meta.model
         if model and not verbose_name:
-            verbose_name = getattr(model, "_meta").verbose_name
+            verbose_name = model._meta.verbose_name
     except Exception:
         pass
     return model, verbose_name
@@ -217,4 +217,4 @@ def get_request_ident(request):
     http_user_agent = request.META.get("HTTP_USER_AGENT")
     http_accept = request.META.get("HTTP_ACCEPT")
     remote_addr = BaseThrottle().get_ident(request)
-    return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode("utf-8")).decode("utf-8")
+    return base64.b64encode(f"{http_user_agent}{http_accept}{remote_addr}".encode()).decode("utf-8")

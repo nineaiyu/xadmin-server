@@ -5,7 +5,7 @@
 拆分自 modelset.py。
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from django.db.models import Case, IntegerField, Value, When
 from django.utils.translation import gettext_lazy as _
@@ -24,7 +24,7 @@ logger = get_logger(__name__)
 RANK_MAX_ITEMS = 1000
 
 
-class RankAction(object):
+class RankAction:
     filter_queryset: Callable
     get_queryset: Callable
 
@@ -53,7 +53,7 @@ class RankAction(object):
         return ApiResponse(detail=_("Sorting saved successfully"))
 
 
-class BatchDestroyAction(object):
+class BatchDestroyAction:
     filter_queryset: Callable
     get_queryset: Callable
     perform_destroy: Callable

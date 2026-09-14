@@ -144,7 +144,7 @@ def verify_sms_email_code(request, block_utils):
                 "The account has been locked (please contact admin to unlock it or try again after {} minutes)"
             ).format(settings.SECURITY_LOGIN_LIMIT_TIME)
 
-        raise ValidateError(detail)
+        raise ValidateError(detail) from e
 
     return query_key, target, verify_token
 

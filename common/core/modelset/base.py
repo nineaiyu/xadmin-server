@@ -6,7 +6,7 @@
 选择、文件导出绕过分页。拆分自 modelset.py，行为保持不变。
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import QuerySet
@@ -17,7 +17,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class BaseViewSet(object):
+class BaseViewSet:
     action: Callable
     extra_filter_class = []
     # 查询优化：显式声明的关联字段，在所有 action 生效，支持 creator__dept 嵌套写法

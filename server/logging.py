@@ -9,7 +9,7 @@ import logging
 import os
 import re
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 
 from server.utils import get_current_request
@@ -75,9 +75,7 @@ class JsonFormatter(logging.Formatter):
     def format(self, record):
         current_request = get_current_request()
         payload = {
-            "time": datetime.fromtimestamp(record.created, tz=timezone.utc)
-            .astimezone()
-            .isoformat(timespec="milliseconds"),
+            "time": datetime.fromtimestamp(record.created, tz=UTC).astimezone().isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
             "module": f"{record.pathname}:{record.lineno}",

@@ -23,7 +23,7 @@ class FilterIps(list):
         return [obj.get("ip") for obj in self.__iter__() if obj.get("pk")() in pk__in]
 
 
-class IpUtils(object):
+class IpUtils:
     def __init__(self, ip):
         self.ip = ip
 

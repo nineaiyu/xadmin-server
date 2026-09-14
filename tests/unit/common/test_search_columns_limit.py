@@ -67,7 +67,7 @@ class TestChoicesMaxCount:
             choices = field.get_choices()
 
         assert len(choices) == 200
-        assert getattr(field, "choices_truncated") is True
+        assert field.choices_truncated is True
         # 序列化成本被截断：SQL 带出 LIMIT 201（200 条 + 1 行用于判定截断）
         assert any("LIMIT 201" in q["sql"] for q in ctx.captured_queries)
 
@@ -77,7 +77,7 @@ class TestChoicesMaxCount:
         field.is_column = True
         choices = field.get_choices()
         assert len(choices) == 10
-        assert getattr(field, "choices_truncated") is True
+        assert field.choices_truncated is True
 
     def test_dict_choices_truncated(self, many_users, monkeypatch):
         """非 column（dict 形式 choices）同样被截断并标记"""
@@ -85,7 +85,7 @@ class TestChoicesMaxCount:
         field = _field(many_users)
         choices = field.get_choices()
         assert len(choices) == 10
-        assert getattr(field, "choices_truncated") is True
+        assert field.choices_truncated is True
 
     def test_explicit_cutoff_not_overridden(self, many_users):
         field = _field(many_users)

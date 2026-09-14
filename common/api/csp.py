@@ -64,7 +64,7 @@ class CSPReportAPIView(GenericAPIView):
 
         # 节流键用哈希：directive/document 含空格与引号，直接拼进缓存键对 memcached
         # 非法（CacheKeyWarning），且长度不可控
-        ident = hashlib.md5(f"{directive}|{document}".encode("utf-8")).hexdigest()[:16]
+        ident = hashlib.md5(f"{directive}|{document}".encode()).hexdigest()[:16]
         throttle_key = f"csp_report_{ident}"
         if cache.add(throttle_key, 1, CSP_REPORT_LOG_THROTTLE_SECONDS):
             logger.warning("CSP violation: directive=%s blocked=%s document=%s", directive, blocked, document)

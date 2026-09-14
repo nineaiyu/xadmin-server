@@ -61,8 +61,8 @@ class AlibabaSMS(BaseSMSClient):
                 raise APIException(detail=response.body.message, code=response.body.code)
         except TeaException as e:
             if e.code == "SignatureDoesNotMatch":
-                raise APIException(code=e.code, detail=_("Signature does not match"))
-            raise APIException(code=e.code, detail=e.message)
+                raise APIException(code=e.code, detail=_("Signature does not match")) from e
+            raise APIException(code=e.code, detail=e.message) from e
         return response
 
 

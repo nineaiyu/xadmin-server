@@ -14,7 +14,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class CaptchaAuth(object):
+class CaptchaAuth:
     def __init__(self, captcha_key="", request=None):
         self.captcha_key = captcha_key
         self.request = request

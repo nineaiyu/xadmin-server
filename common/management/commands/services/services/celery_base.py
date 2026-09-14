@@ -12,7 +12,7 @@ class CeleryBaseService(BaseService):
 
     @property
     def cmd(self):
-        print("\n- Start Celery as Distributed Task Queue: {}".format(self.queue.capitalize()))
+        print(f"\n- Start Celery as Distributed Task Queue: {self.queue.capitalize()}")
         os.environ.setdefault("LC_ALL", "C.UTF-8")
         os.environ.setdefault("PYTHONOPTIMIZE", "1")
 

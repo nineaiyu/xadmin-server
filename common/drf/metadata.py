@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-from __future__ import unicode_literals
 
 import datetime
 from collections import OrderedDict
@@ -163,7 +162,7 @@ class SimpleMetadataWithFilters(SimpleMetadata):
         return fields
 
     def determine_metadata(self, request, view):
-        metadata = super(SimpleMetadataWithFilters, self).determine_metadata(request, view)
+        metadata = super().determine_metadata(request, view)
         filterset_fields = self.get_filters_fields(request, view)
         order_fields = self.get_ordering_fields(request, view)
 

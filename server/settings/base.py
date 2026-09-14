@@ -243,7 +243,7 @@ CACHES = {
 DB_OPTIONS = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
 if DB_ENGINE in ["mysql", "oracle", "postgresql", "sqlite3"]:
-    ENGINE = "django.db.backends.{}".format(DB_ENGINE)
+    ENGINE = f"django.db.backends.{DB_ENGINE}"
 elif DB_ENGINE == "vastbase":
     ENGINE = "django_vastbase_backend"
 else:

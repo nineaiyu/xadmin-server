@@ -21,7 +21,7 @@ logger = get_logger(__file__)
 
 def get_long_str(li):
     result = ""
-    for i in zip(*li):
+    for i in zip(*li, strict=False):
         if len(set(i)) == 1:
             result += i[0]
         else:

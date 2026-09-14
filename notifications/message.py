@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from django.db import transaction
 from django.db.models import QuerySet
 
@@ -57,12 +55,12 @@ class SiteMessageUtil:
     @classmethod
     def base_notify(
         cls,
-        users: List | QuerySet,
+        users: list | QuerySet,
         title: str,
         message: str,
         notice_type: int,
         level: MessageContent.LevelChoices,
-        extra_json: Dict = None,
+        extra_json: dict = None,
     ):
         if isinstance(users, (QuerySet, list)):
             recipients = users
@@ -80,18 +78,18 @@ class SiteMessageUtil:
 
     @classmethod
     def notify_success(
-        cls, users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: Dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
     ):
         return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.SUCCESS, extra_json)
 
     @classmethod
     def notify_info(
-        cls, users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: Dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
     ):
         return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.PRIMARY, extra_json)
 
     @classmethod
     def notify_error(
-        cls, users: List | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: Dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
     ):
         return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.DANGER, extra_json)

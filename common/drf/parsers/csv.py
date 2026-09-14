@@ -16,8 +16,8 @@ class CSVFileParser(BaseFileParser):
     def match_escape_chars(self):
         chars = []
         for c in CSV_FILE_ESCAPE_CHARS:
-            dq_char = '"{}'.format(c)
-            sg_char = "'{}".format(c)
+            dq_char = f'"{c}'
+            sg_char = f"'{c}"
             chars.append(dq_char)
             chars.append(sg_char)
         return tuple(chars)
@@ -27,8 +27,7 @@ class CSVFileParser(BaseFileParser):
         """
         保证在`通用换行模式`下打开文件
         """
-        for line in stream.splitlines():
-            yield line
+        yield from stream.splitlines()
 
     def __parse_row(self, row):
         row_escape = []

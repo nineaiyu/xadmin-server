@@ -43,7 +43,7 @@ class BaseSMSSettingSerializer(serializers.Serializer):
             return
         try:
             phone = phonenumbers.parse(value, "CN")
-            value = {"code": "+%s" % phone.country_code, "phone": phone.national_number}
+            value = {"code": f"+{phone.country_code}", "phone": phone.national_number}
         except phonenumbers.NumberParseException:
             value = {"code": "+86", "phone": value}
         self._data["SMS_TEST_PHONE"] = value

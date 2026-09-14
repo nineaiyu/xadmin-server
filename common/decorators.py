@@ -28,7 +28,7 @@ def on_transaction_commit(func):
     return inner
 
 
-class Singleton(object):
+class Singleton:
     """单例类"""
 
     def __init__(self, cls):
@@ -55,7 +55,7 @@ class EventLoopThread(threading.Thread):
         try:
             self._loop.run_forever()
         except Exception as e:
-            logger.error("Event loop stopped with err: {} ".format(e))
+            logger.error(f"Event loop stopped with err: {e} ")
 
     def get_loop(self):
         return self._loop
@@ -98,12 +98,7 @@ def run_debouncer_func(cache_key, ttl, func, *args, **kwargs):
         _loop_debouncer_func_args_cache.pop(cache_key, None)
         _loop_debouncer_func_task_time_cache.pop(cache_key, None)
         executor.submit(run_func_partial, *args, **kwargs)
-        logger.debug(
-            "pid {} executor submit run {}".format(
-                os.getpid(),
-                func.__name__,
-            )
-        )
+        logger.debug(f"pid {os.getpid()} executor submit run {func.__name__}")
         return
 
     loop = _loop_thread.get_loop()
@@ -112,7 +107,7 @@ def run_debouncer_func(cache_key, ttl, func, *args, **kwargs):
     _loop_debouncer_func_task_cache[cache_key] = task
 
 
-class Debouncer(object):
+class Debouncer:
     def __init__(self, callback, check, delay, loop=None, executor=None):
         self.callback = callback
         self.check = check
@@ -151,7 +146,7 @@ def _run_func(key, func, *args, **kwargs):
             log_func = logger.info
         pid = os.getpid()
         thread_name = threading.current_thread()
-        log_func("pid {} thread {} delay run {} error: {}".format(pid, thread_name, func.__name__, msg))
+        log_func(f"pid {pid} thread {thread_name} delay run {func.__name__} error: {msg}")
     _loop_debouncer_func_task_cache.pop(key, None)
     _loop_debouncer_func_args_cache.pop(key, None)
     _loop_debouncer_func_task_time_cache.pop(key, None)
@@ -169,7 +164,7 @@ def delay_run(ttl=5, key=None):
         suffix_key_func = key if key else default_suffix_key
         sigs = inspect.signature(func)
         if len(sigs.parameters) != 0:
-            raise ValueError("Merge delay run must not arguments: %s" % func.__name__)
+            raise ValueError(f"Merge delay run must not arguments: {func.__name__}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -202,7 +197,7 @@ def merge_delay_run(ttl=5, key=None):
 
         for k, v in kwargs.items():
             if not isinstance(v, (tuple, list, set)):
-                raise ValueError("func kwargs value must be list or tuple: %s %s" % (func.__name__, v))
+                raise ValueError(f"func kwargs value must be list or tuple: {func.__name__} {v}")
             v = set(v)
             if k not in cache_kwargs:
                 cache_kwargs[k] = v
@@ -220,10 +215,10 @@ def merge_delay_run(ttl=5, key=None):
     def inner(func):
         sigs = inspect.signature(func)
         if len(sigs.parameters) != 1:
-            raise ValueError("func must have one arguments: %s" % func.__name__)
+            raise ValueError(f"func must have one arguments: {func.__name__}")
         param = list(sigs.parameters.values())[0]
         if not isinstance(param.default, tuple):
-            raise ValueError("func default must be tuple: %s" % param.default)
+            raise ValueError(f"func default must be tuple: {param.default}")
         func.delay = functools.partial(delay, func)
         func.apply = functools.partial(apply, func)
 

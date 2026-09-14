@@ -223,7 +223,7 @@ class IsAuthenticated(BasePermission):
             return get_user_permission(request.user, request.method)
         except Exception as e:
             logger.error(f"get user permission failed. user:{request.user} method:{request.method} error:{e}")
-            raise PermissionDenied(_("Permission denied"))
+            raise PermissionDenied(_("Permission denied")) from None
 
     @staticmethod
     def _resolve_menu_pk(request, permission_data):
@@ -258,4 +258,4 @@ class IsAuthenticated(BasePermission):
             request.fields = get_user_field_queryset(request.user, menu_pk)
         except Exception as e:
             logger.error(f"get user field permission failed. user:{request.user} menu:{menu_pk} error:{e}")
-            raise PermissionDenied(_("Permission denied"))
+            raise PermissionDenied(_("Permission denied")) from None

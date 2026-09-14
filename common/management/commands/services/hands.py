@@ -19,7 +19,7 @@ try:
 
     __version__ = const.VERSION
 except ImportError as e:
-    print("Not found __version__: {}".format(e))
+    print(f"Not found __version__: {e}")
     print("Python is: ")
     logger.info(sys.executable)
     __version__ = "Unknown"
@@ -39,7 +39,7 @@ CELERY_WORKER_COUNT = CONFIG.CELERY_WORKER_COUNT or 10
 
 
 def check_port_is_used():
-    for i in range(5):
+    for _ in range(5):
         if not test_ip_connectivity(HTTP_HOST, HTTP_PORT):
             return
         else:
@@ -60,7 +60,7 @@ def check_database_connection():
         except OperationalError:
             logger.warning("Database not setup, retry")
         except Exception as exc:
-            logger.warning("Unexpect error occur: {}".format(str(exc)))
+            logger.warning(f"Unexpect error occur: {str(exc)}")
         time.sleep(1)
     logger.error("Connection database failed, exit")
     sys.exit(10)
@@ -103,7 +103,7 @@ def download_ip_db(force=False):
         path = os.path.join(settings.DATA_DIR, *p)
         if not force and os.path.isfile(path) and os.path.getsize(path) > 1000:
             continue
-        logger.info("Download ip db: {}".format(path))
+        logger.info(f"Download ip db: {path}")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         download_file(src, path)
 
@@ -116,13 +116,13 @@ def expire_caches():
 
 
 def check_settings():
-    for i in range(60):
+    for _ in range(60):
         try:
             Setting.objects.exists()
             time.sleep(1)
             return
         except Exception as exc:
-            logger.warning("Unexpect error occur: {}, retry".format(str(exc)))
+            logger.warning(f"Unexpect error occur: {str(exc)}, retry")
         time.sleep(1)
     logger.error("check settings database failed, exit")
     sys.exit(10)

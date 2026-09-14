@@ -113,7 +113,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
 
     def create(self, validated_data):
         # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串
-        raw_token = "pat_{}".format(secrets.token_urlsafe(32))
+        raw_token = f"pat_{secrets.token_urlsafe(32)}"
         validated_data["token_hash"] = hash_pat_token(raw_token)
         validated_data["token_prefix"] = raw_token[:12]
         instance = super().create(validated_data)

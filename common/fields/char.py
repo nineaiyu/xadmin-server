@@ -20,10 +20,10 @@ class AESField(models.Field):
         else:
             self.prefix = "aes:::"
         self.cipher = AESCipher(settings.SECRET_KEY)
-        super(AESField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def deconstruct(self):
-        name, path, args, kwargs = super(AESField, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
         if self.prefix != "aes:::":
             kwargs["prefix"] = self.prefix
         return name, path, args, kwargs

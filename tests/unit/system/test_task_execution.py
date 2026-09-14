@@ -157,7 +157,7 @@ def test_run_action_rejects_unregistered_task():
 def test_log_action_reads_file(monkeypatch, tmp_path):
     execution = TaskExecution.objects.create(name="x.tasks.log")
     log_file = tmp_path / f"{execution.pk}.log"
-    log_file.write_bytes("hello\n".encode() + CELERY_LOG_MAGIC_MARK)
+    log_file.write_bytes(b"hello\n" + CELERY_LOG_MAGIC_MARK)
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
 
     user = _make_user()
@@ -279,7 +279,7 @@ def _make_log_consumer(execution_pk):
 def test_ws_push_once_streams_until_mark(monkeypatch, tmp_path):
     consumer, captured, async_to_sync = _make_log_consumer("0" * 32)
     log_file = tmp_path / f"{'0' * 32}.log"
-    log_file.write_bytes("hello\nworld\n".encode() + CELERY_LOG_MAGIC_MARK)
+    log_file.write_bytes(b"hello\nworld\n" + CELERY_LOG_MAGIC_MARK)
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
 
     finished = async_to_sync(consumer.push_once)(get_celery_task_log_path(consumer.pk))
@@ -345,7 +345,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
 def test_destroy_execution_removes_log_file(monkeypatch, tmp_path):
     execution = TaskExecution.objects.create(name="x.tasks.del")
     log_file = tmp_path / f"{execution.pk}.log"
-    log_file.write_bytes("content".encode() + CELERY_LOG_MAGIC_MARK)
+    log_file.write_bytes(b"content" + CELERY_LOG_MAGIC_MARK)
     monkeypatch.setattr(settings, "CELERY_LOG_DIR", str(tmp_path))
 
     user = _make_user()

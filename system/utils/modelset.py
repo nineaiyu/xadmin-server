@@ -42,7 +42,7 @@ def _extract_pks(items):
     return pks
 
 
-class ChangeRolePermissionAction(object):
+class ChangeRolePermissionAction:
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -78,7 +78,7 @@ class ChangeRolePermissionAction(object):
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
 
-class PermissionPreviewAction(object):
+class PermissionPreviewAction:
     """用户权限预览（可见菜单/API 码/数据权限规则解码/字段权限矩阵 + 实时试算）。
 
     取数全部直查 DB，不经过 24h/10s 权限缓存，确保反映当前配置
@@ -126,7 +126,7 @@ class PermissionPreviewAction(object):
         )
 
 
-class DeptPreviewAction(object):
+class DeptPreviewAction:
     """部门维度授权预览（挂载角色 / 数据权限 / 字段权限 / 成员采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
@@ -136,7 +136,7 @@ class DeptPreviewAction(object):
         return ApiResponse(data=get_dept_preview(self.get_object(), request.user))
 
 
-class RolePreviewAction(object):
+class RolePreviewAction:
     """角色授权预览（授权菜单树 / 字段权限 / 持有用户采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
@@ -146,7 +146,7 @@ class RolePreviewAction(object):
         return ApiResponse(data=get_role_preview(self.get_object(), request.user))
 
 
-class InvalidConfigCacheAction(object):
+class InvalidConfigCacheAction:
     @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=["post"], detail=True)
     def invalid(self, request, *args, **kwargs):
@@ -162,7 +162,7 @@ class InvalidConfigCacheAction(object):
         return ApiResponse()
 
 
-class AnnotateUserCountMixin(object):
+class AnnotateUserCountMixin:
     """
     部门 user_count 预聚合：列表/详情/导出会逐行序列化该字段，不加聚合时为每行一次 COUNT。
 

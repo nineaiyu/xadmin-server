@@ -22,4 +22,4 @@ class Monitor(models.Model):
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return "%s-%s" % (self.created_time, self.cpu_load)
+        return f"{self.created_time}-{self.cpu_load}"

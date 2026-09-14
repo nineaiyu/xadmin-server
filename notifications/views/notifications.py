@@ -22,7 +22,7 @@ from notifications.serializers import (
 logger = get_logger(__name__)
 
 
-class MsgSubscriptionBackend(object):
+class MsgSubscriptionBackend:
     @extend_schema(
         parameters=None,
         responses=get_default_response_schema(

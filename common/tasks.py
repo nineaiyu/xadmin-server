@@ -82,14 +82,14 @@ def send_mail_async(*args, **kwargs):
     logger.info(f"send_mail_async called with subject={subject}, recipients={recipient_list}")
 
     try:
-        return send_mail(connection=get_connection(), *args, **kwargs)
+        return send_mail(*args, connection=get_connection(), **kwargs)
     except Exception as e:
         direct = task_self is None or getattr(task_self.request, "called_directly", False)
         if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
             countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
             logger.warning(f"Sending mail failed, retry in {countdown}s: {e}")
-            raise task_self.retry(exc=e, countdown=countdown)
-        logger.error("Sending mail error: {}".format(e))
+            raise task_self.retry(exc=e, countdown=countdown) from e
+        logger.error(f"Sending mail error: {e}")
 
 
 @shared_task(bind=True, acks_late=True, verbose_name=_("Send email attachment"))
@@ -119,8 +119,8 @@ def send_mail_attachment_async(*args, **kwargs):
         if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
             countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
             logger.warning(f"Sending mail attachment failed, retry in {countdown}s: {e}")
-            raise task_self.retry(exc=e, countdown=countdown)
-        logger.error("Sending mail attachment error: {}".format(e))
+            raise task_self.retry(exc=e, countdown=countdown) from e
+        logger.error(f"Sending mail attachment error: {e}")
         return None
     # 临时附件仅在发送成功后删除：失败重试时附件仍需存在（旧实现先删后发，重试必然失败）
     for attachment in attachment_list:
@@ -170,14 +170,14 @@ def clean_celery_periodic_tasks():
             continue
 
         task_name = task.name
-        logger.info("Start clean task: {}".format(task_name))
+        logger.info(f"Start clean task: {task_name}")
         disable_celery_periodic_task(task_name)
         delete_celery_periodic_task(task_name)
         task = get_celery_periodic_task(task_name)
         if task is None:
-            logger.info("Clean task success: {}".format(task_name))
+            logger.info(f"Clean task success: {task_name}")
         else:
-            logger.info("Clean task failure: {}".format(task))
+            logger.info(f"Clean task failure: {task}")
 
 
 @shared_task(
@@ -247,9 +247,9 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
             }
             match meta["action"]:
                 case "import_data":
-                    ImportDataMessage(getattr(request, "user"), task_info).publish()
+                    ImportDataMessage(request.user, task_info).publish()
                 case "batch_destroy":
-                    BatchDeleteDataMessage(getattr(request, "user"), task_info).publish()
+                    BatchDeleteDataMessage(request.user, task_info).publish()
 
     return task_info
 

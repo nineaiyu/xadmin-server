@@ -63,7 +63,7 @@ def scope_entry(method: str, path: str) -> str:
 def scope_display_path(path: str) -> str:
     """菜单 path → 人可读路径（占位符保留为 ``{pk}`` 形态，供界面展示）。"""
     body = str(path or "").strip().rstrip("$").strip().lstrip("/")
-    return "/" + _PLACEHOLDER_RE.sub(lambda match: "{%s}" % match.group("name"), body)
+    return "/" + _PLACEHOLDER_RE.sub(lambda match: "{{{}}}".format(match.group("name")), body)
 
 
 def _menu_title(menu) -> str:

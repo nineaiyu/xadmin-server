@@ -45,7 +45,7 @@ class PageNumber(PageNumberPagination):
         )
 
 
-class DynamicPageNumber(object):
+class DynamicPageNumber:
     def __init__(self, max_page_size=100, page_size=20):
         self.max_page_size = max_page_size
         self.page_size = page_size

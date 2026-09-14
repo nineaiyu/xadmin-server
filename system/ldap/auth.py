@@ -89,7 +89,7 @@ class LdapBindBackend(BaseBackend):
         """服务账号搜索目标条目，再以用户 DN bind 验密。返回 (dn, attrs)。"""
         attr_map = get_attr_map()
         username_attr = attr_map.get("username", "sAMAccountName")
-        search_filter = "(&{}({}={}))".format(settings.LDAP_USER_FILTER, username_attr, escape_filter(username))
+        search_filter = f"(&{settings.LDAP_USER_FILTER}({username_attr}={escape_filter(username)}))"
         attributes = sorted(set(attr_map.values()) | {"userAccountControl"})
         with service_connection() as conn:
             entries = paged_search_entries(conn, settings.LDAP_USER_SEARCH_BASE, search_filter, attributes)

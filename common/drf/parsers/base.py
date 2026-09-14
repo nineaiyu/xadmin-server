@@ -168,7 +168,7 @@ class BaseFileParser(BaseParser):
                 continue
             row = self.load_row(row)
             # 空字段名 = 该列未映射到任何字段（含显式忽略列）：不进入行数据
-            row_data = {k: v for k, v in zip(fields_name, row) if k}
+            row_data = {k: v for k, v in zip(fields_name, row, strict=False) if k}
             row_data = self.process_row_data(row_data)
             data.append(row_data)
         return data
@@ -194,7 +194,7 @@ class BaseFileParser(BaseParser):
             self.serializer_fields = self.serializer_cls().fields
         except Exception as e:
             logger.debug(e, exc_info=True)
-            raise ParseError(_("The resource does not support imports!"))
+            raise ParseError(_("The resource does not support imports!")) from e
 
         self.check_content_length(meta)
         try:
@@ -216,7 +216,7 @@ class BaseFileParser(BaseParser):
                 field_names = self.convert_to_field_names(column_titles)
 
             # 给 `common.mixins.api.RenderToJsonMixin` 提供，暂时只能耦合
-            column_title_field_pairs = list(zip(column_titles, field_names))
+            column_title_field_pairs = list(zip(column_titles, field_names, strict=True))
             column_title_field_pairs = [(k, v) for k, v in column_title_field_pairs if k and v]
             if not hasattr(request, "jms_context"):
                 request.jms_context = {}
@@ -227,4 +227,4 @@ class BaseFileParser(BaseParser):
             return data
         except Exception as e:
             logger.error(e, exc_info=True)
-            raise ParseError(_("Parse file error: {}").format(str(e)))
+            raise ParseError(_("Parse file error: {}").format(str(e))) from e

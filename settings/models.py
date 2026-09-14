@@ -31,7 +31,9 @@ class Setting(DbAuditModel, DbUuidModel):
                 return None
             value = json.loads(value)
             return value
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValueError):
+            # json 损坏 / 密文认证失败（GCM 校验不过抛 ValueError）：按读取失败回落 None，
+            # 不让单条坏配置把设置读取打成 500
             return None
 
     @cleaned_value.setter
@@ -44,7 +46,7 @@ class Setting(DbAuditModel, DbUuidModel):
                 v = signer.encrypt(v.encode("utf-8")).decode("utf-8")
             self.value = v
         except json.JSONDecodeError as e:
-            raise ValueError("Json dump error: {}".format(str(e)))
+            raise ValueError(f"Json dump error: {str(e)}") from e
 
     @classmethod
     def refresh_all_settings(cls):

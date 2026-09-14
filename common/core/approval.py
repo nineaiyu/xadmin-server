@@ -23,7 +23,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class ApprovalRequired(object):
+class ApprovalRequired:
     """敏感操作审批装饰器（显式挂载，全局清单控制启停）。"""
 
     def __init__(self, enabled=True):

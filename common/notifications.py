@@ -57,7 +57,7 @@ class ServerPerformanceMessage(SystemMessage):
         pass
 
 
-class ServerPerformanceCheckUtil(object):
+class ServerPerformanceCheckUtil:
     # 阈值可在后台「系统设置 → 安全设置 → 资源告警」配置（settings/serializers/security.py）；
     # Setting 行会经 django_ready/pubsub 实时回写 settings，这里必须每次检查时读取
     @property
@@ -145,7 +145,7 @@ class ServerPerformanceCheckUtil(object):
         self._terminals = [self.get_monitor_latest_average_value()]
 
 
-class TaskMessage(object):
+class TaskMessage:
     def get_html_msg(self) -> dict:
         context = dict(
             subject=self.subject,

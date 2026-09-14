@@ -20,7 +20,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class AESCipher(object):
+class AESCipher:
     def __init__(self, key):
         self.key = hashlib.sha256(key.encode()).digest()
 
@@ -52,7 +52,7 @@ class AESCipher(object):
         return data
 
 
-class AESCipherV3(object):
+class AESCipherV3:
     """字段级加密 v3（S5）：HKDF 派生独立数据密钥 + AES-256-GCM，写新读旧。
 
     动机：旧 ``AESCipher`` 以 ``sha256(SECRET_KEY)`` 直接派生、AES-CBC 无完整性校验——
@@ -121,7 +121,7 @@ def get_signer():
 signer: AESCipherV3 = get_signer()
 
 
-class AesBaseCrypt(object):
+class AesBaseCrypt:
     def __init__(self):
         self.cipher = AESCipher(self.__class__.__name__)
 
@@ -176,7 +176,7 @@ def menu_list_to_tree(data: list, root_field: str = "parent") -> list:
     """
     将权限菜单转换为树状结构
     """
-    mapping: dict = dict(zip([str(i["pk"]) for i in data], data))
+    mapping: dict = dict(zip([str(i["pk"]) for i in data], data, strict=True))
 
     # 树容器
     container: list = []
@@ -234,7 +234,7 @@ def remove_file(name):
         logger.warning(f"remove {name} failed {e}")
 
 
-class AESCipherV2(object):
+class AESCipherV2:
     """
     前端凭证加密解密，双格式自适应：
 

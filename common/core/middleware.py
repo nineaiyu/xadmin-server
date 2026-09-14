@@ -202,7 +202,7 @@ def build_operation_log_info(request, response, request_start_time):
         # 预取主键而非持有实例：on_commit 回调中不再延迟访问 request/ORM
         "creator_id": getattr(user, "pk", None) if not isinstance(user, AnonymousUser) else None,
         "dept_belong_id": getattr(request.user, "dept_id", None),
-        "ipaddress": getattr(request, "request_ip"),
+        "ipaddress": request.request_ip,
         "method": request.method,
         "path": request.path,
         "body": json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict) else str(body)[:MAX_LOG_FIELD],
@@ -302,7 +302,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                     )
                     log.save()
                     setattr(request, self.operation_log_id, log.id)
-                    setattr(request, "request_module", v)
+                    request.request_module = v
 
         return
 

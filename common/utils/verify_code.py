@@ -24,7 +24,7 @@ def send_sms_async(target, code):
     SMS().send_verify_code(target, code)
 
 
-class SendAndVerifyCodeUtil(object):
+class SendAndVerifyCodeUtil:
     KEY_TMPL = "auth_verify_code_{}"
     RATE_KEY_TMPL = "auth_verify_code_send_at_{}"
 
@@ -113,7 +113,7 @@ class SendAndVerifyCodeUtil(object):
         logger.debug(f"Send verify code to {self.target}")
 
 
-class TokenTempCache(object):
+class TokenTempCache:
     CACHE_KEY_TOKEN_TEMP_PREFIX = "_KEY_TOKEN_TEMP_CACHE_{}"
 
     @classmethod

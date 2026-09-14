@@ -43,8 +43,8 @@ class BaseFileRenderer(BaseRenderer):
         suffix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         if self.template == "import":
             suffix = "template"
-        filename = "{}_{}.{}".format(filename_prefix, suffix, self.format)
-        disposition = 'attachment; filename="{}"'.format(filename)
+        filename = f"{filename_prefix}_{suffix}.{self.format}"
+        disposition = f'attachment; filename="{filename}"'
         response["Content-Disposition"] = disposition
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
 
@@ -111,7 +111,7 @@ class BaseFileRenderer(BaseRenderer):
             or value.get("nickname", "")
             or pk
         )
-        return "{}({})".format(name, pk)
+        return f"{name}({pk})"
 
     @staticmethod
     def to_choice_name(value):
@@ -260,7 +260,7 @@ class BaseFileRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if data is None:
-            return bytes()
+            return b""
 
         if not self._check_validation_data(data):
             # return self._json_format_response(data)
@@ -275,7 +275,7 @@ class BaseFileRenderer(BaseRenderer):
             self.set_response_disposition(response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = f"The resource not support export! error:{e}".encode("utf-8")
+            value = f"The resource not support export! error:{e}".encode()
             return value
 
         try:
@@ -294,7 +294,7 @@ class BaseFileRenderer(BaseRenderer):
                 value = self.compress_into_zip_file(value, request, response)
         except Exception as e:
             logger.debug(e, exc_info=True)
-            value = f"Render error! media:{self.media_type} \r\nerror:\r\n{e}".encode("utf-8")
+            value = f"Render error! media:{self.media_type} \r\nerror:\r\n{e}".encode()
             response["Content-Disposition"] = response["Content-Disposition"].replace(self.format, "txt")
             return value
         return value

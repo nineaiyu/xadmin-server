@@ -123,13 +123,13 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
     def get(self, request):
         category = request.query_params.get("category")
-        get_config_func = getattr(self, "get_%s_config" % category)
+        get_config_func = getattr(self, f"get_{category}_config")
         return ApiResponse(data=get_config_func(request))
 
     def post(self, request):
         """发送验证码"""
         category = request.query_params.get("category")
-        config = getattr(self, "get_%s_config" % category)(request)
+        config = getattr(self, f"get_{category}_config")(request)
         if not config.get("access"):
             return ApiResponse(code=1001, detail=_("Forbidden send verification code"))
 
@@ -163,7 +163,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         SendVerifyCodeBlockUtil(target, ipaddr).incr_failed_count()
 
         try:
-            username, extra = getattr(self, "check_%s_config" % category)(request, form_type, query_key, target)
+            username, extra = getattr(self, f"check_{category}_config")(request, form_type, query_key, target)
         except APIException as e:
             # 业务校验失败（ValidateError 等），异常文案本身面向用户
             LoginIpBlockUtil(ipaddr).set_block_if_need()

@@ -15,13 +15,13 @@
 新增 action 必须：① 在此登记枚举；② 补充对应 Payload TypedDict。
 """
 
-from enum import Enum
-from typing import Any, Dict, List, Optional, TypedDict
+from enum import StrEnum
+from typing import Any, TypedDict
 
 PROTOCOL_VERSION = 1
 
 
-class MessageAction(str, Enum):
+class MessageAction(StrEnum):
     """消息动作枚举（字符串值，方便 match/比较与载荷路由）。
 
     `chat_message` 在两条通道上语义不同（历史原因，见各 Payload 文档）：
@@ -44,7 +44,7 @@ class InboundMessage(TypedDict, total=False):
     """客户端→服务端帧。"""
 
     action: str
-    data: Dict[str, Any]
+    data: dict[str, Any]
     mid: str
     v: int
 
@@ -67,7 +67,7 @@ class PingPayload(TypedDict):
 
 class UserinfoPayload(TypedDict):
     pk: str
-    userinfo: Dict[str, Any]
+    userinfo: dict[str, Any]
 
 
 class ChatMessagePayload(TypedDict, total=False):
@@ -91,14 +91,14 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     id: int
     room_id: int
     room_type: str
-    sender_pk: Optional[int]
+    sender_pk: int | None
     sender_name: str
     sender_avatar: str
     message_type: str
     content: str
     created_time: str
     client_msg_id: str
-    extra: Dict[str, Any]
+    extra: dict[str, Any]
 
 
 class ChatRecallPayload(TypedDict, total=False):
@@ -131,10 +131,10 @@ class PushMessagePayload(TypedDict, total=False):
     title: str
     message: str
     level: str
-    notice_type: Dict[str, Any]
+    notice_type: dict[str, Any]
     pk: str
-    sender: Optional[str]
-    recipients: List[Any]
+    sender: str | None
+    recipients: list[Any]
 
 
 class TaskLogPayload(TypedDict):
@@ -153,9 +153,9 @@ class MonitorPushPayload(TypedDict, total=False):
     """
 
     section: str
-    live: Dict[str, Any]
-    services: Dict[str, Any]
-    redis: Dict[str, Any]
-    celery: Dict[str, Any]
-    slow: Dict[str, Any]
-    trend: List[Dict[str, Any]]
+    live: dict[str, Any]
+    services: dict[str, Any]
+    redis: dict[str, Any]
+    celery: dict[str, Any]
+    slow: dict[str, Any]
+    trend: list[dict[str, Any]]

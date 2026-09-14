@@ -4,7 +4,6 @@
 # filename : utils
 # author : ly_13
 # date : 8/12/2024
-from typing import List
 
 from drf_spectacular.extensions import OpenApiAuthenticationExtension, OpenApiSerializerFieldExtension
 from drf_spectacular.openapi import AutoSchema
@@ -18,7 +17,7 @@ logger = get_logger(__name__)
 
 
 class CustomAutoSchema(AutoSchema):
-    def get_tags(self) -> List[str]:
+    def get_tags(self) -> list[str]:
         return [self.view.__class__.__name__]
 
 

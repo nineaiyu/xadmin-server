@@ -23,7 +23,7 @@ def getsize(font, text):
         _top, _left, _right, _bottom = font.getbbox(text)
         return _right - _left, _bottom - _top
     elif hasattr(font, "getoffset"):
-        return tuple([x + y for x, y in zip(font.getsize(text), font.getoffset(text))])
+        return tuple([x + y for x, y in zip(font.getsize(text), font.getoffset(text), strict=True)])
     else:
         return font.getsize(text)
 
@@ -70,9 +70,9 @@ def captcha_image(request, key, scale=1):
             charlist.append(char)
     for char in charlist:
         fgimage = makeimg(size, settings.CAPTCHA_FOREGROUND_COLOR)
-        charimage = Image.new("L", getsize(font, " %s " % char), "#000000")
+        charimage = Image.new("L", getsize(font, f" {char} "), "#000000")
         chardraw = ImageDraw.Draw(charimage)
-        chardraw.text((0, 0), " %s " % char, font=font, fill="#ffffff")
+        chardraw.text((0, 0), f" {char} ", font=font, fill="#ffffff")
         if settings.CAPTCHA_LETTER_ROTATION:
             charimage = charimage.rotate(
                 random.randrange(*settings.CAPTCHA_LETTER_ROTATION),
@@ -146,7 +146,7 @@ def captcha_audio(request, key):
             text = text.replace("*", "times").replace("-", "minus").replace("+", "plus")
         else:
             text = ", ".join(list(text))
-        path = str(os.path.join(tempfile.gettempdir(), "%s.wav" % key))
+        path = str(os.path.join(tempfile.gettempdir(), f"{key}.wav"))
         subprocess.call([settings.CAPTCHA_FLITE_PATH, "-t", text, "-o", path])
 
         # Add arbitrary noise if sox is installed
@@ -186,7 +186,7 @@ def captcha_audio(request, key):
 
         if os.path.isfile(path):
             response = RangedFileResponse(request, open(path, "rb"), content_type="audio/wav")
-            response["Content-Disposition"] = 'attachment; filename="{}.wav"'.format(key)
+            response["Content-Disposition"] = f'attachment; filename="{key}.wav"'
             return response
     raise Http404
 

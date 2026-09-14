@@ -18,7 +18,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
 
-class UploadFileAction(object):
+class UploadFileAction:
     FILE_UPLOAD_TYPE = ["png", "jpeg", "jpg", "gif"]
     # 扩展名可伪造，按文件头魔数做二次校验；扩展新类型时需同步补充签名
     FILE_UPLOAD_MAGIC = {

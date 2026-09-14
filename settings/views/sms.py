@@ -94,7 +94,7 @@ class SmsConfigViewSet(BaseSettingViewSet):
             1、实例化参数
             2、发送测试短信参数
         """
-        get_params_func = getattr(self, "get_%s_params" % backend)
+        get_params_func = getattr(self, f"get_{backend}_params")
         return get_params_func(data)
 
     def create(self, request, *args, **kwargs):

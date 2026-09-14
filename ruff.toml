@@ -1,14 +1,18 @@
-# Ruff 配置：启用 E/F 错误级规则 + I（isort 导入排序，2026-09-14 全仓自动修复后启用）；
+# Ruff 配置：启用 E/F 错误级规则 + I（isort 导入排序，2026-09-14 全仓自动修复后启用）
+# + B（bugbear 坏味道，2026-09-14 全仓整改后启用）+ UP（pyupgrade 语法现代化，同批启用）；
 # 存量通配 import 文件在 per-file-ignores 中显式列出，新代码不得新增
 line-length = 120
 target-version = "py313"
 extend-exclude = ["zsign", "demo/migrations", "data", "loadjson"]
 
 [lint]
-select = ["E4", "E7", "E9", "F", "I"]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
 ignore = [
     "E501", # 行长，存量代码大量超长
     "E402", # import 不在顶部，settings 模块需要先打补丁再导入
+    # 存量 527 处 `# -*- coding: utf-8 -*-` 声明：删除会 touch 几乎全部源文件
+    # （纯声明行，无功能收益），churn 成本远大于收益，故保留；新文件不应再写
+    "UP009",
 ]
 
 [lint.isort]

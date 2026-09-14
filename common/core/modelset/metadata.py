@@ -6,7 +6,7 @@
 """
 
 import json
-from typing import Callable
+from collections.abc import Callable
 
 from django.forms.widgets import DateTimeInput, SelectMultiple
 from django.utils.translation import gettext_lazy as _
@@ -30,7 +30,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class ChoicesAction(object):
+class ChoicesAction:
     choices_models: []
 
     @extend_schema(
@@ -66,7 +66,7 @@ class ChoicesAction(object):
         return ApiResponse(choices_dict=result)
 
 
-class SearchFieldsAction(object):
+class SearchFieldsAction:
     filterset_class: Callable
 
     @extend_schema(
@@ -185,7 +185,7 @@ class SearchFieldsAction(object):
         return ApiResponse(data=results)
 
 
-class SearchColumnsAction(object):
+class SearchColumnsAction:
     filterset_class: Callable
 
     @extend_schema(
@@ -241,14 +241,14 @@ class SearchColumnsAction(object):
         def get_input_type(value, info):
             if hasattr(value, "child_relation") and isinstance(value.child_relation, BasePrimaryKeyRelatedField):
                 info["multiple"] = True
-                setattr(value.child_relation, "is_column", True)
+                value.child_relation.is_column = True
                 choices_owner = value.child_relation
                 tp = get_format_intput_type(value.child_relation, info["type"])
             else:
                 tp = get_format_intput_type(value, info["type"])
                 choices_owner = value
             if tp and tp.endswith("related_field"):
-                setattr(value, "is_column", True)
+                value.is_column = True
                 # 超上限时仅返回前 SEARCH_CHOICES_MAX_COUNT 条，并带出截断标记供前端降级
                 info["choices"] = json.loads(json.dumps(value.choices, cls=encoders.JSONEncoder))
                 if getattr(choices_owner, "choices_truncated", False):

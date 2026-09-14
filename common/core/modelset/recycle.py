@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 _PKS_ARRAY = build_array_type(build_basic_type(OpenApiTypes.STR))
 
 
-class RecycleBinAction(object):
+class RecycleBinAction:
     def get_recycle_restore_queryset(self, pks):
         """恢复目标查询集（已含数据权限过滤）；成组语义的模型可覆写扩展范围。"""
         model = self.get_queryset().model

@@ -29,7 +29,7 @@ class CSVFileRenderer(BaseFileRenderer):
         row_escape = []
         for d in row:
             if isinstance(d, str) and d.strip().startswith(self.escape_chars):
-                d = "'{}".format(d)
+                d = f"'{d}"
             row_escape.append(d)
         return row_escape
 

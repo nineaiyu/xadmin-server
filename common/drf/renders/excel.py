@@ -65,7 +65,7 @@ class ExcelFileRenderer(BaseFileRenderer):
                 validation_data_dict[name] = self.format_values(boolean_choices)
             if hasattr(field, "choices"):
                 validation_data_dict[name] = self.format_values(
-                    getattr(field, "choices"), isinstance(field, BasePrimaryKeyRelatedField)
+                    field.choices, isinstance(field, BasePrimaryKeyRelatedField)
                 )
             if validation_data_dict.get(name) is not None:
                 column_letter = get_column_letter(len(validation_data_dict))

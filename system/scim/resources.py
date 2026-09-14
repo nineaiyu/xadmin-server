@@ -16,6 +16,7 @@
 import json
 import re
 import uuid
+from datetime import UTC
 
 from django.utils.translation import gettext_lazy as _
 
@@ -50,11 +51,10 @@ class ScimApiError(Exception):
 
 def _iso(value) -> str:
     """SCIM 时间格式：UTC ISO8601，秒级 + Z（Django 默认 isoformat 的 +00:00 不兼容部分 IdP）。"""
-    from datetime import timezone as dt_timezone
 
     if not value:
         return ""
-    return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _meta(resource_type: str, obj, path: str) -> dict:

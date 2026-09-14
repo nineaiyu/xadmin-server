@@ -31,7 +31,7 @@ def test_encrypt_uses_v3_prefix_and_roundtrip():
 
 def test_decrypt_accepts_legacy_cbc_ciphertext():
     """旧 v1 密文（无前缀 CBC）继续可读：存量数据无需迁移。"""
-    legacy_token = AESCipher(KEY).encrypt("legacy-secret".encode("utf-8"))
+    legacy_token = AESCipher(KEY).encrypt(b"legacy-secret")
     assert not legacy_token.startswith(b"v3:")
     assert AESCipherV3(KEY).decrypt(legacy_token) == "legacy-secret"
 
@@ -43,13 +43,13 @@ def test_tampered_ciphertext_raises():
     raw = bytearray(base64.b64decode(token[len(b"v3:") :]))
     raw[-1] ^= 0xFF  # 破坏认证标签
     tampered = b"v3:" + base64.b64encode(bytes(raw))
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         cipher.decrypt(tampered)
 
 
 def test_wrong_key_cannot_decrypt():
     token = AESCipherV3("key-a").encrypt("payload")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         AESCipherV3("key-b").decrypt(token)
 
 

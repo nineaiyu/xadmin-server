@@ -120,9 +120,8 @@ class TestListQueryCount:
         # 首次读取会各查一次 systemconfig；不预热会落进基线窗口使差值漂移）
         from common.core.config import SysConfig
 
-        SysConfig.PAT_RATE_LIMIT
-        SysConfig.CSP_MODE
-        SysConfig.CSP_REPORT_URI
+        # 逐个读取以预热缓存（值本身不参与断言）
+        _ = SysConfig.PAT_RATE_LIMIT, SysConfig.CSP_MODE, SysConfig.CSP_REPORT_URI
         # 再打一次预热请求：序列化层除了上面显式预热的键，还有若干「首次请求才读」的
         # 冷启动查询（字典项等），只靠显式预热覆盖不全，会让它们落进基线窗口造成差值漂移
         # （单独运行该用例时会 +2；跑全量时被其它用例预热掩盖）。本用例只比较「逐行 N+1

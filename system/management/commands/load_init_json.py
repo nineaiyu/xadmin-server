@@ -68,7 +68,7 @@ class Command(LoadCommand):
         options["app_label"] = ""
         options["exclude"] = []
         options["format"] = "json"
-        super(Command, self).handle(*fixture_labels, **options)
+        super().handle(*fixture_labels, **options)
         # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
         # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
         invalid_dict_cache()

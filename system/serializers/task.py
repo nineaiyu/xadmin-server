@@ -79,7 +79,7 @@ class CrontabScheduleSerializer(BaseModelSerializer):
             try:
                 crontab_parser(_CRONTAB_STEPS[field]).parse(str(value))
             except ValueError as exc:
-                raise serializers.ValidationError({field: _("Invalid crontab expression: {}").format(exc)})
+                raise serializers.ValidationError({field: _("Invalid crontab expression: {}").format(exc)}) from exc
         return attrs
 
 
@@ -97,7 +97,7 @@ def _validate_json_string(raw, expect_type, field_label):
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError):
-        raise serializers.ValidationError(_("%(label)s must be a valid JSON string") % {"label": field_label})
+        raise serializers.ValidationError(_("%(label)s must be a valid JSON string") % {"label": field_label}) from None
     if not isinstance(data, expect_type):
         raise serializers.ValidationError(
             _("%(label)s must be JSON %(type)s")

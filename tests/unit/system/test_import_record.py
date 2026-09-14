@@ -160,7 +160,7 @@ def test_import_async_aborts_when_fail_rate_exceeded(superuser, monkeypatch):
 def test_import_task_failure_records_error(superuser):
     """源文件缺失：记录转 FAILURE 并留存错误，异常继续抛出（触发 task_failure 告警）。"""
     record = ImportRecord.objects.create(name="x", action="create", creator=superuser)
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         from system.tasks import async_import_data_task
 
         async_import_data_task.apply(args=[str(record.pk), DICT_VIEW_PATH, superuser.pk], task_id=str(record.pk))

@@ -81,25 +81,25 @@ class Subscription:
                         _next(item)
                 except Exception as e:
                     error(msg, item)
-                    logger.error("Subscribe handler handle msg error: {}".format(e))
+                    logger.error(f"Subscribe handler handle msg error: {e}")
         except Exception as e:
             if self.unsubscribed:
                 logger.debug("Subscription unsubscribed")
             else:
-                logger.error("Consume msg error: {}".format(e))
+                logger.error(f"Consume msg error: {e}")
                 self.retry(_next, error, complete)
                 return
 
         try:
             complete()
         except Exception as e:
-            logger.error("Complete subscribe error: {}".format(e))
+            logger.error(f"Complete subscribe error: {e}")
             pass
 
         try:
             self.unsubscribe()
         except Exception as e:
-            logger.error("Redis observer close error: {}".format(e))
+            logger.error(f"Redis observer close error: {e}")
 
     def keep_handle_msg(self, _next, error, complete):
         t = threading.Thread(target=self._handle_msg, args=(_next, error, complete))
@@ -109,14 +109,14 @@ class Subscription:
 
     def unsubscribe(self):
         self.unsubscribed = True
-        logger.info("Unsubscribed from channel: {}".format(self.sub))
+        logger.info(f"Unsubscribed from channel: {self.sub}")
         try:
             self.sub.close()
         except Exception as e:
-            logger.warning("Unsubscribe msg error: {}".format(e))
+            logger.warning(f"Unsubscribe msg error: {e}")
 
     def retry(self, _next, error, complete):
-        logger.info("Retry subscribe channel: {}".format(self.ch))
+        logger.info(f"Retry subscribe channel: {self.ch}")
         times = 0
 
         while True:
@@ -125,6 +125,6 @@ class Subscription:
                 self.pb.resubscribe(_next, error, complete)
                 break
             except Exception as e:
-                logger.error("Retry #{} {} subscribe channel error: {}".format(times, self.ch, e))
+                logger.error(f"Retry #{times} {self.ch} subscribe channel error: {e}")
                 times += 1
                 time.sleep(times * 2)

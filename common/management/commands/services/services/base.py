@@ -11,7 +11,7 @@ import psutil
 from ..hands import *
 
 
-class BaseService(object):
+class BaseService:
     def __init__(self, **kwargs):
         self.name = kwargs["name"]
         self._process = None
@@ -203,7 +203,7 @@ class BaseService(object):
 
     def _restart(self):
         if self.retry > self.max_retry:
-            print("Service start failed, exit: {}".format(self.name))
+            print(f"Service start failed, exit: {self.name}")
             self.EXIT_EVENT.set()
             return
         self.retry += 1

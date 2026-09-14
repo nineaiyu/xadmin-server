@@ -34,7 +34,7 @@ class DbCharModel(models.Model):
         abstract = True
 
 
-class AutoCleanFileMixin(object):
+class AutoCleanFileMixin:
     """
     当对象包含文件字段，更新或者删除的时候，自动删除底层文件
     """

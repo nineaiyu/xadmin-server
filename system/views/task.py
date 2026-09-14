@@ -141,7 +141,7 @@ def _dispatch_periodic_run(instance):
         args = json.loads(instance.args or "[]")
         kwargs = json.loads(instance.kwargs or "{}")
     except (json.JSONDecodeError, TypeError):
-        raise ValueError(_("Task arguments are not valid JSON"))
+        raise ValueError(_("Task arguments are not valid JSON")) from None
     execution = TaskExecution.objects.create(
         name=instance.task,
         periodic_task=instance,

@@ -26,6 +26,6 @@ class Command(BaseCommand):
         verbose = int(options.get("verbosity"))
         count = options.get("pool_size")
         CaptchaStore.create_pool(count)
-        verbose and self.stdout.write("Created %d new captchas\n" % count)
+        verbose and self.stdout.write(f"Created {count} new captchas\n")
         options.get("cleanup_expired") and CaptchaStore.remove_expired()
         options.get("cleanup_expired") and verbose and self.stdout.write("Expired captchas cleaned up\n")

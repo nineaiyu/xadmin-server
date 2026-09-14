@@ -18,7 +18,7 @@ class RedisChannelLayer(_RedisChannelLayer):
 
     @property
     def online_users_key(self):
-        return f"{self.prefix}:{self.ONLINE_USERS_SUFFIX}".encode("utf8")
+        return f"{self.prefix}:{self.ONLINE_USERS_SUFFIX}".encode()
 
     def _online_group_prefix(self):
         # 延迟读取配置，保持本模块可被无 settings 的工具导入

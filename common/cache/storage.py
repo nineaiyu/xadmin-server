@@ -15,7 +15,7 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 
-class RedisCacheBase(object):
+class RedisCacheBase:
     def __init__(self, cache_key, timeout=600):
         self.cache_key = cache_key
         self._timeout = timeout

@@ -2,6 +2,7 @@
 """强制下线：用户级令牌失效时间戳 + refresh 拉黑 + action。"""
 
 import time
+from datetime import UTC
 
 import pytest
 from django.conf import settings
@@ -51,7 +52,6 @@ def test_token_issued_after_logout_still_works():
 
 def test_force_logout_blacklists_refresh_tokens():
     from datetime import datetime
-    from datetime import timezone as dt_timezone
 
     from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -63,7 +63,7 @@ def test_force_logout_blacklists_refresh_tokens():
         defaults={
             "user": user,
             "token": str(refresh),
-            "expires_at": datetime.fromtimestamp(refresh.payload["exp"], tz=dt_timezone.utc),
+            "expires_at": datetime.fromtimestamp(refresh.payload["exp"], tz=UTC),
         },
     )
     assert not BlacklistedToken.objects.filter(token__user=user).exists()

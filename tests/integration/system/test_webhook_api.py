@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.test import RequestFactory
 
 from system.models.webhook import WebhookDelivery, WebhookSubscription
@@ -69,7 +70,7 @@ class TestSignAndValidate:
         if ok:
             assert validate_url(url) == url
         else:
-            with pytest.raises(Exception):
+            with pytest.raises(ValidationError):
                 validate_url(url)
 
 

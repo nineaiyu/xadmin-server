@@ -14,7 +14,7 @@ from common.local import thread_local
 
 
 def set_current_request(request):
-    setattr(thread_local, "current_request", request)
+    thread_local.current_request = request
 
 
 def _find(attr):
@@ -41,7 +41,7 @@ def add_db_prefix(sender, **kwargs):
         else:
             prefix = prefix.get("", None)
     if prefix and not meta.db_table.startswith(prefix):
-        meta.db_table = truncate_name("%s%s" % (prefix, meta.db_table), connection.ops.max_name_length())
+        meta.db_table = truncate_name(f"{prefix}{meta.db_table}", connection.ops.max_name_length())
 
 
 class_prepared.connect(add_db_prefix)

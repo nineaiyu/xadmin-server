@@ -8,7 +8,7 @@ from .hands import *
 from .services.base import BaseService
 
 
-class ServicesUtil(object):
+class ServicesUtil:
     def __init__(self, services, run_daemon=False, force_stop=False, stop_daemon=False):
         self._services = services
         self.run_daemon = run_daemon

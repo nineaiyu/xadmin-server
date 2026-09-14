@@ -6,7 +6,6 @@
 # date : 3/6/2024
 import asyncio
 import uuid
-from typing import Dict, List
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -87,13 +86,13 @@ def get_chat_user_group_name(user_pk) -> str:
     return f"{CHAT_USER_GROUP_PREFIX}_{user_pk}"
 
 
-async def async_push_chat_message(room_pks, payload: Dict, message_type="chat_message"):
+async def async_push_chat_message(room_pks, payload: dict, message_type="chat_message"):
     """把聊天帧推给若干用户的聊天连接（多端同步；公共房间由调用方走公共组）。"""
     for user_pk in dict.fromkeys(room_pks):
         await channel_layer.group_send(get_chat_user_group_name(user_pk), {"type": message_type, "data": payload})
 
 
-def room_event_groups(room) -> List[str]:
+def room_event_groups(room) -> list[str]:
     """房间事件目标组（聊天室拓扑的唯一口径，同步 DB 查询）。
 
     - 公共聊天室 → 公共广播组（全员在线连接）；
@@ -110,12 +109,12 @@ def room_event_groups(room) -> List[str]:
 
 
 @async_to_sync
-async def _group_broadcast(groups, payload: Dict, message_type: str):
+async def _group_broadcast(groups, payload: dict, message_type: str):
     for group in dict.fromkeys(groups):
         await channel_layer.group_send(group, {"type": message_type, "data": payload})
 
 
-def push_room_event(room, payload: Dict, message_type="chat_message"):
+def push_room_event(room, payload: dict, message_type="chat_message"):
     """REST 侧同步广播入口（撤回 / AI 回复）。
 
     先在同步上下文解析目标组，再做一次异步投递：不能把 DB 查询放进
@@ -124,11 +123,11 @@ def push_room_event(room, payload: Dict, message_type="chat_message"):
     _group_broadcast(room_event_groups(room), payload, message_type)
 
 
-async def async_push_message(user_pk: str | int, message: Dict, message_type="push_message"):
+async def async_push_message(user_pk: str | int, message: dict, message_type="push_message"):
     await channel_layer.group_send(get_user_layer_group_name(user_pk), {"type": message_type, "data": message})
 
 
-async def async_push_messages(user_pks, message: Dict, message_type="push_message"):
+async def async_push_messages(user_pks, message: dict, message_type="push_message"):
     """批量推送。整批收进一个 async 函数，只做一次同步桥接；
     message 仅序列化一次，不再对每个用户做 json.loads(json.dumps(...)) 深拷贝。"""
     for user_pk in dict.fromkeys(user_pks):
@@ -136,7 +135,7 @@ async def async_push_messages(user_pks, message: Dict, message_type="push_messag
 
 
 @async_to_sync
-async def push_messages(user_pks, message: Dict, message_type="push_message"):
+async def push_messages(user_pks, message: dict, message_type="push_message"):
     await async_push_messages(user_pks, message, message_type)
 
 
@@ -163,12 +162,12 @@ async def get_online_users():
     return [pk for pk in (parse_online_user_pk(g) for g in await channel_layer.get_groups()) if pk is not None]
 
 
-async def async_push_layer_message(channel_name: str, message: Dict, message_type="push_message"):
+async def async_push_layer_message(channel_name: str, message: dict, message_type="push_message"):
     await channel_layer.send(channel_name, {"type": message_type, "data": message})
 
 
 @async_to_sync
-async def send_logout_msg(user_pk: str | int, channel_names: List[str] = None):
+async def send_logout_msg(user_pk: str | int, channel_names: list[str] = None):
     group_name = get_user_layer_group_name(user_pk)
     if not channel_names:
         channel_names = await get_layers_form_group(group_name)
@@ -179,7 +178,7 @@ async def send_logout_msg(user_pk: str | int, channel_names: List[str] = None):
 
 
 @async_to_sync
-async def push_message(user_pk: str | int, message: Dict, message_type="push_message"):
+async def push_message(user_pk: str | int, message: dict, message_type="push_message"):
     return await async_push_message(user_pk, message, message_type)
 
 
@@ -198,7 +197,7 @@ def set_mid_result_to_cache(mid, content, timeout=10):
 
 @async_to_sync
 async def push_message_and_wait_result(
-    channel_name: str, message: Dict, message_type="push_message", mid=None, timeout=5
+    channel_name: str, message: dict, message_type="push_message", mid=None, timeout=5
 ):
     """
     客户端返回结果必须和发送的mid一致，否则拿不到数据
@@ -208,5 +207,5 @@ async def push_message_and_wait_result(
     await channel_layer.send(channel_name, {"type": message_type, "data": message, "mid": mid})
     try:
         return await asyncio.wait_for(wait_for_mid_result(mid), timeout=timeout)
-    except asyncio.TimeoutError:
-        raise TimeoutError(_("Wait for result timeout"))
+    except TimeoutError:
+        raise TimeoutError(_("Wait for result timeout")) from None

@@ -30,7 +30,7 @@ def format_input(data):
         return data
 
 
-class CacheRedis(object):
+class CacheRedis:
     def __init__(self, key):
         self.connect = get_redis_connection("default")
         self.key = key

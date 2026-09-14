@@ -81,7 +81,7 @@ class LabeledChoiceField(serializers.ChoiceField):
             data = data.get("value")
         if isinstance(data, str) and "(" in data and data.endswith(")"):
             data = data.strip(")").split("(")[-1]
-        return super(LabeledChoiceField, self).to_internal_value(data)
+        return super().to_internal_value(data)
 
     def get_schema(self):
         """
@@ -446,22 +446,22 @@ class PhoneField(serializers.CharField):
             phone = data.get("phone", "")
             if code and phone:
                 code = code.replace("+", "")
-                data = "+{}{}".format(code, phone)
+                data = f"+{code}{phone}"
             else:
                 data = phone
         if data:
             try:
                 phone = phonenumbers.parse(data, "CN")
-                data = "+{}{}".format(phone.country_code, phone.national_number)
+                data = f"+{phone.country_code}{phone.national_number}"
             except phonenumbers.NumberParseException:
-                data = "+86{}".format(data)
+                data = f"+86{data}"
 
         return super().to_internal_value(data)
 
     def to_representation(self, value):
         try:
             phone = phonenumbers.parse(value, "CN")
-            value = {"code": "+%s" % phone.country_code, "phone": phone.national_number}
+            value = {"code": f"+{phone.country_code}", "phone": phone.national_number}
         except phonenumbers.NumberParseException:
             value = {"code": "+86", "phone": value}
         return value

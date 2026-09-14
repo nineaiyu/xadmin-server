@@ -558,7 +558,7 @@ def validate_rules(rules):
                 try:
                     json.loads(value)
                 except (TypeError, ValueError):
-                    raise ValidationError(_("Rule %(index)d has a malformed JSON value") % {"index": index})
+                    raise ValidationError(_("Rule %(index)d has a malformed JSON value") % {"index": index}) from None
         elif f_type != KeyChoices.ALL and table != "*":
             # 自由值类型的 match 校验：与前端 match 下拉同源
             # （字段 class lookups ∪ 框架自定义匹配符，见 _allowed_matches）；

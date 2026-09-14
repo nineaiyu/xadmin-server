@@ -148,7 +148,7 @@ def magic_call_in_times(call_time=24 * 3600, call_limit=6, key=None):
     return decorator
 
 
-class MagicCacheData(object):
+class MagicCacheData:
     """带占位保护的缓存装饰器。
 
     相比旧实现的三处关键修正：
@@ -247,7 +247,7 @@ class MagicCacheData(object):
         )
 
 
-class MagicCacheResponse(object):
+class MagicCacheResponse:
     def __init__(self, timeout=60 * 10, invalid_time=0, key_func=None):
         self.timeout = timeout
         self.key_func = key_func
@@ -370,11 +370,11 @@ def temporary_disable_signal(signal, receiver, *args, **kwargs):
     def decorator(func):
         @wraps(func)
         def wrapper(*_args, **_kwargs):
-            signal.disconnect(receiver=receiver, *args, **kwargs)
+            signal.disconnect(*args, receiver=receiver, **kwargs)
             try:
                 return func(*_args, **_kwargs)
             finally:
-                signal.connect(receiver=receiver, *args, **kwargs)
+                signal.connect(*args, receiver=receiver, **kwargs)
 
         return wrapper
 

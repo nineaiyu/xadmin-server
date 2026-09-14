@@ -253,7 +253,7 @@ class TestMaskOriginalChannel:
         request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/system/user/{normal_user.pk}")
         other = UserInfo.objects.create_user(username="audit_target", password="Test@123456")
         with patch("system.utils.mask.logger") as mock_logger:
-            UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
+            _ = UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
         mock_logger.warning.assert_called_once()
         _, audited_user_pk, _path, model_label = mock_logger.warning.call_args[0]
         assert audited_user_pk == normal_user.pk

@@ -10,7 +10,7 @@ import itertools
 import json
 import math
 import uuid
-from typing import Callable
+from collections.abc import Callable
 
 from django.conf import settings
 from django.db import transaction
@@ -109,7 +109,7 @@ def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
                 # 没有活跃的worker，直接执行任务
                 logger.warning("No active Celery workers found, executing task directly")
                 return None  # 返回None表示需要直接执行
-            for index, batch in enumerate(itertools.batched(data, batch_length)):
+            for index, batch in enumerate(itertools.batched(data, batch_length, strict=False)):
                 meta["task_id"] = f"{task_id}_{index}"
                 meta["task_index"] = index
                 res = background_task_view_set_job.apply_async(
@@ -201,7 +201,7 @@ class OnlyExportDataAction(ListAction):
         )
 
 
-class ImportAsyncAction(object):
+class ImportAsyncAction:
     """导入前校验与异步导入（大数据量场景，记录与错误报告在下载中心获取）。
 
     协议与同步 import-data 完全同源：请求体即文件原始内容（Content-Type
@@ -259,7 +259,7 @@ class ImportAsyncAction(object):
                 try:
                     mapping = json.loads(raw_mapping)
                 except (TypeError, ValueError):
-                    raise ValidationError({"detail": _("Invalid import mapping")})
+                    raise ValidationError({"detail": _("Invalid import mapping")}) from None
                 if not isinstance(mapping, dict):
                     raise ValidationError({"detail": _("Invalid import mapping")})
         if not mapping:
@@ -378,7 +378,7 @@ class ImportAsyncAction(object):
             column_titles = list(parser.get_column_titles(parser.generate_rows(stream_data)))
         except Exception as e:
             logger.error(e, exc_info=True)
-            raise ParseError(_("Parse file error: {}").format(str(e)))
+            raise ParseError(_("Parse file error: {}").format(str(e))) from e
         return ApiResponse(
             data={
                 "headers": column_titles,

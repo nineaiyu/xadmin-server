@@ -6,7 +6,6 @@
 # date : 6/2/2023
 import asyncio
 import os
-from typing import Dict
 
 import aiofiles
 from channels.db import database_sync_to_async
@@ -38,7 +37,7 @@ def get_can_push_message(pk):
     return UserConfig(pk).PUSH_CHAT_MESSAGE
 
 
-async def notify_at_user_msg(data: Dict, username: str):
+async def notify_at_user_msg(data: dict, username: str):
     text = data.get("text")
     if text.startswith("@"):
         target = text.split(" ")[0].split("@")
@@ -143,7 +142,7 @@ class MessageNotify(AsyncJsonWebsocket):
         await self.async_handle_task(task_id, log_path)
 
     async def async_handle_task(self, task_id, log_path):
-        logger.info("Task id: {}".format(task_id))
+        logger.info(f"Task id: {task_id}")
         while not self.disconnected:
             if not os.path.exists(log_path):
                 await self.send_json({"message": ".", "task": task_id})
@@ -155,7 +154,7 @@ class MessageNotify(AsyncJsonWebsocket):
     async def send_task_log(self, task_id, log_path):
         await self.send_json({"message": "\r\n"})
         try:
-            logger.debug("Task log path: {}".format(log_path))
+            logger.debug(f"Task log path: {log_path}")
             async with aiofiles.open(log_path, "rb") as task_log_f:
                 await task_log_f.seek(0, os.SEEK_END)
                 backup = min(4096 * 5, await task_log_f.tell())
@@ -167,4 +166,4 @@ class MessageNotify(AsyncJsonWebsocket):
                         await self.send_json({"message": data.decode(errors="ignore"), "task": task_id})
                     await asyncio.sleep(0.2)
         except OSError as e:
-            logger.warning("Task log path open failed: {}".format(e))
+            logger.warning(f"Task log path open failed: {e}")

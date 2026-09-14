@@ -511,7 +511,7 @@ def _build_draft_grant(draft, menu_ctx):
     try:
         mode = int(raw_mode) if raw_mode is not None else ModeTypeAbstract.ModeChoices.OR
     except (TypeError, ValueError):
-        raise ValidationError("试算草稿的模式不合法")
+        raise ValidationError("试算草稿的模式不合法") from None
     if mode not in (ModeTypeAbstract.ModeChoices.OR, ModeTypeAbstract.ModeChoices.AND):
         raise ValidationError("试算草稿的模式不合法")
     draft_menus = _normalize_pk_list(draft.get("menu"))
@@ -606,7 +606,7 @@ def run_data_trial(user_obj: UserInfo, model_label, menu_pk, draft=None) -> dict
     try:
         model = apps.get_model(app_label, model_name)
     except LookupError:
-        raise ValidationError("不支持的试算模型")
+        raise ValidationError("不支持的试算模型") from None
 
     menu_ctx = None
     if menu_pk:

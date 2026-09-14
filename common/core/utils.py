@@ -55,7 +55,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 continue
 
             if pre_namespace:
-                name = "%s:%s" % (pre_namespace, item.name)
+                name = f"{pre_namespace}:{item.name}"
             else:
                 name = item.name
             url = pre_url + item.pattern.regex.pattern.lstrip("^")
@@ -75,7 +75,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                 continue
             if pre_namespace:
                 if item.namespace:
-                    namespace = "%s:%s" % (pre_namespace, item.namespace)
+                    namespace = f"{pre_namespace}:{item.namespace}"
                 else:
                     namespace = item.namespace
             else:
@@ -137,7 +137,7 @@ def get_query_post_pks(request):
     return pks
 
 
-class PrintLogFormat(object):
+class PrintLogFormat:
     def __init__(self, base_str="", title_width=80, body_width=60, logger_enable=False):
         self.base_str = base_str
         self.logger_enable = logger_enable

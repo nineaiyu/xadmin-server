@@ -56,7 +56,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
 
         # Because when this decorator run, the task was not created,
         # So we can't use func.name
-        task = "{func.__module__}.{func.__name__}".format(func=func)
+        task = f"{func.__module__}.{func.__name__}"
         _name = name if name else task
         add_register_period_task(
             {
@@ -83,7 +83,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
 def after_app_ready_start(func):
     # Because when this decorator run, the task was not created,
     # So we can't use func.name
-    name = "{func.__module__}.{func.__name__}".format(func=func)
+    name = f"{func.__module__}.{func.__name__}"
     if name not in _after_app_ready_start_tasks:
         add_after_app_ready_task(name)
 
@@ -97,7 +97,7 @@ def after_app_ready_start(func):
 def after_app_shutdown_clean_periodic(func):
     # Because when this decorator run, the task was not created,
     # So we can't use func.name
-    name = "{func.__module__}.{func.__name__}".format(func=func)
+    name = f"{func.__module__}.{func.__name__}"
     if name not in _after_app_shutdown_clean_periodic_tasks:
         add_after_app_shutdown_clean_task(name)
 

@@ -90,7 +90,7 @@ def decrypt_secret(encrypted: str) -> str:
 def sign_payload(secret: str, body: bytes, timestamp: int | None = None) -> tuple:
     """返回 (signature_header_value, timestamp)。"""
     ts = int(timestamp if timestamp is not None else time.time())
-    mac = hmac.new(str(secret).encode("utf-8"), f"{ts}.".encode("utf-8") + body, hashlib.sha256)
+    mac = hmac.new(str(secret).encode("utf-8"), f"{ts}.".encode() + body, hashlib.sha256)
     return f"sha256={mac.hexdigest()}", ts
 
 

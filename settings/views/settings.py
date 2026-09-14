@@ -70,8 +70,8 @@ class BaseSettingViewSet(NoDetailModelSet):
                 continue
             change_fields.append(setting.name)
             serializer_data[setting.name] = setting.cleaned_value
-        setattr(serializer, "_data", serializer_data)
-        setattr(serializer, "_change_fields", change_fields)
+        serializer._data = serializer_data
+        serializer._change_fields = change_fields
         if hasattr(serializer, "post_save"):
             serializer.post_save()
 

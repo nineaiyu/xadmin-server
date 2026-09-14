@@ -172,7 +172,7 @@ class TestPermissionBehaviorUnchanged:
         normal_user.save(update_fields=["dept"])
         DeptInfo.objects.get(code="n0").rules.add(
             make_permission(
-                "perm-root", [make_rule("admin", "value.table.user.ids", value='[{"pk": %s}]' % superuser.pk)]
+                "perm-root", [make_rule("admin", "value.table.user.ids", value=f'[{{"pk": {superuser.pk}}}]')]
             )
         )
         cache.delete_pattern("dept_recursion_*")

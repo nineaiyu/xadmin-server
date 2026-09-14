@@ -133,4 +133,4 @@ class AxiosMultiPartParser(BaseParser):
                     new_data[key] = value
             return DataAndFiles(new_data, files)
         except MultiPartParserError as exc:
-            raise ParseError(_("Multipart form parse error - {}").format(str(exc)))
+            raise ParseError(_("Multipart form parse error - {}").format(str(exc))) from exc

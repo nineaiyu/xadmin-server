@@ -5,7 +5,6 @@
 # author : ly_13
 # date : 12/21/2023
 from inspect import isfunction
-from typing import List
 
 from django.conf import settings
 from django.db.models import QuerySet
@@ -105,7 +104,7 @@ class BaseModelSerializer(ModelSerializer):
             self.fields.pop(field_name)
 
     @staticmethod
-    def get_fields_from_tabs(tabs: List) -> List[str]:
+    def get_fields_from_tabs(tabs: list) -> list[str]:
         seen = set()
         result = []
         for tab in tabs:
@@ -157,7 +156,7 @@ class BaseModelSerializer(ModelSerializer):
     def _mark_upload_files_used(file_objs):
         """新关联的文件由临时态转正式态（未被引用的临时文件会被清理任务回收）。"""
         for file_obj in file_objs:
-            setattr(file_obj, "is_tmp", False)
+            file_obj.is_tmp = False
             file_obj.save(update_fields=["is_tmp"])
 
     def create(self, validated_data):
@@ -328,8 +327,8 @@ class BaseModelSerializer(ModelSerializer):
                 logger.warning("drop masked write-back value. model:%s field:%s", model._meta.label_lower, name)
 
 
-class TabsColumn(object):
-    def __init__(self, label: str, fields: List[str]):
+class TabsColumn:
+    def __init__(self, label: str, fields: list[str]):
         self.label = label
         self.fields = fields
 

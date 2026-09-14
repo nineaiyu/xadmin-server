@@ -86,7 +86,7 @@ class RecordFileDownloadMixin:
             content_type=upload.mime_type or "application/octet-stream",
         )
         # RFC 5987：中文文件名需 UTF-8 编码声明，否则浏览器解出乱码
-        response["Content-Disposition"] = "attachment; filename*=UTF-8''{}".format(quote(upload.filename))
+        response["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(upload.filename)}"
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
         return response
 

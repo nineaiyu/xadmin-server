@@ -201,7 +201,7 @@ class CookieJWTAuthentication(JWTAuthentication):
             if cookies:
                 cookie_dict = parse_cookie(cookies)
                 if cookie_dict and cookie_dict.get("X-Token"):
-                    header = f"Bearer {cookie_dict.get('X-Token')}".encode("utf-8")
+                    header = f"Bearer {cookie_dict.get('X-Token')}".encode()
         return header
 
     def authenticate(self, request):
