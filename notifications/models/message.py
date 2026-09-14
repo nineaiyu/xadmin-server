@@ -8,7 +8,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel, AutoCleanFileMixin, SoftDeleteModel
+from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel
 
 
 class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
@@ -61,6 +61,9 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         indexes = [
             # 消息中心列表默认按 created_time 排序，且 BaseFilterSet 提供时间范围过滤
             models.Index(fields=["created_time"], name="idx_msg_created"),
+            # 未读数/列表按 notice_type 分流（系统/公告/部门/角色/用户通知），
+            # OR 查询（公告∪个人未读）在消息量增长后避免对全表做类型判定
+            models.Index(fields=["notice_type"], name="idx_msg_notice_type"),
         ]
 
     def __str__(self):
