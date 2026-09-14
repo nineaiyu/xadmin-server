@@ -5,11 +5,12 @@
 # author : ly_13
 # date : 6/2/2023
 import random
+import secrets
 import string
 import time
 import uuid
 
-from common.cache.storage import TokenManagerCache, RedisCacheBase
+from common.cache.storage import RedisCacheBase, TokenManagerCache
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -22,10 +23,10 @@ def make_token_cache(key, time_limit=60, prefix="", force_new=False, ext_data=No
         logger.debug(f"make_token cache exists. token:{token} force_new:{force_new} token_key:{token_key}")
         return token
     else:
-        random_str = uuid.uuid1().__str__().split("-")[0:-1]
+        # 随机段用 secrets 生成（旧实现 uuid1 含网卡 MAC 与时间戳，属信息泄露面，S8）
+        random_str = secrets.token_urlsafe(16)
         user_ran_str = uuid.uuid5(uuid.NAMESPACE_DNS, key).__str__().split("-")
-        user_ran_str.extend(random_str)
-        token = f"tmp_token_{''.join(user_ran_str)}"
+        token = f"tmp_token_{''.join(user_ran_str)}{random_str}"
 
         token_cache.set_storage_cache({"atime": time.time() + time_limit, "data": key}, time_limit)
         RedisCacheBase(token).set_storage_cache(

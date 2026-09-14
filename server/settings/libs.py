@@ -8,8 +8,8 @@ from datetime import timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 
-from .base import SECRET_KEY, CACHES, REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, CELERY_BROKER_CACHE_ID
 from ..const import CONFIG
+from .base import CACHES, CELERY_BROKER_CACHE_ID, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, SECRET_KEY
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "common.swagger.utils.CustomAutoSchema",
@@ -169,10 +169,6 @@ DJANGO_DEFAULT_CACHES = CACHES["default"]
 CELERY_BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CELERY_BROKER_CACHE_ID}"
 
 # CELERY_WORKER_CONCURRENCY = 10  # worker并发数
-# worker 自动扩缩容区间（最大/最小池进程数）；
-# 注意：当前 worker 启动命令未带 --autoscale（见 common/management/commands/services/services/celery_base.py），
-# 该配置暂不生效，如需启用请同步修改启动命令
-CELERY_WORKER_AUTOSCALE = [10, 3]
 
 CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 

@@ -9,15 +9,17 @@ celery eager 模式下 `.delay()` 同步执行，任务体当普通函数驱动�
 """
 
 import json
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
+from celery import Task
 from django.utils import timezone
-from datetime import timedelta
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 import common.tasks as ct
+from common.cache.redis import CacheList
 from common.tasks import (
     background_task_view_set_job,
     check_server_performance_period,
@@ -27,7 +29,6 @@ from common.tasks import (
     send_mail_async,
     send_mail_attachment_async,
 )
-from common.cache.redis import CacheList
 
 # --------------------------------------------------------------------------- 邮件
 
@@ -71,6 +72,56 @@ class TestSendMailAsync:
         monkeypatch.setattr(ct, "send_mail", boom)
         assert send_mail_async("s", "m", ["a@b.c"]) is None
 
+    def test_task_path_would_retry_with_backoff(self, monkeypatch):
+        """任务路径（非直接调用）失败追加一次退避重试；同步直接调用不触发（见上一条）。"""
+
+        class FakeTask(Task):
+            # 类属性覆盖 Task.request property，模拟 worker 执行上下文
+            request = SimpleNamespace(retries=0, called_directly=False)
+
+            def __init__(self):
+                self.retry_msgs = []
+
+            def retry(self, exc=None, countdown=None):
+                self.retry_msgs.append(countdown)
+                raise RuntimeError(f"RETRY:{countdown}")
+
+        fake = FakeTask()
+        monkeypatch.setattr(ct, "send_mail", lambda *a, **kw: (_ for _ in ()).throw(RuntimeError("smtp down")))
+
+        # 取原始未绑定函数体，手动以 fake 作 bind 首参，等价 worker 执行路径
+        run = send_mail_async.run.__func__
+        with pytest.raises(RuntimeError, match="RETRY:60"):
+            run(fake, "s", "m", ["a@b.c"])
+        assert fake.retry_msgs == [60]
+
+        # 重试耗尽：记录错误后返回 None（不外抛）
+        class ExhaustedTask(FakeTask):
+            request = SimpleNamespace(retries=ct.MAIL_MAX_RETRIES, called_directly=False)
+
+        exhausted = ExhaustedTask()
+        assert run(exhausted, "s", "m", ["a@b.c"]) is None
+        assert exhausted.retry_msgs == []
+
+    def test_mail_tasks_declare_acks_late(self):
+        """P3 守护：邮件任务开启 acks_late，worker 崩溃时任务不丢。"""
+        assert send_mail_async.acks_late is True
+        assert send_mail_attachment_async.acks_late is True
+        assert ct.MAIL_MAX_RETRIES >= 1
+
+    def test_strip_task_self_only_removes_task_instance(self):
+        class FakeTask(Task):
+            pass
+
+        fake = FakeTask()
+        task_self, rest = ct._strip_task_self((fake, "s", "m"))
+        assert task_self is fake
+        assert rest == ("s", "m")
+        # 普通业务参数原样保留，不会误剥离
+        task_self, rest = ct._strip_task_self(("s", "m"))
+        assert task_self is None
+        assert rest == ("s", "m")
+
 
 class TestSendMailAttachmentAsync:
     def test_send_with_attachment_removed_after(self, settings, tmp_path):
@@ -104,6 +155,26 @@ class TestSendMailAttachmentAsync:
 
         monkeypatch.setattr(ct, "EmailMultiAlternatives", BadEmail)
         assert send_mail_attachment_async("s", "m", ["a@b.c"]) is None
+
+    def test_failed_send_keeps_attachment_for_retry(self, settings, monkeypatch, tmp_path):
+        """修复守护：附件仅在发送成功后删除，失败时保留（重试/人工重发仍可用）。"""
+        settings.EMAIL_FROM = "from@x.com"
+        attachment = tmp_path / "keep.csv"
+        attachment.write_text("a,b\n1,2", encoding="utf-8")
+
+        class BadEmail:
+            def __init__(self, **kw):
+                pass
+
+            def attach_file(self, path):
+                pass
+
+            def send(self):
+                raise RuntimeError("smtp down")
+
+        monkeypatch.setattr(ct, "EmailMultiAlternatives", BadEmail)
+        assert send_mail_attachment_async("s", "m", ["a@b.c"], [str(attachment)]) is None
+        assert attachment.exists()
 
 
 # --------------------------------------------------------------------------- 周期任务

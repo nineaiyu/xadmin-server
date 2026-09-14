@@ -46,7 +46,7 @@ def _post(client, url, body: bytes, headers: dict):
         return 0, str(exc)[:500]
 
 
-@shared_task(bind=True, max_retries=0)
+@shared_task(bind=True, max_retries=0, acks_late=True)
 def deliver_webhook(self, delivery_id: str):
     """投递一次；失败按指数退避重派，耗尽置 exhausted 并告警。"""
     from system.models.webhook import WebhookDelivery

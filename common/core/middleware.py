@@ -18,11 +18,11 @@ from common.core.config import SysConfig
 from common.core.utils import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
-    get_request_user,
-    get_request_ip,
-    get_request_data,
-    get_os,
     get_browser,
+    get_os,
+    get_request_data,
+    get_request_ip,
+    get_request_user,
     get_verbose_name,
 )
 from system.services import OperationLog
@@ -250,9 +250,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         # 慢请求阈值走系统配置（默认 1.0s），与监控面板 slow 接口同口径
         threshold = SysConfig.SLOW_REQUEST_THRESHOLD
         if exec_time > threshold:
+            # 请求体必须脱敏（与 OperationLog 同口径）：慢请求日志保留期长，
+            # 明文 token/password/code 落日志文件等同泄露凭证
             logger.warning(
                 f"exec time {exec_time} over {threshold}s. {request.method} {request.path} "
-                f"{getattr(request, 'request_data', {})} request_id:{getattr(request, 'request_uuid', None)}"
+                f"{desensitize_body(getattr(request, 'request_data', {}))} "
+                f"request_id:{getattr(request, 'request_uuid', None)}"
             )
         # 判断有无log_id属性，使用All记录时，会出现此情况
         operation_log_id = getattr(request, self.operation_log_id, None)

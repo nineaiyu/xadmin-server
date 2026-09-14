@@ -8,11 +8,11 @@ import datetime
 import os
 from io import BytesIO
 
-from celery import shared_task
+from celery import Task, shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
-from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection, send_mail
 from django.utils import timezone, translation
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
@@ -20,23 +20,41 @@ from django_celery_beat.models import PeriodicTask
 
 from common.cache.lock import ReentrantLock
 from common.cache.redis import CacheList
-from common.celery.decorator import register_as_period_task, after_app_ready_start
-from common.core.utils import get_doc_first_line
+from common.celery.decorator import after_app_ready_start, register_as_period_task
 from common.celery.utils import (
+    create_or_update_celery_periodic_tasks,
     delete_celery_periodic_task,
     disable_celery_periodic_task,
     get_celery_periodic_task,
-    create_or_update_celery_periodic_tasks,
 )
+from common.core.utils import get_doc_first_line
 from common.models import Monitor
-from common.notifications import ServerPerformanceCheckUtil, ImportDataMessage, BatchDeleteDataMessage
+from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.utils.timezone import local_now_display
 from server.celery import app
 
 logger = get_task_logger(__name__)
 
 
-@shared_task(verbose_name=_("Send email"))
+# 邮件发送重试参数（P3）：SMTP 属外部 IO，瞬时失败（连接超时/限流）不再直接丢。
+# 任务路径失败按指数退避重试；同步直接调用路径（通知渠道 publish 同步分支）
+# 保持「记录错误并返回 None」的既有语义，不抛异常打断业务。
+MAIL_MAX_RETRIES = 3
+MAIL_RETRY_BACKOFF_MAX = 600
+
+
+def _strip_task_self(args):
+    """剥离 bind=True 注入的 Task 实例首参，返回 (task_self, 业务参数)。
+
+    无论 ``.delay()`` 还是同步直接调用，celery 都会把 Task 实例作为首参传入
+    （run 为绑定方法），这里统一剥离，保证两种调用语义一致。
+    """
+    if args and isinstance(args[0], Task):
+        return args[0], args[1:]
+    return None, args
+
+
+@shared_task(bind=True, acks_late=True, verbose_name=_("Send email"))
 def send_mail_async(*args, **kwargs):
     """Using celery to send email async
 
@@ -50,6 +68,7 @@ def send_mail_async(*args, **kwargs):
     Example:
     send_mail_sync.delay(subject, message, recipient_list, fail_silently=False, html_message=None)
     """
+    task_self, args = _strip_task_self(args)
     if len(args) == 3:
         args = list(args)
         args[0] = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {args[0]}"
@@ -65,11 +84,21 @@ def send_mail_async(*args, **kwargs):
     try:
         return send_mail(connection=get_connection(), *args, **kwargs)
     except Exception as e:
+        direct = task_self is None or getattr(task_self.request, "called_directly", False)
+        if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
+            countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
+            logger.warning(f"Sending mail failed, retry in {countdown}s: {e}")
+            raise task_self.retry(exc=e, countdown=countdown)
         logger.error("Sending mail error: {}".format(e))
 
 
-@shared_task(verbose_name=_("Send email attachment"))
-def send_mail_attachment_async(subject, message, recipient_list, attachment_list=None):
+@shared_task(bind=True, acks_late=True, verbose_name=_("Send email attachment"))
+def send_mail_attachment_async(*args, **kwargs):
+    task_self, args = _strip_task_self(args)
+    subject = args[0] if len(args) > 0 else kwargs.get("subject")
+    message = args[1] if len(args) > 1 else kwargs.get("message")
+    recipient_list = args[2] if len(args) > 2 else kwargs.get("recipient_list")
+    attachment_list = args[3] if len(args) > 3 else kwargs.get("attachment_list")
     if attachment_list is None:
         attachment_list = []
     from_email = settings.EMAIL_FROM or settings.EMAIL_HOST_USER
@@ -83,11 +112,23 @@ def send_mail_attachment_async(subject, message, recipient_list, attachment_list
     )
     for attachment in attachment_list:
         email.attach_file(attachment)
-        os.remove(attachment)
     try:
-        return email.send()
+        result = email.send()
     except Exception as e:
+        direct = task_self is None or getattr(task_self.request, "called_directly", False)
+        if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
+            countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
+            logger.warning(f"Sending mail attachment failed, retry in {countdown}s: {e}")
+            raise task_self.retry(exc=e, countdown=countdown)
         logger.error("Sending mail attachment error: {}".format(e))
+        return None
+    # 临时附件仅在发送成功后删除：失败重试时附件仍需存在（旧实现先删后发，重试必然失败）
+    for attachment in attachment_list:
+        try:
+            os.remove(attachment)
+        except OSError:
+            logger.warning("Remove mail attachment failed: %s", attachment)
+    return result
 
 
 @shared_task(verbose_name=_("Periodic delete monitor"))

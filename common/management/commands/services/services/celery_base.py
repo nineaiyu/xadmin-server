@@ -1,5 +1,5 @@
-from .base import BaseService
 from ..hands import *
+from .base import BaseService
 
 
 class CeleryBaseService(BaseService):
@@ -9,7 +9,6 @@ class CeleryBaseService(BaseService):
         self.num = int(concurrency or CELERY_WORKER_COUNT)
         self.pool = pool or "threads"
         self.prefetch = prefetch
-        self.autoscale = settings.CELERY_WORKER_AUTOSCALE
 
     @property
     def cmd(self):
@@ -36,7 +35,6 @@ class CeleryBaseService(BaseService):
             "INFO",
             "-c",
             str(self.num),
-            # '--autoscale', ",".join([str(x) for x in self.autoscale]), # 开启自动弹性伸缩
             "-Q",
             self.queue,
             "--heartbeat-interval",
