@@ -16,7 +16,7 @@ from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
 from common.utils import get_logger
-from server import settings
+from server.const import CONFIG
 from system.services import SystemConfig, UserPersonalConfig
 
 logger = get_logger(__name__)
@@ -39,7 +39,7 @@ def get_render_context(tmp: str, context: dict) -> str:
     return template.render(context)
 
 
-class ConfigCacheBase(object):
+class ConfigCacheBase:
     def __init__(
         self,
         px="system",
@@ -67,7 +67,7 @@ class ConfigCacheBase(object):
                 context_dict = {}
                 for sys_obj_dict in self.model.objects.filter(is_active=True).values().all():
                     str_value = json.dumps(sys_obj_dict["value"])  # 将dict转换为json字符串进行匹配
-                    if re.findall("{{.*%s.*}}" % sys_obj_dict["key"], str_value):
+                    if re.findall("{{{{.*{}.*}}}}".format(sys_obj_dict["key"]), str_value):
                         logger.warning("get same render key. so continue")
                         continue
                     context_dict[sys_obj_dict["key"]] = str_value
@@ -98,7 +98,7 @@ class ConfigCacheBase(object):
 
     def get_value_from_db(self, key):  # 取得数据是激活的数据，如果数据未激活，则取默认数据
         data = self.serializer(self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()).data
-        if re.findall("{{.*%s.*}}" % data["key"], json.dumps(data["value"])):  # 防止渲染出现递归
+        if re.findall("{{{{.*{}.*}}}}".format(data["key"]), json.dumps(data["value"])):  # 防止渲染出现递归
             logger.warning(f"get same render key:{key}. so get default value")
             data["key"] = ""
         return data
@@ -170,21 +170,28 @@ class ConfigCacheBase(object):
 
 
 class BaseConfCache(ConfigCacheBase):
+    """系统级配置读取（键 → 值）。
+
+    默认值单一来源：全部回读 ``server/conf.py`` 的静态配置实例 ``CONFIG``
+    （即 config.yml / 环境变量的值或代码默认值），本类不再硬编码任何默认值；
+    ``loadjson/systemconfig.json`` 的种子初值须与 conf.py 一致（守护测试校验）。
+    """
+
     def __init__(self, *args, **kwargs):
-        super(BaseConfCache, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def FILE_UPLOAD_SIZE(self):
-        return self.get_value("FILE_UPLOAD_SIZE", settings.FILE_UPLOAD_SIZE)
+        return self.get_value("FILE_UPLOAD_SIZE", CONFIG.FILE_UPLOAD_SIZE)
 
     @property
     def PICTURE_UPLOAD_SIZE(self):
-        return self.get_value("PICTURE_UPLOAD_SIZE", settings.PICTURE_UPLOAD_SIZE)
+        return self.get_value("PICTURE_UPLOAD_SIZE", CONFIG.PICTURE_UPLOAD_SIZE)
 
     @property
     def OPERATION_LOG_RETENTION_DAYS(self):
         """操作日志保留天数（清理保留期配置化，默认 180 天）"""
-        return self.get_value("OPERATION_LOG_RETENTION_DAYS", 30 * 6)
+        return self.get_value("OPERATION_LOG_RETENTION_DAYS", CONFIG.OPERATION_LOG_RETENTION_DAYS)
 
     @property
     def SEARCH_CHOICES_MAX_COUNT(self):
@@ -193,27 +200,27 @@ class BaseConfCache(ConfigCacheBase):
         大表关联字段请务必自定义 input_type='api-search-*'（远程搜索），否则超出的
         选项不会出现在下拉里，且接口会带出 choices_truncated 标记。
         """
-        return self.get_value("SEARCH_CHOICES_MAX_COUNT", 200)
+        return self.get_value("SEARCH_CHOICES_MAX_COUNT", CONFIG.SEARCH_CHOICES_MAX_COUNT)
 
     @property
     def SLOW_REQUEST_THRESHOLD(self):
         """慢请求阈值（秒）：超阈值打 warning 日志，监控面板 slow 接口同口径（默认 1.0）。"""
-        return float(self.get_value("SLOW_REQUEST_THRESHOLD", 1.0))
+        return float(self.get_value("SLOW_REQUEST_THRESHOLD", CONFIG.SLOW_REQUEST_THRESHOLD))
 
     @property
     def OPERATION_LOG_ERROR_RETENTION_DAYS(self):
         """错误操作日志（status_code != 1000）额外保留天数（默认 365；0/空 = 跟随全量保留期）。"""
-        return self.get_value("OPERATION_LOG_ERROR_RETENTION_DAYS", 365)
+        return self.get_value("OPERATION_LOG_ERROR_RETENTION_DAYS", CONFIG.OPERATION_LOG_ERROR_RETENTION_DAYS)
 
     @property
     def SENSITIVE_OPERATION_METHODS(self):
         """敏感操作告警的 HTTP 方法清单（默认 ["DELETE"]；"ALL" 或空表示不按方法过滤）。"""
-        return self.get_value("SENSITIVE_OPERATION_METHODS", ["DELETE"])
+        return self.get_value("SENSITIVE_OPERATION_METHODS", CONFIG.SENSITIVE_OPERATION_METHODS)
 
     @property
     def SENSITIVE_OPERATION_PATHS(self):
         """敏感操作告警的路径正则清单（默认空 = 不按路径过滤，与方法清单 AND 组合）。"""
-        return self.get_value("SENSITIVE_OPERATION_PATHS", [])
+        return self.get_value("SENSITIVE_OPERATION_PATHS", CONFIG.SENSITIVE_OPERATION_PATHS)
 
     @property
     def APPROVAL_REQUIRED_PATHS(self):
@@ -222,12 +229,12 @@ class BaseConfCache(ConfigCacheBase):
         仅对显式挂载 ApprovalRequired 装饰器的 action 生效；命中清单的请求需先
         经审批中心通过后携令牌重发（一次性通行令牌）。
         """
-        return self.get_value("APPROVAL_REQUIRED_PATHS", [])
+        return self.get_value("APPROVAL_REQUIRED_PATHS", CONFIG.APPROVAL_REQUIRED_PATHS)
 
     @property
     def APPROVAL_APPROVER_ROLES(self):
         """审批人角色 code 清单（默认空 = 全部在用超管；申请人始终不能自审）。"""
-        return self.get_value("APPROVAL_APPROVER_ROLES", [])
+        return self.get_value("APPROVAL_APPROVER_ROLES", CONFIG.APPROVAL_APPROVER_ROLES)
 
     @property
     def APPROVAL_APPROVER_PERMS(self):
@@ -237,22 +244,22 @@ class BaseConfCache(ConfigCacheBase):
         权限码的在用用户视为职能审批人（system.services.get_users_by_perm 反查，
         借鉴 jumpserver 按权限反查角色的审批人推导模式）。
         """
-        return self.get_value("APPROVAL_APPROVER_PERMS", [])
+        return self.get_value("APPROVAL_APPROVER_PERMS", CONFIG.APPROVAL_APPROVER_PERMS)
 
     @property
     def APPROVAL_TOKEN_TTL(self):
         """审批通过后令牌有效期（秒，默认 300）：有效期内携令牌重发一次有效。"""
-        return int(self.get_value("APPROVAL_TOKEN_TTL", 300))
+        return int(self.get_value("APPROVAL_TOKEN_TTL", CONFIG.APPROVAL_TOKEN_TTL))
 
     @property
     def APPROVAL_PENDING_TIMEOUT(self):
         """待审批单超时天数（默认 3 天）：超时由清理任务置 EXPIRED。"""
-        return int(self.get_value("APPROVAL_PENDING_TIMEOUT", 3))
+        return int(self.get_value("APPROVAL_PENDING_TIMEOUT", CONFIG.APPROVAL_PENDING_TIMEOUT))
 
     @property
     def APPROVAL_KEEP_DAYS(self):
         """审批单保留天数（默认 180）：超过由清理任务分批删除。"""
-        return int(self.get_value("APPROVAL_KEEP_DAYS", 180))
+        return int(self.get_value("APPROVAL_KEEP_DAYS", CONFIG.APPROVAL_KEEP_DAYS))
 
     @property
     def APPROVAL_REMIND_HOURS(self):
@@ -260,12 +267,12 @@ class BaseConfCache(ConfigCacheBase):
 
         由每日提醒任务对「PENDING 且已超过该时长且未提醒过」的单向审批人补发一次提醒。
         """
-        return int(self.get_value("APPROVAL_REMIND_HOURS", 24))
+        return int(self.get_value("APPROVAL_REMIND_HOURS", CONFIG.APPROVAL_REMIND_HOURS))
 
     @property
     def APPROVAL_FLOW_KEEP_DAYS(self):
         """流程实例保留天数（默认 365）：超过由清理任务分批删除（级联节点任务）。"""
-        return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", 365))
+        return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", CONFIG.APPROVAL_FLOW_KEEP_DAYS))
 
     @property
     def LEAVE_APPROVAL_FLOW_CODE(self):
@@ -275,77 +282,77 @@ class BaseConfCache(ConfigCacheBase):
         启用流程」查找（见 system/utils/leave.py:resolve_leave_flow），全找不到则拒绝
         提交并提示管理员配置流程。
         """
-        return self.get_value("LEAVE_APPROVAL_FLOW_CODE", "leave")
+        return self.get_value("LEAVE_APPROVAL_FLOW_CODE", CONFIG.LEAVE_APPROVAL_FLOW_CODE)
 
     @property
     def FILE_OFFICE_PREVIEW_ENABLED(self):
         """Office 在线预览开关（默认开）：关闭或未装 LibreOffice 时按不支持降级。"""
-        return self.get_value("FILE_OFFICE_PREVIEW_ENABLED", True)
+        return self.get_value("FILE_OFFICE_PREVIEW_ENABLED", CONFIG.FILE_OFFICE_PREVIEW_ENABLED)
 
     @property
     def FILE_OFFICE_MAX_BYTES(self):
         """Office 预览转换大小上限（字节，默认 20MB）：超过不转换（保护转换进程）。"""
-        return int(self.get_value("FILE_OFFICE_MAX_BYTES", 20 * 1024 * 1024))
+        return int(self.get_value("FILE_OFFICE_MAX_BYTES", CONFIG.FILE_OFFICE_MAX_BYTES))
 
     @property
     def FILE_OFFICE_CONVERT_TIMEOUT(self):
         """LibreOffice 单次转换超时（秒，默认 60）：超时杀进程并降级为不可预览。"""
-        return int(self.get_value("FILE_OFFICE_CONVERT_TIMEOUT", 60))
+        return int(self.get_value("FILE_OFFICE_CONVERT_TIMEOUT", CONFIG.FILE_OFFICE_CONVERT_TIMEOUT))
 
     @property
     def FILE_OFFICE_WAIT_SECONDS(self):
         """请求侧等待转换产物的窗口（秒，默认 8）：未等到返回 1006 由前端重试。"""
-        return int(self.get_value("FILE_OFFICE_WAIT_SECONDS", 8))
+        return int(self.get_value("FILE_OFFICE_WAIT_SECONDS", CONFIG.FILE_OFFICE_WAIT_SECONDS))
 
     @property
     def FILE_OFFICE_SOFFICE_BIN(self):
         """LibreOffice 可执行文件路径（默认空 = 自动探测 PATH 与常见安装路径）。"""
-        return self.get_value("FILE_OFFICE_SOFFICE_BIN", "")
+        return self.get_value("FILE_OFFICE_SOFFICE_BIN", CONFIG.FILE_OFFICE_SOFFICE_BIN)
 
     @property
     def SCIM_ENABLED(self):
         """SCIM 用户目录同步总开关（默认关，S1）：开启且配置 SCIM_TOKEN 后生效。"""
-        return self.get_value("SCIM_ENABLED", False)
+        return self.get_value("SCIM_ENABLED", CONFIG.SCIM_ENABLED)
 
     @property
     def SCIM_TOKEN(self):
         """SCIM 独立 Bearer Token（默认空 = 未配置，任何请求 401；access=false 不对外回传）。"""
-        return self.get_value("SCIM_TOKEN", "")
+        return self.get_value("SCIM_TOKEN", CONFIG.SCIM_TOKEN)
 
     @property
     def SCIM_RATE_LIMIT(self):
         """SCIM 凭证级限流速率（SimpleRateThrottle 速率串，默认 600/min；空或 0 = 不限）。"""
-        return self.get_value("SCIM_RATE_LIMIT", "600/min")
+        return self.get_value("SCIM_RATE_LIMIT", CONFIG.SCIM_RATE_LIMIT)
 
     @property
     def SCIM_DEFAULT_ROLE_CODE(self):
         """SCIM 新建用户的默认角色 code（默认空 = 不分配角色，由 IdP 分组另行下发）。"""
-        return self.get_value("SCIM_DEFAULT_ROLE_CODE", "")
+        return self.get_value("SCIM_DEFAULT_ROLE_CODE", CONFIG.SCIM_DEFAULT_ROLE_CODE)
 
     @property
     def BACKUP_ALERT_TOKEN(self):
         """备份失败告警回调令牌（默认空 = 端点未启用；access=false 不对外回传）。"""
-        return self.get_value("BACKUP_ALERT_TOKEN", "")
+        return self.get_value("BACKUP_ALERT_TOKEN", CONFIG.BACKUP_ALERT_TOKEN)
 
     @property
     def CSP_MODE(self):
         """CSP 模式（S3，默认 report-only 观察期）：disabled / report-only / enforce。"""
-        return self.get_value("CSP_MODE", "report-only")
+        return self.get_value("CSP_MODE", CONFIG.CSP_MODE)
 
     @property
     def CSP_REPORT_URI(self):
         """CSP 违规上报地址（默认空 = 不下发 report-uri）：一般指向 /api/common/api/csp-report。"""
-        return self.get_value("CSP_REPORT_URI", "")
+        return self.get_value("CSP_REPORT_URI", CONFIG.CSP_REPORT_URI)
 
     @property
     def PAT_RATE_LIMIT(self):
         """PAT 凭证级限流速率（SimpleRateThrottle 速率串，默认 60/min；空或 0 = 不限）。"""
-        return self.get_value("PAT_RATE_LIMIT", "60/min")
+        return self.get_value("PAT_RATE_LIMIT", CONFIG.PAT_RATE_LIMIT)
 
     @property
     def FILE_STORAGE_QUOTA_MB(self):
         """个人文件存储配额（MB，默认 0 = 不限）：上传前按 creator 聚合校验。"""
-        return int(self.get_value("FILE_STORAGE_QUOTA_MB", 0))
+        return int(self.get_value("FILE_STORAGE_QUOTA_MB", CONFIG.FILE_STORAGE_QUOTA_MB))
 
     @property
     def FILE_KEEP_DAYS(self):
@@ -353,12 +360,12 @@ class BaseConfCache(ConfigCacheBase):
 
         仅清理「非临时、无业务引用」的历史文件；物理文件删除由磁盘引用守护兜底。
         """
-        return int(self.get_value("FILE_KEEP_DAYS", 0))
+        return int(self.get_value("FILE_KEEP_DAYS", CONFIG.FILE_KEEP_DAYS))
 
     @property
     def FILE_UPLOAD_COUNT_LIMIT(self):
         """个人上传文件数量上限（默认 0 = 不限）：上传前按 creator 计数校验。"""
-        return int(self.get_value("FILE_UPLOAD_COUNT_LIMIT", 0))
+        return int(self.get_value("FILE_UPLOAD_COUNT_LIMIT", CONFIG.FILE_UPLOAD_COUNT_LIMIT))
 
     @property
     def FILE_PREVIEW_TEXT_MAX_BYTES(self):
@@ -366,17 +373,17 @@ class BaseConfCache(ConfigCacheBase):
 
         避免把一个几百 MB 的日志整份读进内存再回给浏览器。
         """
-        return int(self.get_value("FILE_PREVIEW_TEXT_MAX_BYTES", 256 * 1024))
+        return int(self.get_value("FILE_PREVIEW_TEXT_MAX_BYTES", CONFIG.FILE_PREVIEW_TEXT_MAX_BYTES))
 
     @property
     def FILE_PREVIEW_THUMB_WIDTH(self):
         """列表缩略图宽度（像素，默认 240）：按原图比例等比缩放，不拉伸。"""
-        return int(self.get_value("FILE_PREVIEW_THUMB_WIDTH", 240))
+        return int(self.get_value("FILE_PREVIEW_THUMB_WIDTH", CONFIG.FILE_PREVIEW_THUMB_WIDTH))
 
     @property
     def FILE_PREVIEW_IMAGE_WIDTH(self):
         """抽屉大图宽度（像素，默认 1280）：原图更小时不放大。"""
-        return int(self.get_value("FILE_PREVIEW_IMAGE_WIDTH", 1280))
+        return int(self.get_value("FILE_PREVIEW_IMAGE_WIDTH", CONFIG.FILE_PREVIEW_IMAGE_WIDTH))
 
     @property
     def OAUTH_PROVIDERS(self):
@@ -386,12 +393,12 @@ class BaseConfCache(ConfigCacheBase):
         authorize_url/token_url/userinfo_url/scope/subject_field/auto_create。
         密钥仅服务端可见，列表接口回传时掩码（见 `mask_providers`）。
         """
-        return self.get_value("OAUTH_PROVIDERS", [])
+        return self.get_value("OAUTH_PROVIDERS", CONFIG.OAUTH_PROVIDERS)
 
     @property
     def FILE_PREVIEW_CACHE_KEEP_DAYS(self):
         """预览缓存保留天数（默认 7）：缓存是派生产物，过期删除后按需重建。"""
-        return int(self.get_value("FILE_PREVIEW_CACHE_KEEP_DAYS", 7))
+        return int(self.get_value("FILE_PREVIEW_CACHE_KEEP_DAYS", CONFIG.FILE_PREVIEW_CACHE_KEEP_DAYS))
 
     @property
     def AUDIT_DIFF_MODELS(self):
@@ -399,8 +406,9 @@ class BaseConfCache(ConfigCacheBase):
 
         优先读系统配置（管理员可运行时扩容），未登记时回退 django settings
         （config.yml 链路 / settings_e2e.py 的 AUDIT_DIFF_MODELS 仍然生效）。
-        注意必须用 django.conf.settings 惰性对象：本模块顶部的 `from server
-        import settings` 是 conf 静态模块，读不到 settings_e2e 尾部的显式覆盖。
+        注意必须用 django.conf.settings 惰性对象：静态 conf 链（CONFIG）读不到
+        settings_e2e 尾部的显式覆盖；本键是唯一需要与测试覆盖联动的例外，
+        SysConfig 其余键的默认值统一单源在 server/conf.py（见 BaseConfCache 说明）。
         """
         from django.conf import settings as dj_settings
 
@@ -409,32 +417,32 @@ class BaseConfCache(ConfigCacheBase):
     @property
     def EXPORT_FILE_KEEP_DAYS(self):
         """异步导出记录与产物保留天数（下载中心，默认 7 天）。"""
-        return int(self.get_value("EXPORT_FILE_KEEP_DAYS", getattr(settings, "EXPORT_FILE_KEEP_DAYS", 7)))
+        return int(self.get_value("EXPORT_FILE_KEEP_DAYS", CONFIG.EXPORT_FILE_KEEP_DAYS))
 
     @property
     def EXPORT_ASYNC_MAX_RUNNING(self):
         """同一用户同时进行中的异步导出任务上限（默认 3；0 表示不限制）。"""
-        return int(self.get_value("EXPORT_ASYNC_MAX_RUNNING", 3))
+        return int(self.get_value("EXPORT_ASYNC_MAX_RUNNING", CONFIG.EXPORT_ASYNC_MAX_RUNNING))
 
     @property
     def MONITOR_RETENTION_DAYS(self):
         """主机监控心跳历史保留天数（common.Monitor 30s 一条，默认 30 天）。"""
-        return int(self.get_value("MONITOR_RETENTION_DAYS", 30))
+        return int(self.get_value("MONITOR_RETENTION_DAYS", CONFIG.MONITOR_RETENTION_DAYS))
 
     @property
     def SESSION_ONLINE_TIMEOUT(self):
         """纯 HTTP 会话的在线判定窗口（秒）：last_active 超过该窗口视为离线（默认 300）。"""
-        return int(self.get_value("SESSION_ONLINE_TIMEOUT", 300))
+        return int(self.get_value("SESSION_ONLINE_TIMEOUT", CONFIG.SESSION_ONLINE_TIMEOUT))
 
     @property
     def USER_SESSION_RETENTION_DAYS(self):
         """已结束会话记录保留天数（在线用户/会话管理，默认 30 天）。"""
-        return int(self.get_value("USER_SESSION_RETENTION_DAYS", 30))
+        return int(self.get_value("USER_SESSION_RETENTION_DAYS", CONFIG.USER_SESSION_RETENTION_DAYS))
 
     @property
     def IMPORT_RECORD_KEEP_DAYS(self):
         """异步导入记录、源文件与错误报告保留天数（下载中心，默认 30 天）。"""
-        return int(self.get_value("IMPORT_RECORD_KEEP_DAYS", 30))
+        return int(self.get_value("IMPORT_RECORD_KEEP_DAYS", CONFIG.IMPORT_RECORD_KEEP_DAYS))
 
     @property
     def CHAT_HISTORY_DAYS(self):
@@ -443,40 +451,40 @@ class BaseConfCache(ConfigCacheBase):
         超过保留期的消息由每日清理任务分批删除；会话与成员关系保留，
         历史清空的会话在列表里仅摘要为空。
         """
-        return int(self.get_value("CHAT_HISTORY_DAYS", 0))
+        return int(self.get_value("CHAT_HISTORY_DAYS", CONFIG.CHAT_HISTORY_DAYS))
 
     @property
     def IMPORT_FAIL_RATE_LIMIT(self):
         """异步导入失败率中止阈值（默认 0.5；0 表示不按失败率中止）。"""
-        return float(self.get_value("IMPORT_FAIL_RATE_LIMIT", 0.5))
+        return float(self.get_value("IMPORT_FAIL_RATE_LIMIT", CONFIG.IMPORT_FAIL_RATE_LIMIT))
 
     @property
     def IMPORT_ASYNC_MAX_RUNNING(self):
         """同一用户同时进行中的异步导入任务上限（默认 3；0 表示不限制）。"""
-        return int(self.get_value("IMPORT_ASYNC_MAX_RUNNING", 3))
+        return int(self.get_value("IMPORT_ASYNC_MAX_RUNNING", CONFIG.IMPORT_ASYNC_MAX_RUNNING))
 
     @property
     def IMPORT_VALIDATE_ERROR_LIMIT(self):
         """导入前校验返回的错误行明细上限（默认 200，超出截断并标记）。"""
-        return int(self.get_value("IMPORT_VALIDATE_ERROR_LIMIT", 200))
+        return int(self.get_value("IMPORT_VALIDATE_ERROR_LIMIT", CONFIG.IMPORT_VALIDATE_ERROR_LIMIT))
 
 
 class MessagePushConfCache(ConfigCacheBase):
     def __init__(self, *args, **kwargs):
-        super(MessagePushConfCache, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @property
     def PUSH_MESSAGE_NOTICE(self):
-        return self.get_value("PUSH_MESSAGE_NOTICE", True)
+        return self.get_value("PUSH_MESSAGE_NOTICE", CONFIG.PUSH_MESSAGE_NOTICE)
 
     @property
     def PUSH_CHAT_MESSAGE(self):
-        return self.get_value("PUSH_CHAT_MESSAGE", True)
+        return self.get_value("PUSH_CHAT_MESSAGE", CONFIG.PUSH_CHAT_MESSAGE)
 
 
 class ConfigCache(BaseConfCache, MessagePushConfCache):
     def __init__(self, *args, **kwargs):
-        super(ConfigCache, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 SysConfig = ConfigCache()
@@ -540,15 +548,13 @@ class UserPersonalConfigCache(ConfigCache):
         return {}
 
     def delete_db(self, key, **kwargs):
-        return super(UserPersonalConfigCache, self).delete_db(key, **self.filter_kwargs)
+        return super().delete_db(key, **self.filter_kwargs)
 
     def save_db(self, key, value, is_active=None, description=None, **kwargs):
-        return super(UserPersonalConfigCache, self).save_db(
-            key, value, is_active, description, **self.filter_kwargs, **kwargs
-        )
+        return super().save_db(key, value, is_active, description, **self.filter_kwargs, **kwargs)
 
     def set_default_value(self, key, **kwargs):
-        return super(UserPersonalConfigCache, self).set_default_value(key, **self.filter_kwargs)
+        return super().set_default_value(key, **self.filter_kwargs)
 
 
 UserConfig = UserPersonalConfigCache

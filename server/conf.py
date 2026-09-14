@@ -21,14 +21,14 @@ def import_string(dotted_path):
     try:
         module_path, class_name = dotted_path.rsplit(".", 1)
     except ValueError as err:
-        raise ImportError("%s doesn't look like a module path" % dotted_path) from err
+        raise ImportError(f"{dotted_path} doesn't look like a module path") from err
 
     module = import_module(module_path)
 
     try:
         return getattr(module, class_name)
     except AttributeError as err:
-        raise ImportError('Module "%s" does not define a "%s" attribute/class' % (module_path, class_name)) from err
+        raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class') from err
 
 
 class DoesNotExist(Exception):
@@ -388,6 +388,38 @@ class Config(dict):
         "CAPTCHA_BACKGROUND_COLOR": "#ffffff",
         "CAPTCHA_FOREGROUND_COLOR": "#001100",
         "CAPTCHA_NOISE_FUNCTIONS": ("captcha.helpers.noise_arcs", "captcha.helpers.noise_dots"),
+        # ------------------------------------------------------------------
+        # 运行期系统配置（SysConfig 热更新）的代码默认值唯一源：
+        # common/core/config.py 的 SysConfig property 一律回读这里（CONFIG.<KEY>），
+        # loadjson/systemconfig.json 的初始值须与本段一致
+        # （守护测试 tests/unit/common/test_config_defaults_single_source.py）
+        # ------------------------------------------------------------------
+        # 消息推送开关（用户级可再覆盖）
+        "PUSH_MESSAGE_NOTICE": True,
+        "PUSH_CHAT_MESSAGE": True,
+        # 操作日志保留天数（清理任务按此分批删除）；错误日志额外保留天数（0/空 = 跟随全量）
+        "OPERATION_LOG_RETENTION_DAYS": 180,
+        "OPERATION_LOG_ERROR_RETENTION_DAYS": 365,
+        # 敏感操作告警：方法清单（"ALL" 或空 = 不按方法过滤）与路径正则清单（空 = 不按路径过滤）
+        "SENSITIVE_OPERATION_METHODS": ["DELETE"],
+        "SENSITIVE_OPERATION_PATHS": [],
+        # 慢请求阈值（秒）：超阈值打 WARNING 日志，监控面板 slow 接口同口径
+        "SLOW_REQUEST_THRESHOLD": 1.0,
+        # search-columns / search-fields 关联列 choices 最大返回条数
+        "SEARCH_CHOICES_MAX_COUNT": 200,
+        # 同一用户同时进行中的异步导出任务上限（0 = 不限）
+        "EXPORT_ASYNC_MAX_RUNNING": 3,
+        # 主机监控心跳历史保留天数（30s 一条长期落库）
+        "MONITOR_RETENTION_DAYS": 30,
+        # 纯 HTTP 会话在线判定窗口（秒）/ 已结束会话记录保留天数
+        "SESSION_ONLINE_TIMEOUT": 300,
+        "USER_SESSION_RETENTION_DAYS": 30,
+        # 聊天消息保留天数（0 = 不清理）
+        "CHAT_HISTORY_DAYS": 0,
+        # 审批人职能权限码清单（与 APPROVAL_APPROVER_ROLES 取并集；两者皆空 = 全部在用超管）
+        "APPROVAL_APPROVER_PERMS": [],
+        # 备份失败告警回调令牌（空 = 端点未启用）
+        "BACKUP_ALERT_TOKEN": "",
     }
 
     defaults = {
@@ -439,7 +471,7 @@ class Config(dict):
         return v
 
     def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, dict.__repr__(self))
+        return f"<{self.__class__.__name__} {dict.__repr__(self)}>"
 
     def get_from_config(self, item):
         try:
@@ -492,10 +524,10 @@ class ConfigManager:
         try:
             with open(filename, mode="rb") as config_file:
                 exec(compile(config_file.read(), filename, "exec"), d.__dict__)
-        except IOError as e:
+        except OSError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
                 return False
-            e.strerror = "Unable to load configuration file (%s)" % e.strerror
+            e.strerror = f"Unable to load configuration file ({e.strerror})"
             return False
         self.from_object(d)
         return True
@@ -513,10 +545,10 @@ class ConfigManager:
         try:
             with open(filename) as json_file:
                 obj = json.loads(json_file.read())
-        except IOError as e:
+        except OSError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
                 return False
-            e.strerror = "Unable to load configuration file (%s)" % e.strerror
+            e.strerror = f"Unable to load configuration file ({e.strerror})"
             raise
         return self.from_mapping(obj)
 
@@ -524,12 +556,12 @@ class ConfigManager:
         if self.root_path:
             filename = os.path.join(self.root_path, filename)
         try:
-            with open(filename, "rt", encoding="utf8") as f:
+            with open(filename, encoding="utf8") as f:
                 obj = yaml.safe_load(f)
-        except IOError as e:
+        except OSError as e:
             if silent and e.errno in (errno.ENOENT, errno.EISDIR):
                 return False
-            e.strerror = "Unable to load configuration file (%s)" % e.strerror
+            e.strerror = f"Unable to load configuration file ({e.strerror})"
             raise
         if obj:
             return self.from_mapping(obj)
@@ -543,7 +575,7 @@ class ConfigManager:
             else:
                 mappings.append(mapping[0])
         elif len(mapping) > 1:
-            raise TypeError("expected at most 1 positional argument, got %d" % len(mapping))
+            raise TypeError(f"expected at most 1 positional argument, got {len(mapping)}")
         mappings.append(kwargs.items())
         for mapping in mappings:
             for key, value in mapping:
