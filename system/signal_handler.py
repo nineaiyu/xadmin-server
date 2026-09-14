@@ -14,8 +14,19 @@ from common.base.magic import MagicCacheData, cache_response
 from common.base.utils import remove_file
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
+from common.core.filter import invalidate_data_permission_grants_cache
 from common.utils import get_logger
-from system.models import DataDict, DataMaskRule, DeptInfo, Menu, SystemConfig, TaskExecution, UserInfo, UserRole
+from system.models import (
+    DataDict,
+    DataMaskRule,
+    DataPermission,
+    DeptInfo,
+    Menu,
+    SystemConfig,
+    TaskExecution,
+    UserInfo,
+    UserRole,
+)
 from system.signal import approval_instance_finished, invalid_user_cache_signal
 from system.utils.dict import invalid_dict_cache
 from system.utils.mask import invalid_mask_cache
@@ -40,7 +51,7 @@ def batch_invalid_cache(pks, batch_length=1000):
         (cache_response.invalid_caches, get_cache_response_keys(pks)),
     ]
     for keys in cleans:
-        for data in itertools.batched(keys[1], batch_length):
+        for data in itertools.batched(keys[1], batch_length, strict=False):
             keys[0](data)
 
 
@@ -72,7 +83,43 @@ def invalid_dept_cache_handler(sender, instance, **kwargs):
     batch_invalid_cache(instance.userinfo_set.values_list("pk", flat=True).distinct())
     # 部门树变化会影响下级/上级递归结果，缓存一并失效
     DeptInfo.invalid_dept_tree_cache()
+    # 部门启用状态 / 层级变化会改变授权池的部门链，授权池缓存一并失效
+    invalidate_data_permission_grants_cache()
     logger.info(f"invalid cache {instance}")
+
+
+@receiver([post_save, pre_delete], sender=DataPermission)
+def invalid_data_permission_cache_handler(sender, instance, **kwargs):
+    # 授权规则 / 模式 / 启用状态变化：授权池缓存立即失效（全局版本号自增）
+    invalidate_data_permission_grants_cache()
+    logger.info(f"invalid data permission grants cache {instance}")
+
+
+@receiver(m2m_changed, sender=DataPermission.menu.through)
+def invalid_data_permission_menu_m2m_cache_handler(sender, instance, action, **kwargs):
+    # 授权-菜单绑定直改（绕过 save）同样失效授权池缓存
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    invalidate_data_permission_grants_cache()
+    logger.info(f"invalid data permission grants cache by menu m2m {instance}")
+
+
+@receiver(m2m_changed, sender=UserInfo.rules.through)
+def invalid_user_rules_m2m_cache_handler(sender, instance, action, **kwargs):
+    # 用户-授权关系直改：该用户授权池立即失效（走全局版本号）
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    invalidate_data_permission_grants_cache()
+    logger.info(f"invalid data permission grants cache by user rules m2m {instance}")
+
+
+@receiver(m2m_changed, sender=DeptInfo.rules.through)
+def invalid_dept_rules_m2m_cache_handler(sender, instance, action, **kwargs):
+    # 部门-授权关系直改：部门链下的授权池立即失效（走全局版本号）
+    if action not in M2M_CHANGED_ACTIONS:
+        return
+    invalidate_data_permission_grants_cache()
+    logger.info(f"invalid data permission grants cache by dept rules m2m {instance}")
 
 
 @receiver([post_save, pre_delete], sender=UserInfo)

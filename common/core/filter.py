@@ -4,7 +4,10 @@
 # filename : filter
 # author : ly_13
 # date : 6/2/2023
+from types import SimpleNamespace
+
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
@@ -21,6 +24,81 @@ from common.utils import get_logger
 from system.services import DataPermission, DeptInfo
 
 logger = get_logger(__name__)
+
+# 授权池缓存：版本号在数据权限 / 部门 / 授权关系变更时自增（system/signal_handler.py），
+# 让既有缓存条目立即不可达；TTL 仅兜底。缓存后端异常时静默回落直查，不影响权限结果。
+GRANTS_CACHE_VERSION_KEY = "data_permission_grants_version"
+GRANTS_CACHE_TTL = 300
+
+
+def invalidate_data_permission_grants_cache():
+    """失效授权池缓存（数据权限 / 部门 / 用户或部门-授权关系变更时调用）。"""
+    try:
+        cache.incr(GRANTS_CACHE_VERSION_KEY)
+    except ValueError:
+        # 版本键不存在（尚未初始化 / 被清理）：直接写 2，让可能存在的版本 1 条目全部不可达
+        try:
+            cache.set(GRANTS_CACHE_VERSION_KEY, 2, None)
+        except Exception:
+            logger.warning("reset data permission grants cache version failed", exc_info=True)
+    except Exception:
+        logger.warning("invalidate data permission grants cache failed", exc_info=True)
+
+
+def _grants_cache_version():
+    """当前授权池缓存版本号；缓存不可用时返回 None（调用方跳过缓存直查）。"""
+    try:
+        version = cache.get(GRANTS_CACHE_VERSION_KEY)
+    except Exception:
+        logger.warning("read data permission grants cache version failed", exc_info=True)
+        return None
+    if version is None:
+        version = 1
+        try:
+            cache.set(GRANTS_CACHE_VERSION_KEY, version, None)
+        except Exception:
+            logger.warning("init data permission grants cache version failed", exc_info=True)
+    return version
+
+
+def _load_grants(user_obj, dq):
+    """加载授权池（部门祖先链授权 + 个人授权）。
+
+    单次 OR 查询取代旧实现的「部门 / 个人」两次查询；结果按
+    (版本, 用户, 部门, 菜单) 短缓存，命中时零 SQL。同一授权行同时命中部门与个人时由
+    distinct 去重——同池 OR 合并对重复授权不敏感，编译结果与旧实现等价。
+    """
+    dept = user_obj.dept
+    dept_pk = dept.pk if dept and dept.pk else ""
+    menu_pk = getattr(user_obj, "menu", None) or ""
+    version = _grants_cache_version()
+    cache_key = f"data_permission_grants_{version}_{user_obj.pk}_{dept_pk}_{menu_pk}"
+    if version is not None:
+        try:
+            cached = cache.get(cache_key)
+        except Exception:
+            cached = None
+            logger.warning("read data permission grants cache failed", exc_info=True)
+        if cached is not None:
+            # rules / mode_type 是编译所需全部字段：构造轻量对象，避免逐行取 ORM 实例
+            return [SimpleNamespace(rules=item["rules"], mode_type=item["mode_type"]) for item in cached]
+
+    conditions = Q(userinfo=user_obj)
+    if dept_pk:
+        # 递归取祖先链（含自身，树缓存 60s），仅启用部门上的授权生效
+        chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept_pk, is_parent=True)]
+        active_chain = [
+            str(pk) for pk in DeptInfo.objects.filter(pk__in=chain, is_active=True).values_list("pk", flat=True)
+        ]
+        if active_chain:
+            conditions |= Q(deptinfo__in=active_chain)
+    grants = list(DataPermission.objects.filter(is_active=True).filter(conditions).filter(dq).distinct())
+    if version is not None:
+        try:
+            cache.set(cache_key, [{"rules": g.rules, "mode_type": g.mode_type} for g in grants], GRANTS_CACHE_TTL)
+        except Exception:
+            logger.warning("cache data permission grants failed", exc_info=True)
+    return grants
 
 
 @timeit
@@ -48,20 +126,8 @@ def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
 
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=getattr(user_obj, "menu", None))
 
-    grants = []
-    dept = user_obj.dept
-    if dept and dept.pk:
-        # 递归取祖先链（含自身，树缓存 60s），仅启用部门上的授权生效
-        chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk, is_parent=True)]
-        active_chain = [
-            str(pk) for pk in DeptInfo.objects.filter(pk__in=chain, is_active=True).values_list("pk", flat=True)
-        ]
-        if active_chain:
-            grants.extend(
-                DataPermission.objects.filter(is_active=True).filter(deptinfo__in=active_chain).filter(dq).distinct()
-            )
-    # 个人授权与部门授权同池「或」合并
-    grants.extend(DataPermission.objects.filter(is_active=True).filter(userinfo=user_obj).filter(dq))
+    # 部门授权与个人授权同池「或」合并（单次查询 + 版本化缓存，见 _load_grants）
+    grants = _load_grants(user_obj, dq)
     if extra_grants:
         # 试算草稿等临时授权：不落库，直接参与本次编译
         grants.extend(extra_grants)

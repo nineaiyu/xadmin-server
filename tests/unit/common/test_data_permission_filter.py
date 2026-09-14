@@ -115,7 +115,7 @@ class TestGetFilterQueryset:
         normal_user.dept = dept
         normal_user.save(update_fields=["dept"])
         parent.rules.add(
-            make_permission("hq-own", [make_rule("admin", "value.table.user.ids", value='[{"pk": %s}]' % superuser.pk)])
+            make_permission("hq-own", [make_rule("admin", "value.table.user.ids", value=f'[{{"pk": {superuser.pk}}}]')])
         )
         qs = get_filter_queryset(Book.objects.all(), normal_user)
         # 祖先授权圈 superuser 的书；本部门无授权不收紧
@@ -129,7 +129,7 @@ class TestGetFilterQueryset:
         normal_user.dept = dept
         normal_user.save(update_fields=["dept"])
         parent.rules.add(
-            make_permission("hq-own", [make_rule("admin", "value.table.user.ids", value='[{"pk": %s}]' % superuser.pk)])
+            make_permission("hq-own", [make_rule("admin", "value.table.user.ids", value=f'[{{"pk": {superuser.pk}}}]')])
         )
         dept.rules.add(make_permission("dev-own", [make_rule("admin", "value.user.id")]))
         qs = get_filter_queryset(Book.objects.all(), normal_user)
@@ -148,7 +148,7 @@ class TestGetFilterQueryset:
         normal_user.save(update_fields=["dept"])
         dept.rules.add(
             make_permission(
-                "dept-scope", [make_rule("admin", "value.table.user.ids", value='[{"pk": %s}]' % superuser.pk)]
+                "dept-scope", [make_rule("admin", "value.table.user.ids", value=f'[{{"pk": {superuser.pk}}}]')]
             )
         )
         normal_user.rules.add(make_permission("personal-all", [make_rule("admin", "value.all")]))
@@ -221,3 +221,58 @@ class TestGetFilterQueryset:
         normal_user.rules.add(make_permission("bad", [make_rule("creat0r", "value.user.id")]))
         qs = get_filter_queryset(Book.objects.all(), normal_user)
         assert qs.count() == 0
+
+    def test_same_grant_bound_to_dept_and_user_deduplicated(self, dept, normal_user, books):
+        """同一授权同时绑部门与个人（合并查询会命中重复行）：去重后结果与旧实现一致。"""
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        perm = make_permission("dual", [make_rule("admin", "value.user.id")])
+        dept.rules.add(perm)
+        normal_user.rules.add(perm)
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+
+
+class TestGrantsCache:
+    """授权池缓存（P2）：命中零 SQL + 变更即时失效守护。"""
+
+    @staticmethod
+    def _grant_sql(queries):
+        table = DataPermission._meta.db_table
+        return [q["sql"] for q in queries if table in q["sql"]]
+
+    def test_repeated_filter_reuses_cache_without_grant_sql(self, normal_user, books):
+        """首次过滤加载授权池；二次调用命中缓存（且部门链缓存），不再查授权表。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        normal_user.rules.add(make_permission("own", [make_rule("admin", "value.user.id")]))
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+        with CaptureQueriesContext(connection) as ctx:
+            assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+        assert self._grant_sql(ctx.captured_queries) == []
+
+    def test_grant_change_takes_effect_immediately(self, normal_user, books):
+        """授权规则修改后下一次过滤立即生效（版本号失效，不等 TTL）。"""
+        normal_user.rules.add(make_permission("own", [make_rule("admin", "value.user.id")]))
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+        perm = DataPermission.objects.get(name="own")
+        perm.rules = [make_rule("admin", "value.all")]
+        perm.save()
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+
+    def test_grant_removal_takes_effect_immediately(self, normal_user, books):
+        """解除个人授权（m2m 直改）后立即失效，不再可见。"""
+        normal_user.rules.add(make_permission("own", [make_rule("admin", "value.user.id")]))
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 1
+        normal_user.rules.clear()
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0
+
+    def test_dept_deactivation_takes_effect_immediately(self, dept, normal_user, books):
+        """部门停用后其授权立即失效（部门变更同样触发授权池失效）。"""
+        normal_user.dept = dept
+        normal_user.save(update_fields=["dept"])
+        dept.rules.add(make_permission("dept-all", [make_rule("admin", "value.all")]))
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 3
+        dept.is_active = False
+        dept.save(update_fields=["is_active"])
+        assert get_filter_queryset(Book.objects.all(), normal_user).count() == 0
