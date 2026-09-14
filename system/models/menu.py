@@ -10,7 +10,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import SoftDeleteModel, DbAuditModel, DbUuidModel
+from common.core.models import DbAuditModel, DbUuidModel, SoftDeleteModel
 
 
 class MenuMeta(DbAuditModel, DbUuidModel):

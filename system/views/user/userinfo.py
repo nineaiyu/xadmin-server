@@ -6,13 +6,13 @@
 # date : 6/16/2023
 
 from django.conf import settings
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
-from common.core.modelset import DetailUpdateModelSet, UploadFileAction, ChoicesAction
+from common.core.modelset import ChoicesAction, DetailUpdateModelSet, UploadFileAction
 from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -24,7 +24,7 @@ from mfa.const import ConfirmType
 from settings.services import ResetBlockUtil
 from system.models import UserInfo
 from system.notifications import ResetPasswordSuccessMsg
-from system.serializers.userinfo import UserInfoSerializer, ChangePasswordSerializer
+from system.serializers.userinfo import ChangePasswordSerializer, UserInfoSerializer
 from system.utils.auth import verify_sms_email_code
 
 logger = get_logger(__name__)

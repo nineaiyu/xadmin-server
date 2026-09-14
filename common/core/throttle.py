@@ -6,7 +6,7 @@
 # date : 6/2/2023
 
 
-from rest_framework.throttling import SimpleRateThrottle, UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
 
 class RegisterThrottle(AnonRateThrottle):

@@ -9,9 +9,9 @@ import time
 
 from django.contrib.auth import logout
 from django.utils import timezone
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 

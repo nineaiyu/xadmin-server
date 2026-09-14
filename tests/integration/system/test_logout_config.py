@@ -19,6 +19,7 @@ class TestLogout:
     def _request(self, superuser, data=None, authenticate=True):
         """真实 JWT 认证路径：request.auth 为 simplejwt Token（与生产一致）。"""
         from django.contrib.sessions.backends.db import SessionStore
+
         from system.views.auth.logout import LogoutAPIView
 
         factory = APIRequestFactory()
@@ -41,8 +42,8 @@ class TestLogout:
         assert cache.get_storage_cache() == 1
 
     def test_logout_blacklists_refresh_token(self, superuser):
-        from rest_framework_simplejwt.tokens import BlacklistedToken
         from django.template.response import ContentNotRenderedError
+        from rest_framework_simplejwt.tokens import BlacklistedToken
 
         refresh = RefreshToken.for_user(superuser)
         try:

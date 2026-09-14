@@ -12,7 +12,7 @@ from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter

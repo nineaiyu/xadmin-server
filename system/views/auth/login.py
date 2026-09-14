@@ -9,9 +9,10 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -21,7 +22,7 @@ from common.core.throttle import LoginThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.ip import get_ip_city
-from common.utils.request import get_request_ip, get_browser, get_os
+from common.utils.request import get_browser, get_os, get_request_ip
 from mfa.services import generate_login_mfa_token, get_login_mfa_methods, is_login_mfa_required
 from settings.services import (
     PASSWORD_EXPIRED_MESSAGE,
@@ -31,18 +32,15 @@ from settings.services import (
 )
 from system.models import UserInfo, UserLoginLog
 from system.utils.auth import (
-    get_username_password,
-    get_token_lifetime,
+    ValidateError,
+    check_different_city_login_if_need,
     check_is_block,
     check_token_and_captcha,
+    get_token_lifetime,
+    get_username_password,
     save_login_log,
     verify_sms_email_code,
-    check_different_city_login_if_need,
-    ValidateError,
 )
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
 from system.utils.session import bind_session_claim, register_user_session
 
 logger = get_logger(__name__)

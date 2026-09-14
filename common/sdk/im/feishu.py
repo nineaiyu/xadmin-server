@@ -9,6 +9,7 @@
 import json
 
 from common.utils import get_logger
+
 from .base import BaseImClient, ImSdkError
 
 logger = get_logger(__name__)

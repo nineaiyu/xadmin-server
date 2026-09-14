@@ -4,12 +4,11 @@ import json
 import re
 
 from django.utils.translation import gettext_lazy as _
-from rest_framework import serializers
-from rest_framework import status
-from rest_framework.exceptions import ParseError, APIException
+from rest_framework import serializers, status
+from rest_framework.exceptions import APIException, ParseError
 from rest_framework.parsers import BaseParser
 
-from common.core.fields import LabeledChoiceField, BasePrimaryKeyRelatedField
+from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.import_mapping import resolve_headers
 from common.utils import get_logger
 

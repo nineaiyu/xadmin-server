@@ -4,8 +4,8 @@
 import pytest
 
 from common.base.utils import AESCipherV2
-from tests.integration.aes_v2 import encrypt_v2
 from system.models import UserInfo
+from tests.integration.aes_v2 import encrypt_v2
 
 pytestmark = pytest.mark.django_db
 

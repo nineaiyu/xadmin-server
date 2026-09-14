@@ -8,9 +8,9 @@
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter, OpenApiRequest
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema, extend_schema_view
 from rest_framework.exceptions import APIException
 from rest_framework.generics import GenericAPIView
 
@@ -21,10 +21,9 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger, random_string
 from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
-from settings.services import SendVerifyCodeBlockUtil, LoginIpBlockUtil
-from settings.services import get_password_check_rules
+from settings.services import LoginIpBlockUtil, SendVerifyCodeBlockUtil, get_password_check_rules
 from system.models import UserInfo
-from system.utils.auth import ValidateError, check_token_and_captcha, check_is_block
+from system.utils.auth import ValidateError, check_is_block, check_token_and_captcha
 
 logger = get_logger(__name__)
 

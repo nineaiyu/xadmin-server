@@ -11,9 +11,8 @@ from django.conf import settings
 from django.db.models import ProtectedError
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import Throttled, APIException
-from rest_framework.views import exception_handler
-from rest_framework.views import set_rollback
+from rest_framework.exceptions import APIException, Throttled
+from rest_framework.views import exception_handler, set_rollback
 from rest_framework_simplejwt.exceptions import InvalidToken
 
 from common.core.response import ApiResponse

@@ -6,7 +6,7 @@
 # date : 1/17/2024
 import os
 
-from django.core.files.storage import default_storage, FileSystemStorage
+from django.core.files.storage import FileSystemStorage, default_storage
 from django.db import models
 from django.db.models.fields.files import ImageFieldFile
 from imagekit.cachefiles import ImageCacheFile

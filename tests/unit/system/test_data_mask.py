@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """字段级数据脱敏：apply_mask 纯函数 / 规则缓存与失效 / 序列化器输出掩码 / 管理接口。"""
 
+from unittest.mock import patch
+
 import pytest
 from django.test import RequestFactory, override_settings
-from unittest.mock import patch
 
 from server.utils import set_current_request
 from system.models import DataMaskRule, UserInfo

@@ -10,7 +10,7 @@ import uuid
 from django.conf import settings
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import PermissionDenied, NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData

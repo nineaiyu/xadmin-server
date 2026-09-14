@@ -7,7 +7,7 @@
 import datetime
 import logging
 import re
-from collections import OrderedDict, deque, defaultdict
+from collections import OrderedDict, defaultdict, deque
 
 from django.apps import apps
 from django.conf import settings

@@ -9,7 +9,7 @@ import datetime
 from django.db.models import Count
 from django.db.models.functions import TruncDay
 from django.utils import timezone
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -18,7 +18,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import UserLoginLog, OperationLog, UserInfo
+from system.models import OperationLog, UserInfo, UserLoginLog
 from system.serializers.log import LoginLogSerializer
 
 

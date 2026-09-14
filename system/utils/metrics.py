@@ -183,6 +183,7 @@ def collect_task_health(days: int = None):
     - per_task 按执行次数取 Top N，供监控页定位高频异常任务。
     """
     from django.db.models import Count, Q
+
     from system.models.task import TaskExecution
 
     if days is None:

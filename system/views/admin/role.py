@@ -14,7 +14,7 @@ from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBi
 from common.utils import get_logger
 from system.builtin import BUILTIN_ROLE_CODES
 from system.models import UserRole
-from system.serializers.role import RoleSerializer, ListRoleSerializer
+from system.serializers.role import ListRoleSerializer, RoleSerializer
 from system.utils.modelset import RolePreviewAction
 
 logger = get_logger(__name__)

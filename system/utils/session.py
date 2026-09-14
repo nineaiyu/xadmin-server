@@ -10,7 +10,6 @@
 """
 
 from django.utils import timezone
-
 from django.utils.translation import gettext_lazy as _
 
 from common.cache.storage import UserTokenRevokedCache
@@ -28,9 +27,9 @@ def force_logout_user(user_pk, operator=None):
     ③ WS 推送 logout 消息并断开连接（前端收到即本地登出）；
     ④ 登记的 UserSession 全部置 OFFLINE（在线列表立即消失）。
     """
-    from message.services import get_online_users_layers, send_logout_msg
     from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
+    from message.services import get_online_users_layers, send_logout_msg
     from system.models import UserSession
 
     # ① 服务端 access token 失效（时间戳取当前秒；iat 与 exp 均为 epoch 秒）
@@ -96,7 +95,6 @@ def expire_stale_sessions():
     from datetime import timedelta
 
     from common.core.config import SysConfig
-
     from system.models import UserSession
 
     cutoff = timezone.now() - timedelta(seconds=SysConfig.SESSION_ONLINE_TIMEOUT)
@@ -110,7 +108,6 @@ def clean_expired_sessions():
     from datetime import timedelta
 
     from common.core.config import SysConfig
-
     from system.models import UserSession
 
     retention_days = SysConfig.USER_SESSION_RETENTION_DAYS

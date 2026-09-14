@@ -18,6 +18,7 @@
 
 import ast
 import json
+import sys
 import uuid
 from pathlib import Path
 
@@ -25,6 +26,37 @@ from django.apps import apps
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import models
+
+# 第一方顶层包（与 ruff.toml [lint.isort].known-first-party 对齐）：
+# 产物必须一次通过 ruff check（I001），import 分组/排序口径与 isort 保持一致
+FIRST_PARTY_TOP_LEVEL = frozenset(
+    {
+        "captcha",
+        "common",
+        "demo",
+        "loadtest",
+        "message",
+        "mfa",
+        "notifications",
+        "server",
+        "settings",
+        "system",
+        "utils",
+    }
+)
+
+
+def _import_name_sort_key(name: str) -> tuple:
+    """isort order-by-type 口径的 name 排序键：常量 → 类 → 函数/模块（同类内字母序）。"""
+    base = name.split(" as ")[0].strip()
+    if base.isupper():
+        rank = 0
+    elif base[:1].isupper():
+        rank = 1
+    else:
+        rank = 2
+    return (rank, base.lower())
+
 
 # 生成块标记：views.py / serializers.py 的幂等合并锚点
 BLOCK_START = "# --- xadmin:generated:{key}:start ---"
@@ -450,16 +482,40 @@ class Command(BaseCommand):
         import_line = f"from {ctx['view_module']} import {ctx['model_name']}ViewSet"
         lines = text.splitlines()
         if import_line not in lines:
-            last_import = max(
-                (index for index, line in enumerate(lines) if line.startswith(("import ", "from "))),
-                default=-1,
-            )
-            lines.insert(last_import + 1, import_line)
+            lines = self._merge_urls_import(lines, ctx, import_line)
         insert_at = next((index for index, line in enumerate(lines) if line.startswith("urlpatterns")), len(lines))
         lines.insert(insert_at, register)
         lines.insert(insert_at + 1, "")
         path.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
         return "插入注册行"
+
+    @classmethod
+    def _merge_urls_import(cls, lines, ctx, import_line):
+        """把 ViewSet import 合入第一方 import 块并整体重排（防 I001）。
+
+        复用 `_group_imports`：同模块 from-import 合并、组内按模块排序、组间空行；
+        目标块优先取已有第一方 import 的连续块，否则取最后一个 import 块。
+        直 `import x` 行保持块首（isort 口径：同 section 内直 import 在 from-import 前）。
+        """
+        import_indexes = [index for index, line in enumerate(lines) if line.startswith(("import ", "from "))]
+        if not import_indexes:
+            return [import_line, *lines]
+        blocks: list[list[int]] = []
+        for index in import_indexes:
+            if blocks and index == blocks[-1][-1] + 1:
+                blocks[-1].append(index)
+            else:
+                blocks.append([index])
+
+        def is_first_party(line):
+            return line.startswith("from ") and line[len("from ") :].split()[0].split(".")[0] in FIRST_PARTY_TOP_LEVEL
+
+        target = next((block for block in blocks if any(is_first_party(lines[index]) for index in block)), blocks[-1])
+        head, tail = target[0], target[-1]
+        block_lines = [*lines[head : tail + 1], import_line]
+        plain = [line for line in block_lines if not line.startswith("from ")]
+        froms = [line for line in block_lines if line.startswith("from ")]
+        return [*lines[:head], *plain, *cls._group_imports(froms), *lines[tail + 1 :]]
 
     # ------------------------------------------------------------ 导入去重工具
 
@@ -493,18 +549,35 @@ class Command(BaseCommand):
 
     @staticmethod
     def _group_imports(lines):
-        """import 行按 第三方 → 框架（common.*） → 应用 分组，组间空行（仓库范式）。"""
-        groups = {"third": [], "framework": [], "app": []}
+        """import 行按「标准库 → 第三方 → 第一方」分组，组内按模块排序并合并同模块。
+
+        第一方（common/system/message 与生成的 app）**同属一组、组内不留空行**——
+        口径与 ruff.toml 的 [lint.isort].known-first-party 一致（否则生成物 I001）；
+        同模块的多条 from-import 合并为一行（isort 默认行为），name 顺序保持调用方给定。
+        """
+        merged: dict[str, list[str]] = {}
         for line in lines:
-            module = line[len("from ") :].split(" import", 1)[0]
-            if module.startswith("common"):
-                groups["framework"].append(line)
-            elif module.startswith(("django", "rest_framework")) or "." not in module:
-                groups["third"].append(line)
+            module, names = line[len("from ") :].split(" import", 1)
+            bucket = merged.setdefault(module.strip(), [])
+            for name in names.split(","):
+                name = name.strip()
+                if name and name not in bucket:
+                    bucket.append(name)
+
+        groups = {"stdlib": [], "third": [], "app": []}
+        for module in sorted(merged):
+            top = module.split(".")[0]
+            if top in sys.stdlib_module_names:
+                key = "stdlib"
+            elif top in FIRST_PARTY_TOP_LEVEL:
+                key = "app"
             else:
-                groups["app"].append(line)
+                key = "third"
+            names = sorted(merged[module], key=_import_name_sort_key)
+            groups[key].append(f"from {module} import {', '.join(names)}")
+
         ordered = []
-        for key in ("third", "framework", "app"):
+        for key in ("stdlib", "third", "app"):
             if groups[key]:
                 ordered.extend(groups[key])
                 ordered.append("")

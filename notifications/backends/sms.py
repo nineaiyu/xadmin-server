@@ -2,6 +2,7 @@ from django.conf import settings
 
 from common.sdk.sms import endpoint as sms_endpoint
 from common.utils import get_logger
+
 from .base import BackendBase
 
 logger = get_logger(__name__)

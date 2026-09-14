@@ -10,6 +10,7 @@ from django.conf import settings
 
 from common.sdk.im import dingtalk as dingtalk_sdk
 from common.utils import get_logger
+
 from .im_base import ImBindingBackend
 
 logger = get_logger(__name__)

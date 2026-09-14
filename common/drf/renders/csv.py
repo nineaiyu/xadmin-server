@@ -6,8 +6,8 @@ import codecs
 import unicodecsv
 from six import BytesIO
 
-from .base import BaseFileRenderer
 from ..const import CSV_FILE_ESCAPE_CHARS
+from .base import BaseFileRenderer
 
 
 class CSVFileRenderer(BaseFileRenderer):

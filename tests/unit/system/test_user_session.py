@@ -8,10 +8,10 @@
 - 强制下线/登出/过期任务置离线，保留期任务回收历史记录。
 """
 
+import time
 from datetime import timedelta
 
 import pytest
-import time
 from django.core.cache import cache
 from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenError

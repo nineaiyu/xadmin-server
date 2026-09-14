@@ -6,12 +6,12 @@
 # date : 6/29/2023
 import json
 import os
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 from django.conf import settings
-from django.db.utils import ProgrammingError, OperationalError
+from django.db.utils import OperationalError, ProgrammingError
 from django.utils import timezone
-from django_celery_beat.models import IntervalSchedule, CrontabSchedule, PeriodicTask, PeriodicTasks
+from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask, PeriodicTasks
 
 from common.utils import get_logger
 from common.utils.timezone import local_now

@@ -13,20 +13,20 @@ from settings.views.email import EmailServerSettingViewSet
 from settings.views.ldap import LdapServerSettingViewSet
 from settings.views.notify_im import ImNotifySettingViewSet
 from settings.views.security import (
-    SecurityPasswordRuleViewSet,
-    SecurityLoginLimitViewSet,
-    SecurityLoginAuthViewSet,
-    SecurityRegisterAuthViewSet,
-    SecurityResetPasswordAuthViewSet,
     SecurityBindEmailAuthViewSet,
     SecurityBindPhoneAuthViewSet,
-    SecurityVerifyCodeViewSet,
     SecurityCaptchaCodeViewSet,
+    SecurityLoginAuthViewSet,
+    SecurityLoginLimitViewSet,
     SecurityMFAViewSet,
     SecurityMonitorViewSet,
+    SecurityPasswordRuleViewSet,
+    SecurityRegisterAuthViewSet,
+    SecurityResetPasswordAuthViewSet,
+    SecurityVerifyCodeViewSet,
 )
 from settings.views.settings import SettingViewSet
-from settings.views.sms import SmsSettingViewSet, SmsConfigViewSet
+from settings.views.sms import SmsConfigViewSet, SmsSettingViewSet
 
 app_name = "settings"
 

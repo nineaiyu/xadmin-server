@@ -7,7 +7,7 @@
 """
 
 from django.conf import settings
-from ldap3 import ALL, Connection, Server, SUBTREE
+from ldap3 import ALL, SUBTREE, Connection, Server
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
 

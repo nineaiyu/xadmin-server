@@ -14,9 +14,8 @@ import hashlib
 import hmac
 import time
 
-from django.utils import timezone
-
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import signer

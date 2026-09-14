@@ -10,12 +10,12 @@ from django.contrib.auth import user_logged_out
 from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
-from common.base.magic import cache_response, MagicCacheData
+from common.base.magic import MagicCacheData, cache_response
 from common.base.utils import remove_file
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.utils import get_logger
-from system.models import Menu, UserRole, UserInfo, DeptInfo, SystemConfig, TaskExecution, DataDict, DataMaskRule
+from system.models import DataDict, DataMaskRule, DeptInfo, Menu, SystemConfig, TaskExecution, UserInfo, UserRole
 from system.signal import approval_instance_finished, invalid_user_cache_signal
 from system.utils.dict import invalid_dict_cache
 from system.utils.mask import invalid_mask_cache

@@ -1,4 +1,4 @@
-from .services.command import BaseActionCommand, Action
+from .services.command import Action, BaseActionCommand
 
 
 class Command(BaseActionCommand):

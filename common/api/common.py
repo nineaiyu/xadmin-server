@@ -8,9 +8,9 @@ import time
 import uuid
 
 from django.utils import translation
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest, OpenApiResponse
+from drf_spectacular.utils import OpenApiRequest, OpenApiResponse, extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response

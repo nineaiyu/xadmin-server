@@ -6,7 +6,7 @@
 # date : 6/12/2024
 
 
-from django.urls import path, include
+from django.urls import include, path
 
 # 路由配置，当添加APP完成时候，会自动注入路由到总服务
 URLPATTERNS = [

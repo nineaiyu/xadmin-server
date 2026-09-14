@@ -17,7 +17,7 @@ from rest_framework.exceptions import ValidationError
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from notifications.models import MessageUserRead, MessageContent
+from notifications.models import MessageContent, MessageUserRead
 from system.serializers.fields import DictChoiceField
 from system.services import UploadFile, UserInfo
 

@@ -7,21 +7,21 @@
 
 from django.apps import apps
 from django_filters import rest_framework as filters
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import action
 
 from common.base.utils import get_choices_dict
 from common.core.filter import BaseFilterSet
-from common.core.modelset import ListDeleteModelSet, ImportExportDataAction
+from common.core.modelset import ImportExportDataAction, ListDeleteModelSet
 from common.core.pagination import DynamicPageNumber
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import ModelLabelField
-from system.serializers.field import ModelLabelFieldSerializer, ModelLabelFieldImportSerializer
-from system.utils.modelfield import sync_model_field, get_field_lookup_info, get_extra_field_lookups
+from system.serializers.field import ModelLabelFieldImportSerializer, ModelLabelFieldSerializer
+from system.utils.modelfield import get_extra_field_lookups, get_field_lookup_info, sync_model_field
 from system.utils.rule_meta import RULE_TYPE_TEXTS
 
 logger = get_logger(__name__)

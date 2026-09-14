@@ -8,9 +8,9 @@
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -19,8 +19,7 @@ from common.cache.lock import ReentrantLock
 from common.core.response import ApiResponse
 from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
-from settings.services import RegisterBlockUtil
-from settings.services import check_leak_password, check_password_rules, record_password_hash
+from settings.services import RegisterBlockUtil, check_leak_password, check_password_rules, record_password_hash
 from system.models import DeptInfo, UserInfo, UserLoginLog
 from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
 from system.utils.session import bind_session_claim, register_user_session

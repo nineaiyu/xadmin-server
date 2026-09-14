@@ -7,7 +7,7 @@
 from django.urls import re_path
 
 from common.api.backup import BackupAlertAPIView
-from common.api.common import ResourcesIDCacheAPIView, CountryListAPIView, HealthCheckAPIView
+from common.api.common import CountryListAPIView, HealthCheckAPIView, ResourcesIDCacheAPIView
 from common.api.csp import CSPReportAPIView
 from common.api.metrics import MetricsAPIView
 

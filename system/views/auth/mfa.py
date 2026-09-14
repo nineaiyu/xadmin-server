@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 

@@ -5,11 +5,11 @@ is_ip 的 `/` 与 `-` 分支比较的是 ip_address 对象（调用方传入前�
 `.` 四段与前缀分支比较的是字符串——测试按真实入参类型分别驱动，锁住语义。
 """
 
+from ipaddress import ip_address
 from unittest import mock
 
 import pytest
 from django.utils.translation import activate
-from ipaddress import ip_address
 
 from common.utils.ip.utils import (
     contains_ip,

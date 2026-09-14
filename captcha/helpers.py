@@ -1,9 +1,9 @@
 import random
 import re
 
-from PIL import Image
 from django.conf import settings
 from django.urls import reverse
+from PIL import Image
 
 
 def _callable_from_string(string_or_callable):

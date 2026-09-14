@@ -9,7 +9,7 @@
 
 from collections import OrderedDict
 
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response

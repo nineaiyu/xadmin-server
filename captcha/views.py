@@ -5,13 +5,13 @@ import subprocess
 import tempfile
 from io import BytesIO
 
-from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404, HttpResponse
+from PIL import Image, ImageDraw, ImageFont
 from ranged_response import RangedFileResponse
 
-from captcha.helpers import captcha_audio_url, captcha_image_url, noise_functions, filter_functions, makeimg
+from captcha.helpers import captcha_audio_url, captcha_image_url, filter_functions, makeimg, noise_functions
 from captcha.models import CaptchaStore
 
 # Distance of the drawn text from the top of the captcha image

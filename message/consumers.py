@@ -27,6 +27,7 @@ from common.core.config import UserConfig
 from common.utils import get_logger
 from message import chat as chat_service
 from message.base import AsyncJsonWebsocket
+from message.models import ChatRoom, ChatRoomMember
 from message.protocol import MessageAction
 from message.utils import (
     async_push_message,
@@ -34,7 +35,6 @@ from message.utils import (
     get_public_chat_group_name,
     room_event_groups,
 )
-from message.models import ChatRoom, ChatRoomMember
 
 logger = get_logger(__name__)
 

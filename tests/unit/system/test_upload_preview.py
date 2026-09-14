@@ -16,8 +16,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.core.config import SysConfig
 from system.models import UploadFile
-from system.utils.ctasks import auto_clean_preview_cache
 from system.utils import preview as preview_module
+from system.utils.ctasks import auto_clean_preview_cache
 from system.utils.preview import (
     SIZE_PREVIEW,
     SIZE_THUMB,

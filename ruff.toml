@@ -1,13 +1,32 @@
-# Ruff 配置：启用 E/F 错误级规则；存量通配 import 文件在 per-file-ignores 中显式列出，新代码不得新增
+# Ruff 配置：启用 E/F 错误级规则 + I（isort 导入排序，2026-09-14 全仓自动修复后启用）；
+# 存量通配 import 文件在 per-file-ignores 中显式列出，新代码不得新增
 line-length = 120
 target-version = "py313"
 extend-exclude = ["zsign", "demo/migrations", "data", "loadjson"]
 
 [lint]
-select = ["E4", "E7", "E9", "F"]
+select = ["E4", "E7", "E9", "F", "I"]
 ignore = [
     "E501", # 行长，存量代码大量超长
     "E402", # import 不在顶部，settings 模块需要先打补丁再导入
+]
+
+[lint.isort]
+# 显式声明第一方包，避免分组随运行目录漂移：
+# generate_crud 脚手架的产物测试会在临时目录跑 ruff，此时按“运行目录同名顶层包”
+# 推断会把 demo/common 误判为第三方，导致模板本正确的 import 分组被判 I001。
+known-first-party = [
+    "captcha",
+    "common",
+    "demo",
+    "loadtest",
+    "message",
+    "mfa",
+    "notifications",
+    "server",
+    "settings",
+    "system",
+    "utils",
 ]
 
 [lint.per-file-ignores]

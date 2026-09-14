@@ -9,7 +9,7 @@ import re
 from collections import defaultdict
 
 from celery import signature
-from celery.signals import worker_ready, worker_shutdown, after_setup_logger
+from celery.signals import after_setup_logger, worker_ready, worker_shutdown
 from django.conf import settings
 from django.core.cache import cache
 from django.core.signals import request_finished

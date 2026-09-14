@@ -9,8 +9,8 @@
 import json
 
 import pytest
-from django.utils.translation import gettext
 from django.core.cache import cache
+from django.utils.translation import gettext
 from rest_framework.test import APIClient
 
 from system.models import DataPermission, Dataset, ModelLabelField, OperationLog, UserInfo

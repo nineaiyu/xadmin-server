@@ -5,9 +5,9 @@
 from django.db.models import Case, Count, IntegerField, Value, When
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
 

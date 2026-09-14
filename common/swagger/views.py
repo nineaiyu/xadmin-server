@@ -11,10 +11,10 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import (
-    SpectacularSwaggerView,
-    SpectacularRedocView,
-    SpectacularYAMLAPIView,
     SpectacularJSONAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+    SpectacularYAMLAPIView,
 )
 from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer

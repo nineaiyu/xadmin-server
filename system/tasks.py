@@ -9,11 +9,10 @@ import datetime
 from io import BytesIO
 from urllib.parse import urlencode
 
-from django.db import models, transaction
-
 from celery import shared_task
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
+from django.db import models, transaction
 from django.utils import timezone, translation
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
@@ -27,19 +26,19 @@ from common.utils.timezone import local_now_display
 from server.utils import set_current_request
 from system.models.task import TaskExecution
 from system.utils.ctasks import (
-    auto_clean_operation_log,
     auto_clean_black_token,
+    auto_clean_operation_log,
+    auto_clean_preview_cache,
     auto_clean_tmp_file,
     auto_clean_upload_file,
-    auto_clean_preview_cache,
 )
 
 logger = get_logger(__name__)
 
 # LDAP 同步周期任务：celery autodiscover 只导入 <app>.tasks，
 # 子包任务必须在此显式引入才会注册到 django_celery_beat
-from system.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from system.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
+from system.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from system.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
 
 # 导出产物 MIME：下载中心按记录后缀回写 Content-Type
@@ -105,9 +104,8 @@ def auto_clean_task_execution_job():
 @register_as_period_task(crontab="52 2 * * *")
 def auto_clean_export_record_job():
     """清理超过保留期的异步导出记录与产物文件（EXPORT_FILE_KEEP_DAYS，默认 7 天）。"""
-    from system.models.export import ExportRecord
-
     from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> system.services）
+    from system.models.export import ExportRecord
 
     keep_days = SysConfig.EXPORT_FILE_KEEP_DAYS
     deadline = timezone.now() - datetime.timedelta(days=keep_days)
@@ -132,9 +130,8 @@ def auto_clean_export_record_job():
 @register_as_period_task(crontab="58 2 * * *")
 def auto_clean_import_record_job():
     """清理超过保留期的异步导入记录、源文件与错误报告（IMPORT_RECORD_KEEP_DAYS，默认 30 天）。"""
-    from system.models.import_ import ImportRecord
-
     from common.core.config import SysConfig  # 局部导入避免循环依赖（config <-> system.services）
+    from system.models.import_ import ImportRecord
 
     keep_days = SysConfig.IMPORT_RECORD_KEEP_DAYS
     deadline = timezone.now() - datetime.timedelta(days=keep_days)

@@ -12,7 +12,7 @@ from common.core.fields import LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
-from system.models import UserLoginLog, OperationLog, UserSession
+from system.models import OperationLog, UserLoginLog, UserSession
 from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)

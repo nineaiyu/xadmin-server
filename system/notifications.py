@@ -5,7 +5,7 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from common.utils.request import get_request_ip, get_browser
+from common.utils.request import get_browser, get_request_ip
 from common.utils.timezone import local_now_display
 from notifications.services import (
     BACKEND,
@@ -315,7 +315,7 @@ class ApprovalRequestMessage(UserMessage):
 
     @classmethod
     def gen_test_msg(cls):
-        from system.models import UserInfo, ApprovalRequest
+        from system.models import ApprovalRequest, UserInfo
 
         user = UserInfo.objects.first()
         approval = ApprovalRequest(module="User", method="DELETE", path="/api/system/user/1", creator=user)
@@ -370,7 +370,7 @@ class ApprovalFlowMessage(UserMessage):
 
     @classmethod
     def gen_test_msg(cls):
-        from system.models import ApprovalInstance, ApprovalFlow, UserInfo
+        from system.models import ApprovalFlow, ApprovalInstance, UserInfo
 
         user = UserInfo.objects.first()
         instance = ApprovalInstance(flow=ApprovalFlow(name="Test", code="test"), flow_name="Test", title="Test")
@@ -387,8 +387,9 @@ def maybe_alert_sensitive_operation(info: dict):
     清单（SENSITIVE_OPERATION_PATHS，默认空）AND 组合；同一 方法+路径 60 秒内
     只告警一次。任何异常都不影响请求响应。
     """
-    from common.core.config import SysConfig
     from django.core.cache import cache
+
+    from common.core.config import SysConfig
 
     methods = SysConfig.SENSITIVE_OPERATION_METHODS
     method = info.get("method")

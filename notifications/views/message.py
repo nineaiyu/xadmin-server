@@ -8,7 +8,7 @@
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.filter import BaseFilterSet, PkMultipleFilter
@@ -17,9 +17,9 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from notifications.models import MessageContent, MessageUserRead
 from notifications.serializers.message import (
+    AnnouncementSerializer,
     NoticeMessageSerializer,
     NoticeUserReadMessageSerializer,
-    AnnouncementSerializer,
 )
 
 

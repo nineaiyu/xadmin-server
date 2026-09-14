@@ -6,7 +6,7 @@
 # date : 10/18/2024
 import os
 
-from ..const import PROJECT_DIR, CONFIG
+from ..const import CONFIG, PROJECT_DIR
 
 # 密码安全配置
 SECURITY_PASSWORD_MIN_LENGTH = CONFIG.SECURITY_PASSWORD_MIN_LENGTH

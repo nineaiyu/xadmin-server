@@ -10,7 +10,7 @@ import hashlib
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import upload_directory_path, DbAuditModel, AutoCleanFileMixin, SoftDeleteModel
+from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel, upload_directory_path
 from system.utils.preview import remove_preview_cache_by_pk
 
 

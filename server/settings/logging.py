@@ -6,7 +6,7 @@
 # date : 10/18/2024
 import os
 
-from ..const import LOG_DIR, CONFIG, TMP_DIR, CELERY_LOG_DIR
+from ..const import CELERY_LOG_DIR, CONFIG, LOG_DIR, TMP_DIR
 
 SERVER_LOG_FILE = os.path.join(LOG_DIR, "server.log")
 DRF_EXCEPTION_LOG_FILE = os.path.join(LOG_DIR, "drf_exception.log")

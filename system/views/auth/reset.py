@@ -6,9 +6,9 @@
 # date : 8/10/2024
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.generics import GenericAPIView
 
 from common.base.utils import AESCipherV2
@@ -16,8 +16,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.verify_code import TokenTempCache
-from settings.services import ResetBlockUtil
 from settings.services import (
+    ResetBlockUtil,
     check_history_password,
     check_leak_password,
     check_password_rules,

@@ -11,28 +11,23 @@ from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
-from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet, AiProfileViewSet
-from system.views.analysis import ReportViewSet, ScreenViewSet
-from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
-from system.views.search.global_search import GlobalSearchAPIView
-from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
-from system.views.dataset import DatasetViewSet, DashboardViewSet as DataDashboardViewSet
-from system.views.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
-from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
 from system.views.admin.leave import LeaveViewSet
-from system.views.admin.menu import MenuViewSet
+from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
+from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
 from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.role import RoleViewSet
 from system.views.admin.user import UserViewSet
+from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet, AiProfileViewSet
+from system.views.analysis import ReportViewSet, ScreenViewSet
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
 from system.views.auth.mfa import LoginMFASendCodeAPIView, LoginMFAVerifyAPIView
@@ -47,13 +42,18 @@ from system.views.auth.oauth import (
 from system.views.auth.register import RegisterViewAPIView
 from system.views.auth.reset import ResetPasswordAPIView
 from system.views.auth.rule import PasswordRulesAPIView
-from system.views.auth.token import RefreshTokenAPIView, CaptchaAPIView, TempTokenAPIView
+from system.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTokenAPIView
 from system.views.auth.verify_code import SendVerifyCodeAPIView
 from system.views.configs import ConfigsViewSet
 from system.views.dashboard import DashboardViewSet
+from system.views.dataset import DashboardViewSet as DataDashboardViewSet
+from system.views.dataset import DatasetViewSet
+from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
 from system.views.monitor import MonitorViewSet
+from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from system.views.routes import UserRoutesAPIView
 from system.views.search.dept import SearchDeptViewSet
+from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
@@ -66,6 +66,7 @@ from system.views.task import (
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.token import PersonalAccessTokenViewSet
 from system.views.user.userinfo import UserInfoViewSet
+from system.views.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 
 app_name = "system"
 

@@ -11,12 +11,12 @@ from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
 
 from common.core.models import (
+    AutoCleanFileMixin,
+    DbAuditModel,
     SoftDeleteManager,
     SoftDeleteModel,
     SoftDeleteQuerySet,
     upload_directory_path,
-    DbAuditModel,
-    AutoCleanFileMixin,
 )
 from common.fields.image import ProcessedImageField
 

@@ -8,7 +8,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
 
 from common.base.magic import cache_response
-from common.base.utils import menu_list_to_tree, format_menu_data
+from common.base.utils import format_menu_data, menu_list_to_tree
 from common.core.modelset import CacheDetailResponseMixin
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse

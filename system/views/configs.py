@@ -6,11 +6,11 @@
 # date : 3/14/2024
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.auth import auth_required
-from common.core.config import UserConfig, SysConfig
+from common.core.config import SysConfig, UserConfig
 from common.core.filter import OwnerUserFilter
 from common.core.permission import PatScopePermission
 from common.core.response import ApiResponse

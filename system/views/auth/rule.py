@@ -4,7 +4,7 @@
 # filename : rule
 # author : ly_13
 # date : 8/10/2024
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView

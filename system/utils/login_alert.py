@@ -83,8 +83,8 @@ def maybe_alert_abnormal_login(user, ip, city, browser, system):
         throttle_key = "abnormal_login_alert_{}_{}".format(user.pk, "_".join(sorted(dimensions)))
         if not cache.add(throttle_key, 1, ALERT_THROTTLE_SECONDS):
             return
-        from system.notifications import AbnormalLoginMessage
         from common.utils.timezone import local_now_display
+        from system.notifications import AbnormalLoginMessage
 
         AbnormalLoginMessage(
             user,

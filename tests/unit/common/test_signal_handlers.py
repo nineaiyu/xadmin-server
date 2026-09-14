@@ -12,11 +12,11 @@ from django.core.cache import cache
 from django_celery_results.models import TaskResult
 
 import common.signal_handlers as sh
-from common.celery.decorator import get_after_app_ready_tasks
-from common.signals import django_ready
 
 # 触发 registry 注册（auto_clean_monitor_logs 等四个 after_app_ready 任务）
 import common.tasks  # noqa: F401
+from common.celery.decorator import get_after_app_ready_tasks
+from common.signals import django_ready
 
 
 def _stub_request(user):

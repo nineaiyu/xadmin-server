@@ -1,12 +1,12 @@
 from django.apps import AppConfig
-from django.db.models.signals import post_save, post_migrate, m2m_changed
+from django.db.models.signals import m2m_changed, post_migrate, post_save
 from django.dispatch import receiver
 from django.utils.functional import LazyObject
 
 from common.utils import get_logger
 from common.utils.connection import RedisPubSub
 from notifications.message import SiteMessageUtil
-from notifications.models import SystemMsgSubscription, MessageContent
+from notifications.models import MessageContent, SystemMsgSubscription
 from notifications.notifications import SYSTEM_MESSAGE_REGISTRY
 from system.services import UserInfo
 

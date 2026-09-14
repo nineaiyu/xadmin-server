@@ -50,7 +50,8 @@ def test_token_issued_after_logout_still_works():
 
 
 def test_force_logout_blacklists_refresh_tokens():
-    from datetime import datetime, timezone as dt_timezone
+    from datetime import datetime
+    from datetime import timezone as dt_timezone
 
     from rest_framework_simplejwt.tokens import RefreshToken
 

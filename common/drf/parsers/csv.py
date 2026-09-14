@@ -5,8 +5,8 @@ from functools import cached_property
 import chardet
 import unicodecsv
 
-from .base import BaseFileParser
 from ..const import CSV_FILE_ESCAPE_CHARS
+from .base import BaseFileParser
 
 
 class CSVFileParser(BaseFileParser):

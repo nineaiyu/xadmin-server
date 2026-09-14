@@ -10,9 +10,9 @@ import logging
 
 import pytest
 
+from common.api.csp import CSP_REPORT_HEADER, CSP_REPORT_LOG_THROTTLE_SECONDS
 from common.core.config import SysConfig
 from common.core.middleware import CSP_HEADER, CSP_HEADER_REPORT_ONLY
-from common.api.csp import CSP_REPORT_LOG_THROTTLE_SECONDS, CSP_REPORT_HEADER
 
 pytestmark = pytest.mark.django_db
 

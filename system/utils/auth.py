@@ -13,11 +13,11 @@ from rest_framework.exceptions import APIException
 from captcha.services import CaptchaAuth
 from common.base.utils import AESCipherV2
 from common.utils.ip import get_ip_city
-from common.utils.request import get_request_ip, get_browser, get_os, get_request_ident, get_user_agent
+from common.utils.request import get_browser, get_os, get_request_ident, get_request_ip, get_user_agent
 from common.utils.token import verify_token_cache
-from common.utils.verify_code import TokenTempCache, SendAndVerifyCodeUtil
+from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from settings.services import LoginBlockUtil, LoginIpBlockUtil
-from system.models import UserLoginLog, UserInfo
+from system.models import UserInfo, UserLoginLog
 from system.notifications import DifferentCityLoginMessage
 from system.serializers.log import LoginLogSerializer
 

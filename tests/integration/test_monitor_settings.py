@@ -106,7 +106,7 @@ class TestServerPerformanceCheck:
         subscription.save()
 
         self._seed_monitor(disk_used=95)
-        from common.notifications import ServerPerformanceMessage, ServerPerformanceCheckUtil
+        from common.notifications import ServerPerformanceCheckUtil, ServerPerformanceMessage
 
         util = ServerPerformanceCheckUtil()
         util.check()

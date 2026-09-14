@@ -7,17 +7,17 @@
 
 from common.utils import get_logger
 from settings.serializers.security import (
-    SecurityPasswordRuleSerializer,
-    SecurityLoginLimitSerializer,
-    SecurityLoginAuthSerializer,
-    SecurityRegisterAuthSerializer,
-    SecurityResetPasswordAuthSerializer,
     SecurityBindEmailAuthSerializer,
     SecurityBindPhoneAuthSerializer,
-    SecurityVerifyCodeSerializer,
     SecurityCaptchaCodeSerializer,
+    SecurityLoginAuthSerializer,
+    SecurityLoginLimitSerializer,
     SecurityMFASerializer,
     SecurityMonitorSerializer,
+    SecurityPasswordRuleSerializer,
+    SecurityRegisterAuthSerializer,
+    SecurityResetPasswordAuthSerializer,
+    SecurityVerifyCodeSerializer,
 )
 from settings.views.settings import BaseSettingViewSet
 

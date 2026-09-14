@@ -7,14 +7,14 @@
 
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
-from drf_spectacular.plumbing import build_object_type, build_array_type, build_basic_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, UploadFileAction, ImportExportDataAction, RecycleBinAction
+from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBinAction, UploadFileAction
 from common.core.permission import IsAuthenticated
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -26,7 +26,7 @@ from mfa.const import ConfirmType
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
 from system.models import UserInfo
-from system.serializers.user import UserSerializer, ResetPasswordSerializer
+from system.serializers.user import ResetPasswordSerializer, UserSerializer
 from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 
 logger = get_logger(__name__)

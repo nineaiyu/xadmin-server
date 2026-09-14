@@ -4,7 +4,7 @@
 # filename : routers
 # author : ly_13
 # date : 7/31/2024
-from rest_framework.routers import SimpleRouter, Route, DynamicRoute
+from rest_framework.routers import DynamicRoute, Route, SimpleRouter
 
 
 class NoDetailRouter(SimpleRouter):

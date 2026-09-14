@@ -159,7 +159,6 @@ class TestPeriodicTaskRegistered:
     def test_task_in_registry(self):
         """周期任务经 system.tasks 锚点被 autodiscover 发现（启动时 upsert 到 beat）。"""
         import system.tasks  # noqa: F401  触发子包任务注册
-
         from common.celery.decorator import get_register_period_tasks
 
         names = [next(iter(item)) for item in get_register_period_tasks()]

@@ -7,14 +7,14 @@
 """
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
-from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
 from rest_framework.viewsets import GenericViewSet
@@ -23,8 +23,8 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
     CreateAction,
-    DetailAction,
     DestroyAction,
+    DetailAction,
     ListAction,
     SearchColumnsAction,
     SearchFieldsAction,
@@ -46,8 +46,8 @@ from system.utils.ai import (
     is_enabled,
     profile_credentials,
     remove_chunks,
-    set_document_active,
     set_active_profile,
+    set_document_active,
     sync_knowledge,
     upsert_upload_document,
 )
@@ -119,6 +119,7 @@ class AiAssistantViewSet(GenericViewSet):
     @action(methods=["post"], detail=False, url_path="nl-query/interpret")
     def nl_interpret(self, request, *args, **kwargs):
         """NL → 数据集 DSL（白名单校验）+ 试算预览计数（数据权限随调用者）。"""
+        from common.sdk.ai.chat import AiSdkError
         from system.utils.ai import is_enabled as ai_enabled_check
         from system.utils.nl_query import (
             audit_nl_query,
@@ -127,7 +128,6 @@ class AiAssistantViewSet(GenericViewSet):
             validate_dsl,
             visible_datasets,
         )
-        from common.sdk.ai.chat import AiSdkError
 
         question = str(request.data.get("question") or "").strip()
         if not question:

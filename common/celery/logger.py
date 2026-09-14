@@ -2,9 +2,9 @@ from logging import StreamHandler
 from threading import get_ident
 
 from celery import current_task
-from celery.signals import task_prerun, task_postrun
+from celery.signals import task_postrun, task_prerun
 
-from common.celery.utils import get_celery_task_log_path, CELERY_LOG_MAGIC_MARK
+from common.celery.utils import CELERY_LOG_MAGIC_MARK, get_celery_task_log_path
 
 
 class CeleryTaskLoggerHandler(StreamHandler):

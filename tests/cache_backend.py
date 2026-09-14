@@ -20,7 +20,6 @@ import threading
 import fakeredis
 from django.core.cache.backends.locmem import LocMemCache
 
-
 # 进程内共享的 fakeredis server：FakeStrictRedis 不传 server 时每个连接各建独立
 # server，跨线程/跨连接数据不互通，分布式锁等并发语义无法覆盖；显式共享一个 server
 # （pytest-xdist 下每进程独立，互不污染）

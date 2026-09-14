@@ -208,7 +208,8 @@ class TestUrlsMerge:
         )
         _generate(workspace)
         text = (app_dir / "urls.py").read_text(encoding="utf-8")
-        assert "from demo.views import BookViewSet" in text
+        # 同模块 from-import 合并为一行且按字母序（ruff isort 口径，独立成行会 I001）
+        assert "from demo.views import BookViewSet, ExistingViewSet" in text
         assert text.index('router.register("book"') < text.index("urlpatterns = []")
         assert 'router.register("existing"' in text
         _assert_python_compiles(backend)

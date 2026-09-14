@@ -8,8 +8,8 @@
 """
 
 import pytest
-from django.utils.translation import gettext
 from django.core.cache import cache
+from django.utils.translation import gettext
 
 from common.sdk.im.base import ImSdkError
 from common.sdk.im.dingtalk import DingTalkClient

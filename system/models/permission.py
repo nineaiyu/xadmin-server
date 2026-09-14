@@ -9,7 +9,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from common.core.models import DbAuditModel, DbUuidModel, DbCharModel
+from common.core.models import DbAuditModel, DbCharModel, DbUuidModel
 from system.models import ModeTypeAbstract
 
 

@@ -20,8 +20,8 @@ from system.models.webhook import WebhookDelivery, WebhookSubscription
 from system.utils.webhook import (
     EVENT_CATALOG,
     decrypt_secret,
-    encrypt_secret,
     emit_webhook_event,
+    encrypt_secret,
     sign_payload,
     validate_url,
 )

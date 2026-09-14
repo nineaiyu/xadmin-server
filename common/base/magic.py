@@ -7,7 +7,7 @@
 
 
 import time
-from functools import wraps, WRAPPER_ASSIGNMENTS
+from functools import WRAPPER_ASSIGNMENTS, wraps
 from importlib import import_module
 
 from django.conf import settings

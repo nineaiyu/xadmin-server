@@ -7,8 +7,8 @@
 import datetime
 
 import pytest
-from rest_framework.test import APIClient
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from system.models import Menu, UserInfo
 from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask

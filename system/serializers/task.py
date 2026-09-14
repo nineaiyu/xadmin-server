@@ -15,7 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework import serializers
 
-from common.core.serializers import BasePrimaryKeyRelatedField, BaseModelSerializer
+from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system.models.task import TaskExecution
 from system.serializers.fields import DictChoiceField
 

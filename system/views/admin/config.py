@@ -15,8 +15,8 @@ from common.utils import get_logger
 from system.models import SystemConfig, UserPersonalConfig
 from system.serializers.config import (
     SystemConfigSerializer,
-    UserPersonalConfigSerializer,
     UserPersonalConfigExportImportSerializer,
+    UserPersonalConfigSerializer,
 )
 from system.utils.modelset import InvalidConfigCacheAction
 

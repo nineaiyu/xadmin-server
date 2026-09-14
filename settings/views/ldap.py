@@ -13,7 +13,7 @@ from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.ldap import LdapSettingSerializer
 from settings.views.settings import BaseSettingViewSet
-from system.ldap.client import LDAPException, LdapConfigError
+from system.ldap.client import LdapConfigError, LDAPException
 
 logger = get_logger(__name__)
 

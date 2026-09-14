@@ -18,16 +18,16 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRequest, OpenApiResponse
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from rest_framework.decorators import action
 
 from common.core.import_mapping import first_column_candidates, writable_field_options
 from common.core.modelset.crud import CreateAction, ListAction, UpdateAction
 from common.core.response import ApiResponse
 from common.core.utils import has_self_fields, topological_sort
-from common.swagger.utils import get_default_response_schema
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
+from common.swagger.utils import get_default_response_schema
 from common.tasks import background_task_view_set_job
 from common.utils import get_logger
 
@@ -46,6 +46,7 @@ CELERY_IMPORT_SINGLE_BATCH = 99999999
 def has_active_celery_worker():
     """探测是否存在活跃 Celery worker（结果短缓存，避免请求线程内反复广播阻塞）。"""
     from django.core.cache import cache
+
     from server.celery import app
 
     cached = cache.get(CELERY_WORKER_PROBE_CACHE_KEY)

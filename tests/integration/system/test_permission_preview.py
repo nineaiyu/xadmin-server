@@ -16,7 +16,7 @@ import json
 import pytest
 
 from demo.models import Book
-from system.models import DataPermission, FieldPermission, ModeTypeAbstract, ModelLabelField
+from system.models import DataPermission, FieldPermission, ModelLabelField, ModeTypeAbstract
 
 pytestmark = pytest.mark.django_db
 
@@ -405,7 +405,6 @@ def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
 def test_menu_scoped_grant_flagged_not_general_effective(normal_user, menu_factory):
     """绑定菜单的授权仅在对应菜单上下文生效：标 menu_scoped，不计入通用 has_any_grant。"""
     from system.models import Menu
-
     from system.utils.permission_preview import get_user_data_permissions
 
     dp = make_owner_book_permission("绑定菜单规则")

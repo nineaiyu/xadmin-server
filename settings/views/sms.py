@@ -8,7 +8,7 @@ import importlib
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_array_type, build_object_type, build_basic_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status

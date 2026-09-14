@@ -1,6 +1,6 @@
 import ipaddress
 import socket
-from ipaddress import ip_network, ip_address
+from ipaddress import ip_address, ip_network
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _

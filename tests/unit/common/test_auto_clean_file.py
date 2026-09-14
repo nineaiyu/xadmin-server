@@ -14,7 +14,7 @@ from django.test.utils import CaptureQueriesContext
 
 from common.core.models import AutoCleanFileMixin
 from demo.models import Book
-from system.models import UserInfo, UploadFile
+from system.models import UploadFile, UserInfo
 
 pytestmark = pytest.mark.django_db
 
@@ -66,8 +66,9 @@ class TestOwnFileCleanup:
     def test_soft_delete_keeps_file_hard_delete_removes(self, superuser):
         """UploadFile.delete() 为软删除（文件保留、行进回收站）；
         hard_delete() 才清理底层文件。"""
-        from django.conf import settings
         import os
+
+        from django.conf import settings
 
         f = UploadFile(filename="a.png", filesize=1, mime_type="image/png", md5sum="b" * 32)
         f.filepath.save("own.png", ContentFile(PNG_BYTES), save=True)

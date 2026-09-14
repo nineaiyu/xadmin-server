@@ -16,7 +16,6 @@ eager celery），但差异点：
 import os
 
 from server.conf import ConfigManager
-
 from tests import settings_test as _base
 
 # 说明：对 _test_config 的注入必须发生在 server.settings 导入之前才生效，

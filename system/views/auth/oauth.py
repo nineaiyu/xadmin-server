@@ -27,7 +27,6 @@ from system.models.log import UserLoginLog
 from system.models.oauth import UserOAuthBinding
 from system.serializers.oauth import OAuthBindingSerializer
 from system.utils.auth import get_token_lifetime
-from system.utils.session import bind_session_claim
 from system.utils.oauth import (
     OAuthError,
     build_authorize_url,
@@ -43,6 +42,7 @@ from system.utils.oauth import (
     mask_providers,
     resolve_subject,
 )
+from system.utils.session import bind_session_claim
 from system.views.auth.login import _register_session_safe, complete_login
 
 logger = get_logger(__name__)

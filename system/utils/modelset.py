@@ -6,16 +6,16 @@
 # date : 12/24/2023
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
-from drf_spectacular.plumbing import build_object_type, build_basic_type, build_array_type
+from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiRequest
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.config import SysConfig, UserConfig
 from common.core.filter import get_filter_queryset
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import UserRole, DataPermission, SystemConfig
+from system.models import DataPermission, SystemConfig, UserRole
 from system.utils.permission_preview import (
     get_dept_preview,
     get_role_preview,
