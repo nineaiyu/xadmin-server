@@ -111,6 +111,11 @@ docker compose up -d
 
 - 密码策略：compose 对 postgres 提供与 `config.yml` 对齐的默认密码兜底（`${DB_PASSWORD:-KGzKjZpWBp4R4RSa}`），本地开发开箱即用；
   **生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值（`config.yml` 中同步修改），否则使用默认密码等于裸奔。
+- HTTPS 部署（可选，默认关闭 = HTTP 直连部署零影响）：TLS 终止于反向代理/网关后，在 `config.yml`
+  设 `SECURITY_HTTPS_ENABLED: true`，即下发 HSTS 一年（含子域/preload）与 Secure Cookie；
+  若还需 Django 侧执行 HTTP→HTTPS 跳转，再开 `SECURITY_HTTPS_REDIRECT_ENABLED: true`
+  ——**要求代理正确传递 `X-Forwarded-Proto: https`**，纯 TCP stream 代理（内置 nginx 默认形态）
+  下开启会造成重定向循环，保持关闭、由网关侧做跳转。
 - 服务拓扑（另含 `db-backup` 定时备份服务，见 §3.1）：
 
 | 服务                 | 说明                     | 健康检查                               |

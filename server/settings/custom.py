@@ -14,6 +14,12 @@ PERMISSION_WHITE_URL = {
     "^/api/system/userinfo$": ["GET"],
     "^/api/system/routes$": ["*"],
     "^/api/system/dashboard/": ["*"],
+    # 结构元数据枚举（S7 口径文档化）：choices / search-fields / dict.items 对所有
+    # 已登录用户开放，不要求菜单权限——前端表单枚举、通用搜索、引用字段渲染在任意页面
+    # 都可能跨菜单消费这些元数据，按菜单收紧会直接破坏渲染。
+    # 数据边界：仅返回「字段名 / 枚举 label / 字典项」等结构元数据，不含业务记录行；
+    # 如将来需收紧：按 app 白名单放行，或要求对应模型 list 权限（前端需为
+    # useDict / search-fields 请求补齐菜单上下文后同步改造，属独立改造项）。
     "^/api/.*choices$": ["*"],
     "^/api/.*search-fields$": ["*"],
     "^/api/system/dict/items$": ["GET"],  # 数据字典消费端（前端 useDict 下拉），同 choices 口径

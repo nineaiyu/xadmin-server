@@ -49,6 +49,24 @@ USE_X_FORWARDED_HOST = True
 # DEBUG 模式默认放行所有 Host；生产环境必须通过 config.yml 配置域名白名单
 ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS or (["*"] if DEBUG else [])
 
+# 反向代理信任清单（防 XFF 伪造，语义见 conf.py）：默认空 = 不信任任何 X-Forwarded-For
+TRUSTED_PROXY_IPS = CONFIG.TRUSTED_PROXY_IPS
+
+# ---------------------------------------------------------------------------
+# HTTPS 部署安全头（S3，语义见 conf.py；默认关闭 = HTTP 直连部署零影响）
+# 开启 SECURITY_HTTPS_ENABLED 后：HSTS 一年（含子域/preload）+ Secure Cookie。
+# 其余安全头（X-Content-Type-Options 等）Django 已默认下发，无需随开关变化。
+# HTTP→HTTPS 跳转是独立开关：需要代理层正确传递 X-Forwarded-Proto，
+# 纯 TCP stream 代理下开启会造成重定向循环（保持关闭，由网关侧做跳转）。
+# ---------------------------------------------------------------------------
+SECURITY_HTTPS_ENABLED = CONFIG.SECURITY_HTTPS_ENABLED
+SECURE_HSTS_SECONDS = 31536000 if SECURITY_HTTPS_ENABLED else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURITY_HTTPS_ENABLED
+SECURE_HSTS_PRELOAD = SECURITY_HTTPS_ENABLED
+SESSION_COOKIE_SECURE = SECURITY_HTTPS_ENABLED
+CSRF_COOKIE_SECURE = SECURITY_HTTPS_ENABLED
+SECURE_SSL_REDIRECT = CONFIG.SECURITY_HTTPS_REDIRECT_ENABLED
+
 # Application definition
 XADMIN_APPS = CONFIG.XADMIN_APPS
 
