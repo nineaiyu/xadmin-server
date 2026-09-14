@@ -27,6 +27,8 @@ class DynamicFormSerializer(BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
+        # RePlusPage 列表列：schema 列由前端渲染「字段数」（不直接展示 JSON）
+        table_fields = ["name", "schema", "is_active", "approval_required", "description", "updated_time"]
 
     def validate_schema(self, value):
         validate_schema(value if isinstance(value, dict) else {})

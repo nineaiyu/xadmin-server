@@ -25,6 +25,8 @@ class ScreenSerializer(BaseModelSerializer):
         model = Screen
         fields = ["pk", "name", "dashboards", "interval", "refresh", "visibility", "created_time", "updated_time"]
         read_only_fields = ["pk", "created_time", "updated_time"]
+        # RePlusPage 列表列
+        table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "updated_time"]
 
     def validate_dashboards(self, value):
         if not isinstance(value, list):
@@ -73,6 +75,8 @@ class ReportSerializer(BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["pk", "last_run_at", "last_status", "created_time", "updated_time"]
+        # RePlusPage 列表列：聚合细则（group_by/metric/date_trunc/value_field）不进列表
+        table_fields = ["name", "dataset", "frequency", "send_time", "recipients", "last_status", "updated_time"]
 
     def validate_dataset(self, value):
         if Dataset.objects.filter(pk=value.pk).exists():

@@ -10,15 +10,25 @@
 """
 
 from django.utils.translation import gettext_lazy as _
+from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from system.models.dform import DynamicForm, DynamicFormSubmission
 from system.serializers.dform import DynamicFormSerializer, DynamicFormSubmissionSerializer
 
 _EDIT_DENY = _("Only the creator can modify a submission")
+
+
+class DynamicFormFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = DynamicForm
+        fields = ["is_active", "approval_required"]
 
 
 class DynamicFormViewSet(BaseModelSet):
@@ -28,6 +38,7 @@ class DynamicFormViewSet(BaseModelSet):
     serializer_class = DynamicFormSerializer
     ordering = ["-created_time"]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = DynamicFormFilter
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, modifier=self.request.user)

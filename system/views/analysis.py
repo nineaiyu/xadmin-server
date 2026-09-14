@@ -11,11 +11,13 @@
 """
 
 from django.db.models import Q
+from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -71,11 +73,28 @@ class BaseAnalysisViewSet(BaseModelSet):
         return super().destroy(request, *args, **kwargs)
 
 
+class ScreenFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = Screen
+        fields = ["visibility"]
+
+
+class ReportFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = Report
+        fields = ["dataset", "frequency", "is_active"]
+
+
 class ScreenViewSet(BaseAnalysisViewSet):
     """大屏模板"""
 
     queryset = Screen.objects.all()
     serializer_class = ScreenSerializer
+    filterset_class = ScreenFilter
 
 
 class ReportViewSet(BaseAnalysisViewSet):
@@ -83,6 +102,7 @@ class ReportViewSet(BaseAnalysisViewSet):
 
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
+    filterset_class = ReportFilter
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="run")

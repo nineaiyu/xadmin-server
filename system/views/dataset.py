@@ -13,12 +13,14 @@
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -30,12 +32,21 @@ from system.utils.dataset import aggregate_dataset, available_fields, available_
 logger = get_logger(__name__)
 
 
+class DatasetFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = Dataset
+        fields = ["bound_model", "visibility"]
+
+
 class DatasetViewSet(BaseModelSet):
     """数据集"""
 
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
     ordering = ["-created_time"]
+    filterset_class = DatasetFilter
     # 定义类资源不做行级数据权限过滤（可见性语义 = 创建者/共享，见 get_queryset）；
     # 数据权限作用于数据集执行的**业务数据**，而非数据集定义本身
     filter_backends = [DjangoFilterBackend, OrderingFilter]

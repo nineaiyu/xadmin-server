@@ -34,6 +34,8 @@ class DatasetSerializer(BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
+        # RePlusPage 列表列：列/filters/ordering/config 等定义细节不进列表
+        table_fields = ["name", "bound_model", "visibility", "description", "updated_time"]
 
     def validate(self, attrs):
         """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。"""
