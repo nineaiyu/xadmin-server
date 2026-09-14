@@ -22,11 +22,6 @@ logger = get_logger(__name__)
 
 # `/kb` 前缀命令：走知识库 RAG；否则通用多轮对话
 KB_COMMAND = "/kb"
-# 内置助手人设（一期写死默认值，配置化留后续）
-DEFAULT_PERSONA = (
-    "You are the xadmin in-app assistant. Answer concisely and accurately in the user's language. "
-    "If you are unsure, say so instead of making things up."
-)
 
 
 def is_enabled() -> bool:
@@ -46,11 +41,16 @@ def strip_kb_command(content: str) -> str:
     return (content or "").strip()[len(KB_COMMAND) :].strip()
 
 
-def history_messages(room: ChatRoom, limit: int = chat_service.AI_CONTEXT_LIMIT, drop_last_user: bool = False) -> list:
+def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list:
     """取会话最近 N 条消息（时间正序）：用户消息 → user，AI 回复 → assistant，系统消息跳过。
 
+    limit 缺省读配置（档案/Setting 的 AI_CONTEXT_LIMIT）；
     drop_last_user：本轮提问已先落库，裁剪上下文时去掉末条 user 消息，避免重复一轮。
     """
+    if limit is None:
+        from system.utils.ai import ai_context_limit
+
+        limit = ai_context_limit()
     rows = list(ChatMessage.objects.filter(room=room).order_by("-id")[: limit * 2])
     rows.reverse()
     messages = []
@@ -66,8 +66,10 @@ def history_messages(room: ChatRoom, limit: int = chat_service.AI_CONTEXT_LIMIT,
 
 def build_chat_messages(room: ChatRoom, question: str) -> list:
     """通用多轮上下文：人设 + 历史（不含本轮提问）+ 本轮提问。"""
+    from system.utils.ai import ai_persona
+
     return (
-        [{"role": "system", "content": DEFAULT_PERSONA}]
+        [{"role": "system", "content": ai_persona()}]
         + history_messages(room, drop_last_user=True)
         + [{"role": "user", "content": question}]
     )

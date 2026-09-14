@@ -38,8 +38,6 @@ MENTION_PATTERN = re.compile(r"@([\w.\-]+)")
 # 会话列表 / 联系人默认条数
 ROOM_LIST_LIMIT = 100
 CONTACT_LIMIT = 100
-# AI 多轮上下文条数
-AI_CONTEXT_LIMIT = 20
 
 
 def _user_pk(obj):
