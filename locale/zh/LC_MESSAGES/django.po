@@ -5742,3 +5742,83 @@ msgstr "目标用户"
 #: message app (ADR-034 chat room, generated)
 msgid "Type /kb followed by a question to ask the knowledge base"
 msgstr "输入 /kb 加问题可向知识库提问"
+#: system app (AI profiles, generated)
+msgid "AI profile"
+msgstr "AI 配置档案"
+
+#: system app (AI profiles, generated)
+msgid "AI profiles"
+msgstr "AI 配置档案"
+
+#: system app (AI profiles, generated)
+msgid "Profile name"
+msgstr "档案名称"
+
+#: system app (AI profiles, generated)
+msgid "API Key set"
+msgstr "已设置密钥"
+
+#: system app (AI profiles, generated)
+msgid "Temperature"
+msgstr "温度"
+
+#: system app (AI profiles, generated)
+msgid "Max tokens"
+msgstr "最大输出 tokens"
+
+#: system app (AI profiles, generated)
+msgid "Top P"
+msgstr "Top P"
+
+#: system app (AI profiles, generated)
+msgid "Frequency penalty"
+msgstr "频率惩罚"
+
+#: system app (AI profiles, generated)
+msgid "Presence penalty"
+msgstr "存在惩罚"
+
+#: system app (AI profiles, generated)
+msgid "Stop sequences"
+msgstr "停止序列"
+
+#: system app (AI profiles, generated)
+msgid "Seed"
+msgstr "随机种子"
+
+#: system app (AI profiles, generated)
+msgid "Max retries"
+msgstr "最大重试次数"
+
+#: system app (AI profiles, generated)
+msgid "Context messages"
+msgstr "聊天上下文条数"
+
+#: system app (AI profiles, generated)
+msgid "Persona"
+msgstr "助手人设"
+
+#: system app (AI profiles, generated)
+msgid "Remark"
+msgstr "备注"
+
+#: system app (AI profiles, generated)
+msgid "Profile name is required"
+msgstr "请填写档案名称"
+
+#: system app (AI profiles, generated)
+msgid "Base URL must start with http:// or https://"
+msgstr "接口地址必须以 http:// 或 https:// 开头"
+
+#: system app (AI profiles, generated)
+msgid "Fill in base URL, API key and model before testing"
+msgstr "测试前请先填写接口地址、API 密钥与模型"
+
+#: system app (AI profiles, generated)
+msgid "Profile activated"
+msgstr "档案已激活，AI 全链路将使用该配置"
+
+#: system app (AI profiles, generated)
+msgid "Profile deactivated"
+msgstr "档案已停用，AI 将回落到历史配置"
+

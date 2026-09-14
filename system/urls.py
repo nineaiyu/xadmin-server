@@ -11,7 +11,7 @@ from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
-from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet
+from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet, AiProfileViewSet
 from system.views.analysis import ReportViewSet, ScreenViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from system.views.search.global_search import GlobalSearchAPIView
@@ -170,6 +170,8 @@ no_detail_router.register("ai/assistant/config", AiAssistantSettingViewSet, base
 no_detail_router.register("ai/assistant", AiAssistantViewSet, basename="ai-assistant")
 # AI 知识库文档管理：上传/预览/启停/删除 + 仓库文档重建
 router.register("ai/knowledge-documents", AiKnowledgeDocumentViewSet, basename="ai-knowledge-document")
+# AI 配置档案：多套凭据/采样参数，激活唯一（无激活档案回落 Setting 通路）
+router.register("ai/profiles", AiProfileViewSet, basename="ai-profile")
 router.register("config/user", UserPersonalConfigViewSet, basename="userconfig")
 
 # 日志相关

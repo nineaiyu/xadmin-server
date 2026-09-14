@@ -32,6 +32,11 @@ CHUNK_WINDOW = 1200  # 长块滑动窗口字符数
 TOP_K = 5
 SCORE_THRESHOLD = 2
 MAX_QUESTION_LENGTH = 500
+# 聊天室助手内置人设（档案/Setting 未配置人设时的兜底）
+BUILTIN_PERSONA = (
+    "You are the xadmin in-app assistant. Answer concisely and accurately in the user's language. "
+    "If you are unsure, say so instead of making things up."
+)
 # 上传文档：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
 MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
@@ -245,7 +250,71 @@ def retrieve(question: str, top_k: int = TOP_K) -> list:
     return [{"chunk": chunk, "score": round(score, 4)} for score, chunk in scored[:top_k]]
 
 
+def active_profile():
+    """当前激活的 AI 配置档案（至多一个；无则 None → 回落 Setting 通路）。"""
+    from system.models.ai import AiProfile
+
+    return AiProfile.objects.filter(is_active=True).first()
+
+
+def set_active_profile(profile, active: bool = True) -> None:
+    """激活/停用档案：激活时事务内清掉其余激活行（部分唯一索引兜底）。"""
+    from django.db import transaction
+
+    from system.models.ai import AiProfile
+
+    with transaction.atomic():
+        if active:
+            AiProfile.objects.exclude(pk=profile.pk).filter(is_active=True).update(is_active=False)
+        if profile.is_active != active:
+            profile.is_active = active
+            profile.save(update_fields=["is_active", "updated_time"])
+
+
+def profile_credentials(profile) -> dict:
+    """档案行 → SDK credentials dict（api_key 解密；stop 逗号分隔转列表）。"""
+    return {
+        "base_url": profile.base_url,
+        "api_key": profile.api_key_plain,
+        "model": profile.model,
+        "timeout": profile.timeout,
+        "max_retries": profile.max_retries,
+        "temperature": profile.temperature,
+        "max_tokens": profile.max_tokens,
+        "top_p": profile.top_p,
+        "frequency_penalty": profile.frequency_penalty,
+        "presence_penalty": profile.presence_penalty,
+        "seed": profile.seed,
+        "stop": profile.stop_list,
+        "context_limit": profile.context_limit,
+        "persona": (profile.persona or "").strip(),
+    }
+
+
+def _setting_credentials() -> dict:
+    """Setting 回落通路（无激活档案时）：新参数键 getattr 兜底（测试/旧库无该键不炸）。"""
+    return {
+        "base_url": settings.AI_BASE_URL,
+        "api_key": settings.AI_API_KEY,
+        "model": settings.AI_MODEL,
+        "timeout": settings.AI_TIMEOUT,
+        "max_retries": getattr(settings, "AI_MAX_RETRIES", 0) or 0,
+        "temperature": getattr(settings, "AI_TEMPERATURE", None),
+        "max_tokens": getattr(settings, "AI_MAX_TOKENS", 0) or None,
+        "top_p": getattr(settings, "AI_TOP_P", None),
+        "frequency_penalty": getattr(settings, "AI_FREQUENCY_PENALTY", None),
+        "presence_penalty": getattr(settings, "AI_PRESENCE_PENALTY", None),
+        "seed": getattr(settings, "AI_SEED", None),
+        "stop": getattr(settings, "AI_STOP", "") or "",
+        "context_limit": getattr(settings, "AI_CONTEXT_LIMIT", 20) or 20,
+        "persona": (getattr(settings, "AI_PERSONA", "") or "").strip(),
+    }
+
+
 def is_configured() -> bool:
+    profile = active_profile()
+    if profile is not None:
+        return profile.is_configured
     return bool(settings.AI_BASE_URL and settings.AI_API_KEY and settings.AI_MODEL)
 
 
@@ -254,12 +323,27 @@ def is_enabled() -> bool:
 
 
 def ai_credentials() -> dict:
-    return {
-        "base_url": settings.AI_BASE_URL,
-        "api_key": settings.AI_API_KEY,
-        "model": settings.AI_MODEL,
-        "timeout": settings.AI_TIMEOUT,
-    }
+    """SDK 凭据 + 采样参数全集：激活档案优先，无档案回落 Setting 通路。"""
+    profile = active_profile()
+    if profile is not None:
+        return profile_credentials(profile)
+    return _setting_credentials()
+
+
+def ai_context_limit() -> int:
+    """聊天室多轮上下文条数：档案 → Setting → 内置默认 20。"""
+    profile = active_profile()
+    if profile is not None and profile.context_limit:
+        return profile.context_limit
+    return getattr(settings, "AI_CONTEXT_LIMIT", 20) or 20
+
+
+def ai_persona() -> str:
+    """聊天室助手人设：档案 → Setting → 内置默认。"""
+    profile = active_profile()
+    if profile is not None and (profile.persona or "").strip():
+        return profile.persona.strip()
+    return (getattr(settings, "AI_PERSONA", "") or "").strip() or BUILTIN_PERSONA
 
 
 def ask(question: str) -> dict:

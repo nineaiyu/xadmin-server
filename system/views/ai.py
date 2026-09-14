@@ -36,16 +36,18 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from settings.serializers.ai import AiAssistantSettingSerializer
 from settings.views.settings import BaseSettingViewSet
-from system.models.ai import AiKnowledgeChunk, AiKnowledgeDocument
+from system.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from system.models.dataset import Dataset
-from system.serializers.ai import AiKnowledgeDocumentSerializer, KnowledgeUploadSerializer
+from system.serializers.ai import AiKnowledgeDocumentSerializer, AiProfileSerializer, KnowledgeUploadSerializer
 from system.utils.ai import (
     ai_credentials,
     ask,
     is_configured,
     is_enabled,
+    profile_credentials,
     remove_chunks,
     set_document_active,
+    set_active_profile,
     sync_knowledge,
     upsert_upload_document,
 )
@@ -341,3 +343,92 @@ class AiKnowledgeDocumentViewSet(
         """重新扫描仓库文档（docs/）并返回同步摘要（上传文档不受影响）。"""
         summary = sync_knowledge()
         return ApiResponse(data=summary, detail=_("Repository documents synced"))
+
+
+class AiProfileFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+    model = filters.CharFilter(field_name="model", lookup_expr="icontains")
+
+    class Meta:
+        model = AiProfile
+        fields = ["name", "model", "is_active", "creator", "created_time"]
+
+
+class AiProfileViewSet(
+    BaseViewSet,
+    CreateAction,
+    DestroyAction,
+    UpdateAction,
+    ListAction,
+    DetailAction,
+    SearchFieldsAction,
+    SearchColumnsAction,
+    GenericViewSet,
+):
+    """AI 配置档案：多套凭据 + 采样/行为参数，至多一个激活。
+
+    - 激活（activate）后供全部 AI 链路使用；删除激活行 / 停用（deactivate）
+      后回落 Setting 体系历史配置（category=ai）；
+    - api_key 明文只进不出（加密落库，回显 api_key_set 布尔）；
+    - test：按档案当前持久化值真实 ping 一次 LLM。
+    """
+
+    queryset = AiProfile.objects.all()
+    serializer_class = AiProfileSerializer
+    filterset_class = AiProfileFilter
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ["-is_active", "name"]
+    ordering_fields = ["name", "is_active", "updated_time", "created_time"]
+    select_related_fields = ("creator",)
+
+    def perform_create(self, serializer):
+        # 先清激活行再插入：部分唯一索引（uniq_ai_profile_active）下
+        # 「带 is_active=true 直接新建」才不会在插入瞬间撞约束
+        from django.db import transaction
+
+        with transaction.atomic():
+            if serializer.validated_data.get("is_active"):
+                AiProfile.objects.filter(is_active=True).update(is_active=False)
+            instance = serializer.save()
+            if instance.is_active:
+                set_active_profile(instance, True)
+
+    def perform_update(self, serializer):
+        from django.db import transaction
+
+        with transaction.atomic():
+            if serializer.validated_data.get("is_active"):
+                AiProfile.objects.exclude(pk=serializer.instance.pk).filter(is_active=True).update(is_active=False)
+            instance = serializer.save()
+            if instance.is_active:
+                set_active_profile(instance, True)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True, url_path="activate")
+    def activate(self, request, *args, **kwargs):
+        """激活档案（事务内清掉其余激活行，全局至多一个激活档案）。"""
+        set_active_profile(self.get_object(), True)
+        return ApiResponse(detail=_("Profile activated"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True, url_path="deactivate")
+    def deactivate(self, request, *args, **kwargs):
+        """停用档案：AI 全链路回落 Setting 体系历史配置。"""
+        set_active_profile(self.get_object(), False)
+        return ApiResponse(detail=_("Profile deactivated"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True, url_path="test")
+    def test(self, request, *args, **kwargs):
+        """按档案持久化值真实 ping 一次 LLM（api_key 用已存密钥）。"""
+        profile = self.get_object()
+        if not profile.is_configured:
+            return ApiResponse(code=1001, detail=_("Fill in base URL, API key and model before testing"))
+        try:
+            reply = ChatCompletionsClient(profile_credentials(profile)).chat([{"role": "user", "content": "ping"}])
+        except AiSdkError as exc:
+            return ApiResponse(code=1002, detail=str(exc))
+        except Exception as exc:  # noqa: BLE001 测试入口兜底
+            logger.warning("AI profile test unexpected error", exc_info=True)
+            return ApiResponse(code=1002, detail=str(exc))
+        return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))

@@ -10,13 +10,94 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
-from system.models.ai import AiKnowledgeChunk, AiKnowledgeDocument
+from system.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from system.serializers.task import DisplayRelatedField
 from system.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
 NAME_FORBIDDEN_CHARS = ("/", "\\")
+
+
+def _encrypt_api_key(value: str) -> str:
+    value = (value or "").strip()
+    return signer.encrypt(value.encode("utf-8")).decode("utf-8") if value else ""
+
+
+class AiProfileSerializer(BaseModelSerializer):
+    """AI 配置档案：api_key 明文进 → 加密存；回显只给 api_key_set 布尔，永不回传密钥。"""
+
+    creator = DisplayRelatedField(
+        read_only=True, allow_null=True, label=_("Creator"), label_builder=lambda v: v.username
+    )
+    api_key = serializers.CharField(
+        required=False, allow_blank=True, write_only=True, max_length=512, label=_("API Key")
+    )
+    api_key_set = serializers.SerializerMethodField(label=_("API Key set"))
+    # 显式声明绕开 DRF 3.16 对单字段 UniqueConstraint 自动生成的 UniqueValidator：
+    # 激活互斥由 service 层 set_active_profile「自动顶掉旧档案」保证，不是报错语义
+    is_active = serializers.BooleanField(required=False, default=False, label=_("Is active"))
+
+    class Meta:
+        model = AiProfile
+        fields = [
+            "pk",
+            "name",
+            "base_url",
+            "api_key",
+            "api_key_set",
+            "model",
+            "temperature",
+            "max_tokens",
+            "top_p",
+            "frequency_penalty",
+            "presence_penalty",
+            "stop",
+            "seed",
+            "timeout",
+            "max_retries",
+            "context_limit",
+            "persona",
+            "is_active",
+            "remark",
+            "creator",
+            "created_time",
+            "updated_time",
+        ]
+        read_only_fields = ["api_key_set"]
+        table_fields = ["name", "model", "temperature", "max_tokens", "is_active", "remark", "updated_time"]
+
+    def get_api_key_set(self, obj) -> bool:
+        return bool(obj.api_key)
+
+    def get_unique_together_validators(self):
+        # 条件唯一约束（is_active=True 部分索引）会生成 UniqueTogetherValidator 把
+        # is_active 误判必填；激活唯一性由 service 层 set_active_profile + DB 索引兜底
+        return []
+
+    def validate_name(self, value):
+        name = (value or "").strip()
+        if not name:
+            raise serializers.ValidationError(_("Profile name is required"))
+        return name
+
+    def validate_base_url(self, value):
+        url = (value or "").strip()
+        if not (url.startswith("http://") or url.startswith("https://")):
+            raise serializers.ValidationError(_("Base URL must start with http:// or https://"))
+        return url
+
+    def create(self, validated_data):
+        validated_data["api_key"] = _encrypt_api_key(validated_data.get("api_key", ""))
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        api_key = validated_data.pop("api_key", "")
+        if api_key.strip():
+            # 留空 = 沿用原密钥
+            validated_data["api_key"] = _encrypt_api_key(api_key)
+        return super().update(instance, validated_data)
 
 
 class KnowledgeUploadSerializer(serializers.Serializer):

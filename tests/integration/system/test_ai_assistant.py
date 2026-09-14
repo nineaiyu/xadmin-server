@@ -72,6 +72,8 @@ def knowledge(db):
 
 
 class _FakeResponse:
+    status_code = 200
+
     def __init__(self, payload):
         self._payload = payload
 

@@ -5192,3 +5192,83 @@ msgstr "Target user"
 #: message app (ADR-034 chat room, generated)
 msgid "Type /kb followed by a question to ask the knowledge base"
 msgstr "Type /kb followed by a question to ask the knowledge base"
+#: system app (AI profiles, generated)
+msgid "AI profile"
+msgstr "AI profile"
+
+#: system app (AI profiles, generated)
+msgid "AI profiles"
+msgstr "AI profiles"
+
+#: system app (AI profiles, generated)
+msgid "Profile name"
+msgstr "Profile name"
+
+#: system app (AI profiles, generated)
+msgid "API Key set"
+msgstr "API Key set"
+
+#: system app (AI profiles, generated)
+msgid "Temperature"
+msgstr "Temperature"
+
+#: system app (AI profiles, generated)
+msgid "Max tokens"
+msgstr "Max tokens"
+
+#: system app (AI profiles, generated)
+msgid "Top P"
+msgstr "Top P"
+
+#: system app (AI profiles, generated)
+msgid "Frequency penalty"
+msgstr "Frequency penalty"
+
+#: system app (AI profiles, generated)
+msgid "Presence penalty"
+msgstr "Presence penalty"
+
+#: system app (AI profiles, generated)
+msgid "Stop sequences"
+msgstr "Stop sequences"
+
+#: system app (AI profiles, generated)
+msgid "Seed"
+msgstr "Seed"
+
+#: system app (AI profiles, generated)
+msgid "Max retries"
+msgstr "Max retries"
+
+#: system app (AI profiles, generated)
+msgid "Context messages"
+msgstr "Context messages"
+
+#: system app (AI profiles, generated)
+msgid "Persona"
+msgstr "Persona"
+
+#: system app (AI profiles, generated)
+msgid "Remark"
+msgstr "Remark"
+
+#: system app (AI profiles, generated)
+msgid "Profile name is required"
+msgstr "Profile name is required"
+
+#: system app (AI profiles, generated)
+msgid "Base URL must start with http:// or https://"
+msgstr "Base URL must start with http:// or https://"
+
+#: system app (AI profiles, generated)
+msgid "Fill in base URL, API key and model before testing"
+msgstr "Fill in base URL, API key and model before testing"
+
+#: system app (AI profiles, generated)
+msgid "Profile activated"
+msgstr "Profile activated"
+
+#: system app (AI profiles, generated)
+msgid "Profile deactivated"
+msgstr "Profile deactivated"
+

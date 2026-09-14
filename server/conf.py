@@ -146,14 +146,27 @@ class Config(dict):
         "FEISHU_ENABLED": False,
         "FEISHU_APP_ID": "",
         "FEISHU_APP_SECRET": "",
-        # AI 助手：OpenAI 兼容协议，默认全关；API Key 值级加密落库
+        # AI 助手：OpenAI 兼容协议，默认全关；API Key 值级加密落库。
+        # 多档案（AiProfile）为主通路：激活档案供全部 AI 链路使用；
+        # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）
         "AI_ASSISTANT_ENABLED": False,
         "AI_BASE_URL": "",
         "AI_API_KEY": "",
-        "AI_MODEL": "",
+        "AI_MODEL": "gpt-4o-mini",
         "AI_TIMEOUT": 60,
         # AI 二期 NL 查数：默认关闭灰度
         "AI_NL_QUERY_ENABLED": False,
+        # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
+        "AI_TEMPERATURE": 0.2,
+        "AI_MAX_TOKENS": 0,
+        "AI_TOP_P": None,
+        "AI_FREQUENCY_PENALTY": None,
+        "AI_PRESENCE_PENALTY": None,
+        "AI_STOP": "",
+        "AI_SEED": None,
+        "AI_MAX_RETRIES": 0,
+        "AI_CONTEXT_LIMIT": 20,
+        "AI_PERSONA": "",
     }
     libs = {
         # REST_FRAMEWORK
