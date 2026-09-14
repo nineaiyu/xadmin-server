@@ -83,6 +83,35 @@ class TestApplicationManagement:
         assert _issue_token(rotated).data["code"] == 1000
 
 
+class TestScopeOptions:
+    """应用「接口范围」选项：与令牌同源（权限菜单 × 请求用户），供管理页勾选。
+
+    选项是白名单元数据（设置见 `server/settings/custom.py`）：返回的只是「当前用户可
+    授权的接口」（本人权限菜单派生，无业务数据行），查看/编辑权限点分离时勾选器仍可用。
+    """
+
+    def test_scope_options_list_authorized_apis(self, auth_client, menu_factory):
+        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        resp = auth_client.get(f"{APPS_URL}/scope-options")
+        assert resp.data["code"] == 1000
+        payload = resp.data["data"]
+        options = [option for group in payload["groups"] for option in group["options"]]
+        assert "GET ^/api/system/user/?$" in [option["value"] for option in options]
+        for option in options:
+            assert option["method"] and option["path"] and option["label"] and option["code"]
+
+    def test_scope_options_requires_login(self, api_client):
+        assert api_client.get(f"{APPS_URL}/scope-options").status_code == 401
+
+    def test_scope_options_readable_without_api_app_permission(self, normal_user):
+        """白名单口径：无 API 应用权限的登录用户也能读自己的可授权范围（空清单）。"""
+        client = APIClient()
+        client.force_authenticate(user=normal_user)
+        resp = client.get(f"{APPS_URL}/scope-options")
+        assert resp.data["code"] == 1000
+        assert resp.data["data"]["groups"] == []
+
+
 class TestClientCredentials:
     def test_issue_and_authenticate_with_application_token(self, auth_client):
         application = _create_application(auth_client)

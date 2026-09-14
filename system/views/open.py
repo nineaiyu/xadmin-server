@@ -18,6 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -27,8 +28,10 @@ from common.core.auth import hash_pat_token
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from system.models.token import ApiApplication, PersonalAccessToken
 from system.serializers.token import ApiApplicationSerializer
+from system.utils.pat_scope import scope_options_for_user
 from system.utils.webhook import decrypt_secret, encrypt_secret, sign_payload
 
 CLIENT_SECRET_PREFIX = "aps"
@@ -216,3 +219,16 @@ class ApiApplicationViewSet(BaseModelSet):
             return ApiResponse(code=1001, detail=_("No callback url configured"), data={"results": []})
         results = [send_test_callback(application, url) for url in urls]
         return ApiResponse(data={"results": results})
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="scope-options")
+    def scope_options(self, request, *args, **kwargs):
+        """应用可授权的接口范围（按菜单分组，供应用「接口范围」勾选）
+
+        口径与个人访问令牌同源（`system/utils/pat_scope.py`）：权限菜单 × 请求用户角色
+        （超管为全部启用的权限菜单）；条目是锚定正则（如 ``GET ^/api/system/user/?$``），
+        只放行勾选的那一个接口。应用凭证以 owner（creator）身份走既有认证链，管理页由
+        平台管理员维护，故选项集合取「当前用户可授权的接口」；非 owner 编辑时，超出
+        选项的历史条目在前端自动落到「自定义」区，不会丢失。
+        """
+        return ApiResponse(data=scope_options_for_user(request.user))

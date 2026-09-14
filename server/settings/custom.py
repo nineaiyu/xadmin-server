@@ -27,6 +27,10 @@ PERMISSION_WHITE_URL = {
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    # 应用接口范围选项（API 应用管理页表单枚举，同 choices/search-fields 口径）：
+    # 返回的只是「当前用户可授权的接口」元数据（用户自己权限菜单派生，无业务数据行），
+    # 且管理页的查看/编辑是两个独立权限点——按菜单收紧会让只有编辑权限的用户打不开勾选器。
+    "^/api/system/api-applications/scope-options$": ["GET"],
     # 第三方登录与绑定：登录前置（authorize/callback）必须匿名可达，绑定管理是个人凭证，
     # 两者都无需菜单权限（视图内自行要求 DRF IsAuthenticated，见 views/auth/oauth.py）
     "^/api/system/auth/oauth/": ["*"],
@@ -43,6 +47,7 @@ ROUTE_IGNORE_URL = [
     "^/api/system/dashboard/",  # 忽略dashboard路由
     "^/api/system/captcha",  # 忽略图片验证码路由
     "^/api/mfa/",  # 忽略 MFA 二次验证路由
+    "^/api/system/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
 ]
 
 # 访问权限配置

@@ -70,3 +70,24 @@ ApiApplication（应用）
   审计 auth_type=pat）、per-app 限流 429、回调测试（HMAC 头可验签）、regenerate 后旧凭证 401；
 - E2E：管理页主链路（建应用 → 复制 secret → 测试回调）；
 - 门禁：pytest / ruff / i18n po / 前端四门禁 / E2E。
+
+## 补充（2026-09-14）：接口范围可勾选（与访问令牌同款）
+
+- 背景：`scopes` 与 PAT 同语义，但管理页原是「逗号分隔手填 + 列表原样铺开锚定正则」，
+  用户既不知道写什么，也看不懂已有条目。
+- 服务端：`ApiApplicationViewSet` 新增 `GET /api/system/api-applications/scope-options`
+  （复用 `system/utils/pat_scope.py::scope_options_for_user`，按父菜单分组下发
+  method/path/label/code）；路径登记 `PERMISSION_WHITE_URL`——口径同 choices /
+  search-fields 的表单枚举元数据：返回的只是「请求用户可授权的接口」，不含业务数据行，
+  且查看/编辑是两个独立权限点，按菜单收紧会让只有编辑权限的用户打不开勾选器；
+  同时加入 `ROUTE_IGNORE_URL`（天然无需权限点，不进入权限配置的 URL 候选）。
+- 口径：应用凭证以 owner（creator）身份走既有认证链、管理页由平台管理员维护，故选项集合
+  = 当前用户可授权的接口；非 owner 编辑时超出选项的历史条目在前端自动落到「自定义」区，
+  不会丢条目。
+- 前端：`PatScopeEditor` 泛化为共享组件 `components/ApiScopeEditor`（选项加载器由调用方
+  注入：令牌走 PAT 端点、应用走本端点），令牌页与 API 应用页共用；列表列由「原样铺开」
+  改为「条数 + tooltip 可读路径」（`utils/scopeDisplay.ts` 把条目还原为
+  `METHOD /api/system/user/{pk}`，未命中目录的条目原样展示）。
+- 验证：`tests/integration/system/test_api_application.py::TestScopeOptions`
+  （分组下发 / 未登录 401 / 无应用权限的登录用户可读）；E2E `api-app.e2e.ts`
+  （勾选 → 列表显示「接口范围：1 条」）。
