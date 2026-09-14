@@ -10,6 +10,8 @@ import os
 
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
+from Cryptodome.Hash import SHA256
+from Cryptodome.Protocol.KDF import HKDF
 from django.conf import settings
 from django.forms.models import ModelChoiceIteratorValue
 
@@ -50,12 +52,73 @@ class AESCipher(object):
         return data
 
 
+class AESCipherV3(object):
+    """字段级加密 v3（S5）：HKDF 派生独立数据密钥 + AES-256-GCM，写新读旧。
+
+    动机：旧 ``AESCipher`` 以 ``sha256(SECRET_KEY)`` 直接派生、AES-CBC 无完整性校验——
+    SECRET_KEY 一处泄露即可同时伪造 JWT 并解密全部落库密钥，且密文可被篡改。
+
+    格式：``v3:`` + base64(salt[16] | nonce[12] | ct | tag[16])
+
+    - 数据密钥 = HKDF-SHA256(master=SECRET_KEY, salt=每次随机, info="xadmin-field-encryption")，
+      与 JWT 签名/前端传输加密（``AESCipherV2`` 的 PBKDF2 域）密钥隔离，互不派生；
+    - AES-256-GCM 同时提供机密性与完整性：密文篡改/错误密钥在解密时抛异常。
+
+    向后兼容：``decrypt`` 对无 ``v3:`` 前缀的旧 CBC 密文回退旧实现解析，
+    存量数据无需迁移（下次写入自动升级为 v3 格式）。
+    """
+
+    PREFIX = "v3:"
+    SALT_LENGTH = 16
+    NONCE_LENGTH = 12
+    TAG_LENGTH = 16
+    KEY_LENGTH = 32
+    HKDF_INFO = b"xadmin-field-encryption"
+
+    def __init__(self, key: str | bytes):
+        self.key = key.encode("utf-8") if isinstance(key, str) else key
+        self._legacy = AESCipher(key.decode("utf-8") if isinstance(key, bytes) else key)
+
+    def _derive_key(self, salt: bytes) -> bytes:
+        return HKDF(
+            master=self.key,
+            key_len=self.KEY_LENGTH,
+            salt=salt,
+            hashmod=SHA256,
+            context=self.HKDF_INFO,
+        )
+
+    def encrypt(self, raw: bytes | str) -> bytes:
+        if isinstance(raw, str):
+            raw = raw.encode("utf-8")
+        salt = Random.new().read(self.SALT_LENGTH)
+        nonce = Random.new().read(self.NONCE_LENGTH)
+        cipher = AES.new(self._derive_key(salt), AES.MODE_GCM, nonce=nonce)
+        ciphertext, tag = cipher.encrypt_and_digest(raw)
+        payload = base64.b64encode(salt + nonce + ciphertext + tag)
+        return self.PREFIX.encode("utf-8") + payload
+
+    def decrypt(self, enc: str | bytes) -> str:
+        text = enc.decode("utf-8", "ignore") if isinstance(enc, bytes) else enc
+        if not text.startswith(self.PREFIX):
+            # 旧格式（v1 CBC）回落：存量密文继续可读
+            return self._legacy.decrypt(enc)
+        data = base64.b64decode(text[len(self.PREFIX) :])
+        salt = data[: self.SALT_LENGTH]
+        nonce = data[self.SALT_LENGTH : self.SALT_LENGTH + self.NONCE_LENGTH]
+        body = data[self.SALT_LENGTH + self.NONCE_LENGTH :]
+        cipher = AES.new(self._derive_key(salt), AES.MODE_GCM, nonce=nonce)
+        # 认证失败（篡改/错钥）抛 ValueError，由调用方按解密失败处理
+        plain = cipher.decrypt_and_verify(body[: -self.TAG_LENGTH], body[-self.TAG_LENGTH :])
+        return plain.decode("utf-8")
+
+
 def get_signer():
-    s = AESCipher(settings.SECRET_KEY)
-    return s
+    """字段级加解密器（S5）：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。"""
+    return AESCipherV3(settings.SECRET_KEY)
 
 
-signer: AESCipher = get_signer()
+signer: AESCipherV3 = get_signer()
 
 
 class AesBaseCrypt(object):
