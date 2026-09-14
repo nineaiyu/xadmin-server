@@ -82,6 +82,14 @@ class Config(dict):
         "DB_POOL_MAX_SIZE": 8,
         # HOST 校验白名单，生产环境必须配置，如 ['xadmin.example.com']；DEBUG 模式默认放行
         "ALLOWED_HOSTS": [],
+        # 反向代理信任清单（单个 IP 或 CIDR 字符串数组）。
+        # 仅当直连地址（REMOTE_ADDR）命中清单时，才按 X-Forwarded-For 解析客户端真实 IP
+        # （从右往左取第一个非可信地址）；直连地址不在清单内 = 请求头不可信，直接用直连地址，
+        # 防止伪造 XFF 绕过登录 IP 封禁 / PAT IP 白名单 / 污染登录日志。默认空 = 完全不信任 XFF。
+        # 注意：仅当代理以 HTTP 反代方式注入 XFF（如 xadmin-web 内置 nginx 的
+        # $proxy_add_x_forwarded_for）才可配置；纯 TCP stream 代理不注入 XFF，
+        # 为其配置会引入伪造面。示例：['192.168.196.0/24']
+        "TRUSTED_PROXY_IPS": [],
         # CORS 跨域配置，同源部署（nginx 反代）无需配置；跨域部署请配置白名单
         "CORS_ALLOW_ALL_ORIGINS": False,
         "CORS_ALLOWED_ORIGINS": [],
@@ -196,6 +204,14 @@ class Config(dict):
         # AES 旧格式（Salted__）解密灰度开关：默认开启保持存量前端兼容；
         # 确认全量用户已升级至 v2 优先前端后可关闭，关闭后旧格式一律按非法输入拒绝（返回空串）
         "SECURITY_AES_V1_DECRYPT_ENABLED": True,
+        # HTTPS 部署安全头（默认关闭 = 现有 HTTP 直连部署零影响）：
+        # 开启后强制 Secure Cookie（Session/CSRF）+ HSTS（1 年，含子域/preload）+ nosniff。
+        # 仅在 TLS 终止于反向代理/网关且对外入口为 HTTPS 时开启
+        "SECURITY_HTTPS_ENABLED": False,
+        # 是否由 Django 把 HTTP 请求 301 重定向到 HTTPS。
+        # 仅当代理层（HTTP 反代）会正确传递 X-Forwarded-Proto: https 时才可开启；
+        # 纯 TCP stream 代理（内置 nginx 默认形态）下开启会造成重定向循环，保持关闭
+        "SECURITY_HTTPS_REDIRECT_ENABLED": False,
         # 用户登录限制的规则
         "SECURITY_LOGIN_LIMIT_COUNT": 7,
         "SECURITY_LOGIN_LIMIT_TIME": 30,  # Unit: minute
@@ -307,6 +323,11 @@ class Config(dict):
         "CSP_REPORT_URI": "",  # 空 = 不下发 report-uri；建议 /api/common/api/csp-report
         # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）
         "PAT_RATE_LIMIT": "60/min",
+        # 单文件上传大小上限（字节，默认 10MB）：与 DB 种子 loadjson/systemconfig.json 对齐，
+        # 裸环境（未执行 load_init_json）兜底，避免 upload 动作拿 None 比较直接 500
+        "FILE_UPLOAD_SIZE": 10 * 1024 * 1024,
+        # 图片上传大小上限（字节，默认 500KB）：同上
+        "PICTURE_UPLOAD_SIZE": 512 * 1024,
         # 个人文件存储配额（MB；0 = 不限）
         "FILE_STORAGE_QUOTA_MB": 0,
         # 个人上传文件数量上限（0 = 不限）

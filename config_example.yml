@@ -37,6 +37,20 @@ SECRET_KEY:
 # ALLOWED_HOSTS:
 #   - xadmin.example.com
 
+# 反向代理信任清单（单个 IP 或 CIDR）：仅当直连地址命中清单时才解析 X-Forwarded-For
+# 取客户端真实 IP，否则一律使用直连地址（防伪造 IP 绕过登录封禁 / PAT IP 白名单）。
+# 默认空 = 不信任任何 XFF；仅 HTTP 反代（会覆写/追加 XFF）场景才可配置，纯 TCP 代理勿配
+# TRUSTED_PROXY_IPS:
+#   - 192.168.196.0/24
+
+# HTTPS 部署安全头（默认 false = HTTP 直连部署零影响）：
+# 开启后强制 Secure Cookie（Session/CSRF）+ HSTS 一年（含子域/preload）+ nosniff，
+# 仅在 TLS 终止于反向代理/网关且对外入口为 HTTPS 时开启
+# SECURITY_HTTPS_ENABLED: false
+# 是否由 Django 执行 HTTP→HTTPS 301 跳转：仅当代理层会正确传递 X-Forwarded-Proto: https
+# 时才可开启；纯 TCP stream 代理（内置 nginx 默认形态）下开启会造成重定向循环
+# SECURITY_HTTPS_REDIRECT_ENABLED: false
+
 # CORS 跨域配置（同源部署/nginx 反代无需配置；跨域部署请配置域名白名单）
 # CORS_ALLOW_ALL_ORIGINS: false
 # CORS_ALLOWED_ORIGINS:

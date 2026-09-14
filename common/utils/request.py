@@ -5,11 +5,11 @@
 # author : ly_13
 # date : 6/27/2023
 import base64
+import ipaddress
 import json
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
 from django.utils.module_loading import import_string
 from rest_framework.throttling import BaseThrottle
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -44,21 +44,63 @@ def get_request_user(request):
     return user or AnonymousUser()
 
 
+def _normalize_ip(value):
+    """归一化单个地址：剥离空白/引号，兼容 "ipv4:port"、"[ipv6]:port" 等非标准写法。"""
+    if not value:
+        return ""
+    value = str(value).strip().strip('"')
+    if not value:
+        return ""
+    if value.startswith("["):
+        end = value.find("]")
+        return value[1:end] if end > 0 else value
+    if value.count(":") == 1 and "." in value:
+        # ipv4:port（X-Forwarded-For 中偶见），IPv6 字面量不含 "."，不会误伤
+        return value.split(":")[0].strip()
+    return value
+
+
+def _is_trusted_proxy(ip):
+    """直连地址/转发地址是否命中 TRUSTED_PROXY_IPS（单个 IP 或 CIDR）。"""
+    from django.conf import settings as dj_settings
+
+    trusted = getattr(dj_settings, "TRUSTED_PROXY_IPS", None) or []
+    if not trusted or not ip:
+        return False
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    for cidr in trusted:
+        try:
+            if address in ipaddress.ip_network(str(cidr), strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def get_request_ip(request):
     """
-    获取请求IP
-    :param request:
-    :return:
+    获取请求 IP（防伪造：X-Forwarded-For 仅在直连地址为可信代理时参与解析）。
+
+    - 直连地址（REMOTE_ADDR）不在 TRUSTED_PROXY_IPS 内：请求头完全不可信，
+      直接使用直连地址——攻击者伪造 XFF 无法影响 IP 登录封禁 / PAT IP 白名单判定；
+    - 直连地址是可信代理：从 XFF 右往左取第一个非可信地址，逐跳剥离可信代理，
+      得到最接近客户端的真实地址（内置 HTTP 反代 xadmin-api-conf 以
+      $proxy_add_x_forwarded_for 追加，真实客户端地址位于链尾方向）。
     """
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")
-    if x_forwarded_for and x_forwarded_for[0]:
-        login_ip = x_forwarded_for[0]
-        if login_ip.count(":") == 1:
-            # format: ipv4:port (非标准格式的 X-Forwarded-For)
-            return login_ip.split(":")[0]
-        return login_ip
-    ip = request.META.get("REMOTE_ADDR", "") or getattr(request, "request_ip", None)
-    return ip or "unknown"
+    remote_addr = _normalize_ip(request.META.get("REMOTE_ADDR", "")) or getattr(request, "request_ip", None)
+    remote_addr = _normalize_ip(remote_addr)
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if not x_forwarded_for or not remote_addr or not _is_trusted_proxy(remote_addr):
+        return remote_addr or "unknown"
+    for item in reversed(x_forwarded_for.split(",")):
+        ip = _normalize_ip(item)
+        if ip and not _is_trusted_proxy(ip):
+            return ip
+    # 全链均为可信代理：回退直连地址
+    return remote_addr or "unknown"
 
 
 def get_request_data(request):
