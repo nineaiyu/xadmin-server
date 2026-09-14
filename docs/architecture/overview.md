@@ -134,7 +134,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 | [ADR-003](../adr/ADR-003-websocket-protocol.md) | WebSocket 保持自定义协议，补 Schema 与类型约束            |
 | [ADR-004](../adr/ADR-004-django-60-upgrade.md)  | 停留 Django 5.2 LTS，2027-01 窗口评估 6.2 LTS      |
 
-技术债台账（TD-01~28）已全部销项：闭环记录见《[半年回顾与下期规划初稿-2027.03-08](../plans/半年回顾与下期规划初稿-2027.03-08.md)》与 [metrics.md](../metrics.md) 履历。
+技术债台账（TD-01~28）已全部销项：闭环记录见 [metrics.md](../metrics.md) 履历（原《半年回顾》规划文档已于 2026-09-14 清理，去向登记见 [plans/README.md](../plans/README.md)）。
 
 ## 十、新人上手路径
 

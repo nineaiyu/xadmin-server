@@ -5,7 +5,7 @@
   [ADR-003](ADR-003-websocket-protocol.md)（WS 协议契约三处同步）、
   [ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期 RAG）、
   [ADR-033](ADR-033-knowledge-base-management.md)（知识库，`/kb` 命令的数据源）；
-  规划文档 `docs/plans/聊天室重构计划-2026.09.md`；
+  规划文档 `docs/plans/聊天室重构计划-2026.09.md`（已交付，2026-09-14 清理，去向登记见 [plans/README.md](../plans/README.md)）；
   `message/models.py`、`message/chat.py`、`message/consumers.py`、`message/views.py`、`message/ai.py`
 
 ## 背景
