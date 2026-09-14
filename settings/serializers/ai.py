@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 助手配置序列化器（ADR-023）：Setting 体系，category=ai。
+"""AI 助手配置序列化器：Setting 体系，category=ai。
 
 API Key write_only ⇒ 值级加密落库、retrieve 回显自动剔除（G12 模式先行）。
 """

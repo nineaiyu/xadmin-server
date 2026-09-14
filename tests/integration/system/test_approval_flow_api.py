@@ -360,7 +360,7 @@ class TestApprovalInstanceApi:
         assert ApprovalInstance.objects.get(pk=first).status == ApprovalInstance.Status.APPROVED
         assert ApprovalInstance.objects.get(pk=second).status == ApprovalInstance.Status.REJECTED
 
-    # 二期（ADR-016）：条件分支主链路 API + 版本列表/回滚 API
+    # 二期：条件分支主链路 API + 版本列表/回滚 API
 
     def test_phase2_branch_api_lifecycle(self, api_client, applicant, approver_client, approver, menu_factory, role):
         """金额条件分支：小额走快车道直达归档节点，全程未经过大额终审。"""

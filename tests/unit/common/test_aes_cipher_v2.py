@@ -43,7 +43,7 @@ class TestLegacySaltedFormat:
 
 
 class TestLegacyDecryptGate:
-    """SECURITY_AES_V1_DECRYPT_ENABLED 灰度开关（ADR-011 演进：v1 退役路径）。"""
+    """SECURITY_AES_V1_DECRYPT_ENABLED 灰度开关（v1 退役路径）。"""
 
     def test_legacy_rejected_when_disabled(self, settings):
         encrypted = AESCipherV2("some-key").encrypt("legacy-payload".encode()).decode()

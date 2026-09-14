@@ -264,12 +264,12 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def APPROVAL_FLOW_KEEP_DAYS(self):
-        """流程实例保留天数（默认 365，ADR-012）：超过由清理任务分批删除（级联节点任务）。"""
+        """流程实例保留天数（默认 365）：超过由清理任务分批删除（级联节点任务）。"""
         return int(self.get_value("APPROVAL_FLOW_KEEP_DAYS", 365))
 
     @property
     def LEAVE_APPROVAL_FLOW_CODE(self):
-        """请假审批流程 code（默认 leave，ADR-032）：请假单提交时绑定的流程定义。
+        """请假审批流程 code（默认 leave）：请假单提交时绑定的流程定义。
 
         该 code 的流程不存在或未启用时，按「leave_<请假类型>」再回退「leave 前缀的
         启用流程」查找（见 system/utils/leave.py:resolve_leave_flow），全找不到则拒绝
@@ -279,7 +279,7 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def FILE_OFFICE_PREVIEW_ENABLED(self):
-        """Office 在线预览开关（默认开，ADR-013）：关闭或未装 LibreOffice 时按不支持降级。"""
+        """Office 在线预览开关（默认开）：关闭或未装 LibreOffice 时按不支持降级。"""
         return self.get_value("FILE_OFFICE_PREVIEW_ENABLED", True)
 
     @property
@@ -435,6 +435,15 @@ class BaseConfCache(ConfigCacheBase):
     def IMPORT_RECORD_KEEP_DAYS(self):
         """异步导入记录、源文件与错误报告保留天数（下载中心，默认 30 天）。"""
         return int(self.get_value("IMPORT_RECORD_KEEP_DAYS", 30))
+
+    @property
+    def CHAT_HISTORY_DAYS(self):
+        """聊天消息保留天数（二期，默认 0 = 不清理）。
+
+        超过保留期的消息由每日清理任务分批删除；会话与成员关系保留，
+        历史清空的会话在列表里仅摘要为空。
+        """
+        return int(self.get_value("CHAT_HISTORY_DAYS", 0))
 
     @property
     def IMPORT_FAIL_RATE_LIMIT(self):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""开放平台雏形（ADR-030，G11）：client-credentials 应用 + 凭证换发 + 回调测试。
+"""开放平台雏形：client-credentials 应用 + 凭证换发 + 回调测试。
 
 设计要点（细节见 docs/adr/ADR-030-open-platform.md）：
 - 应用不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链
@@ -140,7 +140,7 @@ class ApiApplicationTokenAPIView(APIView):
 
 
 class ApiApplicationViewSet(BaseModelSet):
-    """API 应用（开放平台，ADR-030）"""
+    """API 应用（开放平台）"""
 
     queryset = ApiApplication.objects.all()
     serializer_class = ApiApplicationSerializer

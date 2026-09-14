@@ -195,7 +195,7 @@ class SensitiveOperationMessage(SystemMessage):
 
 @register_message
 class LdapSyncMessage(SystemMessage):
-    """LDAP 目录同步摘要（ADR-017）：有建号/处置/冲突动作时告知全部超管。"""
+    """LDAP 目录同步摘要：有建号/处置/冲突动作时告知全部超管。"""
 
     category = "Audit"
     category_label = _("Audit")
@@ -235,7 +235,7 @@ class LdapSyncMessage(SystemMessage):
 
 @register_message
 class WebhookFailedMessage(SystemMessage):
-    """Webhook 投递耗尽告警（ADR-022）：站内信告知全部超管。"""
+    """Webhook 投递耗尽告警：站内信告知全部超管。"""
 
     category = "Audit"
     category_label = _("Audit")
@@ -324,7 +324,7 @@ class ApprovalRequestMessage(UserMessage):
 
 @register_message
 class ApprovalFlowMessage(UserMessage):
-    """流程审批通知（ADR-012 全量审批流引擎）：
+    """流程审批通知（全量审批流引擎）：
 
     submitted（待审批，发节点审批人）/ approved、rejected（结果，发申请人）/
     remind（节点超时提醒，发审批人）/ added（被加签，发新增审批人）/
@@ -422,7 +422,7 @@ def maybe_alert_sensitive_operation(info: dict):
         ).publish(is_async=True)
     except Exception:
         logger.warning("send sensitive operation alert failed", exc_info=True)
-    # 出站 Webhook：敏感操作事件（ADR-022，emit 全程吞异常）
+    # 出站 Webhook：敏感操作事件（emit 全程吞异常）
     from system.utils.webhook import emit_webhook_event
 
     emit_webhook_event("security.sensitive_operation", info or {})

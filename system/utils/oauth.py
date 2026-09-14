@@ -79,7 +79,7 @@ def get_providers(enabled_only: bool = False) -> list[dict]:
     """读取 provider 配置；`enabled_only=True` 时只返回已启用且配置完整的。
 
     flavor 预设合并优先级：显式配置 > flavor 官方端点预设 > 通用默认值
-    （ADR-018：IM flavor 管理员只需填应用三元组）。
+    （IM flavor 管理员只需填应用三元组）。
     """
     from system.utils.oauth_flavors import FLAVOR_PRESETS
 
@@ -106,7 +106,7 @@ def validate_providers(value) -> list[dict]:
     """写入侧校验：结构、必填键、key 唯一、URL 必须 https、启用时 secret 非空。
 
     配置错误必须在**保存时**挡住，否则会让每个用户都撞到一个看不懂的回调错误。
-    IM flavor（ADR-018）的 URL 有官方预设可不填，https 只校验显式配置的 URL。
+    IM flavor 的 URL 有官方预设可不填，https 只校验显式配置的 URL。
     """
     from system.utils.oauth_flavors import FLAVOR_PRESETS, FLAVOR_REQUIRED_KEYS
 

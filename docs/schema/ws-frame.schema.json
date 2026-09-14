@@ -59,7 +59,7 @@
     },
     "chatRoomMessagePayload": {
       "type": "object",
-      "description": "聊天室消息帧载荷（ADR-034，ws/chat/ 通道 ChatNotify 落库后广播；与历史 ws/message/* 通道的 chat_message 载荷不同）",
+      "description": "聊天室消息帧载荷（ws/chat/ 通道 ChatNotify 落库后广播；与历史 ws/message/* 通道的 chat_message 载荷不同）",
       "required": ["id", "room_id", "content"],
       "properties": {
         "id": { "type": "integer", "description": "消息自增主键（游标）" },

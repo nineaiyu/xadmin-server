@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP bind 认证 backend（ADR-017）。
+"""LDAP bind 认证 backend。
 
 挂载于 AUTHENTICATION_BACKENDS 首位，与 ModelBackend 并存：
 

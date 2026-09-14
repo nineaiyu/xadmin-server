@@ -137,7 +137,7 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
 router.register("approvals", ApprovalRequestViewSet, basename="approval_request")
-# 全量审批流引擎（ADR-012）：流程定义 + 流程实例（流程审批中心）
+# 全量审批流引擎：流程定义 + 流程实例（流程审批中心）
 router.register("approval-flows", ApprovalFlowViewSet, basename="approval_flow")
 router.register("approval-instances", ApprovalInstanceViewSet, basename="approval_instance")
 router.register("dept", DeptViewSet, basename="dept")
@@ -151,24 +151,24 @@ router.register("online", UserOnlineViewSet, basename="online_socket")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")
-# 数据集与仪表盘（ADR-020，可视化一期）
+# 数据集与仪表盘（可视化一期）
 router.register("datasets", DatasetViewSet, basename="dataset")
 router.register("dashboards", DataDashboardViewSet, basename="dashboards")
-# 大屏与定时报表（ADR-021）
+# 大屏与定时报表
 router.register("screens", ScreenViewSet, basename="screen")
 router.register("reports", ReportViewSet, basename="report")
-# 出站 Webhook（ADR-022）
+# 出站 Webhook
 router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
 router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
-# 动态表单（ADR-025）
+# 动态表单
 router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
 router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
-# 请假申请（ADR-032）：审批流引擎的第一个真实业务接入方
+# 请假申请：审批流引擎的第一个真实业务接入方
 router.register("leaves", LeaveViewSet, basename="leave")
-# AI 助手（ADR-023）：配置（Setting 体系）与问答
+# AI 助手：配置（Setting 体系）与问答
 no_detail_router.register("ai/assistant/config", AiAssistantSettingViewSet, basename="ai-assistant-config")
 no_detail_router.register("ai/assistant", AiAssistantViewSet, basename="ai-assistant")
-# AI 知识库文档管理（ADR-033）：上传/预览/启停/删除 + 仓库文档重建
+# AI 知识库文档管理：上传/预览/启停/删除 + 仓库文档重建
 router.register("ai/knowledge-documents", AiKnowledgeDocumentViewSet, basename="ai-knowledge-document")
 router.register("config/user", UserPersonalConfigViewSet, basename="userconfig")
 
@@ -186,7 +186,7 @@ router.register("imports", ImportRecordViewSet, basename="import_record")
 # 导入列映射模板（个人 / 全局共享，导入弹窗内维护，无独立页面）
 router.register("import-templates", ImportTemplateViewSet, basename="import_template")
 
-# 开放平台应用（ADR-030，G11）：client-credentials 应用管理与回调测试
+# 开放平台应用：client-credentials 应用管理与回调测试
 router.register("api-applications", ApiApplicationViewSet, basename="api_application")
 
 # 定时任务管理（django_celery_beat）
@@ -196,7 +196,7 @@ router.register("tasks/executions", TaskExecutionViewSet, basename="task_executi
 router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
-# 全局搜索（ADR-028，G9）：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
+# 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
-# 开放平台换发端点（ADR-030，G11）：匿名可达（白名单），凭 client_secret 换 PAT 凭证
+# 开放平台换发端点：匿名可达（白名单），凭 client_secret 换 PAT 凭证
 urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]

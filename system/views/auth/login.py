@@ -58,7 +58,7 @@ def _register_session_safe(request, user, login_type):
 
 
 def _login_type_for(user) -> "UserLoginLog.LoginTypeChoices":
-    """账密登录来源：LdapBindBackend 认证成功记 LDAP，其余按本地账密（ADR-017）。"""
+    """账密登录来源：LdapBindBackend 认证成功记 LDAP，其余按本地账密。"""
     if getattr(user, "_ldap_authenticated", False):
         return UserLoginLog.LoginTypeChoices.LDAP
     return UserLoginLog.LoginTypeChoices.USERNAME
@@ -74,7 +74,7 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         # LDAP bind 认证的登录（LdapBindBackend 成功）在登录日志中标记独立来源；
-        # 本地/验证码路径不受影响（ADR-017）
+        # 本地/验证码路径不受影响
         login_type = _login_type_for(self.user)
         session = _register_session_safe(self.context.get("request"), self.user, login_type)
         if session:
@@ -92,7 +92,7 @@ def login_failed(request, username):
     login_ip_block = LoginIpBlockUtil(ipaddr)
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
-    # 出站 Webhook：登录失败事件（ADR-022）
+    # 出站 Webhook：登录失败事件
     from system.utils.webhook import emit_webhook_event
 
     emit_webhook_event("user.login_failed", {"username": username, "ip": get_request_ip(request)})
@@ -128,7 +128,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         # 登录 MFA 待验证：密码阶段已通过，锁定计数需清理；登录日志与异地提醒在二次验证通过后记录
         return
     request.user = user_obj
-    # 出站 Webhook：登录成功事件（ADR-022，emit 全程吞异常）
+    # 出站 Webhook：登录成功事件（emit 全程吞异常）
     from system.utils.webhook import emit_webhook_event
 
     emit_webhook_event("user.login_succeeded", {"username": user_obj.username, "ip": ipaddr})

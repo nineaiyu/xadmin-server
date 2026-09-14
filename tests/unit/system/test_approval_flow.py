@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""全量审批流引擎一期（ADR-012）：引擎推进 + API + 页签取值域 + 定时任务。"""
+"""全量审批流引擎一期：引擎推进 + API + 页签取值域 + 定时任务。"""
 
 import datetime
 
@@ -338,7 +338,7 @@ class TestEngineFlow:
 
 
 class TestBranchRoutes:
-    """二期条件分支（ADR-016 §1）：排他网关出口路由 + 线性回退。"""
+    """二期条件分支：排他网关出口路由 + 线性回退。"""
 
     def test_route_hit_jumps_to_target(self, applicant, approver):
         """路由命中跳转 target（排他网关）：跳过中间线性节点。"""
@@ -441,7 +441,7 @@ class TestBranchRoutes:
 
 
 class TestRatioApprove:
-    """二期比例会签（ADR-016 §3）：达标通过 / 不可能达标提前驳回。"""
+    """二期比例会签：达标通过 / 不可能达标提前驳回。"""
 
     def _three_member_flow(self, applicant, approver, approver2, ratio):
         from tests.unit.system.test_approval_flow import make_flow as _make
@@ -485,7 +485,7 @@ class TestRatioApprove:
 
 
 class TestFlowVersions:
-    """二期版本管理（ADR-016 §2）：保存落快照 / 回滚写回 / PENDING 拒绝回滚。"""
+    """二期版本管理：保存落快照 / 回滚写回 / PENDING 拒绝回滚。"""
 
     def _flow_with_nodes(self, code):
         flow = make_flow(code, nodes=[{"name": "节点一", "order": 1}])

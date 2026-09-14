@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""聊天室 WS consumer（ChatNotify）集成测试（ADR-034）。
+"""聊天室 WS consumer（ChatNotify）集成测试。
 
 覆盖：准入（匿名 4401 / 无权限 4403 / 超管放行）、连接即下发未读快照、
 公共与私聊广播拓扑、未读推送、client_msg_id 幂等、撤回/已读上行、

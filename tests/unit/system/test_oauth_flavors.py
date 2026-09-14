@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""企业 IM 扫码登录 flavor 适配器（ADR-018）：钉钉 / 企业微信 / 飞书。
+"""企业 IM 扫码登录 flavor 适配器：钉钉 / 企业微信 / 飞书。
 
 覆盖：配置预设合并与校验 / 授权地址参数形状 / 换码请求体与响应解析（含
 errcode、code、data 包裹与兼容提取）/ userinfo 归一化（subject + 标准键）/
@@ -477,7 +477,7 @@ class TestCallbackIntegration:
 
 
 class TestConfigWriteValidation:
-    """OAUTH_PROVIDERS 经系统配置 API 写入时保存即校验（ADR-018 补齐存量接线）。"""
+    """OAUTH_PROVIDERS 经系统配置 API 写入时保存即校验（补齐存量接线）。"""
 
     def test_invalid_provider_rejected_on_save(self, auth_client):
         payload = {

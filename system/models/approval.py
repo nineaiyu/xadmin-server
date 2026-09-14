@@ -16,7 +16,7 @@ PENDING 单并通知审批人；审批通过后由原始客户端在有效期内
 - EXPIRED   待审批超时 / 令牌过期
 - FAILED    消费校验失败（重发请求与快照指纹不一致，留审计痕迹）
 
-二、ApprovalFlow / ApprovalFlowNode / ApprovalInstance / ApprovalNodeTask（全量引擎一期，ADR-012）
+二、ApprovalFlow / ApprovalFlowNode / ApprovalInstance / ApprovalNodeTask（全量引擎一期）
 面向业务表单的多级审批：流程定义 = 顺序节点列表（节点级条件表达式决定是否经过该
 节点），节点支持或签（任一通过）/ 会签（全部通过），审批人支持 角色 / 指定用户 /
 申请人上级（部门 leader）/ 表单字段（值为用户名列表）。驳回即终止（不走回退上一
@@ -99,7 +99,7 @@ class ApprovalFlow(DbAuditModel):
     form_schema = models.JSONField(_("Form schema"), default=list, blank=True)
     is_active = models.BooleanField(_("Is active"), default=True, db_index=True)
     # 当前定义版本号：每次节点/表单定义变化 +1，并在 ApprovalFlowVersion 落全量快照
-    # （回滚 = 把历史快照写入活定义并落新版本，见 ADR-016 §2）
+    # （回滚 = 把历史快照写入活定义并落新版本）
     version = models.IntegerField(_("Definition version"), default=0)
 
     class Meta:
@@ -149,7 +149,7 @@ class ApprovalFlowNode(DbAuditModel):
     assignee_value = models.CharField(_("Assignee value"), max_length=255, blank=True, default="")
     # 条件表达式：{"field": "amount", "op": "gte", "value": 1000}；空 dict = 无条件
     condition = models.JSONField(_("Condition"), default=dict, blank=True)
-    # 出口路由表（排他网关，ADR-016 §1）：逐条求值首个命中即跳转 target（同流程节点
+    # 出口路由表（排他网关）：逐条求值首个命中即跳转 target（同流程节点
     # order）；全部未命中回退线性语义（order 之后首个条件命中节点）。空 = 纯线性。
     # 形态：[{"condition": {...}, "target": 3}]
     routes = models.JSONField(_("Branch routes"), default=list, blank=True)
@@ -190,14 +190,14 @@ class ApprovalInstance(DbAuditModel):
     flow_name = models.CharField(_("Flow name"), max_length=64)
     title = models.CharField(_("Title"), max_length=128)
     form_data = models.JSONField(_("Form data"), default=dict, blank=True)
-    # 通用业务绑定（ADR-032）：biz_type 为业务标识（如 "leave"），biz_id 为业务行主键
+    # 通用业务绑定：biz_type 为业务标识（如 "leave"），biz_id 为业务行主键
     # 字符串。业务模块经 create_instance(biz_type=..., biz_id=...) 挂载，实例终态时由
     # system/utils/approval_flow.py 的 _finish_instance 发 approval_instance_finished
     # 信号回写业务状态；两者皆空 = 引擎自带表单的独立申请（历史行为不变）。
     biz_type = models.CharField(_("Business type"), max_length=64, blank=True, default="", db_index=True)
     biz_id = models.CharField(_("Business id"), max_length=64, blank=True, default="")
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
-    # 发起时的流程定义版本号（纯追溯字段：推进仍读活定义，见 ADR-016 §2 边界）
+    # 发起时的流程定义版本号（纯追溯字段：推进仍读活定义）
     flow_version = models.IntegerField(_("Flow version"), null=True, blank=True)
     current_node = models.ForeignKey(
         "system.ApprovalFlowNode",
@@ -288,7 +288,7 @@ class ApprovalNodeTask(DbAuditModel):
 
 
 class ApprovalFlowVersion(DbAuditModel):
-    """流程定义版本快照（ADR-016 §2）：每次节点/表单定义变化落一条全量快照。
+    """流程定义版本快照：每次节点/表单定义变化落一条全量快照。
 
     用途 = 变更审计追溯 + 一键回滚（回滚把历史快照写回活定义并落新版本）；
     不做「在途实例绑版本」（推进仍读活定义，靠 PENDING 锁维持一致性）。

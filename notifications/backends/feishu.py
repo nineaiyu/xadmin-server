@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""飞书通知渠道（ADR-019）：im/v1/messages 文本消息。
+"""飞书通知渠道：im/v1/messages 文本消息。
 
 可达性两层：渠道级 = 开关 + 应用二元组齐全；用户级 = 用户有 feishu flavor
 的 OAuth 绑定（subject 即 union_id，receive_id_type=union_id 直发）。

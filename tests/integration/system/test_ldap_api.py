@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""LDAP 设置 API 集成测试（ADR-017）：鉴权/越权 / 凭据加密不回显 / 连接测试降级。"""
+"""LDAP 设置 API 集成测试：鉴权/越权 / 凭据加密不回显 / 连接测试降级。"""
 
 import pytest
 from django.conf import settings as dj_settings

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据分析内置示例种子守护测试（ADR-020/021）。
+"""数据分析内置示例种子守护测试。
 
 loadjson/dataset.json、dashboard.json、report.json、screen.json 是新装环境
 的内置示例（load_init_json 按 loaddata upsert 灌入）。固定 pk 之间存在引用：

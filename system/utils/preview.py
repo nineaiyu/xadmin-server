@@ -11,7 +11,7 @@
 缓存路径与源文件**一对一可推导**（`preview_cache/<pk>/<size>.jpg`），
 因此清理不需要额外索引表；并发生成用 cache 锁 + 原子替换，避免半截文件被读到。
 
-**Office 在线预览（ADR-013）**：docx/xlsx/pptx 等由 LibreOffice headless 转
+**Office 在线预览**：docx/xlsx/pptx 等由 LibreOffice headless 转
 PDF 后走既有 PDF 内嵌渲染。转换不在请求线程里做（耗时且吃 CPU），而是投递
 `heavy` 队列任务 `system.tasks.convert_office_preview_task`，请求侧短等
 （`FILE_OFFICE_WAIT_SECONDS`）产物流盘；未等到则返回业务码 1006，前端重试。

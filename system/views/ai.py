@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 助手视图（ADR-023）：配置（Setting 体系）+ 状态 + 问答。
+"""AI 助手视图：配置（Setting 体系）+ 状态 + 问答。
 
 - 配置视图与邮件/LDAP 同构：POST create = 连接测试（真实 ping LLM）；
 - ask/status 经菜单权限点门控（未授权 403）；问答链路不触生产数据。
@@ -242,7 +242,7 @@ class AiKnowledgeDocumentViewSet(
     """批量删除（batch-destroy）自带 @action 定义：不走框架 BatchDestroyAction，
     因为需要逐条清理分块（见 batch_destroy 文档字符串）；同时避免装饰器叠加。"""
 
-    """知识库文档管理（ADR-033）：上传/预览/启用停用/删除 + 仓库文档重建。
+    """知识库文档管理：上传/预览/启用停用/删除 + 仓库文档重建。
 
     - 上传：{name, content} 文本入库（同名覆盖更新），前端选本地 .md 文件由浏览器读文本；
     - 预览：详情返回全文 + 分块摘要（列表轻量）；

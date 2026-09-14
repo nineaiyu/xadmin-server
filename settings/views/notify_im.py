@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""企业 IM 通知渠道设置视图（ADR-019）：retrieve 回显 / partialUpdate 保存 / create 渠道测试。
+"""企业 IM 通知渠道设置视图：retrieve 回显 / partialUpdate 保存 / create 渠道测试。
 
 ``?channel=dingtalk|wecom|feishu`` 是「渠道作用域」参数：retrieve / search-columns /
 partialUpdate / create 全链路按它收敛字段集合（设置页三个页签各自只读写自己的字段，

@@ -64,7 +64,7 @@ def _fetch_identity(request, provider: str, config: dict, code: str):
     :return: ``(subject, userinfo)``；IdP 侧失败统一抛 `OAuthError`（可读文案）。
     """
     token_payload = exchange_code(config, code, _redirect_uri(request, provider))
-    # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定（ADR-018）
+    # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定
     userinfo = fetch_userinfo(config, token_payload)
     return resolve_subject(config, userinfo), userinfo
 

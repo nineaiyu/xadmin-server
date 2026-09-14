@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""请假业务单序列化器（ADR-032）。
+"""请假业务单序列化器。
 
 - leave_type / status 走数据字典（leave_type / leave_status），字典未配置时回退模型
   choices（merge_fallback，避免字典只配了部分项导致写入被拒）；

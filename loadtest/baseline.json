@@ -9,7 +9,7 @@
     "redis": "Redis 7.4.3 专用一次性容器",
     "seed": "1000 个 perf_ 用户 + 默认数据",
     "k6": "v2.0.0",
-    "note": "TD-25（ASGI 每请求新建 DB 连接）修复前的口径：修复后 routes 实测改善（P95 53.7→32.5ms、失败率 20.33%→0%），故本快照偏保守，复测后可用 check_baseline.py --update 收紧"
+    "note": "ASGI 每请求新建 DB 连接修复前的口径：修复后 routes 实测改善（P95 53.7→32.5ms、失败率 20.33%→0%），故本快照偏保守，复测后可用 check_baseline.py --update 收紧"
   },
   "tolerance": {
     "p95_ratio": 1.2,

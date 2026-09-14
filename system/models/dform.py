@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""动态表单（ADR-025）：收敛控件集 JSON Schema + 通用 JSON 存储提交。"""
+"""动态表单：收敛控件集 JSON Schema + 通用 JSON 存储提交。"""
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -15,7 +15,7 @@ class DynamicForm(DbAuditModel, DbUuidModel):
     description = models.CharField(_("Description"), max_length=512, blank=True, default="")
     schema = models.JSONField(_("Schema"), default=dict, help_text=_("Constrained widget-set field definitions"))
     is_active = models.BooleanField(_("Is active"), default=True)
-    # G5b：开启后提交走审批流（提交 → 412 待审批 → 审批人通过 → 申请人携令牌重放）
+    # 开启后提交走审批流（提交 → 412 待审批 → 审批人通过 → 申请人携令牌重放）
     approval_required = models.BooleanField(_("Approval required"), default=False)
 
     class Meta:

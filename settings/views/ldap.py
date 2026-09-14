@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP/AD 设置视图（ADR-017）：retrieve 回显 / partialUpdate 保存 / create 连接测试。
+"""LDAP/AD 设置视图：retrieve 回显 / partialUpdate 保存 / create 连接测试。
 
 与邮件服务器设置同构：``POST`` 即「测试」——按表单当前值（未带字段回退到已存
 配置）实际 bind + 搜索并返回用户/部门计数；失败转可读 ApiResponse，不影响登录。

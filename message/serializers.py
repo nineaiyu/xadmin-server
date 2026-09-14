@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室请求校验（ADR-034）。响应体为显式字典（会话/消息载荷契约见 message/chat.py）。"""
+"""聊天室请求校验。响应体为显式字典（会话/消息载荷契约见 message/chat.py）。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers

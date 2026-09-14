@@ -71,7 +71,7 @@ def get_user_layer_group_name(user_pk):
     return f"{settings.CACHE_KEY_TEMPLATE.get('websocket_group_key')}_{user_pk}"
 
 
-# 聊天室通道分组（ADR-034，channel layer 命名空间，非 cache 键）：
+# 聊天室通道分组（channel layer 命名空间，非 cache 键）：
 # - 公共聊天室广播组：全站单例；
 # - 用户聊天组：私聊/AI 消息与未读红点定向推送（多端同步）。
 # 命名刻意避开 websocket_group_ 前缀：在线索引只认个人推送组，聊天连接不参与在线计数。

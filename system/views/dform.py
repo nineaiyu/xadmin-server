@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""动态表单视图（ADR-025）。
+"""动态表单视图。
 
 - DynamicFormViewSet（管理员）：表单定义 CRUD（schema 写入侧校验）；
 - DynamicFormSubmissionViewSet：填报与本人提交管理——普通用户按 creator 隔离
   （只见/只改本人提交），超管全量；停用表单拒新提交（序列化器校验）。
 
-定义/提交类资源不做行级数据权限过滤（与 ADR-020 Dataset 同款处理）。
+定义/提交类资源不做行级数据权限过滤（与 Dataset 同款处理）。
 """
 
 from django.utils.translation import gettext_lazy as _
@@ -34,7 +34,7 @@ class DynamicFormViewSet(BaseModelSet):
 
 
 class DynamicFormSubmissionViewSet(BaseModelSet):
-    """动态表单提交（填报与本人提交管理；G5b 表单可挂审批流）"""
+    """动态表单提交（填报与本人提交管理；表单可挂审批流）"""
 
     queryset = DynamicFormSubmission.objects.select_related("form", "creator")
     serializer_class = DynamicFormSubmissionSerializer
@@ -42,7 +42,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
 
     def create(self, request, *args, **kwargs):
-        """提交：数据校验先行 → 审批门（approval_required 表单，G5b）→ 创建。
+        """提交：数据校验先行 → 审批门（approval_required 表单）→ 创建。
 
         审批协议与全局拦截器同构：412 待审批 → 审批人通过 → 申请人携
         X-Approval-Id 重放（服务端校验 creator/指纹/一次性），消费成功才落库。

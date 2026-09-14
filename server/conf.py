@@ -106,7 +106,7 @@ class Config(dict):
         # Flower 监控 basic-auth（格式 用户:密码），生产环境必须配置；
         # 未配置时 Flower 仅允许绑定 127.0.0.1 供本机调试，绑定其他地址将拒绝启动
         "CELERY_FLOWER_AUTH": "",
-        # LDAP/AD 目录同步（ADR-017）：默认全关，行为与无 LDAP 时完全一致。
+        # LDAP/AD 目录同步：默认全关，行为与无 LDAP 时完全一致。
         # 运行期经 settings app 的 Setting 体系（category=ldap）热更新覆盖
         "LDAP_AUTH_ENABLED": False,
         # ldap_first：先 bind 目录（本地密码兜底）；local_first：本地可用密码优先（防目录密码遮蔽本地管理员）
@@ -133,7 +133,7 @@ class Config(dict):
         "LDAP_SYNC_MISSING_POLICY": "deactivate",
         # 同步分页大小（ldap3 paged search）
         "LDAP_SYNC_PAGE_SIZE": 500,
-        # 企业 IM 通知渠道（ADR-019）：默认全关；运行期经 Setting 体系（category=notify_im）
+        # 企业 IM 通知渠道：默认全关；运行期经 Setting 体系（category=notify_im）
         # 热更新覆盖，secret 值级加密落库。开关开而凭据缺 → 渠道自动降级为不可用
         "DINGTALK_ENABLED": False,
         "DINGTALK_APP_KEY": "",
@@ -146,13 +146,13 @@ class Config(dict):
         "FEISHU_ENABLED": False,
         "FEISHU_APP_ID": "",
         "FEISHU_APP_SECRET": "",
-        # AI 助手（ADR-023）：OpenAI 兼容协议，默认全关；API Key 值级加密落库
+        # AI 助手：OpenAI 兼容协议，默认全关；API Key 值级加密落库
         "AI_ASSISTANT_ENABLED": False,
         "AI_BASE_URL": "",
         "AI_API_KEY": "",
         "AI_MODEL": "",
         "AI_TIMEOUT": 60,
-        # AI 二期 NL 查数（ADR-024）：默认关闭灰度
+        # AI 二期 NL 查数：默认关闭灰度
         "AI_NL_QUERY_ENABLED": False,
     }
     libs = {
@@ -180,7 +180,7 @@ class Config(dict):
         # 存量用户 date_password_updated 为空 = 宽限期不拦截，改密后开始计时；
         # 2026-09-12 灰度转正：评审确认 90 天）
         "SECURITY_PASSWORD_EXPIRATION_DAYS": 90,
-        # AES 旧格式（Salted__）解密灰度开关（ADR-011 演进）：默认开启保持存量前端兼容；
+        # AES 旧格式（Salted__）解密灰度开关：默认开启保持存量前端兼容；
         # 确认全量用户已升级至 v2 优先前端后可关闭，关闭后旧格式一律按非法输入拒绝（返回空串）
         "SECURITY_AES_V1_DECRYPT_ENABLED": True,
         # 用户登录限制的规则
@@ -273,12 +273,12 @@ class Config(dict):
         "APPROVAL_KEEP_DAYS": 180,
         # 待审批超时提醒阈值（小时）：由每日提醒任务对未处理的单补发一次提醒；0 = 不提醒
         "APPROVAL_REMIND_HOURS": 24,
-        # 流程实例（全量审批流引擎，ADR-012）保留天数：超过由清理任务分批删除
+        # 流程实例（全量审批流引擎）保留天数：超过由清理任务分批删除
         "APPROVAL_FLOW_KEEP_DAYS": 365,
-        # 请假审批流程 code（ADR-032）：请假单提交时绑定的流程定义；该 code 不存在时
+        # 请假审批流程 code：请假单提交时绑定的流程定义；该 code 不存在时
         # 依次回退 leave_<请假类型> 与「leave 前缀的启用流程」
         "LEAVE_APPROVAL_FLOW_CODE": "leave",
-        # Office 在线预览（ADR-013）：LibreOffice headless 转 PDF 后内嵌渲染
+        # Office 在线预览：LibreOffice headless 转 PDF 后内嵌渲染
         "FILE_OFFICE_PREVIEW_ENABLED": True,  # 关闭或未安装转换器时按「不支持预览」降级
         "FILE_OFFICE_MAX_BYTES": 20 * 1024 * 1024,  # 转换大小上限（字节，默认 20MB）
         "FILE_OFFICE_CONVERT_TIMEOUT": 60,  # 单次转换超时（秒）

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """S3 CSP 落地（django-csp + 运行期模式开关）：策略头 / 模式切换 / 上报端点。
 
-ADR-004 复审（Django 6.2 升级取消）后改为独立方案 django-csp；默认 report-only
+原方案复审（Django 6.2 升级取消）后改为独立方案 django-csp；默认 report-only
 观察一周再切 enforce，模式与上报地址通过系统配置运行期调整，不需要重新发版。
 """
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 助手知识库（ADR-023 / ADR-033）：文档登记 + 分块入库。不触生产数据。
+"""AI 助手知识库：文档登记 + 分块入库。不触生产数据。
 
 两类来源：
 - repo：仓库 docs/**/*.md + 根 README/CONTRIBUTING，由 sync_ai_knowledge 命令扫描维护；
@@ -27,7 +27,7 @@ def upload_document_path(name: str) -> str:
 
 
 class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
-    """知识库文档（ADR-033）：管理端上传 + 仓库同步统一登记，内容存 DB 供预览。"""
+    """知识库文档：管理端上传 + 仓库同步统一登记，内容存 DB 供预览。"""
 
     class SourceType(models.TextChoices):
         REPO = "repo", _("Repository docs")

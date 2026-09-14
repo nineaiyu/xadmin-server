@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI 使用/二开助手集成测试（ADR-023）。
+"""AI 使用/二开助手集成测试。
 
 覆盖：知识库同步（分块/hash 幂等/清理）、检索评分（相关块优先）、ask 全链路
 （stub LLM → 引用出处）、降级（未启用/未配置/无命中）、越权与密钥不回显、
@@ -110,7 +110,7 @@ class TestKnowledgeSync:
         monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
 
         summary = ai_utils.sync_knowledge()
-        # created 为文档级计数（ADR-033 起同步登记文档实体 + 重建分块）
+        # created 为文档级计数（同步登记文档实体 + 重建分块）
         assert summary["created"] == 1
         document = AiKnowledgeDocument.objects.get(path="docs/demo.md")
         assert document.chunk_count == 3

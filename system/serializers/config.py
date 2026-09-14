@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 # 系统配置写入侧校验分发表：坏配置在保存时挡住，而不是运行时才炸。
 # 校验函数返回归一化后的 value（一并持久化）。
 CONFIG_KEY_VALIDATORS = {
-    # 第三方登录 provider 列表（ADR-018：含钉钉/企微/飞书 flavor）
+    # 第三方登录 provider 列表（含钉钉/企微/飞书 flavor）
     "OAUTH_PROVIDERS": lambda value: validate_providers(value),
 }
 

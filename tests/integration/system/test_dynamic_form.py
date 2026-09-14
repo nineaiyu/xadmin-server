@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""动态表单集成测试（ADR-025）。
+"""动态表单集成测试。
 
 覆盖：schema 校验矩阵（key 格式/重复/控件类型/options/字段数上限）、提交
 校验矩阵（required/选项外/数值越界/超长/未知键）、creator 隔离（他人不可见
@@ -217,18 +217,18 @@ def auth_client_list(superuser):
     return client.get(SUBMISSION_URL).json()
 
 
-# ---------------------------------------------------------------- G5b 审批挂接
+# ---------------------------------------------------------------- 审批挂接
 
 
 class TestFormApproval:
-    """G5b：approval_required 表单走审批流（提交 412 → 通过 → 令牌重放落库）。"""
+    """approval_required 表单走审批流（提交 412 → 通过 → 令牌重放落库）。"""
 
     @pytest.fixture
     def gated_form(self, superuser):
         return DynamicForm.objects.create(name="需审批登记", schema=SCHEMA, creator=superuser, approval_required=True)
 
     def test_api_exposes_approval_required(self, auth_client):
-        """G5b：approval_required 经定义接口读写（前端设计器开关的契约面）。"""
+        """approval_required 经定义接口读写（前端设计器开关的契约面）。"""
         created = auth_client.post(
             FORM_URL, {"name": "审批表单", "schema": SCHEMA, "approval_required": True}, format="json"
         )

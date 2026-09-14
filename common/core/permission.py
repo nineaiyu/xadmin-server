@@ -122,7 +122,7 @@ def resolve_pat_scopes(request):
 def check_pat_scope(request) -> bool:
     """PAT scope 判定：True 放行；False 表示当前凭证不允许访问该请求。
 
-    校验口径 = 凭证 scope（空清单 = 不限，ADR-008 向后兼容）× 请求 path
+    校验口径 = 凭证 scope（空清单 = 不限，向后兼容）× 请求 path
     （条目可带方法前缀，形如 ``GET /api/system/user``，此时同时限定 HTTP 方法）。
     """
     scopes = resolve_pat_scopes(request)

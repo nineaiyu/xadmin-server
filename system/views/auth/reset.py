@@ -58,7 +58,7 @@ class ResetPasswordAPIView(GenericAPIView):
 
         instance = UserInfo.objects.get(**{query_key: target})
         if LdapUserBinding.objects.filter(user=instance).exists():
-            # LDAP 绑定用户密码由目录管理，本地重置入口直接拒绝（ADR-017）
+            # LDAP 绑定用户密码由目录管理，本地重置入口直接拒绝
             return ApiResponse(
                 code=1002, detail=_("Password is managed by the LDAP directory and cannot be changed locally")
             )

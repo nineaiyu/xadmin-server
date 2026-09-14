@@ -96,7 +96,7 @@ def notify_backup_failure(payload: dict) -> bool:
     except Exception:  # noqa: BLE001 告警链路故障不影响上报响应（脚本仅记 WARN）
         logger.warning("send backup failure alert failed", exc_info=True)
         return False
-    # 出站 Webhook：备份失败事件（ADR-022，emit 全程吞异常）
+    # 出站 Webhook：备份失败事件（emit 全程吞异常）
     from system.utils.webhook import emit_webhook_event
 
     emit_webhook_event("system.backup_failure", payload or {})

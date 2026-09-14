@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 助手核心工具（ADR-023 / ADR-033）：知识库同步 + 词频检索 + 问答链路。
+"""AI 助手核心工具：知识库同步 + 词频检索 + 问答链路。
 
 安全口径：
 - 知识库文档两类来源：仓库文件（docs/**/*.md + 根 README/CONTRIBUTING，命令同步）
-  与管理端上传（存 DB 全文，ADR-033）；ask 链路不查询任何业务模型（不触生产数据）；
+  与管理端上传（存 DB 全文）；ask 链路不查询任何业务模型（不触生产数据）；
 - 检索为零依赖词频重叠评分（CJK 二元组 + ASCII 词 + 标题加成），
   向量嵌入升级路径登记候选池；
 - LLM 配置经 Setting 值级加密（AI_API_KEY write_only），未启用/未配置统一
@@ -32,7 +32,7 @@ CHUNK_WINDOW = 1200  # 长块滑动窗口字符数
 TOP_K = 5
 SCORE_THRESHOLD = 2
 MAX_QUESTION_LENGTH = 500
-# 上传文档（ADR-033）：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
+# 上传文档：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
 MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
 
@@ -105,7 +105,7 @@ def upsert_upload_document(name: str, content: str, creator=None):
     """创建/覆盖上传文档并重建分块，返回 (doc, created)。
 
     同名（稳定 path）视为更新——「重新上传即覆盖」，列表不会出现同名多份；
-    路径前缀 upload/ 与仓库文档隔离，sync 不参与其维护（ADR-033）。
+    路径前缀 upload/ 与仓库文档隔离，sync 不参与其维护。
     """
     from system.models.ai import AiKnowledgeDocument, upload_document_path
 
@@ -143,7 +143,7 @@ def set_document_active(doc, active: bool) -> None:
 def sync_knowledge() -> dict:
     """扫描仓库文档 → 登记/分块入库（内容 hash 幂等）；返回同步摘要。
 
-    只维护 repo 来源（ADR-033 双来源边界）：上传文档（source_type=upload 与
+    只维护 repo 来源（双来源边界）：上传文档（source_type=upload 与
     upload/ 前缀分块）不参与扫描与清理；仓库文件消失、或历史遗留的孤儿块
     （无文档登记的 repo 块）会被清理。
     """

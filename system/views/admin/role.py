@@ -52,7 +52,7 @@ class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction, RolePr
 
     @ApprovalRequired()
     def destroy(self, request, *args, **kwargs):
-        """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批，见 ADR-032）"""
+        """删除{cls}数据（高危：可经 APPROVAL_REQUIRED_PATHS 纳入审批）"""
         return super().destroy(request, *args, **kwargs)
 
     @ApprovalRequired()

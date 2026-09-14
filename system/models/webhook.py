@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""出站 Webhook（ADR-022）：订阅与投递审计模型。"""
+"""出站 Webhook：订阅与投递审计模型。"""
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _

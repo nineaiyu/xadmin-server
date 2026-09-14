@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""全量审批流引擎一期（ADR-012）：
+"""全量审批流引擎一期：
 
 - ApprovalFlowViewSet：流程定义 CRUD（节点列表嵌套写入）；
 - ApprovalInstanceViewSet：流程实例（我的申请/待办/已办）+ 发起 / 通过 / 驳回 /
@@ -86,7 +86,7 @@ class ApprovalFlowViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="versions")
     def versions(self, request, *args, **kwargs):
-        """流程定义版本列表（ADR-016 §2：快照审计追溯）。"""
+        """流程定义版本列表（快照审计追溯）。"""
         flow = self.get_object()
         rows = flow.versions.order_by("-version").values("version", "remark", "created_time")
         return ApiResponse(data=list(rows))

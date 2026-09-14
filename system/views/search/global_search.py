@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""全局搜索接口（ADR-028，G9）。
+"""全局搜索接口。
 
 URL 权限：菜单权限码 ``retrieve:SystemGlobalSearch``（GET，种子已登记）；
 分组级权限门与数据权限门见 system/search.py（逐实体两道门）。

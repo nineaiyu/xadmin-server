@@ -4233,1043 +4233,783 @@ msgstr ""
 msgid "Task cloned: {}"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP authentication"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Enable LDAP/AD account login"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Authentication priority"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "local_first: local accounts with a usable password are authenticated locally first (directory password never shadows local admin); ldap_first: directory bind is tried first"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Auto create user on first login"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Create a local user (no local password) on first successful directory bind"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Server URI"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "ldap://host:389 or ldaps://host:636"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "StartTLS"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Upgrade the connection to TLS after connecting (ldap:// URIs)"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Bind DN"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Service account DN used to search the directory; empty for anonymous bind"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Bind password"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Encrypted at rest; never returned by the API"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Connect timeout (seconds)"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "User search base"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Base DN for user search"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "User filter"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP search filter, e.g. (objectClass=person)"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Username attribute"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "e.g. sAMAccountName / uid"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Nickname attribute"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "e.g. cn / displayName"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Email attribute"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "e.g. mail"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Phone attribute"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "e.g. telephoneNumber / mobile"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Sync departments"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Sync organizational units under the department search base as the department tree"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Department search base"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Scheduled sync"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Hourly sync of users/departments/status from the directory"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Auto create user on sync"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Missing user policy"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "deactivate: disable accounts removed from the directory (reversible); soft_delete: move them to the recycle bin; ignore: keep untouched"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Server URI is required"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "User search base is required"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Connection OK: {user_count} users, {dept_count} departments found"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Distinguished name"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Last synced at"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP binding"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP bindings"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP directory account"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP directory sync"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP sync summary"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "LDAP sync finished"
 msgstr ""
 
-#: ADR-017 LDAP directory sync (generated)
 msgid "Password is managed by the LDAP directory and cannot be changed locally"
 msgstr ""
 
-#: ADR-018 IM scan login (generated)
 msgid "Unknown OAuth provider flavor: {}"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "DingTalk"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "WeCom"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "FeiShu"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "DingTalk notification"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Send notifications via DingTalk work message"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "DingTalk AppKey"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "DingTalk AppSecret"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "DingTalk AgentId"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "AgentId of the corp app used to send work messages"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "WeCom notification"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Send notifications via WeCom app message"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "WeCom CorpId"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "WeCom CorpSecret"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "WeCom AgentId"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "FeiShu notification"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Send notifications via FeiShu IM message"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "FeiShu App ID"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "FeiShu App Secret"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Missing configuration: {}"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Unknown channel: {}"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Channel not enabled"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "OK"
 msgstr ""
 
-#: ADR-019 IM notify channels (generated)
 msgid "Test completed"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Dataset"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Datasets"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Dashboard"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Dashboards"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Personal"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Bound model"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "label_lower of a whitelisted model, e.g. system.userinfo"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Columns"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Whitelisted field names"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Filters"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "[{field, op, value}] with whitelisted ops"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Ordering"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Ordering field must be in columns"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Row limit"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Hard cap 5000"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Row limit must be between 1 and {}"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Config"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "{\"date_field\": ...} for trend"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Layout"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "[{id, dataset, title, chart_type, ...}]"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Visibility"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Model {} is not available for datasets"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Field {}.{} is not available for datasets"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Filter op {} is not allowed"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Filter op in requires a list value"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Filter op isnull requires a boolean value"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Dataset columns cannot be empty"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Field {} is not available for datasets"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Field {} is not numeric, cannot aggregate"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Metric {} is not allowed"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Date trunc {} is not allowed"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Field {} is not a datetime, cannot trend"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Invalid dataset filters"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Invalid dashboard layout"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Invalid chart type: {}"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Unknown dataset in layout"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Only the creator can modify a dataset"
 msgstr ""
 
-#: ADR-020 dataset & dashboard (generated)
 msgid "Only the creator can modify a dashboard"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Screen"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Screens"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Report"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Reports"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Ordered dashboard pks"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Seconds per dashboard"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Refresh"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Data refresh seconds"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Mode"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Rows"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Aggregate"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Group by"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Value field"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Frequency"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Daily"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Weekly"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Monthly"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Send time"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "HH:MM"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Weekday"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "0=Monday, weekly only"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Recipients"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Email addresses"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Last run at"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Last status"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Invalid screen dashboards"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Interval must be between 5 and 3600 seconds"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Refresh must be between 10 and 3600 seconds"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Invalid report mode"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Group by is required for aggregate reports"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Send time must be HH:MM"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Weekday must be between 0 and 6"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Recipients cannot be empty"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Invalid email address: {}"
 msgstr ""
 
-#: ADR-021 screen & report (generated)
 msgid "Scheduled report {}. {} rows generated. The xlsx file is attached."
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook subscription"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook subscriptions"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook delivery"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook deliveries"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "URL"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Secret"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Events"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Subscription"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Attempt"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Response body"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Duration"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Seconds"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Next retry at"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Failed (retrying)"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Exhausted"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook url must use https (loopback http is allowed for testing)"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook events cannot be empty"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Unknown webhook event: {}"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Secret is required"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Test event dispatched, check the delivery audit page"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Test event was not dispatched (subscription inactive or event not subscribed)"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Only failed or exhausted deliveries can be retried"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Delivery re-dispatched"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook delivery exhausted"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook delivery exhausted: {}"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Login succeeded"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Login failed"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Approval submitted"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Approval approved"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Approval rejected"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Approval cancelled"
 msgstr ""
 
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
 msgid "Flow application submitted"
 msgstr ""
 
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
 msgid "Flow application approved"
 msgstr ""
 
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
 msgid "Flow application rejected"
 msgstr ""
 
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
 msgid "Flow application cancelled"
 msgstr ""
 
-#: ADR-022 outbound webhook (generated)
 msgid "Webhook ping"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "AI assistant"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Enable the docs-based usage/development assistant"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Base URL"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "API Key"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "e.g. deepseek-chat"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Timeout (seconds)"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "AI knowledge chunk"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "AI knowledge chunks"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Chunk index"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Content"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Content hash"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Synced at"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Base URL is required"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "API Key and model are required"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "AI provider OK: {}"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "You are the xadmin usage/development assistant. Answer ONLY based on the provided reference documents, cite them as [n] markers, and say you don't know when the documents do not cover the question."
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Question: {}"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Question cannot be empty"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "AI assistant is not enabled or configured"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "No matching documents found for this question"
 msgstr ""
 
-#: ADR-023 AI assistant (generated)
 msgid "Sync AI assistant knowledge base from repository docs"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "The model returned malformed JSON"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "The model returned unknown DSL keys: {}"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "Invalid NL query DSL"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "NL query is not enabled"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "No visible datasets for NL query"
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "You translate the user's question into a constrained dataset query DSL. You MUST pick the dataset only from the provided catalog and fields only from the dataset columns. Output ONLY a JSON object matching the schema, no prose. Use mode=aggregate with group_by/metric for statistical questions, mode=rows for record lists. Unknown values must be answered with an empty filters list."
 msgstr ""
 
-#: ADR-024 NL query (generated)
 msgid "DSL schema: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Dynamic form"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Dynamic forms"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Dynamic form submission"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Dynamic form submissions"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Schema"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Constrained widget-set field definitions"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "This form is no longer accepting submissions"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Dynamic form is required"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Invalid form schema"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Form schema must contain fields"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Form fields exceed the limit of {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field key {} is invalid (lowercase letters/digits/underscore)"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Duplicate field key: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} requires a label"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Unknown widget type: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} requires options"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} has too many options"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} of type {} does not accept options"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} max_length must be 1-{}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} {} must be numeric"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Invalid submission data"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Unknown submission keys: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} must be numeric"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} is below the minimum"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} is above the maximum"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} must be a list"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} has invalid options: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} must be boolean"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} has an invalid option: {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} must be text"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Field {} exceeds the max length {}"
 msgstr ""
 
-#: ADR-025 dynamic form (generated)
 msgid "Only the creator can modify a submission"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "AI knowledge document"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "AI knowledge documents"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Source type"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Repository docs"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Uploaded document"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Storage path"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Chunk count"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Chunks"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document uploaded"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document updated"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Repository documents are managed by sync"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Repository documents synced"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document name is required"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document name cannot contain path characters"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document content cannot be empty"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Path {} conflicts with a repository document"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document name"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Document content"
 msgstr ""
 
-#: ADR-033 knowledge documents (generated)
 msgid "Active"
 msgstr ""
 

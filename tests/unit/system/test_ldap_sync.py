@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""LDAP 同步服务单元测试（ADR-017）：建号/更新/冲突审计/消失策略/部门树/恢复。
+"""LDAP 同步服务单元测试：建号/更新/冲突审计/消失策略/部门树/恢复。
 
 同步契约：逐条 savepoint 隔离、冲突跳过并落 OperationLog(LDAP:conflict)、
 摘要落 OperationLog(LDAP:sync)、有动作时通知超管。

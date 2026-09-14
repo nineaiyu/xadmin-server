@@ -36,7 +36,7 @@ from system.utils.ctasks import (
 
 logger = get_logger(__name__)
 
-# LDAP 同步周期任务（ADR-017）：celery autodiscover 只导入 <app>.tasks，
+# LDAP 同步周期任务：celery autodiscover 只导入 <app>.tasks，
 # 子包任务必须在此显式引入才会注册到 django_celery_beat
 from system.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from system.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
@@ -240,7 +240,7 @@ def auto_clean_approval_job():
 @shared_task
 @register_as_period_task(crontab="*/30 * * * *")
 def auto_remind_approval_flow_job():
-    """流程节点超时提醒（ADR-012）：节点 timeout_hours 超时未处理，向指派人补发一次（每任务每日一次）。"""
+    """流程节点超时提醒：节点 timeout_hours 超时未处理，向指派人补发一次（每任务每日一次）。"""
     from system.utils.approval_flow import remind_pending_tasks
 
     count = remind_pending_tasks()
@@ -263,7 +263,7 @@ def auto_clean_approval_flow_job():
 
 @shared_task
 def convert_office_preview_task(upload_pk):
-    """Office 文件转 PDF 预览（ADR-013）：走 heavy 队列，产物落预览缓存。
+    """Office 文件转 PDF 预览：走 heavy 队列，产物落预览缓存。
 
     队列归属由 `CELERY_TASK_ROUTES` 按任务名路由；结束后释放转换锁，
     让后续请求（转换失败的场景）可以重新触发。

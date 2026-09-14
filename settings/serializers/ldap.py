@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP/AD 配置序列化器（ADR-017）。
+"""LDAP/AD 配置序列化器。
 
 字段名即配置名（BaseSettingViewSet 约定）；``LDAP_BIND_PASSWORD`` write_only
 ⇒ Setting.encrypted=True 值级加密落库，且 retrieve 回显时自动剔除。

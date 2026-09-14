@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""钉钉工作通知客户端（ADR-019）：asyncsend_v2 文本消息。
+"""钉钉工作通知客户端：asyncsend_v2 文本消息。
 
 凭据：appKey / appSecret / agentId。身份链路：OAuth 绑定存的是 unionId，
 发送前经 `topapi/user/getbyunionid` 换 userid（缓存，避免逐条换算的频控压力）。

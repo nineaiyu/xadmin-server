@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""请假业务演示数据（ADR-032）：真实审批闭环，不是造状态。
+"""请假业务演示数据：真实审批闭环，不是造状态。
 
 与 seed_demo_flows 的分工：
 - 流程定义（code=leave）随 ``load_init_json`` 作为内置示例灌入（loadjson/*.json）；

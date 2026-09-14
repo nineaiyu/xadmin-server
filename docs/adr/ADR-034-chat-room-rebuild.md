@@ -153,6 +153,49 @@ src/utils/websocket.ts         # 新增 ChatWebSocket 子类（/ws/chat/），�
   已读清零）+ `notice-push.e2e.ts` 改写走新页面（第二个浏览器上下文发 @提及，断言全局通道收到
   `push_message`，并断言公共房间实时广播可达）。
 
+## 二期（2026-09-14）：表情包 / AI 流式（SSE）/ 历史自动清理 / 桌面通知
+
+### 1. AI 流式输出（SSE）
+
+- 端点：`POST /api/chat/ai/stream`（`text/event-stream`），复用 `ask:ChatRoom` 的门禁语义
+  但单独登记权限点 **`stream:ChatRoom`**（`api/chat/ai/stream$`，POST）——DRF 权限链按
+  请求路径匹配菜单 path 正则，`api/chat/ai/message$` 覆盖不到新端点，不补点即全员 403；
+- 事件序：`meta`（问题正式载荷）→ `delta`*（文本增量）→ `done`（AI 消息正式载荷）| `error`
+  （可读 detail + system 降级消息载荷）。流式响应头发出后无法再改状态码，失败一律带内下发光；
+  门禁/参数/房间错误仍在响应头之前返回 JSON `code=1001`，前端按普通接口错误提示；
+- SDK：`ChatCompletionsClient.chat_stream`（OpenAI `stream=true` SSE 兼容，逐段产出增量，
+  错误口径与 `chat()` 一致）；`/kb` 问答整段一次产出（知识库检索本身非流式，不做假打字机）；
+- 落库/广播与 `ai/message` 同口径：流结束才写 AI 消息行并广播（多端经 client_msg_id 对齐）；
+  全程无增量即失败 → system 降级消息 + error 事件；已有增量后中断 → 保留部分回答
+  （`extra.partial` 记录中断原因）+ done 事件；
+- 响应头带 `X-Accel-Buffering: no`（防 nginx 攒满 buffer 才转发）与 `Cache-Control: no-cache`；
+  请求中间件已核安全：操作日志/计时中间件对 `.data/.content` 全部走 getattr 防护；
+- 前端：axios 不支持流式，`src/utils/sse.ts` 用 fetch + ReadableStream 手工解析
+  （解析器 `parseSseBuffer` 为纯函数，vitest 钉死半帧/多帧/CRLF/多行 data 场景）；
+  气泡内「▍」光标闪烁，切会话/卸载自动 abort；登录态用 `formatToken(getToken())` 手工携带。
+
+### 2. 历史自动清理（`CHAT_HISTORY_DAYS`）
+
+- 配置位：`common/core/config.py::CHAT_HISTORY_DAYS`（默认 **0 = 不清理**）+
+  `loadjson/systemconfig.json` 登记（系统设置界面可改）；
+- 任务：`message/tasks.py::clean_chat_history_job`（每日 03:23，`register_as_period_task`，
+  celery autodiscover 自动注册，无需 system/tasks.py 显式引入）；清理实现在
+  `message/chat.py::clean_expired_history`：按 id 升序小批（2000）删除，只删消息行、
+  不动会话与成员关系（历史清空的会话仍在列表，摘要自然为空）；
+- 测试：`tests/unit/message/test_chat_cleanup.py`（删旧留新 / 0 = no-op / 配置读取 /
+  任务可运行），配置断言沿用 patch SysConfig property 的范式。
+
+### 3. 表情包与桌面通知（前端）
+
+- 表情包：内置 64 个常用表情（不引第三方依赖），`el-popover` 网格 + 光标处插入
+  （textarea `selectionStart/setSelectionRange`），面板 `data-testid="chat-emoji-panel"`；
+- 桌面通知：`src/utils/desktopNotify.ts`（Notification API），开关持久化 localStorage
+  （聊天室头部铃铛，开启时按需申请权限）。口径钉死在 `shouldNotifyDesktop`：
+  **聊天类推送（@提及/私聊）前台也弹；其余站内推送仅 `document.hidden` 时弹**
+  （前台有应用内通知，避免双重打扰）。点击聚焦窗口并复用各分支的路由跳转；
+  正文一律 `stripHtml` 纯文本（推送正文可能带 HTML）。E2E 通过 `addInitScript`
+  注入假 Notification（permission=granted + 实例记录）断言，绕开真实权限弹窗。
+
 ## 验收（已执行 2026-09-14）
 
 - 后端：`pytest tests` **2087 passed**（新增 25 模型单测 + 28 REST 集成 + 15 WS consumer +

@@ -29,7 +29,7 @@ def test_action_enum_covers_known_actions():
 
 
 def test_action_enum_matches_ws_frame_schema():
-    """三处契约同步（ADR-003）：protocol.py ↔ ws-frame.schema.json ↔ 前端 protocol.ts。"""
+    """三处契约同步：protocol.py ↔ ws-frame.schema.json ↔ 前端 protocol.ts。"""
     import json
     import os
 
@@ -42,7 +42,7 @@ def test_action_enum_matches_ws_frame_schema():
 
 
 def test_chat_payloads_registered():
-    """聊天室新增载荷类型（ADR-034）必须在协议模块中有定义。"""
+    """聊天室新增载荷类型必须在协议模块中有定义。"""
     from message import protocol
 
     for name in ("ChatRoomMessagePayload", "ChatRecallPayload", "ChatReadPayload", "ChatUnreadPayload"):

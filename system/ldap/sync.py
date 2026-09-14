@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP 定时同步服务（ADR-017）：OU → 部门树、目录条目 → 用户/状态。
+"""LDAP 定时同步服务：OU → 部门树、目录条目 → 用户/状态。
 
 设计要点：
 - ``run_ldap_sync`` 为唯一入口，返回摘要 dict；连接/配置错误直接抛出

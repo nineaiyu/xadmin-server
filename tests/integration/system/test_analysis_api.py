@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""大屏与定时报表集成测试（ADR-021）。
+"""大屏与定时报表集成测试。
 
 覆盖：Screen/Report CRUD 与越权、报表调度命中（daily/weekly/monthly × 时刻）、
 执行（创建者权限上下文 fail-closed、xlsx 产物进下载中心、邮件降级）、

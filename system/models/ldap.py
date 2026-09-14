@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP 目录绑定（ADR-017）：本地账号与目录条目的关联锚点。"""
+"""LDAP 目录绑定：本地账号与目录条目的关联锚点。"""
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _

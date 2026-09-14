@@ -128,7 +128,7 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
 
 
 class ApiApplicationSerializer(BaseModelSerializer):
-    """开放平台应用序列化器（ADR-030）。
+    """开放平台应用序列化器。
 
     client_id / client_secret_prefix 只读（由服务端生成）；client_secret 与 callback_secret
     的明文仅在创建/重置响应中返回一次（视图层注入，不经本序列化器）。

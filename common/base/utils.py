@@ -173,7 +173,7 @@ def remove_file(name):
 
 class AESCipherV2(object):
     """
-    前端凭证加密解密，双格式自适应（ADR-010 / ADR-011）：
+    前端凭证加密解密，双格式自适应：
 
     - 旧格式：OpenSSL ``Salted__`` 兼容格式（EVP_BytesToKey(MD5) + AES-256-CBC），
       无前缀，由前端 crypto-es（原 crypto-js）产出；
@@ -229,7 +229,7 @@ class AESCipherV2(object):
         if text.startswith(self.V2_PREFIX):
             return self._decrypt_v2(text[len(self.V2_PREFIX) :])
         if not self._v1_decrypt_enabled():
-            # ADR-011 演进：灰度开关关闭后拒绝旧格式，与非法输入同语义返回空串
+            # 灰度开关关闭后拒绝旧格式，与非法输入同语义返回空串
             return ""
         data = base64.b64decode(enc)
         if data[:8] != b"Salted__":
@@ -259,7 +259,7 @@ class AESCipherV2(object):
 
     @staticmethod
     def _v1_decrypt_enabled() -> bool:
-        """旧格式（Salted__）解密灰度开关（SECURITY_AES_V1_DECRYPT_ENABLED，ADR-011 演进项）。
+        """旧格式（Salted__）解密灰度开关（SECURITY_AES_V1_DECRYPT_ENABLED）。
 
         默认开启保持存量前端兼容；配置缺失（Settings 尚未加载的极端场景）按开启处理，
         宁可多兼容不误杀。确认全量用户升级至 v2 优先前端后由运维关闭。

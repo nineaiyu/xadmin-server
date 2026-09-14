@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 
 def ensure_local_password_changeable(user):
-    """LDAP 绑定用户拒绝本地改密/重置：密码由目录服务器管理（ADR-017）。"""
+    """LDAP 绑定用户拒绝本地改密/重置：密码由目录服务器管理。"""
     if LdapUserBinding.objects.filter(user=user).exists():
         raise ValidationError(_("Password is managed by the LDAP directory and cannot be changed locally"))
 

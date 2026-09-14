@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室领域服务（ADR-034）：会话开通 / 消息落库 / 未读游标 / 联系人 / @提及。
+"""聊天室领域服务：会话开通 / 消息落库 / 未读游标 / 联系人 / @提及。
 
 分层约定：
 - 本模块只做同步 DB 与纯函数逻辑（REST 视图与 WS consumer 共用同一套语义）：
@@ -431,3 +431,30 @@ def mention_users(content: str, exclude_username: str = "") -> list:
 def new_client_msg_id() -> str:
     """服务端侧消息幂等键（AI/系统消息落库用，避免与客户端键空间混淆）。"""
     return uuid.uuid4().hex
+
+
+def clean_expired_history(keep_days=None, batch_size=2000) -> int:
+    """分批删除超过保留期的聊天消息（CHAT_HISTORY_DAYS，0 = 不清理）。
+
+    只删消息行，不动会话与成员关系：历史清空的会话仍在列表里（摘要自然为空），
+    未读游标等冗余字段失效无害。按 id 升序小批删除，避免长事务长时间锁表。
+    """
+    from common.core.config import SysConfig
+
+    days = SysConfig.CHAT_HISTORY_DAYS if keep_days is None else keep_days
+    if not days or int(days) <= 0:
+        return 0
+    deadline = timezone.now() - timezone.timedelta(days=int(days))
+    removed = 0
+    while True:
+        ids = list(
+            ChatMessage.objects.filter(created_time__lte=deadline)
+            .order_by("id")
+            .values_list("id", flat=True)[:batch_size]
+        )
+        if not ids:
+            break
+        deleted, _counts = ChatMessage.objects.filter(id__in=ids).delete()
+        removed += deleted
+    logger.info(f"clean {removed} chat history message, keep_days {days}")
+    return removed

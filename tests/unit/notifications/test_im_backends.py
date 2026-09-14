@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""企业 IM 通知渠道单测（ADR-019）。
+"""企业 IM 通知渠道单测。
 
 覆盖：三家 SDK 客户端（token 获取与缓存 / 请求体形状 / errcode、code 拒绝 /
 钉钉 unionId→userid 缓存 / 单用户失败隔离）/ 渠道可达性（凭据缺失降级）/

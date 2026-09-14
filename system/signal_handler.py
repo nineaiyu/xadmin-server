@@ -155,7 +155,7 @@ def invalid_mask_roles_m2m_cache_handler(sender, instance, action, **kwargs):
 
 @receiver(approval_instance_finished)
 def sync_business_status_handler(sender, instance, status=None, reason="", **kwargs):
-    """流程实例终态回写业务单（ADR-032）：按 biz_type 分发给业务同步器。
+    """流程实例终态回写业务单：按 biz_type 分发给业务同步器。
 
     目前仅请假业务（biz_type=leave）接入；新增业务在此处追加分支即可（引擎侧
     无需改动）。回写失败只记日志——业务状态由审批结果驱动，不应反过来阻断审批。

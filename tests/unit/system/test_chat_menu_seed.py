@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""聊天室菜单/权限种子守护测试（ADR-034）。
+"""聊天室菜单/权限种子守护测试。
 
 新增 REST 接口若不登记权限点，非超管用户会被 `IsAuthenticated._resolve_menu_pk`
 fail-closed 拒绝（403）；而权限点 `path` 写错（如多写尾斜杠）**同样**是 403，
@@ -29,6 +29,7 @@ CHAT_POINTS = {
     "recall:ChatMessage": (r"api/chat/message/(?P<pk>[^/.]+)/recall$", "POST", "/api/chat/message/1/recall"),
     "list:ChatContact": ("api/chat/contacts$", "GET", "/api/chat/contacts"),
     "ask:ChatRoom": ("api/chat/ai/message$", "POST", "/api/chat/ai/message"),
+    "stream:ChatRoom": ("api/chat/ai/stream$", "POST", "/api/chat/ai/stream"),
 }
 # 已授予聊天室权限的内置角色（有聊天室页面授权的角色必须同步授权接口权限点）
 ROLES_WITH_CHAT = [

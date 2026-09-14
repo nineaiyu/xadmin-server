@@ -1,5 +1,5 @@
 // T3.1 性能基线 04：元数据接口（search-columns / search-fields / with_meta=1 内联）。
-// TD-05 已知热点：页面首开依赖元数据。本脚本同时测三个面：
+// 已知热点：页面首开依赖元数据。本脚本同时测三个面：
 //   - search-columns / search-fields：分离请求（T3.2 优化前的旧路径）
 //   - list?with_meta=1：内联元数据（T3.2 优化后的单请求路径），用于对比验证优化收益
 import http from 'k6/http';

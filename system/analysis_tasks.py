@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""定时报表任务（ADR-021）：调度分发 + 执行渲染 + 邮件送达。
+"""定时报表任务：调度分发 + 执行渲染 + 邮件送达。
 
 - 分发器每小时跑一次（crontab "5 * * * *"），命中 frequency/send_time/weekday
   的 active 报表派发执行；执行与分发解耦（长渲染不阻塞扫描）；
@@ -111,7 +111,7 @@ def _precreate_record(report) -> str:
 
 
 @shared_task
-@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发（ADR-021）")
+@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发")
 def dispatch_scheduled_reports():
     """每小时扫描 active 报表并派发到期的执行任务。"""
     from system.models.dataset import Report

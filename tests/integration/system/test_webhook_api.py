@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""出站 Webhook 集成测试（ADR-022）。
+"""出站 Webhook 集成测试。
 
 覆盖：签名（HMAC 稳定性 + 本地接收端验签）、指数退避重试与耗尽告警、
 订阅过滤（未订阅事件不投递）、URL 白名单、事件接线（登录/审批触发投递）、
@@ -235,7 +235,7 @@ class TestEventWiring:
         assert handler.received[-1]["event"] == "approval.approved"
 
     def test_flow_events_emit(self, receiver, superuser, normal_user):
-        """流程审批引擎（ADR-012）事件接线：提交/通过/撤回 → flow.* 投递。"""
+        """流程审批引擎事件接线：提交/通过/撤回 → flow.* 投递。"""
         url, handler = receiver
         for event in ("flow.submitted", "flow.approved", "flow.cancelled"):
             make_subscription(url=url, event=event)

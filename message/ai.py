@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室 AI 助手（ADR-034）：通用多轮对话 + `/kb` 知识库问答双形态。
+"""聊天室 AI 助手：通用多轮对话 + `/kb` 知识库问答双形态。
 
 - 通用多轮：读取本会话最近 N 条消息裁剪上下文 + 内置助手人设 → ChatCompletionsClient；
 - `/kb 问题`：复用 system.utils.ai 的知识库 RAG（ask）链路，回复附引用来源（extra.sources）；
 - 门禁：`AI_ASSISTANT_ENABLED` 且凭据齐全才可用（未启用/未配置统一可读降级，不静默）；
 - 异常降级：LLM 失败落一条 system 消息（前端可见），REST 同时返回可读 detail；
-- 会话走 REST 同步（LLM 5~60s，不占用 WS 长连接）；流式 SSE 留二期。
+- 会话走 REST 同步（LLM 5~60s，不占用 WS 长连接）；流式走 `ai_stream_events`（SSE，二期）。
 """
 
 from django.conf import settings
@@ -16,6 +16,7 @@ from django.utils.translation import gettext_lazy as _
 from common.utils import get_logger
 from message import chat as chat_service
 from message.models import ChatMessage, ChatRoom
+from message.utils import push_room_event
 
 logger = get_logger(__name__)
 
@@ -100,6 +101,64 @@ def ai_reply_content(room: ChatRoom, question: str) -> tuple:
         answer, sources = kb_answer(kb_question)
         return answer, {"mode": "kb", "sources": sources}, "kb"
     return _llm_reply(build_chat_messages(room, question)), {"mode": "chat"}, "chat"
+
+
+def _llm_reply_stream(messages: list):
+    """流式多轮：逐段产出增量；AiSdkError 转可读校验错误（在生成器内抛出）。"""
+    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from system.utils.ai import ai_credentials
+
+    client = ChatCompletionsClient(ai_credentials())
+    try:
+        yield from client.chat_stream(messages)
+    except AiSdkError as exc:
+        logger.warning("chat ai llm stream failed: %s", exc)
+        raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
+
+
+def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
+    """SSE 事件生成器（二期）：yield dict(event, data)，视图转 text/event-stream。
+
+    事件序：``meta``（问题回执）→ ``delta``*（文本增量）→ ``done``（正式消息载荷）| ``error``。
+    落库与 WS 广播在此收口，与 ``ai_message`` 同口径：
+
+    - 全程无增量即失败 → 落一条 system 降级消息（前端可见）+ error 事件；
+    - 已有增量后中断 → 保留部分回答（extra.partial 记录中断原因）+ done 事件。
+    """
+    yield {"event": "meta", "data": {"question": question_payload}}
+
+    chunks: list = []
+    extra = {"mode": "chat"}
+    try:
+        if is_kb_command(question):
+            kb_question = strip_kb_command(question)
+            if not kb_question:
+                raise DjangoValidationError(_("Please provide a question after /kb, e.g. /kb how to reset password"))
+            answer, sources = kb_answer(kb_question)
+            extra = {"mode": "kb", "sources": sources}
+            chunks.append(answer)
+            yield {"event": "delta", "data": {"delta": answer}}
+        else:
+            for delta in _llm_reply_stream(build_chat_messages(room, question)):
+                chunks.append(delta)
+                yield {"event": "delta", "data": {"delta": delta}}
+    except DjangoValidationError as exc:
+        detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
+        if not chunks:
+            fallback, __ = chat_service.create_message(
+                room, None, detail, message_type=ChatMessage.MessageType.SYSTEM, extra={"error": True, "mode": "chat"}
+            )
+            payload = chat_service.message_payload(fallback, room=room)
+            push_room_event(room, payload)
+            yield {"event": "error", "data": {"detail": detail, "message": payload}}
+            return
+        extra["partial"] = detail
+    reply, __ = chat_service.create_message(
+        room, None, "".join(chunks), message_type=ChatMessage.MessageType.AI, extra=extra
+    )
+    payload = chat_service.message_payload(reply, room=room)
+    push_room_event(room, payload)
+    yield {"event": "done", "data": {"mode": extra.get("mode", "chat"), "message": payload}}
 
 
 def markdown_hint() -> str:

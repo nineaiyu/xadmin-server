@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""数据集与仪表盘视图（ADR-020）。
+"""数据集与仪表盘视图。
 
 数据集：CRUD + `columns`（设计器元数据）/ `execute`（行数据，数据权限过滤）/
 `aggregate`（聚合序列，图表数据源）。执行动作必须经权限菜单节点访问

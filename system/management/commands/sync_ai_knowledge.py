@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""同步 AI 助手知识库（ADR-023）：docs/ 分块入库，按 hash 幂等。"""
+"""同步 AI 助手知识库：docs/ 分块入库，按 hash 幂等。"""
 
 from django.core.management.base import BaseCommand
 

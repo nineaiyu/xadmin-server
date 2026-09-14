@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""数据集与仪表盘序列化器（ADR-020）。"""
+"""数据集与仪表盘序列化器。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -14,7 +14,7 @@ ALLOWED_CHART_TYPES = ("number", "line", "bar", "pie")
 
 class DatasetSerializer(BaseModelSerializer):
     # 定义类资源（配置对象）不做字段权限裁剪：可见性语义 = 创建者/共享；
-    # 字段权限叠加到数据集列属 G3b 评估项（ADR-020 边界）
+    # 字段权限叠加到数据集列属待评估边界项
     ignore_field_permission = True
 
     class Meta:

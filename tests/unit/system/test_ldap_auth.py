@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""LdapBindBackend 单元测试（ADR-017）。
+"""LdapBindBackend 单元测试。
 
 覆盖：开关 / 优先级让位 / bind 成功解析与建号 / 复用本地账号 / 回收站占用
 fail-closed / 密码错误与目录不可达降级（绝不抛异常阻断本地登录）。

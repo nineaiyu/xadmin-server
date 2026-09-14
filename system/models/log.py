@@ -25,7 +25,7 @@ class UserLoginLog(DbAuditModel):
         WECHAT = 4, _("Wechat scan code")
         # 第三方 OAuth/OIDC 登录：位标记风格下的独立槽位（0/1/2/4/8/9 已占用）
         OAUTH = 5, _("Third-party OAuth")
-        # LDAP/AD 目录账号 bind 登录（ADR-017）：经 LdapBindBackend 认证，
+        # LDAP/AD 目录账号 bind 登录：经 LdapBindBackend 认证，
         # login_type 由 SessionTokenObtainPairSerializer 依 _ldap_authenticated 透传
         LDAP = 3, _("LDAP directory account")
         WEBSOCKET = 8, _("Websocket")
@@ -69,9 +69,9 @@ class OperationLog(DbAuditModel):
         PAT = "pat", _("Personal access token")
         # SCIM 目录同步（S1）：独立服务凭证，写操作由 system/scim/resources.write_audit 落库
         SCIM = "scim", _("SCIM directory sync")
-        # LDAP 目录同步（ADR-017）：同步冲突/摘要由 system/ldap/sync 落库
+        # LDAP 目录同步：同步冲突/摘要由 system/ldap/sync 落库
         LDAP = "ldap", _("LDAP directory sync")
-        # AI NL 查数（ADR-024）：interpret/run 语义审计由 system/utils/nl_query 落库
+        # AI NL 查数：interpret/run 语义审计由 system/utils/nl_query 落库
         AI = "ai", _("AI assistant")
 
     module = models.CharField(max_length=64, verbose_name=_("Module"), null=True, blank=True)
@@ -91,7 +91,7 @@ class OperationLog(DbAuditModel):
     exec_time = models.FloatField(verbose_name=_("Execution time"), null=True, blank=True)
     # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径写入）
     changes = models.TextField(verbose_name=_("Changed fields"), null=True, blank=True)
-    # 凭证标识（PAT 精确审计，ADR-008 演进项销项）：PAT 请求记 pat + token_pk，
+    # 凭证标识（PAT 精确审计）：PAT 请求记 pat + token_pk，
     # JWT 请求记 jwt，匿名/白名单接口留空。token_pk 刻意不建 FK——凭证被清理任务
     # 删除后日志不断链（主键快照本身即可回溯）；类型对齐凭证主键（大整数）。
     # 升级前的历史行 token_pk 为空，无法归属到具体凭证。

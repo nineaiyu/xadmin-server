@@ -47,7 +47,7 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     def retrieve(self, request, *args, **kwargs):
         """获取{cls}信息"""
         data = super().retrieve(request, *args, **kwargs).data
-        # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue，见 ADR-029）
+        # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue）
         return ApiResponse(
             **data,
             config={

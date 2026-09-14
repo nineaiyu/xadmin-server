@@ -59,7 +59,7 @@ logger = get_logger(__name__)
 QUOTA_EXCEEDED_CODE = 1004
 # 不支持在线预览的业务码：前端按该码禁用预览按钮并说明原因
 PREVIEW_UNSUPPORTED_CODE = 1005
-# Office 转换中的业务码（ADR-013）：前端稍后重试预览请求
+# Office 转换中的业务码：前端稍后重试预览请求
 PREVIEW_PREPARING_CODE = 1006
 
 
@@ -296,7 +296,7 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         - PDF：`inline` 流式返回，由浏览器内嵌渲染；
         - 文本：按 `FILE_PREVIEW_TEXT_MAX_BYTES` 截断，以 `text/plain` 返回，
           截断状态放在 `X-Preview-Truncated` 响应头（前端据此提示"过大，请下载"）；
-        - Office（docx/xlsx/pptx 等，ADR-013）：LibreOffice 转 PDF 后内嵌渲染，
+        - Office（docx/xlsx/pptx 等）：LibreOffice 转 PDF 后内嵌渲染，
           转换在 heavy 队列执行；产物未就绪返回业务码 1006（前端稍后重试），
           转换器缺失/超限/关闭时降级为 1005；
         - 其余类型：返回业务码 1005（前端按 `preview_kind` 已提前禁用按钮）。

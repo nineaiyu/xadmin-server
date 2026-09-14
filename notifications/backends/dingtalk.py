@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""钉钉通知渠道（ADR-019）：工作通知 asyncsend_v2。
+"""钉钉通知渠道：工作通知 asyncsend_v2。
 
 可达性两层：渠道级 = 开关 + 应用三元组齐全（缺 agentId 视为未配置）；
 用户级 = 用户有 dingtalk flavor 的 OAuth 绑定（unionId → userid 发送前换算）。

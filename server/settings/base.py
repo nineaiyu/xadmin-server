@@ -118,7 +118,7 @@ MIDDLEWARE = [
     "server.middleware.EndMiddleware",
 ]
 
-# CSP 策略（ADR-013 之外的 S3 落地）：django-csp 生成，运行期模式由
+# CSP 策略（S3 落地，独立于 Office 预览）：django-csp 生成，运行期模式由
 # CSPModeMiddleware + SysConfig.CSP_MODE 决定（默认 report-only 观察，再切 enforce）。
 # - style-src 放开 'unsafe-inline'：Element Plus / 图表按需注入内联样式；
 # - connect-src 放开 ws:/wss:：应用 WebSocket（应用 ws 与 vite HMR）；
@@ -330,7 +330,7 @@ USE_TZ = True
 
 AUTH_USER_MODEL = "system.UserInfo"
 
-# 认证 backend 链：LDAP bind 在前（ADR-017）。LdapBindBackend 内部按
+# 认证 backend 链：LDAP bind 在前。LdapBindBackend 内部按
 # LDAP_AUTH_ENABLED / LDAP_AUTH_PRIORITY 动态让位 ModelBackend，
 # 关闭/降级时行为与纯本地账密完全一致
 AUTHENTICATION_BACKENDS = [

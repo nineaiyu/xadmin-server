@@ -25,7 +25,7 @@
     "fields": {
       "created_time": "2026-09-14T02:20:00.000Z",
       "updated_time": "2026-09-14T02:20:00.000Z",
-      "description": "请假审批（ADR-032 内置业务）：审批人 = 申请人所在部门负责人；天数/事由由请假单自动带入",
+      "description": "请假审批（内置业务）：审批人 = 申请人所在部门负责人；天数/事由由请假单自动带入",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,

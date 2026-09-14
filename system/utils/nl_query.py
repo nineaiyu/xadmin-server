@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 二期 NL 查数核心工具（ADR-024）。
+"""AI 二期 NL 查数核心工具。
 
 四层防线（缺一不可）：
 1. 禁原生 SQL——LLM 只产出受限 DSL（数据集/模式/白名单过滤/聚合/limit）；
 2. 白名单校验——字段/op/metric/dataset 可见性任一越界即拒绝（LLM 输出按
    不可信输入处理，提示注入只能收敛到白名单闭包）；
-3. 数据权限编译器强制过滤——执行走 ADR-020 的 execute/aggregate 管线
+3. 数据权限编译器强制过滤——执行走 execute/aggregate 管线
    （fail-closed）；
 4. 试算预览 + limit 限幅 + 全程审计（OperationLog module=AI:nl_query）。
 """

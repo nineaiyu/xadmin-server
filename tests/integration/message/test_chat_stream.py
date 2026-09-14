@@ -1,0 +1,189 @@
+# -*- coding: utf-8 -*-
+"""聊天室 AI 流式提问集成测试（二期，/api/chat/ai/stream SSE）。
+
+覆盖：事件序（meta → delta* → done）、`/kb` 单段增量带引用来源、门禁 JSON 1001、
+LLM 全程失败降级 system 消息 + error 事件、已有增量后中断保留部分回答、
+权限门控（无 stream:ChatRoom 权限点 fail-closed 403）。
+"""
+
+import json as jsonlib
+
+import pytest
+from rest_framework.test import APIClient
+
+from message import chat as chat_service
+from message.models import ChatMessage, ChatRoom
+
+pytestmark = pytest.mark.django_db
+
+STREAM_URL = "/api/chat/ai/stream"
+
+
+def parse_sse(response) -> list:
+    """Django 测试流式响应 → [(event, data_dict)]（按空行切帧）。"""
+    frames = []
+    buffer = b""
+    for chunk in response.streaming_content:
+        buffer += chunk if isinstance(chunk, bytes) else str(chunk).encode()
+        while b"\n\n" in buffer:
+            raw, buffer = buffer.split(b"\n\n", 1)
+            event, data = "message", ""
+            for line in raw.decode().splitlines():
+                if line.startswith("event:"):
+                    event = line[len("event:") :].strip()
+                elif line.startswith("data:"):
+                    data = line[len("data:") :].strip()
+            frames.append((event, jsonlib.loads(data) if data else {}))
+    return frames
+
+
+class _FakeStreamResponse:
+    def __init__(self, lines, status_code=200):
+        self._lines = lines
+        self.status_code = status_code
+        self.text = "provider rejected"
+
+    def iter_lines(self, decode_unicode=True):
+        yield from self._lines
+
+
+class StreamStubLLM:
+    """替换 ChatCompletionsClient._client：post 返回 OpenAI SSE 帧序列，走真实 chat_stream 解析。"""
+
+    def __init__(self, deltas=("你好", "，我是", " AI 助手")):
+        self.deltas = list(deltas)
+        self.requests = []
+
+    def post(self, url, json=None, headers=None, timeout=None, stream=False):
+        # 注意：形参 json 是请求载荷（requests 签名），模块 json 用 jsonlib 别名
+        self.requests.append({"url": url, "json": json})
+        lines = [
+            f"data: {jsonlib.dumps({'choices': [{'delta': {'content': delta}}]}, ensure_ascii=False)}"
+            for delta in self.deltas
+        ]
+        lines.append("data: [DONE]")
+        lines.append("")
+        return _FakeStreamResponse(lines)
+
+
+@pytest.fixture
+def stream_stub(monkeypatch):
+    stub = StreamStubLLM()
+    monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+    return stub
+
+
+@pytest.fixture
+def alice(db):
+    from system.models import UserInfo
+
+    return UserInfo.objects.create_user(username="alice", password="Test@123456", nickname="爱丽丝")
+
+
+@pytest.fixture
+def bob(db):
+    from system.models import UserInfo
+
+    return UserInfo.objects.create_user(username="bob", password="Test@123456", nickname="鲍勃")
+
+
+@pytest.fixture
+def ai_enabled(settings):
+    settings.AI_ASSISTANT_ENABLED = True
+    settings.AI_BASE_URL = "https://ai.example.com/v1"
+    settings.AI_API_KEY = "sk-test"
+    settings.AI_MODEL = "test-model"
+    return settings
+
+
+class TestStream:
+    def test_event_order_and_persistence(self, auth_client, superuser, ai_enabled, stream_stub):
+        response = auth_client.post(STREAM_URL, {"content": "介绍一下系统"}, format="json")
+        assert response.status_code == 200, response.data
+        assert response["Content-Type"] == "text/event-stream"
+        assert response["X-Accel-Buffering"] == "no"
+
+        frames = parse_sse(response)
+        assert [event for event, __ in frames] == ["meta", "delta", "delta", "delta", "done"]
+        assert frames[0][1]["question"]["content"] == "介绍一下系统"
+        assert "".join(data["delta"] for __, data in frames[1:-1]) == "你好，我是 AI 助手"
+        assert frames[-1][1]["mode"] == "chat"
+        assert frames[-1][1]["message"]["message_type"] == ChatMessage.MessageType.AI
+
+        room = ChatRoom.objects.get(room_key=f"ai:{superuser.pk}")
+        rows = list(ChatMessage.objects.filter(room=room).order_by("id"))
+        assert [row.message_type for row in rows] == [ChatMessage.MessageType.TEXT, ChatMessage.MessageType.AI]
+        assert rows[1].content == "你好，我是 AI 助手"
+
+    def test_llm_request_uses_stream_flag(self, auth_client, ai_enabled, stream_stub):
+        response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
+        # 流式响应是惰性生成器：消费帧才会真正触发 LLM 请求
+        parse_sse(response)
+        assert stream_stub.requests[0]["json"]["stream"] is True
+
+    def test_kb_single_delta_with_sources(self, auth_client, ai_enabled, monkeypatch):
+        monkeypatch.setattr(
+            "system.utils.ai.ask",
+            lambda question: {
+                "answer": "根据文档，重置密码见 [1]。",
+                "sources": [{"title": "手册", "path": "upload/manual.md", "chunk_index": 0}],
+            },
+        )
+        response = auth_client.post(STREAM_URL, {"content": "/kb 如何重置密码"}, format="json")
+        frames = parse_sse(response)
+        assert [event for event, __ in frames] == ["meta", "delta", "done"]
+        assert frames[1][1]["delta"] == "根据文档，重置密码见 [1]。"
+        assert frames[2][1]["message"]["extra"]["sources"][0]["path"] == "upload/manual.md"
+
+    def test_failure_without_delta_degrades_to_system_message(self, auth_client, superuser, ai_enabled, monkeypatch):
+        from common.sdk.ai.chat import AiSdkError
+
+        monkeypatch.setattr(
+            "common.sdk.ai.chat.ChatCompletionsClient.chat_stream",
+            lambda self, messages, temperature=0.2: (_ for _ in ()).throw(AiSdkError("provider down")),
+        )
+        response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
+        frames = parse_sse(response)
+        assert frames[-1][0] == "error"
+        fallback = ChatMessage.objects.filter(message_type=ChatMessage.MessageType.SYSTEM).first()
+        assert fallback is not None
+        assert fallback.extra.get("error") is True
+        assert frames[-1][1]["message"]["id"] == fallback.pk
+        assert not ChatMessage.objects.filter(message_type=ChatMessage.MessageType.AI).exists()
+
+    def test_interruption_after_delta_keeps_partial_answer(self, auth_client, superuser, ai_enabled, monkeypatch):
+        from common.sdk.ai.chat import AiSdkError
+
+        def broken_stream(self, messages, temperature=0.2):
+            yield "部分"
+            yield "回答"
+            raise AiSdkError("stream interrupted")
+
+        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", broken_stream)
+        response = auth_client.post(STREAM_URL, {"content": "写个长答案"}, format="json")
+        frames = parse_sse(response)
+        assert frames[-1][0] == "done"
+        reply = ChatMessage.objects.filter(message_type=ChatMessage.MessageType.AI).first()
+        assert reply is not None
+        assert reply.content == "部分回答"
+        from django.utils.translation import gettext as _t
+
+        assert reply.extra.get("partial") == str(_t("AI service is temporarily unavailable"))
+
+    def test_gate_disabled_returns_json(self, auth_client, superuser, settings):
+        settings.AI_ASSISTANT_ENABLED = False
+        response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
+        assert response.json()["code"] == 1001
+        assert not ChatMessage.objects.exists()
+
+    def test_non_ai_room_rejected(self, auth_client, superuser, bob, ai_enabled, stream_stub):
+        room = chat_service.get_or_create_private_room(superuser, bob)
+        response = auth_client.post(STREAM_URL, {"content": "hello", "room_id": room.pk}, format="json")
+        assert response.json()["code"] == 1001
+
+    def test_permission_gate_fail_closed(self, db, alice, ai_enabled, stream_stub):
+        """未授予 stream:ChatRoom 权限点的普通用户 fail-closed 403。"""
+        client = APIClient()
+        client.force_authenticate(alice)
+        response = client.post(STREAM_URL, {"content": "你好"}, format="json")
+        assert response.status_code == 403

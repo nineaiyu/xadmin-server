@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""知识库序列化器（ADR-033）：文档列表/预览 + 上传写入校验。
+"""知识库序列化器：文档列表/预览 + 上传写入校验。
 
 - 列表轻量（不含全文，to_representation 按 action 裁剪）；
 - retrieve 附分块摘要（chunks）供前端预览「问答时会切成哪些块」；

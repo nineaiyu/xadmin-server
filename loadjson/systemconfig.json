@@ -620,7 +620,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "流程实例保留天数（全量审批流引擎，ADR-012）：超过由清理任务分批删除（级联节点任务）",
+      "description": "流程实例保留天数（全量审批流引擎）：超过由清理任务分批删除（级联节点任务）",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -637,7 +637,7 @@
     "fields": {
       "created_time": "2026-09-14T00:00:00Z",
       "updated_time": "2026-09-14T00:00:00Z",
-      "description": "请假审批流程 code（ADR-032）：请假单提交时绑定的流程定义；不存在时按 leave_<类型> 与 leave 前缀回退查找",
+      "description": "请假审批流程 code：请假单提交时绑定的流程定义；不存在时按 leave_<类型> 与 leave 前缀回退查找",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -654,7 +654,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "Office 在线预览开关（ADR-013）：关闭或未安装 LibreOffice 时按「不支持预览」降级",
+      "description": "Office 在线预览开关：关闭或未安装 LibreOffice 时按「不支持预览」降级",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -824,7 +824,7 @@
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
       "updated_time": "2026-09-11T00:00:00Z",
-      "description": "CSP 模式（S3，ADR-004 复审后的独立方案 django-csp）：disabled / report-only（观察期，默认）/ enforce",
+      "description": "CSP 模式（S3，django-csp 独立方案）：disabled / report-only（观察期，默认）/ enforce",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -849,6 +849,23 @@
       "is_active": true,
       "access": false,
       "key": "CSP_REPORT_URI",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b2b",
+    "fields": {
+      "created_time": "2026-09-10T00:00:00Z",
+      "updated_time": "2026-09-14T00:00:00Z",
+      "description": "聊天消息保留天数（0 = 不清理）：超过由每日清理任务分批删除，会话与成员保留",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 0,
+      "is_active": true,
+      "access": false,
+      "key": "CHAT_HISTORY_DAYS",
       "inherit": false
     }
   }

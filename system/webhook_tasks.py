@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Webhook 投递任务（ADR-022）：HMAC 签名 POST + 指数退避重试 + 耗尽告警。
+"""Webhook 投递任务：HMAC 签名 POST + 指数退避重试 + 耗尽告警。
 
 - task_id == WebhookDelivery.pk（幂等键，接收方按 X-Xadmin-Delivery 去重）；
 - 失败 countdown = min(60 × 2^attempt, 3600) 指数退避，上限 5 次尝试；

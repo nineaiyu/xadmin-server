@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室数据模型（ADR-034）。
+"""聊天室数据模型。
 
 三张表：
 - ChatRoom：会话（public 全站单例 / private 一对一 / ai 每用户一间），room_key 规范化唯一键；
@@ -8,7 +8,7 @@
 - ChatMessage：消息（BigAuto 主键即自增游标，(room, id) 索引支撑倒序游标分页）。
 
 设计边界：
-- 公共聊天室不维护未读（进入即浏览，ADR-034 一期口径）；
+- 公共聊天室不维护未读（进入即浏览）；
 - `sender_name` 存发送时快照，昵称改名不回溯历史消息；
 - `client_msg_id` 幂等键：断线重发/乐观上屏去重，`(sender, client_msg_id)` 部分唯一索引兜底。
 """

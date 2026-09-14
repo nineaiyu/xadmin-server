@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室 REST 路由（/api/chat/，ADR-034）。"""
+"""聊天室 REST 路由（/api/chat/）。"""
 
 from rest_framework.routers import SimpleRouter
 

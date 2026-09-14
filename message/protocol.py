@@ -26,7 +26,7 @@ class MessageAction(str, Enum):
 
     `chat_message` 在两条通道上语义不同（历史原因，见各 Payload 文档）：
     - `ws/message/<group>/<username>`（MessageNotify，历史通道，仅兼容保留）载荷 = ChatMessagePayload；
-    - `ws/chat/`（ChatNotify，聊天室重构 ADR-034 通道）载荷 = ChatRoomMessagePayload。
+    - `ws/chat/`（ChatNotify，聊天室重构后的通道）载荷 = ChatRoomMessagePayload。
     """
 
     PING = "ping"  # 心跳：上行 ping → 下行 data='pong'
@@ -83,7 +83,7 @@ class ChatMessagePayload(TypedDict, total=False):
 
 
 class ChatRoomMessagePayload(TypedDict, total=False):
-    """聊天室消息载荷（ws/chat/ 通道，ADR-034）：落库后广播的完整消息记录。
+    """聊天室消息载荷（ws/chat/ 通道）：落库后广播的完整消息记录。
 
     id 为自增主键（即游标），client_msg_id 供发送端做本地幂等对齐。
     """

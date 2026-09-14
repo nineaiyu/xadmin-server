@@ -22,7 +22,7 @@ SECRET_KEY:
 # SENTRY_ENVIRONMENT: production
 # SENTRY_TRACES_SAMPLE_RATE: 0.0
 
-# DRF Basic 认证开关（SEC-4）：base64 明文凭证，默认关闭，仅本地调试按需开启
+# DRF Basic 认证开关：base64 明文凭证，默认关闭，仅本地调试按需开启
 # BASIC_AUTH_ENABLED: true
 
 # 用于DEBUG模式下，输出sql日志
@@ -87,7 +87,7 @@ HTTP_BIND_HOST: 0.0.0.0
 HTTP_LISTEN_PORT: 8896
 GUNICORN_MAX_WORKER: 4
 CELERY_WORKER_COUNT: 4
-# PERF-1：heavy 队列（导入/导出/批量重任务）worker 配置。
+# heavy 队列（导入/导出/批量重任务）worker 配置。
 # CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）
 # CELERY_HEAVY_POOL: threads
 # CELERY_HEAVY_CONCURRENCY: 4
@@ -98,10 +98,10 @@ CELERY_WORKER_COUNT: 4
 # Flower 监控 basic-auth（格式 用户:密码）；生产环境必须配置，未配置时仅允许绑定 127.0.0.1
 # CELERY_FLOWER_AUTH: flower:<your-flower-password>
 
-# FEAT-2：软删除回收站保留天数（超过后由 purge_soft_deleted 周期任务物理清除）
+# 软删除回收站保留天数（超过后由 purge_soft_deleted 周期任务物理清除）
 # RECYCLE_BIN_RETENTION_DAYS: 30
 
-# FEAT-4：字段级审计 diff 白名单（模型 _meta.label），决定「变更历史」弹窗能否看到
+# 字段级审计 diff 白名单（模型 _meta.label），决定「变更历史」弹窗能否看到
 # 字段明细（未命中白名单的模型 changes 恒为空，前端显示「—」）。
 # 默认已开启 system.UserInfo（用户管理页的变更历史入口）；命中白名单的 update 请求会
 # 额外做 2 次查询。注意：显式配置本项会整体覆盖默认值；置空数组表示关闭该能力

@@ -29,7 +29,7 @@ class Command(LoadCommand):
         ModelLabelField,
         DeptInfo,
         Setting,
-        # 数据分析内置示例（ADR-020/021）：固定 pk 相互引用，必须按依赖顺序加载
+        # 数据分析内置示例：固定 pk 相互引用，必须按依赖顺序加载
         # Dataset(数据集) → Dashboard(仪表盘卡片引用数据集) → Screen(大屏引用仪表盘) / Report(报表外键数据集)
         Dataset,
         Dashboard,

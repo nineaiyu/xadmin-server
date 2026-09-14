@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP 连接与搜索的轻封装（ADR-017）。
+"""LDAP 连接与搜索的轻封装。
 
 只依赖 ldap3 与 django.conf.settings；不吞异常——「目录不可达」与「密码错误」
 由调用方按异常类型/结果区分。连接对象可整体替换（测试注入 fake 连接）。

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Webhook 订阅与投递序列化器（ADR-022）。"""
+"""Webhook 订阅与投递序列化器。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers

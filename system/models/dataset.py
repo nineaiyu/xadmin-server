@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""数据集与仪表盘（ADR-020，可视化一期）。
+"""数据集与仪表盘（可视化一期）。
 
 数据集 = 模型白名单内的受控查询定义（禁原生 SQL）：模型/字段/op 三层白名单
 在保存与执行双侧校验，行级过滤复用数据权限编译器入口 `get_filter_queryset`
@@ -68,7 +68,7 @@ class Dashboard(DbAuditModel, DbUuidModel):
 
 
 class Screen(DbAuditModel, DbUuidModel):
-    """大屏模板：跨仪表盘的全屏轮播配置（ADR-021）。"""
+    """大屏模板：跨仪表盘的全屏轮播配置。"""
 
     name = models.CharField(_("Name"), max_length=128, unique=True)
     dashboards = models.JSONField(_("Dashboards"), default=list, help_text=_("Ordered dashboard pks"))
@@ -92,7 +92,7 @@ class Screen(DbAuditModel, DbUuidModel):
 
 
 class Report(DbAuditModel, DbUuidModel):
-    """定时报表：数据集 + 调度 + 邮件收件人（ADR-021）。"""
+    """定时报表：数据集 + 调度 + 邮件收件人。"""
 
     class Frequency(models.TextChoices):
         DAILY = "daily", _("Daily")

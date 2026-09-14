@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""大屏与报表视图（ADR-021）。
+"""大屏与报表视图。
 
 - Screen（大屏模板）：CRUD，无自定义动作；
 - Report（定时报表）：CRUD + `run` 立即运行动作（预创建 ExportRecord 并按
   pk==task_id 契约派发，与周期任务同一条管线）。
 
-定义类资源不做行级数据权限过滤（可见性语义 = 创建者/共享，与 ADR-020 的
-Dataset/Dataset 同款处理）；非创建者只读。
+定义类资源不做行级数据权限过滤（可见性语义 = 创建者/共享，与 Dataset 同款处理）；
+非创建者只读。
 """
 
 from django.db.models import Q

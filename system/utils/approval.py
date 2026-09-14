@@ -179,7 +179,7 @@ def notify_approvers(approval, approvers):
 
 
 def _emit_approval_event(event: str, approval) -> None:
-    """出站 Webhook：审批事件（ADR-022，emit 全程吞异常，不影响审批流转）。"""
+    """出站 Webhook：审批事件（emit 全程吞异常，不影响审批流转）。"""
     from system.utils.webhook import emit_webhook_event
 
     try:

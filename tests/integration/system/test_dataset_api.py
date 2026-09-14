@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据集与仪表盘集成测试（ADR-020）。
+"""数据集与仪表盘集成测试。
 
 覆盖：白名单（越权模型/字段/op 拒绝）、fail-closed（无授权空结果、
 value.user.id 规则只见本人）、共享语义（personal 不可见 / shared 只读、

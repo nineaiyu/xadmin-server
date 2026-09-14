@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""开放平台雏形（ADR-030，G11）：应用 CRUD / client-credentials 换发 / 凭证链路 / 限流 / 回调。
+"""开放平台雏形：应用 CRUD / client-credentials 换发 / 凭证链路 / 限流 / 回调。
 
 关键口径与测试纪律：
 - 换发 = 轮换：明文不可回读，旧凭证即时失效；

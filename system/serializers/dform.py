@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""动态表单序列化器（ADR-025）。定义类资源豁免字段权限裁剪。"""
+"""动态表单序列化器。定义类资源豁免字段权限裁剪。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -15,7 +15,7 @@ class DynamicFormSerializer(BaseModelSerializer):
 
     class Meta:
         model = DynamicForm
-        # approval_required（G5b）：开启后提交走敏感操作审批（412 → 通过 → 携令牌重放）
+        # approval_required：开启后提交走敏感操作审批（412 → 通过 → 携令牌重放）
         fields = [
             "pk",
             "name",
@@ -34,7 +34,7 @@ class DynamicFormSerializer(BaseModelSerializer):
 
 
 class FormPkField(serializers.PrimaryKeyRelatedField):
-    """表单外键取值域不做行级数据权限过滤（定义类资源，ADR-025）。"""
+    """表单外键取值域不做行级数据权限过滤（定义类资源）。"""
 
     def get_queryset(self):
         return DynamicForm.objects.all()

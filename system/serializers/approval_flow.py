@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""全量审批流引擎一期序列化器（ADR-012）。
+"""全量审批流引擎一期序列化器。
 
 - ApprovalFlowSerializer：流程定义 + 节点列表嵌套写入（nodes 整体替换式更新）；
   有 PENDING 实例的流程禁止改动节点（避免在途实例指向被删节点）。
@@ -267,7 +267,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         }
 
     def _snapshot_version(self, flow, nodes, remark):
-        """版本号 +1 并落全量快照（ADR-016 §2）。"""
+        """版本号 +1 并落全量快照。"""
         flow.version = (flow.version or 0) + 1
         flow.save(update_fields=["version", "updated_time"])
         ApprovalFlowVersion.objects.create(

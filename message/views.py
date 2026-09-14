@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室 REST（/api/chat/，ADR-034）。
+"""聊天室 REST（/api/chat/）。
 
 - `GET  /api/chat/room`                 我的会话列表（公共聊天室 + AI 助手 + 私聊，含未读/在线态）
 - `POST /api/chat/room/open-private`    开通（幂等复用）与目标用户的一对一私聊
@@ -8,14 +8,19 @@
 - `POST /api/chat/message/{id}/recall`  撤回（仅本人、2 分钟内），广播双方同步
 - `GET  /api/chat/contacts`             最近在线联系人（在线优先、按最近活跃排序）
 - `POST /api/chat/ai/message`           AI 助手提问（通用多轮；`/kb` 前缀走知识库 RAG）
+- `POST /api/chat/ai/stream`            AI 助手流式提问（SSE：meta → delta* → done | error）
 
 权限：菜单权限点（`list:ChatRoom` / `create:ChatRoom` / `list:ChatMessage` /
-`recall:ChatMessage` / `list:ChatContact` / `ask:ChatRoom`），页面沿用聊天室菜单授权；
+`recall:ChatMessage` / `list:ChatContact` / `ask:ChatRoom` / `stream:ChatRoom`），
+页面沿用聊天室菜单授权；
 AI 接口额外受 `AI_ASSISTANT_ENABLED` + 凭据完整性门禁（未启用返回可读 1001）。
 消息内容一律文本（前端插值渲染，不 v-html；长度上限服务端强制）。
 """
 
+import json
+
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import StreamingHttpResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
@@ -37,6 +42,16 @@ from message.utils import push_room_event
 # 历史分页默认/最大条数
 HISTORY_DEFAULT_LIMIT = 20
 HISTORY_MAX_LIMIT = 50
+
+
+def _sse_frames(events):
+    """事件字典序列 → text/event-stream 帧（`event:` + `data:` + 空行）。
+
+    JSON 序列化对 UUID/datetime 宽松处理（default=str），与 message_payload 的
+    JSON 广播口径一致；每个事件独立成帧，客户端按空行切分。
+    """
+    for event in events:
+        yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False, default=str)}\n\n"
 
 
 def _validation_detail(exc) -> str:
@@ -226,3 +241,47 @@ class ChatAiViewSet(GenericViewSet):
         payload = chat_service.message_payload(reply, room=room)
         push_room_event(room, payload)
         return ApiResponse(data={"mode": mode, "question": question_payload, "message": payload})
+
+    @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
+    @action(methods=["post"], detail=False, url_path="stream")
+    def stream(self, request, *args, **kwargs):
+        """流式提问（二期）：`text/event-stream`，事件序 meta → delta* → done | error。
+
+        事件载荷均为 JSON（``data: {...}\\n\\n``）；业务落库与 WS 广播与 `message` 同口径
+        （前端实时气泡 + 多端同步），失败带内下发光 error 事件（头已发出，不能再改状态码）。
+        非 SSE 错误（门禁/参数/房间）仍走 JSON 1001，前端按普通接口错误提示。
+        """
+        if not chat_ai.is_enabled():
+            return ApiResponse(code=1001, detail=chat_ai.ai_gate_error())
+        serializer = ChatAiMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        content = serializer.validated_data["content"]
+
+        room_id = serializer.validated_data.get("room_id")
+        if room_id:
+            try:
+                room = chat_service.accessible_room(room_id, request.user)
+            except DjangoValidationError as exc:
+                return ApiResponse(code=1001, detail=_validation_detail(exc))
+            if room.room_type != ChatRoom.RoomType.AI:
+                return ApiResponse(code=1001, detail=_("Not an AI assistant chat"))
+        else:
+            room = chat_service.get_or_create_ai_room(request.user)
+
+        question, __ = chat_service.create_message(
+            room,
+            request.user,
+            content,
+            client_msg_id=serializer.validated_data.get("client_msg_id") or "",
+        )
+        question_payload = chat_service.message_payload(question, room=room, sender=request.user)
+        push_room_event(room, question_payload)
+
+        response = StreamingHttpResponse(
+            _sse_frames(chat_ai.ai_stream_events(room, content, question_payload)),
+            content_type="text/event-stream",
+        )
+        # 关闭代理缓冲：SSE 必须逐帧到达（nginx 默认会攒满 buffer 才转发）
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response

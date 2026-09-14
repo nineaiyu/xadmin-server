@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""全量审批流引擎一期：流程实例推进（ADR-012）。
+"""全量审批流引擎一期：流程实例推进。
 
 模型关系：ApprovalFlow（定义）→ ApprovalFlowNode（顺序节点，节点级条件）→
 ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审批人）。
@@ -9,8 +9,8 @@ ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审�
 - 令牌审批面向「拦截业务请求 → 批准后重发」，无表单、无多级；
 - 本引擎面向业务表单（请假/报销类），无请求重放，状态机完整。
 
-关键语义（ADR-012）：
-- 条件分支（二期 ADR-016）：节点 routes 为排他网关出口路由表（逐条求值首个
+关键语义：
+- 条件分支（二期）：节点 routes 为排他网关出口路由表（逐条求值首个
   命中即跳转 target），全不命中回退一期线性语义；
 - 或签 OR：任一 APPROVED 即节点通过，其余 PENDING 行置 CANCELLED；
 - 会签 AND：全部 APPROVED 才通过；任一行 REJECTED → 实例驳回（终态）；
@@ -42,7 +42,7 @@ FLOW_NOTIFY_THROTTLE_SECONDS = 60
 FLOW_STATS_WINDOW_DAYS = 30
 # 条件运算符白名单
 CONDITION_OPS = ("eq", "ne", "in", "not_in", "gt", "gte", "lt", "lte", "contains", "is_empty", "not_empty")
-# 实例终态 → 出站 Webhook 事件（flow.*，ADR-022）；PENDING 不经 _finish_instance 不映射
+# 实例终态 → 出站 Webhook 事件（flow.*）；PENDING 不经 _finish_instance 不映射
 _FLOW_FINISH_EVENTS = {
     "APPROVED": "flow.approved",
     "REJECTED": "flow.rejected",
@@ -173,7 +173,7 @@ def matching_nodes(flow, form_data) -> list:
 def next_node(flow, after_order, form_data, node=None):
     """当前节点的下一节点；返回 None = 流程结束。
 
-    二期路由优先（ADR-016 §1）：node.routes 逐条求值，首个命中跳转 target
+    二期路由优先：node.routes 逐条求值，首个命中跳转 target
     （排他网关）；全部未命中或无 routes 时回退一期线性语义（order 之后首个
     条件命中节点）。target 无效（节点已不存在）记日志后同样回退线性。
     """
@@ -311,7 +311,7 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     返回 (instance, error)：error 为 None 表示成功。候选校验 fail-closed——
     任一可达节点无人可审即拒绝发起（避免在途中卡死或静默放行）。
 
-    biz_type/biz_id（ADR-032）：业务模块挂钩点——传入后实例与业务行绑定，
+    biz_type/biz_id：业务模块挂钩点——传入后实例与业务行绑定，
     终态时经 ``approval_instance_finished`` 信号回写业务状态；留空 = 引擎自带
     表单的独立申请（历史行为不变）。
     """
@@ -392,7 +392,7 @@ def _finish_instance(instance, status, reason=None):
 
 
 def _notify_business_finished(instance, status, reason=None) -> None:
-    """业务回调（ADR-032）：实例到达终态时通知绑定的业务模块回写状态。
+    """业务回调：实例到达终态时通知绑定的业务模块回写状态。
 
     仅在 biz_type 非空时发送；接收方在 system/signal_handler.py 注册，异常只记
     日志——业务回写失败不应影响审批主链路（与通知/Webhook 同口径）。
@@ -487,7 +487,7 @@ def approve_task(task_pk, user, comment: str = ""):
         _cancel_pending_tasks(instance, node=node)
         _advance(instance, node)
     elif node.approve_type == node.ApproveType.RATIO:
-        # 比例会签（ADR-016 §3）：通过数/候选总数 ≥ ratio% 即通过；
+        # 比例会签：通过数/候选总数 ≥ ratio% 即通过；
         # 剩余可决人数不足以达标时提前驳回（全员拒绝必然落入此条件）
         node_tasks = ApprovalNodeTask.objects.filter(instance=instance, node=node)
         total = node_tasks.count()

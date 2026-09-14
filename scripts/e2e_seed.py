@@ -161,7 +161,7 @@ def seed_periodic_task():
 
 
 def seed_oauth_im_provider():
-    """登录页第三方入口 E2E 数据：启用态飞书 flavor provider（ADR-018）。
+    """登录页第三方入口 E2E 数据：启用态飞书 flavor provider。
 
     只验证「配置 → 登录页可见」链路；回调交互依赖真实 IdP，由后端集成测试
     stub HTTP 覆盖。名称带 E2E 前缀，避免与真实配置混淆。
@@ -312,7 +312,7 @@ def main() -> None:
     SysConfig.set_value("SENSITIVE_OPERATION_METHODS", ["__E2E_DISABLED__"])
     print("sensitive operation alert disabled")
 
-    # ---- 登录页第三方入口（feishu flavor，ADR-018）----
+    # ---- 登录页第三方入口（feishu flavor）----
     seed_oauth_im_provider()
 
     print("E2E seed done")

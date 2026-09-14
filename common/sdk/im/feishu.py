@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""飞书 IM 消息客户端（ADR-019）：im/v1/messages 文本消息。
+"""飞书 IM 消息客户端：im/v1/messages 文本消息。
 
 凭据：appId / appSecret。OAuth 绑定的 subject 即 union_id，
 以 receive_id_type=union_id 直发（逐条发送，单条失败不影响其余）。

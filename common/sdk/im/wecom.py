@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""企业微信应用消息客户端（ADR-019）：message/send 文本消息。
+"""企业微信应用消息客户端：message/send 文本消息。
 
 凭据：corpId / corpSecret / agentId。OAuth 绑定的 subject 即 userid，直发。
 """

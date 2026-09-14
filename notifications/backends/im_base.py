@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""IM 通知渠道公共基类（ADR-019）：从 OAuth 绑定派生收件账号。
+"""IM 通知渠道公共基类：从 OAuth 绑定派生收件账号。
 
 `account_field` 语义是「User 上的接收账号字段」，而 IM 渠道的接收账号
 （unionId/userid）来自用户经对应 flavor provider 登录留下的 `UserOAuthBinding`：
@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 class ImBindingBackend(BackendBase):
     """binding 派生账号的 IM 渠道基类。"""
 
-    # 对应 ADR-018 的 provider flavor（dingtalk / wecom / feishu），子类覆盖
+    # 对应的 provider flavor（dingtalk / wecom / feishu），子类覆盖
     flavor = ""
 
     @classmethod

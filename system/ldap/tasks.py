@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""LDAP 同步周期任务入口（ADR-017）。
+"""LDAP 同步周期任务入口。
 
 注册范式与 system/tasks.py 一致：``@shared_task`` + ``@register_as_period_task``
 启动时 upsert 到 django_celery_beat；任务内先查 ``LDAP_SYNC_ENABLED``，管理页可
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 @shared_task
-@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态，ADR-017）")
+@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态）")
 def sync_ldap_directory_job():
     from system.ldap.sync import run_ldap_sync
 

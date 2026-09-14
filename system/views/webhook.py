@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Webhook 订阅与投递审计视图（ADR-022）。
+"""Webhook 订阅与投递审计视图。
 
 - SubscriptionViewSet：CRUD + `events`（事件目录）+ `test`（发送 ping 测试事件，
   走真实投递管线做配置自检）；

@@ -10248,5 +10248,28 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5e1c9a72-4b8d-4f36-9e04-7a2b8d6f1c93",
+  "fields": {
+   "created_time": "2026-09-14T00:00:00.000Z",
+   "updated_time": "2026-09-14T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+   "menu_type": 2,
+   "name": "stream:ChatRoom",
+   "rank": 7,
+   "path": "api/chat/ai/stream$",
+   "component": null,
+   "is_active": true,
+   "meta": "8b4f2d19-7c56-4e21-a3d8-9f0e6c4b7a52",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

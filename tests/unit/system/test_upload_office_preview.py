@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""O2/O3 Office 在线预览（ADR-013）：类型分派 / 可用性降级 / 转换与缓存 / API 链路。
+"""Office 在线预览：类型分派 / 可用性降级 / 转换与缓存 / API 链路。
 
 真实转换（LibreOffice）用例在未安装转换器的环境自动跳过；其余用例通过
 monkeypatch 转换入口，保证 CI 无 LibreOffice 时链路逻辑仍被完整覆盖。

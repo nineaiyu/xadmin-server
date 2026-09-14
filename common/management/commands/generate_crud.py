@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""代码生成器（ADR-027）：已存在的模型 → 后端四件套 + 前端页面 + 菜单种子 JSON。
+"""代码生成器：已存在的模型 → 后端四件套 + 前端页面 + 菜单种子 JSON。
 
 定位：**一次性代码生成**（非运行期脚手架）——模板与仓库既有范式同源
 （docs/architecture/framework-cookbook.md、xadmin-docs example/new-app-*.md），
@@ -120,7 +120,7 @@ class Command(BaseCommand):
         return "".join(out)
 
     def _field_plan(self, model):
-        """字段映射规则（ADR-027 §4）：序列化器字段 / 表格列 / extra_kwargs / 搜索字段。"""
+        """字段映射规则：序列化器字段 / 表格列 / extra_kwargs / 搜索字段。"""
         serializer_fields = ["pk"]
         for field in model._meta.fields:
             if not field.primary_key and field.name not in AUDIT_FIELDS:
@@ -516,11 +516,11 @@ class Command(BaseCommand):
     def _module_header(ctx, standalone, title, note):
         """模块头部：独立文件带 shebang/docstring；追加进共享文件的生成块用注释头。"""
         if not standalone:
-            return [f"# {ctx['verbose_name']} {title}（generate_crud 生成，ADR-027）：{note}", ""]
+            return [f"# {ctx['verbose_name']} {title}（generate_crud 生成）：{note}", ""]
         return [
             "#!/usr/bin/env python",
             "# -*- coding:utf-8 -*-",
-            f'"""{ctx["verbose_name"]} {title}（generate_crud 生成，ADR-027）。',
+            f'"""{ctx["verbose_name"]} {title}（generate_crud 生成）。',
             "",
             note,
             '"""',
@@ -635,7 +635,7 @@ class Command(BaseCommand):
         lines = [
             "#!/usr/bin/env python",
             "# -*- coding:utf-8 -*-",
-            f'"""{ctx["verbose_name"]} 路由（generate_crud 生成，ADR-027）。"""',
+            f'"""{ctx["verbose_name"]} 路由（generate_crud 生成）。"""',
             "",
             "from rest_framework.routers import SimpleRouter",
             "",
@@ -658,7 +658,7 @@ class Command(BaseCommand):
         lines = [
             "#!/usr/bin/env python",
             "# -*- coding:utf-8 -*-",
-            f'"""{app_label} 应用配置（generate_crud 生成，ADR-027）。"""',
+            f'"""{app_label} 应用配置（generate_crud 生成）。"""',
             "",
             "from django.urls import include, path",
             "",
@@ -679,7 +679,7 @@ class Command(BaseCommand):
         lines = [
             'import { BaseApi } from "@/api/base";',
             "",
-            f"/** {ctx['verbose_name']}（generate_crud 生成，ADR-027）",
+            f"/** {ctx['verbose_name']}（generate_crud 生成）",
             " *",
             " * 自定义 action 用子类方法追加，参考 src/api/system/task.ts。",
             " */",
@@ -695,7 +695,7 @@ class Command(BaseCommand):
             "",
             f'import {{ {ctx["model_snake"]}Api }} from "./api";',
             "",
-            f"/** {ctx['verbose_name']} 页面逻辑（generate_crud 生成，ADR-027）",
+            f"/** {ctx['verbose_name']} 页面逻辑（generate_crud 生成）",
             " *",
             " * 表格列/搜索/表单覆写按需追加：listColumnsFormat / searchColumnsFormat /",
             " * addOrEditOptions，参考 xadmin-docs example/new-app-client.md。",

@@ -47,7 +47,7 @@
       "platformAutomerge": true
     },
     {
-      "description": "Django 大版本升级不自动升，走 ADR-004 评估流程",
+      "description": "Django 大版本升级不自动升，走 docs/adr 评估流程",
       "matchPackageNames": [
         "django"
       ],
@@ -62,7 +62,7 @@
       ]
     },
     {
-      "description": "openpyxl 仅允许稳定版（历史曾固定 beta，TD-18）",
+      "description": "openpyxl 仅允许稳定版（历史曾固定 beta）",
       "matchPackageNames": [
         "openpyxl"
       ],

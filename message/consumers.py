@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天室 WebSocket 通道（ADR-034）：`ws/chat/` → ChatNotify。
+"""聊天室 WebSocket 通道：`ws/chat/` → ChatNotify。
 
 与历史 `ws/message/<group>/<username>`（MessageNotify）的关系：
 - 旧通道保持原样（全站通知推送 + 登录日志/会话登记），聊天室页面已切到本通道；

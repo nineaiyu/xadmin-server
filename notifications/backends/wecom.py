@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""企业微信通知渠道（ADR-019）：应用消息 message/send。
+"""企业微信通知渠道：应用消息 message/send。
 
 可达性两层：渠道级 = 开关 + 应用三元组齐全；用户级 = 用户有 wecom flavor
 的 OAuth 绑定（subject 即 userid，直发）。

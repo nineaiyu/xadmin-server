@@ -21,7 +21,7 @@ class PersonalAccessToken(DbAuditModel):
     name = models.CharField(_("Token name"), max_length=128)
     token_hash = models.CharField(_("Token hash"), max_length=64, unique=True, db_index=False)
     token_prefix = models.CharField(_("Token prefix"), max_length=16)
-    # scope 语义 = 允许的接口路径前缀/正则清单（ADR-008 一期边界收口）：
+    # scope 语义 = 允许的接口路径前缀/正则清单（一期边界收口）：
     # 空清单 = 不限（既有 token 向后兼容）；校验内联在统一权限层
     # （common.core.permission.IsAuthenticated），防「显式 permission_classes 覆写」
     # 与「同请求带 JWT+Pat 双 header」两种绕过路径
@@ -32,7 +32,7 @@ class PersonalAccessToken(DbAuditModel):
     is_active = models.BooleanField(_("Is active"), default=True)
     expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
     last_used_time = models.DateTimeField(_("Last used time"), null=True, blank=True)
-    # 所属开放平台应用（ADR-030）：非空 = 由应用换发（应用停用/过期即失效 + 按应用限流）
+    # 所属开放平台应用：非空 = 由应用换发（应用停用/过期即失效 + 按应用限流）
     api_application = models.ForeignKey(
         "system.ApiApplication",
         verbose_name=_("API application"),
@@ -57,7 +57,7 @@ class PersonalAccessToken(DbAuditModel):
 
 
 class ApiApplication(DbAuditModel):
-    """开放平台应用（client-credentials，ADR-030）。
+    """开放平台应用（client-credentials）。
 
     应用本身不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链，
     三层权限 / 数据权限 / 审计（``OperationLog.auth_type=pat``）天然生效；

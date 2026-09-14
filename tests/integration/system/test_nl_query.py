@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI NL 查数集成测试（ADR-024）：四层防线专项。
+"""AI NL 查数集成测试：四层防线专项。
 
 覆盖：灰度开关、DSL 白名单校验矩阵（越界字段/op/metric/dataset/未知键）、
 提示注入收敛（注入只能落白名单闭包）、数据权限 fail-closed 与 value.user.id
