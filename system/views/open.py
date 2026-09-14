@@ -17,12 +17,14 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django_filters import rest_framework as filters
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
 from common.core.auth import hash_pat_token
+from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from system.models.token import ApiApplication, PersonalAccessToken
@@ -139,6 +141,14 @@ class ApiApplicationTokenAPIView(APIView):
         )
 
 
+class ApiApplicationFilter(BaseFilterSet):
+    name = filters.CharFilter(field_name="name", lookup_expr="icontains")
+
+    class Meta:
+        model = ApiApplication
+        fields = ["is_active"]
+
+
 class ApiApplicationViewSet(BaseModelSet):
     """API 应用（开放平台）"""
 
@@ -146,6 +156,7 @@ class ApiApplicationViewSet(BaseModelSet):
     serializer_class = ApiApplicationSerializer
     ordering_fields = ["created_time"]
     ordering = ["-created_time"]
+    filterset_class = ApiApplicationFilter
 
     def create(self, request, *args, **kwargs):
         """创建应用：client_id / client_secret / callback_secret 由服务端生成，明文仅此一次。"""

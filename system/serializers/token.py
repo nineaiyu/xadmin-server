@@ -154,10 +154,9 @@ class ApiApplicationSerializer(BaseModelSerializer):
         ]
         read_only_fields = ["client_id", "client_secret_prefix"]
         table_fields = [
-            "pk",
             "name",
             "client_id",
-            "client_secret_prefix",
+            "scopes",
             "rate_limit_per_minute",
             "is_active",
             "created_time",

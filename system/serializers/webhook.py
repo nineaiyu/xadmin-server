@@ -30,6 +30,8 @@ class WebhookSubscriptionSerializer(BaseModelSerializer):
         ]
         read_only_fields = ["pk", "last_failure", "created_time", "updated_time"]
         extra_kwargs = {"secret": {"write_only": True}}
+        # RePlusPage 列表列：secret 为 write_only 不进列，补充创建时间作审计锚点
+        table_fields = ["name", "url", "events", "is_active", "last_failure", "created_time"]
 
     def validate_url(self, value):
         return validate_url(value)
@@ -47,7 +49,7 @@ class WebhookSubscriptionSerializer(BaseModelSerializer):
 
 
 class WebhookDeliverySerializer(BaseModelSerializer):
-    subscription_name = serializers.CharField(source="subscription.name", read_only=True)
+    subscription_name = serializers.CharField(source="subscription.name", read_only=True, label=_("Subscription"))
 
     ignore_field_permission = True
 
@@ -67,3 +69,14 @@ class WebhookDeliverySerializer(BaseModelSerializer):
             "created_time",
         ]
         read_only_fields = fields
+        # 投递审计列：subscription 主键/next_retry_at 属内部字段不进列，只留审计关注项
+        table_fields = [
+            "created_time",
+            "subscription_name",
+            "event",
+            "status",
+            "attempt",
+            "response_code",
+            "response_body",
+            "duration",
+        ]
