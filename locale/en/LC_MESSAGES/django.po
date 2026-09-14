@@ -3257,6 +3257,10 @@ msgstr ""
 msgid "Timezone"
 msgstr ""
 
+#: system/serializers/task.py:107
+msgid "A schedule with the same interval already exists"
+msgstr ""
+
 #: system/serializers/task.py:82
 #, python-brace-format
 msgid "Invalid crontab expression: {}"

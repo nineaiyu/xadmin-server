@@ -3358,6 +3358,10 @@ msgstr "字段"
 msgid "Timezone"
 msgstr "时间"
 
+#: system/serializers/task.py:107
+msgid "A schedule with the same interval already exists"
+msgstr "该间隔调度已存在"
+
 #: system/serializers/task.py:82
 #, python-brace-format
 msgid "Invalid crontab expression: {}"

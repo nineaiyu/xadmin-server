@@ -45,6 +45,22 @@ def _post_import(viewset, url_path, user, csv_body, action="create", query=None)
     return view(request) if not query else view(request, **query)
 
 
+def test_import_headers_rejects_non_file_content_type(superuser):
+    """非文件媒体类型（application/json）返回 1001 而非 500。
+
+    历史缺陷：``_get_file_parser`` 会误命中 DRF JSONParser，后续
+    ``check_content_length`` 抛 AttributeError（500）——此前该路径被权限点缺口
+    掩盖（非超管 403 先于解析），补齐权限后才暴露。
+    """
+    from rest_framework.test import APIRequestFactory, force_authenticate
+
+    factory = APIRequestFactory()
+    request = factory.post("/api/system/dict/import-headers", {}, format="json")
+    force_authenticate(request, user=superuser)
+    response = DataDictViewSet.as_view({"post": "import_headers"})(request)
+    assert response.data["code"] == 1001
+
+
 def test_import_validate_reports_errors_without_persist(superuser):
     """导入前校验：非法行返回字段级定位（row/field/message），且零落库。"""
     response = _post_import(DataDictViewSet, "import-validate", superuser, CSV_MIXED)

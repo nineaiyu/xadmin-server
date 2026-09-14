@@ -335,11 +335,20 @@ class ImportAsyncAction:
         )
 
     def _get_file_parser(self, request):
-        """按 Content-Type 取当前视图可用的文件解析器实例（CSV / xlsx）。"""
+        """按 Content-Type 取当前视图可用的文件解析器实例（CSV / xlsx）。
+
+        只认文件解析器（``BaseFileParser`` 子类）：DRF 的 JSONParser/FormParser 也带
+        ``media_type``，误命中会让后续 ``check_content_length`` 抛 AttributeError（500）。
+        """
+        from common.drf.parsers.base import BaseFileParser
+
         content_type = (request.content_type or "").split(";")[0].strip()
         for parser in self.get_parsers():
-            if getattr(parser, "media_type", None) == content_type:
+            if getattr(parser, "media_type", None) != content_type:
+                continue
+            if isinstance(parser, BaseFileParser):
                 return parser
+            return None
         return None
 
     @extend_schema(

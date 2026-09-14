@@ -89,6 +89,24 @@ class IntervalScheduleSerializer(BaseModelSerializer):
         fields = "__all__"
         table_fields = ["pk", "every", "period"]
 
+    def validate(self, attrs):
+        """间隔唯一性校验（django_celery_beat>=2.9 已移除库级 unique_together）。
+
+        完全相同的 (every, period) 会在周期任务表单的「执行间隔」下拉里出现
+        多个无法分辨的同名项（如两条「每 15 分钟」），这里在业务侧补回该校验；
+        编辑时排除自身，避免仅调整其他字段时被自身误拒。
+        """
+        every = attrs.get("every", getattr(self.instance, "every", None))
+        period = attrs.get("period", getattr(self.instance, "period", None))
+        if every is None or not period:
+            return attrs
+        queryset = IntervalSchedule.objects.filter(every=every, period=period)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError(_("A schedule with the same interval already exists"))
+        return attrs
+
 
 def _validate_json_string(raw, expect_type, field_label):
     """args/kwargs 以 JSON 字符串落库（django_celery_beat 约定），入库前校验可解析且类型正确。"""

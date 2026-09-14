@@ -119,5 +119,4 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
     @action(methods=["get"], detail=False)
     def sync(self, request, *args, **kwargs):
         """同步{cls}的字段名"""
-        sync_model_field()
-        return ApiResponse()
+        return ApiResponse(data=sync_model_field())

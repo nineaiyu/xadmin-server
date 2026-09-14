@@ -258,7 +258,8 @@
    "method": "POST",
    "model": [
     "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693"
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]
   }
  },
@@ -354,6 +355,7 @@
    "meta": "9777ba02-b707-4a77-8d27-6f08e285c8e0",
    "method": "GET",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
@@ -379,6 +381,7 @@
    "meta": "f29a9c84-b453-4a23-819c-31bb822f4587",
    "method": "PATCH",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "16a823b0-c4fb-40cd-af63-9aed309823aa"
    ]
   }
@@ -547,7 +550,10 @@
    "meta": "13deb802-8227-4dce-badb-9d1f15856914",
    "method": "PATCH",
    "model": [
-    "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -646,7 +652,9 @@
    "is_active": true,
    "meta": "f8b2f943-8a54-5d3e-b033-3f992a6ee3a1",
    "method": "GET",
-   "model": []
+   "model": [
+    "a6742831-3bb4-4e32-b0d9-d5643122fd1c"
+   ]
   }
  },
  {
@@ -716,7 +724,8 @@
    "meta": "3a702dc5-41da-4307-8f35-d8c11363146f",
    "method": "POST",
    "model": [
-    "ab6ae020-1de6-4695-925b-56456769b7aa"
+    "ab6ae020-1de6-4695-925b-56456769b7aa",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
  },
@@ -741,6 +750,7 @@
    "meta": "30e22ef1-4d71-4211-9342-3552a08e6b39",
    "method": "GET",
    "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
     "6a242e6a-abde-4e56-93e1-da841cbab5bf",
     "16a823b0-c4fb-40cd-af63-9aed309823aa",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
@@ -769,7 +779,8 @@
    "method": "GET",
    "model": [
     "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693"
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]
   }
  },
@@ -957,7 +968,11 @@
    "meta": "555c4963-7e46-435c-b112-95c2635c625c",
    "method": "GET",
    "model": [
-    "331d76d8-7f36-43ba-8a3c-09540130f682"
+    "331d76d8-7f36-43ba-8a3c-09540130f682",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -1080,7 +1095,10 @@
    "is_active": true,
    "meta": "3c4d5e6f-7081-492a-a4b5-c6d7e8f00211",
    "method": "GET",
-   "model": []
+   "model": [
+    "880e9c31-cc97-41cb-aa4c-000041f41aef",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997"
+   ]
   }
  },
  {
@@ -1127,7 +1145,10 @@
    "meta": "7d066265-94d6-4965-ab57-363b43f71a50",
    "method": "POST",
    "model": [
-    "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -1556,7 +1577,10 @@
    "is_active": true,
    "meta": "f57afa2e-ecca-4e6a-a91c-8091041c0436",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "3ac4fe93-f41c-4e80-bfee-b57684f23375",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -1580,6 +1604,7 @@
    "meta": "7e597f2e-2e43-4d95-834b-60a160de3a67",
    "method": "GET",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "16a823b0-c4fb-40cd-af63-9aed309823aa"
    ]
   }
@@ -1680,6 +1705,7 @@
    "meta": "e3b9d2b2-2f64-4de1-a1a1-5f6ac904e5c7",
    "method": "PATCH",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
@@ -1778,7 +1804,10 @@
    "meta": "7fa734bc-75b5-4ab5-a916-927f266c6209",
    "method": "POST",
    "model": [
-    "14071ee3-6725-4fcc-962d-ad7898efa284"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -1826,6 +1855,7 @@
    "meta": "2baf638d-9bd2-42a9-92a0-f4f384250b20",
    "method": "GET",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
@@ -2041,7 +2071,10 @@
    "is_active": true,
    "meta": "5e6f7081-92a3-4b4c-c6d7-e8f004112233",
    "method": "GET",
-   "model": []
+   "model": [
+    "880e9c31-cc97-41cb-aa4c-000041f41aef",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997"
+   ]
   }
  },
  {
@@ -2179,7 +2212,9 @@
    "is_active": true,
    "meta": "086f157b-fb59-537b-82c4-2522e9d9a39a",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "a6742831-3bb4-4e32-b0d9-d5643122fd1c"
+   ]
   }
  },
  {
@@ -2532,6 +2567,7 @@
    "meta": "eaeab52f-c12b-423d-96ac-5ac858bcfe73",
    "method": "GET",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "16a823b0-c4fb-40cd-af63-9aed309823aa"
    ]
   }
@@ -2677,7 +2713,11 @@
    "meta": "daa4c5d7-186a-40f0-b0dd-ba8700ba03ac",
    "method": "GET",
    "model": [
-    "331d76d8-7f36-43ba-8a3c-09540130f682"
+    "331d76d8-7f36-43ba-8a3c-09540130f682",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -2957,7 +2997,10 @@
    "meta": "aea8a63d-3ab6-40db-b365-893b50e69cec",
    "method": "GET",
    "model": [
-    "14071ee3-6725-4fcc-962d-ad7898efa284"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -3149,7 +3192,10 @@
    "meta": "8fdc9ab8-ae75-4340-8ea7-1b4746b08ad3",
    "method": "PATCH",
    "model": [
-    "14071ee3-6725-4fcc-962d-ad7898efa284"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -3317,7 +3363,9 @@
    "is_active": true,
    "meta": "e6f107b3-2e72-556e-ab32-a25544246a28",
    "method": "POST",
-   "model": []
+   "model": [
+    "a6742831-3bb4-4e32-b0d9-d5643122fd1c"
+   ]
   }
  },
  {
@@ -3553,7 +3601,8 @@
    "method": "PATCH",
    "model": [
     "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693"
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]
   }
  },
@@ -3767,7 +3816,10 @@
    "is_active": true,
    "meta": "486a4bc9-a0cd-4031-bbff-7a17a226ecfe",
    "method": "GET",
-   "model": []
+   "model": [
+    "201ffaa5-b0bb-4523-a87c-911d47204994",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -4043,7 +4095,7 @@
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "deleted_at": null,
+   "deleted_at": "2026-09-14T14:10:51.469Z",
    "parent": "74bac617-657c-577f-8a27-ab38a438b930",
    "menu_type": 2,
    "name": "batchDestroy:SystemDataDict",
@@ -4077,6 +4129,7 @@
    "meta": "5f11083e-7d25-4857-ba39-1484cdb549af",
    "method": "GET",
    "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
     "6a242e6a-abde-4e56-93e1-da841cbab5bf",
     "16a823b0-c4fb-40cd-af63-9aed309823aa",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
@@ -4104,6 +4157,7 @@
    "meta": "68298e7a-0bc6-400f-aecb-71adea00e920",
    "method": "GET",
    "model": [
+    "0cbe8c6e-311e-4df2-8f88-1700d409c52c",
     "585d2a2a-1c9b-42de-9b69-113e150da4a2"
    ]
   }
@@ -4348,7 +4402,11 @@
    "meta": "c02abdfc-1dd5-4e83-9db7-2b6e08dda7f7",
    "method": "POST",
    "model": [
-    "331d76d8-7f36-43ba-8a3c-09540130f682"
+    "331d76d8-7f36-43ba-8a3c-09540130f682",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -4490,7 +4548,11 @@
    "meta": "fea8d5b7-c9ae-497f-af19-ef06bafd583e",
    "method": "GET",
    "model": [
-    "331d76d8-7f36-43ba-8a3c-09540130f682"
+    "331d76d8-7f36-43ba-8a3c-09540130f682",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -4700,7 +4762,10 @@
    "is_active": true,
    "meta": "d01d4946-f805-4968-bddc-f7ce494a2243",
    "method": "GET",
-   "model": []
+   "model": [
+    "3ac4fe93-f41c-4e80-bfee-b57684f23375",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -4863,7 +4928,10 @@
    "is_active": true,
    "meta": "bc08feaf-e914-4546-bc7e-1a5d7295dfc1",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "201ffaa5-b0bb-4523-a87c-911d47204994",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -4981,6 +5049,7 @@
    "meta": "e7a1b123-6d3e-47f8-80f2-530fdd1f5453",
    "method": "POST",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "16a823b0-c4fb-40cd-af63-9aed309823aa"
    ]
   }
@@ -5053,9 +5122,7 @@
    "is_active": true,
    "meta": "e515fd0a-8eef-431a-a1bf-b260d9e8789a",
    "method": "POST",
-   "model": [
-    "14071ee3-6725-4fcc-962d-ad7898efa284"
-   ]
+   "model": []
   }
  },
  {
@@ -5102,7 +5169,11 @@
    "meta": "ad7d1868-0846-4fa8-b81b-2d116e807284",
    "method": "PATCH",
    "model": [
-    "331d76d8-7f36-43ba-8a3c-09540130f682"
+    "331d76d8-7f36-43ba-8a3c-09540130f682",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997",
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -5200,9 +5271,7 @@
    "is_active": true,
    "meta": "2d65d700-d229-4c11-aee2-98bd3419d612",
    "method": "POST",
-   "model": [
-    "6a242e6a-abde-4e56-93e1-da841cbab5bf"
-   ]
+   "model": []
   }
  },
  {
@@ -5612,7 +5681,8 @@
    "meta": "82d413ba-d270-4898-8156-2d82cd22e105",
    "method": "PATCH",
    "model": [
-    "ab6ae020-1de6-4695-925b-56456769b7aa"
+    "ab6ae020-1de6-4695-925b-56456769b7aa",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
  },
@@ -5637,6 +5707,7 @@
    "meta": "35410095-e55b-4aab-af7a-52254d83c351",
    "method": "POST",
    "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
     "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
@@ -5827,7 +5898,8 @@
    "method": "GET",
    "model": [
     "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693"
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]
   }
  },
@@ -6023,6 +6095,7 @@
    "meta": "16d85f46-f99b-4ccb-9459-bbf54614544f",
    "method": "GET",
    "model": [
+    "0cbe8c6e-311e-4df2-8f88-1700d409c52c",
     "585d2a2a-1c9b-42de-9b69-113e150da4a2"
    ]
   }
@@ -6110,7 +6183,7 @@
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "deleted_at": null,
+   "deleted_at": "2026-09-14T14:10:51.454Z",
    "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
    "menu_type": 2,
    "name": "recycle:SystemUser",
@@ -6283,7 +6356,8 @@
    "method": "GET",
    "model": [
     "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
-    "c19100c5-725c-4a81-a1f1-1209f757d693"
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
    ]
   }
  },
@@ -6423,7 +6497,10 @@
    "meta": "c3e221a1-91f4-4ee2-91a3-0e33ca39fa11",
    "method": "GET",
    "model": [
-    "6a242e6a-abde-4e56-93e1-da841cbab5bf"
+    "14071ee3-6725-4fcc-962d-ad7898efa284",
+    "6a242e6a-abde-4e56-93e1-da841cbab5bf",
+    "16a823b0-c4fb-40cd-af63-9aed309823aa",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
    ]
   }
  },
@@ -6497,7 +6574,9 @@
    "is_active": true,
    "meta": "e25274bd-42ad-55d5-89d9-ad4a7aadb355",
    "method": "GET",
-   "model": []
+   "model": [
+    "a6742831-3bb4-4e32-b0d9-d5643122fd1c"
+   ]
   }
  },
  {
@@ -6543,7 +6622,10 @@
    "is_active": true,
    "meta": "15469646-61fa-4f76-b088-373dcaf8fe7a",
    "method": "GET",
-   "model": []
+   "model": [
+    "cb71b56c-3f35-4f45-ad33-bcaeea834594",
+    "913a4a9c-d2a3-4f5b-b89c-7d0aa8766174"
+   ]
   }
  },
  {
@@ -6753,7 +6835,10 @@
    "is_active": true,
    "meta": "6c8c299b-1a61-5bfc-9d2e-34b8ffa1271e",
    "method": "GET",
-   "model": []
+   "model": [
+    "98a89150-23bf-47df-90c6-86d3653c6dbd",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997"
+   ]
   }
  },
  {
@@ -6776,7 +6861,10 @@
    "is_active": true,
    "meta": "0a70fef2-5f0e-52bb-8051-44669d7a8ade",
    "method": "GET",
-   "model": []
+   "model": [
+    "98a89150-23bf-47df-90c6-86d3653c6dbd",
+    "771d52ec-3633-41c4-89b4-2ca1f0ba4997"
+   ]
   }
  },
  {
@@ -6891,7 +6979,9 @@
    "is_active": true,
    "meta": "6b82029d-4c7e-55d6-9675-2a337ed1f7c4",
    "method": "GET",
-   "model": []
+   "model": [
+    "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+   ]
   }
  },
  {
@@ -6937,7 +7027,10 @@
    "is_active": true,
    "meta": "7f3e574b-e824-48a6-abaa-e6a8638e8a65",
    "method": "GET",
-   "model": []
+   "model": [
+    "e1f8c367-eab2-414d-ae1c-2437b64d4483",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
+   ]
   }
  },
  {
@@ -6960,7 +7053,10 @@
    "is_active": true,
    "meta": "74c914f9-e4de-4385-becf-621593f79610",
    "method": "POST",
-   "model": []
+   "model": [
+    "e1f8c367-eab2-414d-ae1c-2437b64d4483",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
+   ]
   }
  },
  {
@@ -6983,7 +7079,10 @@
    "is_active": true,
    "meta": "6db75c61-300b-4628-b952-d7ee8b22bdd8",
    "method": "GET",
-   "model": []
+   "model": [
+    "e1f8c367-eab2-414d-ae1c-2437b64d4483",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
+   ]
   }
  },
  {
@@ -7029,7 +7128,10 @@
    "is_active": true,
    "meta": "482a1ed2-9fe5-46fe-9885-df8924a9698a",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "e1f8c367-eab2-414d-ae1c-2437b64d4483",
+    "11ad085f-8749-4098-be4c-9ca685fd21b7"
+   ]
   }
  },
  {
@@ -7060,7 +7162,7 @@
   "pk": "df3a661c-dcc4-462d-94e8-9da2feb87bc8",
   "fields": {
    "created_time": "2026-09-09T00:00:00Z",
-   "updated_time": "2026-09-09T00:00:00Z",
+   "updated_time": "2026-09-14T14:11:41.469Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -7074,7 +7176,7 @@
    "component": null,
    "is_active": true,
    "meta": "3bc3a56c-2669-4bbb-aeab-b01e704c85a1",
-   "method": "DELETE",
+   "method": "POST",
    "model": []
   }
  },
@@ -7190,7 +7292,10 @@
    "is_active": true,
    "meta": "31b2c995-c970-4e30-8d35-0fea498a704f",
    "method": "GET",
-   "model": []
+   "model": [
+    "30553438-b463-4585-9ae8-5a943ac93734",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -7213,7 +7318,10 @@
    "is_active": true,
    "meta": "c6038d2a-b21a-4d82-9a48-cf238f48c423",
    "method": "GET",
-   "model": []
+   "model": [
+    "30553438-b463-4585-9ae8-5a943ac93734",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
   }
  },
  {
@@ -7420,7 +7528,9 @@
    "is_active": true,
    "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a601",
    "method": "GET",
-   "model": []
+   "model": [
+    "1dbbd00e-32e6-4b53-acb4-81876845f881"
+   ]
   }
  },
  {
@@ -7443,7 +7553,9 @@
    "is_active": true,
    "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a602",
    "method": "POST",
-   "model": []
+   "model": [
+    "1dbbd00e-32e6-4b53-acb4-81876845f881"
+   ]
   }
  },
  {
@@ -7466,7 +7578,9 @@
    "is_active": true,
    "meta": "c2d3e4f5-a607-4829-93ab-c2d3e4f5a603",
    "method": "GET",
-   "model": []
+   "model": [
+    "1dbbd00e-32e6-4b53-acb4-81876845f881"
+   ]
   }
  },
  {
@@ -7627,7 +7741,9 @@
    "is_active": true,
    "meta": "f29467e1-05aa-5ee1-8086-d1d438df5797",
    "method": "GET",
-   "model": []
+   "model": [
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
   }
  },
  {
@@ -7650,7 +7766,9 @@
    "is_active": true,
    "meta": "a945ac7c-0050-531e-9885-4ad627eb4a54",
    "method": "POST",
-   "model": []
+   "model": [
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
   }
  },
  {
@@ -7673,7 +7791,9 @@
    "is_active": true,
    "meta": "86b7bdad-b98b-5240-8559-e63179c1bc82",
    "method": "GET",
-   "model": []
+   "model": [
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
   }
  },
  {
@@ -7696,7 +7816,9 @@
    "is_active": true,
    "meta": "f3052814-8880-5da1-8f8d-fcfb92fdb744",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
+   ]
   }
  },
  {
@@ -7732,7 +7854,7 @@
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "deleted_at": null,
+   "deleted_at": "2026-09-14T14:10:51.465Z",
    "parent": "76cb05b6-baa8-58b0-bbf4-281452d45116",
    "menu_type": 2,
    "name": "batchDestroy:SystemApprovalFlow",
@@ -7788,7 +7910,11 @@
    "is_active": true,
    "meta": "3db6a95f-b191-551f-8480-c709f29dac2e",
    "method": "GET",
-   "model": []
+   "model": [
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+    "f3761fee-bd03-4513-8c9c-2e1f31b352f1"
+   ]
   }
  },
  {
@@ -7811,7 +7937,11 @@
    "is_active": true,
    "meta": "7396b13d-53c1-5ad8-a427-c13ef33bbc7c",
    "method": "POST",
-   "model": []
+   "model": [
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+    "f3761fee-bd03-4513-8c9c-2e1f31b352f1"
+   ]
   }
  },
  {
@@ -7834,7 +7964,11 @@
    "is_active": true,
    "meta": "0c1fe44c-d2d0-5630-9670-780dffe51149",
    "method": "GET",
-   "model": []
+   "model": [
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987",
+    "f3761fee-bd03-4513-8c9c-2e1f31b352f1"
+   ]
   }
  },
  {
@@ -8116,12 +8250,13 @@
   "model": "system.menu",
   "pk": "109ef89f-fe47-5835-a9a1-8c545233d85e",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "27f49261-6173-506d-a820-f543b1c5302b",
    "menu_type": 2,
    "name": "retrieve:LdapServerSetting",
@@ -8131,19 +8266,22 @@
    "is_active": true,
    "meta": "111165b1-c019-5bef-a140-f47aa3994efb",
    "method": "GET",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "089355f2-6feb-5cf4-bb71-726c85247d95",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "27f49261-6173-506d-a820-f543b1c5302b",
    "menu_type": 2,
    "name": "partialUpdate:LdapServerSetting",
@@ -8153,19 +8291,22 @@
    "is_active": true,
    "meta": "b63debdf-8937-5231-885e-c88bc5d8b406",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "e6606c90-048c-5170-a40b-e013b718ba09",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "27f49261-6173-506d-a820-f543b1c5302b",
    "menu_type": 2,
    "name": "create:LdapServerSetting",
@@ -8175,19 +8316,22 @@
    "is_active": true,
    "meta": "b59c58af-5a8b-5645-8ca1-223c1103183a",
    "method": "POST",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "643050a1-ae93-55e1-9cc4-7f98c2e984ad",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
    "menu_type": 2,
    "name": "retrieve:ImNotifySetting",
@@ -8197,19 +8341,22 @@
    "is_active": true,
    "meta": "0070871c-a67b-52ed-92a4-f9311e52877c",
    "method": "GET",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "6e95dfc1-c6f9-56cc-8f14-022b2b50766e",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
    "menu_type": 2,
    "name": "partialUpdate:ImNotifySetting",
@@ -8219,19 +8366,22 @@
    "is_active": true,
    "meta": "17aa62b6-3c09-5e5d-9aa8-3067723ae3fa",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "11bfd985-ed17-5c80-af0a-c3334c35c7d6",
   "fields": {
-   "created_time": "2026-09-12T12:00:00.000Z",
-   "updated_time": "2026-09-12T12:00:00.000Z",
+   "created_time": "2026-09-12T12:00:00Z",
+   "updated_time": "2026-09-12T12:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
    "menu_type": 2,
    "name": "create:ImNotifySetting",
@@ -8241,7 +8391,9 @@
    "is_active": true,
    "meta": "c2172b38-098e-501c-ba17-9f1fc4d90d52",
    "method": "POST",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
@@ -8314,12 +8466,13 @@
   "model": "system.menu",
   "pk": "9210d58d-7c29-543f-a2a6-8ca491bdfced",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
    "menu_type": 2,
    "name": "list:DataDashboard",
@@ -8329,19 +8482,22 @@
    "is_active": true,
    "meta": "03653e08-673f-5958-b92e-7a608d3a6ded",
    "method": "GET",
-   "model": []
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "d9eae806-5504-5bc3-83c6-e8ce2f10f007",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
    "menu_type": 2,
    "name": "create:DataDashboard",
@@ -8351,19 +8507,22 @@
    "is_active": true,
    "meta": "40bbfd29-f8fe-59db-92d0-123a6ef75cc9",
    "method": "POST",
-   "model": []
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "0c2e74dd-a930-5def-9756-2a5825e45518",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
    "menu_type": 2,
    "name": "partialUpdate:DataDashboard",
@@ -8373,7 +8532,9 @@
    "is_active": true,
    "meta": "7841854c-1e40-5373-aff2-bb58f64d984c",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
   }
  },
  {
@@ -8402,12 +8563,13 @@
   "model": "system.menu",
   "pk": "14ba19ee-856b-515d-84a5-a3516e402528",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": "2026-09-14T14:10:51.431Z",
    "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
    "menu_type": 2,
    "name": "execute:Dataset",
@@ -8424,12 +8586,13 @@
   "model": "system.menu",
   "pk": "181a94da-8b68-594b-8c59-03d18c38f66d",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": "2026-09-14T14:10:51.447Z",
    "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
    "menu_type": 2,
    "name": "aggregate:Dataset",
@@ -8446,12 +8609,13 @@
   "model": "system.menu",
   "pk": "5a8a8c1d-867a-55be-8423-f7c05159487d",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
    "menu_type": 2,
    "name": "list:DataDataset",
@@ -8461,19 +8625,22 @@
    "is_active": true,
    "meta": "59c5f56f-9659-51bc-ab0c-94a5082e67c4",
    "method": "GET",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "2f63175e-dced-5597-bb0a-173e803811f9",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
    "menu_type": 2,
    "name": "create:DataDataset",
@@ -8483,19 +8650,22 @@
    "is_active": true,
    "meta": "ef55d8a3-0224-5887-a1eb-bb085986b498",
    "method": "POST",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "95fc9648-64ca-554e-aaa5-e68f8e137ca3",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
    "menu_type": 2,
    "name": "retrieve:DataDataset",
@@ -8505,19 +8675,22 @@
    "is_active": true,
    "meta": "ade6feeb-6d4d-551a-bee8-b1a07fde677d",
    "method": "GET",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "e984ffc5-96c1-555b-a3c3-8a4661d40d80",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
    "menu_type": 2,
    "name": "partialUpdate:DataDataset",
@@ -8527,7 +8700,9 @@
    "is_active": true,
    "meta": "5e37d20e-eb03-5b21-ac5d-4d990639928e",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535"
+   ]
   }
  },
  {
@@ -8666,12 +8841,13 @@
   "model": "system.menu",
   "pk": "8fa3cac7-e730-5d4b-9aae-1c55eaacc712",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
    "menu_type": 2,
    "name": "list:DataReport",
@@ -8681,19 +8857,23 @@
    "is_active": true,
    "meta": "1b818fd4-aaaf-593d-ae61-9a26a2a69ff2",
    "method": "GET",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "1711513e-fbad-5a8a-baf7-54fecb87116e",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
    "menu_type": 2,
    "name": "create:DataReport",
@@ -8703,19 +8883,23 @@
    "is_active": true,
    "meta": "d086ba8d-dd5f-58dd-810b-104f36692601",
    "method": "POST",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "d138f67b-cd9f-52f0-99db-f618310f9e43",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
    "menu_type": 2,
    "name": "partialUpdate:DataReport",
@@ -8725,7 +8909,10 @@
    "is_active": true,
    "meta": "995c5ce6-322b-5b15-886b-bb9996d79451",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
   }
  },
  {
@@ -8776,12 +8963,13 @@
   "model": "system.menu",
   "pk": "f76e2ec1-12e0-515e-9c76-43d6fba97ea1",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
    "menu_type": 2,
    "name": "list:DataScreen",
@@ -8791,19 +8979,22 @@
    "is_active": true,
    "meta": "a5c1ec94-c80e-5045-b7aa-2f69499e2468",
    "method": "GET",
-   "model": []
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "70f63167-096a-5937-b4fe-43a50db24dee",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
    "menu_type": 2,
    "name": "create:DataScreen",
@@ -8813,19 +9004,22 @@
    "is_active": true,
    "meta": "9a3c06e2-938a-571c-9f4a-c271c7daf3c3",
    "method": "POST",
-   "model": []
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "d376b906-51f2-5abc-8bc3-3a7b177cf2bb",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
    "menu_type": 2,
    "name": "partialUpdate:DataScreen",
@@ -8835,7 +9029,9 @@
    "is_active": true,
    "meta": "149ae23c-2629-5f7f-aac0-3d165a8577ee",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
   }
  },
  {
@@ -8930,12 +9126,13 @@
   "model": "system.menu",
   "pk": "a93ab0c5-4af2-5ead-b3b8-c8fab238590c",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "21205d75-8558-5405-a646-b526b3fd5009",
    "menu_type": 2,
    "name": "list:WebhookSubscription",
@@ -8945,19 +9142,22 @@
    "is_active": true,
    "meta": "2afe8362-75b4-5be1-8430-446d76b4e36e",
    "method": "GET",
-   "model": []
+   "model": [
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "c0fe2b18-691f-5b6b-a12d-c17fb3ca00a9",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "21205d75-8558-5405-a646-b526b3fd5009",
    "menu_type": 2,
    "name": "create:WebhookSubscription",
@@ -8967,19 +9167,22 @@
    "is_active": true,
    "meta": "38521f4f-a7f8-550c-bbe7-92d54c183f84",
    "method": "POST",
-   "model": []
+   "model": [
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "5a5a163e-2cef-5013-a4ff-0f4ed3c36a83",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "21205d75-8558-5405-a646-b526b3fd5009",
    "menu_type": 2,
    "name": "partialUpdate:WebhookSubscription",
@@ -8989,7 +9192,9 @@
    "is_active": true,
    "meta": "541ac850-56ee-5df1-bcb1-468d3bb4d6ee",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
   }
  },
  {
@@ -9062,12 +9267,13 @@
   "model": "system.menu",
   "pk": "82d2325f-beed-5b0d-8897-8b5eef75be4d",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
    "menu_type": 2,
    "name": "list:WebhookDelivery",
@@ -9077,7 +9283,10 @@
    "is_active": true,
    "meta": "5fdea96c-ba50-5ecf-be59-0180cff4a06c",
    "method": "GET",
-   "model": []
+   "model": [
+    "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
   }
  },
  {
@@ -9194,12 +9403,13 @@
   "model": "system.menu",
   "pk": "398dca52-67ee-5734-a7b6-6c7b525cac83",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "list:AiAssistantConfig",
@@ -9209,19 +9419,22 @@
    "is_active": true,
    "meta": "bc0cb574-7081-516d-84a3-c50cadb78eff",
    "method": "GET",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "8623724b-c035-57ec-9e38-a3850aef5582",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "partialUpdate:AiAssistantConfig",
@@ -9231,19 +9444,22 @@
    "is_active": true,
    "meta": "840f98fa-183d-5f1c-a1e5-2630c1862865",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "fe5e1f5a-0257-5701-8c6b-1f63d4ae1ad6",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "create:AiAssistantConfig",
@@ -9253,19 +9469,22 @@
    "is_active": true,
    "meta": "17f12cdf-01a1-5cad-970a-f3af39cec7a3",
    "method": "POST",
-   "model": []
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "98abc5a9-c517-4d26-ba6e-27ad557a1ae5",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "list:AiProfile",
@@ -9275,19 +9494,22 @@
    "is_active": true,
    "meta": "7e2c43df-83ca-4f3e-8875-b55465a16591",
    "method": "GET",
-   "model": []
+   "model": [
+    "983b0f7a-c47a-43e3-9a98-563627193d7b"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "85906631-87c1-4158-ad05-0054b6e8d62f",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "create:AiProfile",
@@ -9297,19 +9519,22 @@
    "is_active": true,
    "meta": "16d1e7d9-7d48-484f-885c-a241acb616fb",
    "method": "POST",
-   "model": []
+   "model": [
+    "983b0f7a-c47a-43e3-9a98-563627193d7b"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "87fd7c72-7a9c-430e-81e7-df366fc5d489",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "retrieve:AiProfile",
@@ -9319,19 +9544,22 @@
    "is_active": true,
    "meta": "497ec00d-86d8-48d9-9085-2cb6620a9c21",
    "method": "GET",
-   "model": []
+   "model": [
+    "983b0f7a-c47a-43e3-9a98-563627193d7b"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "746b3568-70a6-4f05-8f67-f14dc3bc72f7",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "10c28e70-3d19-5c65-8589-c8913c643d25",
    "menu_type": 2,
    "name": "partialUpdate:AiProfile",
@@ -9341,7 +9569,9 @@
    "is_active": true,
    "meta": "68f53680-3865-4be2-ac07-f4157ed39d09",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "983b0f7a-c47a-43e3-9a98-563627193d7b"
+   ]
   }
  },
  {
@@ -9546,12 +9776,13 @@
   "model": "system.menu",
   "pk": "781dc66d-01d4-5492-9e71-2551d7fcdd7b",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
    "menu_type": 2,
    "name": "list:FormDesigner",
@@ -9561,19 +9792,22 @@
    "is_active": true,
    "meta": "841c7db3-3474-5cff-9fe7-92c879a66d2a",
    "method": "GET",
-   "model": []
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "3df05ab7-a8f5-5de5-a174-2f59952d42f4",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
    "menu_type": 2,
    "name": "create:FormDesigner",
@@ -9583,19 +9817,22 @@
    "is_active": true,
    "meta": "e24aac1f-f2ce-5c15-b7db-5dd4cef136dc",
    "method": "POST",
-   "model": []
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "df0fc7f7-f499-541d-922c-0144ec866a5b",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
    "menu_type": 2,
    "name": "retrieve:FormDesigner",
@@ -9605,19 +9842,22 @@
    "is_active": true,
    "meta": "08ea4e1f-63d8-501d-a427-bda11fcbcceb",
    "method": "GET",
-   "model": []
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "b8bc7344-1e8e-5229-8923-74bc4e8ce4dc",
   "fields": {
-   "created_time": "2026-09-13T00:00:00.000Z",
-   "updated_time": "2026-09-13T00:00:00.000Z",
+   "created_time": "2026-09-13T00:00:00Z",
+   "updated_time": "2026-09-13T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
    "menu_type": 2,
    "name": "partialUpdate:FormDesigner",
@@ -9627,7 +9867,9 @@
    "is_active": true,
    "meta": "a5c3f270-59a5-5f65-b5da-e58242e5807a",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
   }
  },
  {
@@ -9718,7 +9960,9 @@
    "is_active": true,
    "meta": "20c53d45-df68-5f2e-9bdf-c931a464d5b6",
    "method": "GET",
-   "model": []
+   "model": [
+    "ed2cbcdd-9646-43ad-91c0-5458ce718f00"
+   ]
   }
  },
  {
@@ -9741,7 +9985,9 @@
    "is_active": true,
    "meta": "4b66de2b-45e0-5db0-9728-ddc708487d41",
    "method": "GET",
-   "model": []
+   "model": [
+    "ed2cbcdd-9646-43ad-91c0-5458ce718f00"
+   ]
   }
  },
  {
@@ -9764,7 +10010,9 @@
    "is_active": true,
    "meta": "d6342450-0d8b-5474-be5c-6ead5427127f",
    "method": "POST",
-   "model": []
+   "model": [
+    "ed2cbcdd-9646-43ad-91c0-5458ce718f00"
+   ]
   }
  },
  {
@@ -9787,7 +10035,9 @@
    "is_active": true,
    "meta": "89379fee-0457-5c1a-ac59-a3f79ac9baee",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "ed2cbcdd-9646-43ad-91c0-5458ce718f00"
+   ]
   }
  },
  {
@@ -9902,7 +10152,10 @@
    "is_active": true,
    "meta": "ae6a38bc-1f88-599b-9d3b-b1767b028d22",
    "method": "GET",
-   "model": []
+   "model": [
+    "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
   }
  },
  {
@@ -9925,7 +10178,10 @@
    "is_active": true,
    "meta": "386583c6-84f5-5a70-9efa-629cde65fb67",
    "method": "POST",
-   "model": []
+   "model": [
+    "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
   }
  },
  {
@@ -9948,7 +10204,10 @@
    "is_active": true,
    "meta": "81f9606b-5a3d-5a57-aed6-1d6ea9e6f135",
    "method": "GET",
-   "model": []
+   "model": [
+    "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
   }
  },
  {
@@ -9971,7 +10230,10 @@
    "is_active": true,
    "meta": "64478b7d-3d81-576f-807c-76d7bef97d66",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "45a5d9fb-5a04-4209-9542-3590ca9d7965",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
   }
  },
  {
@@ -10007,7 +10269,7 @@
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "deleted_at": null,
+   "deleted_at": "2026-09-14T14:10:51.460Z",
    "parent": "655242f9-626e-528e-894e-98179f69a403",
    "menu_type": 2,
    "name": "batchDestroy:SystemLeave",
@@ -10115,12 +10377,13 @@
   "model": "system.menu",
   "pk": "506d89ef-4077-417d-94c0-637a12c5f384",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
    "menu_type": 2,
    "name": "list:AiKnowledge",
@@ -10130,19 +10393,22 @@
    "is_active": true,
    "meta": "1731f4a4-97a1-4c20-9767-e3855505ebd9",
    "method": "GET",
-   "model": []
+   "model": [
+    "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "c1212d72-e839-4f80-8435-0184c138ffb8",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
    "menu_type": 2,
    "name": "create:AiKnowledge",
@@ -10152,19 +10418,22 @@
    "is_active": true,
    "meta": "d2514a8e-e146-47c9-8584-768f29cc6d2d",
    "method": "POST",
-   "model": []
+   "model": [
+    "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "f89df067-27f3-4acb-9a80-34f3fe0216aa",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
    "menu_type": 2,
    "name": "retrieve:AiKnowledge",
@@ -10174,19 +10443,22 @@
    "is_active": true,
    "meta": "0825d727-d87a-49be-9da7-15234db256e7",
    "method": "GET",
-   "model": []
+   "model": [
+    "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "bb5ddfeb-7f0f-42aa-96d4-4491a2681ed1",
   "fields": {
-   "created_time": "2026-09-14T00:00:00.000Z",
-   "updated_time": "2026-09-14T00:00:00.000Z",
+   "created_time": "2026-09-14T00:00:00Z",
+   "updated_time": "2026-09-14T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
    "menu_type": 2,
    "name": "partialUpdate:AiKnowledge",
@@ -10196,7 +10468,9 @@
    "is_active": true,
    "meta": "05dfdf67-e8eb-4666-a595-d49d3e2ebb94",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "6772d9ac-fe07-40f5-9a06-2dfbfbcc0c0f"
+   ]
   }
  },
  {
@@ -10445,6 +10719,2151 @@
    "is_active": true,
    "meta": "8b4f2d19-7c56-4e21-a3d8-9f0e6c4b7a52",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2dcf7e4f-bcee-48dd-93cd-803ef2daedca",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.682Z",
+   "updated_time": "2026-09-14T13:49:28.682Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "21205d75-8558-5405-a646-b526b3fd5009",
+   "menu_type": 2,
+   "name": "batchDestroy:WebhookSubscription",
+   "rank": 10001,
+   "path": "api/system/webhooks/subscriptions/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3961974-e676-496e-81fe-b4214b71b607",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "834ce854-3dee-4fc7-9ff1-e1ec1a3eb8d3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.679Z",
+   "updated_time": "2026-09-14T13:49:28.679Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "21205d75-8558-5405-a646-b526b3fd5009",
+   "menu_type": 2,
+   "name": "retrieve:WebhookSubscription",
+   "rank": 10000,
+   "path": "api/system/webhooks/subscriptions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "5e3ca7dd-e012-4d92-8387-723e2b8c2fb6",
+   "method": "GET",
+   "model": [
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8c6f14b4-97d5-4180-ab53-f4104786d54d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.677Z",
+   "updated_time": "2026-09-14T13:49:28.677Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
+   "menu_type": 2,
+   "name": "batchDestroy:WebhookDelivery",
+   "rank": 10002,
+   "path": "api/system/webhooks/deliveries/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "52255a5e-7654-4284-abd8-3dfadc0ecbde",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1722d931-ea57-4ad4-9095-163f94d14734",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.674Z",
+   "updated_time": "2026-09-14T13:49:28.674Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
+   "menu_type": 2,
+   "name": "retrieve:WebhookDelivery",
+   "rank": 10001,
+   "path": "api/system/webhooks/deliveries/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "a54ee25a-6e36-4bd8-92b1-e040f8a3d480",
+   "method": "GET",
+   "model": [
+    "8108f7ab-cefc-4048-849d-dcfbb821e4a9",
+    "d76a6bbf-c662-47a8-9c67-bc719d50c999"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "22ec0d72-53ef-4cd7-ad76-7d3783b96352",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.672Z",
+   "updated_time": "2026-09-14T13:49:28.672Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "a7556f4a-4031-562e-8850-4bb0977f9ca3",
+   "menu_type": 2,
+   "name": "destroy:WebhookDelivery",
+   "rank": 10000,
+   "path": "api/system/webhooks/deliveries/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "4c9b2bc3-8a48-446e-9022-da609d97ffe5",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "eefb3949-e585-48aa-bdfa-867f948aa76c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.670Z",
+   "updated_time": "2026-09-14T13:49:28.670Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "580f45ff-1fc0-5a51-991b-7845ecd460fa",
+   "menu_type": 2,
+   "name": "batchDestroy:IntegrationApiApp",
+   "rank": 10000,
+   "path": "api/system/api-applications/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "cc26f678-84e5-42c8-88df-334836aa3fd5",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5026fba5-fe0c-41ce-8a00-f601be09dbee",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.668Z",
+   "updated_time": "2026-09-14T13:49:28.668Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "taskHealth:SystemMonitor",
+   "rank": 10000,
+   "path": "api/system/monitor/task-health$",
+   "component": null,
+   "is_active": true,
+   "meta": "1a7a9e9d-6b58-4d31-adac-072e2a4a5696",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0994aedd-8b79-42a8-ac33-22b94c12e4e4",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.665Z",
+   "updated_time": "2026-09-14T13:49:28.665Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "batchDestroy:FormDesigner",
+   "rank": 10000,
+   "path": "api/system/dynamic-forms/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "a4104552-3ec4-4568-b96a-fc265eaa3c2b",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b13e5b15-5b87-45b4-903f-294639266ec9",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.663Z",
+   "updated_time": "2026-09-14T13:49:28.663Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "batchDestroy:FormMySubmission",
+   "rank": 10005,
+   "path": "api/system/dynamic-form-submissions/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "0549f58d-742a-4839-a7de-a5f7a7916aff",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7194e9b0-05c4-498e-8bc3-4ce646e207d7",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.660Z",
+   "updated_time": "2026-09-14T13:49:28.660Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "partialUpdate:FormMySubmission",
+   "rank": 10004,
+   "path": "api/system/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "3bf1caaa-b12e-4777-a97b-0b36dd7ee082",
+   "method": "PATCH",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "bddc334f-e59c-4927-a3da-bc813c0dd8a3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.658Z",
+   "updated_time": "2026-09-14T13:49:28.658Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "retrieve:FormMySubmission",
+   "rank": 10003,
+   "path": "api/system/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "2121c0a4-c517-4f2b-9570-9548a1c0e777",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "031d4f01-7907-4c09-9ba9-f59b332d016a",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.656Z",
+   "updated_time": "2026-09-14T13:49:28.656Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "destroy:FormMySubmission",
+   "rank": 10002,
+   "path": "api/system/dynamic-form-submissions/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "61587439-09eb-4a00-9823-8107d1544713",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a48b690f-8baf-4cb1-8610-521e2cccbd71",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.653Z",
+   "updated_time": "2026-09-14T13:49:28.653Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "create:FormMySubmission",
+   "rank": 10001,
+   "path": "api/system/dynamic-form-submissions$",
+   "component": null,
+   "is_active": true,
+   "meta": "cc58e579-5e83-4477-8562-5637664c0810",
+   "method": "POST",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6330cbf8-6a85-428c-a360-edac821ac55d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.650Z",
+   "updated_time": "2026-09-14T13:49:28.650Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "list:FormMySubmission",
+   "rank": 10000,
+   "path": "api/system/dynamic-form-submissions$",
+   "component": null,
+   "is_active": true,
+   "meta": "32a528ed-2e18-450f-bf74-2c565da5ebe6",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "06f802a5-df5c-4eeb-a007-ceb49ecb2fff",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.648Z",
+   "updated_time": "2026-09-14T13:49:28.648Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "c3875c49-2b28-5d60-8622-e5829ff45c74",
+   "menu_type": 2,
+   "name": "batchDestroy:DataDataset",
+   "rank": 10000,
+   "path": "api/system/datasets/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "499c94cd-1cdd-4e41-b945-1c12a75e85f9",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c4cf4cda-92b3-4fee-a78d-35374302a801",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.646Z",
+   "updated_time": "2026-09-14T13:49:28.646Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "batchDestroy:DataDashboard",
+   "rank": 10001,
+   "path": "api/system/dashboards/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "1438c2f2-df6f-4127-8571-046975c5d701",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "952898fc-732b-4e94-ba46-1ab610082f54",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.643Z",
+   "updated_time": "2026-09-14T13:49:28.643Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "289636aa-a7fd-58ab-a163-5ba07f6d5c7d",
+   "menu_type": 2,
+   "name": "retrieve:DataDashboard",
+   "rank": 10000,
+   "path": "api/system/dashboards/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "1f7d3d7f-9f40-411f-8b9a-27b794bba273",
+   "method": "GET",
+   "model": [
+    "40df3f8e-79c7-43b9-8b9b-d598a72ff15d"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "44338014-cf2b-4567-b8c5-a182fcbd5b98",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.641Z",
+   "updated_time": "2026-09-14T13:49:28.641Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "batchDestroy:DataScreen",
+   "rank": 10001,
+   "path": "api/system/screens/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "77ddb46f-9b37-4392-aaf9-10b071d6f35a",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f24d67b7-a821-4638-9340-b6b84f736cd3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.638Z",
+   "updated_time": "2026-09-14T13:49:28.638Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "retrieve:DataScreen",
+   "rank": 10000,
+   "path": "api/system/screens/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "c0594407-d937-499b-958d-ffef571769bb",
+   "method": "GET",
+   "model": [
+    "1c41b71d-dbcd-4e23-99ea-26ef84e0ca36"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c5f818a5-5264-47f4-a400-c7b37685f59c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.636Z",
+   "updated_time": "2026-09-14T13:49:28.636Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "batchDestroy:DataReport",
+   "rank": 10001,
+   "path": "api/system/reports/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "b2afc383-3cfe-43d4-b756-425f6b165991",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7485a3b0-1f64-493a-aa9b-d97c3bcb1bd9",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.633Z",
+   "updated_time": "2026-09-14T13:49:28.633Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "retrieve:DataReport",
+   "rank": 10000,
+   "path": "api/system/reports/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "731a596b-de3c-46ba-ae26-6f2963a9dd16",
+   "method": "GET",
+   "model": [
+    "7fd8e9a5-8ccb-4257-80c1-7629fa029535",
+    "8e81f53a-efc0-44d4-8362-1bbd9589331b"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0a97ce60-a65c-47ea-a13a-de460096df76",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.631Z",
+   "updated_time": "2026-09-14T13:49:28.631Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "importValidate:SystemUser",
+   "rank": 10003,
+   "path": "api/system/user/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "817d4f9c-4714-4ff2-87e4-cf9d9224b9d7",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f3420629-b623-4d10-b4fd-94a324296745",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.629Z",
+   "updated_time": "2026-09-14T13:49:28.629Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "importHeaders:SystemUser",
+   "rank": 10002,
+   "path": "api/system/user/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "f151f8db-0d71-45a4-bc13-62f354981f1d",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0ba9c6b0-ce7b-464e-a073-6ebe11d770f6",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.627Z",
+   "updated_time": "2026-09-14T13:49:28.627Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "importAsync:SystemUser",
+   "rank": 10001,
+   "path": "api/system/user/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "ed87bc25-cc94-4037-8337-7a4ae5c2fdc3",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "42b48993-169b-49ae-8dd0-a08a1633a4bc",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.625Z",
+   "updated_time": "2026-09-14T13:49:28.625Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "exportAsync:SystemUser",
+   "rank": 10000,
+   "path": "api/system/user/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "ec55df05-efc9-41ae-87d3-acedadb045ff",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8b77657b-609f-4414-b467-41fdad732d6d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.622Z",
+   "updated_time": "2026-09-14T13:49:28.622Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+   "menu_type": 2,
+   "name": "importValidate:SystemRole",
+   "rank": 10003,
+   "path": "api/system/role/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "ecb7affd-86e2-4810-90db-1b666625bf7f",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "075f8152-44bd-4bc5-9576-47c1aa8adc68",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.620Z",
+   "updated_time": "2026-09-14T13:49:28.620Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+   "menu_type": 2,
+   "name": "importHeaders:SystemRole",
+   "rank": 10002,
+   "path": "api/system/role/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "fd36685d-1a34-4ff3-b720-3a3dba06b382",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "ddf6a8dc-8f2d-4b68-81ce-67cba2918db7",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.618Z",
+   "updated_time": "2026-09-14T13:49:28.618Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+   "menu_type": 2,
+   "name": "importAsync:SystemRole",
+   "rank": 10001,
+   "path": "api/system/role/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "08c0a2e0-2a84-49c7-b90a-6cfbfc2eb751",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "501c2690-3dae-4472-a19a-fbe6c1b576fd",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.616Z",
+   "updated_time": "2026-09-14T13:49:28.616Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "b5f6aa93-62dd-433f-9759-2f542baae423",
+   "menu_type": 2,
+   "name": "exportAsync:SystemRole",
+   "rank": 10000,
+   "path": "api/system/role/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "3b32e804-520d-428d-8bc7-a22f4f1b6ff2",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8847625f-2e12-4f0b-a206-3bbc50901d74",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.614Z",
+   "updated_time": "2026-09-14T13:49:28.614Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "importValidate:SystemDataPermission",
+   "rank": 10003,
+   "path": "api/system/permission/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "fd69f69a-fb63-4110-b842-c9bd1512a011",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a4c13dad-73b5-4ae8-9c2e-3d6ef7045718",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.612Z",
+   "updated_time": "2026-09-14T13:49:28.612Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "importHeaders:SystemDataPermission",
+   "rank": 10002,
+   "path": "api/system/permission/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "1694a1ea-18bc-46b6-808d-5e6aeb16d259",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3f2cf675-e78a-45ab-9231-f609babfa1bd",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.610Z",
+   "updated_time": "2026-09-14T13:49:28.610Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "importAsync:SystemDataPermission",
+   "rank": 10001,
+   "path": "api/system/permission/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "12ded7c9-303d-4bc4-91a2-78d6132c9de5",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "42b06fe0-725d-4f8c-b090-d9655bd091fe",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.608Z",
+   "updated_time": "2026-09-14T13:49:28.608Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0678cc57-f292-4287-887b-ffade834dde1",
+   "menu_type": 2,
+   "name": "exportAsync:SystemDataPermission",
+   "rank": 10000,
+   "path": "api/system/permission/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "edf0ba34-4b75-4d42-ac78-0f6240e313b4",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8e6a85e9-8044-4eb4-8e4f-81fe154e6514",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.606Z",
+   "updated_time": "2026-09-14T13:49:28.606Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
+   "menu_type": 2,
+   "name": "exportAsync:SystemOperationLog",
+   "rank": 10000,
+   "path": "api/system/logs/operation/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "96942d3a-0662-4d94-95fc-9e58fa6f5bca",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "34853e85-28b9-4925-b817-040198694eb3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.605Z",
+   "updated_time": "2026-09-14T13:49:28.605Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "e3ebc0db-9509-4851-b5cd-00fd87104737",
+   "menu_type": 2,
+   "name": "exportAsync:SystemUserOnline",
+   "rank": 10000,
+   "path": "api/system/online/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "30a22c1c-5db3-487e-97ee-ee2c7516c1ec",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "534020ab-99c7-4a1e-9166-e924534915aa",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.603Z",
+   "updated_time": "2026-09-14T13:49:28.603Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "importValidate:SystemModelLabelField",
+   "rank": 10007,
+   "path": "api/system/field/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "702fb309-f109-4f41-b451-c4917b5a8f16",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0eb471f5-7143-4337-a9a0-5aa000ccdac3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.601Z",
+   "updated_time": "2026-09-14T13:49:28.601Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "importHeaders:SystemModelLabelField",
+   "rank": 10006,
+   "path": "api/system/field/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "31fb41fc-abbe-4c5c-b39d-05281a57abba",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b9a01fc1-a675-420e-a573-d1d92876ffa1",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.599Z",
+   "updated_time": "2026-09-14T13:49:28.599Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "importAsync:SystemModelLabelField",
+   "rank": 10005,
+   "path": "api/system/field/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "4cb674b6-270f-4e80-82e0-00dee599b0d4",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "89c4bc2a-ba47-45ea-bb45-1e3a7f11d56d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.597Z",
+   "updated_time": "2026-09-14T13:49:28.597Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "exportAsync:SystemModelLabelField",
+   "rank": 10004,
+   "path": "api/system/field/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "35e19686-0c66-4ecc-bba4-6e712e1c7987",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "75c257a9-5ad6-497a-905d-afa2adc09cf7",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.594Z",
+   "updated_time": "2026-09-14T13:49:28.594Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemModelLabelField",
+   "rank": 10003,
+   "path": "api/system/field/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "d6f2d017-a7d3-4232-b1c8-0d0774275b43",
+   "method": "PATCH",
+   "model": [
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fc0d1000-6c70-4fba-90e5-b7507daa597f",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.591Z",
+   "updated_time": "2026-09-14T13:49:28.591Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "retrieve:SystemModelLabelField",
+   "rank": 10002,
+   "path": "api/system/field/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "cb342587-a16f-4e98-804e-47cae30a4f1a",
+   "method": "GET",
+   "model": [
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f31b2187-6736-426f-93ec-4038000cfd17",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.589Z",
+   "updated_time": "2026-09-14T13:49:28.589Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "destroy:SystemModelLabelField",
+   "rank": 10001,
+   "path": "api/system/field/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "342358b2-f912-41f1-a3bb-16a3b33cb1e4",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f19a1d3d-ac69-4175-82b6-4539cf1acc66",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.586Z",
+   "updated_time": "2026-09-14T13:49:28.586Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "de2bdbf8-aeaf-4171-b73e-17cc383298d2",
+   "menu_type": 2,
+   "name": "create:SystemModelLabelField",
+   "rank": 10000,
+   "path": "api/system/field$",
+   "component": null,
+   "is_active": true,
+   "meta": "7dad51c8-7b17-4ec7-947b-c1943c60b055",
+   "method": "POST",
+   "model": [
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d76f50aa-aa9e-40ef-8aec-78b3dfe587c8",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.584Z",
+   "updated_time": "2026-09-14T13:49:28.584Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "recycleRestore:SystemMenu",
+   "rank": 10005,
+   "path": "api/system/menu/recycle/restore$",
+   "component": null,
+   "is_active": true,
+   "meta": "e1bf1df9-3f34-4006-bc68-91805cc91882",
+   "method": "PATCH",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7c3d807c-958f-4153-90e2-f1edbf630468",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.582Z",
+   "updated_time": "2026-09-14T13:49:28.582Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "recyclePurge:SystemMenu",
+   "rank": 10004,
+   "path": "api/system/menu/recycle/purge$",
+   "component": null,
+   "is_active": true,
+   "meta": "fb293840-caa6-47d6-9f73-0281eaff1d06",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4423762f-2450-4fb7-b71e-001a919c6579",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.580Z",
+   "updated_time": "2026-09-14T13:49:28.580Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "importValidate:SystemMenu",
+   "rank": 10003,
+   "path": "api/system/menu/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "f020517b-de76-45f2-ba5e-aa9337aceb1b",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2716675c-538a-4216-94ec-e90ff2046cc7",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.578Z",
+   "updated_time": "2026-09-14T13:49:28.578Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "importHeaders:SystemMenu",
+   "rank": 10002,
+   "path": "api/system/menu/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "53e57e41-9716-4f58-8c03-40e2a3493494",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9465f8ab-539d-4e11-b83d-5bdd036638db",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.576Z",
+   "updated_time": "2026-09-14T13:49:28.576Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "importAsync:SystemMenu",
+   "rank": 10001,
+   "path": "api/system/menu/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "6f6a31b6-978e-42f9-b1a5-72cab37d8be0",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3beb2833-36bb-4803-9ce7-5496cab2168f",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.573Z",
+   "updated_time": "2026-09-14T13:49:28.573Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "exportAsync:SystemMenu",
+   "rank": 10000,
+   "path": "api/system/menu/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "d2c67d29-a489-47cc-b953-77cf086a0f8e",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "196663ed-3973-42dc-9b9b-84a397f052e1",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.571Z",
+   "updated_time": "2026-09-14T13:49:28.571Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "e0738d8a-a999-41a7-88e6-6a62af4cc71f",
+   "menu_type": 2,
+   "name": "importValidate:SystemDataMaskRule",
+   "rank": 10004,
+   "path": "api/system/mask-rules/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "30eff2b0-49c9-4691-82ac-615c89ca30e3",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b7a2ab46-f1eb-43f5-bd64-5cecc30bedae",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.569Z",
+   "updated_time": "2026-09-14T13:49:28.569Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "e0738d8a-a999-41a7-88e6-6a62af4cc71f",
+   "menu_type": 2,
+   "name": "importHeaders:SystemDataMaskRule",
+   "rank": 10003,
+   "path": "api/system/mask-rules/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "62dba736-13e5-433a-8c97-16584a1cda1f",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "11b28ec1-264c-4c56-ad3f-5115aed5530f",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.567Z",
+   "updated_time": "2026-09-14T13:49:28.567Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "e0738d8a-a999-41a7-88e6-6a62af4cc71f",
+   "menu_type": 2,
+   "name": "importAsync:SystemDataMaskRule",
+   "rank": 10002,
+   "path": "api/system/mask-rules/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "0b7efabc-49de-4b20-8dc0-ba4a9207dd42",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "deb2c70e-c654-4e5a-b45e-ec4483ef6337",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.565Z",
+   "updated_time": "2026-09-14T13:49:28.565Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "e0738d8a-a999-41a7-88e6-6a62af4cc71f",
+   "menu_type": 2,
+   "name": "exportAsync:SystemDataMaskRule",
+   "rank": 10001,
+   "path": "api/system/mask-rules/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "cca3dbcb-6c00-41c6-9d58-dfc7f2236db0",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "50a0249c-1073-4f05-8b7b-516b295c086d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.560Z",
+   "updated_time": "2026-09-14T13:49:28.560Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
+   "menu_type": 2,
+   "name": "exportAsync:SystemUserLoginLog",
+   "rank": 10000,
+   "path": "api/system/logs/login/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "6ed7eefb-c2e6-48f1-8369-6972a422a91a",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a8c5f53c-ec61-443a-82f7-3056602ea7dc",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.558Z",
+   "updated_time": "2026-09-14T13:49:28.558Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+   "menu_type": 2,
+   "name": "batchDestroy:SystemImportTemplate",
+   "rank": 10001,
+   "path": "api/system/import-templates/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "b68997e2-f010-47b8-827a-69bf79396c3f",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b5d629cd-aa90-41b2-b0e0-7b76b3997943",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.556Z",
+   "updated_time": "2026-09-14T13:49:28.556Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6f1c0a3e-9d24-4b7f-8e51-2a7c4d8b1e30",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemImportTemplate",
+   "rank": 10000,
+   "path": "api/system/import-templates/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "4fa09780-f793-42dc-9c5d-8656e232d844",
+   "method": "PATCH",
+   "model": [
+    "1dbbd00e-32e6-4b53-acb4-81876845f881"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "079357ca-ef30-4bfe-ae65-040c5ca47f1c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.554Z",
+   "updated_time": "2026-09-14T13:49:28.554Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+   "menu_type": 2,
+   "name": "importValidate:SystemDataDict",
+   "rank": 10003,
+   "path": "api/system/dict/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "9cdb2307-ab78-4018-9f28-7af0b327eb20",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1122dab0-58a7-4722-b395-43aa1900d8b2",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.552Z",
+   "updated_time": "2026-09-14T13:49:28.552Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+   "menu_type": 2,
+   "name": "importHeaders:SystemDataDict",
+   "rank": 10002,
+   "path": "api/system/dict/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "ec1b37e7-1a6c-40fe-ac2a-82a50f6dab3a",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "60259858-9d97-49bb-acfa-8c49ba60a211",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.551Z",
+   "updated_time": "2026-09-14T13:49:28.551Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+   "menu_type": 2,
+   "name": "importAsync:SystemDataDict",
+   "rank": 10001,
+   "path": "api/system/dict/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "1c07742a-2be5-43cc-875c-335c6f689345",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5e81d369-14d1-4a50-8b2d-cd0dfc91240c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.549Z",
+   "updated_time": "2026-09-14T13:49:28.549Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "74bac617-657c-577f-8a27-ab38a438b930",
+   "menu_type": 2,
+   "name": "exportAsync:SystemDataDict",
+   "rank": 10000,
+   "path": "api/system/dict/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "7cc8985e-0ed8-4803-9cc5-2c151d741958",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "bdcd0686-b1d1-4ccf-a186-8231700e1f29",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.547Z",
+   "updated_time": "2026-09-14T13:49:28.547Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "importValidate:SystemDept",
+   "rank": 10003,
+   "path": "api/system/dept/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "ad291e83-128c-4e61-aca9-4be616b6960c",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4271523c-228e-4fc6-b72e-ad8e373b0c93",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.545Z",
+   "updated_time": "2026-09-14T13:49:28.545Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "importHeaders:SystemDept",
+   "rank": 10002,
+   "path": "api/system/dept/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "0d64ef9a-49d0-47c7-ba8c-f24183045b52",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0ec8deb2-0535-47ba-8055-d3cee1798b7a",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.543Z",
+   "updated_time": "2026-09-14T13:49:28.543Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "importAsync:SystemDept",
+   "rank": 10001,
+   "path": "api/system/dept/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "8f2005d7-b354-4893-91e6-16cb0746646e",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e19eade1-a824-464e-bfd0-b401f7fc1f79",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.541Z",
+   "updated_time": "2026-09-14T13:49:28.541Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "exportAsync:SystemDept",
+   "rank": 10000,
+   "path": "api/system/dept/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "cf5f24ee-4325-44e5-8c46-63dfb709b7e4",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1df4d4f2-a613-443b-83c9-ef2549d799df",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.539Z",
+   "updated_time": "2026-09-14T13:49:28.539Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+   "menu_type": 2,
+   "name": "importValidate:UserConfig",
+   "rank": 10003,
+   "path": "api/system/config/user/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "781e36e1-cb91-414c-ada7-9960896e50ad",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "85b46257-760b-4b90-a1fe-cf36e7274c3f",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.538Z",
+   "updated_time": "2026-09-14T13:49:28.538Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+   "menu_type": 2,
+   "name": "importHeaders:UserConfig",
+   "rank": 10002,
+   "path": "api/system/config/user/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "24395e8c-ca52-4637-be04-705db385a431",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fe126518-e9fd-472e-a6f0-55f5600c5fb9",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.536Z",
+   "updated_time": "2026-09-14T13:49:28.536Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+   "menu_type": 2,
+   "name": "importAsync:UserConfig",
+   "rank": 10001,
+   "path": "api/system/config/user/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "2fc749fc-fcc6-4961-a26f-4819d35bac90",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2bdcea35-9140-40c5-9614-32de836b0805",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.534Z",
+   "updated_time": "2026-09-14T13:49:28.534Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "09523de8-58de-4aa3-8732-a30da14443d4",
+   "menu_type": 2,
+   "name": "exportAsync:UserConfig",
+   "rank": 10000,
+   "path": "api/system/config/user/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "a9c8c767-1ca3-487c-bd08-8d7bd6b969d9",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "64f61bd3-4edf-481a-8e77-2c502e942223",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.532Z",
+   "updated_time": "2026-09-14T13:49:28.532Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+   "menu_type": 2,
+   "name": "importValidate:SystemConfig",
+   "rank": 10003,
+   "path": "api/system/config/system/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "6889fc1f-d2df-4dd4-9500-932b9c9ca345",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "6116321b-879c-406b-90cb-9e3ce75cccc3",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.530Z",
+   "updated_time": "2026-09-14T13:49:28.530Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+   "menu_type": 2,
+   "name": "importHeaders:SystemConfig",
+   "rank": 10002,
+   "path": "api/system/config/system/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "c62fb31d-aba6-4082-9137-493ccd44e84b",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2eb573af-877c-47d1-b416-badca58d3b2c",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.528Z",
+   "updated_time": "2026-09-14T13:49:28.528Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+   "menu_type": 2,
+   "name": "importAsync:SystemConfig",
+   "rank": 10001,
+   "path": "api/system/config/system/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "cbf69b0e-0a36-492d-b09f-480b313ad91e",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "557b74fc-9202-4448-b5c7-88a7d80e9e4d",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.526Z",
+   "updated_time": "2026-09-14T13:49:28.526Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6e914168-2d0e-4a35-98c1-1543cb2c2fb7",
+   "menu_type": 2,
+   "name": "exportAsync:SystemConfig",
+   "rank": 10000,
+   "path": "api/system/config/system/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "1fa70084-42e8-4549-bb2b-8c6c0a27ec32",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5ada8243-aa65-431d-b263-79217bd27f5e",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.524Z",
+   "updated_time": "2026-09-14T13:49:28.524Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "76cb05b6-baa8-58b0-bbf4-281452d45116",
+   "menu_type": 2,
+   "name": "versions:SystemApprovalFlow",
+   "rank": 10001,
+   "path": "api/system/approval-flows/(?P<pk>[^/.]+)/versions$",
+   "component": null,
+   "is_active": true,
+   "meta": "b7e4473b-8b9a-444e-b32c-e3c05d2140eb",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b1e275c9-d828-447c-90c6-4136e06947ee",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.522Z",
+   "updated_time": "2026-09-14T13:49:28.522Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "76cb05b6-baa8-58b0-bbf4-281452d45116",
+   "menu_type": 2,
+   "name": "rollback:SystemApprovalFlow",
+   "rank": 10000,
+   "path": "api/system/approval-flows/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "2fa5bf6a-a35e-4161-8c03-8be4e298d8a7",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "008d66c6-db87-40b6-b51a-b698070cad7a",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.520Z",
+   "updated_time": "2026-09-14T13:49:28.520Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importValidate:SystemSetting",
+   "rank": 10007,
+   "path": "api/settings/setting/import-validate$",
+   "component": null,
+   "is_active": true,
+   "meta": "48d14e95-11d2-4174-8815-57f9808af755",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5f05fc2d-e272-4757-aac3-ff51252a1490",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.518Z",
+   "updated_time": "2026-09-14T13:49:28.518Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importHeaders:SystemSetting",
+   "rank": 10006,
+   "path": "api/settings/setting/import-headers$",
+   "component": null,
+   "is_active": true,
+   "meta": "70bafd25-398d-4d7c-aba8-03a0de280136",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "96356211-581e-4846-a25c-cddc6a4c0e0e",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.516Z",
+   "updated_time": "2026-09-14T13:49:28.516Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "importAsync:SystemSetting",
+   "rank": 10005,
+   "path": "api/settings/setting/import-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "8aede353-a2f0-4b9c-9e12-64f93ffa84e8",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7e7dd673-9b59-4b32-8ae7-3f579834eb36",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.513Z",
+   "updated_time": "2026-09-14T13:49:28.513Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "exportAsync:SystemSetting",
+   "rank": 10004,
+   "path": "api/settings/setting/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "63e5215e-ca42-4761-b422-2d6a3eaa9eb5",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "d6c34bc6-ef4b-4ff8-b0b9-c8a96e776397",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.510Z",
+   "updated_time": "2026-09-14T13:49:28.510Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemSetting",
+   "rank": 10003,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "0c25670c-2ddf-4f97-aab7-e6c3b6eb9154",
+   "method": "PATCH",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7cab67af-01bd-438d-afc4-8b24dbda2682",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.507Z",
+   "updated_time": "2026-09-14T13:49:28.507Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "retrieve:SystemSetting",
+   "rank": 10002,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "aad54e01-02b0-4f11-8143-0e433aa50987",
+   "method": "GET",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "36b94b2b-43b8-4633-8a47-f5e258eb2334",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.505Z",
+   "updated_time": "2026-09-14T13:49:28.505Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "destroy:SystemSetting",
+   "rank": 10001,
+   "path": "api/settings/setting/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "df679492-2501-4375-8400-8acb281338a5",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "0e7029d4-fa92-4165-9093-6e0b0e0ec6be",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.502Z",
+   "updated_time": "2026-09-14T13:49:28.502Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "0088716e-e813-4f1e-bf77-0c55b9e0a124",
+   "menu_type": 2,
+   "name": "create:SystemSetting",
+   "rank": 10000,
+   "path": "api/settings/setting$",
+   "component": null,
+   "is_active": true,
+   "meta": "a9bdd387-b062-4e3b-be2c-34d8f4adc1ec",
+   "method": "POST",
+   "model": [
+    "23a586ba-6c71-4664-b1c0-edf41e6a3f52"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c891a9fd-662f-4c9c-875c-4e86547dbe07",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.498Z",
+   "updated_time": "2026-09-14T13:49:28.498Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "6997ffe2-8246-401d-8800-248ecbc2dd83",
+   "menu_type": 2,
+   "name": "retrieve:UserMsgSubscription",
+   "rank": 10000,
+   "path": "api/notifications/user-msg-subscription/(?P<message_type>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "19a13f39-54d5-463e-a000-38b4ac6162e7",
+   "method": "GET",
+   "model": [
+    "3ac4fe93-f41c-4e80-bfee-b57684f23375",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1688cf65-7cf6-441d-a29b-e02db1c31528",
+  "fields": {
+   "created_time": "2026-09-14T13:49:28.489Z",
+   "updated_time": "2026-09-14T13:49:28.489Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "42cab74c-67b5-4c9a-a15e-8e63f1cdf670",
+   "menu_type": 2,
+   "name": "retrieve:SystemMsgSubscription",
+   "rank": 10000,
+   "path": "api/notifications/system-msg-subscription/(?P<message_type>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "08007826-8b0e-432c-bfa4-30faee4d80ba",
+   "method": "GET",
+   "model": [
+    "201ffaa5-b0bb-4523-a87c-911d47204994",
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "e361b5de-216e-44cb-a611-99b9a46ed371",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.851Z",
+   "updated_time": "2026-09-14T14:27:13.851Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "list:SystemTaskInterval",
+   "rank": 10000,
+   "path": "api/system/tasks/interval$",
+   "component": null,
+   "is_active": true,
+   "meta": "6f7e9c7f-950d-4d24-87c5-962e496d76b3",
+   "method": "GET",
+   "model": [
+    "394550bb-2ecb-4878-be00-c30deaa67987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "020fae41-6f92-4035-9b72-cfc8cd694ffa",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.857Z",
+   "updated_time": "2026-09-14T14:27:13.857Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "create:SystemTaskInterval",
+   "rank": 10001,
+   "path": "api/system/tasks/interval$",
+   "component": null,
+   "is_active": true,
+   "meta": "5892e3b7-5278-4363-97fb-cafe3bc2dc39",
+   "method": "POST",
+   "model": [
+    "394550bb-2ecb-4878-be00-c30deaa67987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b743b898-47dd-4d55-9cb8-f91a29875adc",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.860Z",
+   "updated_time": "2026-09-14T14:27:13.860Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "destroy:SystemTaskInterval",
+   "rank": 10002,
+   "path": "api/system/tasks/interval/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "86d8321c-4fd7-47b6-ad4f-1887c1f8145a",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1288b239-9fe8-4b0e-9bff-3f5ec7b7b8b7",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.862Z",
+   "updated_time": "2026-09-14T14:27:13.862Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "retrieve:SystemTaskInterval",
+   "rank": 10003,
+   "path": "api/system/tasks/interval/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "81d3ca43-802d-4831-8aff-41ed582091b4",
+   "method": "GET",
+   "model": [
+    "394550bb-2ecb-4878-be00-c30deaa67987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "b87ff0a8-8995-48b4-a8cf-2bb9d60fc8c2",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.865Z",
+   "updated_time": "2026-09-14T14:27:13.865Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemTaskInterval",
+   "rank": 10004,
+   "path": "api/system/tasks/interval/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "d5f33a3c-6eff-4311-90c4-5cbf32be4622",
+   "method": "PATCH",
+   "model": [
+    "394550bb-2ecb-4878-be00-c30deaa67987"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "7671bd17-e6de-48b4-b57a-3a4b0b0f9a3a",
+  "fields": {
+   "created_time": "2026-09-14T14:27:13.868Z",
+   "updated_time": "2026-09-14T14:27:13.868Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+   "menu_type": 2,
+   "name": "batchDestroy:SystemTaskInterval",
+   "rank": 10005,
+   "path": "api/system/tasks/interval/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "627abda9-e7cd-4c95-96fd-67ab48a6bf16",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3cb6d75e-93f0-46c1-a34d-6ce81d65a12a",
+  "fields": {
+   "created_time": "2026-09-14T14:27:02.034Z",
+   "updated_time": "2026-09-14T14:27:02.034Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "371b0a83-7819-44b8-8b25-fe5fa167c421",
+   "menu_type": 1,
+   "name": "SystemTaskInterval",
+   "rank": 173,
+   "path": "/system/celery/interval/index",
+   "component": "system/celery/interval/index",
+   "is_active": true,
+   "meta": "e24e54ca-e2c4-43d7-97c6-07bfe864bd12",
+   "method": null,
    "model": []
   }
  }

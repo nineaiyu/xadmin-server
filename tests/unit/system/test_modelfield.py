@@ -73,3 +73,31 @@ class TestSyncModelField:
         )
         assert "*" in names
         assert any(name.startswith("system.") for name in names)
+
+    def test_prune_removes_stale_rows_with_null_updated_time(self):
+        """清理陈旧行不得依赖 updated_time（种子 loaddata 写入的行该列为 NULL）。"""
+        from system.models import ModelLabelField
+        from system.utils.modelfield import sync_model_field
+
+        sync_model_field()
+        stale = ModelLabelField.objects.create(
+            name="stale.field.for.test", label="stale", field_type=ModelLabelField.FieldChoices.ROLE
+        )
+        ModelLabelField.objects.filter(pk=stale.pk).update(updated_time=None)
+        assert ModelLabelField.objects.filter(pk=stale.pk).exists()
+
+        sync_model_field()
+        assert not ModelLabelField.objects.filter(pk=stale.pk).exists()
+
+    def test_broken_serializer_is_skipped_not_fatal(self):
+        """单个序列化器实例化异常只跳过并登记，不中断全量同步。"""
+        from common.core.serializers import BaseModelSerializer
+        from system.utils.modelfield import sync_model_field
+
+        class BrokenProbeSerializer(BaseModelSerializer):
+            def __init__(self, *args, **kwargs):
+                raise ValueError("broken probe")
+
+        result = sync_model_field()
+        assert "BrokenProbeSerializer" in result["role"]["failed_serializers"]
+        assert result["role"]["kept"] > 0

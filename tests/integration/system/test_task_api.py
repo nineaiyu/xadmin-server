@@ -4,12 +4,13 @@
 import uuid
 
 import pytest
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 
 pytestmark = pytest.mark.django_db
 
 TASK_URL = "/api/system/tasks/periodic"
 CRONTAB_URL = "/api/system/tasks/crontab"
+INTERVAL_URL = "/api/system/tasks/interval"
 
 
 @pytest.fixture
@@ -166,3 +167,78 @@ class TestCrontabCrud:
         resp = auth_client.delete(f"{CRONTAB_URL}/{pk}")
         assert resp.status_code == 200
         assert not CrontabSchedule.objects.filter(pk=pk).exists()
+
+
+class TestIntervalCrud:
+    def test_create_list_patch_delete(self, auth_client):
+        resp = auth_client.post(INTERVAL_URL, {"every": 15, "period": "minutes"}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        pk = resp.data["data"]["pk"]
+        assert IntervalSchedule.objects.filter(pk=pk, every=15, period="minutes").exists()
+        # period 为 labeled_choice：响应下发 {value,label}，列表/表单直出可读标签
+        assert resp.data["data"]["period"]["value"] == "minutes"
+        assert resp.data["data"]["period"]["label"]
+
+        resp = auth_client.get(INTERVAL_URL, {"period": "minutes"})
+        assert resp.data["data"]["total"] >= 1
+
+        resp = auth_client.patch(f"{INTERVAL_URL}/{pk}", {"every": 30}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        assert IntervalSchedule.objects.filter(pk=pk, every=30).exists()
+
+        resp = auth_client.delete(f"{INTERVAL_URL}/{pk}")
+        assert resp.status_code == 200
+        assert not IntervalSchedule.objects.filter(pk=pk).exists()
+
+    def test_duplicate_every_period_rejected(self, auth_client):
+        """业务侧唯一性校验（库 2.9 已移除 unique_together）：重复组合返回 400，避免下拉出现同名项。"""
+        payload = {"every": 17, "period": "hours"}
+        resp = auth_client.post(INTERVAL_URL, payload, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        pk = resp.data["data"]["pk"]
+
+        resp = auth_client.post(INTERVAL_URL, payload, format="json")
+        assert resp.status_code == 400, resp.data
+
+        # 编辑自身（未改动 every/period）不受唯一性校验影响
+        resp = auth_client.patch(f"{INTERVAL_URL}/{pk}", {"period": "hours"}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        # 改成已存在的组合仍被拒
+        other = auth_client.post(INTERVAL_URL, {"every": 23, "period": "hours"}, format="json")
+        assert other.data["code"] == 1000, other.data
+        resp = auth_client.patch(f"{INTERVAL_URL}/{pk}", {"every": 23}, format="json")
+        assert resp.status_code == 400, resp.data
+
+    def test_batch_destroy(self, auth_client):
+        """批量删除入参为主键列表（与 crontab/periodic 同款端点）。"""
+        pks = []
+        for every in (11, 13):
+            resp = auth_client.post(INTERVAL_URL, {"every": every, "period": "days"}, format="json")
+            assert resp.data["code"] == 1000, resp.data
+            pks.append(resp.data["data"]["pk"])
+
+        resp = auth_client.post(f"{INTERVAL_URL}/batch-destroy", pks, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        assert not IntervalSchedule.objects.filter(pk__in=pks).exists()
+
+
+class TestPeriodicTaskIntervalSchedule:
+    def test_create_task_with_interval_and_readable_label(self, auth_client):
+        """间隔调度可挂到周期任务上，且关联字段带可读 label（间隔页 → 任务表单闭环）。"""
+        resp = auth_client.post(INTERVAL_URL, {"every": 19, "period": "minutes"}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        interval_pk = resp.data["data"]["pk"]
+
+        payload = {
+            "name": f"间隔任务-{uuid.uuid4().hex[:6]}",
+            "task": "common.tasks.expire_caches",
+            "interval": interval_pk,
+            "enabled": False,
+        }
+        resp = auth_client.post(TASK_URL, payload, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        task = PeriodicTask.objects.get(pk=resp.data["data"]["pk"])
+        assert task.interval_id == interval_pk
+        assert task.crontab_id is None
+        assert "19" in resp.data["data"]["interval"]["label"]

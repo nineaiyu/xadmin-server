@@ -7,20 +7,40 @@
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
 from django.utils.translation import activate
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel
 from common.core.serializers import BaseModelSerializer
-from common.core.utils import PrintLogFormat
 from common.utils import get_logger
 from system.models import ModelLabelField
 
 logger = get_logger(__name__)
 
 
+def _prune_stale(field_type, kept_pks, enabled):
+    """删除本轮未采集到的同类型行（陈旧字段/模型）。
+
+    **不依赖 updated_time**：种子 loaddata 写入的行 updated_time 为 NULL，
+    旧的 `updated_time__lt=now` 清理对这批行恒不成立（NULL 不参与比较），
+    导致被删字段长期残留（2026-09 调研：1298 行中 647 行为 NULL）。
+    `enabled` 为假（本轮未采集到任何数据）时不做清理，避免误删全表。
+    """
+    if not enabled:
+        return 0
+    stale = ModelLabelField.objects.filter(field_type=field_type).exclude(pk__in=kept_pks)
+    count = stale.count()
+    if count:
+        stale.delete()
+    return count
+
+
 def get_sub_serializer_fields():
+    """按序列化器定义重建 ROLE 字段树（角色页字段权限勾选的数据源）。
+
+    - 单个序列化器实例化异常只跳过并记录（不再中断整个同步）；
+    - 清理口径改用「本轮采集 pk 集合的反向差集」（NULL 安全）。
+    """
     cls_list = []
     activate(settings.LANGUAGE_CODE)
 
@@ -32,96 +52,98 @@ def get_sub_serializer_fields():
 
     get_all_subclass(BaseModelSerializer)
 
-    delete = False
-    now = timezone.now()
     field_type = ModelLabelField.FieldChoices.ROLE
+    kept, processed, failed = set(), 0, []
     for cls in cls_list:
-        instance = cls(ignore_field_permission=True)
-        model = instance.Meta.model
+        try:
+            instance = cls(ignore_field_permission=True)
+        except Exception as e:  # noqa: BLE001 单个坏序列化器不阻断全量同步
+            failed.append(cls.__name__)
+            logger.warning(f"skip serializer {cls.__name__} in field sync: {e}")
+            continue
+        model = getattr(getattr(instance, "Meta", None), "model", None)
         if not model:
             continue
-        count = [0, 0]
-
-        delete = True
-        obj, created = ModelLabelField.objects.update_or_create(
+        processed += 1
+        obj, _created = ModelLabelField.objects.update_or_create(
             name=model._meta.label_lower,
             field_type=field_type,
             parent=None,
             defaults={"label": model._meta.verbose_name},
         )
-        count[int(not created)] += 1
+        kept.add(obj.pk)
         for name, field in instance.fields.items():
-            _, created = ModelLabelField.objects.update_or_create(
+            _obj, _created = ModelLabelField.objects.update_or_create(
                 name=name, parent=obj, field_type=field_type, defaults={"label": field.label}
             )
-            count[int(not created)] += 1
-        PrintLogFormat(f"Model:({model._meta.label_lower})").warning(
-            f"update_or_create role permission, created:{count[0]} updated:{count[1]}"
-        )
+            kept.add(_obj.pk)
 
-    if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat("Sync Role permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
+    deleted = _prune_stale(field_type, kept, enabled=processed > 0)
+    logger.info(f"sync role field tree done. kept:{len(kept)} deleted:{deleted} failed:{failed}")
+    return {"kept": len(kept), "deleted": deleted, "failed_serializers": failed}
 
 
 def get_app_model_fields():
-    delete = False
-    now = timezone.now()
+    """按 PERMISSION_DATA_AUTH_APPS 重建「模型/字段」数据权限树（NULL 安全清理）。"""
     field_type = ModelLabelField.FieldChoices.DATA
-    obj, created = ModelLabelField.objects.update_or_create(
-        name="*", field_type=field_type, defaults={"label": _("All tables")}, parent=None
+    kept = set()
+    root, _created = ModelLabelField.objects.update_or_create(
+        name="*", field_type=field_type, parent=None, defaults={"label": _("All tables")}
     )
-    ModelLabelField.objects.update_or_create(
-        name="*", field_type=field_type, parent=obj, defaults={"label": _("All fields")}
+    kept.add(root.pk)
+    all_fields, _created = ModelLabelField.objects.update_or_create(
+        name="*", field_type=field_type, parent=root, defaults={"label": _("All fields")}
     )
+    kept.add(all_fields.pk)
 
     for field in DbAuditModel._meta.fields:
-        ModelLabelField.objects.update_or_create(
+        _obj, _created = ModelLabelField.objects.update_or_create(
             name=field.name,
             field_type=field_type,
-            parent=obj,
+            parent=root,
             defaults={"label": getattr(field, "verbose_name", field.name)},
         )
+        kept.add(_obj.pk)
 
+    processed = 0
     for app_name, app in apps.app_configs.items():
         if app_name not in settings.PERMISSION_DATA_AUTH_APPS:
             continue
 
         for model in app.models.values():
-            count = [0, 0]
-            delete = True
-            model_name = model._meta.model_name
-            verbose_name = model._meta.verbose_name
-            if not hasattr(
-                model, "Meta"
-            ):  # 虚拟 model 判断, 不包含Meta的模型，是系统生成的第三方模型，包含 relationship
+            # 虚拟 model 判断：不包含 Meta 的模型是系统生成的第三方模型（含 relationship）
+            if not hasattr(model, "Meta"):
                 continue
-            obj, created = ModelLabelField.objects.update_or_create(
-                name=f"{app_name}.{model_name}", field_type=field_type, parent=None, defaults={"label": verbose_name}
+            processed += 1
+            obj, _created = ModelLabelField.objects.update_or_create(
+                name=f"{app_name}.{model._meta.model_name}",
+                field_type=field_type,
+                parent=None,
+                defaults={"label": model._meta.verbose_name},
             )
-            count[int(not created)] += 1
-            # for field in model._meta.get_fields():
+            kept.add(obj.pk)
             for field in model._meta.fields + model._meta.many_to_many:
-                _obj, created = ModelLabelField.objects.update_or_create(
+                _obj, _created = ModelLabelField.objects.update_or_create(
                     name=field.name, parent=obj, field_type=field_type, defaults={"label": field.verbose_name}
                 )
-                count[int(not created)] += 1
-            PrintLogFormat(f"Model:({app_name}.{model_name})").warning(
-                f"update_or_create data permission, created:{count[0]} updated:{count[1]}"
-            )
-    if delete:
-        deleted, _rows_count = ModelLabelField.objects.filter(field_type=field_type, updated_time__lt=now).delete()
-        PrintLogFormat("Sync Data permission end").info(f"deleted success, deleted:{deleted} row_count {_rows_count}")
+                kept.add(_obj.pk)
+
+    deleted = _prune_stale(field_type, kept, enabled=processed > 0)
+    logger.info(f"sync data field tree done. kept:{len(kept)} deleted:{deleted} models:{processed}")
+    return {"kept": len(kept), "deleted": deleted, "models": processed}
 
 
 @transaction.atomic
 def sync_model_field():
-    """
-    用于执行迁移命令的时候，同步字段数据到数据库
+    """同步模型字段数据到数据库（角色字段树 + 数据权限字段树）。
+
+    返回同步摘要（新增语义按 kept 计），供管理命令 / 接口回显：
+    ``{"data": {...}, "role": {...}}``
     """
     activate(settings.LANGUAGE_CODE)
-    get_app_model_fields()
-    get_sub_serializer_fields()
+    data = get_app_model_fields()
+    role = get_sub_serializer_fields()
+    return {"data": data, "role": role}
 
 
 def get_field_lookup_info(fields):
