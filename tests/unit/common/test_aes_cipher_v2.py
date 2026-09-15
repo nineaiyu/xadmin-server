@@ -6,6 +6,7 @@ key = "e2e-cross-check-token"，明文 = "CrossCheck@2026 密码"。
 
 import base64
 import hashlib
+import logging
 
 import pytest
 from Cryptodome.Cipher import AES
@@ -66,6 +67,24 @@ class TestLegacyDecryptGate:
         """真实 settings（conf.py 默认值注入）下旧格式仍可解密——默认行为不变。"""
         encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
         assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
+
+
+class TestLegacyDecryptObservability:
+    """v1 退役观测点：合法旧格式命中时留 WARNING 标记，供运维确认清零后再关闭开关。"""
+
+    def test_legacy_hit_warns(self, caplog):
+        encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
+        with caplog.at_level(logging.WARNING):
+            assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
+        assert "aes_v1_decrypt_used" in caplog.text
+
+    def test_v2_and_arbitrary_input_do_not_warn(self, caplog):
+        """v2 主路径与任意非法输入（含非 Salted__ 的 base64）都不触发退役标记，避免日志放大。"""
+        with caplog.at_level(logging.WARNING):
+            assert AESCipherV2("some-key").decrypt(_encrypt_v2("some-key", "v2-payload")) == "v2-payload"
+            assert AESCipherV2("some-key").decrypt("bm90LXNhbHRlZA==") == ""
+            assert AESCipherV2("some-key").decrypt("v2:!!!not-base64!!!") == ""
+        assert "aes_v1_decrypt_used" not in caplog.text
 
 
 class TestV2Format:

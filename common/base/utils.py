@@ -297,6 +297,10 @@ class AESCipherV2:
         data = base64.b64decode(enc)
         if data[:8] != b"Salted__":
             return ""
+        # v1 退役观测点（发布窗口 checklist 前置条件的核验依据）：仅对「合法旧格式密文」
+        # 留痕，运维按该标记确认观察窗口内命中清零后再关闭 SECURITY_AES_V1_DECRYPT_ENABLED；
+        # 非 Salted__ 的任意输入不会触发本日志，避免日志放大。
+        logger.warning("aes_v1_decrypt_used: 旧格式（Salted__）密文命中，v1 退役观察期标记")
         salt = data[8:16]
         key_iv = self._make_key(salt, 32 + 16)
         key = key_iv[:32]
