@@ -56,6 +56,7 @@ docs/
 |--------------------------------------------------------|-------------------------------------------------|
 | [deployment.md](ops/deployment.md)                     | 配置项详解、Docker 部署、备份恢复、升级回滚、监控告警                  |
 | [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
+| [release-checklist.md](ops/release-checklist.md)       | 发布窗口 checklist：基线门禁、CSP enforce 与 AES v1 关闭硬门禁、挂起项与执行记录 |
 | [performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（T3.1）：silk 剖析接入 + k6 六接口压测 + 登记口径与回归判定 |
 | [backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份演练（异地副本/媒体目录/RPO 6h 收口）：`utils/backup_drill.sh` 一键闭环与结果 |
 | [backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md) | 季度演练（Q4，提前执行）：67 表逐表 0 不一致、RTO 0.28s，一并验收备份失败告警（S2） |
@@ -101,6 +102,8 @@ docs/
 | [ADR-034](adr/ADR-034-chat-room-rebuild.md) | 聊天室重构（微信式两栏）：`ChatRoom/ChatRoomMember/ChatMessage` 三表（room_key 幂等 + 未读游标 + client_msg_id 幂等 + 2 分钟撤回）/ 新通道 `ws/chat/`（显式组名、不登记会话、心跳不污染在线索引）/ `/api/chat/` 六接口 + 6 权限点 / 私聊与 AI 双形态（多轮 + `/kb` RAG 带引用）/ 前端两栏骨架（气泡/时间分组/游标加载/未读红点/@联想） |
 | [ADR-035](adr/ADR-035-api-contract-governance.md) | API 契约治理：**不做 URL 版本化（no-go，登记 3 条重开条件）**——消费者以同仓前端为主；契约唯一真源 `docs/schema/` + 前端镜像 `check:contract` + 服务端守护测试兜底；新路由 basename 统一 kebab-case、存量不改名（不影响权限链，仅监控 label 断档的纯 churn） |
 | [ADR-036](adr/ADR-036-import-export-replay-decision.md) | 导入导出 WSGIRequest 重放：**保留现状不重构**（与同步路径 100% 同源是既定意图，重构需先补装配契约测试）——装配点补 5 个隐式契约注释清单 + 登记重构步骤与重开条件 |
+| [ADR-037](adr/ADR-037-ai-retrieval-evaluation.md) | AI 检索升级评估（评测驱动）：**暂不引入向量**——36 问评测集入 CI 实测 hit@5 97.2%（535 块 / 30ms），远高于 75% 门控；登记评估出口（hit@5<75% / 分块>1000 / P95>300ms）与升级预研要点（OpenAI 兼容 embedding + Python 余弦 + RRF） |
+| [ADR-038](adr/ADR-038-ai-actions.md) | AI 助手受限动作（A2）：白名单动作注册表（请假/动态表单）+ 聊天 `/do` 草稿 + 确认卡片 + 权限双门 + 412 审批协议复用 + auth_type=ai 审计 + 灰度默认关；随项修复 SSE 端点浏览器 406 不可用的既有缺陷（EventStreamRenderer） |
 
 ## 项目规划与治理（plans/）
 

@@ -82,3 +82,10 @@ TypeScript 7.0（2026-07-08 发布）是用 Go 重写的原生移植版，官方
 - 结论：**维持暂不升级**；触发条件更新为「vue-tsc 发布声明支持 TS 7 原生版」，
   届时在独立分支用本仓 typecheck（tsc --noEmit && vue-tsc --noEmit）+ vitest 复测；
 - 另注：项目当前已运行 typescript 6.0.3（TS 6 线），无阻塞问题。
+
+## 复审记录（2026-09-15，下一年度规划 W3–W4 依赖窗口评估）
+
+- 项目仍运行 typescript 6.0.3 + vue-tsc（本轮 AI 动作 E2E/门禁全绿，无类型层阻塞）；
+- TS 7 升级触发条件不变：**vue-tsc 发布声明支持 TS 7 原生版**（此前实测 3.3.11 直接
+  `ERR_PACKAGE_PATH_NOT_EXPORTED`）；未命中前维持暂不升级，届时独立分支复测
+  `tsc --noEmit && vue-tsc --noEmit` + vitest。

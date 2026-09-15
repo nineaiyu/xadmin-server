@@ -81,3 +81,10 @@ beat/results 的声明矩阵亦未覆盖 6.0 之上版本）。下次复核时�
 `django-csp 4.0` + 运行期模式开关（`CSP_MODE`：disabled/report-only/enforce）落地，
 默认 report-only 观察，观察期结束后切 enforce，无需等待框架升级（见
 `docs/ops/deployment.md` 与 `docs/security-review.md`）。
+
+## 复审记录（2026-09-15，下一年度规划 W3–W4 依赖窗口评估）
+
+- 本仓当前运行 **Django 5.2 LTS**（支持至 2028-04）；6.2 LTS 计划 2026-12 发布，
+  **尚未发布**，重开条件（6.2 发布且 celery 全家桶声明支持）未满足；
+- 结论：**维持不升级**，下次复核时机不变（2026-12 6.2 发布后按 D2 口径复核一次）；
+  在 2028-04（5.2 LTS 支持结束）前完成迁移评估即可，无近期动作。

@@ -108,6 +108,20 @@
 回填要求：记录环境元数据（机器规格 / gunicorn worker 数 / DB 引擎与版本 / 种子规模）；元数据 P95 需同时
 登记分离请求与 with_meta=1 内联两组，用于对照 T3.2 目标（较基线 -50%，目标 <150ms）。
 
+### 2026-09-14 AI 检索评测（A1，评测驱动门控）
+
+评测集 `tests/data/ai_retrieval_eval.json`（36 问 + 期望出处，含 6 条改写式难题）随
+`pytest tests/integration/system/test_ai_retrieval_eval.py` 入 CI（含「期望出处有效性」守护与耗时护栏）。
+
+| 指标 | 实测 | 门控 | 判定 |
+|------|------|------|------|
+| hit@5 | **35/36 = 97.2%** | < 75% 才升级向量 | 不升级（[ADR-037](adr/ADR-037-ai-retrieval-evaluation.md)） |
+| 知识库分块数 | **535** | > 500 触发评估 | 略超（+7%），质量与时延均达标 → 维持 |
+| 单次检索耗时 | 平均 30.3ms / 最差 31.6ms | P95 > 300ms 重估 | 达标 |
+
+结论：词频重叠检索在现语料规模下质量充分，**不引入向量嵌入**；重开条件（hit@5<75% / 分块>1000 /
+检索 P95>300ms / 明确语义检索需求）见 ADR-037。
+
 ## 依赖安全审计（W4，2026-09-12）
 
 | 仓库 | 工具 | 结果 | 备注 |
@@ -132,3 +146,31 @@
 `src/components/ReIcon/data.ts` 实测 3,869 行 / 79.7 KB raw / **15 KB gzip9**，占首屏闭包（861 KB）的 3.2%；
 唯一消费点为 `ReIcon/src/Select.vue`（菜单表单图标选择器）。整块剥离的收益上限为首屏 -1.7%，
 且需把图标选择器异步化——**数据不支持立项，候选池该项关闭**（首屏优化的剩余空间不在数据文件）。
+
+### 2026-09-14 首屏 KPI 改「增长预算制」+ wangeditor 拆包（W0 收口）
+
+**KPI 新口径（替代绝对 -10%）**：每个窗口首屏闭包（gzip9，`dist/index.html` 静态依赖闭包）增长 **≤15 KB**；
+超预算需在 PR 说明理由并刷新基线。执行器 = `scripts/check-bundle-size.mjs` + `scripts/bundle-size-baseline.json`，
+已进 CI `.github/workflows/lint-code.yml`（`pnpm build && pnpm check:bundle-size`）。
+
+| 指标 | 09-12 基线 | 09-14 拆包前复测 | 09-14 拆包后 | 变化 |
+|------|-----------|-----------------|-------------|------|
+| **首屏 JS 静态闭包（gzip9，9 chunks）** | 861 KB | 881.7 KB | **557.5 KB** | **-324.2 KB（-36.8%）** |
+| 主 chunk `index-*.js` | 466 KB | 518.8 KB | **194.6 KB** | -62.5% |
+| element-plus / vue-core | 234 / 86 KB | 235.6 / 86.4 KB | 235.6 / 86.4 KB | 维持 |
+
+**拆包决策（数据来源：`pnpm analyze:bundle`，rollup-plugin-visualizer raw-data，renderedLength 口径）**：
+
+| 候选 | 实测结论 | 动作 |
+|------|----------|------|
+| `@wangeditor`（编辑器栈） | **1044.8 KB rendered 落在主 chunk**（App.vue 静态 `Boot.registerModule` 把插件+核心拖入入口闭包，与 renderers-form 注释「编辑器全懒加载」的设计意图相反） | **立项并交付**：注册迁至 `src/utils/wangEditorBoot.ts`（幂等懒注册，含 rolldown UMD 解包兼容），WangEditor.vue / NoticeShow.vue 改「先 await 注册、再加载编辑器组件」的异步组件 |
+| `version-rocket`（版本更新提示） | 129.7 KB rendered 在主 chunk（含 119.4 KB 主题） | **立项并交付**：App.vue 改动态 `import()`，5 分钟轮询行为不受影响 |
+| `@vue-flow` | 已在独立懒加载 chunk（FlowCanvas 50.2 KB gzip，不在闭包） | 确认无需动作 |
+| `plus-pro-components` | 闭包内仅 13.2 KB gzip（97 KB rendered） | 收益低于预算量级，不立项 |
+| ReIcon/data.ts | 15 KB gzip，占闭包 3.2% | 维持既有「不立项」结论 |
+
+**剩余杠杆（登记为后续候选，均未达立项阈值）**：i18n zh/en 语言包 ~49 KB gzip（需 i18n 懒加载改造，影响面大）、
+`@zxcvbn-ts` 26 KB、`vue-tippy` 24 KB、`sortablejs` 17 KB（3 处消费需动态导入）、`vue-json-pretty` 9.6 KB。
+
+**验证**：拆包后主链路 E2E（notice 创建/编辑、NoticeShow 只读）双浏览器通过；`pnpm analyze:bundle` 复测确认
+闭包内不再含 wangeditor chunk。
