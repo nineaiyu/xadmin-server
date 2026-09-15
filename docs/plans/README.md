@@ -36,7 +36,7 @@
 | LDAP 组→角色映射 | 目录组同步为平台角色（[ADR-017](../adr/ADR-017-ldap-directory-sync.md) 一期只做部门树）；需求出现时评审 |
 | 管理员代录 IM 账号 | 免扫码为用户补钉钉/企微/飞书身份（[ADR-019](../adr/ADR-019-im-notify-channels.md) 边界）；需处理 unionId/userid 语义 |
 | ~~Webhook payload schema 治理~~ | ✅ 2026-09-15 完成（[ADR-039](../adr/ADR-039-open-platform-phase2.md) B4：`EVENT_CATALOG` 契约表 + `schema_version` + 自动生成 events.md + 守护测试；一致性守卫口径已收紧） |
-| 报表 cron 表达式 | 自定义调度（[ADR-021](../adr/ADR-021-dashboard-display-and-reports.md) 一期 daily/weekly/monthly）；引入 croniter 前置评审 |
+| ~~报表 cron 表达式~~ | ✅ 2026-09-15 完成（[ADR-041](../adr/ADR-041-report-cron-expression.md)：`Report.cron_expression` + croniter 分钟级判定 + 每分钟分发任务 + 序列化器校验） |
 | 仪表盘卡片级权限与字段权限叠加 | 卡片按浏览者细粒度授权（[ADR-020](../adr/ADR-020-dataset-dashboard-phase1.md) 边界）；与数据集列白名单联动评审 |
 | ~~AI 检索升级为向量嵌入~~ | ✅ 2026-09-15 已评估（[ADR-037](../adr/ADR-037-ai-retrieval-evaluation.md)：36 问评测集 hit@5 97.2%，**暂不引入向量**；重开条件见 ADR） |
 | suggestions 候选接口 | 前置：先定首个消费方（SearchUser/SearchDept 或 RePlusPage 关系字段渲染器） |
