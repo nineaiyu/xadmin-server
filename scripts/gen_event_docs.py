@@ -4,7 +4,11 @@
 
 用法（容器内或本地 venv，需可 import Django 设置）：
     python scripts/gen_event_docs.py          # 重新生成
-    python scripts/gen_event_docs.py --check  # 只校验（CI 门禁，漂移即退出 1）
+    python scripts/gen_event_docs.py --check  # 只校验（本地/发布前校验，漂移即退出 1）
+
+一致性守卫：CI 由守护测试 tests/unit/system/test_webhook_contract.py 保证（漂移即失败），
+本脚本的 --check 供发布前手工复核（CI 环境无 config.yml，server.settings 依赖真实配置，
+故不在 CI 直接执行本脚本）。
 
 label/description 用「禁用翻译」的原文生成，保证跨环境（有无 .mo）结果可复现。
 """
@@ -34,7 +38,8 @@ def render() -> str:
         "# 出站 Webhook 事件契约",
         "",
         "> 本文档由 `scripts/gen_event_docs.py` 从 `system/utils/webhook.py` 的 `EVENT_CATALOG` 自动生成，",
-        "> 请勿手工编辑；CI 门禁（`--check`）保证文档与代码一致。",
+        "> 请勿手工编辑；一致性由守护测试 `tests/unit/system/test_webhook_contract.py` 在 CI 保证，",
+        "> 本地/发布前可用 `python scripts/gen_event_docs.py --check` 复核。",
         "",
         "## payload 外壳",
         "",

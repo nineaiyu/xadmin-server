@@ -1,7 +1,8 @@
 # 出站 Webhook 事件契约
 
 > 本文档由 `scripts/gen_event_docs.py` 从 `system/utils/webhook.py` 的 `EVENT_CATALOG` 自动生成，
-> 请勿手工编辑；CI 门禁（`--check`）保证文档与代码一致。
+> 请勿手工编辑；一致性由守护测试 `tests/unit/system/test_webhook_contract.py` 在 CI 保证，
+> 本地/发布前可用 `python scripts/gen_event_docs.py --check` 复核。
 
 ## payload 外壳
 
