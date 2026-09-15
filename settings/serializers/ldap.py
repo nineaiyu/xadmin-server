@@ -130,6 +130,21 @@ class LdapSettingSerializer(serializers.Serializer):
             "soft_delete: move them to the recycle bin; ignore: keep untouched"
         ),
     )
+    # 组 → 角色映射（组同步）：读取用户所属组的属性名 + 组 DN/CN → 平台角色 code 映射；
+    # 映射为空 = 不启用（只管理映射中出现的角色，手工授权不受影响）
+    LDAP_ATTR_GROUPS = serializers.CharField(
+        max_length=64,
+        required=False,
+        allow_blank=True,
+        label=_("Group attribute"),
+        help_text=_("Directory attribute holding group membership (AD default: memberOf)"),
+    )
+    LDAP_GROUP_ROLE_MAP = serializers.DictField(
+        child=serializers.CharField(allow_blank=False),
+        required=False,
+        label=_("Group to role mapping"),
+        help_text=_("Map directory group DN/CN (case-insensitive) to platform role code"),
+    )
 
     # 留白的可选字段收敛到默认值：空 filter/空属性名会让搜索静默失效
     _BLANK_DEFAULTS = {

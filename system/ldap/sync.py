@@ -49,8 +49,58 @@ _SUMMARY_AUDIT_KEYS = [
     "updated_depts",
     "deactivated_depts",
     "skipped_users",
+    "roles_added",
+    "roles_removed",
     "total_entries",
 ]
+
+
+def get_group_role_map() -> dict:
+    """组 → 平台角色映射（LDAP_GROUP_ROLE_MAP；键为组 DN 或 CN，大小写不敏感）。"""
+    mapping = getattr(settings, "LDAP_GROUP_ROLE_MAP", None) or {}
+    result = {}
+    for key, code in mapping.items():
+        key, code = str(key).strip().lower(), str(code).strip()
+        if key and code:
+            result[key] = code
+    return result
+
+
+def _group_matches(key: str, values: list) -> bool:
+    """组标识匹配：完整 DN 相等，或 DN 的 CN 段相等（`CN=<key>,...`）。"""
+    for value in values:
+        if value == key or value.startswith(f"cn={key},"):
+            return True
+    return False
+
+
+def _sync_roles(user, attrs, summary) -> None:
+    """按 LDAP 组映射挂/撤平台角色（只管理映射中出现的角色，不动手工授权）。
+
+    - 命中组 → 挂对应角色；未命中 → 撤该角色；
+    - 映射为空 = 不启用（存量行为零变化）；角色 code 不存在或已停用 → 跳过挂载。
+    """
+    mapping = get_group_role_map()
+    if not mapping:
+        return
+    group_attr = getattr(settings, "LDAP_ATTR_GROUPS", "memberOf")
+    raw = attrs.get(group_attr) or []
+    values = [str(item).strip().lower() for item in (raw if isinstance(raw, (list, tuple)) else [raw])]
+    wanted = {code for key, code in mapping.items() if _group_matches(key, values)}
+
+    from system.models import UserRole
+
+    mapped_codes = set(mapping.values())
+    current = set(user.roles.filter(code__in=mapped_codes).values_list("code", flat=True))
+    to_add, to_remove = wanted - current, current - wanted
+    if to_add:
+        roles = list(UserRole.objects.filter(code__in=to_add, is_active=True))
+        if roles:
+            user.roles.add(*roles)
+            summary["roles_added"] += len(roles)
+    if to_remove:
+        user.roles.remove(*user.roles.filter(code__in=to_remove))
+        summary["roles_removed"] += len(to_remove)
 
 
 def run_ldap_sync() -> dict:
@@ -182,7 +232,8 @@ def _audit_conflict(dn: str, username: str, reasons: list):
 def _sync_users(conn, summary: dict, dept_by_dn: dict):
     attr_map = get_attr_map()
     username_attr = attr_map.get("username", "sAMAccountName")
-    attributes = sorted(set(attr_map.values()) | {"userAccountControl"})
+    group_attr = getattr(settings, "LDAP_ATTR_GROUPS", "memberOf")
+    attributes = sorted(set(attr_map.values()) | {"userAccountControl", group_attr})
     entries = paged_search_entries(conn, settings.LDAP_USER_SEARCH_BASE, settings.LDAP_USER_FILTER, attributes)
     summary["total_entries"] = len(entries)
     seen_dns = set()
@@ -217,6 +268,7 @@ def _sync_one_user(dn, username, attrs, attr_map, dept_by_dn, summary):
             binding.delete()
         else:
             _update_user(user, binding, dn, fields, disabled, dept_by_dn, summary)
+            _sync_roles(user, attrs, summary)
             return
 
     local = UserInfo.all_objects.filter(username__iexact=username).first()
@@ -253,6 +305,7 @@ def _sync_one_user(dn, username, attrs, attr_map, dept_by_dn, summary):
     summary["created_users"] += 1
     if reasons:
         _audit_conflict(dn, username, reasons)
+    _sync_roles(user, attrs, summary)
 
 
 def _update_user(user, binding, dn, fields, disabled, dept_by_dn, summary):

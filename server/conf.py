@@ -136,6 +136,10 @@ class Config(dict):
         "LDAP_DEPT_ENABLED": True,
         "LDAP_DEPT_SEARCH_BASE": "",
         "LDAP_SYNC_ENABLED": False,
+        # 组同步（审批流外的 LDAP 三期项）：读取用户所属组的属性名（AD 默认 memberOf）
+        "LDAP_ATTR_GROUPS": "memberOf",
+        # 组 → 平台角色 code 映射（键为组 DN 或 CN，大小写不敏感；空 = 不启用组映射）
+        "LDAP_GROUP_ROLE_MAP": {},
         "LDAP_SYNC_AUTO_CREATE": True,
         # 目录侧消失策略：deactivate 禁用（默认，可逆）/ soft_delete 进回收站 / ignore 不处理
         "LDAP_SYNC_MISSING_POLICY": "deactivate",
