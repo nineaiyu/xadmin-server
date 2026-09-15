@@ -67,6 +67,7 @@ class ReportSerializer(BaseModelSerializer):
             "frequency",
             "send_time",
             "weekday",
+            "cron_expression",
             "recipients",
             "is_active",
             "last_run_at",
@@ -107,4 +108,11 @@ class ReportSerializer(BaseModelSerializer):
         weekday = attrs.get("weekday", getattr(self.instance, "weekday", 0))
         if not (0 <= int(weekday) <= 6):
             raise serializers.ValidationError(_("Weekday must be between 0 and 6"))
+        # cron 表达式（ADR-041）：非空时优先于三档频次；非法表达式直接拒绝
+        cron_expression = (attrs.get("cron_expression", getattr(self.instance, "cron_expression", "")) or "").strip()
+        if cron_expression:
+            from croniter import croniter
+
+            if not croniter.is_valid(cron_expression):
+                raise serializers.ValidationError(_("Invalid cron expression"))
         return attrs

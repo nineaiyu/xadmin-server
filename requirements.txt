@@ -49,3 +49,4 @@ tinycss2==1.5.1
 sentry-sdk==2.68.1
 uvicorn-worker==0.4.0
 ldap3==2.9.1
+croniter==6.0.0

@@ -31,7 +31,9 @@ EXPORT_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 
 def report_due(report, now=None) -> bool:
-    """调度命中判定：frequency × send_time(× weekday)。now 仅供测试注入。"""
+    """调度命中判定：cron_expression 优先；否则 frequency × send_time(× weekday)。now 仅供测试注入。"""
+    if (getattr(report, "cron_expression", "") or "").strip():
+        return _cron_due(report.cron_expression, now)
     now = now or timezone.localtime()
     if f"{now.hour:02d}:{now.minute:02d}" != report.send_time:
         return False
@@ -41,6 +43,17 @@ def report_due(report, now=None) -> bool:
         return now.weekday() == int(report.weekday)
     # monthly：每月第一天命中
     return now.day == 1
+
+
+def _cron_due(expression: str, now=None) -> bool:
+    """cron 表达式命中判定（分钟级）：非法表达式视为不命中（fail-closed）。"""
+    from croniter import croniter
+
+    expression = (expression or "").strip()
+    if not croniter.is_valid(expression):
+        return False
+    now = now or timezone.localtime()
+    return bool(croniter.match(expression, now.replace(second=0, microsecond=0)))
 
 
 def _excel_safe(value):
@@ -113,11 +126,11 @@ def _precreate_record(report) -> str:
 @shared_task
 @register_as_period_task(crontab="5 * * * *", description="定时报表调度分发")
 def dispatch_scheduled_reports():
-    """每小时扫描 active 报表并派发到期的执行任务。"""
+    """每小时扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由每分钟任务负责）。"""
     from system.models.dataset import Report
 
     dispatched = 0
-    for report in Report.objects.filter(is_active=True).iterator():
+    for report in Report.objects.filter(is_active=True, cron_expression="").iterator():
         try:
             if not report_due(report):
                 continue
@@ -128,6 +141,27 @@ def dispatch_scheduled_reports():
         dispatched += 1
     if dispatched:
         logger.info("dispatched %s scheduled report(s)", dispatched)
+    return dispatched
+
+
+@shared_task
+@register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发")
+def dispatch_cron_reports():
+    """每分钟扫描带 cron 表达式的 active 报表并派发（三档报表由每小时任务负责，职责互斥）。"""
+    from system.models.dataset import Report
+
+    dispatched = 0
+    for report in Report.objects.filter(is_active=True).exclude(cron_expression="").iterator():
+        try:
+            if not report_due(report):
+                continue
+        except Exception:  # noqa: BLE001 单条判定异常不中断扫描
+            logger.warning("report cron check failed: %s", report.pk, exc_info=True)
+            continue
+        run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk)}, task_id=_precreate_record(report))
+        dispatched += 1
+    if dispatched:
+        logger.info("dispatched %s cron scheduled report(s)", dispatched)
     return dispatched
 
 
