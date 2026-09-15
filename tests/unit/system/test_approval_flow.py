@@ -437,7 +437,8 @@ class TestBranchRoutes:
         )
         instance, error = create_instance(flow=flow, applicant=applicant, title="成环", form_data={})
         assert instance is None
-        assert "loop" in error
+        # 文案断言必须 gettext 同源（有 .mo 显中文、无 .mo 显英文，写死英文会随语言环境失效）
+        assert _gettext("The flow routes contain a loop, please contact the administrator") in str(error)
 
 
 class TestRatioApprove:

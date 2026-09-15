@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 21:12+0800\n"
+"POT-Creation-Date: 2026-09-15 14:01+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12,12 +12,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: common/api/backup.py:55
-#| msgid "Invalid approval token"
 msgid "Invalid backup alert token"
 msgstr "备份告警令牌无效"
 
-#: common/api/backup.py:61
-#| msgid "Celery task failure"
+#: common/api/backup.py:61 system/utils/webhook.py:105
 msgid "Backup failure"
 msgstr "备份失败"
 
@@ -35,27 +33,22 @@ msgid "Monitor"
 msgstr "资源监控"
 
 #: common/backup_alert.py:34
-#| msgid "Celery task failure alert: {}"
 msgid "Backup failure alert"
 msgstr "备份失败告警"
 
 #: common/backup_alert.py:41
-#| msgid "Unknown"
 msgid "Unknown failure"
 msgstr "未知失败"
 
 #: common/backup_alert.py:45
-#, python-brace-format
-#| msgid "Celery task failure alert: {}"
 msgid "Backup failure alert: {}"
 msgstr "备份失败告警：{}"
 
 #: common/backup_alert.py:47
-#| msgid "Source path"
 msgid "Source"
 msgstr "来源"
 
-#: common/backup_alert.py:48
+#: common/backup_alert.py:48 system/models/webhook.py:44
 msgid "Event"
 msgstr "事件"
 
@@ -63,8 +56,7 @@ msgstr "事件"
 msgid "Host"
 msgstr "主机"
 
-#: common/backup_alert.py:50 notifications/notifications.py:202
-#: system/templates/notify/msg_approval.html:23
+#: common/backup_alert.py:50 system/templates/notify/msg_approval.html:23
 #: system/templates/notify/msg_approval_flow.html:31
 #: system/templates/notify/msg_sensitive_operation.html:6
 msgid "Time"
@@ -79,7 +71,6 @@ msgid "Celery task failure"
 msgstr "Celery 任务失败"
 
 #: common/celery/failure_handler.py:38
-#, python-brace-format
 msgid "Celery task failure alert: {}"
 msgstr "Celery 任务失败告警：{}"
 
@@ -96,21 +87,26 @@ msgid ""
 "<h3>Celery flower service unavailable. Please contact the administrator</h3>"
 msgstr "任务监控系统不可用，请联系管理员"
 
-#: common/core/auth.py:31 common/core/filter.py:99 common/core/filter.py:106
+#: common/core/auth.py:31 common/core/filter.py:165 common/core/filter.py:172
 #: common/core/permission.py:182
 msgid "Unauthorized authentication"
 msgstr "未授权"
 
-#: common/core/auth.py:148 common/core/auth.py:153 common/core/auth.py:158
-#: common/core/auth.py:239 common/core/auth.py:242 system/utils/auth.py:121
+#: common/core/auth.py:218
+msgid "Rate limit exceeded for this application"
+msgstr "该应用已超出速率限制"
+
+#: common/core/auth.py:231 common/core/auth.py:236 common/core/auth.py:241
+#: common/core/auth.py:322 common/core/auth.py:325 common/core/auth.py:348
+#: system/utils/auth.py:121
 msgid "Token is invalid or expired"
 msgstr "令牌无效或过期"
 
-#: common/core/auth.py:245
+#: common/core/auth.py:328
 msgid "User account is disabled"
 msgstr "用户账号已被禁用"
 
-#: common/core/auth.py:256
+#: common/core/auth.py:339
 msgid "Token is not allowed from this IP address"
 msgstr "该 IP 地址不在令牌允许范围内"
 
@@ -209,30 +205,28 @@ msgstr "规则 %(index)d 的匹配值无法用于该字段查询"
 msgid "Field %(field)s does not exist on %(table)s"
 msgstr "字段 %(field)s 不存在于表 %(table)s"
 
-#: common/core/exception.py:37
+#: common/core/exception.py:36
 msgid "Your visit is too fast, please visit again later"
 msgstr "您的手速太快啦，请稍后再访问"
 
-#: common/core/exception.py:39
-#, python-brace-format
+#: common/core/exception.py:38
 msgid "Your visit is too fast, please visit again in {} seconds"
 msgstr "您的手速太快啦，请 {} 秒后再次访问"
 
-#: common/core/exception.py:59
+#: common/core/exception.py:58
 msgid ""
 "The requested address is incorrect or the data permission is not allowed"
 msgstr "请求地址不正确或数据权限不允许"
 
-#: common/core/exception.py:64
-#, python-brace-format
+#: common/core/exception.py:63
 msgid "Is referenced by other {} and cannot be deleted"
 msgstr "被其他 {} 关联，不能删除"
 
-#: common/core/exception.py:71
+#: common/core/exception.py:70
 msgid "Server internal error, please contact administrator or try again later"
 msgstr "服务器内部错误，请联系管理员或稍后再试"
 
-#: common/core/exception.py:80
+#: common/core/exception.py:79
 msgid "Operation failed, please check the submitted data"
 msgstr "操作失败，请检查提交的数据"
 
@@ -254,7 +248,7 @@ msgstr "错误类型。期望 pk 值，收到 {data_type}。"
 msgid "The query set is empty."
 msgstr "当前查询对象为空"
 
-#: common/core/filter.py:130
+#: common/core/filter.py:200
 msgid "Resource selection has expired, please reselect"
 msgstr "资源选择已过期，请重新选择"
 
@@ -272,13 +266,15 @@ msgstr "创建时间"
 msgid "Updated time"
 msgstr "更新时间"
 
-#: common/core/models.py:165
+#: common/core/models.py:165 system/models/dataset.py:24
+#: system/models/dform.py:15 system/models/webhook.py:19
 msgid "Description"
 msgstr "描述"
 
-#: common/core/models.py:177 system/serializers/approval_flow.py:47
+#: common/core/models.py:177 system/serializers/ai.py:32
+#: system/serializers/ai.py:125 system/serializers/approval_flow.py:56
 #: system/serializers/export.py:22 system/serializers/import_.py:25
-#: system/serializers/task.py:236
+#: system/serializers/task.py:254
 msgid "Creator"
 msgstr "创建人"
 
@@ -294,19 +290,20 @@ msgstr "数据归属部门"
 msgid "Deleted at"
 msgstr "删除时间"
 
-#: common/core/modelset/batch.py:40 common/core/modelset/import_export.py:451
-#: common/core/modelset/import_export.py:454
-#: common/core/modelset/import_export.py:532 system/serializers/import_.py:153
-#: system/utils/auth.py:116 system/utils/modelset.py:63
-#: system/utils/modelset.py:72 system/views/admin/dict.py:131
-#: system/views/auth/mfa.py:46 system/views/auth/register.py:71
-#: system/views/auth/reset.py:48 system/views/auth/verify_code.py:149
-#: system/views/auth/verify_code.py:176
+#: common/core/modelset/batch.py:40 common/core/modelset/batch.py:72
+#: common/core/modelset/import_export.py:467
+#: common/core/modelset/import_export.py:470
+#: common/core/modelset/import_export.py:548 system/serializers/import_.py:153
+#: system/utils/auth.py:116 system/utils/modelset.py:69
+#: system/utils/modelset.py:78 system/views/admin/approval_flow.py:112
+#: system/views/admin/dict.py:131 system/views/ai.py:408
+#: system/views/auth/mfa.py:46 system/views/auth/register.py:70
+#: system/views/auth/reset.py:54 system/views/auth/verify_code.py:148
+#: system/views/auth/verify_code.py:175
 msgid "Operation failed. Abnormal data"
 msgstr "操作失败，数据异常"
 
 #: common/core/modelset/batch.py:43
-#, python-brace-format
 msgid "Too many items to sort (max {})"
 msgstr "排序项过多（最多 {} 项）"
 
@@ -314,60 +311,56 @@ msgstr "排序项过多（最多 {} 项）"
 msgid "Sorting saved successfully"
 msgstr "排序保存成功"
 
-#: common/core/modelset/batch.py:74 common/core/modelset/batch.py:89
-#, python-brace-format
+#: common/core/modelset/batch.py:78 common/core/modelset/batch.py:93
+#: system/views/ai.py:417
 msgid "Operation successful. Batch deleted {} data"
 msgstr "操作成功，批量删除 {} 条数据"
 
-#: common/core/modelset/import_export.py:118
+#: common/core/modelset/import_export.py:119
 msgid "Task add success"
 msgstr "任务添加成功"
 
-#: common/core/modelset/import_export.py:174
-#, python-brace-format
+#: common/core/modelset/import_export.py:178
 msgid ""
 "Too many export tasks in progress (limit {}), please wait for them to finish"
 msgstr "导出任务过多（上限 {}），请等待其完成后再试"
 
-#: common/core/modelset/import_export.py:199
+#: common/core/modelset/import_export.py:203
 msgid "Export task submitted"
 msgstr "导出任务已提交"
 
-#: common/core/modelset/import_export.py:253
+#: common/core/modelset/import_export.py:257
 msgid "Import template not found"
 msgstr "导入模板不存在"
 
-#: common/core/modelset/import_export.py:261
-#: common/core/modelset/import_export.py:263 system/serializers/import_.py:139
+#: common/core/modelset/import_export.py:265
+#: common/core/modelset/import_export.py:267 system/serializers/import_.py:139
 #: system/serializers/import_.py:145
 msgid "Invalid import mapping"
 msgstr "导入列映射不合法"
 
-#: common/core/modelset/import_export.py:292
-#, python-brace-format
+#: common/core/modelset/import_export.py:299
 msgid ""
 "Too many import tasks in progress (limit {}), please wait for them to finish"
 msgstr "导入任务过多（上限 {}），请等待其完成后再试"
 
-#: common/core/modelset/import_export.py:362
+#: common/core/modelset/import_export.py:378
 msgid "Unsupported file type"
 msgstr "不支持的文件类型"
 
-#: common/core/modelset/import_export.py:368 common/drf/parsers/base.py:198
+#: common/core/modelset/import_export.py:384 common/drf/parsers/base.py:197
 msgid "The resource does not support imports!"
 msgstr "该资源不支持导入"
 
-#: common/core/modelset/import_export.py:380 common/drf/parsers/base.py:231
-#, python-brace-format
+#: common/core/modelset/import_export.py:396 common/drf/parsers/base.py:230
 msgid "Parse file error: {}"
 msgstr "文件解析失败 {}"
 
-#: common/core/modelset/import_export.py:472
+#: common/core/modelset/import_export.py:488
 msgid "Import task submitted"
 msgstr "导入任务已提交"
 
-#: common/core/modelset/import_export.py:531
-#, python-brace-format
+#: common/core/modelset/import_export.py:547
 msgid "Operation successful. Import {} data"
 msgstr "操作成功，导入 {} 条数据"
 
@@ -380,31 +373,26 @@ msgid "Please select the data to restore"
 msgstr "请选择要恢复的数据"
 
 #: common/core/modelset/recycle.py:81
-#, python-brace-format
 msgid "Restored {} data"
 msgstr "已恢复 {} 条数据"
 
 #: common/core/modelset/recycle.py:83
-#, python-brace-format
 msgid "Skipped {} data with unique conflicts"
 msgstr "因唯一冲突跳过 {} 条数据"
 
 #: common/core/modelset/recycle.py:100
-#, python-brace-format
 msgid "Purged {} data"
 msgstr "已清除 {} 条数据"
 
-#: common/core/modelset/upload.py:46
+#: common/core/modelset/upload.py:53
 msgid "Please select the file to upload"
 msgstr "请输入邮箱验证码"
 
-#: common/core/modelset/upload.py:49
-#, python-brace-format
+#: common/core/modelset/upload.py:56
 msgid "Wrong image type, the type should be {}"
 msgstr "错误的图片类型, 类型应该为 {}"
 
-#: common/core/modelset/upload.py:56
-#, python-brace-format
+#: common/core/modelset/upload.py:63
 msgid "Image size cannot exceed {}"
 msgstr "图片大小不能超过 {}"
 
@@ -412,20 +400,20 @@ msgstr "图片大小不能超过 {}"
 msgid "PAT scope does not allow this path"
 msgstr "令牌授权范围不包含该接口"
 
-#: common/core/permission.py:226 common/core/permission.py:243
-#: common/core/permission.py:261 system/scim/views.py:79
+#: common/core/permission.py:244 common/core/permission.py:261
+#: common/core/permission.py:279 system/scim/views.py:79
 #: system/views/admin/approval.py:99 system/views/admin/approval.py:120
-#: system/views/admin/approval.py:154 system/views/admin/approval_flow.py:355
+#: system/views/admin/approval.py:154 system/views/admin/approval_flow.py:396
 msgid "Permission denied"
 msgstr "权限拒绝"
 
-#: common/core/response.py:19 common/tasks.py:202 message/base.py:72
-#: system/tasks.py:409 system/tasks.py:655 system/views/admin/dict.py:158
+#: common/core/response.py:19 common/tasks.py:245 message/base.py:72
+#: system/tasks.py:412 system/tasks.py:665 system/views/admin/dict.py:158
 msgid "Operation successful"
 msgstr "操作成功"
 
-#: common/core/response.py:19 common/tasks.py:202 message/base.py:72
-#: system/tasks.py:409 system/tasks.py:655
+#: common/core/response.py:19 common/tasks.py:245 message/base.py:72
+#: system/tasks.py:412 system/tasks.py:665
 msgid "Operation failed"
 msgstr "操作失败"
 
@@ -434,17 +422,14 @@ msgid "The phone number format is incorrect"
 msgstr "手机号格式不正确"
 
 #: common/drf/parsers/axios_form_data.py:136
-#, python-brace-format
 msgid "Multipart form parse error - {}"
 msgstr "表单数据解析异常 - {}"
 
-#: common/drf/parsers/base.py:22
-#, python-brace-format
+#: common/drf/parsers/base.py:21
 msgid "The file content overflowed (The maximum length `{}` bytes)"
 msgstr "文件内容太大 (最大长度 `{}` 字节)"
 
-#: common/drf/parsers/excel.py:14
-#, python-brace-format
+#: common/drf/parsers/excel.py:15
 msgid "Invalid excel file {}"
 msgstr "错误的Excel文件 {}"
 
@@ -453,7 +438,6 @@ msgid "Yes/No"
 msgstr "是/否"
 
 #: common/drf/renders/base.py:161
-#, python-brace-format
 msgid "Text, max length {}"
 msgstr "文本，最大长度 {}"
 
@@ -462,22 +446,18 @@ msgid "Long text, no length limit"
 msgstr "长文本，无长度限制"
 
 #: common/drf/renders/base.py:165
-#, python-brace-format
 msgid "Number, min {}, max {}"
 msgstr "数字, 最小 {}, 最大 {}"
 
 #: common/drf/renders/base.py:167
-#, python-brace-format
 msgid "Float, min {}, max {}"
 msgstr "浮点数, 最小 {}, 最大 {}"
 
 #: common/drf/renders/base.py:169
-#, python-brace-format
 msgid "Decimal, min {}, max {}, max_digits {}, decimal_places {}"
 msgstr "固定精度的数, 最小 {}, 最大 {}, 最大位数（小数和整数）{}, 小数位数 {}"
 
 #: common/drf/renders/base.py:173
-#, python-brace-format
 msgid "Datetime format {}"
 msgstr "日期时间格式 {}"
 
@@ -487,14 +467,12 @@ msgid "IP"
 msgstr "IP"
 
 #: common/drf/renders/base.py:180
-#, python-brace-format
 msgid ""
 "Choices, format name(value), name is optional for human read, value is "
 "requisite, options {}"
 msgstr "选项，格式: 名称(值)，名称是可选的，方便阅读，值是必填的，可选项有 {}"
 
 #: common/drf/renders/base.py:183
-#, python-brace-format
 msgid "Choices, options {}"
 msgstr "选项，可选项有 {}"
 
@@ -541,14 +519,12 @@ msgid "UUID4"
 msgstr "UUID4"
 
 #: common/drf/renders/base.py:313
-#, python-brace-format
 msgid ""
 "{} - The encryption password has not been set - please go to personal "
 "information -> file encryption password to set the encryption password"
 msgstr "{} - 未设置加密密码 - 请前往个人信息 -> 文件加密密码中设置加密密码"
 
 #: common/fields/char.py:58
-#, python-brace-format
 msgid "{} is not a valid value for AESCharField"
 msgstr "{} 不支持的AES加密类型"
 
@@ -610,7 +586,6 @@ msgid "Export data message"
 msgstr "导出数据通知"
 
 #: common/notifications.py:168
-#, python-brace-format
 msgid "Export {} data {} message"
 msgstr "导出{}数据{}通知"
 
@@ -619,7 +594,6 @@ msgid "Import data message"
 msgstr "导入数据通知"
 
 #: common/notifications.py:180
-#, python-brace-format
 msgid "Import {} data {} message"
 msgstr "导入{}数据{}通知"
 
@@ -628,24 +602,22 @@ msgid "Batch delete data message"
 msgstr "批量删除数据通知"
 
 #: common/notifications.py:192
-#, python-brace-format
 msgid "Batch delete {} data {} message"
 msgstr "批量删除{}数据{}通知"
 
-#: common/sdk/sms/alibaba.py:63
+#: common/sdk/sms/alibaba.py:64
 msgid "Signature does not match"
 msgstr "签名不匹配"
 
-#: common/sdk/sms/endpoint.py:22
+#: common/sdk/sms/endpoint.py:23
 msgid "Alibaba cloud"
 msgstr "阿里云"
 
-#: common/sdk/sms/endpoint.py:32
-#, python-brace-format
+#: common/sdk/sms/endpoint.py:33
 msgid "SMS provider not support: {}"
 msgstr "短信服务商不支持：{}"
 
-#: common/sdk/sms/endpoint.py:53
+#: common/sdk/sms/endpoint.py:54
 msgid "SMS verification code signature or template invalid"
 msgstr "短信验证码签名或模板无效"
 
@@ -658,7 +630,6 @@ msgid "The verification code is incorrect"
 msgstr "验证码错误"
 
 #: common/sdk/sms/exceptions.py:24 common/sdk/sms/exceptions.py:32
-#, python-brace-format
 msgid "Please wait {} seconds before sending"
 msgstr "请在 {} 秒后发送"
 
@@ -670,31 +641,31 @@ msgstr "用户名或密码错误"
 msgid "Please enter your account information to log in"
 msgstr "请输入用户信息进行登录"
 
-#: common/tasks.py:38
+#: common/tasks.py:57
 msgid "Send email"
 msgstr "发件邮件"
 
-#: common/tasks.py:70
+#: common/tasks.py:95
 msgid "Send email attachment"
 msgstr "发送邮件附件"
 
-#: common/tasks.py:92
+#: common/tasks.py:134
 msgid "Periodic delete monitor"
 msgstr "周期清理监控日志"
 
-#: common/tasks.py:119
+#: common/tasks.py:161
 msgid "Clear celery periodic tasks"
 msgstr "清理周期任务"
 
-#: common/tasks.py:120
+#: common/tasks.py:162
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr "系统启动时，清理已经不存在的celery任务"
 
-#: common/tasks.py:142
+#: common/tasks.py:184
 msgid "Create or update periodic tasks"
 msgstr "创建或更新周期任务"
 
-#: common/tasks.py:144
+#: common/tasks.py:186
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -706,11 +677,11 @@ msgstr ""
 "新定时任务参数随着版本迭代，可能会新增任务或者修改任务的名称，执行时间，所以"
 "在系统启动时，将会注册任务或者更新定时任务参数"
 
-#: common/tasks.py:158
+#: common/tasks.py:200
 msgid "Periodic check service performance"
 msgstr "周期检测服务性能"
 
-#: common/tasks.py:160
+#: common/tasks.py:202
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -721,15 +692,15 @@ msgstr ""
 "消息每小时检测各组件是否离线，cpu，内存，硬盘使用率是否超过阈值，向管理员发送"
 "消息预警"
 
-#: common/tasks.py:169
+#: common/tasks.py:211
 msgid "Run background task view set"
 msgstr "通过任务方式执行视图"
 
-#: common/tasks.py:215
+#: common/tasks.py:258
 msgid "Purge soft deleted data"
 msgstr "物理清除软删除数据"
 
-#: common/tasks.py:216
+#: common/tasks.py:259
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr "物理清除回收站中超过保留期（RECYCLE_BIN_RETENTION_DAYS）的软删除数据"
 
@@ -771,8 +742,8 @@ msgid "China"
 msgstr "中国"
 
 #: common/utils/ip/geoip/utils.py:33 common/utils/ip/geoip/utils.py:45
-#: common/utils/ip/geoip/utils.py:51 system/models/log.py:29
-#: system/models/user.py:39 system/utils/auth.py:93 system/utils/session.py:72
+#: common/utils/ip/geoip/utils.py:51 system/models/log.py:32
+#: system/models/user.py:39 system/utils/auth.py:93 system/utils/session.py:71
 msgid "Unknown"
 msgstr "未知"
 
@@ -801,9 +772,249 @@ msgstr "“%(path)s” 不存在"
 msgid "Send SMS code"
 msgstr "发送短信验证码"
 
-#: message/utils.py:159
+#: message/ai.py:68 system/views/ai.py:275
+msgid "AI actions are not enabled"
+msgstr "AI 动作未开启"
+
+#: message/ai.py:70
+msgid "Please describe the request after /do"
+msgstr "请在 /do 后描述要执行的事项"
+
+#: message/ai.py:76 message/ai.py:126 message/ai.py:161
+msgid "AI service is temporarily unavailable"
+msgstr "AI 服务暂时不可用"
+
+#: message/ai.py:80
+msgid "I will perform: {}"
+msgstr "我将执行：{}"
+
+#: message/ai.py:145 message/ai.py:186
+msgid "Please provide a question after /kb, e.g. /kb how to reset password"
+msgstr "请在 /kb 后输入问题，例如 /kb 如何重置密码"
+
+#: message/ai.py:221
+msgid ""
+"Type /kb followed by a question to ask the knowledge base, or /do to request "
+"an action draft (confirm before execution)"
+msgstr "输入 /kb 加问题进行知识库问答，或输入 /do 生成动作草稿（执行前需确认）"
+
+#: message/ai.py:230
+msgid "AI assistant is not enabled"
+msgstr "AI 助手未启用"
+
+#: message/ai.py:231
+msgid "AI assistant is not configured"
+msgstr "AI 助手未配置"
+
+#: message/chat.py:92
+msgid "Cannot start a private chat with yourself"
+msgstr "不能和自己发起私聊"
+
+#: message/chat.py:126 message/chat.py:131 message/chat.py:134
+msgid "Chat room not found"
+msgstr "会话不存在"
+
+#: message/chat.py:151
+msgid "Message content cannot be empty"
+msgstr "消息内容不能为空"
+
+#: message/chat.py:153
+msgid "Message is too long (max {} characters)"
+msgstr "消息过长（最多 {} 个字符）"
+
+#: message/chat.py:281
+#| msgid "User not found"
+msgid "Message not found"
+msgstr "消息不存在"
+
+#: message/chat.py:283
+msgid "Only the sender can recall the message"
+msgstr "只能撤回自己发送的消息"
+
+#: message/chat.py:285
+msgid "Message already recalled"
+msgstr "消息已撤回"
+
+#: message/chat.py:288
+msgid "Messages can only be recalled within {} minutes"
+msgstr "消息只能在 {} 分钟内撤回"
+
+#: message/consumers.py:230
+msgid "New private message from {}"
+msgstr "{} 发来一条私聊消息"
+
+#: message/consumers.py:233 message/models.py:50
+msgid "Private chat"
+msgstr "私聊"
+
+#: message/consumers.py:254
+msgid "User {} mentioned you in the chat room"
+msgstr "用户 {} 在聊天室提到了你"
+
+#: message/consumers.py:257 message/models.py:72
+msgid "Chat room"
+msgstr "聊天室"
+
+#: message/models.py:49
+msgid "Public chat room"
+msgstr "公共聊天室"
+
+#: message/models.py:51 settings/serializers/ai.py:17 system/models/log.py:75
+msgid "AI assistant"
+msgstr "AI 助手"
+
+#: message/models.py:54
+#| msgid "Room key"
+msgid "Room type"
+msgstr "会话类型"
+
+#: message/models.py:56
+msgid "Room key"
+msgstr "会话键"
+
+#: message/models.py:57
+msgid "Display name"
+msgstr "显示名称"
+
+#: message/models.py:60
+msgid "Owner"
+msgstr "所有者"
+
+#: message/models.py:65
+msgid "AI room owner; empty for public/private rooms"
+msgstr "AI 会话归属用户；公共/私聊会话为空"
+
+#: message/models.py:67
+msgid "Last message"
+msgstr "最后消息"
+
+#: message/models.py:68
+msgid "Last message time"
+msgstr "最后消息时间"
+
+#: message/models.py:69 system/models/ai.py:46
+msgid "Active"
+msgstr "启用"
+
+#: message/models.py:73
+msgid "Chat rooms"
+msgstr "聊天室"
+
+#: message/models.py:87 message/models.py:113 message/serializers.py:20
+msgid "Room"
+msgstr "会话"
+
+#: message/models.py:89 notifications/models/message.py:74
+#: notifications/models/notification.py:17
+#: notifications/models/notification.py:31
+#: notifications/serializers/notifications.py:23
+#: notifications/serializers/notifications.py:48 system/models/approval.py:131
+#: system/models/config.py:43 system/models/ldap.py:22
+#: system/models/oauth.py:22 system/models/password.py:22
+msgid "User"
+msgstr "用户"
+
+#: message/models.py:92
+msgid "Last read message id"
+msgstr "已读消息游标"
+
+#: message/models.py:93
+msgid "Unread count"
+msgstr "未读数量"
+
+#: message/models.py:96
+msgid "Chat room member"
+msgstr "聊天室成员"
+
+#: message/models.py:97
+msgid "Chat room members"
+msgstr "聊天室成员"
+
+#: message/models.py:109 system/models/field.py:16
+msgid "Text"
+msgstr "文本"
+
+#: message/models.py:110
+msgid "AI reply"
+msgstr "AI 回复"
+
+#: message/models.py:111
+msgid "System message"
+msgstr "系统消息"
+
+#: message/models.py:116 settings/serializers/email.py:36
+msgid "Sender"
+msgstr "发件人"
+
+#: message/models.py:121
+msgid "Empty for AI / system messages"
+msgstr "AI / 系统消息为空"
+
+#: message/models.py:123
+msgid "Sender name"
+msgstr "发送者名称"
+
+#: message/models.py:125
+msgid "Message type"
+msgstr "消息类型"
+
+#: message/models.py:127 message/serializers.py:22 system/models/ai.py:43
+#: system/models/ai.py:72
+msgid "Content"
+msgstr "内容"
+
+#: message/models.py:128 message/serializers.py:24
+msgid "Client message id"
+msgstr "客户端消息键"
+
+#: message/models.py:129
+msgid "Recalled"
+msgstr "已撤回"
+
+#: message/models.py:130
+msgid "Recalled time"
+msgstr "撤回时间"
+
+#: message/models.py:132
+msgid "Extra"
+msgstr "附加信息"
+
+#: message/models.py:135
+msgid "Chat message"
+msgstr "聊天消息"
+
+#: message/models.py:136
+msgid "Chat messages"
+msgstr "聊天消息"
+
+#: message/serializers.py:14
+msgid "Target user"
+msgstr "目标用户"
+
+#: message/utils.py:211
 msgid "Wait for result timeout"
 msgstr "等待命令结果返回超时"
+
+#: message/views.py:99 system/scim/views.py:93 system/views/admin/online.py:90
+#: system/views/admin/online.py:95
+msgid "User not found"
+msgstr "用户不存在"
+
+#: message/views.py:106
+msgid "Chat opened"
+msgstr "会话已打开"
+
+#: message/views.py:134
+msgid "Invalid pagination cursor"
+msgstr "分页游标无效"
+
+#: message/views.py:171
+msgid "Message recalled"
+msgstr "消息已撤回"
+
+#: message/views.py:216 message/views.py:282
+msgid "Not an AI assistant chat"
+msgstr "不是 AI 助手会话"
 
 #: mfa/backends/base.py:45
 msgid "This method does not support sending verification codes"
@@ -819,7 +1030,7 @@ msgid "Please enter the Email verification code"
 msgstr "请输入邮箱验证码"
 
 #: mfa/backends/email.py:33 system/templates/msg_verify_code.html:12
-#: system/views/auth/verify_code.py:113
+#: system/views/auth/verify_code.py:112
 msgid "Verify code"
 msgstr "验证码"
 
@@ -874,7 +1085,7 @@ msgid "Request object not found"
 msgstr "请求对象缺失"
 
 #: mfa/const.py:15 settings/serializers/email.py:26
-#: system/serializers/user.py:152 system/views/auth/oauth.py:168
+#: system/serializers/user.py:174 system/views/auth/oauth.py:274
 msgid "Password"
 msgstr "密码"
 
@@ -899,7 +1110,6 @@ msgid "Verification code / password"
 msgstr "验证码 / 密码"
 
 #: mfa/services.py:43
-#, python-brace-format
 msgid ""
 "Too many failures, the account has been locked (please contact admin to "
 "unlock it or try again after {} minutes)"
@@ -923,7 +1133,7 @@ msgid "Verification successful"
 msgstr "验证通过"
 
 #: mfa/views.py:97 system/views/auth/mfa.py:78
-#: system/views/auth/verify_code.py:192
+#: system/views/auth/verify_code.py:191
 msgid "The verification code has been sent"
 msgstr "验证码已发送"
 
@@ -959,14 +1169,31 @@ msgstr "OTP 解绑成功"
 msgid "App Notifications"
 msgstr "通知管理"
 
-#: notifications/backends/__init__.py:10 settings/serializers/email.py:13
+#: notifications/backends/__init__.py:14 settings/serializers/email.py:13
 #: system/models/mask.py:23 system/models/user.py:60
 msgid "Email"
 msgstr "邮件"
 
-#: notifications/backends/__init__.py:11
+#: notifications/backends/__init__.py:15
 msgid "Site message"
 msgstr "站内信"
+
+#: notifications/backends/__init__.py:16 settings/serializers/sms.py:18
+#: settings/serializers/sms.py:29
+msgid "SMS"
+msgstr "短信"
+
+#: notifications/backends/__init__.py:18
+msgid "DingTalk"
+msgstr "钉钉"
+
+#: notifications/backends/__init__.py:19
+msgid "WeCom"
+msgstr "企业微信"
+
+#: notifications/backends/__init__.py:20
+msgid "FeiShu"
+msgstr "飞书"
 
 #: notifications/models/message.py:16
 msgid "System notification"
@@ -1048,23 +1275,15 @@ msgstr "发布"
 msgid "Message content"
 msgstr "消息中心"
 
-#: notifications/models/message.py:71 notifications/models/notification.py:17
-#: notifications/models/notification.py:31
-#: notifications/serializers/notifications.py:23
-#: notifications/serializers/notifications.py:48 system/models/approval.py:126
-#: system/models/config.py:43 system/models/oauth.py:22
-msgid "User"
-msgstr "用户"
-
-#: notifications/models/message.py:72
+#: notifications/models/message.py:75
 msgid "Notice"
 msgstr "通知"
 
-#: notifications/models/message.py:74 notifications/serializers/message.py:248
+#: notifications/models/message.py:77 notifications/serializers/message.py:248
 msgid "Unread"
 msgstr "未读"
 
-#: notifications/models/message.py:78
+#: notifications/models/message.py:81
 msgid "User read message"
 msgstr "用户已读消息"
 
@@ -1083,7 +1302,6 @@ msgid "User message subscription"
 msgstr "用户消息订阅"
 
 #: notifications/models/notification.py:26
-#, python-brace-format
 msgid "{} subscription"
 msgstr "{} 订阅"
 
@@ -1131,31 +1349,32 @@ msgstr "参数有误"
 msgid "Message Type"
 msgstr "消息类型"
 
-#: notifications/views/notifications.py:70
-#| msgid "message type"
+#: notifications/views/notifications.py:68
 msgid "Unknown message type"
 msgstr "未知的消息类型"
 
-#: notifications/views/notifications.py:74
-#| msgid "This file type does not support preview"
+#: notifications/views/notifications.py:72
 msgid "This message type does not support test sending"
 msgstr "该消息类型不支持发送测试"
 
-#: notifications/views/notifications.py:77
+#: notifications/views/notifications.py:75
 msgid "Failed to send test message"
 msgstr "测试消息发送失败"
 
-#: notifications/views/notifications.py:78
-#| msgid "Message content"
+#: notifications/views/notifications.py:76
 msgid "Test message sent"
 msgstr "测试消息已发送"
 
 #: settings/models.py:15 settings/serializers/sms.py:62
+#: system/analysis_tasks.py:79 system/models/dataset.py:23
+#: system/models/dataset.py:55 system/models/dataset.py:73
+#: system/models/dataset.py:102 system/models/dform.py:14
 #: system/models/mask.py:24 system/models/permission.py:17
+#: system/models/webhook.py:14
 msgid "Name"
 msgstr "名称"
 
-#: settings/models.py:16
+#: settings/models.py:16 system/analysis_tasks.py:79
 msgid "Value"
 msgstr "值"
 
@@ -1168,17 +1387,120 @@ msgstr "类别"
 msgid "Encrypted"
 msgstr "加密的"
 
-#: settings/models.py:19 system/models/approval.py:100
-#: system/models/config.py:17 system/models/department.py:51
+#: settings/models.py:19 system/models/ai.py:109 system/models/approval.py:100
+#: system/models/config.py:17 system/models/dataset.py:115
+#: system/models/department.py:51 system/models/dform.py:17
 #: system/models/dict.py:37 system/models/mask.py:38 system/models/menu.py:98
 #: system/models/permission.py:19 system/models/role.py:22
-#: system/models/token.py:32
+#: system/models/token.py:32 system/models/token.py:87
+#: system/models/token.py:126 system/models/webhook.py:20
+#: system/serializers/ai.py:40
 msgid "Is active"
 msgstr "激活状态"
 
-#: settings/models.py:95
+#: settings/models.py:97
 msgid "System setting"
 msgstr "系统设置"
+
+#: settings/serializers/ai.py:17
+msgid "Enable the docs-based usage/development assistant"
+msgstr "启用基于文档库的使用/二开问答助手"
+
+#: settings/serializers/ai.py:23 system/models/ai.py:95
+msgid "Base URL"
+msgstr "接口地址"
+
+#: settings/serializers/ai.py:24
+msgid "OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1"
+msgstr "OpenAI 兼容接口地址，如 https://api.deepseek.com/v1"
+
+#: settings/serializers/ai.py:31 system/models/ai.py:96
+#: system/serializers/ai.py:35
+msgid "API Key"
+msgstr "API 密钥"
+
+#: settings/serializers/ai.py:32 settings/serializers/ldap.py:59
+#: settings/serializers/notify_im.py:33 settings/serializers/notify_im.py:56
+#: settings/serializers/notify_im.py:74 settings/serializers/notify_im.py:94
+#: settings/serializers/notify_im.py:115 settings/serializers/notify_im.py:130
+msgid "Encrypted at rest; never returned by the API"
+msgstr "落库加密；API 永不回传"
+
+#: settings/serializers/ai.py:35 system/models/ai.py:97
+#: system/models/mask.py:28 system/models/menu.py:100
+#: system/models/token.py:119
+msgid "Model"
+msgstr "模型"
+
+#: settings/serializers/ai.py:35
+msgid "e.g. deepseek-chat"
+msgstr "如 deepseek-chat"
+
+#: settings/serializers/ai.py:37 system/models/ai.py:105
+msgid "Timeout (seconds)"
+msgstr "超时（秒）"
+
+#: settings/serializers/ai.py:40
+msgid "NL query"
+msgstr "自然语言查数"
+
+#: settings/serializers/ai.py:41
+msgid ""
+"Enable natural-language dataset query (gated preview + execute, audited)"
+msgstr "启用自然语言数据集查询（预览 + 执行双门控，全程审计）"
+
+#: settings/serializers/ai.py:45
+msgid "AI actions"
+msgstr "AI 动作"
+
+#: settings/serializers/ai.py:47
+#| msgid ""
+#| "Enable AI actions (whitelisted actions executed as the current user after "
+#| "confirmation, audited)"
+msgid ""
+"Enable AI action drafts (whitelisted actions executed as the current user "
+"after confirmation, audited)"
+msgstr "开启 AI 动作草稿（白名单动作，经用户确认后以本人身份执行并审计）"
+
+#: settings/serializers/ai.py:52 system/models/ai.py:98
+msgid "Temperature"
+msgstr "温度"
+
+#: settings/serializers/ai.py:54 system/models/ai.py:99
+msgid "Max tokens"
+msgstr "最大输出 tokens"
+
+#: settings/serializers/ai.py:55 system/models/ai.py:100
+msgid "Top P"
+msgstr "Top P"
+
+#: settings/serializers/ai.py:57 system/models/ai.py:101
+msgid "Frequency penalty"
+msgstr "频率惩罚"
+
+#: settings/serializers/ai.py:60 system/models/ai.py:102
+msgid "Presence penalty"
+msgstr "存在惩罚"
+
+#: settings/serializers/ai.py:62 system/models/ai.py:103
+msgid "Stop sequences"
+msgstr "停止序列"
+
+#: settings/serializers/ai.py:63 system/models/ai.py:104
+msgid "Seed"
+msgstr "随机种子"
+
+#: settings/serializers/ai.py:64 system/models/ai.py:106
+msgid "Max retries"
+msgstr "最大重试次数"
+
+#: settings/serializers/ai.py:65 system/models/ai.py:107
+msgid "Context messages"
+msgstr "聊天上下文条数"
+
+#: settings/serializers/ai.py:66 system/models/ai.py:108
+msgid "Persona"
+msgstr "助手人设"
 
 #: settings/serializers/basic.py:16
 msgid "Site URL"
@@ -1198,45 +1520,49 @@ msgstr "前端页面水印"
 msgid "Enable watermark for front-end web"
 msgstr "开启前端页面水印"
 
-#: settings/serializers/basic.py:33
+#: settings/serializers/basic.py:34
 msgid "Front-end web watermark text"
 msgstr "前端水印文案"
 
-#: settings/serializers/basic.py:34
+#: settings/serializers/basic.py:35
 msgid "Leave empty to use 'username-nickname-time' as the watermark text"
 msgstr "留空则使用「用户名-昵称-时间」作为水印文案"
 
-#: settings/serializers/basic.py:39
+#: settings/serializers/basic.py:42
 msgid "Front-end web watermark pages"
 msgstr "前端水印生效页面"
 
-#: settings/serializers/basic.py:40
-msgid "Comma-separated route path prefixes the watermark applies to; leave empty for all pages. e.g. /system/user/index,/system/role/index"
-msgstr "水印生效的路由路径前缀，多个用英文逗号分隔；留空则全部页面生效。如：/system/user/index,/system/role/index"
+#: settings/serializers/basic.py:44
+msgid ""
+"Comma-separated route path prefixes the watermark applies to; leave empty "
+"for all pages. e.g. /system/user/index,/system/role/index"
+msgstr ""
+"水印生效的路由路径前缀，多个用英文逗号分隔；留空则全部页面生效。如：/system/"
+"user/index,/system/role/index"
 
-#: settings/serializers/basic.py:33 system/models/permission.py:42
+#: settings/serializers/basic.py:51 system/models/permission.py:42
 msgid "Field permission"
 msgstr "字段权限"
 
-#: settings/serializers/basic.py:34
+#: settings/serializers/basic.py:52
 msgid "Field permissions are used to authorize access to data field display"
 msgstr "字段权限用于授权访问数据字段展示"
 
-#: settings/serializers/basic.py:40 system/models/department.py:42
+#: settings/serializers/basic.py:58 system/models/department.py:42
 #: system/models/field.py:35 system/models/permission.py:29
-#: system/models/user.py:69
+#: system/models/user.py:74
 msgid "Data permission"
 msgstr "数据权限"
 
-#: settings/serializers/basic.py:41
+#: settings/serializers/basic.py:59
 msgid "Data permissions are used to authorize access to data"
 msgstr "数据权限用于授权访问数据"
 
-#: settings/serializers/basic.py:45
+#: settings/serializers/basic.py:63
 msgid "Export max limit"
 msgstr "数据导出限制"
 
-#: settings/serializers/basic.py:45
+#: settings/serializers/basic.py:63
 msgid "Limit the maximum number of rows of exported data"
 msgstr "导出数据最大行数限制"
 
@@ -1261,10 +1587,6 @@ msgid ""
 "Password to use for the email server. It is used in conjunction with `User` "
 "when authenticating to the email server"
 msgstr "登录到邮件服务器的密码"
-
-#: settings/serializers/email.py:36
-msgid "Sender"
-msgstr "发件人"
 
 #: settings/serializers/email.py:37
 msgid "Sender email address (default to using the `User`)"
@@ -1313,6 +1635,215 @@ msgstr "收件人"
 msgid "The recipient is used for testing the email server's connectivity"
 msgstr "收件人用于测试电子邮件服务器的连通性"
 
+#: settings/serializers/ldap.py:16
+msgid "LDAP authentication"
+msgstr "LDAP 目录认证"
+
+#: settings/serializers/ldap.py:16
+msgid "Enable LDAP/AD account login"
+msgstr "允许 LDAP/AD 目录账号登录"
+
+#: settings/serializers/ldap.py:21
+msgid "Authentication priority"
+msgstr "认证优先级"
+
+#: settings/serializers/ldap.py:23
+msgid ""
+"local_first: local accounts with a usable password are authenticated locally "
+"first (directory password never shadows local admin); ldap_first: directory "
+"bind is tried first"
+msgstr ""
+"local_first：本地可用密码的账号先走本地认证（目录密码不遮蔽本地管理员）；"
+"ldap_first：优先尝试目录 bind"
+
+#: settings/serializers/ldap.py:29
+msgid "Auto create user on first login"
+msgstr "首次登录自动建号"
+
+#: settings/serializers/ldap.py:30
+msgid ""
+"Create a local user (no local password) on first successful directory bind"
+msgstr "首次目录 bind 成功时自动创建本地账号（无本地密码）"
+
+#: settings/serializers/ldap.py:38
+msgid "Server URI"
+msgstr "服务器地址"
+
+#: settings/serializers/ldap.py:39
+msgid "ldap://host:389 or ldaps://host:636"
+msgstr "ldap://host:389 或 ldaps://host:636"
+
+#: settings/serializers/ldap.py:43
+msgid "StartTLS"
+msgstr "StartTLS"
+
+#: settings/serializers/ldap.py:44
+msgid "Upgrade the connection to TLS after connecting (ldap:// URIs)"
+msgstr "连接后升级为 TLS（ldap:// 地址）"
+
+#: settings/serializers/ldap.py:50
+msgid "Bind DN"
+msgstr "绑定 DN"
+
+#: settings/serializers/ldap.py:51
+msgid ""
+"Service account DN used to search the directory; empty for anonymous bind"
+msgstr "用于搜索目录的服务账号 DN；留空为匿名 bind"
+
+#: settings/serializers/ldap.py:58
+msgid "Bind password"
+msgstr "绑定密码"
+
+#: settings/serializers/ldap.py:62
+msgid "Connect timeout (seconds)"
+msgstr "连接超时（秒）"
+
+#: settings/serializers/ldap.py:70
+msgid "User search base"
+msgstr "用户搜索基准"
+
+#: settings/serializers/ldap.py:71
+msgid "Base DN for user search"
+msgstr "用户搜索的基础 DN"
+
+#: settings/serializers/ldap.py:77
+msgid "User filter"
+msgstr "用户过滤器"
+
+#: settings/serializers/ldap.py:78
+msgid "LDAP search filter, e.g. (objectClass=person)"
+msgstr "LDAP 搜索过滤器，如 (objectClass=person)"
+
+#: settings/serializers/ldap.py:86
+msgid "Username attribute"
+msgstr "用户名属性"
+
+#: settings/serializers/ldap.py:87
+msgid "e.g. sAMAccountName / uid"
+msgstr "如 sAMAccountName / uid"
+
+#: settings/serializers/ldap.py:93
+msgid "Nickname attribute"
+msgstr "昵称属性"
+
+#: settings/serializers/ldap.py:94
+msgid "e.g. cn / displayName"
+msgstr "如 cn / displayName"
+
+#: settings/serializers/ldap.py:97
+msgid "Email attribute"
+msgstr "邮箱属性"
+
+#: settings/serializers/ldap.py:97
+msgid "e.g. mail"
+msgstr "如 mail"
+
+#: settings/serializers/ldap.py:103
+msgid "Phone attribute"
+msgstr "手机号属性"
+
+#: settings/serializers/ldap.py:104
+msgid "e.g. telephoneNumber / mobile"
+msgstr "如 telephoneNumber / mobile"
+
+#: settings/serializers/ldap.py:110
+msgid "Sync departments"
+msgstr "同步部门"
+
+#: settings/serializers/ldap.py:111
+msgid ""
+"Sync organizational units under the department search base as the department "
+"tree"
+msgstr "将部门搜索基准下的组织单元同步为部门树"
+
+#: settings/serializers/ldap.py:114
+msgid "Department search base"
+msgstr "部门搜索基准"
+
+#: settings/serializers/ldap.py:120
+msgid "Scheduled sync"
+msgstr "定时同步"
+
+#: settings/serializers/ldap.py:121
+msgid "Hourly sync of users/departments/status from the directory"
+msgstr "每小时从目录同步用户/部门/状态"
+
+#: settings/serializers/ldap.py:123
+msgid "Auto create user on sync"
+msgstr "同步时自动建号"
+
+#: settings/serializers/ldap.py:127
+msgid "Missing user policy"
+msgstr "目录缺失用户策略"
+
+#: settings/serializers/ldap.py:129
+msgid ""
+"deactivate: disable accounts removed from the directory (reversible); "
+"soft_delete: move them to the recycle bin; ignore: keep untouched"
+msgstr ""
+"deactivate：目录中已删除的账号置为禁用（可逆）；soft_delete：移入回收站；"
+"ignore：不做处理"
+
+#: settings/serializers/notify_im.py:24 settings/serializers/notify_im.py:83
+msgid "DingTalk notification"
+msgstr "钉钉通知"
+
+#: settings/serializers/notify_im.py:24 settings/serializers/notify_im.py:83
+msgid "Send notifications via DingTalk work message"
+msgstr "通过钉钉工作通知发送消息"
+
+#: settings/serializers/notify_im.py:26 settings/serializers/notify_im.py:86
+msgid "DingTalk AppKey"
+msgstr "钉钉 AppKey"
+
+#: settings/serializers/notify_im.py:32 settings/serializers/notify_im.py:93
+msgid "DingTalk AppSecret"
+msgstr "钉钉 AppSecret"
+
+#: settings/serializers/notify_im.py:38 settings/serializers/notify_im.py:100
+msgid "DingTalk AgentId"
+msgstr "钉钉 AgentId"
+
+#: settings/serializers/notify_im.py:39 settings/serializers/notify_im.py:101
+msgid "AgentId of the corp app used to send work messages"
+msgstr "用于发送工作通知的企业内部应用 AgentId"
+
+#: settings/serializers/notify_im.py:47 settings/serializers/notify_im.py:106
+msgid "WeCom notification"
+msgstr "企业微信通知"
+
+#: settings/serializers/notify_im.py:47 settings/serializers/notify_im.py:106
+msgid "Send notifications via WeCom app message"
+msgstr "通过企业微信应用消息发送消息"
+
+#: settings/serializers/notify_im.py:49 settings/serializers/notify_im.py:108
+msgid "WeCom CorpId"
+msgstr "企业微信 CorpId"
+
+#: settings/serializers/notify_im.py:55 settings/serializers/notify_im.py:114
+msgid "WeCom CorpSecret"
+msgstr "企业微信 CorpSecret"
+
+#: settings/serializers/notify_im.py:58 settings/serializers/notify_im.py:117
+msgid "WeCom AgentId"
+msgstr "企业微信 AgentId"
+
+#: settings/serializers/notify_im.py:65 settings/serializers/notify_im.py:121
+msgid "FeiShu notification"
+msgstr "飞书通知"
+
+#: settings/serializers/notify_im.py:65 settings/serializers/notify_im.py:121
+msgid "Send notifications via FeiShu IM message"
+msgstr "通过飞书 IM 消息发送消息"
+
+#: settings/serializers/notify_im.py:67 settings/serializers/notify_im.py:123
+msgid "FeiShu App ID"
+msgstr "飞书 App ID"
+
+#: settings/serializers/notify_im.py:73 settings/serializers/notify_im.py:129
+msgid "FeiShu App Secret"
+msgstr "飞书 App Secret"
+
 #: settings/serializers/security.py:17
 msgid "Minimum length (User)"
 msgstr "密码最小长度"
@@ -1354,7 +1885,6 @@ msgstr ""
 "2001:db8:1a:1110::/64  (支持网域)"
 
 #: settings/serializers/security.py:47
-#, python-brace-format
 msgid "IP address invalid: `{}`"
 msgstr "IP 地址无效: `{}`"
 
@@ -1800,10 +2330,6 @@ msgid ""
 "exceeds this threshold"
 msgstr "单核 CPU 负载超过该阈值时，向管理员发送告警邮件"
 
-#: settings/serializers/sms.py:18 settings/serializers/sms.py:29
-msgid "SMS"
-msgstr "短信"
-
 #: settings/serializers/sms.py:18
 msgid "Enable Short Message Service (SMS)"
 msgstr "启用短信服务 (SMS)"
@@ -1837,14 +2363,61 @@ msgstr "模板"
 msgid "Label"
 msgstr "标签"
 
+#: settings/utils/password.py:90
+msgid "Password has expired, please change your password before logging in"
+msgstr "密码已过期，请先修改密码后再登录"
+
 #: settings/views/email.py:43
 msgid "Test smtp setting"
 msgstr "测试 smtp 设置"
 
 #: settings/views/email.py:68
-#, python-brace-format
 msgid "Test mail sent to {}, please check"
 msgstr "邮件已经发送{}, 请检查"
+
+#: settings/views/ldap.py:57
+msgid "Server URI is required"
+msgstr "服务器地址不能为空"
+
+#: settings/views/ldap.py:59
+msgid "User search base is required"
+msgstr "用户搜索基准不能为空"
+
+#: settings/views/ldap.py:81
+#, python-brace-format
+msgid "Connection OK: {user_count} users, {dept_count} departments found"
+msgstr "连接成功：找到 {user_count} 个用户、{dept_count} 个部门"
+
+#: settings/views/notify_im.py:89 settings/views/notify_im.py:143
+#: system/models/user.py:44 tests/unit/notifications/test_im_backends.py:433
+#: tests/unit/notifications/test_im_backends.py:519
+msgid "Disabled"
+msgstr "禁用"
+
+#: settings/views/notify_im.py:92
+#: tests/unit/notifications/test_im_backends.py:436
+msgid "Missing configuration: {}"
+msgstr "缺少配置：{}"
+
+#: settings/views/notify_im.py:101 settings/views/notify_im.py:143
+#: tests/unit/notifications/test_im_backends.py:433
+msgid "OK"
+msgstr "正常"
+
+#: settings/views/notify_im.py:125
+msgid "Unknown channel: {}"
+msgstr "未知渠道：{}"
+
+#: settings/views/notify_im.py:150
+#: tests/unit/notifications/test_im_backends.py:509
+#: tests/unit/notifications/test_im_backends.py:518
+msgid "Channel not enabled"
+msgstr "渠道未启用"
+
+#: settings/views/notify_im.py:151
+#: tests/unit/notifications/test_im_backends.py:463
+msgid "Test completed"
+msgstr "测试完成"
 
 #: settings/views/sms.py:107
 msgid "test_phone is required"
@@ -1853,6 +2426,30 @@ msgstr "测试手机号 该字段是必填项。"
 #: settings/views/sms.py:115
 msgid "Test success"
 msgstr "测试成功"
+
+#: system/analysis_tasks.py:68 system/models/dataset.py:120
+msgid "Report"
+msgstr "报表"
+
+#: system/analysis_tasks.py:94
+msgid "Scheduled report {}. {} rows generated. The xlsx file is attached."
+msgstr "定时报表「{}」已生成，共 {} 行，详见附件 xlsx。"
+
+#: system/builtin.py:24
+msgid "System Administrator"
+msgstr "系统管理员"
+
+#: system/builtin.py:25
+msgid "Builtin role: grants all active menus automatically on sync"
+msgstr "内置角色：同步时自动授予全部活跃菜单"
+
+#: system/builtin.py:30
+msgid "Auditor"
+msgstr "审计员"
+
+#: system/builtin.py:31
+msgid "Builtin role: assign audit menus manually as needed"
+msgstr "内置角色：审计菜单请按需手动配置"
 
 #: system/models/abstract.py:14
 msgid "Or mode"
@@ -1874,18 +2471,93 @@ msgstr ""
 "权限模式，mode 表示数据需同时满足规则列表中的每一条规则权限模式, 且模式表示数"
 "据需要同时满足规则列表中的每条规则，或模式即满足任意一条规则即可"
 
-#: system/models/approval.py:39 system/models/approval.py:167
-#: system/models/approval.py:214
+#: system/models/ai.py:35
+msgid "Repository docs"
+msgstr "仓库文档"
+
+#: system/models/ai.py:36
+msgid "Uploaded document"
+msgstr "上传文档"
+
+#: system/models/ai.py:39
+msgid "Source type"
+msgstr "来源类型"
+
+#: system/models/ai.py:41
+msgid "Storage path"
+msgstr "存储路径"
+
+#: system/models/ai.py:42 system/models/ai.py:70 system/models/approval.py:191
+#: system/templates/notify/msg_approval_flow.html:21
+msgid "Title"
+msgstr "标题"
+
+#: system/models/ai.py:44 system/models/ai.py:73
+msgid "Content hash"
+msgstr "内容哈希"
+
+#: system/models/ai.py:45
+msgid "Chunk count"
+msgstr "分块数"
+
+#: system/models/ai.py:47 system/models/ai.py:74
+msgid "Synced at"
+msgstr "同步时间"
+
+#: system/models/ai.py:50
+msgid "AI knowledge document"
+msgstr "AI 知识库文档"
+
+#: system/models/ai.py:51
+msgid "AI knowledge documents"
+msgstr "AI 知识库文档"
+
+#: system/models/ai.py:69 system/models/export.py:34
+#: system/models/import_.py:37
+msgid "Source path"
+msgstr "来源路径"
+
+#: system/models/ai.py:71
+msgid "Chunk index"
+msgstr "块序号"
+
+#: system/models/ai.py:77
+msgid "AI knowledge chunk"
+msgstr "AI 知识块"
+
+#: system/models/ai.py:78
+msgid "AI knowledge chunks"
+msgstr "AI 知识块"
+
+#: system/models/ai.py:94
+msgid "Profile name"
+msgstr "档案名称"
+
+#: system/models/ai.py:110 system/models/approval.py:307
+msgid "Remark"
+msgstr "备注"
+
+#: system/models/ai.py:113
+msgid "AI profile"
+msgstr "AI 配置档案"
+
+#: system/models/ai.py:114
+msgid "AI profiles"
+msgstr "AI 配置档案"
+
+#: system/models/approval.py:39 system/models/approval.py:180
+#: system/models/approval.py:236 system/models/leave.py:33
+#: system/models/webhook.py:36
 msgid "Pending"
 msgstr "待审批"
 
-#: system/models/approval.py:40 system/models/approval.py:168
-#: system/models/approval.py:215
+#: system/models/approval.py:40 system/models/approval.py:181
+#: system/models/approval.py:237 system/models/leave.py:34
 msgid "Approved"
 msgstr "已通过"
 
-#: system/models/approval.py:41 system/models/approval.py:169
-#: system/models/approval.py:216
+#: system/models/approval.py:41 system/models/approval.py:182
+#: system/models/approval.py:238 system/models/leave.py:35
 msgid "Rejected"
 msgstr "已驳回"
 
@@ -1893,8 +2565,8 @@ msgstr "已驳回"
 msgid "Expired"
 msgstr "已过期"
 
-#: system/models/approval.py:43 system/models/approval.py:170
-#: system/models/approval.py:217
+#: system/models/approval.py:43 system/models/approval.py:183
+#: system/models/approval.py:239 system/models/leave.py:36
 msgid "Cancelled"
 msgstr "已撤回"
 
@@ -1902,7 +2574,7 @@ msgstr "已撤回"
 msgid "Failed"
 msgstr "校验失败"
 
-#: system/models/approval.py:47 system/models/log.py:70
+#: system/models/approval.py:47 system/models/log.py:77
 #: system/templates/notify/msg_approval.html:17
 #: system/templates/notify/msg_sensitive_operation.html:3
 msgid "Module"
@@ -1912,11 +2584,12 @@ msgstr "模块"
 msgid "Method"
 msgstr "请求方式"
 
-#: system/models/approval.py:50 system/models/log.py:71
+#: system/models/approval.py:50 system/models/log.py:78
+#: system/utils/webhook.py:98
 msgid "URL path"
 msgstr "访问路径"
 
-#: system/models/approval.py:51 system/models/log.py:74
+#: system/models/approval.py:51 system/models/log.py:81
 #: system/views/admin/operationlog.py:26
 msgid "Object pk"
 msgstr "对象主键"
@@ -1925,10 +2598,11 @@ msgstr "对象主键"
 msgid "Request params"
 msgstr "请求参数快照"
 
-#: system/models/approval.py:54 system/models/approval.py:180
-#: system/models/approval.py:250 system/models/export.py:37
-#: system/models/import_.py:42 system/models/session.py:33
-#: system/models/task.py:48
+#: system/models/approval.py:54 system/models/approval.py:199
+#: system/models/approval.py:272 system/models/export.py:37
+#: system/models/import_.py:42 system/models/leave.py:44
+#: system/models/session.py:33 system/models/task.py:62
+#: system/models/webhook.py:46 system/serializers/leave.py:38
 msgid "Status"
 msgstr "状态"
 
@@ -1948,8 +2622,8 @@ msgstr "令牌过期时间"
 msgid "Consume time"
 msgstr "消费时间"
 
-#: system/models/approval.py:72 system/models/approval.py:190
-#: system/templates/notify/msg_approval.html:21
+#: system/models/approval.py:72 system/models/approval.py:211
+#: system/models/leave.py:43 system/templates/notify/msg_approval.html:21
 #: system/templates/notify/msg_approval_flow.html:26
 msgid "Reason"
 msgstr "原因"
@@ -1959,151 +2633,184 @@ msgstr "原因"
 msgid "Approval request"
 msgstr "审批单"
 
-#: system/models/approval.py:97 system/models/approval.py:177
-#| msgid "File name"
+#: system/models/approval.py:97 system/models/approval.py:190
+#: system/utils/webhook.py:120 system/utils/webhook.py:133
+#: system/utils/webhook.py:146 system/utils/webhook.py:159
 msgid "Flow name"
 msgstr "流程名称"
 
 #: system/models/approval.py:98
-#| msgid "Role code"
 msgid "Flow code"
 msgstr "流程编码"
 
-#: system/models/approval.py:99 system/serializers/approval_flow.py:210
+#: system/models/approval.py:99 system/serializers/approval_flow.py:351
 msgid "Form schema"
 msgstr "表单结构"
 
-#: system/models/approval.py:104
-#| msgid "Approval No."
+#: system/models/approval.py:103
+msgid "Definition version"
+msgstr "定义版本"
+
+#: system/models/approval.py:107
 msgid "Approval flow"
 msgstr "审批流程"
 
-#: system/models/approval.py:121
-#| msgid "Approver"
+#: system/models/approval.py:124
 msgid "Any approver"
 msgstr "或签"
 
-#: system/models/approval.py:122
-#| msgid "Approver"
+#: system/models/approval.py:125
 msgid "All approvers"
 msgstr "会签"
 
-#: system/models/approval.py:125 system/models/permission.py:37
+#: system/models/approval.py:127
+#| msgid "All approvers"
+msgid "Ratio approvers"
+msgstr "会签人"
+
+#: system/models/approval.py:130 system/models/permission.py:37
 msgid "Role"
 msgstr "角色"
 
-#: system/models/approval.py:127 system/models/department.py:35
+#: system/models/approval.py:132 system/models/department.py:35
 msgid "Leader"
 msgstr "部门主管"
 
-#: system/models/approval.py:128
-#| msgid "Field"
+#: system/models/approval.py:133
 msgid "Form field"
 msgstr "表单字段"
 
-#: system/models/approval.py:132 system/models/approval.py:174
-#: system/serializers/approval_flow.py:198
+#: system/models/approval.py:137 system/models/approval.py:187
+#: system/models/approval.py:302 system/serializers/approval_flow.py:339
 #: system/templates/notify/msg_approval_flow.html:22
 msgid "Flow"
 msgstr "流程"
 
-#: system/models/approval.py:134 system/models/approval.py:232
-#| msgid "Role name"
+#: system/models/approval.py:139 system/models/approval.py:254
 msgid "Node name"
 msgstr "节点名称"
 
-#: system/models/approval.py:135 system/models/approval.py:233
+#: system/models/approval.py:140 system/models/approval.py:255
 msgid "Node order"
 msgstr "节点顺序"
 
-#: system/models/approval.py:137
-#| msgid "Approved at"
+#: system/models/approval.py:142
 msgid "Approve type"
 msgstr "审批方式"
 
-#: system/models/approval.py:140
-#| msgid "message type"
+#: system/models/approval.py:145
+#| msgid "Approved at"
+msgid "Approve ratio"
+msgstr "通过比例"
+
+#: system/models/approval.py:147
 msgid "Assignee type"
 msgstr "审批人类型"
 
-#: system/models/approval.py:142
-#| msgid "Config value"
+#: system/models/approval.py:149
 msgid "Assignee value"
 msgstr "审批人取值"
 
-#: system/models/approval.py:144
+#: system/models/approval.py:151
 msgid "Condition"
 msgstr "条件"
 
-#: system/models/approval.py:145
-#| msgid "Time Cost"
+#: system/models/approval.py:155
+msgid "Branch routes"
+msgstr "分支路由"
+
+#: system/models/approval.py:157
+msgid "Canvas layout"
+msgstr "画布布局"
+
+#: system/models/approval.py:158
 msgid "Timeout hours"
 msgstr "超时小时数"
 
-#: system/models/approval.py:149
-#| msgid "Approval No."
+#: system/models/approval.py:162
 msgid "Approval flow node"
 msgstr "审批流程节点"
 
-#: system/models/approval.py:178
-#: system/templates/notify/msg_approval_flow.html:21
-msgid "Title"
-msgstr "标题"
-
-#: system/models/approval.py:179
+#: system/models/approval.py:192
 msgid "Form data"
 msgstr "表单数据"
 
-#: system/models/approval.py:187 system/serializers/approval_flow.py:206
-#| msgid "Parent node"
+#: system/models/approval.py:197
+msgid "Business type"
+msgstr "业务类型"
+
+#: system/models/approval.py:198
+msgid "Business id"
+msgstr "业务标识"
+
+#: system/models/approval.py:201
+#| msgid "Field permission"
+msgid "Flow version"
+msgstr "流程版本"
+
+#: system/models/approval.py:208 system/serializers/approval_flow.py:347
+#: system/serializers/leave.py:43 system/utils/webhook.py:123
+#: system/utils/webhook.py:136 system/utils/webhook.py:149
+#: system/utils/webhook.py:162
 msgid "Current node"
 msgstr "当前节点"
 
-#: system/models/approval.py:189
-#| msgid "Finish Time"
+#: system/models/approval.py:210 system/serializers/leave.py:45
 msgid "Finished at"
 msgstr "完成时间"
 
-#: system/models/approval.py:194
-#| msgid "Approval request notice"
+#: system/models/approval.py:215 system/models/leave.py:52
+#: system/serializers/leave.py:41
 msgid "Approval instance"
 msgstr "审批实例"
 
-#: system/models/approval.py:221
+#: system/models/approval.py:243
 msgid "Instance"
 msgstr "实例"
 
-#: system/models/approval.py:229
+#: system/models/approval.py:251
 #: system/templates/notify/msg_approval_flow.html:23
 msgid "Node"
 msgstr "节点"
 
-#: system/models/approval.py:240 system/serializers/approval_flow.py:171
+#: system/models/approval.py:262 system/serializers/approval_flow.py:312
 msgid "Assignee"
 msgstr "审批人"
 
-#: system/models/approval.py:248 system/serializers/approval_flow.py:172
+#: system/models/approval.py:270 system/serializers/approval_flow.py:313
 msgid "Actor"
 msgstr "操作人"
 
-#: system/models/approval.py:251
+#: system/models/approval.py:273
 #: system/templates/notify/msg_approval_flow.html:29
 msgid "Comment"
 msgstr "审批意见"
 
-#: system/models/approval.py:252
-#| msgid "Deleted at"
+#: system/models/approval.py:274
 msgid "Acted at"
 msgstr "处理时间"
 
-#: system/models/approval.py:253
+#: system/models/approval.py:275
 msgid "Added by counter-sign"
 msgstr "加签添加"
 
-#: system/models/approval.py:257
-#| msgid "Approval No."
+#: system/models/approval.py:279
 msgid "Approval node task"
 msgstr "审批节点任务"
+
+#: system/models/approval.py:304
+#| msgid "Permission"
+msgid "Version"
+msgstr "版本"
+
+#: system/models/approval.py:306
+msgid "Snapshot"
+msgstr "快照"
+
+#: system/models/approval.py:311
+#| msgid "Approval flow node"
+msgid "Approval flow version"
+msgstr "审批流程版本"
 
 #: system/models/config.py:16
 msgid "Config value"
@@ -2137,6 +2844,196 @@ msgstr "系统配置"
 msgid "User config"
 msgstr "用户配置"
 
+#: system/models/dataset.py:20 system/models/dataset.py:52
+msgid "Personal"
+msgstr "个人"
+
+#: system/models/dataset.py:21 system/models/dataset.py:53
+#: system/models/import_.py:100
+msgid "Shared"
+msgstr "共享"
+
+#: system/models/dataset.py:26
+msgid "Bound model"
+msgstr "绑定模型"
+
+#: system/models/dataset.py:28
+msgid "label_lower of a whitelisted model, e.g. system.userinfo"
+msgstr "白名单模型的 label_lower，如 system.userinfo"
+
+#: system/models/dataset.py:30
+msgid "Columns"
+msgstr "数据列"
+
+#: system/models/dataset.py:30
+msgid "Whitelisted field names"
+msgstr "白名单内的字段名列表"
+
+#: system/models/dataset.py:31
+msgid "Filters"
+msgstr "过滤条件"
+
+#: system/models/dataset.py:31
+msgid "[{field, op, value}] with whitelisted ops"
+msgstr "[{field, op, value}]，op 限白名单"
+
+#: system/models/dataset.py:32
+msgid "Ordering"
+msgstr "排序"
+
+#: system/models/dataset.py:33
+msgid "Row limit"
+msgstr "行数上限"
+
+#: system/models/dataset.py:33
+msgid "Hard cap 5000"
+msgstr "硬上限 5000"
+
+#: system/models/dataset.py:34
+msgid "Config"
+msgstr "配置"
+
+#: system/models/dataset.py:34
+msgid "{\"date_field\": ...} for trend"
+msgstr "{\"date_field\": ...}，趋势聚合用时间字段"
+
+#: system/models/dataset.py:36 system/models/dataset.py:58
+#: system/models/dataset.py:78
+msgid "Visibility"
+msgstr "可见性"
+
+#: system/models/dataset.py:40 system/models/dataset.py:103
+msgid "Dataset"
+msgstr "数据集"
+
+#: system/models/dataset.py:41
+msgid "Datasets"
+msgstr "数据集"
+
+#: system/models/dataset.py:56
+msgid "Layout"
+msgstr "布局"
+
+#: system/models/dataset.py:56
+msgid "[{id, dataset, title, chart_type, ...}]"
+msgstr "[{id, dataset, title, chart_type, ...}]"
+
+#: system/models/dataset.py:62
+msgid "Dashboard"
+msgstr "仪表盘"
+
+#: system/models/dataset.py:63 system/models/dataset.py:74
+msgid "Dashboards"
+msgstr "仪表盘"
+
+#: system/models/dataset.py:74
+msgid "Ordered dashboard pks"
+msgstr "仪表盘 pk 有序列表"
+
+#: system/models/dataset.py:75 system/serializers/task.py:185
+msgid "Interval"
+msgstr "执行间隔"
+
+#: system/models/dataset.py:75
+msgid "Seconds per dashboard"
+msgstr "每个仪表盘停留秒数"
+
+#: system/models/dataset.py:76
+msgid "Refresh"
+msgstr "刷新间隔"
+
+#: system/models/dataset.py:76
+msgid "Data refresh seconds"
+msgstr "数据刷新秒数"
+
+#: system/models/dataset.py:86
+msgid "Screen"
+msgstr "大屏"
+
+#: system/models/dataset.py:87
+msgid "Screens"
+msgstr "大屏"
+
+#: system/models/dataset.py:98
+msgid "Daily"
+msgstr "每天"
+
+#: system/models/dataset.py:99
+msgid "Weekly"
+msgstr "每周"
+
+#: system/models/dataset.py:100
+msgid "Monthly"
+msgstr "每月"
+
+#: system/models/dataset.py:105
+msgid "Mode"
+msgstr "模式"
+
+#: system/models/dataset.py:105
+msgid "Rows"
+msgstr "行数据"
+
+#: system/models/dataset.py:105
+msgid "Aggregate"
+msgstr "聚合"
+
+#: system/models/dataset.py:107
+msgid "Group by"
+msgstr "分组字段"
+
+#: system/models/dataset.py:108
+msgid "Metric"
+msgstr "指标"
+
+#: system/models/dataset.py:109
+msgid "Date trunc"
+msgstr "日期截断"
+
+#: system/models/dataset.py:110
+msgid "Value field"
+msgstr "取值字段"
+
+#: system/models/dataset.py:111
+msgid "Frequency"
+msgstr "频率"
+
+#: system/models/dataset.py:112
+msgid "Send time"
+msgstr "发送时刻"
+
+#: system/models/dataset.py:112
+msgid "HH:MM"
+msgstr "HH:MM"
+
+#: system/models/dataset.py:113
+msgid "Weekday"
+msgstr "星期"
+
+#: system/models/dataset.py:113
+msgid "0=Monday, weekly only"
+msgstr "0=周一，仅每周频率使用"
+
+#: system/models/dataset.py:114
+msgid "Recipients"
+msgstr "收件人"
+
+#: system/models/dataset.py:114
+msgid "Email addresses"
+msgstr "邮箱地址列表"
+
+#: system/models/dataset.py:116
+msgid "Last run at"
+msgstr "上次运行"
+
+#: system/models/dataset.py:117
+msgid "Last status"
+msgstr "上次状态"
+
+#: system/models/dataset.py:121
+msgid "Reports"
+msgstr "报表"
+
 #: system/models/department.py:22
 msgid "Department name"
 msgstr "部门名称"
@@ -2155,7 +3052,7 @@ msgid ""
 msgstr "部门主管，可被授予所辖部门范围的数据权限"
 
 #: system/models/department.py:41 system/models/field.py:34
-#: system/models/user.py:68
+#: system/models/user.py:73
 msgid "Role permission"
 msgstr "角色权限"
 
@@ -2173,9 +3070,44 @@ msgid ""
 "department code, the user is automatically bound to the department"
 msgstr "注册参数channel的值和该部门code一致，则该用户会自动和该部门绑定"
 
-#: system/models/department.py:98 system/models/user.py:72
+#: system/models/department.py:98 system/models/user.py:77
 msgid "Department"
 msgstr "部门"
+
+#: system/models/dform.py:16
+msgid "Schema"
+msgstr "表单定义"
+
+#: system/models/dform.py:16
+msgid "Constrained widget-set field definitions"
+msgstr "收敛控件集字段定义"
+
+# F1 敏感操作审批（新增 msgid；location 行由下次 makemessages 统一回填）
+#: system/models/dform.py:19
+#| msgid "Approval request"
+msgid "Approval required"
+msgstr "需要审批"
+
+#: system/models/dform.py:22 system/models/dform.py:34
+msgid "Dynamic form"
+msgstr "动态表单"
+
+#: system/models/dform.py:23
+msgid "Dynamic forms"
+msgstr "动态表单"
+
+#: system/models/dform.py:36
+#| msgid "Dataset"
+msgid "Data"
+msgstr "数据"
+
+#: system/models/dform.py:39
+msgid "Dynamic form submission"
+msgstr "动态表单提交"
+
+#: system/models/dform.py:40
+msgid "Dynamic form submissions"
+msgstr "动态表单提交"
 
 #: system/models/dict.py:29 system/serializers/dict.py:28
 msgid "Parent dict"
@@ -2208,24 +3140,6 @@ msgstr "标签颜色"
 #: system/models/dict.py:40
 msgid "Is locked"
 msgstr "系统内置"
-msgid "Builtin role code cannot be changed"
-msgstr "内置角色禁止修改编码"
-
-msgid "System Administrator"
-msgstr "系统管理员"
-
-msgid "Auditor"
-msgstr "审计员"
-
-msgid "Builtin role: grants all active menus automatically on sync"
-msgstr "内置角色：同步时自动授予全部活跃菜单"
-
-msgid "Builtin role: assign audit menus manually as needed"
-msgstr "内置角色：审计菜单请按需手动配置"
-
-msgid "Is builtin"
-msgstr "内置角色"
-
 
 #: system/models/dict.py:44
 msgid "Data dict"
@@ -2236,22 +3150,22 @@ msgid "Dict code already exists"
 msgstr "字典编码已存在"
 
 #: system/models/export.py:26 system/models/import_.py:25
-#: system/models/task.py:30
+#: system/models/task.py:44
 msgid "Waiting"
 msgstr "等待中"
 
 #: system/models/export.py:27 system/models/import_.py:26
-#: system/models/task.py:31
+#: system/models/task.py:45
 msgid "Running"
 msgstr "运行中"
 
 #: system/models/export.py:28 system/models/import_.py:27
-#: system/models/task.py:32
+#: system/models/task.py:46 system/models/webhook.py:37
 msgid "Success"
 msgstr "成功"
 
 #: system/models/export.py:29 system/models/import_.py:28
-#: system/models/task.py:33
+#: system/models/task.py:47
 msgid "Failure"
 msgstr "失败"
 
@@ -2262,10 +3176,6 @@ msgstr "文件名称"
 #: system/models/export.py:33
 msgid "Source module"
 msgstr "来源模块"
-
-#: system/models/export.py:34 system/models/import_.py:37
-msgid "Source path"
-msgstr "来源路径"
 
 #: system/models/export.py:35
 msgid "File format"
@@ -2295,10 +3205,6 @@ msgstr "导出参数"
 #: system/models/export.py:58
 msgid "Export record"
 msgstr "导出记录"
-
-#: system/models/field.py:16
-msgid "Text"
-msgstr "文本"
 
 #: system/models/field.py:17
 msgid "Json"
@@ -2380,11 +3286,12 @@ msgstr "模型/字段数值"
 msgid "Model label field"
 msgstr "模型/字段名称"
 
-#: system/models/import_.py:31
+#: system/models/import_.py:31 system/utils/api_grant.py:45
 msgid "Create"
 msgstr "创建"
 
-#: system/models/import_.py:32
+#: system/models/import_.py:32 system/utils/api_grant.py:46
+#: system/utils/api_grant.py:47
 msgid "Update"
 msgstr "更新"
 
@@ -2444,13 +3351,73 @@ msgstr "列映射"
 msgid "Import options"
 msgstr "导入选项"
 
-#: system/models/import_.py:100
-msgid "Shared"
-msgstr "共享"
-
 #: system/models/import_.py:104
 msgid "Import template"
 msgstr "导入模板"
+
+#: system/models/ldap.py:24
+msgid "Distinguished name"
+msgstr "辨别名（DN）"
+
+#: system/models/ldap.py:25
+msgid "Last synced at"
+msgstr "最近同步时间"
+
+#: system/models/ldap.py:28
+msgid "LDAP binding"
+msgstr "LDAP 绑定"
+
+#: system/models/ldap.py:29
+msgid "LDAP bindings"
+msgstr "LDAP 绑定"
+
+#: system/models/leave.py:24
+msgid "Annual leave"
+msgstr "年假"
+
+#: system/models/leave.py:25
+msgid "Sick leave"
+msgstr "病假"
+
+#: system/models/leave.py:26
+msgid "Personal leave"
+msgstr "事假"
+
+#: system/models/leave.py:27
+msgid "Compensatory leave"
+msgstr "调休"
+
+#: system/models/leave.py:28
+msgid "Marriage leave"
+msgstr "婚假"
+
+#: system/models/leave.py:29
+msgid "Other"
+msgstr "其他"
+
+#: system/models/leave.py:32
+msgid "Draft"
+msgstr "草稿"
+
+#: system/models/leave.py:38 system/serializers/leave.py:31
+msgid "Leave type"
+msgstr "请假类型"
+
+#: system/models/leave.py:39
+msgid "Start date"
+msgstr "开始日期"
+
+#: system/models/leave.py:40
+msgid "End date"
+msgstr "结束日期"
+
+#: system/models/leave.py:42
+msgid "Days"
+msgstr "天数"
+
+#: system/models/leave.py:57
+msgid "Leave request"
+msgstr "请假申请"
 
 #: system/models/log.py:22
 msgid "Username and password"
@@ -2464,106 +3431,115 @@ msgstr "微信扫码"
 msgid "Third-party OAuth"
 msgstr "第三方 OAuth"
 
-#: system/models/log.py:28
+#: system/models/log.py:30
+msgid "LDAP directory account"
+msgstr "LDAP 目录账号"
+
+#: system/models/log.py:31
 msgid "Websocket"
 msgstr "WebSocket"
 
-#: system/models/log.py:31
+#: system/models/log.py:34
 msgid "Login status"
 msgstr "登录状态"
 
-#: system/models/log.py:32 system/models/log.py:77
+#: system/models/log.py:35 system/models/log.py:84
 #: system/templates/notify/msg_abnormal_login.html:12
 #: system/templates/notify/msg_sensitive_operation.html:5
 msgid "IpAddress"
 msgstr "IP地址"
 
-#: system/models/log.py:33 system/models/session.py:37
+#: system/models/log.py:36 system/models/session.py:37
 #: system/templates/notify/msg_abnormal_login.html:13
 #: system/templates/notify/msg_different_city.html:11
 msgid "Login city"
 msgstr "登录城市"
 
-#: system/models/log.py:34 system/models/log.py:78 system/models/session.py:38
+#: system/models/log.py:37 system/models/log.py:85 system/models/session.py:38
 #: system/templates/notify/msg_abnormal_login.html:14
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
 msgstr "浏览器"
 
-#: system/models/log.py:35 system/models/log.py:79 system/models/session.py:39
+#: system/models/log.py:38 system/models/log.py:86 system/models/session.py:39
 #: system/templates/notify/msg_abnormal_login.html:15
 msgid "System"
 msgstr "操作系统"
 
-#: system/models/log.py:36
+#: system/models/log.py:39
 msgid "Agent"
 msgstr "用户代理"
 
-#: system/models/log.py:37
+#: system/models/log.py:40
 msgid "Channel name"
 msgstr "频道名称"
 
-#: system/models/log.py:39 system/models/session.py:42
+#: system/models/log.py:42 system/models/session.py:42
 msgid "Login type"
 msgstr "登录类型"
 
-#: system/models/log.py:43
+#: system/models/log.py:46
 msgid "User login log"
 msgstr "用户登录日志"
 
-#: system/models/log.py:65
+#: system/models/log.py:68
 msgid "JWT"
 msgstr "JWT"
 
-#: system/models/log.py:66 system/models/token.py:38
+#: system/models/log.py:69 system/models/token.py:47
 msgid "Personal access token"
 msgstr "个人访问令牌"
 
-#: system/models/log.py:68
+#: system/models/log.py:71
 msgid "SCIM directory sync"
 msgstr "SCIM 目录同步"
 
-#: system/models/log.py:75
+#: system/models/log.py:73
+msgid "LDAP directory sync"
+msgstr "LDAP 目录同步"
+
+#: system/models/log.py:82
 msgid "Request body"
 msgstr "请求参数"
 
-#: system/models/log.py:76
+#: system/models/log.py:83
 msgid "Request method"
 msgstr "请求方式"
 
-#: system/models/log.py:80 system/views/admin/operationlog.py:28
+#: system/models/log.py:87 system/models/webhook.py:48
+#: system/views/admin/operationlog.py:28
 msgid "Response code"
 msgstr "响应码"
 
-#: system/models/log.py:81
+#: system/models/log.py:88
 msgid "Response result"
 msgstr "响应内容"
 
-#: system/models/log.py:82
+#: system/models/log.py:89
 msgid "Status code"
 msgstr "状态码"
 
-#: system/models/log.py:83
+#: system/models/log.py:90
 msgid "Request ID"
 msgstr "请求ID"
 
-#: system/models/log.py:84
+#: system/models/log.py:91
 msgid "Execution time"
 msgstr "执行时间"
 
-#: system/models/log.py:86
+#: system/models/log.py:93
 msgid "Changed fields"
 msgstr "变更字段"
 
-#: system/models/log.py:92
+#: system/models/log.py:99
 msgid "Auth type"
 msgstr "认证类型"
 
-#: system/models/log.py:94
+#: system/models/log.py:101
 msgid "Token pk"
 msgstr "令牌主键"
 
-#: system/models/log.py:97 system/notifications.py:187
+#: system/models/log.py:104 system/notifications.py:187
 msgid "Operation log"
 msgstr "操作日志"
 
@@ -2578,10 +3554,6 @@ msgstr "银行卡"
 #: system/models/mask.py:26
 msgid "Custom"
 msgstr "自定义"
-
-#: system/models/mask.py:28 system/models/menu.py:100
-msgid "Model"
-msgstr "模型"
 
 #: system/models/mask.py:29 system/models/permission.py:39
 msgid "Field"
@@ -2710,7 +3682,7 @@ msgstr "目录"
 
 #: system/models/menu.py:76 system/models/menu.py:140
 #: system/models/permission.py:22 system/models/permission.py:38
-#: system/models/role.py:23
+#: system/models/role.py:26
 msgid "Menu"
 msgstr "菜单"
 
@@ -2759,7 +3731,6 @@ msgid "Component path"
 msgstr "组件地址"
 
 #: system/models/oauth.py:25
-#| msgid "Subject prefix"
 msgid "Subject"
 msgstr "主题"
 
@@ -2776,14 +3747,20 @@ msgid "IdP 返回的头像/昵称/邮箱等只读快照"
 msgstr "IdP 返回的头像/昵称/邮箱等只读快照"
 
 #: system/models/oauth.py:31
-#| msgid "Auto bind"
 msgid "OAuth binding"
 msgstr "OAuth 绑定"
 
 #: system/models/oauth.py:32
-#| msgid "Auto bind"
 msgid "OAuth bindings"
 msgstr "OAuth 绑定"
+
+#: system/models/password.py:27
+msgid "Password hash"
+msgstr "密码哈希"
+
+#: system/models/password.py:31
+msgid "Password history"
+msgstr "密码历史"
 
 #: system/models/permission.py:18
 msgid "Rules"
@@ -2801,7 +3778,11 @@ msgstr "角色名称"
 msgid "Role code"
 msgstr "角色标识"
 
-#: system/models/role.py:26
+#: system/models/role.py:25
+msgid "Is builtin"
+msgstr "内置角色"
+
+#: system/models/role.py:29
 msgid "User role"
 msgstr "用户角色"
 
@@ -2833,37 +3814,37 @@ msgstr "最近活跃"
 msgid "User session"
 msgstr "用户会话"
 
-#: system/models/task.py:34
+#: system/models/task.py:48
 msgid "Revoked"
 msgstr "已撤销"
 
-#: system/models/task.py:37
+#: system/models/task.py:51
 msgid "Task Name"
 msgstr "任务名称"
 
-#: system/models/task.py:40 system/serializers/task.py:230
+#: system/models/task.py:54 system/serializers/task.py:248
 msgid "Periodic Task"
 msgstr "周期任务"
 
-#: system/models/task.py:45 system/serializers/task.py:174
-#: system/serializers/task.py:175
+#: system/models/task.py:59 system/serializers/task.py:192
+#: system/serializers/task.py:193
 msgid "Positional Args"
 msgstr "位置参数"
 
-#: system/models/task.py:46 system/serializers/task.py:180
-#: system/serializers/task.py:181
+#: system/models/task.py:60 system/serializers/task.py:198
+#: system/serializers/task.py:199
 msgid "Keyword Args"
 msgstr "关键字参数"
 
-#: system/models/task.py:54
+#: system/models/task.py:68
 msgid "Start Time"
 msgstr "开始时间"
 
-#: system/models/task.py:55
+#: system/models/task.py:69
 msgid "Finish Time"
 msgstr "结束时间"
 
-#: system/models/task.py:59
+#: system/models/task.py:73
 msgid "Task Execution"
 msgstr "任务执行"
 
@@ -2871,7 +3852,7 @@ msgstr "任务执行"
 msgid "Token name"
 msgstr "令牌名称"
 
-#: system/models/token.py:22
+#: system/models/token.py:22 system/models/token.py:145
 msgid "Token hash"
 msgstr "令牌哈希"
 
@@ -2879,21 +3860,115 @@ msgstr "令牌哈希"
 msgid "Token prefix"
 msgstr "令牌前缀"
 
-#: system/models/token.py:28 system/serializers/token.py:27
+#: system/models/token.py:28 system/models/token.py:77
+#: system/models/token.py:158 system/serializers/token.py:27
 msgid "Scopes"
 msgstr "接口范围"
 
-#: system/models/token.py:31 system/serializers/token.py:34
+#: system/models/token.py:31 system/models/token.py:78
+#: system/serializers/token.py:34
 msgid "Ip allowlist"
 msgstr "IP 白名单"
 
-#: system/models/token.py:33
+#: system/models/token.py:33 system/models/token.py:88
+#: system/models/token.py:159
 msgid "Expired at"
 msgstr "过期时间"
 
 #: system/models/token.py:34 system/serializers/token.py:24
 msgid "Last used time"
 msgstr "最后使用时间"
+
+#: system/models/token.py:38 system/models/token.py:92
+#: system/models/token.py:114 system/models/token.py:148
+#| msgid "Application no"
+msgid "API application"
+msgstr "API 应用"
+
+#: system/models/token.py:70 system/utils/webhook.py:171
+#| msgid "Application no"
+msgid "Application name"
+msgstr "应用名称"
+
+#: system/models/token.py:71 system/utils/webhook.py:172
+#| msgid "Client message id"
+msgid "Client id"
+msgstr "客户端 ID"
+
+#: system/models/token.py:73
+#| msgid "Content hash"
+msgid "Client secret hash"
+msgstr "客户端密钥哈希"
+
+#: system/models/token.py:74
+msgid "Client secret prefix"
+msgstr "客户端密钥前缀"
+
+#: system/models/token.py:76
+msgid "Callback secret"
+msgstr "回调密钥"
+
+#: system/models/token.py:80
+msgid "Rate limit per minute"
+msgstr "每分钟限流"
+
+#: system/models/token.py:81
+msgid "Callback urls"
+msgstr "回调地址"
+
+#: system/models/token.py:83
+#| msgid "Timeout (seconds)"
+msgid "Token ttl seconds"
+msgstr "凭证有效期（秒）"
+
+#: system/models/token.py:85 system/utils/webhook.py:174
+#| msgid "Daily"
+msgid "Daily quota"
+msgstr "每日配额"
+
+#: system/models/token.py:86
+msgid "Quota alert percent"
+msgstr "配额告警阈值（百分比）"
+
+#: system/models/token.py:121
+#| msgid "AI actions"
+msgid "Actions"
+msgstr "动作"
+
+#: system/models/token.py:123 system/serializers/role.py:52
+#: system/serializers/role.py:53
+msgid "Fields"
+msgstr "字段"
+
+#: system/models/token.py:125
+#| msgid "User filter"
+msgid "Row filter"
+msgstr "行级规则"
+
+#: system/models/token.py:130
+#| msgid "Application no"
+msgid "API application grant"
+msgstr "应用资源授权"
+
+#: system/models/token.py:154
+#| msgid "The notified user"
+msgid "Authorized user"
+msgstr "授权用户"
+
+#: system/models/token.py:160
+#| msgid "Revoked"
+msgid "Is revoked"
+msgstr "已撤销"
+
+#: system/models/token.py:164
+#| msgid "Personal access token"
+msgid "Access token"
+msgstr "访问令牌"
+
+#: system/models/token.py:173
+#| msgid "Data refresh seconds"
+msgid "OAuth refresh token"
+msgstr "OAuth 刷新令牌"
 
 #: system/models/upload.py:18
 msgid "Filepath"
@@ -2947,10 +4022,6 @@ msgstr "男性"
 msgid "Female"
 msgstr "女性"
 
-#: system/models/user.py:44
-msgid "Disabled"
-msgstr "禁用"
-
 #: system/models/user.py:45
 msgid "Enabled"
 msgstr "启用"
@@ -2963,7 +4034,7 @@ msgstr "头像"
 msgid "Nickname"
 msgstr "昵称"
 
-#: system/models/user.py:58 system/serializers/user.py:36
+#: system/models/user.py:58 system/serializers/user.py:49
 msgid "Gender"
 msgstr "性别"
 
@@ -2975,9 +4046,86 @@ msgstr "MFA 级别"
 msgid "OTP secret key"
 msgstr "OTP 密钥"
 
-#: system/models/user.py:80
+#: system/models/user.py:71
+msgid "Password updated at"
+msgstr "密码更新时间"
+
+#: system/models/user.py:85
 msgid "Userinfo"
 msgstr "用户信息"
+
+#: system/models/webhook.py:15
+msgid "URL"
+msgstr "地址"
+
+#: system/models/webhook.py:17
+msgid "Secret"
+msgstr "签名密钥"
+
+#: system/models/webhook.py:18
+msgid "Events"
+msgstr "订阅事件"
+
+#: system/models/webhook.py:18
+msgid "Event keys from EVENT_CATALOG"
+msgstr "事件键（来自 EVENT_CATALOG）"
+
+#: system/models/webhook.py:21
+#| msgid "Last active"
+msgid "Last failure"
+msgstr "最近失败"
+
+#: system/models/webhook.py:24
+msgid "Webhook subscription"
+msgstr "Webhook 订阅"
+
+#: system/models/webhook.py:25
+msgid "Webhook subscriptions"
+msgstr "Webhook 订阅"
+
+#: system/models/webhook.py:38
+msgid "Failed (retrying)"
+msgstr "失败（重试中）"
+
+#: system/models/webhook.py:39
+msgid "Exhausted"
+msgstr "已耗尽"
+
+#: system/models/webhook.py:42 system/serializers/webhook.py:52
+msgid "Subscription"
+msgstr "订阅"
+
+#: system/models/webhook.py:45
+msgid "Payload"
+msgstr "载荷"
+
+#: system/models/webhook.py:47
+msgid "Attempt"
+msgstr "尝试次数"
+
+#: system/models/webhook.py:49
+msgid "Response body"
+msgstr "响应内容"
+
+#: system/models/webhook.py:50
+msgid "Duration"
+msgstr "耗时"
+
+#: system/models/webhook.py:50
+msgid "Seconds"
+msgstr "秒"
+
+#: system/models/webhook.py:51
+msgid "Next retry at"
+msgstr "下次重试"
+
+#: system/models/webhook.py:54
+msgid "Webhook delivery"
+msgstr "Webhook 投递"
+
+#: system/models/webhook.py:55
+msgid "Webhook deliveries"
+msgstr "Webhook 投递"
 
 #: system/notifications.py:25 system/notifications.py:62
 #: system/notifications.py:109
@@ -3013,70 +4161,89 @@ msgid "Reset password success"
 msgstr "重置密码成功"
 
 #: system/notifications.py:140 system/notifications.py:201
-#: system/notifications.py:253
+#: system/notifications.py:241 system/notifications.py:283
+#: system/notifications.py:325 system/notifications.py:377
 msgid "Audit"
 msgstr "审计"
 
-#: system/notifications.py:141
+#: system/notifications.py:141 system/utils/webhook.py:94
 msgid "Sensitive operation alert"
 msgstr "敏感操作告警"
 
 #: system/notifications.py:148
-#, python-brace-format
 msgid "Sensitive operation alert: {} {}"
 msgstr "敏感操作告警：{} {}"
 
 #: system/notifications.py:202
+msgid "LDAP sync summary"
+msgstr "LDAP 同步摘要"
+
+#: system/notifications.py:208
+msgid "LDAP sync finished"
+msgstr "LDAP 同步完成"
+
+#: system/notifications.py:242
+msgid "Webhook delivery exhausted"
+msgstr "Webhook 投递已耗尽"
+
+#: system/notifications.py:249
+msgid "Webhook delivery exhausted: {}"
+msgstr "Webhook 投递已耗尽: {}"
+
+#: system/notifications.py:284 system/utils/webhook.py:168
+#| msgid "Application no"
+msgid "API application quota warning"
+msgstr "API 应用配额告警"
+
+#: system/notifications.py:291
+msgid "API application quota warning: {}"
+msgstr "API 应用配额告警：{}"
+
+#: system/notifications.py:326
 msgid "Approval request notice"
 msgstr "审批通知"
 
-#: system/notifications.py:205
+#: system/notifications.py:329
 msgid "New approval request"
 msgstr "新的审批申请"
 
-#: system/notifications.py:206
+#: system/notifications.py:330
 msgid "Approval request approved"
 msgstr "审批申请已通过"
 
-#: system/notifications.py:207
+#: system/notifications.py:331
 msgid "Approval request rejected"
 msgstr "审批申请已驳回"
 
-#: system/notifications.py:209
+#: system/notifications.py:333
 msgid "Approval request pending reminder"
 msgstr "审批单待处理提醒"
 
-#: system/notifications.py:254
-#| msgid "Approval request notice"
+#: system/notifications.py:378
 msgid "Approval flow notice"
 msgstr "审批流程通知"
 
-#: system/notifications.py:257
-#| msgid "New approval request"
+#: system/notifications.py:381
 msgid "New approval application"
 msgstr "新的审批申请"
 
-#: system/notifications.py:258
-#| msgid "Approval request approved"
+#: system/notifications.py:382
 msgid "Approval application approved"
 msgstr "审批申请已通过"
 
-#: system/notifications.py:259
-#| msgid "Approval request rejected"
+#: system/notifications.py:383
 msgid "Approval application rejected"
 msgstr "审批申请已驳回"
 
-#: system/notifications.py:260
-#| msgid "Approval request pending reminder"
+#: system/notifications.py:384
 msgid "Approval task pending reminder"
 msgstr "审批任务待处理提醒"
 
-#: system/notifications.py:261
-#| msgid "Approval request approved"
+#: system/notifications.py:385
 msgid "Added as approval approver"
 msgstr "已被添加为审批人"
 
-#: system/notifications.py:262
+#: system/notifications.py:386
 msgid "Approval application cancelled"
 msgstr "审批申请已撤回"
 
@@ -3093,18 +4260,15 @@ msgid "Invalid SCIM authorization header"
 msgstr "无效的 SCIM 认证头"
 
 #: system/scim/auth.py:47 system/scim/auth.py:51
-#| msgid "Invalid approval token"
 msgid "Invalid SCIM token"
 msgstr "SCIM 令牌无效"
 
 #: system/scim/resources.py:139
-#| msgid "Unsupported file type"
 msgid "Unsupported filter expression"
 msgstr "不支持的过滤表达式"
 
 #: system/scim/resources.py:142 system/scim/views.py:211
 #: system/scim/views.py:278
-#| msgid "Unsupported file type"
 msgid "Unsupported filter attribute"
 msgstr "不支持的过滤属性"
 
@@ -3114,195 +4278,300 @@ msgstr "无效的分页参数"
 
 #: system/scim/resources.py:166 system/scim/resources.py:248
 #: system/scim/resources.py:251
-#| msgid "test_phone is required"
 msgid "userName is required"
 msgstr "userName 为必填项"
 
 #: system/scim/resources.py:185 system/scim/resources.py:222
 #: system/scim/resources.py:253 system/scim/resources.py:291
-#| msgid "Username already exist"
 msgid "userName already exists"
 msgstr "userName 已存在"
 
 #: system/scim/resources.py:274 system/scim/resources.py:375
-#| msgid "Invalid approval token"
 msgid "Invalid patch operation"
 msgstr "无效的补丁操作"
 
 #: system/scim/resources.py:279
-#, python-brace-format
-#| msgid "Unsupported file type"
 msgid "Unsupported patch op: {}"
 msgstr "不支持的补丁操作：{}"
 
 #: system/scim/resources.py:345
-#| msgid "test_phone is required"
 msgid "displayName is required"
 msgstr "displayName 为必填项"
 
 #: system/scim/resources.py:348 system/scim/resources.py:364
 #: system/scim/resources.py:398
-#| msgid "Dict code already exists"
 msgid "Group code already exists"
 msgstr "组编码已存在"
 
 #: system/scim/resources.py:447
-#, python-brace-format
-#| msgid "Object not found: {}"
 msgid "Group member not found: {}"
 msgstr "组成员不存在：{}"
 
 #: system/scim/views.py:77
-#| msgid "Authentication required"
 msgid "Authentication failed"
 msgstr "认证失败"
 
 #: system/scim/views.py:82
-#| msgid "Request method"
 msgid "Request was throttled"
 msgstr "请求过于频繁，已被限流"
 
 #: system/scim/views.py:86
-#| msgid "User not found"
 msgid "Resource not found"
 msgstr "资源不存在"
 
-#: system/scim/views.py:93 system/views/admin/online.py:90
-#: system/views/admin/online.py:95
-msgid "User not found"
-msgstr "用户不存在"
-
 #: system/scim/views.py:100
-#| msgid "User not found"
 msgid "Group not found"
 msgstr "组不存在"
 
 #: system/scim/views.py:251 system/scim/views.py:307
-#| msgid "test_phone is required"
 msgid "Operations is required"
 msgstr "Operations 为必填项"
 
-#: system/serializers/approval.py:19 system/serializers/approval_flow.py:199
+#: system/serializers/ai.py:37
+msgid "API Key set"
+msgstr "已设置密钥"
+
+#: system/serializers/ai.py:82
+msgid "Profile name is required"
+msgstr "请填写档案名称"
+
+#: system/serializers/ai.py:88
+msgid "Base URL must start with http:// or https://"
+msgstr "接口地址必须以 http:// 或 https:// 开头"
+
+#: system/serializers/ai.py:112
+msgid "Document name is required"
+msgstr "请填写文档名称"
+
+#: system/serializers/ai.py:114
+msgid "Document name cannot contain path characters"
+msgstr "文档名称不能包含路径字符"
+
+#: system/serializers/ai.py:119
+msgid "Document content cannot be empty"
+msgstr "文档内容不能为空"
+
+#: system/serializers/ai.py:127
+msgid "Chunks"
+msgstr "知识分块"
+
+#: system/serializers/analysis.py:33
+msgid "Invalid screen dashboards"
+msgstr "大屏仪表盘列表不合法"
+
+#: system/serializers/analysis.py:37
+#| msgid "Unknown dataset in layout"
+msgid "Unknown dashboard in layout"
+msgstr "布局中引用了未知仪表盘"
+
+#: system/serializers/analysis.py:42
+msgid "Interval must be between 5 and 3600 seconds"
+msgstr "切换间隔需在 5 到 3600 秒之间"
+
+#: system/serializers/analysis.py:47
+msgid "Refresh must be between 10 and 3600 seconds"
+msgstr "刷新间隔需在 10 到 3600 秒之间"
+
+#: system/serializers/analysis.py:84 system/serializers/dataset.py:73
+msgid "Unknown dataset in layout"
+msgstr "布局中引用了未知数据集"
+
+#: system/serializers/analysis.py:88
+msgid "Recipients cannot be empty"
+msgstr "收件人不能为空"
+
+#: system/serializers/analysis.py:93
+msgid "Invalid email address: {}"
+msgstr "邮箱地址不合法: {}"
+
+#: system/serializers/analysis.py:99 system/utils/nl_query.py:90
+msgid "Invalid report mode"
+msgstr "报表模式不合法"
+
+#: system/serializers/analysis.py:103
+msgid "Group by is required for aggregate reports"
+msgstr "聚合报表必须指定分组字段"
+
+#: system/serializers/analysis.py:106
+msgid "Send time must be HH:MM"
+msgstr "发送时刻格式必须为 HH:MM"
+
+#: system/serializers/analysis.py:109
+msgid "Weekday must be between 0 and 6"
+msgstr "星期取值需在 0 到 6 之间"
+
+#: system/serializers/approval.py:19 system/serializers/approval_flow.py:340
+#: system/serializers/leave.py:40
 msgid "Applicant"
 msgstr "申请人"
 
-#: system/serializers/approval_flow.py:48
-#| msgid "Row count"
+#: system/serializers/approval_flow.py:57
 msgid "Node count"
 msgstr "节点数"
 
-#: system/serializers/approval_flow.py:75
+#: system/serializers/approval_flow.py:84
 msgid "Form schema must be a list"
 msgstr "表单结构必须是列表"
 
-#: system/serializers/approval_flow.py:79
-#| msgid "Rule %(index)d must be an object"
+#: system/serializers/approval_flow.py:88
 msgid "Form schema item must be an object"
 msgstr "表单结构项必须是对象"
 
-#: system/serializers/approval_flow.py:82
-#, python-brace-format
-#| msgid "This field is required."
+#: system/serializers/approval_flow.py:91
 msgid "Form field key is required (item {})"
 msgstr "表单字段 key 为必填项（第 {} 项）"
 
-#: system/serializers/approval_flow.py:84
-#, python-brace-format
+#: system/serializers/approval_flow.py:93
 msgid "Form field key {} is duplicated"
 msgstr "表单字段 key {} 重复"
 
-#: system/serializers/approval_flow.py:88
-#, python-brace-format
-#| msgid "Unsupported file type"
+#: system/serializers/approval_flow.py:97
 msgid "Unsupported form field type: {}"
 msgstr "不支持的表单字段类型：{}"
 
-#: system/serializers/approval_flow.py:90
-#, python-brace-format
+#: system/serializers/approval_flow.py:99
 msgid "Select field {} requires options"
 msgstr "选择型字段 {} 需要配置选项"
 
-#: system/serializers/approval_flow.py:98
-#| msgid "Rule %(index)d requires at least one value"
+#: system/serializers/approval_flow.py:107
 msgid "The flow requires at least one node"
 msgstr "流程至少需要一个节点"
 
-#: system/serializers/approval_flow.py:104
+#: system/serializers/approval_flow.py:113
 msgid "Node order must be greater than 0"
 msgstr "节点顺序必须大于 0"
 
-#: system/serializers/approval_flow.py:107
+#: system/serializers/approval_flow.py:116
 msgid "Node order is duplicated"
 msgstr "节点顺序重复"
 
-#: system/serializers/approval_flow.py:110
-#| msgid "Dict code is required"
+#: system/serializers/approval_flow.py:119
 msgid "Node name is required"
 msgstr "节点名称为必填项"
 
-#: system/serializers/approval_flow.py:115
-#, python-brace-format
+#: system/serializers/approval_flow.py:124
 msgid "Assignee value is required for node {}"
 msgstr "节点 {} 需要配置审批人取值"
 
-#: system/serializers/approval_flow.py:118
-#| msgid "The notice user cannot be null"
+#: system/serializers/approval_flow.py:127
 msgid "Timeout hours cannot be negative"
 msgstr "超时小时数不能为负数"
 
-#: system/serializers/approval_flow.py:122
-#| msgid "Authentication required"
+#: system/serializers/approval_flow.py:136
+#| msgid "Refresh must be between 10 and 3600 seconds"
+msgid "Approve ratio must be between 1 and 100 for node {}"
+msgstr "节点 {} 的通过比例必须在 1 到 100 之间"
+
+#: system/serializers/approval_flow.py:140
+#| msgid "Form schema must be a list"
+msgid "Branch routes must be a list"
+msgstr "分支路由必须是列表"
+
+#: system/serializers/approval_flow.py:143
+#| msgid "Form schema item must be an object"
+msgid "Branch route item must be an object"
+msgstr "分支路由项必须是对象"
+
+#: system/serializers/approval_flow.py:152
 msgid "Condition requires a field"
 msgstr "条件分支需要指定字段"
 
-#: system/serializers/approval_flow.py:125
-#, python-brace-format
+#: system/serializers/approval_flow.py:154
 msgid "Unsupported condition operator: {}"
 msgstr "不支持的条件操作符：{}"
 
-#: system/serializers/approval_flow.py:132
-#| msgid "Dict code is required"
+#: system/serializers/approval_flow.py:159
 msgid "Flow code is required"
 msgstr "流程编码为必填项"
 
-#: system/serializers/approval_flow.py:137
+#: system/serializers/approval_flow.py:180
+#| msgid "Assignee value is required for node {}"
+msgid "Branch route target is required for node {}"
+msgstr "节点 {} 需要配置分支路由目标"
+
+#: system/serializers/approval_flow.py:184
+#| msgid "The task does not exist"
+msgid "Branch route target {} does not exist"
+msgstr "分支路由目标 {} 不存在"
+
+#: system/serializers/approval_flow.py:187
+msgid "Branch route cannot point to itself (node {})"
+msgstr "分支路由不能指向自身（节点 {}）"
+
+#: system/serializers/approval_flow.py:198
+msgid "Branch routes contain a loop"
+msgstr "分支路由存在环路"
+
+#: system/serializers/approval_flow.py:211
 msgid "The flow has pending applications, nodes cannot be changed"
 msgstr "该流程存在待审批申请，节点不可修改"
 
-#: system/serializers/approval_flow.py:207
+#: system/serializers/approval_flow.py:218
+#| msgid "Data permission"
+msgid "Initial version"
+msgstr "初始版本"
+
+#: system/serializers/approval_flow.py:231
+#| msgid "Document updated"
+msgid "Nodes updated"
+msgstr "节点已更新"
+
+#: system/serializers/approval_flow.py:281
+#| msgid "The task does not exist"
+msgid "The flow version does not exist"
+msgstr "流程版本不存在"
+
+#: system/serializers/approval_flow.py:291
+msgid "Rollback from version {}"
+msgstr "从版本 {} 回滚"
+
+#: system/serializers/approval_flow.py:348
 msgid "My task"
 msgstr "我的任务"
 
-#: system/serializers/approval_flow.py:271
-#| msgid "Dict code is required"
+#: system/serializers/approval_flow.py:412
 msgid "Flow is required"
 msgstr "流程为必填项"
 
-#: system/serializers/approval_flow.py:273 system/utils/approval_flow.py:267
-#| msgid "User account is disabled"
+#: system/serializers/approval_flow.py:414 system/utils/approval_flow.py:321
 msgid "The flow is disabled"
 msgstr "该流程已停用"
 
-#: system/serializers/approval_flow.py:275
-#| msgid "Dict code is required"
+#: system/serializers/approval_flow.py:416
 msgid "Title is required"
 msgstr "标题为必填项"
 
-#: system/serializers/config.py:31
+#: system/serializers/config.py:50
 msgid "Config cache value"
 msgstr "配置缓存数值"
 
-#: system/serializers/config.py:66
+#: system/serializers/config.py:85
 msgid "Users"
 msgstr "多个用户"
 
-#: system/serializers/config.py:74
+#: system/serializers/config.py:93
 msgid "User cannot be null"
 msgstr "用户不能为空"
+
+#: system/serializers/dataset.py:65 system/serializers/dataset.py:69
+msgid "Invalid dashboard layout"
+msgstr "仪表盘布局不合法"
+
+#: system/serializers/dataset.py:71
+msgid "Invalid chart type: {}"
+msgstr "不支持的图表类型: {}"
 
 #: system/serializers/department.py:86
 msgid "The superior department cannot be its own subordinate department"
 msgstr "上级部门不能是自己的下级部门"
+
+#: system/serializers/dform.py:60
+msgid "Dynamic form is required"
+msgstr "动态表单不能为空"
+
+#: system/serializers/dform.py:62
+msgid "This form is no longer accepting submissions"
+msgstr "该表单已停用，不再接受提交"
 
 #: system/serializers/dict.py:32 system/views/admin/dict.py:27
 msgid "Parent code"
@@ -3333,7 +4602,6 @@ msgid "Report size"
 msgstr "报告大小"
 
 #: system/serializers/import_.py:141
-#, python-brace-format
 msgid "Too many columns in mapping (max {})"
 msgstr "映射列数过多（最多 {} 列）"
 
@@ -3345,71 +4613,78 @@ msgstr "仅超级管理员可维护共享模板"
 msgid "Template name already exists"
 msgstr "模板名称已存在"
 
-#: system/serializers/menu.py:60 system/serializers/role.py:52
-#: system/serializers/user.py:112
+#: system/serializers/leave.py:42
+msgid "Application no"
+msgstr "申请单号"
+
+#: system/serializers/leave.py:44
+msgid "Reject reason"
+msgstr "驳回原因"
+
+#: system/serializers/leave.py:125
+msgid "Requests in approval or already approved cannot be modified"
+msgstr "审批中或已通过的申请不可修改"
+
+#: system/serializers/menu.py:60 system/serializers/role.py:63
+#: system/serializers/user.py:125
 msgid "This field already exists"
 msgstr "手机号已经存在"
 
-#: system/serializers/role.py:41 system/serializers/role.py:42
-msgid "Fields"
-msgstr "字段"
+#: system/serializers/role.py:78
+msgid "Builtin role code cannot be changed"
+msgstr "内置角色禁止修改编码"
 
 #: system/serializers/task.py:58
 msgid "Timezone"
 msgstr "时间"
 
+#: system/serializers/task.py:82
+msgid "Invalid crontab expression: {}"
+msgstr "无效的 crontab 表达式：{}"
+
 #: system/serializers/task.py:107
 msgid "A schedule with the same interval already exists"
 msgstr "该间隔调度已存在"
 
-#: system/serializers/task.py:82
-#, python-brace-format
-msgid "Invalid crontab expression: {}"
-msgstr "无效的 crontab 表达式：{}"
-
-#: system/serializers/task.py:100
+#: system/serializers/task.py:118
 #, python-format
 msgid "%(label)s must be a valid JSON string"
 msgstr "%(label)s 必须是有效的 JSON 字符串"
 
-#: system/serializers/task.py:103
+#: system/serializers/task.py:121
 #, python-format
 msgid "%(label)s must be JSON %(type)s"
 msgstr "%(label)s 必须是 JSON %(type)s"
 
-#: system/serializers/task.py:133
+#: system/serializers/task.py:151
 msgid "Default queue"
 msgstr "默认队列"
 
-#: system/serializers/task.py:138
+#: system/serializers/task.py:156
 msgid "Default routing key"
 msgstr "默认路由键"
 
-#: system/serializers/task.py:149
+#: system/serializers/task.py:167
 msgid "Default exchange"
 msgstr "默认交换机"
 
-#: system/serializers/task.py:161
+#: system/serializers/task.py:179
 msgid "Crontab"
 msgstr "Crontab 表达式"
 
-#: system/serializers/task.py:167
-msgid "Interval"
-msgstr "执行间隔"
-
-#: system/serializers/task.py:189
+#: system/serializers/task.py:207
 msgid "Queue"
 msgstr "队列"
 
-#: system/serializers/task.py:195
+#: system/serializers/task.py:213
 msgid "Routing Key"
 msgstr "路由键"
 
-#: system/serializers/task.py:201
+#: system/serializers/task.py:219
 msgid "Exchange"
 msgstr "交换机"
 
-#: system/serializers/task.py:246
+#: system/serializers/task.py:264
 msgid "Time Cost"
 msgstr "耗时"
 
@@ -3438,6 +4713,36 @@ msgstr "IP 白名单必须是 IP 或 CIDR 网段列表"
 msgid "Invalid IP or CIDR network: %(entry)s"
 msgstr "无效的 IP 或 CIDR 网段：%(entry)s"
 
+#: system/serializers/token.py:173
+#| msgid "Field {} must be a list"
+msgid "Callback urls must be a list"
+msgstr "回调地址必须是列表"
+
+#: system/serializers/token.py:178
+#| msgid "Scopes must be a list of path strings"
+msgid "Scopes must be a list of strings"
+msgstr "接口范围必须是字符串列表"
+
+#: system/serializers/token.py:183
+#| msgid "Ip allowlist must be a list of IPs or CIDR networks"
+msgid "Ip allowlist must be a list"
+msgstr "IP 白名单必须是列表"
+
+#: system/serializers/token.py:188
+#| msgid "Timeout hours cannot be negative"
+msgid "Rate limit cannot be negative"
+msgstr "速率限制不能为负数"
+
+#: system/serializers/token.py:193
+#| msgid "Timeout hours cannot be negative"
+msgid "Daily quota cannot be negative"
+msgstr "每日配额不能为负数"
+
+#: system/serializers/token.py:198
+#| msgid "Row limit must be between 1 and {}"
+msgid "Quota alert percent must be between 1 and 100"
+msgstr "配额告警阈值必须在 1 到 100 之间"
+
 #: system/serializers/upload.py:63
 msgid "Access URL"
 msgstr "访问地址"
@@ -3450,83 +4755,81 @@ msgstr "预览类型"
 msgid "Internet url cannot be null"
 msgstr "网络地址不能为空"
 
-#: system/serializers/user.py:97
+#: system/serializers/user.py:38 system/views/auth/reset.py:63
+msgid "Password is managed by the LDAP directory and cannot be changed locally"
+msgstr "密码由 LDAP 目录服务器管理，无法在本地修改"
+
+#: system/serializers/user.py:110
 msgid "Login blocked"
 msgstr "登录被锁定"
 
-#: system/serializers/user.py:100
+#: system/serializers/user.py:113
 msgid "Online count"
 msgstr "在线数量"
 
-#: system/serializers/user.py:144 system/serializers/user.py:157
-#: system/serializers/userinfo.py:52 system/views/auth/register.py:77
-#: system/views/auth/reset.py:55
+#: system/serializers/user.py:157 system/serializers/user.py:180
+#: system/serializers/userinfo.py:60 system/views/auth/register.py:76
+#: system/views/auth/reset.py:66
 msgid "Password does not match security rules"
 msgstr "密码不满足安全规则"
 
+#: system/serializers/user.py:159 system/serializers/user.py:182
+#: system/serializers/userinfo.py:62 system/views/auth/register.py:78
+#: system/views/auth/reset.py:68
 msgid "Password has been leaked, please change to another one"
 msgstr "密码已在泄露库中，请更换密码"
 
-msgid "Password cannot reuse the recent %(count)s passwords"
-msgstr "密码不能与最近 %(count)s 次密码重复"
-
-msgid "Password has expired, please change your password before logging in"
-msgstr "密码已过期，请先修改密码后再登录"
-
-msgid "Password updated at"
-msgstr "密码更新时间"
-
-msgid "Password history"
-msgstr "密码历史"
-
-msgid "Password hash"
-msgstr "密码哈希"
-
-#: system/serializers/user.py:147
+#: system/serializers/user.py:162
 msgid "Abnormal password field"
 msgstr "密码字段异常"
 
-#: system/serializers/userinfo.py:40
+#: system/serializers/user.py:185 system/serializers/userinfo.py:65
+#: system/views/auth/reset.py:72
+#, python-format
+msgid "Password cannot reuse the recent %(count)s passwords"
+msgstr "密码不能与最近 %(count)s 次密码重复"
+
+#: system/serializers/userinfo.py:47
 msgid "Old password"
 msgstr "旧密码"
 
-#: system/serializers/userinfo.py:43
+#: system/serializers/userinfo.py:50
 msgid "Confirm password"
 msgstr "确认密码"
 
-#: system/serializers/userinfo.py:50
+#: system/serializers/userinfo.py:58
 msgid "Old password verification failed"
 msgstr "旧密码校验失败"
 
-#: system/tasks.py:316
+#: system/serializers/webhook.py:47
+msgid "Secret is required"
+msgstr "签名密钥不能为空"
+
+#: system/tasks.py:319
 msgid "Async export data"
 msgstr "异步导出数据"
 
-#: system/tasks.py:415
-#, python-brace-format
+#: system/tasks.py:418
 msgid "Exported {} rows"
 msgstr "已导出 {} 行"
 
-#: system/tasks.py:468
-#, python-brace-format
+#: system/tasks.py:471
 msgid "Object not found: {}"
 msgstr "对象不存在：{}"
 
-#: system/tasks.py:479
+#: system/tasks.py:482
 msgid "Async import data"
 msgstr "异步导入数据"
 
-#: system/tasks.py:516
+#: system/tasks.py:519
 msgid "Import source file not found"
 msgstr "导入源文件不存在"
 
-#: system/tasks.py:582 tests/unit/system/test_import_record.py:151
-#, python-brace-format
+#: system/tasks.py:592 tests/unit/system/test_import_record.py:167
 msgid "Aborted: failure rate exceeds limit ({}/{} rows failed)"
 msgstr "已中止：失败率超过上限（{}/{} 行失败）"
 
-#: system/tasks.py:662
-#, python-brace-format
+#: system/tasks.py:672
 msgid "Imported {} rows, {} failed"
 msgstr "已导入 {} 行，{} 行失败"
 
@@ -3592,28 +4895,20 @@ msgid "Approval No."
 msgstr "审批单号"
 
 #: system/templates/notify/msg_approval_flow.html:7
-#| msgid ""
-#| "A sensitive operation has been submitted for approval, please handle it "
-#| "in the approval center"
 msgid ""
 "A new approval application requires your approval, please handle it in the "
 "approval center"
 msgstr "敏感操作已提交审批，请在审批中心处理"
 
 #: system/templates/notify/msg_approval_flow.html:9
-#| msgid "The approval request has been approved"
 msgid "Your approval application has been approved"
 msgstr "你的审批申请已通过"
 
 #: system/templates/notify/msg_approval_flow.html:11
-#| msgid "Your approval request has been rejected"
 msgid "Your approval application has been rejected"
 msgstr "你的审批申请已驳回"
 
 #: system/templates/notify/msg_approval_flow.html:13
-#| msgid ""
-#| "This approval request has been pending for a long time, please handle it "
-#| "as soon as possible"
 msgid ""
 "This approval task has been pending for a long time, please handle it as "
 "soon as possible"
@@ -3624,12 +4919,10 @@ msgid "You have been added as an approver of the approval flow"
 msgstr "你已被添加为该审批流程的审批人"
 
 #: system/templates/notify/msg_approval_flow.html:17
-#| msgid "The approval request has been cancelled"
 msgid "The approval application has been cancelled by the applicant"
 msgstr "审批申请已被申请人撤回"
 
 #: system/templates/notify/msg_approval_flow.html:24
-#| msgid "Applicant"
 msgid "Application No."
 msgstr "申请单号"
 
@@ -3639,6 +4932,7 @@ msgstr "请注意，你的账号存在异地登录行为"
 
 #: system/templates/notify/msg_different_city.html:9
 #: system/templates/notify/msg_rest_password_success.html:8
+#: system/utils/webhook.py:36 system/utils/webhook.py:44
 msgid "Username"
 msgstr "用户名"
 
@@ -3656,178 +4950,392 @@ msgid ""
 "security issues"
 msgstr "如果这次密码更新不是由你发起的，那么你的账号可能存在安全问题"
 
-#: system/utils/approval.py:131
+#: system/utils/ai.py:123
+msgid "Path {} conflicts with a repository document"
+msgstr "路径 {} 与仓库文档冲突"
+
+#: system/utils/ai.py:355 system/views/ai.py:142
+msgid "Question cannot be empty"
+msgstr "问题不能为空"
+
+#: system/utils/ai.py:357 system/views/ai.py:146 system/views/ai.py:193
+#: system/views/ai.py:277
+msgid "AI assistant is not enabled or configured"
+msgstr "AI 助手未启用或未完成配置"
+
+#: system/utils/ai.py:361
+msgid "No matching documents found for this question"
+msgstr "知识库中没有与该问题匹配的文档"
+
+#: system/utils/ai.py:374
+msgid ""
+"You are the xadmin usage/development assistant. Answer ONLY based on the "
+"provided reference documents, cite them as [n] markers, and say you don't "
+"know when the documents do not cover the question."
+msgstr ""
+"你是 xadmin 使用/二开助手。仅基于给出的参考文档作答，用 [n] 标注引用出处；文"
+"档未覆盖的内容请回答不知道。"
+
+#: system/utils/ai.py:381 system/utils/nl_query.py:167
+msgid "Question: {}"
+msgstr "问题：{}"
+
+#: system/utils/ai_actions.py:82 system/utils/ai_actions.py:84
+#: system/utils/nl_query.py:57 system/utils/nl_query.py:59
+msgid "The model returned malformed JSON"
+msgstr "模型返回了不合法的 JSON"
+
+#: system/utils/ai_actions.py:136
+msgid "Unknown leave type: {}"
+msgstr "未知的请假类型：{}"
+
+#: system/utils/ai_actions.py:140
+msgid "Start date and end date must be in YYYY-MM-DD format"
+msgstr "开始与结束日期必须是 YYYY-MM-DD 格式"
+
+#: system/utils/ai_actions.py:143
+msgid "Reason is required"
+msgstr "请填写事由"
+
+#: system/utils/ai_actions.py:149
+msgid "Days must be a number"
+msgstr "天数必须是数字"
+
+#: system/utils/ai_actions.py:186 system/views/admin/leave.py:87
+msgid "Saved as draft: {}"
+msgstr "已保存为草稿：{}"
+
+#: system/utils/ai_actions.py:187 system/views/admin/leave.py:88
+#: system/views/admin/leave.py:108
+msgid "The leave request has been submitted for approval"
+msgstr "请假申请已提交审批"
+
+#: system/utils/ai_actions.py:201
+msgid "A form must be selected"
+msgstr "请先选择表单"
+
+#: system/utils/ai_actions.py:205 system/utils/ai_actions.py:207
+msgid "The requested form does not exist"
+msgstr "目标表单不存在"
+
+#: system/utils/ai_actions.py:209
+msgid "The form is disabled and cannot accept submissions"
+msgstr "表单已停用，无法提交"
+
+#: system/utils/ai_actions.py:224
+msgid "Submission data must be an object"
+msgstr "提交数据必须是对象"
+
+#: system/utils/ai_actions.py:254
+msgid "The form has been submitted"
+msgstr "表单已提交"
+
+#: system/utils/ai_actions.py:301
+msgid "Submit a leave request"
+msgstr "发起请假申请"
+
+#: system/utils/ai_actions.py:302
+msgid ""
+"Create a leave request for the current user and submit it into the leave "
+"approval flow"
+msgstr "以当前用户创建请假申请并提交到请假审批流程"
+
+#: system/utils/ai_actions.py:323
+msgid "Submit a dynamic form"
+msgstr "提交动态表单"
+
+#: system/utils/ai_actions.py:324
+msgid ""
+"Submit one record to an active dynamic form; field values must match the "
+"form fields"
+msgstr "向启用中的动态表单提交一条记录；字段取值必须与表单字段匹配"
+
+#: system/utils/ai_actions.py:379
+msgid ""
+"You convert the user's request into exactly ONE action draft for this "
+"system. Pick the action only from the provided catalog and use only the "
+"described parameters. Output ONLY a JSON object: {\"action\": \"<action "
+"key>\", \"params\": {...}, \"summary\": \"<one line>\"}. Never invent values "
+"the user did not provide; resolve relative dates with the current date "
+"{today}. If the request is not executable, is missing required parameters, "
+"or matches several forms, output {\"action\": null, \"message\": \"<a short "
+"clarifying question>\"}."
+msgstr "You convert the user's request into exactly ONE action draft for this \"\"system. Pick the action only from the provided catalog and use only the \"\"described parameters. Output ONLY a JSON object: {\\\"action\\\": \\\"<action \"\"key>\\\", \\\"params\\\": {...}, \\\"summary\\\": \\\"<one line>\\\"}. Never invent values \"\"the user did not provide; resolve relative dates with the current date \"\"{today}. If the request is not executable, is missing required parameters, \"\"or matches several forms, output {\\\"action\\\": null, \\\"message\\\": \\\"<a short \"\"clarifying question>\\\"}."
+
+#: system/utils/ai_actions.py:406
+msgid "The model did not return an actionable request"
+msgstr "模型没有返回可执行的请求"
+
+#: system/utils/ai_actions.py:411
+msgid "The model requested an unknown action: {}"
+msgstr "模型请求了未登记的动作：{}"
+
+#: system/utils/ai_actions.py:413 system/views/ai.py:284
+msgid "The action is not available: {}"
+msgstr "动作当前不可用：{}"
+
+#: system/utils/ai_actions.py:415 system/views/ai.py:288
+msgid "You do not have permission to perform the action: {}"
+msgstr "你没有执行该动作的权限：{}"
+
+#: system/utils/ai_actions.py:462 system/views/ai.py:281 system/views/ai.py:282
+msgid "Unknown action"
+msgstr "未知动作"
+
+#: system/utils/api_grant.py:43
+msgid "List"
+msgstr "列表"
+
+#: system/utils/api_grant.py:44
+msgid "Retrieve"
+msgstr "详情"
+
+#: system/utils/api_grant.py:48
+#| msgid "Deleted at"
+msgid "Delete"
+msgstr "删除"
+
+#: system/utils/api_grant.py:49
+#| msgid "Batch delete data message"
+msgid "Batch delete"
+msgstr "批量删除"
+
+#: system/utils/api_grant.py:50
+#| msgid "Export file"
+msgid "Export"
+msgstr "导出"
+
+#: system/utils/api_grant.py:51
+#| msgid "Async export data"
+msgid "Async export"
+msgstr "异步导出"
+
+#: system/utils/api_grant.py:52
+#| msgid "Report"
+msgid "Import"
+msgstr "导入"
+
+#: system/utils/api_grant.py:53
+#| msgid "Import template"
+msgid "Import validate"
+msgstr "导入校验"
+
+#: system/utils/api_grant.py:54
+#| msgid "Import params"
+msgid "Import headers"
+msgstr "导入表头"
+
+#: system/utils/api_grant.py:55
+#| msgid "Async import data"
+msgid "Async import"
+msgstr "异步导入"
+
+#: system/utils/api_grant.py:250
+#| msgid "PAT scope does not allow this path"
+msgid "API application grant does not allow this operation"
+msgstr "应用资源授权不允许该操作"
+
+#: system/utils/api_grant.py:340
+#, python-format
+msgid "Unknown model: %(model)s"
+msgstr "未知模型：%(model)s"
+
+#: system/utils/api_grant.py:343 system/utils/api_grant.py:346
+#| msgid "Question cannot be empty"
+msgid "Actions cannot be empty"
+msgstr "动作不能为空"
+
+#: system/utils/api_grant.py:351
+msgid "Wildcard model does not support fields or row filter"
+msgstr "通配模型不支持字段与行级规则"
+
+#: system/utils/api_grant.py:358
+#, python-format
+msgid "Unknown actions for %(model)s: %(actions)s"
+msgstr "模型 %(model)s 存在未知动作：%(actions)s"
+
+#: system/utils/api_grant.py:365
+#, python-format
+msgid "Unknown fields for %(model)s: %(fields)s"
+msgstr "模型 %(model)s 存在未知字段：%(fields)s"
+
+#: system/utils/api_grant.py:372
+#| msgid "Scopes must be a list of path strings"
+msgid "Row filter must be a list of rule objects"
+msgstr "行级规则必须是规则对象列表"
+
+#: system/utils/api_grant.py:435
+#| msgid "All fields"
+msgid "All models"
+msgstr "全部模型"
+
+#: system/utils/api_grant.py:436
+#| msgid "AI actions"
+msgid "All actions"
+msgstr "全部动作"
+
+#: system/utils/approval.py:146
 msgid "Sensitive operation"
 msgstr "敏感操作"
 
-#: system/utils/approval.py:183
-#, python-brace-format
+#: system/utils/approval.py:217
 msgid ""
 "Operation submitted for approval (No. {}), please retry after it is approved"
 msgstr "操作已提交审批（单号：{}），审批通过后请重试"
 
-#: system/utils/approval.py:201
+#: system/utils/approval.py:239
 msgid ""
 "No available approver, please contact the administrator to configure "
 "approvers"
 msgstr "暂无可用审批人，请联系管理员配置审批人"
 
-#: system/utils/approval.py:228 system/utils/approval.py:231
+#: system/utils/approval.py:267 system/utils/approval.py:270
 msgid "Invalid approval token"
 msgstr "无效的审批令牌"
 
-#: system/utils/approval.py:233
+#: system/utils/approval.py:272
 msgid "The approval token does not belong to the current user"
 msgstr "审批令牌不属于当前用户"
 
-#: system/utils/approval.py:243
+#: system/utils/approval.py:282
 msgid "Resent request does not match the approved snapshot"
 msgstr "重发请求与审批快照不一致"
 
-#: system/utils/approval.py:245
+#: system/utils/approval.py:284
 msgid "The resent request does not match the approved content"
 msgstr "重发请求与审批内容不一致"
 
-#: system/utils/approval.py:252
-#, python-brace-format
+#: system/utils/approval.py:291
 msgid "The approval has been {}"
 msgstr "审批单已{}"
 
-#: system/utils/approval.py:254
-#, python-brace-format
+#: system/utils/approval.py:293
 msgid "The approval was rejected: {}"
 msgstr "审批单被驳回：{}"
 
-#: system/utils/approval.py:258 system/utils/approval.py:274
+#: system/utils/approval.py:297 system/utils/approval.py:313
 msgid "The approval token has already been used"
 msgstr "审批令牌已被使用"
 
-#: system/utils/approval.py:262
+#: system/utils/approval.py:301
 msgid "The approval token has expired"
 msgstr "审批令牌已过期"
 
-#: system/utils/approval.py:306
+#: system/utils/approval.py:350 system/utils/approval.py:364
 msgid "Only pending requests can be approved"
 msgstr "仅待审批单可以审批通过"
 
-#: system/utils/approval.py:308 system/utils/approval.py:328
+#: system/utils/approval.py:352 system/utils/approval.py:384
 msgid "The applicant cannot approve their own request"
 msgstr "申请人不能审批自己的申请"
 
-#: system/utils/approval.py:326
+#: system/utils/approval.py:382 system/utils/approval.py:395
 msgid "Only pending requests can be rejected"
 msgstr "仅待审批单可以驳回"
 
-#: system/utils/approval.py:344
+#: system/utils/approval.py:413 system/utils/leave.py:161
 msgid "Only the applicant can cancel the request"
 msgstr "仅申请人可以撤回审批单"
 
-#: system/utils/approval.py:346
+#: system/utils/approval.py:415 system/utils/approval.py:421
+#: system/utils/leave.py:159
 msgid "Only pending requests can be cancelled"
 msgstr "仅待审批单可以撤回"
 
-#: system/utils/approval_flow.py:179
-#| msgid "Rule %(index)d must be an object"
+#: system/utils/approval_flow.py:229
 msgid "Form data must be an object"
 msgstr "表单数据必须是对象"
 
-#: system/utils/approval_flow.py:187
-#, python-brace-format
-#| msgid "This field is required."
+#: system/utils/approval_flow.py:237 system/utils/dform.py:88
 msgid "Field {} is required"
 msgstr "字段 {} 为必填项"
 
-#: system/utils/approval_flow.py:241
-#| msgid ""
-#| "No available approver, please contact the administrator to configure "
-#| "approvers"
+#: system/utils/approval_flow.py:291
 msgid "No available approver, node auto-approved"
 msgstr "暂无可用审批人，节点自动通过"
 
-#: system/utils/approval_flow.py:273
+#: system/utils/approval_flow.py:327
+#| msgid "The node has been removed, please contact the administrator"
+msgid "The flow routes contain a loop, please contact the administrator"
+msgstr "流程路由存在环路，请联系管理员"
+
+#: system/utils/approval_flow.py:329
 msgid "The flow has no available node"
 msgstr "该流程没有可用节点"
 
-#: system/utils/approval_flow.py:276
-#, python-brace-format
+#: system/utils/approval_flow.py:332
 msgid "No available approver for node {}"
 msgstr "节点 {} 没有可用审批人"
 
-#: system/utils/approval_flow.py:346 system/utils/approval_flow.py:400
-#| msgid "Phone does not exist"
+#: system/utils/approval_flow.py:455 system/utils/approval_flow.py:528
 msgid "The task does not exist"
 msgstr "审批任务不存在"
 
-#: system/utils/approval_flow.py:348 system/utils/approval_flow.py:371
-#: system/utils/approval_flow.py:402 system/utils/approval_flow.py:418
-#| msgid "The user's MFA has been reset"
+#: system/utils/approval_flow.py:457 system/utils/approval_flow.py:480
+#: system/utils/approval_flow.py:530 system/utils/approval_flow.py:546
 msgid "The task has been processed"
 msgstr "该审批任务已处理"
 
-#: system/utils/approval_flow.py:351 system/utils/approval_flow.py:405
-#| msgid "The verification code has been sent"
+#: system/utils/approval_flow.py:460 system/utils/approval_flow.py:533
 msgid "The application has been finished"
 msgstr "该审批申请已结束"
 
-#: system/utils/approval_flow.py:353 system/utils/approval_flow.py:407
+#: system/utils/approval_flow.py:462 system/utils/approval_flow.py:535
 msgid "This task is not assigned to you"
 msgstr "该任务未分配给你"
 
-#: system/utils/approval_flow.py:355 system/utils/approval_flow.py:409
-#| msgid "The applicant cannot approve their own request"
+#: system/utils/approval_flow.py:464 system/utils/approval_flow.py:537
 msgid "The applicant cannot approve their own application"
 msgstr "申请人不能审批自己的申请"
 
-#: system/utils/approval_flow.py:357
-#| msgid "The approval token does not belong to the current user"
+#: system/utils/approval_flow.py:466
 msgid "The task is not in the current node"
 msgstr "该任务不在当前节点"
 
-#: system/utils/approval_flow.py:360 system/utils/approval_flow.py:411
-#| msgid "If you have any questions, you can contact the administrator"
+#: system/utils/approval_flow.py:469 system/utils/approval_flow.py:539
 msgid "The node has been removed, please contact the administrator"
 msgstr "该节点已被移除，请联系管理员"
 
-#: system/utils/approval_flow.py:396 system/views/admin/approval.py:157
-#: system/views/admin/approval.py:212 system/views/admin/approval_flow.py:220
-#: system/views/admin/approval_flow.py:317
+#: system/utils/approval_flow.py:505
+#| msgid "Approval application rejected"
+msgid "Approval ratio cannot be reached, the application is rejected"
+msgstr "通过比例无法达成，申请已驳回"
+
+#: system/utils/approval_flow.py:524 system/views/admin/approval.py:157
+#: system/views/admin/approval.py:212 system/views/admin/approval_flow.py:261
+#: system/views/admin/approval_flow.py:358
 msgid "Rejection reason is required"
 msgstr "驳回原因必填"
 
-#: system/utils/approval_flow.py:432
-#| msgid "Only the applicant can cancel the request"
+#: system/utils/approval_flow.py:560
 msgid "Only the applicant can cancel the application"
 msgstr "仅申请人可以撤回申请"
 
-#: system/utils/approval_flow.py:434
-#| msgid "Only pending requests can be cancelled"
+#: system/utils/approval_flow.py:562
 msgid "Only pending applications can be cancelled"
 msgstr "仅待审批的申请可以撤回"
 
-#: system/utils/approval_flow.py:457
-#| msgid "Only pending requests can be cancelled"
+#: system/utils/approval_flow.py:585
 msgid "Only pending applications can be counter-signed"
 msgstr "仅待审批的申请可以加签"
 
-#: system/utils/approval_flow.py:459
+#: system/utils/approval_flow.py:587
 msgid "The application has no active node"
 msgstr "该申请没有进行中的节点"
 
-#: system/utils/approval_flow.py:466
+#: system/utils/approval_flow.py:594
 msgid "Only the current node approvers can counter-sign"
 msgstr "仅当前节点的审批人可以加签"
 
-#: system/utils/approval_flow.py:470
-#| msgid "Please select the file to upload"
+#: system/utils/approval_flow.py:598
 msgid "Please select the approver to add"
 msgstr "请选择要加签的审批人"
 
-#: system/utils/approval_flow.py:473
+#: system/utils/approval_flow.py:601
 msgid "No available approver for counter-sign"
 msgstr "没有可加签的审批人"
 
-#: system/utils/approval_flow.py:491
-#| msgid "The approval token has already been used"
+#: system/utils/approval_flow.py:619
 msgid "The selected approver is already in the node"
 msgstr "所选审批人已在当前节点中"
 
@@ -3840,15 +5348,13 @@ msgid "Temporary Token validation failed. Please try again"
 msgstr "临时Token校验失败，请稍后重试"
 
 #: system/utils/auth.py:77
-#, python-brace-format
 msgid ""
 "The address has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
 msgstr "IP 已被锁定 (请联系管理员解锁或 {} 分钟后重试)"
 
 #: system/utils/auth.py:84 system/utils/auth.py:144
-#: system/views/auth/login.py:93
-#, python-brace-format
+#: system/views/auth/login.py:110
 msgid ""
 "The account has been locked (please contact admin to unlock it or try again "
 "after {} minutes)"
@@ -3864,66 +5370,254 @@ msgstr ""
 "{error} 请重新输入。 您还可以尝试 {times_try} 次 (账号将被临时 锁定 "
 "{block_time} 分钟)"
 
+#: system/utils/dataset.py:55 system/utils/dataset.py:59
+msgid "Model {} is not available for datasets"
+msgstr "模型 {} 不可用于数据集"
+
+#: system/utils/dataset.py:66 system/utils/dataset.py:82
+#: system/utils/dataset.py:104 system/utils/dataset.py:159
+#: system/utils/dataset.py:166 system/utils/nl_query.py:70
+#: system/utils/nl_query.py:113 system/utils/nl_query.py:126
+msgid "Field {}.{} is not available for datasets"
+msgstr "字段 {}.{} 不可用于数据集"
+
+#: system/utils/dataset.py:68 system/utils/nl_query.py:134
+msgid "Dataset columns cannot be empty"
+msgstr "数据集列不能为空"
+
+#: system/utils/dataset.py:76 system/utils/dataset.py:80
+#: system/utils/nl_query.py:94 system/utils/nl_query.py:97
+msgid "Invalid dataset filters"
+msgstr "数据集过滤条件不合法"
+
+#: system/utils/dataset.py:84 system/utils/nl_query.py:72
+msgid "Filter op {} is not allowed"
+msgstr "过滤操作 {} 不在允许范围"
+
+#: system/utils/dataset.py:86 system/utils/nl_query.py:74
+msgid "Filter op in requires a list value"
+msgstr "过滤操作 in 要求列表值"
+
+#: system/utils/dataset.py:88 system/utils/nl_query.py:76
+msgid "Filter op isnull requires a boolean value"
+msgstr "过滤操作 isnull 要求布尔值"
+
+#: system/utils/dataset.py:99
+msgid "Ordering field must be in columns"
+msgstr "排序字段必须在数据列内"
+
+#: system/utils/dataset.py:101
+msgid "Row limit must be between 1 and {}"
+msgstr "行数上限必须在 1 到 {} 之间"
+
+#: system/utils/dataset.py:116
+msgid "Field {} is not available for datasets"
+msgstr "字段 {} 不可用于数据集"
+
+#: system/utils/dataset.py:118
+msgid "Field {} is not numeric, cannot aggregate"
+msgstr "字段 {} 不是数值字段，无法聚合"
+
+#: system/utils/dataset.py:155 system/utils/nl_query.py:111
+msgid "Metric {} is not allowed"
+msgstr "聚合方式 {} 不在允许范围"
+
+#: system/utils/dataset.py:173
+msgid "Date trunc {} is not allowed"
+msgstr "时间粒度 {} 不在允许范围"
+
+#: system/utils/dataset.py:176
+msgid "Field {} is not a datetime, cannot trend"
+msgstr "字段 {} 不是时间字段，无法做趋势聚合"
+
+#: system/utils/dform.py:26 system/utils/dform.py:36 system/utils/dform.py:70
+msgid "Invalid form schema"
+msgstr "表单定义不合法"
+
+#: system/utils/dform.py:29
+msgid "Form schema must contain fields"
+msgstr "表单定义必须包含字段"
+
+#: system/utils/dform.py:31
+msgid "Form fields exceed the limit of {}"
+msgstr "表单字段数超过上限 {}"
+
+#: system/utils/dform.py:39
+msgid "Field key {} is invalid (lowercase letters/digits/underscore)"
+msgstr "字段标识 {} 不合法（仅小写字母/数字/下划线）"
+
+#: system/utils/dform.py:41
+msgid "Duplicate field key: {}"
+msgstr "字段标识重复: {}"
+
+#: system/utils/dform.py:44
+msgid "Field {} requires a label"
+msgstr "字段 {} 缺少标签"
+
+#: system/utils/dform.py:47
+msgid "Unknown widget type: {}"
+msgstr "未知控件类型: {}"
+
+#: system/utils/dform.py:51
+msgid "Field {} requires options"
+msgstr "字段 {} 必须提供选项"
+
+#: system/utils/dform.py:53
+msgid "Field {} has too many options"
+msgstr "字段 {} 选项过多"
+
+#: system/utils/dform.py:55
+msgid "Field {} of type {} does not accept options"
+msgstr "字段 {}（类型 {}）不接受选项"
+
+#: system/utils/dform.py:58
+msgid "Field {} max_length must be 1-{}"
+msgstr "字段 {} 的最大长度须在 1 到 {} 之间"
+
+#: system/utils/dform.py:62
+msgid "Field {} {} must be numeric"
+msgstr "字段 {} 的 {} 必须为数值"
+
+#: system/utils/dform.py:72
+msgid "Invalid submission data"
+msgstr "提交数据不合法"
+
+#: system/utils/dform.py:77
+msgid "Unknown submission keys: {}"
+msgstr "提交数据包含未知字段: {}"
+
+#: system/utils/dform.py:93
+msgid "Field {} must be numeric"
+msgstr "字段 {} 必须为数值"
+
+#: system/utils/dform.py:95
+msgid "Field {} is below the minimum"
+msgstr "字段 {} 低于最小值"
+
+#: system/utils/dform.py:97
+msgid "Field {} is above the maximum"
+msgstr "字段 {} 超过最大值"
+
+#: system/utils/dform.py:100
+msgid "Field {} must be a list"
+msgstr "字段 {} 必须为列表"
+
+#: system/utils/dform.py:103
+msgid "Field {} has invalid options: {}"
+msgstr "字段 {} 含无效选项: {}"
+
+#: system/utils/dform.py:106
+msgid "Field {} must be boolean"
+msgstr "字段 {} 必须为布尔值"
+
+#: system/utils/dform.py:109
+msgid "Field {} has an invalid option: {}"
+msgstr "字段 {} 含无效选项: {}"
+
+#: system/utils/dform.py:112
+msgid "Field {} must be text"
+msgstr "字段 {} 必须为文本"
+
+#: system/utils/dform.py:115
+msgid "Field {} exceeds the max length {}"
+msgstr "字段 {} 超过最大长度 {}"
+
 #: system/utils/import_report.py:37
 msgid "Validation failed"
 msgstr "校验失败"
 
-#: system/utils/modelfield.py:72
+#: system/utils/leave.py:54
+msgid "Start date and end date are required"
+msgstr "开始日期与结束日期必填"
+
+#: system/utils/leave.py:56
+msgid "End date cannot be earlier than start date"
+msgstr "结束日期不能早于开始日期"
+
+#: system/utils/leave.py:60
+msgid "Days must be greater than 0"
+msgstr "请假天数必须大于 0"
+
+#: system/utils/leave.py:62
+msgid "Days cannot exceed the date range (max {} days)"
+msgstr "请假天数不能超过起止区间（最多 {} 天）"
+
+#: system/utils/leave.py:78
+msgid "A leave request for {} already overlaps with this period"
+msgstr "与已有请假申请（{}）的假期区间重叠"
+
+#: system/utils/leave.py:111
+msgid "Only the applicant can submit this request"
+msgstr "只有申请人本人可以提交该申请"
+
+#: system/utils/leave.py:113
+msgid "The request is already in approval"
+msgstr "该申请正在审批中"
+
+#: system/utils/leave.py:115
+msgid "The request has been approved"
+msgstr "该申请已通过审批"
+
+#: system/utils/leave.py:129
+msgid "No leave approval flow is configured, please contact the administrator"
+msgstr "未配置请假审批流程，请联系管理员"
+
+#: system/utils/modelfield.py:91
 msgid "All tables"
 msgstr "全部表"
 
-#: system/utils/modelfield.py:75
+#: system/utils/modelfield.py:95
 msgid "All fields"
 msgstr "全部字段"
 
-#: system/utils/modelfield.py:129
+#: system/utils/modelfield.py:151
 msgid ""
 "Exact match, the field value must be exactly the same as the given value."
 msgstr "精确匹配，字段值必须与给定的值完全相同"
 
-#: system/utils/modelfield.py:130
+#: system/utils/modelfield.py:152
 msgid "Case-insensitive exact match."
 msgstr "不区分大小写的精确匹配"
 
-#: system/utils/modelfield.py:131
+#: system/utils/modelfield.py:153
 msgid "The field value must contain the given substring (case-sensitive)."
 msgstr "字段值必须包含给定的子字符串（大小写敏感）"
 
-#: system/utils/modelfield.py:133
+#: system/utils/modelfield.py:155
 msgid ""
 "Case-insensitive containment, the field value must contain the given "
 "substring (case-insensitive)."
 msgstr "不区分大小写的包含，字段值必须包含给定的子字符串（不区分大小写）"
 
-#: system/utils/modelfield.py:135
+#: system/utils/modelfield.py:157
 msgid "The field value must be within the given list, tuple, or queryset."
 msgstr "字段值必须在给定的列表、元组或查询集内"
 
-#: system/utils/modelfield.py:136
+#: system/utils/modelfield.py:158
 msgid "Greater than, the field value must be greater than the given value."
 msgstr "大于（greater than），字段值必须大于给定值"
 
-#: system/utils/modelfield.py:137
+#: system/utils/modelfield.py:159
 msgid ""
 "Greater than or equal to, the field value must be greater than or equal to "
 "the given value."
 msgstr "大于或等于（greater than or equal），字段值必须大于或等于给定值"
 
-#: system/utils/modelfield.py:138
+#: system/utils/modelfield.py:160
 msgid "Less than, the field value must be less than the given value."
 msgstr "小于（less than），字段值必须小于给定值"
 
-#: system/utils/modelfield.py:139
+#: system/utils/modelfield.py:161
 msgid ""
 "Less than or equal to, the field value must be less than or equal to the "
 "given value."
 msgstr "小于或等于（less than or equal），字段值必须小于或等于给定值"
 
-#: system/utils/modelfield.py:140
+#: system/utils/modelfield.py:162
 msgid "The field value must start with the given string (case-sensitive)."
 msgstr "字段值必须以给定的字符串开头（大小写敏感）"
 
-#: system/utils/modelfield.py:142
+#: system/utils/modelfield.py:164
 msgid ""
 "Case-insensitive start with, the field value must start with the given "
 "string (case-insensitive)."
@@ -3931,11 +5625,11 @@ msgstr ""
 "不区分大小写的 starts-with：字段值须以给定字符串开头（忽略大小写）不区分大小"
 "写的以某个字符串开头，字段值必须以给定的字符串开头（不区分大小写）"
 
-#: system/utils/modelfield.py:144
+#: system/utils/modelfield.py:166
 msgid "The field value must end with the given string (case-sensitive)."
 msgstr "字段值必须以给定的字符串结尾（大小写敏感）"
 
-#: system/utils/modelfield.py:145
+#: system/utils/modelfield.py:167
 msgid ""
 "Case-insensitive end with, the field value must end with the given string "
 "(case-insensitive)."
@@ -3943,163 +5637,341 @@ msgstr ""
 "不区分大小写的 ends-with：字段值须以给定字符串结尾（忽略大小写）不区分大小写"
 "的以某个字符串结尾，字段值必须以给定的字符串结尾（不区分大小写）"
 
-#: system/utils/modelfield.py:146
+#: system/utils/modelfield.py:168
 msgid ""
 "Within a range, the field value must be between the two given values "
 "(inclusive)."
 msgstr "在一个范围内，字段值必须在给定的两个值之间（包括两个端点）"
 
-#: system/utils/modelfield.py:147
+#: system/utils/modelfield.py:169
 msgid "Filters only the date part (ignores the time part)."
 msgstr "仅按日期部分过滤（忽略时间部分）"
 
-#: system/utils/modelfield.py:148
+#: system/utils/modelfield.py:170
 msgid "Filters by year."
 msgstr "按年份过滤"
 
-#: system/utils/modelfield.py:149
+#: system/utils/modelfield.py:171
 msgid "Filters by ISO year (may not be the same as the Gregorian year)."
 msgstr "ISO 年份（不一定与公历年份相同）"
 
-#: system/utils/modelfield.py:150
+#: system/utils/modelfield.py:172
 msgid "Filters by month."
 msgstr "按月份过滤"
 
-#: system/utils/modelfield.py:151
+#: system/utils/modelfield.py:173
 msgid "Filters by day of the month."
 msgstr "按日期（天）过滤"
 
-#: system/utils/modelfield.py:152
+#: system/utils/modelfield.py:174
 msgid "Filters by week number of the year."
 msgstr "按年份和周数过滤"
 
-#: system/utils/modelfield.py:153
+#: system/utils/modelfield.py:175
 msgid "Filters by a specific day of the week (1 = Monday, 7 = Sunday)."
 msgstr "按一周中的某一天过滤（1 = Monday, 7 = Sunday）"
 
-#: system/utils/modelfield.py:154
+#: system/utils/modelfield.py:176
 msgid "Filters by a specific day of the ISO week (1 = Monday, 7 = Sunday)."
 msgstr "ISO 周中的某一天（1 = Monday, 7 = Sunday）"
 
-#: system/utils/modelfield.py:155
+#: system/utils/modelfield.py:177
 msgid "Filters by quarter (1, 2, 3, 4)."
 msgstr "按季度过滤（1, 2, 3, 4）"
 
-#: system/utils/modelfield.py:156
+#: system/utils/modelfield.py:178
 msgid "Filters only the time part (ignores the date part)."
 msgstr "仅按时间部分过滤（忽略日期部分）"
 
-#: system/utils/modelfield.py:157
+#: system/utils/modelfield.py:179
 msgid "Filters by hour."
 msgstr "按小时过滤"
 
-#: system/utils/modelfield.py:158
+#: system/utils/modelfield.py:180
 msgid "Filters by minute."
 msgstr "按分钟过滤"
 
-#: system/utils/modelfield.py:159
+#: system/utils/modelfield.py:181
 msgid "Filters by second."
 msgstr "按秒过滤"
 
-#: system/utils/modelfield.py:160
+#: system/utils/modelfield.py:182
 msgid "Checks if the field value is NULL, can be set to True or False."
 msgstr "检查字段值是否为 NULL，可以用 True 或 False"
 
-#: system/utils/modelfield.py:161
+#: system/utils/modelfield.py:183
 msgid ""
 "The field value must match the given regular expression (case-sensitive)."
 msgstr "字段值必须匹配给定的正则表达式（大小写敏感）"
 
-#: system/utils/modelfield.py:162
+#: system/utils/modelfield.py:184
 msgid ""
 "The field value must match the given regular expression (case-insensitive)."
 msgstr "字段值必须匹配给定的正则表达式（不区分大小写）"
 
-#: system/utils/modelfield.py:164
+#: system/utils/modelfield.py:186
 msgid ""
 "The field value must be a subset of the given value, typically used with "
 "array or JSON fields."
 msgstr "字段值必须是给定值的子集，通常用于数组或 JSON 字段"
 
-#: system/utils/modelfield.py:167
+#: system/utils/modelfield.py:189
 msgid ""
 "The field value must contain at least one of the given keys, typically used "
 "with JSON fields."
 msgstr "字段值必须包含至少一个给定的键，通常用于 JSON 字段"
 
-#: system/utils/modelfield.py:169
+#: system/utils/modelfield.py:191
 msgid ""
 "The field value must contain all the given keys, typically used with JSON "
 "fields."
 msgstr "字段值必须包含所有给定的键，通常用于 JSON 字段"
 
-#: system/utils/modelfield.py:170
+#: system/utils/modelfield.py:192
 msgid ""
 "The field value must contain the given single key, typically used with JSON "
 "fields."
 msgstr "字段值必须包含给定的单个键，通常用于 JSON 字段"
 
-#: system/utils/modelfield.py:172
+#: system/utils/modelfield.py:194
 msgid "Many-to-many: the field contains any of the given values."
 msgstr "多对多包含任一：关联对象中含任意一个给定值即可"
 
-#: system/utils/modelfield.py:173
+#: system/utils/modelfield.py:195
 msgid "Many-to-many: the field contains all of the given values."
 msgstr "多对多包含全部：关联对象需含全部给定值"
 
-#: system/utils/modelfield.py:174
+#: system/utils/modelfield.py:196
 msgid "IP address is inside the given network / range, * means no restriction."
 msgstr "IP 属于给定网段/范围，填 * 表示不限"
 
-#: system/utils/oauth.py:101 system/utils/oauth.py:107
+#: system/utils/nl_query.py:62
+msgid "The model returned unknown DSL keys: {}"
+msgstr "模型返回了未知字段: {}"
+
+#: system/utils/nl_query.py:82
+msgid "Invalid NL query DSL"
+msgstr "NL 查询 DSL 不合法"
+
+#: system/utils/nl_query.py:85
+#| msgid "Unknown dataset in layout"
+msgid "Unknown dataset in NL query"
+msgstr "自然语言查数引用了未知数据集"
+
+#: system/utils/nl_query.py:157
+msgid ""
+"You translate the user's question into a constrained dataset query DSL. You "
+"MUST pick the dataset only from the provided catalog and fields only from "
+"the dataset columns. Output ONLY a JSON object matching the schema, no "
+"prose. Use mode=aggregate with group_by/metric for statistical questions, "
+"mode=rows for record lists. Unknown values must be answered with an empty "
+"filters list."
+msgstr ""
+"你将用户的问题转换为受限的数据集查询 DSL。只能从给出的数据集清单中选择数据"
+"集，字段只能来自该数据集的列。仅输出符合 schema 的 JSON 对象，不要输出任何解"
+"释。统计类问题用 mode=aggregate 配合 group_by/metric，明细列表用 mode=rows。"
+"无法确定的过滤条件以空 filters 列表回答。"
+
+#: system/utils/nl_query.py:166
+msgid "DSL schema: {}"
+msgstr "DSL schema：{}"
+
+#: system/utils/oauth.py:116 system/utils/oauth.py:122
 msgid "Invalid OAuth providers configuration"
 msgstr "OAuth 提供商配置无效"
 
-#: system/utils/oauth.py:110
-#, python-brace-format
+#: system/utils/oauth.py:125
+msgid "Unknown OAuth provider flavor: {}"
+msgstr "未知的第三方登录类型: {}"
+
+#: system/utils/oauth.py:128
 msgid "OAuth provider is missing required fields: {}"
 msgstr "OAuth 提供商缺少必填字段：{}"
 
-#: system/utils/oauth.py:113
-#, python-brace-format
+#: system/utils/oauth.py:131
 msgid "Duplicate OAuth provider key: {}"
 msgstr "OAuth 提供商 key 重复：{}"
 
-#: system/utils/oauth.py:119
-#, python-brace-format
+#: system/utils/oauth.py:137
 msgid "OAuth provider url must use https: {}"
 msgstr "OAuth 提供商 URL 必须使用 https：{}"
 
-#: system/utils/oauth.py:121
+#: system/utils/oauth.py:139
 msgid "Enabled OAuth provider requires client_secret"
 msgstr "启用的 OAuth 提供商必须配置 client_secret"
 
-#: system/utils/oauth.py:199 system/utils/oauth.py:218
+#: system/utils/oauth.py:256 system/utils/oauth.py:284
+#: system/utils/oauth_flavors.py:73
 msgid "Failed to contact the identity provider"
 msgstr "无法连接身份提供商"
 
-#: system/utils/oauth.py:203
-#| msgid "The applicant cannot approve their own request"
+#: system/utils/oauth.py:260 system/utils/oauth_flavors.py:74
 msgid "The identity provider rejected the login request"
 msgstr "身份提供商拒绝了本次登录请求"
 
-#: system/utils/oauth.py:221
+#: system/utils/oauth.py:287 system/utils/oauth_flavors.py:75
 msgid "The identity provider returned incomplete user information"
 msgstr "身份提供商返回的用户信息不完整"
 
+#: system/utils/webhook.py:33
+msgid "Login succeeded"
+msgstr "登录成功"
+
+#: system/utils/webhook.py:37 system/utils/webhook.py:45
+#: system/utils/webhook.py:100
+#| msgid "New IP address"
+msgid "Client IP address"
+msgstr "客户端 IP 地址"
+
+#: system/utils/webhook.py:41
+msgid "Login failed"
+msgstr "登录失败"
+
+#: system/utils/webhook.py:49
+msgid "Approval submitted"
+msgstr "审批已提交"
+
+#: system/utils/webhook.py:52 system/utils/webhook.py:63
+#: system/utils/webhook.py:74 system/utils/webhook.py:85
+#| msgid "Approval No."
+msgid "Approval id"
+msgstr "审批单号"
+
+#: system/utils/webhook.py:53 system/utils/webhook.py:64
+#: system/utils/webhook.py:75 system/utils/webhook.py:86
+#: system/utils/webhook.py:97
+#| msgid "Business id"
+msgid "Business module"
+msgstr "业务模块"
+
+#: system/utils/webhook.py:54 system/utils/webhook.py:65
+#: system/utils/webhook.py:76 system/utils/webhook.py:87
+#| msgid "Filepath"
+msgid "Detail path"
+msgstr "详情路径"
+
+#: system/utils/webhook.py:55 system/utils/webhook.py:66
+#: system/utils/webhook.py:77 system/utils/webhook.py:88
+#| msgid "Approval instance"
+msgid "Approval status"
+msgstr "审批状态"
+
+#: system/utils/webhook.py:56 system/utils/webhook.py:67
+#: system/utils/webhook.py:78 system/utils/webhook.py:89
+#: system/utils/webhook.py:122 system/utils/webhook.py:135
+#: system/utils/webhook.py:148 system/utils/webhook.py:161
+#| msgid "Creator"
+msgid "Creator username"
+msgstr "创建人用户名"
+
+#: system/utils/webhook.py:60
+msgid "Approval approved"
+msgstr "审批已通过"
+
+#: system/utils/webhook.py:71
+msgid "Approval rejected"
+msgstr "审批已驳回"
+
+#: system/utils/webhook.py:82
+msgid "Approval cancelled"
+msgstr "审批已撤回"
+
+#: system/utils/webhook.py:99
+msgid "HTTP method"
+msgstr "HTTP 方法"
+
+#: system/utils/webhook.py:108
+#| msgid "Backup failure"
+msgid "Backup source"
+msgstr "备份来源"
+
+#: system/utils/webhook.py:109
+#| msgid "Failure"
+msgid "Failure summary"
+msgstr "失败摘要"
+
+#: system/utils/webhook.py:110
+#| msgid "Task name"
+msgid "Host name"
+msgstr "主机名"
+
+#: system/utils/webhook.py:115
+msgid "Flow application submitted"
+msgstr "流程申请已提交"
+
+#: system/utils/webhook.py:118 system/utils/webhook.py:131
+#: system/utils/webhook.py:144 system/utils/webhook.py:157
+#| msgid "Instance"
+msgid "Instance number"
+msgstr "实例编号"
+
+#: system/utils/webhook.py:119 system/utils/webhook.py:132
+#: system/utils/webhook.py:145 system/utils/webhook.py:158
+#| msgid "Instance"
+msgid "Instance title"
+msgstr "实例标题"
+
+#: system/utils/webhook.py:121 system/utils/webhook.py:134
+#: system/utils/webhook.py:147 system/utils/webhook.py:160
+#| msgid "Instance"
+msgid "Instance status"
+msgstr "实例状态"
+
+#: system/utils/webhook.py:124 system/utils/webhook.py:137
+#: system/utils/webhook.py:150 system/utils/webhook.py:163
+#| msgid "Finish Time"
+msgid "Finish reason"
+msgstr "结束原因"
+
+#: system/utils/webhook.py:128
+msgid "Flow application approved"
+msgstr "流程申请已通过"
+
+#: system/utils/webhook.py:141
+msgid "Flow application rejected"
+msgstr "流程申请已驳回"
+
+#: system/utils/webhook.py:154
+msgid "Flow application cancelled"
+msgstr "流程申请已撤回"
+
+#: system/utils/webhook.py:173
+#| msgid "Request body"
+msgid "Used requests today"
+msgstr "今日已用请求数"
+
+#: system/utils/webhook.py:179
+msgid "Webhook ping"
+msgstr "连接测试"
+
+#: system/utils/webhook.py:182
+#| msgid "Subscription"
+msgid "Subscription name"
+msgstr "订阅名称"
+
+#: system/utils/webhook.py:228
+msgid "Webhook url must use https (loopback http is allowed for testing)"
+msgstr "Webhook 地址必须使用 https（联调环境允许 loopback http）"
+
+#: system/utils/webhook.py:233
+msgid "Webhook events cannot be empty"
+msgstr "订阅事件不能为空"
+
+#: system/utils/webhook.py:236
+msgid "Unknown webhook event: {}"
+msgstr "未知的 Webhook 事件: {}"
+
 #: system/views/admin/approval.py:123 system/views/admin/approval.py:160
-#: system/views/admin/approval_flow.py:181
-#: system/views/admin/approval_flow.py:223
+#: system/views/admin/approval_flow.py:222
+#: system/views/admin/approval_flow.py:264 system/views/ai.py:437
 msgid "Please select the data to operate"
 msgstr "请选择要操作的数据"
 
-#: system/views/admin/approval.py:133 system/views/admin/approval_flow.py:199
-#, python-brace-format
+#: system/views/admin/approval.py:133 system/views/admin/approval_flow.py:240
 msgid "Operation successful. Approved {} data"
 msgstr "操作成功，审批通过 {} 条"
 
-#: system/views/admin/approval.py:171 system/views/admin/approval_flow.py:240
-#, python-brace-format
+#: system/views/admin/approval.py:171 system/views/admin/approval_flow.py:281
 msgid "Operation successful. Rejected {} data"
 msgstr "操作成功，已驳回 {} 条数据"
 
@@ -4115,42 +5987,36 @@ msgstr "审批单已驳回"
 msgid "The approval request has been cancelled"
 msgstr "审批单已撤回"
 
-#: system/views/admin/approval_flow.py:71
-#| msgid "Locked dict cannot be deleted"
+#: system/views/admin/approval_flow.py:78
 msgid "A flow with applications cannot be deleted"
 msgstr "该流程下已有申请单，不能删除"
 
-#: system/views/admin/approval_flow.py:146
-#| msgid "Applicant"
+#: system/views/admin/approval_flow.py:187
 msgid "Application submitted"
 msgstr "申请已提交"
 
-#: system/views/admin/approval_flow.py:160
+#: system/views/admin/approval_flow.py:201
 msgid "No pending task available for the current user"
 msgstr "当前用户没有待处理任务"
 
-#: system/views/admin/approval_flow.py:190
 #: system/views/admin/approval_flow.py:231
+#: system/views/admin/approval_flow.py:272
 msgid "No pending task for you"
 msgstr "你没有待处理任务"
 
-#: system/views/admin/approval_flow.py:296
-#| msgid "The approval request has been approved"
+#: system/views/admin/approval_flow.py:337
 msgid "The approval task has been approved"
 msgstr "审批任务已通过"
 
-#: system/views/admin/approval_flow.py:322
-#| msgid "The approval request has been rejected"
+#: system/views/admin/approval_flow.py:363
 msgid "The approval task has been rejected"
 msgstr "审批任务已驳回"
 
-#: system/views/admin/approval_flow.py:332
-#| msgid "The approval request has been cancelled"
+#: system/views/admin/approval_flow.py:373
 msgid "The application has been cancelled"
 msgstr "审批申请已撤回"
 
-#: system/views/admin/approval_flow.py:361
-#| msgid "The approval has been {}"
+#: system/views/admin/approval_flow.py:402
 msgid "The approver has been added"
 msgstr "已添加审批人"
 
@@ -4167,7 +6033,6 @@ msgid "Dict code is required"
 msgstr "字典编码为必填项"
 
 #: system/views/admin/dict.py:111 system/views/task.py:305
-#, python-brace-format
 msgid "Batch update submitted: {} success"
 msgstr "批量更新已提交：{} 成功"
 
@@ -4175,59 +6040,62 @@ msgstr "批量更新已提交：{} 成功"
 msgid "Export file not found"
 msgstr "导出文件不存在"
 
-#: system/views/admin/file.py:83 system/views/admin/file.py:88
+#: system/views/admin/file.py:102 system/views/admin/file.py:107
 msgid "Unnamed file"
 msgstr "未命名文件"
 
-#: system/views/admin/file.py:211 system/views/admin/file.py:219
-#: system/views/admin/file.py:231 system/views/admin/file.py:260
+#: system/views/admin/file.py:324 system/views/admin/file.py:332
+#: system/views/admin/file.py:344 system/views/admin/file.py:373
 msgid "This file type does not support preview"
 msgstr "该文件类型不支持在线预览"
 
-#: system/views/admin/file.py:240 system/views/admin/record_base.py:73
+#: system/views/admin/file.py:353 system/views/admin/record_base.py:73
 msgid "File not found"
 msgstr "文件不存在"
 
-#: system/views/admin/file.py:254
-#| msgid "Your visit is too fast, please visit again later"
+#: system/views/admin/file.py:367
 msgid "The document is being converted, please try again later"
 msgstr "文档转换中，请稍后重试"
 
-#: system/views/admin/file.py:306
+#: system/views/admin/file.py:420
 msgid "Wrong upload file type"
 msgstr "错误的文件类型"
 
-#: system/views/admin/file.py:309
-#, python-brace-format
+#: system/views/admin/file.py:423
 msgid "upload file size cannot exceed {}"
 msgstr "文件大小不能超过 {}"
 
-#: system/views/admin/file.py:314
-#, python-brace-format
+#: system/views/admin/file.py:428
 msgid "Storage quota exceeded ({} MB), please clean up and retry"
 msgstr "存储配额已用尽（{} MB），请清理后重试"
 
-#: system/views/admin/file.py:319
-#, python-brace-format
+#: system/views/admin/file.py:433
 msgid "File count limit exceeded ({}), please clean up and retry"
 msgstr "文件数量已达上限（{}），请清理后重试"
 
-#: system/views/admin/file.py:366
+#: system/views/admin/file.py:485
 msgid "Failed to save uploaded file"
 msgstr "保存上传文件失败"
 
-#: system/views/admin/file.py:370
+#: system/views/admin/file.py:489
 msgid "Upload successful"
 msgstr "上传成功"
 
-#: system/views/admin/file.py:372
-#, python-brace-format
+#: system/views/admin/file.py:491
 msgid "Upload successful, {} file(s) reused existing copies"
 msgstr "上传成功，其中 {} 个文件已复用已有副本"
 
 #: system/views/admin/import_.py:58
 msgid "Error report not found"
 msgstr "错误报告不存在"
+
+#: system/views/admin/leave.py:92
+msgid "Requests in approval or already approved cannot be deleted"
+msgstr "审批中或已通过的申请不可删除"
+
+#: system/views/admin/leave.py:118
+msgid "The leave request has been cancelled"
+msgstr "请假申请已撤回"
 
 #: system/views/admin/loginlog.py:51
 msgid "This login record cannot be forcibly logged out"
@@ -4250,7 +6118,6 @@ msgid "User forced offline (all sessions revoked)"
 msgstr "用户已被强制下线（所有会话已吊销）"
 
 #: system/views/admin/online.py:132
-#, python-brace-format
 msgid "Batch force offline submitted: {} users"
 msgstr "批量强制下线已提交：{} 个用户"
 
@@ -4282,7 +6149,82 @@ msgstr "超级管理员禁止删除"
 msgid "The user's MFA has been reset"
 msgstr "验证码已发送"
 
-#: system/views/auth/login.py:86
+#: system/views/ai.py:79
+msgid "Base URL is required"
+msgstr "接口地址不能为空"
+
+#: system/views/ai.py:81
+msgid "API Key and model are required"
+msgstr "API 密钥与模型不能为空"
+
+#: system/views/ai.py:97 system/views/ai.py:546
+msgid "AI provider OK: {}"
+msgstr "AI 服务连通正常: {}"
+
+#: system/views/ai.py:144 system/views/ai.py:191
+#: tests/integration/system/test_nl_query.py:129
+msgid "NL query is not enabled"
+msgstr "自然语言查数未启用"
+
+#: system/views/ai.py:150
+msgid "No visible datasets for NL query"
+msgstr "没有可用于自然语言查数的数据集"
+
+#: system/views/ai.py:252
+msgid "Action executed: {}"
+msgstr "AI 动作已执行：{}"
+
+#: system/views/ai.py:315
+msgid "AI action"
+msgstr "AI 动作"
+
+#: system/views/ai.py:318
+msgid "Waiting for approval"
+msgstr "等待审批中"
+
+#: system/views/ai.py:331
+msgid "Action failed"
+msgstr "动作执行失败"
+
+#: system/views/ai.py:384
+msgid "Document uploaded"
+msgstr "文档已上传"
+
+#: system/views/ai.py:384
+msgid "Document updated"
+msgstr "文档已更新"
+
+#: system/views/ai.py:390
+msgid "Repository documents are managed by sync"
+msgstr "仓库文档由同步命令维护，不支持直接删除"
+
+#: system/views/ai.py:439
+#| msgid "Title is required"
+msgid "is_active is required"
+msgstr "启用状态为必填项"
+
+#: system/views/ai.py:449
+#| msgid "Operation successful. Rejected {} data"
+msgid "Operation successful. Updated {} data"
+msgstr "操作成功，已更新 {} 条数据"
+
+#: system/views/ai.py:457
+msgid "Repository documents synced"
+msgstr "仓库文档已同步"
+
+#: system/views/ai.py:523
+msgid "Profile activated"
+msgstr "档案已激活，AI 全链路将使用该配置"
+
+#: system/views/ai.py:530
+msgid "Profile deactivated"
+msgstr "档案已停用，AI 将回落到历史配置"
+
+#: system/views/ai.py:538
+msgid "Fill in base URL, API key and model before testing"
+msgstr "测试前请先填写接口地址、API 密钥与模型"
+
+#: system/views/auth/login.py:103
 #, python-brace-format
 msgid ""
 "The username or password you entered is incorrect, please enter it again. "
@@ -4293,7 +6235,7 @@ msgstr ""
 "定）您输入的用户名或密码不正确，请重新输入。 您还可以尝试 {times_try} 次 (账"
 "号将被临时 锁定 {block_time} 分钟)"
 
-#: system/views/auth/login.py:193 system/views/auth/login.py:280
+#: system/views/auth/login.py:218 system/views/auth/login.py:305
 msgid "Login forbidden"
 msgstr "禁止登录"
 
@@ -4301,93 +6243,180 @@ msgstr "禁止登录"
 msgid "Login verification expired, please log in again"
 msgstr "登录验证已过期，请重新登录"
 
-#: system/views/auth/oauth.py:79 system/views/auth/oauth.py:109
-msgid "Third-party login is not enabled"
-msgstr "未开启第三方登录"
-
-#: system/views/auth/oauth.py:105
-#| msgid "Login verification expired, please log in again"
+#: system/views/auth/oauth.py:88 system/views/auth/oauth.py:213
 msgid "The login link has expired, please try again"
 msgstr "登录链接已过期，请重新登录"
 
-#: system/views/auth/oauth.py:124
-msgid "This account is not bound, please login and bind it first"
-msgstr "该账号尚未绑定，请先登录并完成绑定"
-
-#: system/views/auth/oauth.py:130
-#| msgid "User account is disabled"
-msgid "The account has been disabled"
-msgstr "账号已被停用"
-
-#: system/views/auth/oauth.py:174
-#| msgid "Phone does not exist"
-msgid "The binding does not exist"
-msgstr "绑定关系不存在"
-
-#: system/views/auth/oauth.py:178
-#| msgid "Incorrect username/password"
-msgid "Incorrect password"
-msgstr "密码错误"
-
-#: system/views/auth/oauth.py:182
-msgid "This is the only login method, bind another one before unbinding"
-msgstr "这是唯一的登录方式，请先绑定其他方式再解绑"
-
-#: system/views/auth/oauth.py:185
-#| msgid "Upload successful"
-msgid "Unbound successfully"
-msgstr "已成功解绑"
-
 #: system/views/auth/oauth.py:93
-msgid "The binding link does not belong to the current account, please login and retry"
+msgid ""
+"The binding link does not belong to the current account, please login and "
+"retry"
 msgstr "绑定链接不属于当前账号，请重新登录后再试"
+
+#: system/views/auth/oauth.py:97 system/views/auth/oauth.py:158
+#: system/views/auth/oauth.py:181 system/views/auth/oauth.py:217
+msgid "Third-party login is not enabled"
+msgstr "未开启第三方登录"
 
 #: system/views/auth/oauth.py:107
 msgid "This third-party account is already bound to another account"
 msgstr "该第三方账号已绑定到其他账号"
 
-#: system/views/auth/register.py:64
+#: system/views/auth/oauth.py:230
+msgid "This account is not bound, please login and bind it first"
+msgstr "该账号尚未绑定，请先登录并完成绑定"
+
+#: system/views/auth/oauth.py:236
+msgid "The account has been disabled"
+msgstr "账号已被停用"
+
+#: system/views/auth/oauth.py:280
+msgid "The binding does not exist"
+msgstr "绑定关系不存在"
+
+#: system/views/auth/oauth.py:284
+msgid "Incorrect password"
+msgstr "密码错误"
+
+#: system/views/auth/oauth.py:288
+msgid "This is the only login method, bind another one before unbinding"
+msgstr "这是唯一的登录方式，请先绑定其他方式再解绑"
+
+#: system/views/auth/oauth.py:291
+msgid "Unbound successfully"
+msgstr "已成功解绑"
+
+#: system/views/auth/register.py:63
 msgid "Registration forbidden"
 msgstr "禁止注册"
 
-#: system/views/auth/register.py:89
+#: system/views/auth/register.py:91
 msgid "The account already exists, please try another one"
 msgstr "用户已经存在，请换个试试"
 
-#: system/views/auth/reset.py:60
+#: system/views/auth/reset.py:80
 msgid "Reset password success, return to login page"
 msgstr "重置密码成功，返回到登录页面"
 
-#: system/views/auth/verify_code.py:135
+#: system/views/auth/verify_code.py:134
 msgid "Forbidden send verification code"
 msgstr "禁止发送验证码"
 
-#: system/views/auth/verify_code.py:244
+#: system/views/auth/verify_code.py:243
 msgid "Phone already exist"
 msgstr "手机号已经存在"
 
-#: system/views/auth/verify_code.py:246
+#: system/views/auth/verify_code.py:245
 msgid "Email already exist"
 msgstr "邮件已经存在"
 
-#: system/views/auth/verify_code.py:248
+#: system/views/auth/verify_code.py:247
 msgid "Username already exist"
 msgstr "用户名已经存在"
 
-#: system/views/auth/verify_code.py:259
+#: system/views/auth/verify_code.py:258
 msgid "Phone does not exist"
 msgstr "手机号不存在"
 
-#: system/views/auth/verify_code.py:261
+#: system/views/auth/verify_code.py:260
 msgid "Email does not exist"
 msgstr "邮件不存在"
 
-#: system/views/auth/verify_code.py:263
+#: system/views/auth/verify_code.py:262
 msgid "Username does not exist"
 msgstr "用户名不存在"
 
+#: system/views/configs.py:73
+msgid "Unknown config key"
+msgstr "未知配置项"
+
+#: system/views/configs.py:75
+msgid "This config is managed by administrators"
+msgstr "该配置由管理员统一管理，请在「用户配置」管理页调整"
+
+#: system/views/dataset.py:67 system/views/dataset.py:87
+msgid "Only the creator can modify a dataset"
+msgstr "仅创建者可修改数据集"
+
+#: system/views/dataset.py:155
+msgid "Only the creator can modify a dashboard"
+msgstr "仅创建者可修改仪表盘"
+
+#: system/views/dform.py:23
+msgid "Only the creator can modify a submission"
+msgstr "仅提交人可修改提交"
+
+#: system/views/open.py:90 system/views/open.py:192
+msgid "Invalid client credentials"
+msgstr "客户端凭据无效"
+
+#: system/views/open.py:93
+#| msgid "Token is invalid or expired"
+msgid "Application is disabled or expired"
+msgstr "应用已停用或过期"
+
+#: system/views/open.py:95
+#| msgid "User account is disabled"
+msgid "Application owner account is disabled"
+msgstr "应用属主账号已停用"
+
+#: system/views/open.py:288
+msgid "No callback url configured"
+msgstr "未配置回调地址"
+
+#: system/views/open.py:320
+#| msgid "Form schema must be a list"
+msgid "Grants must be a list"
+msgstr "授权规则必须是列表"
+
+#: system/views/open.py:326
+#| msgid "Form data must be an object"
+msgid "Grants must be a list of objects"
+msgstr "授权规则必须是对象列表"
+
+#: system/views/open_oauth.py:108
+#, python-format
+msgid "Requested scope is not allowed: %(scope)s"
+msgstr "请求的范围不被允许：%(scope)s"
+
+#: system/views/open_oauth.py:167
+msgid "redirect_uri is not registered for this application"
+msgstr "redirect_uri 未在该应用登记"
+
+#: system/views/open_oauth.py:182
+msgid "Unsupported code_challenge_method"
+msgstr "不支持的 code_challenge_method"
+
+#: system/views/open_oauth.py:276
+#| msgid "Token is invalid or expired"
+msgid "Authorization code is invalid or expired"
+msgstr "授权码无效或已过期"
+
+#: system/views/open_oauth.py:278
+msgid "Authorization code does not match this client"
+msgstr "授权码与该客户端不匹配"
+
+#: system/views/open_oauth.py:280
+#| msgid "Old password verification failed"
+msgid "PKCE verification failed"
+msgstr "PKCE 校验失败"
+
+#: system/views/open_oauth.py:283 system/views/open_oauth.py:303
+#| msgid "The flow is disabled"
+msgid "Authorized user is disabled"
+msgstr "授权用户已停用"
+
+#: system/views/open_oauth.py:300
+#| msgid "Token is invalid or expired"
+msgid "Refresh token is invalid or revoked"
+msgstr "刷新令牌无效或已撤销"
+
+#: system/views/open_oauth.py:346
+#| msgid "Title is required"
+msgid "token is required"
+msgstr "token 为必填项"
+
 #: system/views/task.py:139
-#, python-brace-format
 msgid "Task \"{}\" is not registered"
 msgstr "任务 \"{}\" 未注册"
 
@@ -4396,14 +6425,29 @@ msgid "Task arguments are not valid JSON"
 msgstr "任务参数不是有效的 JSON"
 
 #: system/views/task.py:276
-#, python-brace-format
 msgid "Batch execution submitted: {} success, {} failed"
 msgstr "批量执行已提交：{} 成功，{} 失败"
 
 #: system/views/task.py:319
-#, python-brace-format
 msgid "Task cloned: {}"
 msgstr "任务已克隆：{}"
+
+#: system/views/webhook.py:69
+msgid "Test event dispatched, check the delivery audit page"
+msgstr "测试事件已派发，请到投递审计页查看结果"
+
+#: system/views/webhook.py:71
+msgid ""
+"Test event was not dispatched (subscription inactive or event not subscribed)"
+msgstr "测试事件未派发（订阅未启用或未包含该事件）"
+
+#: system/views/webhook.py:90
+msgid "Only failed or exhausted deliveries can be retried"
+msgstr "仅失败或已耗尽的投递可以重试"
+
+#: system/views/webhook.py:98
+msgid "Delivery re-dispatched"
+msgstr "投递已重新派发"
 
 #~ msgid "All-data rules only support the all match"
 #~ msgstr "全部数据规则仅支持不限匹配"
@@ -4411,1533 +6455,14 @@ msgstr "任务已克隆：{}"
 #~ msgid "Rule %(index)d has a malformed value"
 #~ msgstr "规则 %(index)d 的值格式不正确"
 
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP authentication"
-msgstr "LDAP 目录认证"
+#~ msgid "Sync AI assistant knowledge base from repository docs"
+#~ msgstr "从仓库文档同步 AI 助手知识库"
 
-#: ADR-017 LDAP directory sync (generated)
-msgid "Enable LDAP/AD account login"
-msgstr "允许 LDAP/AD 目录账号登录"
+#~ msgid "Document name"
+#~ msgstr "文档名称"
 
-#: ADR-017 LDAP directory sync (generated)
-msgid "Authentication priority"
-msgstr "认证优先级"
+#~ msgid "Document content"
+#~ msgstr "文档内容"
 
-#: ADR-017 LDAP directory sync (generated)
-msgid "local_first: local accounts with a usable password are authenticated locally first (directory password never shadows local admin); ldap_first: directory bind is tried first"
-msgstr "local_first：本地可用密码的账号先走本地认证（目录密码不遮蔽本地管理员）；ldap_first：优先尝试目录 bind"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Auto create user on first login"
-msgstr "首次登录自动建号"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Create a local user (no local password) on first successful directory bind"
-msgstr "首次目录 bind 成功时自动创建本地账号（无本地密码）"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Server URI"
-msgstr "服务器地址"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "ldap://host:389 or ldaps://host:636"
-msgstr "ldap://host:389 或 ldaps://host:636"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "StartTLS"
-msgstr "StartTLS"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Upgrade the connection to TLS after connecting (ldap:// URIs)"
-msgstr "连接后升级为 TLS（ldap:// 地址）"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Bind DN"
-msgstr "绑定 DN"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Service account DN used to search the directory; empty for anonymous bind"
-msgstr "用于搜索目录的服务账号 DN；留空为匿名 bind"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Bind password"
-msgstr "绑定密码"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Encrypted at rest; never returned by the API"
-msgstr "落库加密；API 永不回传"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Connect timeout (seconds)"
-msgstr "连接超时（秒）"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "User search base"
-msgstr "用户搜索基准"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Base DN for user search"
-msgstr "用户搜索的基础 DN"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "User filter"
-msgstr "用户过滤器"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP search filter, e.g. (objectClass=person)"
-msgstr "LDAP 搜索过滤器，如 (objectClass=person)"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Username attribute"
-msgstr "用户名属性"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "e.g. sAMAccountName / uid"
-msgstr "如 sAMAccountName / uid"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Nickname attribute"
-msgstr "昵称属性"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "e.g. cn / displayName"
-msgstr "如 cn / displayName"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Email attribute"
-msgstr "邮箱属性"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "e.g. mail"
-msgstr "如 mail"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Phone attribute"
-msgstr "手机号属性"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "e.g. telephoneNumber / mobile"
-msgstr "如 telephoneNumber / mobile"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Sync departments"
-msgstr "同步部门"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Sync organizational units under the department search base as the department tree"
-msgstr "将部门搜索基准下的组织单元同步为部门树"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Department search base"
-msgstr "部门搜索基准"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Scheduled sync"
-msgstr "定时同步"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Hourly sync of users/departments/status from the directory"
-msgstr "每小时从目录同步用户/部门/状态"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Auto create user on sync"
-msgstr "同步时自动建号"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Missing user policy"
-msgstr "目录缺失用户策略"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "deactivate: disable accounts removed from the directory (reversible); soft_delete: move them to the recycle bin; ignore: keep untouched"
-msgstr "deactivate：目录中已删除的账号置为禁用（可逆）；soft_delete：移入回收站；ignore：不做处理"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Server URI is required"
-msgstr "服务器地址不能为空"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "User search base is required"
-msgstr "用户搜索基准不能为空"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Connection OK: {user_count} users, {dept_count} departments found"
-msgstr "连接成功：找到 {user_count} 个用户、{dept_count} 个部门"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Distinguished name"
-msgstr "辨别名（DN）"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Last synced at"
-msgstr "最近同步时间"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP binding"
-msgstr "LDAP 绑定"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP bindings"
-msgstr "LDAP 绑定"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP directory account"
-msgstr "LDAP 目录账号"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP directory sync"
-msgstr "LDAP 目录同步"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP sync summary"
-msgstr "LDAP 同步摘要"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "LDAP sync finished"
-msgstr "LDAP 同步完成"
-
-#: ADR-017 LDAP directory sync (generated)
-msgid "Password is managed by the LDAP directory and cannot be changed locally"
-msgstr "密码由 LDAP 目录服务器管理，无法在本地修改"
-
-#: ADR-018 IM scan login (generated)
-msgid "Unknown OAuth provider flavor: {}"
-msgstr "未知的第三方登录类型: {}"
-
-#: ADR-019 IM notify channels (generated)
-msgid "DingTalk"
-msgstr "钉钉"
-
-#: ADR-019 IM notify channels (generated)
-msgid "WeCom"
-msgstr "企业微信"
-
-#: ADR-019 IM notify channels (generated)
-msgid "FeiShu"
-msgstr "飞书"
-
-#: ADR-019 IM notify channels (generated)
-msgid "DingTalk notification"
-msgstr "钉钉通知"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Send notifications via DingTalk work message"
-msgstr "通过钉钉工作通知发送消息"
-
-#: ADR-019 IM notify channels (generated)
-msgid "DingTalk AppKey"
-msgstr "钉钉 AppKey"
-
-#: ADR-019 IM notify channels (generated)
-msgid "DingTalk AppSecret"
-msgstr "钉钉 AppSecret"
-
-#: ADR-019 IM notify channels (generated)
-msgid "DingTalk AgentId"
-msgstr "钉钉 AgentId"
-
-#: ADR-019 IM notify channels (generated)
-msgid "AgentId of the corp app used to send work messages"
-msgstr "用于发送工作通知的企业内部应用 AgentId"
-
-#: ADR-019 IM notify channels (generated)
-msgid "WeCom notification"
-msgstr "企业微信通知"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Send notifications via WeCom app message"
-msgstr "通过企业微信应用消息发送消息"
-
-#: ADR-019 IM notify channels (generated)
-msgid "WeCom CorpId"
-msgstr "企业微信 CorpId"
-
-#: ADR-019 IM notify channels (generated)
-msgid "WeCom CorpSecret"
-msgstr "企业微信 CorpSecret"
-
-#: ADR-019 IM notify channels (generated)
-msgid "WeCom AgentId"
-msgstr "企业微信 AgentId"
-
-#: ADR-019 IM notify channels (generated)
-msgid "FeiShu notification"
-msgstr "飞书通知"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Send notifications via FeiShu IM message"
-msgstr "通过飞书 IM 消息发送消息"
-
-#: ADR-019 IM notify channels (generated)
-msgid "FeiShu App ID"
-msgstr "飞书 App ID"
-
-#: ADR-019 IM notify channels (generated)
-msgid "FeiShu App Secret"
-msgstr "飞书 App Secret"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Missing configuration: {}"
-msgstr "缺少配置：{}"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Unknown channel: {}"
-msgstr "未知渠道：{}"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Channel not enabled"
-msgstr "渠道未启用"
-
-#: ADR-019 IM notify channels (generated)
-msgid "OK"
-msgstr "正常"
-
-#: ADR-019 IM notify channels (generated)
-msgid "Test completed"
-msgstr "测试完成"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Dataset"
-msgstr "数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Datasets"
-msgstr "数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Dashboard"
-msgstr "仪表盘"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Dashboards"
-msgstr "仪表盘"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Personal"
-msgstr "个人"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Bound model"
-msgstr "绑定模型"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "label_lower of a whitelisted model, e.g. system.userinfo"
-msgstr "白名单模型的 label_lower，如 system.userinfo"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Columns"
-msgstr "数据列"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Whitelisted field names"
-msgstr "白名单内的字段名列表"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Filters"
-msgstr "过滤条件"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "[{field, op, value}] with whitelisted ops"
-msgstr "[{field, op, value}]，op 限白名单"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Ordering"
-msgstr "排序"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Ordering field must be in columns"
-msgstr "排序字段必须在数据列内"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Row limit"
-msgstr "行数上限"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Hard cap 5000"
-msgstr "硬上限 5000"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Row limit must be between 1 and {}"
-msgstr "行数上限必须在 1 到 {} 之间"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Config"
-msgstr "配置"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "{\"date_field\": ...} for trend"
-msgstr "{\"date_field\": ...}，趋势聚合用时间字段"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Layout"
-msgstr "布局"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "[{id, dataset, title, chart_type, ...}]"
-msgstr "[{id, dataset, title, chart_type, ...}]"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Visibility"
-msgstr "可见性"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Model {} is not available for datasets"
-msgstr "模型 {} 不可用于数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Field {}.{} is not available for datasets"
-msgstr "字段 {}.{} 不可用于数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Filter op {} is not allowed"
-msgstr "过滤操作 {} 不在允许范围"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Filter op in requires a list value"
-msgstr "过滤操作 in 要求列表值"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Filter op isnull requires a boolean value"
-msgstr "过滤操作 isnull 要求布尔值"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Dataset columns cannot be empty"
-msgstr "数据集列不能为空"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Field {} is not available for datasets"
-msgstr "字段 {} 不可用于数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Field {} is not numeric, cannot aggregate"
-msgstr "字段 {} 不是数值字段，无法聚合"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Metric {} is not allowed"
-msgstr "聚合方式 {} 不在允许范围"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Date trunc {} is not allowed"
-msgstr "时间粒度 {} 不在允许范围"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Field {} is not a datetime, cannot trend"
-msgstr "字段 {} 不是时间字段，无法做趋势聚合"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Invalid dataset filters"
-msgstr "数据集过滤条件不合法"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Invalid dashboard layout"
-msgstr "仪表盘布局不合法"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Invalid chart type: {}"
-msgstr "不支持的图表类型: {}"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Unknown dataset in layout"
-msgstr "布局中引用了未知数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Only the creator can modify a dataset"
-msgstr "仅创建者可修改数据集"
-
-#: ADR-020 dataset & dashboard (generated)
-msgid "Only the creator can modify a dashboard"
-msgstr "仅创建者可修改仪表盘"
-
-#: ADR-021 screen & report (generated)
-msgid "Screen"
-msgstr "大屏"
-
-#: ADR-021 screen & report (generated)
-msgid "Screens"
-msgstr "大屏"
-
-#: ADR-021 screen & report (generated)
-msgid "Report"
-msgstr "报表"
-
-#: ADR-021 screen & report (generated)
-msgid "Reports"
-msgstr "报表"
-
-#: ADR-021 screen & report (generated)
-msgid "Ordered dashboard pks"
-msgstr "仪表盘 pk 有序列表"
-
-#: ADR-021 screen & report (generated)
-msgid "Seconds per dashboard"
-msgstr "每个仪表盘停留秒数"
-
-#: ADR-021 screen & report (generated)
-msgid "Refresh"
-msgstr "刷新间隔"
-
-#: ADR-021 screen & report (generated)
-msgid "Data refresh seconds"
-msgstr "数据刷新秒数"
-
-#: ADR-021 screen & report (generated)
-msgid "Mode"
-msgstr "模式"
-
-#: ADR-021 screen & report (generated)
-msgid "Rows"
-msgstr "行数据"
-
-#: ADR-021 screen & report (generated)
-msgid "Aggregate"
-msgstr "聚合"
-
-#: ADR-021 screen & report (generated)
-msgid "Group by"
-msgstr "分组字段"
-
-#: ADR-021 screen & report (generated)
-msgid "Value field"
-msgstr "取值字段"
-
-#: ADR-021 screen & report (generated)
-msgid "Frequency"
-msgstr "频率"
-
-#: ADR-021 screen & report (generated)
-msgid "Daily"
-msgstr "每天"
-
-#: ADR-021 screen & report (generated)
-msgid "Weekly"
-msgstr "每周"
-
-#: ADR-021 screen & report (generated)
-msgid "Monthly"
-msgstr "每月"
-
-#: ADR-021 screen & report (generated)
-msgid "Send time"
-msgstr "发送时刻"
-
-#: ADR-021 screen & report (generated)
-msgid "HH:MM"
-msgstr "HH:MM"
-
-#: ADR-021 screen & report (generated)
-msgid "Weekday"
-msgstr "星期"
-
-#: ADR-021 screen & report (generated)
-msgid "0=Monday, weekly only"
-msgstr "0=周一，仅每周频率使用"
-
-#: ADR-021 screen & report (generated)
-msgid "Recipients"
-msgstr "收件人"
-
-#: ADR-021 screen & report (generated)
-msgid "Email addresses"
-msgstr "邮箱地址列表"
-
-#: ADR-021 screen & report (generated)
-msgid "Last run at"
-msgstr "上次运行"
-
-#: ADR-021 screen & report (generated)
-msgid "Last status"
-msgstr "上次状态"
-
-#: ADR-021 screen & report (generated)
-msgid "Invalid screen dashboards"
-msgstr "大屏仪表盘列表不合法"
-
-#: ADR-021 screen & report (generated)
-msgid "Interval must be between 5 and 3600 seconds"
-msgstr "切换间隔需在 5 到 3600 秒之间"
-
-#: ADR-021 screen & report (generated)
-msgid "Refresh must be between 10 and 3600 seconds"
-msgstr "刷新间隔需在 10 到 3600 秒之间"
-
-#: ADR-021 screen & report (generated)
-msgid "Invalid report mode"
-msgstr "报表模式不合法"
-
-#: ADR-021 screen & report (generated)
-msgid "Group by is required for aggregate reports"
-msgstr "聚合报表必须指定分组字段"
-
-#: ADR-021 screen & report (generated)
-msgid "Send time must be HH:MM"
-msgstr "发送时刻格式必须为 HH:MM"
-
-#: ADR-021 screen & report (generated)
-msgid "Weekday must be between 0 and 6"
-msgstr "星期取值需在 0 到 6 之间"
-
-#: ADR-021 screen & report (generated)
-msgid "Recipients cannot be empty"
-msgstr "收件人不能为空"
-
-#: ADR-021 screen & report (generated)
-msgid "Invalid email address: {}"
-msgstr "邮箱地址不合法: {}"
-
-#: ADR-021 screen & report (generated)
-msgid "Scheduled report {}. {} rows generated. The xlsx file is attached."
-msgstr "定时报表「{}」已生成，共 {} 行，详见附件 xlsx。"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook subscription"
-msgstr "Webhook 订阅"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook subscriptions"
-msgstr "Webhook 订阅"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook delivery"
-msgstr "Webhook 投递"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook deliveries"
-msgstr "Webhook 投递"
-
-#: ADR-022 outbound webhook (generated)
-msgid "URL"
-msgstr "地址"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Secret"
-msgstr "签名密钥"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Events"
-msgstr "订阅事件"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Subscription"
-msgstr "订阅"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Attempt"
-msgstr "尝试次数"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Response body"
-msgstr "响应内容"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Duration"
-msgstr "耗时"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Seconds"
-msgstr "秒"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Next retry at"
-msgstr "下次重试"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Failed (retrying)"
-msgstr "失败（重试中）"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Exhausted"
-msgstr "已耗尽"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook url must use https (loopback http is allowed for testing)"
-msgstr "Webhook 地址必须使用 https（联调环境允许 loopback http）"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook events cannot be empty"
-msgstr "订阅事件不能为空"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Unknown webhook event: {}"
-msgstr "未知的 Webhook 事件: {}"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Secret is required"
-msgstr "签名密钥不能为空"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Test event dispatched, check the delivery audit page"
-msgstr "测试事件已派发，请到投递审计页查看结果"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Test event was not dispatched (subscription inactive or event not subscribed)"
-msgstr "测试事件未派发（订阅未启用或未包含该事件）"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Only failed or exhausted deliveries can be retried"
-msgstr "仅失败或已耗尽的投递可以重试"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Delivery re-dispatched"
-msgstr "投递已重新派发"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook delivery exhausted"
-msgstr "Webhook 投递已耗尽"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook delivery exhausted: {}"
-msgstr "Webhook 投递已耗尽: {}"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Login succeeded"
-msgstr "登录成功"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Login failed"
-msgstr "登录失败"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Approval submitted"
-msgstr "审批已提交"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Approval approved"
-msgstr "审批已通过"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Approval rejected"
-msgstr "审批已驳回"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Approval cancelled"
-msgstr "审批已撤回"
-
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
-msgid "Flow application submitted"
-msgstr "流程申请已提交"
-
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
-msgid "Flow application approved"
-msgstr "流程申请已通过"
-
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
-msgid "Flow application rejected"
-msgstr "流程申请已驳回"
-
-#: ADR-012 flow engine → ADR-022 outbound webhook (generated)
-msgid "Flow application cancelled"
-msgstr "流程申请已撤回"
-
-#: ADR-022 outbound webhook (generated)
-msgid "Webhook ping"
-msgstr "连接测试"
-
-#: ADR-023 AI assistant (generated)
-msgid "AI assistant"
-msgstr "AI 助手"
-
-#: ADR-023 AI assistant (generated)
-msgid "Enable the docs-based usage/development assistant"
-msgstr "启用基于文档库的使用/二开问答助手"
-
-#: ADR-023 AI assistant (generated)
-msgid "Base URL"
-msgstr "接口地址"
-
-#: ADR-023 AI assistant (generated)
-msgid "OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1"
-msgstr "OpenAI 兼容接口地址，如 https://api.deepseek.com/v1"
-
-#: ADR-023 AI assistant (generated)
-msgid "API Key"
-msgstr "API 密钥"
-
-#: ADR-023 AI assistant (generated)
-msgid "e.g. deepseek-chat"
-msgstr "如 deepseek-chat"
-
-#: ADR-023 AI assistant (generated)
-msgid "Timeout (seconds)"
-msgstr "超时（秒）"
-
-#: ADR-023 AI assistant (generated)
-msgid "AI knowledge chunk"
-msgstr "AI 知识块"
-
-#: ADR-023 AI assistant (generated)
-msgid "AI knowledge chunks"
-msgstr "AI 知识块"
-
-#: ADR-023 AI assistant (generated)
-msgid "Chunk index"
-msgstr "块序号"
-
-#: ADR-023 AI assistant (generated)
-msgid "Content"
-msgstr "内容"
-
-#: ADR-023 AI assistant (generated)
-msgid "Content hash"
-msgstr "内容哈希"
-
-#: ADR-023 AI assistant (generated)
-msgid "Synced at"
-msgstr "同步时间"
-
-#: ADR-023 AI assistant (generated)
-msgid "Base URL is required"
-msgstr "接口地址不能为空"
-
-#: ADR-023 AI assistant (generated)
-msgid "API Key and model are required"
-msgstr "API 密钥与模型不能为空"
-
-#: ADR-023 AI assistant (generated)
-msgid "AI provider OK: {}"
-msgstr "AI 服务连通正常: {}"
-
-#: ADR-023 AI assistant (generated)
-msgid "You are the xadmin usage/development assistant. Answer ONLY based on the provided reference documents, cite them as [n] markers, and say you don't know when the documents do not cover the question."
-msgstr "你是 xadmin 使用/二开助手。仅基于给出的参考文档作答，用 [n] 标注引用出处；文档未覆盖的内容请回答不知道。"
-
-#: ADR-023 AI assistant (generated)
-msgid "Question: {}"
-msgstr "问题：{}"
-
-#: ADR-023 AI assistant (generated)
-msgid "Question cannot be empty"
-msgstr "问题不能为空"
-
-#: ADR-023 AI assistant (generated)
-msgid "AI assistant is not enabled or configured"
-msgstr "AI 助手未启用或未完成配置"
-
-#: ADR-023 AI assistant (generated)
-msgid "No matching documents found for this question"
-msgstr "知识库中没有与该问题匹配的文档"
-
-#: ADR-023 AI assistant (generated)
-msgid "Sync AI assistant knowledge base from repository docs"
-msgstr "从仓库文档同步 AI 助手知识库"
-
-#: ADR-024 NL query (generated)
-msgid "The model returned malformed JSON"
-msgstr "模型返回了不合法的 JSON"
-
-#: ADR-024 NL query (generated)
-msgid "The model returned unknown DSL keys: {}"
-msgstr "模型返回了未知字段: {}"
-
-#: ADR-024 NL query (generated)
-msgid "Invalid NL query DSL"
-msgstr "NL 查询 DSL 不合法"
-
-#: ADR-024 NL query (generated)
-msgid "NL query is not enabled"
-msgstr "自然语言查数未启用"
-
-#: ADR-024 NL query (generated)
-msgid "No visible datasets for NL query"
-msgstr "没有可用于自然语言查数的数据集"
-
-#: ADR-024 NL query (generated)
-msgid "You translate the user's question into a constrained dataset query DSL. You MUST pick the dataset only from the provided catalog and fields only from the dataset columns. Output ONLY a JSON object matching the schema, no prose. Use mode=aggregate with group_by/metric for statistical questions, mode=rows for record lists. Unknown values must be answered with an empty filters list."
-msgstr "你将用户的问题转换为受限的数据集查询 DSL。只能从给出的数据集清单中选择数据集，字段只能来自该数据集的列。仅输出符合 schema 的 JSON 对象，不要输出任何解释。统计类问题用 mode=aggregate 配合 group_by/metric，明细列表用 mode=rows。无法确定的过滤条件以空 filters 列表回答。"
-
-#: ADR-024 NL query (generated)
-msgid "DSL schema: {}"
-msgstr "DSL schema：{}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Dynamic form"
-msgstr "动态表单"
-
-#: ADR-025 dynamic form (generated)
-msgid "Dynamic forms"
-msgstr "动态表单"
-
-#: ADR-025 dynamic form (generated)
-msgid "Dynamic form submission"
-msgstr "动态表单提交"
-
-#: ADR-025 dynamic form (generated)
-msgid "Dynamic form submissions"
-msgstr "动态表单提交"
-
-#: ADR-025 dynamic form (generated)
-msgid "Schema"
-msgstr "表单定义"
-
-#: ADR-025 dynamic form (generated)
-msgid "Constrained widget-set field definitions"
-msgstr "收敛控件集字段定义"
-
-#: ADR-025 dynamic form (generated)
-msgid "This form is no longer accepting submissions"
-msgstr "该表单已停用，不再接受提交"
-
-#: ADR-025 dynamic form (generated)
-msgid "Dynamic form is required"
-msgstr "动态表单不能为空"
-
-#: ADR-025 dynamic form (generated)
-msgid "Invalid form schema"
-msgstr "表单定义不合法"
-
-#: ADR-025 dynamic form (generated)
-msgid "Form schema must contain fields"
-msgstr "表单定义必须包含字段"
-
-#: ADR-025 dynamic form (generated)
-msgid "Form fields exceed the limit of {}"
-msgstr "表单字段数超过上限 {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field key {} is invalid (lowercase letters/digits/underscore)"
-msgstr "字段标识 {} 不合法（仅小写字母/数字/下划线）"
-
-#: ADR-025 dynamic form (generated)
-msgid "Duplicate field key: {}"
-msgstr "字段标识重复: {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} requires a label"
-msgstr "字段 {} 缺少标签"
-
-#: ADR-025 dynamic form (generated)
-msgid "Unknown widget type: {}"
-msgstr "未知控件类型: {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} requires options"
-msgstr "字段 {} 必须提供选项"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} has too many options"
-msgstr "字段 {} 选项过多"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} of type {} does not accept options"
-msgstr "字段 {}（类型 {}）不接受选项"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} max_length must be 1-{}"
-msgstr "字段 {} 的最大长度须在 1 到 {} 之间"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} {} must be numeric"
-msgstr "字段 {} 的 {} 必须为数值"
-
-#: ADR-025 dynamic form (generated)
-msgid "Invalid submission data"
-msgstr "提交数据不合法"
-
-#: ADR-025 dynamic form (generated)
-msgid "Unknown submission keys: {}"
-msgstr "提交数据包含未知字段: {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} must be numeric"
-msgstr "字段 {} 必须为数值"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} is below the minimum"
-msgstr "字段 {} 低于最小值"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} is above the maximum"
-msgstr "字段 {} 超过最大值"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} must be a list"
-msgstr "字段 {} 必须为列表"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} has invalid options: {}"
-msgstr "字段 {} 含无效选项: {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} must be boolean"
-msgstr "字段 {} 必须为布尔值"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} has an invalid option: {}"
-msgstr "字段 {} 含无效选项: {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} must be text"
-msgstr "字段 {} 必须为文本"
-
-#: ADR-025 dynamic form (generated)
-msgid "Field {} exceeds the max length {}"
-msgstr "字段 {} 超过最大长度 {}"
-
-#: ADR-025 dynamic form (generated)
-msgid "Only the creator can modify a submission"
-msgstr "仅提交人可修改提交"
-
-#: ADR-032 leave module (generated)
-msgid "Leave request"
-msgstr "请假申请"
-
-#: ADR-032 leave module (generated)
-msgid "Leave type"
-msgstr "请假类型"
-
-#: ADR-032 leave module (generated)
-msgid "Annual leave"
-msgstr "年假"
-
-#: ADR-032 leave module (generated)
-msgid "Sick leave"
-msgstr "病假"
-
-#: ADR-032 leave module (generated)
-msgid "Personal leave"
-msgstr "事假"
-
-#: ADR-032 leave module (generated)
-msgid "Compensatory leave"
-msgstr "调休"
-
-#: ADR-032 leave module (generated)
-msgid "Marriage leave"
-msgstr "婚假"
-
-#: ADR-032 leave module (generated)
-msgid "Draft"
-msgstr "草稿"
-
-#: ADR-032 leave module (generated)
-msgid "Start date"
-msgstr "开始日期"
-
-#: ADR-032 leave module (generated)
-msgid "End date"
-msgstr "结束日期"
-
-#: ADR-032 leave module (generated)
-msgid "Days"
-msgstr "天数"
-
-#: ADR-032 leave module (generated)
-msgid "Business type"
-msgstr "业务类型"
-
-#: ADR-032 leave module (generated)
-msgid "Business id"
-msgstr "业务标识"
-
-#: ADR-032 leave module (generated)
-msgid "Start date and end date are required"
-msgstr "开始日期与结束日期必填"
-
-#: ADR-032 leave module (generated)
-msgid "End date cannot be earlier than start date"
-msgstr "结束日期不能早于开始日期"
-
-#: ADR-032 leave module (generated)
-msgid "Days must be greater than 0"
-msgstr "请假天数必须大于 0"
-
-#: ADR-032 leave module (generated)
-msgid "Days cannot exceed the date range (max {} days)"
-msgstr "请假天数不能超过起止区间（最多 {} 天）"
-
-#: ADR-032 leave module (generated)
-msgid "A leave request for {} already overlaps with this period"
-msgstr "与已有请假申请（{}）的假期区间重叠"
-
-#: ADR-032 leave module (generated)
-msgid "Only the applicant can submit this request"
-msgstr "只有申请人本人可以提交该申请"
-
-#: ADR-032 leave module (generated)
-msgid "The request is already in approval"
-msgstr "该申请正在审批中"
-
-#: ADR-032 leave module (generated)
-msgid "The request has been approved"
-msgstr "该申请已通过审批"
-
-#: ADR-032 leave module (generated)
-msgid "No leave approval flow is configured, please contact the administrator"
-msgstr "未配置请假审批流程，请联系管理员"
-
-#: ADR-032 leave module (generated)
-msgid "Application no"
-msgstr "申请单号"
-
-#: ADR-032 leave module (generated)
-msgid "Reject reason"
-msgstr "驳回原因"
-
-#: ADR-032 leave module (generated)
-msgid "Requests in approval or already approved cannot be modified"
-msgstr "审批中或已通过的申请不可修改"
-
-#: ADR-032 leave module (generated)
-msgid "Requests in approval or already approved cannot be deleted"
-msgstr "审批中或已通过的申请不可删除"
-
-#: ADR-032 leave module (generated)
-msgid "Saved as draft: {}"
-msgstr "已保存为草稿：{}"
-
-#: ADR-032 leave module (generated)
-msgid "The leave request has been submitted for approval"
-msgstr "请假申请已提交审批"
-
-#: ADR-032 leave module (generated)
-msgid "The leave request has been cancelled"
-msgstr "请假申请已撤回"
-
-#: ADR-033 knowledge documents (generated)
-msgid "AI knowledge document"
-msgstr "AI 知识库文档"
-
-#: ADR-033 knowledge documents (generated)
-msgid "AI knowledge documents"
-msgstr "AI 知识库文档"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Source type"
-msgstr "来源类型"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Repository docs"
-msgstr "仓库文档"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Uploaded document"
-msgstr "上传文档"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Storage path"
-msgstr "存储路径"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Chunk count"
-msgstr "分块数"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Chunks"
-msgstr "知识分块"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document uploaded"
-msgstr "文档已上传"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document updated"
-msgstr "文档已更新"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Repository documents are managed by sync"
-msgstr "仓库文档由同步命令维护，不支持直接删除"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Repository documents synced"
-msgstr "仓库文档已同步"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document name is required"
-msgstr "请填写文档名称"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document name cannot contain path characters"
-msgstr "文档名称不能包含路径字符"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document content cannot be empty"
-msgstr "文档内容不能为空"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Path {} conflicts with a repository document"
-msgstr "路径 {} 与仓库文档冲突"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document name"
-msgstr "文档名称"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Document content"
-msgstr "文档内容"
-
-#: ADR-033 knowledge documents (generated)
-msgid "Active"
-msgstr "启用"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Public chat room"
-msgstr "公共聊天室"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Private chat"
-msgstr "私聊"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat room"
-msgstr "聊天室"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat rooms"
-msgstr "聊天室"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat room member"
-msgstr "聊天室成员"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat room members"
-msgstr "聊天室成员"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat message"
-msgstr "聊天消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat messages"
-msgstr "聊天消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Room key"
-msgstr "会话键"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Display name"
-msgstr "显示名称"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Owner"
-msgstr "所有者"
-
-#: message app (ADR-034 chat room, generated)
-msgid "AI room owner; empty for public/private rooms"
-msgstr "AI 会话归属用户；公共/私聊会话为空"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Last message"
-msgstr "最后消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Last message time"
-msgstr "最后消息时间"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Last read message id"
-msgstr "已读消息游标"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Unread count"
-msgstr "未读数量"
-
-#: message app (ADR-034 chat room, generated)
-msgid "AI reply"
-msgstr "AI 回复"
-
-#: message app (ADR-034 chat room, generated)
-msgid "System message"
-msgstr "系统消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Sender name"
-msgstr "发送者名称"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Message type"
-msgstr "消息类型"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Client message id"
-msgstr "客户端消息键"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Recalled"
-msgstr "已撤回"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Recalled time"
-msgstr "撤回时间"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Extra"
-msgstr "附加信息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Room"
-msgstr "会话"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Cannot start a private chat with yourself"
-msgstr "不能和自己发起私聊"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat room not found"
-msgstr "会话不存在"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Message content cannot be empty"
-msgstr "消息内容不能为空"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Message is too long (max {} characters)"
-msgstr "消息过长（最多 {} 个字符）"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Only the sender can recall the message"
-msgstr "只能撤回自己发送的消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Message already recalled"
-msgstr "消息已撤回"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Messages can only be recalled within {} minutes"
-msgstr "消息只能在 {} 分钟内撤回"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Chat opened"
-msgstr "会话已打开"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Invalid pagination cursor"
-msgstr "分页游标无效"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Message recalled"
-msgstr "消息已撤回"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Not an AI assistant chat"
-msgstr "不是 AI 助手会话"
-
-#: message app (ADR-034 chat room, generated)
-msgid "AI service is temporarily unavailable"
-msgstr "AI 服务暂时不可用"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Please provide a question after /kb, e.g. /kb how to reset password"
-msgstr "请在 /kb 后输入问题，例如 /kb 如何重置密码"
-
-#: message app (ADR-034 chat room, generated)
-msgid "AI assistant is not enabled"
-msgstr "AI 助手未启用"
-
-#: message app (ADR-034 chat room, generated)
-msgid "AI assistant is not configured"
-msgstr "AI 助手未配置"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Type /kb <question> to ask the knowledge base"
-msgstr "输入 /kb 加问题可向知识库提问"
-
-#: message app (ADR-034 chat room, generated)
-msgid "New private message from {}"
-msgstr "{} 发来一条私聊消息"
-
-#: message app (ADR-034 chat room, generated)
-msgid "User {} mentioned you in the chat room"
-msgstr "用户 {} 在聊天室提到了你"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Target user"
-msgstr "目标用户"
-
-#: message app (ADR-034 chat room, generated)
-msgid "Type /kb followed by a question to ask the knowledge base, or /do to request an action draft (confirm before execution)"
-msgstr "输入 /kb 加问题进行知识库问答，或输入 /do 生成动作草稿（执行前需确认）"
-#: system app (AI profiles, generated)
-msgid "AI profile"
-msgstr "AI 配置档案"
-
-#: system app (AI profiles, generated)
-msgid "AI profiles"
-msgstr "AI 配置档案"
-
-#: system app (AI profiles, generated)
-msgid "Profile name"
-msgstr "档案名称"
-
-#: system app (AI profiles, generated)
-msgid "API Key set"
-msgstr "已设置密钥"
-
-#: system app (AI profiles, generated)
-msgid "Temperature"
-msgstr "温度"
-
-#: system app (AI profiles, generated)
-msgid "Max tokens"
-msgstr "最大输出 tokens"
-
-#: system app (AI profiles, generated)
-msgid "Top P"
-msgstr "Top P"
-
-#: system app (AI profiles, generated)
-msgid "Frequency penalty"
-msgstr "频率惩罚"
-
-#: system app (AI profiles, generated)
-msgid "Presence penalty"
-msgstr "存在惩罚"
-
-#: system app (AI profiles, generated)
-msgid "Stop sequences"
-msgstr "停止序列"
-
-#: system app (AI profiles, generated)
-msgid "Seed"
-msgstr "随机种子"
-
-#: system app (AI profiles, generated)
-msgid "Max retries"
-msgstr "最大重试次数"
-
-#: system app (AI profiles, generated)
-msgid "Context messages"
-msgstr "聊天上下文条数"
-
-#: system app (AI profiles, generated)
-msgid "Persona"
-msgstr "助手人设"
-
-#: system app (AI profiles, generated)
-msgid "Remark"
-msgstr "备注"
-
-#: system app (AI profiles, generated)
-msgid "Profile name is required"
-msgstr "请填写档案名称"
-
-#: system app (AI profiles, generated)
-msgid "Base URL must start with http:// or https://"
-msgstr "接口地址必须以 http:// 或 https:// 开头"
-
-#: system app (AI profiles, generated)
-msgid "Fill in base URL, API key and model before testing"
-msgstr "测试前请先填写接口地址、API 密钥与模型"
-
-#: system app (AI profiles, generated)
-msgid "Profile activated"
-msgstr "档案已激活，AI 全链路将使用该配置"
-
-#: system app (AI profiles, generated)
-msgid "Profile deactivated"
-msgstr "档案已停用，AI 将回落到历史配置"
-
-#: system app (AI actions, generated)
-msgid "Unknown leave type: {}"
-msgstr "未知的请假类型：{}"
-
-#: system app (AI actions, generated)
-msgid "Start date and end date must be in YYYY-MM-DD format"
-msgstr "开始与结束日期必须是 YYYY-MM-DD 格式"
-
-#: system app (AI actions, generated)
-msgid "Reason is required"
-msgstr "请填写事由"
-
-#: system app (AI actions, generated)
-msgid "Days must be a number"
-msgstr "天数必须是数字"
-
-#: system app (AI actions, generated)
-msgid "A form must be selected"
-msgstr "请先选择表单"
-
-#: system app (AI actions, generated)
-msgid "The requested form does not exist"
-msgstr "目标表单不存在"
-
-#: system app (AI actions, generated)
-msgid "The form is disabled and cannot accept submissions"
-msgstr "表单已停用，无法提交"
-
-#: system app (AI actions, generated)
-msgid "Submission data must be an object"
-msgstr "提交数据必须是对象"
-
-#: system app (AI actions, generated)
-msgid "The model did not return an actionable request"
-msgstr "模型没有返回可执行的请求"
-
-#: system app (AI actions, generated)
-msgid "The model requested an unknown action: {}"
-msgstr "模型请求了未登记的动作：{}"
-
-#: system app (AI actions, generated)
-msgid "The action is not available: {}"
-msgstr "动作当前不可用：{}"
-
-#: system app (AI actions, generated)
-msgid "You do not have permission to perform the action: {}"
-msgstr "你没有执行该动作的权限：{}"
-
-#: system app (AI actions, generated)
-msgid "Unknown action"
-msgstr "未知动作"
-
-#: system app (AI actions, generated)
-msgid "Action failed"
-msgstr "动作执行失败"
-
-#: system app (AI actions, generated)
-msgid "Waiting for approval"
-msgstr "等待审批中"
-
-#: system app (AI actions, generated)
-msgid "AI action"
-msgstr "AI 动作"
-
-#: system app (AI actions, generated)
-msgid "AI actions are not enabled"
-msgstr "AI 动作未开启"
-
-#: system app (AI actions, generated)
-msgid "Please describe the request after /do"
-msgstr "请在 /do 后描述要执行的事项"
-
-#: system app (AI actions, generated)
-msgid "I will perform: {}"
-msgstr "我将执行：{}"
-
-#: system app (AI actions, generated)
-msgid "Action executed: {}"
-msgstr "AI 动作已执行：{}"
-
-#: system app (AI actions, generated)
-msgid "Submit a leave request"
-msgstr "发起请假申请"
-
-#: system app (AI actions, generated)
-msgid "Create a leave request for the current user and submit it into the leave approval flow"
-msgstr "以当前用户创建请假申请并提交到请假审批流程"
-
-#: system app (AI actions, generated)
-msgid "Submit a dynamic form"
-msgstr "提交动态表单"
-
-#: system app (AI actions, generated)
-msgid "Submit one record to an active dynamic form; field values must match the form fields"
-msgstr "向启用中的动态表单提交一条记录；字段取值必须与表单字段匹配"
-
-#: system app (AI actions, generated)
-msgid "AI actions"
-msgstr "AI 动作"
-
-#: system app (AI actions, generated)
-msgid "Enable AI actions (whitelisted actions executed as the current user after confirmation, audited)"
-msgstr "开启 AI 动作草稿（白名单动作，经用户确认后以本人身份执行并审计）"
-
-#: system app (AI actions, generated)
-msgid "The form has been submitted"
-msgstr "表单已提交"
-
-#: system/views/configs.py
-msgid "Unknown config key"
-msgstr "未知配置项"
-
-#: system/views/configs.py
-msgid "This config is managed by administrators"
-msgstr "该配置由管理员统一管理，请在「用户配置」管理页调整"
+#~ msgid "Type /kb <question> to ask the knowledge base"
+#~ msgstr "输入 /kb 加问题可向知识库提问"
