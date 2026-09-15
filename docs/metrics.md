@@ -174,3 +174,17 @@
 
 **验证**：拆包后主链路 E2E（notice 创建/编辑、NoticeShow 只读）双浏览器通过；`pnpm analyze:bundle` 复测确认
 闭包内不再含 wangeditor chunk。
+
+### 2026-09-15 首屏三期余量（i18n / sortablejs / vue-json-pretty，W7–W10 收口后的候选池项）
+
+基线口径：560.6 KB（W7–W8 收口后）→ 本轮实测 **519.6 KB（-41.0 KB / -7.3%）**，主 chunk 151 → 130.5 KB。
+
+| 项 | 改造 | 结果 |
+|------|------|------|
+| `sortablejs`（列拖拽排序） | `RePureTableBar/bar.tsx` 静态 import 改为「列排序」交互触发时动态 `import()`（类型经 `import type` 保留） | 移出闭包 |
+| `vue-json-pretty`（JSON 展开 + 样式） | `RePlusPage/utils/renderers-detail.tsx` 改 `defineAsyncComponent` + 动态 import CSS（Vite 产出独立 css chunk，加载时注入） | 移出闭包（JS + CSS 双份） |
+| i18n 语言包（en.yaml + element-plus en locale） | `plugins/i18n.ts`：zh-CN 保持 eager（默认语言/源语言，`flatI18n` 同步探测依赖）；en 由 `ensureLocale()` 按需加载（`app.mount` 前按初始语言 + 语言切换处 + `watch` 兜底防止 key 泄漏），新增 `e2e/locale.e2e.ts` 双浏览器守护（切换往返 / 落库后刷新首屏英文） | **-20.8 KB**（540.4 → 519.6） |
+| `@zxcvbn-ts` | 复测：已在独立懒 chunk（3 处均为懒视图消费），**与候选池登记值（在闭包）不符 → 无需动作** | 无变化 |
+| `vue-tippy`（~24 KB gz） | 评估：`app.use(VueTippy)` + 指令式用法散布布局层（侧栏 tooltip 属首屏交互），移出闭包需重写指令为异步实现或降级 tooltip | **评估后维持**（收益低于风险，登记同 ReIcon 范式） |
+
+已核实为懒加载 / 不在闭包（无需动作）：echarts、wangeditor、version-rocket、`@vue-flow`。
