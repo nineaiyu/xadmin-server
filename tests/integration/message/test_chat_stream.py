@@ -170,6 +170,28 @@ class TestStream:
 
         assert reply.extra.get("partial") == str(_t("AI service is temporarily unavailable"))
 
+    def test_browser_accept_header_negotiation(self, auth_client, superuser, ai_enabled, stream_stub):
+        """回归：浏览器 fetch 携带 Accept: text/event-stream 时不得 406。
+
+        APIClient 默认 Accept: */* 会命中 JSONRenderer，历史上该缺陷只在真实浏览器
+        出现（AI 流式链路在浏览器侧整体 406、不可用），需要显式以 SSE Accept 回归。
+        """
+        response = auth_client.post(
+            STREAM_URL, {"content": "介绍一下系统"}, format="json", HTTP_ACCEPT="text/event-stream"
+        )
+        assert response.status_code == 200
+        assert response["Content-Type"] == "text/event-stream"
+        frames = parse_sse(response)
+        assert frames[-1][0] == "done"
+
+    def test_gate_json_content_type_with_sse_accept(self, auth_client, superuser, settings):
+        """门禁错误保持 JSON 响应（即便 Accept 请求 SSE），前端按普通接口错误提示。"""
+        settings.AI_ASSISTANT_ENABLED = False
+        response = auth_client.post(STREAM_URL, {"content": "hi"}, format="json", HTTP_ACCEPT="text/event-stream")
+        assert response.status_code == 200
+        assert response["Content-Type"] == "application/json"
+        assert response.data["code"] == 1001
+
     def test_gate_disabled_returns_json(self, auth_client, superuser, settings):
         settings.AI_ASSISTANT_ENABLED = False
         response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
