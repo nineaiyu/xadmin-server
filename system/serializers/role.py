@@ -80,12 +80,13 @@ class RoleSerializer(BaseModelSerializer):
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_field(self, obj):
-        results = FieldPermissionSerializer(
-            FieldPermission.objects.filter(role=obj), many=True, ignore_field_permission=True
-        ).data
+        # 前端授权树回显契约（treeKeys.ts）：{menuPk: [fieldPk]}，pk 一律为纯字符串。
+        # 不能经 FieldPermissionSerializer 取值：BasePrimaryKeyRelatedField 默认输出
+        # {'pk':..., 'label':...} 结构，会把字典键变成 str(dict)、值变成 dict 列表，
+        # 前端合成键匹配不到树节点，勾选回显全丢（表现为字段权限设置后不渲染）。
         data = {}
-        for res in results:
-            data[str(res.get("menu"))] = res.get("field", [])
+        for fp in FieldPermission.objects.filter(role=obj).prefetch_related("field"):
+            data[str(fp.menu_id)] = [str(item.pk) for item in fp.field.all()]
         return data
 
     def save_fields(self, fields, instance):

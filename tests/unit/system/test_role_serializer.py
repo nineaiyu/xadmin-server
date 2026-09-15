@@ -62,7 +62,11 @@ class TestRoleSerializer:
         assert set(fp.field.values_list("pk", flat=True)) == {children[0].pk}
 
     def test_get_field_returns_menu_field_structure(self, role, menu_factory, field_tree):
-        """get_field 输出 {menu: [field,...]} 结构，键为菜单序列化表示的字符串。"""
+        """get_field 输出 {menuPk: [fieldPk]} 结构，pk 一律为纯字符串。
+
+        前端授权树回显（treeKeys.ts 合成键）依赖该契约：键是菜单 pk 字符串、
+        值是字段 pk 字符串列表；出现 dict 形态（{'pk':...}）会导致勾选回显全丢。
+        """
         menu = menu_factory("menu", menu_type=Menu.MenuChoices.MENU)
         _, children = field_tree()
         fp = FieldPermission.objects.create(role=role, menu=menu)
@@ -70,12 +74,10 @@ class TestRoleSerializer:
 
         data = RoleSerializer().get_field(role)
         assert isinstance(data, dict)
-        assert len(data) == 1
-        key = next(iter(data.keys()))
-        assert str(menu.pk) in key
-        value = data[key]
+        assert set(data.keys()) == {str(menu.pk)}
+        value = data[str(menu.pk)]
         assert isinstance(value, list)
-        assert {item["pk"] for item in value} == {c.pk for c in children}
+        assert set(value) == {str(c.pk) for c in children}
 
     def test_create_with_fields_creates_field_permissions(self, menu_factory, field_tree):
         menu = menu_factory("menu", menu_type=Menu.MenuChoices.MENU)
