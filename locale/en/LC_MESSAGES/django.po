@@ -5194,8 +5194,8 @@ msgid "Target user"
 msgstr "Target user"
 
 #: message app (ADR-034 chat room, generated)
-msgid "Type /kb followed by a question to ask the knowledge base"
-msgstr "Type /kb followed by a question to ask the knowledge base"
+msgid "Type /kb followed by a question to ask the knowledge base, or /do to request an action draft (confirm before execution)"
+msgstr ""
 #: system app (AI profiles, generated)
 msgid "AI profile"
 msgstr "AI profile"
@@ -5276,3 +5276,110 @@ msgstr "Profile activated"
 msgid "Profile deactivated"
 msgstr "Profile deactivated"
 
+#: system app (AI actions, generated)
+msgid "Unknown leave type: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Start date and end date must be in YYYY-MM-DD format"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Reason is required"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Days must be a number"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "A form must be selected"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The requested form does not exist"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The form is disabled and cannot accept submissions"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Submission data must be an object"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The model did not return an actionable request"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The model requested an unknown action: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The action is not available: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "You do not have permission to perform the action: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Unknown action"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Action failed"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Waiting for approval"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "AI action"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "AI actions are not enabled"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Please describe the request after /do"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "I will perform: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Action executed: {}"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Submit a leave request"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Create a leave request for the current user and submit it into the leave approval flow"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Submit a dynamic form"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Submit one record to an active dynamic form; field values must match the form fields"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "AI actions"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "Enable AI actions (whitelisted actions executed as the current user after confirmation, audited)"
+msgstr ""
+
+#: system app (AI actions, generated)
+msgid "The form has been submitted"
+msgstr ""

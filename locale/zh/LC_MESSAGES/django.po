@@ -5744,8 +5744,8 @@ msgid "Target user"
 msgstr "目标用户"
 
 #: message app (ADR-034 chat room, generated)
-msgid "Type /kb followed by a question to ask the knowledge base"
-msgstr "输入 /kb 加问题可向知识库提问"
+msgid "Type /kb followed by a question to ask the knowledge base, or /do to request an action draft (confirm before execution)"
+msgstr "输入 /kb 加问题进行知识库问答，或输入 /do 生成动作草稿（执行前需确认）"
 #: system app (AI profiles, generated)
 msgid "AI profile"
 msgstr "AI 配置档案"
@@ -5826,3 +5826,110 @@ msgstr "档案已激活，AI 全链路将使用该配置"
 msgid "Profile deactivated"
 msgstr "档案已停用，AI 将回落到历史配置"
 
+#: system app (AI actions, generated)
+msgid "Unknown leave type: {}"
+msgstr "未知的请假类型：{}"
+
+#: system app (AI actions, generated)
+msgid "Start date and end date must be in YYYY-MM-DD format"
+msgstr "开始与结束日期必须是 YYYY-MM-DD 格式"
+
+#: system app (AI actions, generated)
+msgid "Reason is required"
+msgstr "请填写事由"
+
+#: system app (AI actions, generated)
+msgid "Days must be a number"
+msgstr "天数必须是数字"
+
+#: system app (AI actions, generated)
+msgid "A form must be selected"
+msgstr "请先选择表单"
+
+#: system app (AI actions, generated)
+msgid "The requested form does not exist"
+msgstr "目标表单不存在"
+
+#: system app (AI actions, generated)
+msgid "The form is disabled and cannot accept submissions"
+msgstr "表单已停用，无法提交"
+
+#: system app (AI actions, generated)
+msgid "Submission data must be an object"
+msgstr "提交数据必须是对象"
+
+#: system app (AI actions, generated)
+msgid "The model did not return an actionable request"
+msgstr "模型没有返回可执行的请求"
+
+#: system app (AI actions, generated)
+msgid "The model requested an unknown action: {}"
+msgstr "模型请求了未登记的动作：{}"
+
+#: system app (AI actions, generated)
+msgid "The action is not available: {}"
+msgstr "动作当前不可用：{}"
+
+#: system app (AI actions, generated)
+msgid "You do not have permission to perform the action: {}"
+msgstr "你没有执行该动作的权限：{}"
+
+#: system app (AI actions, generated)
+msgid "Unknown action"
+msgstr "未知动作"
+
+#: system app (AI actions, generated)
+msgid "Action failed"
+msgstr "动作执行失败"
+
+#: system app (AI actions, generated)
+msgid "Waiting for approval"
+msgstr "等待审批中"
+
+#: system app (AI actions, generated)
+msgid "AI action"
+msgstr "AI 动作"
+
+#: system app (AI actions, generated)
+msgid "AI actions are not enabled"
+msgstr "AI 动作未开启"
+
+#: system app (AI actions, generated)
+msgid "Please describe the request after /do"
+msgstr "请在 /do 后描述要执行的事项"
+
+#: system app (AI actions, generated)
+msgid "I will perform: {}"
+msgstr "我将执行：{}"
+
+#: system app (AI actions, generated)
+msgid "Action executed: {}"
+msgstr "AI 动作已执行：{}"
+
+#: system app (AI actions, generated)
+msgid "Submit a leave request"
+msgstr "发起请假申请"
+
+#: system app (AI actions, generated)
+msgid "Create a leave request for the current user and submit it into the leave approval flow"
+msgstr "以当前用户创建请假申请并提交到请假审批流程"
+
+#: system app (AI actions, generated)
+msgid "Submit a dynamic form"
+msgstr "提交动态表单"
+
+#: system app (AI actions, generated)
+msgid "Submit one record to an active dynamic form; field values must match the form fields"
+msgstr "向启用中的动态表单提交一条记录；字段取值必须与表单字段匹配"
+
+#: system app (AI actions, generated)
+msgid "AI actions"
+msgstr "AI 动作"
+
+#: system app (AI actions, generated)
+msgid "Enable AI actions (whitelisted actions executed as the current user after confirmation, audited)"
+msgstr "开启 AI 动作草稿（白名单动作，经用户确认后以本人身份执行并审计）"
+
+#: system app (AI actions, generated)
+msgid "The form has been submitted"
+msgstr "表单已提交"

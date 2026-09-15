@@ -34,6 +34,7 @@ from common.core.response import ApiResponse
 from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from message.models import ChatRoom
 from settings.serializers.ai import AiAssistantSettingSerializer
 from settings.views.settings import BaseSettingViewSet
 from system.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
@@ -104,14 +105,21 @@ class AiAssistantViewSet(GenericViewSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="status")
     def status(self, request, *args, **kwargs):
-        """助手状态：开关/配置/知识库规模（前端渲染未配置引导）。"""
+        """助手状态：开关/配置/知识库规模/动作可用性（前端渲染未配置引导与 /do 提示）。"""
+        from system.utils.ai_actions import ai_action_enabled, available_actions
+
         last_synced = AiKnowledgeChunk.objects.order_by("-synced_at").values_list("synced_at", flat=True).first()
+        action_ready = ai_action_enabled() and is_enabled()
         return ApiResponse(
             data={
                 "enabled": is_enabled(),
                 "configured": is_configured(),
                 "chunks": AiKnowledgeChunk.objects.count(),
                 "synced_at": last_synced.isoformat() if last_synced else "",
+                "action_enabled": action_ready,
+                "actions": [{"key": spec.key, "label": str(spec.label)} for spec in available_actions(request.user)]
+                if action_ready
+                else [],
             }
         )
 
@@ -219,6 +227,110 @@ class AiAssistantViewSet(GenericViewSet):
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages))
         return ApiResponse(data=result)
+
+    # ------------------------------------------------------------------
+    # A2 受限动作：草稿经聊天 /do 生成，此处只负责「用户确认后」的执行
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _push_action_result(room_id, user, result: dict) -> None:
+        """把执行结果落成 AI 房间的 system 消息并广播（跨端可见、刷新可追溯）。"""
+        if not room_id:
+            return
+        try:
+            from message import chat as chat_service
+            from message.models import ChatMessage
+            from message.utils import push_room_event
+
+            room = chat_service.accessible_room(room_id, user)
+            if room.room_type != ChatRoom.RoomType.AI:
+                return
+            detail = str(result.get("detail") or "")
+            message, __ = chat_service.create_message(
+                room,
+                None,
+                str(_("Action executed: {}").format(detail))[:2000],
+                message_type=ChatMessage.MessageType.SYSTEM,
+                extra={"mode": "action", "action_result": result.get("data") or {}},
+            )
+            push_room_event(room, chat_service.message_payload(message, room=room))
+        except Exception:  # noqa: BLE001 结果回写失败不影响执行结果本身
+            logger.warning("push ai action result failed", exc_info=True)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=False, url_path="action/execute")
+    def action_execute(self, request, *args, **kwargs):
+        """执行已确认的动作草稿：白名单 + 参数重校验（不信任前端回传）+ 权限双门 + 审批协议 + 审计。
+
+        审批口径：动作声明需要审批（如需审批的动态表单）时复用 412 协议——
+        首次确认建 PENDING 单并返回 412；审批通过后前端原样重发（指纹一致）
+        由拦截器携带 X-Approval-Id，消费成功才真正执行。
+        """
+        from system.utils.ai_actions import ai_action_enabled, audit_ai_action, execute_action, get_action
+
+        action_key = str(request.data.get("action") or "").strip()
+        params = request.data.get("params")
+        params = params if isinstance(params, dict) else {}
+        if not ai_action_enabled():
+            return ApiResponse(code=1001, detail=_("AI actions are not enabled"))
+        if not is_enabled():
+            return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
+
+        spec = get_action(action_key)
+        if spec is None:
+            audit_ai_action(request.user, action_key, params, False, str(_("Unknown action")))
+            return ApiResponse(code=1001, detail=_("Unknown action"))
+        if not spec.available(request.user):
+            detail = str(_("The action is not available: {}").format(str(spec.label)))
+            audit_ai_action(request.user, action_key, params, False, detail)
+            return ApiResponse(code=1001, detail=detail)
+        if not spec.has_permission(request.user):
+            detail = str(_("You do not have permission to perform the action: {}").format(str(spec.label)))
+            audit_ai_action(request.user, action_key, params, False, detail)
+            return ApiResponse(code=1001, detail=detail)
+
+        clean, error = spec.validate(request.user, params)
+        if error:
+            audit_ai_action(request.user, action_key, params, False, error)
+            return ApiResponse(code=1001, detail=error)
+
+        if spec.requires_approval(request.user, clean):
+            from system.utils.approval import (
+                APPROVAL_HEADER,
+                APPROVAL_QUERY_PARAM,
+                consume_approval,
+                create_approval,
+                find_active_pending,
+                get_request_params,
+                pending_response,
+            )
+
+            token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
+            if token:
+                approval_response = consume_approval(request, token)
+            else:
+                approval = find_active_pending(request.user, request.method, request.path, get_request_params(request))
+                if approval is None:
+                    # module 显式命名：审批中心里可直接识别来源（视图 docstring 与动作无关）
+                    approval = create_approval(None, request, module=str(_("AI action"))[:64])
+                approval_response = pending_response(approval)
+            if approval_response is not None:
+                audit_ai_action(request.user, action_key, clean, False, str(_("Waiting for approval")))
+                return approval_response
+
+        result = execute_action(request.user, action_key, clean)
+        audit_ai_action(
+            request.user,
+            action_key,
+            clean,
+            bool(result.get("ok")),
+            str(result.get("detail") or ""),
+            {"result": result.get("data") or {}},
+        )
+        if not result.get("ok"):
+            return ApiResponse(code=1001, detail=result.get("detail") or _("Action failed"))
+        self._push_action_result(request.data.get("room_id"), request.user, result)
+        return ApiResponse(data=result.get("data"), detail=result.get("detail"))
 
 
 class AiKnowledgeDocumentFilter(BaseFilterSet):

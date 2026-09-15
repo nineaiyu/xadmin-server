@@ -40,6 +40,13 @@ class AiAssistantSettingSerializer(serializers.Serializer):
         label=_("NL query"),
         help_text=_("Enable natural-language dataset query (gated preview + execute, audited)"),
     )
+    AI_ACTION_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("AI actions"),
+        help_text=_(
+            "Enable AI action drafts (whitelisted actions executed as the current user after confirmation, audited)"
+        ),
+    )
     # 采样/行为参数（回落通路；与 AiProfile 档案字段同义）
     AI_TEMPERATURE = serializers.FloatField(
         required=False, allow_null=True, min_value=0, max_value=2, label=_("Temperature")

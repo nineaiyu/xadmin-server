@@ -12866,5 +12866,28 @@
    "method": null,
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a1e2c3d4-5f6b-4c7d-8e9f-0a1b2c3d4e5f",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00.000Z",
+   "updated_time": "2026-09-15T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "21c88c48-6624-5cff-b85f-952e130e06e0",
+   "menu_type": 2,
+   "name": "actionExecute:AiAssistant",
+   "rank": 5,
+   "path": "api/system/ai/assistant/action/execute$",
+   "component": null,
+   "is_active": true,
+   "meta": "b2f3d4e5-6a7c-4d8e-9f0a-1b2c3d4e5f6a",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

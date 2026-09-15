@@ -20,8 +20,9 @@ from message.utils import push_room_event
 
 logger = get_logger(__name__)
 
-# `/kb` 前缀命令：走知识库 RAG；否则通用多轮对话
+# `/kb` 前缀命令：走知识库 RAG；`/do` 前缀命令：受限动作草稿（A2）；否则通用多轮对话
 KB_COMMAND = "/kb"
+ACTION_COMMAND = "/do"
 
 
 def is_enabled() -> bool:
@@ -39,6 +40,45 @@ def is_kb_command(content: str) -> bool:
 def strip_kb_command(content: str) -> str:
     """去掉 `/kb` 前缀取真实问题（保留空串：由调用方给出可读提示）。"""
     return (content or "").strip()[len(KB_COMMAND) :].strip()
+
+
+def is_action_command(content: str) -> bool:
+    """是否为受限动作命令（`/do` 或 `/do 请求描述`）。"""
+    return (content or "").strip().lower().startswith(ACTION_COMMAND)
+
+
+def strip_action_command(content: str) -> str:
+    """去掉 `/do` 前缀取真实请求描述（保留空串：由调用方给出可读提示）。"""
+    return (content or "").strip()[len(ACTION_COMMAND) :].strip()
+
+
+def action_reply(user, request_text: str) -> tuple:
+    """受限动作草稿（A2）：返回 (content, extra, mode)。
+
+    - 可执行 → content 为确认摘要，``extra.action_draft`` 携带白名单动作与规范化参数
+      （前端渲染确认卡片，用户二次确认后经 execute 端点以本人身份执行）；
+    - 请求不可执行/缺参数 → 返回澄清文本（mode=chat，按普通 AI 气泡渲染，不落草稿）；
+    - 灰度关闭/LLM 失败 → 抛可读校验错误（调用方落 system 消息降级，不静默）。
+    """
+    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from system.utils.ai import ai_credentials
+    from system.utils.ai_actions import ai_action_enabled, build_draft_prompt, parse_draft
+
+    if not ai_action_enabled():
+        raise DjangoValidationError(_("AI actions are not enabled"))
+    if not request_text:
+        raise DjangoValidationError(_("Please describe the request after /do"))
+    try:
+        raw = ChatCompletionsClient(ai_credentials()).chat(build_draft_prompt(user, request_text))
+        result = parse_draft(raw, user)
+    except AiSdkError as exc:
+        logger.warning("chat ai action draft failed: %s", exc)
+        raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
+    if result["kind"] == "message":
+        return result["message"], {"mode": "chat"}, "chat"
+    draft = result["draft"]
+    content = str(_("I will perform: {}").format(draft["label"]))
+    return content, {"mode": "action", "action_draft": draft}, "action"
 
 
 def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list:
@@ -96,6 +136,9 @@ def kb_answer(question: str) -> tuple:
 
 def ai_reply_content(room: ChatRoom, question: str) -> tuple:
     """按命令分流生成回复，返回 (content, extra, mode)。"""
+    if is_action_command(question):
+        # AI 房间归属者即发起用户（视图层已保证 room_type=ai）
+        return action_reply(room.owner, strip_action_command(question))
     if is_kb_command(question):
         kb_question = strip_kb_command(question)
         if not kb_question:
@@ -132,7 +175,12 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
     chunks: list = []
     extra = {"mode": "chat"}
     try:
-        if is_kb_command(question):
+        if is_action_command(question):
+            # `/do` 动作草稿：整段单 delta（草稿是结构化结果，无打字机语义）
+            content, extra, __ = action_reply(room.owner, strip_action_command(question))
+            chunks.append(content)
+            yield {"event": "delta", "data": {"delta": content}}
+        elif is_kb_command(question):
             kb_question = strip_kb_command(question)
             if not kb_question:
                 raise DjangoValidationError(_("Please provide a question after /kb, e.g. /kb how to reset password"))
@@ -168,7 +216,12 @@ def markdown_hint() -> str:
 
     文案不含尖括号占位符：该串会直接渲染到前端（含 i18n 场景），尖括号易被误当标签。
     """
-    return str(_("Type /kb followed by a question to ask the knowledge base"))
+    return str(
+        _(
+            "Type /kb followed by a question to ask the knowledge base, or /do to request an "
+            "action draft (confirm before execution)"
+        )
+    )
 
 
 def ai_gate_error() -> str:

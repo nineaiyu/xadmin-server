@@ -25,9 +25,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
+from rest_framework.renderers import JSONRenderer
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
+from common.drf.renders import EventStreamRenderer
 from common.swagger.utils import get_default_response_schema
 from message import ai as chat_ai
 from message import chat as chat_service
@@ -242,6 +244,18 @@ class ChatAiViewSet(GenericViewSet):
         push_room_event(room, payload)
         return ApiResponse(data={"mode": mode, "question": question_payload, "message": payload})
 
+    def get_renderers(self):
+        """stream 动作按需接入 SSE 渲染器：浏览器 fetch 携带 Accept: text/event-stream，
+        协商必须能命中该 media type，否则一律 406（APIClient 默认 Accept: */* 会命中
+        JSONRenderer，单测发现不了这个问题）。
+
+        注意 ``@renderer_classes`` 装饰器只对 @api_view 函数视图生效，ViewSet 必须
+        覆写 get_renderers。
+        """
+        if getattr(self, "action", None) == "stream":
+            return [JSONRenderer(), EventStreamRenderer()]
+        return super().get_renderers()
+
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="stream")
     def stream(self, request, *args, **kwargs):
@@ -249,10 +263,11 @@ class ChatAiViewSet(GenericViewSet):
 
         事件载荷均为 JSON（``data: {...}\\n\\n``）；业务落库与 WS 广播与 `message` 同口径
         （前端实时气泡 + 多端同步），失败带内下发光 error 事件（头已发出，不能再改状态码）。
-        非 SSE 错误（门禁/参数/房间）仍走 JSON 1001，前端按普通接口错误提示。
+        非 SSE 错误（门禁/参数/房间）仍走 JSON 1001，前端按普通接口错误提示；
+        这里显式声明 content_type，避免被 EventStreamRenderer 覆盖成 SSE 类型。
         """
         if not chat_ai.is_enabled():
-            return ApiResponse(code=1001, detail=chat_ai.ai_gate_error())
+            return ApiResponse(code=1001, detail=chat_ai.ai_gate_error(), content_type="application/json")
         serializer = ChatAiMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         content = serializer.validated_data["content"]
@@ -262,9 +277,9 @@ class ChatAiViewSet(GenericViewSet):
             try:
                 room = chat_service.accessible_room(room_id, request.user)
             except DjangoValidationError as exc:
-                return ApiResponse(code=1001, detail=_validation_detail(exc))
+                return ApiResponse(code=1001, detail=_validation_detail(exc), content_type="application/json")
             if room.room_type != ChatRoom.RoomType.AI:
-                return ApiResponse(code=1001, detail=_("Not an AI assistant chat"))
+                return ApiResponse(code=1001, detail=_("Not an AI assistant chat"), content_type="application/json")
         else:
             room = chat_service.get_or_create_ai_room(request.user)
 

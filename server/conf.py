@@ -164,6 +164,9 @@ class Config(dict):
         "AI_TIMEOUT": 60,
         # AI 二期 NL 查数：默认关闭灰度
         "AI_NL_QUERY_ENABLED": False,
+        # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：默认关闭灰度，
+        # 白名单动作与审计见 system/utils/ai_actions.py（ADR-038）
+        "AI_ACTION_ENABLED": False,
         # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
         "AI_TEMPERATURE": 0.2,
         "AI_MAX_TOKENS": 0,

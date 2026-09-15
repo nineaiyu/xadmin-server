@@ -226,8 +226,12 @@ def forbidden_response(detail: str) -> ApiResponse:
     return ApiResponse(code=403, status=403, detail=detail, type=APPROVAL_RESPONSE_TYPE)
 
 
-def create_approval(view, request):
-    """建 PENDING 单并通知审批人；无可用审批人时直接报错（避免永久 PENDING）。"""
+def create_approval(view, request, module: str = ""):
+    """建 PENDING 单并通知审批人；无可用审批人时直接报错（避免永久 PENDING）。
+
+    module：调用方可显式指定审批单归属模块名（缺省取视图 docstring 首行），
+    供非标准 CRUD 入口（如 AI 动作执行端点）给出可读的审批单标题。
+    """
     from system.models.approval import ApprovalRequest
 
     approvers = resolve_approvers(request.user)
@@ -236,7 +240,7 @@ def create_approval(view, request):
 
     params = get_request_params(request)
     approval = ApprovalRequest.objects.create(
-        module=build_module(view)[:64],
+        module=(module or build_module(view))[:64],
         method=request.method,
         path=request.path,
         object_pk=get_request_object_pk(view),
