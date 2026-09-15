@@ -28,16 +28,16 @@
 
 | 项 | 说明 / 前置条件 |
 |----|-----------------|
-| PITR（WAL 归档） | 备份 RPO 6h → 分钟级；前置：磁盘成本与回放演练立项评审 |
+| ~~PITR（WAL 归档）~~ | ✅ 2026-09-15 方案与工具就绪（[docs/ops/pitr.md](../ops/pitr.md)：启用步骤/成本口径/演练流程 + `utils/pitr_drill.sh` 链路检查助手）；**默认不启用**，待发布窗口确认独立归档卷成本后按文档开启 |
 | 适老/可读性轻方案 | 用户级字号设置或浏览器缩放引导（不动全局样式）；全局主题方案已于 2026-09-08 否决 |
 | AES 旧格式（`Salted__`）退役 | `SECURITY_AES_V1_DECRYPT_ENABLED` 开关已落地（[ADR-011](../adr/ADR-011-aes-protocol-v2.md)），待发布窗口核对前端版本分布后由运维关闭 |
-| 审批流三期余量 | 委托代理、与 MFA 敏感操作联动扩展（画布/网关/版本回滚/比例会签已随 [ADR-016](../adr/ADR-016-approval-flow-phase2.md) 交付） |
+| ~~审批流三期余量~~ | ✅ 2026-09-15 完成（[ADR-040](../adr/ADR-040-approval-flow-phase3.md)：动作 MFA 二次确认已交付 + 委托代理全量交付——模型/解析防环/接口/权限点/前端页/E2E 守护） |
 | print.ts 前端打印 | 零依赖，待有打印需求时引入 |
-| LDAP 组→角色映射 | 目录组同步为平台角色（[ADR-017](../adr/ADR-017-ldap-directory-sync.md) 一期只做部门树）；需求出现时评审 |
-| 管理员代录 IM 账号 | 免扫码为用户补钉钉/企微/飞书身份（[ADR-019](../adr/ADR-019-im-notify-channels.md) 边界）；需处理 unionId/userid 语义 |
+| ~~LDAP 组→角色映射~~ | ✅ 2026-09-15 完成（`LDAP_GROUP_ROLE_MAP` 组 DN/CN → 角色 code 映射；同步挂/撤角色、只管映射角色不动手工授权；管理页可配 + 6 例测试） |
+| ~~管理员代录 IM 账号~~ | ✅ 2026-09-15 完成（`user/{pk}/im-binding` 代录/解绑 + 防自锁 + `IM:binding` 审计 + 2 权限点 + 用户页弹窗入口 + 6 例测试） |
 | ~~Webhook payload schema 治理~~ | ✅ 2026-09-15 完成（[ADR-039](../adr/ADR-039-open-platform-phase2.md) B4：`EVENT_CATALOG` 契约表 + `schema_version` + 自动生成 events.md + 守护测试；一致性守卫口径已收紧） |
 | ~~报表 cron 表达式~~ | ✅ 2026-09-15 完成（[ADR-041](../adr/ADR-041-report-cron-expression.md)：`Report.cron_expression` + croniter 分钟级判定 + 每分钟分发任务 + 序列化器校验） |
-| 仪表盘卡片级权限与字段权限叠加 | 卡片按浏览者细粒度授权（[ADR-020](../adr/ADR-020-dataset-dashboard-phase1.md) 边界）；与数据集列白名单联动评审 |
+| ~~仪表盘卡片级权限~~（一期） | ✅ 2026-09-15（[ADR-042](../adr/ADR-042-dashboard-card-permission.md)：`layout[].allowed_roles` 授权面 + 读取侧按浏览者角色过滤 + 未知角色 code 拒绝 + 5 例测试）；二期遗留：字段权限叠加到执行列、前端授权 UI |
 | ~~AI 检索升级为向量嵌入~~ | ✅ 2026-09-15 已评估（[ADR-037](../adr/ADR-037-ai-retrieval-evaluation.md)：36 问评测集 hit@5 97.2%，**暂不引入向量**；重开条件见 ADR） |
 | suggestions 候选接口 | 前置：先定首个消费方（SearchUser/SearchDept 或 RePlusPage 关系字段渲染器） |
 | common/decorators.py 按域拆分 | 265 行、4 个消费方，纯搬家零收益，登记缓做 |

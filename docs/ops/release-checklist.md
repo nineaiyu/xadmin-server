@@ -70,7 +70,7 @@
 | 生产异地副本独立故障域核对 | 备份副本与生产不在同一故障域（机房/账号/存储），核对副本可独立恢复 | 每季度备份演练时一并核对（记录追加到 ops/backup-drill-*.md） |
 | Renovate main 合入 + dispatch 验收 | `renovate.yml`/`renovate.json` 仅在 dev 分支，非默认分支 dispatch 返回 404、cron 不生效 | 下次例行合入 main 后执行 `gh workflow run renovate.yml` 补跑验收（并确认 `RENOVATE_TOKEN`） |
 | SCIM 真实 IdP 联调 | Okta/Entra 真实目录接入（需租户资源） | 有真实 IdP 资源时插入执行；参考 [scim.md](../architecture/scim.md) |
-| PITR（WAL 归档） | RPO 6h → 分钟级 | 仅当 RPO 升为硬需求并经成本评审（候选池，见 plans/README.md） |
+| PITR（WAL 归档） | RPO 6h → 分钟级 | 方案与演练工具已备（[docs/ops/pitr.md](pitr.md) + `utils/pitr_drill.sh` 链路检查助手）；启用需发布窗口（`archive_mode=on` 需重启）+ 独立归档卷成本确认 |
 
 ## 4. 执行记录（逐窗口追加）
 
