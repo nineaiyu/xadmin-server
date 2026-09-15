@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from system.models.dataset import Dashboard, Dataset
-from system.utils.dataset import validate_dataset
+from system.utils.dataset import filter_layout_for_user, validate_dataset
 
 ALLOWED_CHART_TYPES = ("number", "line", "bar", "pie")
 
@@ -64,6 +64,9 @@ class DashboardSerializer(BaseModelSerializer):
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Invalid dashboard layout"))
         dataset_pks = {str(pk) for pk in Dataset.objects.values_list("pk", flat=True)}
+        from system.models import UserRole
+
+        known_role_codes = set(UserRole.objects.values_list("code", flat=True))
         for card in value or []:
             if not isinstance(card, dict) or not card.get("id") or not card.get("dataset"):
                 raise serializers.ValidationError(_("Invalid dashboard layout"))
@@ -71,4 +74,18 @@ class DashboardSerializer(BaseModelSerializer):
                 raise serializers.ValidationError(_("Invalid chart type: {}").format(card.get("chart_type")))
             if str(card["dataset"]) not in dataset_pks:
                 raise serializers.ValidationError(_("Unknown dataset in layout"))
+            # 卡片级权限（allowed_roles）：空 = 全员可见；非空须为已知角色 code
+            allowed_roles = card.get("allowed_roles") or []
+            if not isinstance(allowed_roles, list) or any(not isinstance(item, str) for item in allowed_roles):
+                raise serializers.ValidationError(_("Invalid card roles"))
+            unknown = [code for code in allowed_roles if code not in known_role_codes]
+            if unknown:
+                raise serializers.ValidationError(_("Unknown role codes: {}").format(", ".join(unknown)))
         return value
+
+    def to_representation(self, instance):
+        """读取侧按浏览者过滤卡片（卡片级权限；超管全量，匿名 fail-closed）。"""
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        data["layout"] = filter_layout_for_user(instance.layout, getattr(request, "user", None))
+        return data

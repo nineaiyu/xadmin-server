@@ -200,3 +200,20 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
             for row in rows
         ]
     return {"name": group_by, "metric": metric, "series": series}
+
+
+def filter_layout_for_user(layout, user) -> list:
+    """卡片级权限过滤（仪表盘读取侧）：allowed_roles 空 = 全员可见；非空要求浏览者命中其一。
+
+    - 超管全量可见（旁路，与数据权限口径一致）；
+    - 匿名/未认证 → 空布局（fail-closed，路由层已拦截，此处兜底）。
+    """
+    if user is None or not getattr(user, "is_authenticated", False):
+        return []
+    cards = list(layout or [])
+    if getattr(user, "is_superuser", False):
+        return cards
+    role_codes = set(user.roles.filter(is_active=True).values_list("code", flat=True))
+    return [
+        card for card in cards if not card.get("allowed_roles") or role_codes & set(card.get("allowed_roles") or [])
+    ]
