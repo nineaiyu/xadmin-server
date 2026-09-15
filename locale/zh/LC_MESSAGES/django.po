@@ -5199,6 +5199,11 @@ msgstr "字段 {} 不可用于数据集"
 msgid "Field {} is not numeric, cannot aggregate"
 msgstr "字段 {} 不是数值字段，无法聚合"
 
+#: system/utils/dataset.py
+#, python-brace-format
+msgid "No field permission for {}.{}"
+msgstr "无 {}.{} 的字段权限"
+
 #: system/utils/dataset.py:155 system/utils/nl_query.py:111
 #, python-brace-format
 msgid "Metric {} is not allowed"

@@ -37,7 +37,7 @@
 | ~~管理员代录 IM 账号~~ | ✅ 2026-09-15 完成（`user/{pk}/im-binding` 代录/解绑 + 防自锁 + `IM:binding` 审计 + 2 权限点 + 用户页弹窗入口 + 6 例测试） |
 | ~~Webhook payload schema 治理~~ | ✅ 2026-09-15 完成（[ADR-039](../adr/ADR-039-open-platform-phase2.md) B4：`EVENT_CATALOG` 契约表 + `schema_version` + 自动生成 events.md + 守护测试；一致性守卫口径已收紧） |
 | ~~报表 cron 表达式~~ | ✅ 2026-09-15 完成（[ADR-041](../adr/ADR-041-report-cron-expression.md)：`Report.cron_expression` + croniter 分钟级判定 + 每分钟分发任务 + 序列化器校验） |
-| ~~仪表盘卡片级权限~~（一期） | ✅ 2026-09-15（[ADR-042](../adr/ADR-042-dashboard-card-permission.md)：`layout[].allowed_roles` 授权面 + 读取侧按浏览者角色过滤 + 未知角色 code 拒绝 + 5 例测试）；二期遗留：字段权限叠加到执行列、前端授权 UI |
+| ~~仪表盘卡片级权限~~（一二期） | ✅ 2026-09-15 一期 + 2026-09-16 二期全部交付（[ADR-042](../adr/ADR-042-dashboard-card-permission.md)：`layout[].allowed_roles` 授权面 + 读取侧角色过滤 + 字段权限叠加到执行/聚合输出（无字段配置=全量）+ 卡片弹窗「可见角色」授权 UI + 越权矩阵补强，共 18 例测试 + E2E） |
 | ~~AI 检索升级为向量嵌入~~ | ✅ 2026-09-15 已评估（[ADR-037](../adr/ADR-037-ai-retrieval-evaluation.md)：36 问评测集 hit@5 97.2%，**暂不引入向量**；重开条件见 ADR） |
 | suggestions 候选接口 | 前置：先定首个消费方（SearchUser/SearchDept 或 RePlusPage 关系字段渲染器） |
 | common/decorators.py 按域拆分 | 265 行、4 个消费方，纯搬家零收益，登记缓做 |

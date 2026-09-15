@@ -14,7 +14,7 @@ ALLOWED_CHART_TYPES = ("number", "line", "bar", "pie")
 
 class DatasetSerializer(BaseModelSerializer):
     # 定义类资源（配置对象）不做字段权限裁剪：可见性语义 = 创建者/共享；
-    # 字段权限叠加到数据集列属待评估边界项
+    # 字段权限叠加发生在执行/聚合输出侧（system/utils/dataset.py，ADR-042 二期）
     ignore_field_permission = True
 
     class Meta:

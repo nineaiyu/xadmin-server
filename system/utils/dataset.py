@@ -6,7 +6,8 @@
 - 模型白名单 = ModelLabelField DATA 根节点（与数据权限编辑器同源）；
 - 字段白名单 = 对应模型的 DATA 子节点；过滤字段/排序字段/聚合字段同样受限；
 - op 白名单固定九种；聚合 metric 限 count/sum/avg，sum/avg 仅数值字段；
-- 行级过滤走既有入口 `get_filter_queryset`（fail-closed：无授权 → none()）。
+- 行级过滤走既有入口 `get_filter_queryset`（fail-closed：无授权 → none()）；
+- 输出列叠加浏览者字段权限白名单（ADR-042 二期，见 viewer_visible_fields）。
 """
 
 from django.apps import apps
@@ -137,10 +138,58 @@ def build_queryset(dataset, user_obj, extra_filters=None):
     return get_filter_queryset(queryset, user_obj), model, columns
 
 
+def viewer_visible_fields(bound_model: str, user_obj):
+    """浏览者对 bound_model 的字段权限白名单（ADR-042 二期：跨菜单并集）。
+
+    角色解析与 `common.core.permission.get_user_field_queryset` 同口径
+    （用户直挂角色 + 部门挂角色，均要求角色启用）；字段权限配置本身跨菜单取并集——
+    数据集执行无菜单上下文，逐菜单裁剪在此无意义。
+
+    返回值语义：
+    - ``None``：超管，或浏览者的角色**没有任何**该模型字段权限配置 → 不裁剪（全量）。
+      字段权限是显式授权行为（白名单制），而数据集执行不走菜单序列化裁剪链路；
+      若在此 fail-closed 全裁，所有未配置字段权限的普通用户的仪表盘都会被裁空；
+    - ``set``：白名单字段名集合（执行/聚合列与其求交集后输出）。
+    """
+    from django.db.models import Q
+
+    from system.models import FieldPermission
+
+    if getattr(user_obj, "is_superuser", False):
+        return None
+    conditions = Q()
+    has_role = False
+    roles = list(user_obj.roles.all())
+    if roles:
+        conditions |= Q(role__in=roles) & Q(role__is_active=True)
+        has_role = True
+    if getattr(user_obj, "dept", None):
+        conditions |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
+        has_role = True
+    if not has_role:
+        return None
+    fields = set(
+        FieldPermission.objects.filter(conditions)
+        .filter(field__parent__name=bound_model)
+        .values_list("field__name", flat=True)
+        .distinct()
+    )
+    return fields or None
+
+
 def execute_dataset(dataset, user_obj):
-    """执行数据集：返回白名单列的行数据（row_limit 上限）。"""
+    """执行数据集：返回白名单列的行数据（row_limit 上限）。
+
+    输出列 = 数据集 columns ∩ 浏览者字段权限白名单（超管/无字段配置 = 全量，
+    见 ADR-042 二期）；交集为空时返回空结果（不泄露行数等任何业务数据）。
+    """
     queryset, model, columns = build_queryset(dataset, user_obj)
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
+    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    if visible is not None:
+        columns = [col for col in columns if col in visible]
+    if not columns:
+        return {"columns": [], "rows": [], "total": 0, "limit": limit}
     rows = list(queryset.values(*columns)[:limit])
     return {"columns": columns, "rows": rows, "total": queryset.count(), "limit": limit}
 
@@ -149,7 +198,9 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
     """聚合：图表卡片数据源。输出 [{name, value}]（桶上限 365）。
 
     - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势）；
-    - metric: count / sum / avg（sum、avg 仅数值字段，value_field 必填且在白名单）。
+    - metric: count / sum / avg（sum、avg 仅数值字段，value_field 必填且在白名单）；
+    - 字段权限叠加（ADR-042 二期）：分组/取值字段必须对浏览者可见，否则聚合结果
+      会绕过列白名单泄露隐藏字段（如薪酬求和），fail-closed 报错。
     """
     if metric not in ALLOWED_METRICS:
         raise ValidationError(_("Metric {} is not allowed").format(metric))
@@ -157,6 +208,13 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
     whitelist = set(available_fields(dataset.bound_model))
     if group_by not in whitelist:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(dataset.bound_model, group_by))
+
+    visible = viewer_visible_fields(dataset.bound_model, user_obj)
+    if visible is not None:
+        if group_by not in visible:
+            raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, group_by))
+        if value_field and value_field not in visible:
+            raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, value_field))
 
     queryset, __, __ = build_queryset(dataset, user_obj, extra_filters=[])
     annotation = Count("pk")
