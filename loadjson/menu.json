@@ -13004,5 +13004,174 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+   "menu_type": 1,
+   "name": "SystemApprovalDelegation",
+   "rank": 194,
+   "path": "/system/approval/delegation/index",
+   "component": "system/approval/delegation/index",
+   "is_active": true,
+   "meta": "53279ffa-64e5-4f28-90ea-479225b06d78",
+   "method": null,
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c94db9db-ddf0-4fe3-890f-a333ab3661ba",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.173Z",
+   "updated_time": "2026-09-15T13:17:32.173Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "list:SystemApprovalDelegation",
+   "rank": 10000,
+   "path": "api/system/approval-delegations$",
+   "component": null,
+   "is_active": true,
+   "meta": "2b606fea-cf43-454c-bd06-1894d8a49be4",
+   "method": "GET",
+   "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2cdc028c-0149-475b-8ecd-670bd0870985",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.179Z",
+   "updated_time": "2026-09-15T13:17:32.179Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "create:SystemApprovalDelegation",
+   "rank": 10001,
+   "path": "api/system/approval-delegations$",
+   "component": null,
+   "is_active": true,
+   "meta": "bdfa28b4-0c90-4e68-8d03-fda708c3f61d",
+   "method": "POST",
+   "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dae2d92e-d5ce-49f7-b87a-1c9cd5eb3cfc",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.182Z",
+   "updated_time": "2026-09-15T13:17:32.182Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "destroy:SystemApprovalDelegation",
+   "rank": 10002,
+   "path": "api/system/approval-delegations/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "d7509a2b-b969-47ff-a8c6-ab21abaeea66",
+   "method": "DELETE",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "292c454e-a502-494d-88da-8156e09d863b",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.183Z",
+   "updated_time": "2026-09-15T13:17:32.183Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "retrieve:SystemApprovalDelegation",
+   "rank": 10003,
+   "path": "api/system/approval-delegations/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "3c9a70a5-771b-4e63-95e2-860729468e13",
+   "method": "GET",
+   "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3e9b963d-055d-4397-9bb0-3f22a8891b4b",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.186Z",
+   "updated_time": "2026-09-15T13:17:32.186Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "partialUpdate:SystemApprovalDelegation",
+   "rank": 10004,
+   "path": "api/system/approval-delegations/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "8593dbd0-e0b3-4e97-a883-816d3a959d2b",
+   "method": "PATCH",
+   "model": [
+    "14071ee3-6725-4fcc-962d-ad7898efa284"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "34593208-c9a4-4e62-8ff4-def234408c8c",
+  "fields": {
+   "created_time": "2026-09-15T13:17:32.188Z",
+   "updated_time": "2026-09-15T13:17:32.188Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "batchDestroy:SystemApprovalDelegation",
+   "rank": 10005,
+   "path": "api/system/approval-delegations/batch-destroy$",
+   "component": null,
+   "is_active": true,
+   "meta": "03f078a1-0fd5-4872-8113-f4d5a27120b7",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

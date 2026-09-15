@@ -162,7 +162,46 @@ def resolve_assignees(node, applicant, form_data) -> list:
     else:
         return []
 
-    return list(queryset.exclude(pk=applicant.pk).order_by("pk"))
+    resolved = list(queryset.exclude(pk=applicant.pk).order_by("pk"))
+    return _expand_delegations(resolved, node, applicant)
+
+
+def _delegations():
+    from system.models import ApprovalDelegation
+
+    return ApprovalDelegation
+
+
+def _expand_delegations(users, node, applicant) -> list:
+    """委托代理展开（审批流三期）：生效委托用代理人替换原审批人。
+
+    - 仅「生效中」委托参与：is_active + start<=now<=end + 流程范围命中（空 = 全部流程）；
+    - 代理人若为申请人本人或已停用 → 丢弃该候选（申请人不能审批自己的节点，语义不变）；
+    - 代理人自身再委托不生效（不递归，防环）；
+    - 无委托记录时一次批量查询后原样返回（存量行为零变化）。
+    """
+    if not users:
+        return users
+    ApprovalDelegation = _delegations()
+    now = timezone.now()
+    flow_code = getattr(getattr(node, "flow", None), "code", "")
+    rows = ApprovalDelegation.objects.filter(
+        delegator__in=users, is_active=True, start_time__lte=now, end_time__gte=now
+    ).select_related("delegate")
+    by_delegator = {}
+    for row in rows:
+        codes = row.flow_codes or []
+        if codes and flow_code not in codes:
+            continue
+        by_delegator[row.delegator_id] = row.delegate
+
+    expanded: dict = {}
+    for user in users:
+        target = by_delegator.get(user.pk) or user
+        if target.pk == applicant.pk or not target.is_active:
+            continue
+        expanded[target.pk] = target
+    return list(expanded.values())
 
 
 def matching_nodes(flow, form_data) -> list:

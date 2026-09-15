@@ -33,7 +33,8 @@ from common.core.modelset import (
 )
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
+from system.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalInstance, ApprovalNodeTask
+from system.serializers.approval_delegation import ApprovalDelegationSerializer
 from system.serializers.approval_flow import ApprovalFlowSerializer, ApprovalInstanceSerializer
 from system.utils.approval_flow import (
     FLOW_STATS_WINDOW_DAYS,
@@ -421,3 +422,25 @@ class ApprovalInstanceViewSet(
         if not ok:
             return ApiResponse(code=1001, detail=detail)
         return ApiResponse(detail=_("The approver has been added"))
+
+
+class ApprovalDelegationFilter(BaseFilterSet):
+    class Meta:
+        model = ApprovalDelegation
+        fields = ["is_active", "delegator", "delegate"]
+
+
+class ApprovalDelegationViewSet(BaseModelSet):
+    """审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。
+
+    只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
+    解析语义见 system/utils/approval_flow.py::_expand_delegations。
+    """
+
+    queryset = ApprovalDelegation.objects.all()
+    serializer_class = ApprovalDelegationSerializer
+    filterset_class = ApprovalDelegationFilter
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ["-created_time"]
+    ordering_fields = ["created_time", "start_time", "end_time"]
+    select_related_fields = ("delegator", "delegate")

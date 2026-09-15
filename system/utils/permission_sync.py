@@ -36,7 +36,10 @@ DEAD_ENDPOINT_PREFIXES = ()
 # 不参与扫描的路由前缀（demo 应用按既定决策不投入）
 SKIP_ROUTE_PREFIXES = ("api/demo/",)
 # 无同源权限点时，按路由前缀指定父菜单（Menu.name，必须为页面菜单）
-PARENT_MENU_MAP = {"api/system/dynamic-form-submissions": "FormMySubmission"}
+PARENT_MENU_MAP = {
+    "api/system/dynamic-form-submissions": "FormMySubmission",
+    "api/system/approval-delegations": "SystemApprovalDelegation",
+}
 # 审计豁免（有权限点但不在可扫描路由面内，运行期经权限链正则回退命中，权限点有效）：
 # - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
 # - api-docs/*、api/flower/*、api/system/global-search：路由以无名 pattern / 代理注册，
