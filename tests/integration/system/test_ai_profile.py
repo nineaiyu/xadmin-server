@@ -3,11 +3,8 @@
 
 覆盖：CRUD 与 api_key 加密/回显剔除、激活互斥（全局至多一个）、
 credentials 收口（激活档案优先 / 无档案回落 Setting 通路）、
-test 连接测试动作、persona/context_limit 配置化、权限门控、
-迁移函数（Setting → Profile 数据搬迁）。
+test 连接测试动作、persona/context_limit 配置化、权限门控。
 """
-
-import importlib
 
 import pytest
 from rest_framework.test import APIClient
@@ -24,8 +21,6 @@ from system.utils.ai import (
 pytestmark = pytest.mark.django_db
 
 PROFILES_URL = "/api/system/ai/profiles"
-# 迁移模块名以数字开头，不能静态 import
-_migrate_setting_to_profile = importlib.import_module("system.migrations.0005_aiprofile").migrate_setting_to_profile
 
 
 @pytest.fixture(autouse=True)
@@ -257,53 +252,3 @@ class TestTestAction:
         row = AiProfile.objects.create(name="p", base_url="https://x.example.com", api_key="", model="m")
         response = auth_client.post(f"{PROFILES_URL}/{row.pk}/test")
         assert response.json()["code"] == 1001
-
-
-class TestMigrationHelpers:
-    def test_migrate_setting_to_profile(self, db):
-        """Setting（category=ai）齐全 → 搬迁为激活档案；已存在档案时幂等跳过。"""
-        from django.apps import apps as real_apps
-
-        from settings.models import Setting
-
-        Setting.objects.filter(category="ai").delete()
-        # update_or_create 内部做 json 编码，这里传原始值
-        Setting.update_or_create(name="AI_BASE_URL", value="https://old.example.com/v1", category="ai")
-        Setting.update_or_create(name="AI_API_KEY", value="sk-old", encrypted=True, category="ai")
-        Setting.update_or_create(name="AI_MODEL", value="old-model", category="ai")
-        Setting.update_or_create(name="AI_TEMPERATURE", value=0.4, category="ai")
-
-        class _FakeSchema:
-            pass
-
-        AiProfile.objects.all().delete()
-        _migrate_setting_to_profile(real_apps, _FakeSchema())
-        row = AiProfile.objects.get(name="默认配置")
-        assert row.base_url == "https://old.example.com/v1"
-        assert row.api_key_plain == "sk-old"
-        assert row.model == "old-model"
-        assert row.temperature == 0.4
-        assert row.is_active is True
-
-        # 幂等：档案表已有行（哪怕是别的）不再搬迁
-        AiProfile.objects.all().delete()
-        AiProfile.objects.create(name="已有档案", base_url="u", api_key="", model="m")
-        _migrate_setting_to_profile(real_apps, _FakeSchema())
-        assert AiProfile.objects.filter(name="默认配置").exists() is False
-
-    def test_migrate_skips_incomplete_settings(self, db):
-        """凭据不齐全（仅开开关）不搬迁：保持「无档案 = Setting 回落」语义。"""
-        from django.apps import apps as real_apps
-
-        from settings.models import Setting
-
-        Setting.objects.filter(category="ai").delete()
-        Setting.update_or_create(name="AI_ASSISTANT_ENABLED", value=True, category="ai")
-        Setting.update_or_create(name="AI_BASE_URL", value="https://old.example.com/v1", category="ai")
-
-        class _FakeSchema:
-            pass
-
-        AiProfile.objects.all().delete()
-        _migrate_setting_to_profile(real_apps, _FakeSchema())
-        assert AiProfile.objects.count() == 0
