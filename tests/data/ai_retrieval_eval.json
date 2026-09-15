@@ -1,0 +1,188 @@
+{
+  "description": "AI 知识库检索评测集（A1，检索升级门控）：问题 -> 期望出处（source_path，命中 top-5 任一即算 hit）。出处路径相对 xadmin-server 仓库根，口径与 system/utils/ai.py 的 _iter_doc_files 一致。新增/重命名语料文档时需同步本文件并重跑 tests/integration/system/test_ai_retrieval_eval.py。",
+  "version": 1,
+  "updated": "2026-09-14",
+  "top_k": 5,
+  "cases": [
+    {
+      "id": "mfa-412",
+      "question": "敏感操作的二次验证 MFA 是怎么实现的？412 协议与权限工厂是什么？",
+      "expected": ["docs/architecture/mfa.md"]
+    },
+    {
+      "id": "cache-keys",
+      "question": "缓存键的命名规范、TTL 与失效矩阵在哪里查？",
+      "expected": ["docs/architecture/cache.md", "docs/cache-keys-audit.md"]
+    },
+    {
+      "id": "data-permission-compiler",
+      "question": "数据权限规则编译器有哪几段管线？ScopeResult 布尔代数怎么设计？",
+      "expected": ["docs/architecture/数据权限与字段权限重构方案-2026.09.md"]
+    },
+    {
+      "id": "field-permission",
+      "question": "字段权限如何控制列表或详情列的可见性？白名单怎么配？",
+      "expected": ["docs/architecture/field-permission.md"]
+    },
+    {
+      "id": "permission-layers",
+      "question": "三层权限体系的生效顺序是什么？页面权限、数据权限与字段权限如何叠加？",
+      "expected": ["docs/architecture/permission.md"]
+    },
+    {
+      "id": "webhook-signature",
+      "question": "出站 Webhook 的 HMAC-SHA256 签名怎么做？投递失败如何指数退避重试？",
+      "expected": ["docs/adr/ADR-022-outbound-webhooks.md"]
+    },
+    {
+      "id": "aes-v2",
+      "question": "AES 加密协议 v2 的密文格式（PBKDF2 与 AES-GCM）与旧 Salted 格式如何兼容？",
+      "expected": ["docs/adr/ADR-011-aes-protocol-v2.md"]
+    },
+    {
+      "id": "dform-approval",
+      "question": "动态表单提交如何复用敏感操作审批协议？412 一次性令牌怎么校验？",
+      "expected": ["docs/adr/ADR-026-dynamic-form-approval.md"]
+    },
+    {
+      "id": "ldap-sync",
+      "question": "LDAP 目录同步的配置项有哪些？OU 到部门树的映射怎么做？",
+      "expected": ["docs/adr/ADR-017-ldap-directory-sync.md"]
+    },
+    {
+      "id": "scim-okta",
+      "question": "SCIM 2.0 用户目录同步如何与 Okta 或 Entra 对接配置？",
+      "expected": ["docs/architecture/scim.md", "docs/architecture/scim-idp-readiness.md"]
+    },
+    {
+      "id": "approval-flow-nodes",
+      "question": "审批流引擎支持哪些节点类型？加签与催办是怎么实现的？",
+      "expected": ["docs/adr/ADR-012-approval-flow-engine.md"]
+    },
+    {
+      "id": "report-email",
+      "question": "大屏轮播与定时报表的邮件附件是怎么实现的？",
+      "expected": ["docs/adr/ADR-021-dashboard-display-and-reports.md"]
+    },
+    {
+      "id": "index-review",
+      "question": "数据库索引的评审规范与 EXPLAIN 回归记录在哪里？",
+      "expected": ["docs/architecture/indexes.md"]
+    },
+    {
+      "id": "asgi-db-pool",
+      "question": "ASGI 形态下每个请求新建数据库连接的问题与连接池配置方案是什么？",
+      "expected": ["docs/adr/ADR-006-asgi-db-connection-pool.md"]
+    },
+    {
+      "id": "error-codes",
+      "question": "接口统一响应结构与错误码 1001 代表什么？错误如何脱敏？",
+      "expected": ["docs/exception-handling.md"]
+    },
+    {
+      "id": "perf-baseline",
+      "question": "k6 性能压测基线怎么跑？P95 与 RPS 的回归判定口径是什么？",
+      "expected": ["docs/ops/performance-baseline.md"]
+    },
+    {
+      "id": "backup-drill",
+      "question": "备份演练的 RTO 与 RPO 口径是什么？异地副本和媒体目录如何处理？",
+      "expected": ["docs/ops/backup-drill-2027-03.md", "docs/ops/backup-drill-2026-Q4.md"]
+    },
+    {
+      "id": "pat-scope",
+      "question": "个人访问令牌 PAT 的 scope 语法与精确审计（auth_type、token_pk）如何实现？",
+      "expected": ["docs/adr/ADR-008-pat-auth.md"]
+    },
+    {
+      "id": "knowledge-base",
+      "question": "AI 知识库文档支持哪些来源？上传文档与仓库同步如何隔离？",
+      "expected": ["docs/adr/ADR-033-knowledge-base-management.md"]
+    },
+    {
+      "id": "chat-room",
+      "question": "聊天室的 WebSocket 通道与消息幂等（client_msg_id）是怎么设计的？",
+      "expected": ["docs/adr/ADR-034-chat-room-rebuild.md"]
+    },
+    {
+      "id": "code-generator",
+      "question": "代码生成器 generate_crud 命令怎么用？生成物如何幂等合并？",
+      "expected": ["docs/adr/ADR-027-code-generator.md"]
+    },
+    {
+      "id": "global-search",
+      "question": "全局搜索的权限门与数据权限编译器 fail-closed 是怎么实现的？",
+      "expected": ["docs/adr/ADR-028-global-search.md"]
+    },
+    {
+      "id": "watermark",
+      "question": "页面水印的配置项有哪些？生效页面范围与时间戳刷新怎么做？",
+      "expected": ["docs/adr/ADR-029-page-watermark.md"]
+    },
+    {
+      "id": "open-platform",
+      "question": "开放平台应用发卡与 client-credentials 换发令牌的流程是什么？",
+      "expected": ["docs/adr/ADR-030-open-platform.md"]
+    },
+    {
+      "id": "deployment-upgrade",
+      "question": "生产环境部署的升级与回滚步骤在哪里？配置项如何详解？",
+      "expected": ["docs/ops/deployment.md"]
+    },
+    {
+      "id": "runbook",
+      "question": "服务启动即退出或 healthz 检查失败时怎么排查处置？",
+      "expected": ["docs/ops/runbook.md"]
+    },
+    {
+      "id": "django-version",
+      "question": "Django 6.2 升级为什么取消？当前停留在哪个 LTS 版本？",
+      "expected": ["docs/adr/ADR-004-django-60-upgrade.md"]
+    },
+    {
+      "id": "multi-tenant",
+      "question": "多租户评估的结论是什么？重开条件有哪些？",
+      "expected": ["docs/adr/ADR-031-multi-tenant-evaluation.md"]
+    },
+    {
+      "id": "office-preview",
+      "question": "Office 文档在线预览用什么方案？格式转换与缓存回收怎么做？",
+      "expected": ["docs/adr/ADR-013-office-online-preview.md"]
+    },
+    {
+      "id": "api-contract",
+      "question": "API 契约治理为什么不做 URL 版本化？契约唯一真源在哪里？",
+      "expected": ["docs/adr/ADR-035-api-contract-governance.md"]
+    },
+    {
+      "id": "hard-approval-writeback",
+      "question": "审批通过之后业务单据的状态是怎么回写的？",
+      "expected": ["docs/adr/ADR-032-approval-business-integration.md"]
+    },
+    {
+      "id": "hard-im-login",
+      "question": "钉钉、企业微信、飞书扫码登录是怎么接入的？",
+      "expected": ["docs/adr/ADR-018-im-scan-login.md"]
+    },
+    {
+      "id": "hard-field-hidden",
+      "question": "某个用户看不到某张表的某一列，可能是哪种权限配置导致的？",
+      "expected": ["docs/architecture/field-permission.md"]
+    },
+    {
+      "id": "hard-im-notify",
+      "question": "企业微信与钉钉的消息通知是怎么发出去的？",
+      "expected": ["docs/adr/ADR-019-im-notify-channels.md"]
+    },
+    {
+      "id": "hard-nl-query-authz",
+      "question": "AI 自然语言查数是如何防止越权的？",
+      "expected": ["docs/adr/ADR-024-nl-query-phase2.md"]
+    },
+    {
+      "id": "hard-mask-exemption",
+      "question": "敏感数据脱敏可以豁免吗？豁免清单怎么维护？",
+      "expected": ["docs/adr/ADR-009-data-mask-exemption.md"]
+    }
+  ]
+}
