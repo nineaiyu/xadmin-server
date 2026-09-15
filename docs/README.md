@@ -105,6 +105,7 @@ docs/
 | [ADR-037](adr/ADR-037-ai-retrieval-evaluation.md) | AI 检索升级评估（评测驱动）：**暂不引入向量**——36 问评测集入 CI 实测 hit@5 97.2%（535 块 / 30ms），远高于 75% 门控；登记评估出口（hit@5<75% / 分块>1000 / P95>300ms）与升级预研要点（OpenAI 兼容 embedding + Python 余弦 + RRF） |
 | [ADR-038](adr/ADR-038-ai-actions.md) | AI 助手受限动作（A2）：白名单动作注册表（请假/动态表单）+ 聊天 `/do` 草稿 + 确认卡片 + 权限双门 + 412 审批协议复用 + auth_type=ai 审计 + 灰度默认关；随项修复 SSE 端点浏览器 406 不可用的既有缺陷（EventStreamRenderer） |
 | [ADR-039](adr/ADR-039-open-platform-phase2.md) | 开放平台二期（B1–B4 全量）：应用级四级授权（模型×动作×字段×行，只收敛不提权）+ OAuth 授权码（PKCE/refresh/revoke/同意页）+ 用量报表与每日配额软告警 + Webhook 事件契约（schema_version + 自动文档 + 守护测试）；接入指南与示例客户端见 [open-platform/](open-platform/README.md) |
+| [ADR-040](adr/ADR-040-approval-flow-phase3.md) | 审批流三期：**动作 MFA 二次确认已交付**（`APPROVAL_MFA_REQUIRED_ACTIONS` 逐动作灰度 + 412 `user_confirm_required` 复用 + 未验证不推进业务状态守护）；**委托代理设计已定待实施**（委托表 + `resolve_assignees` 出口改造 + 不递归防环 + 审计标注代审） |
 
 ## 项目规划与治理（plans/）
 
