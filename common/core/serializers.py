@@ -70,7 +70,7 @@ class BaseModelSerializer(ModelSerializer):
             or ignore_field_permission
             or getattr(self.request, "ignore_field_permission", False)
         ):
-            return set(fields) & _fields
+            return self._converge_grant_fields(set(fields) & _fields)
 
         allow_fields = []
         # 获取权限字段，如果没有配置，则为定义的所有字段
@@ -83,7 +83,19 @@ class BaseModelSerializer(ModelSerializer):
         else:
             allow_fields = _fields
 
-        return set(fields) & _fields & set(allow_fields)
+        return self._converge_grant_fields(set(fields) & _fields & set(allow_fields))
+
+    def _converge_grant_fields(self, allowed):
+        """应用字段级授权收敛（ADR-039，最后一道）。
+
+        约束挂在凭证（应用）维度：**穿透字段权限豁免**（超管 / 白名单 URL /
+        字段权限开关关闭时同样收敛），未配置应用授权时原样返回。
+        """
+        if not self.request:
+            return allowed
+        from system.utils.api_grant import apply_grant_fields
+
+        return apply_grant_fields(self.request, self.Meta.model._meta.label_lower, allowed)
 
     def __init__(self, instance=None, data=empty, fields=None, ignore_field_permission=False, **kwargs):
         """

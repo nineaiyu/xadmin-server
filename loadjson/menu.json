@@ -12889,5 +12889,97 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "72083c58-b429-5316-b33f-4f719dc3c0cd",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "580f45ff-1fc0-5a51-991b-7845ecd460fa",
+   "menu_type": 2,
+   "name": "listGrants:IntegrationApiApp",
+   "rank": 8,
+   "path": "api/system/api-applications/(?P<pk>[^/.]+)/grants$",
+   "component": null,
+   "is_active": true,
+   "meta": "09ad9098-7c02-5d41-91be-69bd1f6d22bd",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "4d3984f5-0ea2-559c-8b86-fbe559caef12",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "580f45ff-1fc0-5a51-991b-7845ecd460fa",
+   "menu_type": 2,
+   "name": "updateGrants:IntegrationApiApp",
+   "rank": 9,
+   "path": "api/system/api-applications/(?P<pk>[^/.]+)/grants$",
+   "component": null,
+   "is_active": true,
+   "meta": "9f32d635-d5e0-5092-96e1-f84a6a613f94",
+   "method": "PUT",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "8affe71d-f948-5c98-bf30-b00fd8ec9e53",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "580f45ff-1fc0-5a51-991b-7845ecd460fa",
+   "menu_type": 2,
+   "name": "stats:IntegrationApiApp",
+   "rank": 10,
+   "path": "api/system/api-applications/(?P<pk>[^/.]+)/stats$",
+   "component": null,
+   "is_active": true,
+   "meta": "42eb8ec3-1630-5f3f-8f15-bb1f19d71b7a",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "64637cdd-286c-51a5-84a5-7b08054999b3",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "exportData:FormMySubmission",
+   "rank": 10006,
+   "path": "api/system/dynamic-form-submissions/export-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "98c082e4-1e21-5342-90d4-db676632536e",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

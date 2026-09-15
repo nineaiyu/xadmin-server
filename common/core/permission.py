@@ -191,19 +191,37 @@ class IsAuthenticated(BasePermission):
         if not check_pat_scope(request):
             raise PermissionDenied(_("PAT scope does not allow this path"))
 
+        # 应用四级授权（ADR-039）：应用凭证存在授权规则时走白名单（模型×动作×字段×行），
+        # 无规则 = 兼容模式直接跳过。三个出口统一收敛（超管 / 白名单 URL 不豁免）。
         if request.user.is_superuser:
             request.ignore_field_permission = True
+            self._check_application_grant(request, view)
             return True
 
         if self._match_white_url(request):
             request.ignore_field_permission = True
+            self._check_application_grant(request, view)
             return True
 
         permission_data = self._load_user_permission(request)
         menu_pk = self._resolve_menu_pk(request, permission_data)
         request.user.menu = menu_pk
         self._load_field_permission(request, menu_pk)
+        self._check_application_grant(request, view)
         return True
+
+    @staticmethod
+    def _check_application_grant(request, view):
+        """应用四级授权校验（模型 × 动作级；字段/行级在各自消费点收敛）。
+
+        超管与白名单 URL 出口未解析菜单上下文（``request.user.menu`` 为空）——
+        应用凭证在此按请求路径在启用权限菜单里命中一次（动作段解析所需）。
+        """
+        from system.utils.api_grant import application_of_request, enforce_application_grant, resolve_request_menu_pk
+
+        if getattr(request.user, "menu", None) is None and application_of_request(request) is not None:
+            request.user.menu = resolve_request_menu_pk(request)
+        enforce_application_grant(request, view)
 
     @staticmethod
     def _match_white_url(request):

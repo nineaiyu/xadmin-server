@@ -276,6 +276,48 @@ class WebhookFailedMessage(SystemMessage):
 
 
 @register_message
+class ApiQuotaWarningMessage(SystemMessage):
+    """API 应用每日配额软告警：达阈值当日首次越线，站内信告知全部超管。"""
+
+    category = "Audit"
+    category_label = _("Audit")
+    message_type_label = _("API application quota warning")
+
+    def __init__(self, info: dict):
+        self.info = info
+
+    def get_html_msg(self) -> dict:
+        info = self.info
+        subject = _("API application quota warning: {}").format(info.get("application"))
+        message = "<p>{}</p><ul><li>client_id: {}</li><li>used: {}</li><li>quota: {}</li></ul>".format(
+            subject, info.get("client_id"), info.get("used"), info.get("quota")
+        )
+        return {"subject": subject, "message": message}
+
+    def get_site_msg_msg(self):
+        info = self.get_html_msg()
+        info["level"] = "warning"
+        return info
+
+    @classmethod
+    def post_insert_to_db(cls, subscription: SystemMsgSubscription):
+        subscription.users.add(*get_active_superuser_queryset())
+        subscription.receive_backends = [BACKEND.SITE_MSG]
+        subscription.save()
+
+    def publish(self, is_async=False):
+        """发布告警；订阅收件人为空时自愈补齐活跃超管（post_migrate 种子早于建号）。"""
+        subscription = SystemMsgSubscription.objects.get(message_type=self.get_message_type())
+        if not subscription.users.exists():
+            self.post_insert_to_db(subscription)
+        super().publish(is_async=is_async)
+
+    @classmethod
+    def gen_test_msg(cls):
+        return cls({"application": "演示应用", "client_id": "app_demo", "used": 82, "quota": 100})
+
+
+@register_message
 class ApprovalRequestMessage(UserMessage):
     """审批中心通知：提交（发审批人）/ 通过、驳回（发申请人）三种文案。"""
 

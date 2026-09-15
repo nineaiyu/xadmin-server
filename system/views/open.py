@@ -10,6 +10,7 @@
 - 回调测试复用 webhook 的 HMAC-SHA256 时间戳签名口径（system/utils/webhook.py）。
 """
 
+import hmac
 import json
 import secrets
 from datetime import timedelta
@@ -30,12 +31,15 @@ from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.token import ApiApplication, PersonalAccessToken
-from system.serializers.token import ApiApplicationSerializer
+from system.serializers.token import ApiApplicationGrantSerializer, ApiApplicationSerializer
+from system.utils.api_grant import grant_options_for_user
 from system.utils.pat_scope import scope_options_for_user
 from system.utils.webhook import decrypt_secret, encrypt_secret, sign_payload
 
 CLIENT_SECRET_PREFIX = "aps"
 CALLBACK_TIMEOUT_SECONDS = 10
+# 业务成功码（与 system/views/user/token.py 的 stats 口径一致）
+API_SUCCESS_CODE = 1000
 
 
 def build_client_credentials() -> tuple[str, str, str, str]:
@@ -75,6 +79,23 @@ def issue_application_token(application: ApiApplication) -> tuple[PersonalAccess
     return token, raw_token
 
 
+def verify_application_credentials(client_id: str, client_secret: str):
+    """校验应用凭据（启用/过期/owner 启用），返回 ``(application, 错误文案)``。
+
+    OAuth token/revoke 与 client-credentials 换发共用；哈希比较用 ``compare_digest``
+    防时序侧信道（与 PAT 认证口径一致）。
+    """
+    application = ApiApplication.objects.filter(client_id=client_id).select_related("creator").first()
+    if application is None or not hmac.compare_digest(application.client_secret_hash, hash_pat_token(client_secret)):
+        return None, _("Invalid client credentials")
+    now = timezone.now()
+    if not application.is_active or (application.expired_at and application.expired_at <= now):
+        return None, _("Application is disabled or expired")
+    if application.creator is None or not application.creator.is_active:
+        return None, _("Application owner account is disabled")
+    return application, None
+
+
 def send_test_callback(application: ApiApplication, url: str, client=None) -> dict:
     """向单个回调地址投递一次签名探测（返回值 = 投递结果，供管理页展示）。"""
     secret = decrypt_secret(application.callback_secret_encrypted) if application.callback_secret_encrypted else ""
@@ -104,6 +125,58 @@ def send_test_callback(application: ApiApplication, url: str, client=None) -> di
         return {"url": url, "success": False, "detail": str(exc)}
 
 
+def application_usage_stats(application: ApiApplication, days: int) -> dict:
+    """应用用量报表（近 N 天）：聚合 OperationLog（token_pk ∈ 应用全部凭证）。
+
+    凭证只失效不删除（删除应用才级联），故 token_pk 口径覆盖应用全生命周期；
+    失败判定与个人令牌 stats 同源（业务码非成功即失败）；配额为软口径读取当日计数缓存。
+    """
+    from django.core.cache import cache
+    from django.db.models import Avg, Count, Q
+    from django.db.models.functions import TruncDate
+
+    from system.models.log import OperationLog
+
+    since = timezone.now() - timedelta(days=days)
+    token_pks = list(PersonalAccessToken.objects.filter(api_application=application).values_list("pk", flat=True))
+    queryset = OperationLog.objects.filter(token_pk__in=token_pks, created_time__gte=since)
+    failed_q = ~Q(status_code=API_SUCCESS_CODE)
+    daily = [
+        {
+            "date": row["day"].isoformat() if row["day"] else "",
+            "total": row["total"],
+            "failed": row["failed"],
+            "avg_duration": round(row["avg_duration"] or 0, 4),
+        }
+        for row in queryset.annotate(day=TruncDate("created_time"))
+        .values("day")
+        .annotate(total=Count("pk"), failed=Count("pk", filter=failed_q), avg_duration=Avg("exec_time"))
+        .order_by("day")
+    ]
+    totals = queryset.aggregate(total=Count("pk"), failed=Count("pk", filter=failed_q), avg_duration=Avg("exec_time"))
+    top_paths = list(queryset.values("path").annotate(total=Count("pk")).order_by("-total")[:10])
+    status_codes = list(queryset.values("status_code").annotate(total=Count("pk")).order_by("-total")[:10])
+    day_key = timezone.now().strftime("%Y%m%d")
+    try:
+        used_today = cache.get(f"api_app_quota_{application.pk}_{day_key}") or 0
+    except Exception:  # noqa: BLE001 缓存故障按 0 展示（报表不阻断）
+        used_today = 0
+    return {
+        "days": days,
+        "total": totals["total"] or 0,
+        "failed": totals["failed"] or 0,
+        "avg_duration": round(totals["avg_duration"] or 0, 4),
+        "daily": daily,
+        "top_paths": top_paths,
+        "status_codes": status_codes,
+        "quota": {
+            "daily_quota": application.daily_quota or 0,
+            "alert_percent": application.quota_alert_percent or 80,
+            "used_today": used_today,
+        },
+    }
+
+
 class ApiApplicationTokenAPIView(APIView):
     """换发端点（client-credentials）：凭 client_id/client_secret 换 PAT 凭证。
 
@@ -124,14 +197,10 @@ class ApiApplicationTokenAPIView(APIView):
         client_secret = str(request.data.get("client_secret") or "").strip()
         if not client_id or not client_secret:
             return self._unauthorized()
-        application = ApiApplication.objects.filter(client_id=client_id).select_related("creator").first()
-        if application is None or application.client_secret_hash != hash_pat_token(client_secret):
-            return self._unauthorized()
+        application, error = verify_application_credentials(client_id, client_secret)
+        if application is None:
+            return self._unauthorized(error)
         now = timezone.now()
-        if not application.is_active or (application.expired_at and application.expired_at <= now):
-            return self._unauthorized(_("Application is disabled or expired"))
-        if application.creator is None or not application.creator.is_active:
-            return self._unauthorized(_("Application owner account is disabled"))
         token, raw_token = issue_application_token(application)
         expires_in = int((token.expired_at - now).total_seconds()) if token.expired_at else None
         return ApiResponse(
@@ -232,3 +301,59 @@ class ApiApplicationViewSet(BaseModelSet):
         选项的历史条目在前端自动落到「自定义」区，不会丢失。
         """
         return ApiResponse(data=scope_options_for_user(request.user))
+
+    @action(methods=["get", "put"], detail=True, url_path="grants")
+    def grants(self, request, *args, **kwargs):
+        """应用资源授权规则（四级授权管理面，ADR-039）。
+
+        GET：读取现有规则；PUT：全量替换（事务内按 pk 更新 / 缺失删除）。
+        应用无规则 = 兼容模式（沿用一期 owner 权限 + scopes）；存在规则即白名单模式：
+        模型/动作必须命中，字段与行级在覆盖规则上继续收敛（只收敛不提权）。
+        """
+        application = self.get_object()
+        if request.method.lower() == "get":
+            return ApiResponse(
+                data={"results": ApiApplicationGrantSerializer(application.grants.all(), many=True).data}
+            )
+        payload = request.data.get("grants") if isinstance(request.data, dict) else request.data
+        if not isinstance(payload, list):
+            return ApiResponse(code=1001, detail=_("Grants must be a list"))
+        with transaction.atomic():
+            existing = {str(item.pk): item for item in application.grants.all()}
+            kept = set()
+            for item in payload:
+                if not isinstance(item, dict):
+                    return ApiResponse(code=1001, detail=_("Grants must be a list of objects"))
+                instance = existing.get(str(item.get("pk") or ""))
+                serializer = ApiApplicationGrantSerializer(instance, data=item, context=self.get_serializer_context())
+                serializer.is_valid(raise_exception=True)
+                serializer.save(application=application, creator=instance.creator if instance else request.user)
+                kept.add(str(serializer.instance.pk))
+            application.grants.exclude(pk__in=kept).delete()
+        return ApiResponse(data={"results": ApiApplicationGrantSerializer(application.grants.all(), many=True).data})
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="stats")
+    def stats(self, request, *args, **kwargs):
+        """应用用量报表（近 N 天，默认 7 / 上限 30）。
+
+        按天调用量、失败数、平均耗时 + Top 路径 + 业务码分布 + 当日配额用量
+        （配额软口径：只告警不阻断，见 ADR-039 B3）。
+        """
+        application = self.get_object()
+        try:
+            days = int(request.query_params.get("days") or 7)
+        except (TypeError, ValueError):
+            days = 7
+        days = max(1, min(days, 30))
+        return ApiResponse(data=application_usage_stats(application, days))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="grant-options")
+    def grant_options(self, request, *args, **kwargs):
+        """应用资源授权目录（模型 → 动作段 / 字段，粒度与「接口范围」同源）。
+
+        只返回当前用户可授权面（超管为全部启用权限菜单 + 全部模型标签），不含业务
+        数据行；路径登记白名单（表单枚举元数据口径，与 scope-options 同处理）。
+        """
+        return ApiResponse(data=grant_options_for_user(request.user))

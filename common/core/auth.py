@@ -135,6 +135,63 @@ def hash_pat_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
+def check_api_application_quota(application) -> None:
+    """每日配额计数 + 软告警（不阻断请求，ADR-039 B3）。
+
+    计数键按「应用 + 自然日」（TTL 两天，跨日自然滚动）；达到
+    ``quota_alert_percent`` 阈值当日首次越线时发一次告警（站内信给超管 +
+    webhook 事件 ``api_quota.warning``），不拒绝请求（软口径）。
+    """
+    quota = application.daily_quota or 0
+    if quota <= 0:
+        return
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    day = timezone.now().strftime("%Y%m%d")
+    count_key = f"api_app_quota_{application.pk}_{day}"
+    try:
+        if cache.add(count_key, 1, 60 * 60 * 48):
+            count = 1
+        else:
+            count = cache.incr(count_key)
+    except ValueError:  # 窗口刚过期被清理：按首次计数处理
+        cache.add(count_key, 1, 60 * 60 * 48)
+        count = 1
+    threshold = max(1, int(quota * (application.quota_alert_percent or 80) / 100))
+    if count < threshold:
+        return
+    warn_key = f"api_app_quota_warn_{application.pk}_{day}"
+    try:
+        if not cache.add(warn_key, 1, 60 * 60 * 48):
+            return  # 当日已告警
+    except Exception:  # noqa: BLE001 缓存故障按已告警处理（不重复打扰）
+        return
+    notify_api_quota_warning(application, count, quota)
+
+
+def notify_api_quota_warning(application, used: int, quota: int) -> None:
+    """配额软告警：站内信（超管）+ webhook 事件；任何故障只记日志。"""
+    info = {
+        "application": application.name,
+        "client_id": application.client_id,
+        "used": used,
+        "quota": quota,
+    }
+    try:
+        from system.notifications import ApiQuotaWarningMessage
+
+        ApiQuotaWarningMessage(info).publish(is_async=True)
+    except Exception:  # noqa: BLE001
+        logger.warning("send api quota warning message failed", exc_info=True)
+    try:
+        from system.utils.webhook import emit_webhook_event
+
+        emit_webhook_event("api_quota.warning", info)
+    except Exception:  # noqa: BLE001
+        logger.warning("emit api quota warning event failed", exc_info=True)
+
+
 def check_api_application_rate_limit(application) -> None:
     """开放平台应用限流：按应用 + 分钟窗口计数，超限抛 429；0 = 不限。
 
@@ -258,7 +315,7 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
         token_model = apps.get_model("system", "PersonalAccessToken")
         pat = (
             token_model.objects.filter(token_hash=self.hash_token(parts[1]), is_active=True)
-            .select_related("creator")
+            .select_related("creator", "api_application")
             .first()
         )
         if pat is None:
@@ -290,6 +347,8 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
             if not application.is_active or (application.expired_at and application.expired_at <= now):
                 raise AuthenticationFailed(_("Token is invalid or expired"))
             check_api_application_rate_limit(application)
+            # 每日配额计数与软告警（不阻断请求，仅观测）
+            check_api_application_quota(application)
 
         request.pat_scopes = pat.scopes or []
 

@@ -174,7 +174,11 @@ class CreatorUserFilter(BaseFilterBackend):
 
 class BaseDataPermissionFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        return get_filter_queryset(queryset, request.user)
+        queryset = get_filter_queryset(queryset, request.user)
+        # 应用行级授权（ADR-039）：AND 叠加在数据权限之后（超管 owner 同样生效）
+        from system.utils.api_grant import apply_grant_row_scope
+
+        return apply_grant_row_scope(request, queryset)
 
 
 class BaseFilterSet(filters.FilterSet):

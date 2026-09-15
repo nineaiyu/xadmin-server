@@ -31,11 +31,16 @@ PERMISSION_WHITE_URL = {
     # 返回的只是「当前用户可授权的接口」元数据（用户自己权限菜单派生，无业务数据行），
     # 且管理页的查看/编辑是两个独立权限点——按菜单收紧会让只有编辑权限的用户打不开勾选器。
     "^/api/system/api-applications/scope-options$": ["GET"],
+    # 应用资源授权目录（四级授权表单枚举，同 scope-options 口径：只返回可授权元数据）
+    "^/api/system/api-applications/grant-options$": ["GET"],
     # 第三方登录与绑定：登录前置（authorize/callback）必须匿名可达，绑定管理是个人凭证，
     # 两者都无需菜单权限（视图内自行要求 DRF IsAuthenticated，见 views/auth/oauth.py）
     "^/api/system/auth/oauth/": ["*"],
     # 开放平台换发端点：凭 client_secret 认证（凭证即身份），视图内 fail-closed
     "^/api/system/open/token$": ["*"],
+    # OAuth 授权码端点（ADR-039 B2）：授权码换发（token/revoke）同客户端凭证口径；
+    # authorize/approve 需登录态但不需要菜单权限（第三方接入点，视图内 fail-closed）
+    "^/api/system/open/oauth/": ["*"],
 }
 
 # 前端权限路由 忽略配置
@@ -48,6 +53,7 @@ ROUTE_IGNORE_URL = [
     "^/api/system/captcha",  # 忽略图片验证码路由
     "^/api/mfa/",  # 忽略 MFA 二次验证路由
     "^/api/system/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
+    "^/api/system/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点
 ]
 
 # 访问权限配置

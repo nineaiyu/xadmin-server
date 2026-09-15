@@ -13913,5 +13913,57 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "09ad9098-7c02-5d41-91be-69bd1f6d22bd",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "API 应用-listGrants"
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "9f32d635-d5e0-5092-96e1-f84a6a613f94",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "API 应用-updateGrants"
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "42eb8ec3-1630-5f3f-8f15-bb1f19d71b7a",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "API 应用-stats"
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "98c082e4-1e21-5342-90d4-db676632536e",
+  "fields": {
+   "created_time": "2026-09-15T00:00:00Z",
+   "updated_time": "2026-09-15T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "我的填报-exportData"
+  }
  }
 ]

@@ -62,6 +62,9 @@ class ApiApplication(DbAuditModel):
     应用本身不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链，
     三层权限 / 数据权限 / 审计（``OperationLog.auth_type=pat``）天然生效；
     应用只负责凭证换发、范围（scopes / ip_allowlist）、按应用限流与回调登记。
+
+    二期（ADR-039）增量：``grants``（模型×动作×字段×行四级授权，只收敛不提权）、
+    ``daily_quota``（每日配额软告警）、OAuth 授权码（refresh 见 OAuthRefreshToken）。
     """
 
     name = models.CharField(_("Application name"), max_length=128)
@@ -78,6 +81,9 @@ class ApiApplication(DbAuditModel):
     callback_urls = models.JSONField(_("Callback urls"), default=list, blank=True)
     # 换发凭证的有效期（秒）；0 = 不过期（随应用 expired_at）
     token_ttl_seconds = models.IntegerField(_("Token ttl seconds"), default=7200)
+    # 每日请求配额（0 = 不限）；达 quota_alert_percent 百分比当日首次越线发告警（软，不阻断）
+    daily_quota = models.IntegerField(_("Daily quota"), default=0)
+    quota_alert_percent = models.IntegerField(_("Quota alert percent"), default=80)
     is_active = models.BooleanField(_("Is active"), default=True)
     expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
 
@@ -89,3 +95,84 @@ class ApiApplication(DbAuditModel):
 
     def __str__(self):
         return f"{self.name}({self.client_id})"
+
+
+class ApiApplicationGrant(DbAuditModel):
+    """应用资源授权规则（开放平台二期：模型 × 动作 × 字段 × 行四级授权）。
+
+    生效语义（只收敛不提权，fail-closed）：
+    - 应用不存在任何 is_active 规则 → 兼容模式（维持一期 owner 权限 + scopes，零影响）；
+    - 存在 ≥1 条规则 → 白名单模式：请求目标模型必须被某条规则覆盖（model 精确或 ``*``），
+      动作段必须在覆盖规则的 actions 内（或 ``*``）；fields 非空时收敛字段
+      （输出裁剪 + 输入拒绝未授权字段）；row_filter 非空时编译为 Q 叠加在数据权限
+      过滤之后（AND）。
+    - 四级之上仍走原有菜单/字段/数据权限（全部取交集），永不放大回 owner 全量。
+    """
+
+    application = models.ForeignKey(
+        "system.ApiApplication",
+        verbose_name=_("API application"),
+        on_delete=models.CASCADE,
+        related_name="grants",
+    )
+    # 目标模型标签（system.dataset）或 *（全部模型）
+    model = models.CharField(_("Model"), max_length=128)
+    # 权限点动作段清单（list/retrieve/create/...）或 ["*"]（全部动作）
+    actions = models.JSONField(_("Actions"), default=list)
+    # 允许的字段名清单（空 = 全部字段）
+    fields = models.JSONField(_("Fields"), default=list, blank=True)
+    # 行级规则（DataPermission.rules 同格式；空 = 不限）
+    row_filter = models.JSONField(_("Row filter"), default=list, blank=True)
+    is_active = models.BooleanField(_("Is active"), default=True)
+
+    class Meta:
+        ordering = ("model", "created_time")
+        verbose_name = _("API application grant")
+        verbose_name_plural = verbose_name
+        indexes = [models.Index(fields=["application", "is_active"], name="idx_api_grant_app_active")]
+
+    def __str__(self):
+        return f"{self.application_id}:{self.model}"
+
+
+class OAuthRefreshToken(DbAuditModel):
+    """OAuth 授权码模式的刷新令牌（ADR-039 B2）。
+
+    与 PAT 同口径只存 sha256 哈希；一次性轮换（刷新即失效旧值），撤销可联动
+    失效关联 access 凭证。权限面 = 应用 scope × 应用 grant × 授权用户权限（交集）。
+    """
+
+    token_hash = models.CharField(_("Token hash"), max_length=64, unique=True, db_index=False)
+    application = models.ForeignKey(
+        "system.ApiApplication",
+        verbose_name=_("API application"),
+        on_delete=models.CASCADE,
+        related_name="refresh_tokens",
+    )
+    user = models.ForeignKey(
+        "system.UserInfo",
+        verbose_name=_("Authorized user"),
+        on_delete=models.CASCADE,
+        related_name="oauth_refresh_tokens",
+    )
+    scopes = models.JSONField(_("Scopes"), default=list, blank=True)
+    expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
+    is_revoked = models.BooleanField(_("Is revoked"), default=False)
+    # 本次 refresh 关联的 access 凭证（撤销时联动失效；SET_NULL 不阻断凭证回溯）
+    access_token = models.ForeignKey(
+        "system.PersonalAccessToken",
+        verbose_name=_("Access token"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    class Meta:
+        ordering = ("-created_time",)
+        verbose_name = _("OAuth refresh token")
+        verbose_name_plural = verbose_name
+        indexes = [models.Index(fields=["application", "user"], name="idx_oauth_refresh_app_user")]
+
+    def __str__(self):
+        return f"oauth:{self.application_id}:{self.user_id}"

@@ -14,7 +14,7 @@ from rest_framework import serializers
 
 from common.core.auth import hash_pat_token
 from common.core.serializers import BaseModelSerializer
-from system.models.token import ApiApplication, PersonalAccessToken
+from system.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
 
 
 class PersonalAccessTokenSerializer(BaseModelSerializer):
@@ -146,6 +146,8 @@ class ApiApplicationSerializer(BaseModelSerializer):
             "rate_limit_per_minute",
             "callback_urls",
             "token_ttl_seconds",
+            "daily_quota",
+            "quota_alert_percent",
             "is_active",
             "expired_at",
             "description",
@@ -158,6 +160,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
             "client_id",
             "scopes",
             "rate_limit_per_minute",
+            "daily_quota",
             "is_active",
             "created_time",
         ]
@@ -184,3 +187,50 @@ class ApiApplicationSerializer(BaseModelSerializer):
         if value is not None and value < 0:
             raise serializers.ValidationError(_("Rate limit cannot be negative"))
         return value
+
+    def validate_daily_quota(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError(_("Daily quota cannot be negative"))
+        return value
+
+    def validate_quota_alert_percent(self, value):
+        if value is not None and not 1 <= value <= 100:
+            raise serializers.ValidationError(_("Quota alert percent must be between 1 and 100"))
+        return value
+
+
+class ApiApplicationGrantSerializer(BaseModelSerializer):
+    """应用资源授权规则（开放平台二期四级授权，ADR-039）。
+
+    ``model × actions × fields × row_filter`` 四级结构；写入校验与运行时判定同口径
+    （模型/动作/字段必须真实存在，行级规则复用数据权限规则编译器校验）。
+    """
+
+    class Meta:
+        model = ApiApplicationGrant
+        fields = [
+            "pk",
+            "model",
+            "actions",
+            "fields",
+            "row_filter",
+            "is_active",
+            "description",
+            "created_time",
+        ]
+        read_only_fields = ["created_time"]
+        table_fields = ["model", "actions", "fields", "is_active", "created_time"]
+
+    def validate(self, attrs):
+        from system.utils.api_grant import validate_grant_payload
+
+        instance = self.instance
+        model_label = attrs.get("model", getattr(instance, "model", None))
+        actions = attrs.get("actions", getattr(instance, "actions", None))
+        fields = attrs.get("fields", getattr(instance, "fields", None))
+        row_filter = attrs.get("row_filter", getattr(instance, "row_filter", None))
+        actions, fields, row_filter = validate_grant_payload(model_label, actions, fields, row_filter)
+        attrs["actions"] = actions
+        attrs["fields"] = fields
+        attrs["row_filter"] = row_filter
+        return attrs

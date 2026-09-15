@@ -51,6 +51,12 @@ from system.views.dataset import DatasetViewSet
 from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
 from system.views.monitor import MonitorViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
+from system.views.open_oauth import (
+    OpenOAuthApproveAPIView,
+    OpenOAuthAuthorizeAPIView,
+    OpenOAuthRevokeAPIView,
+    OpenOAuthTokenAPIView,
+)
 from system.views.routes import UserRoutesAPIView
 from system.views.search.dept import SearchDeptViewSet
 from system.views.search.global_search import GlobalSearchAPIView
@@ -203,3 +209,10 @@ urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_rout
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
 # 开放平台换发端点：匿名可达（白名单），凭 client_secret 换 PAT 凭证
 urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]
+# 开放平台 OAuth 授权码（ADR-039 B2）：authorize/approve 需登录态，token/revoke 匿名可达
+urlpatterns += [
+    path("open/oauth/authorize", OpenOAuthAuthorizeAPIView.as_view()),
+    path("open/oauth/approve", OpenOAuthApproveAPIView.as_view()),
+    path("open/oauth/token", OpenOAuthTokenAPIView.as_view()),
+    path("open/oauth/revoke", OpenOAuthRevokeAPIView.as_view()),
+]
