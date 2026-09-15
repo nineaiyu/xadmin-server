@@ -13965,5 +13965,30 @@
    "dept_belong": null,
    "title": "我的填报-exportData"
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "1e2ae45a-27d6-455b-8034-165bb4b77e42",
+  "fields": {
+   "created_time": "2026-09-15T11:49:17.140Z",
+   "updated_time": "2026-09-15T11:49:17.140Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "异步导出动态表单提交（填报与本人提交管理；表单可挂审批流）。数据",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]
