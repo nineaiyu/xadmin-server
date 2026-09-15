@@ -13173,5 +13173,51 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c6677425-1706-4f8f-a023-1a733fee415b",
+  "fields": {
+   "created_time": "2026-09-15T13:33:38.725Z",
+   "updated_time": "2026-09-15T13:33:38.730Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "imBinding:SystemUser",
+   "rank": 10000,
+   "path": "api/system/user/(?P<pk>[^/.]+)/im-binding$",
+   "component": null,
+   "is_active": true,
+   "meta": "1b7109cb-2025-4460-9249-516d2489b682",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "12f22515-d272-4477-b175-f25b9af0b4fe",
+  "fields": {
+   "created_time": "2026-09-15T13:33:38.734Z",
+   "updated_time": "2026-09-15T13:33:38.734Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "imUnbind:SystemUser",
+   "rank": 10002,
+   "path": "api/system/user/(?P<pk>[^/.]+)/im-unbind$",
+   "component": null,
+   "is_active": true,
+   "meta": "af81eadd-17b3-44a6-be0d-14adcd692a5c",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

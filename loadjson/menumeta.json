@@ -14165,5 +14165,55 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "1b7109cb-2025-4460-9249-516d2489b682",
+  "fields": {
+   "created_time": "2026-09-15T13:33:38.724Z",
+   "updated_time": "2026-09-15T13:33:38.724Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "af81eadd-17b3-44a6-be0d-14adcd692a5c",
+  "fields": {
+   "created_time": "2026-09-15T13:33:38.734Z",
+   "updated_time": "2026-09-15T13:33:38.734Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "管理员解绑 IM 身份（防自锁：解绑后无其它登录方式则拒绝）。",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]

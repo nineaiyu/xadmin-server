@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 6/16/2023
 
+import json
+
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -25,7 +27,7 @@ from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
-from system.models import UserInfo
+from system.models import OperationLog, UserInfo, UserOAuthBinding
 from system.serializers.user import ResetPasswordSerializer, UserSerializer
 from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 
@@ -148,3 +150,85 @@ class UserViewSet(
         channel_names = request.data.get("channel_names", [])
         send_logout_msg(instance.pk, channel_names)
         return ApiResponse()
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "provider": build_basic_type(OpenApiTypes.STR),
+                    "subject": build_basic_type(OpenApiTypes.STR),
+                    "nickname": build_basic_type(OpenApiTypes.STR),
+                },
+                required=["provider", "subject"],
+                description="IM provider（dingtalk/wecom/feishu 等）+ IdP 侧唯一标识（钉钉为 unionId）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["get", "post"], detail=True, url_path="im-binding")
+    def im_binding(self, request, *args, **kwargs):
+        """管理员代录 IM 身份（免扫码）：GET 查看绑定，POST 创建或更新。
+
+        与自助扫码绑定（system/views/auth/oauth.py）共用 UserOAuthBinding；
+        钉钉的 subject 必须是 unionId（发消息前再换算 userid，见 notifications/backends/dingtalk.py）。
+        写操作落 OperationLog（module=IM:binding）。
+        """
+        user = self.get_object()
+        if request.method.upper() == "GET":
+            rows = list(user.oauth_bindings.values("pk", "provider", "subject", "profile", "created_time"))
+            return ApiResponse(data=rows)
+
+        provider = (request.data.get("provider") or "").strip()
+        subject = (request.data.get("subject") or "").strip()
+        if not provider or not subject:
+            return ApiResponse(code=1001, detail=_("Provider and subject are required"))
+        conflict = UserOAuthBinding.objects.filter(provider=provider, subject=subject).exclude(user=user).first()
+        if conflict:
+            return ApiResponse(code=1001, detail=_("This identity is already bound to another user"))
+        nickname = (request.data.get("nickname") or "").strip()
+        binding, created = UserOAuthBinding.objects.update_or_create(
+            user=user,
+            provider=provider,
+            defaults={"subject": subject, "profile": {"nickname": nickname, "source": "admin_manual"}},
+        )
+        OperationLog.objects.create(
+            module="IM:binding",
+            object_pk=str(user.pk),
+            path=request.path,
+            changes=json.dumps({"provider": provider, "subject": subject, "created": created}, ensure_ascii=False)[
+                :4096
+            ],
+        )
+        return ApiResponse(
+            data={"pk": str(binding.pk), "created": created},
+            detail=_("IM identity bound") if created else _("IM identity updated"),
+        )
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"provider": build_basic_type(OpenApiTypes.STR)},
+                required=["provider"],
+                description="要解绑的 IM provider",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True, url_path="im-unbind")
+    def im_unbind(self, request, *args, **kwargs):
+        """管理员解绑 IM 身份（防自锁：解绑后无其它登录方式则拒绝）。"""
+        user = self.get_object()
+        provider = (request.data.get("provider") or "").strip()
+        binding = user.oauth_bindings.filter(provider=provider).first()
+        if binding is None:
+            return ApiResponse(code=1001, detail=_("Binding not found"))
+        if not UserOAuthBinding.user_has_other_login_method(user, exclude_pk=binding.pk):
+            return ApiResponse(code=1001, detail=_("User would lose the last login method"))
+        binding.delete()
+        OperationLog.objects.create(
+            module="IM:binding",
+            object_pk=str(user.pk),
+            path=request.path,
+            changes=json.dumps({"provider": provider, "action": "unbind"}, ensure_ascii=False)[:4096],
+        )
+        return ApiResponse(detail=_("IM identity unbound"))
