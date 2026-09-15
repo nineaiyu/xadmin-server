@@ -27,7 +27,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
-from common.core.config import SysConfig, UserConfig
+from common.core.config import SysConfig, get_personal_config_data, get_personal_int_config
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
@@ -64,7 +64,21 @@ PREVIEW_PREPARING_CODE = 1006
 
 
 def get_upload_max_size(user_obj):
-    return min(SysConfig.FILE_UPLOAD_SIZE, UserConfig(user_obj).FILE_UPLOAD_SIZE)
+    """单文件上传大小上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""
+    personal_data = get_personal_config_data(user_obj, "FILE_UPLOAD_SIZE")
+    if personal_data is not None and isinstance(personal_data.get("value"), int) and personal_data["value"] > 0:
+        return min(SysConfig.FILE_UPLOAD_SIZE, personal_data["value"])
+    return SysConfig.FILE_UPLOAD_SIZE
+
+
+def get_user_quota_mb(user_obj):
+    """个人文件存储配额（MB）：个人行优先，未设置继承系统级（0 = 不限）。"""
+    return get_personal_int_config(user_obj, "FILE_STORAGE_QUOTA_MB", SysConfig.FILE_STORAGE_QUOTA_MB)
+
+
+def get_user_count_limit(user_obj):
+    """个人上传文件数量上限：个人行优先，未设置继承系统级（0 = 不限）。"""
+    return get_personal_int_config(user_obj, "FILE_UPLOAD_COUNT_LIMIT", SysConfig.FILE_UPLOAD_COUNT_LIMIT)
 
 
 def _inline_file_response(path, content_type, filename):
@@ -207,7 +221,8 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         agg = queryset.aggregate(count=Count("pk"), total_size=Sum("filesize"))
         count = agg["count"] or 0
         total_size = agg["total_size"] or 0
-        quota_mb = SysConfig.FILE_STORAGE_QUOTA_MB or 0
+        # 配额概览（存储用量/文件数）：个人行优先，未设置继承系统级（0 = 不限）
+        quota_mb = get_user_quota_mb(request.user) or 0
         quota_bytes = quota_mb * 1024 * 1024
         usage_rate = round(total_size / quota_bytes * 100, 2) if quota_bytes else 0
         return ApiResponse(
@@ -388,9 +403,10 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         files = request.FILES.getlist("file", [])
         result = []
         file_upload_max_size = get_upload_max_size(request.user)
-        # 配额校验前置到落盘之前（超额 1004 且不落盘）；仅有限额配置时才查聚合
-        quota_mb = SysConfig.FILE_STORAGE_QUOTA_MB or 0
-        count_limit = SysConfig.FILE_UPLOAD_COUNT_LIMIT or 0
+        # 配额校验前置到落盘之前（超额 1004 且不落盘）；仅有限额配置时才查聚合。
+        # 配额/数量上限个人行优先，未设置继承系统级
+        quota_mb = get_user_quota_mb(request.user) or 0
+        count_limit = get_user_count_limit(request.user) or 0
         owner_files = UploadFile.objects.filter(creator=request.user)
         used_size = (owner_files.aggregate(size=Sum("filesize"))["size"] or 0) if quota_mb else 0
         used_count = owner_files.count() if count_limit else 0

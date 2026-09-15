@@ -312,7 +312,11 @@ class TestSendPrivate:
     def test_client_msg_id_idempotent(self, ws_layer, alice, bob, monkeypatch):
         room = chat_service.get_or_create_private_room(alice, bob)
         sent = _capture_group_send(ws_layer, monkeypatch)
-        monkeypatch.setattr("message.consumers.async_push_message", lambda *args, **kwargs: None)
+
+        async def fake_push(*args, **kwargs):
+            return None
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
 
         async def scenario():
             consumer, captured, __ = _make_consumer(ws_layer, alice)

@@ -11,6 +11,7 @@ from django.core.management.commands.loaddata import Command as LoadCommand
 from django.db import DEFAULT_DB_ALIAS
 from django.db.models.signals import ModelSignal
 
+from common.core.config import SysConfig
 from settings.models import Setting
 from system.models import *
 from system.utils.dict import invalid_dict_cache
@@ -72,3 +73,6 @@ class Command(LoadCommand):
         # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
         # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
         invalid_dict_cache()
+        # 同理：loaddata 按 pk 覆盖 SystemConfig 字段且信号被屏蔽，种子更新后
+        # 主动失效系统配置缓存，避免旧缓存压过新种子
+        SysConfig.invalid_config_cache()

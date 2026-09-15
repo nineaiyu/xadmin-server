@@ -152,7 +152,7 @@ class OnlyExportDataAction(ListAction):
         from django.utils import timezone as dj_timezone
         from django.utils.module_loading import import_string
 
-        from common.core.config import SysConfig
+        from common.core.config import SysConfig, get_personal_int_config
 
         params = dict(request.data) if isinstance(request.data, dict) else {}
         for key, value in request.query_params.items():
@@ -162,8 +162,11 @@ class OnlyExportDataAction(ListAction):
         name = "{}_{}".format(model._meta.model_name, dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
         # 跨 app 惰性取模型/任务：common 层不直接依赖 system（契约层约束，见 check_cross_app_imports）
         export_record_model = apps.get_model("system", "ExportRecord")
-        # 同用户并发上限：导出是最重的后台任务，防止重复点击/脚本刷爆 worker
-        max_running = SysConfig.EXPORT_ASYNC_MAX_RUNNING
+        # 同用户并发上限：导出是最重的后台任务，防止重复点击/脚本刷爆 worker。
+        # 真实个人行优先，未设置回退系统级
+        max_running = get_personal_int_config(
+            request.user, "EXPORT_ASYNC_MAX_RUNNING", SysConfig.EXPORT_ASYNC_MAX_RUNNING
+        )
         if max_running > 0:
             running = export_record_model.objects.filter(
                 creator=request.user,
@@ -279,9 +282,12 @@ class ImportAsyncAction:
         """同用户并发上限（IMPORT_ASYNC_MAX_RUNNING，0=不限制），超限返回提示文案。"""
         from django.apps import apps
 
-        from common.core.config import SysConfig
+        from common.core.config import SysConfig, get_personal_int_config
 
-        max_running = SysConfig.IMPORT_ASYNC_MAX_RUNNING
+        # 真实个人行优先，未设置回退系统级
+        max_running = get_personal_int_config(
+            request.user, "IMPORT_ASYNC_MAX_RUNNING", SysConfig.IMPORT_ASYNC_MAX_RUNNING
+        )
         if max_running <= 0:
             return None
         import_record_model = apps.get_model("system", "ImportRecord")

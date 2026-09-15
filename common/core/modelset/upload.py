@@ -13,7 +13,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
-from common.core.config import SysConfig
+from common.core.config import SysConfig, get_personal_config_data
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
@@ -31,6 +31,13 @@ class UploadFileAction:
     FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
 
     def get_upload_size(self):
+        """头像上传上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""
+        user = getattr(self.request, "user", None)
+        personal_data = None
+        if user is not None and user.is_authenticated:
+            personal_data = get_personal_config_data(user, "PICTURE_UPLOAD_SIZE")
+        if personal_data is not None and isinstance(personal_data.get("value"), int) and personal_data["value"] > 0:
+            return min(SysConfig.PICTURE_UPLOAD_SIZE, personal_data["value"])
         return SysConfig.PICTURE_UPLOAD_SIZE
 
     @extend_schema(

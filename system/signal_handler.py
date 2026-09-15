@@ -7,11 +7,12 @@
 import itertools
 
 from django.contrib.auth import user_logged_out
-from django.db.models.signals import m2m_changed, post_migrate, post_save, pre_delete
+from django.db.models.signals import m2m_changed, post_delete, post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
 from common.base.magic import MagicCacheData, cache_response
 from common.base.utils import remove_file
+from common.cache.storage import UserSystemConfigCache
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import SysConfig
 from common.core.filter import invalidate_data_permission_grants_cache
@@ -25,6 +26,7 @@ from system.models import (
     SystemConfig,
     TaskExecution,
     UserInfo,
+    UserPersonalConfig,
     UserRole,
 )
 from system.signal import approval_instance_finished, invalid_user_cache_signal
@@ -68,6 +70,17 @@ def clean_cache_handler(sender, instance, **kwargs):
 def invalid_config_cache_handler(sender, instance, **kwargs):
     SysConfig.invalid_config_cache(instance.key)
     logger.info(f"invalid cache {instance}")
+
+
+@receiver([post_save, post_delete], sender=UserPersonalConfig)
+def invalid_user_config_cache_handler(sender, instance, **kwargs):
+    """用户个人配置行变更（管理页/导入/ORM 直改）即时失效该用户的对应缓存键。
+
+    管理页写个人配置不走 UserConfig.set_value，缺这条时该用户最长 30 天读不到
+    管理员设置的个人值；按 owner+key 精确清理，无 wildcard 扫描开销。
+    """
+    UserSystemConfigCache(f"user_{instance.owner_id}_{instance.key}").del_storage_cache()
+    logger.info(f"invalid user config cache {instance}")
 
 
 @receiver([post_save, pre_delete], sender=UserRole)

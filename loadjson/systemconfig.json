@@ -13,7 +13,7 @@
       "is_active": true,
       "access": false,
       "key": "PICTURE_UPLOAD_SIZE",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -94,7 +94,8 @@
         "EpThemeColor": "#409EFF",
         "SidebarStatus": true,
         "WatermarkText": "",
-        "MultiTagsCache": false
+        "MultiTagsCache": false,
+        "SplitPanes": {}
       },
       "is_active": true,
       "access": true,
@@ -237,7 +238,7 @@
       "is_active": true,
       "access": false,
       "key": "EXPORT_ASYNC_MAX_RUNNING",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -339,7 +340,7 @@
       "is_active": true,
       "access": false,
       "key": "IMPORT_ASYNC_MAX_RUNNING",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -458,7 +459,7 @@
       "is_active": true,
       "access": false,
       "key": "PAT_RATE_LIMIT",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -475,7 +476,7 @@
       "is_active": true,
       "access": false,
       "key": "FILE_STORAGE_QUOTA_MB",
-      "inherit": false
+      "inherit": true
     }
   },
   {
@@ -492,7 +493,7 @@
       "is_active": true,
       "access": false,
       "key": "FILE_UPLOAD_COUNT_LIMIT",
-      "inherit": false
+      "inherit": true
     }
   },
   {

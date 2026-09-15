@@ -5933,3 +5933,11 @@ msgstr "开启 AI 动作草稿（白名单动作，经用户确认后以本人�
 #: system app (AI actions, generated)
 msgid "The form has been submitted"
 msgstr "表单已提交"
+
+#: system/views/configs.py
+msgid "Unknown config key"
+msgstr "未知配置项"
+
+#: system/views/configs.py
+msgid "This config is managed by administrators"
+msgstr "该配置由管理员统一管理，请在「用户配置」管理页调整"

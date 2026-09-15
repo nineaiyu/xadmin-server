@@ -4,7 +4,9 @@
 # filename : config
 # author : ly_13
 # date : 12/15/2023
-# 修改下面配置之后，记得清理一下redis缓存： python manage.py expire_caches 'config_*'
+# 系统配置的缓存失效由信号自动处理（system/signal_handler.py），个人级继承值
+# 不落个人缓存（直读系统级），系统默认变更无需手动清理缓存；
+# 手动兜底命令仍可用： python manage.py expire_caches config_*
 
 
 import json
@@ -40,6 +42,11 @@ def get_render_context(tmp: str, context: dict) -> str:
 
 
 class ConfigCacheBase:
+    # 无行 no_row 标记 TTL：只缓存「该 key 无数据行」这一事实（值不落缓存，
+    # 每次由调用方默认值现算），信号失效/种子导入/行创建路径都会清理标记，
+    # 绕过信号的 ORM 直建行在该窗口内自愈
+    ABSENCE_CACHE_TIMEOUT = 60
+
     def __init__(
         self,
         px="system",
@@ -97,7 +104,10 @@ class ConfigCacheBase:
         return value
 
     def get_value_from_db(self, key):  # 取得数据是激活的数据，如果数据未激活，则取默认数据
-        data = self.serializer(self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()).data
+        row = self.model.objects.filter(is_active=True, key=key, **self.filter_kwargs).first()
+        if row is None:
+            return {}
+        data = self.serializer(row).data
         if re.findall("{{{{.*{}.*}}}}".format(data["key"]), json.dumps(data["value"])):  # 防止渲染出现递归
             logger.warning(f"get same render key:{key}. so get default value")
             data["key"] = ""
@@ -118,21 +128,31 @@ class ConfigCacheBase:
         cache = self.cache(f"{self.px}_{key}")
         cache_data = cache.get_storage_cache()
         if cache_data is not None and cache_data.get("key", "") == key:
+            if cache_data.get("no_row"):
+                return self._absence_value(key, default_data)
             if ignore_access or cache_data.get("access"):
                 return cache_data
         db_data = self.get_value_from_db(key)
-        d_key = db_data.get("key", "")
-        if d_key != key:
-            data = self.get_default_data(key, default_data)
-            if data is not None:
-                db_data["value"] = data
-                db_data["key"] = key
-                db_data["access"] = True
+        if db_data.get("key") != key:
+            # 无行：缓存 no_row 标记（短 TTL）——既不把空值/默认值固化进缓存
+            # （default_data 由调用方每次给定），也避免无行键每次读都查库
+            cache.set_storage_cache({"key": key, "no_row": True}, timeout=self.ABSENCE_CACHE_TIMEOUT)
+            return self._absence_value(key, default_data)
         db_data["value"] = self.get_render_value(json.dumps(db_data["value"]))
         cache.set_storage_cache(db_data, timeout=self.timeout)
         if ignore_access or db_data.get("access"):
             return db_data
         return {}
+
+    def _absence_value(self, key, default_data):
+        """无行（系统级/用户级通用）时的返回：调用方默认值的纯 JSON 拷贝。
+
+        不做模板渲染——无行场景下 {{ KEY }} 引用的源行同样不存在，渲染只会
+        白白多一次全表查询；default_data 为 None 时返回空 {}（缺席语义自担）。
+        """
+        if default_data is None:
+            return {}
+        return {"key": key, "value": json.loads(json.dumps(default_data)), "access": True}
 
     def save_db(self, key, value, is_active, description, **kwargs):
         defaults = {"value": value}
@@ -507,14 +527,21 @@ def batch_user_config(user_pks, key, default=None):
     result = {}
     for pk, cache_key in key_map.items():
         data = cached.get(cache_key)
-        if isinstance(data, dict) and data.get("key") == key:
+        # no_row 缺席标记只表示「无个人行」，值需回退系统级，不能当作已缓存值
+        if isinstance(data, dict) and data.get("key") == key and not data.get("no_row"):
             result[pk] = data.get("value")
     missing = [pk for pk in pks if pk not in result]
     if missing:
-        # 用户未单独配置时，统一回退到系统级默认值（单次读取）
+        # 缓存 miss（含 no_row 缺席标记与刚写入未回填的个人行）：一次 IN 查询
+        # 回查个人行，有行用行值，仍无行才回退系统级默认值（单次读取）
+        personal = dict(
+            UserPersonalConfig.objects.filter(key=key, owner_id__in=missing, is_active=True).values_list(
+                "owner_id", "value"
+            )
+        )
         system_value = SysConfig.get_value(key, default)
         for pk in missing:
-            result[pk] = system_value
+            result[pk] = personal[pk] if pk in personal else system_value
     return result
 
 
@@ -541,10 +568,53 @@ class UserPersonalConfigCache(ConfigCache):
             filter_kwargs=self.filter_kwargs,
         )
 
-    def get_default_data(self, key, default_data):
+    def _absence_value(self, key, default_data):
+        """无个人行时的读取结果：系统生效值，统一带 system_fallback 标记。
+
+        三级回退语义（L0 conf 默认 / L1 系统行 / L2 个人行）：L1/L2 之间不做
+        inherit 阈值判断——系统行值即全员当前默认，个人行缺席时用户理应读到它；
+        inherit 字段保留为「键允许个人覆盖」的元数据，不再参与读取链。
+        system_fallback 标记供 get_personal_config_data 区分真实个人行。
+
+        default_data 非 None 时 SysConfig.get_data 必返回非空（有行→行数据，
+        无行→默认值结构），因此这里无需 default 兜底分支——也不做模板渲染：
+        self.model 是个人配置表，get_render_value 会全表扫描它。
+        """
         data = SysConfig.get_data(key, default_data)
-        if data and data.get("inherit"):
-            return data.get("value")
+        if data and data.get("key") == key:
+            return {"key": key, "value": data.get("value"), "access": True, "system_fallback": True}
+        return {}
+
+    def get_data(self, key, default_data=None, ignore_access=True):
+        """用户级读取：个人缓存槽只存「个人行值（长 TTL）」或「缺席标记（短 TTL）」。
+
+        继承来的系统值不落个人缓存，缺席标记只缓存「该用户没有此 key 的个人行」
+        这一事实，值本身每次直读系统级缓存（system_{key}）：系统默认变更只需
+        失效系统级缓存，即可对所有未个性化用户即时生效，无需失效任何用户 key；
+        已有个人行的用户读自己的值，不受系统级变更影响。
+        """
+        cache = self.cache(f"{self.px}_{key}")
+        cache_data = cache.get_storage_cache()
+        if cache_data is not None and cache_data.get("key", "") == key:
+            if cache_data.get("no_row"):
+                return self._absence_value(key, default_data)
+            if "inherit" in cache_data:
+                # 旧版缓存把继承的系统行数据（含 inherit 字段，个人行模型没有
+                # 该字段）存进了个人槽，且系统行更新信号不清理用户槽——继续
+                # 命中会把用户的配置值冻结在旧值上（最长一个缓存 TTL）。视同
+                # 缺席并清理，升级后自动收敛
+                cache.del_storage_cache()
+                return self._absence_value(key, default_data)
+            if ignore_access or cache_data.get("access"):
+                return cache_data
+        db_data = self.get_value_from_db(key)
+        if db_data.get("key") != key:
+            cache.set_storage_cache({"key": key, "no_row": True}, timeout=self.ABSENCE_CACHE_TIMEOUT)
+            return self._absence_value(key, default_data)
+        db_data["value"] = self.get_render_value(json.dumps(db_data["value"]))
+        cache.set_storage_cache(db_data, timeout=self.timeout)
+        if ignore_access or db_data.get("access"):
+            return db_data
         return {}
 
     def delete_db(self, key, **kwargs):
@@ -558,3 +628,24 @@ class UserPersonalConfigCache(ConfigCache):
 
 
 UserConfig = UserPersonalConfigCache
+
+
+def get_personal_config_data(user_obj, key):
+    """返回用户真实个人行的完整缓存数据（无个人行返回 None）。
+
+    缺席标记/系统生效值回退（no_row/system_fallback）均视为「未个性化」，
+    返回 None；供配额「个人行优先、缺席继承系统级」语义使用。
+    """
+    data = UserConfig(user_obj).get_data(key, None)
+    is_personal = isinstance(data, dict) and data.get("key") == key
+    if is_personal and not data.get("no_row") and not data.get("system_fallback"):
+        return data
+    return None
+
+
+def get_personal_int_config(user_obj, key, system_value):
+    """个人级 int 配置读取：真实个人行优先（int 类型才生效），否则回退系统级。"""
+    data = get_personal_config_data(user_obj, key)
+    if data is not None and isinstance(data.get("value"), int):
+        return data["value"]
+    return system_value
