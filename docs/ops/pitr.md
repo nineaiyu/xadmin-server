@@ -1,7 +1,9 @@
 # PITR（WAL 归档）方案与演练
 
 > 候选池「PITR（WAL 归档）」交付物：备份 RPO 6h（pg_dump 逻辑备份）→ **分钟级**。
-> 本文给出现状、启用步骤、成本口径、演练流程与回滚；**默认不启用**（需发布窗口 + 成本确认）。
+> 本文给出现状、启用步骤、成本口径、演练流程与回滚。
+> **✅ 2026-09-16 已启用**（发布窗口执行：archive_mode=on 重启 + gzip 压缩归档 + 归档滞后告警接线，
+> 归档卷为同盘独立目录——单机退让决策与迁移条件见 §6）。
 > 相关：[deployment.md](deployment.md)（备份总览）、[backup-drill-*.md](backup-drill-2027-03.md)（既有演练口径）、`utils/pitr_drill.sh`（链路检查助手）。
 
 ## 1. 现状与目标
@@ -15,41 +17,49 @@
 
 ## 2. 启用步骤（发布窗口执行）
 
-### 2.1 PostgreSQL 侧（`xadmin-postgresql/docker-compose.yml` 的 postgresql 服务）
+### 2.1 PostgreSQL 侧（`xadmin-server/docker-compose.yml` 的 postgresql 服务，已按此启用）
 
 ```yaml
     command:
       - postgres
       - -c
       - max_connections=200
-      # —— PITR（按需启用；归档目录必须是独立卷/独立盘）——
       - -c
       - archive_mode=on
       - -c
       - archive_timeout=60
       - -c
-      - archive_command=test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f
+      - "archive_command=test ! -f /var/lib/postgresql/archive/%f.gz && gzip < %p > /var/lib/postgresql/archive/%f.gz"
     volumes:
-      - ./data:/var/lib/postgresql/data
-      - ${PG_ARCHIVE_HOST_DIR:-./archive}:/var/lib/postgresql/archive   # 新增：独立卷
+      - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
+      - ${VOLUME_DIR:-../}/xadmin-postgresql/archive:/var/lib/postgresql/archive   # 独立卷
 ```
 
 要点：
 
 1. `archive_mode=on` **需要重启** PostgreSQL 才生效（`archive_command` 可 reload，`archive_mode` 不可）；
-2. `archive_command` 用 `test ! -f … && cp` 幂等写法（重复归档同段不报错）；
-3. **归档目录必须与数据目录分盘/分卷**（同盘故障时两者同失，归档失去意义）；
-4. 归档目录纳入既有备份同步链路（异地副本），保留期建议 ≥ 14 天。
+2. `archive_command` 用 `test ! -f … && …` 幂等写法（同段重归档不覆盖已有文件；
+   覆盖被拒绝时归档器报失败，由 §2.2 巡检捕获）；
+3. 归档采用 **gzip 压缩**：空段 16MB → KB 级，持续写入段约压 5~10 倍，
+   磁盘成本几乎归零（实测：16MB 段压缩后 1.4MB，见 §6）；恢复端需 gunzip（见 §3）；
+4. **归档目录必须与数据目录分盘/分卷**（同盘故障时两者同失，归档失去意义）。
+   当前部署为**同盘独立目录**（单机退让，用户 2026-09-16 确认）：目录独立于数据目录，
+   但与数据同盘；换独立盘后仅需把 compose 中该卷的**宿主路径**改为挂载点（容器内路径不变）；
+5. 归档目录应纳入异地副本同步链路（`BACKUP_REMOTE_TYPE` 当前未启用，随异地副本一并规划），
+   保留期建议 ≥ 14 天。
 
-### 2.2 告警（复用既有通道）
+### 2.2 告警（已接线：`utils/db_backup.sh` 的 `check_wal_archive`）
 
-`utils/db_backup.sh` 的 `send_alert` 已覆盖 pg_dump/校验/同步/媒体四处；
-PITR 增加一条**归档滞后检查**（建议加进 db-backup 容器的健康检查脚本）：
+`db-backup` 容器每轮备份后执行一次归档巡检（`archive_mode=on` 才生效），两个信号都
+**不依赖库空闲**（空闲不切段，「最新归档时间」在静默期会误报，故不用它做判据）：
 
-```bash
-# 归档滞后 = 最新归档文件 mtime 距今秒数；> 600s 告警（含"归档目录不可写"场景）
-find "${PG_ARCHIVE_DIR}" -name '0000*' -mmin -10 | head -1 | grep -q . || echo "WAL archive stalled" | send_alert
-```
+1. **归档器失败态**：`pg_stat_archiver.last_failed_time` 晚于 `last_archived_time`
+   （目录不可写/磁盘满/权限 → 告警 `wal archive failing`）；
+2. **待归档积压**：`pg_wal/archive_status` 有 `.ready` 滞留且最老者超过
+   `WAL_ARCHIVE_STALL_SECONDS`（默认 600s）——`archive_command` 挂死或归档器停转时
+   没有失败计数，只有积压能暴露（告警 `wal archive stalled`）。
+
+告警经既有 `send_alert` 通道上报（`BACKUP_ALERT_URL`/`BACKUP_ALERT_TOKEN`，未配置时仅落 WARN 日志）。
 
 ## 3. 时间点回放演练（`utils/pitr_drill.sh`）
 
@@ -61,11 +71,11 @@ find "${PG_ARCHIVE_DIR}" -name '0000*' -mmin -10 | head -1 | grep -q . || echo "
 | 4. 校验 | `psql -c "select count(*) …"` 对比预期；确认误删数据回来了、其后的正常数据未被回退（按时间点语义） |
 | 5. 记录 | 演练结果追加到本文件 §5 记录表（RTO/RPO 实测） |
 
-标准恢复配置（临时实例）：
+标准恢复配置（临时实例；归档段为 gzip 压缩，restore 端解压，兼容未压缩段）：
 
 ```
-restore_command = 'cp /var/lib/postgresql/archive/%f %p'
-recovery_target_time = '2026-09-15 12:00:00+08'
+restore_command = 'if test -f /var/lib/postgresql/archive/%f.gz; then gunzip < /var/lib/postgresql/archive/%f.gz > %p; else cp /var/lib/postgresql/archive/%f %p; fi'
+recovery_target_time = '2026-09-16 12:00:00+08'
 recovery_target_action = 'promote'
 ```
 
@@ -80,8 +90,13 @@ recovery_target_action = 'promote'
 |------|--------|-----------|-----------------|--------------------|------|
 | （待发布窗口启用后首次执行） | — | — | — | — | — |
 
-## 6. 成本评估口径
+## 6. 成本评估口径（2026-09-16 实测口径）
 
-- 归档存量 ≈ 日写入 WAL 量 × 保留天数（PG 默认 16MB/段；低写入场景每天 < 100MB）；
-- 独立盘/卷按保留期容量规划（建议 3 个月余量）；
+- 实测基线：库 21MB；启用前 7 小时累计 WAL 写入 55MB（≈ 190MB/天业务数据量，轻负载）；
+- gzip 压缩归档：空段 16MB → KB 级，含真实写入段 16MB → 1.4MB（实测首个归档段）；
+  archive_timeout=60（RPO 1 分钟）下磁盘成本几乎归零，14 天保留预算 < 1GB；
+- 若未来写入量级增长（WAL > 数 GB/天），复核方向：archive_timeout 提到 300s（RPO 5 分钟）
+  或保留期下调；
+- **独立盘迁移条件**：当前归档目录与数据同盘（单机退让，同盘故障两者同失的风险已标注）；
+  换独立盘/挂载点后仅改 compose 中归档卷宿主路径，并把迁移完成日期回填本节；
 - 演练频次：与季度备份演练同一周期（`backup-drill-reminder.yml` 提醒 workflow 复用）。

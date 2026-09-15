@@ -25,7 +25,21 @@ services:
     restart: always
     # 8000 远超应用实际需求（CONN_MAX_AGE 持久连接 × worker 数），
     # 仅徒增 PG 内存基线；确需更高并发时引入 pgbouncer（同类预案见 docs/adr）
-    command: [ "postgres","-c","max_connections=200" ]
+    # PITR（2026-09-16 启用，见 docs/ops/pitr.md）：
+    #   - archive_mode=on 需重启生效（archive_command/timeout 可 reload）；
+    #   - 归档用 gzip 压缩（空段 16MB → KB 级，磁盘成本≈0），restore 端 gunzip；
+    #   - 归档卷当前与数据同盘（单机退让，风险与迁移条件见 pitr.md §6），
+    #     有独立盘后把宿主路径换成挂载点即可（容器内路径不变）
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_timeout=60
+      - -c
+      - "archive_command=test ! -f /var/lib/postgresql/archive/%f.gz && gzip < %p > /var/lib/postgresql/archive/%f.gz"
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
@@ -35,6 +49,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
+      - ${VOLUME_DIR:-../}/xadmin-postgresql/archive:/var/lib/postgresql/archive
     healthcheck:
       test: "pg_isready -q -U $$POSTGRES_USER -d $$POSTGRES_DB"
       interval: 10s

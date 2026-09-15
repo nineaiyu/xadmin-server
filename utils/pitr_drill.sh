@@ -12,7 +12,10 @@ set -uo pipefail
 
 PG_CONTAINER="${PG_CONTAINER:-xadmin-postgresql}"
 PG_ARCHIVE_DIR="${PG_ARCHIVE_DIR:-/var/lib/postgresql/archive}"
-PG_USER="${PG_USER:-postgres}"
+# 默认用户/库与 docker-compose 的 POSTGRES_USER/POSTGRES_DB 对齐；
+# psql 不带 -d 会默认连「与用户同名的库」，compose 部署下该库不存在（曾因此误报无法连接）
+PG_USER="${PG_USER:-server}"
+PG_DATABASE="${PG_DATABASE:-xadmin}"
 
 fail=0
 
@@ -24,7 +27,7 @@ if ! docker inspect "${PG_CONTAINER}" >/dev/null 2>&1; then
   exit 1
 fi
 
-archive_mode="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -Atc "show archive_mode" 2>/dev/null || true)"
+archive_mode="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DATABASE}" -Atc "show archive_mode" 2>/dev/null || true)"
 if [[ -z "${archive_mode}" ]]; then
   echo "[FAIL] 无法连接 PostgreSQL（检查 PG_USER/容器配置）"
   exit 1
@@ -35,9 +38,9 @@ if [[ "${archive_mode}" != "on" ]]; then
   fail=1
 fi
 
-command_line="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -Atc "show archive_command" 2>/dev/null || true)"
+command_line="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DATABASE}" -Atc "show archive_command" 2>/dev/null || true)"
 echo "archive_command = ${command_line}"
-timeout_value="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -Atc "show archive_timeout" 2>/dev/null || true)"
+timeout_value="$(docker exec "${PG_CONTAINER}" psql -U "${PG_USER}" -d "${PG_DATABASE}" -Atc "show archive_timeout" 2>/dev/null || true)"
 echo "archive_timeout = ${timeout_value}"
 
 count="$(docker exec "${PG_CONTAINER}" sh -c "ls ${PG_ARCHIVE_DIR} 2>/dev/null | wc -l" | tr -d ' ')"
@@ -63,8 +66,8 @@ cat <<'STEPS'
 == 时间点回放演练步骤（在隔离环境执行，勿覆盖生产数据目录）==
   1) 选目标时间点，先制造并记录一条可辨识测试数据（随后"误删"它）
   2) 在临时容器恢复基础备份（最近一次 pg_dump 或 pg_basebackup 副本）
-  3) postgresql.auto.conf 配置：
-       restore_command = 'cp <ARCHIVE_DIR>/%f %p'
+  3) postgresql.auto.conf 配置（归档段为 gzip 压缩，restore 端解压）：
+       restore_command = 'if test -f <ARCHIVE_DIR>/%f.gz; then gunzip < <ARCHIVE_DIR>/%f.gz > %p; else cp <ARCHIVE_DIR>/%f %p; fi'
        recovery_target_time = '<目标时间点>+08'
        recovery_target_action = 'promote'
   4) 启动临时实例，psql 校验：误删数据已恢复、其后正常数据未被回退

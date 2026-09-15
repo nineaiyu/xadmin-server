@@ -202,6 +202,41 @@ prune_remote() {
     fi
 }
 
+# WAL 归档链路巡检（PITR，docs/ops/pitr.md §2.2）：archive_mode=on 时每轮检查一次。
+# 两个信号都不依赖库空闲（空闲不切段、不算停滞，不能用「最新归档时间」判断）：
+#   1) 归档器失败态：last_failed_time 晚于 last_archived_time（目录不可写/磁盘满/权限）；
+#   2) 待归档积压：pg_wal/archive_status 存在 .ready 滞留且最老者超过 WAL_ARCHIVE_STALL_SECONDS
+#      —— archive_command 挂死或归档器停转时没有失败计数，只有积压能暴露。
+WAL_ARCHIVE_STALL_SECONDS=${WAL_ARCHIVE_STALL_SECONDS:-600}
+
+check_wal_archive() {
+    local mode failing backlog_count backlog_age
+    mode=$(psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Atc \
+        "select setting from pg_settings where name = 'archive_mode'" 2>/dev/null || true)
+    if [[ "${mode}" != "on" ]]; then
+        log "wal archive check skipped (archive_mode=${mode:-unknown})"
+        return 0
+    fi
+    failing=$(psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Atc \
+        "select coalesce(last_failed_time > last_archived_time, last_failed_time is not null) from pg_stat_archiver" 2>/dev/null || echo "?")
+    backlog_count=$(psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Atc \
+        "select count(*) from pg_ls_dir('pg_wal/archive_status', true, true) t(name) where name like '%.ready'" 2>/dev/null || echo "?")
+    backlog_age=$(psql -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Atc \
+        "select coalesce(max(extract(epoch from now() - s.modification)), 0)::int from pg_ls_dir('pg_wal/archive_status', true, true) t(name), lateral pg_stat_file('pg_wal/archive_status/' || name, true) s where name like '%.ready'" 2>/dev/null || echo "?")
+    if [[ "${failing}" == "t" ]]; then
+        warn "WAL 归档器处于失败态：最近失败晚于最近成功（pg_stat_archiver），检查归档目录写权限/磁盘空间"
+        send_alert "wal archive failing" "last_failed_time is newer than last_archived_time"
+    fi
+    if [[ "${backlog_count}" == "?" || "${backlog_age}" == "?" ]]; then
+        warn "WAL 归档巡检查询失败（pending=${backlog_count} oldest=${backlog_age}）"
+        send_alert "wal archive check failed" "pending=${backlog_count} oldest=${backlog_age}"
+    elif [[ "${backlog_count}" -gt 0 && "${backlog_age}" -gt "${WAL_ARCHIVE_STALL_SECONDS}" ]]; then
+        warn "WAL 归档积压：${backlog_count} 段待归档，最老滞留 ${backlog_age}s（阈值 ${WAL_ARCHIVE_STALL_SECONDS}s）"
+        send_alert "wal archive stalled" "pending=${backlog_count} oldest_age=${backlog_age}s threshold=${WAL_ARCHIVE_STALL_SECONDS}s"
+    fi
+    log "wal archive check done (failing=${failing} pending=${backlog_count:-?} oldest=${backlog_age:-?}s)"
+}
+
 mkdir -p "${BACKUP_DIR}"
 log "db-backup started (interval=${BACKUP_INTERVAL}s keep=${KEEP_DAYS}d media=${BACKUP_MEDIA} remote=${BACKUP_REMOTE_TYPE:-none} once=${BACKUP_ONCE})"
 FAILED=0
@@ -214,6 +249,7 @@ while true; do
     fi
     prune_local
     prune_remote
+    check_wal_archive
     if [[ "${BACKUP_ONCE}" == "1" ]]; then
         log "BACKUP_ONCE=1，单轮备份结束"
         break
