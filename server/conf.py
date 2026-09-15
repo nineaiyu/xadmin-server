@@ -295,6 +295,10 @@ class Config(dict):
         # 敏感操作审批：拦截路径正则清单（默认空 = 休眠，渐进启用；仅对显式挂载
         # ApprovalRequired 装饰器的 action 生效），审批通过后携一次性令牌重发放行
         "APPROVAL_REQUIRED_PATHS": [],
+        # 审批动作需 MFA 二次确认的清单（默认空 = 不启用；审批流三期）：
+        # 取值 approve / reject / cancel / add_sign / batch_approve / batch_reject，
+        # 命中动作在业务变更前走 412（user_confirm_required）协议
+        "APPROVAL_MFA_REQUIRED_ACTIONS": [],
         # 审批人角色 code 清单（默认空 = 全部在用超管；申请人不能自审）
         "APPROVAL_APPROVER_ROLES": [],
         # 审批通过后令牌有效期（秒）

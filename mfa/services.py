@@ -130,3 +130,14 @@ def validate_login_mfa_token(token):
 def get_login_mfa_methods(user, request=None):
     """获取登录 MFA 可用的验证方式（密码方式在登录场景无意义，不参与）"""
     return get_confirm_methods(user, request=request, confirm_type=ConfirmType.MFA)
+
+
+def ensure_user_confirmed(request, confirm_type=ConfirmType.MFA):
+    """敏感操作二次确认校验（412 协议）——供其他 app 的 ViewSet/action 手动校验。
+
+    未通过时抛 HTTP 412（type=user_confirm_required），前端拦截弹验证窗并自动重发；
+    验证通过后的确认状态写入缓存（JWT 无 session），有效期内免重复验证。
+    """
+    from mfa.confirm import ensure_user_confirmed as _ensure
+
+    return _ensure(request, confirm_type)

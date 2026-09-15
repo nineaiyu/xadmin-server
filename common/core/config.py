@@ -252,6 +252,15 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("APPROVAL_REQUIRED_PATHS", CONFIG.APPROVAL_REQUIRED_PATHS)
 
     @property
+    def APPROVAL_MFA_REQUIRED_ACTIONS(self):
+        """需 MFA 二次确认的审批动作清单（默认空 = 不启用；审批流三期）。
+
+        取值 approve / reject / cancel / add_sign / batch_approve / batch_reject；
+        命中动作在业务变更前走 412（user_confirm_required）协议，前端弹验证窗后自动重发。
+        """
+        return self.get_value("APPROVAL_MFA_REQUIRED_ACTIONS", CONFIG.APPROVAL_MFA_REQUIRED_ACTIONS)
+
+    @property
     def APPROVAL_APPROVER_ROLES(self):
         """审批人角色 code 清单（默认空 = 全部在用超管；申请人始终不能自审）。"""
         return self.get_value("APPROVAL_APPROVER_ROLES", CONFIG.APPROVAL_APPROVER_ROLES)
