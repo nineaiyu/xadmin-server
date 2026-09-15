@@ -23,7 +23,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 from system.serializers.webhook import WebhookDeliverySerializer, WebhookSubscriptionSerializer
-from system.utils.webhook import EVENT_CATALOG, get_event_label
+from system.utils.webhook import event_catalog_payload
 
 logger = get_logger(__name__)
 
@@ -54,8 +54,8 @@ class WebhookSubscriptionViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="events")
     def events(self, request, *args, **kwargs):
-        """事件目录（key + 中文名）。"""
-        return ApiResponse(data=[{"key": key, "label": get_event_label(key)} for key in EVENT_CATALOG])
+        """事件目录（key + 中文名 + 契约版本；ADR-039 B4）。"""
+        return ApiResponse(data=event_catalog_payload())
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="test")
