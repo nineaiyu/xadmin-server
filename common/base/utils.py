@@ -7,6 +7,7 @@
 import base64
 import hashlib
 import os
+import sys
 
 from Cryptodome import Random
 from Cryptodome.Cipher import AES
@@ -300,7 +301,12 @@ class AESCipherV2:
         # v1 退役观测点（发布窗口 checklist 前置条件的核验依据）：仅对「合法旧格式密文」
         # 留痕，运维按该标记确认观察窗口内命中清零后再关闭 SECURITY_AES_V1_DECRYPT_ENABLED；
         # 非 Salted__ 的任意输入不会触发本日志，避免日志放大。
-        logger.warning("aes_v1_decrypt_used: 旧格式（Salted__）密文命中，v1 退役观察期标记")
+        # 带 caller 是定位前提：只报「命中了」无法区分是未刷新的浏览器缓存、遗留调用点
+        # 还是探测流量，而清零路径的第一步正是「定位读取源」。
+        logger.warning(
+            "aes_v1_decrypt_used: 旧格式（Salted__）密文命中，v1 退役观察期标记 caller=%s",
+            self._caller(),
+        )
         salt = data[8:16]
         key_iv = self._make_key(salt, 32 + 16)
         key = key_iv[:32]
@@ -323,6 +329,20 @@ class AESCipherV2:
         except Exception:
             # GCM 认证失败 / 格式非法：返回空串，交由业务层按解密失败处理
             return ""
+
+    @staticmethod
+    def _caller(depth: int = 2) -> str:
+        """命中点调用来源（`文件名:行号 函数名`），供 v1 退役观测定位读取源。
+
+        depth=2 对应「调用 decrypt 的那一行」（0=_caller / 1=decrypt / 2=调用方）。
+        仅在旧格式命中时取栈，不在主路径上，成本可忽略。
+        """
+        try:
+            frame = sys._getframe(depth)
+            code = frame.f_code
+            return f"{code.co_filename.rsplit('/', 1)[-1]}:{frame.f_lineno} {code.co_name}"
+        except Exception:  # 栈深度不足或实现无 _getframe：观测信息降级，不影响解密
+            return "unknown"
 
     @staticmethod
     def _v1_decrypt_enabled() -> bool:

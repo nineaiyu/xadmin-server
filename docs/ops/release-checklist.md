@@ -31,6 +31,10 @@
 - [ ] `CSP_REPORT_URI` 已指向 `/api/csp-report`（空 = 不下发 report-uri，观察期无数据）
 - [ ] 生产日志 `data/logs/server.log` 中 `CSP violation:` 命中**连续 7 天清零**
       （统计：`grep -c "CSP violation:" data/logs/server.log`；按 directive 看：`grep -o "directive=[^ ]*" ... | sort | uniq -c`）
+      - **2026-09-16 起该判据已可判**：`common/api/csp.py` 增加合成上报隔离，非真实浏览器来源
+        （缺 `document-uri` / 脚本 UA / 非本站文档域）只记 `CSP synthetic report ignored:`（INFO），
+        不再写入 `CSP violation:`。隔离前当日 69 条命中**全部**为合成上报，判据无意义。
+      - 排查合成来源仍可查原始字段：`grep "CSP synthetic report ignored" data/logs/server.log`（含 reason/directive/blocked/document）
 - [ ] 若清零前有个别命中，已在 `server/settings/base.py` 策略中豁免并复测（不要用 enforce 直接压掉真实违规）
 
 **动作**：
@@ -52,8 +56,10 @@
       （2026-09-14 新增的退役观测点：仅命中**合法旧格式密文**时告警，任意非法输入不触发，可安全用于清零判定）
       - 统计：`grep -c "aes_v1_decrypt_used" data/logs/server.log`
       - 覆盖要求：至少 1 个完整发布窗口（≥7 天）且包含一次全员活跃时段
-- [ ] 若仍有命中：结合 `dist/version.json` 与前端发布记录定位未升级客户端（浏览器缓存/长期未刷新页面），
-      提示强刷后观察至清零
+- [ ] 若仍有命中：按日志里的 **`caller=`**（2026-09-16 新增，形如 `login.py:313 do_login`）定位来源，
+      再结合 `dist/version.json` 与前端发布记录定位未升级客户端（浏览器缓存/长期未刷新页面），提示强刷后观察至清零
+      - `caller` 是区分「遗留调用点」与「未刷新浏览器缓存」的唯一依据：只报命中数无法收敛到入口
+      - 按来源聚合：`grep -o "caller=[^ ]*" data/logs/server.log | sort | uniq -c | sort -rn`
 
 **动作**：
 
@@ -78,6 +84,7 @@
 |------|------|------------------|------------------|------|
 | W0（下一年度收口） | 2026-09-14 | 未闭环（待生产 report 7 天清零；开关与回滚已就位） | 未闭环（待观察窗口内 `aes_v1_decrypt_used` 清零；观测点已交付） | 硬门禁保持：不启动 W1 功能窗口 |
 | W9–W10（年度收口复核） | 2026-09-15 | **未闭环**：当日 `CSP violation:` 69 条，09-11 起每日 48~119 条；形态为**合成上报**（logger `xadmin.post`、`AnonymousUser`、`cdn.example.com` / `https://x/`）→ 判据被测试流量污染 | **未闭环**：当日 `aes_v1_decrypt_used` **570 条**（全天分散，20 点仍 96 条）→ 仍有 v1 密文被持续读取 | 硬门禁保持；清零路径见下节「复核结论」 |
+| 判据可判化 | 2026-09-16 | **判据已修复（待观察）**：合成上报隔离上线——非真实浏览器来源不再写入 `CSP violation:`，改为 INFO 留痕；起算条件=隔离后重新观察 7 天 | **定位能力已修复（待观察）**：日志新增 `caller=` 调用来源；起算条件=按 caller 收敛来源并清零后关闭开关 | 两项均为「判据/可观测性」修复，非切换本身；切换仍按 §1/§2 前置执行 |
 
 ### 复核结论（2026-09-15，W9–W10）
 
@@ -88,3 +95,19 @@
    **清零路径**：① 按命中时刻与访问者定位读取源（系统配置密钥类字段 / 客户端缓存页面）；② 将对应值以 v2 重写（前端 v2 覆盖后重新保存即可）；
    ③ 直到一个完整发布窗口（≥7 天，含全员活跃时段）清零后再置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`。
 3. 两项均**不满足切换前置**，本轮不动生产配置；开关与回滚路径保持现状。
+
+### 复核结论（2026-09-16，判据可判化）
+
+1. **项 1（CSP enforce）**：定位到污染源的准确形态——当日 69 条违规与 `tests/unit/common/test_csp.py`
+   的 payload 字面量完全一致（`document=https://example.com/#/system/user/index` + `cdn.example.com/x.js`、
+   CSP3 信封 `https://x/` + `blob:`、非法 JSON 全空三条），即**探测/测试流量**而非真实浏览器。
+   处置：在 `common/api/csp.py` 加合成上报隔离（缺 `document-uri` / 脚本 UA / 非本站文档域 → INFO 不计违规，
+   响应头 `X-CSP-Report: ignored`），原始字段仍留痕。`ALLOWED_HOSTS` 为通配或未配置时跳过域名判据（宁可多记）。
+   **下一步**：隔离上线后重新起算 7 天窗口，`CSP violation:` 连续 7 天为 0 即可切 enforce。
+2. **项 2（AES v1 关闭）**：**澄清一个此前的口径错误**——v1（`Salted__`）只出现在**前端请求体**加密
+   （`AESCipherV2`，key 为 username/token 的一次性密文），**不落库**；落库字段级加密是另一套
+   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`common/base/utils.py:118`），且 `AESCharField/AESTextField`
+   全仓无模型使用。因此**不存在「扫库重写 v1 密文」这条路径**，命中必然来自仍在提交旧格式密文的客户端或遗留调用点。
+   处置：观测点日志新增 `caller=`（调用方 `文件名:行号 函数名`），使 572 条/天的命中可收敛到具体入口。
+   **下一步**：部署后按 `caller` 聚合定位，收敛来源并清零后再置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`。
+3. 本轮同样**未切换任何生产配置**：两项的开关与回滚路径保持现状，仅补齐判据与定位能力。

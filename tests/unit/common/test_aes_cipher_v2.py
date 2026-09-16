@@ -78,6 +78,25 @@ class TestLegacyDecryptObservability:
             assert AESCipherV2("some-key").decrypt(encrypted) == "legacy-payload"
         assert "aes_v1_decrypt_used" in caplog.text
 
+    def test_legacy_hit_records_caller(self, caplog):
+        """命中日志带调用来源：清零路径第一步是「定位读取源」，只报命中无法定位。
+
+        caller 指向的模块可区分「前端未升级的遗留调用点」与「未刷新的浏览器缓存」，
+        缺失时运维只能看到计数，无法收敛到具体入口（2026-09-15 实测 572 条/天）。
+        """
+        encrypted = AESCipherV2("some-key").encrypt(b"legacy-payload").decode()
+        with caplog.at_level(logging.WARNING):
+            AESCipherV2("some-key").decrypt(encrypted)
+        messages = [record.getMessage() for record in caplog.records if "aes_v1_decrypt_used" in record.getMessage()]
+        assert len(messages) == 1
+        # 本用例所在文件与函数名即调用来源
+        assert "test_aes_cipher_v2.py" in messages[0]
+        assert "test_legacy_hit_records_caller" in messages[0]
+
+    def test_caller_degrades_gracefully(self):
+        """栈深度不足时降级为 unknown，不影响解密结果。"""
+        assert AESCipherV2._caller(depth=999) == "unknown"
+
     def test_v2_and_arbitrary_input_do_not_warn(self, caplog):
         """v2 主路径与任意非法输入（含非 Salted__ 的 base64）都不触发退役标记，避免日志放大。"""
         with caplog.at_level(logging.WARNING):

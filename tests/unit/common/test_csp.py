@@ -10,7 +10,7 @@ import logging
 
 import pytest
 
-from common.api.csp import CSP_REPORT_HEADER, CSP_REPORT_LOG_THROTTLE_SECONDS
+from common.api.csp import CSP_REPORT_HEADER, CSP_REPORT_LOG_THROTTLE_SECONDS, _synthetic_reason
 from common.core.config import SysConfig
 from common.core.middleware import CSP_HEADER, CSP_HEADER_REPORT_ONLY
 
@@ -18,6 +18,10 @@ pytestmark = pytest.mark.django_db
 
 HEALTH_URL = "/api/common/api/health"
 REPORT_URL = "/api/common/api/csp-report"
+BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+)
 
 
 def patch_config(monkeypatch, key, value):
@@ -60,22 +64,34 @@ class TestCSPHeaders:
 
 
 class TestCSPReportEndpoint:
-    def test_report_logged_and_throttled(self, api_client, caplog):
+    def test_report_logged_and_throttled(self, api_client, caplog, settings):
+        """真实浏览器（有 UA + 本站 document-uri）的违规照常入统计。"""
+        settings.ALLOWED_HOSTS = ["testserver"]
         payload = {
             "csp-report": {
-                "document-uri": "https://example.com/#/system/user/index",
+                "document-uri": "https://testserver/#/system/user/index",
                 "violated-directive": "script-src 'self'",
                 "blocked-uri": "https://cdn.example.com/x.js",
             }
         }
         with caplog.at_level(logging.WARNING, logger="xadmin"):
-            first = api_client.post(REPORT_URL, data=json.dumps(payload), content_type="application/csp-report")
+            first = api_client.post(
+                REPORT_URL,
+                data=json.dumps(payload),
+                content_type="application/csp-report",
+                HTTP_USER_AGENT=BROWSER_UA,
+            )
             assert first.status_code == 204
             assert first[CSP_REPORT_HEADER] == "logged"
             lines = [record for record in caplog.records if "CSP violation" in record.getMessage()]
             assert len(lines) == 1
             # 同 指令+文档 在节流窗口内只记一次
-            api_client.post(REPORT_URL, data=json.dumps(payload), content_type="application/csp-report")
+            api_client.post(
+                REPORT_URL,
+                data=json.dumps(payload),
+                content_type="application/csp-report",
+                HTTP_USER_AGENT=BROWSER_UA,
+            )
             lines = [record for record in caplog.records if "CSP violation" in record.getMessage()]
             assert len(lines) == 1
         assert CSP_REPORT_LOG_THROTTLE_SECONDS >= 60
@@ -88,3 +104,92 @@ class TestCSPReportEndpoint:
             == 204
         )
         assert api_client.post(REPORT_URL, data="{not-json", content_type="application/csp-report").status_code == 204
+
+
+class TestCSPSyntheticReport:
+    """合成上报隔离（切 enforce 判据可判的前提）。
+
+    背景：2026-09-15 生产日志中当日 69 条「CSP violation」全部来自探测/测试流量
+    （`document=https://example.com/#/...`、`https://x/`、全空），真实浏览器违规为 0，
+    导致「连续 7 天清零」的判据在隔离前不可判。合成上报只记 INFO，不进违规统计。
+    """
+
+    @pytest.mark.parametrize(
+        "payload,user_agent,expected_reason",
+        [
+            ({"csp-report": {}}, BROWSER_UA, "missing-document-uri"),
+            ({"csp-report": {"document-uri": "https://testserver/#/x"}}, "", "non-browser-agent"),
+            (
+                {"csp-report": {"document-uri": "https://testserver/#/x"}},
+                "python-requests/2.31.0",
+                "non-browser-agent",
+            ),
+            (
+                {"csp-report": {"document-uri": "https://example.com/#/system/user/index"}},
+                BROWSER_UA,
+                "foreign-document-host",
+            ),
+        ],
+    )
+    def test_synthetic_reports_not_counted_as_violation(
+        self, api_client, caplog, settings, payload, user_agent, expected_reason
+    ):
+        settings.ALLOWED_HOSTS = ["testserver"]
+        with caplog.at_level(logging.INFO, logger="xadmin"):
+            response = api_client.post(
+                REPORT_URL,
+                data=json.dumps(payload),
+                content_type="application/csp-report",
+                HTTP_USER_AGENT=user_agent,
+            )
+        assert response.status_code == 204
+        assert response[CSP_REPORT_HEADER] == "ignored"
+        assert not [record for record in caplog.records if "CSP violation" in record.getMessage()]
+        ignored = [record for record in caplog.records if "CSP synthetic report ignored" in record.getMessage()]
+        assert len(ignored) == 1
+        assert f"reason={expected_reason}" in ignored[0].getMessage()
+
+    def test_wildcard_allowed_hosts_skips_host_check(self, api_client, caplog, settings):
+        """ALLOWED_HOSTS 为通配时无法判定归属，跳过该判据（宁可多记不漏记真实违规）。"""
+        settings.ALLOWED_HOSTS = ["*"]
+        payload = {
+            "csp-report": {
+                "document-uri": "https://example.org/#/system/user/index",
+                "violated-directive": "img-src 'self'",
+                "blocked-uri": "https://cdn.example.org/a.png",
+            }
+        }
+        with caplog.at_level(logging.WARNING, logger="xadmin"):
+            response = api_client.post(
+                REPORT_URL,
+                data=json.dumps(payload),
+                content_type="application/csp-report",
+                HTTP_USER_AGENT=BROWSER_UA,
+            )
+        assert response[CSP_REPORT_HEADER] == "logged"
+        assert len([record for record in caplog.records if "CSP violation" in record.getMessage()]) == 1
+
+
+class TestSyntheticReasonHostBasis:
+    """「本站」基准：上报请求自身 Host 优先（不依赖 ALLOWED_HOSTS 配置）。
+
+    生产 `ALLOWED_HOSTS` 常为空（config.yml 默认注释掉），只靠它会让域名判据整体失效；
+    report-uri 是同源相对路径，故 document-uri 应与上报请求同 host。
+    """
+
+    def test_request_host_decides_when_allowed_hosts_empty(self, settings):
+        settings.ALLOWED_HOSTS = []
+        assert _synthetic_reason("https://example.com/#/x", BROWSER_UA, "xadmin.example.com") == (
+            "foreign-document-host"
+        )
+        assert _synthetic_reason("https://xadmin.example.com/#/x", BROWSER_UA, "xadmin.example.com") == ""
+
+    def test_host_port_ignored(self, settings):
+        """document-uri 与 Host 的端口差异不参与比较（同一站点不同入口）。"""
+        settings.ALLOWED_HOSTS = []
+        assert _synthetic_reason("https://xadmin.example.com/#/x", BROWSER_UA, "xadmin.example.com:8896") == ""
+
+    def test_allowed_hosts_still_honored(self, settings):
+        """多域名部署：ALLOWED_HOSTS 中的其它站点同样视为本站。"""
+        settings.ALLOWED_HOSTS = ["xadmin.example.com", "ops.example.com"]
+        assert _synthetic_reason("https://ops.example.com/#/x", BROWSER_UA, "xadmin.example.com") == ""
