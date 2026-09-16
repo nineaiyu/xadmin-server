@@ -50,6 +50,9 @@ class ApprovalRequest(DbAuditModel):
     path = models.CharField(_("URL path"), max_length=400)
     object_pk = models.CharField(_("Object pk"), max_length=64, blank=True, null=True)
     params = models.JSONField(_("Request params"), default=dict, blank=True)
+    # 请求体快照（仅 JSON 且小体积时保存）：审批通过后由注册的通过后动作自动执行业务落库，
+    # 省去申请人手动重试；multipart/超大 body 存空，仍走客户端携令牌重放协议
+    payload = models.JSONField(_("Request payload"), default=dict, blank=True)
     status = models.CharField(
         _("Status"),
         max_length=16,
@@ -69,6 +72,8 @@ class ApprovalRequest(DbAuditModel):
     # 令牌有效期：审批通过时置为 approved_at + APPROVAL_TOKEN_TTL
     expired_at = models.DateTimeField(_("Token expired at"), null=True, blank=True)
     consume_time = models.DateTimeField(_("Consume time"), null=True, blank=True)
+    # 审批通过后已由注册的通过后动作自动执行业务落库（申请人无需再手动重放）
+    auto_completed = models.BooleanField(_("Auto completed"), default=False)
     reason = models.CharField(_("Reason"), max_length=255, blank=True, null=True)
 
     class Meta:

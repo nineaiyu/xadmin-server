@@ -113,6 +113,8 @@ docs/
 | [ADR-042](adr/ADR-042-dashboard-card-permission.md) | 仪表盘卡片级权限（一二期全交付）：一期 `layout[].allowed_roles`（内嵌授权面，未知角色 code 拒绝）+ 读取侧按浏览者角色过滤（超管全量 / 匿名 fail-closed，只收敛不提权）；二期字段权限叠加到执行/聚合输出（无字段配置=全量的显式授权口径）+ 卡片弹窗「可见角色」授权 UI + 越权矩阵补强（18 例测试） |
 | [ADR-043](adr/ADR-043-remote-suggestions.md) | 远程联想（suggestions）：引用方 `SuggestionsAction`（`{prefix}/suggestions?field=`，候选集与写入校验同源，权限回落 list 权限点，零新权限点）+ ViewSet 级 `suggestion_fields` 字段白名单（元数据 `suggest_url` 与端点校验共用声明，含 with_meta=1 内联路径）+ 前端 `SuggestSelect`（remote/防抖/pks 回显）。首个消费方=审批委托「代理人」（委托人保持弹窗；部门管理经用户决策不采用）；菜单管理「自动添加API权限」登记为不适用场景 |
 
+| [ADR-044](adr/ADR-044-dform-approval-integration.md) | 动态表单与审批流集成（走查五项）：表单绑定审批流程（`approval_flow` + 提交状态/实例 + 终态回写 + 驳回重提）、审批通过自动完成提交（请求体快照 + 通过后动作注册表，multipart 仍走手动重放）、控件扩到 11 种（附件/日期范围/明细子表，禁嵌套）、部门授权写入修复（原静默丢弃）+ 数据权限 fail-closed 可诊断报错、`seed_demo_org` 开箱模板（组织+四层权限+场景模板） |
+
 ## 项目规划与治理（plans/）
 
 跨仓库（server + client）的项目规划文档，2026-09-12 自工作区根目录 `docs/` 迁入并二次清理，

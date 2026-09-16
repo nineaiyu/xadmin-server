@@ -6246,3 +6246,93 @@ msgstr "解绑后用户将没有其它登录方式"
 
 #~ msgid "Type /kb <question> to ask the knowledge base"
 #~ msgstr "输入 /kb 加问题可向知识库提问"
+
+msgid "Field {} requires table columns"
+msgstr "字段{}需要定义明细列"
+
+msgid "Field {} has too many table columns"
+msgstr "字段{}明细列过多"
+
+msgid "Field {} has an invalid table column"
+msgstr "字段{}存在非法的明细列"
+
+msgid "Table column key {} is invalid"
+msgstr "明细列标识{}不合法"
+
+msgid "Duplicate table column key: {}"
+msgstr "明细列标识重复：{}"
+
+msgid "Table column {} requires a label"
+msgstr "明细列{}需填写标签"
+
+msgid "Unsupported table column type: {}"
+msgstr "不支持的明细列类型：{}"
+
+msgid "Table column {} requires options"
+msgstr "明细列{}需要选项"
+
+msgid "Table column {} does not accept options"
+msgstr "明细列{}不接受选项"
+
+msgid "Field {} rows must be objects"
+msgstr "字段{}的明细行必须是对象"
+
+msgid "Field {} has unknown columns: {}"
+msgstr "字段{}存在未知明细列：{}"
+
+msgid "Field {} must be a list of rows"
+msgstr "字段{}必须是明细行数组"
+
+msgid "Field {} has too many rows"
+msgstr "字段{}明细行过多"
+
+msgid "Field {} must be a date range"
+msgstr "字段{}必须是日期范围"
+
+msgid "Field {} has an invalid date range"
+msgstr "字段{}日期范围不合法"
+
+msgid "Field {} has too many files"
+msgstr "字段{}附件数量过多"
+
+msgid "Field {} contains an invalid file"
+msgstr "字段{}包含非法附件"
+
+msgid "Field {} must be a date"
+msgstr "字段{}必须是日期"
+
+msgid "The form is not bound to an approval flow"
+msgstr "该表单未绑定审批流程"
+
+msgid "The approval flow does not exist"
+msgstr "审批流程不存在"
+
+msgid "The approval flow is not active"
+msgstr "审批流程未启用"
+
+msgid "Only the applicant can resubmit the submission"
+msgstr "仅申请人可重新提交"
+
+msgid "Only rejected submissions can be resubmitted"
+msgstr "仅被驳回的提交可重新提交"
+
+msgid "The form does not exist or is no longer accepting submissions"
+msgstr "表单不存在或已停止收集"
+
+msgid "The submission is in approval and cannot be modified"
+msgstr "提交处于审批中，不可修改"
+
+msgid "The submission has been resubmitted"
+msgstr "已重新提交"
+
+msgid "The approved operation has been completed automatically"
+msgstr "该审批已自动完成提交"
+
+msgid "Invalid pk \"{pk_value}\" - object does not exist, or the current role has no data permission for it"
+msgstr "无效主键\"{pk_value}\" - 对象不存在，或当前角色没有该数据的行级权限"
+
+msgid "Auto completed"
+msgstr "已自动完成"
+
+msgid "Request payload"
+msgstr "请求体快照"

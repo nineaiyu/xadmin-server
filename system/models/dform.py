@@ -15,8 +15,18 @@ class DynamicForm(DbAuditModel, DbUuidModel):
     description = models.CharField(_("Description"), max_length=512, blank=True, default="")
     schema = models.JSONField(_("Schema"), default=dict, help_text=_("Constrained widget-set field definitions"))
     is_active = models.BooleanField(_("Is active"), default=True)
-    # 开启后提交走审批流（提交 → 412 待审批 → 审批人通过 → 申请人携令牌重放）
+    # 开启后提交走操作审批（提交 → 412 待审批 → 审批人通过 → 申请人携令牌重放）；
+    # 绑定审批流程（approval_flow）时优先走流程引擎，本开关被忽略
     approval_required = models.BooleanField(_("Approval required"), default=False)
+    # 绑定审批流程：提交进入流程引擎（多级审批），实例终态回写提交状态
+    approval_flow = models.ForeignKey(
+        "system.ApprovalFlow",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bound_forms",
+        verbose_name=_("Approval flow"),
+    )
 
     class Meta:
         verbose_name = _("Dynamic form")
@@ -28,12 +38,38 @@ class DynamicForm(DbAuditModel, DbUuidModel):
 
 
 class DynamicFormSubmission(DbAuditModel, DbUuidModel):
-    """表单提交：通用 JSON 存储，按表单 schema 校验；可见性按 creator 隔离。"""
+    """表单提交：通用 JSON 存储，按表单 schema 校验；可见性按 creator 隔离。
+
+    状态：空 = 无需审批（直接生效）；绑定审批流程时随实例终态回写
+    （PENDING → APPROVED / REJECTED / CANCELLED）；驳回后允许修改数据重新提交。
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
+        CANCELLED = "CANCELLED", _("Cancelled")
 
     form = models.ForeignKey(
         DynamicForm, on_delete=models.CASCADE, related_name="submissions", verbose_name=_("Dynamic form")
     )
     data = models.JSONField(_("Data"), default=dict)
+    status = models.CharField(
+        _("Status"),
+        max_length=16,
+        choices=Status.choices,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    instance = models.ForeignKey(
+        "system.ApprovalInstance",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="dform_submissions",
+        verbose_name=_("Approval instance"),
+    )
 
     class Meta:
         verbose_name = _("Dynamic form submission")

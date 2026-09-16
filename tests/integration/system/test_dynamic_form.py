@@ -303,9 +303,9 @@ class TestFormApproval:
         assert response.status_code == 200, response.data
         assert DynamicFormSubmission.objects.filter(data__name="张三").exists()
 
-        # 令牌一次性：重放被拒（403），且不会重复落库
+        # 令牌一次性：审批通过后系统已自动落库，再次重放返回幂等成功且不重复建行
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
-        assert response.status_code == 403
+        assert response.status_code == 200
         assert DynamicFormSubmission.objects.count() == 1
 
     def test_replay_with_tampered_data_rejected(self, gated_form, normal_user, superuser):
@@ -325,4 +325,6 @@ class TestFormApproval:
         assert response.status_code == 403
         approval.refresh_from_db()
         assert approval.status == ApprovalRequest.Status.FAILED
-        assert not DynamicFormSubmission.objects.exists()
+        # 审批通过后按原快照自动落库；篡改重放仍被拒，不会按篡改数据建行
+        assert DynamicFormSubmission.objects.filter(data__name="李四").count() == 0
+        assert DynamicFormSubmission.objects.filter(data__name="张三").count() == 1

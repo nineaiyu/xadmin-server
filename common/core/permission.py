@@ -260,6 +260,11 @@ class IsAuthenticated(BasePermission):
         match_group = re.match("(?P<url>.*)/suggestions$", url)
         if match_group:
             url = match_group.group("url")
+        # 可填报表单（available-forms）与对应 list 权限同口径：填报页数据源升级后，
+        # 存量角色未重新授权新增权限点时仍能填报（升级兼容，不影响新权限点单独授权）
+        match_group = re.match("(?P<url>.*)/available-forms$", url)
+        if match_group:
+            url = match_group.group("url")
         p_data = menu_data = get_menu_pk(permission_data, url)
         if not p_data:
             raise PermissionDenied(_("Permission denied"))

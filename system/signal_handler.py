@@ -217,8 +217,9 @@ def invalid_mask_roles_m2m_cache_handler(sender, instance, action, **kwargs):
 def sync_business_status_handler(sender, instance, status=None, reason="", **kwargs):
     """流程实例终态回写业务单：按 biz_type 分发给业务同步器。
 
-    目前仅请假业务（biz_type=leave）接入；新增业务在此处追加分支即可（引擎侧
-    无需改动）。回写失败只记日志——业务状态由审批结果驱动，不应反过来阻断审批。
+    目前接入请假业务（biz_type=leave）与动态表单提交（biz_type=dform_submission）；
+    新增业务在此处追加分支即可（引擎侧无需改动）。回写失败只记日志——业务状态由
+    审批结果驱动，不应反过来阻断审批。
     """
     biz_type = getattr(instance, "biz_type", "")
     if not biz_type:
@@ -228,6 +229,10 @@ def sync_business_status_handler(sender, instance, status=None, reason="", **kwa
             from system.utils.leave import sync_leave_instance
 
             sync_leave_instance(instance, status, reason)
+        elif biz_type == "dform_submission":
+            from system.utils.dform_flow import sync_dform_instance
+
+            sync_dform_instance(instance, status, reason)
         else:
             logger.warning("no business sync handler for biz_type:%s", biz_type)
     except Exception:

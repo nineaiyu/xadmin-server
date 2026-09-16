@@ -10,9 +10,10 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.models import DeptInfo
+from system.models import DataPermission, DeptInfo, UserRole
 
 logger = get_logger(__name__)
 
@@ -71,20 +72,45 @@ class DeptSerializer(BaseModelSerializer):
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 
     def validate(self, attrs):
-        # 权限需要其他接口设置，下面两个参数忽略
-        attrs.pop("rules", None)
-        attrs.pop("roles", None)
         # 上级部门必须存在，否则会出现数据权限问题
         parent = attrs.get("parent", self.instance.parent if self.instance else None)
         if not parent:
             attrs["parent"] = self.request.user.dept
         return attrs
 
+    def _assign_authorizations(self, instance, roles, rules):
+        """写入角色与数据权限：与专用授权接口同口径（角色取值域经行级数据权限过滤）。
+
+        未传的项保持不变（保留既有授权），避免编辑部门信息时误清空。
+        """
+        if roles is not None:
+            instance.roles.set(
+                get_filter_queryset(
+                    UserRole.objects.filter(pk__in=[item.pk for item in roles if getattr(item, "pk", None)]),
+                    self.request.user,
+                ).all()
+            )
+        if rules is not None:
+            instance.rules.set(
+                DataPermission.objects.filter(pk__in=[item.pk for item in rules if getattr(item, "pk", None)]).all()
+            )
+
+    def create(self, validated_data):
+        roles = validated_data.pop("roles", None)
+        rules = validated_data.pop("rules", None)
+        instance = super().create(validated_data)
+        self._assign_authorizations(instance, roles, rules)
+        return instance
+
     def update(self, instance, validated_data):
+        roles = validated_data.pop("roles", None)
+        rules = validated_data.pop("rules", None)
         parent = validated_data.get("parent")
         if parent and str(parent.pk) in DeptInfo.recursion_dept_info(dept_id=instance.pk):
             raise ValidationError(_("The superior department cannot be its own subordinate department"))
-        return super().update(instance, validated_data)
+        instance = super().update(instance, validated_data)
+        self._assign_authorizations(instance, roles, rules)
+        return instance
 
     @extend_schema_field(serializers.IntegerField)
     def get_user_count(self, obj):

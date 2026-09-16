@@ -38,6 +38,73 @@ APPROVAL_PENDING_CODE = 1002
 
 # 重复提交节流窗口（秒），仿 maybe_alert_sensitive_operation 的 cache.add 原子占位
 APPROVAL_NOTIFY_THROTTLE_SECONDS = 60
+
+# 请求体快照上限（字节）：超过则不留快照，审批通过后仍需申请人手动重放
+APPROVAL_PAYLOAD_MAX_SIZE = 64 * 1024
+
+# 通过后动作注册表：{请求路径正则: handler(approval, user) -> (ok, detail)}
+# 审批通过后按路径命中自动执行业务落库，省去申请人手动重试；未注册的路径行为不变
+ON_APPROVED_HANDLERS: dict = {}
+
+
+def register_on_approved(path_pattern: str, handler):
+    """注册「审批通过后自动执行」的动作（键为请求路径正则）。"""
+    ON_APPROVED_HANDLERS[path_pattern] = handler
+
+
+def snapshot_payload(request) -> dict:
+    """请求体快照：仅 JSON 且小体积时保留，供审批通过后自动执行业务落库。
+
+    multipart（文件上传等）与超大 body 一律留空——服务端不做大 body 重放。
+    """
+    if not str(getattr(request, "content_type", "") or "").startswith("application/json"):
+        return {}
+    try:
+        data = request.data
+    except Exception:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    try:
+        if len(json.dumps(data, default=str)) > APPROVAL_PAYLOAD_MAX_SIZE:
+            return {}
+    except (TypeError, ValueError):
+        return {}
+    return data
+
+
+def run_on_approved(approval, user):
+    """审批通过后自动执行业务：命中注册路径且带快照时执行，成功即标记自动完成。
+
+    失败只记日志：审批结果已生效，落库失败仍保留申请人手动重放兜底。
+    """
+    if approval.auto_completed or approval.consume_time or not approval.payload:
+        return
+    from django.utils import timezone
+
+    from system.models.approval import ApprovalRequest
+
+    for pattern, handler in ON_APPROVED_HANDLERS.items():
+        if not re.match(pattern, approval.path or ""):
+            continue
+        try:
+            ok, detail = handler(approval, user)
+        except Exception:
+            logger.exception("on approved handler raised. approval:%s", approval.pk)
+            return
+        if ok:
+            now = timezone.now()
+            ApprovalRequest.objects.filter(pk=approval.pk, auto_completed=False).update(
+                auto_completed=True, consume_time=now, updated_time=now
+            )
+            approval.auto_completed = True
+            approval.consume_time = now
+            logger.info("approval auto completed. approval:%s", approval.pk)
+        else:
+            logger.warning("on approved handler rejected. approval:%s detail:%s", approval.pk, detail)
+        return
+
+
 # 待办计数短缓存（秒）：顶栏角标/页签角标高频轮询，10s 内的多次读取共用一次聚合
 APPROVAL_PENDING_COUNT_CACHE_SECONDS = 10
 # 提醒占位保留期（秒）：同一单只提醒一次（占位仅在同一单被处理后自然过期）
@@ -245,6 +312,7 @@ def create_approval(view, request, module: str = ""):
         path=request.path,
         object_pk=get_request_object_pk(view),
         params=params,
+        payload=snapshot_payload(request),
         creator=request.user,
     )
     invalidate_pending_count_cache()
@@ -293,6 +361,9 @@ def consume_approval(request, approval_id):
             detail = _("The approval was rejected: {}").format(approval.reason)
         return forbidden_response(detail)
 
+    if approval.auto_completed:
+        # 审批通过后已自动落库：原样返回成功语义，别让申请人误以为提交失败
+        return ApiResponse(detail=_("The approved operation has been completed automatically"))
     if approval.consume_time is not None:
         return forbidden_response(_("The approval token has already been used"))
     if approval.expired_at and approval.expired_at < timezone.now():
@@ -369,6 +440,8 @@ def approve_request(approval, user):
     invalidate_pending_count_cache()
     notify_applicant(approval, "approved")
     _emit_approval_event("approval.approved", approval)
+    # 自动完成：登记了通过后动作的路径在此落库，申请人无需再手动重放
+    run_on_approved(approval, user)
     return True, None
 
 

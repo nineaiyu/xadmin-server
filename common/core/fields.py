@@ -130,7 +130,11 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
 
     default_error_messages = {
         "required": _("This field is required."),
-        "does_not_exist": _('Invalid pk "{pk_value}" - object does not exist.'),
+        # 行级数据权限为 fail-closed：无授权时取值域整体为空，此处把「缺数据权限」
+        # 与「数据真的不存在」一并提示，避免管理员/二开误判数据被删
+        "does_not_exist": _(
+            'Invalid pk "{pk_value}" - object does not exist, or the current role has no data permission for it'
+        ),
         "incorrect_type": _("Incorrect type. Expected pk value, received {data_type}."),
         "queryset_none": _("The query set is empty."),
     }

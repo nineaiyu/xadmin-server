@@ -12,17 +12,22 @@
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, OnlyExportDataAction
 from common.core.response import ApiResponse
 from common.core.serializers import BaseModelSerializer
+from common.swagger.utils import get_default_response_schema
 from system.models.dform import DynamicForm, DynamicFormSubmission
 from system.serializers.dform import DynamicFormSerializer, DynamicFormSubmissionSerializer
+from system.utils.dform_flow import create_flow_instance, resubmit_submission
 
 _EDIT_DENY = _("Only the creator can modify a submission")
+_PENDING_DENY = _("The submission is in approval and cannot be modified")
 
 
 class SubmissionDataField(serializers.Field):
@@ -138,15 +143,67 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
                 fields_out.append((key, str(item.get("label") or key)))
         return fields_out
 
-    def create(self, request, *args, **kwargs):
-        """提交：数据校验先行 → 审批门（approval_required 表单）→ 创建。
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="available-forms")
+    def available_forms(self, request, *args, **kwargs):
+        """可填报表单（启用中）：填报页数据源。
 
-        审批协议与全局拦截器同构：412 待审批 → 审批人通过 → 申请人携
-        X-Approval-Id 重放（服务端校验 creator/指纹/一次性），消费成功才落库。
+        表单定义属定义类资源，取值域不做行级数据权限过滤——否则普通员工必须先被
+        授予「表单设计器」的接口权限才能填报（定义与填报共用同一个列表接口的历史
+        耦合），配置门槛高且语义不合理。
+        """
+        forms = DynamicForm.objects.filter(is_active=True)
+        data = [
+            {
+                "pk": form.pk,
+                "name": form.name,
+                "description": form.description,
+                "schema": form.schema,
+                "approval_required": form.approval_required,
+                "approval_flow": form.approval_flow.name if form.approval_flow_id else None,
+                "approval_flow_pk": str(form.approval_flow_id or "") or None,
+            }
+            for form in forms
+        ]
+        return ApiResponse(data=data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True)
+    def resubmit(self, request, *args, **kwargs):
+        """重新提交被驳回的填报（仅申请人、仅驳回态；按当前数据重新发起流程实例）"""
+        instance = self.get_object()
+        ok, detail = resubmit_submission(instance, request.user)
+        if not ok:
+            return ApiResponse(code=1001, detail=detail)
+        return ApiResponse(detail=_("The submission has been resubmitted"))
+
+    def _create_with_flow(self, serializer):
+        """绑定审批流程的提交：事务内建行并发起流程实例，任一失败整体回滚。"""
+        from django.db import transaction
+        from rest_framework.exceptions import ValidationError
+
+        with transaction.atomic():
+            submission = serializer.save(creator=self.request.user, modifier=self.request.user)
+            ok, detail = create_flow_instance(submission, self.request.user)
+            if not ok:
+                raise ValidationError({"detail": detail})
+        return ApiResponse(data=self.get_serializer(submission).data, detail=_("Application submitted"))
+
+    def create(self, request, *args, **kwargs):
+        """提交：数据校验先行 → 审批门 → 创建。
+
+        审批分三支：
+        - 绑定审批流程（form.approval_flow）：进入流程引擎，多级审批，终态回写提交状态；
+        - approval_required：敏感操作审批（412 待审批 → 审批人通过 → 申请人携
+          X-Approval-Id 重放，服务端校验 creator/指纹/一次性），消费成功才落库；
+        - 其余：直接落库。
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form = serializer.validated_data["form"]
+
+        if form.approval_flow_id:
+            return self._create_with_flow(serializer)
 
         if form.approval_required and not getattr(request.user, "is_superuser", False):
             from system.utils.approval import (
@@ -187,6 +244,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     def _creator_guard(self, instance, request):
         if instance and not getattr(request.user, "is_superuser", False) and instance.creator_id != request.user.pk:
             return ApiResponse(code=1003, detail=_EDIT_DENY)
+        # 审批中的提交不可改动：流程实例按提交快照推进，改动会造成两处数据不一致
+        if instance and instance.status == DynamicFormSubmission.Status.PENDING:
+            return ApiResponse(code=1003, detail=_PENDING_DENY)
         return None
 
     def update(self, request, *args, **kwargs):

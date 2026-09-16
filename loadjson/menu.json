@@ -13219,5 +13219,49 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e101-5f01-4c11-9d01-000000000001",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "availableForms:FormMySubmission",
+   "rank": 900,
+   "path": "api/system/dynamic-form-submissions/available-forms$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e102-5f02-4c12-9d02-000000000002",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e103-5f03-4c13-9d03-000000000003",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "resubmit:FormMySubmission",
+   "rank": 900,
+   "path": "api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/resubmit$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e104-5f04-4c14-9d04-000000000004",
+   "method": "POST",
+   "model": []
+  }
  }
 ]
