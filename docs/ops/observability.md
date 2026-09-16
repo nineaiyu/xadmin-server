@@ -65,8 +65,9 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | 任务成功率 | `xadmin_celery_tasks_total{task,status}` —— **跨进程聚合** | ✅ 本窗口补齐：worker 写 redis（`xadmin:metrics:celery_tasks`），端点在渲染时附加（进程内计数器不导出，避免口径重复）；实测 worker 容器 → server 端点跨进程链路 ✓ |
 | 队列积压 | redis `llen` / health 探测 | ✅ |
 
-**说明**：任务耗时直方图（`xadmin_celery_task_duration_seconds`）为 worker **进程内**指标，未注册进
-默认 registry（端点不可拉取）——SLO 不依赖，如需任务 P95 则按「评估出口」另行设计（redis 聚合扩展）。
+**说明**：任务耗时直方图（`xadmin_celery_task_duration_seconds`）已按同一模式**跨进程聚合**
+（2026-09-16 交付：worker 写 redis 累积桶 + sum/count，端点渲染完整 histogram——**零值桶输出**，
+`histogram_quantile` 可直接算任务 P95；SLO 暂不依赖，作为诊断指标使用）。
 **校准方法**：观察 ≥3 个月后按实际数据校准目标值与告警阈值（现维持下方初始口径）；初期形态
 （2026-09-16）：周期任务全 SUCCESS、HTTP 指标待流量积累。
 

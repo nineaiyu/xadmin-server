@@ -82,14 +82,56 @@ class TestTaskRedisAggregate:
         assert "text/plain" in content_type
 
     def test_local_counters_not_exported(self):
-        """进程内 Counter/Histogram 不注册进 registry：输出不出现「本地版」重复指标。"""
+        """进程内 Counter/Histogram 不注册进 registry：输出不出现「本地版」重复定义。"""
         from common.metrics import record_task_result, render_metrics
 
         record_task_result("xadmin.local_only_task", "SUCCESS")
         text = render_metrics()[0].decode()
-        # 同名指标只应有 redis 聚合一处定义（HELP/TYPE 各一行）
-        assert text.count("# TYPE xadmin_celery_tasks_total counter") == 1
-        assert text.count("# TYPE xadmin_celery_task_duration_seconds") == 0
+        # 同名指标最多一处定义（跨进程聚合版；进程内版本登记时 registry=None 不导出）
+        assert text.count("# TYPE xadmin_celery_tasks_total counter") <= 1
+        assert text.count("# TYPE xadmin_celery_task_duration_seconds") <= 1
+
+    def test_duration_writes_redis_buckets(self):
+        from django_redis import get_redis_connection
+
+        from common.metrics import TASK_DURATION_REDIS_KEY, record_task_result
+
+        conn = get_redis_connection("default")
+        # 先清理本次任务的字段，避免跨用例累积干扰桶计数断言
+        for key in conn.hkeys(TASK_DURATION_REDIS_KEY):
+            text = key.decode() if isinstance(key, bytes) else str(key)
+            if text.startswith("xadmin.duration_task|"):
+                conn.hdel(TASK_DURATION_REDIS_KEY, key)
+
+        record_task_result("xadmin.duration_task", "SUCCESS", 0.42)
+
+        def field(name):
+            value = conn.hget(TASK_DURATION_REDIS_KEY, name)
+            return value.decode() if isinstance(value, bytes) else value
+
+        assert int(field("xadmin.duration_task|le:0.1") or 0) == 0
+        assert int(field("xadmin.duration_task|le:0.5") or 0) == 1
+        assert int(field("xadmin.duration_task|count") or 0) == 1
+        assert abs(float(field("xadmin.duration_task|sum") or 0) - 0.42) < 1e-9
+
+    def test_render_includes_duration_histogram(self):
+        from django_redis import get_redis_connection
+
+        from common.metrics import TASK_DURATION_REDIS_KEY, record_task_result, render_metrics
+
+        conn = get_redis_connection("default")
+        for key in conn.hkeys(TASK_DURATION_REDIS_KEY):
+            text = key.decode() if isinstance(key, bytes) else str(key)
+            if text.startswith("xadmin.render_duration|"):
+                conn.hdel(TASK_DURATION_REDIS_KEY, key)
+
+        record_task_result("xadmin.render_duration", "SUCCESS", 2.0)
+        output = render_metrics()[0].decode()
+        assert "# TYPE xadmin_celery_task_duration_seconds histogram" in output
+        assert 'xadmin_celery_task_duration_seconds_bucket{task="xadmin.render_duration",le="5"} 1' in output
+        assert 'xadmin_celery_task_duration_seconds_bucket{task="xadmin.render_duration",le="+Inf"} 1' in output
+        assert 'xadmin_celery_task_duration_seconds_count{task="xadmin.render_duration"} 1' in output
+        assert 'xadmin_celery_task_duration_seconds_sum{task="xadmin.render_duration"}' in output
 
     def test_render_degrades_without_redis(self, monkeypatch):
         """redis 不可用：端点其余指标不受影响，聚合渲染跳过。"""
