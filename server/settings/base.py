@@ -278,6 +278,17 @@ else:
 # CONN_HEALTH_CHECKS 使池在取用连接前做轻量存活校验
 DB_POOL_ENABLED = DB_ENGINE == "postgresql" and bool(CONFIG.DB_POOL)
 if DB_POOL_ENABLED:
+    # 池判活回调替换（真实 SELECT 1）：psycopg_pool 默认 check_connection 用空查询，
+    # 检测不到「PG 重启后半开连接」（2030-03 演练实测坏连接反复被取出、服务不自愈，
+    # 直到进程重启）。Django 硬编码读取 ConnectionPool.check_connection 且不允许
+    # OPTIONS["pool"] 重复传 check（实测 duplicate keyword 启动失败），故在配置期
+    # 替换该静态方法——settings 加载早于任何池创建，对全部池生效。
+    from psycopg_pool import ConnectionPool
+
+    from common.db import check_db_connection
+
+    ConnectionPool.check_connection = staticmethod(check_db_connection)
+
     DB_OPTIONS["pool"] = {
         "min_size": int(CONFIG.DB_POOL_MIN_SIZE),
         "max_size": max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),

@@ -134,6 +134,16 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 **验收**：Redis 冻结时 health **1.85s** 返回 `status:false` + `redis_status:false`（判活正确、远低于
 healthcheck 5s 超时）；恢复后无人工干预自动回正。单测 2378 全绿 + E2E smoke 9 passed。
 
+### 第三轮（2030-03，交付工程窗口）：DB 主库重启
+
+| 阶段 | 表现 |
+|------|------|
+| 重启中（PG 停止） | health **1.05s** 快速失败：`db_status:false` + `db_time:"terminating connection..."`（DB 探测无挂死）|
+| 修复前恢复期 | **永不恢复**：连续 6 次探测全 false（"the connection is closed"），仅进程重启可恢复 |
+| 根因 | psycopg_pool 默认 `check_connection` 以**空查询**判活，检测不到「PG 重启后服务端已断开、客户端未读到终止报文」的**半开连接**——坏连接被反复取出复用 |
+| 修复 | 配置期替换 `ConnectionPool.check_connection` 为**真实 SELECT 1** 判活（`common/db.py` + 测试 3 例）——坏连接在取用阶段被识别淘汰；Django 硬编码 check 参数无法从 OPTIONS 覆盖（实测 duplicate keyword 启动失败），故采用配置期静态方法替换 |
+| 修复后恢复期 | **自动恢复**：数次探测内收敛为 true（uvicorn 多 worker 各自检出坏连接，存在几秒波动窗口——可接受边界）；全量 2387 passed |
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
