@@ -110,6 +110,7 @@
 | **切换执行** | 2026-09-16 | ✅ **已切 enforce**（`CSP_REPORT_URI=/api/csp-report` 已配 + `CSP_MODE=enforce`；响应头已验：`Content-Security-Policy` 含 `report-uri`） | ✅ **已关闭**（`config.yml` 置 `SECURITY_AES_V1_DECRYPT_ENABLED: false` + 三容器重启；实测 v1 密文解密返回空串、v2 不受影响） | 前置以「全量归因 + 隔离验证」替代 7 天窗口：① 历史命中（09-15 572 条 / 09-16 390 条）全部归因**测试流量**（caller 定位 + 集成测试用服务端加密器构造 v1 密文 + 时段形态与 pytest 运行窗口吻合）；② **测试日志隔离落地**（`tests/settings_test.py` / `settings_e2e.py` → `tmp/test_logs/`，实测跑含 v1 构造的测试后生产日志零新增）；③ 真实客户端为零命中（浏览器已全量 v2）。回滚：`CSP_MODE=report-only`（即时）/ `SECURITY_AES_V1_DECRYPT_ENABLED: true` + 重启 |
 | 演练与核对 | 2026-09-16 | — | — | PITR 首次时间点回放演练通过（见 [pitr.md](pitr.md) §5）；异地副本链路核对：未启用（见 §3）。**顺带修复**：`SECURITY_AES_V1_DECRYPT_ENABLED` 此前未导出到 django settings（`getattr` 永远落默认 True，开关形同虚设）——已补 `server/settings/setting.py` 转发 + 全量 SECURITY_* 转发对账守护测试 |
 | **切换后观测** | 2026-09-16 | ✅ 0 条 | ✅ 0 条 | 切换 + 重启后 5 小时生产日志复核：`CSP violation:` **0** / `aes_v1_decrypt_used` **0**；合成上报隔离 INFO 留痕 45 条（不计违规，隔离在工作）；health 四指标全 true、6 容器 healthy。两项硬门禁进入**持续观察**：CSP 页面层待部署形态验证；AES v1 观察无回归后关闭灰度（回滚路径保留）。installer 升级预检同步完成四分支 mock 验证（4/4） |
+| **运营基线（2029-10）** | 2026-09-16 | — | — | 指标端点启用（`METRICS_ENABLED`+`TOKEN`，修复「死开关」漏导出）+ 基线快照（队列 0 / 今日 WARN 10 万行→**降噪 96%**、ERROR 415）；**Redis 冻结韧性五轮修复**（socket 超时 + `IGNORE_EXCEPTIONS` + Config 兜底 + health 豁免限流 + 预算 1s）：health 从 10.1s 收敛至 **1.85s** 且降级正确（详录 [observability.md](observability.md) §六/§七）；E2E 全量 278 passed（2 条偶发 flaky 重跑稳定）；SLO 校准按计划 2029-12 |
 
 ### 复核结论（2026-09-15，W9–W10）
 
