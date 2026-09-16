@@ -268,6 +268,12 @@ if DB_ENGINE in ["mysql", "oracle", "postgresql", "sqlite3"]:
     ENGINE = f"django.db.backends.{DB_ENGINE}"
 elif DB_ENGINE == "vastbase":
     ENGINE = "django_vastbase_backend"
+
+if DB_ENGINE == "postgresql":
+    # 连接建立超时（演练第五轮·网络分区修复，2026-09-16）：PG 断网时 TCP 无响应，
+    # 无该超时会让 DB 操作挂到 TCP 默认超时（实测 health 20s+ 完全无响应）；
+    # 局域网建连 <10ms，3s 充裕且保证故障时快速失败（池/非池模式均透传 psycopg）
+    DB_OPTIONS["connect_timeout"] = 3
 else:
     ENGINE = CONFIG.DB_ENGINE
 

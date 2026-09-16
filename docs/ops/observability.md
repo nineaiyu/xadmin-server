@@ -144,6 +144,27 @@ healthcheck 5s 超时）；恢复后无人工干预自动回正。单测 2378 �
 | 修复 | 配置期替换 `ConnectionPool.check_connection` 为**真实 SELECT 1** 判活（`common/db.py` + 测试 3 例）——坏连接在取用阶段被识别淘汰；Django 硬编码 check 参数无法从 OPTIONS 覆盖（实测 duplicate keyword 启动失败），故采用配置期静态方法替换 |
 | 修复后恢复期 | **自动恢复**：数次探测内收敛为 true（uvicorn 多 worker 各自检出坏连接，存在几秒波动窗口——可接受边界）；全量 2387 passed |
 
+### 第五轮（2030-12，SLO 校准窗口）：网络分区（PG 断网）——含一次环境事故与恢复
+
+**演练设计**：`docker network disconnect xadmin-server_net xadmin-postgresql`（模拟 PG 网络分区）→ 观察 → 恢复。
+
+**发现（修复前）**：PG 断网后 health **3 次 20s+ 完全无响应**——根因：DB 连接**无 `connect_timeout`**
+（TCP 挂到系统默认超时）。**修复**：`DB_OPTIONS["connect_timeout"] = 3`（局域网建连 <10ms，3s 充裕；
+池/非池模式均透传 psycopg）。
+
+**事故与恢复（重要教训）**：`docker network disconnect/connect` 触发了 **Docker embedded DNS
+记录损坏**——全网络容器均解析不了 `postgresql`（且 `getent` 可能"假成功"（仅主机名无 IP），
+libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的重启循环。
+**恢复动作**：`docker compose up -d --force-recreate --no-deps postgresql`（重建容器即重注册 DNS）→
+重启各服务 → 全线 healthy（**数据无损**，PG 数据在卷）。
+
+**结论与规范**：
+1. `connect_timeout` 修复保留（本轮暴露的真缺陷）；
+2. **演练规范新增**：网络层操作（`network disconnect`）**仅限可重建的环境**，执行前确认恢复预案
+   （重建容器的 compose 命令与数据卷就绪）；**首选"容器重启"类场景**（第三轮 DB 重启即为正例）；
+3. DNS 快速失败场景表现（解析即失败）为本次观察；`connect_timeout` 在 **TCP 挂起**（非 DNS 失败）
+   场景的验证待后续演练设计（可用 iptables 丢包模拟）。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
