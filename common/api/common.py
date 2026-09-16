@@ -19,7 +19,7 @@ from common.cache.storage import CommonResourceIDsCache
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils.country import COUNTRY_CALLING_CODES, COUNTRY_CALLING_CODES_ZH
-from common.utils.health import probe_celery, probe_db, probe_redis
+from common.utils.health import probe_all, probe_celery, probe_db, probe_redis
 
 
 class ResourcesIDCacheAPIView(GenericAPIView):
@@ -111,10 +111,11 @@ class HealthCheckAPIView(GenericAPIView):
         }
     )
     def get(self, request):
-        """获取服务健康状态"""
-        redis_status, redis_time = self.get_redis_status()
-        db_status, db_time = self.get_db_status()
-        celery_status, celery_time = self.get_celery_status()
+        """获取服务健康状态（并行探测 + 总超时预算，避免故障依赖拖挂 healthcheck）"""
+        results = probe_all()
+        db_status, db_time = results["db"]
+        redis_status, redis_time = results["redis"]
+        celery_status, celery_time = results["celery"]
         # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）
         status = all([redis_status, db_status])
         data = {

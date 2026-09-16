@@ -8,6 +8,7 @@ healthz（common/api/common.py）与系统监控面板（system/views/monitor.py
 """
 
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from django.conf import settings
 from django.core.cache import cache
@@ -52,3 +53,38 @@ def probe_celery(timeout=1):
         return bool(workers), time.time() - t1
     except Exception as e:  # noqa: BLE001
         return False, str(e)
+
+
+# 健康检查总预算（秒）：**共享一个 deadline**（逐项各自等待会累积成 3×timeout）
+PROBE_BUDGET_SECONDS = 2
+# 池容量大于探测项数：故障依赖可能让个别探测 future 长时间不收敛
+# （celery inspect 对不可达 broker 的内部重试不受 timeout 参数完全约束），
+# 池被占满前不影响其余探测的调度；占满后退化为立即超时（仍为快速失败）。
+_probe_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-probe")
+
+
+def probe_all(timeout=PROBE_BUDGET_SECONDS):
+    """并行执行 db/redis/celery 三项探测，返回 {name: (ok, cost)}。
+
+    单项超预算即返回 ``(False, "probe timeout")``——探测线程由各自的连接超时
+    自行收敛，不阻断响应。背景（2026-09-16 故障演练实测）：Redis 被冻结时
+    串行探测累计超过 8 秒（且占用请求处理线程），超过容器 healthcheck 的
+    5 秒超时，健康状态被误判为不健康。
+    """
+    probes = {"db": probe_db, "redis": probe_redis, "celery": probe_celery}
+    futures = {name: _probe_pool.submit(fn) for name, fn in probes.items()}
+    deadline = time.monotonic() + timeout
+    results = {}
+    for name, future in futures.items():
+        remaining = deadline - time.monotonic()
+        # 已完成的探测直接取结果（预算只约束「等待」，不误伤已完成项）
+        if not future.done() and remaining <= 0:
+            results[name] = (False, "probe timeout")
+            continue
+        try:
+            results[name] = future.result(timeout=max(remaining, 0))
+        except TimeoutError:
+            results[name] = (False, "probe timeout")
+        except Exception as e:  # noqa: BLE001 探测异常按失败返回
+            results[name] = (False, str(e))
+    return results

@@ -12,6 +12,7 @@ class CommonConfig(AppConfig):
     def ready(self):
         from .celery import heatbeat  # noqa
         from .celery import failure_handler  # noqa
+        from .celery import metrics as celery_metrics  # noqa
         from . import backup_alert  # noqa
         from . import signal_handlers  # noqa
         from . import tasks  # noqa
