@@ -39,8 +39,8 @@
 | ~~报表 cron 表达式~~ | ✅ 2026-09-15 完成（[ADR-041](../adr/ADR-041-report-cron-expression.md)：`Report.cron_expression` + croniter 分钟级判定 + 每分钟分发任务 + 序列化器校验） |
 | ~~仪表盘卡片级权限~~（一二期） | ✅ 2026-09-15 一期 + 2026-09-16 二期全部交付（[ADR-042](../adr/ADR-042-dashboard-card-permission.md)：`layout[].allowed_roles` 授权面 + 读取侧角色过滤 + 字段权限叠加到执行/聚合输出（无字段配置=全量）+ 卡片弹窗「可见角色」授权 UI + 越权矩阵补强，共 18 例测试 + E2E） |
 | ~~AI 检索升级为向量嵌入~~ | ✅ 2026-09-15 已评估（[ADR-037](../adr/ADR-037-ai-retrieval-evaluation.md)：36 问评测集 hit@5 97.2%，**暂不引入向量**；重开条件见 ADR） |
-| suggestions 候选接口 | 前置：先定首个消费方（SearchUser/SearchDept 或 RePlusPage 关系字段渲染器） |
-| common/decorators.py 按域拆分 | 265 行、4 个消费方，纯搬家零收益，登记缓做 |
+| ~~suggestions 候选接口~~ | ✅ 2026-09-16 已实施（[ADR-043](../adr/ADR-043-remote-suggestions.md)：引用方 `SuggestionsAction` + ViewSet 级 `suggestion_fields` 字段白名单（元数据 `suggest_url` 与端点校验共用声明），候选集与写入校验同源、权限回落 list 权限点、零新权限点；前端 `SuggestSelect`（remote + 防抖 + pks 回显）。首个消费方=审批委托「代理人」（委托人保持弹窗；部门管理经用户决策不采用）。**不适用场景已登记**：菜单管理「自动添加API权限」视图下拉（运行时路由表，本地 `filterable` 足够） |
+| common/decorators.py 按域拆分 | 261 行 / 4 组语义 / 仅 3 个 import 点（`delay_run`、`merge_delay_run`、`on_transaction_commit` 当前零业务消费）。**先做高收益项**：把模块级副作用（import 即起守护线程 + 10 线程池）改惰性初始化；按域拆包（cache/debounce/transaction/singleton + `__init__` re-export）绑在一起顺带做，单独拆=纯 churn；公开 API 不删（二开兼容） |
 | 二开脚手架 | 已评估不立项；复评条件：教程章节再增 / 出现多人协作诉求。**2026-09-13 边界澄清**：G7 代码生成器（ADR-027）属「一次性代码生成」而非运行期脚手架，不改变本项结论 |
 | ~~RePlusPage 动态列协议改造~~ | ✖ 2026-09-13 评估关闭（见 ADR-025 复审记录）：一期自定义动态表格已满足体验诉求，协议改造要动 `search-columns` 契约与字段权限口径；触发条件：动态表单数据需接入导入导出 / 行级数据权限 / 同款搜索 |
 | ~~ReIcon/data.ts 瘦身~~ | ✖ 已实测关闭：仅 15 KB gzip（占首屏闭包 3.2%），数据不支持立项 |
