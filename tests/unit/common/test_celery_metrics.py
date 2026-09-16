@@ -55,3 +55,49 @@ class TestSignalHandlers:
         before = _task_counter_value("xadmin.orphan_task", "REVOKED")
         celery_metrics.on_task_postrun(task_id="tid-orphan", task=_Task(), state="REVOKED")
         assert _task_counter_value("xadmin.orphan_task", "REVOKED") == before + 1
+
+
+class TestTaskRedisAggregate:
+    """跨进程聚合：worker 写 redis，web 端点渲染附加（SLO 任务成功率数据源，2029-12）。"""
+
+    def test_record_writes_redis_aggregate(self):
+        from django_redis import get_redis_connection
+
+        from common.metrics import TASK_REDIS_KEY, record_task_result
+
+        conn = get_redis_connection("default")
+        field = "xadmin.redis_task|SUCCESS"
+        before = int(conn.hget(TASK_REDIS_KEY, field) or 0)
+        record_task_result("xadmin.redis_task", "SUCCESS", 0.1)
+        assert int(conn.hget(TASK_REDIS_KEY, field) or 0) == before + 1
+
+    def test_render_includes_redis_aggregate(self):
+        from common.metrics import record_task_result, render_metrics
+
+        record_task_result("xadmin.render_task", "FAILURE")
+        payload, content_type = render_metrics()
+        text = payload.decode()
+        assert 'xadmin_celery_tasks_total{task="xadmin.render_task",status="FAILURE"}' in text
+        assert "# TYPE xadmin_celery_tasks_total counter" in text
+        assert "text/plain" in content_type
+
+    def test_local_counters_not_exported(self):
+        """进程内 Counter/Histogram 不注册进 registry：输出不出现「本地版」重复指标。"""
+        from common.metrics import record_task_result, render_metrics
+
+        record_task_result("xadmin.local_only_task", "SUCCESS")
+        text = render_metrics()[0].decode()
+        # 同名指标只应有 redis 聚合一处定义（HELP/TYPE 各一行）
+        assert text.count("# TYPE xadmin_celery_tasks_total counter") == 1
+        assert text.count("# TYPE xadmin_celery_task_duration_seconds") == 0
+
+    def test_render_degrades_without_redis(self, monkeypatch):
+        """redis 不可用：端点其余指标不受影响，聚合渲染跳过。"""
+        import common.metrics as metrics_module
+
+        def _boom(*args, **kwargs):
+            raise ConnectionError("redis down")
+
+        monkeypatch.setattr("django_redis.get_redis_connection", _boom)
+        payload, _ = metrics_module.render_metrics()
+        assert b"xadmin_http" in payload
