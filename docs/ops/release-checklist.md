@@ -111,6 +111,7 @@
 | 演练与核对 | 2026-09-16 | — | — | PITR 首次时间点回放演练通过（见 [pitr.md](pitr.md) §5）；异地副本链路核对：未启用（见 §3）。**顺带修复**：`SECURITY_AES_V1_DECRYPT_ENABLED` 此前未导出到 django settings（`getattr` 永远落默认 True，开关形同虚设）——已补 `server/settings/setting.py` 转发 + 全量 SECURITY_* 转发对账守护测试 |
 | **切换后观测** | 2026-09-16 | ✅ 0 条 | ✅ 0 条 | 切换 + 重启后 5 小时生产日志复核：`CSP violation:` **0** / `aes_v1_decrypt_used` **0**；合成上报隔离 INFO 留痕 45 条（不计违规，隔离在工作）；health 四指标全 true、6 容器 healthy。两项硬门禁进入**持续观察**：CSP 页面层待部署形态验证；AES v1 观察无回归后关闭灰度（回滚路径保留）。installer 升级预检同步完成四分支 mock 验证（4/4） |
 | **运营基线（2029-10）** | 2026-09-16 | — | — | 指标端点启用（`METRICS_ENABLED`+`TOKEN`，修复「死开关」漏导出）+ 基线快照（队列 0 / 今日 WARN 10 万行→**降噪 96%**、ERROR 415）；**Redis 冻结韧性五轮修复**（socket 超时 + `IGNORE_EXCEPTIONS` + Config 兜底 + health 豁免限流 + 预算 1s）：health 从 10.1s 收敛至 **1.85s** 且降级正确（详录 [observability.md](observability.md) §六/§七）；E2E 全量 278 passed（2 条偶发 flaky 重跑稳定）；SLO 校准按计划 2029-12 |
+| **季度依赖窗口（2030-01）** | 2026-09-16 | — | — | audit 双零（pip-audit / pnpm audit）；Django 线：6.2 LTS 未发布、`django-celery-beat` 仍声明 `Django<6.1`（6.1.1 升级维持阻断）；venv 对齐容器基线 **3.14.7**（全量测试 2382 passed）；`@iconify/vue` 升级 5.0.1 / `cropperjs` 维持 1.x（依据 2029-11 评估） |
 
 ### 复核结论（2026-09-15，W9–W10）
 
