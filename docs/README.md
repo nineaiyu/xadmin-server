@@ -58,7 +58,9 @@ docs/
 | [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
 | [release-checklist.md](ops/release-checklist.md)       | 发布窗口 checklist：基线门禁、CSP enforce 与 AES v1 关闭硬门禁、挂起项与执行记录 |
 | [observability.md](ops/observability.md)               | 可观测性与 SLO：追踪启用（Sentry performance / OTel 评估口径）、指标清单与 SLO 定义、告警分级、故障演练记录 |
+| [pitr.md](ops/pitr.md)                                 | WAL 归档与时间点恢复（PITR）：启用口径、首次回放演练记录（RTO <1s）、归档卷迁移条件 |
 | [performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（T3.1）：silk 剖析接入 + k6 六接口压测 + 登记口径与回归判定 |
+| [backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md) | 季度备份恢复演练（2030-06）：sha256 校验、全量导入 0 错误、表数 89=89 与核心表一致 |
 | [backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份演练（异地副本/媒体目录/RPO 6h 收口）：`utils/backup_drill.sh` 一键闭环与结果 |
 | [backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md) | 季度演练（Q4，提前执行）：67 表逐表 0 不一致、RTO 0.28s，一并验收备份失败告警（S2） |
 | [backup-drill-2026-09.md](ops/backup-drill-2026-09.md) | 首次备份演练记录（RTO 0.88s、52 表一致）与当时遗留缺口                 |
