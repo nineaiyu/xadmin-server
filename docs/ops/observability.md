@@ -212,6 +212,36 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
   但**弱类型消费点**（直接按 str 使用）存在静默接受面——登记评估出口
   （不急切修改：动全局配置解析影响面大）。
 
+### 第十轮（2032-12，SLO 窗口）：SECRET_KEY 轮换（JWT 签名失效验证）
+
+- **场景**：服务端密钥轮换（安全运维常规动作）——验证轮换的会话影响面与闭环恢复；
+- **方式**：替换 `SECRET_KEY`（config.yml）→ 重启 server；用旧 key 签发的 JWT 对受保护端点
+  （`/api/system/search/user`）做三态验证；
+- **结果**：无 token **401**（端点需认证，预检成立）→ 旧 key token **200** →（轮换）→ 同 token
+  **401**（签名失效，符合预期）→（恢复 key）→ 同 token **200**（闭环）；
+- **伴随观察**：server 重启后 ~15s 内 health `celery_status` 短暂 false（worker 心跳未续），
+  ~8s 后自愈 true——探针语义正确（过期判定 + 自愈），无缺陷；
+- **操作登记**：受保护端点 URL 为 `SimpleRouter` 形态（**无尾斜杠**）——首轮因尾斜杠 404 未能
+  触达（姿势修正）；轮换 = **全端重登**影响面确认（本环境无活跃会话残留）。
+
+### 第十一轮（2033-03，交付工程窗口）：敏感信息泄漏扫描
+
+- **范围**：生产日志（`server.log`）+ 仓库侧配置跟踪状态；
+- **值级扫描**：SECRET_KEY **0** / METRICS token **0** / JWT（`Bearer eyJ`）**0** —— 无值级泄漏；
+- **config.yml**：已被 `.gitignore` 忽略（`git check-ignore` 通过；`git ls-files` 命中的
+  1 个为示例文件）✓；
+- **`password` 字面 286 处**：均为 DEBUG 级请求/响应正文中的**字段名或掩码值**（`*` 串）——
+  **脱敏机制在工作**（password → 掩码；username 走 `v2:` AES 密文），且 DEBUG 级不进生产日志；
+  **唯一遗留**：登录中间态 `tmp_token` 完整落入操作日志 `body`（短时效中间态，低风险）——
+  登记评估出口；DEBUG 正文裁剪同步登记。
+
+### 第十二轮（2033-06，审计与安全窗口）：敏感文件权限审计（含加固）
+
+- **审计发现**：host / 容器 `config.yml` 为 **644**（含密钥文件全局可读）；`data/`、`data/logs/` 755；
+- **加固执行**：`chmod 600 config.yml`（host 与容器共享挂载，一处生效；服务读取正常无影响）；
+- **登记**：installer 侧 config 生成权限随发布节奏核对；`data` 目录 750 收紧列为可选加固项；
+- **结论**：权限面第一轮收敛（644→600），审计与加固机制建立。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
