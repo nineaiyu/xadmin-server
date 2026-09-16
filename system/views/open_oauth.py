@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""OAuth 2.0 授权码模式（ADR-039 B2）：第三方代表 xadmin 用户访问。
+"""OAuth 2.0 授权码模式：第三方代表 xadmin 用户访问。
 
 端点（`/api/system/open/oauth/*`，白名单，视图内 fail-closed）：
 
@@ -9,7 +9,7 @@
 - ``POST /token``：``authorization_code`` 换 access + refresh；``refresh_token`` 一次性轮换；
 - ``POST /revoke``：撤销 refresh（RFC 7009 口径）并联动失效关联 access。
 
-权限面 = 应用 scope（接口）× 应用四级授权（ADR-039 B1）× 授权用户自身权限（交集）：
+权限面 = 应用 scope（接口）× 应用四级授权× 授权用户自身权限（交集）：
 access 凭证是 PAT（creator = 授权用户，``api_application`` = 应用），走既有认证链，
 凡带 ``api_application`` 的凭证都过四级门，OAuth 不另开绕过路径。
 

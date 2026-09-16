@@ -38,7 +38,7 @@ PERMISSION_WHITE_URL = {
     "^/api/system/auth/oauth/": ["*"],
     # 开放平台换发端点：凭 client_secret 认证（凭证即身份），视图内 fail-closed
     "^/api/system/open/token$": ["*"],
-    # OAuth 授权码端点（ADR-039 B2）：授权码换发（token/revoke）同客户端凭证口径；
+    # OAuth 授权码端点：授权码换发（token/revoke）同客户端凭证口径；
     # authorize/approve 需登录态但不需要菜单权限（第三方接入点，视图内 fail-closed）
     "^/api/system/open/oauth/": ["*"],
 }

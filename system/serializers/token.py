@@ -200,7 +200,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
 
 
 class ApiApplicationGrantSerializer(BaseModelSerializer):
-    """应用资源授权规则（开放平台二期四级授权，ADR-039）。
+    """应用资源授权规则（开放平台二期四级授权）。
 
     ``model × actions × fields × row_filter`` 四级结构；写入校验与运行时判定同口径
     （模型/动作/字段必须真实存在，行级规则复用数据权限规则编译器校验）。

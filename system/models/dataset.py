@@ -110,7 +110,7 @@ class Report(DbAuditModel, DbUuidModel):
     value_field = models.CharField(_("Value field"), max_length=128, blank=True, default="")
     frequency = models.CharField(_("Frequency"), max_length=16, choices=Frequency.choices, default=Frequency.DAILY)
     send_time = models.CharField(_("Send time"), max_length=5, default="08:00", help_text=_("HH:MM"))
-    # cron 表达式（五段，分钟级）：非空时优先于 frequency/send_time 三档（见 ADR-041）
+    # cron 表达式（五段，分钟级）：非空时优先于 frequency/send_time 三档
     cron_expression = models.CharField(
         _("Cron expression"), max_length=64, blank=True, default="", help_text=_("5-field cron, takes precedence")
     )

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """开放平台雏形：client-credentials 应用 + 凭证换发 + 回调测试。
 
-设计要点（细节见 docs/adr/ADR-030-open-platform.md）：
+设计要点：
 - 应用不携带权限：换发出的凭证以 owner（creator）身份走既有 PAT 认证链
   （`Authorization: Pat <token>`），三层权限/数据权限/审计天然生效；
 - 换发 = **轮换**：明文不可回读，故每次换发都失效旧凭证再发新凭证（避免「以为复用、其实是旧密文」）；
@@ -304,7 +304,7 @@ class ApiApplicationViewSet(BaseModelSet):
 
     @action(methods=["get", "put"], detail=True, url_path="grants")
     def grants(self, request, *args, **kwargs):
-        """应用资源授权规则（四级授权管理面，ADR-039）。
+        """应用资源授权规则（四级授权管理面）。
 
         GET：读取现有规则；PUT：全量替换（事务内按 pk 更新 / 缺失删除）。
         应用无规则 = 兼容模式（沿用一期 owner 权限 + scopes）；存在规则即白名单模式：
@@ -338,7 +338,7 @@ class ApiApplicationViewSet(BaseModelSet):
         """应用用量报表（近 N 天，默认 7 / 上限 30）。
 
         按天调用量、失败数、平均耗时 + Top 路径 + 业务码分布 + 当日配额用量
-        （配额软口径：只告警不阻断，见 ADR-039 B3）。
+        （配额软口径：只告警不阻断）。
         """
         application = self.get_object()
         try:

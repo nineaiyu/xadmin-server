@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""开放平台接入示例（第三方视角的端到端演示，ADR-039 出口交付物）。
+"""开放平台接入示例（第三方视角的端到端演示）。
 
 依赖：仅标准库 + requests（`pip install requests`）。
 

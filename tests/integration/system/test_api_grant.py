@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""应用级资源授权（ADR-039 B1）：模型 × 动作 × 字段 × 行四级收敛。
+"""应用级资源授权：模型 × 动作 × 字段 × 行四级收敛。
 
 纪律：
 - 凭证类断言必须用独立 APIClient（auth_client 是 force_authenticate，PAT 头不参与认证）；

@@ -13,7 +13,7 @@
   已有导入去重（避免 F811 重定义）；urls.py 走注册行插入（幂等）；
 - 菜单种子 pk 用固定 uuid5 命名空间派生：同输入重复生成同一批 pk，重复 loaddata = 覆盖同一批行。
 
-用法与参数见 `python manage.py generate_crud --help` 与 docs/adr/ADR-027-code-generator.md。
+用法与参数见 `python manage.py generate_crud --help`。
 """
 
 import ast

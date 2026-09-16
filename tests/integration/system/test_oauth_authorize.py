@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""OAuth 2.0 授权码模式（ADR-039 B2）：授权流程 / PKCE / refresh 轮换 / 撤销 / 四级授权联动。
+"""OAuth 2.0 授权码模式：授权流程 / PKCE / refresh 轮换 / 撤销 / 四级授权联动。
 
 纪律：token/revoke 匿名可达（凭证即身份）；access 是 PAT（creator = 授权用户），
 因此 B1 四级授权对 OAuth 凭证同样生效（关键红线：OAuth 不绕过应用授权）。

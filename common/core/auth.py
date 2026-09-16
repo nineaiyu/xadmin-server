@@ -136,7 +136,7 @@ def hash_pat_token(raw_token: str) -> str:
 
 
 def check_api_application_quota(application) -> None:
-    """每日配额计数 + 软告警（不阻断请求，ADR-039 B3）。
+    """每日配额计数 + 软告警（不阻断请求）。
 
     计数键按「应用 + 自然日」（TTL 两天，跨日自然滚动）；达到
     ``quota_alert_percent`` 阈值当日首次越线时发一次告警（站内信给超管 +

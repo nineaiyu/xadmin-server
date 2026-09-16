@@ -7,7 +7,7 @@
 - 字段白名单 = 对应模型的 DATA 子节点；过滤字段/排序字段/聚合字段同样受限；
 - op 白名单固定九种；聚合 metric 限 count/sum/avg，sum/avg 仅数值字段；
 - 行级过滤走既有入口 `get_filter_queryset`（fail-closed：无授权 → none()）；
-- 输出列叠加浏览者字段权限白名单（ADR-042 二期，见 viewer_visible_fields）。
+- 输出列叠加浏览者字段权限白名单。
 """
 
 from django.apps import apps
@@ -139,7 +139,7 @@ def build_queryset(dataset, user_obj, extra_filters=None):
 
 
 def viewer_visible_fields(bound_model: str, user_obj):
-    """浏览者对 bound_model 的字段权限白名单（ADR-042 二期：跨菜单并集）。
+    """浏览者对 bound_model 的字段权限白名单。
 
     角色解析与 `common.core.permission.get_user_field_queryset` 同口径
     （用户直挂角色 + 部门挂角色，均要求角色启用）；字段权限配置本身跨菜单取并集——
@@ -181,7 +181,7 @@ def execute_dataset(dataset, user_obj):
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
     输出列 = 数据集 columns ∩ 浏览者字段权限白名单（超管/无字段配置 = 全量，
-    见 ADR-042 二期）；交集为空时返回空结果（不泄露行数等任何业务数据）。
+    显式授权即收敛）；交集为空时返回空结果（不泄露行数等任何业务数据）。
     """
     queryset, model, columns = build_queryset(dataset, user_obj)
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
@@ -199,7 +199,7 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
 
     - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势）；
     - metric: count / sum / avg（sum、avg 仅数值字段，value_field 必填且在白名单）；
-    - 字段权限叠加（ADR-042 二期）：分组/取值字段必须对浏览者可见，否则聚合结果
+    - 字段权限叠加：分组/取值字段必须对浏览者可见，否则聚合结果
       会绕过列白名单泄露隐藏字段（如薪酬求和），fail-closed 报错。
     """
     if metric not in ALLOWED_METRICS:

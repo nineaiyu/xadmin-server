@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""定时报表 cron 表达式（ADR-041）集成测试：命中判定 + 校验 + 与三档互斥。"""
+"""定时报表 cron 表达式集成测试：命中判定 + 校验 + 与三档互斥。"""
 
 import pytest
 from django.utils import timezone

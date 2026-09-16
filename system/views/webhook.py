@@ -54,7 +54,7 @@ class WebhookSubscriptionViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="events")
     def events(self, request, *args, **kwargs):
-        """事件目录（key + 中文名 + 契约版本；ADR-039 B4）。"""
+        """事件目录（key + 中文名 + 契约版本）。"""
         return ApiResponse(data=event_catalog_payload())
 
     @extend_schema(responses=get_default_response_schema())

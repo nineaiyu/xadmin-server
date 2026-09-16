@@ -63,7 +63,7 @@ class ApiApplication(DbAuditModel):
     三层权限 / 数据权限 / 审计（``OperationLog.auth_type=pat``）天然生效；
     应用只负责凭证换发、范围（scopes / ip_allowlist）、按应用限流与回调登记。
 
-    二期（ADR-039）增量：``grants``（模型×动作×字段×行四级授权，只收敛不提权）、
+    二期增量：``grants``（模型×动作×字段×行四级授权，只收敛不提权）、
     ``daily_quota``（每日配额软告警）、OAuth 授权码（refresh 见 OAuthRefreshToken）。
     """
 
@@ -136,7 +136,7 @@ class ApiApplicationGrant(DbAuditModel):
 
 
 class OAuthRefreshToken(DbAuditModel):
-    """OAuth 授权码模式的刷新令牌（ADR-039 B2）。
+    """OAuth 授权码模式的刷新令牌。
 
     与 PAT 同口径只存 sha256 哈希；一次性轮换（刷新即失效旧值），撤销可联动
     失效关联 access 凭证。权限面 = 应用 scope × 应用 grant × 授权用户权限（交集）。

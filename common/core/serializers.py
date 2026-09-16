@@ -86,7 +86,7 @@ class BaseModelSerializer(ModelSerializer):
         return self._converge_grant_fields(set(fields) & _fields & set(allow_fields))
 
     def _converge_grant_fields(self, allowed):
-        """应用字段级授权收敛（ADR-039，最后一道）。
+        """应用字段级授权收敛。
 
         约束挂在凭证（应用）维度：**穿透字段权限豁免**（超管 / 白名单 URL /
         字段权限开关关闭时同样收敛），未配置应用授权时原样返回。

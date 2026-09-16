@@ -2,7 +2,7 @@
 """仪表盘卡片级权限（layout[].allowed_roles）集成测试。
 
 一期：授权面（allowed_roles）+ 读取侧按浏览者角色过滤；
-二期：字段权限叠加到执行/聚合输出列 + 越权矩阵补强（ADR-042）。
+二期：字段权限叠加到执行/聚合输出列 + 越权矩阵补强。
 """
 
 import pytest
@@ -100,7 +100,7 @@ class TestCardRoleValidation:
 
 
 class TestFieldPermissionOverlay:
-    """字段权限叠加到执行/聚合输出列（ADR-042 二期）。
+    """字段权限叠加到执行/聚合输出列。
 
     口径：输出列 = 数据集 columns ∩ 浏览者字段白名单（跨菜单并集）；
     超管全量；浏览者角色无任何字段权限配置 = 全量（字段权限是显式授权行为，
@@ -186,7 +186,7 @@ class TestFieldPermissionOverlay:
 
 
 class TestEscalationMatrixPhase2:
-    """越权矩阵补强（ADR-042 二期）：跨角色浏览 / 空角色 / 超管旁路 / 卡片级与行级叠加。"""
+    """越权矩阵补强：跨角色浏览 / 空角色 / 超管旁路 / 卡片级与行级叠加。"""
 
     @pytest.fixture
     def shared_dashboard(self, dataset):

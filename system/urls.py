@@ -214,7 +214,7 @@ urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_rout
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
 # 开放平台换发端点：匿名可达（白名单），凭 client_secret 换 PAT 凭证
 urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]
-# 开放平台 OAuth 授权码（ADR-039 B2）：authorize/approve 需登录态，token/revoke 匿名可达
+# 开放平台 OAuth 授权码：authorize/approve 需登录态，token/revoke 匿名可达
 urlpatterns += [
     path("open/oauth/authorize", OpenOAuthAuthorizeAPIView.as_view()),
     path("open/oauth/approve", OpenOAuthApproveAPIView.as_view()),

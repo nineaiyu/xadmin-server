@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Webhook 事件契约（ADR-039 B4）：结构完备性 / payload 外壳 / 文档一致性 / 缺字段告警。"""
+"""Webhook 事件契约：结构完备性 / payload 外壳 / 文档一致性 / 缺字段告警。"""
 
 import importlib.util
 import logging

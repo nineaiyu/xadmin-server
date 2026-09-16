@@ -23,8 +23,7 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-# 事件目录：key → 契约（label / version / fields）。ADR-039 B4 口径：
-# - 新增事件 = 加一条 + 在信号源接线 emit_webhook_event；
+# 事件目录：key → 契约（label / version / fields）。# - 新增事件 = 加一条 + 在信号源接线 emit_webhook_event；
 # - payload 外壳固定 ``{event, schema_version, occurred_at, data}``，version 取自本表；
 # - fields 是 data 的字段契约（required=True 必须出现，emit 时校验只告警不阻断）；
 # - **破坏性变更 = 新增 ``xxx.v2`` 事件**（旧 key 至少保留一个发布窗口），不改老契约语义。
