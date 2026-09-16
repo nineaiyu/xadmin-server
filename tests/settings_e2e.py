@@ -125,3 +125,10 @@ def _e2e_no_workers(self, *args, **kwargs):
 
 Inspect.active = _e2e_no_workers
 Inspect.ping = _e2e_no_workers
+
+# 测试日志与生产日志隔离：本模块 star-import 的是原生 LOGGING（settings_test 的
+# 改写不会传递过来），须单独改写——E2E 后端进程同样不得写入 data/logs/server.log
+# （该文件是发布窗口硬门禁的唯一判据来源，背景见 tests/logging_isolation.py）
+from tests.logging_isolation import isolate_file_handlers  # noqa: E402
+
+isolate_file_handlers(LOGGING, PROJECT_DIR)  # noqa: F405

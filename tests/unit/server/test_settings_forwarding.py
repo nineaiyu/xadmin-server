@@ -60,3 +60,19 @@ def test_settings_forwarding_reads_existing_conf_keys():
         if attr not in Config.defaults
     ]
     assert missing == [], f"以下转发读取的键在 conf.py 默认值表中不存在（CONFIG 会静默返回 None）: {missing}"
+
+
+def test_security_keys_all_forwarded_to_settings():
+    """conf.py 中所有 SECURITY_* 键都必须被 server/settings 转发（同名或已登记别名）。
+
+    SECURITY_* 的读取方普遍走 `getattr(settings, "X", 默认值)` 形态：漏转发时
+    django settings 没有该属性，getattr 永远落默认值，配置开关形同虚设且无任何报错
+    （实测：SECURITY_AES_V1_DECRYPT_ENABLED 曾因漏转发无法关闭）。
+    """
+    from server.conf import Config
+
+    forwarded = {attr for _, attr, _, _ in _forwarding_pairs()}
+    missing = sorted(key for key in Config.defaults if key.startswith("SECURITY_") and key not in forwarded)
+    assert missing == [], (
+        f"以下 SECURITY_* 键未转发到 server/settings（开关将静默失效，读取方 getattr 永远落默认值）: {missing}"
+    )

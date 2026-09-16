@@ -64,3 +64,9 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 import os  # noqa: E402
 
 MEDIA_ROOT = os.path.join(PROJECT_DIR, "tmp", "test_media")
+
+# 测试日志与生产日志隔离：data/logs/server.log 是发布窗口硬门禁（CSP enforce /
+# AES v1 关闭）的唯一判据来源，测试流量不得写入（机制与背景见 tests/logging_isolation.py）
+from tests.logging_isolation import isolate_file_handlers  # noqa: E402
+
+isolate_file_handlers(LOGGING, PROJECT_DIR)  # noqa: F405
