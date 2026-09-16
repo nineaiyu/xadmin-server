@@ -2,9 +2,16 @@
 """common/decorators.py：单例、内存缓存、延迟防抖与合并参数装饰器。"""
 
 import asyncio
+import os
+import subprocess
+import sys
+import textwrap
 import time
+from pathlib import Path
 
 import pytest
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 from common.decorators import (
     Debouncer,
@@ -162,13 +169,14 @@ class TestDebounceInfrastructure:
         assert cancel_or_remove_debouncer_task("NO_SUCH_KEY") is None
 
     def test_event_loop_thread_running(self):
-        from common import decorators
+        from common.decorators import debounce
 
-        loop = decorators.get_loop()
+        loop = debounce.get_loop()
         assert loop is not None
         assert loop.is_running()
-        assert isinstance(decorators._loop_thread, EventLoopThread)
-        assert decorators._loop_thread.is_alive()
+        # 惰性创建入口：get_loop() 之后线程已就绪且为事件循环线程实例
+        assert isinstance(debounce._loop_thread, EventLoopThread)
+        assert debounce._loop_thread.is_alive()
 
     def test_debouncer_awaits_delay_then_calls_back(self):
         loop = asyncio.new_event_loop()
@@ -197,3 +205,44 @@ class TestDebounceInfrastructure:
         # 轮询到执行完成；防抖的「延迟语义」仍以 elapsed 下限断言兜底
         assert wait_until(lambda: calls) == [1]
         assert time.time() - start >= 0.1
+
+
+class TestLazyInitialization:
+    """事件循环线程与执行池惰性创建：import 不得产生后台线程/线程池副作用。
+
+    回归背景：原实现 `common/decorators.py` 在 import 即启动一条事件循环线程 +
+    创建 10 线程执行池，所有间接 import 方（celery/worker 等）都常驻这些资源。
+    """
+
+    def test_fresh_import_has_no_background_resources(self):
+        """全新解释器 import 后：无事件循环线程、无执行池。"""
+        code = textwrap.dedent(
+            """
+            import threading
+
+            import common.decorators  # noqa: F401
+            from common.decorators import debounce
+
+            assert debounce._loop_thread is None, "import 即创建了事件循环线程"
+            assert debounce._executor is None, "import 即创建了线程池"
+            assert not any(isinstance(t, debounce.EventLoopThread) for t in threading.enumerate())
+            print("lazy-ok")
+            """
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            cwd=str(PROJECT_ROOT),
+            env={**os.environ, "DJANGO_SETTINGS_MODULE": "tests.settings_test"},
+            timeout=120,
+        )
+        assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"
+        assert "lazy-ok" in proc.stdout
+
+    def test_executor_created_on_demand(self):
+        """历史模块级 `executor` 引用兼容：访问即惰性创建，且与 get_executor() 同实例。"""
+        from common import decorators
+        from common.decorators import debounce
+
+        assert decorators.executor is debounce.get_executor()

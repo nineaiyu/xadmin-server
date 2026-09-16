@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
-#
+"""延迟防抖域：延迟执行（delay_run）与合并参数（merge_delay_run）。
+
+配套基础设施「事件循环线程 + 执行池」为**惰性初始化**：一条常驻事件循环线程与
+一个 10 线程执行池改为在首个延迟任务（或显式访问 `get_loop()` / `get_executor()`）
+时创建——import 本模块不再产生后台线程/线程池副作用。原实现 import 即启动，
+所有间接 import 方（含 celery/worker 等）都会常驻这些资源。
+"""
+
 import asyncio
 import functools
 import inspect
@@ -7,42 +14,11 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from functools import wraps
-
-from django.db import transaction
 
 from common.core.db.utils import open_db_connection
 from common.utils import get_logger
 
 logger = get_logger(__name__)
-
-
-def on_transaction_commit(func):
-    """
-    如果不调用on_commit, 对象创建时添加多对多字段值失败
-    """
-
-    def inner(*args, **kwargs):
-        transaction.on_commit(lambda: func(*args, **kwargs))
-
-    return inner
-
-
-class Singleton:
-    """单例类"""
-
-    def __init__(self, cls):
-        self._cls = cls
-        self._instance = {}
-
-    def __call__(self):
-        if self._cls not in self._instance:
-            self._instance[self._cls] = self._cls()
-        return self._instance[self._cls]
-
-
-def default_suffix_key(*args, **kwargs):
-    return "default"
 
 
 class EventLoopThread(threading.Thread):
@@ -61,17 +37,44 @@ class EventLoopThread(threading.Thread):
         return self._loop
 
 
-_loop_thread = EventLoopThread()
-_loop_thread.daemon = True
-_loop_thread.start()
-executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="debouncer")
+# 惰性状态：None 表示尚未创建（首次调度防抖任务时经双检锁初始化）
+_loop_thread = None
+_executor = None
+_state_lock = threading.Lock()
 _loop_debouncer_func_task_cache = {}
 _loop_debouncer_func_args_cache = {}
 _loop_debouncer_func_task_time_cache = {}
 
 
+def _get_loop_thread():
+    """事件循环线程惰性创建（daemon 线程，不阻塞进程退出）。"""
+    global _loop_thread
+    if _loop_thread is None:
+        with _state_lock:
+            if _loop_thread is None:
+                thread = EventLoopThread()
+                thread.daemon = True
+                thread.start()
+                _loop_thread = thread
+    return _loop_thread
+
+
+def get_executor():
+    """防抖执行池惰性创建（max_workers=10，与原模块级实例同参数）。"""
+    global _executor
+    if _executor is None:
+        with _state_lock:
+            if _executor is None:
+                _executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="debouncer")
+    return _executor
+
+
 def get_loop():
-    return _loop_thread.get_loop()
+    return _get_loop_thread().get_loop()
+
+
+def default_suffix_key(*args, **kwargs):
+    return "default"
 
 
 def cancel_or_remove_debouncer_task(cache_key):
@@ -97,12 +100,12 @@ def run_debouncer_func(cache_key, ttl, func, *args, **kwargs):
     if current - first_run_time > ttl:
         _loop_debouncer_func_args_cache.pop(cache_key, None)
         _loop_debouncer_func_task_time_cache.pop(cache_key, None)
-        executor.submit(run_func_partial, *args, **kwargs)
+        get_executor().submit(run_func_partial, *args, **kwargs)
         logger.debug(f"pid {os.getpid()} executor submit run {func.__name__}")
         return
 
-    loop = _loop_thread.get_loop()
-    _debouncer = Debouncer(run_func_partial, lambda: True, ttl, loop=loop, executor=executor)
+    loop = _get_loop_thread().get_loop()
+    _debouncer = Debouncer(run_func_partial, lambda: True, ttl, loop=loop, executor=get_executor())
     task = asyncio.run_coroutine_threadsafe(_debouncer(*args, **kwargs), loop=loop)
     _loop_debouncer_func_task_cache[cache_key] = task
 
@@ -229,32 +232,3 @@ def merge_delay_run(ttl=5, key=None):
         return wrapper
 
     return inner
-
-
-def cached_method(ttl=20):
-    """
-    进程内内存缓存，ttl 为缓存时间，-1 表示永久。
-
-    使用限制（避免误用）：
-    - 仅适用于参数可哈希的调用（list/dict/request 等会直接 TypeError）；
-    - 缓存只增不主动清理，进程内长期驻留，不要用于大对象或高基数 key；
-    - 多进程/多 worker 之间不共享，不保证一致性。
-    """
-    _cache = {}
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            key = (func, args, tuple(sorted(kwargs.items())))
-            # 检查缓存是否存在且未过期
-            if key in _cache and (ttl == -1 or time.time() - _cache[key]["timestamp"] < ttl):
-                return _cache[key]["result"]
-
-            # 缓存过期或不存在，执行方法并缓存结果
-            result = func(*args, **kwargs)
-            _cache[key] = {"result": result, "timestamp": time.time()}
-            return result
-
-        return wrapper
-
-    return decorator
