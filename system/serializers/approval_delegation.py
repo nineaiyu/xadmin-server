@@ -38,6 +38,21 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
             "updated_time",
         ]
         read_only_fields = ["creator", "created_time", "updated_time"]
+        # 委托人/代理人统一用户选择形态（label = 昵称(用户名)，与全局用户展示一致）；
+        # 代理人是否升级为远程联想由 ViewSet 的 suggestion_fields 白名单声明，
+        # 委托人未入名单，保持 api-search-user 弹窗选择器。
+        extra_kwargs = {
+            "delegator": {
+                "attrs": ["pk", "username", "nickname"],
+                "format": "{nickname}({username})",
+                "input_type": "api-search-user",
+            },
+            "delegate": {
+                "attrs": ["pk", "username", "nickname"],
+                "format": "{nickname}({username})",
+                "input_type": "api-search-user",
+            },
+        }
         table_fields = [
             "delegator_name",
             "delegate_name",

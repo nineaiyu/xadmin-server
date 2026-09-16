@@ -191,7 +191,7 @@ class IsAuthenticated(BasePermission):
         if not check_pat_scope(request):
             raise PermissionDenied(_("PAT scope does not allow this path"))
 
-        # 应用四级授权（ADR-039）：应用凭证存在授权规则时走白名单（模型×动作×字段×行），
+        # 应用四级授权：应用凭证存在授权规则时走白名单（模型×动作×字段×行），
         # 无规则 = 兼容模式直接跳过。三个出口统一收敛（超管 / 白名单 URL 不豁免）。
         if request.user.is_superuser:
             request.ignore_field_permission = True
@@ -254,6 +254,10 @@ class IsAuthenticated(BasePermission):
         """
         url = request.path_info
         match_group = re.match("(?P<url>.*)/search-columns$", url)
+        if match_group:
+            url = match_group.group("url")
+        # 远程联想与对应 list 权限同口径（候选集=字段自身 queryset，零新增枚举面）
+        match_group = re.match("(?P<url>.*)/suggestions$", url)
         if match_group:
             url = match_group.group("url")
         p_data = menu_data = get_menu_pk(permission_data, url)

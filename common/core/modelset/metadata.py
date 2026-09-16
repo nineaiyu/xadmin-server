@@ -22,6 +22,7 @@ from rest_framework.utils import encoders
 from common.base.utils import get_choices_dict
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
+from common.core.modelset.suggest import expose_suggest_url
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
 from common.swagger.utils import get_default_response_schema
@@ -288,6 +289,8 @@ class SearchColumnsAction:
                 info["input_type"] = "textarea"
             else:
                 info["input_type"] = get_input_type(value, info)
+            # 混入 SuggestionsAction 的视图，对 api-search-* 关联字段下发联想地址
+            expose_suggest_url(self, request, info, info["input_type"])
             del info["type"]
             if not table_fields:
                 info["table_show"] = 1

@@ -30,6 +30,7 @@ from common.core.modelset import (
     ListAction,
     SearchColumnsAction,
     SearchFieldsAction,
+    SuggestionsAction,
 )
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
@@ -430,7 +431,7 @@ class ApprovalDelegationFilter(BaseFilterSet):
         fields = ["is_active", "delegator", "delegate"]
 
 
-class ApprovalDelegationViewSet(BaseModelSet):
+class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
     """审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。
 
     只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
@@ -444,3 +445,5 @@ class ApprovalDelegationViewSet(BaseModelSet):
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "start_time", "end_time"]
     select_related_fields = ("delegator", "delegate")
+    # 远程联想仅开放代理人：委托人在同表单里保持 api-search-user 弹窗选择器
+    suggestion_fields = ("delegate",)

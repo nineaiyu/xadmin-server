@@ -26,6 +26,7 @@ from common.core.modelset.import_export import ImportExportDataAction, OnlyExpor
 from common.core.modelset.input_types import get_format_intput_type, get_upload_input_type_suffix
 from common.core.modelset.metadata import ChoicesAction, SearchColumnsAction, SearchFieldsAction
 from common.core.modelset.recycle import RecycleBinAction
+from common.core.modelset.suggest import SuggestionsAction, expose_suggest_url
 from common.core.modelset.upload import UploadFileAction
 from common.core.modelset.viewsets import (
     BaseModelSet,
@@ -51,6 +52,9 @@ __all__ = [
     "ChoicesAction",
     "SearchFieldsAction",
     "SearchColumnsAction",
+    # suggestions
+    "SuggestionsAction",
+    "expose_suggest_url",
     "get_upload_input_type_suffix",
     "get_format_intput_type",
     # import / export
