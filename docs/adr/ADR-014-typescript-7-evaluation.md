@@ -89,3 +89,14 @@ TypeScript 7.0（2026-07-08 发布）是用 Go 重写的原生移植版，官方
 - TS 7 升级触发条件不变：**vue-tsc 发布声明支持 TS 7 原生版**（此前实测 3.3.11 直接
   `ERR_PACKAGE_PATH_NOT_EXPORTED`）；未命中前维持暂不升级，届时独立分支复测
   `tsc --noEmit && vue-tsc --noEmit` + vitest。
+
+## 复审记录（2026-09-16，第四年度 2030-05 前端跟随窗口）
+
+- 第三次复核：typescript **7.0.2**（npm 最新）+ vue-tsc **3.3.11**（当前最新）本仓实测
+  仍不兼容——`ERR_PACKAGE_PATH_NOT_EXPORTED`（TS 7 的 package exports 不再暴露
+  `./lib/tsc`，vue-tsc 3.x 的 tsc 驱动方式失效）；触发条件未满足；
+- 已回滚至 typescript 6.0.3 并复测 typecheck 全绿（exit 0）；
+- 同期完成：dev 工具链 major 升级（cssnano 9 / postcss-import 17 / unplugin-icons 24）+
+  `@vueuse/core 14→15`（20 文件使用面，typecheck / 250 单测 / 生产构建全绿）；
+  包体基线收紧至 **522 KB**（消除 35.5 KB 历史余量）；
+- 维持暂不升级；触发条件不变。
