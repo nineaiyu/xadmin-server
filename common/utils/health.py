@@ -7,6 +7,7 @@ healthz（common/api/common.py）与系统监控面板（system/views/monitor.py
 (ok, cost)：ok 为布尔，cost 为耗时秒数或异常信息字符串。
 """
 
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -41,18 +42,46 @@ def probe_redis():
         return False, str(e)
 
 
-def probe_celery(timeout=1):
-    """探测在线 worker（inspect ping）。E2E/单进程模式下可显式跳过。"""
-    if getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False):
-        return False, 0.0
-    t1 = time.time()
+# celery 探测缓存（2030-04）：inspect ping 总是等满收集窗口（实测 1s/3s/5s 耗时对等）
+# 且回复收集存在竞态抖动（短窗口时零时两 worker）——同步调用会顶穿 probe_all 的共享
+# 预算，导致 celery_status 误报 "probe timeout"。改为进程内缓存 + 后台线程刷新：
+# TTL 内直接返回上次真实结果（毫秒级），过期时触发一次后台刷新（防重入），
+# 本次返回旧值（首次为 (False, 0.0)，30s 内收敛为真实状态）。
+_CELERY_PROBE_TIMEOUT = 2.5
+_CELERY_PROBE_CACHE_TTL = 30
+_celery_probe_cache = {"at": 0.0, "value": (False, 0.0)}
+_celery_probe_refreshing = threading.Lock()
+
+
+def _refresh_celery_probe():
+    """后台刷新 celery 探测结果（失败记录原因，由下次刷新重试）。"""
     try:
         from server.celery import app
 
-        workers = app.control.inspect(timeout=timeout).ping()
-        return bool(workers), time.time() - t1
-    except Exception as e:  # noqa: BLE001
-        return False, str(e)
+        start = time.time()
+        workers = app.control.inspect(timeout=_CELERY_PROBE_TIMEOUT).ping()
+        _celery_probe_cache["value"] = (bool(workers), time.time() - start)
+    except Exception as e:  # noqa: BLE001 探测失败记录原因
+        _celery_probe_cache["value"] = (False, str(e))
+    finally:
+        _celery_probe_cache["at"] = time.time()
+        _celery_probe_refreshing.release()
+
+
+def probe_celery(timeout=None):
+    """探测在线 worker（inspect ping，结果进程内缓存 TTL=30s，毫秒级返回）。
+
+    背景见上方缓存说明；HEALTH_CHECK_SKIP_CELERY 跳过语义保持不变。
+    timeout 参数保留仅为兼容历史调用方（内部使用固定收集窗口）。
+    """
+    if getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False):
+        return False, 0.0
+    if time.time() - _celery_probe_cache["at"] < _CELERY_PROBE_CACHE_TTL:
+        return _celery_probe_cache["value"]
+    # 缓存过期：触发后台刷新（防重入）；本次返回旧值，不阻塞响应
+    if _celery_probe_refreshing.acquire(blocking=False):
+        threading.Thread(target=_refresh_celery_probe, daemon=True, name="celery-probe").start()
+    return _celery_probe_cache["value"]
 
 
 # 健康检查总预算（秒）：**共享一个 deadline**（逐项各自等待会累积成 3×timeout）。
