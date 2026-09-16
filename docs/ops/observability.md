@@ -165,6 +165,16 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 3. DNS 快速失败场景表现（解析即失败）为本次观察；`connect_timeout` 在 **TCP 挂起**（非 DNS 失败）
    场景的验证待后续演练设计（可用 iptables 丢包模拟）。
 
+### 第六轮（2031-03，交付工程窗口）：备份失败（单次模式）
+
+- **方式**：`BACKUP_ONCE=1` 单次模式（演练 / 外部 cron 用法；容器入口为常驻循环）；
+- **失败态**（`chmod 000 /backups`）：**EXIT=1** + `WARN: backup FAILED, remove partial file` +
+  `WARN: 本轮数据库备份失败`——失败可判（调度侧可感知），临时文件不落正式名；
+- **恢复后**：**EXIT=0**（媒体备份 1.9M、WAL 归档检查齐全）；
+- **规范补充**：`db_backup.sh` 为常驻循环脚本（轮间 `sleep BACKUP_INTERVAL`），
+  **手动执行必须使用 `BACKUP_ONCE=1`**——否则命令挂起在轮间休眠（2026-09-16 实测踩中，
+  误执行进程已清理、备份产物无损、多出的一份备份由 KEEP_DAYS 自然回收）。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
