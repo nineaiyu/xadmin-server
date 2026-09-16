@@ -183,6 +183,20 @@ class AiAssistantViewSet(GenericViewSet):
                 "pk", "username"
             )
         }
+        # token 用量（成本维度）：解析窗口内审计 changes 的 usage 字段（缺 usage 的记录记 0）
+        import json as _json
+
+        prompt_tokens = completion_tokens = 0
+        for raw_changes in base.values_list("changes", flat=True):
+            try:
+                usage = (_json.loads(raw_changes or "{}") or {}).get("usage") or {}
+            except (TypeError, ValueError):
+                continue
+            try:
+                prompt_tokens += int(usage.get("prompt_tokens") or 0)
+                completion_tokens += int(usage.get("completion_tokens") or 0)
+            except (TypeError, ValueError):
+                continue
         return ApiResponse(
             data={
                 "days": days,
@@ -195,6 +209,11 @@ class AiAssistantViewSet(GenericViewSet):
                     {"username": name_map.get(row["object_pk"], row["object_pk"][:12]), "count": row["count"]}
                     for row in top_rows
                 ],
+                "tokens": {
+                    "prompt": prompt_tokens,
+                    "completion": completion_tokens,
+                    "total": prompt_tokens + completion_tokens,
+                },
             }
         )
 
@@ -226,9 +245,11 @@ class AiAssistantViewSet(GenericViewSet):
 
         dsl: dict = {}
         normalized: dict = {}
+        usage = None
         try:
             client = ChatCompletionsClient(ai_credentials())
             raw = client.chat(build_interpret_prompt(question, datasets))
+            usage = getattr(client, "last_usage", None)
             dsl = parse_llm_json(raw)
             normalized = validate_dsl(dsl, request.user)
             dataset = Dataset.objects.get(pk=normalized["dataset"])
@@ -238,12 +259,12 @@ class AiAssistantViewSet(GenericViewSet):
             queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
             preview_count = queryset.count()
         except DjangoValidationError as exc:
-            audit_nl_query(request.user, "interpret", question, dsl, error="; ".join(exc.messages))
+            audit_nl_query(request.user, "interpret", question, dsl, error="; ".join(exc.messages), usage=usage)
             return ApiResponse(code=1001, detail="; ".join(exc.messages))
         except AiSdkError as exc:
             audit_nl_query(request.user, "interpret", question, {}, error=str(exc))
             return ApiResponse(code=1001, detail=str(exc))
-        audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count)
+        audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count, usage=usage)
         return ApiResponse(
             data={
                 "dsl": normalized,
@@ -305,7 +326,8 @@ class AiAssistantViewSet(GenericViewSet):
             detail = "; ".join(exc.messages)
             audit_ai_ask(request.user, question, ok=False, detail=detail)
             return ApiResponse(code=1001, detail=detail)
-        audit_ai_ask(request.user, question, ok=True)
+        usage = result.pop("_usage", None)
+        audit_ai_ask(request.user, question, ok=True, usage=usage)
         return ApiResponse(data=result)
 
     # ------------------------------------------------------------------

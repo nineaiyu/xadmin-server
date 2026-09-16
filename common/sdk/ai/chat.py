@@ -47,6 +47,9 @@ class ChatCompletionsClient:
             stop = stop.split(",")
         self.stop = [str(item).strip() for item in (stop or []) if str(item).strip()] if stop else []
         self.http = http_client
+        # 最近一次成功 chat() 的 token 用量（供应商 payload.usage 原样，缺省 None）：
+        # 供调用方写审计（成本维度观测），不改变 chat() 的返回契约
+        self.last_usage = None
 
     def _client(self):
         if self.http is None:
@@ -130,6 +133,8 @@ class ChatCompletionsClient:
         if not content:
             logger.warning("ai chat rejected: %s", str(payload)[:300])
             raise AiSdkError("The AI provider returned an empty answer")
+        usage = payload.get("usage")
+        self.last_usage = usage if isinstance(usage, dict) else None
         return str(content)
 
     def chat_stream(self, messages: list, **overrides):

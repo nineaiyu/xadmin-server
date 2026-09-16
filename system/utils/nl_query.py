@@ -172,8 +172,13 @@ def build_interpret_prompt(question: str, datasets: list) -> list:
     ]
 
 
-def audit_nl_query(user_obj, action: str, question: str, dsl: dict, rows: int = None, error: str = ""):
-    """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。"""
+def audit_nl_query(
+    user_obj, action: str, question: str, dsl: dict, rows: int = None, error: str = "", usage: dict = None
+):
+    """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。
+
+    usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
+    """
     from system.models import OperationLog
 
     try:
@@ -184,7 +189,14 @@ def audit_nl_query(user_obj, action: str, question: str, dsl: dict, rows: int = 
             status_code=1000 if error == "" else 1001,
             response_code=1000 if error == "" else 1001,
             changes=json.dumps(
-                {"action": action, "question": (question or "")[:120], "dsl": dsl, "rows": rows, "error": error},
+                {
+                    "action": action,
+                    "question": (question or "")[:120],
+                    "dsl": dsl,
+                    "rows": rows,
+                    "error": error,
+                    **({"usage": usage} if usage else {}),
+                },
                 ensure_ascii=False,
                 default=str,
             )[:4096],

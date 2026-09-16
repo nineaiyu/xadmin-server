@@ -172,3 +172,26 @@ class TestRetry:
         assert response.status_code == 200
         assert len(http.calls) == 2
         assert http.calls[-1]["stream"] is True
+
+
+class TestUsageCapture:
+    """usage 采集：chat() 成功时记录供应商返回的 token 用量（供审计与成本观测）。"""
+
+    def test_chat_records_usage(self):
+        usage = {"prompt_tokens": 12, "completion_tokens": 3, "total_tokens": 15}
+        http = _FakeHttp([_FakeResponse(payload={"choices": [{"message": {"content": "hi"}}], "usage": usage})])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        assert client.chat([]) == "hi"
+        assert client.last_usage == usage
+
+    def test_chat_without_usage_keeps_none(self):
+        http = _FakeHttp([_FakeResponse(payload={"choices": [{"message": {"content": "hi"}}]})])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        client.chat([])
+        assert client.last_usage is None
+
+    def test_invalid_usage_shape_ignored(self):
+        http = _FakeHttp([_FakeResponse(payload={"choices": [{"message": {"content": "hi"}}], "usage": "oops"})])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        client.chat([])
+        assert client.last_usage is None

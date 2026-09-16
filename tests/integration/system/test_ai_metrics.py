@@ -19,14 +19,17 @@ pytestmark = pytest.mark.django_db
 METRICS_URL = "/api/system/ai/assistant/metrics"
 
 
-def seed_ai_log(module, ok, user, days_ago=0):
+def seed_ai_log(module, ok, user, days_ago=0, usage=None):
+    payload = {"status": "ok" if ok else "failed"}
+    if usage:
+        payload["usage"] = usage
     log = OperationLog.objects.create(
         module=module,
         object_pk=str(user.pk),
         auth_type=OperationLog.AuthType.AI,
         status_code=1000 if ok else 1001,
         response_code=1000 if ok else 1001,
-        changes=json.dumps({"status": "ok" if ok else "failed"}, ensure_ascii=False),
+        changes=json.dumps(payload, ensure_ascii=False),
     )
     if days_ago:
         OperationLog.objects.filter(pk=log.pk).update(created_time=timezone.now() - timedelta(days=days_ago))
@@ -111,3 +114,22 @@ class TestAiMetrics:
         data, _ = self._query(metrics_client)
         assert all(row["module"] != "login" for row in data["by_module"])
         assert all((row["module"] or "").startswith("AI:") for row in data["by_module"])
+
+    def test_token_usage_aggregation(self, metrics_client, metrics_user):
+        base, _ = self._query(metrics_client)
+        seed_ai_log(
+            "AI:ask",
+            True,
+            metrics_user,
+            usage={"prompt_tokens": 120, "completion_tokens": 30, "total_tokens": 150},
+        )
+        seed_ai_log(
+            "AI:nl_query",
+            True,
+            metrics_user,
+            usage={"prompt_tokens": 80, "completion_tokens": 20, "total_tokens": 100},
+        )
+        data, _ = self._query(metrics_client)
+        assert data["tokens"]["prompt"] >= base["tokens"]["prompt"] + 200
+        assert data["tokens"]["completion"] >= base["tokens"]["completion"] + 50
+        assert data["tokens"]["total"] == data["tokens"]["prompt"] + data["tokens"]["completion"]

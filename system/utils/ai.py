@@ -390,4 +390,5 @@ def ask(question: str) -> dict:
         )
     except AiSdkError as exc:
         raise DjangoValidationError(str(exc)) from exc
-    return {"answer": answer, "sources": sources}
+    # _usage 供调用方写审计（成本维度观测）；返回契约中的 answer/sources 不变，调用方负责剥离
+    return {"answer": answer, "sources": sources, "_usage": getattr(client, "last_usage", None)}

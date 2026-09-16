@@ -466,10 +466,11 @@ def execute_action(user, action_key: str, params) -> dict:
     return spec.execute(user, clean)
 
 
-def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "") -> None:
+def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dict = None) -> None:
     """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
 
     与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。
+    usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
     """
     from system.models import OperationLog
 
@@ -485,6 +486,7 @@ def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "") -> None:
                     "question": (question or "")[:200],
                     "status": "ok" if ok else "failed",
                     "detail": (detail or "")[:200],
+                    **({"usage": usage} if usage else {}),
                 },
                 ensure_ascii=False,
             )[:4096],
