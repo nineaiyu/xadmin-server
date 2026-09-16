@@ -175,6 +175,43 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
   **手动执行必须使用 `BACKUP_ONCE=1`**——否则命令挂起在轮间休眠（2026-09-16 实测踩中，
   误执行进程已清理、备份产物无损、多出的一份备份由 KEEP_DAYS 自然回收）。
 
+### 第七轮（2031-12，SLO 窗口）：TCP 挂起（connect_timeout 边界验证）
+
+- **背景**：第五轮登记的未覆盖边界——`connect_timeout` 在 **TCP 挂起**（非 DNS 快速失败）场景的表现；
+- **环境约束**：xadmin-server 容器无 `iptables`/`tc`（无 NET_ADMIN）→ 改用**用户态黑洞模拟**
+  （本地 TCPServer accept 后只吞不回包，等价覆盖「TCP 建连成功、PG 协议无响应」）；
+- **结果**：`connect_timeout=3` → **3.03s 快速失败**（`ConnectionTimeout: connection timeout expired`，
+  libpq 超时覆盖整个连接建立过程含启动包交换）；对照组（无 timeout，SIGALRM 6s 兜底）**6.00s 仍挂起**
+  ——场景有效性成立，排除"快速拒绝"假象；
+- **生产核对**：容器实际 `OPTIONS={'connect_timeout': 3, 'pool': {min 2 / max 8}}` 已生效；
+- **边界说明**：SYN 不可达（真丢包）与协议无响应共享同一 libpq timeout 逻辑，本模拟覆盖后者
+  （更严格：TCP 已建立仍必须超时）；真丢包场景的部署级观察待具备 NET_ADMIN 的演练环境。
+
+### 第八轮（2032-03，交付工程窗口）：PG 只读降级（存储层自我保护）
+
+- **场景**：`default_transaction_read_only=on`（磁盘不足等触发 PG 自我保护进入的只读态）；
+- **方式**：`ALTER SYSTEM SET` + `pg_reload_conf()`（秒级生效、无需重启）——**注意须单语句执行**：
+  多语句 `psql -c "A; B"` 会被包进事务块而报 `ALTER SYSTEM cannot run inside a transaction block`
+  （2026-09-16 首次执行即踩中，属操作姿势问题，非系统缺陷）；
+- **读路径**：health 四指标全 true（无 degraded）、psql SELECT 正常——**读侧零降级**；
+- **写路径**：应用写入明确失败 `InternalError: cannot execute INSERT in a read-only transaction`
+  ——错误语义清晰可诊断（非静默、非挂起）；
+- **恢复**：`ALTER SYSTEM RESET` + reload → `off`，写立即可用（无需重启）；
+- **结论**：存储层只读态下「读可用、写明确失败、恢复秒级」，符合预期，无缺陷。
+
+### 第九轮（2032-06，审计与安全窗口）：坏配置注入（fail-fast 验证）
+
+- **场景**：向 `config.yml` 注入类型错误配置（`LOG_BACKUP_COUNT: "abc"`）后重启；
+- **机制**：`server/conf.py` 的 `convert_type` 对转换失败**静默保留原值**（宽容解析），
+  但强类型消费点（`int(CONFIG.LOG_BACKUP_COUNT or 0)`）**响亮失败**：
+  `ValueError: invalid literal for int() with base 10: 'abc'`（日志直接指向问题配置行）；
+- **行为**：容器进入 `Restarting (1)` 崩溃循环（restart policy 反复拉起）——**不静默降级**
+  （未用默认值 30 继续跑）；
+- **恢复**：还原 `config.yml` + 重启 → `Up (healthy)`、health 四指标全 true；
+- **评估登记**：`convert_type` 的「宽容解析 + 严格消费」组合当前总能暴露坏值（消费点均有类型转换），
+  但**弱类型消费点**（直接按 str 使用）存在静默接受面——登记评估出口
+  （不急切修改：动全局配置解析影响面大）。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
