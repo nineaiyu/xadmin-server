@@ -62,6 +62,18 @@ def test_settings_forwarding_reads_existing_conf_keys():
     assert missing == [], f"以下转发读取的键在 conf.py 默认值表中不存在（CONFIG 会静默返回 None）: {missing}"
 
 
+def test_metrics_keys_exported():
+    """METRICS_ENABLED / METRICS_TOKEN 必须无条件导出到 settings。
+
+    读取方 common/api/metrics.py 走 `getattr(settings, "METRICS_ENABLED", False)`：
+    漏导出时端点永远 404（2026-09-16 实测踩中，与 SECURITY_AES_V1_DECRYPT_ENABLED 同类缺陷）。
+    """
+    from django.conf import settings
+
+    assert hasattr(settings, "METRICS_ENABLED")
+    assert hasattr(settings, "METRICS_TOKEN")
+
+
 def test_security_keys_all_forwarded_to_settings():
     """conf.py 中所有 SECURITY_* 键都必须被 server/settings 转发（同名或已登记别名）。
 

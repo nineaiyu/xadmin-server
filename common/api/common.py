@@ -78,6 +78,9 @@ class HealthCheckAPIView(GenericAPIView):
     """获取服务健康状态"""
 
     permission_classes = (AllowAny,)
+    # 基础设施端点：跳过 DRF 限流——限流计数走 redis，Redis 故障时会拖慢判活
+    # （2029-10 故障演练复测：冻结时限流读 redis 增加 0.2s+ 串行等待）
+    throttle_classes = ()
 
     # 探测逻辑已抽至 common/utils/health.py（与监控面板共用），此处保留方法名以兼容既有调用方
     @staticmethod

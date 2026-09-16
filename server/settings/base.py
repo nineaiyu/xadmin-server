@@ -165,8 +165,12 @@ CONTENT_SECURITY_POLICY_REPORT_ONLY = {
     "EXCLUDE_URL_PREFIXES": _CSP_EXCLUDE_PREFIXES,
 }
 
-# Prometheus 指标采集（默认关闭）：仅在显式启用时挂载，避免无谓开销与端点暴露
-if CONFIG.METRICS_ENABLED:
+# Prometheus 指标采集（默认关闭）：仅在显式启用时挂载，避免无谓开销与端点暴露。
+# 开关与令牌**无条件导出**：读取方（common/api/metrics.py）走 getattr(settings, ...)，
+# 漏导出会让端点永远 404（2026-09-16 实测踩中，与 SECURITY_AES_V1_DECRYPT_ENABLED 同类缺陷）
+METRICS_ENABLED = CONFIG.METRICS_ENABLED
+METRICS_TOKEN = CONFIG.METRICS_TOKEN
+if METRICS_ENABLED:
     MIDDLEWARE.append("common.core.middleware.MetricsMiddleware")
 
 # django-silk 性能剖析（性能基线）：config.yml 中 `SILK_ENABLED: true` 显式开启，
@@ -224,10 +228,28 @@ CACHES = {
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{DEFAULT_CACHE_ID}",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {"max_connections": 8000},
+            # 故障演练 2029-10 复测修复：Redis 冻结（容器 stop，连接挂起而非拒绝）时
+            # socket 无超时会让请求挂在中间件/配置读取阶段（实测 10s+ 被 worker
+            # timeout 打断、health 端点被拖挂）。局域网 redis 操作 <5ms，1s 超时充裕，
+            # 冻结时快速失败（配合 ConfigCache 回落读库，见 common/core/config.py）。
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 8000,
+                # 连接超时 0.2s：局域网建连正常 <1ms；冻结（连接挂起）时每个调用
+                # 0.2s 快速失败（实测 1s 时多个串行调用累积到 10s，0.2s 收敛到秒级）
+                "socket_connect_timeout": 0.2,
+                # 读写超时 0.5s：正常操作 <10ms（大 pattern SCAN 留余量），仅兜底
+                "socket_timeout": 0.5,
+                "retry_on_timeout": False,
+            },
             "PASSWORD": REDIS_PASSWORD,
             "DECODE_RESPONSES": True,
             "REDIS_CLIENT_KWARGS": {"health_check_interval": 30},
+            # 故障演练 2029-10 复测（第二轮）：Redis 冻结时 TimeoutError 被
+            # django_redis 转换为 ConnectionInterrupted，但默认继续向上抛——
+            # DRF 限流器等框架层调用点不兜异常 → 请求 500（实测 health 返回
+            # 500）。开启 IGNORE_EXCEPTIONS：读返回 None、写静默失败（标准降级
+            # 语义：缓存不可用时 fail-open，业务回落数据源/重算）。
+            "IGNORE_EXCEPTIONS": True,
         },
         "TIMEOUT": 60 * 15,
         "KEY_FUNCTION": "common.base.utils.redis_key_func",

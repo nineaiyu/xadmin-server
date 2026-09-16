@@ -236,15 +236,15 @@ class MagicCacheData:
     def invalid_cache(key):
         cache_key = f"magic_cache_data_{key}"
         count = cache.delete_pattern(cache_key)
-        logger.warning(f"invalid_cache cache_key:{cache_key} count:{count}")
+        # 降噪（2029-10 运营基线）：缓存失效按需走写路径高频触发（实测 WARN 级 ~9.6 万行/天），
+        # 无运营价值且淹没真实告警——降为 debug，排查缓存行为时按需开启
+        logger.debug(f"invalid_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
     def invalid_caches(keys):
         delete_keys = [f"magic_cache_data_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
-        logger.warning(
-            f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"
-        )
+        logger.debug(f"invalid_cache_data cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}")
 
 
 class MagicCacheResponse:
@@ -257,13 +257,14 @@ class MagicCacheResponse:
     def invalid_cache(key):
         cache_key = f"magic_cache_response_{key}"
         count = cache.delete_pattern(cache_key)
-        logger.warning(f"invalid_response_cache cache_key:{cache_key} count:{count}")
+        # 降噪（2029-10 运营基线）：同 MagicCache，高频 WARN 降为 debug
+        logger.debug(f"invalid_response_cache cache_key:{cache_key} count:{count}")
 
     @staticmethod
     def invalid_caches(keys):
         delete_keys = [f"magic_cache_response_{key}" for key in keys]
         count = cache.delete_many(delete_keys)
-        logger.warning(
+        logger.debug(
             f"invalid_response_cache cache_key:{delete_keys[0]}... {len(delete_keys)} count. delete count:{count}"
         )
 

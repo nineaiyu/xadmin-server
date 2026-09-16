@@ -64,7 +64,10 @@ class TestHealthCheck:
         assert data["status"] is True
         assert data["db_time"] >= 0
         assert data["redis_time"] >= 0
-        assert data["celery_time"] >= 0
+        # celery_time 契约为「耗时秒数或异常/超时信息字符串」：无 worker 时探测可能在
+        # 预算内未收敛并返回 "probe timeout"（预算 1s，见 common/utils/health.py）
+        celery_time = data["celery_time"]
+        assert (isinstance(celery_time, (int, float)) and celery_time >= 0) or celery_time == "probe timeout"
 
     def test_health_celery_skipped(self, api_client, settings):
         """显式跳过 celery 探测时耗时应为 0。"""

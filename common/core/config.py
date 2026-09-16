@@ -126,7 +126,11 @@ class ConfigCacheBase:
 
     def get_data(self, key, default_data=None, ignore_access=True):
         cache = self.cache(f"{self.px}_{key}")
-        cache_data = cache.get_storage_cache()
+        try:
+            cache_data = cache.get_storage_cache()
+        except Exception:  # noqa: BLE001 Redis 不可用（故障演练 2029-10）：降级读库，不阻断请求
+            logger.warning("config cache read failed, fallback to db", exc_info=True)
+            cache_data = None
         if cache_data is not None and cache_data.get("key", "") == key:
             if cache_data.get("no_row"):
                 return self._absence_value(key, default_data)
@@ -136,10 +140,16 @@ class ConfigCacheBase:
         if db_data.get("key") != key:
             # 无行：缓存 no_row 标记（短 TTL）——既不把空值/默认值固化进缓存
             # （default_data 由调用方每次给定），也避免无行键每次读都查库
-            cache.set_storage_cache({"key": key, "no_row": True}, timeout=self.ABSENCE_CACHE_TIMEOUT)
+            try:
+                cache.set_storage_cache({"key": key, "no_row": True}, timeout=self.ABSENCE_CACHE_TIMEOUT)
+            except Exception:  # noqa: BLE001 写缓存失败不影响本次读数
+                logger.warning("config cache write failed, skipped", exc_info=True)
             return self._absence_value(key, default_data)
         db_data["value"] = self.get_render_value(json.dumps(db_data["value"]))
-        cache.set_storage_cache(db_data, timeout=self.timeout)
+        try:
+            cache.set_storage_cache(db_data, timeout=self.timeout)
+        except Exception:  # noqa: BLE001 写缓存失败不影响本次读数
+            logger.warning("config cache write failed, skipped", exc_info=True)
         if ignore_access or db_data.get("access"):
             return db_data
         return {}

@@ -55,8 +55,10 @@ def probe_celery(timeout=1):
         return False, str(e)
 
 
-# 健康检查总预算（秒）：**共享一个 deadline**（逐项各自等待会累积成 3×timeout）
-PROBE_BUDGET_SECONDS = 2
+# 健康检查总预算（秒）：**共享一个 deadline**（逐项各自等待会累积成 3×timeout）。
+# 实测收敛（2029-10 复测）：单次预算 1s——冻结时两项超时探测合计 ≤1s，加上请求
+# 路径（中间件/配置读）的快速失败，整体响应稳定低于容器 healthcheck 的 5s 超时。
+PROBE_BUDGET_SECONDS = 1
 # 池容量大于探测项数：故障依赖可能让个别探测 future 长时间不收敛
 # （celery inspect 对不可达 broker 的内部重试不受 timeout 参数完全约束），
 # 池被占满前不影响其余探测的调度；占满后退化为立即超时（仍为快速失败）。
