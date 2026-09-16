@@ -124,6 +124,81 @@ class AiAssistantViewSet(GenericViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="metrics")
+    def metrics(self, request, *args, **kwargs):
+        """AI 调用观测：近 N 天用量 / 成功率 / 日趋势 / 类型分布 / Top 用户。
+
+        数据源 = OperationLog(auth_type=ai)：AI:ask（文档问答）/ AI:nl_query（NL 查数）/
+        AI:action（受限动作）；权限点与 status 共用同一路径正则（`(status|metrics)$`，
+        见菜单种子），不新增权限点。
+        """
+        from datetime import timedelta
+
+        from django.db.models import Count
+        from django.db.models.functions import TruncDate
+        from django.utils import timezone
+
+        from system.models import OperationLog, UserInfo
+
+        try:
+            days = int(request.query_params.get("days") or 30)
+        except (TypeError, ValueError):
+            days = 30
+        days = max(1, min(days, 90))
+        since = (timezone.now() - timedelta(days=days - 1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        base = OperationLog.objects.filter(
+            auth_type=OperationLog.AuthType.AI,
+            created_time__gte=since,
+        )
+        total = base.count()
+        failed = base.exclude(status_code=1000).count()
+
+        module_labels = {"AI:ask": "文档问答", "AI:nl_query": "NL 查数", "AI:action": "受限动作"}
+        by_module = [
+            {
+                "module": row["module"] or "",
+                "label": module_labels.get(row["module"] or "", row["module"] or "未知"),
+                "count": row["count"],
+            }
+            for row in base.values("module").annotate(count=Count("id")).order_by("-count")
+        ]
+        by_day = [
+            {"date": row["day"].isoformat(), "module": row["module"] or "", "count": row["count"]}
+            for row in base.annotate(day=TruncDate("created_time"))
+            .values("day", "module")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        ]
+        top_rows = (
+            base.exclude(object_pk__isnull=True)
+            .exclude(object_pk="")
+            .values("object_pk")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+        name_map = {
+            str(pk): username
+            for pk, username in UserInfo.objects.filter(pk__in=[row["object_pk"] for row in top_rows]).values_list(
+                "pk", "username"
+            )
+        }
+        return ApiResponse(
+            data={
+                "days": days,
+                "total": total,
+                "success": total - failed,
+                "failed": failed,
+                "by_module": by_module,
+                "by_day": by_day,
+                "top_users": [
+                    {"username": name_map.get(row["object_pk"], row["object_pk"][:12]), "count": row["count"]}
+                    for row in top_rows
+                ],
+            }
+        )
+
+    @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="nl-query/interpret")
     def nl_interpret(self, request, *args, **kwargs):
         """NL → 数据集 DSL（白名单校验）+ 试算预览计数（数据权限随调用者）。"""
@@ -221,11 +296,16 @@ class AiAssistantViewSet(GenericViewSet):
     @action(methods=["post"], detail=False, url_path="ask")
     def ask(self, request, *args, **kwargs):
         """文档问答：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案。"""
+        from system.utils.ai_actions import audit_ai_ask
+
         question = str(request.data.get("question") or "")
         try:
             result = ask(question)
         except DjangoValidationError as exc:
-            return ApiResponse(code=1001, detail="; ".join(exc.messages))
+            detail = "; ".join(exc.messages)
+            audit_ai_ask(request.user, question, ok=False, detail=detail)
+            return ApiResponse(code=1001, detail=detail)
+        audit_ai_ask(request.user, question, ok=True)
         return ApiResponse(data=result)
 
     # ------------------------------------------------------------------

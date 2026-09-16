@@ -9369,7 +9369,7 @@
    "menu_type": 2,
    "name": "status:AiAssistant",
    "rank": 1,
-   "path": "api/system/ai/assistant/status$",
+   "path": "api/system/ai/assistant/(status|metrics)$",
    "component": null,
    "is_active": true,
    "meta": "5a7bbc72-13c7-5f00-b54c-59d3627867c5",

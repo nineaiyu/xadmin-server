@@ -464,3 +464,30 @@ def execute_action(user, action_key: str, params) -> dict:
     if error:
         return {"ok": False, "detail": error, "data": {}}
     return spec.execute(user, clean)
+
+
+def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "") -> None:
+    """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
+
+    与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。
+    """
+    from system.models import OperationLog
+
+    try:
+        OperationLog.objects.create(
+            module="AI:ask",
+            object_pk=str(getattr(user_obj, "pk", "")),
+            auth_type=OperationLog.AuthType.AI,
+            status_code=1000 if ok else 1001,
+            response_code=1000 if ok else 1001,
+            changes=json.dumps(
+                {
+                    "question": (question or "")[:200],
+                    "status": "ok" if ok else "failed",
+                    "detail": (detail or "")[:200],
+                },
+                ensure_ascii=False,
+            )[:4096],
+        )
+    except Exception:  # noqa: BLE001 审计失败不影响业务
+        logger.warning("write AI ask audit failed", exc_info=True)
