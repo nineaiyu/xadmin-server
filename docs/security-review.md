@@ -170,6 +170,10 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 - `/media/`、`/api/static/`、`/api-docs/` 前缀豁免（大文件/静态资源不背策略头）；
 - 已知边界：前端 SPA 由 nginx 托管时，其自身的 CSP 需在 nginx 侧下发同一策略串
   （见 `docs/ops/deployment.md`）；本处 django-csp 覆盖 Django 渲染页与 API 响应。
+  **2026-09-16 已落地**：`xadmin-web/default.conf` 的 `location /` 已下发同策略串
+  （`Content-Security-Policy-Report-Only`，report-uri 同为 `/api/csp-report`）；
+  与 Django 侧同步切强制头（去掉 `Report-Only`）；**策略串变更需两处同步**
+  （Django：`server/settings/base.py` `_CSP_DIRECTIVES`；nginx：`xadmin-web/default.conf`）。
 
 测试：`tests/unit/common/test_csp.py`（8 例：默认观察头/切 enforce/disabled/report-uri 注入/
 静态前缀豁免/上报落日志与节流/CSP3 信封与非法 JSON 容错）。

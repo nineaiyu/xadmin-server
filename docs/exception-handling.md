@@ -15,7 +15,7 @@
 | `settings/views/sms.py` 测试短信接口                                                                   | 超管诊断接口              | 保留 + **补日志** | 同上，新增 `logger.warning`                                              |
 | `common/api/common.py` healthz 探测                                                                | 运维健康检查              | 保留           | 返回给 healthz 状态字段，含探测错误便于定位                                          |
 | `common/drf/parsers/*`（axios_form_data/excel/base）                                               | 上传解析错误              | 保留           | ParseError 文案来自第一方解析代码，面向用户上传场景                                     |
-| `common/base/magic.py` / `common/decorators.py` / `common/core/config.py` / `settings/models.py` | 后台任务/缓存/日志路径        | 保留           | 不直接进客户端响应                                                           |
+| `common/base/magic.py` / `common/decorators/` / `common/core/config.py` / `settings/models.py` | 后台任务/缓存/日志路径        | 保留           | 不直接进客户端响应                                                           |
 | `system/views/auth/verify_code.py` ValueError 分支                                                 | 用户侧发码失败             | 保留 + **补日志** | `SendAndVerifyCodeUtil` 抛出的 ValueError 为业务校验文案                      |
 
 **脱敏原则**（后续新代码遵循）：

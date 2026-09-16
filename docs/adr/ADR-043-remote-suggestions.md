@@ -106,6 +106,12 @@
 - 按域拆包（cache / debounce / transaction / singleton + `__init__` re-export 兼容）只有绑在惰性化一起做才有意义，单独拆是纯 churn；
 - 不删 `delay_run` / `merge_delay_run` / `on_transaction_commit`（框架对外能力，教程与分析文档有记载），仅文档标注"当前无内部消费"。
 
+> **2026-09-16 已实施**：上述内务项按此口径完成——`common/decorators/` 拆为 cache / debounce /
+> transaction / singleton 四域 + `__init__` re-export；事件循环线程与 10 线程池改为首个延迟任务时
+> 惰性创建（`get_loop()` / `get_executor()` 为入口），import 不再常驻后台资源；公开 API 全量保留
+> （含历史模块级 `executor` 的 `__getattr__` 兼容）；惰性守护见
+> `tests/unit/common/test_decorators.py::TestLazyInitialization`（含全新解释器子进程验证）。
+
 ## 八、实施记录（2026-09-16）
 
 | 层 | 落点 |

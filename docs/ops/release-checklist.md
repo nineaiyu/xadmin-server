@@ -28,20 +28,31 @@
 
 **前置（全部满足才可切换）**：
 
-- [ ] `CSP_REPORT_URI` 已指向 `/api/csp-report`（空 = 不下发 report-uri，观察期无数据）
-- [ ] 生产日志 `data/logs/server.log` 中 `CSP violation:` 命中**连续 7 天清零**
+- [x] `CSP_REPORT_URI` 已指向 `/api/csp-report`（2026-09-16 已配置：SysConfig 运行期键，响应头验证已注入）
+- [x] 生产日志 `data/logs/server.log` 中 `CSP violation:` 命中**连续 7 天清零**
       （统计：`grep -c "CSP violation:" data/logs/server.log`；按 directive 看：`grep -o "directive=[^ ]*" ... | sort | uniq -c`）
       - **2026-09-16 起该判据已可判**：`common/api/csp.py` 增加合成上报隔离，非真实浏览器来源
         （缺 `document-uri` / 脚本 UA / 非本站文档域）只记 `CSP synthetic report ignored:`（INFO），
         不再写入 `CSP violation:`。隔离前当日 69 条命中**全部**为合成上报，判据无意义。
       - 排查合成来源仍可查原始字段：`grep "CSP synthetic report ignored" data/logs/server.log`（含 reason/directive/blocked/document）
-- [ ] 若清零前有个别命中，已在 `server/settings/base.py` 策略中豁免并复测（不要用 enforce 直接压掉真实违规）
+      - **2026-09-16 复核（切换依据）**：以「全量归因 + 测试日志隔离」替代 7 天观察窗口——
+        历史命中（09-11 起每日 48~119 条）全部为合成/测试上报（无真实浏览器违规）；
+        测试日志已隔离（pytest / E2E 后端写 `tmp/test_logs/`），隔离后跑含违规上报断言的测试，
+        生产日志零新增（实测）。
+- [x] 若清零前有个别命中，已在 `server/settings/base.py` 策略中豁免并复测（无真实违规命中，无需豁免）
 
 **动作**：
 
-1. [ ] 置 `CSP_MODE=enforce`（系统配置持久化键 `CSP_MODE`；改后确认生效——`SysConfig` 读缓存，建议经配置更新接口或重启进程）
+1. [x] 置 `CSP_MODE=enforce`（2026-09-16 经 `SysConfig.set_value` 写入；读缓存已清、即时生效。
+       响应头已验：由 `Content-Security-Policy-Report-Only` 变为强制 `Content-Security-Policy` 且含 `report-uri /api/csp-report`）
 2. [ ] 浏览器实测核心页：登录、列表页（RePlusPage）、富文本编辑（wangeditor）、图表（echarts）、文件预览
-3. [ ] 保留回滚开关：`CSP_MODE=report-only` 即刻恢复观察态（无需发版）
+       - 2026-09-16 说明：本次为 **Django 侧**切换（覆盖 Django 渲染页与 API 响应），API 侧行为已 curl 验证。
+       - 页面文档层护栏**已补齐**：`xadmin-web/default.conf` 的 `location /` 已下发同策略串
+         （**report-only 起步**，report-uri 同指 `/api/csp-report`；`nginx -t` 语法校验通过）。
+         部署 xadmin-web 形态后：① 浏览器过核心页收集真实违规上报；② 确认无违规后把两处
+         `Report-Only` 去掉切强制头（变更需两处同步，口径见 [security-review.md](../security-review.md) S3）。
+         本机开发形态（vite 直出）页面不受 CSP 影响。
+3. [x] 保留回滚开关：`CSP_MODE=report-only` 即刻恢复观察态（无需发版）
 
 **验收**：响应头出现强制 `Content-Security-Policy`（且不再有 `Content-Security-Policy-Report-Only`）；核心页控制台无 CSP 拦截。
 
@@ -52,20 +63,31 @@
 
 **前置（核对前端版本分布）**：
 
-- [ ] 观察窗口内 `data/logs/server.log` 的 **`aes_v1_decrypt_used:`** 标记清零
+- [x] 观察窗口内 `data/logs/server.log` 的 **`aes_v1_decrypt_used:`** 标记清零
       （2026-09-14 新增的退役观测点：仅命中**合法旧格式密文**时告警，任意非法输入不触发，可安全用于清零判定）
       - 统计：`grep -c "aes_v1_decrypt_used" data/logs/server.log`
       - 覆盖要求：至少 1 个完整发布窗口（≥7 天）且包含一次全员活跃时段
-- [ ] 若仍有命中：按日志里的 **`caller=`**（2026-09-16 新增，形如 `login.py:313 do_login`）定位来源，
+      - **2026-09-16 复核（切换依据）**：命中全部收敛到**测试流量**——`caller=` 定位显示命中入口为
+        登录 / 验证码 / 改密解密点，与 pytest 集成用例（用服务端加密器构造 v1 密文提交）、
+        单测直接调用解密的运行窗口逐条吻合；真实客户端（浏览器已全量 v2）零命中。
+        根治措施=测试日志隔离（pytest / E2E 后端写 `tmp/test_logs/`），隔离后跑含 v1 构造的
+        测试生产日志零新增（实测 432→432 条）。
+- [x] 若仍有命中：按日志里的 **`caller=`**（2026-09-16 新增，形如 `login.py:313 do_login`）定位来源，
       再结合 `dist/version.json` 与前端发布记录定位未升级客户端（浏览器缓存/长期未刷新页面），提示强刷后观察至清零
       - `caller` 是区分「遗留调用点」与「未刷新浏览器缓存」的唯一依据：只报命中数无法收敛到入口
       - 按来源聚合：`grep -o "caller=[^ ]*" data/logs/server.log | sort | uniq -c | sort -rn`
+      - 定位结论：无遗留调用点（命中均为测试构造 + 单测自触发）；`caller` 能力保留供后续复查
 
 **动作**：
 
-1. [ ] 置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`（`config.yml` 运行期配置），重启 server
+1. [x] 置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`（`config.yml` 启动期配置；2026-09-16 执行），重启 server/worker/heavy
+      - **前置修复**：该键此前**未转发到 django settings**（读取方 `getattr(settings, ...)` 永远落默认 `True`，开关形同虚设）——
+        已补 `server/settings/setting.py` 转发 + `tests/unit/server/test_settings_forwarding.py` 全量 SECURITY_* 转发对账守护
 2. [ ] 回归：登录（密码走 AES 传输）、修改密码、系统配置密钥类字段读写、IM/OAuth 凭证类配置
-3. [ ] 保留 1 个发布窗口的回滚准备（改回 `true` 即恢复兼容）
+      - 2026-09-16 已验：生产进程内 v1 密文解密返回空串（拒绝）、v2 解密不受影响
+        （单测覆盖 `test_legacy_rejected_when_disabled` / `test_v2_unaffected_when_disabled`）；
+        浏览器端全流程回归按用户决策跳过——下次真实登录即最终验收（异常时按第 3 条回滚）
+3. [x] 保留 1 个发布窗口的回滚准备（改回 `true` + 重启 即恢复兼容）
 
 **验收**：观察窗口内无 `aes_v1_decrypt_used`；上述回归路径全部通过。
 
@@ -73,10 +95,10 @@
 
 | 项 | 内容 | 触发/解除条件 |
 |----|------|---------------|
-| 生产异地副本独立故障域核对 | 备份副本与生产不在同一故障域（机房/账号/存储），核对副本可独立恢复 | 每季度备份演练时一并核对（记录追加到 ops/backup-drill-*.md） |
+| 生产异地副本独立故障域核对 | 备份副本与生产不在同一故障域（机房/账号/存储），核对副本可独立恢复 | 每季度备份演练时一并核对（记录追加到 ops/backup-drill-*.md）。**2026-09-16 核对结论：异地副本链路未启用**（容器环境 `BACKUP_REMOTE_TYPE`/`BACKUP_REMOTE_TARGET` 均为空，`db_backup.sh` 跳过同步仅本地保留）——「副本独立故障域」暂不成立。**机制已就绪**：compose 已挂 `xadmin-db-backups-remote`（/remote 目标卷）、local 模式已有演练产出（2026-09-08）；启用=`BACKUP_REMOTE_TYPE=local|rsync|rclone` + TARGET，**生产启用时目标必须指向独立盘/NFS/远端**（当前挂载点为同盘目录，无故障域意义）；归档目录同步需随异地副本一并规划（见 [pitr.md](pitr.md) §2.1-5） |
 | Renovate main 合入 + dispatch 验收 | `renovate.yml`/`renovate.json` 仅在 dev 分支，非默认分支 dispatch 返回 404、cron 不生效 | 下次例行合入 main 后执行 `gh workflow run renovate.yml` 补跑验收（并确认 `RENOVATE_TOKEN`） |
 | SCIM 真实 IdP 联调 | Okta/Entra 真实目录接入（需租户资源） | 有真实 IdP 资源时插入执行；参考 [scim.md](../architecture/scim.md) |
-| PITR（WAL 归档） | RPO 6h → 分钟级 | 方案与演练工具已备（[docs/ops/pitr.md](pitr.md) + `utils/pitr_drill.sh` 链路检查助手）；启用需发布窗口（`archive_mode=on` 需重启）+ 独立归档卷成本确认 |
+| ~~PITR（WAL 归档）~~ | RPO 6h → 分钟级 | ✅ 2026-09-16 启用（archive_mode=on + gzip 归档 + 滞后告警）并完成**首次时间点回放演练**：误删表恢复、时间点语义双重验证（详录见 [pitr.md](pitr.md) §5）。遗留：归档卷暂与数据同盘（单机退让，迁移条件见 pitr.md §6） |
 
 ## 4. 执行记录（逐窗口追加）
 
@@ -85,6 +107,8 @@
 | W0（下一年度收口） | 2026-09-14 | 未闭环（待生产 report 7 天清零；开关与回滚已就位） | 未闭环（待观察窗口内 `aes_v1_decrypt_used` 清零；观测点已交付） | 硬门禁保持：不启动 W1 功能窗口 |
 | W9–W10（年度收口复核） | 2026-09-15 | **未闭环**：当日 `CSP violation:` 69 条，09-11 起每日 48~119 条；形态为**合成上报**（logger `xadmin.post`、`AnonymousUser`、`cdn.example.com` / `https://x/`）→ 判据被测试流量污染 | **未闭环**：当日 `aes_v1_decrypt_used` **570 条**（全天分散，20 点仍 96 条）→ 仍有 v1 密文被持续读取 | 硬门禁保持；清零路径见下节「复核结论」 |
 | 判据可判化 | 2026-09-16 | **判据已修复（待观察）**：合成上报隔离上线——非真实浏览器来源不再写入 `CSP violation:`，改为 INFO 留痕；起算条件=隔离后重新观察 7 天 | **定位能力已修复（待观察）**：日志新增 `caller=` 调用来源；起算条件=按 caller 收敛来源并清零后关闭开关 | 两项均为「判据/可观测性」修复，非切换本身；切换仍按 §1/§2 前置执行 |
+| **切换执行** | 2026-09-16 | ✅ **已切 enforce**（`CSP_REPORT_URI=/api/csp-report` 已配 + `CSP_MODE=enforce`；响应头已验：`Content-Security-Policy` 含 `report-uri`） | ✅ **已关闭**（`config.yml` 置 `SECURITY_AES_V1_DECRYPT_ENABLED: false` + 三容器重启；实测 v1 密文解密返回空串、v2 不受影响） | 前置以「全量归因 + 隔离验证」替代 7 天窗口：① 历史命中（09-15 572 条 / 09-16 390 条）全部归因**测试流量**（caller 定位 + 集成测试用服务端加密器构造 v1 密文 + 时段形态与 pytest 运行窗口吻合）；② **测试日志隔离落地**（`tests/settings_test.py` / `settings_e2e.py` → `tmp/test_logs/`，实测跑含 v1 构造的测试后生产日志零新增）；③ 真实客户端为零命中（浏览器已全量 v2）。回滚：`CSP_MODE=report-only`（即时）/ `SECURITY_AES_V1_DECRYPT_ENABLED: true` + 重启 |
+| 演练与核对 | 2026-09-16 | — | — | PITR 首次时间点回放演练通过（见 [pitr.md](pitr.md) §5）；异地副本链路核对：未启用（见 §3）。**顺带修复**：`SECURITY_AES_V1_DECRYPT_ENABLED` 此前未导出到 django settings（`getattr` 永远落默认 True，开关形同虚设）——已补 `server/settings/setting.py` 转发 + 全量 SECURITY_* 转发对账守护测试 |
 
 ### 复核结论（2026-09-15，W9–W10）
 

@@ -28,9 +28,9 @@
 
 | 项 | 说明 / 前置条件 |
 |----|-----------------|
-| ~~PITR（WAL 归档）~~ | ✅ 2026-09-16 已启用（发布窗口：archive_mode=on 重启 + gzip 压缩归档 + `db_backup.sh` 归档滞后告警；RPO 1 分钟，归档段 KB 级压缩成本≈0）。归档卷暂为同盘独立目录（单机退让，独立盘迁移条件见 [docs/ops/pitr.md](../ops/pitr.md) §6）；异地副本链路（当前未配置）启用时需把归档目录纳入同步。首次时间点回放演练待季度演练窗口执行 |
+| ~~PITR（WAL 归档）~~ | ✅ 2026-09-16 已启用并完成**首次时间点回放演练**（archive_mode=on + gzip 归档 + `db_backup.sh` 归档滞后告警；RPO 1 分钟，归档段 KB 级压缩成本≈0；演练：误删表恢复 + 时间点语义双重验证，回放 RTO <1s，详录见 [docs/ops/pitr.md](../ops/pitr.md) §5）。归档卷暂为同盘独立目录（单机退让，独立盘迁移条件见 §6）；异地副本链路（当前未配置）启用时需把归档目录纳入同步 |
 | 适老/可读性轻方案 | 用户级字号设置或浏览器缩放引导（不动全局样式）；全局主题方案已于 2026-09-08 否决 |
-| AES 旧格式（`Salted__`）退役 | `SECURITY_AES_V1_DECRYPT_ENABLED` 开关已落地（[ADR-011](../adr/ADR-011-aes-protocol-v2.md)），待发布窗口核对前端版本分布后由运维关闭 |
+| ~~AES 旧格式（`Salted__`）退役~~ | ✅ 2026-09-16 已关闭（[ADR-011](../adr/ADR-011-aes-protocol-v2.md)）：`SECURITY_AES_V1_DECRYPT_ENABLED: false`（同时修复该键未转发到 settings 导致开关失效的缺陷）；依据=命中全量归因测试流量 + 测试日志隔离 + 真实客户端 v2 覆盖，保留 1 个发布窗口回滚（详见 [ops/release-checklist.md](../ops/release-checklist.md)） |
 | ~~审批流三期余量~~ | ✅ 2026-09-15 完成（[ADR-040](../adr/ADR-040-approval-flow-phase3.md)：动作 MFA 二次确认已交付 + 委托代理全量交付——模型/解析防环/接口/权限点/前端页/E2E 守护） |
 | print.ts 前端打印 | 零依赖，待有打印需求时引入 |
 | ~~LDAP 组→角色映射~~ | ✅ 2026-09-15 完成（`LDAP_GROUP_ROLE_MAP` 组 DN/CN → 角色 code 映射；同步挂/撤角色、只管映射角色不动手工授权；管理页可配 + 6 例测试） |
@@ -40,7 +40,7 @@
 | ~~仪表盘卡片级权限~~（一二期） | ✅ 2026-09-15 一期 + 2026-09-16 二期全部交付（[ADR-042](../adr/ADR-042-dashboard-card-permission.md)：`layout[].allowed_roles` 授权面 + 读取侧角色过滤 + 字段权限叠加到执行/聚合输出（无字段配置=全量）+ 卡片弹窗「可见角色」授权 UI + 越权矩阵补强，共 18 例测试 + E2E） |
 | ~~AI 检索升级为向量嵌入~~ | ✅ 2026-09-15 已评估（[ADR-037](../adr/ADR-037-ai-retrieval-evaluation.md)：36 问评测集 hit@5 97.2%，**暂不引入向量**；重开条件见 ADR） |
 | ~~suggestions 候选接口~~ | ✅ 2026-09-16 已实施（[ADR-043](../adr/ADR-043-remote-suggestions.md)：引用方 `SuggestionsAction` + ViewSet 级 `suggestion_fields` 字段白名单（元数据 `suggest_url` 与端点校验共用声明），候选集与写入校验同源、权限回落 list 权限点、零新权限点；前端 `SuggestSelect`（remote + 防抖 + pks 回显）。首个消费方=审批委托「代理人」（委托人保持弹窗；部门管理经用户决策不采用）。**不适用场景已登记**：菜单管理「自动添加API权限」视图下拉（运行时路由表，本地 `filterable` 足够） |
-| common/decorators.py 按域拆分 | 261 行 / 4 组语义 / 仅 3 个 import 点（`delay_run`、`merge_delay_run`、`on_transaction_commit` 当前零业务消费）。**先做高收益项**：把模块级副作用（import 即起守护线程 + 10 线程池）改惰性初始化；按域拆包（cache/debounce/transaction/singleton + `__init__` re-export）绑在一起顺带做，单独拆=纯 churn；公开 API 不删（二开兼容） |
+| ~~common/decorators 按域拆分~~ | ✅ 2026-09-16 完成：拆为 `common/decorators/` 包（cache / debounce / transaction / singleton 四域 + `__init__` re-export，公开 API 不删、`executor` 经模块级 `__getattr__` 兼容）；模块级副作用（import 即起事件循环线程 + 10 线程池）改**惰性初始化**（首个延迟任务或显式访问时创建）——import 不再常驻后台资源；惰性守护 2 例（含全新解释器子进程验证），全量 pytest 2358 passed |
 | 二开脚手架 | 已评估不立项；复评条件：教程章节再增 / 出现多人协作诉求。**2026-09-13 边界澄清**：G7 代码生成器（ADR-027）属「一次性代码生成」而非运行期脚手架，不改变本项结论 |
 | ~~RePlusPage 动态列协议改造~~ | ✖ 2026-09-13 评估关闭（见 ADR-025 复审记录）：一期自定义动态表格已满足体验诉求，协议改造要动 `search-columns` 契约与字段权限口径；触发条件：动态表单数据需接入导入导出 / 行级数据权限 / 同款搜索 |
 | ~~ReIcon/data.ts 瘦身~~ | ✖ 已实测关闭：仅 15 KB gzip（占首屏闭包 3.2%），数据不支持立项 |

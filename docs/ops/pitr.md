@@ -79,6 +79,12 @@ recovery_target_time = '2026-09-16 12:00:00+08'
 recovery_target_action = 'promote'
 ```
 
+另需**与主库兼容的实例参数**（否则启动即中止，2026-09-16 演练实测）：
+`max_connections` 必须 ≥ 主库值（本部署主库为 200），默认 100 时报
+`FATAL: recovery aborted because of insufficient parameter settings`——
+临时恢复实例以 `postgres -c max_connections=200` 启动（其余 `-c` 参数如 `archive_*` 恢复实例不需要）；
+数据目录清空前先 `docker rm -f` 容器，避免旧实例持有目录。
+
 ## 4. 回滚
 
 - 关闭：`archive_mode=off` + 重启（归档文件保留可继续用于历史回放）；
@@ -88,7 +94,8 @@ recovery_target_action = 'promote'
 
 | 日期 | 操作人 | 目标时间点 | RTO（到可查询） | RPO（实际丢失窗口） | 结论 |
 |------|--------|-----------|-----------------|--------------------|------|
-| （待发布窗口启用后首次执行） | — | — | — | — | — |
+| 2026-09-16 | 运维（用户授权） | 12:55:37+08（演练表 INSERT 后 / DROP 前） | 回放 <1s（数据量 21MB）；含解压基础备份约 30s | 0（目标点前数据零丢失；归档滞后 34s，RPO ≤ archive_timeout=60s） | ✅ 首次时间点回放演练通过：误删表与数据完整恢复、`pg_last_xact_replay_timestamp` 停在 INSERT 时刻（12:55:32）；对照恢复到 INSERT 前（12:55:25）确认表不存在，时间点语义精确 |
+| 2026-09-16 | 演练备注 | — | 一次中止（参数不足） | — | 首次启动因 `max_connections=100 < 主库 200` 中止（见 §3 新增参数要求）；补参后断点续传成功。生产库演练表已 DROP 无残留、`pg_stat_archiver` 无失败记录 |
 
 ## 6. 成本评估口径（2026-09-16 实测口径）
 
