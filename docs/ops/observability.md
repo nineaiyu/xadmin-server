@@ -71,6 +71,13 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 **校准方法**：观察 ≥3 个月后按实际数据校准目标值与告警阈值（现维持下方初始口径）；初期形态
 （2026-09-16）：周期任务全 SUCCESS、HTTP 指标待流量积累。
 
+**采集机制（A2，2026-09-17 上线）**：`utils/slo_snapshot_cron.sh` 每日（宿主 cron / systemd timer）
+调用 `scripts/slo_snapshot.py --append`，把快照追加进 JSONL（`SLO_SNAPSHOT_FILE`，默认
+`tmp/slo_snapshots.jsonl`）——HTTP/任务为进程累计口径，**跨重启的趋势**才有意义。
+首次采集（2026-09-17）：可用性 100.000%（23 请求）、P95 0.05s、任务成功率 99.89%（2831 个任务）。
+**校准触发**：采集跨度 ≥3 个月（2026-12 起季度巡检核对）→ 按实际数据回填目标值到下方表格与
+[metrics.md](../metrics.md)。
+
 ### SLO（初始口径，按实际基线校准并回填 metrics.md）
 
 | SLO | 计算 | 目标 | 告警阈值（建议） |

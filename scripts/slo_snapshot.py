@@ -21,12 +21,14 @@ SLO 四项（定义见 docs/ops/observability.md §三）：
 """
 
 import argparse
+import datetime
 import json
 import math
 import os
 import re
 import sys
 import urllib.request
+from pathlib import Path
 
 # Prometheus 文本样本行：name{k="v",...} value
 _LINE_RE = re.compile(r"^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{([^}]*)\})?\s+([0-9eE.+-]+)$")
@@ -134,6 +136,24 @@ def fetch(url: str, token: str, timeout: int = 10) -> str:
         return response.read().decode()
 
 
+def build_snapshot_record(result: dict, now=None) -> dict:
+    """快照记录（JSONL 行载荷）：UTC 时间戳 + 观测值。
+
+    累积文件用于 ≥3 个月后的 SLO 目标值校准（observability §三「SLO 数据源与校准」）；
+    HTTP/任务指标为进程启动起累计，单点无意义、趋势有意义。
+    """
+    moment = now or datetime.datetime.now(datetime.UTC)
+    return {"ts": moment.isoformat(timespec="seconds"), "result": result}
+
+
+def append_snapshot(path: str, record: dict) -> None:
+    """把快照记录追加进 JSONL 文件（父目录自动创建）。"""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
 def render(result: dict) -> str:
     lines = [
         "SLO 快照（HTTP/任务为进程启动起累计，非月度口径——正式校准结合长期数据）",
@@ -172,6 +192,11 @@ def main() -> int:
     )
     parser.add_argument("--token", default=os.environ.get("METRICS_TOKEN", ""), help="METRICS_TOKEN")
     parser.add_argument("--json", action="store_true", help="输出 JSON（便于归档比对）")
+    parser.add_argument(
+        "--append",
+        default=os.environ.get("SLO_SNAPSHOT_FILE", ""),
+        help="把本次快照追加进 JSONL 文件（长期累积，用于 SLO 校准）",
+    )
     args = parser.parse_args()
 
     if not args.token:
@@ -183,6 +208,10 @@ def main() -> int:
         print(f"拉取指标失败：{exc}", file=sys.stderr)
         return 1
     result = compute_slo(parse_metrics(text))
+    if args.append:
+        record = build_snapshot_record(result)
+        append_snapshot(args.append, record)
+        print(f"已追加快照：{args.append}（ts={record['ts']}）")
     print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else render(result))
     return 0
 

@@ -2,7 +2,16 @@
 # -*- coding: utf-8 -*-
 """SLO 快照脚本单测：指标文本解析与四项 SLO 计算（缺数据路径）。"""
 
-from scripts.slo_snapshot import compute_slo, parse_label_pairs, parse_metrics
+import datetime
+import json
+
+from scripts.slo_snapshot import (
+    append_snapshot,
+    build_snapshot_record,
+    compute_slo,
+    parse_label_pairs,
+    parse_metrics,
+)
 
 
 class TestParse:
@@ -58,3 +67,23 @@ class TestComputeSlo:
         assert result["task_success"]["value"] is None
         assert result["queue_backlog"]["value"] is None
         assert "note" in result["availability"]
+
+
+class TestSnapshotAccumulation:
+    """长期累积（--append）：JSONL 记录形状与追加语义，供 SLO 校准采集。"""
+
+    def test_record_shape_has_utc_ts_and_result(self):
+        moment = datetime.datetime(2034, 10, 1, 6, 17, tzinfo=datetime.UTC)
+        record = build_snapshot_record(compute_slo([]), now=moment)
+        assert record["ts"] == "2034-10-01T06:17:00+00:00"
+        assert set(record["result"]) >= {"availability", "p95_seconds", "task_success", "queue_backlog"}
+
+    def test_append_snapshot_writes_jsonl(self, tmp_path):
+        target = tmp_path / "nested" / "slo_snapshots.jsonl"
+        append_snapshot(str(target), build_snapshot_record(compute_slo([])))
+        append_snapshot(str(target), build_snapshot_record(compute_slo([])))
+        lines = target.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 2
+        for line in lines:
+            payload = json.loads(line)
+            assert "ts" in payload and "result" in payload
