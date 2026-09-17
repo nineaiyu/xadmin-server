@@ -14,6 +14,7 @@ from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from common.core.modules import filter_menu_queryset
 from common.utils import get_logger
 from server.utils import get_current_request, set_current_request
 from system.services import FieldPermission, Menu
@@ -35,7 +36,8 @@ def get_user_menu_queryset(user_obj):
     if has_role:
         # return get_filter_queryset(Menu.objects.filter(is_active=True).filter(q), user_obj)
         # 菜单通过角色控制，就不用再次通过数据权限过滤了，要不然还得两个地方都得配置
-        return Menu.objects.filter(is_active=True).filter(q)
+        # 功能模块裁剪：停用模块的菜单子树与权限码在此统一隐藏（未配置停用模块时零开销）
+        return filter_menu_queryset(Menu.objects.filter(is_active=True).filter(q))
     return None
 
 

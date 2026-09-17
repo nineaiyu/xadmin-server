@@ -53,6 +53,7 @@ from system.views.dashboard import DashboardViewSet
 from system.views.dataset import DashboardViewSet as DataDashboardViewSet
 from system.views.dataset import DatasetViewSet
 from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
+from system.views.modules import SystemModuleViewSet
 from system.views.monitor import MonitorViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
 from system.views.open_oauth import (
@@ -163,6 +164,8 @@ router.register("online", UserOnlineViewSet, basename="online_socket")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")
+# 功能模块清单（只读）：模块等级/依赖/启停状态与裁剪配置片段
+router.register("modules", SystemModuleViewSet, basename="module")
 # 数据集与仪表盘（可视化一期）
 router.register("datasets", DatasetViewSet, basename="dataset")
 router.register("dashboards", DataDashboardViewSet, basename="dashboards")

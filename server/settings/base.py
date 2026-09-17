@@ -70,6 +70,13 @@ SECURE_SSL_REDIRECT = CONFIG.SECURITY_HTTPS_REDIRECT_ENABLED
 # Application definition
 XADMIN_APPS = CONFIG.XADMIN_APPS
 
+# 功能模块裁剪（软裁剪）：MODULE_PRESET 选基线（core/standard/full），
+# MODULE_ENABLE / MODULE_DISABLE 做显式增删。模块清单、依赖校验与裁剪动作
+# 见 common/core/modules.py（默认 full = 全部开启，行为与改造前一致）
+MODULE_PRESET = CONFIG.MODULE_PRESET
+MODULE_ENABLE = CONFIG.MODULE_ENABLE
+MODULE_DISABLE = CONFIG.MODULE_DISABLE
+
 # 表前缀设置
 # 1.指定配置
 # DB_PREFIX={
@@ -115,6 +122,8 @@ if DEBUG or DEBUG_DEV:
 MIDDLEWARE = [
     "server.middleware.StartMiddleware",
     "server.middleware.RequestMiddleware",
+    # 功能模块裁剪：停用模块的请求直接 404（无停用模块时零开销）
+    "server.middleware.ModuleGateMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",

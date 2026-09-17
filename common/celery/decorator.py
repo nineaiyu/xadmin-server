@@ -36,7 +36,7 @@ def get_after_app_ready_tasks():
     return _after_app_ready_start_tasks
 
 
-def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwargs=None, description=""):
+def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwargs=None, description="", module=None):
     """
     Warning: Task must have not any args and kwargs
     :param crontab:  "* * * * *"
@@ -45,6 +45,8 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
     :param kwargs: {}
     :param description: "
     :param name: ""
+    :param module: 归属功能模块 id（见 common/core/modules.py）：模块被停用时该任务
+        不注册（历史注册条目在启动时清理），重新启用自动恢复；None = 内核任务
     :return:
     """
     if crontab is None and interval is None:
@@ -67,6 +69,7 @@ def register_as_period_task(crontab=None, interval=None, name=None, args=(), kwa
                     "args": args,
                     "kwargs": kwargs if kwargs else {},
                     "description": description,
+                    "module": module,
                 }
             }
         )

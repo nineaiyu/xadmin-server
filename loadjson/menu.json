@@ -13263,5 +13263,51 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3e48aac3-b1b8-4f5d-85b6-7ceac64ce2f0",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00.000Z",
+   "deleted_at": null,
+   "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+   "menu_type": 1,
+   "name": "SystemModule",
+   "rank": 182,
+   "path": "/system/module/index",
+   "component": "system/module/index",
+   "is_active": true,
+   "meta": "ab253428-a3f3-4648-a4f6-a479292b03b7",
+   "method": null,
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "fa8b82ec-fad3-4469-82c6-f428dabe7f62",
+  "fields": {
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00.000Z",
+   "deleted_at": null,
+   "parent": "3e48aac3-b1b8-4f5d-85b6-7ceac64ce2f0",
+   "menu_type": 2,
+   "name": "list:SystemModule",
+   "rank": 200,
+   "path": "api/system/modules$",
+   "component": null,
+   "is_active": true,
+   "meta": "ede27e68-b901-4602-a97c-fc6fd5572eba",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

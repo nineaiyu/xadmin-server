@@ -14,6 +14,10 @@
 重复执行按编码/用户名幂等更新，不产生重复数据。
 """
 
+import json
+import os
+
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -30,6 +34,21 @@ from system.models import (
 from system.models.approval import ApprovalFlow, ApprovalFlowNode
 
 DEFAULT_PASSWORD = "Demo@2026!"
+
+
+def _builtin_flow_pks() -> set:
+    """内置种子（loadjson/approvalflow.json）里的固定主键集合。
+
+    这些行由 load_init_json 维护，reset 不得删除（原因见 _clean 注释）。
+    """
+
+    path = os.path.join(settings.PROJECT_DIR, "loadjson", "approvalflow.json")
+    try:
+        with open(path, encoding="utf-8") as fp:
+            return {row["pk"] for row in json.load(fp)}
+    except (OSError, ValueError, KeyError):  # pragma: no cover - 种子文件缺失/损坏
+        return set()
+
 
 # 示例组织：部门（code, 名称, 主管用户名）
 DEPTS = [
@@ -110,7 +129,13 @@ class Command(BaseCommand):
         DeptInfo.objects.filter(code__in=[d[0] for d in DEPTS]).delete()
         UserRole.objects.filter(code__in=list(ROLE_NAMES)).delete()
         DataPermission.objects.filter(name__startswith="示例-").delete()
-        ApprovalFlow.objects.filter(code__in=["demo_expense", "demo_onboarding"]).delete()
+        # 内置种子（loadjson/approvalflow.json）里的固定主键行由 load_init_json 维护，
+        # reset 不得删除：删掉后按 code 重建会换主键，之后 load_init_json 导入同一 code
+        # 会撞唯一约束并回滚**整次**导入（loaddata 单事务）。存在内置行时本命令
+        # 通过 update_or_create 复用它（主键保持稳定）。
+        ApprovalFlow.objects.filter(code__in=["demo_expense", "demo_onboarding"]).exclude(
+            pk__in=_builtin_flow_pks()
+        ).delete()
         DynamicForm.objects.filter(name__in=["示例-入职登记表"]).delete()
         self.stdout.write("已清理既有示例数据")
 

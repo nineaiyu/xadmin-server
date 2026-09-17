@@ -199,7 +199,7 @@ def auto_clean_pat_job():
 
 
 @shared_task
-@register_as_period_task(crontab="42 3 * * *")
+@register_as_period_task(crontab="42 3 * * *", module="approval")
 def auto_expire_approval_job():
     """敏感操作审批单超时（APPROVAL_PENDING_TIMEOUT，默认 3 天）置 EXPIRED。"""
     from system.utils.approval import expire_pending_approvals
@@ -211,7 +211,7 @@ def auto_expire_approval_job():
 
 
 @shared_task
-@register_as_period_task(crontab="0 9 * * *")
+@register_as_period_task(crontab="0 9 * * *", module="approval")
 def auto_remind_approval_job():
     """待审批超时提醒（APPROVAL_REMIND_HOURS，默认 24h）：每日 09:00 对未处理且未提醒过的单补发一次。"""
     from system.utils.approval import remind_pending_approvals
@@ -223,7 +223,7 @@ def auto_remind_approval_job():
 
 
 @shared_task
-@register_as_period_task(crontab="52 3 * * *")
+@register_as_period_task(crontab="52 3 * * *", module="approval")
 def auto_clean_approval_job():
     """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
     from system.utils.approval import clean_expired_approvals
@@ -235,7 +235,7 @@ def auto_clean_approval_job():
 
 
 @shared_task
-@register_as_period_task(crontab="*/30 * * * *")
+@register_as_period_task(crontab="*/30 * * * *", module="approval_flow")
 def auto_remind_approval_flow_job():
     """流程节点超时提醒：节点 timeout_hours 超时未处理，向指派人补发一次（每任务每日一次）。"""
     from system.utils.approval_flow import remind_pending_tasks
@@ -247,7 +247,7 @@ def auto_remind_approval_flow_job():
 
 
 @shared_task
-@register_as_period_task(crontab="12 4 * * *")
+@register_as_period_task(crontab="12 4 * * *", module="approval_flow")
 def auto_clean_approval_flow_job():
     """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天，分批删，级联任务）。"""
     from system.utils.approval_flow import clean_finished_instances

@@ -124,7 +124,7 @@ def _precreate_record(report) -> str:
 
 
 @shared_task
-@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发")
+@register_as_period_task(crontab="5 * * * *", description="定时报表调度分发", module="analysis")
 def dispatch_scheduled_reports():
     """每小时扫描 active 报表并派发到期的执行任务（三档频次；cron 报表由每分钟任务负责）。"""
     from system.models.dataset import Report
@@ -145,7 +145,7 @@ def dispatch_scheduled_reports():
 
 
 @shared_task
-@register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发")
+@register_as_period_task(crontab="* * * * *", description="定时报表 cron 表达式调度分发", module="analysis")
 def dispatch_cron_reports():
     """每分钟扫描带 cron 表达式的 active 报表并派发（三档报表由每小时任务负责，职责互斥）。"""
     from system.models.dataset import Report

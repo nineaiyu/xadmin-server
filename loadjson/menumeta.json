@@ -14265,5 +14265,55 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "ab253428-a3f3-4648-a4f6-a479292b03b7",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0,
+   "title": "menus.moduleManager",
+   "icon": "ep:grid"
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "ede27e68-b901-4602-a97c-fc6fd5572eba",
+  "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0,
+   "title": "U-获取功能模块清单",
+   "icon": ""
+  }
  }
 ]

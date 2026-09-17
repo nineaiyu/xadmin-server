@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 12/25/2023
 import os.path
+import tempfile
 
 from django.conf import settings
 from django.core.management.commands.loaddata import Command as LoadCommand
@@ -12,9 +13,11 @@ from django.db import DEFAULT_DB_ALIAS
 from django.db.models.signals import ModelSignal
 
 from common.core.config import SysConfig
+from common.core.modules import ModuleSeedFilter
 from settings.models import Setting
 from system.models import *
 from system.utils.dict import invalid_dict_cache
+from system.utils.seed import build_seed_fixtures
 
 
 class Command(LoadCommand):
@@ -60,16 +63,32 @@ class Command(LoadCommand):
     def handle(self, *args, **options):
         ModelSignal.send = lambda *args, **kwargs: []  # 忽略任何信号
 
-        fixture_labels = []
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
-        for model in self.model_names:
-            fixture_labels.append(os.path.join(file_root, f"{model._meta.model_name}.json"))
         options["ignore"] = ""
         options["database"] = DEFAULT_DB_ALIAS
         options["app_label"] = ""
         options["exclude"] = []
         options["format"] = "json"
-        super().handle(*fixture_labels, **options)
+
+        # 装配待导入的种子（system/utils/seed.py）：
+        # 1. 功能模块裁剪：停用模块的菜单/权限点/字段权限绑定不入库（口径与运行期一致）；
+        # 2. 冲突预检：自然键被库内数据占用时跳过该行（loaddata 是单事务，一行冲突会回滚全部）；
+        # 未做任何裁剪且无冲突时直接用仓库里的原始种子文件
+        with tempfile.TemporaryDirectory(prefix="xadmin_seed_") as target_dir:
+            fixture_labels, notes, trimmed = build_seed_fixtures(
+                self.model_names,
+                file_root,
+                target_dir,
+                module_filter=ModuleSeedFilter.build(),
+                using=DEFAULT_DB_ALIAS,
+            )
+            if notes:
+                for note in notes:
+                    self.stdout.write(self.style.WARNING(f"[种子冲突] {note}"))
+                self.stdout.write(
+                    self.style.WARNING(f"[种子冲突] 共跳过 {len(notes)} 处（库内数据优先，未改动库内对象）")
+                )
+            super().handle(*fixture_labels, **options)
         # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
         # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
         invalid_dict_cache()

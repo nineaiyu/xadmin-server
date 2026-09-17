@@ -132,7 +132,7 @@ def send_mail_attachment_async(*args, **kwargs):
 
 
 @shared_task(verbose_name=_("Periodic delete monitor"))
-@register_as_period_task(interval=3600)
+@register_as_period_task(interval=3600, module="ops")
 @after_app_ready_start
 def auto_clean_monitor_logs():
     """心跳历史保留期清理（MONITOR_RETENTION_DAYS，默认 30 天），按 pk 分批删除。
@@ -191,9 +191,17 @@ def clean_celery_periodic_tasks():
 @after_app_ready_start
 def create_or_update_registered_periodic_tasks():
     from .celery.decorator import get_register_period_tasks
+    from .core.modules import is_module_enabled
 
     for task in get_register_period_tasks():
-        create_or_update_celery_periodic_tasks(task)
+        # 功能模块裁剪：停用模块的周期任务不注册；已注册的历史条目一并清理
+        # （重新启用模块后随本函数自动重建，无需人工干预）
+        for name, detail in task.items():
+            if not is_module_enabled(detail.get("module")):
+                logger.info(f"Skip periodic task of disabled module: {name}")
+                delete_celery_periodic_task(name)
+                continue
+            create_or_update_celery_periodic_tasks({name: detail})
 
 
 @shared_task(
@@ -203,7 +211,7 @@ def create_or_update_registered_periodic_tasks():
         and disk usage exceed the thresholds, and send an alert message to the administrator"""
     ),
 )
-@register_as_period_task(interval=60)
+@register_as_period_task(interval=60, module="ops")
 def check_server_performance_period():
     ServerPerformanceCheckUtil().check_and_publish()
 

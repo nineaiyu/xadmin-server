@@ -108,3 +108,22 @@ def auth_client(api_client, superuser):
     """以超级管理员身份请求（跳过权限校验，专注 ViewSet 冒烟）。"""
     api_client.force_authenticate(user=superuser)
     return api_client
+
+
+@pytest.fixture
+def module_config(settings):
+    """应用一次功能模块裁剪配置（preset / enable / disable）并清空派生缓存。
+
+    模块组合变更在生产环境需重启进程；测试中通过 settings + reset_module_state()
+    模拟同等效果（见 common/core/modules.py）。
+    """
+    from common.core.modules import reset_module_state
+
+    def _apply(preset="full", enable=(), disable=()):
+        settings.MODULE_PRESET = preset
+        settings.MODULE_ENABLE = list(enable)
+        settings.MODULE_DISABLE = list(disable)
+        reset_module_state()
+
+    yield _apply
+    reset_module_state()

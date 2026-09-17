@@ -24,6 +24,13 @@ class CommonConfig(AppConfig):
                 return
         super().ready()
 
+        # 功能模块裁剪：校验模块配置（未知模块/内核被关/依赖未满足 → 启动期 fail-fast），
+        # 并在存在停用模块时清理菜单/权限缓存（配置变更需重启，重启清理一次即可）
+        from .core.modules import invalidate_trimmed_caches, resolve_modules
+
+        resolve_modules()
+        invalidate_trimmed_caches()
+
         def background_task():
             time.sleep(0.1)
             django_ready.send(CommonConfig)

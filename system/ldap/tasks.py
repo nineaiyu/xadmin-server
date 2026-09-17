@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 @shared_task
-@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态）")
+@register_as_period_task(crontab="17 * * * *", description="LDAP 目录同步（用户/部门/状态）", module="ldap")
 def sync_ldap_directory_job():
     from system.ldap.sync import run_ldap_sync
 

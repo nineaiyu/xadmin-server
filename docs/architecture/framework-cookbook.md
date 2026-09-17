@@ -103,3 +103,28 @@ config.yml              XADMIN_APPS 注册 app
 - 页面级：`getDefaultAuths(instance, [...自定义动作])` 生成权限 map；
 - 按钮级：`hasAuth("动作:组件名")` 或 `<Auth value="...">`；
 - 三层权限机制见 `docs/architecture/{permission,data-permission,field-permission}.md`。
+
+## 七、功能模块与裁剪（二开起点）
+
+功能按 `core / standard / optional` 三级声明在 `common/core/modules.py`，通过 config.yml 裁剪，
+不改代码即可得到轻量后台（清单、语义红线与路线图见
+[模块化与功能裁剪.md](模块化与功能裁剪.md)）：
+
+```yaml
+MODULE_PRESET: standard   # full（默认）/ standard（去掉 9 个可选模块）/ core（仅内核）
+MODULE_DISABLE: [analysis, chat]
+```
+
+```bash
+python manage.py modules --preset standard --config   # 预演并输出可粘贴的配置片段
+```
+
+裁剪生效于五层：请求路由（404）、菜单与权限点（隐藏）、周期任务（不注册）、
+新装库的种子导入（不入库）、启动时的相关缓存清理；**关闭模块不删任何业务数据**。
+
+管理页：**系统管理 → 模块管理**（只读清单 + 可复制的配置片段）。
+物理移除：`python manage.py module remove <id>`（计划）→ `--apply`（种子清理 + 归档回滚）。
+
+新增业务模块：`generate_crud` 起骨架 → `XADMIN_APPS` 注册 →
+`python manage.py generate_module` 生成 `{app}/modules.py` 声明（或在内置 `MODULES` 补一条）
+→ `python manage.py modules` 验证（详见架构文档 §七/§九）。

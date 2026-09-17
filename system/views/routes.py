@@ -10,6 +10,7 @@ from rest_framework.generics import GenericAPIView
 from common.base.magic import cache_response
 from common.base.utils import format_menu_data, menu_list_to_tree
 from common.core.modelset import CacheDetailResponseMixin
+from common.core.modules import filter_menu_queryset
 from common.core.permission import get_user_menu_queryset
 from common.core.response import ApiResponse
 from system.models import Menu
@@ -18,7 +19,7 @@ from system.serializers.route import RouteSerializer
 
 def get_auths(user):
     if user.is_superuser:
-        menu_obj = Menu.objects.filter(is_active=True)
+        menu_obj = filter_menu_queryset(Menu.objects.filter(is_active=True))
     else:
         menu_obj = get_user_menu_queryset(user)
     if not menu_obj:
@@ -38,7 +39,9 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
         if user_obj.is_superuser:
             # 嵌套 meta（OneToOne）预取，缓存失效时不再每菜单一查
             route_list = RouteSerializer(
-                Menu.objects.filter(is_active=True, menu_type__in=menu_type).select_related("meta").order_by("rank"),
+                filter_menu_queryset(Menu.objects.filter(is_active=True, menu_type__in=menu_type))
+                .select_related("meta")
+                .order_by("rank"),
                 many=True,
                 ignore_field_permission=True,
             ).data

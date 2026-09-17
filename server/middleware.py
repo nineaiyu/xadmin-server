@@ -11,7 +11,8 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
+from django.utils.translation import gettext_lazy as _
 
 from .utils import set_current_request
 
@@ -62,6 +63,32 @@ class EndMiddleware:
         response = self.get_response(request)
         request._e_time_end = time.time()
         return response
+
+
+class ModuleGateMiddleware:
+    """功能模块裁剪的路由级拦截（见 common/core/modules.py）。
+
+    命中「已停用模块」路由前缀的请求直接返回 404，语义等价于该功能不存在，
+    避免出现「页面已隐藏、接口仍可达」的半残状态。未配置停用模块时零开销。
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+        from common.core.modules import disabled_route_patterns
+
+        self.patterns = disabled_route_patterns()
+
+    def __call__(self, request):
+        if self.patterns:
+            path = request.path
+            for pattern in self.patterns:
+                if pattern.match(path):
+                    return JsonResponse(
+                        {"code": 1001, "detail": str(_("Feature not enabled")), "data": None},
+                        status=404,
+                    )
+        return self.get_response(request)
 
 
 class RequestMiddleware:

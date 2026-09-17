@@ -57,6 +57,13 @@ class Config(dict):
         "SENTRY_ENVIRONMENT": "production",
         "SENTRY_TRACES_SAMPLE_RATE": 0.0,
         "XADMIN_APPS": [],
+        # ------------------------------------------------------------------
+        # 功能模块裁剪（软裁剪）：预设 + 显式增删，模块清单与裁剪语义见
+        # common/core/modules.py；默认 full = 全部开启，与改造前行为一致
+        # ------------------------------------------------------------------
+        "MODULE_PRESET": "full",  # core / standard / full
+        "MODULE_ENABLE": [],  # 在预设基础上额外启用，如 ["chat"]
+        "MODULE_DISABLE": [],  # 在预设基础上关闭，如 ["analysis", "chat"]
         # 表前缀 abc_
         "DB_PREFIX": "",
         # redis
