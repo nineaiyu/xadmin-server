@@ -28,8 +28,8 @@ jobs:
 
       - name: Run tests (parallel)
         # -n auto 并行（sqlite 内存库每 worker 独立、FakeRedis 进程内无交叉污染）
-        # --cov-fail-under=78 覆盖率门禁：2026-09-11 实测 82%（ws/ws_monitor 补测后 95%）；
-        # 关键模块（权限/导入导出/WebSocket）的覆盖率另行按模块跟踪
-        run: pytest -n auto --cov --cov-report=term-missing --cov-fail-under=78
+        # --cov-fail-under=82 覆盖率门禁：2026-09-17 实测 87%（2534 passed）；
+        # 门禁保持 ≤ 实测 -2pp 的上移规则，关键模块（权限/导入导出/WebSocket）另行按模块跟踪
+        run: pytest -n auto --cov --cov-report=term-missing --cov-fail-under=82
 
       # 代码风格检查由 lint.yml 独立负责，此处不再重复执行 ruff
