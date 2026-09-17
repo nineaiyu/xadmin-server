@@ -249,6 +249,18 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 - **盘满（7.5M/8M，剩 524K）**：`gzip: stdout: No space left on device` 自然暴露 → 脚本清理临时文件 → **不产出损坏正式包**（无 `.sql.gz` / `.tmp` 残留）→ `exit=1`（单次模式退出码可供调度侧感知）→ WAL 归档巡检不中断（failing=f / pending=0）；
 - **结论**：备份链路磁盘耗尽 fail-safe（临时文件机制有效，首轮归档失败演练之后的写入失败面补测）；告警投递未配置（按设计静默跳过）；归档目录满（WAL 堆积型）与媒体包盘满为同构链路的未覆盖边界，随场景池滚动。
 
+### 第十四轮（2034-03，交付工程窗口）：DNS 恢复流程复演 + installer config 权限核对
+
+- **DNS 复演（隔离网络，零风险设计）**：独立 `drill_dns_net` + 3 个临时容器（client / target / bystander）：
+  基线解析均 OK → 对 target 执行 `disconnect` → `connect`（第五轮事故的触发操作序列）后**未复现**全网络解析失效
+  （当前 Docker 版本行为已变化，历史触发条件不复现）→ **恢复动作彩排**：同名重建容器
+  （`docker compose up -d --force-recreate` 等效）后解析正常，恢复流程有效；演练后容器/网络全清理，生产零接触；
+- **installer config 权限核对（第十二轮登记的跟进项）**：`prepare_config` 生成的 `config.txt`
+  （含 DB/Redis 密码与 SECRET_KEY）为 **umask 默认权限**（目录 755 / 文件 644，全局可读）、无任何 chmod；
+  **加固**：`chmod 700 ${CONFIG_DIR}` + `chmod 600 ${CONFIG_FILE}`（幂等，覆盖安装/升级/配置变更三处调用路径）；
+  沙盒双场景验证（全新安装 700/600、存量 755/644 幂等收敛）；
+- **结论**：DNS 恢复规范保留（重建容器动作经彩排）；installer 权限面与 host 侧口径对齐（第十二轮 644→600 的延伸）。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
