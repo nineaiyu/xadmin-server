@@ -109,6 +109,16 @@ EVENT_CATALOG = {
             "host": {"type": "string", "required": False, "description": _("Host name")},
         },
     },
+    # 运维告警（A1）：宿主侧 watcher（容器 OOM 等）事件，由 notify_ops_alert 发射
+    "system.ops_alert": {
+        "label": _("Ops alert"),
+        "version": 1,
+        "fields": {
+            "source": {"type": "string", "required": False, "description": _("Alert source")},
+            "event": {"type": "string", "required": False, "description": _("Event summary")},
+            "host": {"type": "string", "required": False, "description": _("Host name")},
+        },
+    },
     # 流程审批引擎：实例级事件（提交/终态），payload 只含摘要不含 form_data
     "flow.submitted": {
         "label": _("Flow application submitted"),

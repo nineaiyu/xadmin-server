@@ -116,6 +116,17 @@
 | `event` | string | 否 | Failure summary |
 | `host` | string | 否 | Host name |
 
+### `system.ops_alert`
+
+- 版本：1
+- 说明：Ops alert
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `source` | string | 否 | Alert source |
+| `event` | string | 否 | Event summary |
+| `host` | string | 否 | Host name |
+
 ### `flow.submitted`
 
 - 版本：1

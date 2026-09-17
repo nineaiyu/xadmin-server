@@ -103,3 +103,13 @@
 - **定位**：Security Audit workflow 邮件/页面，确认漏洞包、版本、严重级别、是否有 fix 版本。
 - **处置**：有 fix → 升级 patch 版本走独立 PR + 全量门禁；无 fix → 评估缓解（配置收紧/下线特性）并在
   `docs/security-review.md` 登记豁免理由与复查日期。
+
+## 16. 容器 OOM 告警（运维告警）
+
+- **定位**：站内信/邮件「运维告警：container oom」（出站事件 `system.ops_alert` 同源）；或宿主 watcher 日志
+  `OOM 事件：container=<name> image=<image>`。核对被杀容器：`docker inspect <容器> --format '{{.State.OOMKilled}} {{.State.ExitCode}}'`
+  （OOM 杀为 `true / 137`），必要时 `docker events --filter event=oom` 复核事件时间线。
+- **处置**：核对 `mem_limit` 与容器实际负载（备份容器流式架构峰值 < 16MB，保守下限参考 ≥ 32m）；写入型任务
+  （导出 / 报表）OOM 后检查临时文件残留；调大限额或错峰后重启容器，并回看告警是否再次出现。
+- **环境要求**：watcher 需部署在 Docker 宿主机（见 [observability.md](observability.md) §三「宿主侧 watcher」）；
+  未部署时该告警不会产生（`docker events` 仍可人工核查）。

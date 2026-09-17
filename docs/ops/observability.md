@@ -82,9 +82,44 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 
 ### 告警分级（以「可行动」为准，先收敛后扩充）
 
-- **P1（立即处置）**：可用性、队列积压、WAL 归档失败（既有 `check_wal_archive`）、备份失败告警；
+- **P1（立即处置）**：可用性、队列积压、WAL 归档失败（既有 `check_wal_archive`）、备份失败告警、容器 OOM；
 - **P2（当班处置）**：API 延迟、任务失败率；
 - **P3（周检处置）**：容量趋势（监控面板 + audit 周检）。
+
+### 告警覆盖清单（A1，滚动维护）
+
+| 场景 | 触发信号 | 投递链路 | 状态 |
+|------|----------|----------|------|
+| 备份失败（DB / 媒体 / 异地同步） | `db_backup.sh` 失败点 | `/api/common/api/backup-alert` → 站内信 + 邮件 + Webhook `system.backup_failure` | ✅ 已接 |
+| WAL 归档失败 / 积压 | `check_wal_archive` 双信号巡检 | 备份脚本日志（调度侧可感知） | ✅ 已接 |
+| Celery 任务失败 | `failure_handler` 信号 | 站内信 + 邮件 | ✅ 已接 |
+| 敏感操作 | 操作日志中间件 | 站内信 + 邮件 | ✅ 已接 |
+| Webhook 投递耗尽 | 投递任务 | 站内信 | ✅ 已接 |
+| API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
+| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`） | ✅ 已接 |
+| **容器 OOM** | `docker events` 的 `oom` 事件 | `utils/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
+| HTTP 可用性 / P95 延迟 / 队列积压 | Prometheus 指标 + SLO 阈值 | 指标端点已暴露；自动投递需外部 Prometheus / Alertmanager | ⏳ 登记（部署形态就绪后按需） |
+
+维护约定：新增告警必须经演练验证（本清单同步登记证据）；仅接已证实场景，避免告警噪音。
+
+### 宿主侧 watcher（容器 OOM）
+
+`utils/oom_alert.sh` 在 **Docker 宿主机** 常驻运行（需 docker socket 与服务端 HTTP 可达）：
+
+```bash
+OPS_ALERT_URL=https://<xadmin-host>/api/common/api/ops-alert \
+OPS_ALERT_TOKEN=<与系统设置 OPS_ALERT_TOKEN 一致> \
+bash utils/oom_alert.sh
+```
+
+- 监听 `docker events --filter event=oom`；断线自动重连，游标（事件时间纳秒）落
+  `OOM_ALERT_STATE`（默认 `/tmp/xadmin-oom-alert.cursor`）——重连按秒级游标回放、
+  按纳秒去重，不重放已投递事件、不静默漏事件；
+- `OOM_ALERT_ONCE=1` 投递首个事件后退出（验证 / 单次场景）；`OOM_ALERT_CONTAINER=<name>`
+  只监听指定容器；
+- 服务端侧 60s 节流（同来源同事件，OOM 风暴合并为一条）；watcher 未配置
+  URL/TOKEN 时仅记日志不投递，投递失败只记 WARN、不阻塞监听；
+- 建议以 systemd unit 或具备 docker socket 的运维容器常驻（重启自愈）。
 
 ## 四、故障演练（A4）
 
@@ -269,6 +304,21 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 - **OOM 构造对照**：内存超限进程 → 容器 `ExitCode=137` + `OOMKilled=true`；**`docker events` 暴露 `container oom` 事件**（可监听接入告警；当前未接入 → 登记观察项）；
 - **与第十三轮互补**：磁盘满 = 可错误处理（fail-safe 清理）；OOM = 进程被动被杀（无优雅路径，写入型任务可能留残件——当前备份流程内存占用低未构造到主流程 OOM 面）；
 - **结论**：内存面边界数据建立；OOM 事件可用但未接入告警（观察项）。
+
+### 第十六轮（2034-10，运营基线窗口）：容器 OOM 告警链路端到端验证（A1）
+
+- **背景**：第十五轮登记「`docker events` 暴露 `container oom` 事件，可监听接入告警；当前未接入」——
+  本轮完成接入并端到端验证；
+- **接入**：宿主侧 `utils/oom_alert.sh`（`docker events --filter event=oom`，纳秒游标去重 + 断线重连）
+  → `POST /api/common/api/ops-alert`（独立令牌 `X-Ops-Token` = 系统设置 `OPS_ALERT_TOKEN`）
+  → `OpsAlertMessage` 站内信 + 邮件（超管订阅自愈）+ 出站 Webhook `system.ops_alert`；
+  60s 同来源同事件节流（与备份告警同范式）；
+- **验证（真实事件）**：隔离容器 `--memory=64m --memory-swap=64m` + 1GiB 分配
+  → `OOMKilled=true / ExitCode=137`；watcher 捕获 `container oom` 并投递（无失败 WARN）
+  → 站内信落库「运维告警：container oom」（danger、超管未读 = 1）
+  → 订阅自愈（`OpsAlertMessage`，`site_msg + email`，receivers = 1）；重复投递由 60s 节流合并（单测覆盖）；
+- **结论**：OOM 告警链路端到端闭环（事件 → 投递 → 落库 → 收件人），监控覆盖清单见 §三；
+  HTTP 可用性 / 延迟 / 队列积压的自动投递保持登记（依赖外部 Prometheus / Alertmanager，部署形态就绪后按需）。
 
 ## 七、运营基线快照（2029-10 窗口）
 

@@ -24,6 +24,14 @@ msgstr "备份失败"
 msgid "Backup alert received"
 msgstr "已接收备份告警"
 
+#: common/api/ops_alert.py:55
+msgid "Invalid ops alert token"
+msgstr "运维告警令牌无效"
+
+#: common/api/ops_alert.py:67
+msgid "Ops alert received"
+msgstr "已接收运维告警"
+
 #: common/api/csp.py:78
 msgid "CSP report endpoint"
 msgstr "CSP 上报端点"
@@ -64,6 +72,31 @@ msgstr "时间"
 #: common/backup_alert.py:54
 msgid "Please check the backup container logs and the backup directory."
 msgstr "请检查备份容器日志与备份目录。"
+
+#: common/ops_alert.py:34 system/utils/webhook.py:114
+msgid "Ops alert"
+msgstr "运维告警"
+
+#: common/ops_alert.py:41 common/api/ops_alert.py:61
+msgid "Unknown event"
+msgstr "未知事件"
+
+#: common/ops_alert.py:45
+#, python-brace-format
+msgid "Ops alert: {}"
+msgstr "运维告警：{}"
+
+#: common/ops_alert.py:54
+msgid "Please check the container status and host resource usage."
+msgstr "请检查容器状态与宿主机资源占用。"
+
+#: system/utils/webhook.py:117
+msgid "Alert source"
+msgstr "告警来源"
+
+#: system/utils/webhook.py:118
+msgid "Event summary"
+msgstr "事件摘要"
 
 #: common/celery/failure_handler.py:30
 msgid "Celery task failure"

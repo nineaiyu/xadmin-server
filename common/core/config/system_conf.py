@@ -189,6 +189,11 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("BACKUP_ALERT_TOKEN", CONFIG.BACKUP_ALERT_TOKEN)
 
     @property
+    def OPS_ALERT_TOKEN(self):
+        """运维告警回调令牌（默认空 = 端点未启用；access=false 不对外回传）。"""
+        return self.get_value("OPS_ALERT_TOKEN", CONFIG.OPS_ALERT_TOKEN)
+
+    @property
     def CSP_MODE(self):
         """CSP 模式（S3，默认 report-only 观察期）：disabled / report-only / enforce。"""
         return self.get_value("CSP_MODE", CONFIG.CSP_MODE)

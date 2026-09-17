@@ -30,6 +30,14 @@ msgstr ""
 msgid "Backup alert received"
 msgstr ""
 
+#: common/api/ops_alert.py:55
+msgid "Invalid ops alert token"
+msgstr ""
+
+#: common/api/ops_alert.py:67
+msgid "Ops alert received"
+msgstr ""
+
 #: common/api/csp.py:78
 msgid "CSP report endpoint"
 msgstr ""
@@ -69,6 +77,31 @@ msgstr ""
 
 #: common/backup_alert.py:54
 msgid "Please check the backup container logs and the backup directory."
+msgstr ""
+
+#: common/ops_alert.py:34 system/utils/webhook.py:114
+msgid "Ops alert"
+msgstr ""
+
+#: common/ops_alert.py:41 common/api/ops_alert.py:61
+msgid "Unknown event"
+msgstr ""
+
+#: common/ops_alert.py:45
+#, python-brace-format
+msgid "Ops alert: {}"
+msgstr ""
+
+#: common/ops_alert.py:54
+msgid "Please check the container status and host resource usage."
+msgstr ""
+
+#: system/utils/webhook.py:117
+msgid "Alert source"
+msgstr ""
+
+#: system/utils/webhook.py:118
+msgid "Event summary"
 msgstr ""
 
 #: common/celery/failure_handler.py:30

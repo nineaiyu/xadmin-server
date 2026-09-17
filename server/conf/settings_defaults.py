@@ -243,4 +243,6 @@ SETTINGS_CONFIG = {
     "APPROVAL_APPROVER_PERMS": [],
     # 备份失败告警回调令牌（空 = 端点未启用）
     "BACKUP_ALERT_TOKEN": "",
+    # 运维告警回调令牌（容器 OOM 等宿主级事件；空 = 端点未启用）
+    "OPS_ALERT_TOKEN": "",
 }
