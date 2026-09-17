@@ -37,7 +37,7 @@
 
 | 日期 | 阶段 | 变更摘要 |
 |------|------|----------|
-| 2026-09-17 | 长期优化方案首批（质量门禁与文档复核） | **Q1**：pytest 全量实测 **2534 passed / 1 skipped / 覆盖率 87%**（25015 语句），CI 覆盖率门禁 78 → **82**；**Q2**：strict 全仓收口——e2e 存量 **10 处**清零，`tsconfig.strict.json` 纳入 `e2e/**`，`typecheck:strict` 改全仓判定（scripts 的 `.mjs` 待评估 allowJs）；**Q3**：巨型文件（>500 行）门禁进两端 CI——实测存量 **后端 13 / 前端 4**（另 1 数据文件豁免），基线登记「只减不增」；**Q5**：两端 PR 模板补断言环境无关项与行数勾选；**T5**：xadmin-docs 新增 `docs-build.yml`（本地 `pnpm docs:build` 5.24s 通过）。详录见 [plans/长期优化方案-2034.10-2039.09.md](plans/长期优化方案-2034.10-2039.09.md) §十 |
+| 2026-09-17 | 长期优化方案批二（P1/P2 收口：SLO 采集 / 体验基线 / 时长预算 / 裁剪演练 / 依赖清账） | **A2** SLO 采集机制上线（`slo_snapshot.py --append` + `utils/slo_snapshot_cron.sh` 每日 JSONL；首采 可用性 100.000% / P95 0.05s / 任务 99.89%，≥3 个月后校准）；**U1** 前端体验基线首测（登录页 TTFB 332ms / FCP 1172ms / LCP 1224ms / CLS 0.016；列表页 CLS 0.05~0.24 波动，登记改进候选）——`pnpm test:e2e:perf` + `e2e/perf-baseline.json`；**Q4** E2E 跑批时长预算（各 shard/总用时记录 + 同环境基线 +20% 校验，`e2e/duration-budget.json`）；**F1** 模块裁剪五层矩阵演练 9 例（路由/菜单/周期任务/缓存/声明一致性）；**T5** docs 站依赖清账 **18 → 0** |\r\n| 2026-09-17 | 依赖 audit 季度例行（T1） | server `pip_audit` **0**；client 官方源 `pnpm audit` **0**；xadmin-docs 官方源 **18 → 0**（移除无补丁依赖 `markdown-it-custom-attrs` → 内联 fancybox 属性实现；overrides 修复 vite 6.4.3 / postcss / rollup / nanoid / preact / esbuild / mdast-util-to-hast；`docs:build` 5.8s 通过）。口径：pnpm 11 起 overrides 只读 `pnpm-workspace.yaml`（package.json 的 `pnpm` 字段被忽略） |\r\n| 2026-09-17 | 长期优化方案首批（质量门禁与文档复核） | **Q1**：pytest 全量实测 **2534 passed / 1 skipped / 覆盖率 87%**（25015 语句），CI 覆盖率门禁 78 → **82**；**Q2**：strict 全仓收口——e2e 存量 **10 处**清零，`tsconfig.strict.json` 纳入 `e2e/**`，`typecheck:strict` 改全仓判定（scripts 的 `.mjs` 待评估 allowJs）；**Q3**：巨型文件（>500 行）门禁进两端 CI——实测存量 **后端 13 / 前端 4**（另 1 数据文件豁免），基线登记「只减不增」；**Q5**：两端 PR 模板补断言环境无关项与行数勾选；**T5**：xadmin-docs 新增 `docs-build.yml`（本地 `pnpm docs:build` 5.24s 通过）。详录见 [plans/长期优化方案-2034.10-2039.09.md](plans/长期优化方案-2034.10-2039.09.md) §十 |
 | 2026-09-17 | 存量巨型文件拆分第一批（纯搬迁） | **后端** `system/utils/permission_sync.py`（511 行）→ 包（constants / types / scan / apply / audit / seed，`__init__` 统一再导出，`sync.*` 消费方零改动，专项测试 10 例通过）；**前端** `src/router/utils.ts`（525 行）→ 包（route-tree / async-routes / auth / nav，index 统一再导出，88 个消费方零改动）；存量基线 **13/4 → 12/3**。验证：pytest 2534 + 覆盖率 87% + 两项静态门禁、vitest 250、typecheck/strict 全仓、E2E smoke+auth+locale 双浏览器 30 passed |
 | 2026-09-17 | 存量巨型文件拆分第二批 | **后端** `system/utils/permission_preview.py`（985 行，最大存量）→ 包（constants / labels / decode / queries / trial_data / trial_field / previews，`__init__` 统一再导出，消费方零改动，专项集成测试 38 例通过）；**前端** `TrialPanel.vue`（561 行）→ `useTrialPanel.ts`（237 行）+ 纯工具 `utils/trial.ts`，SFC 降至 **326 行**，新增 6 例纯函数单测；存量基线 **12/3 → 11/2**。验证：pytest 2534 + 覆盖率 87% + 三项门禁、vitest **256**、typecheck/strict、E2E permissions+a11y 双浏览器 20 passed |
 | 2026-09-17 | 存量巨型文件拆分第三批（后端 5 个） | `generate_crud.py`（900）→ 命令模块 + `_generate_crud` 实现包（Django 命令发现跳过包目录，入口单文件再导出）；`approval_flow.py`（781）→ 包（constants / conditions / engine / queries / periodic）；`modules.py`（717）→ 包（specs / registry / gate / seeding，`reset_module_state` 跨模块清缓存）；`preview.py`（522）→ 包（constants / media / office）；`modelset/import_export.py`（579）→ 包（celery_utils / export_actions / import_actions / actions）。存量基线 **11/2 → 6/2**（17 → 8）。验证：pytest **2534 passed / 覆盖率 87%** + 行数/跨 app/ruff 全绿；4 处测试补丁点与 2 处私有名再导出随拆分迁移。**剩余**：后端 6（config / data_scope / server-conf / tasks / approval / views.ai）+ 前端 2（bar.tsx / ReCropper） |
@@ -193,3 +193,18 @@
 | `vue-tippy`（~24 KB gz） | 评估：`app.use(VueTippy)` + 指令式用法散布布局层（侧栏 tooltip 属首屏交互），移出闭包需重写指令为异步实现或降级 tooltip | **评估后维持**（收益低于风险，登记同 ReIcon 范式） |
 
 已核实为懒加载 / 不在闭包（无需动作）：echarts、wangeditor、version-rocket、`@vue-flow`。
+
+### 2026-09-17 前端体验基线首测（U1，chromium + dev 链路）
+
+| 页面 | TTFB | FCP | LCP | CLS |
+|------|------|-----|-----|-----|
+| 登录页（冷加载） | 332 ms | 1172 ms | 1224 ms | 0.016 |
+| 首页（登录后整页重载） | 3 ms | 284 ms | 284 ms | 0.020 |
+| 用户列表（登录后整页重载） | 3 ms | 268 ms | 268 ms | 0.048 ~ 0.240（波动） |
+
+- 采集：`pnpm test:e2e:perf`（刷新基线加 `:update`）；基线文件 client `e2e/perf-baseline.json`，
+  按「平台-CI」分组存放（数字随机器变化，**仅同环境趋势可比**）；
+- 口径：dev 链路（vite）+ 本地机器；现阶段只做「离谱回归」兜底（TTFB ≤ 2s / LCP ≤ 5s / CLS ≤ 0.5），
+  正式预算待数据积累后评审（U1 阶段一目标：先立基线后定预算）；
+- 发现：用户列表页 CLS 在 0.048 ~ 0.240 间波动（异步数据填充引起），高于 0.1「良好」线
+  → 登记体验改进候选（待稳定口径复测后再评估）。
