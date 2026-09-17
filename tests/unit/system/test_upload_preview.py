@@ -16,7 +16,6 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.core.config import SysConfig
 from system.models import UploadFile
-from system.utils import preview as preview_module
 from system.utils.ctasks import auto_clean_preview_cache
 from system.utils.preview import (
     SIZE_PREVIEW,
@@ -25,6 +24,7 @@ from system.utils.preview import (
     preview_cache_path,
     preview_kind,
 )
+from system.utils.preview import media as preview_media
 from system.views.admin.file import PREVIEW_UNSUPPORTED_CODE, UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
@@ -108,15 +108,16 @@ class TestPreviewAction:
         # 幂等：再次请求直接命中缓存，不重新生成（用生成次数而非 mtime 判定：
         # 命中时会 touch 刷新 mtime，供保留期按"最近使用"淘汰）
         calls = []
-        original = preview_module._generate_jpeg
-        preview_module._generate_jpeg = lambda *args, **kwargs: (
+        # 拆分后缩略图实现位于 media 子模块（包级导出仅再导出），探针挂在实现模块上
+        original = preview_media._generate_jpeg
+        preview_media._generate_jpeg = lambda *args, **kwargs: (
             calls.append(1),
             original(*args, **kwargs),
         )[1]
         try:
             preview(upload, superuser, query=f"?size={SIZE_THUMB}")
         finally:
-            preview_module._generate_jpeg = original
+            preview_media._generate_jpeg = original
         assert calls == []
         # 大图档位独立缓存
         preview(upload, superuser, query=f"?size={SIZE_PREVIEW}")

@@ -109,8 +109,10 @@ def patch_config(monkeypatch, key, value):
 
 
 def patch_converter(monkeypatch, available=True):
+    # 拆分后实现位于 office 子模块（包级导出仅再导出），补丁打在实现模块上
     monkeypatch.setattr(
-        preview_module, "office_converter_bin", (lambda: "/usr/bin/soffice") if available else (lambda: None)
+        "system.utils.preview.office.office_converter_bin",
+        (lambda: "/usr/bin/soffice") if available else (lambda: None),
     )
 
 

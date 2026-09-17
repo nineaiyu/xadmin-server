@@ -115,7 +115,7 @@ def module_config(settings):
     """应用一次功能模块裁剪配置（preset / enable / disable）并清空派生缓存。
 
     模块组合变更在生产环境需重启进程；测试中通过 settings + reset_module_state()
-    模拟同等效果（见 common/core/modules.py）。
+    模拟同等效果（见 common/core/modules/ 包）。
     """
     from common.core.modules import reset_module_state
 

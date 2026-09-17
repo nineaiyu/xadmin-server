@@ -1,207 +1,26 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""导入导出 Action：文件导出（export-data）与数据导入（import-data）。
-
-含 Celery 异步导入分发（run_view_by_celery_task）。拆分自 modelset.py。
-"""
+"""导入导出：导入前校验与异步导入（import-headers / import-validate / import-async）。"""
 
 import codecs
-import itertools
 import json
-import math
-import uuid
-from collections.abc import Callable
 
 from django.conf import settings
-from django.db import transaction
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
 from common.core.import_mapping import first_column_candidates, writable_field_options
-from common.core.modelset.crud import CreateAction, ListAction, UpdateAction
 from common.core.response import ApiResponse
-from common.core.utils import has_self_fields, topological_sort
-from common.drf.renders.csv import CSVFileRenderer
-from common.drf.renders.excel import ExcelFileRenderer
 from common.swagger.utils import get_default_response_schema
-from common.tasks import background_task_view_set_job
 from common.utils import get_logger
 
+from .celery_utils import _flatten_row_errors
+
 logger = get_logger(__name__)
-
-# 活跃 worker 探测结果的短缓存：inspect().active() 是 broker 广播（最长 ~1s 阻塞），
-# 每次导入请求都在请求线程内做一遍会明显拖慢主流程；短窗口内复用同一探测结果
-CELERY_WORKER_PROBE_CACHE_KEY = "celery_active_worker_probe"
-CELERY_WORKER_PROBE_CACHE_TIMEOUT = 15
-
-# 异步导入分片大小；自关联数据经拓扑排序后必须按依赖顺序整体执行，不能分片
-CELERY_IMPORT_DEFAULT_BATCH = 100
-CELERY_IMPORT_SINGLE_BATCH = 99999999
-
-
-def has_active_celery_worker():
-    """探测是否存在活跃 Celery worker（结果短缓存，避免请求线程内反复广播阻塞）。"""
-    from django.core.cache import cache
-
-    from server.celery import app
-
-    cached = cache.get(CELERY_WORKER_PROBE_CACHE_KEY)
-    if cached is not None:
-        return cached
-    try:
-        active_workers = app.control.inspect().active()
-        result = bool(active_workers)
-    except Exception as e:
-        # 探测失败（broker 不可达等）视为无 worker，走同步降级
-        logger.warning(f"probe active celery worker failed: {e}")
-        result = False
-    cache.set(CELERY_WORKER_PROBE_CACHE_KEY, result, CELERY_WORKER_PROBE_CACHE_TIMEOUT)
-    return result
-
-
-def _flatten_row_errors(row, ser_errors, limit):
-    """把 DRF serializer.errors 展开为字段级条目 [{row, field, message}]，最多 limit 条。
-
-    嵌套序列化器（dict 值）无法定位单一字段，整体 JSON 序列化进 message。
-    """
-    items = []
-    for field, msgs in (ser_errors or {}).items():
-        if not isinstance(msgs, list):
-            msgs = [msgs]
-        for msg in msgs:
-            if isinstance(msg, dict):
-                msg = json.dumps(msg, ensure_ascii=False, default=str)
-            items.append({"row": row, "field": field, "message": str(msg)[:200]})
-            if len(items) >= limit:
-                return items
-    return items
-
-
-def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
-    """把导入/批量操作分发到 Celery，返回 ``ApiResponse`` 或 ``None``。
-
-    - 返回 ``ApiResponse``：任务已提交，调用方直接返回该响应；
-    - 返回 ``None``：调用方应改为同步执行。
-
-    三种情形共用 ``None`` 语义（调用方处理方式一致，均落到同步分支）：
-    1. ``task`` 参数为 false（调用方显式要求同步）；
-    2. 无活跃 worker（自动降级）；
-    3. 任务提交异常（兜底降级，错误已记日志）。
-    """
-    task = kwargs.get(
-        "task", request.query_params.get("task", "true").lower() in ["true", "1", "yes"]
-    )  # 默认为任务异步导入
-    if task:
-        view_str = f"{view.__class__.__module__}.{view.__class__.__name__}"
-        meta = request.META
-        task_id = uuid.uuid4()
-        if isinstance(data, dict):
-            data = [data]
-        meta["task_count"] = math.ceil(len(data) / batch_length)
-        meta["action"] = view.action
-        try:
-            # 检查Celery是否可用，如果不可用则直接执行任务（探测结果带短缓存，避免请求内广播阻塞）
-            if not has_active_celery_worker():
-                # 没有活跃的worker，直接执行任务
-                logger.warning("No active Celery workers found, executing task directly")
-                return None  # 返回None表示需要直接执行
-            for index, batch in enumerate(itertools.batched(data, batch_length, strict=False)):
-                meta["task_id"] = f"{task_id}_{index}"
-                meta["task_index"] = index
-                res = background_task_view_set_job.apply_async(
-                    args=(view_str, meta, json.dumps(batch), view.action_map), task_id=meta["task_id"]
-                )
-                logger.info(f"add {view_str} task success. {res}")
-            return ApiResponse(detail=_("Task add success"))
-        except Exception as e:
-            logger.error(f"Celery task submission failed: {e}, executing task directly")
-            return None  # 如果提交任务失败，也返回None表示需要直接执行
-    return None  # 如果task参数为false，直接执行
-
-
-class OnlyExportDataAction(ListAction):
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name="type", required=True, enum=["xlsx", "csv"]),
-        ],
-        responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
-    )
-    @action(methods=["get"], detail=False, url_path="export-data")
-    def export_data(self, request, *args, **kwargs):
-        """导出{cls}数据"""
-        self.format_kwarg = request.query_params.get("type", "xlsx")
-        request.no_cache = True  # 防止自定义缓存数据
-        self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
-        request.accepted_renderer = None
-        data = self.list(request, *args, **kwargs)
-        return data
-
-    @extend_schema(
-        request=OpenApiRequest(build_object_type(properties={"type": build_basic_type(OpenApiTypes.STR)})),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=False, url_path="export-async")
-    def export_async(self, request, *args, **kwargs):
-        """异步导出{cls}数据"""
-        from django.apps import apps
-        from django.db import transaction
-        from django.utils import timezone as dj_timezone
-        from django.utils.module_loading import import_string
-
-        from common.core.config import SysConfig, get_personal_int_config
-
-        params = dict(request.data) if isinstance(request.data, dict) else {}
-        for key, value in request.query_params.items():
-            params.setdefault(key, value)
-        file_format = params.get("type") or "xlsx"
-        model = self.get_queryset().model
-        name = "{}_{}".format(model._meta.model_name, dj_timezone.localtime().strftime("%Y-%m-%d_%H-%M-%S"))
-        # 跨 app 惰性取模型/任务：common 层不直接依赖 system（契约层约束，见 check_cross_app_imports）
-        export_record_model = apps.get_model("system", "ExportRecord")
-        # 同用户并发上限：导出是最重的后台任务，防止重复点击/脚本刷爆 worker。
-        # 真实个人行优先，未设置回退系统级
-        max_running = get_personal_int_config(
-            request.user, "EXPORT_ASYNC_MAX_RUNNING", SysConfig.EXPORT_ASYNC_MAX_RUNNING
-        )
-        if max_running > 0:
-            running = export_record_model.objects.filter(
-                creator=request.user,
-                status__in=[export_record_model.Status.PENDING, export_record_model.Status.RUNNING],
-            ).count()
-            if running >= max_running:
-                return ApiResponse(
-                    code=1001,
-                    detail=_("Too many export tasks in progress (limit {}), please wait for them to finish").format(
-                        max_running
-                    ),
-                )
-        record = export_record_model.objects.create(
-            name=name,
-            module=str(model._meta.verbose_name),
-            path=request.path,
-            file_format=file_format,
-            params=params,
-        )
-        args = [
-            str(record.pk),
-            f"{self.__class__.__module__}.{self.__class__.__name__}",
-            params,
-            getattr(request.user, "pk", None),
-        ]
-        task = import_string("system.tasks.async_export_data_task")
-        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
-            # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
-            task.apply(args=args, task_id=str(record.pk))
-        else:
-            transaction.on_commit(lambda: task.apply_async(args=args, task_id=str(record.pk)))
-        return ApiResponse(
-            data={"record_id": str(record.pk), "task_id": str(record.pk)},
-            detail=_("Export task submitted"),
-        )
 
 
 class ImportAsyncAction:
@@ -487,93 +306,3 @@ class ImportAsyncAction:
             data={"record_id": str(record.pk), "task_id": str(record.pk)},
             detail=_("Import task submitted"),
         )
-
-
-class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, OnlyExportDataAction):
-    filter_queryset: Callable
-    get_queryset: Callable
-    get_serializer: Callable
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(name="action", required=True, enum=["create", "update"]),
-        ],
-        request=OpenApiRequest(
-            build_basic_type(OpenApiTypes.BINARY),
-        ),
-        responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
-    )
-    @action(methods=["post"], detail=False, url_path="import-data")
-    @transaction.atomic
-    def import_data(self, request, *args, **kwargs):
-        """导入{cls}数据"""
-
-        task = kwargs.get(
-            "task", request.query_params.get("task", "true").lower() in ["true", "1", "yes"]
-        )  # 默认为任务异步导入
-        # 列映射必须在访问 request.data（触发文件解析）之前解析
-        self._resolve_import_mapping(request)
-        data = request.data
-
-        # 处理数据格式，确保是列表格式
-        if isinstance(data, dict):
-            data = [data]
-
-        # 检查是否存在自关联依赖
-        self_field = has_self_fields(self.queryset.model, data[0].keys()) if data else None
-
-        # 如果存在依赖关系，则对数据进行拓扑排序
-        if self_field:
-            data = topological_sort(data, parent=self_field)
-
-        # 尝试使用异步任务导入
-        if task and data:
-            # 自关联数据经拓扑排序后必须按依赖顺序整体执行，不能分片（分片会打乱父子顺序）
-            batch_length = CELERY_IMPORT_SINGLE_BATCH if self_field else CELERY_IMPORT_DEFAULT_BATCH
-            response = run_view_by_celery_task(self, request, kwargs, data, batch_length)
-            if response:
-                return response
-
-        # 同步导入数据
-        # Deprecated：ignore_error=true 会跳过失败行（保持历史兼容语义），
-        # 需要失败行定位/错误报告请改走 import-validate + import-async（异步导入 2.0）
-        act = request.query_params.get("action")
-        ignore_error = request.query_params.get("ignore_error", "false") == "true"
-        if act and data:
-            count, failed = self._sync_import(request, data, ignore_error)
-            if failed:
-                # 失败/跳过行数至少落到日志，避免"静默丢数"完全无迹可循
-                logger.warning(f"sync import skipped {failed} rows. action:{act} ignore_error:{ignore_error}")
-            return ApiResponse(detail=_("Operation successful. Import {} data").format(count))
-        return ApiResponse(detail=_("Operation failed. Abnormal data"), code=1001)
-
-    def _sync_import(self, request, data, ignore_error):
-        """同步导入 create/update 两种动作，返回 ``(成功条数, 失败或跳过条数)``。"""
-        act = request.query_params.get("action")
-        count = 0
-        failed = 0
-        if act == "create":
-            for item in data:
-                serializer = self.get_serializer(data=item)
-                serializer.is_valid(raise_exception=not ignore_error)
-                if serializer.errors:
-                    # raise_exception 已保证非 ignore_error 时不会走到这里
-                    failed += 1
-                    continue
-                self.perform_create(serializer)
-                count += 1
-        elif act == "update":
-            queryset = self.filter_queryset(self.get_queryset())
-            for item in data:
-                instance = queryset.filter(pk=item.get("pk")).first()
-                if not instance:
-                    failed += 1
-                    continue
-                serializer = self.get_serializer(instance, data=item, partial=True)
-                serializer.is_valid(raise_exception=not ignore_error)
-                if serializer.errors:
-                    failed += 1
-                    continue
-                self.perform_update(serializer)
-                count += 1
-        return count, failed

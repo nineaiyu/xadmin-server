@@ -37,7 +37,7 @@ def test_export_async_creates_record_and_dispatch(superuser, monkeypatch):
 
     with mock.patch.object(async_export_data_task, "apply_async") as apply_async:
         # on_commit 回调在测试事务内不执行，改为立即执行以验证投递参数
-        with mock.patch("common.core.modelset.import_export.transaction.on_commit", side_effect=lambda fn: fn()):
+        with mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()):
             response = _post_export_async(superuser)
     assert response.data["code"] == 1000
     record_id = response.data["data"]["record_id"]
@@ -201,7 +201,7 @@ def test_export_async_concurrency_limit(superuser, monkeypatch):
     # 其他用户不受该用户额度影响
     with (
         mock.patch.object(async_export_data_task, "apply_async"),
-        mock.patch("common.core.modelset.import_export.transaction.on_commit", side_effect=lambda fn: fn()),
+        mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()),
     ):
         response = _post_export_async(other_user)
     assert response.data["code"] == 1000
@@ -210,7 +210,7 @@ def test_export_async_concurrency_limit(superuser, monkeypatch):
     ExportRecord.objects.filter(pk__in=[r.pk for r in running]).update(status=ExportRecord.Status.SUCCESS)
     with (
         mock.patch.object(async_export_data_task, "apply_async"),
-        mock.patch("common.core.modelset.import_export.transaction.on_commit", side_effect=lambda fn: fn()),
+        mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()),
     ):
         response = _post_export_async(superuser)
     assert response.data["code"] == 1000
@@ -227,7 +227,7 @@ def test_export_async_limit_zero_disables_throttle(superuser, monkeypatch):
 
     with (
         mock.patch.object(async_export_data_task, "apply_async"),
-        mock.patch("common.core.modelset.import_export.transaction.on_commit", side_effect=lambda fn: fn()),
+        mock.patch("django.db.transaction.on_commit", side_effect=lambda fn: fn()),
     ):
         response = _post_export_async(superuser)
     assert response.data["code"] == 1000

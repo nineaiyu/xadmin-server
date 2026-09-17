@@ -110,7 +110,9 @@ class TestModuleResolution:
         specs = tuple(
             replace(spec, depends=("analysis",)) if spec.id == "chat" else spec for spec in modules.all_module_specs()
         )
-        monkeypatch.setattr(modules, "all_module_specs", lambda: specs)
+        # 拆分后 all_module_specs 的实现位于 registry 子模块（包级导出仅作再导出），
+        # 内部解析读取 registry 命名空间，故补丁打在实现模块上
+        monkeypatch.setattr("common.core.modules.registry.all_module_specs", lambda: specs)
         module_config(preset="full", disable=["analysis"])
         with pytest.raises(ImproperlyConfigured, match="模块依赖未满足"):
             resolve_modules()
