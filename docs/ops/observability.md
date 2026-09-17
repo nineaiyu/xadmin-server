@@ -242,6 +242,13 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 - **登记**：installer 侧 config 生成权限随发布节奏核对；`data` 目录 750 收紧列为可选加固项；
 - **结论**：权限面第一轮收敛（644→600），审计与加固机制建立。
 
+### 第十三轮（2033-12，SLO 窗口）：磁盘压力（tmpfs 小盘）——备份链路 fail-safe
+
+- **环境**：隔离一次性容器（生产同镜像 + `--tmpfs /drill:size=8m`，daemon 挂载免容器内权限）+ 生产 PG 只读 `pg_dump` + `BACKUP_ONCE=1` 单次模式；不触碰生产备份目录与容器，`--rm` 自动回收；
+- **基线（空间充足）**：备份 **920K** 成功、sha256 sidecar 落盘、`.latest_backup` 更新、`exit=0`；
+- **盘满（7.5M/8M，剩 524K）**：`gzip: stdout: No space left on device` 自然暴露 → 脚本清理临时文件 → **不产出损坏正式包**（无 `.sql.gz` / `.tmp` 残留）→ `exit=1`（单次模式退出码可供调度侧感知）→ WAL 归档巡检不中断（failing=f / pending=0）；
+- **结论**：备份链路磁盘耗尽 fail-safe（临时文件机制有效，首轮归档失败演练之后的写入失败面补测）；告警投递未配置（按设计静默跳过）；归档目录满（WAL 堆积型）与媒体包盘满为同构链路的未覆盖边界，随场景池滚动。
+
 ## 七、运营基线快照（2029-10 窗口）
 
 **指标端点启用（2026-09-16）**：`METRICS_ENABLED=true` + `METRICS_TOKEN`（config.yml，Bearer 保护，
