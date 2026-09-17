@@ -4,7 +4,7 @@
 - 日期：2026-09-13
 - 关联：年度开发计划 2026.10-2027.09 §四 2027-09；ADR-006/ADR-015（数据权限编译器与红线）；
   `common/core/data_scope.py`、`common/core/filter.py::get_filter_queryset`；
-  年度回顾 `docs/plans/年度回顾-2026.10-2027.09.md`
+  年度回顾 `docs/plans/archive/年度回顾-2026.10-2027.09.md`
 
 ## 背景
 

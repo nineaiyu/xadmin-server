@@ -2,7 +2,7 @@
 
 - 状态：已接受（结论：**不引入向量检索**，词频重叠检索维持；登记评估出口）
 - 日期：2026-09-14
-- 关联：下一年度规划建议 §四.A1（W1–W2）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期：词频检索 + 向量升级候选池）；
+- 关联：[下一年度规划建议](../plans/archive/下一年度规划建议-2027.10-2028.09.md)（已归档）§四.A1（W1–W2）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期：词频检索 + 向量升级候选池）；
   [ADR-033](ADR-033-knowledge-base-management.md)（知识库文档管理）；
   `system/utils/ai.py::retrieve`；`tests/data/ai_retrieval_eval.json`、
   `tests/integration/system/test_ai_retrieval_eval.py`

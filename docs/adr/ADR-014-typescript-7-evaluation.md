@@ -100,3 +100,20 @@ TypeScript 7.0（2026-07-08 发布）是用 Go 重写的原生移植版，官方
   `@vueuse/core 14→15`（20 文件使用面，typecheck / 250 单测 / 生产构建全绿）；
   包体基线收紧至 **522 KB**（消除 35.5 KB 历史余量）；
 - 维持暂不升级；触发条件不变。
+
+## 复审记录（2026-09-17，第九年度独立分支试点）
+
+- npm 实查：typescript latest **7.0.2**（next 7.1.0-dev，新 API 未稳定）；vue-tsc 最新仍 **3.3.11**，
+  peer 未排除 7.x 但**未发布 TS 7 支持声明**——触发条件未命中；
+- 包名修正：§四.3 所引并存包 `@typescript/native` 实查 npm **不存在**（404）；
+  `@typescript/typescript6` 存在（6.0.2 止，bin `tsc6`）；
+- 独立 worktree（dev HEAD，分支试点后已清理）实测：
+  - CLI 段：TS 7.0.2 `tsc --noEmit` **1.15s 通过** vs TS 6.0.3 1.28s——§一预期的 ~5x 提速
+    在本仓**不成立**（tsc 段仅占 typecheck 总时长 ~1s，大头在 vue-tsc 段 10s 量级）；
+  - 整体升 7：vue-tsc 第 4 次复现 `ERR_PACKAGE_PATH_NOT_EXPORTED`（exit 1）；
+  - 并存方案（`typescript@^6.0.3` + `typescript7: npm:typescript@7.0.2` 别名共存）：
+    typecheck / strict / vitest 273 全绿，接线方式 `node node_modules/typescript7/bin/tsc` 可行；
+- 结论：**并存方案收益不足**（CLI 段节省 ~0.1s vs 新增原生二进制 devDep 与 CI 安装成本），
+  **维持 `typescript ^6.0.3` 单版本**，别名接线不落地；
+- 触发条件不变：**vue-tsc 发布声明支持 TS 7 原生版**（预计随 TS 7.1 稳定释出），
+  届时整体升级复测；季度复核随依赖窗口滚动。
