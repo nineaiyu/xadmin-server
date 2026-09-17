@@ -7,6 +7,8 @@
 不回显、越权、分渠道测试）。
 """
 
+import logging
+
 import pytest
 from django.core.cache import cache
 from django.utils.translation import gettext
@@ -303,6 +305,19 @@ class TestBindingAccounts:
         accounts, unbound, __ = backend.get_accounts([normal_user, superuser])
         assert [(subject, user.pk) for subject, user in accounts] == [("union-n1", normal_user.pk)]
         assert [user.pk for user in unbound] == [superuser.pk]
+
+    def test_unbound_users_logged_at_warning(self, im_providers, superuser, caplog):
+        """未绑定账号用户跳过必须有 WARNING 级线索（默认 LOG_LEVEL=WARNING，
+        debug/info 在生产不可见）——否则「为什么没收到」无日志可查。"""
+        caplog.set_level(logging.WARNING, logger="xadmin.notifications.backends.base")
+
+        DingTalk().get_accounts([superuser])
+
+        records = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert records, "未绑定用户跳过未产生 WARNING 日志"
+        message = records[-1].getMessage()
+        assert superuser.username in message
+        assert "skip" in message
 
     def test_send_dingtalk_converts_unionid(self, settings, im_providers, normal_user, monkeypatch):
         enable_all_channels(settings)

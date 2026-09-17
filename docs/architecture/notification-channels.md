@@ -44,7 +44,7 @@ backend = Wecom  # 约定：模块级 backend 变量
 | 层 | 判定 | 失效行为 |
 |----|------|----------|
 | 渠道级 `is_enable` | `BackendBase` 读 `settings.<is_enable_field_in_settings>`；开关缺失按禁用兜底 | 渠道不进入发送映射（`get_backend_msg_mapper` / `filter_enable_backends` 均跳过） |
-| 用户级 `get_accounts` | 按 `account_field` 把接收人拆成「已绑定 / 未绑定」 | 未绑定用户跳过并发 debug 日志（排查"为什么没收到"先看这里） |
+| 用户级 `get_accounts` | 按 `account_field` 把接收人拆成「已绑定 / 未绑定」 | 未绑定用户跳过并发 warning 日志（含用户名，排查"为什么没收到"先看这里） |
 
 存量订阅数据里的已下线渠道（如 dingtalk）：`BACKEND(...)` 抛 `ValueError` 的取值会**告警跳过**，不会打断发布链路。
 
@@ -67,7 +67,7 @@ backend = Wecom  # 约定：模块级 backend 变量
 三渠道收件账号**不落用户字段**：来自用户经对应 flavor provider 扫码登录留下的
 `UserOAuthBinding`（provider key 自由命名，按 flavor 归集）。钉钉发送前按
 `user/getbyunionid` 换 userid（缓存）；从未经该 IM 登录的用户不可达该渠道
-（debug 日志口径）。凭据与开关走 Setting（category=notify_im，secret 值级加密），
+（warning 日志口径，含用户名）。凭据与开关走 Setting（category=notify_im，secret 值级加密），
 管理页在「消息通知设置」按渠道拆为钉钉 / 企业微信 / 飞书三个页签（后端按
 `?channel=` 收敛字段，非密文凭据必填、密文不回显故可选；测试按钮只测本渠道，
 未启用/未测通按失败反馈）；`is_enable` = 开关 AND 凭据齐全（SMS 同款降级语义），
@@ -76,6 +76,6 @@ token/userid 缓存按凭据摘要隔离（改密换 key）。SDK 收口 `common
 
 ## 六、排错指引
 
-- **没收到邮件/短信**：确认订阅 `receive_backends` 含该渠道 → 渠道级开关 → 用户级 `account_field` 是否绑定（debug 日志 `skip N user(s) without ... bound`）；
+- **没收到邮件/短信**：确认订阅 `receive_backends` 含该渠道 → 渠道级开关 → 用户级 `account_field` 是否绑定（warning 日志 `skip N user(s) without ...`）；
 - **订阅页渠道列表**：`/api/notifications/` 的 backends 接口只下发 `is_enable` 为真的渠道（`notifications/views/notifications.py`）;
 - **发送异常不外抛**：`Message.send_msg` 对单渠道异常打印堆栈并继续其他渠道（`NotImplementedError` 直接跳过）。

@@ -5,16 +5,12 @@
 `account_field` 语义是「User 上的接收账号字段」，而 IM 渠道的接收账号
 （unionId/userid）来自用户经对应 flavor provider 登录留下的 `UserOAuthBinding`：
 - provider key 由管理员自由命名，归属判定按 provider 配置的 **flavor** 归集；
-- 未绑定用户沿用 BackendBase 的 debug 日志口径静默跳过；
+- 未绑定用户经 `log_unbound_users` 以 warning 级记录（默认日志级别下可见）；
 - `BACKEND.get_account` 无外部调用方，覆写 `get_accounts`/`get_account` 不影响
   订阅页等其他链路。
 """
 
-from common.utils import get_logger
-
-from .base import BackendBase
-
-logger = get_logger(__name__)
+from .base import BackendBase, log_unbound_users
 
 
 class ImBindingBackend(BackendBase):
@@ -63,12 +59,7 @@ class ImBindingBackend(BackendBase):
             else:
                 unbound_users.append(user)
         if unbound_users:
-            logger.debug(
-                "Notification backend %s skip %s user(s) without %s binding",
-                type(self).__name__,
-                len(unbound_users),
-                self.flavor,
-            )
+            log_unbound_users(type(self).__name__, f"{self.flavor} binding", unbound_users)
         return accounts, unbound_users, {subject: user for subject, user in accounts}
 
     @classmethod
