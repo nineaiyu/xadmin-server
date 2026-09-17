@@ -39,12 +39,13 @@ docs/
 | [overview.md](architecture/overview.md)                 | 架构总览：分层、元数据驱动、子系统速览、协作时序（1289 行深度分析文档的精炼导航版） |
 | [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
 | [模块化与功能裁剪.md](architecture/模块化与功能裁剪.md) | 二开友好架构：功能模块清单与裁剪矩阵（三级分层 / 发行预设 / 五层裁剪 / CLI 与管理页 / 二开路径 A–C / 维护约定 / 已评估关闭项的触发条件） |
-| [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、14 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
+| [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、16 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
 | [data-permission.md](architecture/data-permission.md)   | 数据权限配置操作教程（配图）                               |
 | [field-permission.md](architecture/field-permission.md) | 字段权限配置操作教程（配图）                               |
 | [cache.md](architecture/cache.md)                       | 缓存策略统一审计：四套缓存键规范/TTL/失效矩阵/绕过 ORM 红线          |
 | [indexes.md](architecture/indexes.md)                   | 索引评审记录：清单、不加索引的理由、EXPLAIN 回归                 |
 | [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
+| [oauth-login.md](architecture/oauth-login.md)           | 第三方登录与 IM 扫码登录：provider 字段、生效条件、保存校验与常见现象排错 |
 | [scim.md](architecture/scim.md)                         | SCIM 2.0 用户目录同步：启用步骤 / 字段与组映射 / Okta、Entra 配置示例 / 排错 |
 | [notification-channels.md](architecture/notification-channels.md) | 通知渠道体系：三件套模型、新增渠道步骤、两层可达性过滤、短信通知模板配置与排错 |
 | [数据权限与字段权限重构方案-2026.09.md](architecture/数据权限与字段权限重构方案-2026.09.md) | 数据权限重构设计（规则编译器四段管线 + ScopeResult 布尔代数）：问题清单 / 语义决策 D1–D11 / 实施批次与测试计划 |

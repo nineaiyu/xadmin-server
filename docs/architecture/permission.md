@@ -58,15 +58,15 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 ### 3.1 原理
 
 `BaseDataPermissionFilter.filter_queryset` 在**每个列表/详情查询**上追加 `queryset.filter(...)`：
-`get_filter_queryset(queryset, user)` 汇总用户身上所有 `DataPermission`（用户直接挂 `rules` + 经角色挂 `rules`），按 AND/OR
-模式构造 Q 对象。
+`get_filter_queryset(queryset, user)` 汇总用户身上所有 `DataPermission`（个人直接绑定 + 所在部门及其祖先链上的
+部门绑定，仅启用部门生效），池内各授权组统一「或」合并（取最宽生效），组内多规则按授权自身模式（AND/OR）组合为 Q 对象。
 
 - **且模式（AND）**：行必须满足规则列表中的每一条；
 - **或模式（OR）**：满足任意一条即可（`ModeTypeAbstract.ModeChoices`）。
 - 规则可绑定菜单：仅对所选菜单对应的接口生效。
 - 部门维度的规则依赖 `DeptInfo.recursion_dept_info` 展开部门树。
 
-### 3.2 规则类型速查表（`ModelLabelField.KeyChoices`，共 14 种）
+### 3.2 规则类型速查表（`ModelLabelField.KeyChoices`，共 16 种）
 
 | 类型值                    | 含义               | value 形态 |
 |------------------------|------------------|----------|
@@ -80,6 +80,8 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 | `value.user.dept.id`   | 本部门数据            | `*`      |
 | `value.user.dept.ids`  | 本部门及下级部门数据       | `*`      |
 | `value.dept.ids`       | 指定部门及下级          | 部门 ID 列表 |
+| `value.leader.dept.ids` | 我主管部门及全部下级部门     | `*`（按绑定用户解析） |
+| `value.leader.user.ids` | 我主管部门及下级部门的成员    | `*`（按绑定用户解析） |
 | `value.table.user.ids` | 指定用户集合           | 用户 ID 列表 |
 | `value.table.menu.ids` | 指定菜单集合           | 菜单 ID 列表 |
 | `value.table.role.ids` | 指定角色集合           | 角色 ID 列表 |
@@ -91,7 +93,9 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 [{"table": "demo.book", "field": "admin", "type": "value.user.id", "value": "*", "match": "exact"}]
 ```
 
-> 注：历史文档口径为「12 种规则」，以代码为准共 **14 种**（含 `value.table.*` 四种）。
+> 注：历史文档口径为「12 种」；`value.leader.*`（部门主管，2026-09 部门主管链路交付）与 `value.table.*`
+> 为后续增量，以代码为准共 **16 种**。**部门主管类规则**：不是任何部门主管的用户解析为空列表（恒假），
+> 属设计内语义；绑定对象中无主管时规则整体不生效，用 `audit_data_permission_rules` 巡检可提示。
 
 ### 3.3 生效范围
 
@@ -149,6 +153,7 @@ BaseModelSerializer.__init__ 读取 request.fields，裁剪 serializer.fields
 | 改了角色/菜单权限未生效 | 确认请求经 API 发起（信号已挂 `m2m_changed`）；若绕过 ORM 直改，触发 `system.signal_handler.clean_cache_handler` 或调 `MagicCacheData.invalid_caches` |
 | 列表有数据但详情 403 | 数据权限规则绑定了菜单，检查规则所挂菜单是否覆盖详情路由                                                                                                  |
 | 字段输出比预期少     | 1) `request.fields` 是否被 FieldPermission 收敛；2) 字段所在模型是否在 `ModelLabelField` 树中正确挂载；3) 前端传参字段与后端字段名大小写                           |
+| 列表空集但用户确有授权 | 1) 跑 `python manage.py audit_data_permission_rules`（非法规则 + 不生效提示：未绑定 / 主管部门规则无主管 / 引用对象已删除）；2) 数据权限页「试算」按目标用户实跑过滤，看实际生效授权与命中（排障口径见 [data-permission.md](data-permission.md) 排障节） |
 | 导入/导出 403    | 未绑定模型的菜单回退到 list/create 权限——检查菜单的「绑定模型」配置                                                                                     |
 
 ### 6.2 Shell 验证片段

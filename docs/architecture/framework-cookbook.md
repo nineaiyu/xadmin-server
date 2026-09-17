@@ -131,10 +131,12 @@ config.yml              XADMIN_APPS 注册 app
 2. **契约同步**（若涉及 Schema）：改 [docs/schema](../schema/README.md) → 同步镜像到 client
    `contract/schema/` → `pnpm gen:metadata-types` → 提交生成的 `src/api/types/*.d.ts`
    （`pnpm check:contract` 校验镜像一致）；
-3. **注册表成对渲染（xadmin-client）**：`RePlusPage/src/utils/renderers-detail.tsx` 登记；
+3. **四通道渲染（xadmin-client）**：`RePlusPage/src/utils/renderers-detail.tsx` 登记；
    对象 / 数组值**同时**提供详情 `render` 与列表 `cellRenderer`（走 valueType 通道的也必须补
    `cellRenderer`），并在 `renderers-pairing.spec.ts` 的分类清单登记（未分类即测试失败）；
-   表单通道补 `renderers-form.tsx`，搜索通道补 `renderers-search.tsx`；
+   表单通道补 `renderers-form.tsx`（详情有渲染器的类型必须能在表单编辑，否则登记
+   `FORM_EXEMPT_TYPES` 并写明理由），搜索通道补 `renderers-search.tsx`（新键须登记
+   `SEARCH_REGISTRY_TYPES`）；
 4. **取值口径**：LabeledChoice 系列值形状为 `{value,label,color?}`——列表读 `.label`
    （行内 `color` 优先），详情 `prop` 指到 `.value` 并用 `render` 渲染彩色 tag；`ElTag`
    传 `color` 需同时覆盖文字 / 边框（统一入口 `src/utils/dict.ts` 的 `dictTagProps` /
