@@ -300,7 +300,8 @@ class TestBackgroundTaskViewSetJob:
         )
 
         assert info["state"] is True
-        assert "成功" in str(info["status"])  # 聚合后 status 为文案（state 才是布尔）
+        # 聚合后 status 为文案（state 才是布尔）；活动语言随环境变化，双语兼容
+        assert "successful" in str(info["status"]) or "成功" in str(info["status"])
         assert info["task_name"].endswith("EchoViewSet")
         assert info["view_doc"].startswith("批量操作演示视图")
         assert len(info["tasks"]) == 1
@@ -336,7 +337,7 @@ class TestBackgroundTaskViewSetJob:
             action_map={"post": "create"},
         )
         assert info["state"] is False
-        assert "失败" in str(info["status"])
+        assert "failed" in str(info["status"]) or "失败" in str(info["status"])
         assert info["tasks"][0]["result"] == "部分行失败"
         CacheList("view_task_jobf", timeout=3600 * 24).delete()
 

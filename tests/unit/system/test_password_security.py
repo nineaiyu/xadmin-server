@@ -153,7 +153,8 @@ class TestChangePasswordFlow:
         assert serializer.is_valid()
         with pytest.raises(ValidationError) as exc:
             serializer.save()
-        assert "密码不能与最近" in str(exc.value)
+        # 活动语言随环境变化（本地编译 .mo 为中文、CI 无 .mo 为英文），双语兼容
+        assert "cannot reuse the recent" in str(exc.value) or "不能与最近" in str(exc.value)
 
     def test_change_rejects_leak_password(self, normal_user, settings):
         settings.SECURITY_PASSWORD_LEAK_CHECK_ENABLED = True
@@ -162,7 +163,7 @@ class TestChangePasswordFlow:
         assert serializer.is_valid()
         with pytest.raises(ValidationError) as exc:
             serializer.save()
-        assert "泄露库" in str(exc.value)
+        assert "has been leaked" in str(exc.value) or "泄露库" in str(exc.value)
 
 
 class TestAdminResetFlow:
@@ -190,4 +191,4 @@ class TestAdminResetFlow:
         assert serializer.is_valid()
         with pytest.raises(ValidationError) as exc:
             serializer.save()
-        assert "泄露库" in str(exc.value)
+        assert "has been leaked" in str(exc.value) or "泄露库" in str(exc.value)

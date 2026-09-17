@@ -127,7 +127,8 @@ class TestVerifyCodeLogin:
     def test_login_code_invalid_token(self, api_client, login_free):
         resp = api_client.post(LOGIN_CODE_URL, {"verify_token": "bad", "verify_code": "123456"}, format="json")
         assert resp.status_code == 400, resp.data
-        _assert_bilingual(str(resp.data["detail"]), "Token is invalid or expired", "令牌无效或过期")
+        # 文案随翻译源略有差异（项目域"令牌无效或过期"/令牌组件域"令牌无效或已过期"），中文取稳定前缀
+        _assert_bilingual(str(resp.data["detail"]), "Token is invalid or expired", "令牌无效")
 
     def test_login_code_username_wrong_password(self, api_client, normal_user, login_free):
         verify_token, verify_code = self._send_login_code(api_client, "zhangsan")

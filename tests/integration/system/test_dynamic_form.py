@@ -162,9 +162,10 @@ class TestSubmission:
         grant_form_menus(normal_user)
         client = client_for(normal_user)
         response = client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三"}}, format="json")
-        # 停用表单拒绝提交（序列化器校验 → HTTP 400 + 可读文案）
+        # 停用表单拒绝提交（序列化器校验 → HTTP 400 + 可读文案；活动语言随环境变化，双语兼容）
         assert response.status_code == 400
-        assert "不再接受提交" in response.json()["detail"]
+        detail = response.json()["detail"]
+        assert "no longer accepting submissions" in detail or "不再接受提交" in detail, detail
 
 
 class TestCreatorIsolation:
