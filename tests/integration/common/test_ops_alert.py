@@ -12,7 +12,9 @@ import pytest
 from django.utils.translation import gettext as _gettext
 
 from common.core.config import SysConfig
+from common.ops_alert import OpsAlertMessage
 from notifications.models import MessageContent
+from notifications.notifications import SYSTEM_MESSAGE_REGISTRY
 
 pytestmark = pytest.mark.django_db
 
@@ -26,6 +28,18 @@ PAYLOAD = {
     "detail": "container=xadmin-celery-worker image=xadmin-server id=abc123",
 }
 SERVER_ROOT = Path(__file__).resolve().parents[3]
+
+
+@pytest.fixture(autouse=True)
+def _restore_message_registry():
+    """测试结束后从全局消息注册表移除 OpsAlertMessage。
+
+    `register_message` 是进程级单例注册表，本文件 import 即注册；不移除会给
+    同 worker 后续的订阅视图断言（类别树）多出一项（并行分布下偶发暴露）。
+    """
+
+    yield
+    SYSTEM_MESSAGE_REGISTRY[:] = [info for info in SYSTEM_MESSAGE_REGISTRY if info["cls"] is not OpsAlertMessage]
 
 
 @pytest.fixture
