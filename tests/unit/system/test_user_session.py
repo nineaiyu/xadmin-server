@@ -191,6 +191,25 @@ class TestSessionOffline:
 
         assert not UserSession.objects.filter(creator=superuser, status=UserSession.Status.ONLINE).exists()
 
+    def test_batch_destroy_offlines_each_selected_session(self, auth_client, superuser):
+        """批量删除在线行必须逐行走 perform_destroy：非逐行 queryset.delete() 会
+        直接删行并跳过踢线/令牌失效，用户看似被下线实际仍可访问。"""
+        target = register_user_session(None, superuser, UserLoginLog.LoginTypeChoices.USERNAME)
+        other = register_user_session(None, superuser, UserLoginLog.LoginTypeChoices.USERNAME)
+        refresh = RefreshToken.for_user(superuser)
+        _, access_str = bind_session_claim(refresh, target.pk)
+
+        resp = auth_client.post("/api/system/online/batch-destroy", [str(target.pk)], format="json")
+
+        assert resp.status_code == 200, resp.data
+        # 行维度「下线」是标记离线（保留历史行），不是物理删除
+        target.refresh_from_db()
+        other.refresh_from_db()
+        assert target.status == UserSession.Status.OFFLINE
+        assert other.status == UserSession.Status.ONLINE
+        with pytest.raises(TokenError):
+            ServerAccessToken(access_str.encode()).verify()
+
 
 class TestExpireAndClean:
     def test_expire_stale_http_sessions_only(self, superuser):

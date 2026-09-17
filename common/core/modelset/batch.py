@@ -99,6 +99,10 @@ class BatchDestroyAction:
           才有批量 delete() 覆盖不到的文件清理副作用；
         - 软删模型（SoftDeleteModel）的 delete() 走 save()，post_save 信号
           （权限缓存失效）必须触发，单 SQL update 会绕过信号。
+
+        视图层另有逐行副作用（如踢线下线）时，视图可覆写本方法返回 True——
+        这类副作用只在 perform_destroy 中，非逐行分支会静默跳过（范例
+        UserOnlineViewSet；覆写契约见 docs/architecture/framework-cookbook.md）。
         """
         model = getattr(getattr(self, "queryset", None), "model", None)
         if model is None:

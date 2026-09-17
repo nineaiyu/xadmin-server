@@ -61,12 +61,33 @@ config.yml              XADMIN_APPS 注册 app
 | `get_serializer_related_fields()` / `optimize_queryset()` | 按序列化器**声明字段自动推断** select_related/prefetch_related（列表页消 N+1；勿手写） |
 | `paginate_queryset()` | 已内建"导出（`?type=csv|xlsx`）绕过分页"；一般无需覆写 |
 | `perform_destroy()` | 删除前钩子 |
+| `_needs_rowwise_delete()` | 批量删除路径选择：默认按模型判定（软删 / 文件清理走逐行）；**视图层有逐行副作用时覆写返回 True**（范例 `UserOnlineViewSet`：踢线/令牌失效只在 perform_destroy 中） |
 | `filterset_class` | 搜索字段（django-filter + `BaseFilterSet`；`PkMultipleFilter` 自定义前端 input_type，见 demo/views.py） |
 | `pagination_class` | `DynamicPageNumber(1000)` 控制最大页大小 |
 | `ordering_fields` | 排序白名单 |
 
 序列化器侧：`BaseModelSerializer` 已自动生成关联/choice 字段形态（demo/serializers/book.py
 有注释说明），自定义输入形态用 `input_wrapper`（下拉/表格选择器/Tab 列等）。
+
+### 覆写红线（新增覆写必读）
+
+1. **批量删除不走 `perform_destroy` 的两个分支**：框架 `batch_destroy` 的非逐行分支直接
+   `queryset.delete()`（单条 SQL），只在逐行分支才逐条调 `perform_destroy`。覆写
+   `perform_destroy` 承担副作用（踢线、派生数据清理、保护性校验）时，必须让批量路径触达它，
+   二选一：
+   - **覆写 `batch_destroy` 自担批量语义**（范例 `KnowledgeViewSet`、`UserViewSet`）；
+     覆写**必须保留 `@extend_schema` + `@action` 装饰器**——DRF 按方法的 mapping 属性收集
+     额外路由，裸覆写会让 `batch-destroy` 路由 405；
+   - **覆写 `_needs_rowwise_delete()` 返回 True**（范例 `UserOnlineViewSet`）。
+   漏网组合由守护测试 `tests/unit/common/test_modelset_override_guard.py` 拦截（扫描全部
+   暴露 batch-destroy 路由的 ViewSet，豁免需登记理由）。
+2. **非 ORM 数据源**：`get_queryset` 返回 list（如安全设置 IP 拦截名单，数据源是 Redis 键）
+   的视图，框架批量分支的 QuerySet 能力不可用，必须自带 `batch_destroy`（范例
+   `SecurityBlockIpViewSet`）。
+3. **数据权限不可绕过**：查询集过滤统一走 `filter_queryset` / `get_filter_queryset`，
+   手写裸 `filter()` 会同时绕过数据权限与审计口径。
+4. **覆写必须附守护测试**：新增/调整上述覆写点（尤其 `perform_destroy` / `batch_destroy` /
+   `get_queryset`）时，同步补一条覆盖该语义的测试（单测或 E2E），随 PR 一起提交。
 
 ## 五、约定与红线
 

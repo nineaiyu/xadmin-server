@@ -158,10 +158,10 @@ msgstr "规则 %(index)d 缺少有效的目标表"
 msgid "Rule %(index)d references an unknown table %(table)s"
 msgstr "规则 %(index)d 引用了不存在的表 %(table)s"
 
-#: common/core/data_scope.py:507
+#: common/core/data_scope/compiler.py:161
 #, python-format
-msgid "Rule %(index)d has an unknown type"
-msgstr "规则 %(index)d 的类型不合法"
+msgid "Rule %(index)d has an unknown type %(type)s"
+msgstr "规则 %(index)d 的类型不合法（%(type)s）"
 
 #: common/core/data_scope.py:511
 #, python-format
@@ -214,20 +214,20 @@ msgstr "规则 %(index)d 需要起止两个时间"
 msgid "Rule %(index)d has a malformed JSON value"
 msgstr "规则 %(index)d 的 JSON 值格式不正确"
 
-#: common/core/data_scope.py:569
+#: common/core/data_scope/compiler.py:224
 #, python-format
-msgid "Rule %(index)d has an unsupported match %(match)s"
-msgstr "规则 %(index)d 使用了不支持的匹配方式 %(match)s"
+msgid "Rule %(index)d has an unsupported match %(match)s for field %(field)s"
+msgstr "规则 %(index)d 的字段 %(field)s 使用了不支持的匹配方式 %(match)s"
 
 #: common/core/data_scope.py:578
 #, python-format
 msgid "Rule %(index)d has a malformed value for match %(match)s"
 msgstr "规则 %(index)d 的匹配方式 %(match)s 对应的值格式不正确"
 
-#: common/core/data_scope.py:581
+#: common/core/data_scope/compiler.py:239
 #, python-format
-msgid "Rule %(index)d cannot be applied with the given value"
-msgstr "规则 %(index)d 的匹配值无法用于该字段查询"
+msgid "Rule %(index)d cannot be applied with the given value for field %(field)s"
+msgstr "规则 %(index)d 的匹配值无法用于字段 %(field)s 查询"
 
 #: common/core/data_scope.py:585
 #, python-format

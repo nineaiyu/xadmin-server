@@ -300,8 +300,10 @@ class TestValidateRules:
             validate_rules([{**self.valid_rule(), "table": "other.model"}])
 
     def test_unknown_type_rejected(self):
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc:
             validate_rules([{**self.valid_rule(), "type": "value.unknown"}])
+        # 报错需带实际取值，管理员才能直接定位改错的那条规则
+        assert "value.unknown" in "; ".join(str(item) for item in exc.value.detail)
 
     def test_exclude_all_rejected(self):
         rule = {**self.valid_rule(), "type": "value.all", "match": "all", "exclude": True}
@@ -362,8 +364,10 @@ class TestValidateRules:
             )
 
     def test_bogus_match_rejected(self, db):
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc:
             validate_rules([{**self.valid_rule(), "match": "bogus_lookup"}])
+        # 报错需带字段名：可用匹配符随字段变化，需指出是哪个字段不匹配
+        assert "admin" in "; ".join(str(item) for item in exc.value.detail)
 
     def test_rule_to_q_all_match_defensive(self):
         """直接调用 rule_to_q 时 match=all 兜底恒真，不拼 Q(field__all=...)。"""

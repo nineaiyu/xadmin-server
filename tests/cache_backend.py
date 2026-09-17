@@ -120,3 +120,19 @@ class FakeRedisCache(LocMemCache):
                 if self._delete(key):
                     deleted += 1
         return deleted
+
+    def keys(self, pattern="*", version=None):
+        """django-redis ``cache.keys`` 等价实现：返回按 pattern 匹配的**逻辑键**。
+
+        生产实现（``django_redis.DefaultClient.keys``）把 prefix/version 拼进 Redis 模式、
+        再把命中键 reverse 回逻辑键；这里对内部键（``:<version>:<key>``）做等价处理，
+        调用方拿到的是不含前缀与版本的键（与生产一致，如 ``_LOGIN_BLOCK_IP_1.2.3.4``）。
+        """
+        version = self.version if version is None else version
+        internal_prefix = f"{self.key_prefix}:{version}:"
+        with self._lock:
+            internal_keys = [key for key in list(self._cache) if not self._has_expired(key)]
+        logical_keys = [
+            key[len(internal_prefix) :] if key.startswith(internal_prefix) else key for key in internal_keys
+        ]
+        return [key for key in logical_keys if fnmatch.fnmatch(key, pattern)]

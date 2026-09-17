@@ -9,8 +9,15 @@ import struct
 
 from django.conf import settings
 from django.core.cache import cache
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.plumbing import build_array_type, build_basic_type
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiRequest, extend_schema
+from rest_framework.decorators import action
 
 from common.core.modelset import ListDeleteModelSet
+from common.core.response import ApiResponse
+from common.swagger.utils import get_default_response_schema
 from settings.models import Setting
 from settings.serializers.security import SecurityBlockIPSerializer
 from settings.utils.security import LoginIpBlockUtil
@@ -65,3 +72,23 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
     def perform_destroy(self, ip):
         LoginIpBlockUtil(ip).clean_block_if_need()
         return 1, 1
+
+    @extend_schema(
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-destroy")
+    def batch_destroy(self, request, *args, **kwargs):
+        """批量解除拦截：数据源是 Redis 键列表（非 ORM queryset），逐条走 perform_destroy。
+
+        框架批量删除的非逐行分支直接调 ``queryset.delete()``——列表没有该方法，
+        且解除拦截的副作用只在 perform_destroy 中；故此处自担批量语义。
+        """
+        if not isinstance(request.data, (list, tuple)):
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        ips = self.filter_queryset(self.get_queryset()).filter(pk__in=request.data)
+        count = 0
+        for ip in ips:
+            self.perform_destroy(ip)
+            count += 1
+        return ApiResponse(detail=_("Operation successful. Batch deleted {} data").format(count))

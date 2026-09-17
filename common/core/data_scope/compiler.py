@@ -157,7 +157,8 @@ def validate_rules(rules):
 
         f_type = rule.get("type")
         if f_type not in KeyChoices.values:
-            raise ValidationError(_("Rule %(index)d has an unknown type") % {"index": index})
+            # 附实际取值：管理员在 UI/种子数据里改错类型时，能直接定位是哪一条
+            raise ValidationError(_("Rule %(index)d has an unknown type %(type)s") % {"index": index, "type": f_type})
 
         exclude = rule.get("exclude", False)
         if not isinstance(exclude, bool):
@@ -218,8 +219,10 @@ def validate_rules(rules):
             # table="*" 无单一模型/字段可依，与字段校验同口径跳过
             match = rule.get("match", "exact")
             if match not in _allowed_matches(model, field):
+                # 附字段名：可用匹配符随字段类型变化（前端 match 下拉同源），报错需指出是哪个字段
                 raise ValidationError(
-                    _("Rule %(index)d has an unsupported match %(match)s") % {"index": index, "match": match}
+                    _("Rule %(index)d has an unsupported match %(match)s for field %(field)s")
+                    % {"index": index, "match": match, "field": field}
                 )
             # 运行时注入 value 的类型（OWNER / 部门类）：写入侧 value 只是占位，
             # 形态与编译探测都会误伤（resolve_rule 读侧会覆写为真实 pk），故跳过。
@@ -231,7 +234,11 @@ def validate_rules(rules):
                         _("Rule %(index)d has a malformed value for match %(match)s") % {"index": index, "match": match}
                     )
                 if not _is_compilable(model, rule_to_q(rule)):
-                    raise ValidationError(_("Rule %(index)d cannot be applied with the given value") % {"index": index})
+                    # 附字段名：通常是「值形态与字段类型不匹配」（如 UUID 字段配非 UUID 值）
+                    raise ValidationError(
+                        _("Rule %(index)d cannot be applied with the given value for field %(field)s")
+                        % {"index": index, "field": field}
+                    )
 
         # 字段路径校验（dunder 逐段；table="*" 无单一模型可依，跳过模型校验）
         if field != "*" and table != "*" and not _field_exists(model, field):

@@ -70,6 +70,11 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         instance.mark_offline()
         return True
 
+    def _needs_rowwise_delete(self):
+        """批量删除必须逐行：WS 踢线与 HTTP 会话令牌失效只在 perform_destroy 中，
+        非逐行分支的 queryset.delete() 会静默跳过这些副作用（在线用户看似被删除、实际未下线）。"""
+        return True
+
     @extend_schema(
         request=None,
         responses=get_default_response_schema({"channels": build_basic_type(OpenApiTypes.NUMBER)}),

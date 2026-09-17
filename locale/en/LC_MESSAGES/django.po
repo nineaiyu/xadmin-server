@@ -164,9 +164,9 @@ msgstr ""
 msgid "Rule %(index)d references an unknown table %(table)s"
 msgstr ""
 
-#: common/core/data_scope.py:507
+#: common/core/data_scope/compiler.py:161
 #, python-format
-msgid "Rule %(index)d has an unknown type"
+msgid "Rule %(index)d has an unknown type %(type)s"
 msgstr ""
 
 #: common/core/data_scope.py:511
@@ -220,9 +220,9 @@ msgstr ""
 msgid "Rule %(index)d has a malformed JSON value"
 msgstr ""
 
-#: common/core/data_scope.py:569
+#: common/core/data_scope/compiler.py:224
 #, python-format
-msgid "Rule %(index)d has an unsupported match %(match)s"
+msgid "Rule %(index)d has an unsupported match %(match)s for field %(field)s"
 msgstr ""
 
 #: common/core/data_scope.py:578
@@ -230,9 +230,9 @@ msgstr ""
 msgid "Rule %(index)d has a malformed value for match %(match)s"
 msgstr ""
 
-#: common/core/data_scope.py:581
+#: common/core/data_scope/compiler.py:239
 #, python-format
-msgid "Rule %(index)d cannot be applied with the given value"
+msgid "Rule %(index)d cannot be applied with the given value for field %(field)s"
 msgstr ""
 
 #: common/core/data_scope.py:585

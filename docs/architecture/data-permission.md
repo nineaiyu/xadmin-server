@@ -25,3 +25,26 @@ filter_queryset = self.filter_queryset(self.get_queryset())
 ![add-data-permission-rules.png](../imgs/data-permission/add-data-permission-rules.png)
 
 将该数据权限分配给用户即可
+
+## 排障：用户看到空集 / 规则不生效
+
+数据权限是 fail-closed 口径（无适用授权即空集），排查分三步：
+
+1. **规则存储体检**——与写入侧 `validate_rules` 同源校验存量规则，列出非法授权及原因
+   （报错带规则序号与字段/匹配符上下文），并给出「不生效」提示（`[WARN]`，不影响退出码）：
+
+   ```bash
+   python manage.py audit_data_permission_rules               # 只列出，不改库
+   python manage.py audit_data_permission_rules --strict      # CI 门禁：发现非法即非零退出
+   python manage.py audit_data_permission_rules --deactivate  # 非法授权整体停用（is_active=False）
+   ```
+
+   `[WARN]` 覆盖三类「规则合法但对绑定对象恒为空集」的配置：未绑定任何用户/部门；
+   「主管部门」类规则绑定对象中没有任何部门主管；规则引用的用户/部门/角色/菜单已被删除。
+   提示只列不改（部分可能是有意配置），修正后重跑确认。
+
+2. **用户视角试算**——数据权限页的「试算」面板按目标用户实跑 `get_filter_queryset`，
+   展示实际生效的授权、规则可读文案与命中结果，回答「他为什么能/不能看到这条数据」。
+
+3. **运行时日志**——读侧对坏规则 fail-closed 时会打 `data scope rule ... fail-closed` 告警
+   （字段不存在 / 无法编译），绑定用户看到空集时可从日志定位到具体模型与字段。
