@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""SLO 快照脚本单测：指标文本解析与四项 SLO 计算（缺数据路径）。"""
+"""SLO 快照脚本单测：指标文本解析与四项 SLO 计算（缺数据路径）+ cron 接线端到端。"""
 
 import datetime
+import http.server
 import json
+import os
+import subprocess
+import sys
+import threading
+from pathlib import Path
 
 from scripts.slo_snapshot import (
     append_snapshot,
@@ -87,3 +93,83 @@ class TestSnapshotAccumulation:
         for line in lines:
             payload = json.loads(line)
             assert "ts" in payload and "result" in payload
+
+
+class TestCronScriptWiring:
+    """utils/slo_snapshot_cron.sh 接线端到端：stub 指标端点 → 脚本 → --append 落盘。
+
+    采集机制（每日 cron）的正确性取决于三件事：环境变量透传（URL/令牌/累积文件）、
+    Bearer 令牌到达端点、快照以 JSONL 追加。本测试用进程内 stub HTTP 服务验证全链路，
+    不依赖真实容器。
+    """
+
+    SERVER_ROOT = Path(__file__).resolve().parents[3]
+
+    @staticmethod
+    def _serve_metrics(payload: str, seen_headers: list):
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):  # noqa: N802 与基类签名一致
+                seen_headers.append(dict(self.headers))
+                body = payload.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):  # 静默测试输出
+                pass
+
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        return server
+
+    def test_cron_script_appends_snapshot_via_stub_endpoint(self, tmp_path):
+        payload = "\n".join(
+            [
+                'xadmin_http_requests_total{method="GET",status="200"} 95.0',
+                'xadmin_http_requests_total{method="GET",status="500"} 5.0',
+                'xadmin_http_request_duration_seconds_bucket{le="0.05"} 90.0',
+                'xadmin_http_request_duration_seconds_bucket{le="0.5"} 100.0',
+                'xadmin_http_request_duration_seconds_bucket{le="+Inf"} 100.0',
+                'xadmin_celery_tasks_total{status="SUCCESS"} 9.0',
+                'xadmin_celery_tasks_total{status="FAILURE"} 1.0',
+                "",
+            ]
+        )
+        seen_headers: list = []
+        server = self._serve_metrics(payload, seen_headers)
+        try:
+            target = tmp_path / "slo_snapshots.jsonl"
+            env = {
+                **os.environ,
+                "METRICS_URL": f"http://127.0.0.1:{server.server_address[1]}/metrics",
+                "METRICS_TOKEN": "slo-wiring-token",
+                "SLO_SNAPSHOT_FILE": str(target),
+                "PYTHON": sys.executable,
+            }
+            script = self.SERVER_ROOT / "utils" / "slo_snapshot_cron.sh"
+            subprocess.run(["bash", str(script)], env=env, capture_output=True, text=True, timeout=60, check=True)
+        finally:
+            server.shutdown()
+
+        # 令牌以 Bearer 头到达端点（鉴权接线正确）
+        assert any(h.get("Authorization") == "Bearer slo-wiring-token" for h in seen_headers)
+        # 快照以 JSONL 追加且数值与 stub 数据一致
+        lines = target.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 1
+        record = json.loads(lines[0])
+        assert "ts" in record and "result" in record
+        assert record["result"]["availability"]["value"] == 0.95
+        assert record["result"]["p95_seconds"]["value"] == 0.5
+        assert record["result"]["task_success"]["value"] == 0.9
+
+    def test_cron_script_syntax_and_contract(self):
+        """脚本语法有效，且默认端点/累积文件/--append 接线保留（文本级回归）。"""
+        script = self.SERVER_ROOT / "utils" / "slo_snapshot_cron.sh"
+        subprocess.run(["bash", "-n", str(script)], check=True)
+        text = script.read_text(encoding="utf-8")
+        assert "--append" in text
+        assert "SLO_SNAPSHOT_FILE" in text
+        assert "METRICS_TOKEN" in text
+        assert "slo_snapshot.py" in text

@@ -74,9 +74,19 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 **采集机制（A2，2026-09-17 上线）**：`utils/slo_snapshot_cron.sh` 每日（宿主 cron / systemd timer）
 调用 `scripts/slo_snapshot.py --append`，把快照追加进 JSONL（`SLO_SNAPSHOT_FILE`，默认
 `tmp/slo_snapshots.jsonl`）——HTTP/任务为进程累计口径，**跨重启的趋势**才有意义。
-首次采集（2026-09-17）：可用性 100.000%（23 请求）、P95 0.05s、任务成功率 99.89%（2831 个任务）。
-**校准触发**：采集跨度 ≥3 个月（2026-12 起季度巡检核对）→ 按实际数据回填目标值到下方表格与
-[metrics.md](../metrics.md)。
+接线有端到端测试守护（`tests/unit/common/test_slo_snapshot.py::TestCronScriptWiring`：
+stub 指标端点验证令牌透传与 JSONL 追加）。
+
+- **首次采集（2026-09-17）**：可用性 100.000%（23 请求）、P95 0.05s、任务成功率 99.89%（2831 任务）；
+- **第二次（同日，经 cron 脚本真实链路）**：可用性 100.000%（461 请求）、P95 0.01s、任务成功率 99.90%（3010 任务）；
+- **宿主调度安装**（一行 crontab，每日 06:17；IDE 沙箱无权限代装，需在宿主终端执行一次）：
+
+```bash
+printf '17 6 * * * METRICS_TOKEN=<config.yml 的 METRICS_TOKEN> PYTHON=<仓库>/.venv/bin/python <仓库>/utils/slo_snapshot_cron.sh >> <仓库>/tmp/slo_cron.log 2>&1\n' | crontab -
+```
+
+**校准触发**：采集跨度 ≥3 个月（约 ≥90 个数据点，2026-12 起季度巡检核对）→ 按实际数据
+回填目标值到下方表格与 [metrics.md](../metrics.md)。
 
 ### SLO（初始口径，按实际基线校准并回填 metrics.md）
 
