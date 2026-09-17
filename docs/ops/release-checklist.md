@@ -11,6 +11,9 @@
 - [ ] **全量门禁**：server `ruff check` + `ruff format --check` + `pytest -n auto`（覆盖率 ≥78%）；
       client `typecheck` + `typecheck:strict` + `eslint --max-warnings 0` + `prettier` + `stylelint` + `vitest` +
       `check:contract` + **`check:bundle-size`**（首屏闭包增长 ≤15 KB，超预算需在 PR 说明后刷新基线）
+- [ ] **CI 全绿**：GitHub Actions 最近一次运行 Unit Tests / Lint / E2E / security 全 success，无积压失败
+      （教训：Unit Tests 曾自 09-14 起连续失败多日未察觉——本地编译 .mo 为中文、CI 无 .mo 为英文/组件域翻译，
+      文案断言写死单语言在 CI 必挂，须 zh/en 双语兼容）
 - [ ] **E2E**：改后端必跑 `pnpm test:e2e:fresh`（防旧进程假失败）；新功能主链路双浏览器 + a11y/smoke 门禁
 - [ ] **数据/部署**：新权限点重灌 `python manage.py load_init_json`（幂等验证）→ 重启 `server`/`celery-worker`/`celery-heavy`
       （代码挂载不热加载）；迁移在全新库重建验证
