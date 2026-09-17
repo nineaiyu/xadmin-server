@@ -66,6 +66,23 @@ class TestFindCovering:
         perms = [self._perm("api/system/user$", "GET")]
         assert sync.find_covering(perms, "api/system/user", "POST") is None
 
+    def test_shared_method_path_covers_registered_methods(self):
+        """登记的多方法共享端点（im-binding）：单权限点同时覆盖 GET / POST。"""
+        perms = [self._perm("api/system/user/(?P<pk>[^/.]+)/im-binding$", "GET", "imBinding:SystemUser")]
+        path = "api/system/user/(?P<pk>[^/.]+)/im-binding"
+        assert sync.find_covering(perms, path, "GET") is not None
+        assert sync.find_covering(perms, path, "POST") is not None
+        # 未登记的方法不放宽（如实暴露缺口）
+        assert sync.find_covering(perms, path, "DELETE") is None
+
+    def test_shared_method_registry_matches_view_action(self):
+        """登记表与视图 action 同源：im-binding 仍为单动作 GET+POST（防登记表悬空）。"""
+        from system.views.admin.user import UserViewSet
+
+        action = UserViewSet.im_binding
+        assert sorted(action.mapping) == ["get", "post"]
+        assert f"api/system/user/(?P<pk>[^/.]+)/{action.url_path}$" in sync.SHARED_METHOD_PATHS
+
 
 class TestSeedMerge:
     def test_detect_indent(self):

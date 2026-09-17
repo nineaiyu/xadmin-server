@@ -9793,7 +9793,8 @@
    "meta": "841c7db3-3474-5cff-9fe7-92c879a66d2a",
    "method": "GET",
    "model": [
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
    ]
   }
  },
@@ -9818,7 +9819,8 @@
    "meta": "e24aac1f-f2ce-5c15-b7db-5dd4cef136dc",
    "method": "POST",
    "model": [
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
    ]
   }
  },
@@ -9843,7 +9845,8 @@
    "meta": "08ea4e1f-63d8-501d-a427-bda11fcbcceb",
    "method": "GET",
    "model": [
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
    ]
   }
  },
@@ -9868,7 +9871,8 @@
    "meta": "a5c3f270-59a5-5f65-b5da-e58242e5807a",
    "method": "PATCH",
    "model": [
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "eee6d5f1-8057-4e01-83f7-0a98d76cb987"
    ]
   }
  },
@@ -10956,7 +10960,8 @@
    "method": "PATCH",
    "model": [
     "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
    ]
   }
  },
@@ -10982,7 +10987,8 @@
    "method": "GET",
    "model": [
     "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
    ]
   }
  },
@@ -11031,7 +11037,8 @@
    "method": "POST",
    "model": [
     "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
    ]
   }
  },
@@ -11057,7 +11064,8 @@
    "method": "GET",
    "model": [
     "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
-    "9a41849c-1791-4420-b6cd-1b59f90034bc"
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
    ]
   }
  },
@@ -13049,6 +13057,7 @@
    "meta": "2b606fea-cf43-454c-bd06-1894d8a49be4",
    "method": "GET",
    "model": [
+    "206cf77d-2775-4552-ad10-64b5b913bf60",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
@@ -13074,6 +13083,7 @@
    "meta": "bdfa28b4-0c90-4e68-8d03-fda708c3f61d",
    "method": "POST",
    "model": [
+    "206cf77d-2775-4552-ad10-64b5b913bf60",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
@@ -13122,6 +13132,7 @@
    "meta": "3c9a70a5-771b-4e63-95e2-860729468e13",
    "method": "GET",
    "model": [
+    "206cf77d-2775-4552-ad10-64b5b913bf60",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
@@ -13147,6 +13158,7 @@
    "meta": "8593dbd0-e0b3-4e97-a883-816d3a959d2b",
    "method": "PATCH",
    "model": [
+    "206cf77d-2775-4552-ad10-64b5b913bf60",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
@@ -13179,7 +13191,7 @@
   "pk": "c6677425-1706-4f8f-a023-1a733fee415b",
   "fields": {
    "created_time": "2026-09-15T13:33:38.725Z",
-   "updated_time": "2026-09-15T13:33:38.730Z",
+   "updated_time": "2026-09-17T10:05:39.368Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
@@ -13193,7 +13205,7 @@
    "component": null,
    "is_active": true,
    "meta": "1b7109cb-2025-4460-9249-516d2489b682",
-   "method": "POST",
+   "method": "GET",
    "model": []
   }
  },
@@ -13291,12 +13303,12 @@
   "model": "system.menu",
   "pk": "fa8b82ec-fad3-4469-82c6-f428dabe7f62",
   "fields": {
+   "created_time": "2026-09-17T00:00:00Z",
+   "updated_time": "2026-09-17T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
-   "created_time": "2026-09-17T00:00:00Z",
-   "updated_time": "2026-09-17T00:00:00.000Z",
    "deleted_at": null,
    "parent": "3e48aac3-b1b8-4f5d-85b6-7ceac64ce2f0",
    "menu_type": 2,
@@ -13307,7 +13319,11 @@
    "is_active": true,
    "meta": "ede27e68-b901-4602-a97c-fc6fd5572eba",
    "method": "GET",
-   "model": []
+   "model": [
+    "094c14b3-8c6e-46a7-a893-cc5a4fc98b0a",
+    "c19100c5-725c-4a81-a1f1-1209f757d693",
+    "0d5de2ca-ef98-4e05-8a21-9aa65ed818b6"
+   ]
   }
  }
 ]

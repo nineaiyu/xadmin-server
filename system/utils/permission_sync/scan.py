@@ -12,7 +12,7 @@ from common.utils import get_logger
 from system.models import Menu, ModelLabelField
 from system.utils.menu import get_view_permissions
 
-from .constants import DEAD_ENDPOINT_PREFIXES, PARENT_MENU_MAP, SKIP_ROUTE_PREFIXES
+from .constants import DEAD_ENDPOINT_PREFIXES, PARENT_MENU_MAP, SHARED_METHOD_PATHS, SKIP_ROUTE_PREFIXES
 from .types import PlanItem, RouteInfo
 
 logger = get_logger(__name__)
@@ -96,17 +96,24 @@ def load_permission_menus():
     return list(Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True))
 
 
+def _method_covers(perm, path, method):
+    """方法匹配：同方法直接命中；登记的多方法共享端点按 SHARED_METHOD_PATHS 放宽。"""
+    perm_method = (perm.method or "").upper()
+    if perm_method == method:
+        return True
+    shared = SHARED_METHOD_PATHS.get(f"{path}$") or ()
+    return method in shared and perm_method in shared
+
+
 def find_covering(perms, path, method):
     """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次正则前缀回退。"""
     exact = f"{path}$"
     for perm in perms:
-        if (perm.method or "").upper() != method:
-            continue
-        if perm.path == exact:
+        if perm.path == exact and _method_covers(perm, path, method):
             return perm
     target = "/" + path
     for perm in perms:
-        if (perm.method or "").upper() != method:
+        if not _method_covers(perm, path, method):
             continue
         try:
             if re.match("/" + perm.path, target):

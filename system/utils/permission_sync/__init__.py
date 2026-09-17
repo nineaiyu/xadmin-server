@@ -24,6 +24,7 @@ from .constants import (
     DEAD_ENDPOINT_PREFIXES,
     IMPORT_EXPORT_ACTIONS,
     PARENT_MENU_MAP,
+    SHARED_METHOD_PATHS,
     SKIP_ROUTE_PREFIXES,
 )
 from .scan import (
@@ -49,6 +50,7 @@ __all__ = [
     "DEAD_ENDPOINT_PREFIXES",
     "IMPORT_EXPORT_ACTIONS",
     "PARENT_MENU_MAP",
+    "SHARED_METHOD_PATHS",
     "SKIP_ROUTE_PREFIXES",
     "BindingFix",
     "PlanItem",

@@ -14296,11 +14296,13 @@
   "pk": "ede27e68-b901-4602-a97c-fc6fd5572eba",
   "fields": {
    "created_time": "2026-09-17T00:00:00Z",
-   "updated_time": "2026-09-17T00:00:00.000Z",
+   "updated_time": "2026-09-17T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "title": "U-获取功能模块清单",
+   "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,
    "is_show_parent": false,
@@ -14311,9 +14313,7 @@
    "transition_leave": "",
    "is_hidden_tag": false,
    "fixed_tag": false,
-   "dynamic_level": 0,
-   "title": "U-获取功能模块清单",
-   "icon": ""
+   "dynamic_level": 0
   }
  }
 ]

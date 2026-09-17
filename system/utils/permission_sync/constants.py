@@ -27,6 +27,14 @@ AUDIT_KNOWN_DUPLICATES = {
     ("api/system/logs/operation$", "GET"),
     ("api/system/tasks/periodic/batch-enable$", "POST"),
 }
+# 已知「单权限码覆盖同端点多方法」：前端以同一权限码驱动查看/保存（拆分权限点会改变页面
+# hasAuth 口径），扫描按本表视为全覆盖；键 = 路由正则原文（含 `$`，与权限点 path 同口径），
+# 值 = 该权限码覆盖的方法集合。
+# - user/{pk}/im-binding GET+POST：管理员代录 IM 身份（查看绑定 / 创建或更新），
+#   前端统一用 `imBinding:SystemUser` 判定入口可见性。
+SHARED_METHOD_PATHS = {
+    "api/system/user/(?P<pk>[^/.]+)/im-binding$": ("GET", "POST"),
+}
 # 需保持「模型绑定为空」的动作：导入导出链（字段权限回退到 list/create 菜单的口径）
 IMPORT_EXPORT_ACTIONS = (
     "export_data",
