@@ -98,6 +98,29 @@ config.yml              XADMIN_APPS 注册 app
   逻辑写在页面 `utils/hook.tsx`，单文件 ≤400 行（CONTRIBUTING 红线）；
 - 页面组件 `name` 必须唯一——它是权限码 `动作:组件名` 的匹配键。
 
+### 新增 input_type（字段类型）检查清单
+
+服务端元数据的 `input_type` 驱动前端「搜索 / 列表 / 详情 / 表单」四条渲染通道，四者
+互不兜底（**详情只认 `render` / `valueType`，列表只认 `cellRenderer`**），漏写一侧即出现
+空白列 / `[object Object]` 类问题。新增或调整字段类型时逐项核对：
+
+1. **服务端类型判定**：`common/drf/metadata.py::get_field_type` 必须用 `isinstance` 而非
+   类名精确匹配（子类如 `DictChoiceField` 要命中 `labeled_choice`）；改判定即补
+   `tests/unit/system/test_data_dict.py` 同款守护测试；
+2. **契约同步**（若涉及 Schema）：改 [docs/schema](../schema/README.md) → 同步镜像到 client
+   `contract/schema/` → `pnpm gen:metadata-types` → 提交生成的 `src/api/types/*.d.ts`
+   （`pnpm check:contract` 校验镜像一致）；
+3. **注册表成对渲染（xadmin-client）**：`RePlusPage/src/utils/renderers-detail.tsx` 登记；
+   对象 / 数组值**同时**提供详情 `render` 与列表 `cellRenderer`（走 valueType 通道的也必须补
+   `cellRenderer`），并在 `renderers-pairing.spec.ts` 的分类清单登记（未分类即测试失败）；
+   表单通道补 `renderers-form.tsx`，搜索通道补 `renderers-search.tsx`；
+4. **取值口径**：LabeledChoice 系列值形状为 `{value,label,color?}`——列表读 `.label`
+   （行内 `color` 优先），详情 `prop` 指到 `.value` 并用 `render` 渲染彩色 tag；`ElTag`
+   传 `color` 需同时覆盖文字 / 边框（统一入口 `src/utils/dict.ts` 的 `dictTagProps` /
+   `statusTagProps`）；
+5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck:strict` + `pnpm check:contract`；
+   改后端元数据后重启容器再跑 `pnpm test:e2e:fresh` 覆盖该字段的列表与详情。
+
 ### 权限
 
 - 页面级：`getDefaultAuths(instance, [...自定义动作])` 生成权限 map；
