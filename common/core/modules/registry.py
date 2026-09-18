@@ -36,6 +36,7 @@ MODULES: tuple[ModuleSpec, ...] = (
         STANDARD,
         menus=("SystemMonitor", "celery"),
         routes=(r"^/api/system/monitor", r"^/api/system/tasks/", r"^/api/flower/"),
+        ws_routes=(r"^/ws/system/monitor/",),
         note="关闭后主机心跳采集与资源告警周期任务一并停止",
     ),
     ModuleSpec(
@@ -69,7 +70,8 @@ MODULES: tuple[ModuleSpec, ...] = (
         OPTIONAL,
         menus=("Chat",),
         routes=(r"^/api/chat/",),
-        note="WebSocket 通道不随模块拦截（REST 与页面已不可达）",
+        ws_routes=(r"^/ws/chat/",),
+        note="关闭后 REST、页面与 ws/chat 通道同步拦截",
     ),
     ModuleSpec(
         "ai",
@@ -90,7 +92,8 @@ MODULES: tuple[ModuleSpec, ...] = (
             r"^/api/system/screens",
             r"^/api/system/reports",
         ),
-        note="关闭后定时报表周期任务一并停止",
+        ws_routes=(r"^/ws/screen/",),
+        note="关闭后定时报表周期任务与 ws/screen 展示通道一并停止",
     ),
     ModuleSpec(
         "dform",
@@ -286,6 +289,7 @@ def reset_module_state() -> None:
         "_resolve_modules_cached",
         "_disabled_specs",
         "_disabled_route_regexes",
+        "_disabled_ws_regexes",
         "_disabled_menu_pks_uncached",
         "all_module_specs",
         "module_index",

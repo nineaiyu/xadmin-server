@@ -9,6 +9,7 @@ import json
 import os
 
 import pytest
+from asgiref.sync import async_to_sync
 from django.core.exceptions import ImproperlyConfigured
 from django.test import Client
 
@@ -18,14 +19,19 @@ from common.core.modules import (
     MODULES,
     OPTIONAL,
     STANDARD,
+    ModuleTrimWebsocketMiddleware,
     disabled_route_patterns,
+    disabled_ws_patterns,
     filter_menu_queryset,
     is_module_enabled,
+    is_ws_path_trimmed,
     module_signature,
     modules_report,
     resolve_modules,
 )
 from system.models import Menu
+
+WS_SCREEN_PK = "5eed0001-0000-0000-0000-000000000002"
 
 pytestmark = pytest.mark.django_db
 
@@ -67,6 +73,7 @@ class TestModuleResolution:
         assert resolution.is_full
         assert not resolution.disabled
         assert disabled_route_patterns() == ()
+        assert disabled_ws_patterns() == ()
         assert module_signature() == "full"
 
     def test_preset_standard_disables_optional_only(self, module_config):
@@ -157,6 +164,75 @@ class TestRouteGate:
     def test_middleware_noop_when_nothing_disabled(self):
         response = Client().get("/api/chat/room")
         assert response.status_code != 404
+
+
+class TestWebsocketGate:
+    """第六层裁剪：停用模块的 WS 通道在准入层拒绝（close 4404）。"""
+
+    @staticmethod
+    def _run_middleware(inner, path):
+        sent = []
+
+        async def send(message):
+            sent.append(message)
+
+        async def receive():  # pragma: no cover - 中间件不读取入站帧
+            return {"type": "websocket.connect"}
+
+        async_to_sync(ModuleTrimWebsocketMiddleware(inner))({"type": "websocket", "path": path}, receive, send)
+        return sent
+
+    def test_disabled_module_ws_patterns_compiled(self, module_config):
+        module_config(disable=["chat", "analysis", "ops"])
+        assert any(pattern.match("/ws/chat/") for pattern in disabled_ws_patterns())
+        assert is_ws_path_trimmed("/ws/chat/")
+        assert is_ws_path_trimmed(f"/ws/screen/{WS_SCREEN_PK}")
+        assert is_ws_path_trimmed("/ws/system/monitor/")
+        # 内核通道不声明 ws_routes，不受影响
+        assert not is_ws_path_trimmed("/ws/message/xadmin/demo")
+        assert not is_ws_path_trimmed("/ws/tasks/log/0123456789abcdef0123456789abcdef")
+
+    def test_ws_gate_noop_when_nothing_disabled(self):
+        assert disabled_ws_patterns() == ()
+        assert not is_ws_path_trimmed("/ws/chat/")
+
+    def test_disabled_channel_rejected_before_inner_app(self, module_config):
+        module_config(disable=["chat"])
+        inner_calls = []
+
+        async def inner(scope, receive, send):  # pragma: no cover - 不应被调用
+            inner_calls.append(scope)
+
+        sent = self._run_middleware(inner, "/ws/chat/")
+        assert sent == [{"type": "websocket.close", "code": 4404}]
+        assert inner_calls == []
+
+    def test_enabled_channel_passes_through(self, module_config):
+        module_config(disable=["chat"])
+        inner_calls = []
+
+        async def inner(scope, receive, send):
+            inner_calls.append(scope["path"])
+
+        sent = self._run_middleware(inner, "/ws/system/monitor/")
+        assert sent == []
+        assert inner_calls == ["/ws/system/monitor/"]
+
+    def test_http_scope_never_gated(self, module_config):
+        """同一路径的 http scope 不由本中间件处理（只拦 websocket 类型）。"""
+
+        module_config(disable=["chat"])
+        inner_calls = []
+
+        async def inner(scope, receive, send):
+            inner_calls.append(scope["path"])
+
+        async_to_sync(ModuleTrimWebsocketMiddleware(inner))(
+            {"type": "http", "path": "/ws/chat/"},
+            lambda: None,
+            lambda message: None,
+        )
+        assert inner_calls == ["/ws/chat/"]
 
 
 class TestMenuFilter:

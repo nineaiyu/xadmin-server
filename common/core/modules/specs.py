@@ -35,6 +35,8 @@ class ModuleSpec:
     :param menus: 本模块的菜单根 name（含其全部后代菜单与权限点）
     :param permissions: 菜单树覆盖不到的权限点 path 前缀（形如 ``api/system/global-search``）
     :param routes: 请求路径正则前缀，用于路由级 404 拦截
+    :param ws_routes: WebSocket 路径正则前缀（含前导斜杠，匹配 ASGI ``scope["path"]``），
+        用于 WS 通道准入拦截；未声明即不拦截（内核通道的自然形态）
     """
 
     id: str
@@ -44,6 +46,7 @@ class ModuleSpec:
     menus: tuple[str, ...] = ()
     permissions: tuple[str, ...] = ()
     routes: tuple[str, ...] = ()
+    ws_routes: tuple[str, ...] = ()
     note: str = ""
 
 

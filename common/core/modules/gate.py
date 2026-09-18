@@ -37,6 +37,52 @@ def disabled_route_patterns() -> tuple:
     return _disabled_route_regexes()
 
 
+@lru_cache(maxsize=1)
+def _disabled_ws_regexes() -> tuple:
+    patterns = []
+    for spec in _disabled_specs():
+        for prefix in spec.ws_routes:
+            patterns.append(re.compile(prefix))
+    return tuple(patterns)
+
+
+def disabled_ws_patterns() -> tuple:
+    """禁用模块的 WebSocket 路径正则（空元组 = 无裁剪，调用方走零开销旁路）。"""
+
+    return _disabled_ws_regexes()
+
+
+def is_ws_path_trimmed(path: str) -> bool:
+    """WS 路径（ASGI ``scope["path"]``，含前导斜杠）是否命中停用模块通道。"""
+
+    patterns = _disabled_ws_regexes()
+    if not patterns:
+        return False
+    return any(pattern.match(path or "") for pattern in patterns)
+
+
+class ModuleTrimWebsocketMiddleware:
+    """停用模块的 WebSocket 通道准入（第六层裁剪，fail-closed）。
+
+    与 HTTP 侧 ``ModuleGateMiddleware`` 同源：通道归属在 ``ModuleSpec.ws_routes``
+    单点声明，停用模块的通道在认证与 consumer 之前直接拒绝（close 4404，语义=
+    通道不存在），避免「页面与 REST 已隐藏、WS 仍可连」的半残状态。
+
+    - 未配置停用模块时零开销直通（不发散任何正则匹配）；
+    - 内核通道（``ws/message``、``ws/tasks/log``）不声明即不拦截。
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "websocket" and is_ws_path_trimmed(scope.get("path", "")):
+            logger.warning("websocket rejected by module trim: %s", scope.get("path"))
+            await send({"type": "websocket.close", "code": 4404})
+            return
+        return await self.app(scope, receive, send)
+
+
 def permission_prefixes_of(specs) -> tuple:
     """给定模块集合的权限点 path 前缀。
 

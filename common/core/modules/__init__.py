@@ -14,8 +14,10 @@
 
 生效范围（软裁剪）：
     1. 请求路由：命中禁用模块前缀的 HTTP 请求直接 404（``ModuleGateMiddleware``）；
-    2. 菜单与权限点：禁用模块的菜单子树与权限码从用户路由/鉴权结果中隐藏；
-    3. 周期任务：禁用模块声明的周期任务不再注册，历史注册条目一并清理。
+    2. WebSocket 通道：命中禁用模块 ``ws_routes`` 声明的 WS 连接在准入层拒绝
+       （``ModuleTrimWebsocketMiddleware``，close 4404）；
+    3. 菜单与权限点：禁用模块的菜单子树与权限码从用户路由/鉴权结果中隐藏；
+    4. 周期任务：禁用模块声明的周期任务不再注册，历史注册条目一并清理。
 
 裁剪语义（红线）：
     1. 关闭模块只隐藏与拦截，**不删除任何业务数据**；重新开启即恢复；
@@ -23,20 +25,22 @@
     3. 依赖未满足时启动期 fail-fast，不做隐式连带禁用；
     4. 默认 ``preset=full``（全部开启），与改造前行为零差异。
 
-已知边界（P1）：WebSocket 通道不拦截（页面与 REST 均已不可达）；前端构建产物
-仍包含全部页面（按需构建裁剪见后续批次）。边界与后续计划见
-``docs/adr/ADR-045-modular-trimmable-architecture.md``。
+已知边界（P1）：前端构建产物仍包含全部页面（按需构建裁剪见后续批次）。
+边界与后续计划见 ``docs/adr/ADR-045-modular-trimmable-architecture.md``。
 
 本包按职责拆分（specs / registry / gate / seeding），对外 API 由本文件统一再导出，
 导入路径保持 ``common.core.modules`` 不变。
 """
 
 from .gate import (
+    ModuleTrimWebsocketMiddleware,
     compute_hidden_menu_pks,
     disabled_permission_prefixes,
     disabled_route_patterns,
+    disabled_ws_patterns,
     filter_menu_queryset,
     invalidate_trimmed_caches,
+    is_ws_path_trimmed,
     permission_prefixes_of,
 )
 from .registry import (
@@ -83,17 +87,20 @@ __all__ = [
     "ModuleResolution",
     "ModuleSeedFilter",
     "ModuleSpec",
+    "ModuleTrimWebsocketMiddleware",
     "all_module_specs",
     "compute_hidden_menu_pks",
     "config_snippet",
     "disabled_module_ids",
     "disabled_permission_prefixes",
     "disabled_route_patterns",
+    "disabled_ws_patterns",
     "discovered_modules",
     "enabled_module_ids",
     "filter_menu_queryset",
     "invalidate_trimmed_caches",
     "is_module_enabled",
+    "is_ws_path_trimmed",
     "module_index",
     "module_signature",
     "modules_report",

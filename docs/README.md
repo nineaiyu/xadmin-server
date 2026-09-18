@@ -38,7 +38,7 @@ docs/
 |---------------------------------------------------------|----------------------------------------------|
 | [overview.md](architecture/overview.md)                 | 架构总览：分层、元数据驱动、子系统速览、协作时序（1289 行深度分析文档的精炼导航版） |
 | [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
-| [模块化与功能裁剪.md](architecture/模块化与功能裁剪.md) | 二开友好架构：功能模块清单与裁剪矩阵（三级分层 / 发行预设 / 五层裁剪 / CLI 与管理页 / 二开路径 A–C / 维护约定 / 已评估关闭项的触发条件） |
+| [模块化与功能裁剪.md](architecture/模块化与功能裁剪.md) | 二开友好架构：功能模块清单与裁剪矩阵（三级分层 / 发行预设 / 六层裁剪（含 WS 通道准入）/ CLI 与管理页 / 二开路径 A–C / 维护约定 / 已评估关闭项的触发条件） |
 | [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、16 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
 | [data-permission.md](architecture/data-permission.md)   | 数据权限配置操作教程（配图）                               |
 | [field-permission.md](architecture/field-permission.md) | 字段权限配置操作教程（配图）                               |
@@ -118,7 +118,7 @@ docs/
 | [ADR-043](adr/ADR-043-remote-suggestions.md) | 远程联想（suggestions）：引用方 `SuggestionsAction`（`{prefix}/suggestions?field=`，候选集与写入校验同源，权限回落 list 权限点，零新权限点）+ ViewSet 级 `suggestion_fields` 字段白名单（元数据 `suggest_url` 与端点校验共用声明，含 with_meta=1 内联路径）+ 前端 `SuggestSelect`（remote/防抖/pks 回显）。首个消费方=审批委托「代理人」（委托人保持弹窗；部门管理经用户决策不采用）；菜单管理「自动添加API权限」登记为不适用场景 |
 
 | [ADR-044](adr/ADR-044-dform-approval-integration.md) | 动态表单与审批流集成（走查五项）：表单绑定审批流程（`approval_flow` + 提交状态/实例 + 终态回写 + 驳回重提）、审批通过自动完成提交（请求体快照 + 通过后动作注册表，multipart 仍走手动重放）、控件扩到 11 种（附件/日期范围/明细子表，禁嵌套）、部门授权写入修复（原静默丢弃）+ 数据权限 fail-closed 可诊断报错、`seed_demo_org` 开箱模板（组织+四层权限+场景模板） |
-| [ADR-045](adr/ADR-045-modular-trimmable-architecture.md) | 功能模块化与可裁剪架构（二开友好）：三级分层（core/standard/optional）+ 发行预设（**不做插件市场**）+ 模块声明单一事实源（内置 `MODULES` + app 侧 `{app}/modules.py` 扩展点）+ 五层裁剪（路由 404 / 菜单权限隐藏 / 周期任务不注册 / 种子裁剪 / 缓存清理）+ CLI（`modules` 清单预演、`module remove` 硬裁剪归档回滚、`generate_module` 脚手架）+ 只读「模块管理」页；默认 `full` 零行为差异；P2b/P4b 已评估关闭并登记触发条件 |
+| [ADR-045](adr/ADR-045-modular-trimmable-architecture.md) | 功能模块化与可裁剪架构（二开友好）：三级分层（core/standard/optional）+ 发行预设（**不做插件市场**）+ 模块声明单一事实源（内置 `MODULES` + app 侧 `{app}/modules.py` 扩展点）+ 六层裁剪（路由 404 / **WS 通道准入**（2026-09-18 增量）/ 菜单权限隐藏 / 周期任务不注册 / 种子裁剪 / 缓存清理）+ CLI（`modules` 清单预演、`module remove` 硬裁剪归档回滚、`generate_module` 脚手架）+ 只读「模块管理」页；默认 `full` 零行为差异；P2b/P4b 已评估关闭并登记触发条件 |
 
 ## 项目规划与治理（plans/）
 

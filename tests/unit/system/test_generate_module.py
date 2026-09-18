@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """`manage.py generate_module` 与「app 侧模块声明」扩展点测试。"""
 
+import importlib.util
 import sys
 import types
 from io import StringIO
@@ -121,3 +122,26 @@ class TestAppModuleDiscovery:
     def test_missing_declaration_is_ignored(self, module_config):
         module_config()
         assert modules.discovered_modules() == ()
+
+    def test_generated_file_is_importable_and_discoverable(self, demo_app, monkeypatch, module_config):
+        """生成 → 真实加载 → 发现机制纳入清单：脚手架产物可直接被扩展点消费。"""
+
+        run_generate("my_biz", "--app", "demo", "--label", "自有业务", "--menu", "Chat", "--route", "^/api/demo/")
+
+        target = demo_app / "modules.py"
+        spec = importlib.util.spec_from_file_location("demo.modules", target)
+        generated = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(generated)  # 生成物可直接执行（此前仅 compile 校验）
+        assert [item.id for item in generated.MODULES] == ["my_biz"]
+        assert generated.MODULES[0].menus == ("Chat",)
+        assert generated.MODULES[0].routes == ("^/api/demo/",)
+
+        class _AppConfig:
+            name = "demo"
+
+        monkeypatch.setattr(django_apps, "get_app_configs", lambda: [_AppConfig()])
+        monkeypatch.setitem(sys.modules, "demo.modules", generated)
+        module_config()  # 清缓存触发重新发现
+        assert "my_biz" in {item.id for item in modules.discovered_modules()}
+        assert "my_biz" in module_index()
+        assert modules.is_module_enabled("my_biz") is True  # optional 随 full 预设默认开启

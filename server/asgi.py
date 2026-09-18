@@ -19,6 +19,7 @@ from django.core.asgi import get_asgi_application
 from django.core.handlers.asgi import ASGIRequest
 from django.utils.module_loading import import_string
 
+from common.core.modules import ModuleTrimWebsocketMiddleware
 from common.utils import get_logger
 from server.utils import set_current_request
 
@@ -76,7 +77,8 @@ application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": AllowedHostsOriginValidator(
-            WsSignatureAuthMiddleware(AuthMiddlewareStack(URLRouter(urlpatterns)))
+            # 模块裁剪的 WS 准入先于认证中间件：停用模块的通道不进入认证与 consumer
+            ModuleTrimWebsocketMiddleware(WsSignatureAuthMiddleware(AuthMiddlewareStack(URLRouter(urlpatterns))))
         ),
     }
 )
