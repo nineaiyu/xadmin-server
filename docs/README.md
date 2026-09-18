@@ -118,6 +118,7 @@ docs/
 
 | [ADR-044](adr/ADR-044-dform-approval-integration.md) | 动态表单与审批流集成（走查五项）：表单绑定审批流程（`approval_flow` + 提交状态/实例 + 终态回写 + 驳回重提）、审批通过自动完成提交（请求体快照 + 通过后动作注册表，multipart 仍走手动重放）、控件扩到 11 种（附件/日期范围/明细子表，禁嵌套）、部门授权写入修复（原静默丢弃）+ 数据权限 fail-closed 可诊断报错、`seed_demo_org` 开箱模板（组织+四层权限+场景模板） |
 | [ADR-045](adr/ADR-045-modular-trimmable-architecture.md) | 功能模块化与可裁剪架构（二开友好）：三级分层（core/standard/optional）+ 发行预设（**不做插件市场**）+ 模块声明单一事实源（内置 `MODULES` + app 侧 `{app}/modules.py` 扩展点）+ 六层裁剪（路由 404 / **WS 通道准入**（2026-09-18 增量）/ 菜单权限隐藏 / 周期任务不注册 / 种子裁剪 / 缓存清理）+ CLI（`modules` 清单预演、`module remove` 硬裁剪归档回滚、`generate_module` 脚手架）+ 只读「模块管理」页；默认 `full` 零行为差异；P2b/P4b 已评估关闭并登记触发条件 |
+| [ADR-046](adr/ADR-046-module-depth-completion.md) | 三大模块深度完善：表单草稿（DRAFT 轻校验 + `submit` 端点 + 操作审批自动落库与重放保序）与模板复用（`is_template` 同表 + `kind=templates`，不新增权限点）、数据字典驱动选项（schema `dict` 与内联 options 互斥，提交校验 fail-closed）、设计器字段排序与完整属性、提交详情与审批轨迹抽屉；数据分析修「可选但必失败」的度量字段（`numeric_columns`）、卡片错误可见化、看板刷新/设置、伪模型过滤与预览 CSV 导出；审批中心通过意见、人工催办（10 分钟节流）+ 流转时间线 + 代理标注（`delegate_from`）+ 驳回重提预填 + 分支路由 target 恒禁用缺陷修复 |
 
 ## 项目规划与治理（plans/）
 

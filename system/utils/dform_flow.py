@@ -102,11 +102,48 @@ def submit_from_approval(approval, user):
     return True, None
 
 
+def update_from_approval(approval, user):
+    """草稿提交经操作审批通过后自动完成：更新既有提交行（不重复建行）。返回 (ok, detail)。
+
+    与「新建提交」链路的区别：目标行已存在（草稿），审批通过 = 提交生效，
+    因此按审批快照重校验数据后把状态从 DRAFT 落为已生效；行已提交（幂等重放）视为完成。
+    """
+    from system.utils.dform import validate_submission_data
+
+    payload = approval.payload or {}
+    submission = DynamicFormSubmission.objects.filter(pk=approval.object_pk or "").first()
+    if submission is None:
+        return False, str(_("The submission does not exist"))
+    if submission.creator_id != approval.creator_id:
+        return False, str(_("The approval token does not belong to the current user"))
+    if submission.status != DynamicFormSubmission.Status.DRAFT:
+        # 已提交/已进入其他状态：视为已完成（幂等）
+        return True, None
+    form = submission.form
+    if not form.is_active:
+        return False, str(_("This form is no longer accepting submissions"))
+    try:
+        data = validate_submission_data(form.schema, payload.get("data") or submission.data)
+    except ValidationError as exc:
+        messages = getattr(exc, "messages", None) or [str(exc)]
+        return False, str(messages[0])
+
+    submission.data = data
+    submission.status = ""
+    submission.save(update_fields=["data", "status", "updated_time"])
+    logger.info("dform draft submitted by approval. approval:%s submission:%s", approval.pk, submission.pk)
+    return True, None
+
+
 def register_approval_handlers():
-    """注册「审批通过后自动完成」的动作（app ready 时调用，可重复执行）。"""
+    """注册「审批通过后自动完成」的动作（app ready 时调用，可重复执行）。
+
+    两条链路：新建提交（POST 列表）与草稿提交（POST {pk}/submit）——后者更新既有行。
+    """
     from system.utils.approval import register_on_approved
 
     register_on_approved(r"^/api/system/dynamic-form-submissions/?$", submit_from_approval)
+    register_on_approved(r"^/api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
 
 
 def sync_dform_instance(instance, status, reason: str = "") -> None:

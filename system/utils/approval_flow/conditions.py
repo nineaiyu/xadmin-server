@@ -76,6 +76,15 @@ def resolve_assignees(node, applicant, form_data) -> list:
 
     结果为空说明该节点无人可审，调用方必须拒绝发起（fail-closed）。
     """
+    return [user for user, _source in resolve_assignee_pairs(node, applicant, form_data)]
+
+
+def resolve_assignee_pairs(node, applicant, form_data) -> list:
+    """节点候选审批人（含委托来源）：``[(user, delegate_from | None)]``。
+
+    delegate_from 非空表示该候选由原审批人委托代理（任务落库时记录，轨迹标注
+    「由 X 代理」）；无委托时为 None。其余解析语义与 resolve_assignees 一致。
+    """
     UserInfo = _users()
     queryset = UserInfo.objects.filter(is_active=True)
     assignee_type = node.assignee_type
@@ -114,7 +123,8 @@ def _expand_delegations(users, node, applicant) -> list:
     - 仅「生效中」委托参与：is_active + start<=now<=end + 流程范围命中（空 = 全部流程）；
     - 代理人若为申请人本人或已停用 → 丢弃该候选（申请人不能审批自己的节点，语义不变）；
     - 代理人自身再委托不生效（不递归，防环）；
-    - 无委托记录时一次批量查询后原样返回（存量行为零变化）。
+    - 无委托记录时一次批量查询后原样返回（存量行为零变化）；
+    - 发生替换时同时回传原审批人（delegate_from），供任务与轨迹标注代审来源。
     """
     if not users:
         return users
@@ -136,7 +146,8 @@ def _expand_delegations(users, node, applicant) -> list:
         target = by_delegator.get(user.pk) or user
         if target.pk == applicant.pk or not target.is_active:
             continue
-        expanded[target.pk] = target
+        source = user if target.pk != user.pk else None
+        expanded[target.pk] = (target, source)
     return list(expanded.values())
 
 

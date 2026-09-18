@@ -311,6 +311,10 @@ class ApprovalFlowSerializer(BaseModelSerializer):
 class ApprovalNodeTaskSerializer(BaseModelSerializer):
     assignee = DisplayRelatedField(read_only=True, allow_null=True, label=_("Assignee"), label_builder=_username)
     actor = DisplayRelatedField(read_only=True, allow_null=True, label=_("Actor"), label_builder=_username)
+    # 委托代审来源：assignee 为代理人时非空（原审批人），详情页标注「由 X 代理」
+    delegate_from = DisplayRelatedField(
+        read_only=True, allow_null=True, label=_("Delegate from"), label_builder=_username
+    )
     status = DictChoiceField(
         dict_code="approval_status",
         fallback_choices=ApprovalNodeTask.Status.choices,
@@ -325,6 +329,7 @@ class ApprovalNodeTaskSerializer(BaseModelSerializer):
             "node_name",
             "node_order",
             "assignee",
+            "delegate_from",
             "actor",
             "status",
             "comment",

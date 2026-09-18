@@ -8,10 +8,20 @@ from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 
-from .conditions import _split_values, next_node, resolve_assignees, simulate_path, validate_form
+from .conditions import (
+    _split_values,
+    next_node,
+    resolve_assignee_pairs,
+    resolve_assignees,
+    simulate_path,
+    validate_form,
+)
 from .constants import _FLOW_FINISH_EVENTS, _models, _users
 
 logger = get_logger(__name__)
+
+# 人工催办节流窗口（秒）：同一实例内申请人在窗口内重复催办只发一次通知
+URGE_THROTTLE_SECONDS = 600
 
 
 def _notify(users, event, instance, extra=None):
@@ -47,12 +57,13 @@ def _enter_node(instance, node) -> bool:
     """进入节点：解析候选并建 PENDING 任务 + 通知；无候选返回 False（调用方跳过该节点）。
 
     无候选（如部门 leader 被清空）在推进期发生时不阻塞流程：写一行 assignee 为空的
-    审计任务（comment 注明自动通过），保证行为可追溯。
+    审计任务（comment 注明自动通过），保证行为可追溯。委托代审的候选会记录
+    delegate_from（原审批人），供审批轨迹标注「由 X 代理」。
     """
     ApprovalNodeTask = _models().Task
     now = timezone.now()
-    candidates = resolve_assignees(node, instance.creator, instance.form_data)
-    if not candidates:
+    pairs = resolve_assignee_pairs(node, instance.creator, instance.form_data)
+    if not pairs:
         ApprovalNodeTask.objects.create(
             instance=instance,
             node=node,
@@ -67,11 +78,17 @@ def _enter_node(instance, node) -> bool:
         logger.warning("approval flow node auto-approved (no candidate). instance:%s node:%s", instance.pk, node.pk)
         return False
 
+    candidates = [user for user, _source in pairs]
     tasks = [
         ApprovalNodeTask.objects.create(
-            instance=instance, node=node, node_name=node.name, node_order=node.order, assignee=user
+            instance=instance,
+            node=node,
+            node_name=node.name,
+            node_order=node.order,
+            assignee=user,
+            delegate_from=source,
         )
-        for user in candidates
+        for user, source in pairs
     ]
     _notify(candidates, "submitted", instance)
     _invalidate_pending_count(candidates)
@@ -343,6 +360,40 @@ def cancel_instance(instance, user):
     _finish_instance(instance, ApprovalInstance.Status.CANCELLED)
     _invalidate_pending_count()
     _notify([task.assignee for task in pending], "cancelled", instance)
+    return True, None
+
+
+def urge_instance(instance, user, message: str = ""):
+    """人工催办：申请人（或超管）提醒当前节点审批人尽快处理。返回 (ok, detail)。
+
+    - 仅申请人本人（或超管）、仅 PENDING 实例；
+    - 通知对象 = 当前节点的待办任务处理人；无可催对象时拒绝（不占用节流窗口）；
+    - 节流：同一实例 URGE_THROTTLE_SECONDS 内只发一次（防刷通知，缓存键随实例）。
+    """
+    from django.core.cache import cache
+
+    ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
+
+    if instance.creator_id != user.pk and not getattr(user, "is_superuser", False):
+        return False, str(_("Only the applicant can urge the application"))
+    if instance.status != ApprovalInstance.Status.PENDING:
+        return False, str(_("Only pending applications can be urged"))
+
+    cache_key = f"approval_flow_urge_{instance.pk}"
+    if not cache.add(cache_key, 1, URGE_THROTTLE_SECONDS):
+        return False, str(_("Please do not urge repeatedly within {} minutes").format(URGE_THROTTLE_SECONDS // 60))
+
+    pending = (
+        ApprovalNodeTask.objects.filter(instance=instance, status=ApprovalNodeTask.Status.PENDING)
+        .select_related("assignee")
+        .exclude(assignee=None)
+    )
+    targets = {task.assignee for task in pending}
+    if not targets:
+        cache.delete(cache_key)
+        return False, str(_("There is no pending approver to urge"))
+
+    _notify(targets, "urge", instance, extra=(message or "").strip()[:200])
     return True, None
 
 

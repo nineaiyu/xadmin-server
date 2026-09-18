@@ -110,6 +110,28 @@ def _group_label(value) -> str:
     return "" if value is None else str(value)
 
 
+def numeric_columns_of(dataset) -> list:
+    """数据集列中的数值字段（sum/avg 聚合候选）：供前端 value_field 选择器使用。
+
+    历史列在模型演进后可能失配（字段被删/改名）：逐列静默跳过，不阻断列表读取。
+    """
+    try:
+        model = apps.get_model(*str(dataset.bound_model or "").split(".", 1))
+    except (LookupError, ValueError):
+        return []
+    if model is None:
+        return []
+    numeric = []
+    for field in dataset.columns or []:
+        try:
+            model_field = model._meta.get_field(field)
+        except Exception:  # noqa: BLE001 历史列失配 → 不影响其余列
+            continue
+        if model_field.__class__.__name__ in NUMERIC_FIELD_CLASSES:
+            numeric.append(field)
+    return numeric
+
+
 def _check_numeric(model, field: str):
     try:
         model_field = model._meta.get_field(field)

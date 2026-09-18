@@ -14490,5 +14490,55 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+{
+ "model": "system.menumeta",
+ "pk": "c3a1f002-5a02-4b02-8c02-000000000002",
+ "fields": {
+  "created_time": "2026-09-18T00:00:00Z",
+  "updated_time": "2026-09-18T00:00:00Z",
+  "description": null,
+  "creator": 1,
+  "modifier": 1,
+  "dept_belong": null,
+  "title": "U-提交草稿（按 schema 严格校验后进入审批/生效）",
+  "icon": null,
+  "r_svg_name": null,
+  "is_show_menu": true,
+  "is_show_parent": false,
+  "is_keepalive": true,
+  "frame_url": null,
+  "frame_loading": false,
+  "transition_enter": null,
+  "transition_leave": null,
+  "is_hidden_tag": false,
+  "fixed_tag": false,
+  "dynamic_level": 0
  }
+},
+{
+ "model": "system.menumeta",
+ "pk": "c3a1f004-5a04-4b04-8c04-000000000004",
+ "fields": {
+  "created_time": "2026-09-18T00:00:00Z",
+  "updated_time": "2026-09-18T00:00:00Z",
+  "description": null,
+  "creator": 1,
+  "modifier": 1,
+  "dept_belong": null,
+  "title": "U-催办审批（仅申请人/超管，10 分钟节流）",
+  "icon": null,
+  "r_svg_name": null,
+  "is_show_menu": true,
+  "is_show_parent": false,
+  "is_keepalive": true,
+  "frame_url": null,
+  "frame_loading": false,
+  "transition_enter": null,
+  "transition_leave": null,
+  "is_hidden_tag": false,
+  "fixed_tag": false,
+  "dynamic_level": 0
+ }
+}
 ]

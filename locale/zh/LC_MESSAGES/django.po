@@ -6589,3 +6589,66 @@ msgstr "切换指令需要指定仪表盘"
 
 msgid "index is required for page"
 msgstr "翻页指令需要指定页码"
+
+msgid "Approval request urged by the applicant"
+msgstr "审批申请已被申请人催办"
+
+msgid "Only the applicant can urge the application"
+msgstr "仅申请人可以催办"
+
+msgid "Only pending applications can be urged"
+msgstr "仅审批中的申请可以催办"
+
+msgid "Please do not urge repeatedly within {} minutes"
+msgstr "{} 分钟内请勿重复催办"
+
+msgid "There is no pending approver to urge"
+msgstr "当前没有可催办的审批人"
+
+msgid "The approval reminder has been sent"
+msgstr "催办提醒已发送"
+
+msgid "Draft saved"
+msgstr "草稿已保存"
+
+msgid "Only draft submissions can be submitted"
+msgstr "仅草稿状态的提交可提交"
+
+msgid "The submission has been saved"
+msgstr "提交已保存"
+
+msgid "The submission does not exist"
+msgstr "提交不存在"
+
+msgid "A form template cannot accept submissions"
+msgstr "表单模板不接受提交"
+
+msgid "Is template cannot be changed after creation"
+msgstr "模板标记创建后不可修改"
+
+msgid "A form template cannot bind an approval flow"
+msgstr "表单模板不支持绑定审批流程"
+
+msgid "Field {} has an invalid dict code"
+msgstr "字段 {} 的数据字典标识非法"
+
+msgid "Field {} cannot use both options and dict"
+msgstr "字段 {} 不能同时配置选项与数据字典"
+
+msgid "Field {} of type {} does not accept a dict"
+msgstr "字段 {}（类型 {}）不支持绑定数据字典"
+
+msgid "Draft data exceeds the size limit"
+msgstr "草稿数据超出体积上限"
+
+msgid "Is template"
+msgstr "表单模板"
+
+msgid "Delegate from"
+msgstr "委托来源"
+
+msgid "Approval trail"
+msgstr "审批轨迹"
+
+msgid "Numeric columns"
+msgstr "数值列"

@@ -382,6 +382,7 @@ class ApprovalFlowMessage(UserMessage):
         "approved": _("Approval application approved"),
         "rejected": _("Approval application rejected"),
         "remind": _("Approval task pending reminder"),
+        "urge": _("Approval request urged by the applicant"),
         "added": _("Added as approval approver"),
         "cancelled": _("Approval application cancelled"),
     }

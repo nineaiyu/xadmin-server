@@ -6477,3 +6477,66 @@ msgstr "index is required for page"
 
 #~ msgid "Type /kb <question> to ask the knowledge base"
 #~ msgstr "Type /kb <question> to ask the knowledge base"
+
+msgid "Approval request urged by the applicant"
+msgstr "Approval request urged by the applicant"
+
+msgid "Only the applicant can urge the application"
+msgstr "Only the applicant can urge the application"
+
+msgid "Only pending applications can be urged"
+msgstr "Only pending applications can be urged"
+
+msgid "Please do not urge repeatedly within {} minutes"
+msgstr "Please do not urge repeatedly within {} minutes"
+
+msgid "There is no pending approver to urge"
+msgstr "There is no pending approver to urge"
+
+msgid "The approval reminder has been sent"
+msgstr "The approval reminder has been sent"
+
+msgid "Draft saved"
+msgstr "Draft saved"
+
+msgid "Only draft submissions can be submitted"
+msgstr "Only draft submissions can be submitted"
+
+msgid "The submission has been saved"
+msgstr "The submission has been saved"
+
+msgid "The submission does not exist"
+msgstr "The submission does not exist"
+
+msgid "A form template cannot accept submissions"
+msgstr "A form template cannot accept submissions"
+
+msgid "Is template cannot be changed after creation"
+msgstr "Is template cannot be changed after creation"
+
+msgid "A form template cannot bind an approval flow"
+msgstr "A form template cannot bind an approval flow"
+
+msgid "Field {} has an invalid dict code"
+msgstr "Field {} has an invalid dict code"
+
+msgid "Field {} cannot use both options and dict"
+msgstr "Field {} cannot use both options and dict"
+
+msgid "Field {} of type {} does not accept a dict"
+msgstr "Field {} of type {} does not accept a dict"
+
+msgid "Draft data exceeds the size limit"
+msgstr "Draft data exceeds the size limit"
+
+msgid "Is template"
+msgstr "Is template"
+
+msgid "Delegate from"
+msgstr "Delegate from"
+
+msgid "Approval trail"
+msgstr "Approval trail"
+
+msgid "Numeric columns"
+msgstr "Numeric columns"

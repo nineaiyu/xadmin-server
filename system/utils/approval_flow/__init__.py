@@ -24,7 +24,15 @@ sqlite 单测/E2E 库不支持 SELECT ... FOR UPDATE）。
 对外 API 由本文件统一再导出，导入路径保持 ``system.utils.approval_flow`` 不变。
 """
 
-from .conditions import eval_condition, matching_nodes, next_node, resolve_assignees, simulate_path, validate_form
+from .conditions import (
+    eval_condition,
+    matching_nodes,
+    next_node,
+    resolve_assignee_pairs,
+    resolve_assignees,
+    simulate_path,
+    validate_form,
+)
 from .constants import (
     CONDITION_OPS,
     FLOW_NOTIFY_THROTTLE_SECONDS,
@@ -41,6 +49,7 @@ from .engine import (
     cancel_instance,
     create_instance,
     reject_task,
+    urge_instance,
 )
 from .periodic import clean_finished_instances, remind_pending_tasks
 from .queries import done_tasks_for, instance_stats, pending_count_for, pending_tasks_for, visible_instances_for
@@ -65,8 +74,10 @@ __all__ = [
     "pending_tasks_for",
     "remind_pending_tasks",
     "reject_task",
+    "resolve_assignee_pairs",
     "resolve_assignees",
     "simulate_path",
+    "urge_instance",
     "validate_form",
     "visible_instances_for",
 ]

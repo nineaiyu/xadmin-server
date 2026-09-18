@@ -12,7 +12,8 @@
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.plumbing import build_object_type
+from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -95,13 +96,26 @@ class SubmissionFilter(BaseFilterSet):
 
 
 class DynamicFormViewSet(BaseModelSet):
-    """动态表单定义（管理员）"""
+    """动态表单定义（管理员）。
+
+    模板（is_template）与表单共用一张表：列表默认只出表单（kind=templates 时
+    只出模板，供「从模板新建」复用）；详情类动作（编辑/删除/取详情）不做过滤，
+    模板因此可被直接维护。
+    """
 
     queryset = DynamicForm.objects.all()
     serializer_class = DynamicFormSerializer
     ordering = ["-created_time"]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = DynamicFormFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if getattr(self, "action", None) == "list":
+            if self.request.query_params.get("kind") == "templates":
+                return queryset.filter(is_template=True)
+            return queryset.filter(is_template=False)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, modifier=self.request.user)
@@ -153,7 +167,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         授予「表单设计器」的接口权限才能填报（定义与填报共用同一个列表接口的历史
         耦合），配置门槛高且语义不合理。
         """
-        forms = DynamicForm.objects.filter(is_active=True)
+        forms = DynamicForm.objects.filter(is_active=True, is_template=False)
         data = [
             {
                 "pk": form.pk,
@@ -194,6 +208,30 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             return ApiResponse(code=1001, detail=detail)
         return ApiResponse(detail=_("The submission has been resubmitted"))
 
+    def _operation_approval_gate(self, request):
+        """操作审批门：返回协议响应（412/403）表示请求中止；None = 放行继续执行业务。
+
+        - 携令牌：消费一次性令牌（校验指纹/归属/有效期），成功放行；
+        - 未携令牌：复用同一内容的在途审批单，否则新建并返回 412 待审批。
+        """
+        from system.utils.approval import (
+            APPROVAL_HEADER,
+            APPROVAL_QUERY_PARAM,
+            consume_approval,
+            create_approval,
+            find_active_pending,
+            get_request_params,
+            pending_response,
+        )
+
+        token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
+        if token:
+            return consume_approval(request, token)
+        approval = find_active_pending(request.user, request.method, request.path, get_request_params(request))
+        if approval is None:
+            approval = create_approval(self, request)
+        return pending_response(approval)
+
     def _create_with_flow(self, serializer):
         """绑定审批流程的提交：事务内建行并发起流程实例，任一失败整体回滚。"""
         from django.db import transaction
@@ -209,43 +247,110 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
     def create(self, request, *args, **kwargs):
         """提交：数据校验先行 → 审批门 → 创建。
 
-        审批分三支：
+        审批分四支：
+        - 草稿（as_draft=true）：暂存不提交，跳过审批（数据只做轻校验，提交时按 schema 严格校验）；
         - 绑定审批流程（form.approval_flow）：进入流程引擎，多级审批，终态回写提交状态；
         - approval_required：敏感操作审批（412 待审批 → 审批人通过 → 申请人携
           X-Approval-Id 重放，服务端校验 creator/指纹/一次性），消费成功才落库；
         - 其余：直接落库。
         """
-        serializer = self.get_serializer(data=request.data)
+        as_draft = bool(request.data.get("as_draft"))
+        serializer = self.get_serializer(
+            data=request.data,
+            context={**self.get_serializer_context(), "draft": as_draft},
+        )
         serializer.is_valid(raise_exception=True)
         form = serializer.validated_data["form"]
+
+        if as_draft:
+            submission = serializer.save(
+                creator=self.request.user,
+                modifier=self.request.user,
+                status=DynamicFormSubmission.Status.DRAFT,
+            )
+            return ApiResponse(data=self.get_serializer(submission).data, detail=_("Draft saved"))
 
         if form.approval_flow_id:
             return self._create_with_flow(serializer)
 
         if form.approval_required and not getattr(request.user, "is_superuser", False):
-            from system.utils.approval import (
-                APPROVAL_HEADER,
-                APPROVAL_QUERY_PARAM,
-                consume_approval,
-                create_approval,
-                find_active_pending,
-                get_request_params,
-                pending_response,
+            gate = self._operation_approval_gate(request)
+            if gate is not None:
+                return gate
+
+        self.perform_create(serializer)
+        return ApiResponse(data=serializer.data)
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"data": build_object_type()},
+                description="草稿提交：按 schema 严格校验的数据（缺省沿用草稿已存数据）",
             )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True)
+    def submit(self, request, *args, **kwargs):
+        """提交草稿：严格校验数据 → 流程引擎 / 操作审批 / 直接生效 三分支。
+
+        草稿本身允许缺必填（暂存语义），因此提交时在服务端统一补一次完整校验；
+        校验通过后才写库或发起审批，失败返回 1001（草稿保持原样，用户可继续修改）。
+        """
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from system.utils.dform import validate_submission_data
+
+        instance = self.get_object()
+        guarded = self._creator_guard(instance, request)
+        if guarded:
+            return guarded
+
+        form = instance.form
+        needs_approval = form.approval_required and not getattr(request.user, "is_superuser", False)
+        # 操作审批重放（携令牌）先于草稿态检查：审批通过（含「通过后自动落库」）后的重放
+        # 在此返回成功语义，而不是被「仅草稿可提交」拒绝（自动完成时状态已不是草稿）
+        approved_replay = False
+        if needs_approval:
+            from system.utils.approval import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
 
             token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
             if token:
                 response = consume_approval(request, token)
                 if response is not None:
                     return response
-            else:
-                approval = find_active_pending(request.user, request.method, request.path, get_request_params(request))
-                if approval is None:
-                    approval = create_approval(self, request)
-                return pending_response(approval)
+                approved_replay = True
 
-        self.perform_create(serializer)
-        return ApiResponse(data=serializer.data)
+        if instance.status != DynamicFormSubmission.Status.DRAFT:
+            return ApiResponse(code=1001, detail=_("Only draft submissions can be submitted"))
+
+        data = request.data.get("data")
+        if data is None:
+            data = instance.data or {}
+        try:
+            normalized = validate_submission_data(form.schema, data)
+        except DjangoValidationError as exc:
+            messages = getattr(exc, "messages", None) or [str(exc)]
+            return ApiResponse(code=1001, detail=str(messages[0]))
+
+        instance.data = normalized
+        instance.save(update_fields=["data", "updated_time"])
+
+        if form.approval_flow_id:
+            ok, detail = create_flow_instance(instance, request.user)
+            if not ok:
+                return ApiResponse(code=1001, detail=detail)
+            return ApiResponse(detail=_("Application submitted"))
+
+        if needs_approval and not approved_replay:
+            gate = self._operation_approval_gate(request)
+            if gate is not None:
+                return gate
+
+        # 操作审批令牌消费成功 / 无需审批：草稿转为已生效提交
+        instance.status = ""
+        instance.save(update_fields=["status", "updated_time"])
+        return ApiResponse(detail=_("The submission has been saved"))
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -272,7 +377,14 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         guarded = self._creator_guard(instance, request)
         if guarded:
             return guarded
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        # 草稿编辑走轻校验（允许缺必填）；非草稿（已生效/驳回等）保持 schema 完整校验
+        draft = instance.status == DynamicFormSubmission.Status.DRAFT
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial,
+            context={**self.get_serializer_context(), "draft": draft},
+        )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return ApiResponse(data=serializer.data)

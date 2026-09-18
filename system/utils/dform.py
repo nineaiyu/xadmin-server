@@ -6,9 +6,15 @@
 提交数据未知键/required 缺失/选项外取值/数值越界/超长一律拒绝。
 upload 仅接受文件 pk 字符串数组（不落文件本体）；table 禁嵌套、限行列数；
 user 仅接受用户主键（不校验存在性——纯函数无 DB，落库后由业务读取时兜底）；
-cascader 仅接受命中选项树叶子路径的值序列。
+cascader 仅接受命中选项树叶子路径的值序列；
+select/radio/checkbox 的选项可以内联（options）或绑定数据字典（dict）——
+绑定字典时选项值集合在**提交校验时**从字典读取（带缓存），schema 侧只校验
+字典 code 格式且与内联 options 互斥（避免两处定义漂移）。
+草稿（DRAFT）走 `validate_draft_data` 轻校验：只做结构/体积收敛，
+必填与取值在「提交」时按完整规则统一校验。
 """
 
+import json
 import re
 
 from django.core.exceptions import ValidationError
@@ -32,9 +38,13 @@ ALLOWED_TYPES = (
 )
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# 数据字典类型 code（与 DataDict.code 口径一致：小写字母开头，字母/数字/下划线）
+DICT_CODE_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
 MAX_FIELDS = 50
 MAX_OPTIONS = 50
 MAX_TEXT_LENGTH = 2000
+# 草稿体积上限（字节）：草稿允许缺必填，但仍是用户可控 JSON，收敛写入体积
+MAX_DRAFT_BYTES = 64 * 1024
 TEXTUAL_TYPES = ("input", "textarea", "select", "radio", "date")
 OPTIONED_TYPES = ("select", "radio", "checkbox")
 # 明细子表：列类型限基础控件（禁 upload/daterange/table 嵌套），行列数封顶防超深 JSON
@@ -128,11 +138,21 @@ def validate_schema(schema: dict) -> list:
         if ftype not in ALLOWED_TYPES:
             raise ValidationError(_("Unknown widget type: {}").format(ftype))
         options = item.get("options")
+        dict_code = item.get("dict")
         if ftype in OPTIONED_TYPES:
-            if not isinstance(options, list) or not options:
-                raise ValidationError(_("Field {} requires options").format(key))
-            if len(options) > MAX_OPTIONS:
-                raise ValidationError(_("Field {} has too many options").format(key))
+            if dict_code is not None and dict_code != "":
+                # 字典驱动：code 格式合法且与内联 options 互斥（选项值集合在提交校验时读字典）
+                if not isinstance(dict_code, str) or not DICT_CODE_RE.match(dict_code.strip()):
+                    raise ValidationError(_("Field {} has an invalid dict code").format(key))
+                if options not in (None, []):
+                    raise ValidationError(_("Field {} cannot use both options and dict").format(key))
+            else:
+                if not isinstance(options, list) or not options:
+                    raise ValidationError(_("Field {} requires options").format(key))
+                if len(options) > MAX_OPTIONS:
+                    raise ValidationError(_("Field {} has too many options").format(key))
+        elif dict_code not in (None, ""):
+            raise ValidationError(_("Field {} of type {} does not accept a dict").format(key, ftype))
         elif ftype == "cascader":
             _validate_cascader_options(key, options)
         elif options not in (None, []):
@@ -217,6 +237,39 @@ def normalize_table_row(item: dict, label: str, row) -> dict:
     return normalized
 
 
+def field_option_values(item: dict) -> list:
+    """选项型字段的合法取值集合：绑定字典时读字典项 value（5 分钟缓存，失败降级空集）。
+
+    空集合语义 = fail-closed：字典被清空/停用时该字段不接受任何取值（提交被拒）。
+    """
+    dict_code = item.get("dict")
+    if dict_code:
+        from system.utils.dict import get_dict_items
+
+        return [row.get("value") for row in get_dict_items(str(dict_code)) if row.get("value") is not None]
+    return list(item.get("options") or [])
+
+
+def validate_draft_data(data) -> dict:
+    """草稿轻校验：数据须为对象、键为合法字段 key 形态、体积封顶；不做必填/取值校验。
+
+    草稿的完整校验在「提交」时统一执行（`validate_submission_data`），
+    避免用户暂存未填完的表单被后端拒绝。
+    """
+    if not isinstance(data, dict):
+        raise ValidationError(_("Invalid submission data"))
+    for key in data:
+        if not isinstance(key, str) or not KEY_RE.match(key):
+            raise ValidationError(_("Field key {} is invalid (lowercase letters/digits/underscore)").format(key))
+    try:
+        size = len(json.dumps(data, ensure_ascii=False, default=str))
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(_("Invalid submission data")) from exc
+    if size > MAX_DRAFT_BYTES:
+        raise ValidationError(_("Draft data exceeds the size limit"))
+    return data
+
+
 def validate_submission_data(schema: dict, data) -> dict:
     """提交数据校验：未知键拒绝 + required + 类型/选项/边界校验。返回规范化 data。"""
     fields = schema.get("fields") if isinstance(schema, dict) else None
@@ -273,14 +326,15 @@ def validate_submission_data(schema: dict, data) -> dict:
         elif ftype == "checkbox":
             if not isinstance(value, list):
                 raise ValidationError(_("Field {} must be a list").format(label))
-            outside = [v for v in value if v not in (item.get("options") or [])]
+            allowed = field_option_values(item)
+            outside = [v for v in value if v not in allowed]
             if outside:
                 raise ValidationError(_("Field {} has invalid options: {}").format(label, outside))
         elif ftype == "switch":
             if not isinstance(value, bool):
                 raise ValidationError(_("Field {} must be boolean").format(label))
         elif ftype in OPTIONED_TYPES:
-            if value not in (item.get("options") or []):
+            if value not in field_option_values(item):
                 raise ValidationError(_("Field {} has an invalid option: {}").format(label, value))
         elif ftype == "upload":
             if not isinstance(value, list):

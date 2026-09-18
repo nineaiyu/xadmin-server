@@ -280,6 +280,16 @@ class ApprovalNodeTask(DbAuditModel):
         blank=True,
         verbose_name=_("Actor"),
     )
+    # 委托代审来源：assignee 为代理人时记录原审批人（委托人生效替换），
+    # 供审批轨迹标注「由 X 代理」；无委托的任务留空。
+    delegate_from = models.ForeignKey(
+        "system.UserInfo",
+        related_name="approval_node_delegated_tasks",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("Delegate from"),
+    )
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
     comment = models.CharField(_("Comment"), max_length=255, blank=True, null=True)
     acted_at = models.DateTimeField(_("Acted at"), null=True, blank=True)

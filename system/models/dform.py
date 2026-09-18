@@ -27,6 +27,9 @@ class DynamicForm(DbAuditModel, DbUuidModel):
         related_name="bound_forms",
         verbose_name=_("Approval flow"),
     )
+    # 表单模板：模板行只保存 schema（供「从模板新建」复用），不进入可填报表单列表，
+    # 也不参与填报（available-forms / 提交外键均排除）；管理入口 = 表单设计器。
+    is_template = models.BooleanField(_("Is template"), default=False, db_index=True)
 
     class Meta:
         verbose_name = _("Dynamic form")
@@ -42,9 +45,11 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
 
     状态：空 = 无需审批（直接生效）；绑定审批流程时随实例终态回写
     （PENDING → APPROVED / REJECTED / CANCELLED）；驳回后允许修改数据重新提交。
+    DRAFT = 草稿（暂存不提交，允许缺必填字段，提交时统一按 schema 严格校验）。
     """
 
     class Status(models.TextChoices):
+        DRAFT = "DRAFT", _("Draft")
         PENDING = "PENDING", _("Pending")
         APPROVED = "APPROVED", _("Approved")
         REJECTED = "REJECTED", _("Rejected")

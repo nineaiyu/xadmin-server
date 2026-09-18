@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from system.models.dataset import Dashboard, Dataset
-from system.utils.dataset import filter_layout_for_user, validate_dataset
+from system.utils.dataset import filter_layout_for_user, numeric_columns_of, validate_dataset
 
 ALLOWED_CHART_TYPES = ("number", "line", "bar", "pie")
 
@@ -16,6 +16,8 @@ class DatasetSerializer(BaseModelSerializer):
     # 定义类资源（配置对象）不做字段权限裁剪：可见性语义 = 创建者/共享；
     # 字段权限叠加发生在执行/聚合输出侧（system/utils/dataset.py）
     ignore_field_permission = True
+    # 数值列（读侧派生）：卡片/报表的 sum・avg 度量字段候选（后端聚合会做同样校验）
+    numeric_columns = serializers.SerializerMethodField(label=_("Numeric columns"))
 
     class Meta:
         model = Dataset
@@ -30,12 +32,16 @@ class DatasetSerializer(BaseModelSerializer):
             "row_limit",
             "config",
             "visibility",
+            "numeric_columns",
             "created_time",
             "updated_time",
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列：列/filters/ordering/config 等定义细节不进列表
         table_fields = ["name", "bound_model", "visibility", "description", "updated_time"]
+
+    def get_numeric_columns(self, obj) -> list:
+        return numeric_columns_of(obj)
 
     def validate(self, attrs):
         """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。"""

@@ -112,6 +112,18 @@ class TestResolveWithDelegation:
         resolved = resolve_assignees(node, applicant, {})
         assert resolved == []
 
+    def test_delegated_task_records_source(self, applicant, target, agent):
+        """委托代审落任务时记录 delegate_from（审批轨迹标注「由 X 代理」）。"""
+        from system.utils.approval_flow import create_instance
+
+        flow, _node = make_flow()
+        make_delegation(target, agent)
+        instance, error = create_instance(flow=flow, applicant=applicant, title="委托代审", form_data={})
+        assert error is None, error
+        task = instance.tasks.get()
+        assert task.assignee_id == agent.pk
+        assert task.delegate_from_id == target.pk
+
 
 class TestDelegationCrud:
     def test_create_and_list(self, auth_client, target, agent):

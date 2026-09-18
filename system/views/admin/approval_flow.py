@@ -45,6 +45,7 @@ from system.utils.approval_flow import (
     instance_stats,
     pending_count_for,
     reject_task,
+    urge_instance,
     visible_instances_for,
 )
 from system.utils.approval_mfa import ensure_approval_action_confirmed
@@ -369,6 +370,24 @@ class ApprovalInstanceViewSet(
         if not ok:
             return ApiResponse(code=1001, detail=detail)
         return ApiResponse(detail=_("The approval task has been rejected"))
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"message": build_basic_type(OpenApiTypes.STR)},
+                description="可选催办留言（随通知带到审批人）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True)
+    def urge(self, request, *args, **kwargs):
+        """催办（仅申请人/超管、仅审批中）：通知当前节点审批人，10 分钟节流"""
+        instance = self.get_object()
+        ok, detail = urge_instance(instance, request.user, (request.data.get("message") or "").strip())
+        if not ok:
+            return ApiResponse(code=1001, detail=detail)
+        return ApiResponse(detail=_("The approval reminder has been sent"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True)
