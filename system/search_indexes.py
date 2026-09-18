@@ -9,7 +9,7 @@
   其它后端与「pg_trgm 扩展不可用」的库一律跳过——检索仍然正确，只退回顺序扫描，
   不阻断迁移（warning 可观测）；
 - 索引清单与豁免理由登记在 docs/architecture/indexes.md；建索引/回滚在
-  system/migrations/0010_*（快照自含），新增检索字段时
+  system/migrations/0004_*（快照自含），新增检索字段时
   tests/unit/system/test_search_indexes.py 的覆盖守护与漂移守护会提示同步。
 """
 

@@ -32,8 +32,23 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--count", type=int, default=128, help="创建数量（1-2000）")
         parser.add_argument("--reset", action="store_true", help="先删除已存在的 demo_ 前缀用户再创建")
+        parser.add_argument("--clean-only", action="store_true", help="只删除批量演示用户（demo_数字 前缀），不创建")
+
+    def _remove_batch_users(self):
+        """仅清理批量演示用户（demo_ 后跟纯数字）：不触碰 demo_flow_* / demo_lead 等命令专用账号。"""
+        user_model = get_user_model()
+        queryset = user_model.all_objects.filter(username__regex=r"^demo_[0-9]+$")
+        total = queryset.count()
+        if not total:
+            self.stdout.write("no demo batch users to remove")
+            return
+        deleted, _rows = queryset.delete()
+        self.stdout.write(f"removed demo batch users: {deleted}")
 
     def handle(self, *args, **options):
+        if options["clean_only"]:
+            self._remove_batch_users()
+            return
         count = max(1, min(int(options["count"]), 2000))
         user_model = get_user_model()
         if options["reset"]:

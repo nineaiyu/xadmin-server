@@ -12,7 +12,6 @@ docs/
 ├── architecture/        架构设计文档（含数据权限重构设计与行为对照）
 ├── ops/                 部署与运维（deployment.md + runbook + 演练/基线记录）
 ├── plans/               项目规划与治理文档（跨仓库排期/台账，见 plans/README.md）
-├── history/             历史归档（XADMIN_FRAMEWORK_ANALYSIS.md）
 ├── schema/              前后端契约 JSON Schema
 ├── imgs/                文档配图
 ├── metrics.md           基线指标看板（覆盖率/体积/性能 KPI 登记与回填）
@@ -150,6 +149,6 @@ docs/
 - ADR 状态变更需同步更新本索引表格；
 - API 文档随版本固化（T6.3）：每次 release 自动附带静态 `openapi.json`（drf-spectacular 导出，见 `build-image.yml`），并可在部署环境访问
   `/api-docs/` 交互查阅；
-- `history/XADMIN_FRAMEWORK_ANALYSIS.md` 为历史深度分析（2026-09-12 自仓库根目录归档），内容已由
-  [architecture/overview.md](architecture/overview.md) 导航收录，以代码与 overview 为准；
+- 原 `history/XADMIN_FRAMEWORK_ANALYSIS.md`（早期框架深度分析，2026-09-12 自仓库根目录归档）已于 2026-09-18
+  文档精简中清理，内容以 [architecture/overview.md](architecture/overview.md)（其精炼导航版）与代码为准；
 - 跨仓库规划/排期文档入 `plans/`（先登记 plans/README.md），架构类文档入 `architecture/`，决策类入 `adr/`。

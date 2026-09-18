@@ -9,13 +9,13 @@ from system.models import UploadFile, UserInfo
 
 class Book(AutoCleanFileMixin, DbAuditModel):
     class CategoryChoices(models.IntegerChoices):
-        DIRECTORY = 0, "小说"
-        MENU = 1, "文学"
-        PERMISSION = 2, "哲学"
+        FICTION = 0, "小说"
+        LITERATURE = 1, "文学"
+        PHILOSOPHY = 2, "哲学"
 
     # choices 单选
     category = models.SmallIntegerField(
-        choices=CategoryChoices, default=CategoryChoices.DIRECTORY, verbose_name="书籍类型"
+        choices=CategoryChoices, default=CategoryChoices.FICTION, verbose_name="书籍类型"
     )
 
     # ForeignKey  一对多关系
@@ -53,10 +53,10 @@ class Book(AutoCleanFileMixin, DbAuditModel):
     files = models.ManyToManyField(to=UploadFile, related_name="book_files", verbose_name="书籍多附件", blank=True)
 
     # 普通字段
-    name = models.CharField(verbose_name="书籍名称", max_length=100, help_text="书籍名称啊，随便填")
+    name = models.CharField(verbose_name="书籍名称", max_length=100)
     isbn = models.CharField(verbose_name="标准书号", max_length=20)
-    author = models.CharField(verbose_name="书籍作者", max_length=20, help_text="坐着大啊啊士大夫")
-    publisher = models.CharField(verbose_name="出版社", max_length=20, default="大宇出版社")
+    author = models.CharField(verbose_name="书籍作者", max_length=20)
+    publisher = models.CharField(verbose_name="出版社", max_length=20, default="示例出版社")
     publication_date = models.DateTimeField(verbose_name="出版日期", default=timezone.now)
     price = models.FloatField(verbose_name="书籍售价", default=999.99)
     is_active = models.BooleanField(verbose_name="是否启用", default=False)

@@ -107,10 +107,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="先清理本命令创建的示例数据再重建")
+        parser.add_argument("--clean-only", action="store_true", help="只清理，不重建（seed_demo_clean 编排调用）")
         parser.add_argument("--password", default=DEFAULT_PASSWORD, help="示例账号初始密码")
 
     def handle(self, *args, **options):
         self.password = options.get("password") or DEFAULT_PASSWORD
+        if options.get("clean_only"):
+            with transaction.atomic():
+                self._clean()
+            return
         with transaction.atomic():
             if options.get("reset"):
                 self._clean()

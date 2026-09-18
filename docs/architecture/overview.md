@@ -1,8 +1,7 @@
 # 架构总览
 
-> 本文是 [XADMIN_FRAMEWORK_ANALYSIS.md](../history/XADMIN_FRAMEWORK_ANALYSIS.md)（1289 行深度分析，2026-09-04 撰写）的**精炼导航版
-**（T6.1，2026-09-06）。
-> 深度细节、跨语言重写建议请看完整版；两文冲突时以本文（较新）与代码为准。
+> 本文为框架深度分析的**精炼导航版**（T6.1，2026-09-06；原 1289 行完整版报告已于
+> 2026-09-18 文档精简中清理）。内容与代码冲突时以代码为准。
 > 关联：[permission.md](permission.md)（三层权限）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)
 > （缓存策略）、[indexes.md](indexes.md)（索引评审）、[../exception-handling.md](../exception-handling.md)
 > （错误码）、[../schema/](../schema/)（元数据契约）。
@@ -19,6 +18,9 @@
 | 部署    | Gunicorn/Uvicorn + Docker（base 镜像自动构建）                 | nginx 静态托管                          |
 
 ## 二、后端分层
+
+> 目录提示（易混淆）：顶层 `settings/` 是「系统配置」业务 app（含 `settings/models`、`views`、`serializers`），
+> Django 项目配置在 `server/settings/`（`base` / `custom` / `setting` / `libs` / `logging`）。二者同名，二开时勿混淆。
 
 ```
 URL 层        server/urls.py → 各 app/urls.py（SimpleRouter / NoDetailRouter + 插件自动注册）

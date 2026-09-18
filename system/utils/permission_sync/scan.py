@@ -134,6 +134,10 @@ def scan_gaps(routes, perms):
             upper = method.upper()
             if upper == "PUT":  # 生成器设计：ViewSet 忽略 PUT（前端统一用 PATCH）
                 continue
+            if upper == "HEAD":
+                # DRF 在请求链路中给带 get 的路由自动补 head→get（rest_framework/viewsets.py），
+                # 与 GET 同 handler、不需要独立权限点；跳过可避免「进程已服务过请求」时的虚报
+                continue
             if path_whitelisted(route.sample, upper):
                 continue
             if find_covering(perms, path, upper):

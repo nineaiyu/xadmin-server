@@ -58,6 +58,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--reset", action="store_true", help="先删除演示数据与演示用户再生成")
+        parser.add_argument("--clean-only", action="store_true", help="只清理，不生成（seed_demo_clean 编排调用）")
 
     # ---------------------------------------------------------------- 清理与用户
 
@@ -410,8 +411,11 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 入口
 
     def handle(self, *args, **options):
-        if options["reset"]:
+        if options["reset"] or options.get("clean_only"):
             self._reset()
+        if options.get("clean_only"):
+            self.stdout.write("seed_demo_flows clean-only done")
+            return
 
         applier = self._ensure_user(DEMO_APPLIER, "演示申请人-李莉")
         approver = self._ensure_user(DEMO_APPROVER, "演示审批人-陈工")

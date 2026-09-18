@@ -139,5 +139,9 @@ CELERY_WORKER_COUNT: 4
 #   - analysis
 #   - webhook
 
-# 需要将创建的应用写到里面
+# 需要将创建的应用写到里面（第三方/自有 app 必须在此注册才会参与
+# makemigrations / migrate / 路由自动注入）。
+# 官方二开范例 demo（Book 四件套，「两行代码一个页面」）默认关闭，
+# 需要体验时取消下一行注释启用：
+# XADMIN_APPS: [demo]
 XADMIN_APPS:

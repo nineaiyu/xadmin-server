@@ -93,7 +93,7 @@ P2 评估出口，触发条件未命中但按需启动）。本 ADR 同步修订
 
 ### 2. 索引清单、豁免与降级
 
-- 清单（9 个，`system/search_indexes.py` + 迁移 `0010_search_trigram_indexes`）：
+- 清单（9 个，`system/search_indexes.py` + 迁移 `0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more`）：
   UserInfo username/nickname/email/phone、UploadFile filename、ApprovalRequest path/module/object_pk、
   Leave reason；
 - 豁免（登记理由，覆盖守护红灯）：DeptInfo name/code（小表）、OperationLog path/module/ipaddress

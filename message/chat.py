@@ -10,9 +10,6 @@
 - 可访问性一律 fail-closed：非成员访问私聊、非归属访问他人 AI 会话均按「房间不存在」拒绝。
 """
 
-import re
-import uuid
-
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Max, Q
@@ -20,6 +17,17 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面（含内部使用）保持不变
+    _normalize_user_pks,
+    _user_pk,
+    avatar_url,
+    clean_expired_history,
+    display_name,
+    mention_users,
+    new_client_msg_id,
+    parse_mentions,
+    user_brief,
+)
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
     GROUP_MEMBERS_PREVIEW,
@@ -36,45 +44,9 @@ from message.models import (
 
 logger = get_logger(__name__)
 
-# @提及解析：@username（用户名允许字符集见 Django UnicodeUsernameValidator）
-MENTION_PATTERN = re.compile(r"@([\w.\-]+)")
 # 会话列表 / 联系人默认条数
 ROOM_LIST_LIMIT = 100
 CONTACT_LIMIT = 100
-
-
-def _user_pk(obj):
-    return getattr(obj, "pk", obj)
-
-
-def display_name(user) -> str:
-    """消息/联系人展示名：优先昵称，回退用户名。"""
-    if user is None:
-        return ""
-    return (getattr(user, "nickname", "") or getattr(user, "username", "") or "")[:64]
-
-
-def avatar_url(user) -> str:
-    """头像 URL（无头像/存储异常返回空串，前端回退首字母头像）。"""
-    avatar = getattr(user, "avatar", None)
-    if not avatar:
-        return ""
-    try:
-        return avatar.url
-    except Exception:  # noqa: BLE001 存储异常不应影响消息链路
-        return ""
-
-
-def user_brief(user) -> dict:
-    """用户简介（会话对端 / 联系人共用）。"""
-    if user is None:
-        return {}
-    return {
-        "pk": user.pk,
-        "username": getattr(user, "username", "") or "",
-        "nickname": getattr(user, "nickname", "") or "",
-        "avatar": avatar_url(user),
-    }
 
 
 # ---------------------------------------------------------------- 会话开通
@@ -120,19 +92,6 @@ def get_or_create_ai_room(owner) -> ChatRoom:
             room = ChatRoom.objects.get(room_key=key)
         ChatRoomMember.objects.get_or_create(room=room, user=owner)
     return room
-
-
-def _normalize_user_pks(raw_pks) -> list:
-    """主键列表规范化：可转 int、去重、剔除非法值（保序）。"""
-    result = []
-    for raw in raw_pks or []:
-        try:
-            pk = int(raw)
-        except (TypeError, ValueError):
-            continue
-        if pk > 0 and pk not in result:
-            result.append(pk)
-    return result
 
 
 def create_group(owner, name: str, member_pks) -> ChatRoom:
@@ -533,57 +492,3 @@ def recent_contacts(user, limit: int = CONTACT_LIMIT) -> list:
     result.sort(key=lambda item: item["last_active"], reverse=True)
     result.sort(key=lambda item: not item["online"])
     return result[:limit]
-
-
-# ---------------------------------------------------------------- @提及
-
-
-def parse_mentions(content: str) -> list:
-    """全位置、多目标解析 @提及（去重保序）。"""
-    seen = []
-    for name in MENTION_PATTERN.findall(content or ""):
-        if name and name not in seen:
-            seen.append(name)
-    return seen
-
-
-def mention_users(content: str, exclude_username: str = "") -> list:
-    """把 @提及解析为在用用户对象（跳过自己与不存在的用户名）。"""
-    from system.models import UserInfo
-
-    names = [name for name in parse_mentions(content) if name != exclude_username]
-    if not names:
-        return []
-    return list(UserInfo.objects.filter(username__in=names, is_active=True))
-
-
-def new_client_msg_id() -> str:
-    """服务端侧消息幂等键（AI/系统消息落库用，避免与客户端键空间混淆）。"""
-    return uuid.uuid4().hex
-
-
-def clean_expired_history(keep_days=None, batch_size=2000) -> int:
-    """分批删除超过保留期的聊天消息（CHAT_HISTORY_DAYS，0 = 不清理）。
-
-    只删消息行，不动会话与成员关系：历史清空的会话仍在列表里（摘要自然为空），
-    未读游标等冗余字段失效无害。按 id 升序小批删除，避免长事务长时间锁表。
-    """
-    from common.core.config import SysConfig
-
-    days = SysConfig.CHAT_HISTORY_DAYS if keep_days is None else keep_days
-    if not days or int(days) <= 0:
-        return 0
-    deadline = timezone.now() - timezone.timedelta(days=int(days))
-    removed = 0
-    while True:
-        ids = list(
-            ChatMessage.objects.filter(created_time__lte=deadline)
-            .order_by("id")
-            .values_list("id", flat=True)[:batch_size]
-        )
-        if not ids:
-            break
-        deleted, _counts = ChatMessage.objects.filter(id__in=ids).delete()
-        removed += deleted
-    logger.info(f"clean {removed} chat history message, keep_days {days}")
-    return removed

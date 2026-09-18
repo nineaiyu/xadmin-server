@@ -14,7 +14,7 @@ import importlib
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-MIGRATION = importlib.import_module("system.migrations.0010_search_trigram_indexes")
+MIGRATION = importlib.import_module("system.migrations.0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more")
 
 
 def _provider_table(provider) -> str:

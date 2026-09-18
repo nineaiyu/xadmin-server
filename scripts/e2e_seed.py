@@ -184,6 +184,47 @@ def seed_oauth_im_provider():
     print("oauth im provider seeded (feishu flavor)")
 
 
+def seed_user_notice_scene():
+    """「我的通知」E2E 场景：给 e2e_user 授权通知页 + 两条未读通知。
+
+    - 菜单授权：e2e_user 默认无角色（无任何页面权限），单独建角色授予
+      「我的通知」页面 + 其下权限点（含 list / batchRead / allRead）；
+    - 通知数据：USER 类型（发给指定用户）两条，标题固定便于用例定位；
+      直接建 MessageUserRead 未读行，不依赖发布信号的推送链路（链路另有单测覆盖）。
+    """
+    from notifications.models import MessageContent, MessageUserRead
+    from system.models import Menu, UserInfo, UserRole
+
+    user = UserInfo.objects.filter(username="e2e_user").first()
+    page = Menu.objects.filter(path="/user/notice/index", menu_type=Menu.MenuChoices.MENU).first()
+    if user is None or page is None:
+        print("skip user notice scene: e2e_user or /user/notice/index menu missing")
+        return
+
+    role, _ = UserRole.objects.get_or_create(code="e2e_notice", defaults={"name": "E2E-通知体验"})
+    menus = [page]
+    if page.parent_id:
+        menus.append(page.parent)
+    menus.extend(Menu.objects.filter(parent=page, menu_type=Menu.MenuChoices.PERMISSION))
+    role.menu.set(menus)
+    user.roles.add(role)
+
+    admin = UserInfo.objects.filter(username="xadmin").first()
+    for index, title in enumerate(("E2E通知：系统升级预告", "E2E通知：本周例会安排")):
+        content, _created = MessageContent.objects.get_or_create(
+            title=title,
+            defaults={
+                "notice_type": MessageContent.NoticeChoices.USER,
+                "level": MessageContent.LevelChoices.PRIMARY if index == 0 else MessageContent.LevelChoices.DEFAULT,
+                "message": f"<p>{title}——这是 E2E 用例使用的未读通知，可在「我的通知」中查看。</p>",
+                "publish": True,
+                "creator": admin,
+            },
+        )
+        MessageUserRead.objects.get_or_create(owner=user, notice=content, defaults={"unread": True})
+    print("user notice scene seeded for e2e_user")
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -314,6 +355,9 @@ def main() -> None:
 
     # ---- 登录页第三方入口（feishu flavor）----
     seed_oauth_im_provider()
+
+    # ---- 我的通知场景：e2e_user 授权通知页 + 未读通知 ----
+    seed_user_notice_scene()
 
     print("E2E seed done")
 
