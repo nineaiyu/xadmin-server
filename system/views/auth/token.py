@@ -4,6 +4,7 @@
 # filename : token
 # author : ly_13
 # date : 8/10/2024
+from django.conf import settings
 from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
@@ -27,7 +28,8 @@ class TempTokenAPIView(GenericAPIView):
     @extend_schema(responses=get_default_response_schema({"token": build_basic_type(OpenApiTypes.STR)}))
     def get(self, request):
         """获取{cls}"""
-        token = make_token_cache(get_request_ident(request), time_limit=600, force_new=True).encode("utf-8")
+        time_limit = int(getattr(settings, "SECURITY_TEMP_TOKEN_EXPIRE", 600) or 600)
+        token = make_token_cache(get_request_ident(request), time_limit=time_limit, force_new=True).encode("utf-8")
         return ApiResponse(token=token)
 
 

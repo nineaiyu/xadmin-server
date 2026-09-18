@@ -47,6 +47,8 @@ docs/
 | [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
 | [oauth-login.md](architecture/oauth-login.md)           | 第三方登录与 IM 扫码登录：provider 字段、生效条件、保存校验与常见现象排错 |
 | [scim.md](architecture/scim.md)                         | SCIM 2.0 用户目录同步：启用步骤 / 字段与组映射 / Okta、Entra 配置示例 / 排错 |
+| [scim-idp-readiness.md](architecture/scim-idp-readiness.md) | SCIM 真实 IdP 联调准备：就绪度清单 / 环境前置 / 验收口径 / 本地 mock 验证（Okta、Entra 请求形态） |
+| [ldap-readiness.md](architecture/ldap-readiness.md)     | LDAP/AD 真实目录联调准备：就绪度清单 / 环境前置（需外部提供项）/ 验收口径 / 本地 mock 验证 |
 | [notification-channels.md](architecture/notification-channels.md) | 通知渠道体系：三件套模型、新增渠道步骤、两层可达性过滤、短信通知模板配置与排错 |
 | [数据权限与字段权限重构方案-2026.09.md](architecture/数据权限与字段权限重构方案-2026.09.md) | 数据权限重构设计（规则编译器四段管线 + ScopeResult 布尔代数）：问题清单 / 语义决策 D1–D11 / 实施批次与测试计划 |
 | [权限行为新旧对比-2026.09.md](architecture/权限行为新旧对比-2026.09.md) | 上篇的配套交付物：同一份配置在旧/新实现下的逐场景结果对照、升级操作清单（迁移 0014 + 巡检命令） |

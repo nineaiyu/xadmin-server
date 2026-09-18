@@ -7,13 +7,11 @@
 本模块只承载实现体。
 """
 
-from io import BytesIO
-
-from django.core.handlers.wsgi import WSGIRequest
 from django.db import transaction
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
+from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
 from server.utils import set_current_request
@@ -87,8 +85,6 @@ def run_async_import(record_id, view_path, user_pk):
     - 校验/写入复用目标视图的 serializer（字段权限/联动校验同源），
       threadlocal 请求注入保证 creator 信号正常赋值。
     """
-    from rest_framework.request import Request
-
     from common.core.config import SysConfig
     from common.notifications import ImportDataMessage
     from system.models.import_ import ImportRecord
@@ -118,35 +114,11 @@ def run_async_import(record_id, view_path, user_pk):
 
         view_cls = import_string(view_path)
         view = view_cls()
-        # 手工装配重放上下文（WSGIRequest 重放，与 common/tasks.py::background_task_view_set_job 同源机制）。
-        # 下列 5 个隐式契约缺一即静默降级，改动前先读#   1) set_current_request：creator 信号赋值 + 操作审计 request_uuid；
-        #   2) drf_request.user：serializer 字段权限与视图权限上下文；
-        #   3) view.action="import_data"：serializer 行为分支（如创建时密码规则）；
-        #   4) view.format_kwarg=None：get_serializer_context 依赖（漏设直接 AttributeError）；
-        #   5) wsgi.input / CONTENT_LENGTH：DRF Request 解析（此处文件行数据已另行解析，body 为空）。
-        environ = {
-            "REQUEST_METHOD": "POST",
-            "SCRIPT_NAME": "",
-            "PATH_INFO": record.path or "/",
-            "SERVER_NAME": "xadmin",
-            "SERVER_PORT": "80",
-            "SERVER_PROTOCOL": "HTTP/1.1",
-            "HTTP_HOST": "xadmin",
-            "wsgi.input": BytesIO(b""),
-            "wsgi.errors": BytesIO(),
-            "wsgi.url_scheme": "http",
-        }
-        request = WSGIRequest(environ)
-        if user:
-            request._force_auth_user = user
-        drf_request = Request(request, parsers=[])
-        if user:
-            drf_request.user = user
-        view.request = drf_request
-        view.action = "import_data"
-        view.kwargs = {}
-        # get_serializer_context 依赖 format_kwarg（导出重放装配同款坑）
-        view.format_kwarg = None
+        # 显式请求上下文（不再重放 WSGIRequest）：五个契约集中在 task_request 装配点，
+        # 契约清单与守护测试见 common/core/task_request.py
+        request = build_task_request(method="POST", path=record.path or "/", user=user)
+        drf_request = bind_view_task_context(view, request, action="import_data")
+        # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理
         set_current_request(drf_request)
 
         # 行数据在 action 内已由文件解析器解析并序列化为 JSON（与同步导入同一条解析链）

@@ -8839,6 +8839,29 @@
  },
  {
   "model": "system.menu",
+  "pk": "c3a1e111-5f11-4c11-9d11-000000000011",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "16294c70-614c-50ae-ab48-9c002e293c6b",
+   "menu_type": 2,
+   "name": "command:DataScreen",
+   "rank": 10,
+   "path": "api/system/screens/(?P<pk>[^/.]+)/command$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e112-5f12-4c12-9d12-000000000012",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
   "pk": "8fa3cac7-e730-5d4b-9aae-1c55eaacc712",
   "fields": {
    "created_time": "2026-09-13T00:00:00Z",
@@ -8956,6 +8979,28 @@
    "is_active": true,
    "meta": "4d3fa837-9015-5f42-8232-f11951721907",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e107-5f07-4c17-9d07-000000000007",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "99d3f9eb-8460-5fab-9954-ef61e024d6df",
+   "menu_type": 2,
+   "name": "userOptions:DataReport",
+   "rank": 6,
+   "path": "api/system/reports/user-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e108-5f08-4c18-9d08-000000000008",
+   "method": "GET",
    "model": []
   }
  },
@@ -10607,6 +10652,98 @@
    "component": null,
    "is_active": true,
    "meta": "e7bd4637-189b-5583-a71e-aa0c2795dc24",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e109-5f09-4c19-9d09-000000000009",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+   "menu_type": 2,
+   "name": "createGroup:ChatRoom",
+   "rank": 3,
+   "path": "api/chat/room/create-group$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e10a-5f0a-4c1a-9d0a-00000000000a",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e10b-5f0b-4c1b-9d0b-00000000000b",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+   "menu_type": 2,
+   "name": "members:ChatRoom",
+   "rank": 4,
+   "path": "api/chat/room/(?P<pk>[^/.]+)/members$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e10c-5f0c-4c1c-9d0c-00000000000c",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e10d-5f0d-4c1d-9d0d-00000000000d",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+   "menu_type": 2,
+   "name": "rename:ChatRoom",
+   "rank": 5,
+   "path": "api/chat/room/(?P<pk>[^/.]+)/rename$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e10e-5f0e-4c1e-9d0e-00000000000e",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e10f-5f0f-4c1f-9d0f-00000000000f",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00.000Z",
+   "updated_time": "2026-09-18T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
+   "menu_type": 2,
+   "name": "leave:ChatRoom",
+   "rank": 6,
+   "path": "api/chat/room/(?P<pk>[^/.]+)/leave$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e110-5f10-4c10-9d10-000000000010",
    "method": "POST",
    "model": []
   }
@@ -13273,6 +13410,28 @@
    "is_active": true,
    "meta": "c3a1e104-5f04-4c14-9d04-000000000004",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1e105-5f05-4c15-9d05-000000000005",
+  "fields": {
+   "created_time": "2026-09-18T00:00:00Z",
+   "updated_time": "2026-09-18T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "067a4d61-592a-5bcf-a3b5-662802e8f917",
+   "menu_type": 2,
+   "name": "userOptions:FormMySubmission",
+   "rank": 900,
+   "path": "api/system/dynamic-form-submissions/user-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1e106-5f06-4c16-9d06-000000000006",
+   "method": "GET",
    "model": []
   }
  },

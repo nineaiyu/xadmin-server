@@ -58,6 +58,11 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("OPERATION_LOG_ERROR_RETENTION_DAYS", CONFIG.OPERATION_LOG_ERROR_RETENTION_DAYS)
 
     @property
+    def OPERATION_LOG_FIELD_MAX(self):
+        """操作日志大字段（请求体/响应/变更 diff）截断上限（字符，默认 4096；0 = 不落大字段内容）。"""
+        return self.get_value("OPERATION_LOG_FIELD_MAX", CONFIG.OPERATION_LOG_FIELD_MAX)
+
+    @property
     def SENSITIVE_OPERATION_METHODS(self):
         """敏感操作告警的 HTTP 方法清单（默认 ["DELETE"]；"ALL" 或空表示不按方法过滤）。"""
         return self.get_value("SENSITIVE_OPERATION_METHODS", CONFIG.SENSITIVE_OPERATION_METHODS)
@@ -80,8 +85,9 @@ class BaseConfCache(ConfigCacheBase):
     def APPROVAL_MFA_REQUIRED_ACTIONS(self):
         """需 MFA 二次确认的审批动作清单（默认空 = 不启用；审批流三期）。
 
-        取值 approve / reject / cancel / add_sign / batch_approve / batch_reject；
-        命中动作在业务变更前走 412（user_confirm_required）协议，前端弹验证窗后自动重发。
+        取值 approve / reject / cancel / add_sign / batch_approve / batch_reject / rollback；
+        覆盖审批中心与审批流引擎（含流程定义回滚）两个入口，命中动作在业务变更前走
+        412（user_confirm_required）协议，前端弹验证窗后自动重发。
         """
         return self.get_value("APPROVAL_MFA_REQUIRED_ACTIONS", CONFIG.APPROVAL_MFA_REQUIRED_ACTIONS)
 

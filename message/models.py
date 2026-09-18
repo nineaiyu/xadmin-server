@@ -3,15 +3,21 @@
 """聊天室数据模型。
 
 三张表：
-- ChatRoom：会话（public 全站单例 / private 一对一 / ai 每用户一间），room_key 规范化唯一键；
-- ChatRoomMember：私聊与 AI 会话的成员 + 未读游标（公共聊天室全员可见，不建行）；
+- ChatRoom：会话（public 全站单例 / private 一对一 / ai 每用户一间 / group 多人群聊），
+  room_key 规范化唯一键；
+- ChatRoomMember：私聊 / AI / 群聊会话的成员 + 未读游标（公共聊天室全员可见，不建行）；
 - ChatMessage：消息（BigAuto 主键即自增游标，(room, id) 索引支撑倒序游标分页）。
+
+群聊：创建者为 owner；成员上限 MAX_GROUP_MEMBERS；群主可改名单与增删成员，
+成员可退出（群主退出自动转让给最早加入者，无成员时软删房间）。
 
 设计边界：
 - 公共聊天室不维护未读（进入即浏览）；
 - `sender_name` 存发送时快照，昵称改名不回溯历史消息；
 - `client_msg_id` 幂等键：断线重发/乐观上屏去重，`(sender, client_msg_id)` 部分唯一索引兜底。
 """
+
+import uuid
 
 from django.conf import settings
 from django.db import models
@@ -27,6 +33,9 @@ AI_MAX_CONTENT_LENGTH = 8000
 LAST_MESSAGE_LENGTH = 200
 # 本人可撤回消息的时间窗口（分钟）
 RECALL_WINDOW_MINUTES = 2
+# 群聊成员上限（含群主）与会话列表成员预览条数
+MAX_GROUP_MEMBERS = 200
+GROUP_MEMBERS_PREVIEW = 12
 
 PUBLIC_ROOM_KEY = "public"
 
@@ -42,13 +51,19 @@ def ai_room_key(owner_pk) -> str:
     return f"ai:{int(owner_pk)}"
 
 
+def group_room_key() -> str:
+    """群聊会话键：`group:{uuid4}`（非幂等，每次创建即新群）。"""
+    return f"group:{uuid.uuid4().hex}"
+
+
 class ChatRoom(DbBaseModel):
-    """会话（公共聊天室 / 私聊 / AI 助手）。"""
+    """会话（公共聊天室 / 私聊 / AI 助手 / 多人群聊）。"""
 
     class RoomType(models.TextChoices):
         PUBLIC = "public", _("Public chat room")
         PRIVATE = "private", _("Private chat")
         AI = "ai", _("AI assistant")
+        GROUP = "group", _("Group chat")
 
     room_type = models.CharField(
         _("Room type"), max_length=16, choices=RoomType.choices, default=RoomType.PUBLIC, db_index=True
@@ -62,7 +77,7 @@ class ChatRoom(DbBaseModel):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="+",
-        help_text=_("AI room owner; empty for public/private rooms"),
+        help_text=_("AI room owner or group chat owner; empty for public/private rooms"),
     )
     last_message = models.CharField(_("Last message"), max_length=LAST_MESSAGE_LENGTH, blank=True, default="")
     last_message_time = models.DateTimeField(_("Last message time"), null=True, blank=True, db_index=True)

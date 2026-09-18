@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 """动态表单校验：schema 与提交数据共用一套规则（写入/提交双侧）。
 
-安全边界：控件类型收敛 11 种；key 格式固定且表单内唯一；字段数 ≤50；
+安全边界：控件类型收敛 14 种；key 格式固定且表单内唯一；字段数 ≤50；
 提交数据未知键/required 缺失/选项外取值/数值越界/超长一律拒绝。
-upload 仅接受文件 pk 字符串数组（不落文件本体）；table 禁嵌套、限行列数。
+upload 仅接受文件 pk 字符串数组（不落文件本体）；table 禁嵌套、限行列数；
+user 仅接受用户主键（不校验存在性——纯函数无 DB，落库后由业务读取时兜底）；
+cascader 仅接受命中选项树叶子路径的值序列。
 """
 
 import re
@@ -16,6 +18,7 @@ ALLOWED_TYPES = (
     "input",
     "textarea",
     "number",
+    "amount",
     "select",
     "radio",
     "checkbox",
@@ -24,6 +27,8 @@ ALLOWED_TYPES = (
     "upload",
     "daterange",
     "table",
+    "user",
+    "cascader",
 )
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -37,6 +42,64 @@ TABLE_COLUMN_TYPES = ("input", "textarea", "number", "date", "select")
 MAX_TABLE_COLUMNS = 12
 MAX_TABLE_ROWS = 100
 MAX_UPLOAD_FILES = 20
+# 级联选项树：节点总数与层级封顶（防超深/超大 JSON）
+MAX_CASCADER_NODES = 200
+MAX_CASCADER_DEPTH = 3
+# 选人控件多选上限
+MAX_USER_PICKS = 20
+
+
+def _validate_cascader_options(key: str, options):
+    """级联选项树校验：{value,label[,children]} 递归 ≤3 层、节点总数封顶。"""
+    if not isinstance(options, list) or not options:
+        raise ValidationError(_("Field {} requires options").format(key))
+    counter = {"total": 0}
+
+    def walk(nodes, depth):
+        if depth > MAX_CASCADER_DEPTH:
+            raise ValidationError(_("Field {} cascader options exceed {} levels").format(key, MAX_CASCADER_DEPTH))
+        for node in nodes:
+            if not isinstance(node, dict):
+                raise ValidationError(_("Field {} has an invalid cascader option").format(key))
+            value = node.get("value")
+            # 值允许字符串或整数（布尔是 int 子类，显式排除）
+            if isinstance(value, bool) or not isinstance(value, (str, int)) or str(value).strip() == "":
+                raise ValidationError(_("Field {} cascader option requires a value").format(key))
+            if not str(node.get("label") or "").strip():
+                raise ValidationError(_("Field {} cascader option requires a label").format(key))
+            counter["total"] += 1
+            if counter["total"] > MAX_CASCADER_NODES:
+                raise ValidationError(_("Field {} has too many cascader options").format(key))
+            children = node.get("children")
+            if children is not None:
+                if not isinstance(children, list) or not children:
+                    raise ValidationError(_("Field {} has an invalid cascader option").format(key))
+                walk(children, depth + 1)
+
+    walk(options, 1)
+
+
+def _validate_user_pk(label: str, value):
+    """选人控件取值：正整数用户主键（不接受布尔/字符串/浮点）。"""
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValidationError(_("Field {} must be a user id").format(label))
+
+
+def _cascader_path_valid(options, path: list) -> bool:
+    """级联取值必须命中选项树的叶子路径（逐段比对，值类型允许 str/int）。"""
+    nodes = options
+    for index, step in enumerate(path):
+        node = next((item for item in nodes if item.get("value") == step), None)
+        if node is None:
+            return False
+        last = index == len(path) - 1
+        children = node.get("children")
+        if last:
+            return not children
+        if not children:
+            return False
+        nodes = children
+    return False
 
 
 def validate_schema(schema: dict) -> list:
@@ -70,8 +133,18 @@ def validate_schema(schema: dict) -> list:
                 raise ValidationError(_("Field {} requires options").format(key))
             if len(options) > MAX_OPTIONS:
                 raise ValidationError(_("Field {} has too many options").format(key))
+        elif ftype == "cascader":
+            _validate_cascader_options(key, options)
         elif options not in (None, []):
             raise ValidationError(_("Field {} of type {} does not accept options").format(key, ftype))
+        if ftype == "user" and item.get("multiple") is not None and not isinstance(item.get("multiple"), bool):
+            raise ValidationError(_("Field {} multiple must be boolean").format(key))
+        if ftype == "amount":
+            precision = item.get("precision")
+            if precision is not None and (
+                not isinstance(precision, int) or isinstance(precision, bool) or not 0 <= precision <= 6
+            ):
+                raise ValidationError(_("Field {} precision must be 0-6").format(key))
         if ftype == "table":
             columns = item.get("columns")
             if not isinstance(columns, list) or not columns:
@@ -169,13 +242,34 @@ def validate_submission_data(schema: dict, data) -> dict:
                 raise ValidationError(_("Field {} is required").format(label))
             normalized[key] = None
             continue
-        if ftype == "number":
+        if ftype in ("number", "amount"):
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise ValidationError(_("Field {} must be numeric").format(label))
             if item.get("min") is not None and value < item["min"]:
                 raise ValidationError(_("Field {} is below the minimum").format(label))
             if item.get("max") is not None and value > item["max"]:
                 raise ValidationError(_("Field {} is above the maximum").format(label))
+            precision = item.get("precision")
+            if ftype == "amount" and precision is not None and abs(value - round(value, precision)) > 1e-9:
+                raise ValidationError(_("Field {} allows at most {} decimal places").format(label, precision))
+        elif ftype == "user":
+            multiple = bool(item.get("multiple"))
+            if multiple:
+                if not isinstance(value, list):
+                    raise ValidationError(_("Field {} must be a list").format(label))
+                if len(value) > MAX_USER_PICKS:
+                    raise ValidationError(_("Field {} has too many users").format(label))
+                for picked in value:
+                    _validate_user_pk(label, picked)
+            else:
+                _validate_user_pk(label, value)
+        elif ftype == "cascader":
+            if not isinstance(value, list) or not value:
+                raise ValidationError(_("Field {} must be a cascader path").format(label))
+            if not all(isinstance(step, (str, int)) and not isinstance(step, bool) for step in value):
+                raise ValidationError(_("Field {} must be a cascader path").format(label))
+            if not _cascader_path_valid(item.get("options") or [], value):
+                raise ValidationError(_("Field {} has an invalid cascader path").format(label))
         elif ftype == "checkbox":
             if not isinstance(value, list):
                 raise ValidationError(_("Field {} must be a list").format(label))

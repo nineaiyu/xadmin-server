@@ -78,12 +78,28 @@ class CSPModeMiddleware:
         return response
 
 
-# 日志大字段截断上限，避免大请求体/大响应整包入库
+# 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
+# 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
 # 操作日志脱敏字段清单
 # code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
+# token / verify_token：临时令牌与验证码票据（登录/注册/重置/绑定加密握手），
 # 严禁明文落日志
-SENSITIVE_FIELDS = {"password", "old_password", "access", "refresh", "code"}
+SENSITIVE_FIELDS = {"password", "old_password", "access", "refresh", "code", "token", "verify_token"}
+
+
+def _log_field_limit():
+    """大字段（请求体/响应/变更）截断上限：系统配置 OPERATION_LOG_FIELD_MAX。
+
+    默认 4096；0 = 不落大字段内容（只保留状态码等元数据）。配置异常时回落默认值，
+    避免坏配置把响应阶段的日志组装打成 500。
+    """
+    try:
+        return max(int(SysConfig.OPERATION_LOG_FIELD_MAX), 0)
+    except (TypeError, ValueError):
+        return MAX_LOG_FIELD
+
+
 # module 列的防御性截断：视图 docstring/模型标签超长时按字段上限截断，
 # 避免写日志失败放大成整个请求 500（mfa confirm 曾因此全挂）
 OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
@@ -156,6 +172,7 @@ def build_operation_log_info(request, response, request_start_time):
     所有字段在此一次性求值（包括 UA 解析与用户主键），返回值不再持有
     request / ORM 实例引用，因此可以安全地延迟到 on_commit 回调中执行。
     """
+    limit = _log_field_limit()
     body = desensitize_body(getattr(request, "request_data", {}))
     # 非 dict 响应的整包解析丢弃逻辑已删除——DRF 渲染后的 content
     # 无法可靠还原 data，解析了也不用，只会白白序列化一遍大响应
@@ -205,7 +222,7 @@ def build_operation_log_info(request, response, request_start_time):
         "ipaddress": request.request_ip,
         "method": request.method,
         "path": request.path,
-        "body": json.dumps(body, default=str)[:MAX_LOG_FIELD] if isinstance(body, dict) else str(body)[:MAX_LOG_FIELD],
+        "body": json.dumps(body, default=str)[:limit] if isinstance(body, dict) else str(body)[:limit],
         "response_code": response.status_code,
         # Step2：UA 只解析一次（旧实现 get_os/get_browser 各跑一次重型正则）
         "system": get_os(request),
@@ -214,7 +231,7 @@ def build_operation_log_info(request, response, request_start_time):
         "request_uuid": getattr(request, "request_uuid", None),
         "exec_time": time.time() - request_start_time,
         # 字段级变更 diff（AUDIT_DIFF_MODELS 白名单模型的 update 路径由视图集挂载）
-        "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:MAX_LOG_FIELD]
+        "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:limit]
         if (changes := getattr(request, "operation_log_changes", None))
         else None,
         "response_result": json.dumps(
@@ -225,7 +242,7 @@ def build_operation_log_info(request, response, request_start_time):
             },
             cls=encoders.JSONEncoder,
             default=str,
-        )[:MAX_LOG_FIELD],
+        )[:limit],
     }
 
 

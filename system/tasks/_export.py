@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""异步导出任务实现（重放 export_data 视图并落产物）。
+"""异步导出任务实现（显式请求上下文执行 export_data 并落产物）。
 
 说明：任务函数本体保留在 ``system.tasks``（celery 任务名 = 函数 __module__，
 必须保持 ``system.tasks.<name>`` 不变以便既有周期任务登记/日志/告警链路匹配），
-本模块只承载实现体。
+本模块只承载实现体。请求经 ``build_task_request`` 显式构造（不再重放 WSGIRequest，
+见 common/core/task_request.py 的契约清单）；导出为只读链路，
+不写 creator/审计，因此不绑定 thread-local 请求。
 """
 
-from io import BytesIO
-from urllib.parse import urlencode
-
 from django.conf import settings
-from django.core.handlers.wsgi import WSGIRequest
 from django.utils import translation
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 
+from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
 
@@ -29,32 +28,18 @@ EXPORT_MIME_TYPES = {
 
 
 def build_export_request(record, query_params, user):
-    """构造用于重放 export_data 的原始请求。
+    """构造导出执行请求：显式 method/path/查询串 + 提交者身份直通。
 
-    直接注入提交者身份（DRF ForcedAuthentication），不在任务里重新签发 access
-    token：任务排队可能超过 access token 寿命（默认 1h），重新签发的令牌会因
-    过期导致重放认证失败。注入 user 后视图内的菜单/数据/字段三层权限与
+    不在任务里重新签发 access token：任务排队可能超过 access token 寿命（默认 1h），
+    重新签发的令牌会因过期导致认证失败。注入 user 后视图内的菜单/数据/字段三层权限与
     filterset 过滤仍按提交者身份生效。
     """
-    environ = {
-        "REQUEST_METHOD": "GET",
-        "SCRIPT_NAME": "",
-        "PATH_INFO": record.path or "/",
-        "QUERY_STRING": urlencode(query_params or {}, doseq=True),
-        "SERVER_NAME": "xadmin",
-        "SERVER_PORT": "80",
-        "SERVER_PROTOCOL": "HTTP/1.1",
-        "HTTP_HOST": "xadmin",
-        "wsgi.input": BytesIO(b""),
-        "wsgi.errors": BytesIO(),
-        "wsgi.url_scheme": "http",
-    }
-    request = WSGIRequest(environ)
-    if user:
-        # DRF 初始化 Request 时检测到 _force_auth_user，改用 ForcedAuthentication，
-        # 跳过 JWT 解析直接以该用户身份执行后续权限链
-        request._force_auth_user = user
-    return request
+    return build_task_request(
+        method="GET",
+        path=record.path or "/",
+        query_params=query_params or {},
+        user=user,
+    )
 
 
 def _save_progress(record, percent):
@@ -103,15 +88,8 @@ def run_async_export(record_id, view_path, query_params, user_pk):
         view_cls = import_string(view_path)
 
         # 行数走与导出同一套 filterset + 数据权限链，避免为计数做一次全量序列化
-        from rest_framework.request import Request
-
         probe = view_cls()
-        probe.action = "export_data"
-        probe.kwargs = {}
-        probe.format_kwarg = None
-        probe.request = Request(request, parsers=[])
-        if user:
-            probe.request.user = user
+        bind_view_task_context(probe, request, action="export_data")
         total = probe.filter_queryset(probe.get_queryset()).count()
         logger.info("async export %s total rows: %s", view_path, total)
         _save_progress(record, 30)

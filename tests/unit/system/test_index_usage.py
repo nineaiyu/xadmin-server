@@ -56,3 +56,15 @@ class TestIndexUsage:
             ["xadmin"],
         )
         assert "SEARCH" in plan and "username=?" in plan and "INDEX" in plan, plan
+
+    @pytest.mark.skipif(
+        connection.vendor != "postgresql",
+        reason="pg_trgm 索引仅 PostgreSQL 生效（本地/CI 用 SQLite，只建索引的 state，不执行 DDL）",
+    )
+    def test_search_trigram_index_is_usable_on_postgres(self):
+        """全局搜索前缀通配能走 trigram 索引（PG 专属；表小需关 seqscan 才证明「可用」）。"""
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL enable_seqscan = off")
+            cursor.execute("EXPLAIN SELECT id FROM system_userinfo WHERE username ILIKE %s", ["%关键词%"])
+            plan = "\n".join(row[0] for row in cursor.fetchall())
+        assert "idx_userinfo_username_trgm" in plan, plan

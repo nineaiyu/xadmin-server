@@ -92,7 +92,7 @@ class Screen(DbAuditModel, DbUuidModel):
 
 
 class Report(DbAuditModel, DbUuidModel):
-    """定时报表：数据集 + 调度 + 邮件收件人。"""
+    """定时报表：数据集 + 调度 + 投递渠道与收件人（邮件 + IM）。"""
 
     class Frequency(models.TextChoices):
         DAILY = "daily", _("Daily")
@@ -116,6 +116,12 @@ class Report(DbAuditModel, DbUuidModel):
     )
     weekday = models.IntegerField(_("Weekday"), default=0, help_text=_("0=Monday, weekly only"))
     recipients = models.JSONField(_("Recipients"), default=list, help_text=_("Email addresses"))
+    # 投递渠道：email / dingtalk / wecom / feishu；空 = 仅邮件（存量兼容）
+    notify_channels = models.JSONField(_("Notify channels"), default=list, blank=True, help_text=_("Delivery channels"))
+    # IM 收件人（用户主键）：投递时按各渠道 OAuth 绑定的可达性过滤
+    im_recipients = models.JSONField(
+        _("IM recipients"), default=list, blank=True, help_text=_("User pks receiving IM messages")
+    )
     is_active = models.BooleanField(_("Is active"), default=True)
     last_run_at = models.DateTimeField(_("Last run at"), null=True, blank=True)
     last_status = models.CharField(_("Last status"), max_length=32, blank=True, default="")

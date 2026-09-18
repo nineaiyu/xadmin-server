@@ -54,3 +54,42 @@
 
 - 现状保留，风险以「注释 + 契约测试」管理，避免无准备的大重构；
 - 本 ADR 作为重开时的起点（含步骤与契约清单）。
+
+## 增量（2026-09-18）：重构落地（契约测试 + 去 WSGIRequest 重放）
+
+维护者决策提前实施（长期优化方案 §4.3 导入/导出行 P2 评估出口「两步都做」）。
+
+### 1. 步骤 1 —— 装配契约测试（先补后改）
+
+`tests/unit/system/test_import_export_execution_context.py`（7 例，spy 视图集子类化真实视图集、
+行为不变只记录）在**真实执行链**内断言五个契约：异步导入（action/format_kwarg/kwargs/提交者身份/
+thread-local 可见且出口清理 + creator 落库）、异步导出（action/format_kwarg/提交者/**查询参数确实
+进入 filterset**——按 code 过滤两行数据只导出一行）、分片任务（`meta["user_pk"]` 携带身份、
+thread-local 可见、通知对象 = 显式身份、creator 落库）+ 请求构造/绑定的单元形态断言。
+
+### 2. 步骤 2 —— 显式请求上下文替换重放层
+
+- 新增 `common/core/task_request.py`：`build_task_request`（显式 method/path/查询串/body/
+  content-type/提交者，构造最小 `HttpRequest`，不再拼 WSGI environ）+
+  `bind_view_task_context`（`view.request/action/kwargs/format_kwarg` 绑定，五契约集中一处）；
+  提交者经 DRF `_force_auth_user`（ForcedAuthentication）直通，任务排队超过 access token 寿命
+  也不会认证失败；每分片构造独立请求对象（字段权限关联 memo 按分片隔离的既有语义保持）；
+- 三处 WSGIRequest 重放全部替换：`common/tasks.py::background_task_view_set_job`、
+  `system/tasks/_import.py::run_async_import`、`system/tasks/_export.py`（`build_export_request` 改为
+  工厂薄封装）；分片任务由 `meta["user_pk"]` 显式携带提交者（`run_view_by_celery_task` 写入），
+  不再依赖 META 里复制的 cookie/令牌完成认证；
+- **顺带修复**：分片任务汇总通知原先读重放请求的 `request.user`（裸 `WSGIRequest` 无该属性，
+  生产路径在最后一个分片聚合时 AttributeError）；现改为显式身份，缺身份时告警跳过。
+
+### 3. 未做（保留登记）
+
+ADR「重构方向」中的 **service 化**（按 action 提取 `*_service`、同步路径委托同一 service）本轮
+不做：重放层已消除，且 action 作为唯一实现避免第二实现漂移；service 化的剩余动机主要是
+「第三种执行通道（独立 worker 服务）」与「接入非 ViewSet 数据源」，触发条件不变。
+
+### 4. 验证
+
+- pytest 全量（含本批新增 7 例契约测试）exit 0；ruff check/format 全绿；
+- 行为锁继续有效：`test_import_record` / `test_export_record` / `test_import_template` /
+  `test_tasks`（分片任务）/ `test_modelset_base` 全部保持通过（72 例）；
+- E2E 导入导出相关 spec 复跑（async-import / async-export / import-export / import-mapping）。

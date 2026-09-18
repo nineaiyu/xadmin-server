@@ -21,7 +21,6 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from rest_framework.viewsets import GenericViewSet
 
-from common.core.config import SysConfig
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseModelSet,
@@ -48,20 +47,7 @@ from system.utils.approval_flow import (
     reject_task,
     visible_instances_for,
 )
-
-
-def _ensure_approval_action_confirmed(request, action: str):
-    """审批动作的 MFA 二次确认（审批流三期）。
-
-    APPROVAL_MFA_REQUIRED_ACTIONS（默认空 = 不启用）命中时，在业务变更前走
-    412（user_confirm_required）协议 —— 与「敏感操作审批令牌」是两套独立协议，
-    本项复用 MFA 的确认状态缓存（前端已支持弹窗并自动重发）。
-    """
-    from mfa.const import ConfirmType
-    from mfa.services import ensure_user_confirmed
-
-    if action in (SysConfig.APPROVAL_MFA_REQUIRED_ACTIONS or []):
-        ensure_user_confirmed(request, ConfirmType.MFA)
+from system.utils.approval_mfa import ensure_approval_action_confirmed
 
 
 class ApprovalFlowFilter(BaseFilterSet):
@@ -122,6 +108,7 @@ class ApprovalFlowViewSet(BaseModelSet):
     @action(methods=["post"], detail=True, url_path="rollback")
     def rollback(self, request, *args, **kwargs):
         """回滚到历史版本：快照写入活定义并落新版本；有 PENDING 实例时拒绝。"""
+        ensure_approval_action_confirmed(request, "rollback")
         version = request.data.get("version")
         try:
             version = int(version)
@@ -234,7 +221,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=False, url_path="batch-approve")
     def batch_approve(self, request, *args, **kwargs):
         """批量通过（逐个定位当前用户的待办任务，返回成功数与被拒明细）"""
-        _ensure_approval_action_confirmed(request, "batch_approve")
+        ensure_approval_action_confirmed(request, "batch_approve")
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
@@ -274,7 +261,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=False, url_path="batch-reject")
     def batch_reject(self, request, *args, **kwargs):
         """批量驳回（原因必填）"""
-        _ensure_approval_action_confirmed(request, "batch_reject")
+        ensure_approval_action_confirmed(request, "batch_reject")
         reason = (request.data.get("reason") or "").strip()
         if not reason:
             raise ValidationError(_("Rejection reason is required"))
@@ -348,7 +335,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=True)
     def approve(self, request, *args, **kwargs):
         """通过（或签任一通过 / 会签全部通过后流转下一节点）"""
-        _ensure_approval_action_confirmed(request, "approve")
+        ensure_approval_action_confirmed(request, "approve")
         instance = self.get_object()
         task = self._resolve_task(instance, request)
         ok, detail = approve_task(task.pk, request.user, (request.data.get("comment") or "").strip())
@@ -372,7 +359,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=True)
     def reject(self, request, *args, **kwargs):
         """驳回（原因必填；驳回即终止申请）"""
-        _ensure_approval_action_confirmed(request, "reject")
+        ensure_approval_action_confirmed(request, "reject")
         instance = self.get_object()
         reason = (request.data.get("reason") or "").strip()
         if not reason:
@@ -387,7 +374,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=True)
     def cancel(self, request, *args, **kwargs):
         """撤回申请（仅申请人、仅审批中）"""
-        _ensure_approval_action_confirmed(request, "cancel")
+        ensure_approval_action_confirmed(request, "cancel")
         instance = self.get_object()
         ok, detail = cancel_instance(instance, request.user)
         if not ok:
@@ -410,7 +397,7 @@ class ApprovalInstanceViewSet(
     @action(methods=["post"], detail=True, url_path="add-sign")
     def add_sign_action(self, request, *args, **kwargs):
         """加签：在当前节点追加审批人（当前节点参与人或超管可操作）"""
-        _ensure_approval_action_confirmed(request, "add_sign")
+        ensure_approval_action_confirmed(request, "add_sign")
         instance = self.get_object()
         if not (
             request.user.is_superuser

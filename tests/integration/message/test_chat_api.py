@@ -7,6 +7,7 @@ AI 双形态（多轮 / `/kb` 引用来源 / 门禁 / 降级）、菜单权限�
 """
 
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.test import APIClient
 
 from message import chat as chat_service
@@ -195,6 +196,82 @@ class TestContacts:
         UserSession.objects.create(creator=superuser, channel_name="chan-self")
         body = auth_client.get(CONTACT_URL).json()["data"]
         assert body["results"] == []
+
+
+class TestGroups:
+    """多人群聊：创建/成员管理/改名/退出转让与解散/列表可见性/服务层门槛。"""
+
+    @staticmethod
+    def _create(owner, members, name="项目群"):
+        return chat_service.create_group(owner, name, [member.pk for member in members])
+
+    def test_create_group_and_appears_in_member_list(self, auth_client, superuser, bob):
+        response = auth_client.post(
+            f"{ROOM_URL}/create-group", {"name": "项目群", "member_pks": [bob.pk]}, format="json"
+        )
+        assert response.status_code == 200, response.data
+        data = response.json()["data"]
+        assert data["room_type"] == ChatRoom.RoomType.GROUP
+        assert data["name"] == "项目群"
+        assert data["member_count"] == 2
+        assert data["is_owner"] is True
+        # 成员侧：尚无消息也应出现在会话列表（群聊创建即入列）
+        rooms = chat_service.list_user_rooms(bob)
+        listed = next(item for item in rooms if item["id"] == data["id"])
+        assert listed["is_owner"] is False
+
+    def test_create_group_requires_members(self, auth_client, superuser):
+        response = auth_client.post(f"{ROOM_URL}/create-group", {"name": "空群", "member_pks": []}, format="json")
+        assert response.status_code == 400
+
+    def test_members_add_and_remove(self, auth_client, superuser, bob, alice):
+        group = self._create(superuser, [bob])
+        added = auth_client.post(f"{ROOM_URL}/{group.pk}/members", {"add": [alice.pk]}, format="json")
+        assert added.json()["data"]["member_count"] == 3
+        removed = auth_client.post(f"{ROOM_URL}/{group.pk}/members", {"remove": [alice.pk]}, format="json")
+        assert removed.json()["data"]["member_count"] == 2
+        # 被移除者失去访问权（按房间不存在拒绝）
+        with pytest.raises(DjangoValidationError):
+            chat_service.accessible_room(group.pk, alice)
+
+    def test_non_owner_cannot_manage_members(self, superuser, bob, alice):
+        group = self._create(superuser, [bob])
+        with pytest.raises(DjangoValidationError):
+            chat_service.add_group_members(group.pk, bob, [alice.pk])
+        with pytest.raises(DjangoValidationError):
+            chat_service.rename_group(group.pk, bob, "改名")
+        with pytest.raises(DjangoValidationError):
+            chat_service.group_room_or_deny(group.pk, alice)
+
+    def test_rename_group(self, auth_client, superuser, bob):
+        group = self._create(superuser, [bob], name="旧名")
+        response = auth_client.post(f"{ROOM_URL}/{group.pk}/rename", {"name": "新名"}, format="json")
+        assert response.json()["code"] == 1000
+        group.refresh_from_db()
+        assert group.name == "新名"
+
+    def test_leave_transfers_owner_then_dissolves(self, superuser, bob, alice):
+        group = self._create(superuser, [bob, alice])
+        chat_service.leave_group(group.pk, superuser)
+        group.refresh_from_db()
+        assert group.owner_id == bob.pk  # 群主退出：转让给最早加入的成员
+        chat_service.leave_group(group.pk, bob)
+        chat_service.leave_group(group.pk, alice)
+        group.refresh_from_db()
+        assert group.is_active is False
+        assert all(item["id"] != group.pk for item in chat_service.list_user_rooms(alice))
+
+    def test_group_unread_and_history(self, auth_client, superuser, bob, alice):
+        group = self._create(superuser, [bob])
+        chat_service.create_message(group, superuser, "大家好")
+        unread = chat_service.bump_unread(group, superuser.pk)
+        assert unread[bob.pk] == 1
+
+        response = auth_client.get(MESSAGE_URL, {"room": group.pk})
+        assert response.json()["code"] == 1000
+        assert response.json()["data"]["results"][0]["content"] == "大家好"
+        with pytest.raises(DjangoValidationError):
+            chat_service.accessible_room(group.pk, alice)
 
 
 class TestAiChat:

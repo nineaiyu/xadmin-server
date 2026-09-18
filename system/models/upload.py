@@ -7,6 +7,7 @@
 
 import hashlib
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -109,6 +110,8 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
             models.Index(fields=["md5sum"], name="idx_uploadfile_md5sum"),
             # 个人配额聚合（creator 维度 Sum/Count）
             models.Index(fields=["creator", "created_time"], name="idx_uploadfile_creator_created"),
+            # 全局搜索的 pg_trgm 索引（文件名 icontains；PostgreSQL 生效，见 system/search_indexes.py）
+            GinIndex(fields=["filename"], name="idx_uploadfile_filename_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
     def __str__(self):

@@ -32,6 +32,7 @@ class RouteMetaSerializer(ModelSerializer):
             "hiddenTag",
             "dynamicLevel",
             "fixedTag",
+            "watermark",
         ]
 
     showParent = serializers.BooleanField(source="is_show_parent", read_only=True, label=_("Show parent menu"))
@@ -52,6 +53,8 @@ class RouteMetaSerializer(ModelSerializer):
     hiddenTag = serializers.BooleanField(source="is_hidden_tag", read_only=True, label=_("Hidden tag"))
     fixedTag = serializers.BooleanField(source="fixed_tag", read_only=True, label=_("Fixed tag"))
     dynamicLevel = serializers.IntegerField(source="dynamic_level", read_only=True, label=_("Dynamic level"))
+    # 菜单级水印开关：置顶「页面强制挂载」，与基本设置的路径前缀范围是或关系
+    watermark = serializers.BooleanField(read_only=True, label=_("Page watermark"))
 
 
 class RouteSerializer(BaseModelSerializer):

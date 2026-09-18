@@ -3,6 +3,7 @@
 > 方法：遍历各 app 模型现有索引 → 对照 filterset / 高频查询路径（列表默认排序、
 > 权限中间件每请求查询、定时清理任务）逐表评审 → 代表性查询以
 > `EXPLAIN QUERY PLAN` 断言索引命中（tests/unit/system/test_index_usage.py）。
+> 2026-09-18 增补 §三 全局搜索 pg_trgm 索引（PostgreSQL 专属，SQLite 上不建、由覆盖守护把关）。
 
 ## 一、现状清单（含 PERF 批次成果）
 
@@ -22,13 +23,33 @@
 | 候选                                                              | 结论 | 理由                                                      |
 |-----------------------------------------------------------------|----|---------------------------------------------------------|
 | OperationLog.status_code                                        | 不加 | 布尔语义过滤（错误/正常）低基数；默认排序已走 created_time 索引，过滤在索引覆盖的行集内进行   |
-| OperationLog/LoginLog 的 ipaddress/system/path/agent `icontains` | 不加 | 前缀通配无法命中 B-tree 索引；低频管理页查询，加索引无收益                       |
+| OperationLog/LoginLog 的 ipaddress/system/path/agent `icontains` | 不加 | 低频管理页查询；且 OperationLog 为写热表（每请求落审计），加 GIN 会把维护成本压到写入路径——维持不加（见 §四 豁免） |
 | UserLoginLog.status / login_type                                | 不加 | 低基数；列表按 created_time 排序已覆盖                              |
 | FieldPermission(menu, role) 复合                                  | 不加 | 表规模 = 角色×菜单（小）；role/menu 单 FK 自动索引已覆盖每请求权限查询（另有 10s 缓存） |
 | ModelLabelField.name/parent                                     | 不加 | 字段元数据树，行数极小                                             |
 | DataPermission(userinfo/rules M2M)                              | 不加 | 规则表行数小；M2M 中间表 Django 自动建唯一约束索引                         |
 
-## 三、回归保护
+## 三、pg_trgm 检索索引（全局搜索，2026-09-18）
+
+全局搜索的 `icontains` 是**前缀通配**（`LIKE '%关键词%'`），B-tree 无法命中；
+PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontains，非 PG / 扩展不可用
+自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`，建索引/回滚见
+迁移 `system/migrations/0010_search_trigram_indexes.py`（vendor 守卫 + 失败只告警）。
+
+| 表                     | 索引                                                                                  | 服务的检索字段                     |
+|-----------------------|-------------------------------------------------------------------------------------|-----------------------------|
+| system_userinfo       | `idx_userinfo_username_trgm` / `idx_userinfo_nickname_trgm` / `idx_userinfo_email_trgm` / `idx_userinfo_phone_trgm` | 用户分组 username/nickname/email/phone |
+| system_uploadfile     | `idx_uploadfile_filename_trgm`                                                      | 文件分组 filename                 |
+| system_approvalrequest | `idx_approvalrequest_path_trgm` / `idx_approvalrequest_module_trgm` / `idx_approvalrequest_object_pk_trgm` | 审批单分组 path/module/object_pk   |
+| system_leave          | `idx_leave_reason_trgm`                                                             | 请假分组 reason                   |
+
+**豁免**（登记理由，覆盖守护在 `tests/unit/system/test_search_indexes.py`）：
+DeptInfo.name/code（小表）；OperationLog.path/module/ipaddress（写热表 + 超管低频检索，维持 §二 结论）。
+
+**验证方式**（PG 库上）：`EXPLAIN SELECT id FROM system_userinfo WHERE username ILIKE '%关键词%';`
+应出现 `Bitmap Index Scan on idx_userinfo_username_trgm`；单字符关键词不使用索引（trigram 需 ≥2 字符）。
+
+## 四、回归保护
 
 `tests/unit/system/test_index_usage.py` 以 `EXPLAIN QUERY PLAN` 断言以下查询
 命中索引（sqlite 与 pg 均会按此计划走索引）：

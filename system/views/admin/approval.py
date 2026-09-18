@@ -33,6 +33,7 @@ from system.utils.approval import (
     pending_count_for,
     reject_request,
 )
+from system.utils.approval_mfa import ensure_approval_action_confirmed
 
 logger = get_logger(__name__)
 
@@ -114,6 +115,7 @@ class ApprovalRequestViewSet(
     @action(methods=["post"], detail=False, url_path="batch-approve")
     def batch_approve(self, request, *args, **kwargs):
         """批量通过审批单"""
+        ensure_approval_action_confirmed(request, "batch_approve")
         # 与单条 approve/reject 口径一致：批量入口同样先校验审批权限
         # （取值域过滤只能保证「看得到」，不能保证「有权审批」）
         if not (request.user.is_superuser or can_approve(request.user)):
@@ -149,6 +151,7 @@ class ApprovalRequestViewSet(
     @action(methods=["post"], detail=False, url_path="batch-reject")
     def batch_reject(self, request, *args, **kwargs):
         """批量驳回审批单（原因必填；逐单校验状态与审批人，返回成功数与被拒明细）"""
+        ensure_approval_action_confirmed(request, "batch_reject")
         # 与单条 reject 同口径：批量入口同样先校验审批权限与原因
         if not (request.user.is_superuser or can_approve(request.user)):
             raise PermissionDenied(_("Permission denied"))
@@ -187,6 +190,7 @@ class ApprovalRequestViewSet(
     @action(methods=["post"], detail=True)
     def approve(self, request, *args, **kwargs):
         """通过审批单"""
+        ensure_approval_action_confirmed(request, "approve")
         approval = self._get_actionable(request)
         ok, detail = approve_request(approval, request.user)
         if not ok:
@@ -206,6 +210,7 @@ class ApprovalRequestViewSet(
     @action(methods=["post"], detail=True)
     def reject(self, request, *args, **kwargs):
         """驳回审批单（必填原因）"""
+        ensure_approval_action_confirmed(request, "reject")
         approval = self._get_actionable(request)
         reason = (request.data.get("reason") or "").strip()
         if not reason:
@@ -219,6 +224,7 @@ class ApprovalRequestViewSet(
     @action(methods=["post"], detail=True)
     def cancel(self, request, *args, **kwargs):
         """撤回审批单（仅申请人、仅待审批）"""
+        ensure_approval_action_confirmed(request, "cancel")
         approval = self.get_object()
         ok, detail = cancel_request(approval, request.user)
         if not ok:

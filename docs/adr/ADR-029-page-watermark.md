@@ -69,3 +69,18 @@ G10 要求「敏感页面水印（配置化）」：只有敏感页面（用户�
   范围外页面不挂；空范围 = 全部页面；用例自建配置并在 `afterEach` 还原（水印是全屏固定层，防污染其它用例）；
 - 门禁：pytest / ruff（check + format）/ i18n po（新增 4 条词条已补 en+zh 并重新编译 mo）/
   前端 typecheck / eslint / prettier / locale-keys。
+
+## 增量（2026-09-18）：菜单级水印开关（触发条件命中）
+
+原「不做菜单级/页面级开关」的重开条件是「同一目录下只对个别菜单生效且路径不稳定」的真实需求；
+产品优先级确认后按需交付（长期优化方案 §4.5 水印行 / F4 按需功能池），本 ADR 同步修订结论。
+
+- **数据**：`MenuMeta.watermark`（布尔，迁移 `0008_menu_meta_watermark`），经 `RouteMetaSerializer`
+  随路由 meta 下发（`watermark` 只读）；
+- **语义**：菜单级开关是「路径范围」的**补充而非替代**——`isSiteWatermarkVisible` 判定
+  `总开关 && 非登录页 && (菜单开关 || 路径前缀命中)`，即置顶「页面强制挂载」；
+- **入口**：菜单管理 → 基本信息 → 「页面水印」开关（zh/en 词条成对）；
+- **仍不做**（维持原结论）：水印防篡改重挂载（MutationObserver）、导出文件水印；
+- **测试**：服务端 `test_menu_api` / `test_routes_view`（meta 写回与透传）；前端
+  `watermark.spec.ts`（或关系矩阵）；`e2e/watermark.e2e.ts` 新增「路径范围外页面由菜单开关
+  强制挂载」用例（用例自建并在 `afterEach` 还原菜单开关与站点配置）。

@@ -26,6 +26,7 @@ PENDING 单并通知审批人；审批通过后由原始客户端在有效期内
 
 import uuid
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -83,6 +84,10 @@ class ApprovalRequest(DbAuditModel):
         indexes = [
             models.Index(fields=["status", "created_time"], name="idx_approval_status_created"),
             models.Index(fields=["creator", "created_time"], name="idx_approval_creator_created"),
+            # 全局搜索的 pg_trgm 索引（path/module/object_pk 检索；PostgreSQL 生效，见 system/search_indexes.py）
+            GinIndex(fields=["path"], name="idx_approvalrequest_path_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["module"], name="idx_approvalrequest_module_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["object_pk"], name="idx_approvalrequest_object_pk_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
     def __str__(self):

@@ -59,5 +59,48 @@
       "is_active": true,
       "version": 1
     }
+  },
+  {
+    "model": "system.approvalflow",
+    "pk": "5eed0006-0000-4000-8000-000000000004",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "采购申请（内置业务模板）：部门负责人初审，金额 ≥5000 追加财务复核",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "采购申请",
+      "code": "purchase",
+      "form_schema": [
+        {"key": "item", "label": "采购物品", "type": "text", "required": true, "options": []},
+        {"key": "amount", "label": "采购金额", "type": "number", "required": true, "options": []},
+        {"key": "supplier", "label": "供应商", "type": "text", "required": false, "options": []},
+        {"key": "remark", "label": "备注", "type": "textarea", "required": false, "options": []}
+      ],
+      "is_active": true,
+      "version": 1
+    }
+  },
+  {
+    "model": "system.approvalflow",
+    "pk": "5eed0006-0000-4000-8000-000000000005",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "用章申请（内置业务模板）：直属主管审批后行政备案",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "name": "用章申请",
+      "code": "seal",
+      "form_schema": [
+        {"key": "doc_type", "label": "印章类型", "type": "select", "required": true, "options": ["公章", "合同章", "财务章"]},
+        {"key": "reason", "label": "用章事由", "type": "textarea", "required": true, "options": []},
+        {"key": "copies", "label": "份数", "type": "number", "required": false, "options": []}
+      ],
+      "is_active": true,
+      "version": 1
+    }
   }
 ]

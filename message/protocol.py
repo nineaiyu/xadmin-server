@@ -38,6 +38,7 @@ class MessageAction(StrEnum):
     CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
     TASK_LOG = "task_log"  # 任务执行日志增量推送（system/ws.py）
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
+    SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（system/ws_screen.py，下行单向）
 
 
 class InboundMessage(TypedDict, total=False):
@@ -143,6 +144,21 @@ class TaskLogPayload(TypedDict):
     offset: int
     content: str
     finished: bool
+
+
+class ScreenCommandPayload(TypedDict, total=False):
+    """大屏远程控制帧（ws/screen/<pk> 下行，管理端触发）。
+
+    command: switch（切到指定仪表盘）/ page（翻到指定页）/ refresh（重拉数据）/ auto（恢复轮播）/
+    state（连接时回放当前控制态）；mode=manual 时展示端停轮播、停在 index 页。
+    """
+
+    command: str
+    mode: str
+    index: int
+    refresh_rev: int
+    rev: int
+    ts: str
 
 
 class MonitorPushPayload(TypedDict, total=False):

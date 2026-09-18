@@ -15,7 +15,8 @@
         "chat_read",
         "chat_unread",
         "task_log",
-        "monitor"
+        "monitor",
+        "screen_command"
       ],
       "description": "消息动作枚举（MessageAction）"
     },
@@ -75,6 +76,23 @@
         "extra": { "type": "object" }
       },
       "additionalProperties": true
+    },
+    "screenCommandPayload": {
+      "type": "object",
+      "description": "大屏远程控制帧载荷（ws/screen/<pk> 下行，system/ws_screen.py 广播；展示端被动接收）",
+      "required": ["command"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "switch / page / refresh / auto；连接回放时为 state"
+        },
+        "mode": { "type": "string", "description": "auto 自动轮播 / manual 远程控制停播" },
+        "index": { "type": "integer", "description": "当前页码（0 基）" },
+        "refresh_rev": { "type": "integer", "description": "数据刷新代数（递增即重拉数据）" },
+        "rev": { "type": "integer", "description": "控制态版本号（单调递增）" },
+        "ts": { "type": "string", "description": "指令落态时间（ISO）" }
+      },
+      "additionalProperties": false
     }
   },
   "oneOf": [

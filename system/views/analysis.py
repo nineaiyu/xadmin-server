@@ -10,7 +10,9 @@
 非创建者只读。
 """
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -23,7 +25,9 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.analysis_tasks import schedule_report_run
 from system.models.dataset import Report, Screen
-from system.serializers.analysis import ReportSerializer, ScreenSerializer
+from system.serializers.analysis import ReportSerializer, ScreenCommandSerializer, ScreenSerializer
+from system.utils.user_options import search_user_options
+from system.ws_screen import apply_screen_command, broadcast_screen_command, load_screen_state
 
 _EDIT_DENY = "Only the creator can modify it"
 
@@ -90,11 +94,41 @@ class ReportFilter(BaseFilterSet):
 
 
 class ScreenViewSet(BaseAnalysisViewSet):
-    """大屏模板"""
+    """大屏模板（含远程控制：管理端下发指令，展示端经 ws/screen/<pk> 接收）"""
 
     queryset = Screen.objects.all()
     serializer_class = ScreenSerializer
     filterset_class = ScreenFilter
+
+    @extend_schema(request=ScreenCommandSerializer, responses=get_default_response_schema())
+    @action(methods=["get", "post"], detail=True, url_path="command")
+    def command(self, request, *args, **kwargs):
+        """GET 当前控制态（+仪表盘清单）；POST 下发切换/翻页/刷新/恢复轮播。
+
+        取值域沿用可见性过滤（个人大屏仅创建者可控制）；GET+POST 共享权限码
+        `command:DataScreen`（登记见 permission_sync SHARED_METHOD_PATHS）。
+        """
+        screen = self.get_object()
+        if request.method == "GET":
+            return ApiResponse(
+                data={
+                    "state": load_screen_state(screen.pk),
+                    "dashboards": [str(item) for item in (screen.dashboards or [])],
+                }
+            )
+        serializer = ScreenCommandSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            frame = apply_screen_command(
+                screen,
+                serializer.validated_data["command"],
+                dashboard_pk=serializer.validated_data.get("dashboard_pk") or "",
+                index=serializer.validated_data.get("index"),
+            )
+        except DjangoValidationError as exc:
+            return ApiResponse(code=1001, detail="; ".join(exc.messages))
+        broadcast_screen_command(screen.pk, frame)
+        return ApiResponse(data={"state": frame}, detail=_("Command sent"))
 
 
 class ReportViewSet(BaseAnalysisViewSet):
@@ -103,6 +137,20 @@ class ReportViewSet(BaseAnalysisViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     filterset_class = ReportFilter
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="user-options")
+    def user_options(self, request, *args, **kwargs):
+        """IM 收件人候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
+
+        口径与选人控件同源（system/utils/user_options.py）；权限与该视图 list
+        权限同口径（common/core/permission.py 的 user-options 特例）。
+        """
+        data = search_user_options(
+            keyword=request.query_params.get("keyword", ""),
+            pks=request.query_params.get("pks", ""),
+        )
+        return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="run")

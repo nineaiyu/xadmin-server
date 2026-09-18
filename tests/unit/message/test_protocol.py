@@ -49,6 +49,24 @@ def test_chat_payloads_registered():
         assert hasattr(protocol, name), f"协议缺少载荷定义 {name}"
 
 
+def test_screen_command_payload_matches_schema():
+    """大屏控制载荷：protocol.py 定义 ↔ ws-frame.schema.json 定义键集合一致。"""
+    import json
+    import os
+
+    from django.conf import settings
+
+    from message import protocol
+
+    schema_path = os.path.join(settings.PROJECT_DIR, "docs", "schema", "ws-frame.schema.json")
+    with open(schema_path, encoding="utf-8") as fp:
+        schema = json.load(fp)
+    definition = schema["definitions"]["screenCommandPayload"]
+    assert sorted(definition["properties"]) == sorted(protocol.ScreenCommandPayload.__annotations__)
+    # command 为必填（连接回放 state 与四类指令都携带）；其余键为可选态
+    assert definition["required"] == ["command"]
+
+
 def test_outbound_frame_contains_version_and_common_fields():
     """出站帧统一携带 code/detail/timestamp/v，data/mid 按需出现。"""
 

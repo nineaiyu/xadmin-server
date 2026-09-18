@@ -49,6 +49,16 @@ class TestMenuCrudSmoke:
         assert resp.data["code"] == 1000
         assert not Menu.objects.filter(pk=pk).exists()
 
+    def test_patch_meta_watermark(self, auth_client):
+        """菜单级水印开关：meta 部分更新可持久化（新菜单默认关闭）。"""
+        pk = _create_menu(auth_client)
+        assert auth_client.get(f"{MENU_URL}/{pk}").data["data"]["meta"]["watermark"] is False
+
+        resp = auth_client.patch(f"{MENU_URL}/{pk}", {"meta": {"watermark": True}}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["meta"]["watermark"] is True
+        assert Menu.objects.get(pk=pk).meta.watermark is True
+
     def test_filter_by_name(self, auth_client):
         _create_menu(auth_client, name="system-user", title="用户管理")
         _create_menu(auth_client, name="system-role", title="角色管理")

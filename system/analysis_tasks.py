@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""定时报表任务：调度分发 + 执行渲染 + 邮件送达。
+"""定时报表任务：调度分发 + 执行渲染 + 多渠道路送达（邮件 + IM）。
 
 - 分发器每小时跑一次（crontab "5 * * * *"），命中 frequency/send_time/weekday
   的 active 报表派发执行；执行与分发解耦（长渲染不阻塞扫描）；
 - 执行以**创建者**权限上下文运行数据集（menu 上下文为空 ⇒ 仅未绑菜单的全局
   授权生效，fail-closed 语义不变）；
 - 产物复用下载中心：派发方预创建 ExportRecord（pk == celery task_id 契约），
-  xlsx 渲染后落 UploadFile 并挂 record；邮件携带附件，失败仅记 error 不回滚产物。
+  xlsx 渲染后落 UploadFile 并挂 record；
+- 投递按 `notify_channels` 逐渠道独立执行（空 = 仅邮件）：邮件携带附件，IM 为
+  文本消息（报表名/行数/下载中心提示，收件人取 `im_recipients` 用户主键并按各
+  渠道 OAuth 绑定可达性过滤）；任一渠道失败仅记 error 与交付状态，不回滚产物。
 """
 
 import io
@@ -110,6 +113,47 @@ def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
     mail.send()
 
 
+def report_notify_channels(report) -> list:
+    """报表投递渠道清单：非法取值忽略；空 = 仅邮件（存量数据与旧客户端兼容）。"""
+    from system.serializers.analysis import REPORT_NOTIFY_CHANNELS
+
+    channels = [item for item in (report.notify_channels or []) if item in REPORT_NOTIFY_CHANNELS]
+    return channels or ["email"]
+
+
+def _deliver_im(report, rows: int) -> list:
+    """IM 渠道投递（文本消息：报表名/行数/下载中心提示）。
+
+    逐渠道独立失败并返回失败明细（``渠道: 原因``）；未配置的渠道记入明细而非静默跳过。
+    消息体不携带附件（各 IM 后端 send_msg 为文本协议），产物统一在下载中心取用。
+    """
+    from notifications.backends import BACKEND
+    from system.models import UserInfo
+
+    channels = [item for item in report_notify_channels(report) if item != "email"]
+    if not channels:
+        return []
+    recipients = list(UserInfo.objects.filter(pk__in=report.im_recipients or [], is_active=True))
+    if not recipients:
+        return ["{}: no active recipients".format("/".join(channels))]
+    subject = "{} - {}".format(report.name, timezone.localtime().strftime("%Y-%m-%d %H:%M"))
+    message = str(
+        _("Scheduled report generated, {} rows. Open the download center to view or download it.").format(rows)
+    )
+    errors = []
+    for channel in channels:
+        try:
+            backend = BACKEND(channel)
+            if not backend.is_enable:
+                errors.append(f"{channel}: not configured")
+                continue
+            backend.client.send_msg(recipients, message, subject=subject)
+        except Exception as exc:  # noqa: BLE001 单渠道失败不影响其它渠道
+            errors.append(f"{channel}: {exc}")
+            logger.warning("scheduled report im delivery failed: %s", channel, exc_info=True)
+    return errors
+
+
 def _precreate_record(report) -> str:
     """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。"""
     from system.models.export import ExportRecord
@@ -203,18 +247,21 @@ def run_scheduled_report(self, report_id: str):
         record.progress = 100
         record.save(update_fields=["file", "rows", "status", "progress", "updated_time"])
 
-        error = ""
-        try:
-            _deliver_email(report, filename, content, rows)
-        except Exception as exc:  # noqa: BLE001 邮件失败不回滚产物
-            error = f"email failed: {exc}"
-            logger.warning("scheduled report email failed: %s", report.pk, exc_info=True)
+        errors = []
+        channels = report_notify_channels(report)
+        if "email" in channels:
+            try:
+                _deliver_email(report, filename, content, rows)
+            except Exception as exc:  # noqa: BLE001 邮件失败不回滚产物
+                errors.append(f"email: {exc}")
+                logger.warning("scheduled report email failed: %s", report.pk, exc_info=True)
+        errors.extend(_deliver_im(report, rows))
         report.last_run_at = timezone.now()
-        report.last_status = "SUCCESS" if not error else "SUCCESS_WITH_EMAIL_ERROR"
+        report.last_status = "SUCCESS" if not errors else "SUCCESS_WITH_DELIVERY_ERROR"
         report.save(update_fields=["last_run_at", "last_status", "updated_time"])
-        record.error = error[:2000] if error else None
+        record.error = "; ".join(errors)[:2000] if errors else None
         record.save(update_fields=["error", "updated_time"])
-        logger.info("scheduled report done: %s rows=%s email=%s", report.pk, rows, not error)
+        logger.info("scheduled report done: %s rows=%s channels=%s", report.pk, rows, channels)
         return rows
     except Exception as exc:
         record.status = ExportRecord.Status.FAILURE

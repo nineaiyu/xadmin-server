@@ -85,6 +85,9 @@ def run_view_by_celery_task(view, request, kwargs, data, batch_length=100):
             data = [data]
         meta["task_count"] = math.ceil(len(data) / batch_length)
         meta["action"] = view.action
+        # 分片任务显式携带提交者身份：任务内据此构造请求（ForcedAuthentication 直通），
+        # 不依赖 META 里的 cookie/令牌（排队超过 access token 寿命时后者会失效）
+        meta["user_pk"] = getattr(request.user, "pk", None)
         try:
             # 检查Celery是否可用，如果不可用则直接执行任务（探测结果带短缓存，避免请求内广播阻塞）
             if not has_active_celery_worker():

@@ -3,7 +3,7 @@
 
 覆盖：
 1. 写入用 UPDATE 而非 update_or_create（主键已知，省 1 条 SELECT）；
-2. 大字段截断到 MAX_LOG_FIELD；
+2. 大字段截断到 OPERATION_LOG_FIELD_MAX（默认 4096，可配置，0 = 不落）；
 3. 日志写通过 transaction.on_commit 移出请求事务；
 4. 缺失 User-Agent 头不再抛 KeyError；
 5. 敏感字段脱敏清单扩展；
@@ -64,6 +64,14 @@ class TestFieldTruncation:
         # 不污染原请求体
         assert body["password"] == "secret"
 
+    def test_temp_token_fields_masked(self):
+        """登录/绑定加密握手的临时令牌与验证码票据不落明文。"""
+        body = {"token": "tmp_token_abc", "verify_token": "vt-abc", "username": "alice"}
+        masked = desensitize_body(body)
+        assert masked["token"] == "*" * len("tmp_token_abc")
+        assert masked["verify_token"] == "*" * len("vt-abc")
+        assert masked["username"] == "alice"
+
     def test_truncation_constants(self):
         assert MAX_LOG_FIELD == 4096
 
@@ -120,6 +128,47 @@ class TestFieldTruncation:
 
         assert info["status_code"] is None
         assert info["response_result"] == '{"code": null, "data": null, "detail": null}'
+
+
+class TestConfigurableFieldLimit:
+    """大字段上限走系统配置 OPERATION_LOG_FIELD_MAX（冗余正文可裁剪，0 = 不落）。"""
+
+    @staticmethod
+    def _build(monkeypatch, limit):
+        from common.core.config import SysConfig
+
+        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_FIELD_MAX", property(lambda self: limit), raising=False)
+        request = type(
+            "R",
+            (),
+            {
+                "META": {"HTTP_USER_AGENT": "pytest-agent"},
+                "method": "POST",
+                "path": DEMO_URL,
+                "request_data": {"data": "x" * 100},
+                "request_ip": "127.0.0.1",
+                "request_module": "demo",
+                "request_uuid": None,
+                "user": None,
+            },
+        )()
+        response = type("R", (), {"status_code": 200, "data": {"code": 1000, "data": "y" * 100, "detail": None}})()
+        return build_operation_log_info(request, response, 0)
+
+    def test_custom_limit_applied(self, monkeypatch):
+        info = self._build(monkeypatch, 8)
+        assert len(info["body"]) == 8
+        assert len(info["response_result"]) == 8
+
+    def test_zero_limit_stores_no_content(self, monkeypatch):
+        info = self._build(monkeypatch, 0)
+        assert info["body"] == ""
+        assert info["response_result"] == ""
+
+    def test_invalid_config_falls_back_to_default(self, monkeypatch):
+        """坏配置（非数字）回落默认值，不把日志组装打成 500（按默认 4096 原样保留）。"""
+        info = self._build(monkeypatch, "not-a-number")
+        assert info["body"] == json.dumps({"data": "x" * 100})
 
 
 class TestAuthIdentity:

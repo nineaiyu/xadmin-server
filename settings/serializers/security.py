@@ -135,6 +135,14 @@ class SecurityLoginAuthSerializer(serializers.Serializer):
         help_text=_("Enable temporary tokens to prevent attacks"),
     )
 
+    SECURITY_TEMP_TOKEN_EXPIRE = serializers.IntegerField(
+        min_value=60,
+        max_value=60 * 60 * 24,
+        default=600,
+        label=_("Temp token validity period (second)"),
+        help_text=_("Validity period of the temporary token used by login/register/reset/bind encryption handshakes"),
+    )
+
     SECURITY_LOGIN_BY_EMAIL_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Login by email"), help_text=_("Enable send email verify code to user")
     )

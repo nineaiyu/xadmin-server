@@ -25,6 +25,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models.dform import DynamicForm, DynamicFormSubmission
 from system.serializers.dform import DynamicFormSerializer, DynamicFormSubmissionSerializer
 from system.utils.dform_flow import create_flow_instance, resubmit_submission
+from system.utils.user_options import search_user_options
 
 _EDIT_DENY = _("Only the creator can modify a submission")
 _PENDING_DENY = _("The submission is in approval and cannot be modified")
@@ -165,6 +166,22 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             }
             for form in forms
         ]
+        return ApiResponse(data=data)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="user-options")
+    def user_options(self, request, *args, **kwargs):
+        """选人控件数据源：关键字搜索或按主键回显（≤20 条，仅基本展示字段）。
+
+        填报链路的轻量数据源：关键字必填（不做通讯录全量枚举）；编辑既有提交时
+        可带 pks 批量回显已选用户（同样字段收敛，仅主键命中）。
+        权限与对应 list 权限同口径（见 common/core/permission.py 的 user-options
+        特例），存量角色无需为控件单独授权。
+        """
+        data = search_user_options(
+            keyword=request.query_params.get("keyword", ""),
+            pks=request.query_params.get("pks", ""),
+        )
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())

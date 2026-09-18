@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from pilkit.processors import ResizeToFill
@@ -85,6 +86,15 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
         verbose_name = _("Userinfo")
         verbose_name_plural = verbose_name
         ordering = ("-date_joined",)
+        # 全局搜索的 pg_trgm 索引（PostgreSQL 生效，其它后端由迁移跳过；
+        # 清单与豁免见 system/search_indexes.py 与 docs/architecture/indexes.md）：
+        # username/nickname/email/phone 均为 icontains 检索字段，B-tree 帮不上前缀通配
+        indexes = [
+            GinIndex(fields=["username"], name="idx_userinfo_username_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["nickname"], name="idx_userinfo_nickname_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["email"], name="idx_userinfo_email_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["phone"], name="idx_userinfo_phone_trgm", opclasses=["gin_trgm_ops"]),
+        ]
         # 注意：username 不做"未删除数据"条件唯一（Django auth.E003 要求
         # USERNAME_FIELD 全局唯一，部分唯一约束不满足检查），
         # 已删除用户的用户名在 DB 层仍被占用，序列化器按 all_objects 拦截并给出可读提示

@@ -11,6 +11,7 @@
   挂载流程实例，实例终态由 ``approval_instance_finished`` 信号回写本单状态。
 """
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -59,6 +60,8 @@ class Leave(DbAuditModel, DbUuidModel):
         indexes = [
             models.Index(fields=["status", "created_time"], name="idx_leave_status_created"),
             models.Index(fields=["creator", "start_date"], name="idx_leave_creator_start"),
+            # 全局搜索的 pg_trgm 索引（reason 检索；PostgreSQL 生效，见 system/search_indexes.py）
+            GinIndex(fields=["reason"], name="idx_leave_reason_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
     def __str__(self):

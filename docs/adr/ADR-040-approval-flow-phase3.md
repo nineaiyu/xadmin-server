@@ -27,6 +27,12 @@ RATIO 比例会签、@vue-flow 画布；两期均**明示不做**「委托代理
 - **顺序保证**：配置 → 动作匹配 → 确认状态；未通过时**不得推进业务状态**（守护测试断言实例仍 PENDING）。
 - **测试**：`tests/integration/system/test_approval_mfa.py`（关闭直通 / 命中 412 / 验证后放行 / 逐动作粒度）。
 
+**增量（2026-09-18）**：动作清单新增 `rollback`（流程定义回滚到历史版本），并把实现从
+审批流视图内的私有函数收敛为共享门控 `system/utils/approval_mfa.py`——审批中心
+（`approve / reject / cancel / batch_approve / batch_reject`）与审批流引擎
+（`approve / reject / cancel / add_sign / batch_* / rollback`）**双入口统一收口**；
+配置项 `APPROVAL_MFA_REQUIRED_ACTIONS` 帮助文案与系统配置描述同步更新（取值集合 6 → 7）。
+
 ## 决策 2：委托代理（设计已定，待实施）
 
 目标：审批人可指定代理人在**指定时段 / 指定流程范围**内代审，审计上区分「代审」。

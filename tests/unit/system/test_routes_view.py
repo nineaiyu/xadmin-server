@@ -105,7 +105,18 @@ class TestRoutesResponseCache:
         assert [child["name"] for child in children] == ["用户管理", "角色管理"]
         for child in children:
             assert child["meta"]["title"] == child["name"]
-            assert {"showLink", "keepAlive", "transition"} <= set(child["meta"])
+            assert {"showLink", "keepAlive", "transition", "watermark"} <= set(child["meta"])
+
+    def test_menu_level_watermark_in_route_meta(self, auth_client, _menu_tree):
+        """菜单级水印开关透传到路由 meta（前端据此在路径范围外置顶强制挂载）。"""
+        child = Menu.objects.get(parent=_menu_tree, name="用户管理")
+        child.meta.watermark = True
+        child.meta.save(update_fields=["watermark"])
+
+        result = payload(auth_client.get(ROUTES_URL))
+        children = {item["name"]: item for item in _fixture_group_children(result)}
+        assert children["用户管理"]["meta"]["watermark"] is True
+        assert children["角色管理"]["meta"]["watermark"] is False
 
 
 class CachedView(APIView):

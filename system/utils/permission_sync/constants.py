@@ -34,6 +34,10 @@ AUDIT_KNOWN_DUPLICATES = {
 #   前端统一用 `imBinding:SystemUser` 判定入口可见性。
 SHARED_METHOD_PATHS = {
     "api/system/user/(?P<pk>[^/.]+)/im-binding$": ("GET", "POST"),
+    # chat/room/{pk}/members GET+POST：查看成员 / 增删成员共用 members:ChatRoom 权限码
+    "api/chat/room/(?P<pk>[^/.]+)/members$": ("GET", "POST"),
+    # screens/{pk}/command GET+POST：查询控制态 / 下发控制指令共用 command:DataScreen 权限码
+    "api/system/screens/(?P<pk>[^/.]+)/command$": ("GET", "POST"),
 }
 # 需保持「模型绑定为空」的动作：导入导出链（字段权限回退到 list/create 菜单的口径）
 IMPORT_EXPORT_ACTIONS = (

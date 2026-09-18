@@ -235,3 +235,45 @@ src/utils/websocket.ts         # 新增 ChatWebSocket 子类（/ws/chat/），�
 8. **`el-input`（textarea 形态）不保证 `data-testid` 落到内部 `<textarea>`**：E2E 用
    `[data-testid="chat-input"] textarea` 会一直等不到元素；data-testid 挂原生 wrapper div，
    或直接按 placeholder/role 定位。同理 icon-only 的抽屉开关按钮要显式 `aria-label`。
+
+## 三期（2026-09-18）：多人群聊（突破「明确不做」的二期候选）
+
+**背景**：原「后果」列把多人群聊登记为「明确不做（二期候选）」。产品优先级确认后启动
+（长期优化方案 §4.4 聊天室行 / F4 按需功能池），按「先 ADR 后动手」在本 ADR 记录结论。
+
+### 1. 数据与语义
+
+- `ChatRoom.RoomType` 新增 `group`；`owner` 字段语义扩展为「AI 会话归属者 / 群主」；
+  `room_key` 取 `group:{uuid4}`（**非幂等**：每次创建即新群，与 public/private 的幂等键不同）；
+- 成员关系复用 `ChatRoomMember`（含未读游标）；群聊**创建即入会话列表**（`last_message_time`
+  为空也可见，与私聊「有消息才列出」不同）；
+- 规则：成员上限 `MAX_GROUP_MEMBERS = 200`（含群主）；名称必填 ≤64 字符；成员只接受在用用户，
+  任一非法/失效成员整体拒绝（避免半成品群）；群主退出自动转让给**最早加入**的成员，
+  末位成员退出即软删房间；非成员/非群聊一律按「会话不存在」拒绝（fail-closed）。
+
+### 2. REST 与权限
+
+| 端点 | 语义 | 权限点 |
+|------|------|--------|
+| `POST /api/chat/room/create-group` | 建群（创建者即群主，成员 ≥1 且不含自己） | `createGroup:ChatRoom` |
+| `GET\|POST /api/chat/room/{pk}/members` | 查看完整成员（成员可见）/ 增删成员（仅群主） | `members:ChatRoom`（GET+POST 共享，登记 `SHARED_METHOD_PATHS`） |
+| `POST /api/chat/room/{pk}/rename` | 改名（仅群主） | `rename:ChatRoom` |
+| `POST /api/chat/room/{pk}/leave` | 退群（群主自动转让 / 末位解散） | `leave:ChatRoom` |
+| `GET /api/chat/contacts/user-options` | 群成员候选（关键字搜索 ≤20 条，仅 pk/用户名/昵称） | 与该视图 `list` 权限同口径（`common/core/permission.py` 特例，存量角色免重授权） |
+
+### 3. 通知与前端
+
+- 群消息对**不在聊天室页面**的成员发站内信（`message_type="chat_group"`，受
+  `PUSH_CHAT_MESSAGE` 偏好约束）；前端桌面通知把 `chat_group` 归入聊天类（前台也弹）；
+  点击站内信直达该会话；
+- 左栏会话区表头新建群聊入口（远程搜索选人，防抖 300ms）；会话行展示成员数；
+  右栏群成员面板：群主可改名/增删成员，所有成员可退群（二次确认）。
+
+### 4. 验收（2026-09-18）
+
+- 后端：`tests/integration/message/test_chat_api.py` 新增 7 例（建群/入列、成员门槛、
+  增删成员、非群主拒绝、改名、转让与解散、群未读与历史）+ 权限种子守护；全量 pytest
+  **2610 collected exit 0**；`ws-frame.schema.json` 无新增 action（群聊复用 `chat_message`）；
+- 前端：`pnpm test:run` 全量通过；`pnpm test:e2e --project=chromium e2e/chat.e2e.ts`
+  新增「多人群聊建群、消息、成员管理与退群」用例（建群 → 发消息 → 成员面板 → 改名 →
+  拉人 → 移除 → 退群）。

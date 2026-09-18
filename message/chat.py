@@ -15,19 +15,22 @@ import uuid
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import F, Max
+from django.db.models import F, Max, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
+    GROUP_MEMBERS_PREVIEW,
     MAX_CONTENT_LENGTH,
+    MAX_GROUP_MEMBERS,
     RECALL_WINDOW_MINUTES,
     ChatMessage,
     ChatRoom,
     ChatRoomMember,
     ai_room_key,
+    group_room_key,
     private_room_key,
 )
 
@@ -119,8 +122,124 @@ def get_or_create_ai_room(owner) -> ChatRoom:
     return room
 
 
+def _normalize_user_pks(raw_pks) -> list:
+    """主键列表规范化：可转 int、去重、剔除非法值（保序）。"""
+    result = []
+    for raw in raw_pks or []:
+        try:
+            pk = int(raw)
+        except (TypeError, ValueError):
+            continue
+        if pk > 0 and pk not in result:
+            result.append(pk)
+    return result
+
+
+def create_group(owner, name: str, member_pks) -> ChatRoom:
+    """创建多人群聊：名称必填、成员（含创建者）至少 2 人、上限 MAX_GROUP_MEMBERS。
+
+    创建者为群主；成员只接受在用用户，任一非法/失效成员整体拒绝（避免半成品群）。
+    """
+    from system.models import UserInfo
+
+    name = (name or "").strip()
+    if not name:
+        raise DjangoValidationError(_("Group name cannot be empty"))
+    if len(name) > 64:
+        raise DjangoValidationError(_("Group name is too long (max 64 characters)"))
+    owner_pk = _user_pk(owner)
+    pks = [pk for pk in _normalize_user_pks(member_pks) if pk != owner_pk]
+    if not pks:
+        raise DjangoValidationError(_("Select at least one member"))
+    members = list(UserInfo.objects.filter(pk__in=pks, is_active=True))
+    if len(members) != len(pks):
+        raise DjangoValidationError(_("Some selected members are unavailable"))
+    if len(members) + 1 > MAX_GROUP_MEMBERS:
+        raise DjangoValidationError(_("Group members exceed the limit of {}").format(MAX_GROUP_MEMBERS))
+    room = ChatRoom.objects.create(
+        room_key=group_room_key(), room_type=ChatRoom.RoomType.GROUP, name=name, owner_id=owner_pk
+    )
+    ChatRoomMember.objects.get_or_create(room=room, user_id=owner_pk)
+    # 入群顺序按 pk 固定：群主退出时「最早加入」的判定与插入顺序可复现
+    for member in sorted(members, key=lambda user: user.pk):
+        ChatRoomMember.objects.get_or_create(room=room, user=member)
+    return room
+
+
+def group_room_or_deny(room_id, user) -> ChatRoom:
+    """群聊会话（fail-closed）：非群聊或非成员一律按「房间不存在」拒绝。"""
+    room = ChatRoom.objects.filter(pk=room_id, is_active=True, room_type=ChatRoom.RoomType.GROUP).first()
+    if room is None or not ChatRoomMember.objects.filter(room=room, user_id=_user_pk(user)).exists():
+        raise DjangoValidationError(_("Chat room not found"))
+    return room
+
+
+def _require_group_owner(room, user) -> None:
+    if room.owner_id != _user_pk(user):
+        raise DjangoValidationError(_("Only the group owner can perform this operation"))
+
+
+def rename_group(room_id, user, name: str) -> ChatRoom:
+    """群主改名（成员态校验 + 群主门槛）。"""
+    room = group_room_or_deny(room_id, user)
+    _require_group_owner(room, user)
+    name = (name or "").strip()
+    if not name:
+        raise DjangoValidationError(_("Group name cannot be empty"))
+    if len(name) > 64:
+        raise DjangoValidationError(_("Group name is too long (max 64 characters)"))
+    room.name = name
+    room.save(update_fields=["name", "updated_time"])
+    return room
+
+
+def add_group_members(room_id, user, member_pks) -> ChatRoom:
+    """群主拉人入群：已在内/失效成员静默跳过；超上限整体拒绝。"""
+    from system.models import UserInfo
+
+    room = group_room_or_deny(room_id, user)
+    _require_group_owner(room, user)
+    owner_pk = _user_pk(user)
+    existing = set(room.members.values_list("user_id", flat=True))
+    pks = [pk for pk in _normalize_user_pks(member_pks) if pk not in existing and pk != owner_pk]
+    if not pks:
+        return room
+    new_members = list(UserInfo.objects.filter(pk__in=pks, is_active=True))
+    if len(existing) + len(new_members) > MAX_GROUP_MEMBERS:
+        raise DjangoValidationError(_("Group members exceed the limit of {}").format(MAX_GROUP_MEMBERS))
+    for member in sorted(new_members, key=lambda user: user.pk):
+        ChatRoomMember.objects.get_or_create(room=room, user=member)
+    return room
+
+
+def remove_group_members(room_id, user, member_pks) -> ChatRoom:
+    """群主移除成员：成员行（含未读游标）删除；群主不能被移除。"""
+    room = group_room_or_deny(room_id, user)
+    _require_group_owner(room, user)
+    pks = _normalize_user_pks(member_pks)
+    if _user_pk(user) in pks:
+        raise DjangoValidationError(_("The group owner cannot be removed"))
+    if pks:
+        room.members.filter(user_id__in=pks).delete()
+    return room
+
+
+def leave_group(room_id, user) -> ChatRoom:
+    """退出群聊：群主退出自动转让给最早加入成员；最后一人退出则房间软删。"""
+    room = group_room_or_deny(room_id, user)
+    room.members.filter(user_id=_user_pk(user)).delete()
+    remaining = list(room.members.order_by("created_time", "pk").values_list("user_id", flat=True))
+    if not remaining:
+        room.is_active = False
+        room.save(update_fields=["is_active", "updated_time"])
+    elif room.owner_id == _user_pk(user):
+        room.owner_id = remaining[0]
+        room.save(update_fields=["owner_id", "updated_time"])
+    return room
+
+
 def accessible_room(room_id, user) -> ChatRoom:
-    """按可访问性取房间（fail-closed）：公共全员可进、私聊仅成员、AI 仅归属者。"""
+    """按可访问性取房间（fail-closed）：公共全员可进、私聊/群聊仅成员、AI 仅归属者。"""
     room = ChatRoom.objects.filter(pk=room_id, is_active=True).first()
     if room is None:
         raise DjangoValidationError(_("Chat room not found"))
@@ -297,7 +416,10 @@ def recall_message(user, message_id) -> ChatMessage:
 
 
 def room_to_dict(room: ChatRoom, user, unread_count: int = 0, online_pks: set = None) -> dict:
-    """会话列表行（前端左侧栏渲染契约）。"""
+    """会话列表行（前端左侧栏渲染契约）。
+
+    群聊附加：群主/成员数与成员预览（前 GROUP_MEMBERS_PREVIEW 人，供头像堆叠与选人回显）。
+    """
     peer = None
     if room.room_type == ChatRoom.RoomType.PRIVATE:
         from system.models import UserInfo
@@ -309,16 +431,23 @@ def room_to_dict(room: ChatRoom, user, unread_count: int = 0, online_pks: set = 
             peer = user_brief(peer_obj)
             if online_pks is not None:
                 peer["online"] = peer_obj.pk in online_pks
-    return {
+    payload = {
         "id": room.pk,
         "room_type": room.room_type,
         "room_key": room.room_key,
         "name": room.name,
         "peer": peer,
+        "owner_pk": room.owner_id,
         "last_message": room.last_message,
         "last_message_time": room.last_message_time.isoformat() if room.last_message_time else "",
         "unread_count": unread_count,
     }
+    if room.room_type == ChatRoom.RoomType.GROUP:
+        member_rows = list(room.members.select_related("user").order_by("created_time", "pk")[:GROUP_MEMBERS_PREVIEW])
+        payload["member_count"] = room.members.count()
+        payload["members"] = [user_brief(row.user) for row in member_rows]
+        payload["is_owner"] = room.owner_id == _user_pk(user)
+    return payload
 
 
 def online_user_pks() -> set:
@@ -333,10 +462,10 @@ def online_user_pks() -> set:
 
 
 def list_user_rooms(user, ai_enabled: bool = False) -> list:
-    """我的会话列表：公共聊天室 → AI 助手（开关开启时）→ 有消息的私聊/AI 会话。
+    """我的会话列表：公共聊天室 → AI 助手（开关开启时）→ 有消息的私聊/AI + 全部群聊。
 
-    私聊/AI 会话排序：未读优先，再按最后消息时间倒序（零额外排序成本，
-    会话表冗余了 last_message/last_message_time）。
+    会话排序：未读优先，再按最后消息时间倒序（零额外排序成本，会话表冗余了
+    last_message/last_message_time；群聊创建即入列，时间缺省按 0 处理）。
     """
     public_room = get_public_room()
     online_pks = online_user_pks()
@@ -353,10 +482,12 @@ def list_user_rooms(user, ai_enabled: bool = False) -> list:
         )
         result.append(room_to_dict(ai_room, user, unread or 0, online_pks))
 
+    # 私聊/AI 只列有消息的会话（避免空会话占位）；群聊创建即入列表（尚无消息也应可见）
     member_rows = (
         ChatRoomMember.objects.filter(user_id=_user_pk(user))
         .select_related("room")
-        .filter(room__is_active=True, room__last_message_time__isnull=False)
+        .filter(room__is_active=True)
+        .filter(Q(room__last_message_time__isnull=False) | Q(room__room_type=ChatRoom.RoomType.GROUP))
         .exclude(room_id__in=fixed_ids)
     )
     unread_map = {row.room_id: row.unread_count for row in member_rows}

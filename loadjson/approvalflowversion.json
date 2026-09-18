@@ -149,5 +149,108 @@
       },
       "remark": "Initial version"
     }
+  },
+  {
+    "model": "system.approvalflowversion",
+    "pk": "5eed0008-0000-4000-8000-000000000004",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000004",
+      "version": 1,
+      "snapshot": {
+        "name": "采购申请",
+        "code": "purchase",
+        "is_active": true,
+        "form_schema": [
+          {"key": "item", "label": "采购物品", "type": "text", "required": true, "options": []},
+          {"key": "amount", "label": "采购金额", "type": "number", "required": true, "options": []},
+          {"key": "supplier", "label": "供应商", "type": "text", "required": false, "options": []},
+          {"key": "remark", "label": "备注", "type": "textarea", "required": false, "options": []}
+        ],
+        "nodes": [
+          {
+            "name": "部门负责人审批",
+            "order": 1,
+            "approve_type": "OR",
+            "approve_ratio": 100,
+            "assignee_type": "leader",
+            "assignee_value": "",
+            "condition": {},
+            "routes": [],
+            "layout": {"x": 260, "y": 160},
+            "timeout_hours": 24
+          },
+          {
+            "name": "财务复核",
+            "order": 2,
+            "approve_type": "OR",
+            "approve_ratio": 100,
+            "assignee_type": "user",
+            "assignee_value": "xadmin,isummer",
+            "condition": {"field": "amount", "op": "gte", "value": 5000},
+            "routes": [],
+            "layout": {"x": 520, "y": 160},
+            "timeout_hours": 0
+          }
+        ]
+      },
+      "remark": "Initial version"
+    }
+  },
+  {
+    "model": "system.approvalflowversion",
+    "pk": "5eed0008-0000-4000-8000-000000000005",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": null,
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000005",
+      "version": 1,
+      "snapshot": {
+        "name": "用章申请",
+        "code": "seal",
+        "is_active": true,
+        "form_schema": [
+          {"key": "doc_type", "label": "印章类型", "type": "select", "required": true, "options": ["公章", "合同章", "财务章"]},
+          {"key": "reason", "label": "用章事由", "type": "textarea", "required": true, "options": []},
+          {"key": "copies", "label": "份数", "type": "number", "required": false, "options": []}
+        ],
+        "nodes": [
+          {
+            "name": "直属主管审批",
+            "order": 1,
+            "approve_type": "OR",
+            "approve_ratio": 100,
+            "assignee_type": "leader",
+            "assignee_value": "",
+            "condition": {},
+            "routes": [],
+            "layout": {"x": 260, "y": 160},
+            "timeout_hours": 24
+          },
+          {
+            "name": "行政备案",
+            "order": 2,
+            "approve_type": "OR",
+            "approve_ratio": 100,
+            "assignee_type": "user",
+            "assignee_value": "xadmin,isummer",
+            "condition": {},
+            "routes": [],
+            "layout": {"x": 520, "y": 160},
+            "timeout_hours": 0
+          }
+        ]
+      },
+      "remark": "Initial version"
+    }
   }
 ]

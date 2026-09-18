@@ -209,9 +209,12 @@ class ChatNotify(AsyncJsonWebsocket):
             )
 
     async def notify_room(self, room, payload: dict):
-        """站内信提醒：私聊提醒对端（对端不在聊天室时）、公共房间提醒被 @ 的用户。"""
+        """站内信提醒：私聊/群聊提醒不在聊天室的成员、公共房间提醒被 @ 的用户。"""
         if room.room_type == ChatRoom.RoomType.PUBLIC:
             await self.notify_mentions(payload)
+            return
+        if room.room_type == ChatRoom.RoomType.GROUP:
+            await self.notify_group(room, payload)
             return
         if room.room_type != ChatRoom.RoomType.PRIVATE:
             return
@@ -232,6 +235,30 @@ class ChatNotify(AsyncJsonWebsocket):
                     "level": "info",
                     "notice_type": {"label": str(_("Private chat")), "value": 0},
                     "message_type": "chat_private",
+                    "room_id": room.pk,
+                    "sender_pk": self.user.pk,
+                },
+            )
+
+    async def notify_group(self, room, payload: dict):
+        """群聊站内信：提醒不在聊天室页面的成员（在线者已实时收到，不重复提醒）。"""
+        member_pks = await database_sync_to_async(chat_service.room_member_pks)(room)
+        title = str(_("New group message from {} in {}").format(payload.get("sender_name") or "", room.name))
+        for user_pk in member_pks:
+            if user_pk == self.user.pk:
+                continue
+            if await self.chat_channel_alive(user_pk):
+                continue
+            if not await database_sync_to_async(can_push_chat)(user_pk):
+                continue
+            await async_push_message(
+                user_pk,
+                {
+                    "title": title,
+                    "message": payload.get("content", ""),
+                    "level": "info",
+                    "notice_type": {"label": str(_("Group chat")), "value": 0},
+                    "message_type": "chat_group",
                     "room_id": room.pk,
                     "sender_pk": self.user.pk,
                 },

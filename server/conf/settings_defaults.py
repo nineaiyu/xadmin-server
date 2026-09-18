@@ -76,6 +76,8 @@ SETTINGS_CONFIG = {
     "SECURITY_BIND_PHONE_CAPTCHA_ENABLED": True,
     "SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED": True,
     "SECURITY_BIND_PHONE_ENCRYPTED_ENABLED": True,
+    # 临时令牌（tmp_token）独立时效（秒）：登录/注册/重置/绑定加密握手共用
+    "SECURITY_TEMP_TOKEN_EXPIRE": 600,
     # MFA / 敏感操作二次验证
     "SECURITY_MFA_CONFIRM_ENABLED": True,  # 敏感操作二次验证总开关
     "SECURITY_MFA_CONFIRM_BACKENDS": ["otp", "sms", "email", "password"],  # 允许的验证方式
@@ -112,7 +114,8 @@ SETTINGS_CONFIG = {
     # ApprovalRequired 装饰器的 action 生效），审批通过后携一次性令牌重发放行
     "APPROVAL_REQUIRED_PATHS": [],
     # 审批动作需 MFA 二次确认的清单（默认空 = 不启用；审批流三期）：
-    # 取值 approve / reject / cancel / add_sign / batch_approve / batch_reject，
+    # 取值 approve / reject / cancel / add_sign / batch_approve / batch_reject / rollback，
+    # 覆盖审批中心与审批流引擎（含流程定义回滚）两个入口，
     # 命中动作在业务变更前走 412（user_confirm_required）协议
     "APPROVAL_MFA_REQUIRED_ACTIONS": [],
     # 审批人角色 code 清单（默认空 = 全部在用超管；申请人不能自审）
@@ -223,6 +226,8 @@ SETTINGS_CONFIG = {
     # 操作日志保留天数（清理任务按此分批删除）；错误日志额外保留天数（0/空 = 跟随全量）
     "OPERATION_LOG_RETENTION_DAYS": 180,
     "OPERATION_LOG_ERROR_RETENTION_DAYS": 365,
+    # 操作日志大字段（请求体/响应/变更 diff）截断上限（字符）；0 = 不落大字段内容
+    "OPERATION_LOG_FIELD_MAX": 4096,
     # 敏感操作告警：方法清单（"ALL" 或空 = 不按方法过滤）与路径正则清单（空 = 不按路径过滤）
     "SENSITIVE_OPERATION_METHODS": ["DELETE"],
     "SENSITIVE_OPERATION_PATHS": [],

@@ -70,6 +70,18 @@ def test_seed_files_exist_and_instance_files_absent():
         assert not os.path.exists(os.path.join(LOADJSON_DIR, f"{name}.json")), f"{name}.json 不应存在"
 
 
+def test_seed_fixture_pks_unique_per_model():
+    """同一模型的 fixture pk 不得重复：loaddata 对重复 pk 走 UPDATE，后一条会静默覆盖前一条。"""
+    seen: dict = {}
+    for name in sorted(f for f in os.listdir(LOADJSON_DIR) if f.endswith(".json")):
+        for item in _load(name):
+            if not isinstance(item, dict) or "model" not in item or "pk" not in item:
+                continue
+            key = (item["model"], str(item["pk"]))
+            assert key not in seen, f"{key} 在 {name} 与 {seen[key]} 中重复（loaddata 会静默覆盖）"
+            seen[key] = name
+
+
 @pytest.mark.parametrize("name", [*SEED_MODEL_NAMES, "dataset", "dashboard", "screen", "report"])
 def test_seed_audit_fields_reference_first_superuser_only(name):
     """种子审计字段只允许 creator/modifier = 1 或 null（新库仅有首个超管）。"""

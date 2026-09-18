@@ -276,7 +276,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         非超管叠加数据权限最坏 5×R×F 条）。memo 挂在请求级（thread-local request 对象
         属性）上，单次请求生命周期内复用；key 必须含字段维度——不同字段的 queryset
         过滤条件不同，同一 pk 在不同数据权限下不能串用。
-        celery 后台导入时 background_task_view_set_job 每任务构造独立 WSGIRequest，
+        celery 后台导入时 background_task_view_set_job 每分片构造独立任务请求（common/core/task_request.py），
         memo 天然按任务隔离。
         """
         request = None

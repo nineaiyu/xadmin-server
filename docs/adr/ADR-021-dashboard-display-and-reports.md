@@ -69,3 +69,33 @@
   非法邮箱拒绝；
 - 门禁：pytest / ruff / i18n po；前端 typecheck / eslint / locale-keys；
   E2E 主链路（建报表 → 立即运行 → 下载中心出现产物）+ 全量回归。
+
+## 增量（2026-09-18）：大屏远程控制 + 报表多渠道路送达
+
+产品优先级确认后按需交付（长期优化方案 §4.5 大屏/定时报表行 / F4 按需功能池）。
+
+### 1. 大屏远程控制（修订 §1「后端不参与轮播状态」）
+
+- **控制态**：`system/ws_screen.py` 以缓存（`screen_display_state_{pk}`，TTL 24h）保存
+  `mode`（auto/manual）/ `index` / `refresh_rev` / `rev`，后端不再是无状态「极薄」层；
+  轮播计时仍在展示端（manual 停播、auto 继续）；
+- **指令入口**：`GET|POST /api/system/screens/{pk}/command`——GET 读控制态（含仪表盘清单）、
+  POST 下发 `switch / page / refresh / auto`（switch 目标必须在屏内、page 越界拒绝）；
+  两个方法共享权限码 `command:DataScreen`（登记 `SHARED_METHOD_PATHS`）；
+- **展示通道**：`ws/screen/<pk>`（展示端被动接收，连接即回放控制态，重连自动对齐）；
+  准入与 HTTP 可见性同口径（超管 / 创建者 / shared），个人大屏不向他人开放；
+- **前端**：投屏页接收控制帧（`resolveScreenFrame` 纯函数内核 + 单测），manual 显示
+  「远程控制中」并把服务端下标映射到本地可见列表（跳过不可见仪表盘不错位）；
+  大屏列表新增「远程控制」入口（ReDialog 面板：状态/切换/翻页/刷新/恢复轮播）。
+
+### 2. 报表投递渠道扩展（邮件 → 邮件 + 三家 IM）
+
+- `Report.notify_channels`（`email/dingtalk/wecom/feishu`，空 = 仅邮件，存量兼容）+
+  `im_recipients`（用户主键列表；序列化器联动校验：选邮件须有邮箱、选 IM 须有接收人）；
+- 投递逐渠道独立执行、独立记错（`_deliver_im` 返回 `渠道: 原因` 明细），任一失败不回滚产物；
+  `last_status` 由 email 专属的 `SUCCESS_WITH_EMAIL_ERROR` 泛化为
+  `SUCCESS_WITH_DELIVERY_ERROR`；IM 为文本消息（报表名/行数/下载中心提示），产物统一在
+  下载中心取用（各 IM 后端 send_msg 无附件协议）；
+- **测试**：`test_analysis_api`（渠道/接收人校验、投递分支）、`test_screen_control`
+  （控制态迁移与回放、非法指令、可见性与通道准入）；E2E
+  `analysis.e2e.ts` 新增「管理端下发切换 → 展示端实时跟随 → 恢复轮播」双标签页用例。

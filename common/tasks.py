@@ -6,12 +6,11 @@
 # date : 7/30/2024
 import datetime
 import os
-from io import BytesIO
 
 from celery import Task, shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
-from django.core.handlers.wsgi import WSGIRequest
+from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives, get_connection, send_mail
 from django.utils import timezone, translation
 from django.utils.module_loading import import_string
@@ -27,11 +26,13 @@ from common.celery.utils import (
     disable_celery_periodic_task,
     get_celery_periodic_task,
 )
+from common.core.task_request import build_task_request
 from common.core.utils import get_doc_first_line
 from common.models import Monitor
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.utils.timezone import local_now_display
 from server.celery import app
+from server.utils import set_current_request
 
 logger = get_task_logger(__name__)
 
@@ -225,15 +226,26 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
         "task_index": meta.get("task_index"),
     }
     view_func = import_string(view)
-    b_data = data.encode("utf-8")
-    meta["wsgi.input"] = BytesIO(b_data)
-    meta["CONTENT_TYPE"] = "application/json"
-    meta["CONTENT_LENGTH"] = len(b_data)
-    request = WSGIRequest(meta)
+    # 显式请求上下文（不再重放 WSGIRequest）：分片任务由 meta["user_pk"] 携带提交者身份，
+    # 逐分片构造独立请求（字段权限的关联对象 memo 按分片隔离）；
+    # 五个契约的清单与守护测试见 common/core/task_request.py
+    request_user = get_user_model().objects.filter(pk=meta["user_pk"]).first() if meta.get("user_pk") else None
+    request = build_task_request(
+        method=meta.get("REQUEST_METHOD", "POST"),
+        path=meta.get("PATH_INFO", "/"),
+        query_params=meta.get("QUERY_STRING", ""),
+        body=data.encode("utf-8"),
+        user=request_user,
+    )
     language = translation.get_language_from_request(request)
     translation.activate(language)
     request.LANGUAGE_CODE = translation.get_language()
-    result = view_func.as_view(action_map)(request, task=False)
+    # 契约 5：thread-local 请求（creator 信号赋值 + 操作审计 request_uuid），出口处清理
+    set_current_request(request)
+    try:
+        result = view_func.as_view(action_map)(request, task=False)
+    finally:
+        set_current_request(None)
     # detail 可能是 gettext 惰性代理（如兜底 500 文案），不物化会让 cache.push 的
     # json.dumps 崩溃，进而丢掉整批分片结果
     task_info["result"] = str(result.data.get("detail", result.data))
@@ -253,11 +265,16 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
                 "status": _("Operation successful") if state else _("Operation failed"),
                 "tasks": sorted(task_results, key=lambda task: task["task_index"]),
             }
-            match meta["action"]:
-                case "import_data":
-                    ImportDataMessage(request.user, task_info).publish()
-                case "batch_destroy":
-                    BatchDeleteDataMessage(request.user, task_info).publish()
+            # 通知对象：优先显式身份（meta.user_pk 解析）；缺省回落视图内绑定的请求身份
+            notify_user = request_user if request_user is not None else getattr(request, "user", None)
+            if notify_user is None:
+                logger.warning("batch task %s finished without submitter identity; notification skipped", view)
+            else:
+                match meta["action"]:
+                    case "import_data":
+                        ImportDataMessage(notify_user, task_info).publish()
+                    case "batch_destroy":
+                        BatchDeleteDataMessage(notify_user, task_info).publish()
 
     return task_info
 

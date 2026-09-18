@@ -136,5 +136,97 @@
       "layout": {"x": 480, "y": 140},
       "timeout_hours": 0
     }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000007",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "部门负责人初审：申请人所在部门 leader（未配置负责人时提交被拒绝并提示）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000004",
+      "name": "部门负责人审批",
+      "order": 1,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "leader",
+      "assignee_value": "",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 260, "y": 160},
+      "timeout_hours": 24
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000008",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "财务复核：采购金额 ≥5000 才经过（条件节点示例）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000004",
+      "name": "财务复核",
+      "order": 2,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {"field": "amount", "op": "gte", "value": 5000},
+      "routes": [],
+      "layout": {"x": 520, "y": 160},
+      "timeout_hours": 0
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-000000000009",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "直属主管审批：申请人所在部门 leader",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000005",
+      "name": "直属主管审批",
+      "order": 1,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "leader",
+      "assignee_value": "",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 260, "y": 160},
+      "timeout_hours": 24
+    }
+  },
+  {
+    "model": "system.approvalflownode",
+    "pk": "5eed0007-0000-4000-8000-00000000000a",
+    "fields": {
+      "created_time": "2026-09-18T00:00:00.000Z",
+      "updated_time": "2026-09-18T00:00:00.000Z",
+      "description": "行政备案：用章登记留档",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "flow": "5eed0006-0000-4000-8000-000000000005",
+      "name": "行政备案",
+      "order": 2,
+      "approve_type": "OR",
+      "approve_ratio": 100,
+      "assignee_type": "user",
+      "assignee_value": "xadmin,isummer",
+      "condition": {},
+      "routes": [],
+      "layout": {"x": 520, "y": 160},
+      "timeout_hours": 0
+    }
   }
 ]

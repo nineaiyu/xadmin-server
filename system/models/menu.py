@@ -38,6 +38,14 @@ class MenuMeta(DbAuditModel, DbUuidModel):
         help_text=_("The embedded iframe link address"),
     )
     frame_loading = models.BooleanField(verbose_name=_("Iframe loading"), default=False)
+    watermark = models.BooleanField(
+        verbose_name=_("Page watermark"),
+        default=False,
+        help_text=_(
+            "When enabled, pages under this menu always show the site watermark, "
+            "regardless of the basic-settings path list"
+        ),
+    )
 
     transition_enter = models.CharField(verbose_name=_("Enter animation"), max_length=255, null=True, blank=True)
     transition_leave = models.CharField(verbose_name=_("Leave animation"), max_length=255, null=True, blank=True)

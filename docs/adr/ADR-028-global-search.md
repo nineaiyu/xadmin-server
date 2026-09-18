@@ -75,3 +75,37 @@ G9 要一个**顶栏统一入口**：一处输入关键词，跨实体（用户/
 - E2E（`e2e/global-search.e2e.ts`）：顶栏入口搜 `e2e_user` → 用户分组可见 → 点击跳转
   `/system/user/index`；无命中关键词不展示分组；
 - 门禁：pytest / ruff（check + format）/ 跨 app 导入 / i18n po / 前端 vitest / prettier。
+
+## 增量（2026-09-18）：pg_trgm 检索索引（评估出口提前实施）
+
+§3 的「Postgres 全文检索引擎化」评估出口由维护者决策**提前实施**（长期优化方案 §4.5 全局搜索行
+P2 评估出口，触发条件未命中但按需启动）。本 ADR 同步修订结论。
+
+### 1. 引擎选型：pg_trgm 列级 GIN，不改检索语义
+
+- **不选 tsvector/zhparser**：向量检索需要中文分词扩展（标准镜像无）、会改变匹配语义
+  （分词/词干）与排序口径，须重写检索链路并重建既有 12 例契约；而本项的短板是**前缀通配
+  无索引**（`LIKE '%x%'` 命中不了 B-tree），trigram 正好补齐这一点——检索代码零改动
+  （仍是 `icontains`），只是执行计划从顺序扫描变为 Bitmap Index Scan；
+- **中文可用**：trigram 按字符切分，无需分词器（关键词 ≥2 字符即可产生 trigram；
+  单字符回退顺序扫描，登记为边界）；
+- §5「不做全文检索索引表」**维持**：不建独立索引表、不引向量检索，仅列级 GIN 索引。
+
+### 2. 索引清单、豁免与降级
+
+- 清单（9 个，`system/search_indexes.py` + 迁移 `0010_search_trigram_indexes`）：
+  UserInfo username/nickname/email/phone、UploadFile filename、ApprovalRequest path/module/object_pk、
+  Leave reason；
+- 豁免（登记理由，覆盖守护红灯）：DeptInfo name/code（小表）、OperationLog path/module/ipaddress
+  （写热表——每请求落审计，GIN 维护成本压到写入路径；超管低频检索，维持索引评审既有结论）；
+- 降级：仅 PostgreSQL 执行（迁移内判 vendor）+ 扩展不可用/单索引失败**只告警不阻断**
+  （检索仍正确，回退顺序扫描）；回滚只删索引、不动 pg_trgm 扩展。
+
+### 3. 测试与验证
+
+- `tests/unit/system/test_search_indexes.py`（9 例）：检索字段覆盖守护（每个字段要么有索引
+  要么有豁免）、迁移快照 ↔ 运行期清单 ↔ state_operations 漂移守护、SQL 形态（幂等 + gin_trgm_ops）、
+  非 PG 不执行 DDL、扩展不可用时不建索引；
+- 既有 12 例检索契约（分组结构/通配符/403/fail-closed/行级收紧）全部保持——语义零变更由它们背书；
+- PG 库上的可用性断言（`enable_seqscan=off` + EXPLAIN）在 `test_index_usage.py` 内按 vendor
+  门控（本地/CI SQLite 跳过）；库上手工验证 SQL 见 [indexes.md](../architecture/indexes.md) §三。

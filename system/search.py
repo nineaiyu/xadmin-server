@@ -12,9 +12,10 @@
 检索策略：基线 `icontains`（全库可移植、中文可用）。关键词为 SQL LIKE 通配符语义
 （`%`/`_` 是通配符而非字面量）：Django 的 icontains 不带 ESCAPE 子句，手工转义反而
 破坏匹配（已在 E2E 库实证）；通配符只会放大检索范围，不构成注入（参数化）或越权
-（权限门在查询集层）。Postgres 全文检索引擎化（zhparser/pg_trgm）登记为部署侧评估
-出口：标准 Postgres 镜像无中文分词扩展、内置 simple 解析器对中文不可用，且单实体
-规模 + 每组 LIMIT 下 icontains 无性能压力（perf.yml 基线可复核）。
+（权限门在查询集层）。PostgreSQL 部署下由 pg_trgm GIN 索引加速前缀通配检索
+（清单/豁免/降级语义见 `system/search_indexes.py`，登记于 docs/architecture/indexes.md，
+迁移 `0010_search_trigram_indexes`）——**检索语义不变**：非 PG 或扩展不可用时自动回退
+顺序扫描，结果与排序口径一致；关键词 ≥2 字符才可能命中索引（单字符无 trigram）。
 """
 
 from collections.abc import Callable

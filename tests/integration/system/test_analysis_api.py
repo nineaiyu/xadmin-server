@@ -240,7 +240,91 @@ class TestReportRun:
         with mock.patch("system.analysis_tasks.EmailMessage.send", side_effect=Exception("smtp down")):
             auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         report.refresh_from_db()
-        assert report.last_status == "SUCCESS_WITH_EMAIL_ERROR"
+        assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"
+
+
+class TestReportImDelivery:
+    """IM 投递渠道：逐渠道独立、未选邮件则不发邮件、未配置渠道记交付错误。"""
+
+    @staticmethod
+    def _fake_backend(monkeypatch, sent, enable=True):
+        class FakeClient:
+            @staticmethod
+            def send_msg(users, message, subject="", **kwargs):
+                sent["users"] = [user.pk for user in users]
+                sent["subject"] = subject
+                sent["message"] = message
+
+        class FakeBackendMember:
+            """对齐 BACKEND 枚举成员契约：is_enable 属性 + client 客户端。"""
+
+            is_enable = enable
+            client = FakeClient()
+
+        class FakeBackendEnum:
+            def __call__(self, value):
+                sent["channel"] = value
+                return FakeBackendMember()
+
+        monkeypatch.setattr("notifications.backends.BACKEND", FakeBackendEnum())
+
+    def test_im_channel_delivered_without_email(self, auth_client, dataset, superuser, settings, monkeypatch):
+        """渠道 = 钉钉：消息发给 IM 收件人（用户主键），邮件通道不执行。"""
+        settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        sent = {}
+        self._fake_backend(monkeypatch, sent)
+        report = _make_report(dataset, superuser)
+        report.notify_channels = ["dingtalk"]
+        report.im_recipients = [superuser.pk]
+        report.save(update_fields=["notify_channels", "im_recipients"])
+
+        auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+
+        report.refresh_from_db()
+        assert report.last_status == "SUCCESS"
+        assert sent["channel"] == "dingtalk"
+        assert sent["users"] == [superuser.pk]
+        assert report.name in sent["subject"]
+        assert "定时报表" in sent["message"] or "Scheduled report" in sent["message"]
+        assert mail.outbox == []  # 未选邮件渠道 → 不发邮件
+
+    def test_im_not_configured_marks_delivery_error(self, auth_client, dataset, superuser, settings, monkeypatch):
+        """渠道未配置（is_enable=False）：交付状态记错误明细，产物仍 SUCCESS。"""
+        settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        sent = {}
+        self._fake_backend(monkeypatch, sent, enable=False)
+        report = _make_report(dataset, superuser)
+        report.notify_channels = ["feishu"]
+        report.im_recipients = [superuser.pk]
+        report.save(update_fields=["notify_channels", "im_recipients"])
+
+        auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
+
+        from system.models.export import ExportRecord
+
+        report.refresh_from_db()
+        assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"
+        record = ExportRecord.objects.filter(module="Report").order_by("-created_time").first()
+        assert "feishu: not configured" in (record.error or "")
+
+    def test_notify_channels_validated(self, auth_client, dataset):
+        payload = {
+            "name": "坏渠道",
+            "dataset": str(dataset.pk),
+            "recipients": ["a@corp.com"],
+            "notify_channels": ["telegram"],
+        }
+        response = auth_client.post(REPORT_URL, payload, format="json")
+        assert response.status_code == 400
+
+    def test_im_channel_requires_recipients(self, auth_client, dataset):
+        payload = {
+            "name": "缺IM收件人",
+            "dataset": str(dataset.pk),
+            "notify_channels": ["feishu"],
+        }
+        response = auth_client.post(REPORT_URL, payload, format="json")
+        assert response.status_code == 400
 
 
 # ---------------------------------------------------------------- helpers

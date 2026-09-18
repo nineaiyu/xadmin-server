@@ -89,6 +89,38 @@ class TestBasicLoginEdge:
         _assert_bilingual(str(resp.data["detail"]), "The account has been locked", "账号已被锁定")
 
 
+class TestTempTokenExpire:
+    """临时令牌独立时效：TTL 取安全设置 SECURITY_TEMP_TOKEN_EXPIRE（不再硬编码 600）。"""
+
+    def test_temp_token_uses_configured_expire(self, api_client, settings, monkeypatch):
+        captured = {}
+
+        def fake_make_token_cache(key, time_limit=60, **kwargs):
+            captured["time_limit"] = time_limit
+            return "tmp_token_fake"
+
+        monkeypatch.setattr("system.views.auth.token.make_token_cache", fake_make_token_cache)
+        settings.SECURITY_TEMP_TOKEN_EXPIRE = 1200
+        resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["token"] == b"tmp_token_fake"
+        assert captured["time_limit"] == 1200
+
+    def test_temp_token_falls_back_to_default(self, api_client, settings, monkeypatch):
+        """配置缺失/为 0 时回落 600 秒默认，不因异常配置拒绝签发。"""
+        captured = {}
+
+        def fake_make_token_cache(key, time_limit=60, **kwargs):
+            captured["time_limit"] = time_limit
+            return "tmp_token_fake"
+
+        monkeypatch.setattr("system.views.auth.token.make_token_cache", fake_make_token_cache)
+        settings.SECURITY_TEMP_TOKEN_EXPIRE = 0
+        resp = api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json")
+        assert resp.data["code"] == 1000, resp.data
+        assert captured["time_limit"] == 600
+
+
 class TestVerifyCodeLogin:
     """验证码登录：token/验证码校验、username 与 email 两条分支。"""
 

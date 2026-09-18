@@ -228,3 +228,87 @@ class TestScimGroups:
         # 组删除
         assert api_client.delete(f"{SCIM_BASE}/Groups/{payload['id']}", **AUTH).status_code == 204
         assert not UserRole.objects.filter(code="scim_team").exists()
+
+
+class TestIdpFlavorMock:
+    """真实 IdP（Okta / Entra）请求形态的本地 mock 验证（不依赖外部租户）。
+
+    固定联调关键面：payload 字段形态、组成员增删的 RFC 7644 形态、成员值直传
+    username，以及 Users externalId 过滤的明确边界（Entra 联调需把匹配属性配为
+    userName，见 [scim-idp-readiness](../../../docs/architecture/scim-idp-readiness.md)）。
+    """
+
+    def _create_user(self, api_client, username):
+        assert api_client.post(f"{SCIM_BASE}/Users", {"userName": username}, format="json", **AUTH).status_code == 201
+        return UserInfo.objects.get(username=username)
+
+    def test_okta_style_payload_and_deactivation(self, api_client, scim_enabled):
+        """Okta：name 对象 + displayName + emails(primary)；停用 PATCH 幂等可重放。"""
+        created = api_client.post(
+            f"{SCIM_BASE}/Users",
+            {
+                "schemas": [USER_SCHEMA],
+                "userName": "okta_user",
+                "name": {"givenName": "Ada", "familyName": "Lovelace"},
+                "displayName": "Ada Lovelace",
+                "emails": [{"primary": True, "value": "ada@corp.com", "type": "work"}],
+                "active": True,
+            },
+            format="json",
+            **AUTH,
+        )
+        assert created.status_code == 201
+        payload = created.json()
+        assert payload["displayName"] == "Ada Lovelace"
+        assert payload["emails"][0]["value"] == "ada@corp.com"
+
+        user = UserInfo.objects.get(username="okta_user")
+        for _ in range(2):  # IdP 重放同一停用请求应保持幂等
+            resp = api_client.patch(
+                f"{SCIM_BASE}/Users/{user.pk}",
+                {"Operations": [{"op": "replace", "path": "active", "value": False}]},
+                format="json",
+                **AUTH,
+            )
+            assert resp.status_code == 200
+        user.refresh_from_db()
+        assert user.is_active is False
+
+    def test_entra_style_group_member_ops(self, api_client, scim_enabled):
+        """Entra：externalId 匹配组；成员 add 直传 username、remove 用 §3.5.2.2 路径形态。"""
+        member = self._create_user(api_client, "entra_member")
+        created = api_client.post(
+            f"{SCIM_BASE}/Groups",
+            {"displayName": "Entra Team", "externalId": "entra_team"},
+            format="json",
+            **AUTH,
+        )
+        assert created.status_code == 201
+        group_id = created.json()["id"]
+
+        listed = api_client.get(f'{SCIM_BASE}/Groups?filter=externalId eq "entra_team"', **AUTH).json()
+        assert listed["totalResults"] == 1
+
+        added = api_client.patch(
+            f"{SCIM_BASE}/Groups/{group_id}",
+            {"Operations": [{"op": "add", "path": "members", "value": [{"value": "entra_member"}]}]},
+            format="json",
+            **AUTH,
+        )
+        assert added.status_code == 200
+        assert member.roles.filter(code="entra_team").exists()
+
+        removed = api_client.patch(
+            f"{SCIM_BASE}/Groups/{group_id}",
+            {"Operations": [{"op": "remove", "path": 'members[value eq "entra_member"]'}]},
+            format="json",
+            **AUTH,
+        )
+        assert removed.status_code == 200
+        assert not member.roles.filter(code="entra_team").exists()
+
+    def test_users_external_id_filter_is_explicit_boundary(self, api_client, scim_enabled):
+        """Users 过滤仅 userName/id：externalId 明确 400 invalidFilter（联调前置边界）。"""
+        resp = api_client.get(f'{SCIM_BASE}/Users?filter=externalId eq "abc"', **AUTH)
+        assert resp.status_code == 400
+        assert resp.json()["scimType"] == "invalidFilter"

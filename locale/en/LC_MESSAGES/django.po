@@ -1920,6 +1920,14 @@ msgstr ""
 msgid "Login temp token"
 msgstr ""
 
+#: settings/serializers/security.py:138
+msgid "Temp token validity period (second)"
+msgstr ""
+
+#: settings/serializers/security.py:143
+msgid "Validity period of the temporary token used by login/register/reset/bind encryption handshakes"
+msgstr ""
+
 #: settings/serializers/security.py:135 settings/serializers/security.py:173 settings/serializers/security.py:211 settings/serializers/security.py:251 settings/serializers/security.py:277
 msgid "Enable temporary tokens to prevent attacks"
 msgstr ""
@@ -3548,6 +3556,14 @@ msgstr ""
 
 #: system/models/menu.py:56
 msgid "Maximum number of dynamic routes that can be opened"
+msgstr ""
+
+#: system/models/menu.py:41 system/serializers/route.py:57
+msgid "Page watermark"
+msgstr ""
+
+#: system/models/menu.py:44
+msgid "When enabled, pages under this menu always show the site watermark, regardless of the basic-settings path list"
 msgstr ""
 
 #: system/models/menu.py:60 system/models/menu.py:99 system/serializers/menu.py:29 system/serializers/route.py:66
@@ -5356,6 +5372,66 @@ msgstr ""
 msgid "Field {} exceeds the max length {}"
 msgstr ""
 
+#: system/utils/dform.py:60
+#, python-brace-format
+msgid "Field {} cascader options exceed {} levels"
+msgstr ""
+
+#: system/utils/dform.py:63 system/utils/dform.py:76
+#, python-brace-format
+msgid "Field {} has an invalid cascader option"
+msgstr ""
+
+#: system/utils/dform.py:67
+#, python-brace-format
+msgid "Field {} cascader option requires a value"
+msgstr ""
+
+#: system/utils/dform.py:69
+#, python-brace-format
+msgid "Field {} cascader option requires a label"
+msgstr ""
+
+#: system/utils/dform.py:72
+#, python-brace-format
+msgid "Field {} has too many cascader options"
+msgstr ""
+
+#: system/utils/dform.py:85
+#, python-brace-format
+msgid "Field {} must be a user id"
+msgstr ""
+
+#: system/utils/dform.py:143
+#, python-brace-format
+msgid "Field {} multiple must be boolean"
+msgstr ""
+
+#: system/utils/dform.py:147
+#, python-brace-format
+msgid "Field {} precision must be 0-6"
+msgstr ""
+
+#: system/utils/dform.py:256
+#, python-brace-format
+msgid "Field {} allows at most {} decimal places"
+msgstr ""
+
+#: system/utils/dform.py:263
+#, python-brace-format
+msgid "Field {} has too many users"
+msgstr ""
+
+#: system/utils/dform.py:270 system/utils/dform.py:272
+#, python-brace-format
+msgid "Field {} must be a cascader path"
+msgstr ""
+
+#: system/utils/dform.py:274
+#, python-brace-format
+msgid "Field {} has an invalid cascader path"
+msgstr ""
+
 #: system/utils/import_report.py:37
 msgid "Validation failed"
 msgstr ""
@@ -6254,6 +6330,150 @@ msgstr "Binding not found"
 
 msgid "User would lose the last login method"
 msgstr "User would lose the last login method"
+
+#: system/analysis_tasks.py
+#, python-brace-format
+msgid "Scheduled report generated, {} rows. Open the download center to view or download it."
+msgstr "Scheduled report generated, {} rows. Open the download center to view or download it."
+
+#: system/models/dataset.py
+msgid "Notify channels"
+msgstr "Notify channels"
+
+msgid "Delivery channels"
+msgstr "Delivery channels"
+
+msgid "IM recipients"
+msgstr "IM recipients"
+
+msgid "User pks receiving IM messages"
+msgstr "User pks receiving IM messages"
+
+#: system/serializers/analysis.py
+msgid "Invalid notify channels"
+msgstr "Invalid notify channels"
+
+#, python-brace-format
+msgid "Unknown notify channel: {}"
+msgstr "Unknown notify channel: {}"
+
+msgid "Invalid IM recipients"
+msgstr "Invalid IM recipients"
+
+msgid "Too many IM recipients"
+msgstr "Too many IM recipients"
+
+#, python-brace-format
+msgid "Invalid IM recipient: {}"
+msgstr "Invalid IM recipient: {}"
+
+msgid "Email channel requires at least one recipient"
+msgstr "Email channel requires at least one recipient"
+
+msgid "IM channel requires at least one recipient"
+msgstr "IM channel requires at least one recipient"
+
+#: message/models.py
+msgid "Group chat"
+msgstr "Group chat"
+
+msgid "AI room owner or group chat owner; empty for public/private rooms"
+msgstr "AI room owner or group chat owner; empty for public/private rooms"
+
+#: message/chat.py
+msgid "Group name cannot be empty"
+msgstr "Group name cannot be empty"
+
+msgid "Group name is too long (max 64 characters)"
+msgstr "Group name is too long (max 64 characters)"
+
+msgid "Select at least one member"
+msgstr "Select at least one member"
+
+msgid "Some selected members are unavailable"
+msgstr "Some selected members are unavailable"
+
+msgid "Group members exceed the limit of {}"
+msgstr "Group members exceed the limit of {}"
+
+msgid "Only the group owner can perform this operation"
+msgstr "Only the group owner can perform this operation"
+
+msgid "The group owner cannot be removed"
+msgstr "The group owner cannot be removed"
+
+#: message/serializers.py
+msgid "Group name"
+msgstr "Group name"
+
+msgid "Members"
+msgstr "Members"
+
+msgid "Add members"
+msgstr "Add members"
+
+msgid "Remove members"
+msgstr "Remove members"
+
+msgid "Nothing to update"
+msgstr "Nothing to update"
+
+#: message/views.py
+msgid "Group created"
+msgstr "Group created"
+
+msgid "Group renamed"
+msgstr "Group renamed"
+
+msgid "Left the group"
+msgstr "Left the group"
+
+#: message/consumers.py
+#, python-brace-format
+msgid "New group message from {} in {}"
+msgstr "New group message from {} in {}"
+
+#: system/ws_screen.py
+msgid "Unknown screen command"
+msgstr "Unknown screen command"
+
+msgid "Dashboard is not in this screen"
+msgstr "Dashboard is not in this screen"
+
+msgid "Invalid page index"
+msgstr "Invalid page index"
+
+msgid "Page index out of range"
+msgstr "Page index out of range"
+
+#: system/views/analysis.py
+msgid "Command sent"
+msgstr "Command sent"
+
+#: system/serializers/analysis.py
+msgid "Switch dashboard"
+msgstr "Switch dashboard"
+
+msgid "Go to page"
+msgstr "Go to page"
+
+msgid "Refresh data"
+msgstr "Refresh data"
+
+msgid "Resume carousel"
+msgstr "Resume carousel"
+
+msgid "Command"
+msgstr "Command"
+
+msgid "Page index"
+msgstr "Page index"
+
+msgid "dashboard_pk is required for switch"
+msgstr "dashboard_pk is required for switch"
+
+msgid "index is required for page"
+msgstr "index is required for page"
 
 #~ msgid "Type /kb <question> to ask the knowledge base"
 #~ msgstr "Type /kb <question> to ask the knowledge base"

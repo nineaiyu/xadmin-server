@@ -1915,6 +1915,14 @@ msgstr "开启敏感信息加密，防止数据泄露"
 msgid "Login temp token"
 msgstr "登录临时令牌"
 
+#: settings/serializers/security.py:138
+msgid "Temp token validity period (second)"
+msgstr "临时令牌有效期（秒）"
+
+#: settings/serializers/security.py:143
+msgid "Validity period of the temporary token used by login/register/reset/bind encryption handshakes"
+msgstr "登录/注册/重置密码/绑定等加密握手所用临时令牌的有效期"
+
 #: settings/serializers/security.py:135 settings/serializers/security.py:173 settings/serializers/security.py:211 settings/serializers/security.py:251 settings/serializers/security.py:277
 msgid "Enable temporary tokens to prevent attacks"
 msgstr "开启临时令牌，防止被攻击"
@@ -3549,6 +3557,14 @@ msgstr "标签显示数量"
 #: system/models/menu.py:56
 msgid "Maximum number of dynamic routes that can be opened"
 msgstr "显示已打开标签页最大数量"
+
+#: system/models/menu.py:41 system/serializers/route.py:57
+msgid "Page watermark"
+msgstr "页面水印"
+
+#: system/models/menu.py:44
+msgid "When enabled, pages under this menu always show the site watermark, regardless of the basic-settings path list"
+msgstr "开启后该菜单页面强制显示站点水印（需在基本设置中开启水印总开关，与生效页面路径范围是或关系）"
 
 #: system/models/menu.py:60 system/models/menu.py:99 system/serializers/menu.py:29 system/serializers/route.py:66
 msgid "Menu meta"
@@ -5364,6 +5380,66 @@ msgstr "字段 {} 必须为文本"
 msgid "Field {} exceeds the max length {}"
 msgstr "字段 {} 超过最大长度 {}"
 
+#: system/utils/dform.py:60
+#, python-brace-format
+msgid "Field {} cascader options exceed {} levels"
+msgstr "字段 {} 的级联选项超过 {} 层"
+
+#: system/utils/dform.py:63 system/utils/dform.py:76
+#, python-brace-format
+msgid "Field {} has an invalid cascader option"
+msgstr "字段 {} 的级联选项非法"
+
+#: system/utils/dform.py:67
+#, python-brace-format
+msgid "Field {} cascader option requires a value"
+msgstr "字段 {} 的级联选项缺少值"
+
+#: system/utils/dform.py:69
+#, python-brace-format
+msgid "Field {} cascader option requires a label"
+msgstr "字段 {} 的级联选项缺少标签"
+
+#: system/utils/dform.py:72
+#, python-brace-format
+msgid "Field {} has too many cascader options"
+msgstr "字段 {} 的级联选项过多"
+
+#: system/utils/dform.py:85
+#, python-brace-format
+msgid "Field {} must be a user id"
+msgstr "字段 {} 必须为用户 ID"
+
+#: system/utils/dform.py:143
+#, python-brace-format
+msgid "Field {} multiple must be boolean"
+msgstr "字段 {} 的多选配置必须为布尔值"
+
+#: system/utils/dform.py:147
+#, python-brace-format
+msgid "Field {} precision must be 0-6"
+msgstr "字段 {} 的精度必须为 0-6"
+
+#: system/utils/dform.py:256
+#, python-brace-format
+msgid "Field {} allows at most {} decimal places"
+msgstr "字段 {} 最多保留 {} 位小数"
+
+#: system/utils/dform.py:263
+#, python-brace-format
+msgid "Field {} has too many users"
+msgstr "字段 {} 选择的用户过多"
+
+#: system/utils/dform.py:270 system/utils/dform.py:272
+#, python-brace-format
+msgid "Field {} must be a cascader path"
+msgstr "字段 {} 必须为级联路径"
+
+#: system/utils/dform.py:274
+#, python-brace-format
+msgid "Field {} has an invalid cascader path"
+msgstr "字段 {} 的级联路径非法"
+
 #: system/utils/import_report.py:37
 msgid "Validation failed"
 msgstr "校验失败"
@@ -6369,3 +6445,147 @@ msgstr "已自动完成"
 
 msgid "Request payload"
 msgstr "请求体快照"
+
+#: system/analysis_tasks.py
+#, python-brace-format
+msgid "Scheduled report generated, {} rows. Open the download center to view or download it."
+msgstr "定时报表已生成，共 {} 行，请到下载中心查看或下载。"
+
+#: system/models/dataset.py
+msgid "Notify channels"
+msgstr "投递渠道"
+
+msgid "Delivery channels"
+msgstr "投递渠道（email/dingtalk/wecom/feishu，空 = 仅邮件）"
+
+msgid "IM recipients"
+msgstr "IM 收件人"
+
+msgid "User pks receiving IM messages"
+msgstr "接收 IM 消息的用户主键"
+
+#: system/serializers/analysis.py
+msgid "Invalid notify channels"
+msgstr "投递渠道格式非法"
+
+#, python-brace-format
+msgid "Unknown notify channel: {}"
+msgstr "未知投递渠道：{}"
+
+msgid "Invalid IM recipients"
+msgstr "IM 收件人格式非法"
+
+msgid "Too many IM recipients"
+msgstr "IM 收件人过多"
+
+#, python-brace-format
+msgid "Invalid IM recipient: {}"
+msgstr "IM 收件人非法：{}"
+
+msgid "Email channel requires at least one recipient"
+msgstr "邮件渠道至少需要一个收件人"
+
+msgid "IM channel requires at least one recipient"
+msgstr "IM 渠道至少需要一个收件人"
+
+#: message/models.py
+msgid "Group chat"
+msgstr "群聊"
+
+msgid "AI room owner or group chat owner; empty for public/private rooms"
+msgstr "AI 会话或群聊的群主；公共/私聊会话为空"
+
+#: message/chat.py
+msgid "Group name cannot be empty"
+msgstr "群名称不能为空"
+
+msgid "Group name is too long (max 64 characters)"
+msgstr "群名称过长（最多 64 个字符）"
+
+msgid "Select at least one member"
+msgstr "请至少选择一位成员"
+
+msgid "Some selected members are unavailable"
+msgstr "部分所选成员不可用"
+
+msgid "Group members exceed the limit of {}"
+msgstr "群成员超过上限（最多 {} 人）"
+
+msgid "Only the group owner can perform this operation"
+msgstr "仅群主可执行该操作"
+
+msgid "The group owner cannot be removed"
+msgstr "群主不能被移除"
+
+#: message/serializers.py
+msgid "Group name"
+msgstr "群名称"
+
+msgid "Members"
+msgstr "成员"
+
+msgid "Add members"
+msgstr "添加成员"
+
+msgid "Remove members"
+msgstr "移除成员"
+
+msgid "Nothing to update"
+msgstr "没有需要更新的内容"
+
+#: message/views.py
+msgid "Group created"
+msgstr "群聊已创建"
+
+msgid "Group renamed"
+msgstr "群名称已更新"
+
+msgid "Left the group"
+msgstr "已退出群聊"
+
+#: message/consumers.py
+#, python-brace-format
+msgid "New group message from {} in {}"
+msgstr "{} 在群聊「{}」发来新消息"
+
+#: system/ws_screen.py
+msgid "Unknown screen command"
+msgstr "未知的大屏控制指令"
+
+msgid "Dashboard is not in this screen"
+msgstr "该仪表盘不在此大屏中"
+
+msgid "Invalid page index"
+msgstr "页码参数非法"
+
+msgid "Page index out of range"
+msgstr "页码超出范围"
+
+#: system/views/analysis.py
+msgid "Command sent"
+msgstr "指令已下发"
+
+#: system/serializers/analysis.py
+msgid "Switch dashboard"
+msgstr "切换仪表盘"
+
+msgid "Go to page"
+msgstr "翻页"
+
+msgid "Refresh data"
+msgstr "刷新数据"
+
+msgid "Resume carousel"
+msgstr "恢复轮播"
+
+msgid "Command"
+msgstr "指令"
+
+msgid "Page index"
+msgstr "页码"
+
+msgid "dashboard_pk is required for switch"
+msgstr "切换指令需要指定仪表盘"
+
+msgid "index is required for page"
+msgstr "翻页指令需要指定页码"

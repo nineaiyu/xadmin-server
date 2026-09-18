@@ -267,6 +267,11 @@ class IsAuthenticated(BasePermission):
         match_group = re.match("(?P<url>.*)/available-forms$", url)
         if match_group:
             url = match_group.group("url")
+        # 选人控件数据源（user-options）同口径：选人属于填报链路的一部分，
+        # 关键字搜索 + 字段收敛（pk/用户名/昵称），不扩大通讯录枚举面
+        match_group = re.match("(?P<url>.*)/user-options$", url)
+        if match_group:
+            url = match_group.group("url")
         p_data = menu_data = get_menu_pk(permission_data, url)
         if not p_data:
             raise PermissionDenied(_("Permission denied"))

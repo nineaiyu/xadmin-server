@@ -11,11 +11,13 @@ from common.core.config import SysConfig
 from mfa.cache import UserConfirmStateCache
 from mfa.const import ConfirmType
 from system.models import UserInfo
-from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
+from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask, ApprovalRequest
 
 pytestmark = pytest.mark.django_db
 
 INSTANCES_URL = "/api/system/approval-instances"
+APPROVALS_URL = "/api/system/approvals"
+FLOWS_URL = "/api/system/approval-flows"
 
 
 def make_flow(code="mfa_gate", approver_name="flow_approver_mfa"):
@@ -118,3 +120,62 @@ class TestApprovalMfaGate:
             f"{INSTANCES_URL}/{pending_instance.pk}/reject", {"reason": "不合规"}, format="json"
         )
         assert resp.data["code"] == 1000, resp.data
+
+
+class TestApprovalCenterMfaGate:
+    """审批中心（敏感操作审批单）动作与审批流引擎同口径受清单门控。"""
+
+    @pytest.fixture
+    def pending_request(self, applicant, approver):
+        return ApprovalRequest.objects.create(
+            module="demo",
+            method="DELETE",
+            path="/api/demo/book/1",
+            status=ApprovalRequest.Status.PENDING,
+            approver=approver,
+            creator=applicant,
+        )
+
+    def test_approve_requires_mfa(self, monkeypatch, approver_client, pending_request):
+        """命中 approve：未二次验证 → 412，审批单状态不推进。"""
+        set_mfa_actions(monkeypatch, ["approve"])
+        resp = approver_client.post(f"{APPROVALS_URL}/{pending_request.pk}/approve", {}, format="json")
+        assert resp.status_code == 412, resp.data
+        assert resp.data["type"] == "user_confirm_required"
+        pending_request.refresh_from_db()
+        assert pending_request.status == ApprovalRequest.Status.PENDING
+
+    def test_batch_reject_requires_mfa(self, monkeypatch, approver_client, pending_request):
+        """批量入口同口径门控（门控先于业务校验，缺原因也先返回 412）。"""
+        set_mfa_actions(monkeypatch, ["batch_reject"])
+        resp = approver_client.post(f"{APPROVALS_URL}/batch-reject", {"pks": [str(pending_request.pk)]}, format="json")
+        assert resp.status_code == 412, resp.data
+
+    def test_after_confirm_passes(self, monkeypatch, approver_client, approver, pending_request):
+        """验证通过（确认状态缓存有效）→ 审批中心动作放行。"""
+        set_mfa_actions(monkeypatch, ["approve"])
+        UserConfirmStateCache(approver).set(ConfirmType.MFA, "otp")
+        resp = approver_client.post(f"{APPROVALS_URL}/{pending_request.pk}/approve", {}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        pending_request.refresh_from_db()
+        assert pending_request.status == ApprovalRequest.Status.APPROVED
+
+
+class TestFlowRollbackMfaGate:
+    """流程定义回滚（高危定义变更）纳入动作清单。"""
+
+    def test_rollback_requires_mfa(self, monkeypatch, approver_client):
+        set_mfa_actions(monkeypatch, ["rollback"])
+        flow = make_flow(code="mfa_rollback")
+        resp = approver_client.post(f"{FLOWS_URL}/{flow.pk}/rollback", {"version": 1}, format="json")
+        assert resp.status_code == 412, resp.data
+        assert resp.data["type"] == "user_confirm_required"
+
+    def test_rollback_after_confirm_reaches_business(self, monkeypatch, approver_client, approver):
+        """验证通过后进入业务校验（无历史版本 → 业务失败码，而非 412）。"""
+        set_mfa_actions(monkeypatch, ["rollback"])
+        UserConfirmStateCache(approver).set(ConfirmType.MFA, "otp")
+        flow = make_flow(code="mfa_rollback_ok")
+        resp = approver_client.post(f"{FLOWS_URL}/{flow.pk}/rollback", {"version": 1}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] != 412
