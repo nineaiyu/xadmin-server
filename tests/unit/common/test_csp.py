@@ -7,12 +7,16 @@
 
 import json
 import logging
+import re
+from pathlib import Path
 
 import pytest
+from django.conf import settings as dj_settings
 
 from common.api.csp import CSP_REPORT_HEADER, CSP_REPORT_LOG_THROTTLE_SECONDS, _synthetic_reason
 from common.core.config import SysConfig
 from common.core.middleware import CSP_HEADER, CSP_HEADER_REPORT_ONLY
+from server.settings.base import _CSP_DIRECTIVES
 
 pytestmark = pytest.mark.django_db
 
@@ -168,6 +172,57 @@ class TestCSPSyntheticReport:
             )
         assert response[CSP_REPORT_HEADER] == "logged"
         assert len([record for record in caplog.records if "CSP violation" in record.getMessage()]) == 1
+
+
+class TestCSPPolicySync:
+    """策略串三处同源守护：服务端 `_CSP_DIRECTIVES` ↔ 页面层 nginx ↔ 验证服务。
+
+    页面层（SPA 文档）头由 `xadmin-web/default.conf` 下发（django-csp 覆盖不到文档层），
+    `xadmin-client/scripts/csp-page-server.mjs` 的隔离验证服务内嵌同一串——任一处漂移都会让
+    「隔离验证通过」与线上实际策略不一致，故固化比对。单仓检出（无同工作区兄弟仓）时跳过。
+    """
+
+    _PARITY_PLACES = (
+        ("xadmin-web", "default.conf"),
+        ("xadmin-client", "scripts/csp-page-server.mjs"),
+    )
+
+    @staticmethod
+    def _expected() -> set:
+        return {f"{key} {' '.join(values)}" for key, values in _CSP_DIRECTIVES.items()}
+
+    @staticmethod
+    def _parse_policy(policy: str) -> set:
+        items = set()
+        for part in policy.split(";"):
+            part = part.strip()
+            if not part or part.startswith("report-uri"):
+                continue
+            items.add(part)
+        return items
+
+    def _read(self, repo: str, relative: str):
+        path = Path(dj_settings.PROJECT_DIR).parent / repo / relative
+        if not path.exists():
+            pytest.skip(f"单仓检出（缺 {repo}/{relative}），跳过三处同源比对")
+        return path.read_text(encoding="utf-8")
+
+    def test_nginx_page_layer_policy_matches(self):
+        text = self._read(*self._PARITY_PLACES[0])
+        match = re.search(r'add_header\s+Content-Security-Policy(?:-Report-Only)?\s+"([^"]+)"', text)
+        assert match, "xadmin-web/default.conf 未找到页面层 CSP 头"
+        assert self._parse_policy(match.group(1)) == self._expected(), (
+            "页面层 CSP 策略串与服务端 _CSP_DIRECTIVES 漂移（改策略需三处同步）"
+        )
+
+    def test_client_harness_policy_matches(self):
+        text = self._read(*self._PARITY_PLACES[1])
+        match = re.search(r"const CSP = \[(.*?)\]\.join", text, re.S)
+        assert match, "csp-page-server.mjs 未找到 CSP 串定义"
+        policy = "; ".join(re.findall(r'"([^"]+)"', match.group(1)))
+        assert self._parse_policy(policy) == self._expected(), (
+            "CSP 隔离验证服务策略串与服务端 _CSP_DIRECTIVES 漂移（改策略需三处同步）"
+        )
 
 
 class TestSyntheticReasonHostBasis:
