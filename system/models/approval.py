@@ -85,9 +85,10 @@ class ApprovalRequest(DbAuditModel):
             models.Index(fields=["status", "created_time"], name="idx_approval_status_created"),
             models.Index(fields=["creator", "created_time"], name="idx_approval_creator_created"),
             # 全局搜索的 pg_trgm 索引（path/module/object_pk 检索；PostgreSQL 生效，见 system/search_indexes.py）
+            # 索引名不得超过 30 字符（Django 跨库上限，超长会触发 models.E034 阻断启动）
             GinIndex(fields=["path"], name="idx_approvalrequest_path_trgm", opclasses=["gin_trgm_ops"]),
-            GinIndex(fields=["module"], name="idx_approvalrequest_module_trgm", opclasses=["gin_trgm_ops"]),
-            GinIndex(fields=["object_pk"], name="idx_approvalrequest_object_pk_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["module"], name="idx_approval_module_trgm", opclasses=["gin_trgm_ops"]),
+            GinIndex(fields=["object_pk"], name="idx_approval_object_pk_trgm", opclasses=["gin_trgm_ops"]),
         ]
 
     def __str__(self):

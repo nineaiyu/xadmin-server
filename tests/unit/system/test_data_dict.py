@@ -67,6 +67,69 @@ def test_items_cache_is_used():
     assert get_dict_items("hot")[0]["label"] == "高"
 
 
+def test_items_degrades_to_empty_on_db_error(monkeypatch):
+    """DB 故障（丢包/池超时）时字典读取降级空列表且不写缓存。
+
+    2026-09-18 真丢包演练定位：读取点位于 serializer 字段绑定与请求路径上，
+    异常冒泡会把每个请求打成 500；失败结果不写缓存保证恢复后立即重试。
+    """
+    from system.utils import dict as dict_utils
+
+    class _BrokenManager:
+        def filter(self, *args, **kwargs):
+            raise RuntimeError("couldn't get a connection after 5.00 sec")
+
+    class _BrokenModel:
+        objects = _BrokenManager()
+
+    set_calls = []
+
+    class _FakeCache:
+        def get(self, key):
+            return None
+
+        def set(self, key, value, timeout=None):
+            set_calls.append(key)
+
+    monkeypatch.setattr(dict_utils.apps, "get_model", lambda *args, **kwargs: _BrokenModel())
+    monkeypatch.setattr(dict_utils, "cache", _FakeCache())
+
+    assert get_dict_items("degrade_probe") == []
+    assert set_calls == [], "失败结果不得写缓存（否则故障恢复要等 TTL）"
+
+
+def test_items_load_success_writes_cache(monkeypatch):
+    """正常路径：缓存未命中时读取并写入缓存（降级改造不改变原语义）。"""
+    from types import SimpleNamespace
+
+    from system.utils import dict as dict_utils
+
+    set_calls = []
+
+    class _FakeCache:
+        def get(self, key):
+            return None
+
+        def set(self, key, value, timeout=None):
+            set_calls.append((key, value))
+
+    class _OkManager:
+        def filter(self, *args, **kwargs):
+            return self
+
+        def order_by(self, *args, **kwargs):
+            return [SimpleNamespace(label="高", label_en="", value="high", color="")]
+
+    class _OkModel:
+        objects = _OkManager()
+
+    monkeypatch.setattr(dict_utils.apps, "get_model", lambda *args, **kwargs: _OkModel())
+    monkeypatch.setattr(dict_utils, "cache", _FakeCache())
+
+    assert get_dict_items("hot_probe") == [{"label": "高", "value": "high", "color": ""}]
+    assert len(set_calls) == 1, "成功读取应写入缓存"
+
+
 def test_items_action_requires_code(superuser):
     response = _call("items", superuser, params={})
     assert response.data["code"] != 1000

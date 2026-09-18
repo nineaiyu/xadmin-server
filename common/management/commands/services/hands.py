@@ -4,6 +4,7 @@ import time
 
 from django.conf import settings
 from django.core import management
+from django.core.management.base import SystemCheckError
 from django.db.utils import OperationalError
 
 from common.core.utils import PrintLogFormat
@@ -59,6 +60,11 @@ def check_database_connection():
             return
         except OperationalError:
             logger.warning("Database not setup, retry")
+        except SystemCheckError as exc:
+            # 确定性错误（模型/索引/配置级）：重试 60 次也不会自愈——快速失败并保留完整原因
+            # （2026-09-18 部署实测：GinIndex 检查失败曾重试刷屏 60s×N 轮后才退出，启动即挂死）
+            logger.error(f"System check failed (deterministic, not retrying): {exc}")
+            sys.exit(12)
         except Exception as exc:
             logger.warning(f"Unexpect error occur: {str(exc)}")
         time.sleep(1)

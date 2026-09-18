@@ -32,8 +32,8 @@ TRGM_INDEXES = (
     ("idx_userinfo_phone_trgm", "system_userinfo", "phone"),
     ("idx_uploadfile_filename_trgm", "system_uploadfile", "filename"),
     ("idx_approvalrequest_path_trgm", "system_approvalrequest", "path"),
-    ("idx_approvalrequest_module_trgm", "system_approvalrequest", "module"),
-    ("idx_approvalrequest_object_pk_trgm", "system_approvalrequest", "object_pk"),
+    ("idx_approval_module_trgm", "system_approvalrequest", "module"),
+    ("idx_approval_object_pk_trgm", "system_approvalrequest", "object_pk"),
     ("idx_leave_reason_trgm", "system_leave", "reason"),
 )
 
@@ -80,14 +80,12 @@ class Migration(migrations.Migration):
                 ),
                 migrations.AddIndex(
                     model_name="approvalrequest",
-                    index=GinIndex(
-                        fields=["module"], name="idx_approvalrequest_module_trgm", opclasses=["gin_trgm_ops"]
-                    ),
+                    index=GinIndex(fields=["module"], name="idx_approval_module_trgm", opclasses=["gin_trgm_ops"]),
                 ),
                 migrations.AddIndex(
                     model_name="approvalrequest",
                     index=GinIndex(
-                        fields=["object_pk"], name="idx_approvalrequest_object_pk_trgm", opclasses=["gin_trgm_ops"]
+                        fields=["object_pk"], name="idx_approval_object_pk_trgm", opclasses=["gin_trgm_ops"]
                     ),
                 ),
                 migrations.AddIndex(

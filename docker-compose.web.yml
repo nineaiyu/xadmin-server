@@ -1,0 +1,38 @@
+# 前端 web 容器编排（测试服 / 独立部署前端用；后端主栈见 docker-compose.yml）
+#
+# 架构：前端静态产物由本容器 nginx 托管（51980），/api、/ws、/media 反代到
+#       主栈 server 容器（xadmin-api-conf 内 `proxy_pass http://server:8896`）——
+#       为此容器必须加入主栈网络（默认 xadmin-server_net，主栈 compose 创建）。
+#
+# 用法（部署根目录，示例 /opt/xadmin）：
+#   docker compose -f docker-compose.web.yml up -d
+#
+# 注：顶层 name 固定独立 project 名——与后端主栈（project=xadmin-server）区分，
+#     避免 `docker compose` 把主栈容器识别为本文件的 orphan 容器。
+name: xadmin-web
+#
+# 目录约定（宿主机）：
+#   ${WEB_DIR}/dist             前端构建产物（pnpm build 输出）
+#   ${WEB_DIR}/default.conf     页面 nginx 配置（含 CSP 观察头）
+#   ${WEB_DIR}/xadmin-api-conf  API/WS 反代配置
+#   与主栈共享的 media 目录：${VOLUME_DIR}/xadmin-server/data/upload（只读挂载）
+services:
+  xadmin-web:
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/nginx:1.31.5-alpine
+    container_name: xadmin-web
+    restart: always
+    ports:
+      - "${WEB_PORT:-80}:51980"
+    volumes:
+      - ${WEB_DIR:-../web}/dist:/opt/xadmin-client:ro
+      - ${WEB_DIR:-../web}/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${WEB_DIR:-../web}/xadmin-api-conf:/etc/nginx/conf.d/xadmin-api-conf:ro
+      - ${VOLUME_DIR:-..}/xadmin-server/data/upload:/data/xadmin/server/data/upload:ro
+    networks:
+      - net
+
+networks:
+  # 主栈网络（docker-compose.yml 创建）；部署目录名变化时用 NETWORK_NAME 覆盖
+  net:
+    external: true
+    name: ${NETWORK_NAME:-xadmin-server_net}

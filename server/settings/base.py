@@ -116,6 +116,12 @@ INSTALLED_APPS = [
     "common.apps.CommonConfig",  # 这个放到最后, django ready
 ]
 
+# PostgreSQL 专有索引（GinIndex / pg_trgm）静态存在于模型 Meta，该 app 必须参与模型
+# 检查（postgres.E005），否则 `check --database` 失败会卡死服务启动（2026-09-18 部署事故根因）。
+# 无条件注册：非 PG 后端下 app 仅注册检查与 lookups、不产生任何 DDL（建索引迁移 0010 有
+# vendor 守卫）；若条件化，mysql 部署与 CI（默认 DB_ENGINE=mysql）会踩同样的 E005。
+INSTALLED_APPS.append("django.contrib.postgres")
+
 if DEBUG or DEBUG_DEV:
     INSTALLED_APPS.insert(0, "daphne")  # 支持websocket
 
@@ -154,9 +160,15 @@ MIDDLEWARE = [
 _CSP_DIRECTIVES = {
     "default-src": ("'self'",),
     "script-src": ("'self'",),
+    # version-rocket 的轮询 Worker 由 Blob 创建（worker-src 未显式声明时回退 script-src，
+    # 页面层强制头评估实测被拦）；显式放行同源 + blob: 的最小集合（2026-09-18）
+    "worker-src": ("'self'", "blob:"),
     "style-src": ("'self'", "'unsafe-inline'"),
     "img-src": ("'self'", "data:", "blob:"),
     "font-src": ("'self'", "data:"),
+    # 图标已离线化（2026-09-18）：菜单/选择器图标随包注册，其余按 set 懒加载**构建期内置**
+    # 的图标集（同源 chunk），运行期不访问任何在线图标 API——故不再放行外部主机；
+    # 强制头下的「核心页零违规」可反向证明无外部请求（见 e2e/csp-page.e2e.ts）
     "connect-src": ("'self'", "ws:", "wss:"),
     "frame-src": ("'self'", "blob:"),
     "object-src": ("'none'",),
@@ -283,6 +295,17 @@ if DB_ENGINE == "postgresql":
     # 无该超时会让 DB 操作挂到 TCP 默认超时（实测 health 20s+ 完全无响应）；
     # 局域网建连 <10ms，3s 充裕且保证故障时快速失败（池/非池模式均透传 psycopg）
     DB_OPTIONS["connect_timeout"] = 3
+    # 半开连接快速失败（第十七轮·真丢包演练修复，2026-09-18）：TCP 丢包时已建立连接
+    # 进入半开态（对端收不到包、本端不知情），查询/SELECT 1 判活阻塞在 recv，无 socket 级
+    # 超时则要等 TCP 重传耗竭（Linux 默认 ~15 分钟）——期间 worker 同步处理线程被逐个占死
+    # （实测 health 亦排队无响应，~1 分钟自愈依赖 TCP 重传成功）。tcp_user_timeout 让内核在
+    # 未确认数据超时后强制断开连接（recv 立即报错 → 池淘汰重建）；keepalives 三件套用于
+    # 空闲连接的探活。注：tcp_user_timeout 仅 Linux 生效（libpq 在其它平台忽略该参数）。
+    DB_OPTIONS["tcp_user_timeout"] = 30000  # ms；未确认数据 30s 即断开
+    DB_OPTIONS["keepalives"] = 1
+    DB_OPTIONS["keepalives_idle"] = 30  # 空闲 30s 开始探测
+    DB_OPTIONS["keepalives_interval"] = 10  # 探测间隔 10s
+    DB_OPTIONS["keepalives_count"] = 3  # 3 次未应答判定连接死亡
 else:
     ENGINE = CONFIG.DB_ENGINE
 
@@ -307,6 +330,13 @@ if DB_POOL_ENABLED:
     DB_OPTIONS["pool"] = {
         "min_size": int(CONFIG.DB_POOL_MIN_SIZE),
         "max_size": max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),
+        # 取用连接的最长等待（psycopg_pool 默认 30s）：故障（半开/丢包）时池重建期间
+        # 请求快速失败（≤5s），而不是每个请求排队等满 30s（第十七轮演练复演实测）。
+        # 正常负载取用 <10ms，5s 余量充足；容量由 min/max_size 控制不受影响。
+        "timeout": 5,
+        # 失败连接的重连调度间隔（psycopg_pool 默认 300s）：DB 恢复后健康指示 10s 级回正，
+        # 而不是最长等 5 分钟（第十七轮复演观察：删规则后 db 指示恢复慢且抖动）。
+        "reconnect_timeout": 10,
     }
 
 DATABASES = {

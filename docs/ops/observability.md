@@ -79,10 +79,15 @@ stub 指标端点验证令牌透传与 JSONL 追加）。
 
 - **首次采集（2026-09-17）**：可用性 100.000%（23 请求）、P95 0.05s、任务成功率 99.89%（2831 任务）；
 - **第二次（同日，经 cron 脚本真实链路）**：可用性 100.000%（461 请求）、P95 0.01s、任务成功率 99.90%（3010 任务）；
-- **宿主调度安装**（一行 crontab，每日 06:17；IDE 沙箱无权限代装，需在宿主终端执行一次）：
+- **宿主调度已安装（2026-09-18）**：macOS 下 `crontab` 写入被 TCC 拦截（`Operation not permitted`），
+  改用 LaunchAgent：`~/Library/LaunchAgents/com.xadmin.slo-snapshot.plist`（label `com.xadmin.slo-snapshot`，
+  每日 06:17；launchd 会在机器唤醒后补跑错过的时点；token 以环境变量内联于 plist，权限 600）。
+  运维命令：
 
 ```bash
-printf '17 6 * * * METRICS_TOKEN=<config.yml 的 METRICS_TOKEN> PYTHON=<仓库>/.venv/bin/python <仓库>/utils/slo_snapshot_cron.sh >> <仓库>/tmp/slo_cron.log 2>&1\n' | crontab -
+launchctl list | grep xadmin                                    # 任务状态（第二列 = 最近退出码，0 为正常）
+launchctl kickstart -k gui/$(id -u)/com.xadmin.slo-snapshot     # 立即手动触发一次（验证链路）
+tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 ```
 
 **校准触发**：采集跨度 ≥3 个月（约 ≥90 个数据点，2026-12 起季度巡检核对）→ 按实际数据
@@ -336,6 +341,59 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
   → 订阅自愈（`OpsAlertMessage`，`site_msg + email`，receivers = 1）；重复投递由 60s 节流合并（单测覆盖）；
 - **结论**：OOM 告警链路端到端闭环（事件 → 投递 → 落库 → 收件人），监控覆盖清单见 §三；
   HTTP 可用性 / 延迟 / 队列积压的自动投递保持登记（依赖外部 Prometheus / Alertmanager，部署形态就绪后按需）。
+
+### 第十七轮（2034-10，运营基线窗口）：真丢包部署级观察（第七轮登记项收口）
+
+**背景**：第七轮（TCP 挂起模拟）登记「真丢包（SYN 不可达）的部署级观察待具备 NET_ADMIN 的演练环境」——
+本轮在 192.168.0.200 测试服（ARM64 VM 的 xadmin 全栈部署）具备注入能力后执行。
+
+**注入方式（两次姿势修正，均为真实踩坑）**：
+1. 第一版在 VM 宿主 `iptables DOCKER-USER` 链注入 DROP —— **规则 0 命中**：VM 未加载 `br_netfilter`
+   （bridge-nf-call-iptables 不可用），容器间 bridge 流量**不经过 FORWARD 链**；
+2. 改用 `nsenter -t <容器PID> -n iptables` 在**容器 netns 的 OUTPUT 链**注入——精确作用于
+   「server/worker → PG:5432」且不影响宿主网络：`-d <pg> -p tcp --dport 5432 -j DROP`
+   （注入后 `/dev/tcp` 探针 6s 挂起验证命中；规则计数器随重传增长）。
+
+**观察（注入约 6 分钟，随后删规则恢复）**：
+- **health 全链路无响应**：容器内直连与经 nginx 均 `000 / 15s+`（非慢响应，是**无响应**）；
+- **线程取证（内核栈）**：每个 gunicorn worker 的同步处理线程阻塞在
+  `tcp_recvmsg → sk_wait_data → wait_woken`（**读 PG 响应的 socket 等待**）；
+  psycopg pool 线程处于 `futex`（池锁串行等待）；
+- **连接状态**：容器 netns 中 7 条 → PG:5432 连接全部 **ESTABLISHED（半开）** + TCP 重传定时器运行
+  （`tm->when` 非零）——SYN 与数据的 DROP 对 TCP 栈不可见；
+- **恢复**：删除规则后 **~1 分钟自愈**（TCP 重传送达，无需进程重启；与第三轮「PG 重启后半开连接仅在
+  进程重启后恢复」形成对照——差异在于本轮对端连接仍存活，重传最终成功）。
+
+**结论（韧性缺口，登记评估出口）**：
+1. `connect_timeout=3` 覆盖「建连」阶段（第七轮已验证）；**已建立连接上的读（recv）无 socket 级超时**，
+   半开连接要等 TCP 重传耗竭（Linux 默认 ~15 分钟）才返回错误——期间该 worker 的同步请求处理被逐个
+   占死（thread_sensitive 串行），health 亦排队（探测 1s 预算约束「探测等待」，无法救「请求未被调度」）；
+2. **加固候选（登记评估，涉及全局 DB 连接配置，不急切修改）**：libpq `tcp_user_timeout`（Linux）
+   + TCP keepalives（`keepalives_idle/interval/count`）——目标：半开连接在池层 30s 级识别淘汰；
+3. 本轮为「部署级观察」定位（不改代码）；行为与风险窗口已量化记录。
+
+**演练姿势沉淀**：容器间流量注入优先 `nsenter` 容器 netns（精确、免 br_netfilter 依赖）；
+演练脚本输出写文件时注意 stdio 块缓冲（用变量捕获 + shell echo，勿依赖 `curl -w` 直接重定向）；
+规则必须 trap 兜底清理。
+
+**修复与复演（2026-09-18 当日闭环）**：本轮暴露的韧性缺口四层修复——①**基础设施端点事务豁免**
+（`common/urls.py`，**根因修复**）：`ATOMIC_REQUESTS=True` 使每个请求进入视图前
+`ensure_connection`，DB 故障时 health 在请求入口直接 500 → health/metrics/csp-report 用官方
+`non_atomic_requests` 包装 URLconf callback；②**DB 半开快速失败**：`tcp_user_timeout=30s`
+（内核对未确认数据超时强制断开）+ keepalives 三件套 + 池 `timeout=5s`（取用等待上限）
++ 池 `reconnect_timeout=10s`（失败重连调度）；③**字典读取降级**（`system/utils/dict.py`）：
+DB 故障返回空列表不阻断请求（读取点在 serializer 字段绑定/请求路径上，曾是"每请求 500"
+直接来源；失败不写缓存、恢复即重试）；④**日志格式器兜底**（`server/logging.py`）：无
+`user` 属性的请求不再崩溃（500 traceback 曾被 Logging error 吞掉）。配套：启动自检快速失败
+（`hands.py` 对 SystemCheckError 不重试 60 次）、CI 补 `check --database` 门禁、覆盖率门禁
+82 → 85（实测 87.21%）。
+
+**复演对比（同场景 v8 实测）**：注入期 health `000 / 挂 12s+`（修复前）→
+**`200 / 1.0s / db=False`**（修复后：探测预算内快速降级、无 500）；半开连接清理从"等 TCP
+重传（分钟级）"→ `tcp_user_timeout` 30s 内核断开 + 池淘汰；恢复经 `reconnect_timeout=10s`
+快速回正（复演终态四指标全 true）。登记观察：① `django.request` 的 500 日志在 ASGI
+`_get_response` 层异常路径未落应用日志；② `backup-alert` / `ops-alert` 上报端点自身写库
+（DB 故障时告警通路依赖 DB，边界登记）。
 
 ## 七、运营基线快照（2029-10 窗口）
 

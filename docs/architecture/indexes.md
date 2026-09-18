@@ -40,7 +40,7 @@ PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontai
 |-----------------------|-------------------------------------------------------------------------------------|-----------------------------|
 | system_userinfo       | `idx_userinfo_username_trgm` / `idx_userinfo_nickname_trgm` / `idx_userinfo_email_trgm` / `idx_userinfo_phone_trgm` | 用户分组 username/nickname/email/phone |
 | system_uploadfile     | `idx_uploadfile_filename_trgm`                                                      | 文件分组 filename                 |
-| system_approvalrequest | `idx_approvalrequest_path_trgm` / `idx_approvalrequest_module_trgm` / `idx_approvalrequest_object_pk_trgm` | 审批单分组 path/module/object_pk   |
+| system_approvalrequest | `idx_approvalrequest_path_trgm` / `idx_approval_module_trgm` / `idx_approval_object_pk_trgm` | 审批单分组 path/module/object_pk   |
 | system_leave          | `idx_leave_reason_trgm`                                                             | 请假分组 reason                   |
 
 **豁免**（登记理由，覆盖守护在 `tests/unit/system/test_search_indexes.py`）：

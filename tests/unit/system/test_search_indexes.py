@@ -42,6 +42,19 @@ class TestCoverage:
             assert item.name.startswith("idx_"), item.name
             assert item.name.endswith("_trgm"), item.name
 
+    def test_index_names_fit_postgres_name_limit(self):
+        """索引名 ≤ 30 字符（Django 跨库上限；超长触发 models.E034 阻断 manage.py start）。"""
+        too_long = [item.name for item in search_indexes.SEARCH_TRGM_INDEXES if len(item.name) > 30]
+        assert too_long == [], f"索引名超过 30 字符（models.E034）：{too_long}"
+
+    def test_contrib_postgres_always_registered(self):
+        """django.contrib.postgres 必须无条件注册：模型静态含 GinIndex，缺失会让
+        `check --database` 报 postgres.E005 卡死服务启动（2026-09-18 部署事故根因）；
+        条件化（仅 PG 后端注册）会让 mysql 部署与 CI 默认配置同样踩坑。"""
+        from django.conf import settings
+
+        assert "django.contrib.postgres" in settings.INSTALLED_APPS
+
 
 class TestMigrationDrift:
     def test_snapshot_matches_runtime_registry(self):

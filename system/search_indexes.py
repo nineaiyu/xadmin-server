@@ -36,8 +36,8 @@ SEARCH_TRGM_INDEXES = (
     TrigramIndex("system_userinfo", "phone", "idx_userinfo_phone_trgm"),
     TrigramIndex("system_uploadfile", "filename", "idx_uploadfile_filename_trgm"),
     TrigramIndex("system_approvalrequest", "path", "idx_approvalrequest_path_trgm"),
-    TrigramIndex("system_approvalrequest", "module", "idx_approvalrequest_module_trgm"),
-    TrigramIndex("system_approvalrequest", "object_pk", "idx_approvalrequest_object_pk_trgm"),
+    TrigramIndex("system_approvalrequest", "module", "idx_approval_module_trgm"),
+    TrigramIndex("system_approvalrequest", "object_pk", "idx_approval_object_pk_trgm"),
     TrigramIndex("system_leave", "reason", "idx_leave_reason_trgm"),
 )
 

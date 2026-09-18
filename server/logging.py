@@ -60,7 +60,11 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
 class ServerFormatter(logging.Formatter):
     def format(self, record):
         current_request = get_current_request()
-        record.requestUser = str(current_request.user if current_request else "SYSTEM")[:16]
+        # 认证中间件之前的异常路径（DisallowedHost 等）请求还没有 user 属性——必须兜底，
+        # 否则格式器抛 AttributeError → Logging error，整条记录（含异常栈）被吞掉
+        # （2026-09-18 真丢包演练排查时发现：500 的 traceback 曾因此不进日志）
+        user = getattr(current_request, "user", None) if current_request else None
+        record.requestUser = str(user or "SYSTEM")[:16]
         record.requestUuid = str(getattr(current_request, "request_uuid", ""))
         return super().format(record)
 
@@ -74,6 +78,8 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record):
         current_request = get_current_request()
+        # 与 ServerFormatter 同口径：无 user 属性的请求（认证前异常路径）兜底 SYSTEM
+        user = getattr(current_request, "user", None) if current_request else None
         payload = {
             "time": datetime.fromtimestamp(record.created, tz=UTC).astimezone().isoformat(timespec="milliseconds"),
             "level": record.levelname,
@@ -82,7 +88,7 @@ class JsonFormatter(logging.Formatter):
             "process": record.process,
             "thread": record.thread,
             "request_uuid": str(getattr(current_request, "request_uuid", "") or ""),
-            "request_user": str(current_request.user if current_request else "SYSTEM")[:16],
+            "request_user": str(user or "SYSTEM")[:16],
             "message": record.getMessage(),
         }
         if record.exc_info:
