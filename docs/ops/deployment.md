@@ -326,10 +326,13 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 - **切换前的隔离验证**（替代「等真实流量观察零」，测试服不可达时尤其有用）：
   `pnpm build && pnpm test:e2e:csp`——以构建产物 + 强制头 + 真实浏览器扫核心页并断言零违规
   （`/__csp_probe` 负对照证明采集链路有效，同时断言 report-uri 可达 204）；
+  跑批默认 `E2E_CSP_TLS=1`：验证服务以 **HTTPS** 提供（openssl 自签 + `ignoreHTTPSErrors`），
+  **chromium 与 webkit 双浏览器**均验证零违规（WebKit 在 http 形态拒收 Secure Cookie 无法登录）；
 - **注意（http 部署 + WebKit）**：生产构建的认证 Cookie 带 `Secure`（`src/utils/auth.ts` 的
   `import.meta.env.PROD` 分支），http 形态下 Chromium 视 loopback 为可信可正常登录，
   而 **WebKit/Safari 会拒收 Secure Cookie → 无法登录**；生产形态请按 §3 启用 HTTPS
-  （`SECURITY_HTTPS_ENABLED: true`），隔离验证的 webkit 覆盖也待 HTTPS 形态下补上。
+  （`SECURITY_HTTPS_ENABLED: true`）。隔离验证的 webkit 覆盖已随 TLS 形态补上（2026-09-18），
+  但线上 http 形态下 WebKit 用户仍无法登录——**生产/测试服部署应走 HTTPS**。
 
 - 注意：`add_header` 在 nginx 中会**覆盖**继承的同名头，若已有 `X-Frame-Options` 等自定义头，
   请放在同一个 `add_header` 块内统一维护，避免互相覆盖。
