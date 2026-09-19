@@ -95,16 +95,19 @@ class Command(BaseCommand):
             self.stdout.write(f"    ... 其余 {scan['truncated']} 处略")
         self.stdout.write(f"    （tests/ 中另有 {scan['tests_count']} 处引用，随对应用例一同删除）")
         self.stdout.write("")
+        # 两段各自判空：单仓检出（无前端兄弟仓）时文件清单为空、词条清单仍来自种子，
+        # 按内容分别输出（避免打印只有标题的空清单）
         frontend = self._frontend_scan(module_id)
-        if frontend:
+        if frontend["files"]:
             self.stdout.write("【3.1】前端页面文件（组件路径来自菜单种子，建议整目录删除）：")
             for line in frontend["files"]:
                 self.stdout.write(f"    {line}")
             if frontend["truncated"]:
                 self.stdout.write(f"    ... 其余 {frontend['truncated']} 个文件略")
-            if frontend["locale_keys"]:
-                self.stdout.write("【3.2】i18n 词条（locales/zh-CN.yaml 与 en.yaml 同步删除）：")
-                self.stdout.write("    " + ", ".join(frontend["locale_keys"]))
+        if frontend["locale_keys"]:
+            self.stdout.write("【3.2】i18n 词条（locales/zh-CN.yaml 与 en.yaml 同步删除）：")
+            self.stdout.write("    " + ", ".join(frontend["locale_keys"]))
+        if frontend["files"] or frontend["locale_keys"]:
             self.stdout.write("")
 
         # 4) 门禁
@@ -219,14 +222,16 @@ class Command(BaseCommand):
 
         前端组件按「菜单 component 子串」解析（与 src/router/utils.ts 的匹配口径一致），
         因此在 client 仓库里搜含该子串的文件即可列出待删页面与其 api 兄弟文件。
+
+        词条清单只依赖种子（menu/menumeta），单仓检出（无前端兄弟仓）时照常给出；
+        文件清单需要前端目录树，缺失时为空（不报错）。
         """
 
         seed_filter = ModuleSeedFilter([module_index()[module_id]])
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         menu_path = os.path.join(file_root, "menu.json")
-        client_src = os.path.join(os.path.dirname(settings.PROJECT_DIR), "xadmin-client", "src")
         result = {"files": [], "locale_keys": [], "truncated": 0}
-        if not (os.path.exists(menu_path) and os.path.isdir(client_src)):
+        if not os.path.exists(menu_path):
             return result
 
         with open(menu_path, encoding="utf-8") as fp:
@@ -244,6 +249,10 @@ class Command(BaseCommand):
             if title and title.isascii() and "." in title and " " not in title:
                 locale_keys.add(title)
         result["locale_keys"] = sorted(locale_keys)
+
+        client_src = os.path.join(os.path.dirname(settings.PROJECT_DIR), "xadmin-client", "src")
+        if not os.path.isdir(client_src):
+            return result
 
         matched = []
         for root, dirs, files in os.walk(client_src):

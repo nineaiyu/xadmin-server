@@ -64,12 +64,38 @@ class TestModuleRemovePlan:
 
 
 class TestModuleRemoveFrontendScan:
-    """前端待删文件与词条提示（用真实仓库路径，只读预演）。"""
+    """前端待删文件与词条提示（用真实仓库路径，只读预演）。
 
-    def test_lists_frontend_files_and_locale_keys(self):
+    断言依赖同工作区的 xadmin-client 兄弟仓（待删清单来自其 src 目录的文件树扫描）；
+    CI 为单仓检出，缺该目录时必须跳过——命令侧 `_frontend_scan` 在同一前提下同样
+    返回空清单（不报错），两侧口径一致，降级行为另见
+    `test_single_repo_checkout_degrades_gracefully`。
+    """
+
+    @pytest.fixture
+    def frontend_src(self, settings):
+        """前端兄弟仓守卫：单仓检出（CI）时跳过依赖前端文件树的断言。"""
+
+        client_src = os.path.join(os.path.dirname(settings.PROJECT_DIR), "xadmin-client", "src")
+        if not os.path.isdir(client_src):
+            pytest.skip("单仓检出（缺 ../xadmin-client/src），跳过前端扫描断言")
+        return client_src
+
+    def test_lists_frontend_files_and_locale_keys(self, frontend_src):
         output = run_module_remove("remove", "chat")
         assert "src/views/chat/index.vue" in output
         assert "src/api/chat/index.ts" in output
+        assert "menus.chat" in output
+
+    def test_single_repo_checkout_degrades_gracefully(self, scratch_project):
+        """单仓检出等价形态（种子在、前端兄弟仓缺）：文件清单降级为空，命令不报错。
+
+        词条清单来自菜单种子（不依赖前端仓），仍需正常输出。
+        """
+
+        output = run_module_remove("remove", "chat")
+        assert "物理移除模块：chat" in output
+        assert "【3.1】" not in output
         assert "menus.chat" in output
 
     def test_backend_references_exclude_virtualenv(self):
