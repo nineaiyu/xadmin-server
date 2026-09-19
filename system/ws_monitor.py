@@ -52,13 +52,15 @@ def _has_monitor_permission(user) -> bool:
 @database_sync_to_async
 def _collect_panel():
     """重采集集中在线程池执行（celery inspect 广播最长阻塞 ~1s，不能占事件循环）。"""
+    services = metrics.collect_services()
     return {
         "section": "panel",
-        "services": metrics.collect_services(),
+        "services": services,
         "redis": metrics.collect_redis_info(),
         "celery": metrics.collect_celery_status(),
         "slow": metrics.collect_slow_requests(),
         "trend": metrics.collect_latest_and_trend()[1],
+        "health": metrics.collect_health_summary(live=metrics.collect_live_metrics(), services=services),
     }
 
 

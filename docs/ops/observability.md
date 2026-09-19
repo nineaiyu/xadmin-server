@@ -56,6 +56,28 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | `xadmin_celery_tasks_total` | Counter | task, status（SUCCESS / FAILURE / REVOKED …） |
 | `xadmin_celery_task_duration_seconds` | Histogram | task |
 
+### 系统监控面板（SystemMonitor，2026-09-19 增强）
+
+页面：系统管理 → 系统监控（`/system/monitor/index`）。数据源全部复用既有基建
+（`common.Monitor` 心跳表 + psutil 快照 + 健康探测），不引入外部组件。
+
+| 能力 | 接口 | 说明 |
+|------|------|------|
+| 实时指标 | `GET api/system/monitor/overview` | CPU/内存/磁盘/负载 + 网卡速率（累计计数器差分，重启归零记缺失）+ 健康总览（分项状态 / 健康分 / 未恢复告警数） |
+| 服务健康 | `.../services`、`.../redis-info`、`.../celery` | DB/Redis/Celery 探测（与 healthz 同源）、Redis INFO、worker/队列 |
+| 历史趋势 | `.../history` | 时间范围 1h/6h/24h/7d/30d（或 start/end）、聚合粒度 auto/1m/5m/15m/1h/1d、多指标叠加（百分比与数值分双轴）、环比上一等长窗口；查询参数多，**不套 10s 短缓存**（避免不同窗口互相污染） |
+| 告警阈值 | `GET/PUT .../thresholds` | 读写 `SECURITY_MONITOR_*`（Setting 表 `category=security_monitor`，与系统设置 → 安全设置同源）；PUT 后同步本进程 settings，其余进程由 pubsub 回写 |
+| 告警记录 | `.../events?kind=alert` | `MonitorAlert` 状态跃迁流水：超标建 firing、持续仅续写 count/last_time、回落置 resolved（60s 检查周期不刷重复流水） |
+| 事件查询 | `.../events?kind=error\|task` | 异常请求（业务码非 1000）/ 任务失败（FAILURE/REVOKED）明细 |
+| 报表导出 | `.../export` | `kind=history\|alerts` × `type=csv\|xlsx`（趋势导出含「趋势数据 + 汇总/环比」双 sheet，CSV 带 BOM） |
+| 分享视图 | 前端复制链接 | 趋势筛选（range/interval/metrics）写回地址栏，链接打开即复现同一视图 |
+
+- 权限点（挂 SystemMonitor 菜单）：`history` / `thresholds`(GET) / `updateThresholds`(PUT) /
+  `events` / `export`；升级后需重灌 `load_init_json`（或 `python manage.py sync_menu_permissions`）再重启，
+  否则非超管角色看不到/调不通新功能（PUT 端点不进 `sync_menu_permissions` 的自动生成面，权限点在种子中维护）；
+- 心跳落盘周期 30s（2026-09-19 修复启动线程双 sleep 导致的实际 60s；告警检查的「最近 3 次心跳均值」窗口随之收紧）；
+- 已恢复的告警记录随 `MONITOR_RETENTION_DAYS` 一并清理，未恢复记录保留至指标回落。
+
 ### SLO 数据源与校准（2029-12 窗口）
 
 | SLO | 数据源 | 就绪性（2026-09-16）|
@@ -118,7 +140,7 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | 敏感操作 | 操作日志中间件 | 站内信 + 邮件 | ✅ 已接 |
 | Webhook 投递耗尽 | 投递任务 | 站内信 | ✅ 已接 |
 | API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
-| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`） | ✅ 已接 |
+| 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出） | ✅ 已接 |
 | **容器 OOM** | `docker events` 的 `oom` 事件 | `utils/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
 | HTTP 可用性 / P95 延迟 / 队列积压 | Prometheus 指标 + SLO 阈值 | 指标端点已暴露；自动投递需外部 Prometheus / Alertmanager | ⏳ 登记（部署形态就绪后按需） |
 

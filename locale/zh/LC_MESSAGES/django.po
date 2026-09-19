@@ -7028,6 +7028,143 @@ msgid "Page index out of range"
 msgstr "页码超出范围"
 
 #, python-brace-format
+
+#: common/models.py
+msgid "Net sent (MB)"
+msgstr "网络发送量 (MB)"
+
+#: common/models.py
+msgid "Net received (MB)"
+msgstr "网络接收量 (MB)"
+
+#: common/models.py
+msgid "Monitor alert"
+msgstr "监控告警"
+
+#: common/models.py
+msgid "CPU percent"
+msgstr "CPU 使用率"
+
+#: common/models.py
+msgid "CPU load"
+msgstr "CPU 负载"
+
+#: common/models.py
+msgid "Memory used"
+msgstr "内存使用率"
+
+#: common/models.py
+msgid "Disk used"
+msgstr "磁盘使用率"
+
+#: common/models.py
+msgid "Firing"
+msgstr "告警中"
+
+#: common/models.py
+msgid "Resolved"
+msgstr "已恢复"
+
+#: common/models.py
+msgid "Alert item"
+msgstr "告警指标"
+
+#: common/models.py
+msgid "Trigger value"
+msgstr "触发值"
+
+#: common/models.py
+msgid "Threshold"
+msgstr "阈值"
+
+#: common/models.py
+msgid "Message"
+msgstr "消息"
+
+#: common/models.py
+msgid "Hit count"
+msgstr "命中次数"
+
+#: common/models.py
+msgid "First time"
+msgstr "首次触发时间"
+
+#: common/models.py
+msgid "Last time"
+msgstr "最近触发时间"
+
+#: common/models.py
+msgid "Resolved time"
+msgstr "恢复时间"
+
+#: system/utils/monitor_history.py
+msgid "CPU usage"
+msgstr "CPU 使用率"
+
+#: system/utils/monitor_history.py
+msgid "Memory usage"
+msgstr "内存使用率"
+
+#: system/utils/monitor_history.py
+msgid "Disk usage"
+msgstr "磁盘使用率"
+
+#: system/utils/monitor_history.py
+msgid "Network upload rate"
+msgstr "网络上行速率"
+
+#: system/utils/monitor_history.py
+msgid "Network download rate"
+msgstr "网络下行速率"
+
+#: system/utils/monitor_history.py
+msgid "Average"
+msgstr "平均值"
+
+#: system/utils/monitor_history.py
+msgid "Minimum"
+msgstr "最小值"
+
+#: system/utils/monitor_history.py
+msgid "Maximum"
+msgstr "最大值"
+
+#: system/utils/monitor_history.py
+msgid "Latest"
+msgstr "最新值"
+
+#: system/utils/monitor_history.py
+msgid "Previous period average"
+msgstr "上期平均值"
+
+#: system/utils/monitor_history.py
+msgid "Change (%)"
+msgstr "变化率 (%)"
+
+#: system/utils/monitor_history.py
+msgid "Trend data"
+msgstr "趋势数据"
+
+#: system/utils/monitor_history.py
+msgid "Summary"
+msgstr "汇总"
+
+#: system/utils/monitor_events.py
+msgid "Monitor alerts"
+msgstr "监控告警记录"
+
+#: system/utils/metrics.py
+msgid "Database"
+msgstr "数据库"
+
+#: system/utils/metrics.py
+msgid "Redis cache"
+msgstr "Redis 缓存"
+
+#: system/utils/metrics.py
+msgid "Celery"
+msgstr "Celery"
+
 #~ msgid "Invalid pk \"{pk_value}\" - object does not exist."
 #~ msgstr "错误的 pk \"{pk_value}\" - 对象不存在"
 

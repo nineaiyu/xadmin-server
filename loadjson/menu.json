@@ -13668,5 +13668,120 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f8e7d6c5-b4a3-4c21-8d0e-1a2b3c4d5e01",
+  "fields": {
+   "created_time": "2026-09-19T00:00:00Z",
+   "updated_time": "2026-09-19T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "history:SystemMonitor",
+   "rank": 10001,
+   "path": "api/system/monitor/history$",
+   "component": null,
+   "is_active": true,
+   "meta": "f8e7d6c5-b4a3-4c21-8d0e-1a2b3c4d5e02",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f8e7d6c5-b4a3-4c22-8d0e-1a2b3c4d5e03",
+  "fields": {
+   "created_time": "2026-09-19T00:00:00Z",
+   "updated_time": "2026-09-19T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "thresholds:SystemMonitor",
+   "rank": 10002,
+   "path": "api/system/monitor/thresholds$",
+   "component": null,
+   "is_active": true,
+   "meta": "f8e7d6c5-b4a3-4c22-8d0e-1a2b3c4d5e04",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f8e7d6c5-b4a3-4c23-8d0e-1a2b3c4d5e05",
+  "fields": {
+   "created_time": "2026-09-19T00:00:00Z",
+   "updated_time": "2026-09-19T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "updateThresholds:SystemMonitor",
+   "rank": 10003,
+   "path": "api/system/monitor/thresholds$",
+   "component": null,
+   "is_active": true,
+   "meta": "f8e7d6c5-b4a3-4c23-8d0e-1a2b3c4d5e06",
+   "method": "PUT",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f8e7d6c5-b4a3-4c24-8d0e-1a2b3c4d5e07",
+  "fields": {
+   "created_time": "2026-09-19T00:00:00Z",
+   "updated_time": "2026-09-19T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "events:SystemMonitor",
+   "rank": 10004,
+   "path": "api/system/monitor/events$",
+   "component": null,
+   "is_active": true,
+   "meta": "f8e7d6c5-b4a3-4c24-8d0e-1a2b3c4d5e08",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "f8e7d6c5-b4a3-4c25-8d0e-1a2b3c4d5e09",
+  "fields": {
+   "created_time": "2026-09-19T00:00:00Z",
+   "updated_time": "2026-09-19T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "f1a2b3c4-d5e6-4789-8abc-def012345678",
+   "menu_type": 2,
+   "name": "export:SystemMonitor",
+   "rank": 10005,
+   "path": "api/system/monitor/export$",
+   "component": null,
+   "is_active": true,
+   "meta": "f8e7d6c5-b4a3-4c25-8d0e-1a2b3c4d5e0a",
+   "method": "GET",
+   "model": []
+  }
  }
 ]

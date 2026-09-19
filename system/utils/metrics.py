@@ -7,13 +7,15 @@
 """
 
 import concurrent.futures
+import threading
+import time
 from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
 
 from common.core.config import SysConfig
-from common.utils import get_logger
+from common.utils import get_logger, get_net_io_bytes
 from common.utils.connection import get_redis_client
 from common.utils.health import probe_celery, probe_db, probe_redis
 
@@ -23,6 +25,27 @@ SLOW_REQUEST_WINDOW_HOURS = 24
 SLOW_REQUEST_LIMIT = 20
 MONITOR_TREND_POINTS = 60
 
+# 网卡速率：psutil 只提供累计计数器，速率由进程内上次快照差分得出
+# （WS 5s 推送与 HTTP 轮询共享，窗口为两次采集的实际间隔）
+_net_rate_state = {"time": None, "sent": 0, "recv": 0}
+_net_rate_lock = threading.Lock()
+
+
+def _net_rates(sent_bytes, recv_bytes):
+    """返回 (上行 KB/s, 下行 KB/s)；首次采集或计数器重置（重启）时为 (None, None)。"""
+    now = time.monotonic()
+    with _net_rate_lock:
+        prev = dict(_net_rate_state)
+        _net_rate_state.update(time=now, sent=sent_bytes, recv=recv_bytes)
+    if prev["time"] is None:
+        return None, None
+    elapsed = now - prev["time"]
+    sent_delta = sent_bytes - prev["sent"]
+    recv_delta = recv_bytes - prev["recv"]
+    if elapsed <= 0 or sent_delta < 0 or recv_delta < 0:
+        return None, None
+    return round(sent_delta / 1024 / elapsed, 2), round(recv_delta / 1024 / elapsed, 2)
+
 
 def collect_live_metrics():
     """主机资源实时快照（psutil 直读）；采集失败返回 None，调用方回退心跳值。"""
@@ -31,7 +54,8 @@ def collect_live_metrics():
 
         from common.utils.common import get_boot_time, get_cpu_load, get_cpu_percent, get_disk_usage, get_memory_usage
 
-        net = psutil.net_io_counters()
+        sent_bytes, recv_bytes = get_net_io_bytes()
+        net_sent_rate, net_recv_rate = _net_rates(sent_bytes, recv_bytes)
         return {
             "cpu_percent": get_cpu_percent(),
             "cpu_load": get_cpu_load(),
@@ -40,8 +64,10 @@ def collect_live_metrics():
             "swap_percent": psutil.swap_memory().percent,
             "cpu_count": psutil.cpu_count(),
             "process_count": len(psutil.pids()),
-            "net_sent_mb": round(net.bytes_sent / 1024 / 1024, 1),
-            "net_recv_mb": round(net.bytes_recv / 1024 / 1024, 1),
+            "net_sent_mb": round(sent_bytes / 1024 / 1024, 1),
+            "net_recv_mb": round(recv_bytes / 1024 / 1024, 1),
+            "net_sent_rate": net_sent_rate,
+            "net_recv_rate": net_recv_rate,
             "boot_time": get_boot_time(),
         }
     except Exception as e:  # noqa: BLE001
@@ -83,6 +109,119 @@ def collect_services():
         "redis": {"status": redis_ok, "cost": redis_cost},
         "celery": {"status": celery_ok, "cost": celery_cost},
         "status": all([db_ok, redis_ok, celery_ok]),
+    }
+
+
+# 健康总览评分：资源项按超阈值程度分档（≤阈值 healthy / 超阈值 warning /
+# 超阈值 20% critical）；服务项 DB/Redis 失败为 critical，Celery 未探测到
+# worker 降为 warning（后台任务离线不阻断核心服务，避免常亮红旗）。
+HEALTH_CRITICAL_RATIO = 1.2
+HEALTH_RESOURCE_PENALTY = {"warning": 8, "critical": 20}
+HEALTH_SERVICE_PENALTY = {"warning": 10, "critical": 25}
+HEALTH_LABELS = {
+    "cpu_percent": ("CPU usage", "%"),
+    "cpu_load": ("CPU load", ""),
+    "memory_used": ("Memory usage", "%"),
+    "disk_used": ("Disk usage", "%"),
+}
+
+
+def _resource_entry(key, value, threshold):
+    from django.utils.translation import gettext as _
+
+    label, unit = HEALTH_LABELS[key]
+    try:
+        value = round(float(value), 2)
+    except (TypeError, ValueError):
+        value = None
+    if value is None or not threshold:
+        status = "unknown"
+    elif value >= float(threshold) * HEALTH_CRITICAL_RATIO:
+        status = "critical"
+    elif value >= float(threshold):
+        status = "warning"
+    else:
+        status = "healthy"
+    return {
+        "key": key,
+        "group": "resource",
+        "label": str(_(label)),
+        "value": value,
+        "unit": unit,
+        "threshold": threshold,
+        "status": status,
+    }
+
+
+def _service_entry(key, label, probe, degraded=False, skipped=False):
+    from django.utils.translation import gettext as _
+
+    probe = probe or {}
+    ok = bool(probe.get("status"))
+    if skipped:
+        status = "unknown"
+    elif ok:
+        status = "healthy"
+    elif degraded:
+        status = "warning"
+    else:
+        status = "critical"
+    return {
+        "key": key,
+        "group": "service",
+        "label": str(_(label)),
+        "status": status,
+        "cost": probe.get("cost"),
+    }
+
+
+def collect_health_summary(live=None, services=None, celery_skipped=None):
+    """系统健康总览：资源阈值分档 + 服务探测 + 告警计数 → 总状态与健康分。
+
+    live/services 允许调用方复用已采集结果（overview 与 WS panel 帧各采一次）。
+    """
+
+    from system.utils.monitor_events import alert_counts
+
+    if live is None:
+        live = collect_live_metrics()
+    if services is None:
+        services = collect_services()
+    if celery_skipped is None:
+        celery_skipped = bool(getattr(settings, "HEALTH_CHECK_SKIP_CELERY", False))
+    live = live or {}
+
+    items = [
+        _resource_entry("cpu_percent", live.get("cpu_percent"), settings.SECURITY_MONITOR_CPU_PERCENT_MAX),
+        _resource_entry("cpu_load", live.get("cpu_load"), settings.SECURITY_MONITOR_CPU_LOAD_MAX),
+        _resource_entry("memory_used", live.get("memory_used"), settings.SECURITY_MONITOR_MEMORY_USED_MAX),
+        _resource_entry("disk_used", live.get("disk_used"), settings.SECURITY_MONITOR_DISK_USED_MAX),
+        _service_entry("db", "Database", services.get("db")),
+        _service_entry("redis", "Redis cache", services.get("redis")),
+        _service_entry("celery", "Celery", services.get("celery"), degraded=True, skipped=celery_skipped),
+    ]
+
+    penalty = 0
+    for entry in items:
+        if entry["status"] == "unknown":
+            continue
+        if entry["group"] == "service":
+            penalty += HEALTH_SERVICE_PENALTY.get(entry["status"], 0)
+        else:
+            penalty += HEALTH_RESOURCE_PENALTY.get(entry["status"], 0)
+    statuses = {entry["status"] for entry in items}
+    if "critical" in statuses:
+        overall = "critical"
+    elif "warning" in statuses:
+        overall = "warning"
+    else:
+        overall = "healthy"
+    return {
+        "status": overall,
+        "score": max(0, 100 - penalty),
+        "items": items,
+        "alerts": alert_counts(),
+        "checked_at": timezone.localtime(timezone.now()).isoformat(),
     }
 
 

@@ -225,6 +225,46 @@ def seed_user_notice_scene():
     print("user notice scene seeded for e2e_user")
 
 
+def seed_monitor_scene():
+    """监控页演示数据：近 24 小时心跳（5 分钟粒度）+ 一条未恢复磁盘告警。
+
+    心跳走 create + update 强制回填 created_time（auto_now_add 不接受传入值）；
+    网络累计量随序号递增，使相邻差分速率可算（趋势图的网络速率线才有值）。
+    DAPHNE 环境不跑 gunicorn 心跳线程，没有这段数据趋势图恒为空态。
+    """
+    import math
+
+    from django.utils import timezone
+
+    from common.models import Monitor, MonitorAlert
+
+    now = timezone.now()
+    boot_time = (now - timezone.timedelta(days=3)).timestamp()
+    points = 288
+    for index in range(points, 0, -1):
+        row = Monitor.objects.create(
+            cpu_percent=round(38 + 16 * math.sin(index / 9), 2),
+            cpu_load=round(1.2 + 0.6 * math.cos(index / 11), 2),
+            memory_used=round(52 + 8 * math.sin(index / 13), 2),
+            disk_used=round(62 + 3 * math.sin(index / 21), 2),
+            boot_time=boot_time,
+            net_sent_mb=round(4096 + index * 3.5, 2),
+            net_recv_mb=round(8192 + index * 5.2, 2),
+        )
+        Monitor.objects.filter(pk=row.pk).update(created_time=now - timezone.timedelta(minutes=5 * index))
+
+    MonitorAlert.objects.create(
+        item="disk_used",
+        value=88.6,
+        threshold=80,
+        message="Disk used more than 80%: => 88.6",
+        count=6,
+        first_time=now - timezone.timedelta(hours=2),
+        last_time=now - timezone.timedelta(minutes=5),
+    )
+    print(f"monitor scene seeded: {points} heartbeat points + 1 firing alert")
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -358,6 +398,9 @@ def main() -> None:
 
     # ---- 我的通知场景：e2e_user 授权通知页 + 未读通知 ----
     seed_user_notice_scene()
+
+    # ---- 系统监控场景：心跳历史与告警记录（监控页图表/告警卡数据源）----
+    seed_monitor_scene()
 
     print("E2E seed done")
 

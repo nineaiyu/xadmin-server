@@ -6981,6 +6981,142 @@ msgstr "Invalid page index"
 msgid "Page index out of range"
 msgstr "Page index out of range"
 
+#: common/models.py
+msgid "Net sent (MB)"
+msgstr "Net sent (MB)"
+
+#: common/models.py
+msgid "Net received (MB)"
+msgstr "Net received (MB)"
+
+#: common/models.py
+msgid "Monitor alert"
+msgstr "Monitor alert"
+
+#: common/models.py
+msgid "CPU percent"
+msgstr "CPU percent"
+
+#: common/models.py
+msgid "CPU load"
+msgstr "CPU load"
+
+#: common/models.py
+msgid "Memory used"
+msgstr "Memory used"
+
+#: common/models.py
+msgid "Disk used"
+msgstr "Disk used"
+
+#: common/models.py
+msgid "Firing"
+msgstr "Firing"
+
+#: common/models.py
+msgid "Resolved"
+msgstr "Resolved"
+
+#: common/models.py
+msgid "Alert item"
+msgstr "Alert item"
+
+#: common/models.py
+msgid "Trigger value"
+msgstr "Trigger value"
+
+#: common/models.py
+msgid "Threshold"
+msgstr "Threshold"
+
+#: common/models.py
+msgid "Message"
+msgstr "Message"
+
+#: common/models.py
+msgid "Hit count"
+msgstr "Hit count"
+
+#: common/models.py
+msgid "First time"
+msgstr "First time"
+
+#: common/models.py
+msgid "Last time"
+msgstr "Last time"
+
+#: common/models.py
+msgid "Resolved time"
+msgstr "Resolved time"
+
+#: system/utils/monitor_history.py
+msgid "CPU usage"
+msgstr "CPU usage"
+
+#: system/utils/monitor_history.py
+msgid "Memory usage"
+msgstr "Memory usage"
+
+#: system/utils/monitor_history.py
+msgid "Disk usage"
+msgstr "Disk usage"
+
+#: system/utils/monitor_history.py
+msgid "Network upload rate"
+msgstr "Network upload rate"
+
+#: system/utils/monitor_history.py
+msgid "Network download rate"
+msgstr "Network download rate"
+
+#: system/utils/monitor_history.py
+msgid "Average"
+msgstr "Average"
+
+#: system/utils/monitor_history.py
+msgid "Minimum"
+msgstr "Minimum"
+
+#: system/utils/monitor_history.py
+msgid "Maximum"
+msgstr "Maximum"
+
+#: system/utils/monitor_history.py
+msgid "Latest"
+msgstr "Latest"
+
+#: system/utils/monitor_history.py
+msgid "Previous period average"
+msgstr "Previous period average"
+
+#: system/utils/monitor_history.py
+msgid "Change (%)"
+msgstr "Change (%)"
+
+#: system/utils/monitor_history.py
+msgid "Trend data"
+msgstr "Trend data"
+
+#: system/utils/monitor_history.py
+msgid "Summary"
+msgstr "Summary"
+
+#: system/utils/monitor_events.py
+msgid "Monitor alerts"
+msgstr "Monitor alerts"
+
+#: system/utils/metrics.py
+msgid "Database"
+msgstr "Database"
+
+#: system/utils/metrics.py
+msgid "Redis cache"
+msgstr "Redis cache"
+
+#: system/utils/metrics.py
+msgid "Celery"
+msgstr "Celery"
+
 #~ msgid "AI room owner; empty for public/private rooms"
 #~ msgstr "AI room owner; empty for public/private rooms"
 

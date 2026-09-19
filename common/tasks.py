@@ -28,7 +28,7 @@ from common.celery.utils import (
 )
 from common.core.task_request import build_task_request
 from common.core.utils import get_doc_first_line
-from common.models import Monitor
+from common.models import Monitor, MonitorAlert
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.utils.timezone import local_now_display
 from server.celery import app
@@ -136,10 +136,11 @@ def send_mail_attachment_async(*args, **kwargs):
 @register_as_period_task(interval=3600, module="ops")
 @after_app_ready_start
 def auto_clean_monitor_logs():
-    """心跳历史保留期清理（MONITOR_RETENTION_DAYS，默认 30 天），按 pk 分批删除。
+    """心跳历史与已恢复告警记录的保留期清理（MONITOR_RETENTION_DAYS，默认 30 天）。
 
     心跳 30s 一条长期落库，单批一次性 DELETE 在大保留期下会长时间锁表，
-    沿用 OperationLog.remove_expired 的分批范式。
+    沿用 OperationLog.remove_expired 的分批范式。告警记录同为监控数据：
+    已恢复（resolved）且超期的流水一并清理，未恢复记录保留到指标回落。
     """
     from common.core.config import SysConfig
 
@@ -154,7 +155,15 @@ def auto_clean_monitor_logs():
         if not pks:
             break
         removed += Monitor.objects.filter(pk__in=pks).delete()[0]
-    logger.info("Clean monitor heartbeat history: %s rows (retention %s days)", removed, retention_days)
+    removed_alerts = MonitorAlert.objects.filter(
+        status=MonitorAlert.Status.RESOLVED, resolved_time__lt=old_times
+    ).delete()[0]
+    logger.info(
+        "Clean monitor heartbeat history: %s rows / resolved alerts: %s rows (retention %s days)",
+        removed,
+        removed_alerts,
+        retention_days,
+    )
     return removed
 
 

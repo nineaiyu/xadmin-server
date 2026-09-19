@@ -75,6 +75,18 @@ def get_memory_usage():
     return psutil.virtual_memory().percent
 
 
+def get_net_io_bytes():
+    """网卡累计收发字节 (sent, recv)；采集失败返回 (0, 0) 不中断心跳。
+
+    注意这是累计计数器（进程/系统重启后归零），速率必须由调用方按时间差换算。
+    """
+    try:
+        net = psutil.net_io_counters()
+        return net.bytes_sent, net.bytes_recv
+    except Exception:
+        return 0, 0
+
+
 def test_ip_connectivity(host, port, timeout=0.5):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout)

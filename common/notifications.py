@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.models import Monitor
@@ -87,14 +88,17 @@ class ServerPerformanceCheckUtil:
 
     def __init__(self):
         self.terms_with_errors = []
+        self.item_states = []
         self._terminals = []
 
     def check_and_publish(self):
         self.check()
         self.publish()
+        self.sync_alert_records()
 
     def check(self):
         self.terms_with_errors = []
+        self.item_states = []
         self.initial_terminals()
 
         for term in self._terminals:
@@ -107,10 +111,56 @@ class ServerPerformanceCheckUtil:
         errors = []
         for item, data in self.items_mapper.items():
             error = self.check_item(term, item, data)
+            # 无论是否超标都记录本轮状态：告警记录需要「超标建记录 / 回落置恢复」双向跃迁
+            self.item_states.append(
+                {
+                    "item": item,
+                    "value": term.get(item, data["default"]),
+                    "threshold": data["max_threshold"],
+                    "exceeded": bool(error),
+                    "message": str(error) if error else "",
+                }
+            )
             if not error:
                 continue
             errors.append(error)
         return errors
+
+    def sync_alert_records(self):
+        """把本轮检查结果落成告警记录（同一指标同时只保留一条未恢复记录）。
+
+        持续超标时续写 last_time/count，回落时置 resolved；重复告警不刷记录，
+        避免 60s 检查周期把告警流水打成噪音。
+        """
+        from common.models import MonitorAlert
+
+        now = timezone.now()
+        for state in self.item_states:
+            value = state["value"]
+            if not isinstance(value, (int, float)):
+                continue
+            firing = MonitorAlert.objects.filter(item=state["item"], status=MonitorAlert.Status.FIRING).first()
+            if state["exceeded"]:
+                if firing:
+                    firing.value = value
+                    firing.threshold = state["threshold"]
+                    firing.message = state["message"]
+                    firing.count += 1
+                    firing.last_time = now
+                    firing.save(update_fields=["value", "threshold", "message", "count", "last_time"])
+                else:
+                    MonitorAlert.objects.create(
+                        item=state["item"],
+                        value=value,
+                        threshold=state["threshold"],
+                        message=state["message"],
+                        first_time=now,
+                        last_time=now,
+                    )
+            elif firing:
+                firing.status = MonitorAlert.Status.RESOLVED
+                firing.resolved_time = now
+                firing.save(update_fields=["status", "resolved_time"])
 
     @staticmethod
     def check_item(term, item, data):
