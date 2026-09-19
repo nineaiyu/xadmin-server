@@ -93,8 +93,7 @@ class TestRoutesResponseCache:
         normal_result = payload(api_client.get(ROUTES_URL))
 
         # 超管能看到全部菜单，普通用户无菜单授权 -> 空树
-        # 断言锚定 fixture 建的"系统管理"而非顶层数量：的菜单种子迁移
-        # （system/migrations/0008_seed_task_menus）会额外建顶层菜单
+        # 断言锚定 fixture 建的"系统管理"而非顶层数量：种子与其它 fixture 会额外建顶层菜单
         assert "用户管理" in _all_child_names(super_result)
         assert normal_result["data"] == []
 
