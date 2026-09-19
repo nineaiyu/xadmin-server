@@ -13,6 +13,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from common.utils import get_logger
 
+from .override import load_override
 from .specs import _PRESET_LEVELS, CORE, DEFAULT_PRESET, OPTIONAL, PRESETS, STANDARD, ModuleResolution, ModuleSpec
 
 logger = get_logger(__name__)
@@ -165,9 +166,26 @@ def _configured_preset() -> str:
 
 
 def resolve_modules() -> ModuleResolution:
-    """解析生效模块集合（带缓存；配置变更需重启进程）。"""
+    """解析生效模块集合（带缓存；配置变更需重启进程）。
 
-    return _resolve_modules_cached()
+    首次解析时顺带完成受裁剪影响的缓存清理（见 ``_ensure_trim_cache_invalidated``）：
+    解析被刻意推迟到首次实际使用（Django 不鼓励在 app 初始化期访问数据库），
+    而清理必须发生在任何请求被处理之前——首次解析发生在中间件装配期，早于请求。
+    """
+
+    resolution = _resolve_modules_cached()
+    _ensure_trim_cache_invalidated(resolution)
+    return resolution
+
+
+def validate_deployment_config() -> ModuleResolution:
+    """启动期校验部署基线（config.yml / 环境变量）并返回其解析结果。
+
+    只读 settings、**不读数据库**：后台覆盖的校验推迟到首次实际解析（同上），
+    避免在 ``AppConfig.ready()`` 中建立指向「尚未创建的测试库」的连接。
+    """
+
+    return _resolve(*_baseline())
 
 
 @lru_cache(maxsize=1)
@@ -219,12 +237,79 @@ def module_index() -> dict:
 
 
 @lru_cache(maxsize=1)
-def _resolve_modules_cached() -> ModuleResolution:
-    return _resolve(
+def _baseline() -> tuple:
+    """部署基线（config.yml / 环境变量）的 ``(preset, enable, disable)``。"""
+
+    return (
         _configured_preset(),
         _as_tuple(getattr(settings, "MODULE_ENABLE", ())),
         _as_tuple(getattr(settings, "MODULE_DISABLE", ())),
     )
+
+
+def deployment_config() -> tuple:
+    """部署基线 ``(preset, enable, disable)``（供管理页展示「偏离了哪份基线」）。"""
+
+    return _baseline()
+
+
+def _effective_config() -> tuple:
+    """生效配置：后台覆盖行优先（整体替换部署基线），无行回退部署基线。"""
+
+    override = load_override()
+    if override is None:
+        return _baseline()
+    return override.preset, override.enable, override.disable
+
+
+def override_active() -> bool:
+    """当前是否存在后台覆盖行（不缓存：管理页保存后需立即反映）。"""
+
+    return load_override() is not None
+
+
+@lru_cache(maxsize=1)
+def _resolve_modules_cached() -> ModuleResolution:
+    return _resolve(*_effective_config())
+
+
+# 进程内一次性标记：模块解析被推迟到首次使用时，缓存清理随之推迟（见 resolve_modules）
+_trim_cache_invalidated = False
+
+
+def _ensure_trim_cache_invalidated(resolution: ModuleResolution) -> None:
+    """首次解析后清理一次菜单路由 / 权限码缓存（无停用模块时零开销）。"""
+
+    global _trim_cache_invalidated
+    if _trim_cache_invalidated:
+        return
+    _trim_cache_invalidated = True
+    from .gate import invalidate_trimmed_caches
+
+    invalidate_trimmed_caches(resolution)
+
+
+def desired_modules() -> ModuleResolution:
+    """待生效的模块组合（后台覆盖优先；**不缓存**，保存后立即可见）。
+
+    与 ``resolve_modules()`` 的区别：后者是进程启动时解析的「当前生效」态，
+    保存覆盖行不得改变它（否则等同于热更新）。
+    """
+
+    override = load_override()
+    if override is None:
+        return preview_modules()
+    return preview_modules(preset=override.preset, enable=override.enable, disable=override.disable)
+
+
+def module_diff(effective: ModuleResolution, desired: ModuleResolution) -> dict:
+    """生效态与待生效态的差异（供管理页展示「待重启生效」）。"""
+
+    return {
+        "enable": sorted(desired.enabled - effective.enabled),
+        "disable": sorted(effective.enabled - desired.enabled),
+        "preset_changed": effective.preset != desired.preset,
+    }
 
 
 def preview_modules(preset=None, enable=None, disable=None) -> ModuleResolution:
@@ -287,6 +372,7 @@ def reset_module_state() -> None:
 
     names = (
         "_resolve_modules_cached",
+        "_baseline",
         "_disabled_specs",
         "_disabled_route_regexes",
         "_disabled_ws_regexes",
@@ -300,6 +386,10 @@ def reset_module_state() -> None:
             cache_clear = getattr(getattr(module, name, None), "cache_clear", None)
             if cache_clear:
                 cache_clear()
+
+    # 一次性清理标记同步复位：下一次解析重新按新的生效组合清理缓存
+    global _trim_cache_invalidated
+    _trim_cache_invalidated = False
 
 
 def enabled_module_ids() -> frozenset:

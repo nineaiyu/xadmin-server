@@ -9,7 +9,7 @@ from django.db.models import Q
 
 from common.utils import get_logger
 
-from .registry import module_index, resolve_modules
+from .registry import _resolve_modules_cached, module_index, resolve_modules
 from .specs import MENU_TYPE_DIRECTORY, MENU_TYPE_PERMISSION
 
 logger = get_logger(__name__)
@@ -218,15 +218,21 @@ def _prefix_regex(prefixes: tuple) -> str:
     return "^(" + "|".join(re.escape(prefix) for prefix in prefixes) + ")"
 
 
-def invalidate_trimmed_caches() -> int:
-    """清理受模块裁剪影响的缓存（进程启动时调用一次）。
+def invalidate_trimmed_caches(resolution=None) -> int:
+    """清理受模块裁剪影响的缓存（进程内首次模块解析时调用一次）。
 
-    菜单路由与用户权限码缓存 TTL 均为 24 小时，而模块组合只在 config.yml 变更
-    并重启后生效：启动时清理一次，避免「模块已关停、菜单仍显示 24 小时」。
-    未配置停用模块（preset=full 且无覆盖）时直接返回 0，无任何开销。
+    菜单路由与用户权限码缓存 TTL 均为 24 小时，而模块组合只在配置变更并重启后生效：
+    进程内清理一次，避免「模块已关停、菜单仍显示 24 小时」。未配置停用模块
+    （preset=full 且无覆盖）时直接返回 0，无任何开销。
+
+    ``resolution`` 由调用方显式传入以避免重复解析（registry 首次解析时传入）；
+    省略时直接取缓存解析结果——不经过 ``resolve_modules()``，否则会触发
+    registry 的一次性自动清理，把本次要清理的缓存提前删掉。
     """
 
-    if resolve_modules().is_full:
+    if resolution is None:
+        resolution = _resolve_modules_cached()
+    if resolution.is_full:
         return 0
     from django.core.cache import cache
 

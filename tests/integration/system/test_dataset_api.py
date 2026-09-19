@@ -229,7 +229,7 @@ class TestDatasetExecute:
         assert series[0]["value"] == total_users
 
     def test_aggregate_group_label_keeps_falsy_values(self, auth_client, dataset, model_registry):
-        """falsy 分组值（is_active=False）是合法分组：桶名 "False"，不得落空串。"""
+        """布尔分组走可读文案（False → 禁用/Disabled）：桶名不得为原始 "False"/空串。"""
         UserInfo.objects.update(is_active=False)
         body = auth_client.post(
             f"{DATASET_URL}/{dataset.pk}/aggregate",
@@ -239,8 +239,31 @@ class TestDatasetExecute:
         assert body["code"] == 1000
         series = body["data"]["series"]
         assert len(series) == 1
-        assert series[0]["name"] == "False"
+        # 本机 .mo 为中文、CI 无 .mo 回退英文（同源 gettext 两种落点都接受）
+        assert series[0]["name"] in {"禁用", "Disabled"}
         assert series[0]["value"] == UserInfo.objects.count()
+
+    def test_aggregate_group_label_maps_choice_codes(self, auth_client, dataset, model_registry):
+        """枚举码分组走 display 文案（gender 1 → 男/Male），不再输出裸码 "1"。"""
+        root = ModelLabelField.objects.get(name="system.userinfo")
+        ModelLabelField.objects.get_or_create(
+            name="gender",
+            parent=root,
+            defaults={"field_type": ModelLabelField.FieldChoices.DATA, "label": "性别"},
+        )
+        UserInfo.objects.update(gender=1)
+        body = auth_client.post(
+            f"{DATASET_URL}/{dataset.pk}/aggregate",
+            {"group_by": "gender", "metric": "count"},
+            format="json",
+        ).json()
+        assert body["code"] == 1000
+        series = body["data"]["series"]
+        assert len(series) == 1
+        label = series[0]["name"]
+        assert label not in {"0", "1", "2"}, "枚举码必须映射为可读文案"
+        # 模型 choices 的 gettext 文案（本机中文为「男性」，CI 无 .mo 回退英文）
+        assert label in {"男性", "Male"}
 
     def test_aggregate_rejects_non_numeric_sum(self, auth_client, dataset):
         body = auth_client.post(

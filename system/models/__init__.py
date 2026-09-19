@@ -22,6 +22,7 @@ from .leave import *
 from .log import *
 from .mask import *
 from .menu import *
+from .module import *
 from .oauth import *
 from .password import *
 from .permission import *

@@ -12,6 +12,7 @@
     python manage.py modules --preset standard        # 预演另一套预设（不改配置）
     python manage.py modules --disable analysis,chat  # 预演关闭若干模块
     python manage.py modules --preset core --enable chat --config   # 只输出 config.yml 片段
+    python manage.py modules --clear-override         # 恢复通道：删除后台覆盖行
 
 模块清单、裁剪语义与维护约定见 docs/architecture/模块化与功能裁剪.md。
 """
@@ -23,6 +24,7 @@ from common.core.modules import (
     CORE,
     PRESETS,
     all_module_specs,
+    clear_override,
     config_snippet,
     modules_report,
     preview_modules,
@@ -47,8 +49,21 @@ class Command(BaseCommand):
             action="store_true",
             help="展示该组合在当前库上的影响面（只读：隐藏的页面/权限点、受影响角色）",
         )
+        parser.add_argument(
+            "--clear-override",
+            action="store_true",
+            help="删除管理页写入的后台覆盖行（覆盖引用已移除模块导致启动失败时的恢复通道）",
+        )
 
     def handle(self, *args, **options):
+        # 恢复通道：必须在任何模块解析之前执行——覆盖行非法时解析本身就会 fail-fast
+        if options.get("clear_override"):
+            removed = clear_override()
+            self.stdout.write(
+                f"已清除后台覆盖行 {removed} 行；模块组合恢复为部署基线（config.yml / 环境变量），重启进程后生效。"
+            )
+            return
+
         preview = any(
             [
                 options.get("preset"),

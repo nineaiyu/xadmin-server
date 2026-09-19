@@ -117,13 +117,33 @@ def module_config(settings):
     模块组合变更在生产环境需重启进程；测试中通过 settings + reset_module_state()
     模拟同等效果（见 common/core/modules/ 包）。
     """
-    from common.core.modules import reset_module_state
+    from common.core.modules import clear_override, reset_module_state
 
     def _apply(preset="full", enable=(), disable=()):
         settings.MODULE_PRESET = preset
         settings.MODULE_ENABLE = list(enable)
         settings.MODULE_DISABLE = list(disable)
+        # 后台覆盖行优先于部署基线：残留行会让 settings 改动失效，先清干净
+        try:
+            clear_override()
+        except Exception:  # noqa: BLE001 无库/表未建时无需清理
+            pass
         reset_module_state()
 
     yield _apply
+    reset_module_state()
+
+
+@pytest.fixture
+def module_override():
+    """写入后台覆盖行（模拟管理页保存），并让解析结果按重启后语义生效。"""
+    from common.core.modules import clear_override, reset_module_state, save_override
+
+    def _apply(preset="full", enable=(), disable=(), reset=True):
+        save_override(preset=preset, enable=enable, disable=disable)
+        if reset:
+            reset_module_state()
+
+    yield _apply
+    clear_override()
     reset_module_state()

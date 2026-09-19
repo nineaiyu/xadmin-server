@@ -26,6 +26,7 @@ import os
 
 from django.apps import apps
 from django.db import DEFAULT_DB_ALIAS
+from django.utils import timezone
 
 from common.utils import get_logger
 
@@ -191,6 +192,26 @@ def _row_references_dropped(model, row, dropped: dict, notes: list) -> bool:
             )
             fields[field.name] = remaining
     return False
+
+
+def backfill_null_timestamps(model_names, *, using=DEFAULT_DB_ALIAS) -> int:
+    """回填种子行缺失的创建/更新时间，返回回填处数。
+
+    ``loaddata`` 以 raw 方式保存对象（``save_base(raw=True)`` 跳过 ``pre_save``），
+    ``auto_now_add``/``auto_now`` 不生效；种子 JSON 未显式给出时间的行落库为 NULL
+    ——列表页「更新时间」列整列空白（实测 dataset/screen/fieldpermission 等）。
+    导入后统一补当前时间；只更新 NULL 行，不动已有时间（含库内既有对象）。
+    """
+    now = timezone.now()
+    updated = 0
+    for model in model_names:
+        field_names = {field.name for field in model._meta.concrete_fields}
+        queryset = model._default_manager.using(using)
+        if "created_time" in field_names:
+            updated += queryset.filter(created_time__isnull=True).update(created_time=now)
+        if "updated_time" in field_names:
+            updated += queryset.filter(updated_time__isnull=True).update(updated_time=now)
+    return updated
 
 
 def build_seed_fixtures(model_names, file_root, target_dir, *, module_filter=None, using=DEFAULT_DB_ALIAS) -> tuple:

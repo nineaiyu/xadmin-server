@@ -17,7 +17,7 @@ from common.core.modules import ModuleSeedFilter
 from settings.models import Setting
 from system.models import *
 from system.utils.dict import invalid_dict_cache
-from system.utils.seed import build_seed_fixtures
+from system.utils.seed import backfill_null_timestamps, build_seed_fixtures
 
 
 class Command(LoadCommand):
@@ -89,6 +89,12 @@ class Command(LoadCommand):
                     self.style.WARNING(f"[种子冲突] 共跳过 {len(notes)} 处（库内数据优先，未改动库内对象）")
                 )
             super().handle(*fixture_labels, **options)
+        # loaddata 以 raw 方式保存（跳过 pre_save），auto_now_add/auto_now 不生效：
+        # 种子行缺失的 created_time/updated_time 落库为 NULL（列表页时间列空白），
+        # 导入后统一回填（只补 NULL 行，不动已有时间）
+        backfilled = backfill_null_timestamps(self.model_names)
+        if backfilled:
+            self.stdout.write(f"[种子时间] 回填 {backfilled} 处缺失的创建/更新时间")
         # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
         # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
         invalid_dict_cache()

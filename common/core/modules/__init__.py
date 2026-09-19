@@ -43,6 +43,12 @@ from .gate import (
     is_ws_path_trimmed,
     permission_prefixes_of,
 )
+from .override import (
+    ModuleOverrideData,
+    clear_override,
+    load_override,
+    save_override,
+)
 from .registry import (
     _MODULE_INDEX as _MODULE_INDEX,  # noqa: PLC0414 显式再导出（测试按私有名导入）
 )
@@ -50,17 +56,22 @@ from .registry import (
     MODULES,
     all_module_specs,
     config_snippet,
+    deployment_config,
+    desired_modules,
     disabled_module_ids,
     discovered_modules,
     enabled_module_ids,
     is_module_enabled,
+    module_diff,
     module_index,
     module_signature,
     modules_report,
+    override_active,
     preset_module_ids,
     preview_modules,
     reset_module_state,
     resolve_modules,
+    validate_deployment_config,
 )
 from .seeding import ModuleSeedFilter
 from .specs import (
@@ -84,13 +95,17 @@ __all__ = [
     "OPTIONAL",
     "PRESETS",
     "STANDARD",
+    "ModuleOverrideData",
     "ModuleResolution",
     "ModuleSeedFilter",
     "ModuleSpec",
     "ModuleTrimWebsocketMiddleware",
     "all_module_specs",
+    "clear_override",
     "compute_hidden_menu_pks",
     "config_snippet",
+    "deployment_config",
+    "desired_modules",
     "disabled_module_ids",
     "disabled_permission_prefixes",
     "disabled_route_patterns",
@@ -101,12 +116,17 @@ __all__ = [
     "invalidate_trimmed_caches",
     "is_module_enabled",
     "is_ws_path_trimmed",
+    "load_override",
+    "module_diff",
     "module_index",
     "module_signature",
     "modules_report",
+    "override_active",
     "permission_prefixes_of",
     "preset_module_ids",
     "preview_modules",
     "reset_module_state",
     "resolve_modules",
+    "save_override",
+    "validate_deployment_config",
 ]

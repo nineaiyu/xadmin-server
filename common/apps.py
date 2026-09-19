@@ -18,18 +18,20 @@ class CommonConfig(AppConfig):
         from . import tasks  # noqa
         from .signals import django_ready
 
-        excludes = ["migrate", "compilemessages", "makemigrations", "stop"]
+        # modules 命令自身会做模块配置校验，且提供 --clear-override 恢复通道：
+        # 若在此处先行 fail-fast，覆盖行引用已移除模块时将无法执行恢复命令。
+        excludes = ["migrate", "compilemessages", "makemigrations", "stop", "modules"]
         for i in excludes:
             if i in sys.argv:
                 return
         super().ready()
 
-        # 功能模块裁剪：校验模块配置（未知模块/内核被关/依赖未满足 → 启动期 fail-fast），
-        # 并在存在停用模块时清理菜单/权限缓存（配置变更需重启，重启清理一次即可）
-        from .core.modules import invalidate_trimmed_caches, resolve_modules
+        # 功能模块裁剪：校验部署基线（未知模块/内核被关/依赖未满足 → 启动期 fail-fast）。
+        # 后台覆盖层（DB 单行）的解析与受裁剪影响的缓存清理推迟到首次实际使用：
+        # 此处访问数据库会建立指向「尚未创建的测试库」的连接，破坏测试库创建。
+        from .core.modules import validate_deployment_config
 
-        resolve_modules()
-        invalidate_trimmed_caches()
+        validate_deployment_config()
 
         def background_task():
             time.sleep(0.1)

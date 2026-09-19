@@ -223,12 +223,14 @@ class PeriodicTaskSerializer(BaseModelSerializer):
         model = PeriodicTask
         fields = "__all__"
         table_fields = [
+            # 顺序即列表列序：enabled（启停开关，行内可交互）紧跟在任务名之后——
+            # 放右侧时会被固定操作列覆盖（可点区域落在覆盖区内，开关点不动）
             "pk",
             "name",
+            "enabled",
             "task",
             "crontab",
             "interval",
-            "enabled",
             "one_off",
             "last_run_at",
             "total_run_count",

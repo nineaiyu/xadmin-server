@@ -7,11 +7,13 @@ import os
 import pytest
 from django.conf import settings as dj_settings
 
-from common.core.modules import CORE, all_module_specs
+from common.core.modules import CORE, all_module_specs, override_active
 
 pytestmark = pytest.mark.django_db
 
 MODULE_API_PATH = "api/system/modules$"
+MODULE_APPLY_PATH = "api/system/modules/apply$"
+MODULE_RESET_PATH = "api/system/modules/reset$"
 MODULE_MENU_PATH = "/system/module/index"
 
 
@@ -57,6 +59,63 @@ class TestSystemModuleApi:
         assert api_client.get("/api/system/modules").status_code == 403
 
 
+class TestSystemModuleWriteApi:
+    """后台覆盖写入：校验同启动口径、保存不热更新、可恢复部署配置。"""
+
+    @staticmethod
+    def _apply(client, **payload):
+        return client.post("/api/system/modules/apply", payload, format="json")
+
+    def test_apply_persists_without_hot_reload(self, auth_client, module_config):
+        from system.models import ModuleOverride
+
+        module_config(preset="full")
+
+        resp = self._apply(auth_client, preset="standard", enable=[], disable=[])
+        assert resp.status_code == 200
+        data = resp.json()["data"]
+
+        assert data["override_active"] is True
+        assert data["desired"]["preset"] == "standard"
+        # 生效态不变（装配期语义，重启才生效）
+        assert data["preset"] == "full"
+        assert data["pending"] is True
+        assert "chat" in data["diff"]["disable"]
+        assert data["diff"]["preset_changed"] is True
+        assert data["restart_command"]
+        assert ModuleOverride.objects.filter(key="module").exists()
+
+    def test_apply_rejects_unknown_module(self, auth_client):
+        resp = self._apply(auth_client, preset="full", disable=["not-exist"])
+        assert resp.status_code == 400
+        assert "未知模块" in resp.json()["detail"]
+
+    def test_apply_rejects_core_disable(self, auth_client):
+        resp = self._apply(auth_client, preset="full", disable=["core_rbac"])
+        assert resp.status_code == 400
+        assert "内核模块不可关闭" in resp.json()["detail"]
+
+    def test_apply_rejects_invalid_preset(self, auth_client):
+        assert self._apply(auth_client, preset="huge").status_code == 400
+
+    def test_reset_clears_override(self, auth_client, module_override):
+        module_override(preset="standard")
+        assert override_active() is True
+
+        resp = auth_client.post("/api/system/modules/reset", {}, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["data"]["override_active"] is False
+        assert override_active() is False
+
+    def test_normal_user_cannot_apply(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        assert self._apply(api_client, preset="full").status_code == 403
+
+    def test_normal_user_cannot_reset(self, api_client, normal_user):
+        api_client.force_authenticate(user=normal_user)
+        assert api_client.post("/api/system/modules/reset", {}, format="json").status_code == 403
+
+
 class TestModuleSeedRegistration:
     """新页面/接口必须在种子里登记（否则新装库无菜单、无权限点可授）。"""
 
@@ -79,6 +138,22 @@ class TestModuleSeedRegistration:
         assert menu["fields"]["name"] == "SystemModule"
         assert menu["fields"]["path"] == MODULE_MENU_PATH
         assert menu["fields"]["component"] == "system/module/index"
+
+    @pytest.mark.parametrize(
+        "path,name",
+        [(MODULE_APPLY_PATH, "apply:SystemModule"), (MODULE_RESET_PATH, "reset:SystemModule")],
+    )
+    def test_write_permissions_registered(self, path, name):
+        rows = self._seed("menu.json")
+        perm = next((row for row in rows if row["fields"].get("path") == path), None)
+        assert perm is not None, f"{name} 未在 menu.json 登记权限点"
+        assert perm["fields"]["name"] == name
+        assert perm["fields"]["method"] == "POST"
+        assert perm["fields"]["menu_type"] == 2
+        assert perm["fields"]["parent"] == "3e48aac3-b1b8-4f5d-85b6-7ceac64ce2f0"
+
+        metas = {row["pk"]: row["fields"] for row in self._seed("menumeta.json")}
+        assert metas[perm["fields"]["meta"]]["title"]
 
     def test_menu_meta_registered(self):
         menus = {row["pk"]: row["fields"] for row in self._seed("menu.json") if row["fields"]["name"] == "SystemModule"}

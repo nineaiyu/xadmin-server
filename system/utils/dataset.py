@@ -12,7 +12,7 @@
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
-from django.db.models import Avg, Count, DateTimeField, Sum
+from django.db.models import Avg, BooleanField, Count, DateTimeField, Sum
 from django.db.models.functions import Trunc
 from django.utils.translation import gettext_lazy as _
 
@@ -105,9 +105,24 @@ def validate_dataset(instance) -> None:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(instance.bound_model, date_field))
 
 
-def _group_label(value) -> str:
-    """分组名：仅 None 落空串；False/0 等合法 falsy 分组值保留字符串形态。"""
-    return "" if value is None else str(value)
+def _group_label(value, model_field=None) -> str:
+    """分组名：布尔与枚举码走可读文案（i18n / choices display）；仅 None 落空串。
+
+    直接 ``str(value)`` 会把原始值画进图例：布尔字段出现两个同名「True」、
+    枚举码（如性别）只显示裸码「0」。False/0 等合法 falsy 分组值在映射后保留。
+    """
+    if value is None:
+        return ""
+    if model_field is not None:
+        if isinstance(model_field, BooleanField):
+            return str(_("Enabled") if value else _("Disabled"))
+        try:
+            label = dict(model_field.flatchoices or []).get(value)
+        except TypeError:  # 分组值不可哈希（JSON 等复杂类型）→ 回落原始字符串
+            label = None
+        if label is not None:
+            return str(label)
+    return str(value)
 
 
 def numeric_columns_of(dataset) -> list:
@@ -273,10 +288,15 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
             for row in rows
         ]
     else:
+        # 分组标签走字段元数据映射：布尔 → 启用/禁用、choices → display 文案
+        group_field = model._meta.get_field(group_by)
         queryset = queryset.values(group_by).annotate(agg_value=annotation).order_by("-agg_value")
         rows = queryset.values(group_by, "agg_value")[:AGGREGATE_BUCKET_LIMIT]
         series = [
-            {"name": _group_label(row[group_by]), "value": row["agg_value"] if row["agg_value"] is not None else 0}
+            {
+                "name": _group_label(row[group_by], group_field),
+                "value": row["agg_value"] if row["agg_value"] is not None else 0,
+            }
             for row in rows
         ]
     return {"name": group_by, "metric": metric, "series": series}

@@ -82,8 +82,22 @@ class ApprovalFlowViewSet(BaseModelSet):
             raise ValidationError({"detail": _("A flow with applications cannot be deleted")})
         return super().perform_destroy(instance)
 
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=["pks"],
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-destroy")
     def batch_destroy(self, request, *args, **kwargs):
-        """批量删除：静默排除有历史实例的流程，不因单条受保护而整批失败。"""
+        """批量删除：静默排除有历史实例的流程，不因单条受保护而整批失败。
+
+        ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
+        装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
+        """
         self.queryset = self.queryset.filter(instances__isnull=True)
         return super().batch_destroy(request, *args, **kwargs)
 

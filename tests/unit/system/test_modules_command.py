@@ -61,6 +61,41 @@ class TestModulesCommand:
 
 
 @pytest.mark.django_db
+class TestClearOverride:
+    """后台覆盖的恢复通道（覆盖行引用已移除模块导致解析失败时的唯一出口）。"""
+
+    def test_clear_override_removes_row(self):
+        from common.core.modules import override_active, reset_module_state, save_override
+
+        save_override(preset="standard")
+        reset_module_state()
+        assert override_active() is True
+
+        output = run_modules("--clear-override")
+
+        assert "已清除后台覆盖行 1 行" in output
+        assert override_active() is False
+        reset_module_state()
+
+    def test_clear_override_works_with_unresolvable_override(self):
+        from django.core.exceptions import ImproperlyConfigured
+
+        from common.core.modules import reset_module_state, resolve_modules, save_override
+
+        # 模拟「模块随 app 卸载后覆盖行残留」：写入未经校验的非法组合
+        save_override(preset="standard", disable=["removed-module"])
+        reset_module_state()
+        with pytest.raises(ImproperlyConfigured, match="未知模块"):
+            resolve_modules()
+
+        output = run_modules("--clear-override")
+
+        assert "已清除后台覆盖行 1 行" in output
+        reset_module_state()
+        assert resolve_modules().preset == "full"
+
+
+@pytest.mark.django_db
 class TestModulesImpact:
     """`--impact`：在某组合下、针对当前库的影响面（只读）。"""
 

@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
 
@@ -53,8 +53,22 @@ class DataDictViewSet(BaseModelSet, ImportExportDataAction):
             raise serializers.ValidationError({"is_locked": _("Locked dict cannot be deleted")})
         return super().perform_destroy(instance)
 
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                required=["pks"],
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="batch-destroy")
     def batch_destroy(self, request, *args, **kwargs):
-        """批量删除：内置字典静默排除，不因单条受保护而整批失败。"""
+        """批量删除：内置字典静默排除，不因单条受保护而整批失败。
+
+        ⚠️ 覆写基类 `BatchDestroyAction.batch_destroy` 必须保留 `@action`
+        装饰器（DRF 靠其 `.mapping` 注册路由），否则端点丢失、请求 405。
+        """
         self.queryset = self.queryset.filter(is_locked=False)
         return super().batch_destroy(request, *args, **kwargs)
 

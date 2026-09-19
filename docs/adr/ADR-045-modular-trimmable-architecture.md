@@ -260,3 +260,42 @@ consumer 之前拒绝（close `4404`，语义=通道不存在）。
 直通、HTTP scope 旁路、全量零开销）；`tests/integration/common/test_module_trim_drill.py`
 新增第六层运行期断言与**通道归属双向对齐**守护（routing 实际注册通道 ↔
 `WS_CHANNEL_OWNERSHIP` 登记表，新增通道漏声明即失败），裁剪矩阵演练 9 → 16 例。
+
+## 增量（2026-09-19）：后台覆盖层（管理页可编辑，待重启生效）
+
+模块管理页从只读升级为可编辑：选预设 + 增删模块，写入一行后台覆盖（`system.ModuleOverride`），
+重启进程后生效。语义见架构文档 §五之四。
+
+设计取舍：
+
+- **不写 config.yml**：生产镜像的 config.yml 是空的且未挂载（配置走 `env_file`），
+  写文件会在容器重建/升级后丢失；DB 覆盖跨 dev 与生产一致、随库持久化。
+- **不做热更新**：标准部署是 web / celery / beat 多容器，页面请求跑在 web 容器内且无
+  docker socket，无法重启兄弟容器；装配语义要求全进程一次性生效，热更新会留下
+  「接口已 404、beat 还在跑该模块任务」的半残状态。故页面只展示「待重启生效」的差异与
+  重启命令，不做页内重启。
+- **覆盖整体替换基线**：存在覆盖行时 `preset/enable/disable` 整体替换 config.yml / 环境变量，
+  不做叠加（避免两处配置互相影响的隐式语义）；无行时行为与改造前完全一致。
+- **写路径不失效进程缓存**：「当前生效」= 启动时 `lru_cache` 的 `resolve_modules()`；
+  「待生效」= 每次现算的 `desired_modules()`（**刻意不缓存**）。保存不得调用
+  `reset_module_state()`，否则等同于热更新。
+- **解析推迟到首次使用**：`AppConfig.ready()` 只校验部署基线（`validate_deployment_config()`，
+  只读 settings），覆盖行的读取推迟到首次实际解析（中间件装配期，早于任何请求）。
+  起因是实测：在 `ready()` 中读库会建立指向「尚未创建的测试库」的连接，破坏 pytest 的
+  测试库创建（`transaction=True` 用例大面积 `no such table`），Django 的「app 初始化期
+  访问数据库」告警正是指此。`load_override()` 本身仍 fail-safe（表未建 / 库不可达时回退
+  部署基线并告警），不阻断启动。
+- **缓存清理随之推迟**：`invalidate_trimmed_caches()` 不再在 `ready()` 调用，改由进程内
+  首次 `resolve_modules()` 触发一次（中间件装配期，仍早于请求）；无停用模块时零开销。
+- **校验同启动口径**：写入前调用同一个 `preview_modules()`，未知模块 / 内核被关 /
+  依赖不满足 → 400，文案与启动失败一致。
+- **逃生舱**：覆盖行引用已移除模块会让首次解析 fail-fast（服务不可用）且管理页不可用，
+  故 `manage.py modules` 增加 `--clear-override`（直接删行、不经过解析），并把 `modules`
+  加入 `ready()` 的 excludes，保证恢复命令能在解析失败前执行。
+- **空 ≠ 缺席**：覆盖行存在即生效（即使与基线等价）；要回到基线须显式清除覆盖。
+
+验证：`tests/unit/common/test_modules_override.py`（优先级 / fail-safe / 保存不改生效态 /
+diff）；`tests/unit/system/test_modules_api.py::TestSystemModuleWriteApi`（apply 落库与
+pending、非法组合 400、reset、普通用户 403）+ 种子权限点守护；
+`tests/unit/system/test_modules_command.py::TestClearOverride`（恢复通道）；
+E2E `system-pages.e2e.ts`（保存 → 待重启差异 → 恢复）。
