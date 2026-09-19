@@ -43,6 +43,9 @@ FLOW_CODES = ("demo_leave", "demo_expense")
 # 演示用户：申请人 / 审批人（unusable password，不可登录）
 DEMO_APPLIER = "demo_flow_lily"
 DEMO_APPROVER = "demo_flow_chen"
+# 报销类实例申请人：场景模板（seed_demo_org）创建的示例员工——其部门主管为 demo_lead，
+# 满足「部门主管审批」节点「申请人有部门且主管非本人」的解析条件
+DEMO_STAFF = "demo_staff"
 # 节点审批人改写目标：双用户互审——任一演示用户发起，另一人必有待办
 DEMO_ASSIGNEE_VALUE = f"{DEMO_APPLIER},{DEMO_APPROVER}"
 
@@ -146,7 +149,7 @@ class Command(BaseCommand):
     def _pending_task(self, instance: ApprovalInstance, assignee: UserInfo) -> ApprovalNodeTask:
         return instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING, assignee=assignee).first()
 
-    def _create_demo_instances(self, applier: UserInfo, approver: UserInfo, superuser: UserInfo):
+    def _create_demo_instances(self, applier: UserInfo, approver: UserInfo):
         from system.models import ApprovalFlow
 
         if ApprovalInstance.objects.filter(pk__in=INSTANCE_PKS).exists():
@@ -159,7 +162,19 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("demo flows missing (run load_init_json first), skip instances"))
             return
 
+        # 报销类实例的申请人必须有部门且部门主管非本人：场景模板的「部门主管审批」节点按
+        # 申请人部门动态解析审批人，超管（无部门）或部门主管自己发起都会无人可审（引擎
+        # fail-closed 拒绝），故统一由示例员工（seed_demo_org 创建，主管为 demo_lead）发起。
+        staff = UserInfo.objects.filter(username=DEMO_STAFF).first()
+        if staff is None:
+            self.stdout.write(
+                self.style.WARNING(f"{DEMO_STAFF} missing (run seed_demo_org first); expense instances skipped")
+            )
+
         now = timezone.now()
+        # 注意：form_data 必须与流程「当前」form_schema 的必填字段对齐——
+        # demo_expense 的 schema 会被 seed_demo_org 场景模板改写为 amount + reason(必填)，
+        # 若仍按 loadjson 原始字段（invoice_no/remark）构造，实例会被引擎校验拒绝而跳过
         plan = [
             # (固定 pk, 流程, 申请人, 标题, form_data, 基线时间, 推进脚本)
             (
@@ -174,20 +189,20 @@ class Command(BaseCommand):
             (
                 INSTANCE_PKS[1],
                 expense,
-                superuser,
-                "管理员的差旅报销（演示）",
-                {"amount": 680, "invoice_no": "FP202609080001", "remark": "差旅餐费"},
+                staff,
+                "员工的差旅报销（演示）",
+                {"amount": 680, "reason": "上海出差餐费与市内交通"},
                 now - timedelta(days=5),
-                "approve_all",  # 金额 <1000 不经总经理节点：直接通过
+                "approve_all",  # 金额 <1000 不经财务复核：部门主管通过即终态
             ),
             (
                 INSTANCE_PKS[2],
                 expense,
-                applier,
-                "李莉的设备采购报销（演示）",
-                {"amount": 5200, "invoice_no": "FP202609100002", "remark": "测试设备采购"},
+                staff,
+                "员工的设备采购报销（演示）",
+                {"amount": 5200, "reason": "测试设备采购（性能压测机）"},
                 now - timedelta(days=3),
-                "approve_all",  # 金额 ≥1000：两级全通过
+                "approve_all",  # 金额 ≥1000：部门主管 + 财务复核两级全通过
             ),
             (
                 INSTANCE_PKS[3],
@@ -201,13 +216,15 @@ class Command(BaseCommand):
             (
                 INSTANCE_PKS[4],
                 expense,
-                approver,
-                "陈工的办公用品报销（演示）",
-                {"amount": 1200, "invoice_no": "FP202609130003", "remark": "部门耗材"},
+                staff,
+                "员工的办公用品报销（演示）",
+                {"amount": 1200, "reason": "部门办公耗材采购"},
                 now - timedelta(hours=2),
-                "pending_second",  # 审批人自己发起：首节点由申请人侧通过，停在第二节点
+                "pending_second",  # 部门主管通过后停在财务复核：审批人有待办
             ),
         ]
+        if staff is None:
+            plan = [row for row in plan if row[1] is leave]
         for pk, flow, applicant, title, form_data, baseline, action in plan:
             instance, error = create_instance(flow=flow, applicant=applicant, title=title, form_data=form_data)
             if error:
@@ -245,11 +262,10 @@ class Command(BaseCommand):
             return baseline + offset
 
         if action == "approve_all":
+            # 逐节点通过：以「当前待办任务的真实处理人」执行审批——场景模板首节点是
+            # 按申请人部门动态解析的「部门主管」，不能假定为固定的演示审批人
             while True:
-                task = (
-                    instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING, assignee=approver).first()
-                    or instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING, assignee=applicant).first()
-                )
+                task = instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING).first()
                 if task is None:
                     break
                 ok, _detail = approve_task(task.pk, task.assignee, "情况属实，同意（演示）")
@@ -419,13 +435,9 @@ class Command(BaseCommand):
 
         applier = self._ensure_user(DEMO_APPLIER, "演示申请人-李莉")
         approver = self._ensure_user(DEMO_APPROVER, "演示审批人-陈工")
-        superuser = UserInfo.objects.filter(is_superuser=True, is_active=True).order_by("pk").first()
-        if superuser is None:
-            self.stdout.write(self.style.WARNING("no active superuser found; superuser-initiated case skipped"))
 
         self._rebind_assignees()
-        if superuser is not None:
-            self._create_demo_instances(applier, approver, superuser)
+        self._create_demo_instances(applier, approver)
         self._create_demo_requests(applier, approver)
         self._create_demo_submissions(applier)
         self.stdout.write(self.style.SUCCESS("seed_demo_flows done"))

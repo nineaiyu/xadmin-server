@@ -186,7 +186,9 @@ def test_all_and_clean_roundtrip(admin, menus, field_trees, builtin_flows, demo_
     # 组织 + 内容 + 审批实例 + 请假全部就位
     assert DeptInfo.objects.filter(code__in=["demo_rd", "demo_fin"]).count() == 2
     assert UserInfo.objects.filter(username="demo_lead").exists()
-    assert ApprovalInstance.objects.filter(pk__in=FLOW_INSTANCE_PKS).count() >= 2
+    # 5 条演示实例须全部建成：form_data 必须与流程当前 form_schema 的必填字段对齐，
+    # 任一流程字段契约漂移都会在此暴露（曾有报销实例因缺「报销事由」被静默跳过）
+    assert ApprovalInstance.objects.filter(pk__in=FLOW_INSTANCE_PKS).count() == len(FLOW_INSTANCE_PKS)
     assert (
         ApprovalRequest.objects.filter(pk__in=[f"6eed0002-0000-4000-8000-00000000000{i}" for i in range(1, 6)]).count()
         == 5
