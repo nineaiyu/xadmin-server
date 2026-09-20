@@ -233,6 +233,11 @@ def sync_business_status_handler(sender, instance, status=None, reason="", **kwa
             from system.utils.dform_flow import sync_dform_instance
 
             sync_dform_instance(instance, status, reason)
+        elif biz_type == "demo_book":
+            # demo 示例 app 的上架审批回写（demo 未装载时不会产生该 biz_type 的实例）
+            from demo.services import sync_book_instance
+
+            sync_book_instance(instance, status, reason)
         else:
             logger.warning("no business sync handler for biz_type:%s", biz_type)
     except Exception:

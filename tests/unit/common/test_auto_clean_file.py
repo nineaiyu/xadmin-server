@@ -96,16 +96,23 @@ class TestOwnFileCleanup:
 
 
 class TestRelatedFileCleanup:
-    def test_book_delete_cascades_uploadfile(self, superuser, upload_file, dept):
-        """Book.file -> UploadFile：Book 非 SoftDeleteModel，删除仍为物理删除；
-        级联清理的附件记录按 语义软删除（由 purge_soft_deleted 周期任务兜底物理清除），
-        物理文件不再随级联立即删除。"""
+    def test_book_soft_delete_keeps_file_hard_delete_cascades(self, superuser, upload_file, dept):
+        """Book.file -> UploadFile（Book 为软删除模型，MRO 首位 SoftDeleteModel）：
+        - delete() 仅标记 deleted_at（回收站可恢复，附件记录保留）；
+        - hard_delete() 走物理删除链，级联清理附件记录（按 UploadFile 软删语义，
+          物理文件由周期任务兜底清除）。"""
         book = Book.objects.create(
             name="书", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file
         )
         book.delete()
         assert not Book.objects.filter(pk=book.pk).exists()
-        # 附件记录软删除进入回收站，等待周期任务清除
+        assert Book.all_objects.filter(pk=book.pk, deleted_at__isnull=False).exists()
+        # 软删不级联：附件记录保留（回收站恢复后仍可用）
+        assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=True).exists()
+
+        # 物理清除：走 AutoCleanFileMixin 的删除链，附件记录软删除进入回收站
+        book.hard_delete()
+        assert not Book.all_objects.filter(pk=book.pk).exists()
         assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=False).exists()
 
     def test_m2m_files_cleaned_on_owner_delete(self, superuser, upload_file, dept):
@@ -143,6 +150,7 @@ class TestDeleteQueryProfile:
             for b in Book.objects.filter(pk__in=pks):
                 b.delete()
 
-        assert len(_business_queries(per_row_ctx)) >= 3  # 逐行删除：每行至少一条 DELETE
+        assert len(_business_queries(per_row_ctx)) >= 3  # 逐行删除：每行至少一条 SQL（软删为 UPDATE）
         assert Book.objects.count() == 0
-        assert not UploadFile.objects.filter(pk=upload_file.pk).exists()
+        # 软删不级联清理附件（回收站恢复后仍可用）
+        assert UploadFile.all_objects.filter(pk=upload_file.pk, deleted_at__isnull=True).exists()

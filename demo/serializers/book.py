@@ -26,11 +26,13 @@ class BookSerializer(BaseModelSerializer):
                     "name",
                     "isbn",
                     "category",
+                    "status",
                     "is_active",
                     "author",
                     "publisher",
                     "publication_date",
                     "price",
+                    "on_shelf_time",
                     "created_time",
                     "updated_time",
                 ],
@@ -38,7 +40,8 @@ class BookSerializer(BaseModelSerializer):
             TabsColumn("管理员", ["admin", "admin2", "managers", "managers2"]),
             TabsColumn("文件信息", ["avatar", "cover", "book_file", "file", "files"]),
         ]
-        fields = ["pk", "block"]
+        # deleted_at 随接口返回，供回收站抽屉展示删除时间（软删除模型专用）
+        fields = ["pk", "block", "deleted_at"]
         ########### 单表单结束 ################
 
         ############### 2.默认的单表单 ##############
@@ -55,6 +58,7 @@ class BookSerializer(BaseModelSerializer):
             "pk",
             "cover",
             "category",
+            "status",
             "name",
             "is_active",
             "isbn",
@@ -62,6 +66,7 @@ class BookSerializer(BaseModelSerializer):
             "publisher",
             "publication_date",
             "price",
+            "on_shelf_time",
             "book_file",
             "file",
             "files",
@@ -76,6 +81,8 @@ class BookSerializer(BaseModelSerializer):
         # # 观察前端页面变化和 search-columns 请求的数据
         extra_kwargs = {
             "pk": {"read_only": True},  # 表示pk字段只读
+            # 上架状态由「提交上架」审批流驱动（终态经信号回写），接口层只读
+            "status": {"read_only": True},
             "admin": {
                 "attrs": ["pk", "username"],
                 "required": True,
@@ -109,7 +116,7 @@ class BookSerializer(BaseModelSerializer):
             # ignore_field_permission 忽略上传文件的字段控制权限
             "file": {
                 "attrs": ["pk", "filepath", "filesize", "filename"],
-                "required": True,
+                "required": False,  # 可选附件（与模型层 blank=True/null=True 同口径）
                 "format": "{filename}({pk})",
                 "ignore_field_permission": True,
                 "input_type_suffix": "image",
@@ -137,13 +144,14 @@ class BookSerializer(BaseModelSerializer):
     # category = LabeledChoiceField(choices=models.Book.CategoryChoices.choices,
     #                               default=models.Book.CategoryChoices.FICTION)
 
-    # 自定义 input_type ，设置了 read_only=True 意味着只能通过详情查看，在新增和编辑页面不展示该字段
-    # input_type 仅是前端组件渲染识别用， 可以自定义input_type ,但是前端组件得对定义的input_type 进行渲染
+    # 自定义 input_type 教学字段：input_type 仅是前端组件渲染识别用（可自定义，但前端组件需对
+    # 该 input_type 实现渲染）——`boolean` 由 RePlusPage 自动渲染为开关（绑定 row[field] 并调
+    # partialUpdate 回写）。这里用 source=is_active 打通完整读写路径：列表开关点击即切换启用状态。
     # 前端自定义组件库 src/components/RePlusPage/src/components
     # 渲染组件定义 src/components/RePlusPage/src/utils/columns.tsx
-    block = input_wrapper(serializers.SerializerMethodField)(
-        read_only=True, input_type="boolean", label="自定义input_type"
+    block = input_wrapper(serializers.BooleanField)(
+        source="is_active",
+        required=False,
+        input_type="boolean",
+        label="是否启用（自定义 input_type 演示）",
     )
-
-    def get_block(self, obj) -> bool:
-        return obj.is_active

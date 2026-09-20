@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""一键加载全部演示数据：组织 / 审批 / 请假 / 内容 / 演示用户。
+"""一键加载全部演示数据：图书示例 / 组织 / 审批 / 请假 / 内容 / 演示用户。
 
 等价于依次执行：
 
+    seed_demo_book     图书上架审批示例（菜单/权限点/流程/删除二次确认）
     seed_demo_org      组织 + 预置角色（四层权限）+ 场景模板
     seed_demo_flows    审批实例 + 轻量审批单 + 表单提交
     seed_demo_leave    请假业务闭环（通过/驳回/待审/草稿）
@@ -39,6 +40,7 @@ class Command(BaseCommand):
             call_command("seed_demo_clean")
 
         steps = [
+            ("图书上架审批示例（demo app：菜单/权限点/流程/二次确认）", lambda: call_command("seed_demo_book")),
             ("组织与四层权限", lambda: call_command("seed_demo_org")),
             ("审批实例与表单提交", lambda: call_command("seed_demo_flows")),
             ("请假业务闭环", lambda: call_command("seed_demo_leave")),

@@ -280,9 +280,9 @@ def main() -> None:
 
     from django.core import management
 
-    # run_syncdb=True 对齐 Django 测试库行为（settings_test 启用的 demo app
-    # 迁移文件已移除，run-syncdb 按当前模型直接建表；否则级联删除触及
-    # demo_book 时报 no such table，用户/部门删除接口 500）
+    # run_syncdb=True 对齐 Django 测试库行为（未携带迁移文件的 app 按当前模型直接建表；
+    # demo app 已恢复标准迁移并随 migrate 正常建表——历史上"级联删除触及 demo_book
+    # 报 no such table"的根因是无迁移且未 run-syncdb，已由提交迁移收口）
     management.call_command("migrate", run_syncdb=True, verbosity=0, interactive=False)
     print("migrate done")
 

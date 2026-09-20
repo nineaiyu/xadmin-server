@@ -4,11 +4,12 @@
 
 执行顺序（先业务数据、后组织与用户，避免外键拦截）：
 
-1. ``seed_demo_content --clean-only``  通知/聊天/知识库/文件/委托/Webhook/应用；
-2. ``seed_demo_leave --clean-only``    演示请假单与关联流程实例；
-3. ``seed_demo_flows --clean-only``    演示流程实例/轻量审批单/表单提交；
-4. ``seed_demo_org --clean-only``      示例组织/角色/四层权限/场景模板；
-5. ``seed_demo_users --clean-only``    批量演示用户（demo_数字 前缀，硬删）；
+1. ``seed_demo_book --clean-only``     图书上架示例（菜单/权限点/流程/二次确认开关）；
+2. ``seed_demo_content --clean-only``  通知/聊天/知识库/文件/委托/Webhook/应用；
+3. ``seed_demo_leave --clean-only``    演示请假单与关联流程实例；
+4. ``seed_demo_flows --clean-only``    演示流程实例/轻量审批单/表单提交；
+5. ``seed_demo_org --clean-only``      示例组织/角色/四层权限/场景模板；
+6. ``seed_demo_users --clean-only``    批量演示用户（demo_数字 前缀，硬删）；
 6. 回滚流程节点审批人改写（恢复 loadjson/approvalflownode.json 种子值）与
    演示版本快照（remark="演示审批人配置"，version 回落到现存快照）；
 7. 回滚「演示部门」负责人（恢复 loadjson/deptinfo.json 种子值）；
@@ -56,6 +57,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # 1) 各命令自清理（顺序 = 业务数据 → 组织 → 用户，避免外键拦截）
+        call_command("seed_demo_book", clean_only=True)
         call_command("seed_demo_content", clean_only=True)
         call_command("seed_demo_leave", clean_only=True)
         call_command("seed_demo_flows", clean_only=True)
