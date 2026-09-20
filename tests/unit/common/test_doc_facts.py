@@ -43,5 +43,12 @@ class TestCheckerLogic:
         assert "未匹配到" in violations[0]
 
     def test_missing_doc_is_reported(self, tmp_path):
-        violations = check_doc_facts.collect_violations(tmp_path, check_doc_facts.FACTS)
+        # docs_root / client_root 显式指向不存在目录：跨仓事实走"根缺失跳过"分支，
+        # 断言只针对本地受保护事实（避免测试耦合本机跨仓检出状态）
+        violations = check_doc_facts.collect_violations(
+            tmp_path,
+            check_doc_facts.FACTS,
+            docs_root=tmp_path / "none",
+            client_root=tmp_path / "none",
+        )
         assert violations and all("文档不存在" in item for item in violations)

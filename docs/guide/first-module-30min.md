@@ -8,7 +8,7 @@
 
 | 步骤 | 内容 | 预算 |
 |------|------|------|
-| 0 | 认识「活样例」demo.Book | 5 min |
+| 0 | 认识参照样例 demo.Book | 5 min |
 | 1 | 建 app + 定义模型 | 5 min |
 | 2 | 注册 `XADMIN_APPS` + 迁移 | 3 min |
 | 3 | `generate_crud` 生成四件套 + 前端页面 + 菜单种子 | 5 min |
@@ -21,9 +21,10 @@
 2. 前端列表页由后端**元数据**驱动：序列化器的 `fields` / `table_fields` 决定表格列与表单；
 3. 权限码是 `动作:组件名`（如 `list:CustomerViewSet`），**必须先入库授权**（否则非超管 403）。
 
-## 步骤 0：认识活样例 demo.Book（5 min）
+## 步骤 0：认识示例 app demo.Book（5 min）
 
-demo app 在「无 config.yml 的开发兜底」下默认启用（`XADMIN_APPS: [demo]`），它就是一个标准四件套：
+demo app 在「无 config.yml 的开发兜底」下默认启用（`XADMIN_APPS: [demo]`），它是一个**官方示例**
+（四件套 + 上架审批 / 二次确认演示，与框架同步演进）：
 
 | 层 | 文件 | 说明 |
 |----|------|------|
@@ -33,7 +34,8 @@ demo app 在「无 config.yml 的开发兜底」下默认启用（`XADMIN_APPS: 
 | 路由 | `demo/urls.py` + `demo/config.py` | `config.py::URLPATTERNS` 由 `XADMIN_APPS` 自动注入总路由 |
 | 前端 | `xadmin-client/src/views/demo/book/` | `index.vue`（一行 `RePlusPage`）+ `utils/{api.ts,hook.tsx}` |
 
-> demo 没有内置菜单——页面还不能从侧栏进入。这正是你要练的第一个动作（步骤 4）。
+> demo 的菜单 / 权限点 / 示例流程由 `python manage.py seed_demo_book` 灌入（`seed_demo_all` 已编排）：
+> 执行后侧栏「示例 → 图书管理」开箱可用；不执行时也可按步骤 4 的思路为你的 app 手工建菜单。
 
 ## 步骤 1：建 app 与模型（5 min）
 
@@ -151,7 +153,9 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 
 ## 下一步阅读
 
+- [architecture/component-handbook.md](../architecture/component-handbook.md)：**组件手册**——组件职责 / 用法 / 依赖 / 配置项 / 扩展点
+- [guide/recipes.md](recipes.md)：**扩展流程处方集**——加字段 / 加按钮 / 自定义渲染器 / 定时任务等 22 条处方
+- [architecture/方案选型与对比.md](../architecture/方案选型与对比.md)：方案选择与对比（元数据驱动 vs 手写等）
 - [framework-cookbook.md](../architecture/framework-cookbook.md)：ViewSet 选型、Action 覆写点、前端契约
 - [模块化与功能裁剪.md](../architecture/模块化与功能裁剪.md)：把模块变成可裁剪功能项
 - [dev-pitfalls.md](../dev-pitfalls.md)：新手陷阱清单（元数据 / 权限码 / 渲染器注册等）
-- [plans/二次开发友好化改造方案-2026.09.md](../plans/二次开发友好化改造方案-2026.09.md)：本教程背后的改造台账

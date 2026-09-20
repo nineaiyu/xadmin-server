@@ -1,18 +1,20 @@
-# 三层权限体系设计（API / 数据 / 字段）
+# 权限体系设计（API / 数据 / 字段 + 应用级授权）
 
-> 适用版本：xadmin-server 4.2.5+（T2.6 梳理，2026-09-05）
-> 本文是三层权限的**整体设计文档**；操作教程见 [data-permission.md](data-permission.md)
+> 适用版本：xadmin-server 4.2.5+（T2.6 梳理，2026-09-05；2026-09 增补第四道「应用级授权」）
+> 本文是权限体系的**整体设计文档**；操作教程见 [data-permission.md](data-permission.md)
 > 与 [field-permission.md](field-permission.md)。
 
 ## 一、总览
 
-xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序生效：
+xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人访问令牌）凭证访问时，在其上额外叠加
+第四道「应用级授权」收敛（模型 × 动作 × 字段 × 行）。在一次 HTTP 请求中按以下顺序生效：
 
 ```
 请求 → ① API 权限（能不能访问这个接口）
      → ② 数据权限（能访问哪些行）
      → ③ 字段权限（能序列化出哪些列）
      → 视图处理 → 响应
+        （PAT 应用凭证下：模型×动作判定 → 行级 AND → 字段级 AND，三道只收紧不提权，见 §2.4）
 ```
 
 | 层          | 入口                               | 核心模块                         | 粒度           | 载体                                              |
@@ -20,10 +22,11 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 | ① API/菜单权限 | DRF `DEFAULT_PERMISSION_CLASSES` | `common/core/permission.py`  | URL × Method | `Menu`（menu_type=PERMISSION）× `UserRole`        |
 | ② 数据权限     | `DEFAULT_FILTER_BACKENDS`        | `common/core/filter.py`      | 表的行          | `DataPermission`（规则 JSON）× 角色/用户                |
 | ③ 字段权限     | `BaseModelSerializer.__init__`   | `common/core/serializers.py` | 表的列          | `FieldPermission`（角色 × 菜单）× `ModelLabelField` 树 |
+| ④ 应用级授权    | 权限类 + 过滤后端 + 序列化层三处挂载       | `system/utils/api_grant.py`  | 模型 × 动作 × 字段 × 行 | `ApiApplication.grant`（开放平台 API 应用，仅 PAT 凭证）   |
 
-三条层共享同一套角色-用户-部门关系（`UserInfo → UserRole → Menu`，部门可挂角色），并共享 `MagicCacheData` 缓存体系与信号失效链路。
+前三层共享同一套角色-用户-部门关系（`UserInfo → UserRole → Menu`，部门可挂角色），并共享 `MagicCacheData` 缓存体系与信号失效链路；第四层挂在应用凭证维度，与前三层取交集。
 
-**超管旁路**：`is_superuser=True` 的用户三层全部跳过（`request.ignore_field_permission = True`）。
+**超管旁路**：`is_superuser=True` 的用户前三层全部跳过（`request.ignore_field_permission = True`）；但应用授权在超管 + PAT 凭证场景下仍生效（`apply_grant_row_scope` 对 owner 同样收敛）。
 
 ## 二、第一层：API / 菜单权限
 
@@ -49,9 +52,27 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 ### 2.3 关键行为
 
 - **白名单**：`settings.PERMISSION_WHITE_URL`（正则 → 方法集合），命中则完全跳过权限。
+  - 命名提示：`PERMISSION_WHITE_REURL` 是各业务 app 的 `config.py` 导出的扩展变量（形如
+    `PERMISSION_WHITE_REURL = [("^/api/demo/", ["GET", "POST"])]`），由 `common/core/utils.py`
+    的 `auto_register_app_url` 在注册路由时合并进 `settings.PERMISSION_WHITE_URL`——运行时真正直读的
+    只有后者。
 - **fail-closed**：权限缓存或 DB 查询抛异常时返回 403，绝不放行（PERF-01 修复项）。
 - **字段权限开关**：`settings.PERMISSION_FIELD_ENABLED` 为 False 时跳过第三层。
-- 通过校验后，`request.user.menu` 被注入当前菜单（供第二/三层与导入导出复用），`request.fields` 注入字段权限集合。
+- 通过校验后，`request.user.menu` 被注入当前菜单（供第二/三层与导入导出复用），`request.fields`
+  由权限类 `IsAuthenticated._load_field_permission` 注入字段权限集合（非中间件）。
+
+### 2.4 应用级授权（开放平台 API 应用，第四道收敛）
+
+仅供以 **PAT 应用凭证**（`request.auth` 绑定 `ApiApplication`）访问的请求生效；JWT / 匿名请求不适用。
+实现见 `system/utils/api_grant.py`，由三处挂载叠加在原有三层之上：
+
+| 维度 | 挂载点 | 行为 |
+|------|--------|------|
+| 模型 × 动作 | `IsAuthenticated`（`enforce_application_grant`） | 白名单模式：应用存在生效规则时必须命中「模型（精确或 `*`）× 动作（或 `*`）」，否则 `PermissionDenied` |
+| 行级 | `BaseDataPermissionFilter`（`apply_grant_row_scope`） | `row_filter` 编译为 `Q`，AND 叠加在数据权限过滤之后（超管 owner 同样收敛） |
+| 字段级 | `BaseModelSerializer`（`apply_grant_fields`） | `fields` 非空时与用户字段权限取交集，且穿透字段权限豁免 |
+
+语义红线：**只收紧不提权**，全部与前三层取交集；应用无生效规则时为兼容模式（判定跳过，存量接入零影响）。
 
 ## 三、第二层：数据权限
 
@@ -73,9 +94,9 @@ xadmin 的权限模型由三层组成，在一次 HTTP 请求中按以下顺序�
 | `value.text`           | 文本匹配             | 字符串      |
 | `value.json`           | JSON 匹配          | JSON     |
 | `value.all`            | 放行全部数据           | `*`      |
-| `value.datetime`       | 距当前时间（秒）         | 整数       |
-| `value.datetime.range` | 时间范围选择器          | 区间       |
-| `value.date`           | 距当前时间（秒，date 精度） | 整数       |
+| `value.datetime`       | 绝对时间点（解析时间字符串）     | 时间字符串      |
+| `value.datetime.range` | 时间区间（两个绝对时间点）       | `[起, 止]`   |
+| `value.date`           | 距当前时间的秒偏移（负=过去，正=未来） | 整数 / 小数    |
 | `value.user.id`        | 「我的」数据（当前用户 ID）  | `*`      |
 | `value.user.dept.id`   | 本部门数据            | `*`      |
 | `value.user.dept.ids`  | 本部门及下级部门数据       | `*`      |
@@ -181,7 +202,7 @@ user.rules.all()  # 用户直接挂载的数据权限
 |--------------------------|----------------------------------------------------------------------------------|
 | 信号失效真实链路 + m2m_changed   | `tests/unit/system/test_signal_handler.py`                                       |
 | API 权限 fail-closed / 白名单 | `tests/unit/common/test_core_permission.py`                                      |
-| 数据权限 12+ 种规则过滤           | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
+| 数据权限 16 种规则过滤            | `tests/unit/common/test_data_permission_filter.py`、`test_dept_tree_cache.py`     |
 | 字段权限裁剪                   | `tests/unit/common/test_serializer_field_permission.py`                          |
 | 三层联动端到端（越权验证）            | `tests/integration/demo/test_book_viewset.py::TestBookDataPermissionIntegration` |
 
@@ -189,4 +210,4 @@ user.rules.all()  # 用户直接挂载的数据权限
 
 - 菜单权限经角色控制后**不再**叠加数据权限过滤（避免双重配置，见 `get_user_menu_queryset` 注释）——给角色配数据权限即可，无需两处都配。
 - `get_user_permission` 缓存 24h 是性能取舍，正确性由信号失效保证；若新增绕过 ORM 的写路径，必须补信号或手动失效。
-- `request.fields` 在权限中间件注入，非 DRF 场景（WebSocket 等）需自行处理字段权限。
+- `request.fields` 由权限类 `IsAuthenticated._load_field_permission` 注入（非 DRF 中间件），非 DRF 权限类场景（WebSocket 等）需自行处理字段权限。

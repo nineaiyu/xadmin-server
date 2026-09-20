@@ -104,7 +104,7 @@ def _load_grants(user_obj, dq):
 @timeit
 @count_sql_queries
 def get_filter_queryset(queryset: QuerySet, user_obj, extra_grants=None):
-    """数据权限过滤入口（薄壳；规则编译与代数在 common/core/data_scope.py）。
+    """数据权限过滤入口（薄壳；规则编译与代数在 common/core/data_scope/ 包）。
 
     合并语义（对齐行业「取最宽生效」）：
     - 部门祖先链（含本部门，仅启用部门）与个人授权汇入同一授权池；

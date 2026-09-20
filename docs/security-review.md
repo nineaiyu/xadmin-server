@@ -3,7 +3,7 @@
 > 背景：半年规划 P5/T5.3「安全自查二期」。本文档归档每轮安全自查的范围、结论与遗留项，
 > 后续自查在本文追加新章节，不另立文档。
 > 关联：ADR-001（CSRF/JWT-only 决策）、docs/exception-handling.md（错误脱敏）、
-> docs/architecture/permission.md（三层权限）。
+> docs/architecture/permission.md（权限体系）。
 
 ## 二期自查（2026-09-06）
 
@@ -15,7 +15,7 @@
 | 项      | 内容                                                                                                                                                                                                                                                                           |
 |--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 风险     | 历史版本 `CELERY_FLOWER_AUTH` 默认值硬编码弱口令（`flower:flower123.` / `flower:flower` 双兜底），部署方不改即带弱口令暴露监控面板                                                                                                                                                                              |
-| 处置     | ① `server/conf.py` 默认值改为空串；② `common/management/commands/services/hands.py` 移除 `or 'flower:flower'` 兜底；③ `services/flower.py` 启动守卫：未配置认证时仅允许绑定 `127.0.0.1`/`localhost`，绑定其他地址直接 `sys.exit(11)` 拒绝启动，未配置认证时不再向 flower 传空的 `--basic-auth=` 参数；④ `config_example.yml` 补充配置示例与说明 |
+| 处置     | ① `server/conf/` 默认值改为空串；② `common/management/commands/services/hands.py` 移除 `or 'flower:flower'` 兜底；③ `common/management/commands/services/services/flower.py` 启动守卫：未配置认证时仅允许绑定 `127.0.0.1`/`localhost`，绑定其他地址直接 `sys.exit(11)` 拒绝启动，未配置认证时不再向 flower 传空的 `--basic-auth=` 参数；④ `config_example.yml` 补充配置示例与说明 |
 | 验收     | 全仓 grep 无 `flower123`/`flower:flower` 硬编码残留；生产部署必须显式配置 `CELERY_FLOWER_AUTH` 才能对外暴露监控面板                                                                                                                                                                                       |
 | 面板访问链路 | 管理台经 `common/celery/flower.py` 代理访问，代理侧自动携带所配置的 basic-auth，前端无需感知                                                                                                                                                                                                            |
 
@@ -29,7 +29,7 @@
 
 ### 3. Referer 校验 ✅ 默认关闭属合理决策
 
-- `REFERER_CHECK_ENABLED`（`server/conf.py` settings 段，实现在 `server/middleware.py`）默认 `False`。
+- `REFERER_CHECK_ENABLED`（`server/conf/` settings 段，实现在 `server/middleware.py`）默认 `False`。
 - JWT-only 架构（ADR-001）下 API 不依赖 Cookie 凭证，CSRF/Referer 伪造面远小于 Cookie 会话架构；开启开关可作为纵深防御选项。
 - 结论：维持默认关闭；面向纯浏览器 Cookie 场景的部署可在 config.yml 打开。
 
@@ -90,11 +90,11 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 ## 遗留项
 
-| 项                              | 归属           | 说明                                                              |
+| 项                              | 状态           | 说明                                                              |
 |--------------------------------|--------------|-----------------------------------------------------------------|
-| 越权矩阵测试（水平/垂直越权用例 ≥10 条入 CI）    | ✅ 开发完成       | 2026-09-06 交付 19 例（M01-M17）入 `tests/integration/`，实跑验证待测试窗口，见上节 |
-| 上传 magic bytes 校验              | 按需           | 仅在扩展非图片类型上传时升级为必做                                               |
-| client pnpm audit 高危清零（40 → 0） | P5/T5.1 升级窗口 | vue3-ts-jsoneditor 3.4.1 + 构建链刷新，独立分支 + 全量门禁；crypto-js 弃用替换评估   |
+| 越权矩阵测试（水平/垂直越权用例 ≥10 条入 CI）    | ✅ 已完成        | 2026-09-06 交付 19 例（M01-M17）入 `tests/integration/system/test_privilege_escalation_matrix.py`，已常态化入 CI 运行；2026-09 扩容至 M18-M29 |
+| 上传 magic bytes 校验              | ✅ 已实现        | `common/core/modelset/upload.py` 的 `FILE_UPLOAD_MAGIC` 文件头校验已上线（扩展名白名单 + 魔数双重校验） |
+| client pnpm audit 高危清零（40 → 0） | ✅ 已清零        | 2026-09-11 四期复核：官方源 `pnpm audit --audit-level high` **0 漏洞**（vue3-ts-jsoneditor 3.4.1 + 构建链刷新） |
 | server pip-audit               | ✅ 已清零        | 2026-09-06，见上节                                                  |
 
 ## 三期自查（2026-09-11）：JWT 专项审计（N5）

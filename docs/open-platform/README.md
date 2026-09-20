@@ -72,7 +72,7 @@ curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
 
 ```
 第三方                        浏览器（被授权用户）              xadmin
-  │  1. 跳转 /oauth/authorize?client_id&redirect_uri&scope&state&code_challenge(S256)
+  │  1. 跳转 /api/system/open/oauth/authorize?client_id&redirect_uri&scope&state&code_challenge(S256)
   │ ────────────────────────────────▶ 同意页（登录态）
   │                                    2. POST /api/system/open/oauth/approve (approved=true)
   │                                    3. 跳回 redirect_uri?code=xxx&state=yyy

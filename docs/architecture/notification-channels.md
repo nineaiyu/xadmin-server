@@ -35,7 +35,7 @@ backend = Wecom  # 约定：模块级 backend 变量
 再补三处登记：
 
 1. `notifications/backends/__init__.py` 的 `BACKEND` 枚举加一行 `WECOM = "wecom", _("WeCom")`；
-2. `server/conf/settings_defaults.py` 加默认值（如 `"WECOM_ENABLED": False`）、`server/settings/setting.py` 暴露到 Django settings；
+2. `server/conf/defaults.py` 加默认值（如 `"WECOM_ENABLED": False`）、`server/settings/setting.py` 暴露到 Django settings；
 3. 消息文案特殊时，在 `notifications/notifications.py` 加 `register_backend_msg(BACKEND.WECOM, "get_wecom_msg")`
    （渠道文案无特殊要求可不注册，自动回退 `get_common_msg`）。
 

@@ -8,7 +8,7 @@
 
 ## 0. 每次发布都过（基线项）
 
-- [ ] **全量门禁**：server `ruff check` + `ruff format --check` + `pytest -n auto`（覆盖率 ≥78%）；
+- [ ] **全量门禁**：server `ruff check` + `ruff format --check` + `pytest -n auto`（覆盖率 ≥85%）；
       client `typecheck` + `typecheck:strict` + `eslint --max-warnings 0` + `prettier` + `stylelint` + `vitest` +
       `check:contract` + **`check:bundle-size`**（首屏闭包增长 ≤15 KB，超预算需在 PR 说明后刷新基线）
 - [ ] **CI 全绿**：GitHub Actions 最近一次运行 Unit Tests / Lint / E2E / security 全 success，无积压失败
@@ -28,7 +28,7 @@
 
 ## 1.（硬门禁）CSP enforce 切换
 
-**背景**：`SysConfig.CSP_MODE` 默认 `report-only`（`server/conf.py:322`，取值 `disabled / report-only / enforce`），
+**背景**：`SysConfig.CSP_MODE` 默认 `report-only`（`server/conf/`，取值 `disabled / report-only / enforce`），
 `CSPModeMiddleware` 按配置改写 django-csp 生成的响应头（`common/core/middleware.py`）；违规上报落 `/api/csp-report`
 （`common/api/csp.py`，按「指令+文档路径」60s 节流打 WARNING）。
 
@@ -64,7 +64,7 @@
 
 ## 2.（硬门禁）AES v1 解密关闭
 
-**背景**：`SECURITY_AES_V1_DECRYPT_ENABLED` 默认 `True`（`server/conf.py:204`）；关闭后旧 `Salted__` 格式密文
+**背景**：`SECURITY_AES_V1_DECRYPT_ENABLED` 默认 `True`（`server/conf/`）；关闭后旧 `Salted__` 格式密文
 一律按非法输入返回空串（`common/base/utils.py` 的 `AESCipherV2.decrypt`）。前端 `aes.ts` 默认走 v2。
 
 **前置（核对前端版本分布）**：
@@ -142,7 +142,7 @@
    **下一步**：隔离上线后重新起算 7 天窗口，`CSP violation:` 连续 7 天为 0 即可切 enforce。
 2. **项 2（AES v1 关闭）**：**澄清一个此前的口径错误**——v1（`Salted__`）只出现在**前端请求体**加密
    （`AESCipherV2`，key 为 username/token 的一次性密文），**不落库**；落库字段级加密是另一套
-   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`common/base/utils.py:118`），且 `AESCharField/AESTextField`
+   `AESCipherV3`（`v3:` 前缀 + HKDF/AES-GCM，`common/base/utils.py`），且 `AESCharField/AESTextField`
    全仓无模型使用。因此**不存在「扫库重写 v1 密文」这条路径**，命中必然来自仍在提交旧格式密文的客户端或遗留调用点。
    处置：观测点日志新增 `caller=`（调用方 `文件名:行号 函数名`），使 572 条/天的命中可收敛到具体入口。
    **下一步**：部署后按 `caller` 聚合定位，收敛来源并清零后再置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`。

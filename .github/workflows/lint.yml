@@ -68,5 +68,18 @@ jobs:
           python-version: "3.13"
 
       - name: Check doc facts against code sources
-        # 文档单一事实源防漂移：「当前状态」版本串必须与 requirements.txt / server/const.py 一致
+        # 文档单一事实源防漂移：「当前状态」版本串必须与 requirements.txt / server/const.py /
+        # workflows / client package.json 一致（跨仓事实在单仓检出时自动跳过）
         run: python scripts/check_doc_facts.py
+
+      - name: Check doc index coverage
+        # 防孤儿文档：docs/ 下的内容型文档必须登记到索引（docs/README.md 或同目录 README.md）
+        run: python scripts/check_doc_index.py
+
+      - name: Check doc path references
+        # 组件手册 + 活跃开发文档引用的代码路径必须可达（跨仓未检出时自动跳过）
+        run: python scripts/check_doc_paths.py
+
+      - name: Check tutorial mirror
+        # 教程里的 manage.py 命令 / CLI 参数 / demo 路径必须与代码一致
+        run: python scripts/check_tutorial_mirror.py

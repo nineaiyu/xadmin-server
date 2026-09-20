@@ -206,7 +206,7 @@ bash utils/oom_alert.sh
 **修复清单**：
 1. `server/settings/base.py`：redis 连接池 `socket_connect_timeout=0.2` / `socket_timeout=0.5` / `retry_on_timeout=False`；
 2. 同处 `IGNORE_EXCEPTIONS=True`：缓存不可用时读返回 None、写静默（fail-open 标准降级语义）；
-3. `common/core/config.py`：ConfigCache 读/写异常兜底 → 回落读库（配置通路不被缓存故障阻断）；
+3. `common/core/config/`：ConfigCache 读/写异常兜底 → 回落读库（配置通路不被缓存故障阻断）；
 4. `common/api/common.py`：health 视图豁免 DRF 限流（基础设施端点不吃业务限流）；
 5. `common/utils/health.py`：探测预算 2s→1s。
 
@@ -281,7 +281,7 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 ### 第九轮（2032-06，审计与安全窗口）：坏配置注入（fail-fast 验证）
 
 - **场景**：向 `config.yml` 注入类型错误配置（`LOG_BACKUP_COUNT: "abc"`）后重启；
-- **机制**：`server/conf.py` 的 `convert_type` 对转换失败**静默保留原值**（宽容解析），
+- **机制**：`server/conf/` 的 `convert_type` 对转换失败**静默保留原值**（宽容解析），
   但强类型消费点（`int(CONFIG.LOG_BACKUP_COUNT or 0)`）**响亮失败**：
   `ValueError: invalid literal for int() with base 10: 'abc'`（日志直接指向问题配置行）；
 - **行为**：容器进入 `Restarting (1)` 崩溃循环（restart policy 反复拉起）——**不静默降级**

@@ -49,7 +49,7 @@
 
 | 主题 | 入口 | 机制文档 |
 |---|---|---|
-| 权限（API/数据/字段三层） | `core/permission.py`、`core/filter.py`、`core/serializers.py::get_allow_fields` | [permission.md](../docs/architecture/permission.md) |
+| 权限（API/数据/字段 + 应用级授权） | `core/permission.py`、`core/filter.py`、`core/serializers.py::get_allow_fields`、`system/utils/api_grant.py` | [permission.md](../docs/architecture/permission.md) |
 | 元数据（search-columns / search-fields / choices） | `core/modelset/metadata.py` + `drf/metadata.py`；协议 Schema 见 [docs/schema/](../docs/schema/README.md)，规范见 [元数据协议规范](../docs/architecture/metadata-protocol.md) | 契约测试 `tests/unit/common/test_metadata_schema.py` |
 | 响应与异常 | `core/response.py::ApiResponse`（`code=1000` 成功） | [exception-handling.md](../docs/exception-handling.md) |
 | 缓存 | `cache/storage.py::RedisCacheBase`（键登记过 `check_cache_keys.py`）；失效走信号，别手工散落 delete | [cache.md](../docs/architecture/cache.md) |

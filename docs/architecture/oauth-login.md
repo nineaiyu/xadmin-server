@@ -47,3 +47,19 @@
 | 扫码后提示身份已被占用 | 唯一约束是「同一 IdP 身份（provider + subject）只能绑定一个本地账号」；换账号或先在原账号解绑 |
 | IM 渠道发不出去 | 用户是否经该 IM 登录过（`UserOAuthBinding` 按 flavor 归集，provider key 可自由命名）；查 warning 日志 |
 | 改凭据后 IM 渠道异常 | token / userid 缓存按凭据摘要隔离（改密自动换 key）；确认新 secret 已保存并生效 |
+
+## 五、新增一个 flavor（内核扩展）
+
+IM flavor 的协议差异全部收口在 `system/utils/oauth_flavors.py`，新增一个 flavor = 三步：
+
+1. **登记预设**：`FLAVOR_PRESETS` 加官方端点与 `subject_field`（授权 / 换码 / 用户信息 URL，允许显式配置覆盖）；
+   `FLAVOR_REQUIRED_KEYS` 加写入侧必填键（如企微额外要求 `agent_id`）；
+2. **实现分发函数**（同文件）：`exchange_code_<flavor>`（换 token，返回 `token_payload`）、
+   `fetch_userinfo_<flavor>`（取用户信息并按 `subject_field` 归一化 `nickname` / `email` / `picture` 标准键）；
+   授权地址参数形状与标准 OAuth2 不一致时，在 `build_flavor_authorize_url` 内补分支（一致则返回 `None` 落回通用构造）；
+3. **挂进分发入口**：`exchange_flavor_code` / `fetch_flavor_userinfo` 的 handler 映射表各加一行。
+
+安全纪律（与通用流一致）：IdP 原始报文只进日志、用户侧错误统一 `OAuthError` 可读文案、
+http 客户端可注入（保证单测离线）；换码 / 取用户信息的缓存按凭据摘要隔离（参考企微 corp token 实现）。
+
+> flavor 属内核扩展（改动面在 `system/utils/` 与写入校验白名单），建议先提 ADR 再落代码。

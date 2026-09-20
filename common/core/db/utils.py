@@ -10,7 +10,7 @@ from django.db import connection, connections, transaction
 
 
 class RelatedManager:
-    """规则 Q 构建的兼容外观：实现已迁至 common/core/data_scope.py（含通配与 m2m_all 修复）。
+    """规则 Q 构建的兼容外观：实现已迁至 common/core/data_scope/ 包（含通配与 m2m_all 修复）。
 
     保留本类是为了既有引用（测试等）不破；新代码请直接使用 data_scope 的
     rule_to_q / ip_in_q / build_rules_qs。

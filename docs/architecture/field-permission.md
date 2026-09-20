@@ -2,7 +2,7 @@
 
 原理： 字段权限是通过 ```djangorestframework``` 中的 ```ModelSerializer``` 来实现。
 
-若要使用字段权限，则需要继承 ```BaseModelSerializer``` 参考 ```system/utils/serializer.py```
+若要使用字段权限，则需要继承 ```BaseModelSerializer``` 参考 ```common/core/serializers.py```
 
 1. 请求先通过```common.core.permission.IsAuthenticated```, 获取该请求的菜单，通过菜单获取绑定的模型，通过模型获取字段
 2. 然后在使用 ```common.core.serializers.BaseModelSerializer``` 的时候，会调用```__init__```方法，在该方法中定义了所需字段
@@ -15,53 +15,45 @@
 
 #### 为什么要关联这四个模型？
 
-代码中```system/utils/serializer.py```部分代码如下
+用户序列化器在 `system/serializers/user.py`，部分代码如下（节选，完整以真源为准）：
 
 ```python
-class BaseRoleRuleInfo(BaseModelSerializer):
-    roles_info = RoleSerializer(fields=["pk", "name"], many=True, read_only=True, source="roles")
-    rules_info = DataPermissionSerializer(fields=["pk", "name"], many=True, read_only=True, source="rules")
-
-
-class UserSerializer(BaseRoleRuleInfo):
+class UserSerializer(BaseModelSerializer):
     class Meta:
-        model = models.UserInfo
+        model = UserInfo
         fields = [
+            "pk",
+            "avatar",
             "username",
             "nickname",
+            "phone",
             "email",
-            "last_login",
             "gender",
+            "block",
+            "online_count",
+            "is_active",
+            "dept",
+            "description",
+            "last_login",
             "date_joined",
             "roles",
             "rules",
-            "is_active",
-            "pk",
-            "dept",
-            "phone",
-            "avatar",
-            "roles_info",
-            "description",
-            "dept_info",
-            "rules_info",
+            "deleted_at",
         ]
         extra_kwargs = {
-            "last_login": {"read_only": True},
-            "date_joined": {"read_only": True},
-            "rules": {"read_only": True},
-            "pk": {"read_only": True},
-            "avatar": {"read_only": True},
-            "roles": {"read_only": True},
+            "roles": {"required": False, "attrs": ["pk", "name", "code"], "format": "{name}", "many": True},
+            "rules": {
+                "required": False,
+                "attrs": ["pk", "name", "get_mode_type_display"],
+                "format": "{name}",
+                "many": True,
+            },
+            "dept": {"required": False, "attrs": ["pk", "name", "parent_id"], "format": "{name}"},
         }
-        # extra_kwargs = {'password': {'write_only': True}}
-        read_only_fields = ["pk"] + list(set([x.name for x in models.UserInfo._meta.fields]) - set(fields))
-
-    dept_info = DeptSerializer(fields=["name", "pk"], read_only=True, source="dept")
-    gender = LabeledChoiceField(choices=models.UserInfo.GenderChoices.choices)
 ```
 
-获取用户的序列化方法，里面使用了```roles_info 角色模型```，```dept_info 部门模型```，```rules_info 数据权限模型```
-，还有自己本身的```UserInfo 模型```
+获取用户的序列化结果里携带了 `roles` 角色模型、`rules` 数据权限模型、`dept` 部门模型
+（`attrs`/`format` 控制内联展示的候选字段与显示文案），还有自己本身的 `UserInfo` 模型
 
 ### 2. 在 角色权限中，创建角色，并关联字段
 

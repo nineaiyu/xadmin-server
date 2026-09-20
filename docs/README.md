@@ -1,160 +1,93 @@
 # xadmin-server 文档中心
 
-> 半年规划 T6.1 建立的 docs/ 知识库索引。目标：新人按本目录可完成环境搭建与第一个功能开发，无需依赖外站文档。
-> 外站文档 https://docs.dvcloud.xin/ 降级为补充资料，逐步以本目录为准。
+> 目标：**新人按本目录完成环境搭建与第一个功能开发**；开发中遇到"不报错但没效果"类问题先查
+> [dev-pitfalls.md](dev-pitfalls.md)。外站 https://docs.dvcloud.xin/ 为补充资料，以本目录为准。
+>
+> 文档有 CI 守护（索引覆盖 / 事实一致性 / 教程镜像 / 手册路径 / 站点导航，见 §五），
+> **新增文档必须登记本索引**。
 
-## 目录结构
+## 一、二次开发：从这里开始（必读 8 篇）
+
+| # | 文档 | 一句话 |
+|---|------|--------|
+| 1 | [guide/first-module-30min.md](guide/first-module-30min.md) | **30 分钟开发第一个业务模块**：建 app → `generate_crud` → 菜单授权 → `doctor` 自检（生成器主线） |
+| 2 | [architecture/component-handbook.md](architecture/component-handbook.md) | **组件手册**：后端 14 组 / 前端 10 组组件的职责·用法·依赖·配置项·扩展点（含权威源路径） |
+| 3 | [guide/recipes.md](guide/recipes.md) | **扩展流程处方集**：加字段 / 加按钮 / 自定义渲染器 / 定时任务 / AI 动作等 23 条任务步骤 |
+| 4 | [architecture/overview.md](architecture/overview.md) | 架构总览：分层、元数据驱动、子体系速览、前后端协作时序 |
+| 5 | [architecture/framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查：ViewSet 选型 / Action↔BaseApi / 覆写红线 / 前端契约 |
+| 6 | [architecture/方案选型与对比.md](architecture/方案选型与对比.md) | 选型决策依据：列表页三范式 / 组件选型速查 / 与同类方案对比 |
+| 7 | [框架开发遵循准则.md](框架开发遵循准则.md) | 服务端 + 前端统一约定与检查清单（含数据字典 / i18n / 按钮交互） |
+| 8 | [dev-pitfalls.md](dev-pitfalls.md) | 新手陷阱清单 24 条（**静默失败类问题先查这里**） |
+
+**三条先记住的心智模型**：① 列表页 = 后端元数据驱动（`search-columns` / `search-fields`）；
+② 权限码 = `动作:组件名`（如 `list:SystemUser`，必须入库授权）；③ 契约变更先改 `docs/schema/` 再同步前端。
+
+## 二、按需查阅（开发）
+
+| 主题 | 文档 |
+|------|------|
+| 元数据协议 | [architecture/metadata-protocol.md](architecture/metadata-protocol.md)：字段语义 / `input_type` 推断链 / 四通道注册表 / 失败可见性 |
+| 权限体系 | [architecture/permission.md](architecture/permission.md)（三层 + 应用级授权）；配置操作教程 [architecture/data-permission.md](architecture/data-permission.md) / [architecture/field-permission.md](architecture/field-permission.md) |
+| 模块化与裁剪 | [architecture/模块化与功能裁剪.md](architecture/模块化与功能裁剪.md)：三级分层 / 发行预设 / 六层裁剪 / CLI 与管理页 |
+| 认证扩展 | [architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
+| 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
+| 通知渠道 | [architecture/notification-channels.md](architecture/notification-channels.md)（新增渠道 = 新增一个文件） |
+| 缓存 / 索引 | [architecture/cache.md](architecture/cache.md)（含键规范与失效矩阵）、[architecture/indexes.md](architecture/indexes.md) |
+| 错误码 | [exception-handling.md](exception-handling.md)（新增错误码必须先登记） |
+| 契约 Schema | [schema/README.md](schema/README.md)（search-columns / search-fields 真源） |
+| 开放平台 | [open-platform/README.md](open-platform/README.md)（接入指南）、[open-platform/events.md](open-platform/events.md)（Webhook 事件契约） |
+| 前端开发（xadmin-client） | 页面 / E2E / 契约入口见 [xadmin-client/docs/README.md](https://github.com/nineaiyu/xadmin-client/blob/dev/docs/README.md)；页面写法见 [recipes.md](guide/recipes.md) R9–R14 / R22、[component-handbook.md](architecture/component-handbook.md) §二 |
+
+## 三、部署与运维（ops/）
+
+| 文档 | 内容 |
+|------|------|
+| [ops/deployment.md](ops/deployment.md) | **部署与运维手册**：配置速查表（§9）/ Docker / 备份恢复 / 升级回滚 |
+| [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
+| [ops/pitr.md](ops/pitr.md) | WAL 归档与时间点恢复（PITR） |
+| [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 演练记录） |
+| [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
+| [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
+| [ops/backup-drill-2026-09.md](ops/backup-drill-2026-09.md)、[ops/backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md)、[ops/backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md)、[ops/backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份恢复演练记录（历史归档） |
+
+## 四、维护与决策（长期演进）
+
+| 文档 | 内容 |
+|------|------|
+| [adr/README.md](adr/README.md) | **架构决策记录索引（46 篇）**——"当时为什么这样选"；新增决策按编号顺延并登记 |
+| [plans/README.md](plans/README.md) | 规划与治理：长期优化方案 / 当前年度计划 / 最近年度回顾；**已完成的一次性台账在 `plans/archive/`** |
+| [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线 → 实测履历） |
+| [security-review.md](security-review.md) | 安全自查归档（按轮次追加） |
+| [cache-keys-audit.md](cache-keys-audit.md) | 缓存键与 JWT 审计（`scripts/check_cache_keys.py --strict`） |
+
+## 五、目录结构与维护约定
 
 ```
 docs/
-├── README.md            本索引
-├── adr/                 架构决策记录（ADR）
-├── architecture/        架构设计文档（含数据权限重构设计与行为对照）
-├── guide/               快速上手教程（30 分钟开发第一个业务模块）
-├── ops/                 部署与运维（deployment.md + runbook + 演练/基线记录）
-├── plans/               项目规划与治理文档（跨仓库排期/台账，见 plans/README.md）
-├── schema/              前后端契约 JSON Schema
-├── imgs/                文档配图
-├── metrics.md           基线指标看板（覆盖率/体积/性能 KPI 登记与回填）
-├── dev-pitfalls.md      新手陷阱清单（元数据/权限码/渲染器注册等高频坑集中登记）
-├── 框架开发遵循准则.md    服务端 + 前端开发统一约定与检查清单
-├── exception-handling.md  异常处理与错误码规范
-└── security-review.md   安全自查清单（按轮次追加归档）
+├── README.md             本索引（二开必读 → 按需 → 运维 → 维护）
+├── guide/                快速上手（30 分钟教程 + 扩展处方集）
+├── architecture/         架构与组件（现状文档：组件手册 / 协议 / 权限 / 模块化…）
+├── adr/                  架构决策记录（历史决策，含索引 README）
+├── ops/                  部署与运维（手册 / runbook / 演练记录）
+├── plans/                规划与治理（活跃 3 篇；历史归档在 archive/）
+├── open-platform/        开放平台接入（指南 + 事件契约）
+├── schema/               前后端契约 JSON Schema
+├── imgs/                 文档配图
+├── dev-pitfalls.md       新手陷阱清单
+├── 框架开发遵循准则.md     开发统一约定与检查清单
+├── exception-handling.md 错误码规范
+├── metrics.md / security-review.md / cache-keys-audit.md   维护者参考
+└── （归档）plans/archive/ 已完成的一次性方案 / 台账 / 历史盘点
 ```
 
-## 新人上手路径
+**维护约定**：
 
-1. **环境搭建**：根 [README](../README.md)（`bash utils/dev_up.sh` 一键启动）→ [ops/deployment.md](ops/deployment.md)
-   （配置项详解 / Docker / 生产部署 / 升级回滚）；
-2. **动手开发**：[guide/first-module-30min.md](guide/first-module-30min.md)（30 分钟开发第一个业务模块：
-   建 app → `generate_crud` → 菜单与授权 → `doctor` 自检），遇到疑问先查 [dev-pitfalls.md](dev-pitfalls.md)；
-3. **理解架构**：[architecture/overview.md](architecture/overview.md)
-   （总览导航）→ [architecture/permission.md](architecture/permission.md)（三层权限，本项目核心）；
-4. **修改核心框架前**：读 [common/README.md](../common/README.md)（内核边界与目录地图）、
-   [architecture/cache.md](architecture/cache.md)（缓存红线）与
-   [architecture/indexes.md](architecture/indexes.md)（索引规范），确保 pytest 全绿。
-
-## 架构设计（architecture/）
-
-| 文档                                                      | 内容                                           |
-|---------------------------------------------------------|----------------------------------------------|
-| [overview.md](architecture/overview.md)                 | 架构总览：分层、元数据驱动、子系统速览、协作时序（1289 行深度分析文档的精炼导航版） |
-| [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：三层职责图、ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
-| [metadata-protocol.md](architecture/metadata-protocol.md) | 元数据协议规范：search-columns / search-fields 字段语义、`input_type` 推断链与四通道注册表、与字段权限的关系、失败可见性 |
-| [模块化与功能裁剪.md](architecture/模块化与功能裁剪.md) | 二开友好架构：功能模块清单与裁剪矩阵（三级分层 / 发行预设 / 六层裁剪（含 WS 通道准入）/ CLI 与管理页 / 二开路径 A–C / 维护约定 / 已评估关闭项的触发条件） |
-| [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、16 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
-| [data-permission.md](architecture/data-permission.md)   | 数据权限配置操作教程（配图）                               |
-| [field-permission.md](architecture/field-permission.md) | 字段权限配置操作教程（配图）                               |
-| [cache.md](architecture/cache.md)                       | 缓存策略统一审计：四套缓存键规范/TTL/失效矩阵/绕过 ORM 红线          |
-| [indexes.md](architecture/indexes.md)                   | 索引评审记录：清单、不加索引的理由、EXPLAIN 回归                 |
-| [mfa.md](architecture/mfa.md)                           | MFA 敏感操作二次验证设计：四后端 / 412 协议 / 权限工厂           |
-| [oauth-login.md](architecture/oauth-login.md)           | 第三方登录与 IM 扫码登录：provider 字段、生效条件、保存校验与常见现象排错 |
-| [scim.md](architecture/scim.md)                         | SCIM 2.0 用户目录同步：启用步骤 / 字段与组映射 / Okta、Entra 配置示例 / 排错 |
-| [scim-idp-readiness.md](architecture/scim-idp-readiness.md) | SCIM 真实 IdP 联调准备：就绪度清单 / 环境前置 / 验收口径 / 本地 mock 验证（Okta、Entra 请求形态） |
-| [ldap-readiness.md](architecture/ldap-readiness.md)     | LDAP/AD 真实目录联调准备：就绪度清单 / 环境前置（需外部提供项）/ 验收口径 / 本地 mock 验证 |
-| [notification-channels.md](architecture/notification-channels.md) | 通知渠道体系：三件套模型、新增渠道步骤、两层可达性过滤、短信通知模板配置与排错 |
-| [数据权限与字段权限重构方案-2026.09.md](architecture/数据权限与字段权限重构方案-2026.09.md) | 数据权限重构设计（规则编译器四段管线 + ScopeResult 布尔代数）：问题清单 / 语义决策 D1–D11 / 实施批次与测试计划 |
-| [权限行为新旧对比-2026.09.md](architecture/权限行为新旧对比-2026.09.md) | 上篇的配套交付物：同一份配置在旧/新实现下的逐场景结果对照、升级操作清单（迁移 0014 + 巡检命令） |
-| [菜单权限与字段同步补全方案-2026.09.md](architecture/菜单权限与字段同步补全方案-2026.09.md) | 调研报告 + 整改方案：权限点覆盖缺口 91 条（方法级扫描 + 运行时复现）、字段同步缺 `system.aiprofile` 等；归一映射 / 漂移守护 / 自动同步三项机制与实施批次 |
-
-## 部署与运维（ops/）
-
-| 文档                                                     | 内容                                              |
-|--------------------------------------------------------|-------------------------------------------------|
-| [deployment.md](ops/deployment.md)                     | 配置项详解（§9 配置速查表：键 ↔ 环境变量 ↔ 默认值 ↔ 生效方式）、Docker 部署、备份恢复、升级回滚、监控告警 |
-| [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
-| [release-checklist.md](ops/release-checklist.md)       | 发布窗口 checklist：基线门禁、CSP enforce 与 AES v1 关闭硬门禁、挂起项与执行记录 |
-| [observability.md](ops/observability.md)               | 可观测性与 SLO：追踪启用（Sentry performance / OTel 评估口径）、指标清单与 SLO 定义、告警分级、故障演练记录 |
-| [pitr.md](ops/pitr.md)                                 | WAL 归档与时间点恢复（PITR）：启用口径、首次回放演练记录（RTO <1s）、归档卷迁移条件 |
-| [performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（T3.1）：silk 剖析接入 + k6 六接口压测 + 登记口径与回归判定 |
-| [backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md) | 季度备份恢复演练（2030-06）：sha256 校验、全量导入 0 错误、表数 89=89 与核心表一致 |
-| [backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份演练（异地副本/媒体目录/RPO 6h 收口）：`utils/backup_drill.sh` 一键闭环与结果 |
-| [backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md) | 季度演练（Q4，提前执行）：67 表逐表 0 不一致、RTO 0.28s，一并验收备份失败告警（S2） |
-| [backup-drill-2026-09.md](ops/backup-drill-2026-09.md) | 首次备份演练记录（RTO 0.88s、52 表一致）与当时遗留缺口                 |
-
-## 架构决策记录（adr/）
-
-| ADR                                          | 主题                                 |
-|----------------------------------------------|------------------------------------|
-| [ADR-001](adr/ADR-001-csrf-jwt-only.md)      | CSRF 中间件不启用（JWT-only 架构）           |
-| [ADR-002](adr/ADR-002-demo-app.md)           | demo app 去留：保留但默认关闭                |
-| [ADR-003](adr/ADR-003-websocket-protocol.md) | WebSocket 协议保持自定义格式并补类型约束          |
-| [ADR-004](adr/ADR-004-django-60-upgrade.md)  | Django 升级线：当前运行 6.0.8；6.1 被 beat 声明阻断（6.2 LTS 发布后按复审口径复核） |
-| [ADR-005](adr/ADR-005-redis-split.md)        | Redis 拆分（缓存/队列/会话分实例）              |
-| [ADR-006](adr/ADR-006-asgi-db-connection-pool.md) | ASGI 形态启用 Django server 端 DB 连接池      |
-| [ADR-007](adr/ADR-007-multipart-form-data-v1-protocol.md) | FormData 上传协议 v1（点分键序列化契约）       |
-| [ADR-008](adr/ADR-008-pat-auth.md)           | 个人访问令牌（PAT）：scope + 精确审计           |
-| [ADR-009](adr/ADR-009-data-mask-exemption.md) | 数据脱敏豁免清单机制                          |
-| [ADR-010](adr/ADR-010-crypto-es.md)          | crypto-js 弃用处置：替换为 crypto-es        |
-| [ADR-011](adr/ADR-011-aes-protocol-v2.md)    | 凭证加密协议升级 v2（WebCrypto PBKDF2+AES-GCM 双格式过渡） |
-| [ADR-012](adr/ADR-012-approval-flow-engine.md) | 审批流引擎（模板/实例/任务/加签/催办，含触发器与数据权限） |
-| [ADR-013](adr/ADR-013-office-online-preview.md) | Office 在线预览选型：LibreOffice headless 转 PDF（重队列 + 缓存回收） |
-| [ADR-014](adr/ADR-014-typescript-7-evaluation.md) | TypeScript 7 升级评估：暂不升级（vue-tsc 与 TS 7 不兼容，附实测数据） |
-| [ADR-015](adr/ADR-015-reference-project-adoption.md) | 参考项目借鉴决策：vue-pure-admin 点状移植边界 / jumpserver 机制借鉴矩阵 / 审批流可视化不引入 |
-| [ADR-016](adr/ADR-016-approval-flow-phase2.md) | 审批流引擎二期：节点出口路由（排他网关）/ 版本快照与回滚 / RATIO 比例会签 / @vue-flow 画布 |
-| [ADR-017](adr/ADR-017-ldap-directory-sync.md) | LDAP/AD 目录同步：bind 认证接入认证链（优先级可配、降级不阻断本地）/ OU→部门树 + 用户定时同步 / 冲突审计 / 凭据值级加密 |
-| [ADR-018](adr/ADR-018-im-scan-login.md) | 企业 IM 扫码登录：钉钉/企微/飞书 flavor 适配器（官方端点预设、企微 corp token 缓存）/ 绑定唯一与 MFA 回归沿用 / OAUTH_PROVIDERS 写侧校验接线 |
-| [ADR-019](adr/ADR-019-im-notify-channels.md) | 企业 IM 消息渠道：三家发送 SDK（token 缓存/unionId 换 userid）/ 收件账号按 flavor 复用 OAuth 绑定 / notify_im 配置值级加密 |
-| [ADR-020](adr/ADR-020-dataset-dashboard-phase1.md) | 数据集 + 仪表盘一期：模型/字段/op 白名单受控查询（行级数据权限 fail-closed）/ 布局 JSON + 四种图表卡片 / 个人·共享两档 / 评估出口条款 |
-| [ADR-021](adr/ADR-021-dashboard-display-and-reports.md) | 仪表盘二期 + 报表轻量版：Screen 大屏模板与全屏轮播（后端极薄）/ Report 定时报表（复用下载中心产物 + 邮件附件，创建者权限上下文）/ 明示不做边界 |
-| [ADR-022](adr/ADR-022-outbound-webhooks.md) | 出站 Webhook：事件目录 + 唯一发射口（吞异常）/ HMAC-SHA256 时间戳签名（secret 值级加密）/ 指数退避 5 次 + 耗尽告警 / 投递审计与重试 |
-| [ADR-023](adr/ADR-023-ai-assistant-phase1.md) | AI 一期（使用/二开助手）：OpenAI 兼容供应商中立接入层 / docs/ 分块入库 + 词频检索（向量升级候选池）/ ask 引用出处 / 权限门控 + 密钥值级加密（G12 模式先行） |
-| [ADR-024](adr/ADR-024-nl-query-phase2.md) | AI 二期 NL 查数：LLM 只产出受限数据集 DSL（LLM 输出按不可信输入处理）/ 服务端白名单重校验 + 数据权限 fail-closed / 试算预览 + 限幅 + 语义审计（AuthType.AI） / 灰度默认关 |
-| [ADR-025](adr/ADR-025-dynamic-form-phase1.md) | 动态表单一期：8 种收敛控件集 JSON Schema（写入/提交双侧校验）/ 通用 JSON 存储 + creator 隔离 / 零新依赖自定义动态表格（RePlusPage 动态列登记二期） |
-| [ADR-026](adr/ADR-026-dynamic-form-approval.md) | 动态表单二期（G5b）：表单定义开关 `approval_required` + 提交复用敏感操作审批协议（412 一次性令牌重放）/ 校验在前审批在后 / 超管直提（单管理员部署防死锁）/ 前端设计器开关与填报标记 |
-| [ADR-027](adr/ADR-027-code-generator.md) | 代码生成器（G7）：`generate_crud` 管理命令（Model → 序列化器/视图/路由/配置 + 前端页面 + 菜单种子）/ 生成块幂等合并 + import 去重 / 输出即过 ruff 门禁（生成器单测含 ruff 校验） |
-| [ADR-028](adr/ADR-028-global-search.md) | 全局搜索（G9）：顶栏搜索弹窗内跨实体分组结果（用户/部门/文件/审批单/日志）/ 逐实体两道门（页面权限门 + 数据权限编译器 fail-closed）/ 检索基线 icontains（转义反破坏匹配已实证，Postgres 全文化为评估出口）/ 权限码 retrieve:SystemGlobalSearch 入种子 |
-| [ADR-029](adr/ADR-029-page-watermark.md) | 敏感页面水印（G10）：基本设置三项配置（开关 / 文案 / 生效页面路由前缀）/ 文案含时间并分钟级刷新 / 挂载与清除收敛到 App.vue（移除 store 里的水印 hack），菜单级开关与防篡改列为评估出口 |
-| [ADR-031](adr/ADR-031-multi-tenant-evaluation.md) | 多租户 go/no-go 评估（2027-09）：**结论 no-go（暂不做）**——一租户一实例为物理隔离、改造面 ≥6 窗口且与数据权限编译器高风险耦合；登记重开条件与 schema-per-tenant 预研要点 |
-| [ADR-030](adr/ADR-030-open-platform.md) | 开放平台雏形（G11）：`ApiApplication` 应用发卡机复用 PAT 认证链（sha256 口径/三层权限/审计）/ client-credentials 换发端点（明文仅一次、轮换即失效）/ 按应用限流（认证处计数 429）/ 回调注册 + HMAC 测试投递；不做应用级权限体系与 OAuth 授权码 |
-| [ADR-032](adr/ADR-032-approval-business-integration.md) | 审批接入业务系统：通用业务绑定 `ApprovalInstance.biz_type/biz_id`（不引 ContentType）+ 终态回调 `approval_instance_finished` 信号（终态走 update 不触发 post_save）/ 首个真实业务「请假」（新增即提交、fail-closed 退化草稿、状态由终态回写、审批动作只在流程审批中心）/ 敏感操作审批挂载点扩到角色·部门删除（默认仍休眠）/ 字典·菜单·流程定义随种子下发 |
-| [ADR-033](adr/ADR-033-knowledge-base-management.md) | AI 知识库文档管理：`AiKnowledgeDocument` 双来源（repo/upload）统一登记 + 既有分块表即检索面（retrieve 零改动）/ 上传=文本入库（浏览器读文件，不落文件系统；同名覆盖更新）/ 预览=详情全文 + 分块摘要（列表轻量；原文展示不引 md 渲染依赖）/ 停用=移除分块、删除仅 upload / sync 只维护 repo（upload 前缀隔离 + 孤儿块清理，守护测试钉死） |
-| [ADR-034](adr/ADR-034-chat-room-rebuild.md) | 聊天室重构（微信式两栏）：`ChatRoom/ChatRoomMember/ChatMessage` 三表（room_key 幂等 + 未读游标 + client_msg_id 幂等 + 2 分钟撤回）/ 新通道 `ws/chat/`（显式组名、不登记会话、心跳不污染在线索引）/ `/api/chat/` 六接口 + 6 权限点 / 私聊与 AI 双形态（多轮 + `/kb` RAG 带引用）/ 前端两栏骨架（气泡/时间分组/游标加载/未读红点/@联想） |
-| [ADR-035](adr/ADR-035-api-contract-governance.md) | API 契约治理：**不做 URL 版本化（no-go，登记 3 条重开条件）**——消费者以同仓前端为主；契约唯一真源 `docs/schema/` + 前端镜像 `check:contract` + 服务端守护测试兜底；新路由 basename 统一 kebab-case、存量不改名（不影响权限链，仅监控 label 断档的纯 churn） |
-| [ADR-036](adr/ADR-036-import-export-replay-decision.md) | 导入导出 WSGIRequest 重放：**保留现状不重构**（与同步路径 100% 同源是既定意图，重构需先补装配契约测试）——装配点补 5 个隐式契约注释清单 + 登记重构步骤与重开条件 |
-| [ADR-037](adr/ADR-037-ai-retrieval-evaluation.md) | AI 检索升级评估（评测驱动）：**暂不引入向量**——36 问评测集入 CI 实测 hit@5 97.2%（535 块 / 30ms），远高于 75% 门控；登记评估出口（hit@5<75% / 分块>1000 / P95>300ms）与升级预研要点（OpenAI 兼容 embedding + Python 余弦 + RRF） |
-| [ADR-038](adr/ADR-038-ai-actions.md) | AI 助手受限动作（A2）：白名单动作注册表（请假/动态表单）+ 聊天 `/do` 草稿 + 确认卡片 + 权限双门 + 412 审批协议复用 + auth_type=ai 审计 + 灰度默认关；随项修复 SSE 端点浏览器 406 不可用的既有缺陷（EventStreamRenderer） |
-| [ADR-039](adr/ADR-039-open-platform-phase2.md) | 开放平台二期（B1–B4 全量）：应用级四级授权（模型×动作×字段×行，只收敛不提权）+ OAuth 授权码（PKCE/refresh/revoke/同意页）+ 用量报表与每日配额软告警 + Webhook 事件契约（schema_version + 自动文档 + 守护测试）；接入指南与示例客户端见 [open-platform/](open-platform/README.md) |
-| [ADR-040](adr/ADR-040-approval-flow-phase3.md) | 审批流三期：**动作 MFA 二次确认已交付**（`APPROVAL_MFA_REQUIRED_ACTIONS` 逐动作灰度 + 412 `user_confirm_required` 复用 + 未验证不推进业务状态守护）；**委托代理设计已定待实施**（委托表 + `resolve_assignees` 出口改造 + 不递归防环 + 审计标注代审） |
-| [ADR-041](adr/ADR-041-report-cron-expression.md) | 定时报表 cron 表达式：引入 `croniter`（纯 Python，pin 6.0.0）+ `Report.cron_expression`（非空覆盖三档频次）+ 分钟级判定（非法 fail-closed）+ 新增每分钟分发任务（与原每小时任务职责互斥，存量零变化） |
-| [ADR-042](adr/ADR-042-dashboard-card-permission.md) | 仪表盘卡片级权限（一二期全交付）：一期 `layout[].allowed_roles`（内嵌授权面，未知角色 code 拒绝）+ 读取侧按浏览者角色过滤（超管全量 / 匿名 fail-closed，只收敛不提权）；二期字段权限叠加到执行/聚合输出（无字段配置=全量的显式授权口径）+ 卡片弹窗「可见角色」授权 UI + 越权矩阵补强（18 例测试） |
-| [ADR-043](adr/ADR-043-remote-suggestions.md) | 远程联想（suggestions）：引用方 `SuggestionsAction`（`{prefix}/suggestions?field=`，候选集与写入校验同源，权限回落 list 权限点，零新权限点）+ ViewSet 级 `suggestion_fields` 字段白名单（元数据 `suggest_url` 与端点校验共用声明，含 with_meta=1 内联路径）+ 前端 `SuggestSelect`（remote/防抖/pks 回显）。首个消费方=审批委托「代理人」（委托人保持弹窗；部门管理经用户决策不采用）；菜单管理「自动添加API权限」登记为不适用场景 |
-
-| [ADR-044](adr/ADR-044-dform-approval-integration.md) | 动态表单与审批流集成（走查五项）：表单绑定审批流程（`approval_flow` + 提交状态/实例 + 终态回写 + 驳回重提）、审批通过自动完成提交（请求体快照 + 通过后动作注册表，multipart 仍走手动重放）、控件扩到 11 种（附件/日期范围/明细子表，禁嵌套）、部门授权写入修复（原静默丢弃）+ 数据权限 fail-closed 可诊断报错、`seed_demo_org` 开箱模板（组织+四层权限+场景模板） |
-| [ADR-045](adr/ADR-045-modular-trimmable-architecture.md) | 功能模块化与可裁剪架构（二开友好）：三级分层（core/standard/optional）+ 发行预设（**不做插件市场**）+ 模块声明单一事实源（内置 `MODULES` + app 侧 `{app}/modules.py` 扩展点）+ 六层裁剪（路由 404 / **WS 通道准入**（2026-09-18 增量）/ 菜单权限隐藏 / 周期任务不注册 / 种子裁剪 / 缓存清理）+ CLI（`modules` 清单预演、`module remove` 硬裁剪归档回滚、`generate_module` 脚手架）+ 只读「模块管理」页；默认 `full` 零行为差异；P2b/P4b 已评估关闭并登记触发条件 |
-| [ADR-046](adr/ADR-046-module-depth-completion.md) | 三大模块深度完善：表单草稿（DRAFT 轻校验 + `submit` 端点 + 操作审批自动落库与重放保序）与模板复用（`is_template` 同表 + `kind=templates`，不新增权限点）、数据字典驱动选项（schema `dict` 与内联 options 互斥，提交校验 fail-closed）、设计器字段排序与完整属性、提交详情与审批轨迹抽屉；数据分析修「可选但必失败」的度量字段（`numeric_columns`）、卡片错误可见化、看板刷新/设置、伪模型过滤与预览 CSV 导出；审批中心通过意见、人工催办（10 分钟节流）+ 流转时间线 + 代理标注（`delegate_from`）+ 驳回重提预填 + 分支路由 target 恒禁用缺陷修复 |
-
-## 项目规划与治理（plans/）
-
-跨仓库（server + client）的项目规划文档，2026-09-12 自工作区根目录 `docs/` 迁入并二次清理，
-2026-09-14 三次清理（已完成职能的规划文档删除，去向登记于 [plans/README.md](plans/README.md)），
-2026-09-17 归档整理（历史年度文档移入 `plans/archive/`，清单与去向见 [plans/README.md](plans/README.md)）：
-
-- [二次开发友好化改造方案-2026.09.md](plans/二次开发友好化改造方案-2026.09.md) —— **开箱即用与易二次开发改造台账**：架构审查（技术栈 / 模块 / 前后端咬合）+ 22 项卡点清单 + 四大改造方向 + P0–P2 改造清单（18 项，含落地动作与验收标准）+ 里程碑与红线
-- [长期优化方案-2034.10-2039.09.md](plans/长期优化方案-2034.10-2039.09.md) —— **跨维度长期优化总纲（第九 ~ 十三年度）**：框架评估 + 功能模块逐项评估 + 五维度优化 + 横切保障；优先级模型、三阶段里程碑、KPI 总表
-- [年度开发计划-2034.10-2035.09.md](plans/年度开发计划-2034.10-2035.09.md) —— **第九年度排期（持续运营年）**：清账闭环 + SLO 校准 + 告警补强 + 演练收尾；按需插槽制 12 窗口
-- [年度回顾-2033.10-2034.09.md](plans/年度回顾-2033.10-2034.09.md) —— 第八年度回顾：12/12 全交付、KPI 对照与遗留交接
-- [阶段全景盘点-2027.10-2033.09.md](plans/阶段全景盘点-2027.10-2033.09.md) —— 跨年度全景盘点：六年度定位纵览、演练全域矩阵、KPI 纵览、跨年度遗留总表
-- 历史年度计划/回顾（2026~2032）与已完结一次性文档共 15 份：见 [plans/archive/](plans/archive/)
-
-## 契约与规范（schema/ + 根级）
-
-| 文档                                                                     | 内容                                  |
-|------------------------------------------------------------------------|-------------------------------------|
-| [schema/search-columns.schema.json](schema/search-columns.schema.json) | search-columns 响应契约                 |
-| [schema/search-fields.schema.json](schema/search-fields.schema.json)   | search-fields 响应契约                  |
-| [exception-handling.md](exception-handling.md)                         | 错误脱敏原则 + 错误码登记表（新增错误码必须先登记）         |
-| [security-review.md](security-review.md)                               | 安全自查归档（Flower/XFrame/Referer/上传校验/JWT 审计等） |
-| [cache-keys-audit.md](cache-keys-audit.md)                             | 缓存键审计（N5）：`scripts/check_cache_keys.py --strict` 冲突清零记录 |
-| [metrics.md](metrics.md)                                               | 基线指标看板（半年规划 T1.8）：测试/体积/性能 KPI 基线与各阶段实测回填 |
-| [框架开发遵循准则.md](框架开发遵循准则.md)                               | 服务端 + 前端开发统一约定与检查清单：响应/Model/Serializer/ViewSet、RePlusPage 模式、i18n、常见坑速查 |
-
-## 维护约定
-
-- 新增文档先在本索引登记；架构类文档入 `architecture/`，决策类入 `adr/`（新建 ADR 编号顺延），部署运维入 `ops/`；
-- ADR 状态变更需同步更新本索引表格；
-- API 文档随版本固化（T6.3）：每次 release 自动附带静态 `openapi.json`（drf-spectacular 导出，见 `build-image.yml`），并可在部署环境访问
-  `/api-docs/` 交互查阅；
-- 原 `history/XADMIN_FRAMEWORK_ANALYSIS.md`（早期框架深度分析，2026-09-12 自仓库根目录归档）已于 2026-09-18
-  文档精简中清理，内容以 [architecture/overview.md](architecture/overview.md)（其精炼导航版）与代码为准；
-- 跨仓库规划/排期文档入 `plans/`（先登记 plans/README.md），架构类文档入 `architecture/`，决策类入 `adr/`。
+1. 新增文档必须登记本索引（CI 守护 `scripts/check_doc_index.py`）；
+2. 文档中的"当前事实"（版本 / 端口 / 覆盖率等）由 `scripts/check_doc_facts.py` 守护，
+   跨仓事实覆盖 xadmin-docs 与 xadmin-client 文档；
+3. 教程中的命令 / 参数 / demo 路径由 `scripts/check_tutorial_mirror.py` 守护；
+   组件手册与活跃开发文档的引用路径由 `scripts/check_doc_paths.py` 守护；
+   对外站点导航由 `scripts/check_docs_site_nav.py` 守护；
+4. **已完成的一次性方案 / 台账**移入 `plans/archive/`（[plans/README.md](plans/README.md) 登记去向），
+   活跃区只保留"在维护"的文档；ADR 状态变更同步更新 [adr/README.md](adr/README.md)；
+5. API 文档随版本固化：每次 release 附带静态 `openapi.json`，部署环境可访问 `/api-docs/` 交互查阅。

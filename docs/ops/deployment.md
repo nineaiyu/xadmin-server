@@ -323,7 +323,7 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 | 组件     | 说明                                                                                           |
 |--------|----------------------------------------------------------------------------------------------|
 | CPU 架构 | 镜像已多架构构建（linux/amd64 + linux/arm64），鲲鹏/飞腾等 ARM 环境直接拉取                                        |
-| 操作系统   | 银河麒麟/统信 UOS 等可运行 arm64 容器环境直接使用；宿主机直装需 Python 3.12+ 与对应系统依赖（psycopg2/mysqlclient 编译链）        |
+| 操作系统   | 银河麒麟/统信 UOS 等可运行 arm64 容器环境直接使用；宿主机直装需 Python 3.13+ 与对应系统依赖（psycopg2/mysqlclient 编译链）        |
 | 数据库    | 默认 PostgreSQL（openGauss 兼容 PG 协议，`DB_ENGINE: postgresql` 尝试接入）；人大金仓/达梦需替换 Django 后端驱动并回归迁移文件 |
 | 中间件    | Redis 兼容版本即可（缓存/broker 用途，无特殊命令依赖）                                                           |
 | 验证清单   | 迁移全量通过 → 登录/验证码/图片处理（Pillow/GeoIP 库）→ 导入导出（openpyxl）→ WebSocket → 定时任务                       |

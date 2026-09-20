@@ -55,7 +55,7 @@ ln -sf "$PWD/scripts/hooks/pre-commit" .git/hooks/pre-commit
 | 门禁       | 命令                                                 | 说明                                                  |
 |----------|----------------------------------------------------|-----------------------------------------------------|
 | 代码风格     | `ruff check .` / `ruff format --check .`           | lint.yml 强制                                         |
-| 测试 + 覆盖率 | `pytest -n auto --cov --cov-fail-under=75`         | 覆盖率门禁 75%（T4.1）                                     |
+| 测试 + 覆盖率 | `pytest -n auto --cov --cov-fail-under=85`         | 覆盖率门禁 85%                                            |
 | 跨 app 引用 | `python scripts/check_cross_app_imports.py`        | 业务层必须走 `<app>.services` 契约层                         |
 | 契约测试     | `pytest tests/unit/common/test_metadata_schema.py` | 改动元数据接口时必跑，schema 同步更新 [docs/schema/](docs/schema/) |
 

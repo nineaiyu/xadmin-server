@@ -5,7 +5,7 @@
   本文第三节方案 C 为实施口径，实施记录见 §八
 - 日期：2026-09-16
 - 关联：`docs/plans/README.md`（候选池「suggestions 候选接口」）、[ADR-035](ADR-035-api-contract-governance.md)（契约纪律/命名约定）、
-  [ADR-039](ADR-039-open-platform-phase2.md)（应用四级授权/PAT scope）、`docs/architecture/菜单权限与字段同步补全方案-2026.09.md`（权限点登记口径）
+  [ADR-039](ADR-039-open-platform-phase2.md)（应用四级授权/PAT scope）、`docs/plans/archive/菜单权限与字段同步补全方案-2026.09.md`（权限点登记口径）
 
 ## 一、背景
 

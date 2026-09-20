@@ -17,7 +17,7 @@
     {
       "id": "data-permission-compiler",
       "question": "数据权限规则编译器有哪几段管线？ScopeResult 布尔代数怎么设计？",
-      "expected": ["docs/architecture/数据权限与字段权限重构方案-2026.09.md"]
+      "expected": ["docs/plans/archive/数据权限与字段权限重构方案-2026.09.md"]
     },
     {
       "id": "field-permission",

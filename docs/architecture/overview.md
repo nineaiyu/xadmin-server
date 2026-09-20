@@ -2,7 +2,7 @@
 
 > 本文为框架深度分析的**精炼导航版**（T6.1，2026-09-06；原 1289 行完整版报告已于
 > 2026-09-18 文档精简中清理）。内容与代码冲突时以代码为准。
-> 关联：[permission.md](permission.md)（三层权限）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)
+> 关联：[permission.md](permission.md)（权限体系）、[mfa.md](mfa.md)（MFA/敏感操作二次验证）、[cache.md](cache.md)
 > （缓存策略）、[indexes.md](indexes.md)（索引评审）、[../exception-handling.md](../exception-handling.md)
 > （错误码）、[../schema/](../schema/)（元数据契约）。
 
@@ -19,7 +19,7 @@
 
 ## 二、后端分层
 
-> 目录提示（易混淆）：顶层 `settings/` 是「系统配置」业务 app（含 `settings/models`、`views`、`serializers`），
+> 目录提示（易混淆）：顶层 `settings/` 是「系统配置」业务 app（含 `settings/models.py`、`views`、`serializers`），
 > Django 项目配置在 `server/settings/`（`base` / `custom` / `setting` / `libs` / `logging`）。二者同名，二开时勿混淆。
 
 ```
@@ -62,13 +62,14 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 `input_type` 映射由服务端 `common/drf/metadata.py` 与前端渲染器注册表（`registry.ts` + `renderers/`）共同定义，
 契约以 [docs/schema/](../schema/) 为准。
 
-## 四、三层权限（概要，详见 permission.md）
+## 四、权限体系（概要，详见 permission.md）
 
 | 层         | 控制对象                           | 生效位置                                              | 配置模型                                  |
 |-----------|--------------------------------|---------------------------------------------------|---------------------------------------|
 | 菜单/API 权限 | 页面可达性 + 接口调用（method+path 正则匹配） | `common/core/permission.py` `IsAuthenticated`     | Menu(目录/菜单/按钮) ←→ UserRole / DeptInfo |
 | 数据权限      | 数据行可见范围（16 种规则，AND/OR 组合，可绑菜单） | `common/core/filter.py` `get_filter_queryset()`   | DataPermission.rules(JSON)            |
 | 字段权限      | 序列化字段可见性（角色×菜单维度）              | `common/core/serializers.py` `get_allow_fields()` | FieldPermission ←→ ModelLabelField    |
+| 应用级授权     | API 应用的模型×动作×字段×行收敛（仅 PAT 凭证） | `system/utils/api_grant.py`（三处挂载）              | ApiApplication.grant                  |
 
 权限编码约定：`{action}:{ViewSetName}`（如 `create:UserViewSet`）；前端 `hasAuth()` / `<Auth>` 组件 /
 `getDefaultAuths()` 消费（无 `v-auth` 指令）。缓存失效由信号驱动（见 cache.md），变更即时生效。
@@ -83,16 +84,18 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 缓存        | `common/cache/` + `common/base/magic.py`   | 四套缓存键规范/TTL/失效矩阵见 [cache.md](cache.md)；MagicCacheData 函数级 + cache_response 视图级                  |
 | 信号失效      | `system/signal_handler.py`                 | Menu/UserRole/DeptInfo/UserInfo/SystemConfig/登出 变更即失效权限与路由缓存，含 m2m_changed 挂钩                   |
 | 通知        | `notifications/`                           | `@register_message` 显式注册 + `BACKEND_MSG_RENDERERS` 集中注册（T2.4）；站内信/邮件/短信后端；新增后端 1 文件 + 1 行       |
-| WebSocket | `message/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；ping/userinfo/push_message/chat_message/task_log |
+| WebSocket | `message/base.py`                          | 自定义 `{action, data, mid}` 协议，补类型约束后保持（ADR-003）；action 全集见 `message/protocol.py`（ping/userinfo/push_message/chat_message/chat_recall/chat_read/chat_unread/task_log/monitor/screen_command） |
 | Celery    | `common/celery/`                           | `@register_as_period_task` 声明式定时任务；default/heavy 队列分离；批量导入分片异步、无 Worker 自动降级同步                  |
 | 导入导出      | `common/drf/parsers                        | renders`                                                                                        | CSV(编码探测)/Excel(下拉验证/列宽/样式)/ZIP(AES 加密)；AxiosMultiPartParser 反解 dot-notation（TD-19 登记，更换 HTTP 库需评估） |
 | 限流        | `common/core/throttle.py`                  | login/register/reset_password/upload/download 分类限流（login 50/h 等 6 类）                            |
 | 中间件链      | `server/settings/base.py`                  | Request-Id 注入、操作日志（动词方法无兜底缺陷已修复 TD-24）、Referer 校验（可选开关）、SQL 统计                                  |
-| 配置系统      | `server/conf/` + `common/core/config.py` | 取值链：config.yml（或 config.py）→ 同名环境变量 → 代码默认值；无配置文件时回落 config_example.yml 并自动生成 SECRET_KEY（开发）；数据库态 SysConfig/UserConfig 支持模板引用；SECRET_KEY 生产拒启校验 |
+| 配置系统      | `server/conf/` + `common/core/config/` | 取值链：config.yml（或 config.py）→ 同名环境变量 → 代码默认值；无配置文件时回落 config_example.yml 并自动生成 SECRET_KEY（开发）；数据库态 SysConfig/UserConfig 支持模板引用；SECRET_KEY 生产拒启校验 |
 | 上传        | `common/core/modelset/upload.py`           | 扩展名白名单（png/jpeg/jpg/gif）+ 大小上限；安全复核见 [../security-review.md](../security-review.md)             |
 | 任务监控      | Flower（`CELERY_FLOWER_AUTH`）               | basic-auth 配置化（T5.3 收尾）：未配置认证仅允许绑定 127.0.0.1                                                    |
 
 ## 六、前端核心结构
+
+> 各组件的职责 / 用法 / 依赖 / 配置项 / 扩展点全景见 [component-handbook.md](component-handbook.md) §二。
 
 ```
 Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/ReAuth/ReDialog）
@@ -106,7 +109,8 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 - **Token 无感刷新**：请求拦截器检测过期 → refresh_token 刷新 → 排队请求批量重放；401 区分 40001/40002；
 - **路由权限**：登录后 `/api/system/routes` 返回路由树 + auths 列表，前端动态注册；
 - **巨型组件已拆分**（T2.5）：lay-tag/lay-setting/system user hook 均为组装层 + 子组件/composable；
-- **构建**（T3.4）：vite advancedChunks 四组分包（vue-core/element-plus/plus-pro/echarts），主 chunk gzip 440KB。
+- **构建**（T3.4 分包 + 2026-09 首屏拆包）：vite advancedChunks 四组分包（vue-core/element-plus/plus-pro/echarts），
+  主 chunk gzip 440 KB → **130.5 KB**（口径与增长预算制见 [metrics.md](../metrics.md) §二）。
 
 ## 七、前后端协作时序（登录 + 首屏）
 
@@ -122,7 +126,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 
 ## 八、工程门禁与安全基线
 
-- CI：server pytest（覆盖率门禁 75%）+ ruff + 跨 app import 门禁 + 元数据契约测试；client typecheck/eslint(no-explicit-any
+- CI：server pytest（覆盖率门禁 85%）+ ruff + 跨 app import 门禁 + 元数据契约测试；client typecheck/eslint(no-explicit-any
   error) + vitest 覆盖率阈值 + Playwright E2E（扩展中）；
 - 发布：前后端版本一致性校验 → 单架构构建 → trivy 镜像扫描（HIGH/CRITICAL 阻断）→ 多架构推送 → SBOM 附 release（T5.5）；
 - 安全基线：CORS/ALLOWED_HOSTS 配置化、SECRET_KEY 显式配置（生产缺失拒绝启动，开发可自动生成）、JWT 轮换+黑名单、
@@ -133,7 +137,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 | ADR                                             | 决策                                          |
 |-------------------------------------------------|---------------------------------------------|
 | [ADR-001](../adr/ADR-001-csrf-jwt-only.md)      | CSRF 中间件不启用（JWT-only 架构），以限流/Referer 开关纵深防御 |
-| [ADR-002](../adr/ADR-002-demo-app.md)           | demo app 保留但默认不启用（XADMIN_APPS 不含）           |
+| [ADR-002](../adr/ADR-002-demo-app.md)           | demo app 为官方示例（上架审批 / 二次确认 / 回收站与变更历史 / 定时任务接入，与框架同步演进；默认仅开发兜底启用） |
 | [ADR-003](../adr/ADR-003-websocket-protocol.md) | WebSocket 保持自定义协议，补 Schema 与类型约束            |
 | [ADR-004](../adr/ADR-004-django-60-upgrade.md)  | 当前运行 Django 6.0.8；6.1 被 django-celery-beat 声明阻断，6.2 LTS 发布后按复审口径复核 |
 
@@ -143,6 +147,8 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 
 1. 环境搭建：根 [README](../../README.md) 快速启动 / [ops/deployment.md](../ops/deployment.md)（Docker 与生产部署）；
 2. 通读本总览 + [permission.md](permission.md)；
-3. 第一个功能：参考 demo app（Book）——后端 model/serializer/filter/viewset 四件套 + 菜单初始化，前端
-   `new BaseApi("/api/demo/book")` + `<RePlusPage :api="bookApi" />`；
+3. 第一个功能：跟 [guide/first-module-30min.md](../guide/first-module-30min.md) 走一遍（建 app → `generate_crud`
+   生成后端四件套与前端页面 → 菜单授权 → `doctor` 自检）；仓库自带的 demo.Book 为**官方示例**
+   （含上架审批 / 二次确认 / 回收站 / 变更历史 / 定时任务演示，`python manage.py seed_demo_book`
+   一键就绪，抄作业地图见 `demo/README.md`）；
 4. 修改核心框架前先读 [cache.md](cache.md) 与对应模块的测试地图，跑通本地 pytest。

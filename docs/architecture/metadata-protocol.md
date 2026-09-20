@@ -1,7 +1,7 @@
 # 元数据协议规范（search-columns / search-fields）
 
 > 面向二开者与协议消费方：两个元数据接口的**字段语义、`input_type` 推断与注册表扩展方式、
-> 与三层权限（尤其字段权限）的关系**。响应结构已用 JSON Schema 冻结于
+> 与权限体系（尤其字段权限）的关系**。响应结构已用 JSON Schema 冻结于
 > [docs/schema/](../schema/README.md)（服务端契约测试持续校验真实响应）；本文解释"为什么长这样"。
 > 前端消费侧速查见 [framework-cookbook.md](framework-cookbook.md) §六。
 
@@ -61,9 +61,41 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
 
 成对守护：`renderers-pairing.spec.ts`（未分类即测试失败）。
 
-**扩展一个 `input_type` 的完整清单**（服务端判定 → 契约 → 四通道 → 门禁）见
-[framework-cookbook.md](framework-cookbook.md) §六「新增 input_type 检查清单」；
-若涉及响应结构变化，先改 `docs/schema/` 再 `pnpm sync:contract`（契约变更流程见该文档）。
+### 前端三通道内置渲染器清单（源码事实）
+
+三个注册表各自内建 `input_type → handler`（文件：`RePlusPage/src/utils/renderers-{search,form,detail}.tsx`）：
+
+| 通道 | 内置 `input_type` 键 | fallback 行为 |
+|---|---|---|
+| 搜索（`renderers-search.tsx`） | `text`、`datetime`、`datetimerange`、`number`、`select`、`select-multiple`、`select-ordering` | 命中 `api-` 前缀走 `api-search-*` 组件；其余 `valueType = input_type` |
+| 表单（`renderers-form.tsx`） | `integer`、`float`、`string`、`field`、`color`、`datetime`、`date`、`boolean`、`textarea`、`choice`、`multiple choice`、`labeled_choice`、`labeled_multiple_choice`、`object_related_field`、`m2m_related_field`、`object_related_field_file`、`object_related_field_image`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`list`、`phone`、`json` | 命中 `api-` 前缀走 `api-search-*` 组件；`suggest_url` 存在时升级为远程联想 `SuggestSelect` |
+| 详情/表格（`renderers-detail.tsx`） | `labeled_choice`、`color`、`object_related_field`、`m2m_related_field`、`labeled_multiple_choice`、`json`、`object_related_field_image`、`object_related_field_file`、`m2m_related_field_file`、`m2m_related_field_image`、`image upload`、`file upload`、`boolean`、`list` | **无 fallback**——未登记类型不配置渲染，靠 plus-pro/pure-table 按 `valueType` 原生输出 |
+
+> 速查提示（读源码才容易踩的边界）：
+> - **基础类型不占详情通道**：`integer`/`float`/`string`/`date`/`datetime`/布尔/`choice` 等由服务端
+>   DRF `label_lookup` 回退产出，详情/表格侧没有专门 handler，靠 `valueType` 原生渲染；
+>   `datetime`/`date` 的列表格式化 `cellRenderer` 实为表单通道一并下发（同文件内）。
+> - **`api-search-*` 是「业务启动时注册」的全局表**（`main.ts` 引入 `@/views/system/apiSearch` 完成登记）；
+>   自定义该类类型必须同步 `registerApiSearchComponents`，否则 DEV 告警且字段静默空。
+> - **详情无 fallback**：对象/数组值类型若漏登记详情 `render`，会退化成 `[object Object]`——这是四通道"
+>   "互不兜底"最易翻车的一侧（`renderers-pairing.spec.ts` 用成对守护拦截）。
+
+### 新增 `input_type` 五步清单
+
+从服务端声明一个新 `input_type` 到前端四通道可用，按序核对（详见
+[framework-cookbook.md](framework-cookbook.md) §六「新增 input_type 检查清单」）：
+
+1. **服务端判定**：`common/drf/metadata.py::get_field_type` 用 `isinstance` 分支产出该 `input_type`
+   （或字段类自带），并补 `tests/unit/system/test_data_dict.py` 同款守护；
+2. **契约同步**（若涉及响应结构）：改 `docs/schema/` → `pnpm sync:contract` 镜像并重新生成
+   `src/api/types/*.d.ts`；
+3. **四通道登记**：搜索 `renderers-search.tsx`、表单 `renderers-form.tsx`、详情 `renderers-detail.tsx`
+   （对象/数组值需同时给详情 `render` 与列表 `cellRenderer`），并在 `renderers-pairing.spec.ts` 分类清单登记
+   （表单不可编辑的类型登记 `FORM_EXEMPT_TYPES` 并写理由；新搜索键登记 `SEARCH_REGISTRY_TYPES`）；
+4. **取值口径**：`labeled_*` 系列值为 `{value,label,color?}`；关联字段为 `{pk,label}`……按既有渲染器
+   同口径处理 `ElTag` 文字/边框覆盖（`src/utils/dict.ts`）；
+5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck:strict` + `pnpm check:contract`；
+   改后端元数据后重启容器再跑 `pnpm test:e2e:fresh` 覆盖该字段的列表与详情。
 
 ## 四、与权限体系的关系
 

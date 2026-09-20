@@ -1,9 +1,14 @@
 # 框架能力速查（二开 CookBook）
 
 > 面向二次开发者：一页看全"框架给了什么、在哪里覆写、前端怎么对上"。
-> "为什么这样设计"见同目录各机制篇章；"第一次建业务模块"见 xadmin-docs
-> `example/new-app-*.md` 五篇教程。本文所有代码引用均可在仓库内找到真实出处，
-> **`demo` app 是官方活范例**（`demo/views.py` + `demo/serializers/`）。
+> 分工：组件的"是什么 / 怎么配 / 往哪扩"见 [component-handbook.md](component-handbook.md)；
+> 按任务找步骤见 [../guide/recipes.md](../guide/recipes.md)、方案对比见 [方案选型与对比.md](方案选型与对比.md)——
+> 本文聚焦**选型与覆写红线**。
+> "为什么这样设计"见同目录各机制篇章；"第一次建业务模块"见
+> [../guide/first-module-30min.md](../guide/first-module-30min.md)（生成器主线）与 xadmin-docs
+> `example/new-app-*.md` 五篇教程（手写理解版）。本文所有代码引用均可在仓库内找到真实出处；
+> **`demo` app 是官方示例**（`demo/views.py` + `demo/serializers/` + `demo/services.py` + `demo/tasks.py`，
+> 含上架审批 / 敏感操作二次确认 / 回收站与变更历史 / 定时任务接入，与框架同步演进）。
 
 ## 〇、三层职责与依赖方向
 
@@ -125,7 +130,7 @@ config.yml              XADMIN_APPS 注册 app
 
 1. **响应**：统一 `ApiResponse`（`code=1000` 成功）；协议已 JSON Schema 冻结（`docs/schema/`），改动先改 Schema 再补 `tests/unit/common/test_contract_schemas.py`；
 2. **审计**：请求级中间件自动落 OperationLog（UpdateAction 做 diff 含 M2M），业务代码**不要手写审计**；
-3. **并发防护**：测试库为 sqlite `:memory:`（不支持 `select_for_update`），状态流转用**条件更新 CAS**（范例 `system/utils/approval.py`）；
+3. **并发防护**：测试库为 sqlite `:memory:`（不支持 `select_for_update`），状态流转用**条件更新 CAS**（范例 `system/utils/approval/`）；
 4. **数据权限**：查询集过滤统一走 `get_filter_queryset`，手写裸 filter 会绕过数据权限与审计口径；
 5. **权限码**：PERMISSION 菜单 `name` = `动作:组件名`，且必须关联 `model`（见 example/new-app-menu.md）；
 6. **新业务能力一律独立 app**，`system` 不再扩容（ADR-015 / T17 评估结论）。
@@ -180,11 +185,11 @@ config.yml              XADMIN_APPS 注册 app
 
 - 页面级：`getDefaultAuths(instance, [...自定义动作])` 生成权限 map；
 - 按钮级：`hasAuth("动作:组件名")` 或 `<Auth value="...">`；
-- 三层权限机制见 `docs/architecture/{permission,data-permission,field-permission}.md`。
+- 权限机制（API/数据/字段 + 应用级授权）见 `docs/architecture/{permission,data-permission,field-permission}.md`。
 
 ## 七、功能模块与裁剪（二开起点）
 
-功能按 `core / standard / optional` 三级声明在 `common/core/modules.py`，通过 config.yml 裁剪，
+功能按 `core / standard / optional` 三级声明在 `common/core/modules/`，通过 config.yml 裁剪，
 不改代码即可得到轻量后台（清单、语义红线与路线图见
 [模块化与功能裁剪.md](模块化与功能裁剪.md)）：
 
@@ -197,7 +202,7 @@ MODULE_DISABLE: [analysis, chat]
 python manage.py modules --preset standard --config   # 预演并输出可粘贴的配置片段
 ```
 
-裁剪生效于五层：请求路由（404）、菜单与权限点（隐藏）、周期任务（不注册）、
+裁剪生效于六层：请求路由（404）、WS 通道（close 4404）、菜单与权限点（隐藏）、周期任务（不注册）、
 新装库的种子导入（不入库）、启动时的相关缓存清理；**关闭模块不删任何业务数据**。
 
 管理页：**系统管理 → 模块管理**（只读清单 + 可复制的配置片段）。

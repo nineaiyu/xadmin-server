@@ -118,4 +118,4 @@ Base URL + Bearer Token 即可；若 IdP 只支持「SCIM 1.1/自定义协议」
 - 不支持 bulk 操作：大规模首次同步（数万用户）请分批或降低并发；
 - 组删除不级联回收用户权限快照：用户角色变更会走既有权限缓存失效链路，但**已下发的 access token
   在有效期内仍是旧权限快照**（与后台改角色一致，属既有设计）；
-- 未实现 `/Me`、`/Bulk`、`/ServiceProviderConfig` 之外的协议端点。
+- 协议端点范围：`/ServiceProviderConfig`、`/Schemas`、`/ResourceTypes`、`/Users`、`/Groups` 已实现；`/Me`、`/Bulk` 未实现，除已实现端点外不承诺其它协议端点。
