@@ -62,6 +62,14 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         parser.add_argument("--frontend-root", default="", help="前端仓库根（默认同级 xadmin-client，存在时使用）")
         parser.add_argument("--parent", default="", help="菜单种子的上级菜单 pk（默认顶级）")
         parser.add_argument("--with-import-export", action="store_true", help="ViewSet 追加导入导出 Mixin 与权限码")
+        parser.add_argument("--with-module", action="store_true", help="同时生成 {app}/modules.py 模块声明（可裁剪）")
+        parser.add_argument("--module-id", default="", help="模块 id（默认 app label，仅 --with-module 时使用）")
+        parser.add_argument(
+            "--module-level",
+            choices=("core", "standard", "optional"),
+            default="optional",
+            help="模块等级（默认 optional，随 full 预设默认开启；仅 --with-module 时使用）",
+        )
         parser.add_argument("--output", default="", help="后端输出根（默认项目根）")
         parser.add_argument("--skip-frontend", action="store_true", help="只生成后端与菜单种子")
         parser.add_argument("--skip-menu-seed", action="store_true", help="不生成菜单种子 JSON")
@@ -75,3 +83,4 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         ctx = self._build_context(model, options)
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
+        self._print_next_steps(ctx, options)

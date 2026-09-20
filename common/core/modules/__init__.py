@@ -73,6 +73,7 @@ from .registry import (
     resolve_modules,
     validate_deployment_config,
 )
+from .scaffold import module_id_conflict, render_modules_source
 from .seeding import ModuleSeedFilter
 from .specs import (
     CORE,
@@ -118,6 +119,7 @@ __all__ = [
     "is_ws_path_trimmed",
     "load_override",
     "module_diff",
+    "module_id_conflict",
     "module_index",
     "module_signature",
     "modules_report",
@@ -125,6 +127,7 @@ __all__ = [
     "permission_prefixes_of",
     "preset_module_ids",
     "preview_modules",
+    "render_modules_source",
     "reset_module_state",
     "resolve_modules",
     "save_override",

@@ -4,6 +4,11 @@
 
 BASE_CONFIG = {
     "SECRET_KEY": "",
+    # SECRET_KEY 缺失时的自动生成开关（开箱即用，见 server/conf/manager.py）：
+    # - 无任何配置文件（回落 config_example.yml）或 DEBUG=true 时默认自动生成并持久化到 data/.secret_key；
+    # - 显式 true 强制开启；显式 false（默认）且非上述场景时，缺失 SECRET_KEY 按生产口径拒绝启动；
+    # - 自动密钥仅限开发/首次体验，生产必须显式配置（多实例一致性 + 已加密数据可解性）。
+    "SECRET_KEY_AUTO_GENERATE": False,
     "DEBUG": False,
     "DEBUG_DEV": False,
     # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
@@ -39,10 +44,12 @@ BASE_CONFIG = {
     "DEFAULT_CACHE_ID": 1,
     "CHANNEL_LAYERS_CACHE_ID": 2,
     "CELERY_BROKER_CACHE_ID": 3,
-    # database
-    "DB_ENGINE": "mysql",
-    "DB_HOST": "mariadb",
-    "DB_PORT": 3306,
+    # database（默认与 config_example.yml 模板一致：PostgreSQL + compose 服务名）。
+    # 兜底值仅在配置文件未给该键时生效；改用其他引擎（mysql/sqlite3/vastbase）需在
+    # config.yml 中显式配置 DB_ENGINE / DB_HOST / DB_PORT 三项。
+    "DB_ENGINE": "postgresql",
+    "DB_HOST": "postgresql",
+    "DB_PORT": 5432,
     "DB_DATABASE": "xadmin",
     "DB_USER": "server",
     "DB_PASSWORD": "",
@@ -72,7 +79,9 @@ BASE_CONFIG = {
     "HTTP_BIND_HOST": "0.0.0.0",
     "HTTP_LISTEN_PORT": 8896,
     "GUNICORN_MAX_WORKER": 4,
-    "CELERY_WORKER_COUNT": 10,
+    # 默认队列 worker 并发：与 config_example.yml 保持一致（模板是唯一事实源，
+    # 零配置回落路径直接读模板；此处仅作「配置文件未给该键」时的兜底）
+    "CELERY_WORKER_COUNT": 4,
     # heavy 队列（导入/导出/批量重任务）worker 配置。
     # CPU 密集的 Excel 导出可把 POOL 改为 'prefork' 提升吞吐（threads 池受 GIL 限制）；
     # 默认维持 threads，与 default 队列保持相同的运行时状态共享行为

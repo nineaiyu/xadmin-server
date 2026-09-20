@@ -38,6 +38,7 @@ from .scan import (
     resolve_view_context,
     sample_path,
     scan_gaps,
+    scan_permission_gaps,
     url_to_sample,
 )
 from .seed import detect_indent, dump_entries, merge_seed_file, seed_entry_pks
@@ -73,6 +74,7 @@ __all__ = [
     "resolve_view_context",
     "sample_path",
     "scan_gaps",
+    "scan_permission_gaps",
     "seed_entry_pks",
     "url_to_sample",
 ]

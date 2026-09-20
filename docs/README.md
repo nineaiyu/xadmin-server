@@ -10,11 +10,13 @@ docs/
 ├── README.md            本索引
 ├── adr/                 架构决策记录（ADR）
 ├── architecture/        架构设计文档（含数据权限重构设计与行为对照）
+├── guide/               快速上手教程（30 分钟开发第一个业务模块）
 ├── ops/                 部署与运维（deployment.md + runbook + 演练/基线记录）
 ├── plans/               项目规划与治理文档（跨仓库排期/台账，见 plans/README.md）
 ├── schema/              前后端契约 JSON Schema
 ├── imgs/                文档配图
 ├── metrics.md           基线指标看板（覆盖率/体积/性能 KPI 登记与回填）
+├── dev-pitfalls.md      新手陷阱清单（元数据/权限码/渲染器注册等高频坑集中登记）
 ├── 框架开发遵循准则.md    服务端 + 前端开发统一约定与检查清单
 ├── exception-handling.md  异常处理与错误码规范
 └── security-review.md   安全自查清单（按轮次追加归档）
@@ -22,21 +24,23 @@ docs/
 
 ## 新人上手路径
 
-1. **环境搭建**：根 [README](../README.md)（快速启动命令）→ [ops/deployment.md](ops/deployment.md)（配置项详解 / Docker /
-   生产部署 / 升级回滚）；
-2. **理解架构**：[architecture/overview.md](architecture/overview.md)
+1. **环境搭建**：根 [README](../README.md)（`bash utils/dev_up.sh` 一键启动）→ [ops/deployment.md](ops/deployment.md)
+   （配置项详解 / Docker / 生产部署 / 升级回滚）；
+2. **动手开发**：[guide/first-module-30min.md](guide/first-module-30min.md)（30 分钟开发第一个业务模块：
+   建 app → `generate_crud` → 菜单与授权 → `doctor` 自检），遇到疑问先查 [dev-pitfalls.md](dev-pitfalls.md)；
+3. **理解架构**：[architecture/overview.md](architecture/overview.md)
    （总览导航）→ [architecture/permission.md](architecture/permission.md)（三层权限，本项目核心）；
-3. **动手开发**：参考 demo app（Book 四件套 + 菜单初始化；前端 `BaseApi` + `RePlusPage`
-   两行代码一个页面），契约与错误码遵循 [schema/](schema/README.md) 与 [exception-handling.md](exception-handling.md)；
-4. **修改核心框架前**：读 [architecture/cache.md](architecture/cache.md)
-   （缓存红线）与 [architecture/indexes.md](architecture/indexes.md)（索引规范），确保 pytest 全绿。
+4. **修改核心框架前**：读 [common/README.md](../common/README.md)（内核边界与目录地图）、
+   [architecture/cache.md](architecture/cache.md)（缓存红线）与
+   [architecture/indexes.md](architecture/indexes.md)（索引规范），确保 pytest 全绿。
 
 ## 架构设计（architecture/）
 
 | 文档                                                      | 内容                                           |
 |---------------------------------------------------------|----------------------------------------------|
 | [overview.md](architecture/overview.md)                 | 架构总览：分层、元数据驱动、子系统速览、协作时序（1289 行深度分析文档的精炼导航版） |
-| [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
+| [framework-cookbook.md](architecture/framework-cookbook.md) | 框架能力速查（二开 CookBook）：三层职责图、ViewSet 选型、Action↔BaseApi 对照、覆写点、前端契约、约定红线 |
+| [metadata-protocol.md](architecture/metadata-protocol.md) | 元数据协议规范：search-columns / search-fields 字段语义、`input_type` 推断链与四通道注册表、与字段权限的关系、失败可见性 |
 | [模块化与功能裁剪.md](architecture/模块化与功能裁剪.md) | 二开友好架构：功能模块清单与裁剪矩阵（三级分层 / 发行预设 / 六层裁剪（含 WS 通道准入）/ CLI 与管理页 / 二开路径 A–C / 维护约定 / 已评估关闭项的触发条件） |
 | [permission.md](architecture/permission.md)             | 三层权限体系设计：生效顺序、16 种数据规则速查、缓存/信号失效链路、调试指引与测试地图 |
 | [data-permission.md](architecture/data-permission.md)   | 数据权限配置操作教程（配图）                               |
@@ -57,7 +61,7 @@ docs/
 
 | 文档                                                     | 内容                                              |
 |--------------------------------------------------------|-------------------------------------------------|
-| [deployment.md](ops/deployment.md)                     | 配置项详解、Docker 部署、备份恢复、升级回滚、监控告警                  |
+| [deployment.md](ops/deployment.md)                     | 配置项详解（§9 配置速查表：键 ↔ 环境变量 ↔ 默认值 ↔ 生效方式）、Docker 部署、备份恢复、升级回滚、监控告警 |
 | [runbook.md](ops/runbook.md)                           | 常见故障 → 处置步骤（≥10 个场景）                            |
 | [release-checklist.md](ops/release-checklist.md)       | 发布窗口 checklist：基线门禁、CSP enforce 与 AES v1 关闭硬门禁、挂起项与执行记录 |
 | [observability.md](ops/observability.md)               | 可观测性与 SLO：追踪启用（Sentry performance / OTel 评估口径）、指标清单与 SLO 定义、告警分级、故障演练记录 |
@@ -75,7 +79,7 @@ docs/
 | [ADR-001](adr/ADR-001-csrf-jwt-only.md)      | CSRF 中间件不启用（JWT-only 架构）           |
 | [ADR-002](adr/ADR-002-demo-app.md)           | demo app 去留：保留但默认关闭                |
 | [ADR-003](adr/ADR-003-websocket-protocol.md) | WebSocket 协议保持自定义格式并补类型约束          |
-| [ADR-004](adr/ADR-004-django-60-upgrade.md)  | Django 升级：停留 5.2 LTS（6.2 升级已取消：celery 未支持） |
+| [ADR-004](adr/ADR-004-django-60-upgrade.md)  | Django 升级线：当前运行 6.0.8；6.1 被 beat 声明阻断（6.2 LTS 发布后按复审口径复核） |
 | [ADR-005](adr/ADR-005-redis-split.md)        | Redis 拆分（缓存/队列/会话分实例）              |
 | [ADR-006](adr/ADR-006-asgi-db-connection-pool.md) | ASGI 形态启用 Django server 端 DB 连接池      |
 | [ADR-007](adr/ADR-007-multipart-form-data-v1-protocol.md) | FormData 上传协议 v1（点分键序列化契约）       |
@@ -126,6 +130,7 @@ docs/
 2026-09-14 三次清理（已完成职能的规划文档删除，去向登记于 [plans/README.md](plans/README.md)），
 2026-09-17 归档整理（历史年度文档移入 `plans/archive/`，清单与去向见 [plans/README.md](plans/README.md)）：
 
+- [二次开发友好化改造方案-2026.09.md](plans/二次开发友好化改造方案-2026.09.md) —— **开箱即用与易二次开发改造台账**：架构审查（技术栈 / 模块 / 前后端咬合）+ 22 项卡点清单 + 四大改造方向 + P0–P2 改造清单（18 项，含落地动作与验收标准）+ 里程碑与红线
 - [长期优化方案-2034.10-2039.09.md](plans/长期优化方案-2034.10-2039.09.md) —— **跨维度长期优化总纲（第九 ~ 十三年度）**：框架评估 + 功能模块逐项评估 + 五维度优化 + 横切保障；优先级模型、三阶段里程碑、KPI 总表
 - [年度开发计划-2034.10-2035.09.md](plans/年度开发计划-2034.10-2035.09.md) —— **第九年度排期（持续运营年）**：清账闭环 + SLO 校准 + 告警补强 + 演练收尾；按需插槽制 12 窗口
 - [年度回顾-2033.10-2034.09.md](plans/年度回顾-2033.10-2034.09.md) —— 第八年度回顾：12/12 全交付、KPI 对照与遗留交接

@@ -55,3 +55,18 @@ jobs:
       - name: Check oversized source files
         # 防巨型文件回潮：>500 行新增即失败；存量基线只减不增
         run: python scripts/check_file_length.py
+
+  doc-facts:
+    name: Doc facts gate (G4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check doc facts against code sources
+        # 文档单一事实源防漂移：「当前状态」版本串必须与 requirements.txt / server/const.py 一致
+        run: python scripts/check_doc_facts.py

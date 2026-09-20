@@ -10,7 +10,7 @@
 
 | 维度    | 后端 xadmin-server                                       | 前端 xadmin-client                    |
 |-------|--------------------------------------------------------|-------------------------------------|
-| 语言/框架 | Python 3.13 / Django 5.2 + DRF 3.16                    | TypeScript / Vue 3 + Vite(rolldown) |
+| 语言/框架 | Python 3.13+ / Django 6.0.8 + DRF 3.18.1               | TypeScript / Vue 3 + Vite(rolldown) |
 | 认证    | SimpleJWT 双 Token + 黑名单                                | Cookie 承载 Token，Axios 无感刷新          |
 | 实时通信  | Django Channels + Redis（Daphne）                        | 原生 WebSocket 封装                     |
 | 任务    | Celery + django-celery-beat/results（default/heavy 双队列） | —                                   |
@@ -59,18 +59,19 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 `input_type` 自动渲染表格列、搜索表单、编辑表单（注册表模式，`registry.ts` + `renderers/`）。新增页面 = 一行 API 实例化 +
 一行组件引用。
 
-`input_type` 完整映射表见完整版分析文档 §6.4。
+`input_type` 映射由服务端 `common/drf/metadata.py` 与前端渲染器注册表（`registry.ts` + `renderers/`）共同定义，
+契约以 [docs/schema/](../schema/) 为准。
 
 ## 四、三层权限（概要，详见 permission.md）
 
 | 层         | 控制对象                           | 生效位置                                              | 配置模型                                  |
 |-----------|--------------------------------|---------------------------------------------------|---------------------------------------|
 | 菜单/API 权限 | 页面可达性 + 接口调用（method+path 正则匹配） | `common/core/permission.py` `IsAuthenticated`     | Menu(目录/菜单/按钮) ←→ UserRole / DeptInfo |
-| 数据权限      | 数据行可见范围（14 种规则，AND/OR 组合，可绑菜单） | `common/core/filter.py` `get_filter_queryset()`   | DataPermission.rules(JSON)            |
+| 数据权限      | 数据行可见范围（16 种规则，AND/OR 组合，可绑菜单） | `common/core/filter.py` `get_filter_queryset()`   | DataPermission.rules(JSON)            |
 | 字段权限      | 序列化字段可见性（角色×菜单维度）              | `common/core/serializers.py` `get_allow_fields()` | FieldPermission ←→ ModelLabelField    |
 
-权限编码约定：`{action}:{ViewSetName}`（如 `create:UserViewSet`）；前端 `v-auth` 指令 / `hasAuth()` / `getDefaultAuths()`
-消费。缓存失效由信号驱动（见 cache.md），变更即时生效。
+权限编码约定：`{action}:{ViewSetName}`（如 `create:UserViewSet`）；前端 `hasAuth()` / `<Auth>` 组件 /
+`getDefaultAuths()` 消费（无 `v-auth` 指令）。缓存失效由信号驱动（见 cache.md），变更即时生效。
 
 ## 五、关键子系统速览
 
@@ -87,7 +88,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 导入导出      | `common/drf/parsers                        | renders`                                                                                        | CSV(编码探测)/Excel(下拉验证/列宽/样式)/ZIP(AES 加密)；AxiosMultiPartParser 反解 dot-notation（TD-19 登记，更换 HTTP 库需评估） |
 | 限流        | `common/core/throttle.py`                  | login/register/reset_password/upload/download 分类限流（login 50/h 等 6 类）                            |
 | 中间件链      | `server/settings/base.py`                  | Request-Id 注入、操作日志（动词方法无兜底缺陷已修复 TD-24）、Referer 校验（可选开关）、SQL 统计                                  |
-| 配置系统      | `server/conf.py` + `common/core/config.py` | 三层合并：config.yml/env → 默认值；数据库态 SysConfig/UserConfig 支持模板引用；SECRET_KEY 生产拒启校验                    |
+| 配置系统      | `server/conf/` + `common/core/config.py` | 取值链：config.yml（或 config.py）→ 同名环境变量 → 代码默认值；无配置文件时回落 config_example.yml 并自动生成 SECRET_KEY（开发）；数据库态 SysConfig/UserConfig 支持模板引用；SECRET_KEY 生产拒启校验 |
 | 上传        | `common/core/modelset/upload.py`           | 扩展名白名单（png/jpeg/jpg/gif）+ 大小上限；安全复核见 [../security-review.md](../security-review.md)             |
 | 任务监控      | Flower（`CELERY_FLOWER_AUTH`）               | basic-auth 配置化（T5.3 收尾）：未配置认证仅允许绑定 127.0.0.1                                                    |
 
@@ -124,8 +125,8 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 - CI：server pytest（覆盖率门禁 75%）+ ruff + 跨 app import 门禁 + 元数据契约测试；client typecheck/eslint(no-explicit-any
   error) + vitest 覆盖率阈值 + Playwright E2E（扩展中）；
 - 发布：前后端版本一致性校验 → 单架构构建 → trivy 镜像扫描（HIGH/CRITICAL 阻断）→ 多架构推送 → SBOM 附 release（T5.5）；
-- 安全基线：CORS/ALLOWED_HOSTS 配置化、SECRET_KEY 拒启、JWT 轮换+黑名单、六类限流、pip-audit 周检、compose 密码 .env
-  注入；自查档案见 [security-review.md](../security-review.md)。
+- 安全基线：CORS/ALLOWED_HOSTS 配置化、SECRET_KEY 显式配置（生产缺失拒绝启动，开发可自动生成）、JWT 轮换+黑名单、
+  六类限流、pip-audit 周检；自查档案见 [security-review.md](../security-review.md)。
 
 ## 九、架构决策与技术债索引
 
@@ -134,7 +135,7 @@ Views（RePlusPage 声明式页面） → Components（RePlusPage/RePlusSearch/R
 | [ADR-001](../adr/ADR-001-csrf-jwt-only.md)      | CSRF 中间件不启用（JWT-only 架构），以限流/Referer 开关纵深防御 |
 | [ADR-002](../adr/ADR-002-demo-app.md)           | demo app 保留但默认不启用（XADMIN_APPS 不含）           |
 | [ADR-003](../adr/ADR-003-websocket-protocol.md) | WebSocket 保持自定义协议，补 Schema 与类型约束            |
-| [ADR-004](../adr/ADR-004-django-60-upgrade.md)  | 停留 Django 5.2 LTS，2027-01 窗口评估 6.2 LTS      |
+| [ADR-004](../adr/ADR-004-django-60-upgrade.md)  | 当前运行 Django 6.0.8；6.1 被 django-celery-beat 声明阻断，6.2 LTS 发布后按复审口径复核 |
 
 技术债台账（TD-01~28）已全部销项：闭环记录见 [metrics.md](../metrics.md) 履历（原《半年回顾》规划文档已于 2026-09-14 清理，去向登记见 [plans/README.md](../plans/README.md)）。
 

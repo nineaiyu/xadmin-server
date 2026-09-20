@@ -141,6 +141,28 @@ def celery_prepare():
     download_ip_db()
 
 
+def check_permission_gaps():
+    """开发态启动自检：权限点缺口只告警不改库（生产不执行，避免启动开销）。
+
+    缺口 = 代码里有路由但库内没有对应权限点 → 非超管访问将 403。
+    修复命令：python manage.py sync_menu_permissions（如需回写种子加 --update-seed）。
+    """
+    if not DEBUG:
+        return
+    try:
+        from system.utils import permission_sync as sync
+
+        gaps = sync.scan_permission_gaps()
+        if gaps:
+            first_route, first_method, _ = gaps[0]
+            logger.warning(
+                f"检测到 {len(gaps)} 条权限点缺口（非超管将 403），运行 `python manage.py sync_menu_permissions` 修复；"
+                f"示例：{first_method} {first_route.url}"
+            )
+    except Exception as exc:
+        logger.warning(f"权限点自检跳过：{exc}")
+
+
 def server_prepare():
     check_database_connection()
     collect_static()
@@ -149,3 +171,4 @@ def server_prepare():
     perform_db_migrate()
     expire_caches()
     download_ip_db()
+    check_permission_gaps()

@@ -48,10 +48,6 @@ class MergeMixin:
             item["path"].parent.mkdir(parents=True, exist_ok=True)
             action = self._write(item, force=options["force"])
             lines.append(f"[{action}] {item['label']} → {item['path']}")
-        lines.append(
-            "\n提示：生成后请复核两点——关联字段 input_type 是否符合数据量；"
-            "菜单是否需要挂到已有目录（--parent 或菜单管理里改上级）。"
-        )
         self.stdout.write("\n".join(lines))
 
     def _write(self, item, force):

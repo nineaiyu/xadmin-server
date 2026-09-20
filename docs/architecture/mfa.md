@@ -142,7 +142,7 @@ def reset_user_api_key(request, user_id): ...
 
 ## 五、配置项
 
-默认值在 `server/conf.py`（`Config.settings`），映射在 `server/settings/setting.py`，
+默认值在 `server/conf/settings_defaults.py`（`Config.settings`），映射在 `server/settings/setting.py`，
 后台"系统设置 → 安全设置 → MFA 二次验证"（`/api/settings/mfa/auth`）可在线修改：
 
 | 配置                                   | 默认       | 说明                  |

@@ -21,26 +21,7 @@ import os
 from django.apps import apps
 from django.core.management.base import BaseCommand, CommandError
 
-from common.core.modules import CORE, MODULES, all_module_specs
-
-HEADER = '''#!/usr/bin/env python
-# -*- coding:utf-8 -*-
-"""{app_label} 的功能模块声明。
-
-随 app 安装自动纳入模块清单（`python manage.py modules`）；等级决定各发行预设下
-是否默认开启：core（不可裁）/ standard（默认开）/ optional（按需开）。
-"""
-
-from common.core.modules import ModuleSpec
-
-MODULES = (
-    ModuleSpec(
-        id="{module_id}",
-        label="{label}",
-        level="{level}",
-{extra}    ),
-)
-'''
+from common.core.modules import CORE, MODULES, module_id_conflict, render_modules_source
 
 
 class Command(BaseCommand):
@@ -61,7 +42,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         module_id = options["module_id"]
-        if module_id in {spec.id for spec in all_module_specs()}:
+        if module_id_conflict(module_id):
             raise CommandError(f"模块 id 已存在：{module_id}")
 
         app_label = options["app"]
@@ -80,19 +61,14 @@ class Command(BaseCommand):
         if os.path.exists(target) and not options["force"]:
             raise CommandError(f"目标文件已存在：{target}（如需覆盖加 --force）")
 
-        extra_lines = []
-        if options["menu"]:
-            extra_lines.append(f"        menus={tuple(options['menu'])!r},")
-        if options["route"]:
-            extra_lines.append(f"        routes={tuple(options['route'])!r},")
-        if options["permission"]:
-            extra_lines.append(f"        permissions={tuple(options['permission'])!r},")
-        content = HEADER.format(
-            app_label=app_config.verbose_name or app_config.name,
+        content = render_modules_source(
+            app_title=app_config.verbose_name or app_config.name,
             module_id=module_id,
             label=options["label"] or module_id,
             level=options["level"],
-            extra="\n".join(extra_lines) + "\n" if extra_lines else "",
+            menus=tuple(options["menu"]),
+            routes=tuple(options["route"]),
+            permissions=tuple(options["permission"]),
         )
         with open(target, "w", encoding="utf-8") as fp:
             fp.write(content)

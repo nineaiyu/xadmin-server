@@ -146,6 +146,15 @@ def scan_gaps(routes, perms):
     return gaps
 
 
+def scan_permission_gaps():
+    """便捷入口：扫描「代码路由 ↔ 库内权限点」缺口（doctor / 启动自检 / post_upgrade 共用）。
+
+    返回 ``[(RouteInfo, METHOD, action)]``；空列表表示当前库的权限点已完整覆盖。
+    注意：读库（``Menu`` 表），空库场景应先执行初始化。
+    """
+    return scan_gaps(build_route_index(), load_permission_menus())
+
+
 def resolve_view_context(view, view_route_urls, perms, default_parent=None):
     """解析某视图的权限码后缀与父菜单（返回 (suffix, parent, source)）。
 

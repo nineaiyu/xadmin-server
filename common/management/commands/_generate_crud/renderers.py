@@ -236,7 +236,8 @@ class RenderMixin:
     # ----------------------------------------------------------------- 菜单种子
 
     def _render_menu_seed(self, ctx, parent):
-        model_pk = self._model_label_pk(ctx["model"])
+        # model_label_pk 由 _collect_artifacts 预先解析（后续步骤提示复用）；兜底现场解析
+        model_pk = ctx["model_label_pk"] if "model_label_pk" in ctx else self._model_label_pk(ctx["model"])
         meta_pk = self._seed_pk(ctx, "meta")
         menu_pk = self._seed_pk(ctx, "menu")
         permissions = list(PERMISSION_ACTIONS)

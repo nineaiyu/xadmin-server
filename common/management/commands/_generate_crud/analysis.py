@@ -238,7 +238,12 @@ class AnalysisMixin:
         if not options["skip_frontend"]:
             artifacts.extend(self._frontend_artifacts(ctx, options))
 
+        if options["with_module"]:
+            artifacts.append(self._module_artifact(ctx, options))
+
         if not options["skip_menu_seed"]:
+            # 菜单的 model 关联（字段权限数据源）：渲染种子前解析一次，后续步骤提示复用
+            ctx["model_label_pk"] = self._model_label_pk(ctx["model"])
             artifacts.append(
                 {
                     "label": "菜单种子",
@@ -249,6 +254,43 @@ class AnalysisMixin:
                 }
             )
         return artifacts
+
+    def _module_artifact(self, ctx, options):
+        """可选产物：{app}/modules.py 模块声明（可裁剪模块的脚手架）。
+
+        模块 id 已存在时不中断生成，降级为提示（换 --module-id 或去掉 --with-module）；
+        模板与 `generate_module` 同源（common/core/modules/scaffold.py）。
+        """
+        from common.core.modules import module_id_conflict, render_modules_source
+
+        module_id = options["module_id"] or ctx["app_label"]
+        key = f"modules-{ctx['app_label']}"
+        if module_id_conflict(module_id):
+            return {
+                "label": "模块声明",
+                "path": None,
+                "content": "",
+                "mode": "notice",
+                "key": key,
+                "notice": f"模块 id 已存在：{module_id}（换 --module-id，或不加 --with-module）",
+            }
+        app_config = apps.get_app_config(ctx["app_label"])
+        # 菜单根 name 取生成的页面菜单名（component）；跳过菜单种子时无从声明，留空
+        menus = () if options["skip_menu_seed"] else (ctx["component"],)
+        return {
+            "label": "模块声明",
+            "path": Path(options["output"] or settings.PROJECT_DIR) / ctx["app_label"] / "modules.py",
+            "content": render_modules_source(
+                app_title=app_config.verbose_name or app_config.name,
+                module_id=module_id,
+                label=module_id,
+                level=options["module_level"],
+                menus=menus,
+                routes=(f"^/api/{ctx['app_label']}/",),
+            ),
+            "mode": "create",
+            "key": key,
+        }
 
     def _frontend_artifacts(self, ctx, options):
         client_root = Path(options["frontend_root"]) if options["frontend_root"] else self._default_client_root()
@@ -298,3 +340,34 @@ class AnalysisMixin:
     def _default_client_root():
         candidate = Path(settings.PROJECT_DIR).parent / "xadmin-client"
         return candidate if candidate.is_dir() else None
+
+    # --------------------------------------------------------------- 后续步骤
+
+    def _print_next_steps(self, ctx, options):
+        """生成后「后续步骤」清单：把散落教程里的手工动作收敛为可复制命令。
+
+        口径与 docs/guide/first-module-30min.md 同步：权限点种子入库 →
+        字段权限树（模型节点缺失时）→ 菜单与授权 → doctor 自检 →（可选）模块声明。
+        """
+        steps = []
+        if ctx["app_label"] not in (getattr(settings, "XADMIN_APPS", None) or []):
+            steps.append(f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（改后需重启进程）')
+        if not options["skip_menu_seed"]:
+            seed = f"loadjson/seed_{ctx['app_label']}_{ctx['model_snake']}.json"
+            steps.append(f"权限点与菜单入库：python manage.py loaddata {seed}")
+            if not ctx.get("model_label_pk"):
+                steps.append(
+                    "字段权限树：python manage.py sync_model_field 后加 --force 重跑本命令"
+                    "（模型节点写回种子后字段权限才可用）"
+                )
+        steps.append(f"菜单与授权：菜单管理里挂到目标目录；角色管理勾选 *:{ctx['component']} 权限点")
+        steps.append("自检：python manage.py doctor（权限点缺口 / 依赖 / 契约一次看全）")
+        if not options["with_module"]:
+            steps.append("（可选）声明为可裁剪模块：重跑本命令加 --with-module，或 manage.py generate_module")
+
+        lines = ["", "后续步骤（命令在项目根执行）："]
+        lines.extend(f"  {index}) {text}" for index, text in enumerate(steps, start=1))
+        lines.append("")
+        lines.append("复核：关联字段 input_type 是否符合数据量（大数据量换 api-search-* 形态）；")
+        lines.append("      菜单上级是否要挂到已有目录（--parent 或菜单管理里调整）。")
+        self.stdout.write("\n".join(lines))

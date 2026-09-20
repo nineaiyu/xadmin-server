@@ -26,10 +26,15 @@ SECRET_KEY = CONFIG.SECRET_KEY
 DEBUG = CONFIG.DEBUG
 
 # SECRET_KEY 同时作为 JWT 签名密钥（SIMPLE_JWT.SIGNING_KEY），
-# 生产环境为空会导致任意伪造 token，直接拒绝启动；DEBUG 模式允许为空便于本地调试
+# 生产环境为空会导致任意伪造 token，直接拒绝启动；DEBUG 模式允许为空便于本地调试。
+# 注：无配置文件回落 config_example.yml、DEBUG=true 或显式 SECRET_KEY_AUTO_GENERATE=true
+# 三种场景会在 server/conf/manager.py 自动生成并持久化密钥（data/.secret_key），一般不会走到本分支。
 if not SECRET_KEY and not DEBUG:
     raise ImproperlyConfigured(
-        "SECRET_KEY is required when DEBUG is disabled. Set it in config.yml or the SECRET_KEY environment variable."
+        "SECRET_KEY is required when DEBUG is disabled. Fix it with one of:\n"
+        "  1. Set SECRET_KEY in config.yml (recommended for production);\n"
+        "  2. Export the SECRET_KEY environment variable before startup;\n"
+        "  3. Set SECRET_KEY_AUTO_GENERATE=true to auto-generate and persist data/.secret_key."
     )
 
 # SECURITY WARNING: If you run with debug turned on, more debug msg with be log
@@ -119,7 +124,7 @@ INSTALLED_APPS = [
 # PostgreSQL 专有索引（GinIndex / pg_trgm）静态存在于模型 Meta，该 app 必须参与模型
 # 检查（postgres.E005），否则 `check --database` 失败会卡死服务启动（2026-09-18 部署事故根因）。
 # 无条件注册：非 PG 后端下 app 仅注册检查与 lookups、不产生任何 DDL（建索引迁移 0010 有
-# vendor 守卫）；若条件化，mysql 部署与 CI（默认 DB_ENGINE=mysql）会踩同样的 E005。
+# vendor 守卫）；若条件化，显式使用 mysql/sqlite3 的部署会踩同样的 E005。
 INSTALLED_APPS.append("django.contrib.postgres")
 
 if DEBUG or DEBUG_DEV:
@@ -257,12 +262,23 @@ CACHES = {
 # python manage.py makemigrations
 # python manage.py migrate
 
+
+def _resolve_db_engine(value: str) -> str:
+    """数据库后端解析：短名 → Django 后端路径，其余按完整路径原样使用（第三方后端）。
+
+    短名清单与 config_example.yml 的注释一致（sqlite3 / mysql / oracle / postgresql / vastbase）。
+    """
+    name = value.lower()
+    if name in ("mysql", "oracle", "postgresql", "sqlite3"):
+        return f"django.db.backends.{name}"
+    if name == "vastbase":
+        return "django_vastbase_backend"
+    return value
+
+
 DB_OPTIONS = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
-if DB_ENGINE in ["mysql", "oracle", "postgresql", "sqlite3"]:
-    ENGINE = f"django.db.backends.{DB_ENGINE}"
-elif DB_ENGINE == "vastbase":
-    ENGINE = "django_vastbase_backend"
+ENGINE = _resolve_db_engine(CONFIG.DB_ENGINE)
 
 if DB_ENGINE == "postgresql":
     # 连接建立超时（演练第五轮·网络分区修复，2026-09-16）：PG 断网时 TCP 无响应，
@@ -280,8 +296,6 @@ if DB_ENGINE == "postgresql":
     DB_OPTIONS["keepalives_idle"] = 30  # 空闲 30s 开始探测
     DB_OPTIONS["keepalives_interval"] = 10  # 探测间隔 10s
     DB_OPTIONS["keepalives_count"] = 3  # 3 次未应答判定连接死亡
-else:
-    ENGINE = CONFIG.DB_ENGINE
 
 # ASGI 形态下 ASGIHandler 为每请求创建独立线程（ThreadSensitiveContext），
 # 线程随请求结束消亡，持久连接机制（CONN_MAX_AGE）在此形态下无效，等效每请求新建 DB

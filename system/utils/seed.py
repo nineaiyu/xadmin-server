@@ -26,6 +26,7 @@ import os
 
 from django.apps import apps
 from django.db import DEFAULT_DB_ALIAS
+from django.db.models import Q
 from django.utils import timezone
 
 from common.utils import get_logger
@@ -68,8 +69,9 @@ def write_seed_rows(rows_by_model, model_names, target_dir) -> list:
 def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
     """剔除与库内数据冲突的种子行，返回 ``(rows_by_model, notes)``。
 
-    冲突判定：某行在**唯一字段**（``unique=True`` 且非主键）上的取值，已被库里另一主键的对象占用。
-    随后级联处理引用被剔除行的行（外键整行剔除、m2m 列表移除对应主键）。
+    冲突判定：某行在**唯一键**（字段级 ``unique=True``，或单字段 / 多字段 ``UniqueConstraint``）
+    上的取值，已被库里另一主键的对象占用。随后级联处理引用被剔除行的行（外键整行剔除、
+    m2m 列表移除对应主键）。
     """
 
     dropped: dict = {}
@@ -81,26 +83,46 @@ def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
         model = apps.get_model(label)
         if model is None:
             continue
-        for field_name, condition in _unique_checks(model):
+        for field_names, condition in _unique_checks(model):
             # 每个唯一键过滤后重新取当前行（前一个键可能已剔除若干行）
             rows = pending.get(label) or []
-            values = {row["fields"].get(field_name) for row in rows if row["fields"].get(field_name) is not None}
-            if not values:
+            keys = {}
+            for row in rows:
+                values = tuple(row["fields"].get(name) for name in field_names)
+                # 含 NULL 的组合键不参与判定：PG 的 UNIQUE 视 NULL 互不相等
+                if any(value is None for value in values):
+                    continue
+                keys.setdefault(tuple(_normalize_unique(value) for value in values), values)
+            if not keys:
                 continue
-            queryset = model._default_manager.using(using).filter(**{f"{field_name}__in": list(values)})
+            if len(field_names) == 1:
+                queryset = model._default_manager.using(using).filter(
+                    **{f"{field_names[0]}__in": [values[0] for values in keys.values()]}
+                )
+            else:
+                query = Q()
+                for values in keys.values():
+                    query |= Q(**dict(zip(field_names, values, strict=True)))
+                queryset = model._default_manager.using(using).filter(query)
             if condition is not None:
                 queryset = queryset.filter(condition)
-            existing = dict(queryset.values_list(field_name, "pk"))
+            existing = {
+                tuple(_normalize_unique(value) for value in values): pk
+                for *values, pk in queryset.values_list(*field_names, "pk")
+            }
             if not existing:
                 continue
             kept = []
             for row in rows:
-                value = row["fields"].get(field_name)
-                if value is not None and value in existing and str(existing[value]) != str(row["pk"]):
+                values = tuple(row["fields"].get(name) for name in field_names)
+                if any(value is None for value in values):
+                    kept.append(row)
+                    continue
+                owner = existing.get(tuple(_normalize_unique(value) for value in values))
+                if owner is not None and str(owner) != str(row["pk"]):
+                    desc = "、".join(f"{name}={value}" for name, value in zip(field_names, values, strict=True))
                     _mark_dropped(dropped, label, row["pk"])
-                    notes.append(
-                        f"跳过 {label}({row['pk']})：{field_name}={value} 已被库内对象占用（pk={existing[value]}）"
-                    )
+                    notes.append(f"跳过 {label}({row['pk']})：{desc} 已被库内对象占用（pk={owner}）")
                     continue
                 kept.append(row)
             pending[label] = kept
@@ -132,30 +154,41 @@ def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
 
 
 def _unique_checks(model) -> list:
-    """模型的唯一键清单：``[(字段名, 额外过滤 Q), ...]``。
+    """模型的唯一键清单：``[(字段名元组, 额外过滤 Q), ...]``。
 
     两类都算唯一键：
-    1. 字段级 ``unique=True``；
-    2. 单字段 ``UniqueConstraint``（含条件约束，如角色/菜单的"未删除数据唯一"）。
+    1. 字段级 ``unique=True``（单字段）；
+    2. ``UniqueConstraint``——单字段或**多字段组合**（含条件约束，如角色/菜单的
+       "未删除数据唯一"、流程节点的 ``(flow, order)``、字典项的 ``(parent, code)``）。
+       组合键必须覆盖：漏判会让 ``loaddata`` 撞唯一约束，单事务回滚**全部**种子。
     """
 
     checks: list = []
     for field in model._meta.concrete_fields:
         if getattr(field, "unique", False) and not field.primary_key:
-            checks.append((field.name, None))
+            checks.append(((field.name,), None))
     for constraint in model._meta.constraints:
         fields = getattr(constraint, "fields", None)
-        if not fields or len(fields) != 1:
+        if not fields:
             continue
-        checks.append((fields[0], getattr(constraint, "condition", None)))
+        checks.append((tuple(fields), getattr(constraint, "condition", None)))
     # 去重：同一字段可能同时命中字段级 unique 与约束
     seen, unique_checks = set(), []
-    for field_name, condition in checks:
-        if field_name in seen:
+    for field_names, condition in checks:
+        if field_names in seen:
             continue
-        seen.add(field_name)
-        unique_checks.append((field_name, condition))
+        seen.add(field_names)
+        unique_checks.append((field_names, condition))
     return unique_checks
+
+
+def _normalize_unique(value) -> str:
+    """唯一键取值归一：种子 JSON 里是字符串，ORM 取回的是 UUID/整数，统一按字符串比较。
+
+    （不归一的话外键类唯一键永远比不中——``str`` 与 ``UUID`` 不相等，冲突预检形同虚设。）
+    """
+
+    return str(value)
 
 
 def _mark_dropped(dropped: dict, label: str, pk: str) -> None:

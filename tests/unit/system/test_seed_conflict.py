@@ -16,9 +16,9 @@ import pytest
 from django.conf import settings as dj_settings
 
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import UserRole
-from system.models.approval import ApprovalFlow
-from system.utils.seed import build_seed_fixtures, filter_conflicting_rows
+from system.models import DataDict, UserRole
+from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
+from system.utils.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 
 pytestmark = pytest.mark.django_db
 
@@ -127,6 +127,74 @@ class TestFilterConflictingRows:
         assert filtered["system.userrole"] == []
         assert filtered["system.datamaskrule"][0]["fields"]["roles"] == []
         assert any("datamaskrule" in note for note in notes)
+
+    def test_composite_unique_conflict_dropped(self):
+        """组合唯一键 ``(flow, order)`` 被占用时同样跳过。
+
+        历史缺陷：只判单字段唯一键，组合键漏判 → ``loaddata`` 撞唯一约束，
+        单事务回滚**全部**种子（含菜单与权限点），init_data 直接失败。
+        """
+        ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")
+        ApprovalFlowNode.objects.create(
+            pk="0ba28b97-24e2-4d34-a87a-787626fc5611", flow_id=LEAVE_SEED_PK, order=1, name="库内节点"
+        )
+        rows = {
+            "system.approvalflownode": [
+                {
+                    "model": "system.approvalflownode",
+                    "pk": "5eed0007-0000-4000-8000-000000000005",
+                    "fields": {"flow": LEAVE_SEED_PK, "order": 1, "name": "种子节点"},
+                }
+            ]
+        }
+        filtered, notes = filter_conflicting_rows(rows)
+        assert filtered["system.approvalflownode"] == []
+        assert len(notes) == 1
+        assert "flow=" in notes[0] and "order=1" in notes[0]
+
+    def test_composite_unique_same_pk_kept(self):
+        ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")
+        node_pk = "5eed0007-0000-4000-8000-000000000005"
+        ApprovalFlowNode.objects.create(pk=node_pk, flow_id=LEAVE_SEED_PK, order=1, name="同一条")
+        rows = {
+            "system.approvalflownode": [
+                {
+                    "model": "system.approvalflownode",
+                    "pk": node_pk,
+                    "fields": {"flow": LEAVE_SEED_PK, "order": 1, "name": "同一条"},
+                }
+            ]
+        }
+        filtered, notes = filter_conflicting_rows(rows)
+        assert notes == []
+        assert len(filtered["system.approvalflownode"]) == 1
+
+    def test_composite_unique_null_value_kept(self):
+        """组合键含 NULL 时不判冲突（PG 的 UNIQUE 视 NULL 互不相等）。"""
+        ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")
+        ApprovalFlowNode.objects.create(
+            pk="0ba28b97-24e2-4d34-a87a-787626fc5611", flow_id=LEAVE_SEED_PK, order=1, name="库内节点"
+        )
+        rows = {
+            "system.approvalflownode": [
+                {
+                    "model": "system.approvalflownode",
+                    "pk": "node-no-order",
+                    "fields": {"flow": LEAVE_SEED_PK, "order": None, "name": "缺序节点"},
+                }
+            ]
+        }
+        filtered, notes = filter_conflicting_rows(rows)
+        assert notes == []
+        assert len(filtered["system.approvalflownode"]) == 1
+
+
+class TestUniqueChecks:
+    def test_composite_constraints_included(self):
+        """组合唯一约束必须进入检查清单（单字段以外的约束不得被静默跳过）。"""
+        assert ("flow", "order") in {names for names, _ in _unique_checks(ApprovalFlowNode)}
+        assert ("flow", "version") in {names for names, _ in _unique_checks(ApprovalFlowVersion)}
+        assert ("parent", "code") in {names for names, _ in _unique_checks(DataDict)}
 
 
 class TestBuildSeedFixtures:

@@ -19,8 +19,8 @@ _test_config = Config()
 _test_config["SECRET_KEY"] = "test-only-secret-key-0123456789abcdef"
 _test_config["XADMIN_APPS"] = ["demo"]  # 启用 demo app，供 BaseModelSet 冒烟测试使用
 # 与生产形态对齐（同 loadtest/settings_loadtest.py 的做法）：DB_ENGINE 决定 settings 的
-# 构造分支（DB_OPTIONS 半开防护参数、连接池开关等），缺失时回落 defaults.py 的 mysql，
-# 会让 PG 相关配置分支在测试中不可见（守护测试形同虚设）。实际连接仍被下方 sqlite 覆盖。
+# 构造分支（DB_OPTIONS 半开防护参数、连接池开关等），显式钉住可避免测试分支随 defaults.py
+# 兜底值变动而漂移（PG 相关配置分支不可见时守护测试形同虚设）。实际连接仍被下方 sqlite 覆盖。
 _test_config["DB_ENGINE"] = "postgresql"
 
 ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _test_config)

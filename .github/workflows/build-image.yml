@@ -21,10 +21,15 @@ jobs:
       - name: Check version consistency with client
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
+          SERVER_VERSION=$(python3 -c "import re; print(re.search(r'^VERSION\s*=\s*\"([^\"]+)\"', open('server/const.py').read(), re.M).group(1))")
           CLIENT_VERSION=$(python3 -c "import json; print(json.load(open('xadmin-client/package.json'))['version'])")
-          echo "server tag: $TAG_VERSION, client version: $CLIENT_VERSION"
+          echo "server tag: $TAG_VERSION, server const.py: $SERVER_VERSION, client version: $CLIENT_VERSION"
           if [ "$TAG_VERSION" != "$CLIENT_VERSION" ]; then
             echo "::error::前后端版本不一致：server tag v$TAG_VERSION vs client $CLIENT_VERSION，请同步升版后再发布"
+            exit 1
+          fi
+          if [ "$TAG_VERSION" != "$SERVER_VERSION" ]; then
+            echo "::error::发布 tag 与 server/const.py 不一致：tag v$TAG_VERSION vs const.py $SERVER_VERSION，请同步后再发布"
             exit 1
           fi
 

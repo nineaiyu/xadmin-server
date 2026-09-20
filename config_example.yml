@@ -1,6 +1,19 @@
+# =============================================================================
+# xadmin-server 配置模板。本文件同时作为「未创建 config.yml 时」的开箱即用默认配置。
+#
+# 取值优先级：config.yml / config.py 中的值 > 同名环境变量 > 代码内置默认值
+#             （环境变量仅在该键未被配置文件赋值时生效；按默认值类型自动转换 bool/数字/列表/字典）
+# 开箱即用：未创建 config.yml 时自动使用本文件默认值启动（数据库/Redis 主机名为 compose
+#           服务名 postgresql/redis）。SECRET_KEY 留空时自动生成并持久化到 data/.secret_key
+#           （仅限开发/首次体验；生产必须显式配置，可设 SECRET_KEY_AUTO_GENERATE: false
+#           关闭自动生成，缺失时按生产口径拒绝启动）。
+# 自定义配置：cp config_example.yml config.yml 后修改（config.yml 已在 .gitignore 中）。
+# =============================================================================
+
 # SECURITY WARNING: keep the secret key used in production secret!
 # 加密密钥 生产服必须保证唯一性，你必须保证这个值的安全，否则攻击者可以用它来生成自己的签名值
-# $ cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 49;echo
+# 生成方法：$ cat /dev/urandom | tr -dc A-Za-z0-9 | head -c 49;echo
+# 留空 = 开发/首次体验自动生成（持久化 data/.secret_key）；生产显式配置
 SECRET_KEY:
 
 # Development env open this, when error occur display the full process track, Production disable it
@@ -62,20 +75,11 @@ SECRET_KEY:
 # 创建竖数据库sql
 # create database xadmin default character set utf8mb4 COLLATE utf8mb4_bin;
 # grant all on xadmin.* to server@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
+#
+# 下方默认值面向 docker compose 形态（主机名 = compose 服务名）；
+# 非 Docker 本地开发请改用本段末尾的「本地非 Docker」注释块（取消注释即覆盖上方默认值）。
 
-# SQLite setting:
-# 使用单文件sqlite数据库
-# DB_ENGINE: sqlite3
-# DB_DATABASE:
-# MySQL or postgres setting like:
-# DB_ENGINE can set mysql, oracle, postgresql, sqlite3
-
-# 使用 Mariadb 作为数据库
-#DB_ENGINE: mysql
-#DB_HOST: mysql
-#DB_PORT: 3306
-
-# 使用 postgresql 作为数据库[默认数据库]
+# 使用 postgresql 作为数据库[默认数据库，compose 形态]
 DB_ENGINE: postgresql
 DB_HOST: postgresql
 DB_PORT: 5432
@@ -84,11 +88,29 @@ DB_USER: server
 DB_DATABASE: xadmin
 #DB_PASSWORD: KGzKjZpWBp4R4RSa
 
+# ---------------------------------------------------------------------------
+# 本地非 Docker 开发：按需取消注释（覆盖上方默认值）
+# ---------------------------------------------------------------------------
+# ① SQLite 单文件（零外部依赖，单机开发最省事）
+# DB_ENGINE: sqlite3
+# DB_DATABASE: data/xadmin.db
+#
+# ② 本机 PostgreSQL（先按本段开头注释建库并授权）
+# DB_ENGINE: postgresql
+# DB_HOST: 127.0.0.1
+# DB_PORT: 5432
+# DB_USER: server
+# DB_PASSWORD: <your-db-password>
+#
+# ③ 其他引擎：mysql（本机 127.0.0.1:3306）/ oracle / vastbase，
+#    DB_ENGINE 与 DB_HOST / DB_PORT 同步改为对应值
+
 
 # Use Redis as broker for celery and web socket
-# Redis配置
+# Redis配置（默认值面向 compose 形态；本地非 Docker 开发改为 127.0.0.1）
 REDIS_HOST: redis
 REDIS_PORT: 6379
+# 本地非 Docker 开发：REDIS_HOST: 127.0.0.1
 #REDIS_PASSWORD: <your-redis-password>
 #DEFAULT_CACHE_ID: 1
 #CHANNEL_LAYERS_CACHE_ID: 2
@@ -141,7 +163,8 @@ CELERY_WORKER_COUNT: 4
 
 # 需要将创建的应用写到里面（第三方/自有 app 必须在此注册才会参与
 # makemigrations / migrate / 路由自动注入）。
-# 官方二开范例 demo（Book 四件套，「两行代码一个页面」）默认关闭，
-# 需要体验时取消下一行注释启用：
-# XADMIN_APPS: [demo]
-XADMIN_APPS:
+# 官方二开范例 demo（Book 四件套，「两行代码一个页面」）默认开启，作为开箱即用的
+# 活样例（教程见 docs/guide/first-module-30min.md）；仅影响「未创建 config.yml 时的
+# 开发兜底」路径，生产镜像（空配置）与显式配置不受影响。
+# 生产/不需要示例时置空：XADMIN_APPS:
+XADMIN_APPS: [demo]

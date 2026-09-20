@@ -7,7 +7,7 @@
 
 import string
 
-from utils.init_data import ADMIN_PASSWORD_ENV, resolve_admin_password
+from utils.init_data import ADMIN_PASSWORD_ENV, parse_args, resolve_admin_password
 
 
 class TestResolveAdminPassword:
@@ -36,3 +36,27 @@ class TestResolveAdminPassword:
         password = resolve_admin_password()
         allowed = set(string.ascii_letters + string.digits + "-_")
         assert set(password) <= allowed
+
+    def test_cli_password_takes_precedence(self, monkeypatch):
+        monkeypatch.setenv(ADMIN_PASSWORD_ENV, "env-password")
+        assert resolve_admin_password("cli-password") == "cli-password"
+
+    def test_cli_blank_falls_through_to_env(self, monkeypatch):
+        monkeypatch.setenv(ADMIN_PASSWORD_ENV, "env-password")
+        assert resolve_admin_password("   ") == "env-password"
+
+
+class TestParseArgs:
+    """命令行参数（init_data 幂等化改造新增，供 dev_up.sh 编排使用）。"""
+
+    def test_defaults(self):
+        args = parse_args([])
+        assert args.with_demo is False
+        assert args.skip_ip_db is False
+        assert args.admin_password == ""
+
+    def test_flags(self):
+        args = parse_args(["--with-demo", "--skip-ip-db", "--admin-password", "pwd"])
+        assert args.with_demo is True
+        assert args.skip_ip_db is True
+        assert args.admin_password == "pwd"

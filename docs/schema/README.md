@@ -17,5 +17,7 @@
   （CI 只 checkout client 仓库，无法跨仓读取本目录），
   并由 `pnpm check:contract` 校验镜像与真源一致。
 - **变更流程**：修改本目录 Schema（破坏性契约变更，需评审）→
-  同步镜像到 client `contract/schema/` → client 跑 `pnpm gen:metadata-types`
-  并提交生成的 `src/api/types/*.d.ts`。
+  在 client 仓库跑 `pnpm sync:contract`（一键同步镜像到 `contract/schema/` +
+  重新生成 `src/api/types/*.d.ts`）→ 连同生成物一起提交。
+  单仓检出（无服务端目录）时可用 `XADMIN_SERVER_DIR` 指向服务端仓库；
+  CI 仍以 `pnpm check:contract` 校验镜像未被绕过手工修改。

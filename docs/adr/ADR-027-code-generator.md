@@ -88,3 +88,14 @@ python manage.py generate_crud demo.Book \
   需要中英词条的按教程补 `locales/{zh-CN,en}.yaml`（可选）；
 - 生成物需要开发者复核的前两点（命令输出中提示）：关联字段 `input_type` 是否符合数据量、
   菜单是否需要挂到已有目录（`--parent`）。
+
+### 6. 增量（2026-09-19，二次开发友好化 P2-4）
+
+- **后续步骤清单**：命令输出尾部把散落在教程里的手工动作收敛为可复制命令——`XADMIN_APPS`
+  注册提示（未登记时）、菜单种子 `loaddata` 灌库、`sync_model_field`（种子 model 关联为空时）、
+  菜单/角色授权、`doctor` 自检；与 `docs/guide/first-module-30min.md` 口径同步；
+- **`--with-module`**：同时生成 `{app}/modules.py` 模块声明（模块 id 默认 app label，
+  `--module-id` / `--module-level` 可覆盖）；模板与 `generate_module` 同源
+  （`common/core/modules/scaffold.py`，单一模板源，双仓命令不再各写一份），模块 id 已存在时
+  降级为提示、不中断生成；元组字面量渲染为 ruff format 口径的双引号
+  （`generate_module` 既有产物同步修正为一次过 `ruff format --check`）。

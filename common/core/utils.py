@@ -113,7 +113,18 @@ def auto_register_app_url(urlpatterns):
         # 使用 value.name 替代 name，以正确处理 apps.xxxx.apps.XxxxConfig 这样的嵌套结构
         app_module_name = value.name
 
-        urls = import_from_string(f"{app_module_name}.config.URLPATTERNS")
+        try:
+            urls = import_from_string(f"{app_module_name}.config.URLPATTERNS")
+        except ImportError:
+            # 允许「先注册 XADMIN_APPS、后由 generate_crud 生成 config.py」的顺序
+            # （注册后模型才在 INSTALLED_APPS 内，生成器才找得到模型——硬失败会把
+            # 新 app 的引导流程锁死）。缺 config.py / URLPATTERNS 时路由不注入，
+            # 用可操作的告警代替 ModuleNotFoundError 崩溃。
+            logger.warning(
+                f"应用 {name} 已注册进 XADMIN_APPS，但缺少 {app_module_name}/config.py 的 URLPATTERNS，"
+                f"该应用路由未注入（生成方式：python manage.py generate_crud <app>.<Model>；改后需重启进程）"
+            )
+            continue
         logger.info(f"auto register {name} url success")
         if urls:
             urlpatterns.extend(urls)

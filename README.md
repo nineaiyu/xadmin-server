@@ -9,6 +9,27 @@ xadmin-基于Django+vue3的rbac权限管理系统
 [https://xadmin.dvcloud.xin/](https://xadmin.dvcloud.xin/)
 账号密码：admin/admin123
 
+## 快速开始
+
+```shell
+# 方式一：Docker 一键体验（起后端全栈 + 幂等初始化 + 启动前端；需 Docker 与 Node/pnpm）
+bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-only 仅起后端；--help 查看帮助
+```
+
+- 浏览器打开 <http://127.0.0.1:8848>，账号 `xadmin`，初始密码在初始化输出中**仅打印一次**；
+- 停止后端：`bash utils/dev_down.sh`；重复执行是幂等的（升级后同样适用）；
+- 首次运行会自动构建镜像（数分钟）。
+
+```shell
+# 方式二：本机源码启动（Python 3.13+，需自备数据库（PostgreSQL/MySQL/SQLite）与 Redis）
+cp config_example.yml config.yml   # 可跳过：不创建时自动使用内置默认配置并自动生成 SECRET_KEY
+python manage.py migrate
+python utils/init_data.py          # 幂等；--with-demo / --skip-ip-db / --admin-password
+python manage.py start all -d
+```
+
+超管初始密码：`--admin-password` 或环境变量 `XADMIN_ADMIN_PASSWORD` 显式指定，未设置时随机生成并仅打印一次。
+
 ## 开发部署文档
 
 **优先查阅本仓库文档中心：[docs/README.md](docs/README.md)**（环境搭建、架构总览、三层权限、部署运维 runbook、ADR）

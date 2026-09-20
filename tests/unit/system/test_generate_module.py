@@ -44,8 +44,9 @@ class TestGenerateModuleCommand:
         assert 'id="my_biz"' in content
         assert 'label="自有业务"' in content
         assert 'level="optional"' in content
-        assert "menus=('Chat',)" in content
-        assert "routes=('^/api/demo/',)" in content
+        # 双引号元组字面量：生成物需一次通过 ruff format（quote-style=double）
+        assert 'menus=("Chat",)' in content
+        assert 'routes=("^/api/demo/",)' in content
         assert "management.py modules" not in output  # 提示文案不含拼写错误
         assert "python manage.py modules" in output
 
@@ -62,8 +63,8 @@ class TestGenerateModuleCommand:
             "api/system/ai/",
         )
         content = (demo_app / "modules.py").read_text(encoding="utf-8")
-        assert "menus=('Chat', 'AiAssistant')," in content
-        assert "permissions=('api/system/ai/',)," in content
+        assert 'menus=("Chat", "AiAssistant"),' in content
+        assert 'permissions=("api/system/ai/",),' in content
 
     def test_unknown_menu_warns(self, demo_app):
         output = run_generate("my_biz", "--app", "demo", "--menu", "NotExistMenu")

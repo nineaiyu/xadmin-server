@@ -254,6 +254,68 @@ class TestMenuSeed:
         assert all(menu["fields"]["model"] == [] for menu in menus)
 
 
+class TestModuleDeclaration:
+    """--with-module：顺带生成 {app}/modules.py（模板与 generate_module 同源）。"""
+
+    def test_with_module_writes_declaration(self, workspace):
+        backend, _ = _generate(workspace, "--with-module")
+        target = backend / "demo" / "modules.py"
+        assert target.exists()
+        content = target.read_text(encoding="utf-8")
+        assert 'id="demo"' in content
+        assert 'level="optional"' in content
+        assert 'menus=("DemoBook",),' in content
+        assert 'routes=("^/api/demo/",),' in content
+        compile(content, str(target), "exec")  # 生成物可直接执行
+        _assert_ruff_clean(backend)
+
+    def test_module_id_conflict_degrades_to_notice(self, workspace, capsys):
+        backend, _ = workspace
+        _generate(workspace, "--with-module", "--module-id", "chat")
+        assert not (backend / "demo" / "modules.py").exists()
+        assert "模块 id 已存在" in capsys.readouterr().out
+
+    def test_module_level_option(self, workspace):
+        backend, _ = _generate(workspace, "--with-module", "--module-level", "standard")
+        content = (backend / "demo" / "modules.py").read_text(encoding="utf-8")
+        assert 'level="standard"' in content
+
+    def test_dry_run_writes_no_module_file(self, workspace):
+        backend, client = workspace
+        call_command(
+            "generate_crud",
+            "demo.Book",
+            output=str(backend),
+            frontend_root=str(client),
+            with_module=True,
+            dry_run=True,
+        )
+        assert not (backend / "demo").exists()
+
+
+class TestNextSteps:
+    """生成后的「后续步骤」清单：把手工四件事收敛为可复制命令。"""
+
+    def test_prints_loaddata_doctor_and_authorize(self, workspace, capsys):
+        _generate(workspace)
+        output = capsys.readouterr().out
+        assert "后续步骤" in output
+        assert "python manage.py loaddata loadjson/seed_demo_book.json" in output
+        assert "python manage.py doctor" in output
+        assert "*:DemoBook" in output
+
+    def test_skip_menu_seed_omits_loaddata(self, workspace, capsys):
+        _generate(workspace, "--skip-menu-seed")
+        output = capsys.readouterr().out
+        assert "loaddata" not in output
+        assert "后续步骤" in output
+
+    def test_with_module_omits_module_hint(self, workspace, capsys):
+        _generate(workspace, "--with-module")
+        output = capsys.readouterr().out
+        assert "--with-module" not in output.split("后续步骤", 1)[1]
+
+
 class TestPackageMode:
     def test_writes_module_files_into_packages(self, workspace):
         """serializers / views 为包时各写独立模块，urls 的 import 指向具体模块。"""

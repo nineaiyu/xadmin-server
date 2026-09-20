@@ -5,11 +5,43 @@
 > `example/new-app-*.md` 五篇教程。本文所有代码引用均可在仓库内找到真实出处，
 > **`demo` app 是官方活范例**（`demo/views.py` + `demo/serializers/`）。
 
+## 〇、三层职责与依赖方向
+
+> 改代码前先定位自己在哪一层：**业务 → 工程 → 内核，禁止反向依赖**。
+> 详细边界规则见 [common/README.md](../../common/README.md)。
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ 业务层（business）  system / settings / message / notifications /    │
+│                     mfa / captcha / demo / 使用方的自有 app          │
+│                     models · serializers · views · services · tasks  │
+├─────────────────────────────────────────────────────────────────────┤
+│ 工程层（project）   server/：urls · asgi · celery · middleware ·      │
+│                     settings/ 拼装 · conf/（config.yml 装载）        │
+│                     —— 只做装配与编排，不含业务语义                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ 内核层（kernel）    common/：core/（权限/元数据/DRF 基类/响应/缓存/   │
+│                     模块裁剪）· drf/ · fields/ · base/ · cache/ 等    │
+│                     —— 不知道任何业务 app 的存在                      │
+└─────────────────────────────────────────────────────────────────────┘
+依赖方向：业务 → 工程 → 内核（`check_cross_app_imports.py` 门禁强制）；
+反向引用（内核 import 业务、业务 import 业务）即坏味道。
+```
+
+| 判断题 | 答案 |
+|--------|------|
+| 一个工具类/装饰器想被多个 app 复用 | 放 `common/`（内核），**不得**反过来 import 业务 app |
+| 跨 app 调用另一个 app 的能力 | 走目标 app 的 `services` 契约层，不直接 import 其 models/views |
+| 业务专属的字段/渲染逻辑 | 留在业务 app 的 serializer（`input_type` 已是开放扩展点） |
+| 工程级装配（新中间件/路由注入） | `server/`；业务可插拔配置走 `config.yml` + `modules.py` |
+
 ## 一、一个业务模块的最小组件链
 
 > 骨架可用代码生成器一键产出：`python manage.py generate_crud <app_label>.<ModelName>`
-> （序列化器/视图/路由/配置 + 前端页面三件套 + 菜单种子，见 [ADR-027](../adr/ADR-027-code-generator.md)）。
-> 生成的代码是普通仓库代码、按本页范式产出，仍需 **人工复核关联字段 `input_type` 与菜单挂载位置**后再提交。
+> （序列化器/视图/路由/配置 + 前端页面三件套 + 菜单种子，加 `--with-module` 顺带生成
+> `{app}/modules.py` 可裁剪模块声明；见 [ADR-027](../adr/ADR-027-code-generator.md)）。
+> 生成的代码是普通仓库代码、按本页范式产出，仍需 **人工复核关联字段 `input_type` 与菜单挂载位置**后再提交；
+> 输出尾部的「后续步骤」清单给出权限点灌库 / 授权 / 自检的可复制命令。
 
 ```
 demo/models.py          模型（继承 common.core.models.DbAuditModel）
@@ -128,8 +160,8 @@ config.yml              XADMIN_APPS 注册 app
 1. **服务端类型判定**：`common/drf/metadata.py::get_field_type` 必须用 `isinstance` 而非
    类名精确匹配（子类如 `DictChoiceField` 要命中 `labeled_choice`）；改判定即补
    `tests/unit/system/test_data_dict.py` 同款守护测试；
-2. **契约同步**（若涉及 Schema）：改 [docs/schema](../schema/README.md) → 同步镜像到 client
-   `contract/schema/` → `pnpm gen:metadata-types` → 提交生成的 `src/api/types/*.d.ts`
+2. **契约同步**（若涉及 Schema）：改 [docs/schema](../schema/README.md) → client 仓库
+   `pnpm sync:contract` 一键同步镜像并重新生成 → 提交生成的 `src/api/types/*.d.ts`
    （`pnpm check:contract` 校验镜像一致）；
 3. **四通道渲染（xadmin-client）**：`RePlusPage/src/utils/renderers-detail.tsx` 登记；
    对象 / 数组值**同时**提供详情 `render` 与列表 `cellRenderer`（走 valueType 通道的也必须补

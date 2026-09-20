@@ -38,6 +38,39 @@ class TestCheckDbConnection:
         assert check_db_connection(_FakeConn(fail=True)) is False
 
 
+class TestDbEngineResolution:
+    """``DB_ENGINE`` 短名 → Django 后端路径（守护 sqlite3 / mysql 等非 PG 部署）。
+
+    历史缺陷：PG 专有选项块末尾多出一个 ``else: ENGINE = CONFIG.DB_ENGINE``，把已解析好的
+    后端路径覆盖回短名（如 ``sqlite3``）——非 postgresql 引擎一律启动即
+    ``ImproperlyConfigured: 'sqlite3' isn't an available database backend``，
+    而 config_example.yml / deployment.md / CONTRIBUTING.md 都把 ``DB_ENGINE: sqlite3``
+    当作本地开发推荐姿势。
+    """
+
+    def test_short_names_map_to_django_backends(self):
+        from server.settings.base import _resolve_db_engine
+
+        for name in ("sqlite3", "mysql", "oracle", "postgresql"):
+            assert _resolve_db_engine(name) == f"django.db.backends.{name}"
+
+    def test_vastbase_maps_to_third_party_backend(self):
+        from server.settings.base import _resolve_db_engine
+
+        assert _resolve_db_engine("vastbase") == "django_vastbase_backend"
+
+    def test_full_backend_path_passes_through(self):
+        from server.settings.base import _resolve_db_engine
+
+        assert _resolve_db_engine("myapp.backends.custom") == "myapp.backends.custom"
+
+    def test_configured_engine_is_dotted_path(self):
+        """测试配置显式钉住 postgresql（见 tests/settings_test.py），ENGINE 必须是后端路径。"""
+        from server.settings.base import ENGINE
+
+        assert ENGINE == "django.db.backends.postgresql"
+
+
 class TestHalfOpenConnectionOptions:
     """半开连接快速失败参数（第十七轮·真丢包演练修复，2026-09-18）。
 

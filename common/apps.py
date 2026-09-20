@@ -20,7 +20,9 @@ class CommonConfig(AppConfig):
 
         # modules 命令自身会做模块配置校验，且提供 --clear-override 恢复通道：
         # 若在此处先行 fail-fast，覆盖行引用已移除模块时将无法执行恢复命令。
-        excludes = ["migrate", "compilemessages", "makemigrations", "stop", "modules"]
+        # doctor 同理：它是诊断入口，非法模块配置必须由它「报出 + 给修复命令」，
+        # 在 setup 阶段抛 ImproperlyConfigured 会让 doctor 直接跑不起来（只剩裸 traceback）。
+        excludes = ["migrate", "compilemessages", "makemigrations", "stop", "modules", "doctor"]
         for i in excludes:
             if i in sys.argv:
                 return
