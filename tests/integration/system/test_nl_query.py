@@ -17,6 +17,24 @@ from system.models import DataPermission, Dataset, ModelLabelField, OperationLog
 
 pytestmark = pytest.mark.django_db
 
+
+def _iter_stream(response):
+    """流式响应的字节块（测试用同步收集）。
+
+    ASGI 实时性由 response.is_async 守护测试覆盖；此处仅需完整消费帧序列，
+    异步迭代器统一经 async_to_sync 收集（同步生成器直接返回）。
+    """
+    content = response.streaming_content
+    if getattr(response, "is_async", False):
+        from asgiref.sync import async_to_sync
+
+        async def gather():
+            return [chunk async for chunk in content]
+
+        return async_to_sync(gather)()
+    return content
+
+
 INTERPRET_URL = "/api/system/ai/assistant/nl-query/interpret"
 RUN_URL = "/api/system/ai/assistant/nl-query/run"
 
@@ -186,6 +204,40 @@ class TestInterpret:
         body = auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json").json()
         assert body["code"] == 1000
 
+    def test_unknown_keys_stripped_not_rejected(self, auth_client, dataset, nl_enabled, stub_llm):
+        """弱模型自创键（stat/order_by）剥离而非整体拒绝：执行安全由 validate_dsl
+        白名单独立保证，多余键只有"模型轻微偏差"，整体失败会让链路不可用。"""
+        payload = dsl_of(dataset)
+        payload.update({"stat": "count", "order_by": "-created_time"})
+        stub_llm([json.dumps(payload, ensure_ascii=False)])
+        body = auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json").json()
+        assert body["code"] == 1000, body
+        assert set(body["data"]["dsl"]) <= {
+            "dataset",
+            "mode",
+            "filters",
+            "limit",
+            "group_by",
+            "metric",
+            "date_trunc",
+            "value_field",
+        }
+
+    def test_structured_max_tokens_default(self, auth_client, dataset, nl_enabled, stub_llm):
+        """未配置 max_tokens 时结构化调用携带安全上限：防思考型模型无界推理挂起。"""
+        from system.utils.ai import STRUCTURED_MAX_TOKENS
+
+        stub = stub_llm([json.dumps(dsl_of(dataset))])
+        auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json")
+        assert stub.requests[0]["max_tokens"] == STRUCTURED_MAX_TOKENS
+
+    def test_structured_max_tokens_respects_configured(self, auth_client, dataset, nl_enabled, stub_llm):
+        """档案/Setting 显式配置了 max_tokens 时尊重用户配置，不被安全默认覆盖。"""
+        nl_enabled.AI_MAX_TOKENS = 512
+        stub = stub_llm([json.dumps(dsl_of(dataset))])
+        auth_client.post(INTERPRET_URL, {"question": "列出用户"}, format="json")
+        assert stub.requests[0]["max_tokens"] == 512
+
 
 class TestRun:
     def test_run_rows_and_audit(self, auth_client, dataset, nl_enabled, superuser, stub_llm):
@@ -206,6 +258,15 @@ class TestRun:
         body = auth_client.post(RUN_URL, {"dsl": dsl}, format="json").json()
         assert body["code"] == 1000
         assert isinstance(body["data"]["series"], list)
+
+    def test_run_aggregate_without_group_by(self, auth_client, dataset, nl_enabled, superuser):
+        """无分组纯聚合（「一共有多少个」等总数问题）：单桶输出，不再被 group_by 必填拒绝。"""
+        dsl = {"dataset": str(dataset.pk), "mode": "aggregate", "metric": "count"}
+        body = auth_client.post(RUN_URL, {"dsl": dsl}, format="json").json()
+        assert body["code"] == 1000, body
+        series = body["data"]["series"]
+        assert len(series) == 1
+        assert series[0]["value"] >= 1
 
     def test_run_revalidates_client_dsl(self, auth_client, dataset, nl_enabled):
         """不信任客户端回传：run 时服务端重校验（越界字段拒绝）。"""
@@ -290,3 +351,61 @@ def grant_menus(user):
     )
     user.roles.add(role)
     role.menu.set(menus)
+
+
+class TestInterpretStream:
+    """NL 查数解释流式（SSE）：meta → reasoning* → delta(JSON) → done | error。"""
+
+    STREAM_URL = f"{INTERPRET_URL}/stream"
+
+    @staticmethod
+    def _parse_sse(response):
+        frames = []
+        buffer = b""
+        for chunk in _iter_stream(response):
+            buffer += chunk if isinstance(chunk, bytes) else str(chunk).encode()
+            while b"\n\n" in buffer:
+                raw, buffer = buffer.split(b"\n\n", 1)
+                event, data = "message", ""
+                for line in raw.decode().splitlines():
+                    if line.startswith("event:"):
+                        event = line[len("event:") :].strip()
+                    elif line.startswith("data:"):
+                        data = line[len("data:") :].strip()
+                frames.append((event, json.loads(data) if data else {}))
+        return frames
+
+    def test_stream_done_with_dsl_and_preview(self, auth_client, dataset, nl_enabled, monkeypatch):
+        """思考流 + JSON 正文流 → done 携带规范化 DSL 与试算预览；写审计。"""
+
+        def fake_stream(self, messages, **kwargs):
+            yield {"type": "reasoning", "text": "先理解问题"}
+            yield {"type": "content", "text": json.dumps(dsl_of(dataset))}
+
+        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        response = auth_client.post(self.STREAM_URL, {"question": "列出用户"}, format="json")
+        assert response["Content-Type"] == "text/event-stream"
+        frames = self._parse_sse(response)
+        assert [event for event, __ in frames] == ["meta", "reasoning", "delta", "done"]
+        done = frames[-1][1]
+        assert done["mode"] == "rows"
+        assert done["dataset_name"] == "用户清单"
+        assert done["preview_count"] >= 1
+        assert OperationLog.objects.filter(module="AI:nl_query").exists()
+
+    def test_stream_only_reasoning_error_event(self, auth_client, dataset, nl_enabled, monkeypatch):
+        """只有思考没有正文（无法解析 DSL）：error 事件带可读文案。"""
+        from django.utils.translation import gettext as _t
+
+        def fake_stream(self, messages, **kwargs):
+            yield {"type": "reasoning", "text": "想不出结论"}
+
+        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        frames = self._parse_sse(auth_client.post(self.STREAM_URL, {"question": "随便问问"}, format="json"))
+        assert [event for event, __ in frames] == ["meta", "reasoning", "error"]
+        assert frames[-1][1]["detail"] == _t("The model did not provide a final answer; please retry or switch models")
+
+    def test_stream_disabled_returns_json(self, auth_client, dataset, nl_enabled):
+        nl_enabled.AI_NL_QUERY_ENABLED = False
+        response = auth_client.post(self.STREAM_URL, {"question": "列出用户"}, format="json")
+        assert response.json()["code"] == 1001

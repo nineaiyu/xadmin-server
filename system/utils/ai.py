@@ -40,6 +40,30 @@ BUILTIN_PERSONA = (
 # 上传文档：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
 MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
+# 结构化输出（NL 查数 DSL / 动作草稿 JSON）在档案未配置 max_tokens 时的安全上限：
+# 思考型模型（含本地小模型）在 JSON 指令任务上可能无界推理（实测单次可产出 5 万+
+# reasoning token、挂起数分钟），结构化结果本身短，给上限防挂起与额度失控；
+# 档案显式配置了 max_tokens 时尊重用户配置，不覆盖。
+STRUCTURED_MAX_TOKENS = 2048
+
+
+def ai_structured_max_tokens() -> int:
+    """结构化输出 token 上限（可配置）：Setting ``AI_STRUCTURED_MAX_TOKENS`` →
+    内置默认 2048。思考型模型思考消耗大，可在 AI 配置页调大预算（0/缺省 = 内置默认）。"""
+    return int(getattr(settings, "AI_STRUCTURED_MAX_TOKENS", 0) or 0) or STRUCTURED_MAX_TOKENS
+
+
+def structured_chat_client():
+    """结构化输出（动作草稿 JSON / NL 查数 DSL）的统一客户端：返回 ``(client, max_tokens)``。
+
+    四条链路共用同一口径（聊天室 ``/do``、助手页 ``action/interpret/stream``、
+    ``nl-query/interpret`` 与其流式版）：max_tokens 未配置时套用结构化安全上限，
+    避免思考型模型无界推理挂起（实测见 ADR-049）。
+    """
+    from common.sdk.ai.chat import ChatCompletionsClient
+
+    client = ChatCompletionsClient(ai_credentials())
+    return client, client.max_tokens or ai_structured_max_tokens()
 
 
 def _iter_doc_files() -> list:
@@ -346,10 +370,11 @@ def ai_persona() -> str:
     return (getattr(settings, "AI_PERSONA", "") or "").strip() or BUILTIN_PERSONA
 
 
-def ask(question: str) -> dict:
-    """问答链路：检索 → LLM → 可读答案 + 出处。异常转可读 ValidationError 语义。"""
-    from django.core.exceptions import ValidationError as DjangoValidationError
+def _prepare_rag(question: str) -> tuple:
+    """问答链路公共部分：问题校验 + 检索 + prompt 构造。
 
+    返回 ``(messages, sources)``；问题为空/未启用/无命中抛可读 ValidationError。
+    """
     question = (question or "").strip()[:MAX_QUESTION_LENGTH]
     if not question:
         raise DjangoValidationError(_("Question cannot be empty"))
@@ -367,8 +392,6 @@ def ask(question: str) -> dict:
         context_blocks.append(f"[{index}] {chunk.title} ({chunk.source_path})\n{chunk.content}")
         sources.append({"title": chunk.title, "path": chunk.source_path, "chunk_index": chunk.chunk_index})
 
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
-
     system_prompt = str(
         _(
             "You are the xadmin usage/development assistant. Answer ONLY based on the "
@@ -380,15 +403,77 @@ def ask(question: str) -> dict:
         "\n\n".join(context_blocks),
         str(_("Question: {}").format(question)),
     )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    return messages, sources
+
+
+def readable_ai_error(exc) -> str:
+    """LLM 调用失败 → 展示可读文案（i18n）。
+
+    SDK 内部英文错误按已知类别归一（思考型模型的「只思考未回答」与「空回答」
+    分开提示，便于用户采取「重试 / 更换模型」动作），其余归服务暂时不可用。
+    """
+    text = str(exc or "")
+    if "only reasoning content" in text or "did not provide a final answer" in text:
+        return str(_("The model did not provide a final answer; please retry or switch models"))
+    if "empty answer" in text:
+        return str(_("The model returned an empty answer; please retry or switch models"))
+    return str(_("AI service is temporarily unavailable"))
+
+
+def prepare_ask(question: str) -> tuple:
+    """流式端点「响应头发出前」的同步预检 + 上下文装配：返回 (messages, sources)。
+
+    与 ask / ask_stream 校验完全同源（空问题 / 未启用 / 无命中 → 可读 ValidationError）。
+    """
+    return _prepare_rag(question)
+
+
+def ask(question: str) -> dict:
+    """问答链路（非流式）：检索 → LLM → 可读答案 + 出处。异常转可读 ValidationError 语义。"""
+    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+
+    messages, sources = _prepare_rag(question)
     try:
         client = ChatCompletionsClient(ai_credentials())
-        answer = client.chat(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
-        )
+        answer = client.chat(messages)
     except AiSdkError as exc:
-        raise DjangoValidationError(str(exc)) from exc
+        raise DjangoValidationError(readable_ai_error(exc)) from exc
     # _usage 供调用方写审计（成本维度观测）；返回契约中的 answer/sources 不变，调用方负责剥离
     return {"answer": answer, "sources": sources, "_usage": getattr(client, "last_usage", None)}
+
+
+def ask_stream(messages: list, sources: list):
+    """问答链路（流式生成器）：产出事件 dict，供 SSE 转发。
+
+    增量事件：``{"type": "reasoning"|"content", "text": ...}``（思考型模型有 reasoning）；
+    流末尾产出 ``{"type": "done", "answer": ..., "sources": [...]}``。
+
+    messages/sources 由 ``prepare_ask`` 装配——视图层先做同步校验，保持
+    「校验错误在响应头前返回 JSON 1001」契约，同时不阻塞首包（模型思考再久，
+    响应头也已发出、前端可先渲染「思考中」）。流内失败抛可读 ValidationError。
+    """
+    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+
+    client = ChatCompletionsClient(ai_credentials())
+    chunks = []
+    try:
+        for item in client.chat_stream(messages):
+            text = item.get("text") or ""
+            if not text:
+                continue
+            if item.get("type") == "reasoning":
+                yield {"type": "reasoning", "text": text}
+            else:
+                chunks.append(text)
+                yield {"type": "content", "text": text}
+    except AiSdkError as exc:
+        raise DjangoValidationError(readable_ai_error(exc)) from exc
+    answer = "".join(chunks).strip()
+    if not answer:
+        # 只有思考没有回答（思考过长被截断）：给出可操作提示，前端保留思考面板
+        raise DjangoValidationError(_("The model did not provide a final answer; please retry or switch models"))
+    yield {"type": "done", "answer": answer, "sources": sources}

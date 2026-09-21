@@ -156,6 +156,9 @@ BASE_CONFIG = {
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
     "AI_TEMPERATURE": 0.2,
     "AI_MAX_TOKENS": 0,
+    # 结构化输出（NL 查数 DSL / 动作草稿 JSON）在未配置 AI_MAX_TOKENS 时的安全上限；
+    # 思考型模型思考消耗 token 多，可通过 AI 配置页调大（0 = 回落内置默认 2048）
+    "AI_STRUCTURED_MAX_TOKENS": 2048,
     "AI_TOP_P": None,
     "AI_FREQUENCY_PENALTY": None,
     "AI_PRESENCE_PENALTY": None,

@@ -86,6 +86,42 @@ def get_menu_pk(permission_data, url):
     return p_data
 
 
+def user_has_permission(user, path: str, method: str = "GET") -> bool:
+    """按权限点 path 判定用户是否具备该权限（与运行时访问控制同源）。
+
+    用于「无独立路由、但需按权限点授权的功能开关」场景（如审批实例的
+    ``scope=ongoing`` 管理视角）：权限点 path 与 menu.path 同格式（形如
+    ``api/system/approval-instances/ongoing$``），命中的是菜单-角色授权关系，
+    与 ``get_user_permission`` 缓存同源（改授权后随缓存失效生效）。
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    # 超管豁免与 IsAuthenticated 的运行时口径一致（超管常无角色绑定，按角色查会漏判）
+    if getattr(user, "is_superuser", False):
+        return True
+    normalized = path.lstrip("/")
+    data = get_user_permission(user, (method or "GET").upper())
+    if data.get(normalized):
+        return True
+    return bool(get_menu_pk(data, f"/{normalized}"))
+
+
+def match_permission_white_url(method: str, path: str) -> bool:
+    """「HTTP 方法 + 路径」是否命中访问白名单（``settings.PERMISSION_WHITE_URL``）。
+
+    白名单端点不要求菜单权限点（登录/匿名即可访问，语义见 settings/custom.py 注释），
+    是运行时访问控制（IsAuthenticated）与 AI 动作业务权限预检的公共口径——
+    两边必须同源，否则「运行时能访问、AI 动作预检无权限」类缺口会出现
+    （如 /api/system/dashboard/* 对普通用户的 dashboard.overview 动作）。
+    """
+    if not method or not path:
+        return False
+    for w_url, methods in settings.PERMISSION_WHITE_URL.items():
+        if re.match(w_url, path) and ("*" in methods or method.upper() in methods):
+            return True
+    return False
+
+
 def resolve_pat_scopes(request):
     """解析本次请求的 PAT scope 清单，非 PAT 请求返回 None。
 
@@ -228,11 +264,7 @@ class IsAuthenticated(BasePermission):
     @staticmethod
     def _match_white_url(request):
         """命中白名单 URL（按 HTTP 方法匹配）时放行。"""
-        url = request.path_info
-        for w_url, method in settings.PERMISSION_WHITE_URL.items():
-            if re.match(w_url, url) and ("*" in method or request.method in method):
-                return True
-        return False
+        return match_permission_white_url(request.method, request.path_info)
 
     @staticmethod
     def _load_user_permission(request):

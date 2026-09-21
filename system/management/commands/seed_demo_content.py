@@ -9,7 +9,8 @@
 - 聊天室：公共房间历史消息（用户消息 + 系统提示）；
 - 知识库：2 篇上传文档（走 ``upsert_upload_document``，分块/检索链路完整）；
 - 文件中心：2 个真实小文件（落盘，可预览/下载）；
-- 审批委托：超管 → 演示审批人的一条生效委托（依赖 seed_demo_flows 的演示用户）；
+- 审批委托：演示申请人 → 演示审批人的一条生效委托（依赖 seed_demo_flows 的演示用户；
+  委托人必须是演示账号——超管作为委托人会让超管的待办被整体转走）；
 - Webhook：1 条订阅 + 2 条投递审计（成功 / 重试中）；
 - 开放平台：1 个演示应用（scopes/配额齐备，密钥只存哈希）。
 
@@ -257,23 +258,32 @@ class Command(BaseCommand):
         self.stdout.write(f"demo upload files ready: {created}")
 
     def _create_delegation(self, admin: UserInfo):
+        """演示委托：委托双方一律用演示账号，**禁止把超管作为委托人**。
+
+        委托语义是「待办归属替换」——节点解析到 xadmin 时任务会被整体转给代理人。
+        历史版本曾以超管为委托人（委托给不可登录的演示账号），导致超管在所有流程的
+        待办恒为空、且任务落到无人可登录的账号上永久卡死。委托功能本身仍完整演示。
+        """
+        delegator = UserInfo.objects.filter(username="demo_flow_lily", is_active=True).first()
         delegate = UserInfo.objects.filter(username="demo_flow_chen", is_active=True).first()
-        if delegate is None:
+        if delegator is None or delegate is None:
             self.stdout.write(
-                self.style.WARNING("demo_flow_chen missing (run seed_demo_flows first); delegation skipped")
+                self.style.WARNING(
+                    "demo_flow_lily/demo_flow_chen missing (run seed_demo_flows first); delegation skipped"
+                )
             )
             return
         now = timezone.now()
         ApprovalDelegation.objects.update_or_create(
             pk=DELEGATION_PK,
             defaults={
-                "delegator": admin,
+                "delegator": delegator,
                 "delegate": delegate,
                 "start_time": now - timedelta(hours=1),
                 "end_time": now + timedelta(days=7),
                 "flow_codes": [],
                 "is_active": True,
-                "remark": "演示：出差期间由陈工代审",
+                "remark": "演示：李莉出差期间由陈工代审",
                 "creator": admin,
                 "modifier": admin,
             },

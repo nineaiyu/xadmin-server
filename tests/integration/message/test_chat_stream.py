@@ -16,6 +16,24 @@ from message.models import ChatMessage, ChatRoom
 
 pytestmark = pytest.mark.django_db
 
+
+def _iter_stream(response):
+    """流式响应的字节块（测试用同步收集）。
+
+    ASGI 实时性由 response.is_async 守护测试覆盖；此处仅需完整消费帧序列，
+    异步迭代器统一经 async_to_sync 收集（同步生成器直接返回）。
+    """
+    content = response.streaming_content
+    if getattr(response, "is_async", False):
+        from asgiref.sync import async_to_sync
+
+        async def gather():
+            return [chunk async for chunk in content]
+
+        return async_to_sync(gather)()
+    return content
+
+
 STREAM_URL = "/api/chat/ai/stream"
 
 
@@ -23,7 +41,7 @@ def parse_sse(response) -> list:
     """Django 测试流式响应 → [(event, data_dict)]（按空行切帧）。"""
     frames = []
     buffer = b""
-    for chunk in response.streaming_content:
+    for chunk in _iter_stream(response):
         buffer += chunk if isinstance(chunk, bytes) else str(chunk).encode()
         while b"\n\n" in buffer:
             raw, buffer = buffer.split(b"\n\n", 1)
@@ -48,16 +66,24 @@ class _FakeStreamResponse:
 
 
 class StreamStubLLM:
-    """替换 ChatCompletionsClient._client：post 返回 OpenAI SSE 帧序列，走真实 chat_stream 解析。"""
+    """替换 ChatCompletionsClient._client：post 返回 OpenAI SSE 帧序列，走真实 chat_stream 解析。
 
-    def __init__(self, deltas=("你好", "，我是", " AI 助手")):
+    reasonings 先于 deltas 产出（思考型模型的 reasoning_content 帧）。
+    """
+
+    def __init__(self, deltas=("你好", "，我是", " AI 助手"), reasonings=()):
         self.deltas = list(deltas)
+        self.reasonings = list(reasonings)
         self.requests = []
 
     def post(self, url, json=None, headers=None, timeout=None, stream=False):
         # 注意：形参 json 是请求载荷（requests 签名），模块 json 用 jsonlib 别名
         self.requests.append({"url": url, "json": json})
         lines = [
+            f"data: {jsonlib.dumps({'choices': [{'delta': {'reasoning_content': item}}]}, ensure_ascii=False)}"
+            for item in self.reasonings
+        ]
+        lines += [
             f"data: {jsonlib.dumps({'choices': [{'delta': {'content': delta}}]}, ensure_ascii=False)}"
             for delta in self.deltas
         ]
@@ -121,6 +147,44 @@ class TestStream:
         parse_sse(response)
         assert stream_stub.requests[0]["json"]["stream"] is True
 
+    def test_stream_uses_async_iterator(self, auth_client, superuser, ai_enabled, stream_stub):
+        """ASGI 实时性守护：streaming_content 必须是异步迭代器。
+
+        回归背景：同步生成器会被 Django __aiter__ 的兜底分支
+        （``sync_to_async(list)``）整体跑完再一次性 yield，SSE 失去实时性。
+        """
+        response = auth_client.post(STREAM_URL, {"content": "你好"}, format="json")
+        assert response.is_async is True
+
+    def test_reasoning_events_forwarded_and_stored(self, auth_client, superuser, ai_enabled, monkeypatch):
+        """思考型模型：reasoning 事件先于 delta 实时转发，并落库 extra.reasoning（回看）。"""
+        stub = StreamStubLLM(deltas=("答案",), reasonings=("先想", "再看"))
+        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+
+        frames = parse_sse(auth_client.post(STREAM_URL, {"content": "介绍一下系统"}, format="json"))
+        assert [event for event, __ in frames] == ["meta", "reasoning", "reasoning", "delta", "done"]
+        assert "".join(data["delta"] for event, data in frames if event == "reasoning") == "先想再看"
+
+        reply = ChatMessage.objects.filter(message_type=ChatMessage.MessageType.AI).first()
+        assert reply.extra["reasoning"] == "先想再看"
+        assert reply.extra.get("no_answer") is None
+
+    def test_only_reasoning_keeps_answer_placeholder(self, auth_client, superuser, ai_enabled, monkeypatch):
+        """只有思考没有回答：思考保留（extra.reasoning）+ 内容落可读提示（extra.no_answer），不落降级。"""
+        from django.utils.translation import gettext as _t
+
+        stub = StreamStubLLM(deltas=(), reasonings=("想了很久",))
+        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient._client", lambda self: stub)
+
+        frames = parse_sse(auth_client.post(STREAM_URL, {"content": "难问题"}, format="json"))
+        assert frames[-1][0] == "done"
+        reply = ChatMessage.objects.filter(message_type=ChatMessage.MessageType.AI).first()
+        assert reply is not None
+        assert reply.extra["no_answer"] is True
+        assert reply.extra["reasoning"] == "想了很久"
+        assert reply.content == _t("The model did not provide a final answer; please retry or switch models")
+        assert not ChatMessage.objects.filter(message_type=ChatMessage.MessageType.SYSTEM).exists()
+
     def test_kb_single_delta_with_sources(self, auth_client, ai_enabled, monkeypatch):
         monkeypatch.setattr(
             "system.utils.ai.ask",
@@ -155,8 +219,8 @@ class TestStream:
         from common.sdk.ai.chat import AiSdkError
 
         def broken_stream(self, messages, temperature=0.2):
-            yield "部分"
-            yield "回答"
+            yield {"type": "content", "text": "部分"}
+            yield {"type": "content", "text": "回答"}
             raise AiSdkError("stream interrupted")
 
         monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", broken_stream)

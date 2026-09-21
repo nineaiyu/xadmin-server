@@ -12,6 +12,7 @@
 
 import hashlib
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -142,3 +143,41 @@ class AiProfile(DbAuditModel, DbUuidModel):
     @property
     def is_configured(self) -> bool:
         return bool(self.base_url and self.api_key_plain and self.model)
+
+
+class AiChatMessage(DbAuditModel):
+    """AI 助手对话消息（助手页三入口的持久化消息流）。
+
+    按 ``(creator, feature)`` 组织：同一用户每个入口（文档问答 / 数据查询 /
+    指令执行）一条连续消息流；自增主键即游标（``before_id`` 倒序翻页）。
+    与聊天室 ChatMessage 的差异：无会话/未读语义，仅承载助手页的问答、
+    NL 查询与动作执行记录（操作本身另有 OperationLog 审计）。
+    """
+
+    class Feature(models.TextChoices):
+        DOCS = "docs", _("Document Q&A")
+        NL = "nl", _("NL query")
+        ACTION = "action", _("Action execution")
+
+    class Role(models.TextChoices):
+        USER = "user", _("User")
+        ASSISTANT = "assistant", _("Assistant")
+        SYSTEM = "system", _("System")
+
+    feature = models.CharField(_("Feature"), max_length=16, choices=Feature.choices, db_index=True)
+    role = models.CharField(_("Role"), max_length=16, choices=Role.choices)
+    content = models.TextField(_("Content"), blank=True, default="")
+    reasoning = models.TextField(_("Reasoning"), blank=True, default="")
+    # 结构化附加信息：引用来源 / NL 查询与结果 / 动作草稿与执行结果 / 错误标记
+    # encoder：NL 结果行可能含 UUID/Decimal/datetime（查询 values 原样），
+    # DjangoJSONEncoder 覆盖这些类型，避免落库序列化失败
+    extra = models.JSONField(_("Extra"), default=dict, blank=True, encoder=DjangoJSONEncoder)
+
+    class Meta:
+        verbose_name = _("AI chat message")
+        verbose_name_plural = _("AI chat messages")
+        ordering = ("-id",)
+        indexes = [models.Index(fields=["creator", "feature", "-id"], name="ai_chat_msg_user_feat_idx")]
+
+    def __str__(self):
+        return f"{self.feature}#{self.pk}({self.role})"

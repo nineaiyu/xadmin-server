@@ -52,6 +52,16 @@ class AiAssistantSettingSerializer(serializers.Serializer):
         required=False, allow_null=True, min_value=0, max_value=2, label=_("Temperature")
     )
     AI_MAX_TOKENS = serializers.IntegerField(required=False, allow_null=True, min_value=0, label=_("Max tokens"))
+    AI_STRUCTURED_MAX_TOKENS = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        label=_("Structured max tokens"),
+        help_text=_(
+            "Token cap for structured outputs (action drafts / NL query DSL) when Max tokens is not set; "
+            "reasoning models may need a larger value. 0 = built-in default (2048)"
+        ),
+    )
     AI_TOP_P = serializers.FloatField(required=False, allow_null=True, min_value=0, max_value=1, label=_("Top P"))
     AI_FREQUENCY_PENALTY = serializers.FloatField(
         required=False, allow_null=True, min_value=-2, max_value=2, label=_("Frequency penalty")

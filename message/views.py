@@ -23,19 +23,15 @@ AI 接口额外受 `AI_ASSISTANT_ENABLED` + 凭据完整性门禁（未启用返
 消息内容一律文本（前端插值渲染，不 v-html；长度上限服务端强制）。
 """
 
-import json
-
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.http import StreamingHttpResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
-from rest_framework.renderers import JSONRenderer
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
-from common.drf.renders import EventStreamRenderer
+from common.drf.renders import SseRendererMixin, sse_response
 from common.swagger.utils import get_default_response_schema
 from message import ai as chat_ai
 from message import chat as chat_service
@@ -57,16 +53,6 @@ from system.utils.user_options import search_user_options
 # 历史分页默认/最大条数
 HISTORY_DEFAULT_LIMIT = 20
 HISTORY_MAX_LIMIT = 50
-
-
-def _sse_frames(events):
-    """事件字典序列 → text/event-stream 帧（`event:` + `data:` + 空行）。
-
-    JSON 序列化对 UUID/datetime 宽松处理（default=str），与 message_payload 的
-    JSON 广播口径一致；每个事件独立成帧，客户端按空行切分。
-    """
-    for event in events:
-        yield f"event: {event['event']}\ndata: {json.dumps(event['data'], ensure_ascii=False, default=str)}\n\n"
 
 
 def _validation_detail(exc) -> str:
@@ -288,10 +274,13 @@ class ChatContactViewSet(GenericViewSet):
         return ApiResponse(data=data)
 
 
-class ChatAiViewSet(GenericViewSet):
+class ChatAiViewSet(SseRendererMixin, GenericViewSet):
     """聊天室 AI 助手（通用多轮 + `/kb` 知识库问答）"""
 
     queryset = ChatRoom.objects.none()
+
+    #: 需要 SSE 协商的流式 action
+    sse_actions = ("stream",)
 
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="message")
@@ -345,18 +334,6 @@ class ChatAiViewSet(GenericViewSet):
         push_room_event(room, payload)
         return ApiResponse(data={"mode": mode, "question": question_payload, "message": payload})
 
-    def get_renderers(self):
-        """stream 动作按需接入 SSE 渲染器：浏览器 fetch 携带 Accept: text/event-stream，
-        协商必须能命中该 media type，否则一律 406（APIClient 默认 Accept: */* 会命中
-        JSONRenderer，单测发现不了这个问题）。
-
-        注意 ``@renderer_classes`` 装饰器只对 @api_view 函数视图生效，ViewSet 必须
-        覆写 get_renderers。
-        """
-        if getattr(self, "action", None) == "stream":
-            return [JSONRenderer(), EventStreamRenderer()]
-        return super().get_renderers()
-
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="stream")
     def stream(self, request, *args, **kwargs):
@@ -393,11 +370,5 @@ class ChatAiViewSet(GenericViewSet):
         question_payload = chat_service.message_payload(question, room=room, sender=request.user)
         push_room_event(room, question_payload)
 
-        response = StreamingHttpResponse(
-            _sse_frames(chat_ai.ai_stream_events(room, content, question_payload)),
-            content_type="text/event-stream",
-        )
-        # 关闭代理缓冲：SSE 必须逐帧到达（nginx 默认会攒满 buffer 才转发）
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-        return response
+        # SSE 响应装配走公共件（异步帧迭代器逐帧 flush + 关闭代理缓冲）
+        return sse_response(chat_ai.ai_stream_events(room, content, question_payload))

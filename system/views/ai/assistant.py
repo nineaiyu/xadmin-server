@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 助手视图：配置（Setting 体系）+ 状态 + 问答。
+"""AI 助手视图：配置（Setting 体系）+ 状态 + 对话历史 + 工具目录 + 文档问答（含流式）。
 
 - 配置视图与邮件/LDAP 同构：POST create = 连接测试（真实 ping LLM）；
-- ask/status 经菜单权限点门控（未授权 403）；问答链路不触生产数据。
+- ask/status/history/tools 经菜单权限点门控（未授权 403）；问答链路不触生产数据；
+- 对话持久化：三入口消息落 AiChatMessage（system/utils/ai_chat.py 收口），
+  流式 done/error 载荷携带持久化消息（前端以服务端载荷为准，刷新可续看）；
+- NL 查数与受限动作执行拆至同目录 mixin（nl_query.py / actions.py，仅行数门禁，
+  URL 与权限点不变）。
 """
 
 from django.conf import settings
@@ -14,15 +18,16 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
+from common.drf.renders import SseRendererMixin, sse_response
 from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from message.models import ChatRoom
 from settings.serializers.ai import AiAssistantSettingSerializer
 from settings.views.settings import BaseSettingViewSet
 from system.models.ai import AiKnowledgeChunk
-from system.models.dataset import Dataset
-from system.utils.ai import ai_credentials, ask, is_configured, is_enabled
+from system.utils.ai import ask, is_configured, is_enabled
+from system.views.ai.actions import AiActionExecuteMixin
+from system.views.ai.nl_query import AiNlQueryMixin
 
 logger = get_logger(__name__)
 
@@ -33,45 +38,75 @@ class AiAssistantSettingViewSet(BaseSettingViewSet):
     serializer_class = AiAssistantSettingSerializer
     category = "ai"
 
+    @staticmethod
+    def _test_credentials(data: dict) -> dict:
+        """连接测试凭据：表单值 → 激活档案 → Setting 逐项兜底。
+
+        不直接走 ``ai_credentials()``（档案优先）：已有激活档案时表单值会被完全
+        忽略——用户在配置页填了新地址点「测试连接」，实际测的却是档案，结果误导。
+        未提交的字段仍按「档案 → Setting」兜底，保持部分填写可测。
+        """
+        from system.utils.ai import active_profile
+
+        profile = active_profile()
+
+        def pick(form_key: str, profile_attr: str):
+            value = data.get(form_key)
+            if value not in (None, ""):
+                return value
+            if profile is not None:
+                value = getattr(profile, profile_attr, None)
+                if value not in (None, ""):
+                    return value
+            return getattr(settings, form_key, None)
+
+        api_key = ""
+        if data.get("AI_API_KEY"):
+            api_key = str(data["AI_API_KEY"])
+        elif profile is not None:
+            api_key = profile.api_key_plain
+        if not api_key:
+            api_key = str(getattr(settings, "AI_API_KEY", "") or "")
+        return {
+            "base_url": pick("AI_BASE_URL", "base_url"),
+            "api_key": api_key,
+            "model": pick("AI_MODEL", "model"),
+            "timeout": pick("AI_TIMEOUT", "timeout"),
+            "max_retries": 0,
+        }
+
     def create(self, request, *args, **kwargs):
-        """测试{cls}：按表单当前值实际 ping 一次 LLM。"""
+        """测试{cls}：按表单当前值实际 ping 一次 LLM（表单缺省项按档案/Setting 兜底）。"""
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        keys = ("AI_BASE_URL", "AI_API_KEY", "AI_MODEL", "AI_TIMEOUT")
-        saved = {key: getattr(settings, key) for key in keys}
+        creds = self._test_credentials(dict(request.data))
+        if not creds["base_url"]:
+            return ApiResponse(code=1001, detail=_("Base URL is required"))
+        if not (creds["api_key"] and creds["model"]):
+            return ApiResponse(code=1001, detail=_("API Key and model are required"))
         try:
-            for key in ("AI_BASE_URL", "AI_MODEL", "AI_TIMEOUT"):
-                if key in request.data:
-                    setattr(settings, key, data.get(key))
-            api_key = data.get("AI_API_KEY") or settings.AI_API_KEY
-            if not settings.AI_BASE_URL:
-                return ApiResponse(code=1001, detail=_("Base URL is required"))
-            if not (api_key and settings.AI_MODEL):
-                return ApiResponse(code=1001, detail=_("API Key and model are required"))
-            original_key = settings.AI_API_KEY
-            settings.AI_API_KEY = api_key
-            try:
-                client = ChatCompletionsClient(ai_credentials())
-                reply = client.chat([{"role": "user", "content": "ping"}])
-            finally:
-                settings.AI_API_KEY = original_key
+            client = ChatCompletionsClient(creds)
+            reply = client.chat([{"role": "user", "content": "ping"}])
         except AiSdkError as exc:
             return ApiResponse(code=1002, detail=str(exc))
         except Exception as exc:  # noqa: BLE001 测试入口兜底
             logger.warning("AI connection test unexpected error", exc_info=True)
             return ApiResponse(code=1002, detail=str(exc))
-        finally:
-            for key, value in saved.items():
-                setattr(settings, key, value)
         return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
 
 
-class AiAssistantViewSet(GenericViewSet):
-    """AI 使用/二开助手（基于 docs/ 知识库的 RAG 问答，不触生产数据）"""
+class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin, GenericViewSet):
+    """AI 使用/二开助手（基于 docs/ 知识库的 RAG 问答，不触生产数据）
+
+    actions：status/metrics/ask/ask_stream（本文件）+ nl-query/*（nl_query.py mixin）
+    + action/execute（actions.py mixin），组合后 URL 与拆分前一致。
+    SSE 协商与响应装配走公共件（SseRendererMixin / sse_response）。
+    """
 
     queryset = AiKnowledgeChunk.objects.none()
+
+    #: 需要 SSE 协商的流式 action（三入口各自的流式端点）
+    sse_actions = ("ask_stream", "nl_interpret_stream", "action_interpret_stream")
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="status")
@@ -189,106 +224,53 @@ class AiAssistantViewSet(GenericViewSet):
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="nl-query/interpret")
-    def nl_interpret(self, request, *args, **kwargs):
-        """NL → 数据集 DSL（白名单校验）+ 试算预览计数（数据权限随调用者）。"""
-        from common.sdk.ai.chat import AiSdkError
-        from system.utils.ai import is_enabled as ai_enabled_check
-        from system.utils.nl_query import (
-            audit_nl_query,
-            build_interpret_prompt,
-            parse_llm_json,
-            validate_dsl,
-            visible_datasets,
+    @action(methods=["get"], detail=False, url_path="history")
+    def history(self, request, *args, **kwargs):
+        """助手页对话历史：按入口（feature）分页，只返回当前用户自己的消息流。
+
+        契约：时间正序返回最近一页，``has_more`` 为真时用 ``before_id=最早一条 id``
+        继续向上翻页（与聊天室历史同口径）。
+        """
+        from system.utils.ai_chat import load_history
+
+        data = load_history(
+            request.user,
+            request.query_params.get("feature"),
+            before_id=request.query_params.get("before_id"),
+            limit=request.query_params.get("limit"),
         )
+        return ApiResponse(data=data)
 
-        question = str(request.data.get("question") or "").strip()
-        if not question:
-            return ApiResponse(code=1001, detail=_("Question cannot be empty"))
-        if not settings.AI_NL_QUERY_ENABLED:
-            return ApiResponse(code=1001, detail=_("NL query is not enabled"))
-        if not ai_enabled_check():
-            return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="tools")
+    def tools(self, request, *args, **kwargs):
+        """统一工具目录（MCP tools/list 等价的标准化描述）。
 
-        datasets = visible_datasets(request.user)
-        if not datasets:
-            return ApiResponse(code=1001, detail=_("No visible datasets for NL query"))
+        输出当前用户**有权执行**的全部系统动作（白名单注册表），每条包含
+        ``name / description / inputSchema``（JSON Schema）；LLM 的 function
+        calling、外部 MCP 客户端或二开脚本可共用这一份目录——机制说明见
+        ``system/utils/ai_actions.py`` 的模块注释（新增能力 = 加一条声明）。
+        """
+        from system.utils.ai_actions import ai_action_enabled
+        from system.utils.ai_tool_catalog import tool_catalog
 
-        dsl: dict = {}
-        normalized: dict = {}
-        usage = None
-        try:
-            client = ChatCompletionsClient(ai_credentials())
-            raw = client.chat(build_interpret_prompt(question, datasets))
-            usage = getattr(client, "last_usage", None)
-            dsl = parse_llm_json(raw)
-            normalized = validate_dsl(dsl, request.user)
-            dataset = Dataset.objects.get(pk=normalized["dataset"])
-            extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-            from system.utils.dataset import build_queryset
-
-            queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
-            preview_count = queryset.count()
-        except DjangoValidationError as exc:
-            audit_nl_query(request.user, "interpret", question, dsl, error="; ".join(exc.messages), usage=usage)
-            return ApiResponse(code=1001, detail="; ".join(exc.messages))
-        except AiSdkError as exc:
-            audit_nl_query(request.user, "interpret", question, {}, error=str(exc))
-            return ApiResponse(code=1001, detail=str(exc))
-        audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count, usage=usage)
+        enabled = ai_action_enabled()
         return ApiResponse(
             data={
-                "dsl": normalized,
-                "dataset_name": dataset.name,
-                "preview_count": preview_count,
-                "mode": normalized["mode"],
+                "action_enabled": enabled,
+                "tools": tool_catalog(request.user) if enabled else [],
             }
         )
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="nl-query/run")
-    def nl_run(self, request, *args, **kwargs):
-        """执行试算确认后的 DSL：服务端重校验（不信任客户端回传）+ 审计。"""
-        from system.utils.ai import is_enabled as ai_enabled_check
-        from system.utils.dataset import aggregate_dataset
-        from system.utils.nl_query import audit_nl_query, validate_dsl
-
-        dsl = request.data.get("dsl")
-        if not settings.AI_NL_QUERY_ENABLED:
-            return ApiResponse(code=1001, detail=_("NL query is not enabled"))
-        if not ai_enabled_check():
-            return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
-        try:
-            normalized = validate_dsl(dsl if isinstance(dsl, dict) else {}, request.user)
-            dataset = Dataset.objects.get(pk=normalized["dataset"])
-            if normalized["mode"] == "aggregate":
-                result = aggregate_dataset(
-                    dataset,
-                    request.user,
-                    group_by=normalized["group_by"],
-                    metric=normalized["metric"],
-                    date_trunc=normalized["date_trunc"] or None,
-                    value_field=normalized["value_field"] or None,
-                )
-                rows = len(result["series"])
-            else:
-                from system.utils.dataset import build_queryset
-
-                extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-                queryset, model, columns = build_queryset(dataset, request.user, extra_filters=extra)
-                result = {"columns": columns, "rows": list(queryset.values(*columns)[: normalized["limit"]])}
-                rows = len(result["rows"])
-        except DjangoValidationError as exc:
-            audit_nl_query(request.user, "run", "", dsl if isinstance(dsl, dict) else {}, error="; ".join(exc.messages))
-            return ApiResponse(code=1001, detail="; ".join(exc.messages))
-        audit_nl_query(request.user, "run", "", normalized, rows=rows)
-        return ApiResponse(data=result)
-
-    @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="ask")
     def ask(self, request, *args, **kwargs):
-        """文档问答：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案。"""
+        """文档问答（非流式）：回答引用文档出处；未启用/未配置/无命中/LLM 失败均转可读文案。
+
+        对话持久化与流式端点同口径（user 消息 + assistant/system 消息）。
+        """
         from system.utils.ai_actions import audit_ai_ask
+        from system.utils.ai_chat import message_payload, persist_message, system_error_message
 
         question = str(request.data.get("question") or "")
         try:
@@ -296,111 +278,96 @@ class AiAssistantViewSet(GenericViewSet):
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
             audit_ai_ask(request.user, question, ok=False, detail=detail)
+            persist_message(request.user, "docs", "user", content=question)
+            system_error_message(request.user, "docs", detail)
             return ApiResponse(code=1001, detail=detail)
         usage = result.pop("_usage", None)
         audit_ai_ask(request.user, question, ok=True, usage=usage)
-        return ApiResponse(data=result)
-
-    # ------------------------------------------------------------------
-    # A2 受限动作：草稿经聊天 /do 生成，此处只负责「用户确认后」的执行
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _push_action_result(room_id, user, result: dict) -> None:
-        """把执行结果落成 AI 房间的 system 消息并广播（跨端可见、刷新可追溯）。"""
-        if not room_id:
-            return
-        try:
-            from message import chat as chat_service
-            from message.models import ChatMessage
-            from message.utils import push_room_event
-
-            room = chat_service.accessible_room(room_id, user)
-            if room.room_type != ChatRoom.RoomType.AI:
-                return
-            detail = str(result.get("detail") or "")
-            message, __ = chat_service.create_message(
-                room,
-                None,
-                str(_("Action executed: {}").format(detail))[:2000],
-                message_type=ChatMessage.MessageType.SYSTEM,
-                extra={"mode": "action", "action_result": result.get("data") or {}},
-            )
-            push_room_event(room, chat_service.message_payload(message, room=room))
-        except Exception:  # noqa: BLE001 结果回写失败不影响执行结果本身
-            logger.warning("push ai action result failed", exc_info=True)
+        persist_message(request.user, "docs", "user", content=question)
+        row = persist_message(
+            request.user,
+            "docs",
+            "assistant",
+            content=result.get("answer") or "",
+            extra={"sources": result.get("sources") or []},
+        )
+        return ApiResponse(data={**result, "message": message_payload(row)})
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=False, url_path="action/execute")
-    def action_execute(self, request, *args, **kwargs):
-        """执行已确认的动作草稿：白名单 + 参数重校验（不信任前端回传）+ 权限双门 + 审批协议 + 审计。
+    @action(methods=["post"], detail=False, url_path="ask/stream")
+    def ask_stream(self, request, *args, **kwargs):
+        """文档问答流式（SSE）：事件序 meta → reasoning* → delta* → done | error。
 
-        审批口径：动作声明需要审批（如需审批的动态表单）时复用 412 协议——
-        首次确认建 PENDING 单并返回 412；审批通过后前端原样重发（指纹一致）
-        由拦截器携带 X-Approval-Id，消费成功才真正执行。
+        与 `ask` 同口径：门禁/校验错误在响应头发出前返回 JSON 1001（前端按普通
+        接口错误提示）；流内失败（LLM 中断/只有思考）转 error 事件（头已发出，
+        无法再改状态码）。事件载荷：reasoning/delta 为 `{"delta": "..."}`，
+        done 为 `{"answer", "sources"}`。
         """
-        from system.utils.ai_actions import ai_action_enabled, audit_ai_action, execute_action, get_action
+        from system.utils.ai import ask_stream as ai_ask_stream
+        from system.utils.ai import prepare_ask
+        from system.utils.ai_actions import audit_ai_ask
+        from system.utils.ai_chat import message_payload, persist_message, system_error_message
 
-        action_key = str(request.data.get("action") or "").strip()
-        params = request.data.get("params")
-        params = params if isinstance(params, dict) else {}
-        if not ai_action_enabled():
-            return ApiResponse(code=1001, detail=_("AI actions are not enabled"))
-        if not is_enabled():
-            return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
+        question = str(request.data.get("question") or "")
+        try:
+            messages, sources = prepare_ask(question)
+        except DjangoValidationError as exc:
+            detail = "; ".join(exc.messages)
+            audit_ai_ask(request.user, question, ok=False, detail=detail)
+            return ApiResponse(code=1001, detail=detail, content_type="application/json")
 
-        spec = get_action(action_key)
-        if spec is None:
-            audit_ai_action(request.user, action_key, params, False, str(_("Unknown action")))
-            return ApiResponse(code=1001, detail=_("Unknown action"))
-        if not spec.available(request.user):
-            detail = str(_("The action is not available: {}").format(str(spec.label)))
-            audit_ai_action(request.user, action_key, params, False, detail)
-            return ApiResponse(code=1001, detail=detail)
-        if not spec.has_permission(request.user):
-            detail = str(_("You do not have permission to perform the action: {}").format(str(spec.label)))
-            audit_ai_action(request.user, action_key, params, False, detail)
-            return ApiResponse(code=1001, detail=detail)
+        # 校验通过即落用户消息：即使流中断，刷新后也能看到本轮提问
+        user_row = persist_message(request.user, "docs", "user", content=question)
 
-        clean, error = spec.validate(request.user, params)
-        if error:
-            audit_ai_action(request.user, action_key, params, False, error)
-            return ApiResponse(code=1001, detail=error)
+        def events():
+            yield {"event": "meta", "data": {"question": question, "user_message": message_payload(user_row)}}
+            content_chunks: list = []
+            reasoning_chunks: list = []
+            try:
+                for item in ai_ask_stream(messages, sources):
+                    kind = item.get("type")
+                    if kind == "reasoning":
+                        reasoning_chunks.append(item["text"])
+                        yield {"event": "reasoning", "data": {"delta": item["text"]}}
+                    elif kind == "content":
+                        content_chunks.append(item["text"])
+                        yield {"event": "delta", "data": {"delta": item["text"]}}
+                    elif kind == "done":
+                        audit_ai_ask(request.user, question, ok=True)
+                        row = persist_message(
+                            request.user,
+                            "docs",
+                            "assistant",
+                            content=item["answer"],
+                            reasoning="".join(reasoning_chunks),
+                            extra={"sources": item["sources"]},
+                        )
+                        yield {
+                            "event": "done",
+                            "data": {
+                                "answer": item["answer"],
+                                "sources": item["sources"],
+                                "message": message_payload(row),
+                            },
+                        }
+            except DjangoValidationError as exc:
+                detail = "; ".join(exc.messages)
+                audit_ai_ask(request.user, question, ok=False, detail=detail)
+                if content_chunks or reasoning_chunks:
+                    # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
+                    row = persist_message(
+                        request.user,
+                        "docs",
+                        "assistant",
+                        content="".join(content_chunks) or detail,
+                        reasoning="".join(reasoning_chunks),
+                        extra={"partial": detail},
+                    )
+                    yield {"event": "error", "data": {"detail": detail, "message": message_payload(row)}}
+                else:
+                    yield {
+                        "event": "error",
+                        "data": {"detail": detail, "message": system_error_message(request.user, "docs", detail)},
+                    }
 
-        if spec.requires_approval(request.user, clean):
-            from system.utils.approval import (
-                APPROVAL_HEADER,
-                APPROVAL_QUERY_PARAM,
-                consume_approval,
-                create_approval,
-                find_active_pending,
-                get_request_params,
-                pending_response,
-            )
-
-            token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
-            if token:
-                approval_response = consume_approval(request, token)
-            else:
-                approval = find_active_pending(request.user, request.method, request.path, get_request_params(request))
-                if approval is None:
-                    # module 显式命名：审批中心里可直接识别来源（视图 docstring 与动作无关）
-                    approval = create_approval(None, request, module=str(_("AI action"))[:64])
-                approval_response = pending_response(approval)
-            if approval_response is not None:
-                audit_ai_action(request.user, action_key, clean, False, str(_("Waiting for approval")))
-                return approval_response
-
-        result = execute_action(request.user, action_key, clean)
-        audit_ai_action(
-            request.user,
-            action_key,
-            clean,
-            bool(result.get("ok")),
-            str(result.get("detail") or ""),
-            {"result": result.get("data") or {}},
-        )
-        if not result.get("ok"):
-            return ApiResponse(code=1001, detail=result.get("detail") or _("Action failed"))
-        self._push_action_result(request.data.get("room_id"), request.user, result)
-        return ApiResponse(data=result.get("data"), detail=result.get("detail"))
+        return sse_response(events())

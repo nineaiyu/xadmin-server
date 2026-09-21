@@ -50,6 +50,9 @@ class ChatCompletionsClient:
         # 最近一次成功 chat() 的 token 用量（供应商 payload.usage 原样，缺省 None）：
         # 供调用方写审计（成本维度观测），不改变 chat() 的返回契约
         self.last_usage = None
+        # 最近一次 chat() 的思考内容（reasoning_content，缺省 None）：用于「只有思考
+        # 没有回答」的错误区分（见 chat() 的空回答判定）；流式场景由 chat_stream 逐段产出
+        self.last_reasoning = None
 
     def _client(self):
         if self.http is None:
@@ -116,6 +119,8 @@ class ChatCompletionsClient:
         """多轮消息 → 助手回复文本。失败抛 AiSdkError（可读、不含原始报文）。
 
         overrides：显式覆盖请求体参数（如 temperature=0.7），None 值忽略。
+        思考型模型（reasoning_content）的思考内容采集到 ``last_reasoning``（供展示）；
+        只有思考没有最终回答时报错文案会区分说明（便于前端给出可操作提示）。
         """
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI client is not configured (base_url/api_key/model)")
@@ -129,19 +134,30 @@ class ChatCompletionsClient:
         if not isinstance(payload, dict):
             raise AiSdkError("The AI provider returned an invalid response")
         choices = payload.get("choices") or []
-        content = ((choices[0] or {}).get("message") or {}).get("content") if choices else None
-        if not content:
-            logger.warning("ai chat rejected: %s", str(payload)[:300])
-            raise AiSdkError("The AI provider returned an empty answer")
+        message = ((choices[0] or {}).get("message") or {}) if choices else {}
+        content = message.get("content")
+        reasoning = message.get("reasoning_content")
+        self.last_reasoning = str(reasoning) if reasoning else None
         usage = payload.get("usage")
         self.last_usage = usage if isinstance(usage, dict) else None
+        if not content:
+            logger.warning("ai chat rejected: %s", str(payload)[:300])
+            if self.last_reasoning:
+                raise AiSdkError("The AI provider returned only reasoning content without a final answer")
+            raise AiSdkError("The AI provider returned an empty answer")
         return str(content)
 
     def chat_stream(self, messages: list, **overrides):
-        """流式多轮：逐段产出文本增量（OpenAI `stream=true` SSE 兼容）。
+        """流式多轮：产出结构化增量事件（OpenAI `stream=true` SSE 兼容）。
+
+        产出 ``{"type": "reasoning"|"content", "text": <增量>}``：
+        - ``reasoning``：思考型模型的思考过程增量（`delta.reasoning_content`），
+          供前端「思考过程」面板实时展示；
+        - ``content``：正式回答增量（`delta.content`）。
 
         与 ``chat()`` 同源凭据与错误口径：连接/协议/空回答失败抛 AiSdkError；
-        已经产出过增量后再失败（流中断）同样抛错，由调用方决定保留部分回答还是降级。
+        已经产出过增量后再失败（流中断）同样抛错，由调用方按部分回答处理；
+        「只有思考、没有回答」不算空回答（已有 reasoning 增量），由调用方决定展示口径。
         """
         if not (self.base_url and self.api_key and self.model):
             raise AiSdkError("AI client is not configured (base_url/api_key/model)")
@@ -153,10 +169,17 @@ class ChatCompletionsClient:
             raise AiSdkError("The AI provider rejected the streaming request")
 
         produced = False
+        produced_reasoning = False
         try:
-            for line in response.iter_lines(decode_unicode=True):
+            # 不依赖 requests 的 decode_unicode：SSE 响应头常见 `text/event-stream`
+            # 不带 charset，requests 会按 text/* 把编码推断成 ISO-8859-1，导致中文
+            # 增量全部 mojibake（数据库 → æ°æ®åº）；SSE 规范固定 UTF-8，这里自行解码。
+            # 兼容测试桩可能返回 str 行（预解码），bytes 才需要 decode。
+            for line in response.iter_lines():
                 if not line:
                     continue
+                if isinstance(line, bytes):
+                    line = line.decode("utf-8", errors="replace")
                 data = line[5:].strip() if line.startswith("data:") else ""
                 if not data or data == "[DONE]":
                     if data == "[DONE]":
@@ -167,15 +190,20 @@ class ChatCompletionsClient:
                 except ValueError:
                     continue
                 choices = chunk.get("choices") or []
-                delta = ((choices[0] or {}).get("delta") or {}).get("content") if choices else None
-                if delta:
+                delta = ((choices[0] or {}).get("delta") or {}) if choices else {}
+                reasoning = delta.get("reasoning_content")
+                if reasoning:
+                    produced_reasoning = True
+                    yield {"type": "reasoning", "text": str(reasoning)}
+                content = delta.get("content")
+                if content:
                     produced = True
-                    yield str(delta)
+                    yield {"type": "content", "text": str(content)}
         except AiSdkError:
             raise
         except Exception as exc:
             logger.warning("ai chat stream interrupted: %s", exc)
             raise AiSdkError("The AI provider stream was interrupted") from exc
-        if not produced:
+        if not produced and not produced_reasoning:
             logger.warning("ai chat stream empty answer")
             raise AiSdkError("The AI provider returned an empty answer")

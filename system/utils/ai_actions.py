@@ -18,15 +18,28 @@
 
 import datetime
 import json
-import re
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+
+# 注册表是唯一白名单入口（再导出：调用方只 import 本模块）
+from system.utils.ai_api_registry import API_ACTION_SPECS  # noqa: F401
+from system.utils.ai_builtin_actions import (
+    DASHBOARD_ENDPOINTS,
+    _dform_requires_approval,  # noqa: F401 私有实现再导出（ACTION_SPECS 引用）
+    _execute_dashboard,
+    _execute_dform,
+    _execute_leave,
+    _form_fields,
+    _validate_dashboard,
+    _validate_dform,
+    _validate_leave,
+    available_forms,
+)
 
 logger = get_logger(__name__)
 
@@ -38,9 +51,12 @@ MAX_MESSAGE_LENGTH = 500
 MAX_REASON_LENGTH = 500
 #: 动态表单目录最多列出的表单数（防 prompt 过大）
 MAX_CATALOG_FORMS = 20
+#: 单次请求最多产出的动作草稿数（多步串联：如「新增用户组 → 配权限」）
+MAX_DRAFTS_PER_REQUEST = 3
 
 ACTION_LEAVE_SUBMIT = "leave.submit"
 ACTION_DFORM_SUBMIT = "dform.submit"
+ACTION_DASHBOARD_OVERVIEW = "dashboard.overview"
 
 
 def ai_action_enabled() -> bool:
@@ -52,13 +68,17 @@ def user_can_visit(user, method: str, path: str) -> bool:
     """按菜单权限点口径判定用户能否访问「方法 + 路径」（与 IsAuthenticated 同一匹配函数）。
 
     业务动作执行前的第二道门：仅有 AI 执行端点权限、而没有底层业务权限的用户不得执行。
+    白名单端点（登录即可访问、无菜单权限点，如 /api/system/dashboard/*）与运行时
+    访问控制同口径视为有权限——否则这类动作对普通用户永久不可见/不可执行。
     """
     if not getattr(user, "is_authenticated", False) or not getattr(user, "pk", None):
         return False
     if getattr(user, "is_superuser", False):
         return True
-    from common.core.permission import get_menu_pk, get_user_permission
+    from common.core.permission import get_menu_pk, get_user_permission, match_permission_white_url
 
+    if match_permission_white_url(method, path):
+        return True
     try:
         permission_data = get_user_permission(user, method.upper())
     except Exception:  # noqa: BLE001 权限查询失败按无权限处理（fail-closed）
@@ -68,192 +88,13 @@ def user_can_visit(user, method: str, path: str) -> bool:
 
 
 def _extract_json_object(text: str) -> dict:
-    """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象。"""
-    text = (text or "").strip()
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
-    if fenced:
-        text = fenced.group(1)
-    else:
-        start, end = text.find("{"), text.rfind("}")
-        text = text[start : end + 1] if (start >= 0 and end > start) else text
+    """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。"""
+    from system.utils.ai_parse import AiOutputParseError, extract_json_object
+
     try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
+        return extract_json_object(text)
+    except AiOutputParseError as exc:
         raise DjangoValidationError(_("The model returned malformed JSON")) from exc
-    if not isinstance(payload, dict):
-        raise DjangoValidationError(_("The model returned malformed JSON"))
-    return payload
-
-
-def _parse_date(value):
-    try:
-        return datetime.date.fromisoformat(str(value))
-    except (TypeError, ValueError):
-        return None
-
-
-def _parse_decimal(value):
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, TypeError, ValueError):
-        return None
-
-
-# ---------------------------------------------------------------------------
-# 动作实现：请假申请
-# ---------------------------------------------------------------------------
-
-
-def available_forms(user) -> list:
-    """可提交的动态表单（启用中，目录按创建时间倒序取前 N 个）。"""
-    from system.models.dform import DynamicForm
-
-    return list(DynamicForm.objects.filter(is_active=True).order_by("-created_time")[:MAX_CATALOG_FORMS])
-
-
-def _form_fields(form) -> list:
-    fields = (form.schema or {}).get("fields") or []
-    return [
-        {
-            "key": str(item.get("key")),
-            "label": str(item.get("label")),
-            "type": str(item.get("type")),
-            "required": bool(item.get("required")),
-            "options": item.get("options") or None,
-        }
-        for item in fields
-    ]
-
-
-def _validate_leave(user, params: dict):
-    """校验请假参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
-    from system.models.leave import Leave
-    from system.utils.leave import leave_days, validate_leave_payload
-
-    allowed_types = {choice[0] for choice in Leave.LeaveType.choices}
-    leave_type = str(params.get("leave_type") or Leave.LeaveType.ANNUAL).strip()
-    if leave_type not in allowed_types:
-        return {}, str(_("Unknown leave type: {}").format(leave_type))
-    start_date = _parse_date(params.get("start_date"))
-    end_date = _parse_date(params.get("end_date"))
-    if not start_date or not end_date:
-        return {}, str(_("Start date and end date must be in YYYY-MM-DD format"))
-    reason = str(params.get("reason") or "").strip()[:MAX_REASON_LENGTH]
-    if not reason:
-        return {}, str(_("Reason is required"))
-    days = None
-    raw_days = params.get("days")
-    if raw_days not in (None, ""):
-        days = _parse_decimal(raw_days)
-        if days is None:
-            return {}, str(_("Days must be a number"))
-    error = validate_leave_payload(start_date=start_date, end_date=end_date, days=days, creator=user)
-    if error:
-        return {}, error
-    if days is None:
-        days = leave_days(start_date, end_date)
-    return (
-        {
-            "leave_type": leave_type,
-            "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat(),
-            "days": float(days),
-            "reason": reason,
-        },
-        None,
-    )
-
-
-def _execute_leave(user, params: dict) -> dict:
-    """创建请假单并立即提交审批（与 LeaveViewSet.create 同口径：无流程/无审批人时保留草稿）。"""
-    from system.models.leave import Leave
-    from system.utils.leave import submit_leave
-
-    leave = Leave.objects.create(
-        leave_type=params["leave_type"],
-        start_date=_parse_date(params["start_date"]),
-        end_date=_parse_date(params["end_date"]),
-        days=_parse_decimal(params["days"]),
-        reason=params["reason"],
-        creator=user,
-        modifier=user,
-        dept_belong=getattr(user, "dept", None),
-    )
-    ok, error = submit_leave(leave, user)
-    leave.refresh_from_db()
-    data = {"leave_id": str(leave.pk), "status": leave.status}
-    if not ok:
-        return {"ok": True, "detail": str(_("Saved as draft: {}").format(error)), "data": data}
-    return {"ok": True, "detail": str(_("The leave request has been submitted for approval")), "data": data}
-
-
-# ---------------------------------------------------------------------------
-# 动作实现：动态表单提交
-# ---------------------------------------------------------------------------
-
-
-def _resolve_form(params: dict):
-    """按 form_id 取启用中的表单；返回 (form, 错误文案)。"""
-    from system.models.dform import DynamicForm
-
-    form_id = str(params.get("form_id") or "").strip()
-    if not form_id:
-        return None, str(_("A form must be selected"))
-    try:
-        form = DynamicForm.objects.filter(pk=form_id).first()
-    except (DjangoValidationError, ValueError, TypeError):
-        return None, str(_("The requested form does not exist"))
-    if form is None:
-        return None, str(_("The requested form does not exist"))
-    if not form.is_active:
-        return None, str(_("The form is disabled and cannot accept submissions"))
-    return form, None
-
-
-def _validate_dform(user, params: dict):
-    """校验动态表单提交参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
-    from system.utils.dform import validate_submission_data
-
-    form, error = _resolve_form(params)
-    if error:
-        return {}, error
-    data = params.get("data")
-    if data is None:
-        data = {}
-    if not isinstance(data, dict):
-        return {}, str(_("Submission data must be an object"))
-    try:
-        normalized = validate_submission_data(form.schema, data)
-    except DjangoValidationError as exc:
-        return {}, "; ".join(exc.messages)
-    return {"form_id": str(form.pk), "data": normalized, "form_name": form.name}, None
-
-
-def _dform_requires_approval(user, params: dict) -> bool:
-    if getattr(user, "is_superuser", False):
-        return False
-    form, error = _resolve_form(params)
-    return bool(form is not None and form.approval_required)
-
-
-def _execute_dform(user, params: dict) -> dict:
-    from system.models.dform import DynamicFormSubmission
-
-    form, error = _resolve_form(params)
-    if error:
-        return {"ok": False, "detail": error, "data": {}}
-    submission = DynamicFormSubmission.objects.create(
-        form=form,
-        data=params.get("data") or {},
-        creator=user,
-        modifier=user,
-        dept_belong=getattr(user, "dept", None),
-    )
-    return {
-        "ok": True,
-        "detail": str(_("The form has been submitted")),
-        "data": {"submission_id": str(submission.pk), "form_id": str(form.pk), "form_name": form.name},
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +177,22 @@ ACTION_SPECS = {
         requires_approval=_dform_requires_approval,
         available=_dform_available,
     ),
+    # ---- 声明式动作（复用业务接口）：声明见 system/utils/ai_api_actions.py ----
+    **API_ACTION_SPECS,
+    ACTION_DASHBOARD_OVERVIEW: ActionSpec(
+        key=ACTION_DASHBOARD_OVERVIEW,
+        label=_("Show dashboard overview"),
+        description=_(
+            "One-shot dashboard statistics: total users, logins, registration/login trends, "
+            "today's operations and active users (aggregates six endpoints in a single call)"
+        ),
+        params={},
+        required_visits=tuple(("GET", path) for __, path in DASHBOARD_ENDPOINTS),
+        validate=_validate_dashboard,
+        execute=_execute_dashboard,
+        requires_approval=_never_requires_approval,
+        available=_always_available,
+    ),
 }
 
 
@@ -357,7 +214,8 @@ def build_catalog(user) -> dict:
             "action": spec.key,
             "label": str(spec.label),
             "description": str(spec.description),
-            "params": spec.params,
+            # const 字段是服务端固定值（如公告 notice_type），不下发给模型
+            "params": {name: rule for name, rule in spec.params.items() if "const" not in rule},
         }
         if spec.key == ACTION_DFORM_SUBMIT:
             entry["forms"] = [
@@ -370,20 +228,26 @@ def build_catalog(user) -> dict:
 def build_draft_prompt(user, message: str) -> list:
     """构造草稿 prompt：动作目录以标记行定位，便于解析与测试（勿改标记格式）。
 
-    注意：文案含 JSON 花括号，不能用 str.format 注入日期（会被当占位符解析成
-    KeyError），这里用 replace 注入 ``{today}``。
+    多步串联：允许模型一次产出最多 MAX_DRAFTS_PER_REQUEST 个动作草稿（按执行
+    顺序），前端逐项确认后逐个执行。注意：文案含 JSON 花括号，不能用 str.format
+    注入变量（会被当占位符解析成 KeyError），这里用 replace 注入 {max}/{today}。
     """
     catalog = build_catalog(user)
-    system = str(
-        _(
-            "You convert the user's request into exactly ONE action draft for this system. "
-            "Pick the action only from the provided catalog and use only the described parameters. "
-            'Output ONLY a JSON object: {"action": "<action key>", "params": {...}, "summary": "<one line>"}. '
-            "Never invent values the user did not provide; resolve relative dates with the current date {today}. "
-            "If the request is not executable, is missing required parameters, or matches several forms, "
-            'output {"action": null, "message": "<a short clarifying question>"}.'
+    system = (
+        str(
+            _(
+                "You convert the user's request into action drafts for this system, at most {max} actions in "
+                "execution order (a single action is fine). Pick action keys exactly as written in the catalog "
+                "(copy them verbatim, never split or reorder their parts) and use only the described parameters. "
+                'Output ONLY a JSON object: {"actions": [{"action": "<action key>", "params": {...}, '
+                '"summary": "<one line>"}]}. Never invent values the user did not provide; resolve relative dates '
+                "with the current date {today}. If the request is not executable or is missing required "
+                'parameters, output {"action": null, "message": "<a short clarifying question>"}.'
+            )
         )
-    ).replace("{today}", datetime.date.today().isoformat())
+        .replace("{max}", str(MAX_DRAFTS_PER_REQUEST))
+        .replace("{today}", datetime.date.today().isoformat())
+    )
     user_content = "{}\n\n{}\n{}".format(
         (message or "").strip()[:MAX_MESSAGE_LENGTH],
         ALLOWED_ACTIONS_MARKER,
@@ -392,40 +256,73 @@ def build_draft_prompt(user, message: str) -> list:
     return [{"role": "system", "content": system}, {"role": "user", "content": user_content}]
 
 
-def parse_draft(raw: str, user) -> dict:
-    """解析 LLM 草稿输出并逐项服务端校验（LLM 输出按不可信输入处理）。
-
-    返回 ``{"kind": "draft", "draft": {...}}`` 或 ``{"kind": "message", "message": "..."}``；
-    校验不通过抛 DjangoValidationError（可读文案，前端按普通业务失败提示）。
-    """
-    payload = _extract_json_object(raw)
-    action_key = payload.get("action")
+def _build_one_draft(user, item: dict, index: int) -> dict:
+    """校验并规范化单个动作草稿（index 从 1 起；多草稿时错误带序号前缀）。"""
+    prefix = "" if index <= 1 else str(_("#{}: ").format(index))
+    action_key = item.get("action")
     if not action_key:
-        message = str(payload.get("message") or "").strip()[:MAX_REASON_LENGTH]
-        if not message:
-            raise DjangoValidationError(_("The model did not return an actionable request"))
-        return {"kind": "message", "message": message}
-
+        raise DjangoValidationError(str(prefix) + str(_("The model did not return an actionable request")))
     spec = get_action(action_key)
     if spec is None:
-        raise DjangoValidationError(_("The model requested an unknown action: {}").format(str(action_key)[:64]))
+        raise DjangoValidationError(
+            str(prefix) + str(_("The model requested an unknown action: {}").format(str(action_key)[:64]))
+        )
     if not spec.available(user):
-        raise DjangoValidationError(_("The action is not available: {}").format(str(spec.label)))
+        raise DjangoValidationError(str(prefix) + str(_("The action is not available: {}").format(str(spec.label))))
     if not spec.has_permission(user):
-        raise DjangoValidationError(_("You do not have permission to perform the action: {}").format(str(spec.label)))
-
-    params = payload.get("params")
+        raise DjangoValidationError(
+            str(prefix) + str(_("You do not have permission to perform the action: {}").format(str(spec.label)))
+        )
+    params = item.get("params")
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})
     if error:
-        raise DjangoValidationError(error)
-    draft = {
+        raise DjangoValidationError(str(prefix) + str(error))
+    return {
         "action": spec.key,
         "label": str(spec.label),
         "params": clean,
-        "summary": str(payload.get("summary") or "").strip()[:200] or str(spec.label),
+        "summary": str(item.get("summary") or "").strip()[:200] or str(spec.label),
         "requires_approval": bool(spec.requires_approval(user, clean)),
     }
-    return {"kind": "draft", "draft": draft}
+
+
+def parse_draft(raw: str, user) -> dict:
+    """解析 LLM 草稿输出并逐项服务端校验（LLM 输出按不可信输入处理）。
+
+    兼容两种形态：多草稿 ``{"actions": [...]}``（新契约，最多 MAX_DRAFTS_PER_REQUEST
+    个）与单草稿 ``{"action": ..., "params": ...}``（旧契约/兜底）。
+    返回 ``{"kind": "draft", "draft": 首个草稿, "drafts": [全部草稿]}`` 或
+    ``{"kind": "message", "message": "..."}``；校验不通过抛 DjangoValidationError
+    （可读文案，前端按普通业务失败提示）。``draft`` 恒为首个草稿，兼容旧渲染。
+    """
+    payload = _extract_json_object(raw)
+    actions = payload.get("actions")
+    if actions is None:
+        # 旧契约：单动作对象（或澄清 message）
+        action_key = payload.get("action")
+        if not action_key:
+            message = str(payload.get("message") or "").strip()[:MAX_REASON_LENGTH]
+            if not message:
+                raise DjangoValidationError(_("The model did not return an actionable request"))
+            return {"kind": "message", "message": message}
+        actions = [payload]
+    if not isinstance(actions, list) or not actions:
+        raise DjangoValidationError(_("The model returned malformed JSON"))
+    if len(actions) > MAX_DRAFTS_PER_REQUEST:
+        raise DjangoValidationError(_("Too many actions requested (max {})").format(MAX_DRAFTS_PER_REQUEST))
+    drafts = []
+    for index, item in enumerate(actions, start=1):
+        if not isinstance(item, dict):
+            raise DjangoValidationError(_("The model returned malformed JSON"))
+        drafts.append(_build_one_draft(user, item, index))
+    return {"kind": "draft", "draft": drafts[0], "drafts": drafts}
+
+
+def draft_summary(drafts: list) -> str:
+    """草稿确认摘要（聊天室 /do 与助手页共用的用户可见文案）。"""
+    if len(drafts) == 1:
+        return str(_("I will perform: {}").format(drafts[0]["label"]))
+    return str(_("I will perform {} actions: {}").format(len(drafts), " → ".join(draft["label"] for draft in drafts)))
 
 
 def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict = None) -> None:

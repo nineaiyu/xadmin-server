@@ -234,7 +234,8 @@ def execute_dataset(dataset, user_obj):
 def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=None, value_field=None):
     """聚合：图表卡片数据源。输出 [{name, value}]（桶上限 365）。
 
-    - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势）；
+    - group_by 为空 = 无分组纯聚合（NL 查数「一共有多少个」等）：单桶输出，name 为「总计」；
+    - date_trunc（day/month）仅对 DateTime 字段生效：按时间桶分组（趋势），需 group_by；
     - metric: count / sum / avg（sum、avg 仅数值字段，value_field 必填且在白名单）；
     - 字段权限叠加：分组/取值字段必须对浏览者可见，否则聚合结果
       会绕过列白名单泄露隐藏字段（如薪酬求和），fail-closed 报错。
@@ -243,12 +244,12 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
         raise ValidationError(_("Metric {} is not allowed").format(metric))
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
-    if group_by not in whitelist:
+    if group_by and group_by not in whitelist:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(dataset.bound_model, group_by))
 
     visible = viewer_visible_fields(dataset.bound_model, user_obj)
     if visible is not None:
-        if group_by not in visible:
+        if group_by and group_by not in visible:
             raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, group_by))
         if value_field and value_field not in visible:
             raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, value_field))
@@ -262,6 +263,15 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
             )
         _check_numeric(model, value_field)
         annotation = Sum(value_field) if metric == "sum" else Avg(value_field)
+
+    if not group_by:
+        # 无分组纯聚合：单桶（趋势/分组语义不成立，date_trunc 忽略）
+        aggregated = queryset.aggregate(agg_value=annotation).get("agg_value")
+        return {
+            "name": "",
+            "metric": metric,
+            "series": [{"name": str(_("Total")), "value": aggregated if aggregated is not None else 0}],
+        }
 
     if date_trunc:
         if date_trunc not in ALLOWED_DATE_TRUNC:

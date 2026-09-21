@@ -17,6 +17,7 @@ from common.utils import get_logger
 from message import chat as chat_service
 from message.models import ChatMessage, ChatRoom
 from message.utils import push_room_event
+from system.utils.ai_chat import clip_reasoning as _clip_reasoning
 
 logger = get_logger(__name__)
 
@@ -60,25 +61,30 @@ def action_reply(user, request_text: str) -> tuple:
     - 请求不可执行/缺参数 → 返回澄清文本（mode=chat，按普通 AI 气泡渲染，不落草稿）；
     - 灰度关闭/LLM 失败 → 抛可读校验错误（调用方落 system 消息降级，不静默）。
     """
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
-    from system.utils.ai import ai_credentials
-    from system.utils.ai_actions import ai_action_enabled, build_draft_prompt, parse_draft
+    from common.sdk.ai.chat import AiSdkError
+    from system.utils.ai import structured_chat_client
+    from system.utils.ai_actions import ai_action_enabled, build_draft_prompt, draft_summary, parse_draft
 
     if not ai_action_enabled():
         raise DjangoValidationError(_("AI actions are not enabled"))
     if not request_text:
         raise DjangoValidationError(_("Please describe the request after /do"))
     try:
-        raw = ChatCompletionsClient(ai_credentials()).chat(build_draft_prompt(user, request_text))
+        # 客户端与结构化输出上限走公共入口（与助手页 action/interpret/stream 同一口径）
+        client, max_tokens = structured_chat_client()
+        raw = client.chat(build_draft_prompt(user, request_text), max_tokens=max_tokens)
         result = parse_draft(raw, user)
     except AiSdkError as exc:
         logger.warning("chat ai action draft failed: %s", exc)
         raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
     if result["kind"] == "message":
         return result["message"], {"mode": "chat"}, "chat"
-    draft = result["draft"]
-    content = str(_("I will perform: {}").format(draft["label"]))
-    return content, {"mode": "action", "action_draft": draft}, "action"
+    drafts = result.get("drafts") or [result["draft"]]
+    extra = {"mode": "action", "action_draft": drafts[0]}
+    if len(drafts) > 1:
+        # 多草稿串联：action_drafts 供前端逐项渲染确认卡片（action_draft 保留首个，兼容旧渲染）
+        extra["action_drafts"] = drafts
+    return draft_summary(drafts), extra, "action"
 
 
 def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list:
@@ -149,7 +155,10 @@ def ai_reply_content(room: ChatRoom, question: str) -> tuple:
 
 
 def _llm_reply_stream(messages: list):
-    """流式多轮：逐段产出增量；AiSdkError 转可读校验错误（在生成器内抛出）。"""
+    """流式多轮：逐段产出 ``{"type": "reasoning"|"content", "text": ...}`` 事件。
+
+    AiSdkError 转可读校验错误（在生成器内抛出）。
+    """
     from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
     from system.utils.ai import ai_credentials
 
@@ -162,17 +171,21 @@ def _llm_reply_stream(messages: list):
 
 
 def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
-    """SSE 事件生成器（二期）：yield dict(event, data)，视图转 text/event-stream。
+    """SSE 事件生成器（二期，含思考过程）：yield dict(event, data)，视图转 text/event-stream。
 
-    事件序：``meta``（问题回执）→ ``delta``*（文本增量）→ ``done``（正式消息载荷）| ``error``。
+    事件序：``meta``（问题回执）→ ``reasoning``*（思考增量，思考型模型才有）→
+    ``delta``*（回答增量）→ ``done``（正式消息载荷）| ``error``。
     落库与 WS 广播在此收口，与 ``ai_message`` 同口径：
 
     - 全程无增量即失败 → 落一条 system 降级消息（前端可见）+ error 事件；
-    - 已有增量后中断 → 保留部分回答（extra.partial 记录中断原因）+ done 事件。
+    - 已有增量后中断 → 保留部分回答（extra.partial 记录中断原因）+ done 事件；
+    - 只有思考没有回答（思考型模型思考过长被截断）→ 保留思考（extra.reasoning），
+      以下落文案作内容并标记 extra.no_answer，前端展示思考过程与「未给出最终回答」。
     """
     yield {"event": "meta", "data": {"question": question_payload}}
 
     chunks: list = []
+    reasoning_chunks: list = []
     extra = {"mode": "chat"}
     try:
         if is_action_command(question):
@@ -189,12 +202,19 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
             chunks.append(answer)
             yield {"event": "delta", "data": {"delta": answer}}
         else:
-            for delta in _llm_reply_stream(build_chat_messages(room, question)):
-                chunks.append(delta)
-                yield {"event": "delta", "data": {"delta": delta}}
+            for item in _llm_reply_stream(build_chat_messages(room, question)):
+                text = item.get("text") or ""
+                if not text:
+                    continue
+                if item.get("type") == "reasoning":
+                    reasoning_chunks.append(text)
+                    yield {"event": "reasoning", "data": {"delta": text}}
+                else:
+                    chunks.append(text)
+                    yield {"event": "delta", "data": {"delta": text}}
     except DjangoValidationError as exc:
         detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
-        if not chunks:
+        if not chunks and not reasoning_chunks:
             fallback, __ = chat_service.create_message(
                 room, None, detail, message_type=ChatMessage.MessageType.SYSTEM, extra={"error": True, "mode": "chat"}
             )
@@ -202,7 +222,16 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
             push_room_event(room, payload)
             yield {"event": "error", "data": {"detail": detail, "message": payload}}
             return
-        extra["partial"] = detail
+        # 已有内容：保留部分回答；只有思考（流中断）：走下方「未给出最终回答」兜底
+        if chunks:
+            extra["partial"] = detail
+    if reasoning_chunks:
+        extra["reasoning"] = _clip_reasoning("".join(reasoning_chunks))
+    if not chunks:
+        # 只有思考没有回答（思考过长被截断 / 思考中流中断）：思考保留在 extra，
+        # 内容用可读文案兜底（消息内容不允许为空）
+        extra["no_answer"] = True
+        chunks.append(str(_("The model did not provide a final answer; please retry or switch models")))
     reply, __ = chat_service.create_message(
         room, None, "".join(chunks), message_type=ChatMessage.MessageType.AI, extra=extra
     )

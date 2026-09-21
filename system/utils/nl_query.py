@@ -12,7 +12,6 @@
 """
 
 import json
-import re
 
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -43,23 +42,22 @@ def visible_datasets(user_obj) -> list:
 
 
 def parse_llm_json(text: str) -> dict:
-    """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象。"""
-    text = (text or "").strip()
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
-    if fenced:
-        text = fenced.group(1)
-    else:
-        start, end = text.find("{"), text.rfind("}")
-        text = text[start : end + 1] if (start >= 0 and end > start) else text
+    """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。
+
+    未知键（弱模型常自创 stat/order_by/sql 等）**剥离而非拒绝**：执行安全由
+    validate_dsl 的白名单（只读取 DSL_KEYS 内的键）独立保证，未知键不带任何执行
+    语义，整体拒绝只会让模型轻微偏差（如多余的 "stat"）导致整个请求失败。
+    """
+    from system.utils.ai_parse import AiOutputParseError, extract_json_object
+
     try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
+        payload = extract_json_object(text)
+    except AiOutputParseError as exc:
         raise ValidationError(_("The model returned malformed JSON")) from exc
-    if not isinstance(payload, dict):
-        raise ValidationError(_("The model returned malformed JSON"))
     unknown = set(payload) - DSL_KEYS
     if unknown:
-        raise ValidationError(_("The model returned unknown DSL keys: {}").format(", ".join(sorted(unknown))))
+        logger.info("nl query dropped unknown DSL keys: %s", ", ".join(sorted(unknown)))
+        payload = {key: value for key, value in payload.items() if key in DSL_KEYS}
     return payload
 
 
@@ -109,13 +107,15 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
         metric = dsl.get("metric") or "count"
         if metric not in ALLOWED_METRICS:
             raise ValidationError(_("Metric {} is not allowed").format(metric))
-        if not group_by or group_by not in columns:
+        # group_by 允许为空：无分组纯聚合（「一共有多少个」等总数类问题），执行层单桶输出；
+        # 非空时必须在数据集列白名单内；date_trunc 仅在按列分组时有意义
+        if group_by and group_by not in columns:
             raise ValidationError(_("Field {}.{} is not available for datasets").format(dataset.bound_model, group_by))
         normalized.update(
             {
                 "group_by": group_by,
                 "metric": metric,
-                "date_trunc": dsl.get("date_trunc") if dsl.get("date_trunc") in ("day", "month") else "",
+                "date_trunc": dsl.get("date_trunc") if (group_by and dsl.get("date_trunc") in ("day", "month")) else "",
                 "value_field": str(dsl.get("value_field") or ""),
             }
         )
