@@ -120,6 +120,13 @@ def process_approval(view, request):
 
     全局清单为空时整体休眠（渐进启用），已携令牌的重发请求在休眠期直接放行。
     """
+    if getattr(request, "_approval_pre_authorized", False):
+        # AI 动作链路预授权：动作层已在 action/execute 完成同一操作指纹的强制审批
+        # （412 协议一次性令牌已消费），内部 dispatch 到业务端点时不再重复拦截，
+        # 否则会建第二张审批单且该单永远无法从 AI 链路消费（双重审批死循环）。
+        # 该标记只能由服务端内部构造的请求设置（AI 动作执行器），外部 HTTP 请求
+        # 无法注入请求对象属性，不存在绕过面。
+        return None
     if not path_intercepted(request.path):
         return None
 

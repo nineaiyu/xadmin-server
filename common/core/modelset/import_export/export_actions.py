@@ -25,11 +25,18 @@ class OnlyExportDataAction(ListAction):
     )
     @action(methods=["get"], detail=False, url_path="export-data")
     def export_data(self, request, *args, **kwargs):
-        """导出{cls}数据"""
-        self.format_kwarg = request.query_params.get("type", "xlsx")
+        """导出{cls}数据（type=csv|xlsx，缺省 xlsx）"""
+        file_format = request.query_params.get("type", "xlsx")
+        self.format_kwarg = file_format
         request.no_cache = True  # 防止自定义缓存数据
         self.renderer_classes = [ExcelFileRenderer, CSVFileRenderer]
-        request.accepted_renderer = None
+        # 显式绑定渲染器：DRF 内容协商按 Accept 列表挑渲染器，浏览器/axios 默认
+        # `Accept: application/json` 会一路落到 renderers[0]（xlsx），**type=csv 被忽略**
+        # （历史缺陷：全站选 CSV 导出的文件实际是 xlsx）。这里按 type 直接指定，
+        # 并把 accepted_renderer 交给 finalize_response（非空即不再协商）。
+        renderer = CSVFileRenderer() if file_format == "csv" else ExcelFileRenderer()
+        request.accepted_renderer = renderer
+        request.accepted_media_type = renderer.media_type
         data = self.list(request, *args, **kwargs)
         return data
 

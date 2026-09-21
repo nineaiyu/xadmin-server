@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-19 11:21+0800\n"
+"POT-Creation-Date: 2026-09-21 11:49+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,7 +46,7 @@ msgid "Ops alert received"
 msgstr ""
 
 #: common/backup_alert.py:33 common/celery/failure_handler.py:29
-#: common/models.py:21 common/notifications.py:21 common/ops_alert.py:33
+#: common/models.py:24 common/notifications.py:22 common/ops_alert.py:33
 msgid "Monitor"
 msgstr ""
 
@@ -78,8 +77,9 @@ msgstr ""
 
 #: common/backup_alert.py:50 common/ops_alert.py:50
 #: system/templates/notify/msg_approval.html:23
-#: system/templates/notify/msg_approval_flow.html:31
+#: system/templates/notify/msg_approval_flow.html:37
 #: system/templates/notify/msg_sensitive_operation.html:6
+#: system/utils/monitor_history.py:258
 msgid "Time"
 msgstr ""
 
@@ -109,7 +109,7 @@ msgid ""
 msgstr ""
 
 #: common/core/auth.py:31 common/core/filter.py:165 common/core/filter.py:172
-#: common/core/permission.py:184
+#: common/core/permission.py:220
 msgid "Unauthorized authentication"
 msgstr ""
 
@@ -281,7 +281,7 @@ msgstr ""
 msgid "ID"
 msgstr ""
 
-#: common/core/models.py:163 common/models.py:18
+#: common/core/models.py:163 common/models.py:21 common/models.py:58
 #: settings/serializers/security.py:292
 msgid "Created time"
 msgstr ""
@@ -432,25 +432,28 @@ msgstr ""
 msgid "Image size cannot exceed {}"
 msgstr ""
 
-#: common/core/permission.py:171 common/core/permission.py:194
+#: common/core/permission.py:207 common/core/permission.py:230
 msgid "PAT scope does not allow this path"
 msgstr ""
 
-#: common/core/permission.py:246 common/core/permission.py:277
-#: common/core/permission.py:295 system/scim/views.py:79
+#: common/core/permission.py:278 common/core/permission.py:309
+#: common/core/permission.py:327 system/scim/views.py:79
 #: system/views/admin/approval.py:100 system/views/admin/approval.py:122
-#: system/views/admin/approval.py:157 system/views/admin/approval_flow.py:439
+#: system/views/admin/approval.py:157
+#: system/views/admin/approval_instance_actions.py:278
 msgid "Permission denied"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:265 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:274 message/base.py:72
 #: system/tasks/_export.py:138 system/tasks/_import.py:233
-#: system/views/admin/dict.py:172
+#: system/utils/ai_api_actions.py:418 system/utils/ai_api_actions.py:424
+#: system/views/admin/dict.py:172 system/views/ai/actions.py:272
 msgid "Operation successful"
 msgstr ""
 
-#: common/core/response.py:19 common/tasks.py:265 message/base.py:72
+#: common/core/response.py:19 common/tasks.py:274 message/base.py:72
 #: system/tasks/_export.py:138 system/tasks/_import.py:233
+#: system/utils/ai_api_actions.py:427
 msgid "Operation failed"
 msgstr ""
 
@@ -583,60 +586,138 @@ msgstr ""
 msgid "Boot Time"
 msgstr ""
 
-#: common/notifications.py:22
+#: common/models.py:19
+msgid "Net sent (MB)"
+msgstr "Net sent (MB)"
+
+#: common/models.py:20
+msgid "Net received (MB)"
+msgstr "Net received (MB)"
+
+#: common/models.py:40
+msgid "CPU percent"
+msgstr "CPU percent"
+
+#: common/models.py:41 system/utils/monitor_history.py:39
+msgid "CPU load"
+msgstr "CPU load"
+
+#: common/models.py:42
+msgid "Memory used"
+msgstr "Memory used"
+
+#: common/models.py:43
+msgid "Disk used"
+msgstr "Disk used"
+
+#: common/models.py:46
+msgid "Firing"
+msgstr "Firing"
+
+#: common/models.py:47
+msgid "Resolved"
+msgstr "Resolved"
+
+#: common/models.py:49 system/utils/monitor_events.py:142
+msgid "Alert item"
+msgstr "Alert item"
+
+#: common/models.py:50 system/models/approval.py:58
+#: system/models/approval.py:210 system/models/approval.py:293
+#: system/models/dform.py:63 system/models/export.py:37
+#: system/models/import_.py:42 system/models/leave.py:45
+#: system/models/session.py:33 system/models/task.py:62
+#: system/models/webhook.py:46 system/serializers/leave.py:38
+#: system/utils/monitor_events.py:143
+msgid "Status"
+msgstr ""
+
+#: common/models.py:51 system/utils/monitor_events.py:144
+msgid "Trigger value"
+msgstr "Trigger value"
+
+#: common/models.py:52 system/utils/monitor_events.py:145
+msgid "Threshold"
+msgstr "Threshold"
+
+#: common/models.py:53 system/utils/monitor_events.py:150
+msgid "Message"
+msgstr "Message"
+
+#: common/models.py:54 system/utils/monitor_events.py:146
+msgid "Hit count"
+msgstr "Hit count"
+
+#: common/models.py:55 system/utils/monitor_events.py:147
+msgid "First time"
+msgstr "First time"
+
+#: common/models.py:56 system/utils/monitor_events.py:148
+msgid "Last time"
+msgstr "Last time"
+
+#: common/models.py:57 system/utils/monitor_events.py:149
+msgid "Resolved time"
+msgstr "Resolved time"
+
+#: common/models.py:61
+msgid "Monitor alert"
+msgstr "Monitor alert"
+
+#: common/notifications.py:23
 msgid "Server performance"
 msgstr ""
 
-#: common/notifications.py:28
+#: common/notifications.py:29
 msgid "Server health check warning"
 msgstr ""
 
-#: common/notifications.py:69
+#: common/notifications.py:70
 #, python-brace-format
 msgid "Disk used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: common/notifications.py:74
+#: common/notifications.py:75
 #, python-brace-format
 msgid "Memory used more than {max_threshold}%: => {value}"
 msgstr ""
 
-#: common/notifications.py:79
+#: common/notifications.py:80
 #, python-brace-format
 msgid "CPU load more than {max_threshold}: => {value}"
 msgstr ""
 
-#: common/notifications.py:84
+#: common/notifications.py:85
 #, python-brace-format
 msgid "CPU percent more than {max_threshold}: => {value}"
 msgstr ""
 
-#: common/notifications.py:162 common/notifications.py:174
-#: common/notifications.py:186
+#: common/notifications.py:212 common/notifications.py:224
+#: common/notifications.py:236
 msgid "Task Message"
 msgstr ""
 
-#: common/notifications.py:163
+#: common/notifications.py:213
 msgid "Export data message"
 msgstr ""
 
-#: common/notifications.py:168
+#: common/notifications.py:218
 msgid "Export {} data {} message"
 msgstr ""
 
-#: common/notifications.py:175
+#: common/notifications.py:225
 msgid "Import data message"
 msgstr ""
 
-#: common/notifications.py:180
+#: common/notifications.py:230
 msgid "Import {} data {} message"
 msgstr ""
 
-#: common/notifications.py:187
+#: common/notifications.py:237
 msgid "Batch delete data message"
 msgstr ""
 
-#: common/notifications.py:192
+#: common/notifications.py:242
 msgid "Batch delete {} data {} message"
 msgstr ""
 
@@ -700,19 +781,19 @@ msgstr ""
 msgid "Periodic delete monitor"
 msgstr ""
 
-#: common/tasks.py:162
+#: common/tasks.py:171
 msgid "Clear celery periodic tasks"
 msgstr ""
 
-#: common/tasks.py:163
+#: common/tasks.py:172
 msgid "At system startup, clean up celery tasks that no longer exist"
 msgstr ""
 
-#: common/tasks.py:185
+#: common/tasks.py:194
 msgid "Create or update periodic tasks"
 msgstr ""
 
-#: common/tasks.py:187
+#: common/tasks.py:196
 msgid ""
 "With version iterations, new tasks may be added, or task names and execution "
 "times may \n"
@@ -721,11 +802,11 @@ msgid ""
 "        of scheduled tasks will be updated"
 msgstr ""
 
-#: common/tasks.py:209
+#: common/tasks.py:218
 msgid "Periodic check service performance"
 msgstr ""
 
-#: common/tasks.py:211
+#: common/tasks.py:220
 msgid ""
 "Check every hour whether each component is offline and whether the CPU, "
 "memory, \n"
@@ -733,15 +814,15 @@ msgid ""
 "the administrator"
 msgstr ""
 
-#: common/tasks.py:220
+#: common/tasks.py:229
 msgid "Run background task view set"
 msgstr ""
 
-#: common/tasks.py:283
+#: common/tasks.py:292
 msgid "Purge soft deleted data"
 msgstr ""
 
-#: common/tasks.py:284
+#: common/tasks.py:293
 msgid "Physically purge recycle bin data older than RECYCLE_BIN_RETENTION_DAYS"
 msgstr ""
 
@@ -813,37 +894,40 @@ msgstr ""
 msgid "Send SMS code"
 msgstr ""
 
-#: message/ai.py:68 system/views/ai/assistant.py:348
+#: message/ai.py:69 system/views/ai/actions.py:69
+#: system/views/ai/actions.py:204 system/views/ai/mcp.py:83
 msgid "AI actions are not enabled"
 msgstr ""
 
-#: message/ai.py:70
+#: message/ai.py:71
 msgid "Please describe the request after /do"
 msgstr ""
 
-#: message/ai.py:76 message/ai.py:126 message/ai.py:161
+#: message/ai.py:79 message/ai.py:132 message/ai.py:170 system/utils/ai.py:424
+#: tests/integration/system/test_ai_assistant.py:204
 msgid "AI service is temporarily unavailable"
 msgstr "AI service is temporarily unavailable"
 
-#: message/ai.py:80
-msgid "I will perform: {}"
-msgstr ""
-
-#: message/ai.py:145 message/ai.py:186
+#: message/ai.py:151 message/ai.py:199
 msgid "Please provide a question after /kb, e.g. /kb how to reset password"
 msgstr "Please provide a question after /kb, e.g. /kb how to reset password"
 
-#: message/ai.py:221
+#: message/ai.py:234 system/utils/ai.py:421 system/utils/ai.py:478
+#: system/views/ai/actions.py:100 system/views/ai/nl_query.py:162
+msgid "The model did not provide a final answer; please retry or switch models"
+msgstr ""
+
+#: message/ai.py:250
 msgid ""
 "Type /kb followed by a question to ask the knowledge base, or /do to request "
 "an action draft (confirm before execution)"
 msgstr ""
 
-#: message/ai.py:230
+#: message/ai.py:259
 msgid "AI assistant is not enabled"
 msgstr "AI assistant is not enabled"
 
-#: message/ai.py:231
+#: message/ai.py:260
 msgid "AI assistant is not configured"
 msgstr "AI assistant is not configured"
 
@@ -968,7 +1052,7 @@ msgstr "Last message"
 msgid "Last message time"
 msgstr "Last message time"
 
-#: message/models.py:84 system/models/ai.py:46
+#: message/models.py:84 system/models/ai.py:47
 msgid "Active"
 msgstr ""
 
@@ -984,9 +1068,10 @@ msgstr "Room"
 #: notifications/models/notification.py:17
 #: notifications/models/notification.py:31
 #: notifications/serializers/notifications.py:23
-#: notifications/serializers/notifications.py:48 system/models/approval.py:142
-#: system/models/config.py:43 system/models/ldap.py:22
-#: system/models/oauth.py:22 system/models/password.py:22
+#: notifications/serializers/notifications.py:48 system/models/ai.py:163
+#: system/models/approval.py:142 system/models/config.py:43
+#: system/models/ldap.py:22 system/models/oauth.py:22
+#: system/models/password.py:22
 msgid "User"
 msgstr ""
 
@@ -1034,8 +1119,8 @@ msgstr "Sender name"
 msgid "Message type"
 msgstr "Message type"
 
-#: message/models.py:142 message/serializers.py:60 system/models/ai.py:43
-#: system/models/ai.py:72
+#: message/models.py:142 message/serializers.py:60 system/models/ai.py:44
+#: system/models/ai.py:73 system/models/ai.py:169
 msgid "Content"
 msgstr ""
 
@@ -1051,7 +1136,7 @@ msgstr "Recalled"
 msgid "Recalled time"
 msgstr "Recalled time"
 
-#: message/models.py:147
+#: message/models.py:147 system/models/ai.py:174
 msgid "Extra"
 msgstr "Extra"
 
@@ -1091,36 +1176,36 @@ msgstr "Nothing to update"
 msgid "Wait for result timeout"
 msgstr ""
 
-#: message/views.py:112 system/scim/views.py:93 system/views/admin/online.py:95
+#: message/views.py:98 system/scim/views.py:93 system/views/admin/online.py:95
 #: system/views/admin/online.py:100
 msgid "User not found"
 msgstr ""
 
-#: message/views.py:119
+#: message/views.py:105
 msgid "Chat opened"
 msgstr "Chat opened"
 
-#: message/views.py:138
+#: message/views.py:124
 msgid "Group created"
 msgstr "Group created"
 
-#: message/views.py:180
+#: message/views.py:166
 msgid "Group renamed"
 msgstr "Group renamed"
 
-#: message/views.py:193
+#: message/views.py:179
 msgid "Left the group"
 msgstr "Left the group"
 
-#: message/views.py:221
+#: message/views.py:207
 msgid "Invalid pagination cursor"
 msgstr "Invalid pagination cursor"
 
-#: message/views.py:258
+#: message/views.py:244
 msgid "Message recalled"
 msgstr "Message recalled"
 
-#: message/views.py:317 message/views.py:383
+#: message/views.py:306 message/views.py:360
 msgid "Not an AI assistant chat"
 msgstr "Not an AI assistant chat"
 
@@ -1474,7 +1559,6 @@ msgid "Test message sent"
 msgstr ""
 
 #: server/middleware.py:88
-#| msgid "AI assistant is not enabled"
 msgid "Feature not enabled"
 msgstr ""
 
@@ -1488,6 +1572,7 @@ msgid "Name"
 msgstr ""
 
 #: settings/models.py:16 system/analysis_tasks.py:95
+#: system/utils/ai_builtin_actions.py:332
 msgid "Value"
 msgstr ""
 
@@ -1500,7 +1585,7 @@ msgstr ""
 msgid "Encrypted"
 msgstr ""
 
-#: settings/models.py:19 system/models/ai.py:109 system/models/approval.py:111
+#: settings/models.py:19 system/models/ai.py:110 system/models/approval.py:111
 #: system/models/approval.py:363 system/models/config.py:17
 #: system/models/dataset.py:125 system/models/department.py:51
 #: system/models/dform.py:17 system/models/dict.py:37 system/models/mask.py:38
@@ -1519,7 +1604,7 @@ msgstr ""
 msgid "Enable the docs-based usage/development assistant"
 msgstr ""
 
-#: settings/serializers/ai.py:23 system/models/ai.py:95
+#: settings/serializers/ai.py:23 system/models/ai.py:96
 msgid "Base URL"
 msgstr ""
 
@@ -1527,7 +1612,7 @@ msgstr ""
 msgid "OpenAI-compatible endpoint, e.g. https://api.deepseek.com/v1"
 msgstr ""
 
-#: settings/serializers/ai.py:31 system/models/ai.py:96
+#: settings/serializers/ai.py:31 system/models/ai.py:97
 #: system/serializers/ai.py:35
 msgid "API Key"
 msgstr ""
@@ -1539,7 +1624,7 @@ msgstr ""
 msgid "Encrypted at rest; never returned by the API"
 msgstr ""
 
-#: settings/serializers/ai.py:35 system/models/ai.py:97
+#: settings/serializers/ai.py:35 system/models/ai.py:98
 #: system/models/mask.py:28 system/models/menu.py:108
 #: system/models/token.py:119
 msgid "Model"
@@ -1549,11 +1634,11 @@ msgstr ""
 msgid "e.g. deepseek-chat"
 msgstr ""
 
-#: settings/serializers/ai.py:37 system/models/ai.py:105
+#: settings/serializers/ai.py:37 system/models/ai.py:106
 msgid "Timeout (seconds)"
 msgstr ""
 
-#: settings/serializers/ai.py:40
+#: settings/serializers/ai.py:40 system/models/ai.py:159
 msgid "NL query"
 msgstr ""
 
@@ -1572,43 +1657,54 @@ msgid ""
 "after confirmation, audited)"
 msgstr ""
 
-#: settings/serializers/ai.py:52 system/models/ai.py:98
+#: settings/serializers/ai.py:52 system/models/ai.py:99
 msgid "Temperature"
 msgstr "Temperature"
 
-#: settings/serializers/ai.py:54 system/models/ai.py:99
+#: settings/serializers/ai.py:54 system/models/ai.py:100
 msgid "Max tokens"
 msgstr "Max tokens"
 
-#: settings/serializers/ai.py:55 system/models/ai.py:100
+#: settings/serializers/ai.py:59
+msgid "Structured max tokens"
+msgstr ""
+
+#: settings/serializers/ai.py:61
+msgid ""
+"Token cap for structured outputs (action drafts / NL query DSL) when Max "
+"tokens is not set; reasoning models may need a larger value. 0 = built-in "
+"default (2048)"
+msgstr ""
+
+#: settings/serializers/ai.py:65 system/models/ai.py:101
 msgid "Top P"
 msgstr "Top P"
 
-#: settings/serializers/ai.py:57 system/models/ai.py:101
+#: settings/serializers/ai.py:67 system/models/ai.py:102
 msgid "Frequency penalty"
 msgstr "Frequency penalty"
 
-#: settings/serializers/ai.py:60 system/models/ai.py:102
+#: settings/serializers/ai.py:70 system/models/ai.py:103
 msgid "Presence penalty"
 msgstr "Presence penalty"
 
-#: settings/serializers/ai.py:62 system/models/ai.py:103
+#: settings/serializers/ai.py:72 system/models/ai.py:104
 msgid "Stop sequences"
 msgstr "Stop sequences"
 
-#: settings/serializers/ai.py:63 system/models/ai.py:104
+#: settings/serializers/ai.py:73 system/models/ai.py:105
 msgid "Seed"
 msgstr "Seed"
 
-#: settings/serializers/ai.py:64 system/models/ai.py:106
+#: settings/serializers/ai.py:74 system/models/ai.py:107
 msgid "Max retries"
 msgstr "Max retries"
 
-#: settings/serializers/ai.py:65 system/models/ai.py:107
+#: settings/serializers/ai.py:75 system/models/ai.py:108
 msgid "Context messages"
 msgstr "Context messages"
 
-#: settings/serializers/ai.py:66 system/models/ai.py:108
+#: settings/serializers/ai.py:76 system/models/ai.py:109
 msgid "Persona"
 msgstr "Persona"
 
@@ -2591,80 +2687,119 @@ msgid ""
 "rule in the rule list at the same time, or the mode satisfies any rule"
 msgstr ""
 
-#: system/models/ai.py:35
+#: system/models/ai.py:36
 msgid "Repository docs"
 msgstr ""
 
-#: system/models/ai.py:36
+#: system/models/ai.py:37
 msgid "Uploaded document"
 msgstr ""
 
-#: system/models/ai.py:39
+#: system/models/ai.py:40
 msgid "Source type"
 msgstr ""
 
-#: system/models/ai.py:41
+#: system/models/ai.py:42
 msgid "Storage path"
 msgstr ""
 
-#: system/models/ai.py:42 system/models/ai.py:70 system/models/approval.py:202
-#: system/templates/notify/msg_approval_flow.html:21
+#: system/models/ai.py:43 system/models/ai.py:71 system/models/approval.py:202
+#: system/templates/notify/msg_approval_flow.html:27
 msgid "Title"
 msgstr ""
 
-#: system/models/ai.py:44 system/models/ai.py:73
+#: system/models/ai.py:45 system/models/ai.py:74
 msgid "Content hash"
 msgstr ""
 
-#: system/models/ai.py:45
+#: system/models/ai.py:46
 msgid "Chunk count"
 msgstr ""
 
-#: system/models/ai.py:47 system/models/ai.py:74
+#: system/models/ai.py:48 system/models/ai.py:75
 msgid "Synced at"
 msgstr ""
 
-#: system/models/ai.py:50
+#: system/models/ai.py:51
 msgid "AI knowledge document"
 msgstr ""
 
-#: system/models/ai.py:51
+#: system/models/ai.py:52
 msgid "AI knowledge documents"
 msgstr ""
 
-#: system/models/ai.py:69 system/models/export.py:34
+#: system/models/ai.py:70 system/models/export.py:34
 #: system/models/import_.py:37
 msgid "Source path"
 msgstr ""
 
-#: system/models/ai.py:71
+#: system/models/ai.py:72
 msgid "Chunk index"
 msgstr ""
 
-#: system/models/ai.py:77
+#: system/models/ai.py:78
 msgid "AI knowledge chunk"
 msgstr ""
 
-#: system/models/ai.py:78
+#: system/models/ai.py:79
 msgid "AI knowledge chunks"
 msgstr ""
 
-#: system/models/ai.py:94
+#: system/models/ai.py:95
 msgid "Profile name"
 msgstr "Profile name"
 
-#: system/models/ai.py:110 system/models/approval.py:328
+#: system/models/ai.py:111 system/models/approval.py:328
 #: system/models/approval.py:364
 msgid "Remark"
 msgstr "Remark"
 
-#: system/models/ai.py:113
+#: system/models/ai.py:114
 msgid "AI profile"
 msgstr "AI profile"
 
-#: system/models/ai.py:114
+#: system/models/ai.py:115
 msgid "AI profiles"
 msgstr "AI profiles"
+
+#: system/models/ai.py:158
+msgid "Document Q&A"
+msgstr ""
+
+#: system/models/ai.py:160
+msgid "Action execution"
+msgstr ""
+
+#: system/models/ai.py:164
+msgid "Assistant"
+msgstr ""
+
+#: system/models/ai.py:165 system/models/log.py:38 system/models/log.py:86
+#: system/models/session.py:39
+#: system/templates/notify/msg_abnormal_login.html:15
+msgid "System"
+msgstr ""
+
+#: system/models/ai.py:167
+msgid "Feature"
+msgstr "Temperature"
+
+#: system/models/ai.py:168 system/models/approval.py:141
+#: system/models/permission.py:37
+msgid "Role"
+msgstr ""
+
+#: system/models/ai.py:170
+msgid "Reasoning"
+msgstr ""
+
+#: system/models/ai.py:177
+msgid "AI chat message"
+msgstr "Chat message"
+
+#: system/models/ai.py:178
+msgid "AI chat messages"
+msgstr "Chat messages"
 
 #: system/models/approval.py:40 system/models/approval.py:191
 #: system/models/approval.py:247 system/models/dform.py:53
@@ -2726,15 +2861,6 @@ msgstr ""
 msgid "Request payload"
 msgstr ""
 
-#: system/models/approval.py:58 system/models/approval.py:210
-#: system/models/approval.py:293 system/models/dform.py:63
-#: system/models/export.py:37 system/models/import_.py:42
-#: system/models/leave.py:45 system/models/session.py:33
-#: system/models/task.py:62 system/models/webhook.py:46
-#: system/serializers/leave.py:38
-msgid "Status"
-msgstr ""
-
 #: system/models/approval.py:70 system/serializers/approval.py:22
 msgid "Approver"
 msgstr ""
@@ -2757,7 +2883,7 @@ msgstr ""
 
 #: system/models/approval.py:78 system/models/approval.py:222
 #: system/models/leave.py:44 system/templates/notify/msg_approval.html:21
-#: system/templates/notify/msg_approval_flow.html:26
+#: system/templates/notify/msg_approval_flow.html:32
 msgid "Reason"
 msgstr ""
 
@@ -2775,7 +2901,7 @@ msgstr ""
 msgid "Flow code"
 msgstr ""
 
-#: system/models/approval.py:110 system/serializers/approval_flow.py:356
+#: system/models/approval.py:110 system/serializers/approval_flow.py:358
 #: system/serializers/dform.py:91
 msgid "Form schema"
 msgstr ""
@@ -2801,10 +2927,6 @@ msgstr ""
 msgid "Ratio approvers"
 msgstr ""
 
-#: system/models/approval.py:141 system/models/permission.py:37
-msgid "Role"
-msgstr ""
-
 #: system/models/approval.py:143 system/models/department.py:35
 msgid "Leader"
 msgstr ""
@@ -2815,7 +2937,7 @@ msgstr ""
 
 #: system/models/approval.py:148 system/models/approval.py:198
 #: system/models/approval.py:323 system/serializers/approval_flow.py:344
-#: system/templates/notify/msg_approval_flow.html:22
+#: system/templates/notify/msg_approval_flow.html:28
 msgid "Flow"
 msgstr ""
 
@@ -2880,9 +3002,9 @@ msgid "Flow version"
 msgstr ""
 
 #: system/models/approval.py:219 system/serializers/approval_flow.py:352
-#: system/serializers/leave.py:43 system/utils/webhook.py:132
-#: system/utils/webhook.py:145 system/utils/webhook.py:158
-#: system/utils/webhook.py:171
+#: system/serializers/approval_flow.py:464 system/serializers/leave.py:43
+#: system/utils/webhook.py:132 system/utils/webhook.py:145
+#: system/utils/webhook.py:158 system/utils/webhook.py:171
 msgid "Current node"
 msgstr ""
 
@@ -2900,7 +3022,7 @@ msgid "Instance"
 msgstr ""
 
 #: system/models/approval.py:262
-#: system/templates/notify/msg_approval_flow.html:23
+#: system/templates/notify/msg_approval_flow.html:29
 msgid "Node"
 msgstr ""
 
@@ -2917,7 +3039,7 @@ msgid "Delegate from"
 msgstr "Delegate from"
 
 #: system/models/approval.py:294
-#: system/templates/notify/msg_approval_flow.html:29
+#: system/templates/notify/msg_approval_flow.html:35
 msgid "Comment"
 msgstr ""
 
@@ -3140,7 +3262,7 @@ msgstr ""
 msgid "Group by"
 msgstr ""
 
-#: system/models/dataset.py:108
+#: system/models/dataset.py:108 system/utils/monitor_history.py:263
 msgid "Metric"
 msgstr ""
 
@@ -3642,11 +3764,6 @@ msgstr ""
 #: system/templates/notify/msg_abnormal_login.html:14
 #: system/templates/notify/msg_rest_password_success.html:10
 msgid "Browser"
-msgstr ""
-
-#: system/models/log.py:38 system/models/log.py:86 system/models/session.py:39
-#: system/templates/notify/msg_abnormal_login.html:15
-msgid "System"
 msgstr ""
 
 #: system/models/log.py:39
@@ -4442,6 +4559,10 @@ msgid "Added as approval approver"
 msgstr ""
 
 #: system/notifications.py:387
+msgid "Approval task transferred to you"
+msgstr ""
+
+#: system/notifications.py:388
 msgid "Approval application cancelled"
 msgstr ""
 
@@ -4633,7 +4754,7 @@ msgstr "Too many IM recipients"
 msgid "Invalid IM recipient: {}"
 msgstr "Invalid IM recipient: {}"
 
-#: system/serializers/analysis.py:160 system/utils/nl_query.py:90
+#: system/serializers/analysis.py:160 system/utils/nl_query.py:88
 msgid "Invalid report mode"
 msgstr ""
 
@@ -4662,7 +4783,7 @@ msgid "IM channel requires at least one recipient"
 msgstr "IM channel requires at least one recipient"
 
 #: system/serializers/approval.py:19 system/serializers/approval_flow.py:345
-#: system/serializers/leave.py:40
+#: system/serializers/approval_flow.py:457 system/serializers/leave.py:40
 msgid "Applicant"
 msgstr ""
 
@@ -4791,19 +4912,28 @@ msgid "Rollback from version {}"
 msgstr ""
 
 #: system/serializers/approval_flow.py:353
+#: system/serializers/approval_flow.py:465
+msgid "Current approvers"
+msgstr ""
+
+#: system/serializers/approval_flow.py:354
 msgid "My task"
 msgstr ""
 
-#: system/serializers/approval_flow.py:417
+#: system/serializers/approval_flow.py:355
+msgid "Node progress"
+msgstr ""
+
+#: system/serializers/approval_flow.py:442
 msgid "Flow is required"
 msgstr ""
 
-#: system/serializers/approval_flow.py:419
-#: system/utils/approval_flow/engine.py:111
+#: system/serializers/approval_flow.py:444
+#: system/utils/approval_flow/engine.py:142
 msgid "The flow is disabled"
 msgstr ""
 
-#: system/serializers/approval_flow.py:421
+#: system/serializers/approval_flow.py:446
 msgid "Title is required"
 msgstr ""
 
@@ -5208,10 +5338,24 @@ msgid "You have been added as an approver of the approval flow"
 msgstr ""
 
 #: system/templates/notify/msg_approval_flow.html:17
+msgid "The applicant urged you to handle the approval task as soon as possible"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:19
+msgid ""
+"An approval task has been transferred to you, please handle it as soon as "
+"possible"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:21
 msgid "The approval application has been cancelled by the applicant"
 msgstr ""
 
-#: system/templates/notify/msg_approval_flow.html:24
+#: system/templates/notify/msg_approval_flow.html:23
+msgid "You have a new approval flow notification"
+msgstr ""
+
+#: system/templates/notify/msg_approval_flow.html:30
 msgid "Application No."
 msgstr ""
 
@@ -5239,135 +5383,783 @@ msgid ""
 "security issues"
 msgstr ""
 
-#: system/utils/ai.py:123
+#: system/utils/ai.py:147
 msgid "Path {} conflicts with a repository document"
 msgstr ""
 
-#: system/utils/ai.py:355 system/views/ai/assistant.py:207
+#: system/utils/ai.py:380 system/views/ai/nl_query.py:57
+#: system/views/ai/nl_query.py:128
 msgid "Question cannot be empty"
 msgstr ""
 
-#: system/utils/ai.py:357 system/views/ai/assistant.py:211
-#: system/views/ai/assistant.py:260 system/views/ai/assistant.py:350
+#: system/utils/ai.py:382 system/views/ai/actions.py:73
+#: system/views/ai/actions.py:206 system/views/ai/mcp.py:85
+#: system/views/ai/nl_query.py:61 system/views/ai/nl_query.py:134
+#: system/views/ai/nl_query.py:226
 msgid "AI assistant is not enabled or configured"
 msgstr ""
 
-#: system/utils/ai.py:361
+#: system/utils/ai.py:386
 msgid "No matching documents found for this question"
 msgstr ""
 
-#: system/utils/ai.py:374
+#: system/utils/ai.py:397
 msgid ""
 "You are the xadmin usage/development assistant. Answer ONLY based on the "
 "provided reference documents, cite them as [n] markers, and say you don't "
 "know when the documents do not cover the question."
 msgstr ""
 
-#: system/utils/ai.py:381 system/utils/nl_query.py:167
+#: system/utils/ai.py:404 system/utils/nl_query.py:167
 msgid "Question: {}"
 msgstr ""
 
-#: system/utils/ai_actions.py:82 system/utils/ai_actions.py:84
-#: system/utils/nl_query.py:57 system/utils/nl_query.py:59
+#: system/utils/ai.py:423 tests/integration/system/test_ai_assistant.py:221
+msgid "The model returned an empty answer; please retry or switch models"
+msgstr ""
+
+#: system/utils/ai_actions.py:97 system/utils/ai_actions.py:310
+#: system/utils/ai_actions.py:316 system/utils/nl_query.py:56
 msgid "The model returned malformed JSON"
 msgstr ""
 
-#: system/utils/ai_actions.py:136
-msgid "Unknown leave type: {}"
-msgstr ""
-
-#: system/utils/ai_actions.py:140
-msgid "Start date and end date must be in YYYY-MM-DD format"
-msgstr ""
-
-#: system/utils/ai_actions.py:143
-msgid "Reason is required"
-msgstr ""
-
-#: system/utils/ai_actions.py:149
-msgid "Days must be a number"
-msgstr ""
-
-#: system/utils/ai_actions.py:186 system/views/admin/leave.py:89
-msgid "Saved as draft: {}"
-msgstr ""
-
-#: system/utils/ai_actions.py:187 system/views/admin/leave.py:90
-#: system/views/admin/leave.py:124
-msgid "The leave request has been submitted for approval"
-msgstr ""
-
-#: system/utils/ai_actions.py:201
-msgid "A form must be selected"
-msgstr ""
-
-#: system/utils/ai_actions.py:205 system/utils/ai_actions.py:207
-msgid "The requested form does not exist"
-msgstr ""
-
-#: system/utils/ai_actions.py:209
-msgid "The form is disabled and cannot accept submissions"
-msgstr ""
-
-#: system/utils/ai_actions.py:224
-msgid "Submission data must be an object"
-msgstr ""
-
-#: system/utils/ai_actions.py:254
-msgid "The form has been submitted"
-msgstr ""
-
-#: system/utils/ai_actions.py:301
+#: system/utils/ai_actions.py:142
 msgid "Submit a leave request"
 msgstr ""
 
-#: system/utils/ai_actions.py:302
+#: system/utils/ai_actions.py:143
 msgid ""
 "Create a leave request for the current user and submit it into the leave "
 "approval flow"
 msgstr ""
 
-#: system/utils/ai_actions.py:323
+#: system/utils/ai_actions.py:164
 msgid "Submit a dynamic form"
 msgstr ""
 
-#: system/utils/ai_actions.py:324
+#: system/utils/ai_actions.py:165
 msgid ""
 "Submit one record to an active dynamic form; field values must match the "
 "form fields"
 msgstr ""
 
-#: system/utils/ai_actions.py:379
+#: system/utils/ai_actions.py:184
+msgid "Show dashboard overview"
+msgstr "Switch dashboard"
+
+#: system/utils/ai_actions.py:186
 msgid ""
-"You convert the user's request into exactly ONE action draft for this "
-"system. Pick the action only from the provided catalog and use only the "
-"described parameters. Output ONLY a JSON object: {\"action\": \"<action "
-"key>\", \"params\": {...}, \"summary\": \"<one line>\"}. Never invent values "
-"the user did not provide; resolve relative dates with the current date "
-"{today}. If the request is not executable, is missing required parameters, "
-"or matches several forms, output {\"action\": null, \"message\": \"<a short "
-"clarifying question>\"}."
+"One-shot dashboard statistics: total users, logins, registration/login "
+"trends, today's operations and active users (aggregates six endpoints in a "
+"single call)"
 msgstr ""
 
-#: system/utils/ai_actions.py:406
+#: system/utils/ai_actions.py:239
+msgid ""
+"You convert the user's request into action drafts for this system, at most "
+"{max} actions in execution order (a single action is fine). Pick action keys "
+"exactly as written in the catalog (copy them verbatim, never split or "
+"reorder their parts) and use only the described parameters. Output ONLY a "
+"JSON object: {\"actions\": [{\"action\": \"<action key>\", \"params\": "
+"{...}, \"summary\": \"<one line>\"}]}. Never invent values the user did not "
+"provide; resolve relative dates with the current date {today}. If the "
+"request is not executable or is missing required parameters, output "
+"{\"action\": null, \"message\": \"<a short clarifying question>\"}."
+msgstr ""
+
+#: system/utils/ai_actions.py:261
+msgid "#{}: "
+msgstr ""
+
+#: system/utils/ai_actions.py:264 system/utils/ai_actions.py:306
 msgid "The model did not return an actionable request"
 msgstr ""
 
-#: system/utils/ai_actions.py:411
+#: system/utils/ai_actions.py:268
 msgid "The model requested an unknown action: {}"
 msgstr ""
 
-#: system/utils/ai_actions.py:413 system/views/ai/assistant.py:357
+#: system/utils/ai_actions.py:271 system/views/ai/actions.py:213
+#: system/views/ai/mcp.py:152
 msgid "The action is not available: {}"
 msgstr ""
 
-#: system/utils/ai_actions.py:415 system/views/ai/assistant.py:361
+#: system/utils/ai_actions.py:274 system/views/ai/actions.py:218
+#: system/views/ai/mcp.py:156
 msgid "You do not have permission to perform the action: {}"
 msgstr ""
 
-#: system/utils/ai_actions.py:462 system/views/ai/assistant.py:354
-#: system/views/ai/assistant.py:355
+#: system/utils/ai_actions.py:312
+msgid "Too many actions requested (max {})"
+msgstr ""
+
+#: system/utils/ai_actions.py:324
+msgid "I will perform: {}"
+msgstr ""
+
+#: system/utils/ai_actions.py:325
+msgid "I will perform {} actions: {}"
+msgstr ""
+
+#: system/utils/ai_actions.py:359 system/views/ai/actions.py:210
+#: system/views/ai/actions.py:211 system/views/ai/mcp.py:132
+#: system/views/ai/mcp.py:136
 msgid "Unknown action"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:179
+msgid "A user must be specified"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:189
+msgid "No such user: {}"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:210
+msgid "A role must be specified"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:217
+msgid "No such role: {}"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:266
+msgid "A menu must be specified"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:273
+msgid "Multiple menus named {} exist; use the primary key"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:276
+msgid "No such menu: {}"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:298
+msgid "Parameter {} must be a boolean"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:303
+msgid "Parameter {} must be a number"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:308
+msgid "Parameter {} must be one of: {}"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:312
+msgid "Parameter {} must be a JSON object or array"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:332
+msgid "Missing required parameter: {}"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:372 system/utils/ai_api_actions.py:381
+msgid "The action is not available"
+msgstr ""
+
+#: system/utils/ai_api_actions.py:409
+msgid "The action failed: {}"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:71
+msgid "Publish a system announcement"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:72
+msgid "Publish a system-wide announcement visible to all users"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:101
+msgid "Enable or disable a user"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:102
+msgid "Set a user's active state; disabled users cannot sign in"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:116
+msgid "Look up users"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:117
+msgid ""
+"Search users by username / nickname / enabled state; returns the first page "
+"(up to 20 rows)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:138
+msgid "List system announcements"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:139
+msgid ""
+"List published system announcements, optionally filtered by title keyword"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:150
+msgid "Update a user's profile"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:151
+msgid ""
+"Update a user's basic attributes (nickname/phone/email); only provided "
+"fields change"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:163
+msgid "Create a role"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:164
+msgid "Create a new role (user group) with a unique name and code"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:177
+msgid "Set role menu permissions"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:179
+msgid ""
+"Grant menus to a role. A menu name resolves to the menu and ALL permissions "
+"under it (same as checking a parent node in the authorization tree). This "
+"REPLACES the role's current menu permissions"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:202
+msgid "Create a user"
+msgstr "Target user"
+
+#: system/utils/ai_api_registry.py:203
+msgid "Create a user account with username, initial password and basic profile"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:221
+msgid "Look up a user's details"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:222
+msgid "Fetch one user's profile (nickname, contact, dept, roles, active state)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:231
+msgid "Unblock a user"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:232
+msgid ""
+"Release a user from login-block state (after repeated password failures)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:241
+msgid "List online users"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:242
+msgid "Currently online user sessions (user, login type, last active)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:249
+msgid "Force a user offline"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:250
+msgid ""
+"Revoke all sessions of one user (server-side token revocation + WebSocket "
+"kick)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:259
+msgid "List departments"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:260
+msgid "Department tree (name, code, leader, user count)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:267
+msgid "Create a department"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:268
+msgid "Create a department under an optional parent department"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:285
+msgid "Update a department"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:286
+msgid ""
+"Rename a department or change its code/parent/description; only provided "
+"fields change"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:298
+msgid "Delete a department"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:299
+msgid "Delete one department (destructive; goes through the approval flow)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:307
+msgid "List roles"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:308
+msgid "List roles (user groups) with name, code and enabled state"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:315
+msgid "Update a role"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:316
+msgid ""
+"Rename a role or change its code/description; menu permissions are not "
+"touched"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:331
+msgid "Delete a role"
+msgstr "Delegate from"
+
+#: system/utils/ai_api_registry.py:332
+msgid "Delete one role (destructive; goes through the approval flow)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:340
+msgid "List menus and permissions"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:341
+msgid ""
+"Menu tree including permission points (for discussing authorization scope)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:348
+msgid "List data permission rules"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:349
+msgid "Row-level data permission rules (model, scope, bound roles/depts/users)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:357
+msgid "List approval requests"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:358
+msgid ""
+"Approval requests visible to the caller (mine to approve / submitted by me), "
+"newest first"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:372
+msgid "Count my pending approvals"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:373
+msgid "Number of approval requests waiting for me to review"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:380
+msgid "Show approval statistics"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:381
+msgid ""
+"Approval stats of recent 30 days (submitted/approved/rejected, average "
+"duration, my pending)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:388
+msgid "Approve an approval request"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:390
+msgid ""
+"Approve one approval request as its reviewer (destructive decision; goes "
+"through the approval flow itself). Request id comes from approval.list; the "
+"applicant cannot approve their own request"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:402
+msgid "Reject an approval request"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:404
+msgid ""
+"Reject one approval request with a mandatory reason (destructive decision; "
+"goes through the approval flow itself). Request id comes from approval.list"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:418
+msgid "List my unread messages"
+msgstr "Last read message id"
+
+#: system/utils/ai_api_registry.py:419
+msgid "Current user's unread notifications and announcements (with totals)"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:426
+msgid "Mark all my messages as read"
+msgstr ""
+
+#: system/utils/ai_api_registry.py:427
+msgid "Mark every unread message of the current user as read"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:81
+msgid "Unknown leave type: {}"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:85
+msgid "Start date and end date must be in YYYY-MM-DD format"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:89
+msgid "Reason is required"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:95
+msgid "Days must be a number"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:132 system/views/admin/leave.py:89
+msgid "Saved as draft: {}"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:133 system/views/admin/leave.py:90
+#: system/views/admin/leave.py:124
+msgid "The leave request has been submitted for approval"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:147
+msgid "A form must be selected"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:151
+#: system/utils/ai_builtin_actions.py:153
+msgid "The requested form does not exist"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:155
+msgid "The form is disabled and cannot accept submissions"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:170
+msgid "Submission data must be an object"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:200
+msgid "The form has been submitted"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:221
+msgid "User logins"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:222
+#: tests/integration/system/test_ai_actions_ext.py:147
+msgid "Total users"
+msgstr "Target user"
+
+#: system/utils/ai_builtin_actions.py:223
+msgid "Registrations"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:224
+msgid "Login trend"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:225
+msgid "Today's operations"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:226
+msgid "Active users"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:331
+msgid "The action failed: no dashboard metrics available"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:332
+msgid "Indicator"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:332
+msgid "Day-over-day"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:332
+msgid "Trend"
+msgstr "Trend data"
+
+#: system/utils/ai_builtin_actions.py:341
+msgid "Dashboard overview compiled"
+msgstr ""
+
+#: system/utils/ai_builtin_actions.py:343
+msgid "Dashboard overview compiled (unavailable: {})"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:21
+msgid "List system configurations"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:22
+msgid ""
+"List system config entries (key, value, description); read-only view of "
+"platform settings"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:29
+msgid "Update a system configuration value"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:31
+msgid ""
+"Change one system config entry's value (requires approval). Pass the value "
+"as JSON text exactly shaped like the current value from config.list; wrong "
+"shape may break the feature"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:51
+msgid "List dictionary types"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:52
+msgid "List data dictionary types (code, name, item count)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:59
+msgid "Show dictionary items"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:60
+msgid ""
+"Enabled items of one dictionary type by its code (labels used across the "
+"system)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:75
+msgid "Search operation logs"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:76
+msgid ""
+"Audit trail of operations (module, operator, status, time); newest first"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:92
+msgid "Search login logs"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:93
+msgid "Login history (user, IP, user agent, success/failure); newest first"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:108
+msgid "List uploaded files"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:109
+msgid "List uploaded files (name, size, uploader)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:116
+msgid "Show file storage stats"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:117
+msgid "File storage statistics (counts, sizes by type)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:124
+msgid "List export records"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:125
+msgid "Async export records in the download center (file, status, creator)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:133
+msgid "List knowledge base documents"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:134
+msgid "Documents in the AI knowledge base (title, enabled state, source)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:141
+msgid "Show AI assistant usage metrics"
+msgstr "Not an AI assistant chat"
+
+#: system/utils/ai_registry_infra.py:142
+msgid ""
+"AI assistant usage of recent days (requests, success rate, top users, token "
+"usage)"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:150
+msgid "List webhook subscriptions"
+msgstr ""
+
+#: system/utils/ai_registry_infra.py:151
+msgid ""
+"Outbound webhook subscriptions (target URL, subscribed events, enabled state)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:31
+msgid "Show system monitor overview"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:32
+msgid "Host metrics, trends and health status from the system monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:39
+msgid "Check service health"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:40
+msgid "Health of DB / Redis / Celery services from the system monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:47
+msgid "Show Celery workers and queues"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:48
+msgid "Celery worker status and queue backlog from the system monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:55
+msgid "Show task health"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:56
+msgid ""
+"Background task execution health (success rate, failures) from the system "
+"monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:63
+msgid "Show slow requests"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:64
+msgid "Top slow HTTP requests from the system monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:71
+msgid "Show monitor alerts and failed requests"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:72
+msgid ""
+"Recent monitor alerts, abnormal requests and failed tasks from the system "
+"monitor"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:79
+msgid "Show alert thresholds"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:80
+msgid ""
+"Current monitor alert thresholds (read-only; use the monitor page to change)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:88
+msgid "List datasets"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:89
+msgid "List datasets available for analysis (id, name, source model)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:96
+msgid "Show dataset designer metadata"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:97
+msgid "Whitelisted models and fields usable in dataset queries and filters"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:104
+msgid "Run a dataset query"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:105
+msgid ""
+"Execute a dataset and return row data (row-level data permissions of the "
+"caller apply)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:114
+msgid "Aggregate a dataset"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:116
+msgid ""
+"Aggregate a dataset into series (for charts): group by a field with a metric "
+"(count/sum/avg/max/min + value field), optionally truncated by date"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:147
+msgid "List scheduled tasks"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:148
+msgid "List periodic tasks with schedule, enabled state and last run"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:155
+msgid "List registered task types"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:156
+msgid ""
+"All Celery task types registered in the system (targets for new scheduled "
+"tasks)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:163
+msgid "Enable or disable a scheduled task"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:164
+msgid "Set a periodic task's enabled state; omit the parameter to toggle it"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:181
+msgid "Run a scheduled task now"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:182
+msgid ""
+"Trigger one immediate run of a periodic task and return the execution id"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:189
+msgid "List task execution history"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:190
+msgid "History of scheduled task runs (status, duration, timing)"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:204
+msgid "Show task execution log"
+msgstr ""
+
+#: system/utils/ai_registry_ops.py:205
+msgid "Log output of one task execution"
 msgstr ""
 
 #: system/utils/api_grant.py:43
@@ -5495,27 +6287,27 @@ msgstr ""
 msgid "The approval token has expired"
 msgstr ""
 
-#: system/utils/approval/lifecycle.py:151
-#: system/utils/approval/lifecycle.py:165
+#: system/utils/approval/lifecycle.py:158
+#: system/utils/approval/lifecycle.py:172
 msgid "Only pending requests can be approved"
 msgstr ""
 
-#: system/utils/approval/lifecycle.py:153
-#: system/utils/approval/lifecycle.py:187
+#: system/utils/approval/lifecycle.py:160
+#: system/utils/approval/lifecycle.py:194
 msgid "The applicant cannot approve their own request"
 msgstr ""
 
-#: system/utils/approval/lifecycle.py:185
-#: system/utils/approval/lifecycle.py:198
+#: system/utils/approval/lifecycle.py:192
+#: system/utils/approval/lifecycle.py:205
 msgid "Only pending requests can be rejected"
 msgstr ""
 
-#: system/utils/approval/lifecycle.py:216 system/utils/leave.py:161
+#: system/utils/approval/lifecycle.py:223 system/utils/leave.py:161
 msgid "Only the applicant can cancel the request"
 msgstr ""
 
-#: system/utils/approval/lifecycle.py:218
-#: system/utils/approval/lifecycle.py:224 system/utils/leave.py:159
+#: system/utils/approval/lifecycle.py:225
+#: system/utils/approval/lifecycle.py:231 system/utils/leave.py:159
 msgid "Only pending requests can be cancelled"
 msgstr ""
 
@@ -5532,114 +6324,173 @@ msgstr ""
 msgid "Field {} is required"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:75
+#: system/utils/approval_flow/engine.py:71
 msgid "No available approver, node auto-approved"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:117
+#: system/utils/approval_flow/engine.py:106
+msgid ""
+"Node {} has no available approver: the applicant has no department yet. "
+"Please assign a department with leader to the applicant first"
+msgstr ""
+
+#: system/utils/approval_flow/engine.py:113
+msgid ""
+"Node {} has no available approver: the applicant's department has no leader. "
+"Please configure a department leader first"
+msgstr ""
+
+#: system/utils/approval_flow/engine.py:120
+msgid ""
+"Node {} has no available approver: the applicant is the department leader. "
+"Please adjust the department leader or the approver of this node"
+msgstr ""
+
+#: system/utils/approval_flow/engine.py:124
+msgid ""
+"Node {} has no available approver. Please check the approver configuration "
+"of this node"
+msgstr ""
+
+#: system/utils/approval_flow/engine.py:148
 msgid "The flow routes contain a loop, please contact the administrator"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:119
+#: system/utils/approval_flow/engine.py:150
 msgid "The flow has no available node"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:122
-msgid "No available approver for node {}"
-msgstr ""
-
-#: system/utils/approval_flow/engine.py:245
-#: system/utils/approval_flow/engine.py:318
+#: system/utils/approval_flow/engine.py:296
+#: system/utils/approval_flow/engine.py:377
+#: system/utils/approval_flow/extra_actions.py:146
 msgid "The task does not exist"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:247
-#: system/utils/approval_flow/engine.py:270
-#: system/utils/approval_flow/engine.py:320
-#: system/utils/approval_flow/engine.py:336
+#: system/utils/approval_flow/engine.py:298
+#: system/utils/approval_flow/engine.py:324
+#: system/utils/approval_flow/engine.py:379
+#: system/utils/approval_flow/engine.py:397
+#: system/utils/approval_flow/extra_actions.py:151
+#: system/utils/approval_flow/extra_actions.py:177
 msgid "The task has been processed"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:250
-#: system/utils/approval_flow/engine.py:323
+#: system/utils/approval_flow/engine.py:302
+#: system/utils/approval_flow/engine.py:382
+#: system/utils/approval_flow/engine.py:423
+#: system/utils/approval_flow/extra_actions.py:74
+#: system/utils/approval_flow/extra_actions.py:149
+msgid "The application does not exist"
+msgstr "The submission does not exist"
+
+#: system/utils/approval_flow/engine.py:304
+#: system/utils/approval_flow/engine.py:384
+#: system/utils/approval_flow/extra_actions.py:153
 msgid "The application has been finished"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:252
-#: system/utils/approval_flow/engine.py:325
+#: system/utils/approval_flow/engine.py:306
+#: system/utils/approval_flow/engine.py:386
+#: system/utils/approval_flow/extra_actions.py:155
 msgid "This task is not assigned to you"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:254
-#: system/utils/approval_flow/engine.py:327
+#: system/utils/approval_flow/engine.py:308
+#: system/utils/approval_flow/engine.py:388
+#: system/utils/approval_flow/extra_actions.py:163
 msgid "The applicant cannot approve their own application"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:256
+#: system/utils/approval_flow/engine.py:310
+#: system/utils/approval_flow/extra_actions.py:157
 msgid "The task is not in the current node"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:259
-#: system/utils/approval_flow/engine.py:329
+#: system/utils/approval_flow/engine.py:313
+#: system/utils/approval_flow/engine.py:390
 msgid "The node has been removed, please contact the administrator"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:295
+#: system/utils/approval_flow/engine.py:348
 msgid "Approval ratio cannot be reached, the application is rejected"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:314 system/views/admin/approval.py:160
-#: system/views/admin/approval.py:217 system/views/admin/approval_flow.py:282
-#: system/views/admin/approval_flow.py:381
+#: system/utils/approval_flow/engine.py:365 system/views/admin/approval.py:160
+#: system/views/admin/approval.py:217
+#: system/views/admin/approval_instance_actions.py:121
+#: system/views/admin/approval_instance_actions.py:220
 msgid "Rejection reason is required"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:350
+#: system/utils/approval_flow/engine.py:425
 msgid "Only the applicant can cancel the application"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:352
+#: system/utils/approval_flow/engine.py:427
 msgid "Only pending applications can be cancelled"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:378
+#: system/utils/approval_flow/extra_actions.py:35
 msgid "Only the applicant can urge the application"
 msgstr "Only the applicant can urge the application"
 
-#: system/utils/approval_flow/engine.py:380
+#: system/utils/approval_flow/extra_actions.py:37
 msgid "Only pending applications can be urged"
 msgstr "Only pending applications can be urged"
 
-#: system/utils/approval_flow/engine.py:384
+#: system/utils/approval_flow/extra_actions.py:41
 msgid "Please do not urge repeatedly within {} minutes"
 msgstr "Please do not urge repeatedly within {} minutes"
 
-#: system/utils/approval_flow/engine.py:394
+#: system/utils/approval_flow/extra_actions.py:51
 msgid "There is no pending approver to urge"
 msgstr "There is no pending approver to urge"
 
-#: system/utils/approval_flow/engine.py:409
-msgid "Only pending applications can be counter-signed"
-msgstr ""
-
-#: system/utils/approval_flow/engine.py:411
-msgid "The application has no active node"
-msgstr ""
-
-#: system/utils/approval_flow/engine.py:418
-msgid "Only the current node approvers can counter-sign"
-msgstr ""
-
-#: system/utils/approval_flow/engine.py:422
+#: system/utils/approval_flow/extra_actions.py:68
 msgid "Please select the approver to add"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:425
+#: system/utils/approval_flow/extra_actions.py:76
+msgid "Only pending applications can be counter-signed"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:78
+msgid "The application has no active node"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:86
+msgid ""
+"The current node is an OR-sign node: any approver can move it forward, so "
+"counter-signing has no effect. Please use transfer instead"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:96
+msgid "Only the current node approvers can counter-sign"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:100
 msgid "No available approver for counter-sign"
 msgstr ""
 
-#: system/utils/approval_flow/engine.py:443
+#: system/utils/approval_flow/extra_actions.py:120
 msgid "The selected approver is already in the node"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:141
+#: system/views/admin/approval_instance_actions.py:342
+msgid "Please select the user to transfer to"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:161
+msgid "The target user does not exist or is disabled"
+msgstr ""
+
+#: system/utils/approval_flow/extra_actions.py:165
+msgid "The task is already assigned to this user"
+msgstr "This identity is already bound to another user"
+
+#: system/utils/approval_flow/extra_actions.py:170
+msgid "Transferred to {}"
 msgstr ""
 
 #: system/utils/auth.py:44
@@ -5675,8 +6526,8 @@ msgid "Model {} is not available for datasets"
 msgstr ""
 
 #: system/utils/dataset.py:67 system/utils/dataset.py:83
-#: system/utils/dataset.py:105 system/utils/dataset.py:247
-#: system/utils/dataset.py:261 system/utils/nl_query.py:70
+#: system/utils/dataset.py:105 system/utils/dataset.py:248
+#: system/utils/dataset.py:262 system/utils/nl_query.py:68
 #: system/utils/nl_query.py:113 system/utils/nl_query.py:126
 msgid "Field {}.{} is not available for datasets"
 msgstr ""
@@ -5686,19 +6537,19 @@ msgid "Dataset columns cannot be empty"
 msgstr ""
 
 #: system/utils/dataset.py:77 system/utils/dataset.py:81
-#: system/utils/nl_query.py:94 system/utils/nl_query.py:97
+#: system/utils/nl_query.py:92 system/utils/nl_query.py:95
 msgid "Invalid dataset filters"
 msgstr ""
 
-#: system/utils/dataset.py:85 system/utils/nl_query.py:72
+#: system/utils/dataset.py:85 system/utils/nl_query.py:70
 msgid "Filter op {} is not allowed"
 msgstr ""
 
-#: system/utils/dataset.py:87 system/utils/nl_query.py:74
+#: system/utils/dataset.py:87 system/utils/nl_query.py:72
 msgid "Filter op in requires a list value"
 msgstr ""
 
-#: system/utils/dataset.py:89 system/utils/nl_query.py:76
+#: system/utils/dataset.py:89 system/utils/nl_query.py:74
 msgid "Filter op isnull requires a boolean value"
 msgstr ""
 
@@ -5718,19 +6569,23 @@ msgstr ""
 msgid "Field {} is not numeric, cannot aggregate"
 msgstr ""
 
-#: system/utils/dataset.py:243 system/utils/nl_query.py:111
+#: system/utils/dataset.py:244 system/utils/nl_query.py:109
 msgid "Metric {} is not allowed"
 msgstr ""
 
-#: system/utils/dataset.py:252 system/utils/dataset.py:254
+#: system/utils/dataset.py:253 system/utils/dataset.py:255
 msgid "No field permission for {}.{}"
 msgstr ""
 
-#: system/utils/dataset.py:268
+#: system/utils/dataset.py:273
+msgid "Total"
+msgstr ""
+
+#: system/utils/dataset.py:278
 msgid "Date trunc {} is not allowed"
 msgstr ""
 
-#: system/utils/dataset.py:271
+#: system/utils/dataset.py:281
 msgid "Field {} is not a datetime, cannot trend"
 msgstr ""
 
@@ -5824,12 +6679,10 @@ msgid "Field {} requires table columns"
 msgstr ""
 
 #: system/utils/dform.py:173
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} has too many table columns"
 msgstr ""
 
 #: system/utils/dform.py:177
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} has an invalid table column"
 msgstr ""
 
@@ -5882,7 +6735,6 @@ msgid "Field {} has an invalid option: {}"
 msgstr ""
 
 #: system/utils/dform.py:230
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} must be a date"
 msgstr ""
 
@@ -5945,12 +6797,10 @@ msgid "Field {} must be boolean"
 msgstr ""
 
 #: system/utils/dform.py:343
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} has too many files"
 msgstr ""
 
 #: system/utils/dform.py:347
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} contains an invalid file"
 msgstr ""
 
@@ -5960,7 +6810,6 @@ msgid "Field {} must be a date range"
 msgstr ""
 
 #: system/utils/dform.py:357
-#| msgid "Field {} has an invalid dict code"
 msgid "Field {} has an invalid date range"
 msgstr ""
 
@@ -5973,12 +6822,10 @@ msgid "Field {} has too many rows"
 msgstr ""
 
 #: system/utils/dform_flow.py:37
-#| msgid "A form template cannot bind an approval flow"
 msgid "The form is not bound to an approval flow"
 msgstr ""
 
 #: system/utils/dform_flow.py:40
-#| msgid "The submission does not exist"
 msgid "The approval flow does not exist"
 msgstr ""
 
@@ -5987,17 +6834,14 @@ msgid "The approval flow is not active"
 msgstr ""
 
 #: system/utils/dform_flow.py:64
-#| msgid "Only the applicant can urge the application"
 msgid "Only the applicant can resubmit the submission"
 msgstr ""
 
 #: system/utils/dform_flow.py:66
-#| msgid "Only draft submissions can be submitted"
 msgid "Only rejected submissions can be resubmitted"
 msgstr ""
 
 #: system/utils/dform_flow.py:83
-#| msgid "A form template cannot accept submissions"
 msgid "The form does not exist or is no longer accepting submissions"
 msgstr ""
 
@@ -6224,15 +7068,67 @@ msgstr ""
 msgid "IP address is inside the given network / range, * means no restriction."
 msgstr ""
 
-#: system/utils/nl_query.py:62
-msgid "The model returned unknown DSL keys: {}"
-msgstr ""
+#: system/utils/monitor_events.py:166
+msgid "Monitor alerts"
+msgstr "Monitor alerts"
 
-#: system/utils/nl_query.py:82
+#: system/utils/monitor_history.py:38
+msgid "CPU usage"
+msgstr "CPU usage"
+
+#: system/utils/monitor_history.py:40
+msgid "Memory usage"
+msgstr "Memory usage"
+
+#: system/utils/monitor_history.py:41
+msgid "Disk usage"
+msgstr "Disk usage"
+
+#: system/utils/monitor_history.py:42
+msgid "Network upload rate"
+msgstr "Network upload rate"
+
+#: system/utils/monitor_history.py:43
+msgid "Network download rate"
+msgstr "Network download rate"
+
+#: system/utils/monitor_history.py:264
+msgid "Average"
+msgstr "Average"
+
+#: system/utils/monitor_history.py:265
+msgid "Minimum"
+msgstr "Minimum"
+
+#: system/utils/monitor_history.py:266
+msgid "Maximum"
+msgstr "Maximum"
+
+#: system/utils/monitor_history.py:267
+msgid "Latest"
+msgstr "Latest"
+
+#: system/utils/monitor_history.py:268
+msgid "Previous period average"
+msgstr "Previous period average"
+
+#: system/utils/monitor_history.py:269
+msgid "Change (%)"
+msgstr "Change (%)"
+
+#: system/utils/monitor_history.py:287
+msgid "Trend data"
+msgstr "Trend data"
+
+#: system/utils/monitor_history.py:288
+msgid "Summary"
+msgstr "Summary"
+
+#: system/utils/nl_query.py:80
 msgid "Invalid NL query DSL"
 msgstr ""
 
-#: system/utils/nl_query.py:85
+#: system/utils/nl_query.py:83
 msgid "Unknown dataset in NL query"
 msgstr ""
 
@@ -6429,16 +7325,19 @@ msgid "Unknown webhook event: {}"
 msgstr ""
 
 #: system/views/admin/approval.py:125 system/views/admin/approval.py:163
-#: system/views/admin/approval_flow.py:242
-#: system/views/admin/approval_flow.py:285 system/views/ai/knowledge.py:135
+#: system/views/admin/approval_instance_actions.py:81
+#: system/views/admin/approval_instance_actions.py:124
+#: system/views/ai/knowledge.py:135
 msgid "Please select the data to operate"
 msgstr ""
 
-#: system/views/admin/approval.py:135 system/views/admin/approval_flow.py:260
+#: system/views/admin/approval.py:135
+#: system/views/admin/approval_instance_actions.py:99
 msgid "Operation successful. Approved {} data"
 msgstr ""
 
-#: system/views/admin/approval.py:174 system/views/admin/approval_flow.py:302
+#: system/views/admin/approval.py:174
+#: system/views/admin/approval_instance_actions.py:141
 msgid "Operation successful. Rejected {} data"
 msgstr ""
 
@@ -6458,38 +7357,61 @@ msgstr ""
 msgid "A flow with applications cannot be deleted"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:206 system/views/dform.py:245
+#: system/views/admin/approval_flow.py:165
+msgid "You do not have permission to view all in-progress applications"
+msgstr ""
+
+#: system/views/admin/approval_flow.py:218 system/views/dform.py:245
 #: system/views/dform.py:343
 msgid "Application submitted"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:220
+#: system/views/admin/approval_instance_actions.py:51
+#: system/views/admin/approval_instance_actions.py:356
 msgid "No pending task available for the current user"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:251
-#: system/views/admin/approval_flow.py:293
+#: system/views/admin/approval_instance_actions.py:90
+#: system/views/admin/approval_instance_actions.py:132
 msgid "No pending task for you"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:359
+#: system/views/admin/approval_instance_actions.py:198
 msgid "The approval task has been approved"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:386
+#: system/views/admin/approval_instance_actions.py:225
 msgid "The approval task has been rejected"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:404
+#: system/views/admin/approval_instance_actions.py:243
 msgid "The approval reminder has been sent"
 msgstr "The approval reminder has been sent"
 
-#: system/views/admin/approval_flow.py:415
+#: system/views/admin/approval_instance_actions.py:254
 msgid "The application has been cancelled"
 msgstr ""
 
-#: system/views/admin/approval_flow.py:445
+#: system/views/admin/approval_instance_actions.py:286
 msgid "The approver has been added"
+msgstr ""
+
+#: system/views/admin/approval_instance_actions.py:313
+#: system/views/admin/approval_instance_actions.py:365
+msgid "The approval task has been transferred"
+msgstr "The approval reminder has been sent"
+
+#: system/views/admin/approval_instance_actions.py:339
+msgid "Please select the applications to transfer"
+msgstr ""
+
+#: system/views/admin/approval_instance_actions.py:352
+msgid "No visible application for the given id"
+msgstr ""
+
+#: system/views/admin/approval_instance_actions.py:369
+#, python-brace-format
+msgid "{success} transferred, {failed} failed"
 msgstr ""
 
 #: system/views/admin/dict.py:29
@@ -6646,45 +7568,39 @@ msgid "User would lose the last login method"
 msgstr "User would lose the last login method"
 
 #: system/views/admin/user.py:234
-#| msgid "IM identity bound"
 msgid "IM identity unbound"
 msgstr ""
 
-#: system/views/ai/assistant.py:50
-msgid "Base URL is required"
-msgstr ""
+#: system/views/ai/actions.py:77 system/views/ai/mcp.py:128
+msgid "The request cannot be empty"
+msgstr "Group name cannot be empty"
 
-#: system/views/ai/assistant.py:52
-msgid "API Key and model are required"
-msgstr ""
-
-#: system/views/ai/assistant.py:68 system/views/ai/profiles.py:121
-msgid "AI provider OK: {}"
-msgstr ""
-
-#: system/views/ai/assistant.py:209 system/views/ai/assistant.py:258
-#: tests/integration/system/test_nl_query.py:129
-msgid "NL query is not enabled"
-msgstr ""
-
-#: system/views/ai/assistant.py:215
-msgid "No visible datasets for NL query"
-msgstr ""
-
-#: system/views/ai/assistant.py:325
+#: system/views/ai/actions.py:173
 msgid "Action executed: {}"
 msgstr ""
 
-#: system/views/ai/assistant.py:388
+#: system/views/ai/actions.py:247
 msgid "AI action"
 msgstr ""
 
-#: system/views/ai/assistant.py:391
+#: system/views/ai/actions.py:250 system/views/ai/actions.py:251
 msgid "Waiting for approval"
 msgstr ""
 
-#: system/views/ai/assistant.py:404
+#: system/views/ai/actions.py:264
 msgid "Action failed"
+msgstr ""
+
+#: system/views/ai/assistant.py:84
+msgid "Base URL is required"
+msgstr ""
+
+#: system/views/ai/assistant.py:86
+msgid "API Key and model are required"
+msgstr ""
+
+#: system/views/ai/assistant.py:95 system/views/ai/profiles.py:121
+msgid "AI provider OK: {}"
 msgstr ""
 
 #: system/views/ai/knowledge.py:82
@@ -6709,6 +7625,42 @@ msgstr ""
 
 #: system/views/ai/knowledge.py:155
 msgid "Repository documents synced"
+msgstr ""
+
+#: system/views/ai/mcp.py:164
+msgid ""
+"This action requires approval; use the AI assistant in the web console (the "
+"approval flow is driven by the web frontend)"
+msgstr ""
+
+#: system/views/ai/mcp.py:198 system/views/ai/mcp.py:203
+msgid "Malformed JSON-RPC request"
+msgstr ""
+
+#: system/views/ai/mcp.py:220
+msgid "Unknown method: {}"
+msgstr "Unknown role codes: {}"
+
+#: system/views/ai/nl_query.py:59 system/views/ai/nl_query.py:130
+#: system/views/ai/nl_query.py:224
+#: tests/integration/system/test_nl_query.py:147
+msgid "NL query is not enabled"
+msgstr ""
+
+#: system/views/ai/nl_query.py:65 system/views/ai/nl_query.py:139
+msgid "No visible datasets for NL query"
+msgstr ""
+
+#: system/views/ai/nl_query.py:102 system/views/ai/nl_query.py:200
+msgid "Query ready: {} (preview {} rows)"
+msgstr ""
+
+#: system/views/ai/nl_query.py:240
+msgid "Query finished: {} groups"
+msgstr ""
+
+#: system/views/ai/nl_query.py:248
+msgid "Query finished: {} rows"
 msgstr ""
 
 #: system/views/ai/profiles.py:98
@@ -6855,7 +7807,6 @@ msgid "Form"
 msgstr ""
 
 #: system/views/dform.py:209
-#| msgid "The submission has been saved"
 msgid "The submission has been resubmitted"
 msgstr ""
 
@@ -6981,141 +7932,14 @@ msgstr "Invalid page index"
 msgid "Page index out of range"
 msgstr "Page index out of range"
 
-#: common/models.py
-msgid "Net sent (MB)"
-msgstr "Net sent (MB)"
+#~ msgid "Database"
+#~ msgstr "Database"
 
-#: common/models.py
-msgid "Net received (MB)"
-msgstr "Net received (MB)"
+#~ msgid "Redis cache"
+#~ msgstr "Redis cache"
 
-#: common/models.py
-msgid "Monitor alert"
-msgstr "Monitor alert"
-
-#: common/models.py
-msgid "CPU percent"
-msgstr "CPU percent"
-
-#: common/models.py
-msgid "CPU load"
-msgstr "CPU load"
-
-#: common/models.py
-msgid "Memory used"
-msgstr "Memory used"
-
-#: common/models.py
-msgid "Disk used"
-msgstr "Disk used"
-
-#: common/models.py
-msgid "Firing"
-msgstr "Firing"
-
-#: common/models.py
-msgid "Resolved"
-msgstr "Resolved"
-
-#: common/models.py
-msgid "Alert item"
-msgstr "Alert item"
-
-#: common/models.py
-msgid "Trigger value"
-msgstr "Trigger value"
-
-#: common/models.py
-msgid "Threshold"
-msgstr "Threshold"
-
-#: common/models.py
-msgid "Message"
-msgstr "Message"
-
-#: common/models.py
-msgid "Hit count"
-msgstr "Hit count"
-
-#: common/models.py
-msgid "First time"
-msgstr "First time"
-
-#: common/models.py
-msgid "Last time"
-msgstr "Last time"
-
-#: common/models.py
-msgid "Resolved time"
-msgstr "Resolved time"
-
-#: system/utils/monitor_history.py
-msgid "CPU usage"
-msgstr "CPU usage"
-
-#: system/utils/monitor_history.py
-msgid "Memory usage"
-msgstr "Memory usage"
-
-#: system/utils/monitor_history.py
-msgid "Disk usage"
-msgstr "Disk usage"
-
-#: system/utils/monitor_history.py
-msgid "Network upload rate"
-msgstr "Network upload rate"
-
-#: system/utils/monitor_history.py
-msgid "Network download rate"
-msgstr "Network download rate"
-
-#: system/utils/monitor_history.py
-msgid "Average"
-msgstr "Average"
-
-#: system/utils/monitor_history.py
-msgid "Minimum"
-msgstr "Minimum"
-
-#: system/utils/monitor_history.py
-msgid "Maximum"
-msgstr "Maximum"
-
-#: system/utils/monitor_history.py
-msgid "Latest"
-msgstr "Latest"
-
-#: system/utils/monitor_history.py
-msgid "Previous period average"
-msgstr "Previous period average"
-
-#: system/utils/monitor_history.py
-msgid "Change (%)"
-msgstr "Change (%)"
-
-#: system/utils/monitor_history.py
-msgid "Trend data"
-msgstr "Trend data"
-
-#: system/utils/monitor_history.py
-msgid "Summary"
-msgstr "Summary"
-
-#: system/utils/monitor_events.py
-msgid "Monitor alerts"
-msgstr "Monitor alerts"
-
-#: system/utils/metrics.py
-msgid "Database"
-msgstr "Database"
-
-#: system/utils/metrics.py
-msgid "Redis cache"
-msgstr "Redis cache"
-
-#: system/utils/metrics.py
-msgid "Celery"
-msgstr "Celery"
+#~ msgid "Celery"
+#~ msgstr "Celery"
 
 #~ msgid "AI room owner; empty for public/private rooms"
 #~ msgstr "AI room owner; empty for public/private rooms"

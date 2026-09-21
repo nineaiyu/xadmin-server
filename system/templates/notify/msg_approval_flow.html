@@ -13,8 +13,14 @@
         {% trans 'This approval task has been pending for a long time, please handle it as soon as possible' %}
     {% elif event == 'added' %}
         {% trans 'You have been added as an approver of the approval flow' %}
-    {% else %}
+    {% elif event == 'urge' %}
+        {% trans 'The applicant urged you to handle the approval task as soon as possible' %}
+    {% elif event == 'transferred' %}
+        {% trans 'An approval task has been transferred to you, please handle it as soon as possible' %}
+    {% elif event == 'cancelled' %}
         {% trans 'The approval application has been cancelled by the applicant' %}
+    {% else %}
+        {% trans 'You have a new approval flow notification' %}
     {% endif %}
 </p>
 <p>

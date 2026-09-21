@@ -350,7 +350,9 @@ class ApprovalInstanceSerializer(BaseModelSerializer):
         read_only=True,
     )
     current_node_name = serializers.SerializerMethodField(label=_("Current node"))
+    current_assignees = serializers.SerializerMethodField(label=_("Current approvers"))
     my_task = serializers.SerializerMethodField(label=_("My task"))
+    node_progress = serializers.SerializerMethodField(label=_("Node progress"))
     tasks = ApprovalNodeTaskSerializer(many=True, read_only=True)
     # 表单字段定义快照：详情页按 key 渲染 label（实例列表已 select_related flow，无额外查询）
     form_schema = serializers.SerializerMethodField(label=_("Form schema"))
@@ -365,7 +367,9 @@ class ApprovalInstanceSerializer(BaseModelSerializer):
             "form_data",
             "status",
             "current_node_name",
+            "current_assignees",
             "my_task",
+            "node_progress",
             "tasks",
             "form_schema",
             "reason",
@@ -379,6 +383,7 @@ class ApprovalInstanceSerializer(BaseModelSerializer):
             "flow_name",
             "status",
             "current_node_name",
+            "current_assignees",
             "creator",
             "finished_at",
             "created_time",
@@ -396,6 +401,26 @@ class ApprovalInstanceSerializer(BaseModelSerializer):
 
     def get_current_node_name(self, obj) -> str:
         return getattr(obj.current_node, "name", "") or ""
+
+    def get_node_progress(self, obj):
+        """当前节点进度（比例会签达标线预览）：复用列表 prefetch 的 tasks，避免 N+1。"""
+        from system.utils.approval_flow import node_progress_for
+
+        return node_progress_for(obj, tasks=obj.tasks.all())
+
+    def get_current_assignees(self, obj) -> str:
+        """当前节点的待办处理人（昵称，逗号分隔）：巡看「申请卡在谁那里」用。
+
+        非 PENDING 实例返回空串；只取当前节点 PENDING 任务（加签者一并纳入）。
+        """
+        if obj.status != ApprovalInstance.Status.PENDING:
+            return ""
+        names = [
+            (task.assignee.nickname or task.assignee.username)
+            for task in obj.tasks.all()
+            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
+        ]
+        return ", ".join(names)
 
     def get_form_schema(self, obj) -> list:
         return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
@@ -420,3 +445,49 @@ class ApprovalInstanceSerializer(BaseModelSerializer):
         if not (attrs.get("title") or "").strip():
             raise serializers.ValidationError({"title": _("Title is required")})
         return attrs
+
+
+class ApprovalInstanceExportSerializer(BaseModelSerializer):
+    """导出专用（轻量）：仅表格列，剔除 tasks / my_task / form_schema / node_progress 等重字段。
+
+    导出复用 list 链路（支持筛选参数），沿用主序列化器会把每条实例的全部任务与表单快照
+    写进文件（体积大且不可读）；此处与 ``Meta.table_fields`` 同口径。
+    """
+
+    creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Applicant"), label_builder=_username)
+    status = DictChoiceField(
+        dict_code="approval_status",
+        fallback_choices=ApprovalInstance.Status.choices,
+        merge_fallback=True,
+        read_only=True,
+    )
+    current_node_name = serializers.SerializerMethodField(label=_("Current node"))
+    current_assignees = serializers.SerializerMethodField(label=_("Current approvers"))
+
+    class Meta:
+        model = ApprovalInstance
+        fields = [
+            "pk",
+            "title",
+            "flow_name",
+            "status",
+            "current_node_name",
+            "current_assignees",
+            "creator",
+            "reason",
+            "finished_at",
+            "created_time",
+        ]
+
+    def get_current_node_name(self, obj) -> str:
+        return getattr(obj.current_node, "name", "") or ""
+
+    def get_current_assignees(self, obj) -> str:
+        if obj.status != ApprovalInstance.Status.PENDING:
+            return ""
+        names = [
+            (task.assignee.nickname or task.assignee.username)
+            for task in obj.tasks.all()
+            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
+        ]
+        return ", ".join(names)

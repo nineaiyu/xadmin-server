@@ -4,12 +4,12 @@
 
 - ApprovalFlowViewSet：流程定义 CRUD（节点列表嵌套写入）；
 - ApprovalInstanceViewSet：流程实例（我的申请/待办/已办）+ 发起 / 通过 / 驳回 /
-  撤回 / 加签 / 批量 / 待办计数 / 统计。
+  撤回 / 加签 / 转交（含批量）/ 批量 / 待办计数 / 统计 / 导出。
 
 取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过」（visible_instances_for）。
 """
 
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -29,26 +29,26 @@ from common.core.modelset import (
     ListAction,
     SearchColumnsAction,
     SearchFieldsAction,
-    SuggestionsAction,
 )
+from common.core.modelset.import_export.export_actions import OnlyExportDataAction
+from common.core.permission import user_has_permission
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalInstance, ApprovalNodeTask
-from system.serializers.approval_delegation import ApprovalDelegationSerializer
-from system.serializers.approval_flow import ApprovalFlowSerializer, ApprovalInstanceSerializer
+from system.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
+from system.serializers.approval_flow import (
+    ApprovalFlowSerializer,
+    ApprovalInstanceExportSerializer,
+    ApprovalInstanceSerializer,
+)
 from system.utils.approval_flow import (
-    FLOW_STATS_WINDOW_DAYS,
-    add_sign,
-    approve_task,
-    cancel_instance,
     create_instance,
-    instance_stats,
-    pending_count_for,
-    reject_task,
-    urge_instance,
     visible_instances_for,
 )
 from system.utils.approval_mfa import ensure_approval_action_confirmed
+from system.views.admin.approval_instance_actions import ApprovalInstanceActionMixin
+
+#: 「全部在途」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
+ONGOING_PERMISSION_PATH = "api/system/approval-instances/ongoing$"
 
 
 class ApprovalFlowFilter(BaseFilterSet):
@@ -146,10 +146,13 @@ class ApprovalInstanceFilter(BaseFilterSet):
 
 
 class ApprovalInstanceScopeFilter(BaseFilterBackend):
-    """页签取值域：scope=pending（待我审批）/ mine（我的申请）/ done（已办）。
+    """页签取值域：scope=pending（待我审批）/ mine（我的申请）/ done（已办）/ ongoing（在途管理）。
 
     缺省 = 可见域（我发起 ∪ 待我审批 ∪ 我参与过）；超管不设限。
     与 pending_count_for 同口径：本人发起的申请不计入待办（在「我的申请」处理）。
+
+    scope=ongoing 是**管理视角**（全部审批中的申请，供管理员巡看/催办），按权限点
+    `ongoing:SystemApprovalInstance` 授权（超管天然具备）——普通用户只能看可见域。
     """
 
     def filter_queryset(self, request, queryset, view):
@@ -157,6 +160,12 @@ class ApprovalInstanceScopeFilter(BaseFilterBackend):
         if not user or not user.is_authenticated:
             return queryset.none()
         scope = request.query_params.get("scope")
+        if scope == "ongoing":
+            if not user_has_permission(user, ONGOING_PERMISSION_PATH, "GET"):
+                raise PermissionDenied(_("You do not have permission to view all in-progress applications"))
+            from system.models.approval import ApprovalInstance as _Instance
+
+            return queryset.filter(status=_Instance.Status.PENDING)
         if scope == "pending":
             return (
                 queryset.filter(tasks__status=ApprovalNodeTask.Status.PENDING, tasks__assignee=user)
@@ -172,10 +181,13 @@ class ApprovalInstanceScopeFilter(BaseFilterBackend):
 
 class ApprovalInstanceViewSet(
     BaseViewSet,
+    # OnlyExportDataAction 继承 ListAction：必须排在 ListAction 之前，否则 MRO 冲突
+    OnlyExportDataAction,
     ListAction,
     DetailAction,
     SearchFieldsAction,
     SearchColumnsAction,
+    ApprovalInstanceActionMixin,
     GenericViewSet,
 ):
     """流程审批中心"""
@@ -205,265 +217,12 @@ class ApprovalInstanceViewSet(
         instance.refresh_from_db()
         return ApiResponse(data=self.get_serializer(instance).data, detail=_("Application submitted"))
 
-    def _resolve_task(self, instance, request):
-        """定位要处理的任务：优先请求体 task，缺省取「我的当前待办」（便于前端一键处理）。"""
-        task_pk = request.data.get("task")
-        queryset = instance.tasks.all()
-        if task_pk:
-            queryset = queryset.filter(pk=task_pk)
-        else:
-            queryset = queryset.filter(
-                assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-            )
-        task = queryset.first()
-        if task is None:
-            raise ValidationError({"detail": _("No pending task available for the current user")})
-        return task
+    def get_serializer_class(self):
+        """导出走轻量序列化器（仅表格列，不含 tasks/表单快照）。
 
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
-                    "comment": build_basic_type(OpenApiTypes.STR),
-                },
-                required=["pks"],
-                description="主键列表 + 审批意见",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=False, url_path="batch-approve")
-    def batch_approve(self, request, *args, **kwargs):
-        """批量通过（逐个定位当前用户的待办任务，返回成功数与被拒明细）"""
-        ensure_approval_action_confirmed(request, "batch_approve")
-        pks = request.data.get("pks") or []
-        if not pks:
-            raise ValidationError(_("Please select the data to operate"))
-        comment = (request.data.get("comment") or "").strip()
-        succeeded, failed = 0, []
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
-        for instance in queryset:
-            task = instance.tasks.filter(
-                assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-            ).first()
-            if task is None:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(_("No pending task for you"))})
-                continue
-            ok, detail = approve_task(task.pk, request.user, comment)
-            if ok:
-                succeeded += 1
-            else:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(detail)})
-        return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
-            detail=_("Operation successful. Approved {} data").format(succeeded),
-        )
-
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
-                    "reason": build_basic_type(OpenApiTypes.STR),
-                },
-                required=["pks", "reason"],
-                description="主键列表 + 驳回原因",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=False, url_path="batch-reject")
-    def batch_reject(self, request, *args, **kwargs):
-        """批量驳回（原因必填）"""
-        ensure_approval_action_confirmed(request, "batch_reject")
-        reason = (request.data.get("reason") or "").strip()
-        if not reason:
-            raise ValidationError(_("Rejection reason is required"))
-        pks = request.data.get("pks") or []
-        if not pks:
-            raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed = 0, []
-        queryset = self.filter_queryset(self.get_queryset()).filter(pk__in=pks)
-        for instance in queryset:
-            task = instance.tasks.filter(
-                assignee=request.user, status=ApprovalNodeTask.Status.PENDING, node=instance.current_node
-            ).first()
-            if task is None:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(_("No pending task for you"))})
-                continue
-            ok, detail = reject_task(task.pk, request.user, reason)
-            if ok:
-                succeeded += 1
-            else:
-                failed.append({"no": str(instance.pk)[:8].upper(), "reason": str(detail)})
-        return ApiResponse(
-            data={"succeeded": succeeded, "failed": failed},
-            detail=_("Operation successful. Rejected {} data").format(succeeded),
-        )
-
-    @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="available-flows")
-    def available_flows(self, request, *args, **kwargs):
-        """可发起流程（启用中）：发起申请弹窗的数据源（无需流程定义管理权限）。
-
-        普通申请人通常没有「流程定义」页权限，因此单独开一个轻量只读入口，
-        只回传发起所需的 pk/name/form_schema，不暴露节点审批人配置。
+        注意不能覆写 ``export_data``——DRF 的路由收集依赖 ``@action`` 装饰器写在方法上，
+        覆写会丢掉标记导致 404；这里按 action 名切换序列化器。
         """
-        flows = ApprovalFlow.objects.filter(is_active=True).order_by("-created_time")
-        return ApiResponse(
-            data=[
-                {
-                    "pk": str(flow.pk),
-                    "name": flow.name,
-                    "code": flow.code,
-                    "form_schema": flow.form_schema or [],
-                }
-                for flow in flows
-            ]
-        )
-
-    @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="pending-count")
-    def pending_count(self, request, *args, **kwargs):
-        """待我审批数（轻量接口：供顶栏/页签角标轮询，服务端 10s 短缓存）"""
-        return ApiResponse(data={"pending": pending_count_for(request.user)})
-
-    @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False)
-    def stats(self, request, *args, **kwargs):
-        """流程审批统计（近 30 天：我提交 / 我通过 / 我驳回 / 我的待办）"""
-        return ApiResponse(data=instance_stats(request.user, days=FLOW_STATS_WINDOW_DAYS))
-
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={
-                    "task": build_basic_type(OpenApiTypes.STR),
-                    "comment": build_basic_type(OpenApiTypes.STR),
-                },
-                description="任务主键（缺省取我的当前待办）+ 审批意见",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=True)
-    def approve(self, request, *args, **kwargs):
-        """通过（或签任一通过 / 会签全部通过后流转下一节点）"""
-        ensure_approval_action_confirmed(request, "approve")
-        instance = self.get_object()
-        task = self._resolve_task(instance, request)
-        ok, detail = approve_task(task.pk, request.user, (request.data.get("comment") or "").strip())
-        if not ok:
-            return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The approval task has been approved"))
-
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={
-                    "task": build_basic_type(OpenApiTypes.STR),
-                    "reason": build_basic_type(OpenApiTypes.STR),
-                },
-                required=["reason"],
-                description="任务主键（缺省取我的当前待办）+ 驳回原因",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=True)
-    def reject(self, request, *args, **kwargs):
-        """驳回（原因必填；驳回即终止申请）"""
-        ensure_approval_action_confirmed(request, "reject")
-        instance = self.get_object()
-        reason = (request.data.get("reason") or "").strip()
-        if not reason:
-            raise ValidationError(_("Rejection reason is required"))
-        task = self._resolve_task(instance, request)
-        ok, detail = reject_task(task.pk, request.user, reason)
-        if not ok:
-            return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The approval task has been rejected"))
-
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={"message": build_basic_type(OpenApiTypes.STR)},
-                description="可选催办留言（随通知带到审批人）",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=True)
-    def urge(self, request, *args, **kwargs):
-        """催办（仅申请人/超管、仅审批中）：通知当前节点审批人，10 分钟节流"""
-        instance = self.get_object()
-        ok, detail = urge_instance(instance, request.user, (request.data.get("message") or "").strip())
-        if not ok:
-            return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The approval reminder has been sent"))
-
-    @extend_schema(responses=get_default_response_schema())
-    @action(methods=["post"], detail=True)
-    def cancel(self, request, *args, **kwargs):
-        """撤回申请（仅申请人、仅审批中）"""
-        ensure_approval_action_confirmed(request, "cancel")
-        instance = self.get_object()
-        ok, detail = cancel_instance(instance, request.user)
-        if not ok:
-            return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The application has been cancelled"))
-
-    @extend_schema(
-        request=OpenApiRequest(
-            build_object_type(
-                properties={
-                    "usernames": build_basic_type(OpenApiTypes.STR),
-                    "comment": build_basic_type(OpenApiTypes.STR),
-                },
-                required=["usernames"],
-                description="加签审批人用户名（逗号分隔）+ 说明",
-            )
-        ),
-        responses=get_default_response_schema(),
-    )
-    @action(methods=["post"], detail=True, url_path="add-sign")
-    def add_sign_action(self, request, *args, **kwargs):
-        """加签：在当前节点追加审批人（当前节点参与人或超管可操作）"""
-        ensure_approval_action_confirmed(request, "add_sign")
-        instance = self.get_object()
-        if not (
-            request.user.is_superuser
-            or instance.tasks.filter(Q(assignee=request.user) | Q(actor=request.user)).exists()
-        ):
-            raise PermissionDenied(_("Permission denied"))
-        ok, detail = add_sign(
-            instance, request.user, request.data.get("usernames"), (request.data.get("comment") or "").strip()
-        )
-        if not ok:
-            return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The approver has been added"))
-
-
-class ApprovalDelegationFilter(BaseFilterSet):
-    class Meta:
-        model = ApprovalDelegation
-        fields = ["is_active", "delegator", "delegate"]
-
-
-class ApprovalDelegationViewSet(BaseModelSet, SuggestionsAction):
-    """审批委托（审批流三期）：委托人 × 代理人 × 生效时段 × 流程范围（空 = 全部流程）。
-
-    只影响「待办归属」（生效委托用代理人替换原审批人），不改变节点定义；
-    解析语义见 system/utils/approval_flow.py::_expand_delegations。
-    """
-
-    queryset = ApprovalDelegation.objects.all()
-    serializer_class = ApprovalDelegationSerializer
-    filterset_class = ApprovalDelegationFilter
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    ordering = ["-created_time"]
-    ordering_fields = ["created_time", "start_time", "end_time"]
-    select_related_fields = ("delegator", "delegate")
-    # 远程联想仅开放代理人：委托人在同表单里保持 api-search-user 弹窗选择器
-    suggestion_fields = ("delegate",)
+        if getattr(self, "action", None) == "export_data":
+            return ApprovalInstanceExportSerializer
+        return ApprovalInstanceSerializer

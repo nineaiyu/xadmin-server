@@ -40,9 +40,14 @@ from system.utils.approval_flow import approve_task, create_instance, reject_tas
 
 # 内置示例流程 code（loadjson/approvalflow.json）
 FLOW_CODES = ("demo_leave", "demo_expense")
-# 演示用户：申请人 / 审批人（unusable password，不可登录）
+# 演示用户：申请人 / 审批人。**必须可登录**（与其他演示账号同口径）：演示实例的
+# 在途单需要本人处理/撤回——不可登录账号会让演示单永久卡死，并因「在途实例存在时
+# 流程节点不可编辑」把演示流程一并锁死（历史教训：unusable password 曾造成
+# 演示审批链路在 UI 上完全无法闭环）。
 DEMO_APPLIER = "demo_flow_lily"
 DEMO_APPROVER = "demo_flow_chen"
+# 演示账号统一密码（与 seed_demo_org 的业务演示账号一致，文档 deployment.md 同步登记）
+DEMO_PASSWORD = "Demo@2026!"
 # 报销类实例申请人：场景模板（seed_demo_org）创建的示例员工——其部门主管为 demo_lead，
 # 满足「部门主管审批」节点「申请人有部门且主管非本人」的解析条件
 DEMO_STAFF = "demo_staff"
@@ -81,8 +86,7 @@ class Command(BaseCommand):
         # all_objects：软删的演示用户同样复用（复活），避免 username 唯一约束冲突
         user = UserInfo.all_objects.filter(username=username).first()
         if user is None:
-            # password=None → set_unusable_password：演示账号不可登录
-            user = UserInfo.objects.create_user(username=username, password=None, nickname=nickname)
+            user = UserInfo.objects.create_user(username=username, password=DEMO_PASSWORD, nickname=nickname)
             user.email = f"{username}@example.com"
             user.is_active = True
             dept = DeptInfo.objects.filter(code="demo").first()
@@ -95,6 +99,12 @@ class Command(BaseCommand):
             user.is_active = True
             user.save(update_fields=["deleted_at", "is_active"])
             self.stdout.write(f"restored demo user: {username}")
+        # 历史版本以 unusable password 创建（不可登录）：升级为可登录演示账号，
+        # 否则演示在途单的申请人/审批人无法登录处理，示例数据永久卡死
+        if not user.has_usable_password():
+            user.set_password(DEMO_PASSWORD)
+            user.save(update_fields=["password"])
+            self.stdout.write(f"enable login for demo user: {username}")
         return user
 
     # ---------------------------------------------------------------- 流程定义改写

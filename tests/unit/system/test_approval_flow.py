@@ -229,6 +229,52 @@ class TestEngineFlow:
         assert instance.status == ApprovalInstance.Status.CANCELLED
         assert instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING).count() == 0
 
+    def test_cancel_superuser_can_clear_others(self, applicant, approver, superuser):
+        """超管可撤回他人 PENDING 申请：运营清障路径。
+
+        演示/离职账号发起的在途单若无人可撤回，会永久阻塞该流程的节点编辑
+        （在途实例存在时流程定义不可改动），超管需要能代为收口。
+        """
+        flow = make_flow(code="leave_superuser_cancel", nodes=[{"name": "初审"}])
+        instance, _ = create_instance(flow=flow, applicant=applicant, title="运营清障", form_data={})
+        ok, detail = cancel_instance(instance, superuser)
+        assert ok, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.CANCELLED
+
+    def test_create_instance_leader_no_approver_detail(self, applicant):
+        """leader 节点无候选时给出可操作提示（无部门 / 部门无负责人 / 负责人即申请人）。"""
+        node = {"name": "上级审批", "assignee_type": ApprovalFlowNode.AssigneeType.LEADER, "assignee_value": ""}
+        flow = make_flow(code="leader_detail", nodes=[node])
+        _instance, error = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        assert error == str(
+            _gettext(
+                "Node {} has no available approver: the applicant has no department yet. "
+                "Please assign a department with leader to the applicant first"
+            )
+        ).format("上级审批")
+
+        dept = DeptInfo.objects.create(name="无主管部门", code="no_leader_dept")
+        applicant.dept = dept
+        applicant.save(update_fields=["dept"])
+        _instance, error = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        assert error == str(
+            _gettext(
+                "Node {} has no available approver: the applicant's department has no leader. "
+                "Please configure a department leader first"
+            )
+        ).format("上级审批")
+
+        dept.leader = applicant
+        dept.save(update_fields=["leader"])
+        _instance, error = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        assert error == str(
+            _gettext(
+                "Node {} has no available approver: the applicant is the department leader. "
+                "Please adjust the department leader or the approver of this node"
+            )
+        ).format("上级审批")
+
     def test_condition_skips_node(self, applicant, approver, approver2):
         flow = make_flow(
             nodes=[
@@ -531,3 +577,67 @@ class TestFlowVersions:
         instance, error = create_instance(flow=flow, applicant=applicant, title="版本", form_data={})
         assert error is None
         assert instance.flow_version == flow.version
+
+
+class TestConcurrencyGuard:
+    """并发安全回归：重复推进不产生重复任务组、重复终态不重复投递副作用。
+
+    真并发（线程/多进程）在 sqlite 测试库上不可靠（表级锁），这里用「同一操作重复
+    执行」验证 CAS 语义——它正是并发交错时两个请求各自看到的状态（都认为自己是
+    首个推进者）。生产环境的真正互斥由实例行锁（select_for_update）保证。
+    """
+
+    def test_repeated_approve_does_not_duplicate_next_node_tasks(self, applicant, approver, approver2):
+        flow = make_flow(
+            nodes=[
+                {"name": "初审"},
+                {
+                    "name": "终审",
+                    "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                    "assignee_value": "flow_approver2",
+                },
+            ]
+        )
+        instance, error = create_instance(flow=flow, applicant=applicant, title="重复推进", form_data={})
+        assert error is None
+        task = instance.tasks.get(node_order=1, assignee=approver, status=ApprovalNodeTask.Status.PENDING)
+        ok, detail = approve_task(task.pk, approver, "")
+        assert ok, detail
+        baseline = instance.tasks.filter(node_order=2).count()
+        assert baseline == 1
+
+        # 重复提交同一任务（并发交错时两个请求都会认为自己持有 PENDING 任务）
+        ok, _detail = approve_task(task.pk, approver, "")
+        assert not ok
+        assert instance.tasks.filter(node_order=2).count() == baseline
+
+    def test_repeated_reject_and_cancel_are_idempotent(self, applicant, approver):
+        """驳回后再撤回：第二次操作被终态拦截，实例状态与时间戳不被覆盖。"""
+        flow = make_flow(nodes=[{"name": "初审"}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="驳回幂等", form_data={})
+        assert error is None
+        task = instance.tasks.get(node_order=1, assignee=approver, status=ApprovalNodeTask.Status.PENDING)
+        ok, detail = reject_task(task.pk, approver, "不同意")
+        assert ok, detail
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.REJECTED
+        finished_at = instance.finished_at
+
+        ok, _detail = cancel_instance(instance, applicant)
+        assert not ok
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.REJECTED
+        assert instance.finished_at == finished_at
+
+    def test_finish_instance_cas_only_once(self, applicant, approver):
+        """终态 CAS：重复置终态只生效一次（Webhook/业务回调/通知不重复投递）。"""
+        from system.utils.approval_flow.engine import _finish_instance
+
+        flow = make_flow(nodes=[{"name": "初审"}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="终态幂等", form_data={})
+        assert error is None
+        assert _finish_instance(instance, ApprovalInstance.Status.APPROVED) is True
+        assert _finish_instance(instance, ApprovalInstance.Status.REJECTED) is False
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED  # 第二次不得覆盖终态
+        assert instance.finished_at is not None

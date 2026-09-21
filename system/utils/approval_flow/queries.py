@@ -49,6 +49,51 @@ def pending_count_for(user) -> int:
     return cache.get_or_set(f"approval_flow_pending_count_{user.pk}", _load, FLOW_PENDING_COUNT_CACHE_SECONDS)
 
 
+def node_progress_for(instance, node=None, tasks=None) -> dict | None:
+    """当前（或指定）节点进度：比例会签的「达标线预览」，会签/或签也给可视化数字。
+
+    返回 ``{approve_type, approve_ratio, total, approved, pending, rejected, required, reached}``：
+    - ``total``：节点全部候选任务数（加签后随之抬升，故达标线预览对加签决策有用）；
+    - ``required``：达标所需通过数——RATIO = ceil(total × ratio / 100)（与 engine 判定同源），
+      AND = total，OR = 1；
+    - 非审批中实例或节点无任务 → None（前端不渲染进度块）。
+
+    ``tasks`` 可传入已预取的任务列表（序列化器路径复用 prefetch，避免列表页 N+1）。
+    """
+    ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
+
+    node = node or instance.current_node
+    if instance.status != ApprovalInstance.Status.PENDING or node is None:
+        return None
+    if tasks is None:
+        tasks = list(ApprovalNodeTask.objects.filter(instance=instance, node=node))
+    else:
+        tasks = [task for task in tasks if task.node_id == node.pk]
+    total = len(tasks)
+    if not total:
+        return None
+    approved = sum(1 for task in tasks if task.status == ApprovalNodeTask.Status.APPROVED)
+    pending = sum(1 for task in tasks if task.status == ApprovalNodeTask.Status.PENDING)
+    rejected = sum(1 for task in tasks if task.status == ApprovalNodeTask.Status.REJECTED)
+    approve_type = node.approve_type
+    if approve_type == node.ApproveType.RATIO:
+        required = -(-total * (node.approve_ratio or 100) // 100)  # ceil，与 engine 同口径
+    elif approve_type == node.ApproveType.OR:
+        required = 1
+    else:
+        required = total
+    return {
+        "approve_type": approve_type,
+        "approve_ratio": node.approve_ratio or 100,
+        "total": total,
+        "approved": approved,
+        "pending": pending,
+        "rejected": rejected,
+        "required": required,
+        "reached": approved >= required,
+    }
+
+
 def instance_stats(user, days: int = FLOW_STATS_WINDOW_DAYS) -> dict:
     """流程审批统计（近 N 天）：我提交 / 我通过 / 我驳回 / 我的待办。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task

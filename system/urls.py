@@ -9,8 +9,8 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.approval import ApprovalRequestViewSet
+from system.views.admin.approval_delegation import ApprovalDelegationViewSet
 from system.views.admin.approval_flow import (
-    ApprovalDelegationViewSet,
     ApprovalFlowViewSet,
     ApprovalInstanceViewSet,
 )
@@ -30,7 +30,13 @@ from system.views.admin.operationlog import OperationLogViewSet
 from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.role import RoleViewSet
 from system.views.admin.user import UserViewSet
-from system.views.ai import AiAssistantSettingViewSet, AiAssistantViewSet, AiKnowledgeDocumentViewSet, AiProfileViewSet
+from system.views.ai import (
+    AiAssistantSettingViewSet,
+    AiAssistantViewSet,
+    AiKnowledgeDocumentViewSet,
+    AiProfileViewSet,
+)
+from system.views.ai.mcp import McpEndpointAPIView
 from system.views.analysis import ReportViewSet, ScreenViewSet
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
@@ -215,6 +221,8 @@ router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_sc
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
+# MCP 协议端点（Streamable HTTP 无状态）：外部 MCP 客户端经 PAT 接入统一工具层
+urlpatterns += [path("ai/mcp", McpEndpointAPIView.as_view())]
 # 开放平台换发端点：匿名可达（白名单），凭 client_secret 换 PAT 凭证
 urlpatterns += [path("open/token", ApiApplicationTokenAPIView.as_view())]
 # 开放平台 OAuth 授权码：authorize/approve 需登录态，token/revoke 匿名可达

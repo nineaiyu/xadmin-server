@@ -61,18 +61,24 @@ USERS = [
     ("demo_staff", "示例-李员工（研发部员工）", "demo_rd", "demo_staff_role", "13800000012"),
     ("demo_fin", "示例-王财务（财务部审批）", "demo_fin", "demo_leader_role", "13800000013"),
 ]
-# 预置角色的页面授权（员工：发起/填报；主管：审批/待办）
+# 预置角色的页面授权（员工：发起/填报 + AI 问答；主管：审批/待办 + AI 问答）
+# AI 助手页自动带上其下全部权限点（status/ask/interpret/run/actionExecute）：
+# 动作执行仍受「业务权限点双门」约束（如提交请假需要请假权限），不会越权。
+# 知识库管理页（/integration/knowledge/index）仅管理员可见——问答的 RAG 走服务端，
+# 不需要该页权限。
 ROLE_MENUS = {
     "demo_staff_role": [
         "/form-collection/my/index",
         "/system/approval/instance/index",
         "/user/notice/index",
         "/system/leave/index",
+        "/integration/ai/index",
     ],
     "demo_leader_role": [
         "/system/approval/index",
         "/system/approval/instance/index",
         "/user/notice/index",
+        "/integration/ai/index",
     ],
 }
 ROLE_NAMES = {
@@ -90,6 +96,14 @@ GRANT_MODELS = [
 ]
 
 
+#: 页面授权时排除的权限点：
+#: - mcp:AiMcp：MCP 协议端点是外部客户端接入通道，不对演示业务角色开放（面向机器凭证，
+#:   与 AI 动作执行不同——后者有业务权限双门保护）；
+#: - ongoing:SystemApprovalInstance：「全部在途」是管理视角（巡看/催办全部申请），
+#:   仅管理员（超管或显式授权）可用，随页面授权自动下发会越权。
+EXCLUDE_PERMISSION_NAMES = {"mcp:AiMcp", "ongoing:SystemApprovalInstance"}
+
+
 def _page_menus(paths):
     """按页面 path 收集菜单项：页面本身 + 其下权限点 + 上级目录。"""
     menus = []
@@ -98,7 +112,11 @@ def _page_menus(paths):
         menus.append(page)
         if page.parent_id:
             menus.append(page.parent)
-        menus.extend(Menu.objects.filter(parent=page, menu_type=Menu.MenuChoices.PERMISSION))
+        menus.extend(
+            Menu.objects.filter(parent=page, menu_type=Menu.MenuChoices.PERMISSION).exclude(
+                name__in=EXCLUDE_PERMISSION_NAMES
+            )
+        )
     return list({item.pk: item for item in menus}.values())
 
 

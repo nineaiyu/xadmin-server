@@ -32,6 +32,7 @@ from system.models import (
 )
 from system.models.ai import AiKnowledgeDocument
 from system.models.approval import (
+    ApprovalDelegation,
     ApprovalFlow,
     ApprovalFlowNode,
     ApprovalFlowVersion,
@@ -197,6 +198,18 @@ def test_all_and_clean_roundtrip(admin, menus, field_trees, builtin_flows, demo_
     assert DynamicFormSubmission.objects.count() >= 2
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 2
     assert UserInfo.objects.filter(username="demo_flow_lily").exists()
+
+    # 演示账号必须可登录：演示在途单需要本人处理/撤回（不可登录账号会让演示单永久卡死，
+    # 并因「在途实例存在时流程节点不可编辑」把演示流程一并锁死）
+    lily = UserInfo.objects.get(username="demo_flow_lily")
+    chen = UserInfo.objects.get(username="demo_flow_chen")
+    assert lily.has_usable_password()
+    assert chen.has_usable_password()
+
+    # 演示委托的委托人必须是演示账号：超管作委托人会让超管在所有流程的待办被整体转走
+    delegation = ApprovalDelegation.objects.get(pk="6eed0009-0000-4000-8000-000000000001")
+    assert delegation.delegator_id == lily.pk
+    assert delegation.delegate_id == chen.pk
 
     # 内置流程节点已被演示改写（uid 含 demo_flow_ 标记）
     node = ApprovalFlowNode.objects.filter(flow__code="demo_leave").first()
