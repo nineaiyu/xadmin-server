@@ -37,7 +37,10 @@ python utils/init_data.py          # 初始数据 + 超管账号（幂等，可�
   **，首次登录后立即修改）。历史版本的默认密码 `xAdminPwd!` 已移除（安装器现会生成随机密码并回写 `config.txt`），
   升级不影响已存在的账号；
 - `init_data` 常用参数：`--with-demo`（追加演示数据）、`--skip-ip-db`（离线/内网跳过 IP 库下载）、
-  `--admin-password`（显式指定初始密码）。
+  `--admin-password`（显式指定初始密码）；
+- **首次体验审批流程前先配置组织架构**：内置的请假/采购/用章等流程首节点按「申请人部门负责人」
+  解析审批人，超管默认无部门——直接发起会被 fail-closed 拒绝（提示会给出引导）。在
+  「组织管理 → 部门管理」为申请人配置所属部门与部门负责人后即可正常流转。
 
 > 配置项（键 / 环境变量 / 默认值 / 必填 / 生效方式）的完整速查见 [§9 配置速查表](#9-配置速查表)；
 > 本地非 Docker 开发的数据库连法见 `config_example.yml` 数据库段注释块。
@@ -102,13 +105,24 @@ python manage.py seed_demo_clean             # 一键卸载（清理演示数据
 
 说明：
 
-- 演示用户（`demo_` 前缀）为不可登录账号（unusable password），**不会**进入正式初始化
-  种子（`load_init_json`）；示例账号 `demo_staff` / `demo_lead` / `demo_fin`（seed_demo_org）
-  可登录，初始密码 `Demo@2026!`（`--password` 可改）；
+- **可登录演示账号**（审批链路相关账号必须可登录，否则演示在途单无人能处理/撤回，
+  还会因「在途实例存在时流程节点不可编辑」锁死演示流程）：
+  - `demo_staff` / `demo_lead` / `demo_fin`（seed_demo_org 业务演示，`--password` 可改）；
+  - `demo_flow_lily` / `demo_flow_chen`（seed_demo_flows 审批演示的申请人/审批人）；
+  - 初始密码均为 `Demo@2026!`；
+- 批量演示用户（`demo_0001` 起，seed_demo_users）为不可登录账号（unusable password），
+  仅作数据集趋势/分布的数据填充，不参与审批链；
+- 演示账号**不会**进入正式初始化种子（`load_init_json`）；
+- 演示委托（seed_demo_content）的委托双方均为演示账号：委托语义是「待办归属替换」
+  （节点解析到委托人时任务整体转给代理人），**禁止把超管作为委托人**——否则超管在所有
+  流程的待办都会被转走，表现为「待我审批」恒为空；
 - 各命令全部幂等（固定标识 / 固定主键），可重复执行；`--clean-only` 只清理不生成
   （`seed_demo_clean` 的编排入口）；
 - `seed_demo_clean` 会回滚对内置种子的改写（流程节点审批人、演示部门负责人、演示版本快照），
-  内置定义类数据（loadjson 的示例流程/表单/数据集/看板等）不在卸载范围。
+  内置定义类数据（loadjson 的示例流程/表单/数据集/看板等）不在卸载范围；
+- 内置流程的 leader 节点（请假/采购/用章等首节点）按申请人部门的负责人解析审批人：
+  申请人无部门 / 部门无负责人 / 负责人即申请人本人时发起会被 fail-closed 拒绝，
+  按发起失败的提示为申请人配置部门与负责人即可。
 
 ## 2. Celery 队列划分
 
@@ -264,6 +278,18 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
 
 - worker 任务失败经 `task_failure` 信号触发 `TaskFailureMessage`，通过站内信 + 邮件通知超管。
 - 同一任务 60 秒节流，防止失败风暴；通知任务自身的失败不再递归告警。
+
+### 4.4 上线冒烟（AI + 审批）
+
+```bash
+docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_ai_approval.py"
+docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_ai_approval.py --user demo_staff --approver demo_lead --admin isummer"
+```
+
+走**运行库 + 真实 HTTP + 普通用户 JWT**（非测试库/超管 APIClient），覆盖单测视角看不到的
+权限点命中、白名单语义与角色授权问题（历史缺陷：运行库权限点正则是旧版导致普通用户全 403，
+单测全绿也发现不了）。检查项：AI（status/工具目录/文档问答/历史）、审批（发起 → 两级通过 → 终态）、
+转交与管理视角（转交归属转移 → 管理视角可见 → 转交后通过）。退出码 0 = 全部通过。
 
 ## 5. 常见问题排查
 
