@@ -19,6 +19,10 @@ ALL_FIELDS = {
     "name",
     "isbn",
     "category",
+    # 上架审批字段（demo 官方示例轮新增）+ 软删时间戳（回收站抽屉展示）
+    "status",
+    "on_shelf_time",
+    "deleted_at",
     "is_active",
     "author",
     "publisher",

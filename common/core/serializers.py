@@ -175,8 +175,9 @@ class BaseModelSerializer(ModelSerializer):
         n_file_objs = []
         for _name, file_data, many in self._iter_upload_file_fields(validated_data):
             if many:
-                n_file_objs.extend(file_data)
-            else:
+                n_file_objs.extend(file_data or [])
+            elif file_data is not None:
+                # 可空外键允许显式传 null（清空附件），临时态标记只针对真实文件
                 n_file_objs.append(file_data)
 
         result = super().create(validated_data)
@@ -189,16 +190,20 @@ class BaseModelSerializer(ModelSerializer):
         for name, file_data, many in self._iter_upload_file_fields(validated_data):
             if many:
                 # 关联实例各取一次，避免原来 set(...all()) 两次触发同一查询
+                # 显式传 null / 空数组 = 清空附件
                 old_file_objs = set(getattr(instance, name).all())
-                new_file_objs = set(file_data)
+                new_file_objs = set(file_data or [])
                 d_file_objs.extend(old_file_objs - new_file_objs)
                 n_file_objs.extend(new_file_objs - old_file_objs)
             else:
                 o_file_obj = getattr(instance, name)
                 n_file_obj = file_data
-                if o_file_obj.pk != n_file_obj.pk:
-                    d_file_objs.append(o_file_obj)
-                    n_file_objs.append(n_file_obj)
+                # 可空外键两侧都可能为 None（清空附件 / 原本就为空），不能直接取 pk
+                if (o_file_obj.pk if o_file_obj else None) != (n_file_obj.pk if n_file_obj else None):
+                    if o_file_obj:
+                        d_file_objs.append(o_file_obj)
+                    if n_file_obj:
+                        n_file_objs.append(n_file_obj)
 
         result = super().update(instance, validated_data)
         for d_file in d_file_objs:

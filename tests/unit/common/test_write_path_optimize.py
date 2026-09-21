@@ -165,7 +165,7 @@ class TestAutoCleanFileMixinSave:
         assert AutoCleanFileMixin.has_file_cleanup(Book) is True  # 关联 UploadFile
 
     def test_viewset_file_cleanup_detection(self):
-        # Book 非软删模型，逐行判定只由文件清理副作用驱动
+        # Book 软删 + 关联 UploadFile：回收站恢复需保留附件，逐行 delete() 走软删（不硬删文件）
         assert BookViewSet()._needs_rowwise_delete() is True
 
 
@@ -210,9 +210,12 @@ class TestBatchDestroy:
 
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
+        # Book 为软删模型：批删逐行 delete() 走 UPDATE deleted_at（含 post_save 信号），
+        # 不再产生硬删 DELETE SQL（旧断言 deletes >= 1 随软删改造过期）
         assert Book.objects.count() == 0
-        deletes = [q for q in _business_queries(ctx) if q.strip().upper().startswith("DELETE")]
-        assert len(deletes) >= 1
+        assert Book.all_objects.filter(deleted_at__isnull=False).count() == 4
+        updates = [q for q in _business_queries(ctx) if "deleted_at" in q]
+        assert len(updates) >= 1
 
     def test_batch_destroy_ignores_unknown_pks(self, auth_client, superuser, upload_file):
         b = Book.objects.create(name="书", isbn="i1", author="a", admin=superuser, admin2=superuser, file=upload_file)
