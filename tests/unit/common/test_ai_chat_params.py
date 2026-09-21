@@ -3,8 +3,10 @@
 
 覆盖：credentials 驱动的请求体（temperature/max_tokens/top_p/penalties/stop/seed）、
 None 参数不下发、temperature 兜底、显式 overrides 覆盖、stop 字符串解析、
-网络异常与 5xx/429 重试（指数退避）、4xx 不重试、流式建连重试。
+网络异常与 5xx/429 重试（指数退避）、4xx 不重试、流式建连重试、流式 UTF-8 解码。
 """
+
+import json
 
 import pytest
 
@@ -172,6 +174,103 @@ class TestRetry:
         assert response.status_code == 200
         assert len(http.calls) == 2
         assert http.calls[-1]["stream"] is True
+
+
+class TestStreamDecoding:
+    """流式增量固定按 UTF-8 解码。
+
+    回归背景：SSE 响应头 `text/event-stream` 不带 charset 时，requests 会把编码
+    推断成 ISO-8859-1，旧实现 ``iter_lines(decode_unicode=True)`` 让中文增量全部
+    mojibake（数据库 → æ°æ®åº）；这里用 bytes 行（真实 requests 路径）与预解码
+    str 行（测试桩可能返回 str）两种形态验证。
+    """
+
+    @staticmethod
+    def _stream_response(lines, status_code=200):
+        class _StreamResponse:
+            text = ""
+
+            def __init__(self):
+                self.status_code = status_code
+
+            def iter_lines(self, *args, **kwargs):
+                yield from lines
+
+        return _StreamResponse()
+
+    def _client_with_lines(self, lines):
+        http = _FakeHttp([self._stream_response(lines)])
+        return ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+
+    @staticmethod
+    def _texts(events):
+        """事件序列 → 正文文本（content 类型）。"""
+        return "".join(item["text"] for item in events if item["type"] == "content")
+
+    def test_chinese_bytes_decoded_as_utf8(self):
+        chunks = ["数据库", "是", "什么"]
+        # bytes 行（str.encode 默认 UTF-8）：贴近真实 requests iter_lines 的返回形态
+        lines = [
+            f"data: {json.dumps({'choices': [{'delta': {'content': c}}]}, ensure_ascii=False)}".encode() for c in chunks
+        ]
+        lines.append(b"data: [DONE]")
+        lines.append(b"")
+        events = list(self._client_with_lines(lines).chat_stream([]))
+        assert self._texts(events) == "数据库是什么"
+        assert all(item["type"] == "content" for item in events)
+
+    def test_predecoded_str_lines_supported(self):
+        lines = ['data: {"choices": [{"delta": {"content": "你好"}}]}', "", "data: [DONE]", ""]
+        assert self._texts(list(self._client_with_lines(lines).chat_stream([]))) == "你好"
+
+    def test_reasoning_content_emitted_separately(self):
+        """思考型模型：delta.reasoning_content 产出为 reasoning 事件（与正文分开）。"""
+        lines = [
+            'data: {"choices": [{"delta": {"reasoning_content": "先想"}}]}',
+            'data: {"choices": [{"delta": {"reasoning_content": "再看"}}]}',
+            'data: {"choices": [{"delta": {"content": "答案"}}]}',
+            "data: [DONE]",
+            "",
+        ]
+        events = list(self._client_with_lines(lines).chat_stream([]))
+        assert [item["type"] for item in events] == ["reasoning", "reasoning", "content"]
+        assert "".join(item["text"] for item in events if item["type"] == "reasoning") == "先想再看"
+        assert self._texts(events) == "答案"
+
+    def test_only_reasoning_is_not_empty_answer(self):
+        """只有思考没有回答不算「空回答」（已有增量），由调用方决定展示口径。"""
+        lines = ['data: {"choices": [{"delta": {"reasoning_content": "一直在想"}}]}', "data: [DONE]", ""]
+        events = list(self._client_with_lines(lines).chat_stream([]))
+        assert [item["type"] for item in events] == ["reasoning"]
+
+
+class TestChatReasoningCapture:
+    """非流式 chat()：reasoning_content 采集与「只思考未回答」的可读区分。"""
+
+    def test_chat_records_reasoning(self):
+        payload = {
+            "choices": [{"message": {"content": "答案", "reasoning_content": "思考过程"}}],
+        }
+        http = _FakeHttp([_FakeResponse(payload=payload)])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        assert client.chat([]) == "答案"
+        assert client.last_reasoning == "思考过程"
+
+    def test_chat_only_reasoning_error_message(self):
+        payload = {"choices": [{"message": {"content": "", "reasoning_content": "想了很久"}}]}
+        http = _FakeHttp([_FakeResponse(payload=payload)])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        with pytest.raises(AiSdkError, match="only reasoning content"):
+            client.chat([])
+        assert client.last_reasoning == "想了很久"
+
+    def test_chat_empty_answer_without_reasoning(self):
+        payload = {"choices": [{"message": {"content": ""}}]}
+        http = _FakeHttp([_FakeResponse(payload=payload)])
+        client = ChatCompletionsClient(FULL_CREDENTIALS, http_client=http)
+        with pytest.raises(AiSdkError, match="empty answer"):
+            client.chat([])
+        assert client.last_reasoning is None
 
 
 class TestUsageCapture:
