@@ -23,6 +23,15 @@ lifecycle / queries / periodic），对外 API 由本文件统一再导出，导
 
 from .approved_actions import ON_APPROVED_HANDLERS, register_on_approved, run_on_approved, snapshot_payload
 from .approvers import build_module, can_approve, find_active_pending, get_approver_queryset, resolve_approvers
+from .chains import (
+    build_steps,
+    can_act,
+    create_steps,
+    current_step,
+    resolve_level_users,
+    resolve_rule,
+    sync_current_level,
+)
 from .constants import (
     APPROVAL_HEADER,
     APPROVAL_NOTIFY_THROTTLE_SECONDS,
@@ -49,11 +58,12 @@ from .notify import (
     forbidden_response,
     notify_applicant,
     notify_approvers,
+    notify_step,
     pending_response,
 )
 from .payload import canonical_params, get_request_object_pk, get_request_params, path_intercepted
 from .periodic import clean_expired_approvals, expire_pending_approvals, remind_pending_approvals
-from .queries import approval_stats, invalidate_pending_count_cache, pending_count_for
+from .queries import approval_stats, invalidate_pending_count_cache, pending_count_for, pending_queryset_for
 
 __all__ = [
     "APPROVAL_HEADER",
@@ -69,12 +79,16 @@ __all__ = [
     "approval_stats",
     "approve_request",
     "build_module",
+    "build_steps",
+    "can_act",
     "can_approve",
     "cancel_request",
     "canonical_params",
     "clean_expired_approvals",
     "consume_approval",
     "create_approval",
+    "create_steps",
+    "current_step",
     "expire_pending_approvals",
     "find_active_pending",
     "forbidden_response",
@@ -84,14 +98,19 @@ __all__ = [
     "invalidate_pending_count_cache",
     "notify_applicant",
     "notify_approvers",
+    "notify_step",
     "path_intercepted",
     "pending_count_for",
+    "pending_queryset_for",
     "pending_response",
     "process_approval",
     "register_on_approved",
     "reject_request",
     "remind_pending_approvals",
     "resolve_approvers",
+    "resolve_level_users",
+    "resolve_rule",
     "run_on_approved",
     "snapshot_payload",
+    "sync_current_level",
 ]

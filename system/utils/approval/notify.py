@@ -31,6 +31,31 @@ def notify_approvers(approval, approvers):
             logger.warning("send approval notify failed. approval:%s user:%s", approval.pk, user.pk, exc_info=True)
 
 
+def notify_step(approval, step):
+    """逐级通知：只通知该级候选人（按「单 + 级次」节流，防重复推进刷屏）。
+
+    与 notify_approvers 的差异：多级链的待办归属随级次变化，通知对象必须是
+    当前级候选人；节流键带上 order，避免第 1 级的节流窗口吞掉第 2 级的通知。
+    """
+    from django.core.cache import cache
+
+    from system.notifications import ApprovalRequestMessage
+
+    if not cache.add(f"approval_notify_{approval.pk}_{step.order}", 1, APPROVAL_NOTIFY_THROTTLE_SECONDS):
+        return
+    for user in step.assignees.all():
+        try:
+            ApprovalRequestMessage(user, "submitted", approval).publish(is_async=True)
+        except Exception:
+            logger.warning(
+                "send approval level notify failed. approval:%s level:%s user:%s",
+                approval.pk,
+                step.order,
+                user.pk,
+                exc_info=True,
+            )
+
+
 def _emit_approval_event(event: str, approval) -> None:
     """出站 Webhook：审批事件（emit 全程吞异常，不影响审批流转）。"""
     from system.utils.webhook import emit_webhook_event

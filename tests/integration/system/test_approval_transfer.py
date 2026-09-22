@@ -12,6 +12,7 @@
 
 import pytest
 from django.core.cache import cache as django_cache
+from django.utils.translation import gettext as _
 from rest_framework.test import APIClient
 
 from system.models import Menu, MenuMeta, UserInfo, UserRole
@@ -398,12 +399,15 @@ class TestInstanceExport:
         response = client.get(f"{LIST_URL}/export-data?type=csv")
         assert response.status_code == 200, response.content[:300]
         content = response.content.decode("utf-8-sig")
-        header, _, first_row = content.partition("\r\n")
+        # 解包占位不用 `_`（函数内赋值会让 gettext 别名 `_` 变成局部变量而不可调用）
+        header, _sep, first_row = content.partition("\r\n")
         assert "转交测试" in content  # 实例标题进入导出文件
         assert "csv" in response["Content-Type"]
         # 轻量序列化器：不含任务轨迹与表单快照字段
         assert "tasks" not in header and "form_data" not in header
-        assert "当前处理人(current_assignees)" in header
+        # 表头 label 经 gettext 渲染（本机有 .mo 显中文、CI 无 .mo 显英文）：
+        # 与产文同源取值，不写死任一语言字面量（写死会跨环境假红，历史教训）
+        assert f"{_('Current approvers')}(current_assignees)" in header
         assert first_row  # 至少一行数据
 
     def test_export_xlsx_default(self, superuser, applicant, approver):

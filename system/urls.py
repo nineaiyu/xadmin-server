@@ -14,6 +14,7 @@ from system.views.admin.approval_flow import (
     ApprovalFlowViewSet,
     ApprovalInstanceViewSet,
 )
+from system.views.admin.approval_rule import ApprovalRuleViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
@@ -155,6 +156,8 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
 router.register("approvals", ApprovalRequestViewSet, basename="approval_request")
+# 审批规则：按请求路径配置多级审批链（指定人/角色，逐级通知与推进）
+router.register("approval-rules", ApprovalRuleViewSet, basename="approval_rule")
 # 全量审批流引擎：流程定义 + 流程实例（流程审批中心）+ 审批委托（三期）
 router.register("approval-flows", ApprovalFlowViewSet, basename="approval_flow")
 router.register("approval-instances", ApprovalInstanceViewSet, basename="approval_instance")

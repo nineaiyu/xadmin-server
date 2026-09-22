@@ -24,13 +24,15 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models.approval import ApprovalRequest
-from system.serializers.approval import ApprovalRequestSerializer
+from system.serializers.approval import ApprovalRequestDetailSerializer, ApprovalRequestSerializer
 from system.utils.approval import (
     approval_stats,
     approve_request,
+    can_act,
     can_approve,
     cancel_request,
     pending_count_for,
+    pending_queryset_for,
     reject_request,
 )
 from system.utils.approval_mfa import ensure_approval_action_confirmed
@@ -64,16 +66,18 @@ class ApprovalScopeFilter(BaseFilterBackend):
             return queryset.none()
         scope = request.query_params.get("scope")
         if scope == "pending":
-            # 待办口径 = 我可审批且非本人发起（本人发起在「我发起」页签处理）：
-            # 与 pending_count_for 保持一致，避免角标数与页签行数不符
-            return queryset.filter(status=ApprovalRequest.Status.PENDING).exclude(creator=user)
+            # 待办口径与 pending_count_for 共用同一函数（角标数与页签行数必须一致）：
+            # 扁平单给全局审批人，多级链单只给当前级候选人，本人发起恒排除
+            return pending_queryset_for(user)
         if scope == "mine":
             return queryset.filter(creator=user)
         if user.is_superuser:
             return queryset
+        # 缺省页签：我发起的 ∪ 我审批过的 ∪ 我当前可审的（含多级链当前级候选人）
+        mine = Q(creator=user) | Q(approver=user) | Q(current_level__gt=0, current_assignees=user)
         if can_approve(user):
-            return queryset.filter(Q(creator=user) | Q(status=ApprovalRequest.Status.PENDING) | Q(approver=user))
-        return queryset.filter(Q(creator=user) | Q(approver=user))
+            mine |= Q(status=ApprovalRequest.Status.PENDING, current_level=0)
+        return queryset.filter(mine).distinct()
 
 
 class ApprovalRequestViewSet(
@@ -93,12 +97,28 @@ class ApprovalRequestViewSet(
     ordering = ["-created_time"]
     ordering_fields = ["created_time"]
     select_related_fields = ("creator", "approver")
+    # current_assignees（当前级候选人投影）列表逐行展示：prefetch 避免 N+1
+    prefetch_related_fields = ("current_assignees",)
+
+    def get_serializer_class(self):
+        # 详情额外返回 steps（多级审批链进度），列表保持轻量
+        if self.action == "retrieve":
+            return ApprovalRequestDetailSerializer
+        return ApprovalRequestSerializer
 
     def _get_actionable(self, request):
-        """取审批单并校验审批权限（超管或审批人集合；申请人不能自审在动作内判断）。"""
+        """取审批单并校验审批权限：多级链 = 当前级候选人；扁平单 = 超管或审批人集合。
+
+        申请人不能自审在引擎动作内判断（保持与批量入口同一收口点）。
+        """
+        approval = self.get_object()
+        if (approval.current_level or 0) > 0:
+            if not can_act(approval, request.user):
+                raise PermissionDenied(_("Permission denied"))
+            return approval
         if not (request.user.is_superuser or can_approve(request.user)):
             raise PermissionDenied(_("Permission denied"))
-        return self.get_object()
+        return approval
 
     @extend_schema(
         request=OpenApiRequest(
@@ -116,10 +136,12 @@ class ApprovalRequestViewSet(
     def batch_approve(self, request, *args, **kwargs):
         """批量通过审批单"""
         ensure_approval_action_confirmed(request, "batch_approve")
-        # 与单条 approve/reject 口径一致：批量入口同样先校验审批权限
-        # （取值域过滤只能保证「看得到」，不能保证「有权审批」）
+        # 授权收口：全局审批人（超管 / 角色或权限反查）直接放行；多级链候选人
+        # 至少要是某张在途单的当前级候选（更细的逐单校验在引擎内完成，
+        # 无权处理的单进入 failed 明细，而不是整体 403）
         if not (request.user.is_superuser or can_approve(request.user)):
-            raise PermissionDenied(_("Permission denied"))
+            if not pending_queryset_for(request.user).exists():
+                raise PermissionDenied(_("Permission denied"))
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
@@ -152,9 +174,10 @@ class ApprovalRequestViewSet(
     def batch_reject(self, request, *args, **kwargs):
         """批量驳回审批单（原因必填；逐单校验状态与审批人，返回成功数与被拒明细）"""
         ensure_approval_action_confirmed(request, "batch_reject")
-        # 与单条 reject 同口径：批量入口同样先校验审批权限与原因
+        # 授权收口同 batch_approve：全局审批人或某张在途单的当前级候选人
         if not (request.user.is_superuser or can_approve(request.user)):
-            raise PermissionDenied(_("Permission denied"))
+            if not pending_queryset_for(request.user).exists():
+                raise PermissionDenied(_("Permission denied"))
         reason = (request.data.get("reason") or "").strip()
         if not reason:
             raise ValidationError(_("Rejection reason is required"))
@@ -189,13 +212,15 @@ class ApprovalRequestViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True)
     def approve(self, request, *args, **kwargs):
-        """通过审批单"""
+        """通过审批单（可选 comment：多级链逐级留痕）"""
         ensure_approval_action_confirmed(request, "approve")
         approval = self._get_actionable(request)
-        ok, detail = approve_request(approval, request.user)
+        comment = (request.data.get("comment") or "").strip()
+        ok, detail = approve_request(approval, request.user, comment)
         if not ok:
             return ApiResponse(code=1001, detail=detail)
-        return ApiResponse(detail=_("The approval request has been approved"))
+        # 会签未齐时引擎返回「已记录，等待其他会签人 (n/m)」的 detail，原样透传
+        return ApiResponse(detail=detail or _("The approval request has been approved"))
 
     @extend_schema(
         request=OpenApiRequest(

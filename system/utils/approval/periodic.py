@@ -18,18 +18,30 @@ def expire_pending_approvals(pending_days: int = None) -> int:
     from django.utils import timezone
 
     from common.core.config import SysConfig
-    from system.models.approval import ApprovalRequest
+    from system.models import ApprovalRequest, ApprovalRequestStep
 
     if pending_days is None:
         pending_days = int(SysConfig.APPROVAL_PENDING_TIMEOUT)
     if not pending_days or pending_days <= 0:
         return 0
     deadline = timezone.now() - datetime.timedelta(days=pending_days)
-    count = ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING, created_time__lt=deadline).update(
-        status=ApprovalRequest.Status.EXPIRED, updated_time=timezone.now()
+    now = timezone.now()
+    pks = list(
+        ApprovalRequest.objects.filter(status=ApprovalRequest.Status.PENDING, created_time__lt=deadline).values_list(
+            "pk", flat=True
+        )
     )
-    if count:
-        invalidate_pending_count_cache()
+    if not pks:
+        return 0
+    count = ApprovalRequest.objects.filter(pk__in=pks).update(
+        status=ApprovalRequest.Status.EXPIRED, current_level=0, updated_time=now
+    )
+    # 多级链：在途级次统一作废（扁平单命中 0 行无副作用）+ 清当前级候选人投影
+    ApprovalRequestStep.objects.filter(request_id__in=pks, status=ApprovalRequestStep.Status.PENDING).update(
+        status=ApprovalRequestStep.Status.CANCELLED, updated_time=now
+    )
+    ApprovalRequest.current_assignees.through.objects.filter(approvalrequest_id__in=pks).delete()
+    invalidate_pending_count_cache()
     return count
 
 
@@ -64,9 +76,13 @@ def remind_pending_approvals(remind_hours: int = None) -> int:
         cache_key = f"approval_remind_{approval.pk}"
         if cache.get(cache_key):
             continue
-        approvers = resolve_approvers(approval.creator) if approval.creator else get_approver_queryset()
+        # 多级链只提醒当前级候选人；扁平单保持全局审批人口径
+        if (approval.current_level or 0) > 0:
+            users = list(approval.current_assignees.all())
+        else:
+            users = list(resolve_approvers(approval.creator) if approval.creator else get_approver_queryset())
         delivered = False
-        for user in approvers:
+        for user in users:
             try:
                 ApprovalRequestMessage(user, "remind", approval).publish(is_async=True)
                 delivered = True

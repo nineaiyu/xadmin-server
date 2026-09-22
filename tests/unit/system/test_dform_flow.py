@@ -36,8 +36,10 @@ def applicant():
 
 
 @pytest.fixture
-def approver():
-    return UserInfo.objects.create_user(username="dform_approver", password="Test@123456", nickname="审批人")
+def approver(superuser):
+    """敏感操作审批的引擎层会校验审批资格（超管或审批人集合）：
+    本文件的用例直接调用 approve_request，因此审批人必须具备资格。"""
+    return superuser
 
 
 @pytest.fixture

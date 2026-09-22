@@ -76,6 +76,15 @@ class ApprovalRequest(DbAuditModel):
     # 审批通过后已由注册的通过后动作自动执行业务落库（申请人无需再手动重放）
     auto_completed = models.BooleanField(_("Auto completed"), default=False)
     reason = models.CharField(_("Reason"), max_length=255, blank=True, null=True)
+    # 多级审批链（ApprovalRule 命中时启用）：current_level = 当前级次（0 = 扁平模式或已结束），
+    # current_assignees = 当前级候选人冗余投影（列表展示与待办查询用；权威数据在 steps 快照）
+    current_level = models.PositiveSmallIntegerField(_("Current level"), default=0)
+    current_assignees = models.ManyToManyField(
+        "system.UserInfo",
+        related_name="approval_current_assignments",
+        blank=True,
+        verbose_name=_("Current approvers"),
+    )
 
     class Meta:
         ordering = ["-created_time"]

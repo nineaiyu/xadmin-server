@@ -9,6 +9,7 @@
 from .abstract import *
 from .ai import *
 from .approval import *
+from .approval_rule import *
 from .config import *
 from .dataset import *
 from .department import *

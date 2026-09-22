@@ -113,3 +113,16 @@
   （导出 / 报表）OOM 后检查临时文件残留；调大限额或错峰后重启容器，并回看告警是否再次出现。
 - **环境要求**：watcher 需部署在 Docker 宿主机（见 [observability.md](observability.md) §三「宿主侧 watcher」）；
   未部署时该告警不会产生（`docker events` 仍可人工核查）。
+
+## 17. 重启栈后 nginx 容器反复重启 / 经 8896 访问 API 502
+
+- **定位**：`docker logs xadmin-nginx` 出现 `[emerg] host not found in upstream "server:8896"`（历史形态）；
+  运行期 502 对比 `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' xadmin-server`
+  与 nginx 实际转发目标 `data/logs/tcp-access.log` 的 `$upstream_addr`。
+- **根因/已修复（2026-09-21）**：后端地址由「配置加载期解析」改为「运行期解析」——`utils/nginx.conf`（stream）
+  与 `xadmin-web/xadmin-api-conf`（页面层，客户端仓库 `web/conf/` 副本同源）均改为 `resolver 127.0.0.11
+  valid=10s ipv6=off` + 变量 `proxy_pass`。修复前 nginx/页面容器早于 server 启动会直接 `[emerg]` 启动失败
+  （靠 `restart: always` 反复重试才恢复），且 server 容器重建换 IP 后必须手工 `docker restart xadmin-nginx xadmin-web`。
+- **处置**：先确认配置未被改回静态 `upstream` / `proxy_pass http://server:8896;`（`docker exec xadmin-nginx
+  nginx -t` 校验，正常应无 emerg）；server 未就绪期间客户端连接断开 / 502 属预期，server healthy 后 **10s 内
+  自动恢复，无需重启 nginx**。安装器 LB 层（`config_init/nginx/lb_http_server.conf`）已同口径修复。

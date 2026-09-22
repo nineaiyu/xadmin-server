@@ -179,6 +179,11 @@ docker compose up -d
 | db-backup          | 每 6h pg_dump 备份 + 媒体目录 + 异地副本，滚动保留 7 天 | 日志（`docker logs xadmin-db-backup`） |
 | postgresql / redis | 存储与 broker             | 内置                                 |
 
+- 后端地址解析（2026-09-21 修复）：内置 nginx（stream）与页面层反代（`xadmin-web/xadmin-api-conf`）均以
+  Docker 内嵌 DNS + 变量形式**运行期**解析 `server:8896`（`resolver 127.0.0.11 valid=10s ipv6=off`）——
+  nginx 先于 server 启动不再 `[emerg] host not found` 启动失败，server 容器重建换 IP 后也**无需重启 nginx**
+  （10s 内自动跟随）。排查步骤见 [runbook.md](runbook.md) §17。
+
 ### 3.1 数据库备份与恢复
 
 > 2026-09-08 收口：异地副本、媒体目录、RPO 6h 三项已落地（下期规划 N1/L1），

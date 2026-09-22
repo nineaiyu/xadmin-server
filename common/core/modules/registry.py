@@ -42,11 +42,11 @@ MODULES: tuple[ModuleSpec, ...] = (
     ),
     ModuleSpec(
         "approval",
-        "敏感操作审批（拦截 + 审批单）",
+        "敏感操作审批（拦截 + 审批单 + 多级审批规则）",
         STANDARD,
-        menus=("SystemApprovalRequest",),
-        permissions=("api/system/approvals",),
-        routes=(r"^/api/system/approvals",),
+        menus=("SystemApprovalRequest", "SystemApprovalRule"),
+        permissions=("api/system/approvals", "api/system/approval-rules"),
+        routes=(r"^/api/system/approvals", r"^/api/system/approval-rules"),
         note="关闭后 APPROVAL_REQUIRED_PATHS 拦截整体失效（无审批单可落）",
     ),
     ModuleSpec(
