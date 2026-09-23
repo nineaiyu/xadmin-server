@@ -157,7 +157,7 @@ def _deliver_im(report, rows: int) -> list:
 def _precreate_record(report) -> str:
     """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。
 
-    params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表（P-2）。
+    params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表。
     """
     from system.models.export import ExportRecord
 
@@ -233,7 +233,7 @@ def run_scheduled_report(self, report_id: str):
     record.status = ExportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     user = report.creator
-    # P-2 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）
+    # 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）
     update_progress(KIND_REPORT, record.pk, 20, stage=_("Querying dataset"))
     try:
         content, rows = _render_workbook(report, user)

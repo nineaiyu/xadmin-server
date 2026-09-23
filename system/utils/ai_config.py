@@ -160,9 +160,9 @@ def ai_persona() -> str:
 
 
 def native_tools_enabled() -> bool:
-    """AI-2 双轨准入：灰度开关开启 **且** 结构化链路档案的 tool_calls 能力探测通过。
+    """双轨准入：灰度开关开启 **且** 结构化链路档案的 tool_calls 能力探测通过。
 
-    开关（``AI_NATIVE_TOOLS_ENABLED``）缺省关闭；能力画像来自 AI-1 探测且可人工修正。
+    开关（``AI_NATIVE_TOOLS_ENABLED``）缺省关闭；能力画像来自探测且可人工修正。
     未探测 / 探测失败 / Setting 通路（无画像）一律回落 prompt-JSON 轨道（fail-safe）。
     """
     if not bool(getattr(settings, "AI_NATIVE_TOOLS_ENABLED", False)):

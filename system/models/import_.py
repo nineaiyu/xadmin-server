@@ -26,7 +26,7 @@ class ImportRecord(DbAuditModel):
         RUNNING = "RUNNING", _("Running")
         SUCCESS = "SUCCESS", _("Success")
         FAILURE = "FAILURE", _("Failure")
-        # 用户取消（任务中心 P-2）
+        # 用户取消（任务中心）
         REVOKED = "REVOKED", _("Cancelled")
 
     class Action(models.TextChoices):
@@ -52,7 +52,7 @@ class ImportRecord(DbAuditModel):
     failed_rows = models.IntegerField(_("Failed rows"), default=0)
     # 运行中按已处理行数分批上报（0-100），终态 SUCCESS 置 100；运行中同步刷新行数统计
     progress = models.PositiveSmallIntegerField(_("Progress"), default=0)
-    # P-2 统一进度助手写入的阶段描述（运行期走缓存通道，终态落库）
+    # 统一进度助手写入的阶段描述（运行期走缓存通道，终态落库）
     stage = models.CharField(_("Progress stage"), max_length=64, blank=True, default="")
     source_file = models.ForeignKey(
         "system.UploadFile",

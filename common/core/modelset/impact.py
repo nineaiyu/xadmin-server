@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""影响面预检 Action（F-2）：``POST {resource}/impact`` ``{"pks": [...]}``。
+"""影响面预检 Action：``POST {resource}/impact`` ``{"pks": [...]}``。
 
 视图混入本 Action 后即获得「删除/停用前的影响面预览」端点（读类、数据权限内过滤）：
 返回逐对象明细（引用方计数 + 样本 + 处置建议）与批量汇总（totals / has_impact），
@@ -23,7 +23,7 @@ IMPACT_MAX_ITEMS = 200
 
 
 class ImpactPreviewAction:
-    """影响面预检（F-2）：删除 / 批量删除 / 停用前的影响范围与引用方清单。"""
+    """影响面预检：删除 / 批量删除 / 停用前的影响范围与引用方清单。"""
 
     @extend_schema(
         request=OpenApiRequest(

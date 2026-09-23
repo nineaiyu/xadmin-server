@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""标准 OIDC（F-10）：discovery 元数据、id_token 验签（JWKS）、claims 映射与组角色同步。
+"""标准 OIDC：discovery 元数据、id_token 验签（JWKS）、claims 映射与组角色同步。
 
 安全口径（与既有 OAuth 链路一致）：
 

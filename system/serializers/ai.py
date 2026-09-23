@@ -28,7 +28,7 @@ def _encrypt_api_key(value: str) -> str:
 class AiProfileSerializer(BaseModelSerializer):
     """AI 配置档案：api_key 明文进 → 加密存；回显只给 api_key_set 布尔，永不回传密钥。
 
-    capabilities 为能力探测结果（AI-1），可由管理端 PATCH 手工修正（探测结果允许覆盖）。
+    capabilities 为能力探测结果，可由管理端 PATCH 手工修正（探测结果允许覆盖）。
     """
 
     creator = DisplayRelatedField(

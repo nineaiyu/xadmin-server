@@ -109,7 +109,7 @@ class ConfigCacheBase:
         if row is None:
             return {}
         data = self.serializer(row).data
-        # 凭据治理（P-3）：敏感键的值内字段解密（读取侧统一收口，消费方拿明文）
+        # 凭据治理：敏感键的值内字段解密（读取侧统一收口，消费方拿明文）
         data["value"] = decrypt_setting_value(key, data["value"])
         if re.findall("{{{{.*{}.*}}}}".format(data["key"]), json.dumps(data["value"])):  # 防止渲染出现递归
             logger.warning(f"get same render key:{key}. so get default value")
@@ -168,7 +168,7 @@ class ConfigCacheBase:
         return {"key": key, "value": json.loads(json.dumps(default_data)), "access": True}
 
     def save_db(self, key, value, is_active, description, **kwargs):
-        # 凭据治理（P-3）：敏感键的值内字段加密（写入侧统一收口，幂等）
+        # 凭据治理：敏感键的值内字段加密（写入侧统一收口，幂等）
         defaults = {"value": encrypt_setting_value(key, value)}
         if is_active is not None:
             defaults["is_active"] = is_active

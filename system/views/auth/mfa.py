@@ -166,7 +166,7 @@ class LoginMFAVerifyAPIView(APIView):
         else:
             result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         result.update(get_token_lifetime(user))
-        # F-6 强制改密标记：登录响应带出，前端引导改密（改密成功后自动清除）
+        # 强制改密标记：登录响应带出，前端引导改密（改密成功后自动清除）
         result["must_change_password"] = bool(getattr(user, "must_change_password", False))
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])

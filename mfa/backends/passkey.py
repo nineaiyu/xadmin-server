@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""Passkey（WebAuthn）验证后端（F-9）。
+"""Passkey（WebAuthn）验证后端。
 
 与 OTP / 短信 / 邮件后端的差异：挑战值来自服务端（``/api/mfa/passkey/challenge``，
 一次性消费），断言由浏览器 ``navigator.credentials.get`` 产生后以 JSON 串作为

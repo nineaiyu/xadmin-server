@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""依赖清单三方一致性守护（E-1：pyproject + uv.lock + requirements 产物）。
+"""依赖清单三方一致性守护（pyproject + uv.lock + requirements 产物）。
 
 事实源：``pyproject.toml``（运行依赖 [project].dependencies / 开发依赖 [dependency-groups].dev）
 产物：``requirements.txt`` / ``requirements-dev.txt``（``uv export`` 输出，**勿手工编辑**）
@@ -174,7 +174,7 @@ def test_pyproject_direct_dependencies_are_exported():
 def test_optional_dependencies_resolved_in_lock():
     """可选依赖（extras，如 storage）必须已在 uv.lock 中解析，且默认不导出到运行产物。
 
-    可选依赖的语义是「默认不装、按需显式安装」（P-4 对象存储），因此既要求声明面与
+    可选依赖的语义是「默认不装、按需显式安装」（对象存储），因此既要求声明面与
     lock 同步（防声明了却没锁），也要求它们不出现在默认运行产物中（防悄悄变成必装依赖）。
     """
     pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))

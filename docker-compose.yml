@@ -45,7 +45,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
       POSTGRES_USER: ${DB_USER:-server}
       # 密码以 config.yml 为唯一定义处，兜底值与既有部署对齐（config.yml 修改时同步）；
-      # 公开分发镜像前改为 ${DB_PASSWORD:?} 强制注入（DEP-5 触发条件）
+      # 公开分发镜像前改为 ${DB_PASSWORD:?} 强制注入（触发条件）
       POSTGRES_PASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data

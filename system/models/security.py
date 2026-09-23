@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""安全域模型（JumpServer 对标批三）：
+"""安全域模型：
 
-- ``AccountRisk``：账号安全风险项（F-6 巡检发现 → 处置 → 留痕）；
-- ``LoginAccessPolicy``：登录访问策略（F-7 时段 / 网段 × 对象）；
-- ``FileAccessLog``：文件访问审计（F-8 上传 / 下载 / 预览 / 删除留痕）；
-- ``UserPasskey``：WebAuthn / Passkey 凭据（F-9）。
+- ``AccountRisk``：账号安全风险项（巡检发现 → 处置 → 留痕）；
+- ``LoginAccessPolicy``：登录访问策略（时段 / 网段 × 对象）；
+- ``FileAccessLog``：文件访问审计（上传 / 下载 / 预览 / 删除留痕）；
+- ``UserPasskey``：WebAuthn / Passkey 凭据。
 """
 
 import uuid
@@ -92,7 +92,7 @@ class AccountRisk(DbAuditModel):
 class LoginAccessPolicy(DbAuditModel):
     """登录访问策略：按「对象 × 时段 × 来源网段」匹配登录，首个命中策略决定动作。
 
-    action 语义（JumpServer LoginACL 口径）：
+    action 语义：
     - ``accept``：命中即放行（豁免后续 reject 判定，用于「仅工作时间可登录」白名单窗口）；
     - ``reject``：命中即拒绝登录（文案说明命中的策略名）；
     - ``require_mfa``：命中即要求二次验证（走既有 MFA 链路）；
@@ -140,7 +140,7 @@ class LoginAccessPolicy(DbAuditModel):
 
 
 class FileAccessLog(models.Model):
-    """文件访问审计（F-8）：上传 / 下载 / 预览 / 删除四类动作的元数据留痕。
+    """文件访问审计：上传 / 下载 / 预览 / 删除四类动作的元数据留痕。
 
     高频写表：只记元数据（不含文件内容），保留期随审计口径统一清理；
     文件与用户删除后靠名称快照保留可读性（不级联删除日志）。
@@ -191,7 +191,7 @@ class FileAccessLog(models.Model):
 
 
 class UserPasskey(DbAuditModel):
-    """WebAuthn / Passkey 凭据（F-9）：一个用户可绑定多个凭据（多设备）。
+    """WebAuthn / Passkey 凭据：一个用户可绑定多个凭据（多设备）。
 
     ``public_key`` 存 COSE 公钥原文（CBOR），认领时解析为 cryptography 公钥对象验签；
     ``sign_count`` 用于单调性校验（防重放，导入的凭据可能恒为 0 → 不做失败判定）。

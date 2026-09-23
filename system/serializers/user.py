@@ -50,9 +50,9 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         required=False,  # 模型 default=UNKNOWN 兜底；显式声明不继承 build_standard_field 的 default
         label=_("Gender"),
     )
-    # P-1 通用标签：只读回显（打标走 /api/system/tags/assign，权限回落 update 权限点）
+    # 通用标签：只读回显（打标走 /api/system/tags/assign，权限回落 update 权限点）
     tags = serializers.SerializerMethodField(label=_("Tags"))
-    # F-11 创建即邀请：write_only 开关（创建后由服务端置待激活 + 发邀请邮件，无需密码）
+    # 创建即邀请：write_only 开关（创建后由服务端置待激活 + 发邀请邮件，无需密码）
     invite = serializers.BooleanField(write_only=True, required=False, default=False, label=_("Invite activation"))
 
     class Meta:
@@ -108,7 +108,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "date_joined": {"read_only": True},
             "avatar": {"read_only": True},
             "password": {"write_only": True},
-            # F-11：邀请状态与邀请时间为服务端维护（写入口 = invite action），只读回显
+            # 邀请状态与邀请时间为服务端维护（写入口 = invite action），只读回显
             "invite_status": {"read_only": True},
             "invited_time": {"read_only": True},
             "roles": {"required": False, "attrs": ["pk", "name", "code"], "format": "{name}", "many": True},
@@ -132,7 +132,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # F-11 创建即邀请：邀请模式无需密码（由被邀请人自行设置）→ 放开字段级必填
+        # 创建即邀请：邀请模式无需密码（由被邀请人自行设置）→ 放开字段级必填
         request = self.context.get("request")
         if user_invite.invite_requested(getattr(request, "data", None)):
             self.fields["password"].required = False
@@ -166,7 +166,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
 
     def validate(self, attrs):
         if attrs.get("invite"):
-            # F-11 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略
+            # 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略
             attrs.pop("password", None)
             return attrs
         password = attrs.get("password")
@@ -194,7 +194,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         invite = validated_data.pop("invite", False)
         instance = super().create(validated_data)
         if invite:
-            # F-11 创建即邀请：密码置不可用（登录被拒），由被邀请人从邀请链接自行设置
+            # 创建即邀请：密码置不可用（登录被拒），由被邀请人从邀请链接自行设置
             instance.set_unusable_password()
             instance.save(update_fields=["password"])
             return instance

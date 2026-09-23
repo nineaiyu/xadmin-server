@@ -46,7 +46,7 @@ def get_media_path(path):
 
 
 def _storage_serve(request, path):
-    """对象存储后端（P-4）的媒体兜底：本地无文件时从存储读取并由应用层代理返回。"""
+    """对象存储后端的媒体兜底：本地无文件时从存储读取并由应用层代理返回。"""
     from common.storage import storage_exists, storage_is_local, storage_open
 
     if storage_is_local() or not storage_exists(path):

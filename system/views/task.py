@@ -210,7 +210,7 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     filterset_class = PeriodicTaskFilter
     ordering = ["name"]
     ordering_fields = ["name", "enabled", "date_changed"]
-    # F-1 批量更新白名单：批量启停用
+    # 批量更新白名单：批量启停用
     batch_update_fields = ("enabled",)
 
     @extend_schema(

@@ -52,7 +52,7 @@ class SystemConfigSerializer(BaseModelSerializer):
     )
 
     def create(self, validated_data):
-        """写入前加密敏感键的值内字段（P-3 凭据治理；非敏感键原样）。"""
+        """写入前加密敏感键的值内字段（凭据治理；非敏感键原样）。"""
         if "value" in validated_data:
             validated_data["value"] = encrypt_setting_value(validated_data.get("key"), validated_data["value"])
         return super().create(validated_data)

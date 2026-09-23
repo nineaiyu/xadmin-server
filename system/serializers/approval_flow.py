@@ -37,7 +37,7 @@ def _username(value):
 
 
 def _normalize_cc_users(value, limit=20):
-    """F-5 抄送人（用户 pk 列表）标准化：去空 / 去重 / 限长。"""
+    """抄送人（用户 pk 列表）标准化：去空 / 去重 / 限长。"""
     if not value:
         return []
     items = value if isinstance(value, (list, tuple)) else [value]
@@ -64,7 +64,7 @@ class ApprovalFlowNodeSerializer(BaseModelSerializer):
             "routes",
             "layout",
             "timeout_hours",
-            # F-5 节点级默认抄送人（用户 pk 列表）
+            # 节点级默认抄送人（用户 pk 列表）
             "cc_users",
         ]
         extra_kwargs = {"order": {"required": False}}
@@ -75,7 +75,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Creator"), label_builder=_username)
     node_count = serializers.SerializerMethodField(label=_("Node count"))
 
-    # F-12 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
+    # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
     # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT
     relation_count_fields = {"node_count": Count("nodes")}
 

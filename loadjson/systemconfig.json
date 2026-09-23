@@ -213,7 +213,7 @@
     "fields": {
       "created_time": "2026-09-09T00:00:00Z",
       "updated_time": "2026-09-09T00:00:00Z",
-      "description": "登录日志保留天数（P-5 冷归档自动面：归档水位驱动清理；0 = 不自动清理）",
+      "description": "登录日志保留天数（冷归档自动面：归档水位驱动清理；0 = 不自动清理）",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,
@@ -1080,7 +1080,7 @@
     "fields": {
       "created_time": "2026-09-23T00:00:00Z",
       "updated_time": "2026-09-23T00:00:00Z",
-      "description": "账号到期提醒天数（F-11）：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒",
+      "description": "账号到期提醒天数：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒",
       "creator": 1,
       "modifier": 1,
       "dept_belong": null,

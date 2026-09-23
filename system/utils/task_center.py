@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""任务中心（P-2）：统一任务视图 + 协作式取消 + 白名单重跑。
+"""任务中心：统一任务视图 + 协作式取消 + 白名单重跑。
 
 三类记录只读聚合（**不建新表**）：
 
@@ -82,7 +82,7 @@ def ensure_not_cancelled(record_id) -> None:
 
 
 def mark_execution_revoked(record_id) -> None:
-    """把同 pk 的执行历史行标记为 REVOKED 终态（P-2）。
+    """把同 pk 的执行历史行标记为 REVOKED 终态。
 
     先写 ``date_finished`` 即可让 ``task_postrun`` 信号（带 ``date_finished is null``
     守卫）不再把它覆盖成 SUCCESS——取消语义在统一视图里保持一致。
@@ -138,7 +138,7 @@ def _iso(value):
 
 
 def _stage_of(record) -> str:
-    """阶段描述（P-2 统一进度助手写入；任务执行无阶段语义返回空串）。"""
+    """阶段描述（统一进度助手写入；任务执行无阶段语义返回空串）。"""
     return str(getattr(record, "stage", "") or "")
 
 

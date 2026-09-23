@@ -150,8 +150,8 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "filesize"]
     filterset_class = UploadFileFilter
-    # P-1 通用标签：?tag=<标签名> 过滤（预取走 TaggedPrefetchMixin）
-    # F-13 受控 lookup 透传：字段面 = UploadFileFilter 已声明字段（字段可见性 fail-closed）
+    # 通用标签：?tag=<标签名> 过滤（预取走 TaggedPrefetchMixin）
+    # 受控 lookup 透传：字段面 = UploadFileFilter 已声明字段（字段可见性 fail-closed）
     controlled_lookup = True
     extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
@@ -298,7 +298,7 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
         """
         upload = self.get_object()
         kind = preview_kind(upload)
-        # F-8 文件访问审计：预览留痕（类型进 detail，便于按访问方式统计）
+        # 文件访问审计：预览留痕（类型进 detail，便于按访问方式统计）
         log_file_access(
             upload=upload,
             user=request.user,
@@ -336,7 +336,7 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
 
         # PDF：原样 inline 返回（浏览器内嵌渲染，不生成缓存）
         if kind == KIND_PDF:
-            # 存储适配（P-4）：对象存储无本地路径，统一走 storage 原语
+            # 存储适配：对象存储无本地路径，统一走 storage 原语
             name = getattr(upload.filepath, "name", "")
             if not name or not storage_exists(name):
                 return ApiResponse(code=1001, detail=_("File not found"))
@@ -404,7 +404,7 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
         # 先全量校验再统一落库：任一文件不合规直接返回错误，避免多文件上传时
         # 「前面的已落库、后面的被拒」造成部分写入
         for file_obj in files:
-            # F-8 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
+            # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
             extension_error = validate_upload_extension(file_obj.name)
             if extension_error:
                 return ApiResponse(code=1002, detail=extension_error)
@@ -481,7 +481,7 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
             invalidate_upload_stats_cache(request.user.pk)
-            # F-8 文件访问审计：上传留痕（含去重命中的引用记录）
+            # 文件访问审计：上传留痕（含去重命中的引用记录）
             for upload in result:
                 log_file_access(upload=upload, user=request.user, action=FileAccessLog.Action.UPLOAD, request=request)
         detail = _("Upload successful")

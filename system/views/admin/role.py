@@ -47,7 +47,7 @@ class RoleViewSet(
 ):
     """角色"""
 
-    # F-1 批量更新白名单：批量启停用
+    # 批量更新白名单：批量启停用
     batch_update_fields = ("is_active",)
 
     queryset = UserRole.objects.all()

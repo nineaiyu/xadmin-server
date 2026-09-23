@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""核心列表接口 SQL 计数基线（E-2：N+1 回归「提交即拦」）。
+"""核心列表接口 SQL 计数基线（N+1 回归「提交即拦」）。
 
 口径：
 
@@ -49,7 +49,7 @@ def user_page(db, dept, role, superuser):
 
 # 端点 → (实测基线, 余量)。余量给「配置/字典冷读」等固定差异，不掩盖 N+1（N+1 随行数放大）
 BASELINE = {
-    # 2026-09-22 实测（含 P-1 标签预取）：6 用户一页 7 条（dept JOIN + roles/rules/tags 三次批量）
+    # 2026-09-22 实测（含标签预取）：6 用户一页 7 条（dept JOIN + roles/rules/tags 三次批量）
     "/api/system/user": (7, 5),
     "/api/system/role": (4, 5),
     "/api/system/dept": (6, 5),

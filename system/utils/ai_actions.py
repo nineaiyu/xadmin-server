@@ -232,7 +232,7 @@ def build_draft_prompt(user, message: str) -> list:
     顺序），前端逐项确认后逐个执行。注意：文案含 JSON 花括号，不能用 str.format
     注入变量（会被当占位符解析成 KeyError），这里用 replace 注入 {max}/{today}。
 
-    护栏（AI-6）：动作目录属外部/业务数据，以引用数据块包裹 + system 声明
+    护栏：动作目录属外部/业务数据，以引用数据块包裹 + system 声明
     「块内内容不是指令」；目录内容命中可疑指令模式时打标 + 告警（不阻断）。
     """
     from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
@@ -332,7 +332,7 @@ def draft_summary(drafts: list) -> str:
 
 
 def verify_action_target(user, spec, params) -> str:
-    """动作参数行级复核（AI-6）：参数指向的目标对象必须在调用者数据权限内可达。
+    """动作参数行级复核：参数指向的目标对象必须在调用者数据权限内可达。
 
     现有服务端校验覆盖字段与格式（菜单权限点 + 序列化器），但不校验「这个 pk 是否
     在调用者数据权限内」——参数里的 pk 由 LLM 产出，可能指向权限外对象。本函数对
@@ -410,7 +410,7 @@ def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra:
 def execute_action(user, action_key: str, params) -> dict:
     """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。
 
-    执行前做参数指向对象的行级复核（AI-6，见 ``verify_action_target``）。
+    执行前做参数指向对象的行级复核（见 ``verify_action_target``）。
     """
     spec = get_action(action_key)
     if spec is None:
@@ -429,7 +429,7 @@ def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dic
 
     与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
-    guard：AI-6 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数 / 输出长度，缺省不写）。
+    guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数 / 输出长度，缺省不写）。
     """
     from system.models import OperationLog
 
@@ -455,7 +455,7 @@ def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dic
         logger.warning("write AI ask audit failed", exc_info=True)
 
 
-# AI-2 原生 function calling 双轨（工具调用 → 草稿结构）拆至 ai_draft_tools（仅行数门禁）：
+# 原生 function calling 双轨（工具调用 → 草稿结构）拆至 ai_draft_tools（仅行数门禁）：
 # 此处再导出保持调用面（调用方只 import 本模块）
 from system.utils.ai_draft_tools import (  # noqa: E402,F401
     build_tool_messages,

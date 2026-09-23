@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""表头排序元数据（U-3）守护测试。
+"""表头排序元数据守护测试。
 
 search-columns 的 ``sortable`` 必须与 ViewSet 的 ``ordering_fields`` 声明面同源：
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""安全域序列化器（F-6 风险巡检 / F-7 登录策略 / F-9 Passkey）。"""
+"""安全域序列化器（风险巡检 / 登录策略 / Passkey）。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers

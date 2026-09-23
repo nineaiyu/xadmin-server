@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通知模板覆盖的渲染与校验（F-3）。
+"""通知模板覆盖的渲染与校验。
 
 - ``apply_override``：按消息类型套用 DB 覆盖（subject / body 分别可选），
   在渠道渲染收口调用，未配置零行为变化；

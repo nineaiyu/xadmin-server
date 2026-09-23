@@ -51,7 +51,7 @@ __all__ = [
     "RankAction",
     "BatchDestroyAction",
     "BatchPartialUpdateAction",
-    # impact preview (F-2)
+    # impact preview
     "ImpactPreviewAction",
     # metadata
     "ChoicesAction",
@@ -70,7 +70,7 @@ __all__ = [
     "UploadFileAction",
     # recycle bin
     "RecycleBinAction",
-    # relation count (F-12)
+    # relation count
     "RelationCountMixin",
     # cache
     "CacheDetailResponseMixin",

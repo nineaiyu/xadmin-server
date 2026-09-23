@@ -174,10 +174,10 @@ class RenderMixin:
         ]
         return "\n".join(lines)
 
-    # ------------------------------------------------------- AI 接入（E-3）
+    # ------------------------------------------------------- AI 接入
 
     def _render_ai_declarations(self, ctx, options):
-        """AI 动作声明骨架（E-3）：只读动作直接给出，写动作以注释给出。
+        """AI 动作声明骨架：只读动作直接给出，写动作以注释给出。
 
         与 ``system/utils/ai_api_registry.py`` 同一格式（``api_action`` 声明式复用
         业务接口）：注册 = 在 registry 里 import 本模块的声明并并入 ``API_ACTION_SPECS``。
@@ -187,7 +187,7 @@ class RenderMixin:
         tags_block = ""
         if options.get("with_tags"):
             tags_block = (
-                "\n\n# 标签接入（P-1 白名单）：把下面的 key 加进 system/models/tag.py::TAGGABLE_MODELS\n"
+                "\n\n# 标签接入（白名单）：把下面的 key 加进 system/models/tag.py::TAGGABLE_MODELS\n"
                 f'TAGGABLE_MODEL_KEYS = ["{ctx["app_label"]}.{ctx["model_name"].lower()}"]\n'
             )
         lines = [
@@ -246,7 +246,7 @@ class RenderMixin:
         return ("\n".join(lines) + tags_block).rstrip("\n") + "\n"
 
     def _render_test_skeleton(self, ctx):
-        """pytest 测试骨架（E-3，`--with-tests`）：鉴权 + 列表契约两条最小断言。"""
+        """pytest 测试骨架（`--with-tests`）：鉴权 + 列表契约两条最小断言。"""
         return "\n".join(
             [
                 "# -*- coding: utf-8 -*-",

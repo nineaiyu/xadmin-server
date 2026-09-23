@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""审批处理人显示名快照工具（U-1）。"""
+"""审批处理人显示名快照工具。"""
 
 
 def user_display(user) -> str:

@@ -91,7 +91,7 @@ class AiActionExecuteMixin:
                 if quota_hit:
                     raise DjangoValidationError(quota_hit)
                 if native_tools_enabled():
-                    # AI-2 原生轨道：能力探测通过 + 开关开启时优先（工具调用非散文，一次性调用）
+                    # 原生轨道：能力探测通过 + 开关开启时优先（工具调用非散文，一次性调用）
                     from system.utils.ai_actions import native_draft_result
 
                     result, track = native_draft_result(request.user, text)
@@ -101,7 +101,7 @@ class AiActionExecuteMixin:
                         "data": {"delta": draft_summary(result.get("drafts") or [result["draft"]])},
                     }
                 else:
-                    # 双轨对照日志（AI-2）：便于按档案/模型统计两条轨道的成功率
+                    # 双轨对照日志：便于按档案/模型统计两条轨道的成功率
                     logger.info("ai action draft track: prompt (user=%s)", request.user.pk)
                     client, max_tokens = structured_chat_client()
                     for item in tracked_chat_stream(
@@ -109,7 +109,7 @@ class AiActionExecuteMixin:
                         "action",
                         client,
                         build_draft_prompt(request.user, text),
-                        track="prompt",  # AI-2 双轨对照：用量账本按轨道统计成功率
+                        track="prompt",  # 双轨对照：用量账本按轨道统计成功率
                         max_tokens=max_tokens,
                     ):
                         chunk = item.get("text") or ""
@@ -288,7 +288,7 @@ class AiActionExecuteMixin:
 
         from system.utils.ai_guard import guard_summary
 
-        # AI-4 幂等：同一意图（用户 + 动作 + 规范化参数）在 TTL 内重复提交返回首次结果，
+        # 幂等：同一意图（用户 + 动作 + 规范化参数）在 TTL 内重复提交返回首次结果，
         # force=true 为用户确认后的「仍要执行」显式通道
         result = execute_idempotent(
             request.user, action_key, clean, execute_action, force=bool(request.data.get("force"))
@@ -323,7 +323,7 @@ class AiActionExecuteMixin:
             data={
                 **(result.get("data") or {}),
                 "message": message_row,
-                # AI-4 幂等可见性：命中重复时前端提示「相同操作在 10 分钟内已执行」，
+                # 幂等可见性：命中重复时前端提示「相同操作在 10 分钟内已执行」，
                 # 用户确认后可携 force=true 显式重发
                 "deduplicated": bool(result.get("deduplicated")),
                 "draft_id": result.get("draft_id") or "",

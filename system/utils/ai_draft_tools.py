@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""AI-2 原生 function calling 双轨：工具调用 → 既有草稿结构（自 ai_actions 拆出，仅行数门禁）。
+"""原生 function calling 双轨：工具调用 → 既有草稿结构（自 ai_actions 拆出，仅行数门禁）。
 
 双轨共用同一下游：本模块只做「工具调用 → drafts」的映射，逐项复用
 ``ai_actions._build_one_draft`` 的校验链（白名单 / 可用性 / 权限 / 参数规范化），
@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 def build_tool_messages(user, message: str) -> list:
     """原生 tools 轨道的消息：动作目录经 tools 定义下发，不重复进 prompt。
 
-    仍保留引用数据护栏声明（AI-6）：模型/工具定义之外的业务内容不可作为指令。
+    仍保留引用数据护栏声明：模型/工具定义之外的业务内容不可作为指令。
     """
     from system.utils.ai_actions import MAX_DRAFTS_PER_REQUEST, MAX_MESSAGE_LENGTH
     from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION
@@ -101,7 +101,7 @@ def native_draft_result(user, message: str) -> tuple:
         build_tool_messages(user, message),
         tools,
         client=client,
-        track="native",  # AI-2 双轨对照：用量账本按轨道统计成功率
+        track="native",  # 双轨对照：用量账本按轨道统计成功率
         tool_choice="auto",
         max_tokens=max_tokens,
     )

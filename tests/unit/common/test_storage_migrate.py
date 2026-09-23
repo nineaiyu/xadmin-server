@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""文件存储搬迁（P-4）守护测试。
+"""文件存储搬迁守护测试。
 
 用两个本地 FileSystemStorage 模拟「源 / 目标」两端（不依赖真实 S3），覆盖：
 幂等搬迁（断点续搬）/ 冲突不覆盖 / --overwrite / dry-run / verify / 去重与 limit。

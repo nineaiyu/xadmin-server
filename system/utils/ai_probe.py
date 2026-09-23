@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""模型能力画像与探测（AI-1）：上线前探明模型能力，把「换模型就静默失败」变「探测即知」。
+"""模型能力画像与探测：上线前探明模型能力，把「换模型就静默失败」变「探测即知」。
 
 四项能力（结果落 ``AiProfile.capabilities``，可按需手工修正覆盖）：
 
 - ``json``：要求按给定 schema 输出 JSON 并校验可解析（NL 查数 / 动作草稿的准入判据）；
-- ``tool_calls``：携带一个内省 tools 定义，期望返回 ``tool_calls``（AI-2 双轨的准入判据）；
+- ``tool_calls``：携带一个内省 tools 定义，期望返回 ``tool_calls``（双轨的准入判据）；
 - ``reasoning``：观察 ``reasoning_content``（思考型模型画像；无思考内容不算调用失败）；
 - ``vision``：按需（显式请求）验证多模态输入被供应商接受。
 
@@ -81,7 +81,7 @@ def probe_json(client) -> tuple:
 
 
 def probe_tool_calls(client) -> tuple:
-    """原生 function calling 能力（AI-2 准入判据）：期望返回 tool_calls。"""
+    """原生 function calling 能力（准入判据）：期望返回 tool_calls。"""
     try:
         result = client.chat_tools(
             [{"role": "user", "content": TOOL_PROBE_PROMPT}],

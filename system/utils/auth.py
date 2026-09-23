@@ -100,7 +100,7 @@ def save_login_log(request, login_type=UserLoginLog.LoginTypeChoices.USERNAME, s
         "status": status,
         "agent": str(get_user_agent(request)) if request else "",
         "login_type": login_type,
-        # F-7 登录访问策略命中结果（登录视图写入 request.login_policy_result）
+        # 登录访问策略命中结果（登录视图写入 request.login_policy_result）
         "policy_result": str(getattr(request, "login_policy_result", "") or "")[:128],
     }
     serializer = LoginLogSerializer(data=data, ignore_field_permission=True)

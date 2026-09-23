@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""文件访问审计与上传安全策略（F-8）集成测试。
+"""文件访问审计与上传安全策略集成测试。
 
 口径钉死：
 - 上传扩展名策略 fail-closed：黑名单优先、白名单非空时只允许名单内；
@@ -68,7 +68,7 @@ class TestFileAccessAudit:
         assert FileAccessLog.objects.filter(file_id=upload_pk, action=FileAccessLog.Action.DELETE).exists()
 
     def test_download_direct_falls_back_on_local_backend(self, auth_client):
-        """预签名直连（P-4）：本地后端返回 direct=false（调用方回退服务端中转下载）。"""
+        """预签名直连：本地后端返回 direct=false（调用方回退服务端中转下载）。"""
         resp = _upload(auth_client, name="direct.txt")
         upload_pk = resp.data["data"][0]["pk"]
         resp = auth_client.get(f"/api/system/file/{upload_pk}/download?direct=1")

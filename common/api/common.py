@@ -123,7 +123,7 @@ class HealthCheckAPIView(GenericAPIView):
         celery_status, celery_time = results["celery"]
         storage_status, storage_time = results["storage"]
         # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）；
-        # 存储后端（P-4）同为可观测项：对象存储抖动不应让容器被判不健康
+        # 存储后端同为可观测项：对象存储抖动不应让容器被判不健康
         status = all([redis_status, db_status])
         data = {
             "status": status,

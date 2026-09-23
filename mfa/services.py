@@ -102,7 +102,7 @@ def send_user_mfa_code(user, method, request=None):
 def is_login_mfa_required(user) -> bool:
     """登录 MFA 判定：
     - 个人开启（mfa_enabled）→ 必须验证。这是用户自身的安全配置，不受全局开关影响；
-    - 角色级强制（F-9，`UserRole.mfa_required`）→ 有可用验证方式即必须验证
+    - 角色级强制（`UserRole.mfa_required`）→ 有可用验证方式即必须验证
       （无可用方式时降级放行 + 告警，避免登录死锁）；
     - 全局「登录 MFA 强制」开启 → 已绑定 OTP 的账号一律验证（含个人已关闭的）；
     - 未绑定密钥无法验证，不拦截。

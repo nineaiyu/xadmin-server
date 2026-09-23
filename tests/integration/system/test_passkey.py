@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Passkey（WebAuthn）与认证方式策略（F-9）集成测试。
+"""Passkey（WebAuthn）与认证方式策略集成测试。
 
 WebAuthn 全链路用 ``cryptography`` 本地生成 P-256 密钥自造 attestation / assertion
 （真实认证器无法在单测自动化；浏览器侧由 E2E 冒烟导航覆盖）。

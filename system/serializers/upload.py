@@ -30,7 +30,7 @@ class UploadFileSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         allow_null=True,
         label=_("Category"),
     )
-    # P-1 通用标签：只读回显（打标走 /api/system/tags/assign）
+    # 通用标签：只读回显（打标走 /api/system/tags/assign）
     tags = serializers.SerializerMethodField(label=_("Tags"))
 
     class Meta:

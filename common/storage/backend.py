@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""可插拔文件存储后端（P-4）：按 SysConfig 声明把文件操作委托给本地 / 对象存储。
+"""可插拔文件存储后端：按 SysConfig 声明把文件操作委托给本地 / 对象存储。
 
 设计要点：
 
@@ -147,7 +147,7 @@ def _build_mirror(config: dict):
 
 
 class MirrorStorage(Storage):
-    """搬迁窗口双写（P-4）：本地为主存储，对象存储为尽力副本。
+    """搬迁窗口双写：本地为主存储，对象存储为尽力副本。
 
     语义（读全走本地，写入双写）：
 
@@ -235,7 +235,7 @@ class MirrorStorage(Storage):
 
 
 class SwitchableStorage(Storage):
-    """声明式存储后端（P-4）：运行期按 SysConfig 委托 local / s3 后端。
+    """声明式存储后端：运行期按 SysConfig 委托 local / s3 后端。
 
     ``Storage`` 基类的默认实现对本类不可用（其方法内部依赖具体后端的私有能力），
     故 Storage 接口逐项显式委托给当前生效的委托实例。
@@ -265,7 +265,7 @@ class SwitchableStorage(Storage):
 
     @property
     def is_local(self) -> bool:
-        """当前生效后端是否「以本地文件系统为准」（P-4 链路分支的统一判据）。
+        """当前生效后端是否「以本地文件系统为准」（链路分支的统一判据）。
 
         ``mirror``（双写）以本地为主存储（本地始终完整）→ 同样视为本地。
         """

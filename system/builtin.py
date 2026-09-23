@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""内置角色定义与 post_migrate 幂等同步（借鉴 jumpserver builtin.BuiltinRole）。
+"""内置角色定义与 post_migrate 幂等同步。
 
 - 清单固定于代码（BUILTIN_ROLES），角色经 post_migrate 同步到库：全新库 migrate
   后即有可用角色，不依赖 load_init_json 种子流程（存量库升级同样生效）；

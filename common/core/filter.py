@@ -201,7 +201,7 @@ class BaseFilterSet(filters.FilterSet):
 
 
 class ControlledLookupFilterBackend(BaseFilterBackend):
-    """受控 lookup 透传（F-13）：在视图已声明过滤器的字段面上放开常用 lookup。
+    """受控 lookup 透传：在视图已声明过滤器的字段面上放开常用 lookup。
 
     开启方式（显式 opt-in，未开启的视图零变化）::
 

@@ -95,7 +95,7 @@ _probe_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-probe
 
 
 def probe_storage():
-    """存储后端可达性探测（P-4）：本地 = MEDIA_ROOT 可写；对象存储 = 一次往返。
+    """存储后端可达性探测：本地 = MEDIA_ROOT 可写；对象存储 = 一次往返。
 
     仅作为可观测项输出，不参与 health 的 status 判定（对象存储抖动不应让
     容器被判不健康，与 celery 同口径）。

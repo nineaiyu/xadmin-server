@@ -132,7 +132,7 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="usage")
     def usage(self, request, *args, **kwargs):
-        """AI 用量账本（AI-5）：按天 / 按链路 / Top 用户 + 配额配置与并发占用。
+        """AI 用量账本：按天 / 按链路 / Top 用户 + 配额配置与并发占用。
 
         数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；
         与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），

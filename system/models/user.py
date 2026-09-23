@@ -37,7 +37,7 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
 
     objects = SoftDeleteUserManager()
 
-    # 通用标签（P-1，白名单对象）：可预取（tagged_items__tag），列表零 N+1
+    # 通用标签（白名单对象）：可预取（tagged_items__tag），列表零 N+1
     tagged_items = GenericRelation("system.TaggedItem")
 
     class GenderChoices(models.IntegerChoices):
@@ -50,7 +50,7 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
         ENABLED = 1, _("Enabled")
 
     class InviteStatusChoices(models.TextChoices):
-        """邀请开户状态（F-11）：空 = 非邀请账号。"""
+        """邀请开户状态：空 = 非邀请账号。"""
 
         PENDING = "pending", _("Pending acceptance")
         ACCEPTED = "accepted", _("Accepted")
@@ -76,9 +76,9 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     )
     otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
 
-    # 认证方式策略（F-9）：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
+    # 认证方式策略：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
     allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)
-    # 账号安全巡检（F-6）处置动作「强制改密」标记：登录响应带出，前端引导改密；
+    # 账号安全巡检处置动作「强制改密」标记：登录响应带出，前端引导改密；
     # 任一改密链路（本人/管理端重置/忘记密码）经 record_password_hash 统一清除
     must_change_password = models.BooleanField(verbose_name=_("Must change password"), default=False)
 
@@ -87,10 +87,10 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     # 用户宽限期，不拦截），改密后开始计时
     date_password_updated = models.DateTimeField(verbose_name=_("Password updated at"), null=True, blank=True)
 
-    # 账号有效期（F-11）：到期登录被拒 + 每日任务自动停用；NULL = 永不过期
+    # 账号有效期：到期登录被拒 + 每日任务自动停用；NULL = 永不过期
     date_expired = models.DateTimeField(verbose_name=_("Account expiry"), null=True, blank=True, db_index=True)
 
-    # 邀请开户（F-11）：pending = 已发邀请等待激活（密码不可用、登录被拒）；
+    # 邀请开户：pending = 已发邀请等待激活（密码不可用、登录被拒）；
     # accepted = 已激活；空 = 非邀请账号（普通建号）。重发邀请刷新 invited_time 与令牌
     invite_status = models.CharField(
         verbose_name=_("Invite status"),

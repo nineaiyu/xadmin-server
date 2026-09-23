@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通知消息模板序列化器（F-3，配置型端点：save / reset 走显式 action）。"""
+"""通知消息模板序列化器（配置型端点：save / reset 走显式 action）。"""
 
 from rest_framework import serializers
 

@@ -18,7 +18,7 @@ router.register("site-messages", UserSiteMessageViewSet, basename="site-messages
 router.register("system-msg-subscription", SystemMsgSubscriptionViewSet, basename="system-msg-subscription")
 router.register("user-msg-subscription", UserMsgSubscriptionViewSet, basename="user-msg-subscription")
 
-# 消息模板管理（F-3）
+# 消息模板管理
 router.register("message-templates", MessageTemplateViewSet, basename="message-template")
 
 urlpatterns = router.urls

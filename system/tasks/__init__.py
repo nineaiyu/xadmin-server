@@ -59,7 +59,7 @@ def auto_clean_black_token_job():
 @shared_task
 @register_as_period_task(crontab="0 8 * * *")
 def account_expiry_job():
-    """账号有效期维护（F-11）：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
+    """账号有效期维护：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
     from system.utils.account_expiry import disable_expired_accounts, notify_expiring_accounts
 
     notified = notify_expiring_accounts()
@@ -109,7 +109,7 @@ def auto_clean_task_execution_job():
 @shared_task
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_ai_usage_job():
-    """AI 用量账本保留期清理（AI-5，保留期随 MONITOR_RETENTION_DAYS）。"""
+    """AI 用量账本保留期清理（保留期随 MONITOR_RETENTION_DAYS）。"""
     auto_clean_ai_usage()
 
 
@@ -308,7 +308,7 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
 @shared_task
 @register_as_period_task(crontab="23 4 * * *")
 def scan_account_risk_job():
-    """账号安全风险巡检（F-6）：弱项巡检一次，产出/刷新待处置风险清单。"""
+    """账号安全风险巡检：弱项巡检一次，产出/刷新待处置风险清单。"""
     from system.utils.account_risk import scan_account_risks
 
     return scan_account_risks()
@@ -317,7 +317,7 @@ def scan_account_risk_job():
 @shared_task
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_file_access_log_job():
-    """清理超过保留期的文件访问日志（F-8，FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
+    """清理超过保留期的文件访问日志（FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
     from system.utils.file_audit import clean_expired_file_access_logs
 
     return clean_expired_file_access_logs()

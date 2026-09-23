@@ -43,7 +43,7 @@ class ProcessedImageFieldFile(ImageFieldFile):
     def is_local_storage(self):
         """当前生效的存储后端是否本地文件系统。
 
-        P-4 可插拔后端（SwitchableStorage）下必须运行期判断：类属性在导入期求值，
+        可插拔后端（SwitchableStorage）下必须运行期判断：类属性在导入期求值，
         切到对象存储后仍会误判为本地（缩略图删除 / URL 替换会打到错误的路径）。
         """
         from common.storage import storage_is_local

@@ -4,7 +4,7 @@
 
 - ApprovalInstanceSerializer：实例只读展示 + 发起申请写入（flow/title/form_data）；
   列表附带 my_task（当前用户在当前节点的待办任务），供待办面板直接发起审批动作；
-  详情附带 related_object（关联业务对象当前状态卡片，U-1）；
+  详情附带 related_object（关联业务对象当前状态卡片）；
 - ApprovalNodeTaskSerializer：节点任务（审批轨迹，含处理人显示名快照）。
 """
 
@@ -43,7 +43,7 @@ class ApprovalNodeTaskSerializer(BaseModelSerializer):
             "node_name",
             "node_order",
             "assignee",
-            # U-1：处理人显示名快照（用户删除/改名后审批轨迹仍可读）
+            # 处理人显示名快照（用户删除/改名后审批轨迹仍可读）
             "assignee_display",
             "delegate_from",
             "actor",
@@ -58,7 +58,7 @@ class ApprovalNodeTaskSerializer(BaseModelSerializer):
 
 
 class ApprovalInstanceCommentSerializer(BaseModelSerializer):
-    """审批讨论区评论（F-5）。"""
+    """审批讨论区评论。"""
 
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Author"), label_builder=_username)
 
@@ -73,7 +73,7 @@ class ApprovalInstanceCommentSerializer(BaseModelSerializer):
 class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     flow = DisplayRelatedField(queryset=ApprovalFlow.objects.all(), label=_("Flow"), label_builder=lambda v: v.name)
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Applicant"), label_builder=_username)
-    # P-1 通用标签：只读回显（打标走 /api/system/tags/assign）
+    # 通用标签：只读回显（打标走 /api/system/tags/assign）
     tags = serializers.SerializerMethodField(label=_("Tags"))
     status = DictChoiceField(
         dict_code="approval_status",
@@ -88,13 +88,13 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
     tasks = ApprovalNodeTaskSerializer(many=True, read_only=True)
     # 表单字段定义快照：详情页按 key 渲染 label（实例列表已 select_related flow，无额外查询）
     form_schema = serializers.SerializerMethodField(label=_("Form schema"))
-    # U-1：关联业务对象当前状态（biz_type 白名单渲染；无关联返回 null，前端不渲染卡片）
+    # 关联业务对象当前状态（biz_type 白名单渲染；无关联返回 null，前端不渲染卡片）
     related_object = serializers.SerializerMethodField(label=_("Related object"))
-    # F-5 抄送人（只读回显；发起时经 create_instance 的 cc_users 参数追加）
+    # 抄送人（只读回显；发起时经 create_instance 的 cc_users 参数追加）
     cc_users = DisplayRelatedField(
         read_only=True, many=True, label=_("CC users"), label_builder=lambda v: v.nickname or v.username
     )
-    # F-5 讨论区评论（仅详情返回；列表不返回避免 N+1）
+    # 讨论区评论（仅详情返回；列表不返回避免 N+1）
     comments = serializers.SerializerMethodField(label=_("Comments"))
 
     class Meta:
@@ -161,7 +161,7 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         """当前节点的待办处理人（昵称，逗号分隔）：巡看「申请卡在谁那里」用。
 
         非 PENDING 实例返回空串；只取当前节点 PENDING 任务（加签者一并纳入）；
-        优先用处理人显示名快照（U-1），无快照回落实时用户名。
+        优先用处理人显示名快照，无快照回落实时用户名。
         """
         if obj.status != ApprovalInstance.Status.PENDING:
             return ""
@@ -175,13 +175,13 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
 
     def get_related_object(self, obj):
-        """关联业务对象当前状态（U-1 白名单渲染器）。"""
+        """关联业务对象当前状态（白名单渲染器）。"""
         from system.utils.approval_flow.biz import biz_summary
 
         return biz_summary(obj)
 
     def get_comments(self, obj) -> list:
-        """F-5 讨论区评论：仅详情（retrieve）返回，列表零额外查询。"""
+        """讨论区评论：仅详情（retrieve）返回，列表零额外查询。"""
         action = getattr(self.context.get("view"), "action", "")
         if action != "retrieve":
             return []

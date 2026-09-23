@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""AI 模型能力探测（AI-1）单测：四项能力探测函数 + 画像判据 + 用途分流。
+"""AI 模型能力探测单测：四项能力探测函数 + 画像判据 + 用途分流。
 
 覆盖：JSON / tool_calls / reasoning / vision 四项探测的成功与失败路径（失败只记录
 ok=False 不抛错）、probe_profile 的子集与 vision 追加、capability_ok 的 fail-closed、
-native_tools_enabled（AI-2 准入：开关 + 能力双门）、profile_for 的用途级回落。
+native_tools_enabled（准入：开关 + 能力双门）、profile_for 的用途级回落。
 """
 
 import json

@@ -130,7 +130,7 @@ class AiProfileViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="probe")
     def probe(self, request, *args, **kwargs):
-        """能力探测（AI-1）：按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities。
+        """能力探测：按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities。
 
         - 请求体可选 ``capabilities``（能力子集）与 ``vision``（是否追加多模态探测）；
         - 探测不阻断：单项失败只记录 ok=False + 可读原因，返回结果供前端提示与人工修正；

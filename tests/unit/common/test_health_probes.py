@@ -14,7 +14,7 @@ class TestProbeAll:
         from common.utils import health
 
         results = health.probe_all()
-        # storage 为 P-4 新增的可观测项（不参与 health 的 status 判定）
+        # storage 为新增的可观测项（不参与 health 的 status 判定）
         assert set(results.keys()) == {"db", "redis", "celery", "storage"}
         for value in results.values():
             assert isinstance(value, tuple) and len(value) == 2

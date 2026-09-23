@@ -162,7 +162,7 @@ class InvalidConfigCacheAction:
         return ApiResponse()
 
 
-# 部门 user_count 预聚合的语义化别名（F-12 起由通用 RelationCountMixin +
+# 部门 user_count 预聚合的语义化别名（起由通用 RelationCountMixin +
 # DeptSerializer.relation_count_fields（Count("dept_query")）驱动），保留本名以兼容
 # 既有视图与测试的导入路径。反向查询名固定为 dept_query —— UserInfo.dept 显式声明了
 # related_query_name，覆盖了默认的模型名小写，写成 userinfo 会抛 FieldError。

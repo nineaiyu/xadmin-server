@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""列表视图序列化器（F-4）。"""
+"""列表视图序列化器。"""
 
 from common.core.serializers import BaseModelSerializer
 from system.models import SavedListView

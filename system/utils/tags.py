@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通用标签中心（P-1）：白名单资源解析 + 打标读写 + 列表过滤。
+"""通用标签中心：白名单资源解析 + 打标读写 + 列表过滤。
 
 - 白名单：``system.models.tag.TAGGABLE_MODELS``（"app_label.model" 小写 → 展示名）；
 - 读写形态：``TaggedItem`` 通过 ``content_type + object_id`` 关联目标对象，

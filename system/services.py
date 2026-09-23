@@ -115,8 +115,8 @@ def get_users_by_perms(perms):
     """按权限码清单反查在用用户（任一命中，去重）。
 
     权限码（"动作:组件名"，如 approve:SystemApprovalRequest）挂 PERMISSION 类型
-    菜单的 name，经 角色↔菜单 授权间接授予用户（jumpserver Role.get_roles_by_perm
-    同思路的"按权限反查"）。软删除角色/菜单显式排除，不依赖关联查询的管理器行为。
+    菜单的 name，经 角色↔菜单 授权间接授予用户（即"按权限反查"）。
+    软删除角色/菜单显式排除，不依赖关联查询的管理器行为。
 
     通用职能推导工具：审批人解析（system.utils.approval.get_approver_queryset）
     与通知接收人解析共用，替代逐处复制"角色清单成员查询"。

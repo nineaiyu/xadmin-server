@@ -30,7 +30,7 @@ class BaseViewSet:
     auto_prefetch_actions = ("list", "retrieve", "export_data")
 
     def perform_destroy(self, instance):
-        # 引用保护（F-2）：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认
+        # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认
         # （未登记模型零开销直接放行）
         from system.utils.impact import ensure_impact_confirmed
 
@@ -116,7 +116,7 @@ class BaseViewSet:
         return super().paginate_queryset(queryset)
 
     def get_serializer(self, *args, **kwargs):
-        """``?fields=`` 字段子集（F-13）：只收窄可见字段（与字段权限 / 应用授权求交），
+        """``?fields=`` 字段子集：只收窄可见字段（与字段权限 / 应用授权求交），
         不扩大任何字段面；仅 GET 生效（写路径语义不变），非 BaseModelSerializer 视图自动忽略。
         """
         if getattr(self.request, "method", None) == "GET" and "fields" not in kwargs:

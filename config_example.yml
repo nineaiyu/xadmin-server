@@ -30,7 +30,7 @@ SECRET_KEY:
 # 按天滚动的日志保留天数，超出后整体清理日期目录（0 表示不清理，默认 30）
 # LOG_BACKUP_COUNT: 30
 
-# Sentry 错误聚合（DEP-3）：配置 DSN 后自动启用 Django/Celery 集成；为空则完全不初始化
+# Sentry 错误聚合：配置 DSN 后自动启用 Django/Celery 集成；为空则完全不初始化
 # SENTRY_DSN: "https://<key>@<host>/<project>"
 # SENTRY_ENVIRONMENT: production
 # SENTRY_TRACES_SAMPLE_RATE: 0.0

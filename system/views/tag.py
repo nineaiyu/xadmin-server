@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通用标签中心（P-1）视图：标签 CRUD + 打标 / 批量打标 + 白名单资源清单。
+"""通用标签中心视图：标签 CRUD + 打标 / 批量打标 + 白名单资源清单。
 
 - 权限：标签管理 4 个权限点（list/create/partialUpdate/destroy:Tag）；
   打标（assign / batch-assign）回落业务对象的 update 权限点（``user_can_visit``

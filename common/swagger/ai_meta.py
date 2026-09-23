@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""OpenAPI 的 AI 可发现性元数据（AI-3）：为 operation 注入 ``x-ai-*`` 扩展字段。
+"""OpenAPI 的 AI 可发现性元数据：为 operation 注入 ``x-ai-*`` 扩展字段。
 
 来源有两层（后者覆盖前者）：
 

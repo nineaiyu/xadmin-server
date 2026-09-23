@@ -248,7 +248,7 @@ def sync_business_status_handler(sender, instance, status=None, reason="", **kwa
 
 @receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_roles")
 def post_migrate_sync_builtin_roles(sender, **kwargs):
-    """migrate 后同步内置角色（幂等，借鉴 jumpserver builtin 同步）：
+    """migrate 后同步内置角色（幂等）：
     全新库 migrate 完成即有可用角色，存量库升级同样生效；同步失败不阻断 migrate。"""
     if getattr(sender, "name", None) != "system":
         return

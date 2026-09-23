@@ -75,7 +75,7 @@ class OperationLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
 
     ordering_fields = ["created_time", "updated_time", "exec_time"]
     filterset_class = OperationLogFilter
-    # F-13 API 查询能力试点：受控 lookup 透传（字段面 = OperationLogFilter 已声明字段；
+    # API 查询能力试点：受控 lookup 透传（字段面 = OperationLogFilter 已声明字段；
     # 字段可见性 fail-closed）——集成排障常用 field__icontains / field__gte 类查询
     controlled_lookup = True
     extra_filter_class = [ControlledLookupFilterBackend]

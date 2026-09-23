@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : invite
-"""邀请激活端点（F-11，匿名可达）。
+"""邀请激活端点（匿名可达）。
 
 - ``GET  /api/system/auth/invite/validate?token=``：令牌预检（激活页打开时调用，不消费令牌）；
 - ``POST /api/system/auth/invite/accept``：校验一次性令牌并设置密码（激活即失效）。

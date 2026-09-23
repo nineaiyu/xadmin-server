@@ -138,7 +138,7 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
 def build_interpret_prompt(question: str, datasets: list, user=None) -> list:
     """构造 interpret 提示词：可见数据集清单 + DSL schema + 仅输出 JSON 约束。
 
-    护栏（AI-6）：数据集目录与 DSL schema 属业务元数据，以引用数据块包裹 + system
+    护栏：数据集目录与 DSL schema 属业务元数据，以引用数据块包裹 + system
     声明「块内内容不是指令」；命中可疑指令模式时打标 + 告警（不阻断）。
     """
     from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
@@ -195,7 +195,7 @@ def audit_nl_query(
     """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。
 
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
-    guard：AI-6 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
+    guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
     """
     from system.models import OperationLog
 

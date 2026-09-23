@@ -81,22 +81,22 @@ class Message:
                 continue
             method_name = BACKEND_MSG_RENDERERS.get(backend, "get_common_msg")
             get_msg_method = getattr(self, method_name)
-            # F-3 模板覆盖收口：渠道渲染完成后统一套用 DB 覆盖（未配置零行为变化）
+            # 模板覆盖收口：渠道渲染完成后统一套用 DB 覆盖（未配置零行为变化）
             msg = self.apply_template_override(get_msg_method())
             backends_msg_mapper[backend] = msg
         return backends_msg_mapper
 
     @classmethod
     def template_variables(cls) -> tuple:
-        """F-3：该消息类型可用的自定义模板变量名（子类按需覆写，供管理页提示与校验）。"""
+        """该消息类型可用的自定义模板变量名（子类按需覆写，供管理页提示与校验）。"""
         return ()
 
     def get_template_vars(self) -> dict:
-        """F-3：模板渲染可用的业务变量值（默认空，子类按需覆写）。"""
+        """模板渲染可用的业务变量值（默认空，子类按需覆写）。"""
         return {}
 
     def apply_template_override(self, msg: dict) -> dict:
-        """F-3：套用 DB 模板覆盖（未配置或渲染异常时原样返回）。"""
+        """套用 DB 模板覆盖（未配置或渲染异常时原样返回）。"""
         from notifications.template_registry import apply_override
 
         return apply_override(self.get_message_type(), msg, extra=self.get_template_vars())

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""审计日志冷归档与冷热分层（P-5）集成测试。
+"""审计日志冷归档与冷热分层集成测试。
 
 口径钉死：
 
@@ -266,7 +266,7 @@ def _make_login_logs(count, when):
 
 
 class TestLoginLogArchive:
-    """登录日志自动归档 / 清理（P-5 收口）：保留期 LOGIN_LOG_RETENTION_DAYS。"""
+    """登录日志自动归档 / 清理（收口）：保留期 LOGIN_LOG_RETENTION_DAYS。"""
 
     def test_auto_clean_covers_login_log(self, tmp_path, monkeypatch):
         from common.core.config import SysConfig
@@ -341,7 +341,7 @@ class TestLoginLogArchive:
 
 
 class TestColdArchiveRestoreDrill:
-    """季度演练池场景「从冷归档恢复查询」（P-5）的命令级全链路演练。"""
+    """季度演练池场景「从冷归档恢复查询」的命令级全链路演练。"""
 
     def test_drill_archive_verify_restore_and_tamper_detection(self, tmp_path, capsys):
         old = timezone.now() - datetime.timedelta(days=400)

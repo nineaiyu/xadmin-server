@@ -119,7 +119,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         # 待二次验证路径同样拦截；date_password_updated 为空的存量用户宽限放行
         raise ValidateError(PASSWORD_EXPIRED_MESSAGE)
     if is_account_expired(user_obj):
-        # 账号有效期拦截（F-11）：date_expired 为空 = 永不过期；到期由每日任务自动停用 +
+        # 账号有效期拦截：date_expired 为空 = 永不过期；到期由每日任务自动停用 +
         # 到期前提醒，此处拦截覆盖「任务时差窗口内仍可登录」的情形
         raise ValidateError(ACCOUNT_EXPIRED_MESSAGE)
     ipaddr = get_request_ip(request)
@@ -152,7 +152,7 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
 
 
 def evaluate_login_policy_for_request(request, user_obj, ipaddr):
-    """F-7 登录访问策略判定：返回 (force_mfa, reject_detail)。
+    """登录访问策略判定：返回 (force_mfa, reject_detail)。
 
     命中结果写 ``request.login_policy_result``（由 save_login_log 落入登录日志）；
     reject 时调用方需自行记失败日志并返回可读文案（含策略名）。
@@ -170,7 +170,7 @@ def evaluate_login_policy_for_request(request, user_obj, ipaddr):
 def login_mfa_if_required(request, user_obj, force_mfa=False):
     """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）。
 
-    ``force_mfa``：登录访问策略（F-7）要求二次验证——无可用方式时降级放行避免登录死锁。
+    ``force_mfa``：登录访问策略要求二次验证——无可用方式时降级放行避免登录死锁。
     """
     required = is_login_mfa_required(user_obj)
     if not required and force_mfa:
@@ -262,7 +262,7 @@ class BasicLoginAPIView(TokenObtainPairView):
         except Exception:
             return login_failed(request, username)
         user = serializer.user
-        # F-7 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志
+        # 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志
         force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
         if reject_detail:
             # 记失败日志前绑定用户（登录日志 creator 归属被策略拒绝的账号）
@@ -274,7 +274,7 @@ class BasicLoginAPIView(TokenObtainPairView):
             return mfa_response
         data = serializer.validated_data
         data.update(get_token_lifetime(user))
-        # F-6 强制改密标记：前端登录后引导改密（改密成功自动清除）
+        # 强制改密标记：前端登录后引导改密（改密成功自动清除）
         data["must_change_password"] = bool(getattr(user, "must_change_password", False))
         return ApiResponse(data=data)
 
@@ -353,7 +353,7 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             user = authenticate(**{query_key: target}, password=password)
             if not user:
                 login_failed(request, target)
-            # F-7 登录访问策略（验证码 + 密码组合登录同样收口）
+            # 登录访问策略（验证码 + 密码组合登录同样收口）
             force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
             if reject_detail:
                 request.user = user

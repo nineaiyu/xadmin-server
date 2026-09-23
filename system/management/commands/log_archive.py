@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : log_archive
-"""审计日志冷归档命令（P-5）。
+"""审计日志冷归档命令。
 
 用法示例::
 
@@ -28,7 +28,7 @@ _TABLE_FIELDS = {
 
 
 class Command(BaseCommand):
-    help = "审计日志冷归档：归档 / 校验 / 离线查询 / 水位驱动清理（P-5）"
+    help = "审计日志冷归档：归档 / 校验 / 离线查询 / 水位驱动清理"
 
     def add_arguments(self, parser):
         parser.add_argument("--model", choices=log_archive.ARCHIVE_MODEL_KEYS, default="operation", help="归档对象")

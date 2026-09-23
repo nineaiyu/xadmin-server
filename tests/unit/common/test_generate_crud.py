@@ -95,7 +95,7 @@ class TestArtifacts:
         _assert_ruff_clean(backend)
 
     def test_ai_declarations_artifact(self, workspace):
-        """E-3：默认携带 AI 动作声明骨架（只读动作可直接注册，写动作注释给出）。"""
+        """默认携带 AI 动作声明骨架（只读动作可直接注册，写动作注释给出）。"""
         backend, _ = _generate(workspace)
         path = backend / "demo" / "ai_declarations.py"
         assert path.exists(), "缺少 AI 声明产物"
@@ -109,7 +109,7 @@ class TestArtifacts:
         _assert_ruff_clean(backend)
 
     def test_with_tags_and_tests_flags(self, workspace):
-        """E-3：--with-tags 附带 P-1 白名单声明；--with-tests 生成测试骨架。"""
+        """--with-tags 附带白名单声明；--with-tests 生成测试骨架。"""
         backend, _ = _generate(workspace, "--with-tags", "--with-tests")
         declarations = (backend / "demo" / "ai_declarations.py").read_text(encoding="utf8")
         assert 'TAGGABLE_MODEL_KEYS = ["demo.book"]' in declarations

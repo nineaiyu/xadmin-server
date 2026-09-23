@@ -71,7 +71,7 @@ def action_reply(user, request_text: str) -> tuple:
     if not request_text:
         raise DjangoValidationError(_("Please describe the request after /do"))
     if native_tools_enabled():
-        # AI-2 原生 function calling 轨道（能力探测通过 + 开关开启时优先）
+        # 原生 function calling 轨道（能力探测通过 + 开关开启时优先）
         from system.utils.ai_actions import native_draft_result
 
         try:
@@ -93,7 +93,7 @@ def action_reply(user, request_text: str) -> tuple:
                 "action",
                 build_draft_prompt(user, request_text),
                 client=client,
-                track="prompt",  # AI-2 双轨对照：用量账本按轨道统计成功率
+                track="prompt",  # 双轨对照：用量账本按轨道统计成功率
                 max_tokens=max_tokens,
             )
             result = parse_draft(raw, user)
@@ -149,7 +149,7 @@ def build_chat_messages(room: ChatRoom, question: str) -> list:
 
 
 def _llm_reply(messages: list, user=None) -> tuple:
-    """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（AI-6 输出护栏 + AI-5 用量记账）。"""
+    """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（输出护栏 + 用量记账）。"""
     from common.sdk.ai.chat import AiSdkError
     from system.utils.ai_guard import mask_text
     from system.utils.ai_usage import tracked_chat
@@ -225,7 +225,7 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
     - 只有思考没有回答（思考型模型思考过长被截断）→ 保留思考（extra.reasoning），
       以下落文案作内容并标记 extra.no_answer，前端展示思考过程与「未给出最终回答」。
 
-    输出护栏（AI-6）：正文与思考增量均经 ``StreamMasker`` 逐段脱敏（hold-back 防
+    输出护栏：正文与思考增量均经 ``StreamMasker`` 逐段脱敏（hold-back 防
     跨帧敏感串泄漏），落库与广播用脱敏后文本；命中数写 extra.guard。
     """
     from system.utils.ai_guard import StreamMasker

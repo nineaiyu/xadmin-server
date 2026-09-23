@@ -173,7 +173,7 @@ class McpEndpointAPIView(APIView):
             audit_ai_action(user, name, arguments, False, error, {"channel": "mcp"})
             return call_result(False, error, {})
 
-        # AI-4 幂等：MCP 通道与 Web 通道同口径（用户 + 动作 + 参数哈希，TTL 内去重）
+        # 幂等：MCP 通道与 Web 通道同口径（用户 + 动作 + 参数哈希，TTL 内去重）
         from system.utils.ai_idempotency import execute_idempotent
 
         result = execute_idempotent(user, name, clean, execute_action)

@@ -19,7 +19,7 @@ logger = get_task_logger(__name__)
 
 
 def auto_clean_operation_log(clean_day=None):
-    """先归档后清理过期审计日志（P-5）：操作日志 + 登录日志。
+    """先归档后清理过期审计日志：操作日志 + 登录日志。
 
     - 归档：把「整月已超保留期」的日志导出为 ``JSONL.gz``（含 sha256 与清单，幂等）；
     - 清理：边界由**归档水位**驱动（删必已归档；未归档的边界月最多多留一个月）；
@@ -102,7 +102,7 @@ def auto_clean_preview_cache(keep_days=None):
     因此不需要"引用守护"那一层保守判断，只保留"最近使用"淘汰。
     """
     result = clean_preview_cache(keep_days=keep_days)
-    # P-4：对象存储后端会为预览/转换把远端对象缓存到本地（MEDIA_ROOT/storage_cache），
+    # 对象存储后端会为预览/转换把远端对象缓存到本地（MEDIA_ROOT/storage_cache），
     # 同属派生产物，与预览缓存一起按最近使用淘汰
     removed_storage_cache = clean_storage_cache(keep_days=keep_days)
     logger.info(
@@ -114,7 +114,7 @@ def auto_clean_preview_cache(keep_days=None):
 
 
 def auto_clean_ai_usage(retention_days=None, batch_size=2000):
-    """分批清理超保留期的 AI 用量记录（AI-5）：保留期取 MONITOR_RETENTION_DAYS。
+    """分批清理超保留期的 AI 用量记录：保留期取 MONITOR_RETENTION_DAYS。
 
     用量账本是观测数据（与监控心跳同口径），过期即失去成本归因价值；
     0/缺省 = 跟随系统配置，配置为 0 表示不清理。

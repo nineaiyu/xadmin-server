@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通用标签中心（P-1）序列化器：标签 CRUD + 可打标对象的只读 tags 字段。"""
+"""通用标签中心序列化器：标签 CRUD + 可打标对象的只读 tags 字段。"""
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers

@@ -41,7 +41,7 @@ class UserLoginLog(DbAuditModel):
     login_type = models.SmallIntegerField(
         default=LoginTypeChoices.USERNAME, choices=LoginTypeChoices, verbose_name=_("Login type")
     )
-    # 登录访问策略（F-7）命中结果：如 "reject:仅工作时间可登录"；空 = 未命中任何策略
+    # 登录访问策略命中结果：如 "reject:仅工作时间可登录"；空 = 未命中任何策略
     policy_result = models.CharField(max_length=128, verbose_name=_("Policy result"), blank=True, default="")
 
     class Meta:

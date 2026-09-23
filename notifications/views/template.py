@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通知消息模板管理（F-3）。
+"""通知消息模板管理。
 
 注册表以「消息类型」为行（代码注册的消息类），DB 覆盖为可选层：
 
@@ -53,7 +53,7 @@ def _sample_message(cls):
 
 
 class MessageTemplateViewSet(GenericViewSet):
-    """通知消息模板（F-3）"""
+    """通知消息模板"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
     def list(self, request, *args, **kwargs):

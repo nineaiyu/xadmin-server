@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : log_archive
-"""审计日志冷归档与冷热分层（P-5）。
+"""审计日志冷归档与冷热分层。
 
 策略（**归档水位驱动清理**，保证「删必已归档」）：
 

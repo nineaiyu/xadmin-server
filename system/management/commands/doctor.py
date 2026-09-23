@@ -217,7 +217,7 @@ class Command(BaseCommand):
             )
 
     def _check_ai_declarations(self):
-        """E-3 生成物自检：`<app>/ai_declarations.py` 的声明路径必须能对上路由面。
+        """生成物自检：`<app>/ai_declarations.py` 的声明路径必须能对上路由面。
 
         - 无声明文件：跳过（不是所有模块都需要 AI 化）；
         - 声明路径无法 resolve：失败（生成物与会话/路由漂移，AI 工具目录会指向不存在的端点）。

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""标准 OIDC（F-10）守护测试：discovery / id_token 验签 / claims 映射 / 组角色同步 / 回调全链路。
+"""标准 OIDC守护测试：discovery / id_token 验签 / claims 映射 / 组角色同步 / 回调全链路。
 
 全部离线：JWKS 与 token 用本地生成的 RSA 密钥对自造，HTTP 走可注入 stub client。
 """

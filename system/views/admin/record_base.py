@@ -76,7 +76,7 @@ class RecordFileDownloadMixin:
         """文件缺失返回可读业务错误，否则返回 FileResponse。"""
         if not upload or not upload.filepath:
             return ApiResponse(code=1001, detail=self.download_not_found_message)
-        # 存储适配（P-4）：本地 / 对象存储统一走 storage 原语
+        # 存储适配：本地 / 对象存储统一走 storage 原语
         name = getattr(upload.filepath, "name", "")
         if not name or not storage_exists(name):
             return ApiResponse(code=1001, detail=self.download_not_found_message)

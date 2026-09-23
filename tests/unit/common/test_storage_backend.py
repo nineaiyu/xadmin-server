@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""可插拔文件存储后端（P-4）守护测试。
+"""可插拔文件存储后端守护测试。
 
 覆盖：默认本地（零变化）/ 声明式切换 / 可选依赖缺失回退 / 委托重建 /
 适配层（storage_local_path 远端缓存）/ 健康探测。
@@ -306,7 +306,7 @@ class TestMirrorBackend:
 
 
 class TestPresignedUrl:
-    """预签名直连（P-4）：仅 s3 后端可用，其余回退（None）。"""
+    """预签名直连：仅 s3 后端可用，其余回退（None）。"""
 
     def test_none_for_local_backend(self):
         from common.storage import storage_presigned_url

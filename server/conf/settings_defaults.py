@@ -87,17 +87,17 @@ SETTINGS_CONFIG = {
     "SECURITY_MFA_LOGIN_TOKEN_TTL": 300,  # 登录 MFA 临时令牌有效期（秒）
     "SECURITY_MFA_OTP_VALID_WINDOW": 1,  # OTP 容错窗口（前后各 N 个周期）
     "SECURITY_MFA_OTP_ISSUER": "XAdmin",  # OTP 绑定 URI 中的签发方名称
-    # 认证方式策略（F-9）：全局允许的验证方式白名单（空 = 全部启用后端）；
+    # 认证方式策略：全局允许的验证方式白名单（空 = 全部启用后端）；
     # 角色级/用户级配置只能在此基础上继续收窄
     "SECURITY_MFA_METHODS": [],
-    # 账号安全风险巡检（F-6）：长期未改密 / 长期未登录判定天数（0 = 关闭该项）
+    # 账号安全风险巡检：长期未改密 / 长期未登录判定天数（0 = 关闭该项）
     "SECURITY_PASSWORD_STALE_DAYS": 180,
     "SECURITY_ACCOUNT_IDLE_DAYS": 90,
     # 超管数量异常阈值（超过即产生风险项；0 = 关闭该项）
     "SECURITY_SUPERUSER_MAX_COUNT": 5,
-    # 登录并发会话上限（F-7，0 = 不限）：超限时踢掉最久未活跃的会话
+    # 登录并发会话上限（0 = 不限）：超限时踢掉最久未活跃的会话
     "SECURITY_LOGIN_MAX_SESSIONS": 0,
-    # 上传安全策略（F-8）：扩展名黑名单（默认拒绝可执行 / 脚本类）与白名单
+    # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）与白名单
     # （白名单非空时只允许名单内扩展名；两者同时命中时黑名单优先，fail-closed）
     "SECURITY_UPLOAD_BLOCK_EXTENSIONS": [
         "exe",
@@ -124,7 +124,7 @@ SETTINGS_CONFIG = {
         "cgi",
     ],
     "SECURITY_UPLOAD_ALLOW_EXTENSIONS": [],
-    # 文件访问审计（F-8）：访问日志保留天数（审计口径统一清理）
+    # 文件访问审计：访问日志保留天数（审计口径统一清理）
     "FILE_ACCESS_LOG_KEEP_DAYS": 180,
     # 资源告警阈值（check_server_performance_period 周期检查，超标时邮件/站内信通知超管）
     "SECURITY_MONITOR_DISK_USED_MAX": 80,  # 磁盘使用率阈值（%）
@@ -206,7 +206,7 @@ SETTINGS_CONFIG = {
     "FILE_PREVIEW_IMAGE_WIDTH": 1280,
     # 预览缓存保留天数：派生产物，过期删除后按需重建
     "FILE_PREVIEW_CACHE_KEEP_DAYS": 7,
-    # 文件存储后端（P-4，声明式可插拔）：local（默认，本地磁盘）/ s3（对象存储；
+    # 文件存储后端（声明式可插拔）：local（默认，本地磁盘）/ s3（对象存储；
     # 需可选依赖 django-storages + boto3，未安装 / 配置不全时回退本地并告警）
     "FILE_STORAGE_BACKEND": "local",
     # S3 兼容对象存储配置（backend=s3 时生效；ACCESS_KEY / SECRET_KEY 经 signer 加密存储）
@@ -276,7 +276,7 @@ SETTINGS_CONFIG = {
     # 操作日志保留天数（清理任务按此分批删除）；错误日志额外保留天数（0/空 = 跟随全量）
     "OPERATION_LOG_RETENTION_DAYS": 180,
     "OPERATION_LOG_ERROR_RETENTION_DAYS": 365,
-    # 登录日志保留天数（P-5 冷归档自动面：归档水位驱动清理；0 = 不自动清理）
+    # 登录日志保留天数（冷归档自动面：归档水位驱动清理；0 = 不自动清理）
     "LOGIN_LOG_RETENTION_DAYS": 365,
     # 操作日志大字段（请求体/响应/变更 diff）截断上限（字符）；0 = 不落大字段内容
     "OPERATION_LOG_FIELD_MAX": 4096,
@@ -285,7 +285,7 @@ SETTINGS_CONFIG = {
     "SENSITIVE_OPERATION_PATHS": [],
     # 慢请求阈值（秒）：超阈值打 WARNING 日志，监控面板 slow 接口同口径
     "SLOW_REQUEST_THRESHOLD": 1.0,
-    # 账号到期提醒（F-11）：到期前 N 天发站内信 + 邮件（每日任务）；0 = 关闭提醒
+    # 账号到期提醒：到期前 N 天发站内信 + 邮件（每日任务）；0 = 关闭提醒
     "ACCOUNT_EXPIRY_REMIND_DAYS": 7,
     # 站点对外访问地址（邀请 / 通知邮件中的链接基址，如 https://xadmin.example.com）；
     # 空 = 按请求推导（经反向代理部署时依赖 X-Forwarded-* 正确传递）

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""通用标签中心（P-1）：轻量分类运营 + 批量筛选。
+"""通用标签中心：轻量分类运营 + 批量筛选。
 
-设计边界（ADR-051）：
+设计边界：
 
 - **白名单准入**：仅登记在 ``TAGGABLE_MODELS`` 的对象可打标（不做全模型铺开）；
 - **关联形态**：``TaggedItem`` 用 ``content_type + object_id`` 关联目标对象，

@@ -145,7 +145,7 @@ def run_async_import(record_id, view_path, user_pk):
         try:
             with transaction.atomic():
                 for idx, row in enumerate(rows, start=1):
-                    # 协作式取消（P-2）：逐行循环即安全点，取消触发外层事务回滚
+                    # 协作式取消：逐行循环即安全点，取消触发外层事务回滚
                     ensure_not_cancelled(record.pk)
                     try:
                         with transaction.atomic():
@@ -165,7 +165,7 @@ def run_async_import(record_id, view_path, user_pk):
                                 len(errors), total
                             )
                             break
-                    # 分批上报进度（1% 粒度，P-2 统一助手：导入运行期走缓存通道），供下载中心进度条展示
+                    # 分批上报进度（1% 粒度 统一助手：导入运行期走缓存通道），供下载中心进度条展示
                     percent = int(idx / max(total, 1) * 100)
                     if percent != last_percent:
                         last_percent = percent
@@ -176,7 +176,7 @@ def run_async_import(record_id, view_path, user_pk):
         except _ImportAborted:
             pass
     except TaskCancelled as exc:
-        # 协作式取消（P-2）：外层事务已回滚，落 REVOKED 终态（不是故障，不 re-raise）
+        # 协作式取消：外层事务已回滚，落 REVOKED 终态（不是故障，不 re-raise）
         state = False
         record.status = ImportRecord.Status.REVOKED
         record.error = str(exc)[:2000]

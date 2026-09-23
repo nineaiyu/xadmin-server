@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : account_expiry
-"""账号有效期与到期处置（F-11）。
+"""账号有效期与到期处置。
 
 - **登录拦截**：``date_expired`` 非空且已过期 → 登录被拒（与密码过期同一拦截面，
   见 ``system/views/auth/login.py::login_success``）；

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""Passkey（WebAuthn）凭据管理（F-9）。
+"""Passkey（WebAuthn）凭据管理。
 
 流程：``challenge``（取服务器挑战值）→ 浏览器 ``navigator.credentials.create``
 → ``register``（提交 attestation 由服务端验签落库）；删除仅限本人凭据（超管可管理全部）。

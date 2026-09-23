@@ -43,7 +43,7 @@ from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin,
 logger = get_logger(__name__)
 
 
-#: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请（F-11）需同时具备该权限
+#: 邀请权限点 path（与 loadjson/menumeta.json 同源）：创建即邀请需同时具备该权限
 INVITE_PERMISSION_PATH = "api/system/user/1/invite"
 
 
@@ -52,7 +52,7 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
     tag = TagChoiceFilter()
     nickname = filters.CharFilter(field_name="nickname", lookup_expr="icontains")
     phone = filters.CharFilter(field_name="phone", lookup_expr="icontains")
-    # F-12 联动：角色列表「用户数」可点击跳转到按角色筛选的用户列表（传角色 pk）
+    # 联动：角色列表「用户数」可点击跳转到按角色筛选的用户列表（传角色 pk）
     role = filters.CharFilter(field_name="roles", lookup_expr="pk")
 
     class Meta:
@@ -75,13 +75,13 @@ class UserViewSet(
     FILE_UPLOAD_FIELD = "avatar"
     queryset = UserInfo.objects.all()
     serializer_class = UserSerializer
-    # F-1 批量更新白名单：批量改状态 / 归属 / 角色 / 性别（逐项序列化器校验）
+    # 批量更新白名单：批量改状态 / 归属 / 角色 / 性别（逐项序列化器校验）
     batch_update_fields = ("is_active", "dept", "roles", "gender")
 
     ordering_fields = ["date_joined", "last_login", "created_time"]
     filterset_class = UserFilter
-    # P-1 通用标签：?tag=<标签名> 过滤（AND 语义，与数据权限叠加）+ 列表预取（TaggedPrefetchMixin）
-    # F-13 API 查询能力试点：受控 lookup 透传（字段面 = UserFilter 已声明字段；字段可见性 fail-closed）
+    # 通用标签：?tag=<标签名> 过滤（AND 语义，与数据权限叠加）+ 列表预取（TaggedPrefetchMixin）
+    # API 查询能力试点：受控 lookup 透传（字段面 = UserFilter 已声明字段；字段可见性 fail-closed）
     controlled_lookup = True
     extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
@@ -100,7 +100,7 @@ class UserViewSet(
         return instance.delete()
 
     def create(self, request, *args, **kwargs):
-        """创建用户；`invite=true` 一步完成邀请开户（F-11：无需密码 + 邮件邀请链接）。
+        """创建用户；`invite=true` 一步完成邀请开户（无需密码 + 邮件邀请链接）。
 
         前置校验（fail-closed，不满足则不创建，避免产生「收不到邀请又无法登录」的死号）：
         邮件渠道已配置 + 具备邀请权限点 `invite:SystemUser`。
@@ -155,7 +155,7 @@ class UserViewSet(
     @extend_schema(responses=get_default_response_schema(), request=None)
     @action(methods=["post"], detail=True)
     def invite(self, request, *args, **kwargs):
-        """发送/重发邀请激活邮件（F-11：重置为待激活 + 一次性链接；权限点 invite:SystemUser）"""
+        """发送/重发邀请激活邮件（重置为待激活 + 一次性链接；权限点 invite:SystemUser）"""
         instance = self.get_object()
         if not user_invite.mail_channel_configured():
             return ApiResponse(code=1001, detail=user_invite.INVITE_MAIL_UNAVAILABLE_MESSAGE)

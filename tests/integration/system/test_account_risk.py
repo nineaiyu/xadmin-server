@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""账号安全风险巡检（F-6）集成测试。
+"""账号安全风险巡检集成测试。
 
 口径钉死：
 - 巡检幂等（同一用户同一风险类型一行），风险消失自动置 RESOLVED；
@@ -102,7 +102,7 @@ class TestAccountRiskDispose:
         assert superuser.must_change_password is False
 
     def test_userinfo_exposes_must_change_password(self, auth_client, superuser):
-        """F-6 引导改密：强制改密标记随 userinfo 下发（刷新页面后仍可引导）"""
+        """引导改密：强制改密标记随 userinfo 下发（刷新页面后仍可引导）"""
         superuser.must_change_password = True
         superuser.save(update_fields=["must_change_password"])
         resp = auth_client.get("/api/system/userinfo")

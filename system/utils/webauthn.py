@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""WebAuthn / Passkey 服务端校验（F-9）。
+"""WebAuthn / Passkey 服务端校验。
 
 不引入第三方 WebAuthn 依赖：CBOR 解析用 ``cbor2``（kombu 既有依赖，已在
 requirements 显式声明），密码学运算用 ``cryptography``（既有依赖）。

@@ -343,10 +343,10 @@ class TestApprovalInstanceApi:
         )
         api_client.force_authenticate(user=applicant)
         first = api_client.post(
-            INSTANCES_URL, {"flow": str(flow.pk), "title": "批一", "form_data": {}}, format="json"
+            INSTANCES_URL, {"flow": str(flow.pk), "title": "第一单", "form_data": {}}, format="json"
         ).data["data"]["pk"]
         second = api_client.post(
-            INSTANCES_URL, {"flow": str(flow.pk), "title": "批二", "form_data": {}}, format="json"
+            INSTANCES_URL, {"flow": str(flow.pk), "title": "第二单", "form_data": {}}, format="json"
         ).data["data"]["pk"]
 
         approved = approver_client.post(

@@ -20,7 +20,7 @@ class DatasetSerializer(BaseModelSerializer):
     ignore_field_permission = True
     # 数值列（读侧派生）：卡片/报表的 sum・avg 度量字段候选（后端聚合会做同样校验）
     numeric_columns = serializers.SerializerMethodField(label=_("Numeric columns"))
-    # F-12 关联计数声明：报表引用数（与 F-2 影响面同源——「删除会影响几张报表」的同一口径）
+    # 关联计数声明：报表引用数（与影响面同源——「删除会影响几张报表」的同一口径）
     relation_count_fields = {"report_count": Count("report")}
     report_count = serializers.SerializerMethodField(label=_("Report count"))
 

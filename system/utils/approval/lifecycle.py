@@ -61,7 +61,7 @@ def create_approval(view, request, module: str = ""):
         object_pk=get_request_object_pk(view),
         params=params,
         payload=snapshot_payload(request),
-        # U-1：目标对象轻量快照（变更前后事实对照；不可达时为空 dict 降级展示）
+        # 目标对象轻量快照（变更前后事实对照；不可达时为空 dict 降级展示）
         target_snapshot=build_target_snapshot(view, request),
         creator=request.user,
     )

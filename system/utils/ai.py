@@ -267,7 +267,7 @@ def _prepare_rag(question: str, user=None) -> tuple:
     """问答链路公共部分：问题校验 + 检索 + prompt 构造（引用数据块 + 注入标记）。
 
     返回 ``(messages, sources, injection_hits)``；问题为空/未启用/无命中抛可读
-    ValidationError。检索片段以引用数据块包裹（AI-6 护栏），命中可疑指令模式时
+    ValidationError。检索片段以引用数据块包裹（护栏），命中可疑指令模式时
     打标 + 落 AI:security 告警（不阻断，避免误杀）。
     """
     from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
@@ -362,7 +362,7 @@ def ask(question: str, user=None) -> dict:
     except AiSdkError as exc:
         raise DjangoValidationError(readable_ai_error(exc)) from exc
     answer, mask_hits = mask_text(answer, user)
-    # _usage 供调用方写审计（成本维度观测）；_guard 为 AI-6 护栏摘要（prompt 摘要/注入/脱敏）
+    # _usage 供调用方写审计（成本维度观测）；_guard 为护栏摘要（prompt 摘要/注入/脱敏）
     return {
         "answer": answer,
         "sources": sources,

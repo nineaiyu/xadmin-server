@@ -59,12 +59,12 @@ class BaseConfCache(ConfigCacheBase):
 
     @property
     def LOGIN_LOG_RETENTION_DAYS(self):
-        """登录日志保留天数（P-5 冷归档自动面，默认 365 天；0 = 不自动清理，仅支持手动归档）。"""
+        """登录日志保留天数（冷归档自动面，默认 365 天；0 = 不自动清理，仅支持手动归档）。"""
         return self.get_value("LOGIN_LOG_RETENTION_DAYS", CONFIG.LOGIN_LOG_RETENTION_DAYS)
 
     @property
     def ACCOUNT_EXPIRY_REMIND_DAYS(self):
-        """账号到期提醒天数（F-11）：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒。"""
+        """账号到期提醒天数：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒。"""
         return self.get_value("ACCOUNT_EXPIRY_REMIND_DAYS", CONFIG.ACCOUNT_EXPIRY_REMIND_DAYS)
 
     @property
@@ -116,8 +116,7 @@ class BaseConfCache(ConfigCacheBase):
         """审批人职能权限码清单（"动作:组件名"，默认空 = 不按权限反查）。
 
         与 APPROVAL_APPROVER_ROLES 取并集，两者皆空回退全部在用超管；持有任一
-        权限码的在用用户视为职能审批人（system.services.get_users_by_perm 反查，
-        借鉴 jumpserver 按权限反查角色的审批人推导模式）。
+        权限码的在用用户视为职能审批人（system.services.get_users_by_perm 反查）。
         """
         return self.get_value("APPROVAL_APPROVER_PERMS", CONFIG.APPROVAL_APPROVER_PERMS)
 

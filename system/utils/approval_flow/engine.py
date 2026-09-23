@@ -83,7 +83,7 @@ def _enter_node(instance, node) -> bool:
             node_name=node.name,
             node_order=node.order,
             assignee=user,
-            # U-1：处理人显示名快照（用户删除/改名后轨迹仍可读）
+            # 处理人显示名快照（用户删除/改名后轨迹仍可读）
             assignee_display=user_display(user),
             delegate_from=source,
         )
@@ -130,7 +130,7 @@ def _no_approver_detail(node, applicant) -> str:
 
 
 def _resolve_instance_cc(path, applicant, extra=None):
-    """F-5 实例抄送人：全部可达节点 cc 并集 + 发起时追加（去重、仅启用用户、不含申请人）。
+    """实例抄送人：全部可达节点 cc 并集 + 发起时追加（去重、仅启用用户、不含申请人）。
 
     标识兼容「用户 pk」与「用户名」两种形态：设计器节点与发起弹窗可直接沿用
     审批人选择器的用户名，API 调用方可传 pk；非法标识静默跳过（抄送为附加能力，
@@ -175,7 +175,7 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     终态时经 ``approval_instance_finished`` 信号回写业务状态；留空 = 引擎自带
     表单的独立申请（历史行为不变）。
 
-    cc_users（F-5）：发起时追加的抄送人（用户 pk 列表）；实例抄送人 = 可达节点
+    cc_users：发起时追加的抄送人（用户 pk 列表）；实例抄送人 = 可达节点
     ``cc_users`` 并集 + 本参数，落实例快照并即时知会（终态再次知会）。
     """
     ApprovalInstance = _models().Instance
@@ -264,7 +264,7 @@ def _finish_instance(instance, status, reason=None) -> bool:
     event = _FLOW_FINISH_EVENTS.get(str(status))
     if event:
         _emit_flow_event(event, instance)
-        # F-5 抄送人终态知会（事件取终态对应文案：approved / rejected / cancelled）
+        # 抄送人终态知会（事件取终态对应文案：approved / rejected / cancelled）
         cc_list = [user for user in instance.cc_users.all() if user.is_active]
         if cc_list:
             _notify(cc_list, "cc", instance, extra={"status": str(status)})

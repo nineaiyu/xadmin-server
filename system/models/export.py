@@ -27,7 +27,7 @@ class ExportRecord(CeleryTaskRecordModel):
         RUNNING = "RUNNING", _("Running")
         SUCCESS = "SUCCESS", _("Success")
         FAILURE = "FAILURE", _("Failure")
-        # 用户取消（任务中心 P-2）：与失败区分，便于运营判断「是坏了还是停了」
+        # 用户取消（任务中心）：与失败区分，便于运营判断「是坏了还是停了」
         REVOKED = "REVOKED", _("Cancelled")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -45,7 +45,7 @@ class ExportRecord(CeleryTaskRecordModel):
     rows = models.IntegerField(_("Row count"), null=True, blank=True)
     # 运行中分批上报（0-100），终态 SUCCESS 置 100；导出为整体渲染，仅里程碑粒度
     progress = models.PositiveSmallIntegerField(_("Progress"), default=0)
-    # P-2 统一进度助手写入的阶段描述（如「统计行数 / 渲染内容」）
+    # 统一进度助手写入的阶段描述（如「统计行数 / 渲染内容」）
     stage = models.CharField(_("Progress stage"), max_length=64, blank=True, default="")
     file = models.ForeignKey(
         "system.UploadFile",

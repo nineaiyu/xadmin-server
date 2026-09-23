@@ -7,7 +7,7 @@
 新增验证方式：实现 BaseMFA 子类后加入 MFA_BACKEND_CLASSES 即可，
 配置层面通过 SECURITY_MFA_CONFIRM_BACKENDS 控制启用哪些方式。
 
-认证方式策略（F-9）在此统一收敛：全局白名单（SECURITY_MFA_METHODS）
+认证方式策略在此统一收敛：全局白名单（SECURITY_MFA_METHODS）
 ∩ 角色级 allowed_mfa_types ∩ 用户级 allowed_mfa_types —— 角色 / 用户只能收窄。
 """
 
@@ -44,7 +44,7 @@ def _normalize_methods(value):
 
 
 def get_user_mfa_policy(user) -> dict:
-    """认证方式策略（F-9）：返回 {"methods": set|None, "mfa_required": bool}。
+    """认证方式策略：返回 {"methods": set|None, "mfa_required": bool}。
 
     - ``methods``：可用方式集合 = 全局白名单 ∩ 角色允许集 ∩ 用户允许集；
       各维度为空 = 该维度不限制，全部为空时返回 None（不限制）；

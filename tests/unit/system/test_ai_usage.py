@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI 用量账本与配额（AI-5）单测：token 归一 + 记账 + 配额判定 + 并发信号量。
+"""AI 用量账本与配额单测：token 归一 + 记账 + 配额判定 + 并发信号量。
 
 配额判定读账本当日汇总（60s 短缓存），这里用独立用户避免缓存串味；
 并发信号量走缓存计数器，异常路径保证释放（with 上下文）。
@@ -65,7 +65,7 @@ class TestUsageLedger:
         assert data["quota"] == quota_limits()
 
     def test_summary_by_track_double_track(self, superuser):
-        """AI-2 双轨对照：按轨道聚合成功率；无轨道记录（非草稿链路）不入表。"""
+        """双轨对照：按轨道聚合成功率；无轨道记录（非草稿链路）不入表。"""
         record_usage(superuser, "action", track="native", usage={"total_tokens": 10})
         record_usage(superuser, "action", track="prompt", usage={"total_tokens": 20})
         record_usage(superuser, "action", track="prompt", ok=False, detail="boom")
@@ -139,7 +139,7 @@ class TestTrackedWrappers:
         assert (row.tokens_total, row.ok, row.model) == (5, True, "m")
 
     def test_tracked_chat_records_track(self, superuser):
-        """AI-2 双轨对照：包装器的 track 参数落账（prompt / native）。"""
+        """双轨对照：包装器的 track 参数落账（prompt / native）。"""
         from system.utils.ai_usage import tracked_chat
 
         class Client:

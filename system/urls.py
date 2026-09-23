@@ -119,7 +119,7 @@ no_auth_url = [
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
     re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
     re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
-    # 邀请激活（F-11）：令牌即凭据，激活页未登录，必须匿名可达
+    # 邀请激活：令牌即凭据，激活页未登录，必须匿名可达
     re_path("^auth/invite/validate$", InviteValidateAPIView.as_view(), name="invite-validate"),
     re_path("^auth/invite/accept$", InviteAcceptAPIView.as_view(), name="invite-accept"),
     # 第三方登录：authorize/callback 必须匿名可达，故挂在 no_auth_url
@@ -190,16 +190,16 @@ router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
 router.register("dict", DataDictViewSet, basename="data_dict")
 router.register("mask-rules", DataMaskRuleViewSet, basename="data_mask_rule")
 router.register("online", UserOnlineViewSet, basename="online_socket")
-# 安全域（JumpServer 对标批三）：账号风险巡检 / 登录访问策略 / Passkey 凭据
+# 安全域：账号风险巡检 / 登录访问策略 / Passkey 凭据
 router.register("account-risks", AccountRiskViewSet, basename="account_risk")
 router.register("login-policies", LoginAccessPolicyViewSet, basename="login_policy")
 router.register("passkeys", PasskeyViewSet, basename="passkey")
-# 列表「我的视图」（F-4）
+# 列表「我的视图」
 router.register("saved-views", SavedListViewSet, basename="saved_view")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")
-# 凭据与密钥（P-3）：只读聚合 + 重加密轮换
+# 凭据与密钥：只读聚合 + 重加密轮换
 router.register("credentials", CredentialViewSet, basename="credential")
 # 功能模块清单（只读）：模块等级/依赖/启停状态与裁剪配置片段
 router.register("modules", SystemModuleViewSet, basename="module")
@@ -248,9 +248,9 @@ router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")
 router.register("tasks/crontab", CrontabScheduleViewSet, basename="crontab_schedule")
 router.register("tasks/executions", TaskExecutionViewSet, basename="task_execution")
 router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
-# 任务中心（P-2）：三类记录统一列表 + 取消 / 重跑
+# 任务中心：三类记录统一列表 + 取消 / 重跑
 router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center")
-# 通用标签中心（P-1）：标签 CRUD + 打标 / 批量打标
+# 通用标签中心：标签 CRUD + 打标 / 批量打标
 router.register("tags", TagViewSet, basename="tag")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls

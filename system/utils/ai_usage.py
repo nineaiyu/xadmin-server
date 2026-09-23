@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 用量账本与配额（AI-5）：逐次记账 + 三级配额（日调用次数 / 日 token / 全局并发流式）。
+"""AI 用量账本与配额：逐次记账 + 三级配额（日调用次数 / 日 token / 全局并发流式）。
 
 - **账本写入口收敛**：``tracked_chat`` / ``tracked_chat_stream`` / ``tracked_chat_tools``
   是各链路的统一包装（保持原 SDK 返回契约），记账不散落在业务代码里；
@@ -73,7 +73,7 @@ def record_usage(
 ) -> None:
     """写一条用量记录（失败只记日志，不影响业务链路）。
 
-    ``track``（AI-2 双轨对照）：仅动作草稿链路写 ``native`` / ``prompt``，
+    ``track``（双轨对照）：仅动作草稿链路写 ``native`` / ``prompt``，
     其余链路留空；供用量端点按轨道统计成功率复核双轨策略。
     """
     from system.models.ai import AiUsageRecord
@@ -285,7 +285,7 @@ def tracked_chat_stream(user, feature: str, client, messages: list, track: str =
     # with 覆盖整个生成器生命周期：异常/中断路径也释放并发信号量
     with stream_slot() as acquired:
         if not acquired:
-            # 全局并发流式上限（AI-5）：给可读提示而不是静默排队
+            # 全局并发流式上限：给可读提示而不是静默排队
             raise AiSdkError("Too many concurrent AI streams, please retry later")
         started = time.monotonic()
         try:
@@ -334,7 +334,7 @@ def usage_summary(days: int = 7, feature: str = "") -> dict:
         .order_by("day")
     )
     by_feature = list(rows.values("feature").annotate(calls=Count("pk"), tokens=Sum("tokens_total")).order_by("-calls"))
-    # AI-2 双轨对照：仅动作草稿链路带轨道标记（native / prompt），其余为空不在本表出现
+    # 双轨对照：仅动作草稿链路带轨道标记（native / prompt），其余为空不在本表出现
     by_track = list(
         rows.exclude(track="")
         .values("track")

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI 动作执行幂等（AI-4）单测：draft_id 稳定性 + 首次结果复用 + force 通道。
+"""AI 动作执行幂等单测：draft_id 稳定性 + 首次结果复用 + force 通道。
 
 幂等窗口内重复提交返回首次结果并标记 deduplicated；失败结果不缓存（允许立即重试）；
 force=True 跳过幂等（用户确认后的「仍要执行」）。

@@ -235,7 +235,7 @@ class AnalysisMixin:
             }
         )
 
-        # E-3「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架
+        # 「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架
         artifacts.append(
             {
                 "label": "AI 动作声明",

@@ -114,7 +114,7 @@ def add_sign(instance, user, usernames, comment: str = ""):
                 node_name=node.name,
                 node_order=node.order,
                 assignee=candidate,
-                # U-1：处理人显示名快照
+                # 处理人显示名快照
                 assignee_display=user_display(candidate),
                 is_added=True,
                 comment=(comment or "")[:255],
@@ -186,7 +186,7 @@ def transfer_task(task_pk, user, to_username: str, comment: str = ""):
             node_name=task.node_name,
             node_order=task.node_order,
             assignee=target,
-            # U-1：处理人显示名快照
+            # 处理人显示名快照
             assignee_display=user_display(target),
             # 复用「原处理人」字段：时间线据此标注来源；该任务非加签所得（is_added=False）
             delegate_from=task.assignee,

@@ -1,4 +1,4 @@
-# xadmin-server 依赖事实源（E-1：pyproject + uv）
+# xadmin-server 依赖事实源（pyproject + uv）
 #
 # 单一事实源约定：
 #   - 运行依赖写在本文件 [project].dependencies；
@@ -78,15 +78,15 @@ dependencies = [
     "uvicorn-worker==0.4.0",
     "ldap3==2.9.1",
     "croniter==6.0.0",
-    # OIDC id_token 验签（F-10）：源码直接 import jwt / cryptography，显式声明防传递依赖漂移
+    # OIDC id_token 验签：源码直接 import jwt / cryptography，显式声明防传递依赖漂移
     "pyjwt==2.14.0",
     "cryptography==50.0.1",
-    # Passkey（F-9）CBOR 解析：源码直接 import cbor2，显式声明防传递依赖漂移
+    # Passkey CBOR 解析：源码直接 import cbor2，显式声明防传递依赖漂移
     "cbor2==5.9.0",
 ]
 
 [project.optional-dependencies]
-# P-4 对象存储后端（可选依赖，默认不装；启用方式见 docs/ops/storage.md）：
+# 对象存储后端（可选依赖，默认不装；启用方式见 docs/ops/storage.md）：
 #   pip install "django-storages" "boto3"   或    uv sync --extra storage
 # 未安装时 SwitchableStorage 回退本地磁盘并输出去重告警（文件链路不中断）。
 storage = [

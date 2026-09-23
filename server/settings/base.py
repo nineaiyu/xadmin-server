@@ -440,9 +440,9 @@ STATIC_ROOT = os.path.join(DATA_DIR, "static")
 # Media配置
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(DATA_DIR, "upload")
-from server.settings.storage import STORAGES  # noqa: E402,F401  可插拔存储后端装配（P-4，本体见该模块）
+from server.settings.storage import STORAGES  # noqa: E402,F401 可插拔存储后端装配（本体见该模块）
 
-# 审计日志冷归档目录（P-5）：默认 DATA_DIR/log_archive；环境变量 LOG_ARCHIVE_DIR 可覆盖
+# 审计日志冷归档目录：默认 DATA_DIR/log_archive；环境变量 LOG_ARCHIVE_DIR 可覆盖
 # （如指向异地同步目录。注意不要直接放备份卷根目录——db_backup.sh 的 prune_local 会按
 #  *.sql.gz / *.media.tar.gz / *.sha256 后缀清理存量文件，见 docs/ops/pitr.md「审计冷归档」）
 LOG_ARCHIVE_DIR = os.environ.get("LOG_ARCHIVE_DIR") or os.path.join(DATA_DIR, "log_archive")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""可插拔文件存储（P-4）：``SwitchableStorage`` + 业务侧统一访问适配层。
+"""可插拔文件存储：``SwitchableStorage`` + 业务侧统一访问适配层。
 
 - ``default_storage`` 经 ``STORAGES["default"]`` 指向 :class:`SwitchableStorage`；
 - 业务代码统一使用本模块的 helpers（``storage_open`` / ``storage_local_path`` 等），

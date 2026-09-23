@@ -20,7 +20,7 @@ NON_BUSINESS_RELATIONS = {"access_logs"}
 
 
 class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
-    # 通用标签（P-1，白名单对象）
+    # 通用标签（白名单对象）
     tagged_items = GenericRelation("system.TaggedItem")
     filepath = models.FileField(verbose_name=_("Filepath"), null=True, blank=True, upload_to=upload_directory_path)
     file_url = models.URLField(
@@ -72,7 +72,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     def has_business_reference(self) -> bool:
         """是否存在业务模型（含软删除记录）指向本附件：存在即视为在用，保守保留磁盘文件。
 
-        ``access_logs``（文件访问审计，F-8）不算业务引用：审计记录引用附件不代表
+        ``access_logs``（文件访问审计）不算业务引用：审计记录引用附件不代表
         附件仍在业务上使用，否则文件一旦被下载过就永远无法清理。
         """
         for relation in self._meta.related_objects:

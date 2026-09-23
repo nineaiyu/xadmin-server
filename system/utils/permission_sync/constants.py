@@ -11,7 +11,7 @@ SKIP_ROUTE_PREFIXES = ("api/demo/",)
 PARENT_MENU_MAP = {
     "api/system/dynamic-form-submissions": "FormMySubmission",
     "api/system/approval-delegations": "SystemApprovalDelegation",
-    # 安全域（JumpServer 对标批三）
+    # 安全域
     "api/system/account-risks": "SystemAccountRisk",
     "api/system/login-policies": "SystemLoginPolicy",
     "api/notifications/message-templates": "SettingMessage",

@@ -386,7 +386,7 @@ class ApprovalFlowMessage(UserMessage):
         "added": _("Added as approval approver"),
         "transferred": _("Approval task transferred to you"),
         "cancelled": _("Approval application cancelled"),
-        # F-5 协作事件：抄送知会（发起 / 终态）与讨论区 @ 提醒
+        # 协作事件：抄送知会（发起 / 终态）与讨论区 @ 提醒
         "cc": _("Approval application copied to you"),
         "mentioned": _("You were mentioned in the approval discussion"),
     }
@@ -399,7 +399,7 @@ class ApprovalFlowMessage(UserMessage):
 
     @classmethod
     def template_variables(cls) -> tuple:
-        """F-3 模板可用业务变量（与 get_template_vars 同源）。"""
+        """模板可用业务变量（与 get_template_vars 同源）。"""
         return ("title", "flow_name", "node_name", "instance_no", "reason", "extra", "name", "event")
 
     def get_template_vars(self) -> dict:
@@ -417,7 +417,7 @@ class ApprovalFlowMessage(UserMessage):
 
     def get_html_msg(self) -> dict:
         subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
-        # 业务变量（get_template_vars，与 F-3 模板覆盖同源）+ 渲染补充字段
+        # 业务变量（get_template_vars，与模板覆盖同源）+ 渲染补充字段
         context = dict(self.get_template_vars())
         context.update(subject=subject, time=local_now_display())
         message = render_to_string("notify/msg_approval_flow.html", context)

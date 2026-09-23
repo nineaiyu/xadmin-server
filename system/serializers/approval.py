@@ -30,7 +30,7 @@ class ApprovalRequestSerializer(BaseModelSerializer):
     approver = DisplayRelatedField(
         read_only=True, allow_null=True, label=_("Approver"), label_builder=lambda value: value.username
     )
-    # U-1：处理人显示名快照（用户删除/改名后审批痕迹仍可读）
+    # 处理人显示名快照（用户删除/改名后审批痕迹仍可读）
     approver_display = serializers.CharField(read_only=True, label=_("Approver display"))
     # 状态标签字典化：文案/颜色管理员可在数据字典 approval_status 维护（默认项随种子下发），
     # 字典未配置时回退模型枚举（merge 保证只配部分项时其余枚举标签不缺）
@@ -100,10 +100,10 @@ class ApprovalRequestSerializer(BaseModelSerializer):
 
 
 class ApprovalRequestDetailSerializer(ApprovalRequestSerializer):
-    """审批单详情：额外返回 steps（多级审批链的逐级进度与留痕）+ target_snapshot（U-1）。"""
+    """审批单详情：额外返回 steps（多级审批链的逐级进度与留痕）+ target_snapshot。"""
 
     steps = serializers.SerializerMethodField(label=_("Approval steps"))
-    # U-1：目标对象轻量快照（变更前后事实对照；缺失时为空 dict，前端降级展示）
+    # 目标对象轻量快照（变更前后事实对照；缺失时为空 dict，前端降级展示）
     target_snapshot = serializers.JSONField(read_only=True, label=_("Target snapshot"))
 
     class Meta(ApprovalRequestSerializer.Meta):
@@ -134,7 +134,7 @@ class ApprovalRequestDetailSerializer(ApprovalRequestSerializer):
                         {
                             "pk": step.approver.pk,
                             "username": step.approver.username,
-                            # U-1：显示名快照优先（用户删除/改名后留痕不降级）
+                            # 显示名快照优先（用户删除/改名后留痕不降级）
                             "display": step.approver_display or step.approver.username,
                         }
                         if step.approver

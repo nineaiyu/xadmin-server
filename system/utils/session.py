@@ -54,7 +54,7 @@ def force_logout_user(user_pk, operator=None):
 
 
 def enforce_session_limit(user, limit=None):
-    """并发会话上限（F-7，SECURITY_LOGIN_MAX_SESSIONS，0 = 不限）：超限踢最久未活跃会话。
+    """并发会话上限（SECURITY_LOGIN_MAX_SESSIONS，0 = 不限）：超限踢最久未活跃会话。
 
     保留最近活跃的 limit 个会话（含本次刚登记的），多余会话写会话级失效标记
     （``SessionTokenRevokedCache``，其 access/refresh token 立即失效）并置 OFFLINE。
@@ -86,7 +86,7 @@ def register_user_session(request, user, login_type, channel_name=""):
 
     元数据（ip/city/browser/system/agent）与登录日志（save_login_log）同口径
     取自 request；调用方对异常自行兜底——会话管理属附加能力，不影响登录主流程。
-    登记后按并发会话上限（F-7）收敛该用户历史会话。
+    登记后按并发会话上限收敛该用户历史会话。
     """
     from common.utils.ip import get_ip_city
     from common.utils.request import get_browser, get_os, get_request_ip, get_user_agent

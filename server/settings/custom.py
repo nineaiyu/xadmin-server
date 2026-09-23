@@ -27,9 +27,9 @@ PERMISSION_WHITE_URL = {
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
-    # Passkey 凭据（F-9）：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
+    # Passkey 凭据：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
     "^/api/system/passkeys": ["*"],
-    # 列表「我的视图」（F-4）：个人筛选偏好，视图内收口为「本人 + 共享只读」，同 PAT 口径
+    # 列表「我的视图」：个人筛选偏好，视图内收口为「本人 + 共享只读」，同 PAT 口径
     "^/api/system/saved-views": ["*"],
     # 登录前 Passkey 挑战值（匿名，凭一次性 mfa_token）：与登录流程同级，不参与菜单权限
     "^/api/system/login/mfa/passkey/": ["*"],

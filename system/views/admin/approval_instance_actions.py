@@ -36,7 +36,7 @@ from system.utils.approval_flow import (
 )
 from system.utils.approval_mfa import ensure_approval_action_confirmed
 
-# F-5 评论 @ 提及：与聊天室提及同口径（用户名，允许 . - _）
+# 评论 @ 提及：与聊天室提及同口径（用户名，允许 . - _）
 MENTION_PATTERN = re.compile(r"@([\w.\-]+)")
 COMMENT_MAX_LENGTH = 2000
 
@@ -61,7 +61,7 @@ class ApprovalInstanceActionMixin:
         return users
 
     def _notify_comment_mentions(self, instance, users, content):
-        """F-5：评论 @ 提醒（默认只提醒被提及者；失败只记日志）。"""
+        """评论 @ 提醒（默认只提醒被提及者；失败只记日志）。"""
         if not users:
             return
         from system.notifications import ApprovalFlowMessage
@@ -98,7 +98,7 @@ class ApprovalInstanceActionMixin:
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="comments")
     def comments(self, request, *args, **kwargs):
-        """讨论区评论列表（F-5）"""
+        """讨论区评论列表"""
         instance = self.get_object()
         rows = instance.comments.select_related("creator").all()
         return ApiResponse(data=ApprovalInstanceCommentSerializer(rows, many=True).data)

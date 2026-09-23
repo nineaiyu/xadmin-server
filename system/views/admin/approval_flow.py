@@ -200,7 +200,7 @@ class ApprovalInstanceViewSet(
     ordering_fields = ["created_time", "finished_at"]
     select_related_fields = ("flow", "creator", "current_node")
     prefetch_related_fields = ("tasks", "tasks__assignee", "tasks__actor")
-    # P-1 通用标签：?tag=<标签名> 过滤 + 列表预取（TaggedPrefetchMixin）
+    # 通用标签：?tag=<标签名> 过滤 + 列表预取（TaggedPrefetchMixin）
     extra_filter_class = [TagFilterBackend]
 
     def create(self, request, *args, **kwargs):
@@ -213,7 +213,7 @@ class ApprovalInstanceViewSet(
             applicant=request.user,
             title=serializer.validated_data.get("title"),
             form_data=serializer.validated_data.get("form_data") or {},
-            # F-5 抄送人：发起时追加（与节点级默认抄送合并，去重）
+            # 抄送人：发起时追加（与节点级默认抄送合并，去重）
             cc_users=request.data.get("cc_users") or [],
         )
         if error:

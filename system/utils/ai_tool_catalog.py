@@ -73,7 +73,7 @@ MAX_TOOL_DESCRIPTION = 1024
 
 
 def openai_tools(user) -> list:
-    """工具目录 → OpenAI ``tools`` 定义（AI-2：同一份 schema 的第三种消费）。
+    """工具目录 → OpenAI ``tools`` 定义（同一份 schema 的第三种消费）。
 
     与 MCP ``tools/list``、助手页 ``tools`` 完全同源（都由 ``tool_catalog`` 推导），
     不存在第二份能力清单；额外附加 ``_summary`` 可选参数供模型产出确认卡片摘要。

@@ -92,7 +92,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
     时结构化链路回落 ``chat`` 激活档案（单档案场景零变化）；
     未激活任何档案时回落 Setting 体系（category=ai）的历史配置。
     api_key 值级加密落库（signer），回显只给 api_key_set 布尔。
-    ``capabilities`` 为能力探测结果（AI-1），可人工修正覆盖。
+    ``capabilities`` 为能力探测结果，可人工修正覆盖。
     """
 
     class Purpose(models.TextChoices):
@@ -117,7 +117,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
     purpose = models.CharField(
         _("Purpose"), max_length=16, choices=Purpose.choices, default=Purpose.CHAT, db_index=True
     )
-    # 能力探测结果（AI-1）：{json/tool_calls/reasoning/vision: {ok, detail, at}} + model/probed_at
+    # 能力探测结果：{json/tool_calls/reasoning/vision: {ok, detail, at}} + model/probed_at
     capabilities = models.JSONField(_("Capabilities"), default=dict, blank=True)
     probed_at = models.DateTimeField(_("Probed at"), null=True, blank=True)
     is_active = models.BooleanField(_("Is active"), default=False, db_index=True)
@@ -162,7 +162,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
 
 
 class AiUsageRecord(DbAuditModel, DbUuidModel):
-    """AI 调用用量账本（AI-5）：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
+    """AI 调用用量账本：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
 
     写入口收敛（``system/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
     不在各链路散落；保留期随 ``MONITOR_RETENTION_DAYS`` 由周期任务清理。
@@ -176,13 +176,13 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
         ACTION = "action", _("Action execution")
 
     class Track(models.TextChoices):
-        """草稿链路轨道（AI-2 双轨对照）：原生 function calling / prompt-JSON。"""
+        """草稿链路轨道（双轨对照）：原生 function calling / prompt-JSON。"""
 
         PROMPT = "prompt", _("Prompt JSON")
         NATIVE = "native", _("Native tools")
 
     feature = models.CharField(_("Feature"), max_length=16, choices=Feature.choices, db_index=True)
-    # AI-2 双轨对照：仅动作草稿链路写轨道标记（其余链路留空），供成功率对比复核
+    # 双轨对照：仅动作草稿链路写轨道标记（其余链路留空），供成功率对比复核
     track = models.CharField(_("Track"), max_length=16, blank=True, default="")
     profile_name = models.CharField(_("Profile"), max_length=64, blank=True, default="")
     model = models.CharField(_("Model"), max_length=128, blank=True, default="")

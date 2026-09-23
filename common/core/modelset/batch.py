@@ -78,13 +78,13 @@ class BatchDestroyAction:
         # 不能整批 500
         valid_pks, failures = _normalize_pks(queryset.model, request.data)
         queryset = self.filter_queryset(queryset).filter(pk__in=valid_pks)
-        # 引用保护（F-2）：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认。
+        # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认。
         # 必须在分支前统一校验——逐行分支的 perform_destroy 异常会被吞（只记日志），
         # 放在分支内会造成「静默不删但提示成功」。
         from system.utils.impact import ensure_impact_confirmed
 
         ensure_impact_confirmed(self, request, queryset=queryset)
-        # F-1：批量响应补逐项明细（data.success / data.failures）。
+        # 批量响应补逐项明细（data.success / data.failures）。
         # detail 文案与历史口径一致（既有前端与测试只读 detail），明细为增量字段。
         existing = [str(pk) for pk in queryset.values_list("pk", flat=True)]
         if not self._needs_rowwise_delete():
@@ -175,7 +175,7 @@ def _batch_error_message(exc, limit=200):
 
 
 class BatchPartialUpdateAction:
-    """通用批量更新（F-1）：逐项走序列化器校验，按项隔离事务（部分成功语义）。
+    """通用批量更新：逐项走序列化器校验，按项隔离事务（部分成功语义）。
 
     视图声明 ``batch_update_fields`` 字段白名单（list/tuple/dict 均可，服务端只取字段名）：
 

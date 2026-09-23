@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""邀请开户与账号有效期（F-11）测试。
+"""邀请开户与账号有效期测试。
 
 口径钉死：
 
@@ -71,7 +71,7 @@ class TestSendInvite:
 
 
 class TestCreateWithInvite:
-    """创建即邀请（F-11 遗留收口）：``POST /user`` 带 ``invite=true`` 一步完成邀请开户。"""
+    """创建即邀请（遗留收口）：``POST /user`` 带 ``invite=true`` 一步完成邀请开户。"""
 
     def test_create_with_invite_marks_pending_and_sends_mail(self, auth_client):
         payload = {

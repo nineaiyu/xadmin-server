@@ -33,7 +33,7 @@ def visible_instances_for(user):
     if user.is_superuser:
         return ApprovalInstance.objects.all()
     involved = ApprovalNodeTask.objects.filter(Q(assignee=user) | Q(actor=user)).values_list("instance_id", flat=True)
-    # F-5 抄送人可见：抄送 = 知会与参与讨论（只读查看 + 评论）
+    # 抄送人可见：抄送 = 知会与参与讨论（只读查看 + 评论）
     return ApprovalInstance.objects.filter(Q(creator=user) | Q(pk__in=involved) | Q(cc_users=user)).distinct()
 
 

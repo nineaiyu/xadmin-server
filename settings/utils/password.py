@@ -70,7 +70,7 @@ def record_password_hash(user, hashed_password: str) -> None:
         # 历史留存失败仅告警，不阻断改密主流程
         logger.warning("record password history failed. user: %s", user)
     # 密码过期计时起点；逐用户低频写（仅改密时发生），与改密主 save 分离避免字段覆盖。
-    # F-6 强制改密标记在此统一清除（本人改密 / 管理端重置 / 忘记密码 / 注册全走本函数）
+    # 强制改密标记在此统一清除（本人改密 / 管理端重置 / 忘记密码 / 注册全走本函数）
     user.date_password_updated = timezone.now()
     update_fields = ["date_password_updated"]
     if getattr(user, "must_change_password", False):

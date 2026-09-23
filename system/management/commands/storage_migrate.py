@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : storage_migrate
-"""文件存储搬迁命令（P-4）。
+"""文件存储搬迁命令。
 
 用法示例::
 
@@ -23,7 +23,7 @@ from system.utils import storage_migrate as util
 
 
 class Command(BaseCommand):
-    help = "文件存储搬迁 / 校验（P-4）：本地 <-> 对象存储，幂等可断点续搬"
+    help = "文件存储搬迁 / 校验：本地 <-> 对象存储，幂等可断点续搬"
 
     def add_arguments(self, parser):
         parser.add_argument(

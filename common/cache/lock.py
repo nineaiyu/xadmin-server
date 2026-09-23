@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""可重入分布式锁（借鉴 jumpserver DistributedLock：可重入 + 自动续期 + 事务提交后释放）。
+"""可重入分布式锁：可重入 + 自动续期 + 事务提交后释放。
 
 在 redis-py 原生锁（token 身份 + Lua 原子释放/续期）之上补齐三个能力：
 

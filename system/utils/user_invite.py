@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # project : xadmin-server
 # filename : user_invite
-"""邀请开户（F-11）：邀请令牌 + 邮件 + 激活设置密码。
+"""邀请开户：邀请令牌 + 邮件 + 激活设置密码。
 
 流程：
 
@@ -48,7 +48,7 @@ def mail_channel_configured() -> bool:
 
 
 def invite_requested(data) -> bool:
-    """请求体中的「创建即邀请」开关（F-11）：JSON 布尔与表单字符串均兼容。"""
+    """请求体中的「创建即邀请」开关：JSON 布尔与表单字符串均兼容。"""
     if data is None or not hasattr(data, "get"):
         return False
     value = data.get("invite")

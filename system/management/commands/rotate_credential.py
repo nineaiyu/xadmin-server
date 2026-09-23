@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""凭据轮换与巡检（P-3）：重加密敏感配置 + 明文巡检 + 审计留痕。
+"""凭据轮换与巡检：重加密敏感配置 + 明文巡检 + 审计留痕。
 
 用法：
     python manage.py rotate_credential --audit             # 只巡检（发现明文退出码 1）

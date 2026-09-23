@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""存储后端装配（自 base.py 拆出，控制单文件体量；P-4）。
+"""存储后端装配（自 base.py 拆出，控制单文件体量）。
 
 ``STORAGES["default"]`` 指向可插拔后端 ``common.storage.SwitchableStorage``：
 默认 local（行为同 ``FileSystemStorage``），切对象存储走 SysConfig

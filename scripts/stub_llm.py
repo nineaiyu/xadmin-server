@@ -30,7 +30,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 ALLOWED_ACTIONS_MARKER = "ALLOWED_ACTIONS_JSON:"
-#: AI-6 护栏的引用数据块边界（目录被包裹后仍可解析；与 system/utils/ai_guard.py 同口径）
+#: 护栏的引用数据块边界（目录被包裹后仍可解析；与 system/utils/ai_guard.py 同口径）
 REFERENCE_BEGIN = "<<<REFERENCE_DATA>>>"
 REFERENCE_END = "<<<END_REFERENCE_DATA>>>"
 E2E_FORM_NAME_PREFIX = "E2E-AI动作"
@@ -44,7 +44,7 @@ LONG_ANSWER = "".join(f"这是流式探针的第 {index} 段输出，用于验�
 
 
 def extract_catalog(text: str) -> dict:
-    """从标记后的文本中解析动作目录：兼容 AI-6 引用数据块包裹（取首个 { 到末个 }）。"""
+    """从标记后的文本中解析动作目录：兼容引用数据块包裹（取首个 { 到末个 }）。"""
     if REFERENCE_BEGIN in text:
         text = text.split(REFERENCE_BEGIN, 1)[1]
     if REFERENCE_END in text:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""存储访问适配层（P-4）：屏蔽本地 / 对象存储差异的统一入口。
+"""存储访问适配层：屏蔽本地 / 对象存储差异的统一入口。
 
 业务侧**不应**直接使用 ``filepath.path``（对象存储无本地路径），统一走本模块：
 
@@ -176,7 +176,7 @@ def storage_url(name: str) -> str:
 def storage_presigned_url(
     name: str | None, expires: int = PRESIGN_DEFAULT_EXPIRES, download_filename: str | None = None
 ) -> str | None:
-    """对象存储预签名直连 URL（P-4）：**仅 `s3` 后端可用**，其余返回 ``None`` 由调用方回退。
+    """对象存储预签名直连 URL：**仅 `s3` 后端可用**，其余返回 ``None`` 由调用方回退。
 
     - 用途：大文件下载 / 预览绕过服务端中转（浏览器直连对象存储，签名短时效）；
     - 本地 / `mirror` 后端无预签名概念（文件就在本地盘）→ 返回 ``None``；

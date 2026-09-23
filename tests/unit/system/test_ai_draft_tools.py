@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AI-2 原生 function calling 双轨单测：工具定义转换 + tool_calls → 草稿映射。
+"""原生 function calling 双轨单测：工具定义转换 + tool_calls → 草稿映射。
 
 覆盖：同一份目录三种消费的形态一致性（openai_tools 由 tool_catalog 推导）、
 _summary 摘要参数注入与回填、未知动作 / 畸形 JSON / 超量调用 / 空调用的可读拒绝。

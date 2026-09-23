@@ -54,7 +54,7 @@ class RoleSerializer(BaseModelSerializer):
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
     fields = serializers.DictField(write_only=True, label=_("Fields"))
 
-    # F-12 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（与 F-2 影响面同源，
+    # 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（与影响面同源，
     # 角色→用户为「删除/停用影响谁」的同一口径）；单对象序列化回退为单次 COUNT
     relation_count_fields = {"user_count": Count("userinfo")}
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))

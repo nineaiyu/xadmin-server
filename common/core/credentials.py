@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""凭据治理（P-3）：敏感配置键注册表 + 值级加密（signer v3）+ 巡检。
+"""凭据治理：敏感配置键注册表 + 值级加密（signer v3）+ 巡检。
 
 两类存储形态的加密口径：
 
@@ -31,7 +31,7 @@ SENSITIVE_SETTING_KEYS = {
     "SCIM_TOKEN": (),
     "BACKUP_ALERT_TOKEN": (),
     "OPS_ALERT_TOKEN": (),
-    # 对象存储访问凭据（P-4 可插拔存储后端）：整值加密
+    # 对象存储访问凭据（可插拔存储后端）：整值加密
     "FILE_S3_ACCESS_KEY": (),
     "FILE_S3_SECRET_KEY": (),
 }

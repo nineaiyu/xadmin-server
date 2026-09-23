@@ -70,7 +70,7 @@ OPTIONAL_DEFAULTS = {
     "subject_field": "sub",
     "enabled": False,
     "auto_create": False,
-    # ---- 标准 OIDC（flavor=oidc，F-10）----
+    # ---- 标准 OIDC（flavor=oidc）----
     "issuer": "",  # discovery 基址（同时作为 id_token 的 iss 校验值）
     "discovery_url": "",  # 显式覆盖 discovery 地址（缺省 {issuer}/.well-known/openid-configuration）
     "jwks_uri": "",  # 显式覆盖 JWKS 地址（缺省取 discovery 的 jwks_uri）

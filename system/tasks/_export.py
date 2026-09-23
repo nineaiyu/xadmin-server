@@ -44,7 +44,7 @@ def build_export_request(record, query_params, user):
 
 
 def _save_progress(record, percent, stage=""):
-    """运行中进度落库（0-100）：P-2 统一助手（里程碑即协作式取消的安全点）。
+    """运行中进度落库（0-100） 统一助手（里程碑即协作式取消的安全点）。
 
     终态由任务结束分支覆盖（终态 100 不做取消检查，避免已完成的导出被翻成取消）。
     """
@@ -125,7 +125,7 @@ def run_async_export(record_id, view_path, query_params, user_pk):
         record.save(update_fields=["file", "rows", "status", "progress", "error", "updated_time"])
         logger.info("async export done: %s bytes, rows: %s", len(content), record.rows)
     except TaskCancelled as exc:
-        # 协作式取消（P-2）：落 REVOKED 终态并同步执行历史行；不 re-raise（不是故障）
+        # 协作式取消：落 REVOKED 终态并同步执行历史行；不 re-raise（不是故障）
         state = False
         record.status = ExportRecord.Status.REVOKED
         record.error = str(exc)[:2000]

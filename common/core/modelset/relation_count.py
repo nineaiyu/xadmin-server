@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""列表关联计数声明式（F-12）。
+"""列表关联计数声明式。
 
 序列化器声明计数表达式（**注解名与字段名一致**，序列化器侧取值并保留回退）：
 
@@ -20,7 +20,7 @@
    ``related_query_name="dept_query"``；``UserInfo.roles`` 未声明时用默认反向名
    ``userinfo``）——写错会在查询期抛 FieldError。
 
-与 F-2 影响面**同源**：计数表达式与 ``system/utils/impact.py`` 的引用计算器指向同一关系
+与影响面**同源**：计数表达式与 ``system/utils/impact.py`` 的引用计算器指向同一关系
 （角色→用户、数据集→报表），「列表计数」与「删除前影响面」回答同一件事。
 
 未声明 ``relation_count_fields`` 的视图行为零变化。存量两处「注解名与字段名不一致」的

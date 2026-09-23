@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""批二 AI 能力线 API 集成测试：能力探测（AI-1）/ 原生工具双轨（AI-2）/ 幂等（AI-4）/ 用量（AI-5）。
+"""AI 能力线 API 集成测试：能力探测 / 原生工具双轨 / 幂等 / 用量。
 
 桩 LLM 按请求体分流：带 tools 的请求返回 tool_calls（原生轨道），否则按内容返回
 JSON 或 ping 文本（存量 prompt-JSON 轨道）——同一桩同时覆盖双轨对照。
@@ -102,7 +102,7 @@ class StubLLM:
 
 
 def _iter_stream(response):
-    """流式响应字节块（测试用同步收集；SSE 已切异步迭代器，见 ADR-050 增量修复）。"""
+    """流式响应字节块（测试用同步收集；SSE 已切异步迭代器）。"""
     content = response.streaming_content
     if getattr(response, "is_async", False):
         from asgiref.sync import async_to_sync

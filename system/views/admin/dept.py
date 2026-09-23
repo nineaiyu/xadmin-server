@@ -41,7 +41,7 @@ class DeptViewSet(
 
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
-    # F-1 批量更新白名单：批量启停用 / 改主管
+    # 批量更新白名单：批量启停用 / 改主管
     batch_update_fields = ("is_active", "leader")
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["created_time", "rank"]

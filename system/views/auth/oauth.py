@@ -69,7 +69,7 @@ def _redirect_uri(request, provider: str) -> str:
 def _fetch_identity(request, provider: str, config: dict, code: str, nonce: str | None = None):
     """换码 + 取用户信息 + 解析 IdP 唯一标识（登录与绑定链路共用）。
 
-    标准 OIDC（F-10）：换码结果里的 ``id_token`` 经 JWKS 验签后取 claims（不再依赖
+    标准 OIDC：换码结果里的 ``id_token`` 经 JWKS 验签后取 claims（不再依赖
     userinfo 端点）；其余 flavor 行为不变。
 
     :return: ``(subject, userinfo)``；IdP 侧失败统一抛 `OAuthError`（可读文案）。
@@ -258,7 +258,7 @@ class OAuthCallbackAPIView(GenericAPIView):
         if not user.is_active:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The account has been disabled"))
 
-        # OIDC 组 → 角色同步（F-10）：本地角色以本次登录 claims 为准，
+        # OIDC 组 → 角色同步：本地角色以本次登录 claims 为准，
         # 必须在 complete_login 之前（权限判定读取的是库内角色）
         if is_oidc_provider(config):
             sync_group_roles(user, config, userinfo)

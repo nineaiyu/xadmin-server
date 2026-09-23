@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 工具面 triage（AI-3 收口）：候选资源域的「注册 / 不 AI 化」显式决策清单。
+"""AI 工具面 triage（收口）：候选资源域的「注册 / 不 AI 化」显式决策清单。
 
 `manage.py ai_tool_audit` 对“未在 `API_ACTION_SPECS` 声明”的路由做三态判定：
 

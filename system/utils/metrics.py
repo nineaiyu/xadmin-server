@@ -315,7 +315,7 @@ TASK_HEALTH_MIN_SAMPLE = 10
 
 
 def collect_task_health(days: int = None):
-    """任务执行健康度（近 N 天聚合，借鉴 jumpserver CeleryTask.summary/state）。
+    """任务执行健康度（近 N 天聚合）。
 
     - 成功率按终态（SUCCESS/FAILURE/REVOKED）计算，PENDING/RUNNING 在途不计；
     - state：healthy / degraded / failing 三档健康色，样本不足时恒 healthy；

@@ -159,7 +159,7 @@ BASE_CONFIG = {
     # 结构化输出（NL 查数 DSL / 动作草稿 JSON）在未配置 AI_MAX_TOKENS 时的安全上限；
     # 思考型模型思考消耗 token 多，可通过 AI 配置页调大（0 = 回落内置默认 2048）
     "AI_STRUCTURED_MAX_TOKENS": 2048,
-    # AI-6 安全护栏：引用数据隔离 + 注入标记（默认开）；输出脱敏（默认开）
+    # 安全护栏：引用数据隔离 + 注入标记（默认开）；输出脱敏（默认开）
     "AI_GUARD_ENABLED": True,
     "AI_OUTPUT_MASK_ENABLED": True,
     "AI_TOP_P": None,
@@ -170,10 +170,10 @@ BASE_CONFIG = {
     "AI_MAX_RETRIES": 0,
     "AI_CONTEXT_LIMIT": 20,
     "AI_PERSONA": "",
-    # AI-2 原生 function calling 双轨：默认关（AI 配置页能力探测通过后可开启）；
+    # 原生 function calling 双轨：默认关（AI 配置页能力探测通过后可开启）；
     # 关闭时动作草稿走稳定的 prompt-JSON 轨道（存量桩 / 弱模型零破坏）
     "AI_NATIVE_TOOLS_ENABLED": False,
-    # AI-5 用量配额（0 = 不限，默认宽松）：用户日调用次数 / 用户日 token 估算 /
+    # 用量配额（0 = 不限，默认宽松）：用户日调用次数 / 用户日 token 估算 /
     # 全局并发流式上限（超限给可读提示；写类动作 fail-closed）
     "AI_QUOTA_USER_DAILY_CALLS": 0,
     "AI_QUOTA_USER_DAILY_TOKENS": 0,
