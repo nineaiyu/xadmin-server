@@ -1,6 +1,6 @@
 # MFA / 敏感操作二次验证
 
-> 设计对标 JumpServer 的 `UserConfirmation.require(ConfirmType.MFA)` 模式，并结合本项目
+> 二次验证采用「一次性确认 + 有效期」模式，并结合本项目
 > JWT 无状态认证改造：确认状态存 Redis（而非 session）。参考测试：`tests/integration/test_mfa_api.py`。
 
 ## 一、能力概览

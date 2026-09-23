@@ -47,7 +47,7 @@ uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requir
 ```
 
 - **pip 路径保持不变**（安装器 / Docker / CI 均按既有命令安装产物文件，见 `Dockerfile` 与 `.github/workflows/`）；
-- **可选依赖**（对象存储后端，P-4）：声明于 `[project.optional-dependencies].storage`，默认不装，
+- **可选依赖**（对象存储后端）：声明于 `[project.optional-dependencies].storage`，默认不装，
   未装时文件链路回退本地，启用方式 `uv sync --extra storage` 或 `pip install django-storages boto3`
   （详见 `docs/ops/storage.md`）；
 - 三方一致性（pyproject ↔ 产物 ↔ uv.lock）由 `tests/unit/test_dependency_manifest.py` 守护：

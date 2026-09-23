@@ -1,4 +1,4 @@
-# ADR-015：参考项目借鉴决策（vue-pure-admin 7.0 / jumpserver）
+# ADR-015：参考项目借鉴决策（vue-pure-admin 7.0）
 
 - 状态：已接受
 - 日期：2026-09-12
@@ -9,11 +9,10 @@
 ## 背景
 
 xadmin-client 与 vue-pure-admin（7.0.0）同源分叉（vue 3.5 / vite 8 / element-plus
-2.14 / @pureadmin/table 3.3 完全同代），xadmin-server 与 jumpserver 同属 RBAC +
-审计 + 任务调度类系统。两者都有大量"已解决过的问题"，但直接搬运会与本仓的
-元数据驱动、权限模型（`hasAuth("动作:组件名")`）、统一 `ApiResponse`/`page/size`
-分页体系冲突。本 ADR 登记 2026-09 批次借鉴执行中的**边界决策**，供后续迭代
-（含 P2 未立项项）复核时引用，避免"抄一半"或"重复造轮子"。
+2.14 / @pureadmin/table 3.3 完全同代），上游有大量"已解决过的问题"，但直接搬运
+会与本仓的元数据驱动、权限模型（`hasAuth("动作:组件名")`）、统一
+`ApiResponse`/`page/size` 分页体系冲突。本 ADR 登记 2026-09 批次借鉴执行中的
+**边界决策**，供后续迭代（含 P2 未立项项）复核时引用，避免"抄一半"或"重复造轮子"。
 
 ## 决策
 
@@ -28,31 +27,7 @@ xadmin-client 与 vue-pure-admin（7.0.0）同源分叉（vue 3.5 / vite 8 / ele
   评估后不移植：ReCropperPreview（与 RePictureUpload 能力重复）、print.ts
   （无打印需求，候选池按需启用）。
 
-### 2. jumpserver 后端：借鉴"精细化机制"，不引入其体系性约定
-
-jumpserver 的无统一响应包装、`limit/offset` 分页、`OrgModelMixin` 多租户体系
-**不引入**——本仓 `ApiResponse` + `page/size` + 「部门 + 数据权限 Q 编译」更贴合
-前端与单租户现实。已落地的机制借鉴：
-
-| 机制                     | 落点                                         | 批次 |
-| ------------------------ | -------------------------------------------- | ---- |
-| 通知渠道约定式加载       | `notifications/backends/`（SMS 入枚举）      | P0-4 |
-| 密码安全套件             | `settings/utils/password.py` + migration 0009 | P1-4 |
-| 按权限反查审批人         | `system/services.py::get_users_by_perm(s)`   | P1-5 |
-| 内置角色 + post_migrate  | `system/builtin.py` + `UserRole.builtin`     | P2-1 |
-| 分布式锁（可重入/续期/事务后释放） | `common/cache/lock.py::ReentrantLock` | P2-2 |
-| 内置对象删除保护         | `RoleViewSet`（同内置字典 is_locked 口径）   | P2-1 |
-
-借鉴执行中的**前提纠偏**（核实先于动手的价值记录）：
-
-- 异地登录提醒：jumpserver 的 `check_different_city_login_if_need` 本仓**已有**
-  （且另有新设备/新 IP 维度），P1-4 该子项零开发；
-- 级联删除审计噪声：jumpserver 的 `CASCADE_SIGNAL_SKIP` 解决的是信号驱动审计的
-  噪声；本仓审计是请求级中间件模型（一条 DELETE 请求一条 OperationLog），ORM
-  级联不产生审计行，**噪声前提不成立**，P2-3 仅落地 M2M diff 纳入
-  （`crud.py` 快照对比，与标量字段同形态落 `changes`）。
-
-### 3. P2-5 审批流可视化评估：不引入（维持列表式编辑）
+### 2. P2-5 审批流可视化评估：不引入（维持列表式编辑）
 
 评估对象：上游 `ReFlowChart`（@logicflow/core 2.2.5 + extension 2.3.1）、
 `@vue-flow`（core 1.48.2 + background 1.3.2），替代 `FlowConfigDrawer` 列表式
@@ -76,10 +51,10 @@ Turbo 适配层较重）。
 > 实施前按纪律补引擎升级 ADR）。本节"不引入"结论自此更新为"线性引擎阶段
 > 不引入，分支引擎阶段引入 @vue-flow"。
 
-### 4. 后果
+### 3. 后果
 
 - 前端与上游保持「同代依赖、点状移植」关系，不做整体升级；
-- 后端借鉴项均带测试与默认关闭的灰度开关（密码安全三项、
+- 借鉴项均带测试与默认关闭的灰度开关（密码安全三项、
   `APPROVAL_APPROVER_PERMS`），按「先灰度观察再默认开启」推进；
-- P2 未立项项（内置角色的菜单同步策略细化、审计存储后端抽象、任务健康度
+- 未立项项（内置角色的菜单同步策略细化、审计存储后端抽象、任务健康度
   阈值调优）沿用本 ADR 的边界原则，另立任务时不再重复论证。

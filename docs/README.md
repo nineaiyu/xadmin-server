@@ -46,7 +46,7 @@
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/pitr.md](ops/pitr.md) | WAL 归档与时间点恢复（PITR） |
 | [ops/log-archive.md](ops/log-archive.md) | 审计日志冷归档（归档水位驱动清理 / 离线恢复查询 / 校验与演练） |
-| [ops/storage.md](ops/storage.md) | 文件存储后端（P-4）：声明式可插拔（local / S3）+ 搬迁校验命令 + health 探针 + 排障 |
+| [ops/storage.md](ops/storage.md) | 文件存储后端：声明式可插拔（local / S3）+ 搬迁校验命令 + health 探针 + 排障 |
 | [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 演练记录） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
