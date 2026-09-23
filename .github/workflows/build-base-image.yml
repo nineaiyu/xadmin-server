@@ -10,6 +10,9 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - 'Dockerfile-base'
+      # 工作流自身变更也触发一次，验证构建与回写逻辑
+      - '.github/workflows/build-base-image.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-push-base-image:
@@ -18,6 +21,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # 回写 base tag 需完整历史：构建期间分支可能前进，需 pull --rebase 后重试
+          fetch-depth: 0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -57,6 +63,18 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add Dockerfile
           git commit -m "perf: Update Dockerfile with new base image tag"
-          git push origin ${{ github.event.pull_request.head.ref }}
+          # 构建耗时数分钟，期间分支可能已有新提交（直接 push 会被拒）：
+          # 逐次 rebase 后重试；三次仍失败则显式报错，避免静默丢弃 tag 回写。
+          for attempt in 1 2 3; do
+            if git pull --rebase origin "${GITHUB_REF_NAME}" \
+              && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "第 ${attempt} 次回写失败（分支在构建期间有新提交），5 秒后重试"
+            sleep 5
+          done
+          echo "::error::Dockerfile base tag 回写失败：分支持续有新提交，请重跑本工作流"
+          exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
