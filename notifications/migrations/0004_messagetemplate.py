@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("notifications", "0003_messagecontent_deleted_at_and_more"),
-        ("system", "0010_savedlistview"),
+        ("system", "0005_squashed_0013_ai_usage_track"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
