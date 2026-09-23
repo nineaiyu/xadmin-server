@@ -256,19 +256,30 @@ def _dockerfiles() -> list[Path]:
     return [DOCKERFILE_BASE, DOCKERFILE_DEV]
 
 
-def test_container_build_installs_from_lockfile():
-    """容器构建（base / dev 镜像）必须以锁文件安装，不得消费 requirements 产物。
+def _instructions(path: Path) -> str:
+    """Dockerfile 去掉注释行后的内容（注释里会解释被禁用的写法，不应参与断言）。"""
+    return "\n".join(
+        line for line in path.read_text(encoding="utf-8").splitlines() if not line.lstrip().startswith("#")
+    )
 
-    容器内用 ``--frozen`` 而非 ``--locked``：``--locked`` 的一致性校验会把当前 index 的候选集
-    一并比对，而构建走 PIP_MIRROR（镜像源与 PyPI 候选集不完全一致）时会误报「lock 需更新」。
-    跳过的那层校验由 CI 的 ``uv lock --check`` 补齐（见 test_ci_installs_from_lockfile）。
+
+def test_container_build_installs_via_uv_with_mirror():
+    """容器构建必须经 uv 安装导出产物（uv pip + --index-url），不得回退裸 pip、也不得用 --frozen。
+
+    为什么容器不用 ``uv sync --frozen``：``--frozen`` 不重新解析，uv 会直接使用 uv.lock 里固化的
+    ``files.pythonhosted.org`` 下载地址，从而绕过 PIP_MIRROR（astral-sh/uv#19625）——国内直连
+    官方 CDN 与走镜像源相差一个数量级。改用 ``uv pip install -r requirements*.txt --index-url``
+    后，解析与下载都走镜像源；版本可复现性由产物与 uv.lock 的三方守护（本文件其余用例）保证。
     """
     for path in _dockerfiles():
-        text = path.read_text(encoding="utf-8")
-        assert "uv sync --frozen" in text, f"{path.name} 未以 uv.lock 安装（缺少 uv sync --frozen）"
-        assert INSTALL_FROM_EXPORT not in text, (
-            f"{path.name} 仍以 requirements 产物安装依赖（应改为 uv sync --frozen；"
-            f"requirements*.txt 仅用于 pip-audit 与手工安装）"
+        text = _instructions(path)
+        assert "uv pip install" in text, f"{path.name} 未通过 uv 安装依赖（缺少 uv pip install）"
+        assert "uv sync --frozen" not in text, (
+            f"{path.name} 使用了 uv sync --frozen：它会绕过镜像源直连 files.pythonhosted.org"
+            f"（astral-sh/uv#19625），应改用 uv pip install + --index-url"
+        )
+        assert not re.search(r"(?<!uv )pip install -r requirements", text), (
+            f"{path.name} 仍以裸 pip 安装依赖（应经 uv pip install）"
         )
 
 

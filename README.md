@@ -36,12 +36,14 @@ uv run python manage.py start all -d
 ### 依赖管理（pyproject + uv）
 
 - **事实源**：`pyproject.toml`（运行依赖 + `dev` 组）与 `uv.lock`（锁文件，入库）；
-- **安装路径（本地 / 容器 / CI 同口径）**：`uv.lock` 是唯一安装依据——本地开发
-  `uv sync --all-groups`（环境重建为秒级）；容器构建 `uv sync --frozen`（见 `Dockerfile-base` /
-  `Dockerfile-dev`）；CI `uv sync --locked` + `uv lock --check`（见 `.github/workflows/`）。
-  容器用 `--frozen` 的原因：`--locked` 的一致性校验会把当前 index 的候选集一并比对，
-  而构建走 `PIP_MIRROR`（镜像源与 PyPI 候选集不完全一致）时会误报「lock 需更新」，
-  跳过的那层校验由 CI 的 `uv lock --check` 补齐；
+- **安装路径**（`uv.lock` 是版本唯一依据）：本地开发 `uv sync --all-groups`；CI
+  `uv sync --locked` + `uv lock --check`（见 `.github/workflows/`）；**容器构建**
+  `uv pip install -r requirements*.txt --index-url ${PIP_MIRROR}`（见 `Dockerfile-base` /
+  `Dockerfile-dev`）。容器为何不用 `uv sync --frozen`：`--frozen` 不重新解析，uv 会直接用
+  `uv.lock` 里固化的 `files.pythonhosted.org`（PyPI 官方 CDN）地址下载，**绕过 PIP_MIRROR**
+  （[astral-sh/uv#19625](https://github.com/astral-sh/uv/issues/19625)）——国内直连官方 CDN 只有
+  10 KB/s 级、走镜像源可达 10+ MB/s。这也是 `requirements*.txt` 的第一个硬用途：镜像源场景的
+  安装输入（与 `uv.lock` 的一致性由 `tests/unit/test_dependency_manifest.py` 守护）；
 - **`requirements.txt` / `requirements-dev.txt` 是 `uv export` 的导出产物**（请勿手工编辑，
   改依赖 = 改 pyproject 后重新导出）。它们不再是安装依据，保留给三类固定用途：pip 生态安全扫描
   （`pip-audit -r requirements.txt`）、无 uv 环境的手工与离线安装、国产化平台版本适配

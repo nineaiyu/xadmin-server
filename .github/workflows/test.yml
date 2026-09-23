@@ -30,7 +30,7 @@ jobs:
         run: uv sync --locked --no-install-package mysqlclient
 
       - name: Verify lockfile is in sync
-        # 容器构建用 --frozen（镜像源候选集与 PyPI 不一致时 --locked 会误报），
+        # 容器构建走 uv pip + 镜像源（不经 lock 的 URL，见 Dockerfile-base 说明），
         # lock ↔ pyproject 的一致性校验在此补齐
         run: uv lock --check
 

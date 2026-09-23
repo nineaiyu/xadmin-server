@@ -13,14 +13,15 @@
 #   uv export --no-hashes --no-emit-project --no-group dev --no-annotate -o requirements.txt
 #   uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requirements-dev.txt
 #
-# 安装路径（本地 / 容器 / CI，一律以 uv.lock 为唯一安装依据）：
+# 安装路径（版本依据一律是 uv.lock）：
 #   uv sync --all-groups                       # 本地开发（含 dev 组）
-#   uv sync --frozen --no-dev                  # 容器构建（见 Dockerfile-base / Dockerfile-dev）：
-#                                              #   --frozen 跳过解析校验，因镜像源候选集与 PyPI
-#                                              #   不一致时 --locked 会误报「lock 需更新」；
-#                                              #   该一致性由 CI 的 uv lock --check 兜底守护
-# 产物用途（requirements*.txt 不再是安装依据）：
-#   pip-audit -r requirements.txt（安全扫描）/ 无 uv 环境的手工与离线安装 / 国产化平台版本适配
+#   uv sync --locked / uv lock --check         # CI（走官方源，可做解析一致性校验）
+#   uv pip install -r requirements*.txt --index-url <镜像源>    # 容器构建
+#     # 不用 uv sync --frozen：它不重新解析，会直接用 lock 里固化的 files.pythonhosted.org
+#     # 地址下载、绕过镜像源（astral-sh/uv#19625），国内构建耗时差一个数量级
+# 产物用途（requirements*.txt）：
+#   镜像源场景的容器安装输入（与 uv.lock 的一致性由 tests/unit/test_dependency_manifest.py 守护）
+#   / pip-audit -r requirements.txt（安全扫描）/ 无 uv 环境的手工与离线安装 / 国产化平台版本适配
 # 可选依赖（对象存储后端，默认不装）：
 #   uv sync --extra storage     或     pip install django-storages boto3
 

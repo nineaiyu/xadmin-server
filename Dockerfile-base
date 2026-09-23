@@ -39,14 +39,20 @@ ARG UV_CONCURRENT_DOWNLOADS=50
 RUN --mount=type=cache,target=/root/.cache,id=core \
     pip install "uv==${UV_VERSION}" -i ${PIP_MIRROR}
 
+# install dependencies（版本依据：uv.lock）
+# 为什么不用 `uv sync --frozen`：--frozen 不重新解析，uv 会直接使用 uv.lock 里固化的
+# files.pythonhosted.org（PyPI 官方 CDN）下载地址，从而绕过 PIP_MIRROR（astral-sh/uv#19625）——
+# 国内直连官方 CDN 实测 10 KB/s 级、走镜像源可达 10+ MB/s，构建耗时差一个数量级。
+# 这里改用 uv pip + 镜像源安装同一份导出产物：requirements.txt 与 uv.lock 的一致性由
+# tests/unit/test_dependency_manifest.py 守护，版本同样完全可复现。
+# UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高。
+ARG UV_CONCURRENT_DOWNLOADS=50
+
 RUN --mount=type=cache,target=/root/.cache,id=core \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
     set -ex \
-    && UV_PROJECT_ENVIRONMENT=/data/py3 \
-       UV_PYTHON_DOWNLOADS=0 \
-       UV_LINK_MODE=copy \
+    && UV_PYTHON_DOWNLOADS=0 uv venv --python-preference only-system /data/py3 \
+    && UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
        UV_COMPILE_BYTECODE=1 \
-       UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
-       uv sync --frozen --no-dev --python-preference only-system --default-index ${PIP_MIRROR} \
+       uv pip install --python /data/py3 -r requirements.txt --index-url ${PIP_MIRROR} \
     && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR}
