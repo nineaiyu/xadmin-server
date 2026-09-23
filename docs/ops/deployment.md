@@ -359,6 +359,13 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 | 中间件    | Redis 兼容版本即可（缓存/broker 用途，无特殊命令依赖）                                                           |
 | 验证清单   | 迁移全量通过 → 登录/验证码/图片处理（Pillow/GeoIP 库）→ 导入导出（openpyxl）→ WebSocket → 定时任务                       |
 
+> **老 ARM CPU 的 wheel 兼容**：`cryptography` 47.0+ 的 aarch64 manylinux wheel 使用了更激进的
+> CPU 基线，在部分较老的 ARM 主机（含 2026-09 前后的 ARM 虚拟机）上 import 即触发
+> `Illegal instruction (core dumped)`（现象：容器反复 Restarting (132)）。此类环境构建镜像前
+> 在服务器侧将 `requirements.txt` 中的 `cryptography` 调整为 `==46.0.7`，并同步把
+> `pyopenssl` 调整为 `==26.0.0`、`service-identity` 调整为 `==24.2.0`（三者对 cryptography
+> 的版本约束互斥）。该适配仅作用于构建上下文，属服务器本地改动，不要提交回仓库。
+
 > 国产化数据库替换涉及迁移文件与第三方库兼容性，属大变更：先建独立分支跑全量门禁（pytest + E2E），并登记 ADR 后再合入。
 
 ## 8. 安全响应头：CSP（S3）
