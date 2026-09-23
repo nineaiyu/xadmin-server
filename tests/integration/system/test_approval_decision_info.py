@@ -104,7 +104,9 @@ class TestRelatedObject:
         summary = biz_summary(instance)
         assert summary["type"] == "leave"
         assert summary["missing"] is False
-        assert "年假" in summary["title"] or "annual" in summary["title"]
+        # CI 无 .mo 编译产物时显示英文（首字母大写），断言需大小写不敏感
+        title = summary["title"].lower()
+        assert "年假" in title or "annual" in title
 
     def test_unknown_biz_type_degrades(self, superuser):
         from system.utils.approval_flow.biz import biz_summary
