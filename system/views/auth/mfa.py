@@ -30,21 +30,46 @@ from system.views.auth.login import login_success
 logger = get_logger(__name__)
 
 # 登录 MFA 允许的验证方式（密码方式在登录场景无意义）
-LOGIN_MFA_METHODS = ["otp", "sms", "email"]
+LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey"]
 CHALLENGE_METHODS = ["sms", "email"]
 
 
 def _get_mfa_user(request):
     """校验 mfa_token 并返回待验证用户，无效则直接抛业务异常。
 
-    只要求已绑定密钥：全局强制场景下允许验证"个人已关闭但被强制"的账号。
+    只要求已绑定凭据（OTP 密钥或 Passkey）：全局强制场景下允许验证"个人已关闭但被强制"的账号。
     """
     user = validate_login_mfa_token(request.data.get("mfa_token"))
     if not user:
         raise ValidateError(_("Login verification expired, please log in again"))
-    if not user.otp_secret_key:
+    if not user.otp_secret_key and not user.passkeys.exists():
         raise ValidateError(_("Operation failed. Abnormal data"))
     return user
+
+
+class LoginMFAPasskeyChallengeAPIView(APIView):
+    """获取 Passkey 登录验证的挑战值（匿名，凭一次性 mfa_token 识别待验证用户）"""
+
+    permission_classes = []
+    authentication_classes = []
+    throttle_classes = [LoginThrottle]
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"mfa_token": build_basic_type(OpenApiTypes.STR)},
+                required=["mfa_token"],
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    def post(self, request, *args, **kwargs):
+        """获取 Passkey 挑战值"""
+        from system.utils.webauthn import SCENE_AUTHENTICATE, generate_challenge, rp_id_and_origin
+
+        user = _get_mfa_user(request)
+        rp_id, _origin = rp_id_and_origin(request)
+        return ApiResponse(data={"challenge": generate_challenge(user, SCENE_AUTHENTICATE), "rp_id": rp_id})
 
 
 class LoginMFASendCodeAPIView(APIView):
@@ -141,6 +166,8 @@ class LoginMFAVerifyAPIView(APIView):
         else:
             result = {"refresh": str(refresh), "access": str(refresh.access_token)}
         result.update(get_token_lifetime(user))
+        # F-6 强制改密标记：登录响应带出，前端引导改密（改密成功后自动清除）
+        result["must_change_password"] = bool(getattr(user, "must_change_password", False))
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
         login_success(request, user)

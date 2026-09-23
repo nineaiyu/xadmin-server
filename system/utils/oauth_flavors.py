@@ -61,6 +61,12 @@ FLAVOR_PRESETS = {
         "subject_field": "union_id",
         "scope": "",
     },
+    "oidc": {
+        # 标准 OIDC（F-10）：端点来自 issuer discovery（或显式 authorize_url/token_url），
+        # 身份取自 id_token claims（签名经 JWKS 验签），无 userinfo 端点也可用
+        "scope": "openid profile email",
+        "subject_field": "sub",
+    },
 }
 
 # 各 flavor 的写入侧必填键（oauth2 沿用 oauth.REQUIRED_KEYS，URL 必填）
@@ -68,6 +74,8 @@ FLAVOR_REQUIRED_KEYS = {
     "dingtalk": ("key", "name", "client_id", "client_secret"),
     "wecom": ("key", "name", "client_id", "client_secret", "agent_id"),
     "feishu": ("key", "name", "client_id", "client_secret"),
+    # OIDC（F-10）：端点由 issuer discovery 解析或显式填写，故 URL 不在必填面
+    "oidc": ("key", "name", "client_id", "client_secret"),
 }
 
 _ERR_CONTACT = _("Failed to contact the identity provider")

@@ -15,12 +15,13 @@ from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.fields import DictChoiceField
+from system.serializers.tag import TaggedObjectSerializerMixin
 from system.utils.preview import preview_kind
 
 logger = get_logger(__name__)
 
 
-class UploadFileSerializer(BaseModelSerializer):
+class UploadFileSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     # 分类选项来自数据字典 upload_category：字典约束写入路径（非法值 invalid_choice），
     # 管理员改字典即时生效；无回退枚举（分类是纯管理口径，无历史值兼容问题）
     category = DictChoiceField(
@@ -29,6 +30,8 @@ class UploadFileSerializer(BaseModelSerializer):
         allow_null=True,
         label=_("Category"),
     )
+    # P-1 通用标签：只读回显（打标走 /api/system/tags/assign）
+    tags = serializers.SerializerMethodField(label=_("Tags"))
 
     class Meta:
         model = UploadFile
@@ -43,6 +46,7 @@ class UploadFileSerializer(BaseModelSerializer):
             "access_url",
             "is_tmp",
             "is_upload",
+            "tags",
             "deleted_at",
             "preview_kind",
         ]
@@ -53,6 +57,7 @@ class UploadFileSerializer(BaseModelSerializer):
             "filesize",
             "mime_type",
             "category",
+            "tags",
             "access_url",
             "is_tmp",
             "is_upload",

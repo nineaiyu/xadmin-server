@@ -7,7 +7,6 @@
 （文件字段名、文案、终态集合）与各自的 OpenAPI schema 声明。
 """
 
-import os
 from urllib.parse import quote
 
 from django.http import FileResponse
@@ -17,6 +16,7 @@ from rest_framework.filters import BaseFilterBackend
 
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
+from common.storage import storage_exists, storage_open
 from system.utils.record_stats import (
     RECORD_STATS_CACHE_SECONDS,
     record_stats,
@@ -76,11 +76,12 @@ class RecordFileDownloadMixin:
         """文件缺失返回可读业务错误，否则返回 FileResponse。"""
         if not upload or not upload.filepath:
             return ApiResponse(code=1001, detail=self.download_not_found_message)
-        path = upload.filepath.path
-        if not os.path.exists(path):
+        # 存储适配（P-4）：本地 / 对象存储统一走 storage 原语
+        name = getattr(upload.filepath, "name", "")
+        if not name or not storage_exists(name):
             return ApiResponse(code=1001, detail=self.download_not_found_message)
         response = FileResponse(
-            open(path, "rb"),
+            storage_open(name, "rb"),
             as_attachment=True,
             filename=upload.filename,
             content_type=upload.mime_type or "application/octet-stream",

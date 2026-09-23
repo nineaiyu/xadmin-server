@@ -20,6 +20,19 @@ class CustomAutoSchema(AutoSchema):
     def get_tags(self) -> list[str]:
         return [self.view.__class__.__name__]
 
+    def get_operation(self, path, path_regex, path_prefix, method, registry):
+        """按 AI 注册表 + 视图 ai_meta 注入 ``x-ai-*`` 扩展（AI-3，未涉及端点零变化）。"""
+        operation = super().get_operation(path, path_regex, path_prefix, method, registry)
+        try:
+            from common.swagger.ai_meta import ai_operation_meta, operation_extensions
+
+            meta = ai_operation_meta(self.view, path, method)
+            if meta:
+                operation.update(operation_extensions(meta))
+        except Exception:  # noqa: BLE001 元数据注入失败不阻断 schema 生成
+            logger.warning("inject AI operation metadata failed. path:%s", path, exc_info=True)
+        return operation
+
 
 class OpenApiAuthenticationScheme(OpenApiAuthenticationExtension):
     target_class = "common.core.auth.CookieJWTAuthentication"  # full import path OR class ref

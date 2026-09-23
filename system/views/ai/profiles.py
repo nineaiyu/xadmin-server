@@ -54,10 +54,13 @@ class AiProfileViewSet(
 ):
     """AI 配置档案：多套凭据 + 采样/行为参数，至多一个激活。
 
-    - 激活（activate）后供全部 AI 链路使用；删除激活行 / 停用（deactivate）
+    - 激活（activate）后供对应用途的 AI 链路使用；删除激活行 / 停用（deactivate）
       后回落 Setting 体系历史配置（category=ai）；
+    - 用途（purpose）分流：chat 供问答/聊天、structured 供 NL 查数/动作草稿；
+      每种用途至多一个激活档案，未配 structured 时结构化链路回落 chat 档案；
     - api_key 明文只进不出（加密落库，回显 api_key_set 布尔）；
-    - test：按档案当前持久化值真实 ping 一次 LLM。
+    - test：按档案当前持久化值真实 ping 一次 LLM；
+    - probe：按序探测 JSON / tool_calls / reasoning（可选 vision）四项能力并落 capabilities。
     """
 
     queryset = AiProfile.objects.all()
@@ -69,13 +72,14 @@ class AiProfileViewSet(
     select_related_fields = ("creator",)
 
     def perform_create(self, serializer):
-        # 先清激活行再插入：部分唯一索引（uniq_ai_profile_active）下
+        # 先清同用途激活行再插入：用途级部分唯一索引（uniq_ai_profile_purpose_active）下
         # 「带 is_active=true 直接新建」才不会在插入瞬间撞约束
         from django.db import transaction
 
         with transaction.atomic():
             if serializer.validated_data.get("is_active"):
-                AiProfile.objects.filter(is_active=True).update(is_active=False)
+                purpose = serializer.validated_data.get("purpose") or AiProfile.Purpose.CHAT
+                AiProfile.objects.filter(is_active=True, purpose=purpose).update(is_active=False)
             instance = serializer.save()
             if instance.is_active:
                 set_active_profile(instance, True)
@@ -85,7 +89,10 @@ class AiProfileViewSet(
 
         with transaction.atomic():
             if serializer.validated_data.get("is_active"):
-                AiProfile.objects.exclude(pk=serializer.instance.pk).filter(is_active=True).update(is_active=False)
+                purpose = serializer.validated_data.get("purpose") or serializer.instance.purpose
+                AiProfile.objects.exclude(pk=serializer.instance.pk).filter(is_active=True, purpose=purpose).update(
+                    is_active=False
+                )
             instance = serializer.save()
             if instance.is_active:
                 set_active_profile(instance, True)
@@ -119,3 +126,35 @@ class AiProfileViewSet(
             logger.warning("AI profile test unexpected error", exc_info=True)
             return ApiResponse(code=1002, detail=str(exc))
         return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["post"], detail=True, url_path="probe")
+    def probe(self, request, *args, **kwargs):
+        """能力探测（AI-1）：按序验证 JSON / tool_calls / reasoning（可选 vision）并落 capabilities。
+
+        - 请求体可选 ``capabilities``（能力子集）与 ``vision``（是否追加多模态探测）；
+        - 探测不阻断：单项失败只记录 ok=False + 可读原因，返回结果供前端提示与人工修正；
+        - 结果写回档案（capabilities + probed_at），可 PATCH 手工覆盖。
+        """
+        from django.utils import timezone
+
+        from system.utils.ai_probe import ALL_CAPABILITIES, probe_profile
+
+        profile = self.get_object()
+        if not profile.is_configured:
+            return ApiResponse(code=1001, detail=_("Fill in base URL, API key and model before testing"))
+        requested = request.data.get("capabilities")
+        requested = [str(item) for item in requested] if isinstance(request.data.get("capabilities"), list) else None
+        if requested:
+            unknown = [name for name in requested if name not in ALL_CAPABILITIES]
+            if unknown:
+                return ApiResponse(code=1001, detail=_("Unknown capability: {}").format(", ".join(unknown[:5])))
+        try:
+            result = probe_profile(profile, capabilities=requested, vision=bool(request.data.get("vision")))
+        except Exception as exc:  # noqa: BLE001 探测入口兜底（凭据/网络异常归一可读文案）
+            logger.warning("AI profile probe failed", exc_info=True)
+            return ApiResponse(code=1002, detail=str(exc))
+        profile.capabilities = result
+        profile.probed_at = timezone.now()
+        profile.save(update_fields=["capabilities", "probed_at", "updated_time"])
+        return ApiResponse(data=result, detail=_("Model probe finished"))

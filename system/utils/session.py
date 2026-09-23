@@ -53,18 +53,47 @@ def force_logout_user(user_pk, operator=None):
     return len(channels)
 
 
+def enforce_session_limit(user, limit=None):
+    """并发会话上限（F-7，SECURITY_LOGIN_MAX_SESSIONS，0 = 不限）：超限踢最久未活跃会话。
+
+    保留最近活跃的 limit 个会话（含本次刚登记的），多余会话写会话级失效标记
+    （``SessionTokenRevokedCache``，其 access/refresh token 立即失效）并置 OFFLINE。
+    返回被踢会话数；异常只告警不阻断登录主流程。
+    """
+    from django.conf import settings
+
+    from common.cache.storage import SessionTokenRevokedCache
+    from system.models import UserSession
+
+    limit = int(limit if limit is not None else (getattr(settings, "SECURITY_LOGIN_MAX_SESSIONS", 0) or 0))
+    if limit <= 0:
+        return 0
+    sessions = list(UserSession.objects.filter(creator=user, status=UserSession.Status.ONLINE).order_by("-last_active"))
+    stale = sessions[limit:]
+    for session in stale:
+        try:
+            SessionTokenRevokedCache(session.pk).set_storage_cache(1)
+            session.mark_offline()
+        except Exception:  # noqa: BLE001 单条会话处置失败不影响其余
+            logger.warning("enforce session limit failed. session:%s", session.pk, exc_info=True)
+    if stale:
+        logger.info("enforce session limit for user %s: kicked %s session(s)", user.pk, len(stale))
+    return len(stale)
+
+
 def register_user_session(request, user, login_type, channel_name=""):
     """登录/WS 接入时登记会话，返回 UserSession 实例。
 
     元数据（ip/city/browser/system/agent）与登录日志（save_login_log）同口径
     取自 request；调用方对异常自行兜底——会话管理属附加能力，不影响登录主流程。
+    登记后按并发会话上限（F-7）收敛该用户历史会话。
     """
     from common.utils.ip import get_ip_city
     from common.utils.request import get_browser, get_os, get_request_ip, get_user_agent
     from system.models import UserSession
 
     login_ip = get_request_ip(request) if request else ""
-    return UserSession.objects.create(
+    session = UserSession.objects.create(
         creator=user,
         channel_name=channel_name or "",
         ipaddress=login_ip or "0.0.0.0",
@@ -74,6 +103,8 @@ def register_user_session(request, user, login_type, channel_name=""):
         agent=str(get_user_agent(request)) if request else "",
         login_type=login_type,
     )
+    enforce_session_limit(user)
+    return session
 
 
 def bind_session_claim(refresh_token, session_pk):

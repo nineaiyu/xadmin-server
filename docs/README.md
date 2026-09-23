@@ -45,6 +45,8 @@
 | [ops/deployment.md](ops/deployment.md) | **部署与运维手册**：配置速查表（§9）/ Docker / 备份恢复 / 升级回滚 |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/pitr.md](ops/pitr.md) | WAL 归档与时间点恢复（PITR） |
+| [ops/log-archive.md](ops/log-archive.md) | 审计日志冷归档（归档水位驱动清理 / 离线恢复查询 / 校验与演练） |
+| [ops/storage.md](ops/storage.md) | 文件存储后端（P-4）：声明式可插拔（local / S3）+ 搬迁校验命令 + health 探针 + 排障 |
 | [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 演练记录） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
@@ -54,7 +56,7 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（46 篇）**——"当时为什么这样选"；新增决策按编号顺延并登记 |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（49 篇）**——"当时为什么这样选"；新增决策按编号顺延并登记 |
 | [plans/README.md](plans/README.md) | 规划与治理：长期优化方案 / 当前年度计划 / 最近年度回顾；**已完成的一次性台账在 `plans/archive/`** |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线 → 实测履历） |
 | [security-review.md](security-review.md) | 安全自查归档（按轮次追加） |

@@ -9,13 +9,12 @@ import datetime
 import hashlib
 import os
 import re
-from urllib.parse import quote
 
 from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
-from django.http import FileResponse, HttpResponse
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
@@ -28,15 +27,17 @@ from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
 from common.core.config import SysConfig, get_personal_config_data, get_personal_int_config
-from common.core.filter import BaseFilterSet
+from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
 from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
+from common.storage import storage_exists, storage_open
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from system.models import UploadFile
+from system.models import FileAccessLog, UploadFile
 from system.serializers.upload import UploadFileSerializer
 from system.utils.dict import get_dict_items
+from system.utils.file_audit import log_file_access, validate_upload_extension
 from system.utils.preview import (
     KIND_IMAGE,
     KIND_OFFICE,
@@ -51,7 +52,9 @@ from system.utils.preview import (
     read_text_preview,
     touch_preview_cache,
 )
+from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 from system.utils.upload_category import UPLOAD_CATEGORY_DICT, resolve_upload_category
+from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
 
 logger = get_logger(__name__)
 
@@ -79,18 +82,6 @@ def get_user_quota_mb(user_obj):
 def get_user_count_limit(user_obj):
     """个人上传文件数量上限：个人行优先，未设置继承系统级（0 = 不限）。"""
     return get_personal_int_config(user_obj, "FILE_UPLOAD_COUNT_LIMIT", SysConfig.FILE_UPLOAD_COUNT_LIMIT)
-
-
-def _inline_file_response(path, content_type, filename):
-    """inline 响应：浏览器直接渲染（PDF 内嵌 / 图片展示）而非下载。
-
-    `Content-Disposition: inline` + RFC 5987 文件名编码，与下载口径同源
-    （见 `views/admin/record_base.py` 的 attachment 版本）。
-    """
-    response = FileResponse(open(path, "rb"), as_attachment=False, content_type=content_type)
-    response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(filename or ""))
-    response["Access-Control-Expose-Headers"] = "Content-Disposition, X-Preview-Truncated"
-    return response
 
 
 def sanitize_filename(name, max_length=255):
@@ -139,16 +130,17 @@ def invalidate_upload_stats_cache(user_pk):
     cache.delete(f"magic_cache_response_UploadFileViewSet_stats_{user_pk}")
 
 
-class UploadFileFilter(BaseFilterSet):
+class UploadFileFilter(TagFilterMixin, BaseFilterSet):
     filename = filters.CharFilter(field_name="filename", lookup_expr="icontains")
     category = filters.CharFilter(field_name="category", lookup_expr="iexact")
+    tag = TagChoiceFilter()
 
     class Meta:
         model = UploadFile
-        fields = ["filename", "category", "mime_type", "md5sum", "description", "is_upload", "is_tmp"]
+        fields = ["filename", "category", "mime_type", "md5sum", "description", "is_upload", "is_tmp", "tag"]
 
 
-class UploadFileViewSet(RecycleBinAction, BaseModelSet):
+class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAction, BaseModelSet):
     """文件"""
 
     queryset = UploadFile.objects.all()
@@ -158,6 +150,10 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "filesize"]
     filterset_class = UploadFileFilter
+    # P-1 通用标签：?tag=<标签名> 过滤（预取走 TaggedPrefetchMixin）
+    # F-13 受控 lookup 透传：字段面 = UploadFileFilter 已声明字段（字段可见性 fail-closed）
+    controlled_lookup = True
+    extra_filter_class = [TagFilterBackend, ControlledLookupFilterBackend]
 
     # stats 短缓存：10s 内重复刷新不重复聚合；按用户区分缓存键
     def get_stats_cache_key(self, view_instance, view_method, request, args, kwargs):
@@ -286,22 +282,6 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
             trend.append({"date": day.isoformat(), "count": row.get("count", 0), "size": row.get("size") or 0})
         return trend
 
-    @extend_schema(
-        responses=get_default_response_schema(
-            {
-                "data": build_object_type(
-                    properties={
-                        "file_upload_size": build_basic_type(OpenApiTypes.NUMBER),
-                    }
-                )
-            }
-        )
-    )
-    @action(methods=["get"], detail=False)
-    def config(self, request, *args, **kwargs):
-        """获取上传配置"""
-        return ApiResponse(data={"file_upload_size": get_upload_max_size(request.user)})
-
     @action(methods=["get"], detail=True, url_path="preview")
     def preview(self, request, *args, **kwargs):
         """在线预览：走 DRF 鉴权与数据权限（不暴露 /media/ 直链）。
@@ -318,6 +298,14 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         """
         upload = self.get_object()
         kind = preview_kind(upload)
+        # F-8 文件访问审计：预览留痕（类型进 detail，便于按访问方式统计）
+        log_file_access(
+            upload=upload,
+            user=request.user,
+            action=FileAccessLog.Action.PREVIEW,
+            request=request,
+            detail=f"kind={kind or ''}",
+        )
         if kind is None or not upload.filepath:
             return ApiResponse(
                 code=PREVIEW_UNSUPPORTED_CODE,
@@ -344,21 +332,24 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
                     detail=_("This file type does not support preview"),
                 )
             touch_preview_cache(cache_path)
-            return _inline_file_response(cache_path, "image/jpeg", upload.filename)
+            return inline_file_response(cache_path, "image/jpeg", upload.filename)
 
         # PDF：原样 inline 返回（浏览器内嵌渲染，不生成缓存）
         if kind == KIND_PDF:
-            path = upload.filepath.path
-            if not os.path.exists(path):
+            # 存储适配（P-4）：对象存储无本地路径，统一走 storage 原语
+            name = getattr(upload.filepath, "name", "")
+            if not name or not storage_exists(name):
                 return ApiResponse(code=1001, detail=_("File not found"))
-            return _inline_file_response(path, upload.mime_type or "application/pdf", upload.filename)
+            return inline_file_response(
+                storage_open(name, "rb"), upload.mime_type or "application/pdf", upload.filename
+            )
 
         # Office：转换产物就绪即 inline 返回；转换中回 1006 由前端重试
         if kind == KIND_OFFICE:
             path, status = ensure_office_pdf(upload)
             if status == PREVIEW_STATUS_READY and path:
                 touch_preview_cache(path)
-                return _inline_file_response(path, "application/pdf", upload.filename)
+                return inline_file_response(path, "application/pdf", upload.filename)
             if status == PREVIEW_STATUS_PREPARING:
                 # 425 Too Early：前端按「转换中」轮询重试（http 层对该状态码不弹全局错误）
                 return ApiResponse(
@@ -413,6 +404,10 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         # 先全量校验再统一落库：任一文件不合规直接返回错误，避免多文件上传时
         # 「前面的已落库、后面的被拒」造成部分写入
         for file_obj in files:
+            # F-8 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
+            extension_error = validate_upload_extension(file_obj.name)
+            if extension_error:
+                return ApiResponse(code=1002, detail=extension_error)
             try:
                 file_size = file_obj.size
             except Exception as e:
@@ -486,6 +481,9 @@ class UploadFileViewSet(RecycleBinAction, BaseModelSet):
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
             invalidate_upload_stats_cache(request.user.pk)
+            # F-8 文件访问审计：上传留痕（含去重命中的引用记录）
+            for upload in result:
+                log_file_access(upload=upload, user=request.user, action=FileAccessLog.Action.UPLOAD, request=request)
         detail = _("Upload successful")
         if dedup_hits:
             detail = _("Upload successful, {} file(s) reused existing copies").format(dedup_hits)

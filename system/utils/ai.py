@@ -15,12 +15,30 @@ import hashlib
 import re
 from pathlib import Path
 
-from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from system.utils.ai_config import (  # noqa: F401 配置/凭据拆至 ai_config（行数门禁），此处再导出保持调用面
+    BUILTIN_PERSONA,
+    PURPOSE_CHAT,
+    PURPOSE_STRUCTURED,
+    STRUCTURED_MAX_TOKENS,
+    active_profile,
+    active_profile_name,
+    ai_context_limit,
+    ai_credentials,
+    ai_persona,
+    ai_structured_max_tokens,
+    is_configured,
+    is_enabled,
+    native_tools_enabled,
+    profile_credentials,
+    profile_for,
+    set_active_profile,
+    structured_chat_client,
+)
 
 logger = get_logger(__name__)
 
@@ -32,38 +50,9 @@ CHUNK_WINDOW = 1200  # 长块滑动窗口字符数
 TOP_K = 5
 SCORE_THRESHOLD = 2
 MAX_QUESTION_LENGTH = 500
-# 聊天室助手内置人设（档案/Setting 未配置人设时的兜底）
-BUILTIN_PERSONA = (
-    "You are the xadmin in-app assistant. Answer concisely and accurately in the user's language. "
-    "If you are unsure, say so instead of making things up."
-)
 # 上传文档：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
 MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
-# 结构化输出（NL 查数 DSL / 动作草稿 JSON）在档案未配置 max_tokens 时的安全上限：
-# 思考型模型（含本地小模型）在 JSON 指令任务上可能无界推理（实测单次可产出 5 万+
-# reasoning token、挂起数分钟），结构化结果本身短，给上限防挂起与额度失控；
-# 档案显式配置了 max_tokens 时尊重用户配置，不覆盖。
-STRUCTURED_MAX_TOKENS = 2048
-
-
-def ai_structured_max_tokens() -> int:
-    """结构化输出 token 上限（可配置）：Setting ``AI_STRUCTURED_MAX_TOKENS`` →
-    内置默认 2048。思考型模型思考消耗大，可在 AI 配置页调大预算（0/缺省 = 内置默认）。"""
-    return int(getattr(settings, "AI_STRUCTURED_MAX_TOKENS", 0) or 0) or STRUCTURED_MAX_TOKENS
-
-
-def structured_chat_client():
-    """结构化输出（动作草稿 JSON / NL 查数 DSL）的统一客户端：返回 ``(client, max_tokens)``。
-
-    四条链路共用同一口径（聊天室 ``/do``、助手页 ``action/interpret/stream``、
-    ``nl-query/interpret`` 与其流式版）：max_tokens 未配置时套用结构化安全上限，
-    避免思考型模型无界推理挂起（实测见 ADR-049）。
-    """
-    from common.sdk.ai.chat import ChatCompletionsClient
-
-    client = ChatCompletionsClient(ai_credentials())
-    return client, client.max_tokens or ai_structured_max_tokens()
 
 
 def _iter_doc_files() -> list:
@@ -274,107 +263,15 @@ def retrieve(question: str, top_k: int = TOP_K) -> list:
     return [{"chunk": chunk, "score": round(score, 4)} for score, chunk in scored[:top_k]]
 
 
-def active_profile():
-    """当前激活的 AI 配置档案（至多一个；无则 None → 回落 Setting 通路）。"""
-    from system.models.ai import AiProfile
+def _prepare_rag(question: str, user=None) -> tuple:
+    """问答链路公共部分：问题校验 + 检索 + prompt 构造（引用数据块 + 注入标记）。
 
-    return AiProfile.objects.filter(is_active=True).first()
-
-
-def set_active_profile(profile, active: bool = True) -> None:
-    """激活/停用档案：激活时事务内清掉其余激活行（部分唯一索引兜底）。"""
-    from django.db import transaction
-
-    from system.models.ai import AiProfile
-
-    with transaction.atomic():
-        if active:
-            AiProfile.objects.exclude(pk=profile.pk).filter(is_active=True).update(is_active=False)
-        if profile.is_active != active:
-            profile.is_active = active
-            profile.save(update_fields=["is_active", "updated_time"])
-
-
-def profile_credentials(profile) -> dict:
-    """档案行 → SDK credentials dict（api_key 解密；stop 逗号分隔转列表）。"""
-    return {
-        "base_url": profile.base_url,
-        "api_key": profile.api_key_plain,
-        "model": profile.model,
-        "timeout": profile.timeout,
-        "max_retries": profile.max_retries,
-        "temperature": profile.temperature,
-        "max_tokens": profile.max_tokens,
-        "top_p": profile.top_p,
-        "frequency_penalty": profile.frequency_penalty,
-        "presence_penalty": profile.presence_penalty,
-        "seed": profile.seed,
-        "stop": profile.stop_list,
-        "context_limit": profile.context_limit,
-        "persona": (profile.persona or "").strip(),
-    }
-
-
-def _setting_credentials() -> dict:
-    """Setting 回落通路（无激活档案时）：新参数键 getattr 兜底（测试/旧库无该键不炸）。"""
-    return {
-        "base_url": settings.AI_BASE_URL,
-        "api_key": settings.AI_API_KEY,
-        "model": settings.AI_MODEL,
-        "timeout": settings.AI_TIMEOUT,
-        "max_retries": getattr(settings, "AI_MAX_RETRIES", 0) or 0,
-        "temperature": getattr(settings, "AI_TEMPERATURE", None),
-        "max_tokens": getattr(settings, "AI_MAX_TOKENS", 0) or None,
-        "top_p": getattr(settings, "AI_TOP_P", None),
-        "frequency_penalty": getattr(settings, "AI_FREQUENCY_PENALTY", None),
-        "presence_penalty": getattr(settings, "AI_PRESENCE_PENALTY", None),
-        "seed": getattr(settings, "AI_SEED", None),
-        "stop": getattr(settings, "AI_STOP", "") or "",
-        "context_limit": getattr(settings, "AI_CONTEXT_LIMIT", 20) or 20,
-        "persona": (getattr(settings, "AI_PERSONA", "") or "").strip(),
-    }
-
-
-def is_configured() -> bool:
-    profile = active_profile()
-    if profile is not None:
-        return profile.is_configured
-    return bool(settings.AI_BASE_URL and settings.AI_API_KEY and settings.AI_MODEL)
-
-
-def is_enabled() -> bool:
-    return bool(settings.AI_ASSISTANT_ENABLED) and is_configured()
-
-
-def ai_credentials() -> dict:
-    """SDK 凭据 + 采样参数全集：激活档案优先，无档案回落 Setting 通路。"""
-    profile = active_profile()
-    if profile is not None:
-        return profile_credentials(profile)
-    return _setting_credentials()
-
-
-def ai_context_limit() -> int:
-    """聊天室多轮上下文条数：档案 → Setting → 内置默认 20。"""
-    profile = active_profile()
-    if profile is not None and profile.context_limit:
-        return profile.context_limit
-    return getattr(settings, "AI_CONTEXT_LIMIT", 20) or 20
-
-
-def ai_persona() -> str:
-    """聊天室助手人设：档案 → Setting → 内置默认。"""
-    profile = active_profile()
-    if profile is not None and (profile.persona or "").strip():
-        return profile.persona.strip()
-    return (getattr(settings, "AI_PERSONA", "") or "").strip() or BUILTIN_PERSONA
-
-
-def _prepare_rag(question: str) -> tuple:
-    """问答链路公共部分：问题校验 + 检索 + prompt 构造。
-
-    返回 ``(messages, sources)``；问题为空/未启用/无命中抛可读 ValidationError。
+    返回 ``(messages, sources, injection_hits)``；问题为空/未启用/无命中抛可读
+    ValidationError。检索片段以引用数据块包裹（AI-6 护栏），命中可疑指令模式时
+    打标 + 落 AI:security 告警（不阻断，避免误杀）。
     """
+    from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
+
     question = (question or "").strip()[:MAX_QUESTION_LENGTH]
     if not question:
         raise DjangoValidationError(_("Question cannot be empty"))
@@ -387,17 +284,30 @@ def _prepare_rag(question: str) -> tuple:
 
     context_blocks = []
     sources = []
+    injection_hits: list = []
     for index, item in enumerate(retrieved, start=1):
         chunk = item["chunk"]
-        context_blocks.append(f"[{index}] {chunk.title} ({chunk.source_path})\n{chunk.content}")
+        block, hits = annotate_reference(
+            chunk.content,
+            label=f"[{index}] {chunk.title} ({chunk.source_path})",
+            user=user,
+            kind="knowledge",
+        )
+        for name in hits:
+            if name not in injection_hits:
+                injection_hits.append(name)
+        context_blocks.append(block)
         sources.append({"title": chunk.title, "path": chunk.source_path, "chunk_index": chunk.chunk_index})
 
-    system_prompt = str(
-        _(
-            "You are the xadmin usage/development assistant. Answer ONLY based on the "
-            "provided reference documents, cite them as [n] markers, and say you don't "
-            "know when the documents do not cover the question."
-        )
+    system_prompt = "{} {}".format(
+        str(
+            _(
+                "You are the xadmin usage/development assistant. Answer ONLY based on the "
+                "provided reference documents, cite them as [n] markers, and say you don't "
+                "know when the documents do not cover the question."
+            )
+        ),
+        str(REFERENCE_GUARD_INSTRUCTION),
     )
     user_prompt = "{}\n\n---\n{}".format(
         "\n\n".join(context_blocks),
@@ -407,7 +317,7 @@ def _prepare_rag(question: str) -> tuple:
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
-    return messages, sources
+    return messages, sources, injection_hits
 
 
 def readable_ai_error(exc) -> str:
@@ -417,6 +327,8 @@ def readable_ai_error(exc) -> str:
     分开提示，便于用户采取「重试 / 更换模型」动作），其余归服务暂时不可用。
     """
     text = str(exc or "")
+    if "concurrent" in text.lower():
+        return str(_("Too many AI requests are running; please retry in a moment"))
     if "only reasoning content" in text or "did not provide a final answer" in text:
         return str(_("The model did not provide a final answer; please retry or switch models"))
     if "empty answer" in text:
@@ -424,56 +336,101 @@ def readable_ai_error(exc) -> str:
     return str(_("AI service is temporarily unavailable"))
 
 
-def prepare_ask(question: str) -> tuple:
+def prepare_ask(question: str, user=None) -> tuple:
     """流式端点「响应头发出前」的同步预检 + 上下文装配：返回 (messages, sources)。
 
     与 ask / ask_stream 校验完全同源（空问题 / 未启用 / 无命中 → 可读 ValidationError）。
     """
-    return _prepare_rag(question)
+    messages, sources, __hits = _prepare_rag(question, user=user)
+    return messages, sources
 
 
-def ask(question: str) -> dict:
-    """问答链路（非流式）：检索 → LLM → 可读答案 + 出处。异常转可读 ValidationError 语义。"""
+def ask(question: str, user=None) -> dict:
+    """问答链路（非流式）：检索 → LLM → 可读答案 + 出处。异常转可读 ValidationError 语义。
+
+    输出文本过安全护栏（敏感形态 + 规则形态脱敏），命中计数与 prompt 摘要进 ``_guard``
+    供调用方写审计；返回契约中的 answer/sources 不变，调用方负责剥离下划线键。
+    """
     from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from system.utils.ai_guard import guard_summary, mask_text
+    from system.utils.ai_usage import tracked_chat
 
-    messages, sources = _prepare_rag(question)
+    messages, sources, injection_hits = _prepare_rag(question, user=user)
     try:
         client = ChatCompletionsClient(ai_credentials())
-        answer = client.chat(messages)
+        answer = tracked_chat(user, "docs", messages, client=client)
     except AiSdkError as exc:
         raise DjangoValidationError(readable_ai_error(exc)) from exc
-    # _usage 供调用方写审计（成本维度观测）；返回契约中的 answer/sources 不变，调用方负责剥离
-    return {"answer": answer, "sources": sources, "_usage": getattr(client, "last_usage", None)}
+    answer, mask_hits = mask_text(answer, user)
+    # _usage 供调用方写审计（成本维度观测）；_guard 为 AI-6 护栏摘要（prompt 摘要/注入/脱敏）
+    return {
+        "answer": answer,
+        "sources": sources,
+        "_usage": getattr(client, "last_usage", None),
+        "_guard": guard_summary(
+            prompt=question,
+            injection=injection_hits,
+            mask_hits=mask_hits,
+            output_len=len(answer or ""),
+        ),
+    }
 
 
-def ask_stream(messages: list, sources: list):
+def ask_stream(messages: list, sources: list, user=None):
     """问答链路（流式生成器）：产出事件 dict，供 SSE 转发。
 
     增量事件：``{"type": "reasoning"|"content", "text": ...}``（思考型模型有 reasoning）；
-    流末尾产出 ``{"type": "done", "answer": ..., "sources": [...]}``。
+    流末尾产出 ``{"type": "done", "answer": ..., "sources": [...], "guard": {...}}``。
 
     messages/sources 由 ``prepare_ask`` 装配——视图层先做同步校验，保持
     「校验错误在响应头前返回 JSON 1001」契约，同时不阻塞首包（模型思考再久，
     响应头也已发出、前端可先渲染「思考中」）。流内失败抛可读 ValidationError。
+
+    护栏：正文与思考增量均经 ``StreamMasker`` 逐段脱敏（hold-back 防跨帧敏感串
+    泄漏），done 的 answer 为脱敏后全文（落库与前端展示同源）。
     """
     from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
+    from system.utils.ai_guard import StreamMasker, guard_summary
+    from system.utils.ai_usage import tracked_chat_stream
 
     client = ChatCompletionsClient(ai_credentials())
+    content_masker = StreamMasker(user)
+    reasoning_masker = StreamMasker(user)
     chunks = []
     try:
-        for item in client.chat_stream(messages):
+        for item in tracked_chat_stream(user, "docs", client, messages):
             text = item.get("text") or ""
             if not text:
                 continue
             if item.get("type") == "reasoning":
-                yield {"type": "reasoning", "text": text}
+                delta = reasoning_masker.feed(text)
+                if delta:
+                    yield {"type": "reasoning", "text": delta}
             else:
-                chunks.append(text)
-                yield {"type": "content", "text": text}
+                delta = content_masker.feed(text)
+                if delta:
+                    chunks.append(delta)
+                    yield {"type": "content", "text": delta}
     except AiSdkError as exc:
         raise DjangoValidationError(readable_ai_error(exc)) from exc
+    content_tail = content_masker.flush()
+    if content_tail:
+        chunks.append(content_tail)
+        yield {"type": "content", "text": content_tail}
+    reasoning_tail = reasoning_masker.flush()
+    if reasoning_tail:
+        yield {"type": "reasoning", "text": reasoning_tail}
     answer = "".join(chunks).strip()
     if not answer:
         # 只有思考没有回答（思考过长被截断）：给出可操作提示，前端保留思考面板
         raise DjangoValidationError(_("The model did not provide a final answer; please retry or switch models"))
-    yield {"type": "done", "answer": answer, "sources": sources}
+    yield {
+        "type": "done",
+        "answer": answer,
+        "sources": sources,
+        "guard": guard_summary(
+            injection=[],
+            mask_hits=content_masker.hits + reasoning_masker.hits,
+            output_len=len(answer),
+        ),
+    }

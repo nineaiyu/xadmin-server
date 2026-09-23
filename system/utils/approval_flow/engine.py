@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from system.utils.approval.display import user_display
 
 from .conditions import (
     next_node,
@@ -82,6 +83,8 @@ def _enter_node(instance, node) -> bool:
             node_name=node.name,
             node_order=node.order,
             assignee=user,
+            # U-1：处理人显示名快照（用户删除/改名后轨迹仍可读）
+            assignee_display=user_display(user),
             delegate_from=source,
         )
         for user, source in pairs
@@ -126,7 +129,43 @@ def _no_approver_detail(node, applicant) -> str:
     )
 
 
-def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""):
+def _resolve_instance_cc(path, applicant, extra=None):
+    """F-5 实例抄送人：全部可达节点 cc 并集 + 发起时追加（去重、仅启用用户、不含申请人）。
+
+    标识兼容「用户 pk」与「用户名」两种形态：设计器节点与发起弹窗可直接沿用
+    审批人选择器的用户名，API 调用方可传 pk；非法标识静默跳过（抄送为附加能力，
+    不阻断发起）。
+    """
+    UserInfo = _users()
+
+    identifiers = []
+    for node in path or []:
+        for item in node.cc_users or []:
+            text = str(item or "").strip()
+            if text and text not in identifiers:
+                identifiers.append(text)
+    for item in extra or []:
+        text = str(item or "").strip()
+        if text and text not in identifiers:
+            identifiers.append(text)
+    if not identifiers:
+        return []
+    pk_field = UserInfo._meta.pk
+    users = []
+    for text in identifiers[:20]:
+        user = None
+        try:
+            user = UserInfo.objects.filter(pk=pk_field.to_python(text)).first()
+        except Exception:  # noqa: BLE001 非主键形态（用户名）走下方兜底
+            user = None
+        if user is None:
+            user = UserInfo.objects.filter(username=text).first()
+        if user and user.is_active and user.pk != applicant.pk and user not in users:
+            users.append(user)
+    return users
+
+
+def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id="", cc_users=None):
     """发起申请：校验表单与全部可达节点候选，建实例并进入首节点。
 
     返回 (instance, error)：error 为 None 表示成功。候选校验 fail-closed——
@@ -135,6 +174,9 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     biz_type/biz_id：业务模块挂钩点——传入后实例与业务行绑定，
     终态时经 ``approval_instance_finished`` 信号回写业务状态；留空 = 引擎自带
     表单的独立申请（历史行为不变）。
+
+    cc_users（F-5）：发起时追加的抄送人（用户 pk 列表）；实例抄送人 = 可达节点
+    ``cc_users`` 并集 + 本参数，落实例快照并即时知会（终态再次知会）。
     """
     ApprovalInstance = _models().Instance
 
@@ -163,6 +205,10 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
         biz_type=(biz_type or "")[:64],
         biz_id=str(biz_id or "")[:64],
     )
+    cc_list = _resolve_instance_cc(path, applicant, cc_users)
+    if cc_list:
+        instance.cc_users.set(cc_list)
+        _notify(cc_list, "cc", instance)
     _enter_node(instance, path[0])
     _emit_flow_event("flow.submitted", instance)
     return instance, None
@@ -218,6 +264,10 @@ def _finish_instance(instance, status, reason=None) -> bool:
     event = _FLOW_FINISH_EVENTS.get(str(status))
     if event:
         _emit_flow_event(event, instance)
+        # F-5 抄送人终态知会（事件取终态对应文案：approved / rejected / cancelled）
+        cc_list = [user for user in instance.cc_users.all() if user.is_active]
+        if cc_list:
+            _notify(cc_list, "cc", instance, extra={"status": str(status)})
     _notify_business_finished(instance, status, reason)
     return True
 
@@ -316,6 +366,7 @@ def approve_task(task_pk, user, comment: str = ""):
         updated = ApprovalNodeTask.objects.filter(pk=task.pk, status=ApprovalNodeTask.Status.PENDING).update(
             status=ApprovalNodeTask.Status.APPROVED,
             actor=user,
+            actor_display=user_display(user),
             comment=(comment or "")[:255],
             acted_at=now,
             updated_time=now,
@@ -391,7 +442,12 @@ def _reject_task_locked(task_pk, user, reason: str):
 
     now = timezone.now()
     updated = ApprovalNodeTask.objects.filter(pk=task.pk, status=ApprovalNodeTask.Status.PENDING).update(
-        status=ApprovalNodeTask.Status.REJECTED, actor=user, comment=reason[:255], acted_at=now, updated_time=now
+        status=ApprovalNodeTask.Status.REJECTED,
+        actor=user,
+        actor_display=user_display(user),
+        comment=reason[:255],
+        acted_at=now,
+        updated_time=now,
     )
     if not updated:
         return False, str(_("The task has been processed"))

@@ -17,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
+from system.utils.task_center import TaskCancelled, mark_execution_revoked
 
 logger = get_logger(__name__)
 
@@ -42,12 +43,16 @@ def build_export_request(record, query_params, user):
     )
 
 
-def _save_progress(record, percent):
-    """运行中进度落库（0-100）：进度条数据源，终态由任务结束分支覆盖。"""
-    percent = max(0, min(100, int(percent)))
-    if record.progress != percent:
-        record.progress = percent
-        record.save(update_fields=["progress", "updated_time"])
+def _save_progress(record, percent, stage=""):
+    """运行中进度落库（0-100）：P-2 统一助手（里程碑即协作式取消的安全点）。
+
+    终态由任务结束分支覆盖（终态 100 不做取消检查，避免已完成的导出被翻成取消）。
+    """
+    from system.utils.task_progress import KIND_EXPORT, update_progress
+
+    update_progress(KIND_EXPORT, record.pk, percent, stage=stage)
+    # 同步调用方内存对象（后续分支可能基于 record 继续 save）
+    record.progress = max(0, min(100, int(percent)))
 
 
 def run_async_export(record_id, view_path, query_params, user_pk):
@@ -92,14 +97,14 @@ def run_async_export(record_id, view_path, query_params, user_pk):
         bind_view_task_context(probe, request, action="export_data")
         total = probe.filter_queryset(probe.get_queryset()).count()
         logger.info("async export %s total rows: %s", view_path, total)
-        _save_progress(record, 30)
+        _save_progress(record, 30, stage=_("Counting rows"))
 
         response = view_cls.as_view({"get": "export_data"})(request)
         response.render()
         if response.status_code != 200:
             raise ValueError(f"export view returned status {response.status_code}")
         content = response.content
-        _save_progress(record, 80)
+        _save_progress(record, 80, stage=_("Rendering content"))
 
         filename = f"{record.name}.{record.file_format}"
         upload = UploadFile(
@@ -119,6 +124,14 @@ def run_async_export(record_id, view_path, query_params, user_pk):
         record.error = None
         record.save(update_fields=["file", "rows", "status", "progress", "error", "updated_time"])
         logger.info("async export done: %s bytes, rows: %s", len(content), record.rows)
+    except TaskCancelled as exc:
+        # 协作式取消（P-2）：落 REVOKED 终态并同步执行历史行；不 re-raise（不是故障）
+        state = False
+        record.status = ExportRecord.Status.REVOKED
+        record.error = str(exc)[:2000]
+        record.save(update_fields=["status", "error", "updated_time"])
+        mark_execution_revoked(record.pk)
+        logger.info("async export cancelled by user: %s", record_id)
     except Exception as exc:
         state = False
         record.status = ExportRecord.Status.FAILURE

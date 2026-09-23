@@ -83,7 +83,8 @@ class TestOptimizeQuerysetBehavior:
         view.action = "list"
         result = view.optimize_queryset(UserInfo.objects.all())
         assert result.query.select_related
-        assert set(result._prefetch_related_lookups) == {"roles", "rules"}
+        # P-1 通用标签：用户列表额外预取标签（TaggedPrefetchMixin，逐行序列化零 N+1）
+        assert set(result._prefetch_related_lookups) == {"roles", "rules", "tagged_items__tag"}
 
     def test_explicit_fields_apply_on_all_actions(self):
         view = LoginLogViewSet()
@@ -98,7 +99,7 @@ class TestOptimizeQuerysetBehavior:
         view.auto_prefetch_related = False
         view.prefetch_related_fields = ("roles",)
         result = view.optimize_queryset(UserInfo.objects.all())
-        assert set(result._prefetch_related_lookups) == {"roles"}
+        assert set(result._prefetch_related_lookups) == {"roles", "tagged_items__tag"}
 
     def test_non_queryset_passthrough(self):
         view = UserViewSet()

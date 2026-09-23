@@ -209,6 +209,23 @@
   },
   {
     "model": "system.systemconfig",
+    "pk": "7b0c0000-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-09T00:00:00Z",
+      "updated_time": "2026-09-09T00:00:00Z",
+      "description": "登录日志保留天数（P-5 冷归档自动面：归档水位驱动清理；0 = 不自动清理）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 365,
+      "is_active": true,
+      "access": false,
+      "key": "LOGIN_LOG_RETENTION_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
     "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b05",
     "fields": {
       "created_time": "2026-09-09T00:00:00Z",
@@ -617,6 +634,142 @@
   },
   {
     "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000001",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "文件存储后端（local=本地磁盘 / s3=对象存储，声明式可插拔；s3 需安装可选依赖 django-storages+boto3）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "local",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_STORAGE_BACKEND",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000002",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "S3 兼容对象存储端点（如 https://minio.example.com；AWS 可留空用区域默认端点）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_ENDPOINT",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000003",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "对象存储桶名（backend=s3 时必填，缺省回退本地）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_BUCKET",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000004",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "对象存储 access key（敏感值，落库经 signer 加密）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_ACCESS_KEY",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000005",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "对象存储 secret key（敏感值，落库经 signer 加密）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_SECRET_KEY",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000006",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "对象存储区域（默认空 = 由 SDK / 端点决定）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_REGION",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000007",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "对象存储访问域名（CDN / 公开桶；非空时文件 URL 不签名）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_CUSTOM_DOMAIN",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "7b0b0000-0000-4000-8000-000000000008",
+    "fields": {
+      "created_time": "2026-09-11T00:00:00Z",
+      "updated_time": "2026-09-11T00:00:00Z",
+      "description": "S3 寻址风格（path / virtual；空 = 由 SDK 决定，MinIO 常需 path）",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "FILE_S3_ADDRESSING_STYLE",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
     "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b1d",
     "fields": {
       "created_time": "2026-09-11T00:00:00Z",
@@ -918,6 +1071,40 @@
       "is_active": true,
       "access": false,
       "key": "OPS_ALERT_TOKEN",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b30",
+    "fields": {
+      "created_time": "2026-09-23T00:00:00Z",
+      "updated_time": "2026-09-23T00:00:00Z",
+      "description": "账号到期提醒天数（F-11）：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": 7,
+      "is_active": true,
+      "access": false,
+      "key": "ACCOUNT_EXPIRY_REMIND_DAYS",
+      "inherit": false
+    }
+  },
+  {
+    "model": "system.systemconfig",
+    "pk": "e9a6b7c8-d9e0-4f1a-9b2c-3d4e5f6a7b31",
+    "fields": {
+      "created_time": "2026-09-23T00:00:00Z",
+      "updated_time": "2026-09-23T00:00:00Z",
+      "description": "站点对外访问地址（邀请/通知邮件链接基址，如 https://xadmin.example.com）；空 = 按请求推导",
+      "creator": 1,
+      "modifier": 1,
+      "dept_belong": null,
+      "value": "",
+      "is_active": true,
+      "access": false,
+      "key": "WEB_SITE_URL",
       "inherit": false
     }
   }

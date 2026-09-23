@@ -235,6 +235,27 @@ class AnalysisMixin:
             }
         )
 
+        # E-3「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架
+        artifacts.append(
+            {
+                "label": "AI 动作声明",
+                "path": app_dir / "ai_declarations.py",
+                "content": self._render_ai_declarations(ctx, options),
+                "mode": "create",
+                "key": f"ai-declarations-{ctx['model_snake']}",
+            }
+        )
+        if options.get("with_tests"):
+            artifacts.append(
+                {
+                    "label": "测试骨架",
+                    "path": backend_root / "tests" / "unit" / ctx["app_label"] / f"test_{ctx['model_snake']}_api.py",
+                    "content": self._render_test_skeleton(ctx),
+                    "mode": "create",
+                    "key": f"tests-{ctx['model_snake']}",
+                }
+            )
+
         if not options["skip_frontend"]:
             artifacts.extend(self._frontend_artifacts(ctx, options))
 

@@ -8,6 +8,7 @@ from django.urls import include, path, re_path
 from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
+from system.views.admin.account_risk import AccountRiskViewSet
 from system.views.admin.approval import ApprovalRequestViewSet
 from system.views.admin.approval_delegation import ApprovalDelegationViewSet
 from system.views.admin.approval_flow import (
@@ -16,20 +17,24 @@ from system.views.admin.approval_flow import (
 )
 from system.views.admin.approval_rule import ApprovalRuleViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
+from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dept import DeptViewSet
 from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
 from system.views.admin.leave import LeaveViewSet
+from system.views.admin.login_policy import LoginAccessPolicyViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
 from system.views.admin.menu import MenuViewSet
 from system.views.admin.modelfield import ModelLabelFieldViewSet
 from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
+from system.views.admin.passkey import PasskeyViewSet
 from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.role import RoleViewSet
+from system.views.admin.saved_view import SavedListViewSet
 from system.views.admin.user import UserViewSet
 from system.views.ai import (
     AiAssistantSettingViewSet,
@@ -39,9 +44,14 @@ from system.views.ai import (
 )
 from system.views.ai.mcp import McpEndpointAPIView
 from system.views.analysis import ReportViewSet, ScreenViewSet
+from system.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
-from system.views.auth.mfa import LoginMFASendCodeAPIView, LoginMFAVerifyAPIView
+from system.views.auth.mfa import (
+    LoginMFAPasskeyChallengeAPIView,
+    LoginMFASendCodeAPIView,
+    LoginMFAVerifyAPIView,
+)
 from system.views.auth.oauth import (
     OAuthAuthorizeAPIView,
     OAuthBindAuthorizeAPIView,
@@ -75,12 +85,14 @@ from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
+from system.views.tag import TagViewSet
 from system.views.task import (
     CrontabScheduleViewSet,
     IntervalScheduleViewSet,
     PeriodicTaskViewSet,
     TaskExecutionViewSet,
 )
+from system.views.task_center import SystemTaskCenterViewSet
 from system.views.user.login_log import UserLoginLogViewSet
 from system.views.user.token import PersonalAccessTokenViewSet
 from system.views.user.userinfo import UserInfoViewSet
@@ -97,11 +109,19 @@ no_auth_url = [
     re_path("^login/code$", VerifyCodeLoginAPIView.as_view(), name="login-by-code"),
     re_path("^login/mfa/send-code$", LoginMFASendCodeAPIView.as_view(), name="login-mfa-send-code"),
     re_path("^login/mfa/verify$", LoginMFAVerifyAPIView.as_view(), name="login-mfa-verify"),
+    re_path(
+        "^login/mfa/passkey/challenge$",
+        LoginMFAPasskeyChallengeAPIView.as_view(),
+        name="login-mfa-passkey-challenge",
+    ),
     re_path("^register$", RegisterViewAPIView.as_view(), name="register"),
     re_path("^auth/captcha$", CaptchaAPIView.as_view(), name="captcha"),
     re_path("^auth/token$", TempTokenAPIView.as_view(), name="temp_token"),
     re_path("^auth/verify$", SendVerifyCodeAPIView.as_view(), name="send-verify-code"),
     re_path("^auth/reset$", ResetPasswordAPIView.as_view(), name="reset-password"),
+    # 邀请激活（F-11）：令牌即凭据，激活页未登录，必须匿名可达
+    re_path("^auth/invite/validate$", InviteValidateAPIView.as_view(), name="invite-validate"),
+    re_path("^auth/invite/accept$", InviteAcceptAPIView.as_view(), name="invite-accept"),
     # 第三方登录：authorize/callback 必须匿名可达，故挂在 no_auth_url
     re_path("^auth/oauth/providers$", OAuthProvidersAPIView.as_view(), name="oauth-providers"),
     re_path(
@@ -170,9 +190,17 @@ router.register("field", ModelLabelFieldViewSet, basename="model_label_field")
 router.register("dict", DataDictViewSet, basename="data_dict")
 router.register("mask-rules", DataMaskRuleViewSet, basename="data_mask_rule")
 router.register("online", UserOnlineViewSet, basename="online_socket")
+# 安全域（JumpServer 对标批三）：账号风险巡检 / 登录访问策略 / Passkey 凭据
+router.register("account-risks", AccountRiskViewSet, basename="account_risk")
+router.register("login-policies", LoginAccessPolicyViewSet, basename="login_policy")
+router.register("passkeys", PasskeyViewSet, basename="passkey")
+# 列表「我的视图」（F-4）
+router.register("saved-views", SavedListViewSet, basename="saved_view")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")
+# 凭据与密钥（P-3）：只读聚合 + 重加密轮换
+router.register("credentials", CredentialViewSet, basename="credential")
 # 功能模块清单（只读）：模块等级/依赖/启停状态与裁剪配置片段
 router.register("modules", SystemModuleViewSet, basename="module")
 # 数据集与仪表盘（可视化一期）
@@ -220,6 +248,10 @@ router.register("tasks/periodic", PeriodicTaskViewSet, basename="periodic_task")
 router.register("tasks/crontab", CrontabScheduleViewSet, basename="crontab_schedule")
 router.register("tasks/executions", TaskExecutionViewSet, basename="task_execution")
 router.register("tasks/interval", IntervalScheduleViewSet, basename="interval_schedule")
+# 任务中心（P-2）：三类记录统一列表 + 取消 / 重跑
+router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center")
+# 通用标签中心（P-1）：标签 CRUD + 打标 / 批量打标
+router.register("tags", TagViewSet, basename="tag")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）

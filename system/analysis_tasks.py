@@ -155,13 +155,17 @@ def _deliver_im(report, rows: int) -> list:
 
 
 def _precreate_record(report) -> str:
-    """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。"""
+    """预创建 ExportRecord（下载中心条目），pk 即派发的 celery task_id。
+
+    params 记 ``report_id``：任务中心「重跑」按记录即可重放同一报表（P-2）。
+    """
     from system.models.export import ExportRecord
 
     record = ExportRecord.objects.create(
         name=f"{report.name}-{timezone.localtime():%Y%m%d%H%M%S}",
         module="Report",
         file_format="xlsx",
+        params={"report_id": str(report.pk)},
         creator=report.creator,
     )
     return str(record.pk)
@@ -218,6 +222,7 @@ def run_scheduled_report(self, report_id: str):
     from system.models.dataset import Report
     from system.models.export import ExportRecord
     from system.models.upload import UploadFile
+    from system.utils.task_progress import KIND_REPORT, update_progress
 
     record = ExportRecord.objects.filter(pk=self.request.id).first()
     report = Report.objects.filter(pk=report_id).select_related("dataset", "creator").first()
@@ -228,8 +233,11 @@ def run_scheduled_report(self, report_id: str):
     record.status = ExportRecord.Status.RUNNING
     record.save(update_fields=["status", "updated_time"])
     user = report.creator
+    # P-2 统一进度：报表此前只有终态 100，此处补中间里程碑（查询 → 渲染 → 落盘）
+    update_progress(KIND_REPORT, record.pk, 20, stage=_("Querying dataset"))
     try:
         content, rows = _render_workbook(report, user)
+        update_progress(KIND_REPORT, record.pk, 80, stage=_("Rendering workbook"))
         filename = f"{report.name}-{timezone.localtime():%Y%m%d%H%M}.xlsx"
         upload = UploadFile(
             filename=filename,

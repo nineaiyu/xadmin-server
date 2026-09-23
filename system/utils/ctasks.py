@@ -11,21 +11,35 @@ from celery.utils.log import get_task_logger
 from django.utils import timezone
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
-from system.models import OperationLog, UploadFile
+from common.storage import clean_storage_cache
+from system.models import OperationLog, UploadFile, UserLoginLog
 from system.utils.preview import clean_preview_cache
 
 logger = get_task_logger(__name__)
 
 
 def auto_clean_operation_log(clean_day=None):
-    """分批清理过期操作日志（保留期默认取系统配置 OPERATION_LOG_RETENTION_DAYS）。
+    """先归档后清理过期审计日志（P-5）：操作日志 + 登录日志。
 
-    同时输出剩余行数，便于监控告警：清理强依赖 celery beat 部署，
-    beat 未部署时该任务静默不执行，表会无限增长。
+    - 归档：把「整月已超保留期」的日志导出为 ``JSONL.gz``（含 sha256 与清单，幂等）；
+    - 清理：边界由**归档水位**驱动（删必已归档；未归档的边界月最多多留一个月）；
+    - 保留期：操作日志 ``OPERATION_LOG_RETENTION_DAYS``（错误日志按
+      ``OPERATION_LOG_ERROR_RETENTION_DAYS`` 分层留存）、登录日志
+      ``LOGIN_LOG_RETENTION_DAYS``（默认 365）；对象保留期置 0 = 该对象不清理；
+    - 归档失败时抛错跳过本次清理（保数据优先），任务在 celery 记录中可见失败，
+      避免「未归档即删除」的静默数据损失；
+    - 同时输出剩余行数，便于监控告警：清理强依赖 celery beat 部署，
+      beat 未部署时该任务静默不执行，表会无限增长。
     """
-    deleted = OperationLog.remove_expired(clean_day)
-    remaining = OperationLog.objects.count()
-    logger.info(f"clean {deleted} operation log. remaining {remaining}")
+    from system.utils.log_archive import archive_expired, prune_archived
+
+    deleted = 0
+    for model_key, model in (("operation", OperationLog), ("login", UserLoginLog)):
+        # clean_day 参数（历史签名）只覆盖操作日志保留期；登录日志走自身配置
+        override = clean_day if model_key == "operation" else None
+        archive_expired(model_key, retention_days=override)
+        deleted += prune_archived(model_key, retention_days=override)
+        logger.info(f"clean {model_key} log remaining {model.objects.count()}")
     return deleted
 
 
@@ -88,8 +102,37 @@ def auto_clean_preview_cache(keep_days=None):
     因此不需要"引用守护"那一层保守判断，只保留"最近使用"淘汰。
     """
     result = clean_preview_cache(keep_days=keep_days)
+    # P-4：对象存储后端会为预览/转换把远端对象缓存到本地（MEDIA_ROOT/storage_cache），
+    # 同属派生产物，与预览缓存一起按最近使用淘汰
+    removed_storage_cache = clean_storage_cache(keep_days=keep_days)
     logger.info(
         f"clean preview cache scanned:{result['scanned']} "
-        f"orphan:{result['removed_orphan']} expired:{result['removed_expired']}"
+        f"orphan:{result['removed_orphan']} expired:{result['removed_expired']} "
+        f"storage_cache:{removed_storage_cache}"
     )
-    return result["removed_orphan"] + result["removed_expired"]
+    return result["removed_orphan"] + result["removed_expired"] + removed_storage_cache
+
+
+def auto_clean_ai_usage(retention_days=None, batch_size=2000):
+    """分批清理超保留期的 AI 用量记录（AI-5）：保留期取 MONITOR_RETENTION_DAYS。
+
+    用量账本是观测数据（与监控心跳同口径），过期即失去成本归因价值；
+    0/缺省 = 跟随系统配置，配置为 0 表示不清理。
+    """
+    from common.core.config import SysConfig
+    from system.models.ai import AiUsageRecord
+
+    if retention_days is None:
+        retention_days = SysConfig.MONITOR_RETENTION_DAYS
+    retention_days = int(retention_days or 0)
+    if retention_days <= 0:
+        return 0
+    deadline = timezone.now() - datetime.timedelta(days=retention_days)
+    removed = 0
+    while True:
+        pks = list(AiUsageRecord.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:batch_size])
+        if not pks:
+            break
+        removed += AiUsageRecord.objects.filter(pk__in=pks).delete()[0]
+    logger.info(f"clean {removed} AI usage records (retention {retention_days} days)")
+    return removed

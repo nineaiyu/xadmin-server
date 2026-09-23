@@ -58,6 +58,21 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("OPERATION_LOG_ERROR_RETENTION_DAYS", CONFIG.OPERATION_LOG_ERROR_RETENTION_DAYS)
 
     @property
+    def LOGIN_LOG_RETENTION_DAYS(self):
+        """登录日志保留天数（P-5 冷归档自动面，默认 365 天；0 = 不自动清理，仅支持手动归档）。"""
+        return self.get_value("LOGIN_LOG_RETENTION_DAYS", CONFIG.LOGIN_LOG_RETENTION_DAYS)
+
+    @property
+    def ACCOUNT_EXPIRY_REMIND_DAYS(self):
+        """账号到期提醒天数（F-11）：到期前 N 天站内信 + 邮件提醒；0 = 关闭提醒。"""
+        return self.get_value("ACCOUNT_EXPIRY_REMIND_DAYS", CONFIG.ACCOUNT_EXPIRY_REMIND_DAYS)
+
+    @property
+    def WEB_SITE_URL(self):
+        """站点对外访问地址（邀请 / 通知邮件链接基址；空 = 按请求推导）。"""
+        return self.get_value("WEB_SITE_URL", CONFIG.WEB_SITE_URL)
+
+    @property
     def OPERATION_LOG_FIELD_MAX(self):
         """操作日志大字段（请求体/响应/变更 diff）截断上限（字符，默认 4096；0 = 不落大字段内容）。"""
         return self.get_value("OPERATION_LOG_FIELD_MAX", CONFIG.OPERATION_LOG_FIELD_MAX)
@@ -264,6 +279,46 @@ class BaseConfCache(ConfigCacheBase):
     def FILE_PREVIEW_CACHE_KEEP_DAYS(self):
         """预览缓存保留天数（默认 7）：缓存是派生产物，过期删除后按需重建。"""
         return int(self.get_value("FILE_PREVIEW_CACHE_KEEP_DAYS", CONFIG.FILE_PREVIEW_CACHE_KEEP_DAYS))
+
+    @property
+    def FILE_STORAGE_BACKEND(self):
+        """文件存储后端（默认 local = 本地磁盘）：local / s3 / mirror（搬迁窗口双写，声明式可插拔）。"""
+        return self.get_value("FILE_STORAGE_BACKEND", CONFIG.FILE_STORAGE_BACKEND)
+
+    @property
+    def FILE_S3_ENDPOINT(self):
+        """S3 兼容对象存储端点（默认空 = 按区域使用默认端点，如 AWS）。"""
+        return self.get_value("FILE_S3_ENDPOINT", CONFIG.FILE_S3_ENDPOINT)
+
+    @property
+    def FILE_S3_BUCKET(self):
+        """对象存储桶名（backend=s3 时必填，缺省回退本地）。"""
+        return self.get_value("FILE_S3_BUCKET", CONFIG.FILE_S3_BUCKET)
+
+    @property
+    def FILE_S3_ACCESS_KEY(self):
+        """对象存储 access key（敏感值，落库经 signer 加密）。"""
+        return self.get_value("FILE_S3_ACCESS_KEY", CONFIG.FILE_S3_ACCESS_KEY)
+
+    @property
+    def FILE_S3_SECRET_KEY(self):
+        """对象存储 secret key（敏感值，落库经 signer 加密）。"""
+        return self.get_value("FILE_S3_SECRET_KEY", CONFIG.FILE_S3_SECRET_KEY)
+
+    @property
+    def FILE_S3_REGION(self):
+        """对象存储区域（默认空 = 由 SDK / 端点决定）。"""
+        return self.get_value("FILE_S3_REGION", CONFIG.FILE_S3_REGION)
+
+    @property
+    def FILE_S3_CUSTOM_DOMAIN(self):
+        """对象存储访问域名（CDN / 公开桶；非空时文件 URL 不签名）。"""
+        return self.get_value("FILE_S3_CUSTOM_DOMAIN", CONFIG.FILE_S3_CUSTOM_DOMAIN)
+
+    @property
+    def FILE_S3_ADDRESSING_STYLE(self):
+        """S3 寻址风格（path / virtual；空 = 由 SDK 决定，MinIO 常需 path）。"""
+        return self.get_value("FILE_S3_ADDRESSING_STYLE", CONFIG.FILE_S3_ADDRESSING_STYLE)
 
     @property
     def AUDIT_DIFF_MODELS(self):

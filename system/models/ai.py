@@ -85,12 +85,19 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
 
 
 class AiProfile(DbAuditModel, DbUuidModel):
-    """AI 配置档案：多套凭据 + 采样/行为参数，至多一个激活。
+    """AI 配置档案：多套凭据 + 采样/行为参数，每种用途至多一个激活。
 
-    激活档案供全部 AI 链路（文档问答 / NL 查数 / 聊天室）使用；
+    激活档案供对应用途的 AI 链路使用（``purpose`` 分流：``chat`` 供问答/聊天，
+    ``structured`` 供 NL 查数/动作草稿等结构化链路）；未配 ``structured`` 激活档案
+    时结构化链路回落 ``chat`` 激活档案（单档案场景零变化）；
     未激活任何档案时回落 Setting 体系（category=ai）的历史配置。
     api_key 值级加密落库（signer），回显只给 api_key_set 布尔。
+    ``capabilities`` 为能力探测结果（AI-1），可人工修正覆盖。
     """
+
+    class Purpose(models.TextChoices):
+        CHAT = "chat", _("Chat / Q&A")
+        STRUCTURED = "structured", _("Structured output")
 
     name = models.CharField(_("Profile name"), max_length=64, unique=True)
     base_url = models.CharField(_("Base URL"), max_length=256)
@@ -107,6 +114,12 @@ class AiProfile(DbAuditModel, DbUuidModel):
     max_retries = models.IntegerField(_("Max retries"), default=0)
     context_limit = models.IntegerField(_("Context messages"), default=20)
     persona = models.TextField(_("Persona"), blank=True, default="")
+    purpose = models.CharField(
+        _("Purpose"), max_length=16, choices=Purpose.choices, default=Purpose.CHAT, db_index=True
+    )
+    # 能力探测结果（AI-1）：{json/tool_calls/reasoning/vision: {ok, detail, at}} + model/probed_at
+    capabilities = models.JSONField(_("Capabilities"), default=dict, blank=True)
+    probed_at = models.DateTimeField(_("Probed at"), null=True, blank=True)
     is_active = models.BooleanField(_("Is active"), default=False, db_index=True)
     remark = models.CharField(_("Remark"), max_length=255, blank=True, default="")
 
@@ -115,7 +128,10 @@ class AiProfile(DbAuditModel, DbUuidModel):
         verbose_name_plural = _("AI profiles")
         ordering = ("-is_active", "name")
         constraints = [
-            models.UniqueConstraint(fields=["is_active"], condition=Q(is_active=True), name="uniq_ai_profile_active")
+            # 每种用途至多一个激活档案（chat / structured 可各配一个，单档案场景零变化）
+            models.UniqueConstraint(
+                fields=["purpose", "is_active"], condition=Q(is_active=True), name="uniq_ai_profile_purpose_active"
+            )
         ]
 
     def __str__(self):
@@ -143,6 +159,51 @@ class AiProfile(DbAuditModel, DbUuidModel):
     @property
     def is_configured(self) -> bool:
         return bool(self.base_url and self.api_key_plain and self.model)
+
+
+class AiUsageRecord(DbAuditModel, DbUuidModel):
+    """AI 调用用量账本（AI-5）：逐次记录 token / 耗时 / 成败，供用量端点与配额判定。
+
+    写入口收敛（``system/utils/ai_usage.py`` 的 ``tracked_chat`` / ``tracked_chat_stream``），
+    不在各链路散落；保留期随 ``MONITOR_RETENTION_DAYS`` 由周期任务清理。
+    ``feature`` 区分链路（文档问答 / 聊天室 / NL 查数 / 动作草稿），用于成本归因。
+    """
+
+    class Feature(models.TextChoices):
+        DOCS = "docs", _("Document Q&A")
+        CHAT = "chat", _("Chat")
+        NL = "nl", _("NL query")
+        ACTION = "action", _("Action execution")
+
+    class Track(models.TextChoices):
+        """草稿链路轨道（AI-2 双轨对照）：原生 function calling / prompt-JSON。"""
+
+        PROMPT = "prompt", _("Prompt JSON")
+        NATIVE = "native", _("Native tools")
+
+    feature = models.CharField(_("Feature"), max_length=16, choices=Feature.choices, db_index=True)
+    # AI-2 双轨对照：仅动作草稿链路写轨道标记（其余链路留空），供成功率对比复核
+    track = models.CharField(_("Track"), max_length=16, blank=True, default="")
+    profile_name = models.CharField(_("Profile"), max_length=64, blank=True, default="")
+    model = models.CharField(_("Model"), max_length=128, blank=True, default="")
+    tokens_in = models.IntegerField(_("Tokens in"), default=0)
+    tokens_out = models.IntegerField(_("Tokens out"), default=0)
+    tokens_total = models.IntegerField(_("Tokens total"), default=0)
+    duration_ms = models.IntegerField(_("Duration (ms)"), default=0)
+    ok = models.BooleanField(_("Success"), default=True, db_index=True)
+    detail = models.CharField(_("Detail"), max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = _("AI usage record")
+        verbose_name_plural = _("AI usage records")
+        ordering = ("-created_time",)
+        indexes = [
+            models.Index(fields=["creator", "-created_time"], name="ai_usage_user_time_idx"),
+            models.Index(fields=["feature", "-created_time"], name="ai_usage_feat_time_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.feature}#{self.pk}({self.tokens_total})"
 
 
 class AiChatMessage(DbAuditModel):

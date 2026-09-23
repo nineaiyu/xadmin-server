@@ -19,13 +19,15 @@
 """
 
 from common.core.modelset.base import BaseViewSet
-from common.core.modelset.batch import BatchDestroyAction, RankAction
+from common.core.modelset.batch import BatchDestroyAction, BatchPartialUpdateAction, RankAction
 from common.core.modelset.cache import CacheDetailResponseMixin, CacheListResponseMixin
 from common.core.modelset.crud import CreateAction, DestroyAction, DetailAction, ListAction, UpdateAction
+from common.core.modelset.impact import ImpactPreviewAction
 from common.core.modelset.import_export import ImportExportDataAction, OnlyExportDataAction, run_view_by_celery_task
 from common.core.modelset.input_types import get_format_intput_type, get_upload_input_type_suffix
 from common.core.modelset.metadata import ChoicesAction, SearchColumnsAction, SearchFieldsAction
 from common.core.modelset.recycle import RecycleBinAction
+from common.core.modelset.relation_count import RelationCountMixin
 from common.core.modelset.suggest import SuggestionsAction, expose_suggest_url
 from common.core.modelset.upload import UploadFileAction
 from common.core.modelset.viewsets import (
@@ -48,6 +50,9 @@ __all__ = [
     # batch
     "RankAction",
     "BatchDestroyAction",
+    "BatchPartialUpdateAction",
+    # impact preview (F-2)
+    "ImpactPreviewAction",
     # metadata
     "ChoicesAction",
     "SearchFieldsAction",
@@ -65,6 +70,8 @@ __all__ = [
     "UploadFileAction",
     # recycle bin
     "RecycleBinAction",
+    # relation count (F-12)
+    "RelationCountMixin",
     # cache
     "CacheDetailResponseMixin",
     "CacheListResponseMixin",

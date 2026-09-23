@@ -10,13 +10,22 @@ import time
 
 
 class TestProbeAll:
-    def test_returns_all_three_probes(self):
+    def test_returns_all_probes(self):
         from common.utils import health
 
         results = health.probe_all()
-        assert set(results.keys()) == {"db", "redis", "celery"}
+        # storage 为 P-4 新增的可观测项（不参与 health 的 status 判定）
+        assert set(results.keys()) == {"db", "redis", "celery", "storage"}
         for value in results.values():
             assert isinstance(value, tuple) and len(value) == 2
+
+    def test_storage_probe_local_writable(self):
+        """本地后端：MEDIA_ROOT 可写即视为可达。"""
+        from common.utils import health
+
+        ok, cost = health.probe_storage()
+        assert ok is True
+        assert isinstance(cost, float)
 
     def test_slow_probe_times_out_without_blocking(self, monkeypatch):
         """单项超预算：该项判失败，且总耗时不被慢探测拖长。"""

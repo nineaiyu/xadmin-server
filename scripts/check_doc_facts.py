@@ -267,7 +267,8 @@ def _requirements_versions() -> dict:
         if not line or line.startswith("#") or "==" not in line:
             continue
         name, _, version = line.partition("==")
-        versions[name.strip().lower()] = version.strip()
+        # 导出产物可能带平台 marker（``1.2.3 ; sys_platform == 'win32'``），版本取分号前段
+        versions[name.strip().lower()] = version.split(";", 1)[0].strip()
     return versions
 
 

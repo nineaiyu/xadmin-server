@@ -7,6 +7,7 @@
 
 import hashlib
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -14,8 +15,13 @@ from django.utils.translation import gettext_lazy as _
 from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel, upload_directory_path
 from system.utils.preview import remove_preview_cache_by_pk
 
+# 非业务引用关系（related_name 口径）：审计 / 日志类关联表，不参与「附件是否在用」判定
+NON_BUSINESS_RELATIONS = {"access_logs"}
+
 
 class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
+    # 通用标签（P-1，白名单对象）
+    tagged_items = GenericRelation("system.TaggedItem")
     filepath = models.FileField(verbose_name=_("Filepath"), null=True, blank=True, upload_to=upload_directory_path)
     file_url = models.URLField(
         verbose_name=_("Internet URL"),
@@ -64,10 +70,16 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         return self.has_business_reference()
 
     def has_business_reference(self) -> bool:
-        """是否存在业务模型（含软删除记录）指向本附件：存在即视为在用，保守保留磁盘文件。"""
+        """是否存在业务模型（含软删除记录）指向本附件：存在即视为在用，保守保留磁盘文件。
+
+        ``access_logs``（文件访问审计，F-8）不算业务引用：审计记录引用附件不代表
+        附件仍在业务上使用，否则文件一旦被下载过就永远无法清理。
+        """
         for relation in self._meta.related_objects:
             field_name = getattr(getattr(relation, "field", None), "name", None)
             if not field_name:
+                continue
+            if relation.get_accessor_name() in NON_BUSINESS_RELATIONS:
                 continue
             related_model = relation.related_model
             manager = getattr(related_model, "all_objects", None) or related_model._default_manager

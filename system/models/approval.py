@@ -26,6 +26,7 @@ PENDING 单并通知审批人；审批通过后由原始客户端在有效期内
 
 import uuid
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -76,6 +77,11 @@ class ApprovalRequest(DbAuditModel):
     # 审批通过后已由注册的通过后动作自动执行业务落库（申请人无需再手动重放）
     auto_completed = models.BooleanField(_("Auto completed"), default=False)
     reason = models.CharField(_("Reason"), max_length=255, blank=True, null=True)
+    # 处理人显示名快照（U-1）：用户被删除/改名后审批痕迹仍可读
+    approver_display = models.CharField(_("Approver display"), max_length=128, blank=True, default="")
+    # 目标对象轻量快照（U-1）：{model, verbose_name, pk, name, changes:[{field,label,old,new}]}
+    # 仅存「变更相关字段」的事实对照，供审批人看 diff 而非申请文字
+    target_snapshot = models.JSONField(_("Target snapshot"), default=dict, blank=True)
     # 多级审批链（ApprovalRule 命中时启用）：current_level = 当前级次（0 = 扁平模式或已结束），
     # current_assignees = 当前级候选人冗余投影（列表展示与待办查询用；权威数据在 steps 快照）
     current_level = models.PositiveSmallIntegerField(_("Current level"), default=0)
@@ -176,6 +182,8 @@ class ApprovalFlowNode(DbAuditModel):
     # 画布坐标（@vue-flow 节点定位）：{"x": 100, "y": 200}；仅前端布局用
     layout = models.JSONField(_("Canvas layout"), default=dict, blank=True)
     timeout_hours = models.IntegerField(_("Timeout hours"), default=0)
+    # F-5 抄送人：节点级默认抄送（用户 pk 列表）；实例发起时解析为实例级 cc_users 快照
+    cc_users = models.JSONField(_("CC users"), default=list, blank=True)
 
     class Meta:
         ordering = ["order", "created_time"]
@@ -202,6 +210,8 @@ class ApprovalInstance(DbAuditModel):
         REJECTED = "REJECTED", _("Rejected")
         CANCELLED = "CANCELLED", _("Cancelled")
 
+    # 通用标签（P-1，白名单对象）
+    tagged_items = GenericRelation("system.TaggedItem")
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     flow = models.ForeignKey(
         "system.ApprovalFlow", related_name="instances", on_delete=models.PROTECT, verbose_name=_("Flow")
@@ -229,6 +239,14 @@ class ApprovalInstance(DbAuditModel):
     )
     finished_at = models.DateTimeField(_("Finished at"), null=True, blank=True)
     reason = models.CharField(_("Reason"), max_length=255, blank=True, null=True)
+    # F-5 抄送人快照：发起时 = 全部可达节点 cc_users 并集 + 发起人追加（去重）；
+    # 抄送人可查看实例详情、参与讨论，并在进入节点 / 实例终态时收到通知
+    cc_users = models.ManyToManyField(
+        "system.UserInfo",
+        related_name="approval_cc_instances",
+        verbose_name=_("CC users"),
+        blank=True,
+    )
 
     class Meta:
         ordering = ["-created_time"]
@@ -289,6 +307,9 @@ class ApprovalNodeTask(DbAuditModel):
         blank=True,
         verbose_name=_("Actor"),
     )
+    # 处理人显示名快照（U-1）：用户删除/改名后审批轨迹不丢痕迹
+    assignee_display = models.CharField(_("Assignee display"), max_length=128, blank=True, default="")
+    actor_display = models.CharField(_("Actor display"), max_length=128, blank=True, default="")
     # 委托代审来源：assignee 为代理人时记录原审批人（委托人生效替换），
     # 供审批轨迹标注「由 X 代理」；无委托的任务留空。
     delegate_from = models.ForeignKey(
@@ -383,3 +404,36 @@ class ApprovalDelegation(DbAuditModel):
 
     def __str__(self):
         return f"{self.delegator_id} -> {self.delegate_id}"
+
+
+class ApprovalInstanceComment(DbAuditModel):
+    """审批实例讨论区评论（F-5）：审批沟通在单内闭环（不再依赖 IM 补充说明）。
+
+    可见性/参与人与实例同口径（申请人 / 历史与当前处理人 / 抄送人经
+    ``visible_instances_for`` 收敛）；@ 提醒复用聊天室提及解析（用户名），
+    默认只对 @ 提及者推送（避免评论噪音）。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    instance = models.ForeignKey(
+        "system.ApprovalInstance",
+        related_name="comments",
+        on_delete=models.CASCADE,
+        verbose_name=_("Instance"),
+    )
+    content = models.TextField(_("Content"), max_length=2000)
+    # 作者显示名快照（用户删除后讨论记录仍可读，与处理人快照同口径）
+    author_display = models.CharField(_("Author display"), max_length=128, blank=True, default="")
+    # @ 提及的用户 pk 列表（落库快照，供前端高亮与追溯）
+    mentions = models.JSONField(_("Mentions"), default=list, blank=True)
+
+    class Meta:
+        ordering = ["created_time"]
+        verbose_name = _("Approval instance comment")
+        verbose_name_plural = verbose_name
+        indexes = [
+            models.Index(fields=["instance", "created_time"], name="idx_appr_comment_inst_created"),
+        ]
+
+    def __str__(self):
+        return f"{self.instance_id} {self.author_display}: {self.content[:20]}"

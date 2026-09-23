@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.modelset import BaseModelSet, BatchPartialUpdateAction, ImpactPreviewAction, ImportExportDataAction
 from common.core.pagination import DynamicPageNumber
 from common.utils import get_logger
 from system.models import DeptInfo
@@ -29,12 +29,20 @@ class DeptFilter(BaseFilterSet):
 
 
 class DeptViewSet(
-    AnnotateUserCountMixin, BaseModelSet, ChangeRolePermissionAction, DeptPreviewAction, ImportExportDataAction
+    AnnotateUserCountMixin,
+    BatchPartialUpdateAction,
+    BaseModelSet,
+    ImpactPreviewAction,
+    ChangeRolePermissionAction,
+    DeptPreviewAction,
+    ImportExportDataAction,
 ):
     """部门"""
 
     queryset = DeptInfo.objects.all()
     serializer_class = DeptSerializer
+    # F-1 批量更新白名单：批量启停用 / 改主管
+    batch_update_fields = ("is_active", "leader")
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["created_time", "rank"]
     filterset_class = DeptFilter

@@ -57,6 +57,7 @@ class Command(BaseCommand):
         if not options["skip_permissions"]:
             self._check_permissions()
         self._check_modules()
+        self._check_ai_declarations()
         self._check_frontend_contract()
         self._check_version_sync()
 
@@ -214,6 +215,54 @@ class Command(BaseCommand):
                 f"配置非法：{exc}",
                 "检查 config.yml 的 MODULE_PRESET / MODULE_ENABLE / MODULE_DISABLE",
             )
+
+    def _check_ai_declarations(self):
+        """E-3 生成物自检：`<app>/ai_declarations.py` 的声明路径必须能对上路由面。
+
+        - 无声明文件：跳过（不是所有模块都需要 AI 化）；
+        - 声明路径无法 resolve：失败（生成物与会话/路由漂移，AI 工具目录会指向不存在的端点）。
+        """
+        from django.apps import apps as django_apps
+        from django.urls import Resolver404, resolve
+        from django.utils.module_loading import import_string
+
+        from common.swagger.ai_meta import normalize_path
+
+        checked, broken, modules = 0, [], []
+        for config in django_apps.get_app_configs():
+            module_path = f"{config.name}.ai_declarations"
+            try:
+                module = import_string(module_path)
+            except ImportError:
+                continue
+            except Exception as exc:  # noqa: BLE001 声明文件本身导入失败即生成物坏了
+                broken.append(f"{module_path}: {exc}")
+                continue
+            modules.append(config.name)
+            for name in dir(module):
+                if not name.endswith("_ACTIONS"):
+                    continue
+                specs = getattr(module, name)
+                for spec in specs.values() if isinstance(specs, dict) else specs:
+                    path = normalize_path(getattr(spec, "path", ""))
+                    if not path:
+                        continue
+                    checked += 1
+                    try:
+                        resolve(path.lstrip("/").replace("<pk>", "1"))
+                    except Resolver404:
+                        broken.append(f"{module_path}::{getattr(spec, 'key', path)} -> {path}")
+        if broken:
+            self._report(
+                FAIL,
+                "AI 声明（生成物）",
+                f"{len(broken)} 条声明对不上路由：{broken[:3]}",
+                "跑 generate_crud 重新生成，或修正声明 path（口径见 system/utils/ai_api_actions.py）",
+            )
+        elif checked:
+            self._report(PASS, "AI 声明（生成物）", f"{len(checked)} 条声明路径可解析（模块 {len(modules)} 个）")
+        else:
+            self._report(PASS, "AI 声明（生成物）", "无声明文件（非 AI 化模块，跳过）")
 
     def _check_frontend_contract(self):
         local = Path(settings.BASE_DIR) / "docs" / "schema"

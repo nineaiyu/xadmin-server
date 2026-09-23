@@ -10,6 +10,7 @@
 """
 
 from django.db import transaction
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -19,9 +20,12 @@ from system.models.approval import (
     ApprovalFlowNode,
     ApprovalFlowVersion,
     ApprovalInstance,
-    ApprovalNodeTask,
 )
-from system.serializers.fields import DictChoiceField
+from system.serializers.approval_instance import (  # noqa: F401 实例/任务序列化器拆出后保持既有导入面
+    ApprovalInstanceExportSerializer,
+    ApprovalInstanceSerializer,
+    ApprovalNodeTaskSerializer,
+)
 from system.serializers.task import DisplayRelatedField
 from system.utils.approval_flow import CONDITION_OPS
 
@@ -30,6 +34,19 @@ FORM_FIELD_TYPES = ("text", "textarea", "number", "date", "select")
 
 def _username(value):
     return getattr(value, "username", str(value))
+
+
+def _normalize_cc_users(value, limit=20):
+    """F-5 抄送人（用户 pk 列表）标准化：去空 / 去重 / 限长。"""
+    if not value:
+        return []
+    items = value if isinstance(value, (list, tuple)) else [value]
+    result = []
+    for item in items:
+        text = str(item or "").strip()
+        if text and text not in result:
+            result.append(text)
+    return result[:limit]
 
 
 class ApprovalFlowNodeSerializer(BaseModelSerializer):
@@ -47,6 +64,8 @@ class ApprovalFlowNodeSerializer(BaseModelSerializer):
             "routes",
             "layout",
             "timeout_hours",
+            # F-5 节点级默认抄送人（用户 pk 列表）
+            "cc_users",
         ]
         extra_kwargs = {"order": {"required": False}}
 
@@ -55,6 +74,10 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     nodes = ApprovalFlowNodeSerializer(many=True, required=False)
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Creator"), label_builder=_username)
     node_count = serializers.SerializerMethodField(label=_("Node count"))
+
+    # F-12 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
+    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT
+    relation_count_fields = {"node_count": Count("nodes")}
 
     class Meta:
         model = ApprovalFlow
@@ -73,7 +96,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         table_fields = ["name", "code", "node_count", "is_active", "creator", "created_time"]
 
     def get_node_count(self, obj) -> int:
-        annotated = getattr(obj, "nodes_count", None)
+        annotated = getattr(obj, "node_count", None)
         return annotated if annotated is not None else obj.nodes.count()
 
     def validate_form_schema(self, value):
@@ -261,6 +284,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                     "routes": node.get("routes") or [],
                     "layout": node.get("layout") or {},
                     "timeout_hours": int(node.get("timeout_hours") or 0),
+                    "cc_users": _normalize_cc_users(node.get("cc_users")),
                 }
                 for index, node in enumerate(nodes or [])
             ],
@@ -305,189 +329,5 @@ class ApprovalFlowSerializer(BaseModelSerializer):
                 routes=node.get("routes") or [],
                 layout=node.get("layout") or {},
                 timeout_hours=int(node.get("timeout_hours") or 0),
+                cc_users=_normalize_cc_users(node.get("cc_users")),
             )
-
-
-class ApprovalNodeTaskSerializer(BaseModelSerializer):
-    assignee = DisplayRelatedField(read_only=True, allow_null=True, label=_("Assignee"), label_builder=_username)
-    actor = DisplayRelatedField(read_only=True, allow_null=True, label=_("Actor"), label_builder=_username)
-    # 委托代审来源：assignee 为代理人时非空（原审批人），详情页标注「由 X 代理」
-    delegate_from = DisplayRelatedField(
-        read_only=True, allow_null=True, label=_("Delegate from"), label_builder=_username
-    )
-    status = DictChoiceField(
-        dict_code="approval_status",
-        fallback_choices=ApprovalNodeTask.Status.choices,
-        merge_fallback=True,
-        read_only=True,
-    )
-
-    class Meta:
-        model = ApprovalNodeTask
-        fields = [
-            "pk",
-            "node_name",
-            "node_order",
-            "assignee",
-            "delegate_from",
-            "actor",
-            "status",
-            "comment",
-            "acted_at",
-            "is_added",
-            "created_time",
-        ]
-        read_only_fields = fields
-
-
-class ApprovalInstanceSerializer(BaseModelSerializer):
-    flow = DisplayRelatedField(queryset=ApprovalFlow.objects.all(), label=_("Flow"), label_builder=lambda v: v.name)
-    creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Applicant"), label_builder=_username)
-    status = DictChoiceField(
-        dict_code="approval_status",
-        fallback_choices=ApprovalInstance.Status.choices,
-        merge_fallback=True,
-        read_only=True,
-    )
-    current_node_name = serializers.SerializerMethodField(label=_("Current node"))
-    current_assignees = serializers.SerializerMethodField(label=_("Current approvers"))
-    my_task = serializers.SerializerMethodField(label=_("My task"))
-    node_progress = serializers.SerializerMethodField(label=_("Node progress"))
-    tasks = ApprovalNodeTaskSerializer(many=True, read_only=True)
-    # 表单字段定义快照：详情页按 key 渲染 label（实例列表已 select_related flow，无额外查询）
-    form_schema = serializers.SerializerMethodField(label=_("Form schema"))
-
-    class Meta:
-        model = ApprovalInstance
-        fields = [
-            "pk",
-            "flow",
-            "flow_name",
-            "title",
-            "form_data",
-            "status",
-            "current_node_name",
-            "current_assignees",
-            "my_task",
-            "node_progress",
-            "tasks",
-            "form_schema",
-            "reason",
-            "creator",
-            "finished_at",
-            "created_time",
-            "updated_time",
-        ]
-        table_fields = [
-            "title",
-            "flow_name",
-            "status",
-            "current_node_name",
-            "current_assignees",
-            "creator",
-            "finished_at",
-            "created_time",
-        ]
-        read_only_fields = [
-            "pk",
-            "flow_name",
-            "status",
-            "reason",
-            "creator",
-            "finished_at",
-            "created_time",
-            "updated_time",
-        ]
-
-    def get_current_node_name(self, obj) -> str:
-        return getattr(obj.current_node, "name", "") or ""
-
-    def get_node_progress(self, obj):
-        """当前节点进度（比例会签达标线预览）：复用列表 prefetch 的 tasks，避免 N+1。"""
-        from system.utils.approval_flow import node_progress_for
-
-        return node_progress_for(obj, tasks=obj.tasks.all())
-
-    def get_current_assignees(self, obj) -> str:
-        """当前节点的待办处理人（昵称，逗号分隔）：巡看「申请卡在谁那里」用。
-
-        非 PENDING 实例返回空串；只取当前节点 PENDING 任务（加签者一并纳入）。
-        """
-        if obj.status != ApprovalInstance.Status.PENDING:
-            return ""
-        names = [
-            (task.assignee.nickname or task.assignee.username)
-            for task in obj.tasks.all()
-            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
-        ]
-        return ", ".join(names)
-
-    def get_form_schema(self, obj) -> list:
-        return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
-
-    def get_my_task(self, obj):
-        """当前用户在当前节点的待办任务（仅 PENDING 实例有意义；非待办返回 null）。"""
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
-        if not user or not getattr(user, "is_authenticated", False) or obj.status != ApprovalInstance.Status.PENDING:
-            return None
-        for task in obj.tasks.all():
-            if task.assignee_id == user.pk and task.status == ApprovalNodeTask.Status.PENDING:
-                return {"pk": str(task.pk), "node_name": task.node_name, "node_order": task.node_order}
-        return None
-
-    def validate(self, attrs):
-        flow = attrs.get("flow")
-        if flow is None:
-            raise serializers.ValidationError({"flow": _("Flow is required")})
-        if not flow.is_active:
-            raise serializers.ValidationError({"flow": _("The flow is disabled")})
-        if not (attrs.get("title") or "").strip():
-            raise serializers.ValidationError({"title": _("Title is required")})
-        return attrs
-
-
-class ApprovalInstanceExportSerializer(BaseModelSerializer):
-    """导出专用（轻量）：仅表格列，剔除 tasks / my_task / form_schema / node_progress 等重字段。
-
-    导出复用 list 链路（支持筛选参数），沿用主序列化器会把每条实例的全部任务与表单快照
-    写进文件（体积大且不可读）；此处与 ``Meta.table_fields`` 同口径。
-    """
-
-    creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Applicant"), label_builder=_username)
-    status = DictChoiceField(
-        dict_code="approval_status",
-        fallback_choices=ApprovalInstance.Status.choices,
-        merge_fallback=True,
-        read_only=True,
-    )
-    current_node_name = serializers.SerializerMethodField(label=_("Current node"))
-    current_assignees = serializers.SerializerMethodField(label=_("Current approvers"))
-
-    class Meta:
-        model = ApprovalInstance
-        fields = [
-            "pk",
-            "title",
-            "flow_name",
-            "status",
-            "current_node_name",
-            "current_assignees",
-            "creator",
-            "reason",
-            "finished_at",
-            "created_time",
-        ]
-
-    def get_current_node_name(self, obj) -> str:
-        return getattr(obj.current_node, "name", "") or ""
-
-    def get_current_assignees(self, obj) -> str:
-        if obj.status != ApprovalInstance.Status.PENDING:
-            return ""
-        names = [
-            (task.assignee.nickname or task.assignee.username)
-            for task in obj.tasks.all()
-            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
-        ]
-        return ", ".join(names)

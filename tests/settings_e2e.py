@@ -60,6 +60,9 @@ SENSITIVE_OPERATION_METHODS = []
 # 字段级审计 diff：E2E 的「变更历史」用例需要 diff 断言（生产按需经 config.yml 开启）
 AUDIT_DIFF_MODELS = ["system.UserInfo"]
 
+# 邀请开户（F-11）发信链路：E2E 使用内存后端（不真实投递，也满足「邮件渠道已配置」判定）
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
 # 放开登录限流：E2E 套件 20+ 用例共享 127.0.0.1 的 login 50/h 配额，
 # 打满后 rules/login 全部 429，登录页会退化为「当前服务器不允许登录」
 #

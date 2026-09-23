@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 """数据集与仪表盘序列化器。"""
 
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
@@ -18,6 +20,9 @@ class DatasetSerializer(BaseModelSerializer):
     ignore_field_permission = True
     # 数值列（读侧派生）：卡片/报表的 sum・avg 度量字段候选（后端聚合会做同样校验）
     numeric_columns = serializers.SerializerMethodField(label=_("Numeric columns"))
+    # F-12 关联计数声明：报表引用数（与 F-2 影响面同源——「删除会影响几张报表」的同一口径）
+    relation_count_fields = {"report_count": Count("report")}
+    report_count = serializers.SerializerMethodField(label=_("Report count"))
 
     class Meta:
         model = Dataset
@@ -33,15 +38,21 @@ class DatasetSerializer(BaseModelSerializer):
             "config",
             "visibility",
             "numeric_columns",
+            "report_count",
             "created_time",
             "updated_time",
         ]
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列：列/filters/ordering/config 等定义细节不进列表
-        table_fields = ["name", "bound_model", "visibility", "description", "updated_time"]
+        table_fields = ["name", "bound_model", "visibility", "report_count", "description", "updated_time"]
 
     def get_numeric_columns(self, obj) -> list:
         return numeric_columns_of(obj)
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_report_count(self, obj):
+        count = getattr(obj, "report_count", None)
+        return count if count is not None else obj.report_set.count()
 
     def validate(self, attrs):
         """保存侧白名单校验：部分更新时与既有实例字段合并后整体校验。"""

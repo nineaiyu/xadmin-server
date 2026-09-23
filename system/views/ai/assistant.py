@@ -130,6 +130,25 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
         )
 
     @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="usage")
+    def usage(self, request, *args, **kwargs):
+        """AI 用量账本（AI-5）：按天 / 按链路 / Top 用户 + 配额配置与并发占用。
+
+        数据源 = AiUsageRecord（逐次记账，保留期随 MONITOR_RETENTION_DAYS 清理）；
+        与 status/metrics 共用权限点路径正则（`(status|metrics|history|tools|usage)$`），
+        不新增权限点。
+        """
+        from system.utils.ai_usage import usage_summary
+
+        days = request.query_params.get("days") or 7
+        feature = str(request.query_params.get("feature") or "").strip()
+        try:
+            days = int(days)
+        except (TypeError, ValueError):
+            days = 7
+        return ApiResponse(data=usage_summary(days=days, feature=feature))
+
+    @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="metrics")
     def metrics(self, request, *args, **kwargs):
         """AI 调用观测：近 N 天用量 / 成功率 / 日趋势 / 类型分布 / Top 用户。
@@ -271,10 +290,20 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
         """
         from system.utils.ai_actions import audit_ai_ask
         from system.utils.ai_chat import message_payload, persist_message, system_error_message
+        from system.utils.ai_usage import quota_error
 
         question = str(request.data.get("question") or "")
+        quota = quota_error(request.user, "docs")
+        if quota:
+            from system.utils.ai_actions import audit_ai_ask
+            from system.utils.ai_chat import persist_message, system_error_message
+
+            audit_ai_ask(request.user, question, ok=False, detail=quota)
+            persist_message(request.user, "docs", "user", content=question)
+            system_error_message(request.user, "docs", quota)
+            return ApiResponse(code=1001, detail=quota)
         try:
-            result = ask(question)
+            result = ask(question, user=request.user)
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
             audit_ai_ask(request.user, question, ok=False, detail=detail)
@@ -282,7 +311,8 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
             system_error_message(request.user, "docs", detail)
             return ApiResponse(code=1001, detail=detail)
         usage = result.pop("_usage", None)
-        audit_ai_ask(request.user, question, ok=True, usage=usage)
+        guard = result.pop("_guard", None)
+        audit_ai_ask(request.user, question, ok=True, usage=usage, guard=guard)
         persist_message(request.user, "docs", "user", content=question)
         row = persist_message(
             request.user,
@@ -307,10 +337,15 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
         from system.utils.ai import prepare_ask
         from system.utils.ai_actions import audit_ai_ask
         from system.utils.ai_chat import message_payload, persist_message, system_error_message
+        from system.utils.ai_usage import quota_error
 
         question = str(request.data.get("question") or "")
+        quota = quota_error(request.user, "docs")
+        if quota:
+            audit_ai_ask(request.user, question, ok=False, detail=quota)
+            return ApiResponse(code=1001, detail=quota, content_type="application/json")
         try:
-            messages, sources = prepare_ask(question)
+            messages, sources = prepare_ask(question, user=request.user)
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
             audit_ai_ask(request.user, question, ok=False, detail=detail)
@@ -324,7 +359,7 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
             content_chunks: list = []
             reasoning_chunks: list = []
             try:
-                for item in ai_ask_stream(messages, sources):
+                for item in ai_ask_stream(messages, sources, user=request.user):
                     kind = item.get("type")
                     if kind == "reasoning":
                         reasoning_chunks.append(item["text"])
@@ -333,7 +368,7 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
                         content_chunks.append(item["text"])
                         yield {"event": "delta", "data": {"delta": item["text"]}}
                     elif kind == "done":
-                        audit_ai_ask(request.user, question, ok=True)
+                        audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
                         row = persist_message(
                             request.user,
                             "docs",

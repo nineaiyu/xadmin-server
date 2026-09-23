@@ -31,16 +31,24 @@ from system.utils.oauth import (
     OAuthError,
     build_authorize_url,
     consume_bind_state,
+    consume_nonce,
     consume_state,
     exchange_code,
     fetch_userinfo,
     get_provider,
     get_providers,
     issue_bind_state,
+    issue_nonce,
     issue_state,
     make_unique_username,
     mask_providers,
     resolve_subject,
+)
+from system.utils.oidc import (
+    fetch_oidc_identity,
+    is_oidc_provider,
+    prepare_oidc_provider,
+    sync_group_roles,
 )
 from system.utils.session import bind_session_claim
 from system.views.auth.login import _register_session_safe, complete_login
@@ -58,15 +66,32 @@ def _redirect_uri(request, provider: str) -> str:
     return f"{request.scheme}://{request.get_host()}/#/oauth/callback?provider={provider}"
 
 
-def _fetch_identity(request, provider: str, config: dict, code: str):
+def _fetch_identity(request, provider: str, config: dict, code: str, nonce: str | None = None):
     """换码 + 取用户信息 + 解析 IdP 唯一标识（登录与绑定链路共用）。
+
+    标准 OIDC（F-10）：换码结果里的 ``id_token`` 经 JWKS 验签后取 claims（不再依赖
+    userinfo 端点）；其余 flavor 行为不变。
 
     :return: ``(subject, userinfo)``；IdP 侧失败统一抛 `OAuthError`（可读文案）。
     """
+    if is_oidc_provider(config):
+        # 换码前解析 discovery 端点（token_url 可能只存在于 discovery 元数据里）
+        prepare_oidc_provider(config)
+        token_payload = exchange_code(config, code, _redirect_uri(request, provider))
+        return fetch_oidc_identity(config, token_payload, nonce=nonce)
     token_payload = exchange_code(config, code, _redirect_uri(request, provider))
     # 传入完整 token payload：企微等 flavor 的身份标识在换码步即确定
     userinfo = fetch_userinfo(config, token_payload)
     return resolve_subject(config, userinfo), userinfo
+
+
+def _authorize_url_with_nonce(request, provider: str, config: dict, state: str) -> str:
+    """构造授权地址；OIDC 额外下发 nonce（回调校验 id_token 防重放）。"""
+    if not is_oidc_provider(config):
+        return build_authorize_url(config, _redirect_uri(request, provider), state)
+    # discovery 可能失败（IdP 不可达）：此时直接返回可读错误，不把用户送到坏地址
+    prepare_oidc_provider(config)
+    return build_authorize_url(config, _redirect_uri(request, provider), state, nonce=issue_nonce(state))
 
 
 def _profile_snapshot(userinfo: dict) -> dict:
@@ -78,7 +103,7 @@ def _profile_snapshot(userinfo: dict) -> dict:
     }
 
 
-def _bind_identity(request, provider: str, code: str, payload: dict):
+def _bind_identity(request, provider: str, code: str, payload: dict, state: str = ""):
     """绑定意图回调：把 IdP 身份绑定到**发起绑定的本人**（不登录、不签发 token）。
 
     归属校验（state 载荷 pk == 当前登录用户）放在最前：防止把别人的 IdP 身份
@@ -96,7 +121,7 @@ def _bind_identity(request, provider: str, code: str, payload: dict):
     if not config:
         return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
     try:
-        subject, userinfo = _fetch_identity(request, provider, config, code)
+        subject, userinfo = _fetch_identity(request, provider, config, code, nonce=consume_nonce(state))
     except OAuthError as exc:
         return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
 
@@ -157,12 +182,11 @@ class OAuthAuthorizeAPIView(GenericAPIView):
         if not config:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
         state = issue_state(provider)
-        return ApiResponse(
-            data={
-                "url": build_authorize_url(config, _redirect_uri(request, provider), state),
-                "state": state,
-            }
-        )
+        try:
+            url = _authorize_url_with_nonce(request, provider, config, state)
+        except OAuthError as exc:
+            return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
+        return ApiResponse(data={"url": url, "state": state})
 
 
 class OAuthBindAuthorizeAPIView(GenericAPIView):
@@ -180,12 +204,11 @@ class OAuthBindAuthorizeAPIView(GenericAPIView):
         if not config:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
         state = issue_bind_state(provider, request.user.pk)
-        return ApiResponse(
-            data={
-                "url": build_authorize_url(config, _redirect_uri(request, provider), state),
-                "state": state,
-            }
-        )
+        try:
+            url = _authorize_url_with_nonce(request, provider, config, state)
+        except OAuthError as exc:
+            return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
+        return ApiResponse(data={"url": url, "state": state})
 
 
 class OAuthCallbackAPIView(GenericAPIView):
@@ -206,7 +229,7 @@ class OAuthCallbackAPIView(GenericAPIView):
         # 先判绑定意图：绑定 state 与登录 state 键空间隔离，互不通用
         bind_payload = consume_bind_state(state or "")
         if bind_payload is not None:
-            return _bind_identity(request, provider, code, bind_payload)
+            return _bind_identity(request, provider, code, bind_payload, state or "")
 
         bound_provider = consume_state(state or "")
         if not code or bound_provider != provider:
@@ -217,7 +240,7 @@ class OAuthCallbackAPIView(GenericAPIView):
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("Third-party login is not enabled"))
 
         try:
-            subject, userinfo = _fetch_identity(request, provider, config, code)
+            subject, userinfo = _fetch_identity(request, provider, config, code, nonce=consume_nonce(state or ""))
         except OAuthError as exc:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=exc.detail)
 
@@ -234,6 +257,11 @@ class OAuthCallbackAPIView(GenericAPIView):
         user = binding.user
         if not user.is_active:
             return ApiResponse(code=OAUTH_ERROR_CODE, detail=_("The account has been disabled"))
+
+        # OIDC 组 → 角色同步（F-10）：本地角色以本次登录 claims 为准，
+        # 必须在 complete_login 之前（权限判定读取的是库内角色）
+        if is_oidc_provider(config):
+            sync_group_roles(user, config, userinfo)
 
         mfa_response = complete_login(request, user, login_type=UserLoginLog.LoginTypeChoices.OAUTH)
         if mfa_response:

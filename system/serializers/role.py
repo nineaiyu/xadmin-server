@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 from django.db import transaction
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
@@ -34,13 +35,14 @@ class RoleSerializer(BaseModelSerializer):
             "code",
             "is_active",
             "builtin",
+            "user_count",
             "description",
             "menu",
             "updated_time",
             "field",
             "fields",
         ]
-        table_fields = ["pk", "name", "code", "is_active", "builtin", "description", "updated_time"]
+        table_fields = ["pk", "name", "code", "is_active", "builtin", "user_count", "description", "updated_time"]
         read_only_fields = ["pk", "builtin"]
         extra_kwargs = {"menu": {"attrs": ["pk", "name"], "many": True, "input_type": "input"}}
 
@@ -51,6 +53,16 @@ class RoleSerializer(BaseModelSerializer):
     # field和fields 设置两个相同的label，可以进行文件导入导出
     field = serializers.SerializerMethodField(read_only=True, label=_("Fields"))
     fields = serializers.DictField(write_only=True, label=_("Fields"))
+
+    # F-12 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（与 F-2 影响面同源，
+    # 角色→用户为「删除/停用影响谁」的同一口径）；单对象序列化回退为单次 COUNT
+    relation_count_fields = {"user_count": Count("userinfo")}
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_user_count(self, obj):
+        count = getattr(obj, "user_count", None)
+        return count if count is not None else obj.userinfo_set.count()
 
     # name/code 的唯一性已改为"未删除数据"条件约束（见 Meta.constraints），
     # DRF 不会为带 condition 的 UniqueConstraint 自动生成校验器，这里显式校验，
@@ -122,6 +134,7 @@ class ListRoleSerializer(RoleSerializer):
             "name",
             "is_active",
             "code",
+            "user_count",
             "menu",
             "builtin",
             "description",
@@ -131,7 +144,17 @@ class ListRoleSerializer(RoleSerializer):
             "fields",
         ]
         # 主列表列白名单：deleted_at（回收站口径）/ field / fields 不上主表格
-        table_fields = ["pk", "name", "is_active", "code", "menu", "builtin", "description", "updated_time"]
+        table_fields = [
+            "pk",
+            "name",
+            "is_active",
+            "code",
+            "user_count",
+            "menu",
+            "builtin",
+            "description",
+            "updated_time",
+        ]
         read_only_fields = [x.name for x in UserRole._meta.fields]
 
     field = serializers.ListField(default=[], read_only=True)

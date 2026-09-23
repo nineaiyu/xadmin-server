@@ -101,6 +101,10 @@ class SearchFieldsAction:
     def search_fields(self, request, *args, **kwargs):
         """获取{cls}的查询字段"""
         results = []
+        if getattr(self, "filterset_class", None) is None:
+            # 非模型视图集（内存 queryset / 未声明 filterset，如 IP 拦截名单）：
+            # 「没有可筛选字段」是正常语义，返回空元数据；真正的构建异常仍走下面失败码
+            return ApiResponse(data=[])
         try:
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
@@ -216,6 +220,7 @@ class SearchColumnsAction:
                                 )
                             ),
                             "choices_truncated": build_basic_type(OpenApiTypes.BOOL),
+                            "sortable": build_basic_type(OpenApiTypes.BOOL),
                         }
                     )
                 )
@@ -260,6 +265,24 @@ class SearchColumnsAction:
         serializer = self.get_serializer()
         fields = getattr(serializer, "fields", [])
         meta = getattr(serializer, "Meta", {})
+
+        # 表头排序声明面（U-3）：与 DRF OrderingFilter 的 ordering_fields 同源，
+        # `-` 前缀仅表默认方向、不影响该字段可排序；"__all__" 视为全部字段可排序。
+        # 未声明 ordering_fields 的视图集不下发 sortable —— 前端表头保持不可排序（零变化）。
+        ordering_fields = getattr(self, "ordering_fields", None)
+        if ordering_fields is None and callable(getattr(self, "get_ordering_fields", None)):
+            try:
+                ordering_fields = self.get_ordering_fields(request)
+            except Exception as e:
+                logger.error(f"get ordering fields failed {e}")
+                ordering_fields = None
+        if ordering_fields == "__all__":
+            sortable_names = None
+        elif isinstance(ordering_fields, str):
+            sortable_names = {ordering_fields.lstrip("-")}
+        else:
+            sortable_names = {str(name).lstrip("-") for name in (ordering_fields or [])}
+
         table_fields = getattr(meta, "table_fields", [])
         tabs_fields = getattr(meta, "tabs", [])
         tabs_label = []
@@ -281,6 +304,15 @@ class SearchColumnsAction:
             info["key"] = key
             if info.get("help_text", None) is None and hasattr(field, "help_text"):
                 info["help_text"] = field.help_text
+
+            # 表头排序标记（U-3）：按序列化器字段名 / source 命中 ordering_fields 声明面
+            source_name = getattr(value, "source", None)
+            if (
+                sortable_names is None
+                or key in sortable_names
+                or (isinstance(source_name, str) and source_name in sortable_names)
+            ):
+                info["sortable"] = True
 
             if value.field_name.replace("_", " ").capitalize() == info["label"] and hasattr(field, "verbose_name"):
                 info["label"] = field.verbose_name

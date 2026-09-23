@@ -94,6 +94,32 @@ class TestArtifacts:
         _assert_python_compiles(backend)
         _assert_ruff_clean(backend)
 
+    def test_ai_declarations_artifact(self, workspace):
+        """E-3：默认携带 AI 动作声明骨架（只读动作可直接注册，写动作注释给出）。"""
+        backend, _ = _generate(workspace)
+        path = backend / "demo" / "ai_declarations.py"
+        assert path.exists(), "缺少 AI 声明产物"
+        text = path.read_text(encoding="utf8")
+        assert "AI_READ_ACTIONS" in text
+        assert '"/api/demo/book"' in text
+        assert "api_action(" in text
+        assert "# AI_WRITE_ACTIONS" in text  # 写动作以注释给出
+        assert "TAGGABLE_MODEL_KEYS" not in text  # 未加 --with-tags 时不出现标签声明
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_with_tags_and_tests_flags(self, workspace):
+        """E-3：--with-tags 附带 P-1 白名单声明；--with-tests 生成测试骨架。"""
+        backend, _ = _generate(workspace, "--with-tags", "--with-tests")
+        declarations = (backend / "demo" / "ai_declarations.py").read_text(encoding="utf8")
+        assert 'TAGGABLE_MODEL_KEYS = ["demo.book"]' in declarations
+        skeleton = backend / "tests" / "unit" / "demo" / "test_book_api.py"
+        assert skeleton.exists()
+        text = skeleton.read_text(encoding="utf8")
+        assert "test_list_requires_auth" in text and 'LIST_URL = "/api/demo/book"' in text
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
     def test_ruff_clean_when_appending_to_existing_views(self, workspace):
         """共享文件合并路径同样要过门禁（E402 已全局忽略，import 去重防 F811）。"""
         backend, _ = workspace

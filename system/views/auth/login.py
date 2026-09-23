@@ -31,6 +31,7 @@ from settings.services import (
     is_password_expired,
 )
 from system.models import UserInfo, UserLoginLog
+from system.utils.account_expiry import ACCOUNT_EXPIRED_MESSAGE, is_account_expired
 from system.utils.auth import (
     ValidateError,
     check_different_city_login_if_need,
@@ -117,6 +118,10 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         # 密码有效期拦截（SECURITY_PASSWORD_EXPIRATION_DAYS，默认关闭）：MFA 前收口，
         # 待二次验证路径同样拦截；date_password_updated 为空的存量用户宽限放行
         raise ValidateError(PASSWORD_EXPIRED_MESSAGE)
+    if is_account_expired(user_obj):
+        # 账号有效期拦截（F-11）：date_expired 为空 = 永不过期；到期由每日任务自动停用 +
+        # 到期前提醒，此处拦截覆盖「任务时差窗口内仍可登录」的情形
+        raise ValidateError(ACCOUNT_EXPIRED_MESSAGE)
     ipaddr = get_request_ip(request)
     login_block_util = LoginBlockUtil(user_obj.username, ipaddr)
     login_ip_block = LoginIpBlockUtil(ipaddr)
@@ -146,9 +151,34 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
     save_login_log(request, login_type=login_type)
 
 
-def login_mfa_if_required(request, user_obj):
-    """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）"""
-    if not is_login_mfa_required(user_obj):
+def evaluate_login_policy_for_request(request, user_obj, ipaddr):
+    """F-7 登录访问策略判定：返回 (force_mfa, reject_detail)。
+
+    命中结果写 ``request.login_policy_result``（由 save_login_log 落入登录日志）；
+    reject 时调用方需自行记失败日志并返回可读文案（含策略名）。
+    """
+    from system.utils.login_policy import evaluate_login_policy
+
+    policy = evaluate_login_policy(user_obj, ipaddr)
+    if policy.get("result"):
+        request.login_policy_result = policy["result"]
+    if policy.get("action") == "reject":
+        return False, str(_("Login is not allowed by policy: {}").format(policy.get("policy") or ""))
+    return policy.get("action") == "require_mfa", ""
+
+
+def login_mfa_if_required(request, user_obj, force_mfa=False):
+    """用户开启登录 MFA 时返回 True：清理密码阶段锁定计数（登录日志在二次验证通过后记录）。
+
+    ``force_mfa``：登录访问策略（F-7）要求二次验证——无可用方式时降级放行避免登录死锁。
+    """
+    required = is_login_mfa_required(user_obj)
+    if not required and force_mfa:
+        if get_login_mfa_methods(user_obj, request):
+            required = True
+        else:
+            logger.warning("Login policy requires MFA but no available method, skip. user: %s", user_obj.username)
+    if not required:
         return False
     if not get_login_mfa_methods(user_obj, request):
         # 已开启 MFA 但无可用验证方式（如管理员关闭了全部方式），降级放行避免登录死锁
@@ -158,7 +188,7 @@ def login_mfa_if_required(request, user_obj):
     return True
 
 
-def complete_login(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME):
+def complete_login(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.USERNAME, force_mfa=False):
     """登录成功后的**唯一收口**：MFA 判定 → 会话登记 / 登录日志 / 异常提醒 / 锁定计数清理。
 
     任何新增登录路径（本地密码 / 验证码 / WebSocket / 第三方 OAuth…）都必须调用它：
@@ -168,7 +198,7 @@ def complete_login(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.U
     :return: 需要 MFA 二次验证时返回可直接下发的 ``ApiResponse``；否则返回 ``None``，
              由调用方继续下发自己的 token 载荷。
     """
-    if login_mfa_if_required(request, user_obj):
+    if login_mfa_if_required(request, user_obj, force_mfa=force_mfa):
         return ApiResponse(
             data={
                 "mfa_required": True,
@@ -232,11 +262,20 @@ class BasicLoginAPIView(TokenObtainPairView):
         except Exception:
             return login_failed(request, username)
         user = serializer.user
-        mfa_response = complete_login(request, user, login_type=_login_type_for(user))
+        # F-7 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志
+        force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
+        if reject_detail:
+            # 记失败日志前绑定用户（登录日志 creator 归属被策略拒绝的账号）
+            request.user = user
+            save_login_log(request, status=False)
+            return ApiResponse(code=1001, detail=reject_detail)
+        mfa_response = complete_login(request, user, login_type=_login_type_for(user), force_mfa=force_mfa)
         if mfa_response:
             return mfa_response
         data = serializer.validated_data
         data.update(get_token_lifetime(user))
+        # F-6 强制改密标记：前端登录后引导改密（改密成功自动清除）
+        data["must_change_password"] = bool(getattr(user, "must_change_password", False))
         return ApiResponse(data=data)
 
     @extend_schema(
@@ -314,12 +353,25 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
             user = authenticate(**{query_key: target}, password=password)
             if not user:
                 login_failed(request, target)
-            mfa_response = complete_login(request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME)
+            # F-7 登录访问策略（验证码 + 密码组合登录同样收口）
+            force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
+            if reject_detail:
+                request.user = user
+                save_login_log(request, status=False)
+                return ApiResponse(code=1001, detail=reject_detail)
+            mfa_response = complete_login(
+                request, user, login_type=UserLoginLog.LoginTypeChoices.USERNAME, force_mfa=force_mfa
+            )
             if mfa_response:
                 return mfa_response
         else:
             # 验证码登录本身已通过动态因子（短信/邮件验证码）验证，无需再走 MFA
             user = UserInfo.objects.get(**{query_key: target})
+            force_mfa, reject_detail = evaluate_login_policy_for_request(request, user, ipaddr)
+            if reject_detail:
+                request.user = user
+                save_login_log(request, status=False, login_type=UserLoginLog.get_login_type(query_key))
+                return ApiResponse(code=1001, detail=reject_detail)
 
         login_type = UserLoginLog.get_login_type(query_key)
         session = _register_session_safe(request, user, login_type)
@@ -336,5 +388,6 @@ class VerifyCodeLoginAPIView(TokenObtainPairView):
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
         result.update(**get_token_lifetime(user))
+        result["must_change_password"] = bool(getattr(user, "must_change_password", False))
         login_success(request, user, login_type=login_type)
         return ApiResponse(data=result)

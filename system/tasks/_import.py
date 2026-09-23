@@ -15,6 +15,7 @@ from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
 from server.utils import set_current_request
+from system.utils.task_center import TaskCancelled, ensure_not_cancelled, mark_execution_revoked
 
 from ._export import EXPORT_MIME_TYPES
 
@@ -90,7 +91,8 @@ def run_async_import(record_id, view_path, user_pk):
     from system.models.import_ import ImportRecord
     from system.models.task import TaskExecution
     from system.models.user import UserInfo
-    from system.utils.import_progress import clear_import_progress, set_import_progress
+    from system.utils.import_progress import clear_import_progress
+    from system.utils.task_progress import KIND_IMPORT, update_progress
 
     record = ImportRecord.objects.filter(pk=record_id).first()
     if record is None:
@@ -143,6 +145,8 @@ def run_async_import(record_id, view_path, user_pk):
         try:
             with transaction.atomic():
                 for idx, row in enumerate(rows, start=1):
+                    # 协作式取消（P-2）：逐行循环即安全点，取消触发外层事务回滚
+                    ensure_not_cancelled(record.pk)
                     try:
                         with transaction.atomic():
                             _import_row(view, record.action, row)
@@ -161,16 +165,26 @@ def run_async_import(record_id, view_path, user_pk):
                                 len(errors), total
                             )
                             break
-                    # 分批上报进度（1% 粒度），供下载中心进度条展示
+                    # 分批上报进度（1% 粒度，P-2 统一助手：导入运行期走缓存通道），供下载中心进度条展示
                     percent = int(idx / max(total, 1) * 100)
                     if percent != last_percent:
                         last_percent = percent
-                        set_import_progress(record.pk, percent)
+                        update_progress(KIND_IMPORT, record.pk, percent)
                 if aborted:
                     # 外层事务回滚：已写入的成功行一并撤销
                     raise _ImportAborted(abort_reason)
         except _ImportAborted:
             pass
+    except TaskCancelled as exc:
+        # 协作式取消（P-2）：外层事务已回滚，落 REVOKED 终态（不是故障，不 re-raise）
+        state = False
+        record.status = ImportRecord.Status.REVOKED
+        record.error = str(exc)[:2000]
+        record.total = record.total or total
+        record.save(update_fields=["status", "error", "total", "updated_time"])
+        clear_import_progress(record.pk)
+        mark_execution_revoked(record.pk)
+        logger.info("async import cancelled by user: %s", record_id)
     except Exception as exc:
         state = False
         record.status = ImportRecord.Status.FAILURE

@@ -45,6 +45,20 @@ def get_media_path(path):
                         return get_thumbnail(pic, int(index[0]))
 
 
+def _storage_serve(request, path):
+    """对象存储后端（P-4）的媒体兜底：本地无文件时从存储读取并由应用层代理返回。"""
+    from common.storage import storage_exists, storage_is_local, storage_open
+
+    if storage_is_local() or not storage_exists(path):
+        raise Http404(_("“%(path)s” does not exist") % {"path": path})
+    content_type, encoding = mimetypes.guess_type(path)
+    content_type = content_type or "application/octet-stream"
+    response = FileResponse(storage_open(path, "rb"), content_type=content_type)
+    if encoding:
+        response.headers["Content-Encoding"] = encoding
+    return response
+
+
 def media_serve(request, path, document_root=None, show_indexes=False):
     path = posixpath.normpath(path).lstrip("/")
     fullpath = Path(safe_join(document_root, path))
@@ -57,7 +71,8 @@ def media_serve(request, path, document_root=None, show_indexes=False):
         if media_path:
             fullpath = Path(safe_join(document_root, media_path))
         else:
-            raise Http404(_("“%(path)s” does not exist") % {"path": fullpath})
+            # 对象存储后端：本地目录无该文件时回落到存储读取（远端内容应用层代理）
+            return _storage_serve(request, path)
     # Respect the If-Modified-Since header.
     statobj = fullpath.stat()
     if not was_modified_since(request.META.get("HTTP_IF_MODIFIED_SINCE"), statobj.st_mtime):

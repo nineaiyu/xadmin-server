@@ -81,6 +81,7 @@ class LoginLogSerializer(BaseModelSerializer):
             "system",
             "agent",
             "status",
+            "policy_result",
             "created_time",
         ]
         table_fields = [
@@ -94,6 +95,7 @@ class LoginLogSerializer(BaseModelSerializer):
             "browser",
             "system",
             "status",
+            "policy_result",
             "created_time",
         ]
         read_only_fields = ["pk", "creator"]

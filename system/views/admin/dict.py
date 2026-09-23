@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """数据字典管理：类型/字典项两级维护 + 状态/排序/缓存维护 + items 消费接口。"""
 
-from django.db.models import Case, Count, IntegerField, Value, When
+from django.db.models import Case, IntegerField, Value, When
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -11,7 +11,13 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, extend_schem
 from rest_framework import serializers
 from rest_framework.decorators import action
 
-from common.core.modelset import BaseModelSet, ImportExportDataAction
+from common.core.modelset import (
+    BaseModelSet,
+    BatchPartialUpdateAction,
+    ImpactPreviewAction,
+    ImportExportDataAction,
+    RelationCountMixin,
+)
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.dict import DataDict
@@ -33,19 +39,22 @@ class DataDictFilter(filters.FilterSet):
         fields = ["code", "label", "parent", "parent_code", "is_active", "is_type"]
 
 
-class DataDictViewSet(BaseModelSet, ImportExportDataAction):
+class DataDictViewSet(
+    BatchPartialUpdateAction,
+    RelationCountMixin,
+    BaseModelSet,
+    ImpactPreviewAction,
+    ImportExportDataAction,
+):
     """数据字典管理"""
+
+    # F-1 批量更新白名单：批量启停用
+    batch_update_fields = ("is_active",)
 
     queryset = DataDict.objects.all()
     serializer_class = DataDictSerializer
     filterset_class = DataDictFilter
     ordering_fields = ["sort", "created_time", "updated_time"]
-
-    def get_queryset(self):
-        # children_count 走 annotate 而非 SerializerMethodField 逐行 count，避免列表 N+1。
-        # annotate 聚合会清掉 Meta.ordering（避免排序字段进 GROUP BY），必须显式补回，
-        # 否则列表失去 sort 默认排序；OrderingFilter 的用户排序在其之后覆盖
-        return super().get_queryset().annotate(children_count=Count("children")).order_by(*DataDict._meta.ordering)
 
     def perform_destroy(self, instance):
         """内置字典（被代码按 code 引用）禁止删除，避免业务字段选项凭空消失。"""

@@ -6,6 +6,7 @@
 # date : 8/10/2024
 
 from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -36,6 +37,9 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
 
     objects = SoftDeleteUserManager()
 
+    # 通用标签（P-1，白名单对象）：可预取（tagged_items__tag），列表零 N+1
+    tagged_items = GenericRelation("system.TaggedItem")
+
     class GenderChoices(models.IntegerChoices):
         UNKNOWN = 0, _("Unknown")
         MALE = 1, _("Male")
@@ -44,6 +48,12 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     class MFALevelChoices(models.IntegerChoices):
         DISABLED = 0, _("Disabled")
         ENABLED = 1, _("Enabled")
+
+    class InviteStatusChoices(models.TextChoices):
+        """邀请开户状态（F-11）：空 = 非邀请账号。"""
+
+        PENDING = "pending", _("Pending acceptance")
+        ACCEPTED = "accepted", _("Accepted")
 
     avatar = ProcessedImageField(
         verbose_name=_("Avatar"),
@@ -66,10 +76,30 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     )
     otp_secret_key = models.CharField(verbose_name=_("OTP secret key"), max_length=64, default="", blank=True)
 
+    # 认证方式策略（F-9）：用户级可用验证方式（只能收窄全局/角色策略，空 = 不限）
+    allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)
+    # 账号安全巡检（F-6）处置动作「强制改密」标记：登录响应带出，前端引导改密；
+    # 任一改密链路（本人/管理端重置/忘记密码）经 record_password_hash 统一清除
+    must_change_password = models.BooleanField(verbose_name=_("Must change password"), default=False)
+
     # 最近一次密码更新时间（改密/重置/建号时由 record_password_hash 刷新）：
     # 配合 SECURITY_PASSWORD_EXPIRATION_DAYS 做密码过期拦截；NULL = 未跟踪（存量
     # 用户宽限期，不拦截），改密后开始计时
     date_password_updated = models.DateTimeField(verbose_name=_("Password updated at"), null=True, blank=True)
+
+    # 账号有效期（F-11）：到期登录被拒 + 每日任务自动停用；NULL = 永不过期
+    date_expired = models.DateTimeField(verbose_name=_("Account expiry"), null=True, blank=True, db_index=True)
+
+    # 邀请开户（F-11）：pending = 已发邀请等待激活（密码不可用、登录被拒）；
+    # accepted = 已激活；空 = 非邀请账号（普通建号）。重发邀请刷新 invited_time 与令牌
+    invite_status = models.CharField(
+        verbose_name=_("Invite status"),
+        max_length=16,
+        choices=InviteStatusChoices.choices,
+        blank=True,
+        default="",
+    )
+    invited_time = models.DateTimeField(verbose_name=_("Invited at"), null=True, blank=True)
 
     roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)

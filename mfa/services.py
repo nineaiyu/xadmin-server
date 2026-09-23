@@ -15,7 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from common.utils import get_logger
 from common.utils.request import get_request_ip
 from common.utils.verify_code import TokenTempCache
-from mfa.backends import get_backend, get_enabled_backends
+from mfa.backends import get_backend, get_enabled_backends, get_user_mfa_policy
 from mfa.cache import UserConfirmStateCache
 from mfa.const import CONFIRM_TYPE_LEVEL, ConfirmType
 from settings.services import MFABlockUtils
@@ -102,11 +102,18 @@ def send_user_mfa_code(user, method, request=None):
 def is_login_mfa_required(user) -> bool:
     """登录 MFA 判定：
     - 个人开启（mfa_enabled）→ 必须验证。这是用户自身的安全配置，不受全局开关影响；
+    - 角色级强制（F-9，`UserRole.mfa_required`）→ 有可用验证方式即必须验证
+      （无可用方式时降级放行 + 告警，避免登录死锁）；
     - 全局「登录 MFA 强制」开启 → 已绑定 OTP 的账号一律验证（含个人已关闭的）；
     - 未绑定密钥无法验证，不拦截。
     """
     if user.mfa_enabled:
         return True
+    if get_user_mfa_policy(user).get("mfa_required"):
+        if get_login_mfa_methods(user):
+            return True
+        logger.warning("Role requires MFA but no method available, skip. user: %s", user.username)
+        return False
     if not user.otp_secret_key:
         return False
     return settings.SECURITY_MFA_LOGIN_PROTECT_ENABLED

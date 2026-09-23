@@ -7,6 +7,7 @@
   主键定位所属类型，跨环境导入仍可复用（parent 主键在新环境无意义）。
 """
 
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -31,6 +32,10 @@ class DataDictSerializer(BaseModelSerializer):
     # 所属类型编码：导入时用编码定位父级，导出时给出可读的类型标识
     parent_code = serializers.CharField(source="parent.code", read_only=True, label=_("Parent code"))
     children_count = serializers.SerializerMethodField(label=_("Children count"))
+
+    # F-12 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
+    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT
+    relation_count_fields = {"children_count": Count("children")}
 
     class Meta:
         model = DataDict

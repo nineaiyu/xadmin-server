@@ -39,12 +39,14 @@ __all__ = [
     "OAuthError",
     "build_authorize_url",
     "consume_bind_state",
+    "consume_nonce",
     "consume_state",
     "exchange_code",
     "fetch_userinfo",
     "get_provider",
     "get_providers",
     "issue_bind_state",
+    "issue_nonce",
     "issue_state",
     "mask_providers",
     "make_unique_username",
@@ -58,6 +60,8 @@ STATE_CACHE_KEY = "oauth_state_{state}"
 # 「绑定意图」state 走独立键空间：与登录 state 互不可用（登录不得触发绑定，反之亦然）。
 # 载荷携带发起人 pk，回调据此校验归属后才建立绑定
 BIND_STATE_CACHE_KEY = "oauth_bind_state_{state}"
+# OIDC 的 nonce（防 id_token 重放）与 state 绑定存续：授权请求下发、回调时校验后即失效
+NONCE_CACHE_KEY = "oauth_nonce_{state}"
 
 # 配置项的必填/可选键
 REQUIRED_KEYS = ("key", "name", "client_id", "authorize_url", "token_url", "userinfo_url")
@@ -66,6 +70,15 @@ OPTIONAL_DEFAULTS = {
     "subject_field": "sub",
     "enabled": False,
     "auto_create": False,
+    # ---- 标准 OIDC（flavor=oidc，F-10）----
+    "issuer": "",  # discovery 基址（同时作为 id_token 的 iss 校验值）
+    "discovery_url": "",  # 显式覆盖 discovery 地址（缺省 {issuer}/.well-known/openid-configuration）
+    "jwks_uri": "",  # 显式覆盖 JWKS 地址（缺省取 discovery 的 jwks_uri）
+    "groups_field": "groups",  # 组 claim 名（组 → 角色映射的取值键）
+    "group_role_map": {},  # 组名 → 角色 code（口径同 LDAP_GROUP_ROLE_MAP：只增删映射内角色）
+    "nickname_claim": "name",  # claims → 本地资料字段映射
+    "email_claim": "email",
+    "phone_claim": "phone_number",
 }
 
 
@@ -131,12 +144,22 @@ def validate_providers(value) -> list[dict]:
             raise ValidationError(_("Duplicate OAuth provider key: {}").format(key))
         seen.add(key)
 
-        for url_key in ("authorize_url", "token_url", "userinfo_url"):
+        for url_key in ("authorize_url", "token_url", "userinfo_url", "issuer", "discovery_url", "jwks_uri"):
             url = str(item.get(url_key) or "")
             if url and not url.startswith("https://"):
                 raise ValidationError(_("OAuth provider url must use https: {}").format(url_key))
         if item.get("enabled") and not item.get("client_secret"):
             raise ValidationError(_("Enabled OAuth provider requires client_secret"))
+        if flavor == "oidc":
+            # 端点来源：issuer / discovery_url（自动发现）或显式 authorize_url + token_url
+            if not (
+                item.get("issuer") or item.get("discovery_url") or (item.get("authorize_url") and item.get("token_url"))
+            ):
+                raise ValidationError(
+                    _("OIDC provider requires issuer (discovery) or explicit authorize_url and token_url")
+                )
+            if not isinstance(item.get("group_role_map") or {}, dict):
+                raise ValidationError(_("OIDC provider group_role_map must be an object"))
         providers.append({**OPTIONAL_DEFAULTS, **item})
     return providers
 
@@ -193,7 +216,25 @@ def consume_bind_state(state: str) -> dict | None:
     return payload if isinstance(payload, dict) else None
 
 
-def build_authorize_url(provider: dict, redirect_uri: str, state: str) -> str:
+def issue_nonce(state: str) -> str:
+    """生成 OIDC nonce（与 state 绑定，回调校验后即失效；防 id_token 重放）。"""
+    nonce = secrets.token_urlsafe(24)
+    cache.set(NONCE_CACHE_KEY.format(state=state), nonce, OAUTH_STATE_TTL)
+    return nonce
+
+
+def consume_nonce(state: str) -> str | None:
+    """消费 nonce：一次性；未下发（非 OIDC）/已使用/过期返回 None。"""
+    if not state:
+        return None
+    key = NONCE_CACHE_KEY.format(state=state)
+    nonce = cache.get(key)
+    if nonce:
+        cache.delete(key)
+    return nonce
+
+
+def build_authorize_url(provider: dict, redirect_uri: str, state: str, nonce: str | None = None) -> str:
     from system.utils.oauth_flavors import build_flavor_authorize_url
 
     # IM flavor 参数形状不同（企微 appid/agentid、飞书 app_id）；返回 None 表示
@@ -207,6 +248,7 @@ def build_authorize_url(provider: dict, redirect_uri: str, state: str) -> str:
         "redirect_uri": redirect_uri,
         "scope": provider.get("scope") or "",
         "state": state,
+        "nonce": nonce,
     }
     separator = "&" if "?" in provider["authorize_url"] else "?"
     return f"{provider['authorize_url']}{separator}{urlencode({k: v for k, v in params.items() if v})}"

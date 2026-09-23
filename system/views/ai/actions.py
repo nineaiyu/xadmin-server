@@ -55,16 +55,20 @@ class AiActionExecuteMixin:
         """
         from common.sdk.ai.chat import AiSdkError
         from system.utils.ai import is_enabled as ai_enabled_check
-        from system.utils.ai import structured_chat_client
+        from system.utils.ai import native_tools_enabled, structured_chat_client
         from system.utils.ai_actions import (
             ai_action_enabled,
             audit_ai_action,
             build_draft_prompt,
+            draft_summary,
             parse_draft,
         )
         from system.utils.ai_chat import message_payload, persist_message
+        from system.utils.ai_guard import guard_summary
+        from system.utils.ai_usage import quota_error, tracked_chat_stream
 
         text = str(request.data.get("message") or "").strip()
+        guard = guard_summary(prompt=text)
         if not ai_action_enabled():
             return ApiResponse(code=1001, detail=_("AI actions are not enabled"), content_type="application/json")
         if not ai_enabled_check():
@@ -77,32 +81,55 @@ class AiActionExecuteMixin:
             return ApiResponse(code=1001, detail=_("The request cannot be empty"), content_type="application/json")
 
         user_row = persist_message(request.user, "action", "user", content=text)
+        quota_hit = quota_error(request.user, "action")
 
         def events():
             yield {"event": "meta", "data": {"message": text, "user_message": message_payload(user_row)}}
             chunks: list = []
             reasoning_chunks: list = []
             try:
-                client, max_tokens = structured_chat_client()
-                for item in client.chat_stream(build_draft_prompt(request.user, text), max_tokens=max_tokens):
-                    chunk = item.get("text") or ""
-                    if not chunk:
-                        continue
-                    if item.get("type") == "reasoning":
-                        reasoning_chunks.append(chunk)
-                        yield {"event": "reasoning", "data": {"delta": chunk}}
-                    else:
-                        chunks.append(chunk)
-                        yield {"event": "delta", "data": {"delta": chunk}}
-                raw = "".join(chunks)
-                if not raw.strip():
-                    raise DjangoValidationError(
-                        _("The model did not provide a final answer; please retry or switch models")
-                    )
-                result = parse_draft(raw, request.user)
+                if quota_hit:
+                    raise DjangoValidationError(quota_hit)
+                if native_tools_enabled():
+                    # AI-2 原生轨道：能力探测通过 + 开关开启时优先（工具调用非散文，一次性调用）
+                    from system.utils.ai_actions import native_draft_result
+
+                    result, track = native_draft_result(request.user, text)
+                    logger.info("ai action draft track: %s (user=%s)", track, request.user.pk)
+                    yield {
+                        "event": "delta",
+                        "data": {"delta": draft_summary(result.get("drafts") or [result["draft"]])},
+                    }
+                else:
+                    # 双轨对照日志（AI-2）：便于按档案/模型统计两条轨道的成功率
+                    logger.info("ai action draft track: prompt (user=%s)", request.user.pk)
+                    client, max_tokens = structured_chat_client()
+                    for item in tracked_chat_stream(
+                        request.user,
+                        "action",
+                        client,
+                        build_draft_prompt(request.user, text),
+                        track="prompt",  # AI-2 双轨对照：用量账本按轨道统计成功率
+                        max_tokens=max_tokens,
+                    ):
+                        chunk = item.get("text") or ""
+                        if not chunk:
+                            continue
+                        if item.get("type") == "reasoning":
+                            reasoning_chunks.append(chunk)
+                            yield {"event": "reasoning", "data": {"delta": chunk}}
+                        else:
+                            chunks.append(chunk)
+                            yield {"event": "delta", "data": {"delta": chunk}}
+                    raw = "".join(chunks)
+                    if not raw.strip():
+                        raise DjangoValidationError(
+                            _("The model did not provide a final answer; please retry or switch models")
+                        )
+                    result = parse_draft(raw, request.user)
             except DjangoValidationError as exc:
                 detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
-                audit_ai_action(request.user, "", {}, False, detail)
+                audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
                 reasoning = "".join(reasoning_chunks)
                 if chunks or reasoning:
                     payload = self._persist_assistant(request.user, detail, {"partial": detail}, reasoning)
@@ -114,7 +141,7 @@ class AiActionExecuteMixin:
                 from system.utils.ai import readable_ai_error
 
                 detail = readable_ai_error(exc)
-                audit_ai_action(request.user, "", {}, False, detail)
+                audit_ai_action(request.user, "", {}, False, detail, {"guard": guard})
                 reasoning = "".join(reasoning_chunks)
                 if chunks or reasoning:
                     payload = self._persist_assistant(request.user, detail, {"partial": detail}, reasoning)
@@ -189,6 +216,8 @@ class AiActionExecuteMixin:
         """
         from system.utils.ai import is_enabled
         from system.utils.ai_actions import ai_action_enabled, audit_ai_action, execute_action, get_action
+        from system.utils.ai_idempotency import execute_idempotent
+        from system.utils.ai_usage import quota_error
 
         assistant_console = not request.data.get("room_id")
 
@@ -204,6 +233,12 @@ class AiActionExecuteMixin:
             return ApiResponse(code=1001, detail=_("AI actions are not enabled"))
         if not is_enabled():
             return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
+        # 写类动作配额 fail-closed：审批前置直接拒绝，不产生半执行
+        quota = quota_error(request.user, "action")
+        if quota:
+            audit_ai_action(request.user, action_key, params, False, quota, {"quota": True})
+            persist_failure(quota)
+            return ApiResponse(code=1001, detail=quota)
 
         spec = get_action(action_key)
         if spec is None:
@@ -251,20 +286,32 @@ class AiActionExecuteMixin:
                 persist_failure(str(_("Waiting for approval")))
                 return approval_response
 
-        result = execute_action(request.user, action_key, clean)
+        from system.utils.ai_guard import guard_summary
+
+        # AI-4 幂等：同一意图（用户 + 动作 + 规范化参数）在 TTL 内重复提交返回首次结果，
+        # force=true 为用户确认后的「仍要执行」显式通道
+        result = execute_idempotent(
+            request.user, action_key, clean, execute_action, force=bool(request.data.get("force"))
+        )
         audit_ai_action(
             request.user,
             action_key,
             clean,
             bool(result.get("ok")),
             str(result.get("detail") or ""),
-            {"result": result.get("data") or {}},
+            {
+                "result": result.get("data") or {},
+                "guard": guard_summary(prompt=action_key),
+                "draft_id": result.get("draft_id"),
+                "deduplicated": bool(result.get("deduplicated")),
+            },
         )
         if not result.get("ok"):
             detail = str(result.get("detail") or _("Action failed"))
             persist_failure(detail)
             return ApiResponse(code=1001, detail=detail)
-        self._push_action_result(request.data.get("room_id"), request.user, result)
+        if not result.get("deduplicated"):
+            self._push_action_result(request.data.get("room_id"), request.user, result)
         message_row = {}
         if assistant_console:
             message_row = self._persist_assistant(
@@ -273,6 +320,13 @@ class AiActionExecuteMixin:
                 {"action_result": result.get("data") or {}},
             )
         return ApiResponse(
-            data={**(result.get("data") or {}), "message": message_row},
+            data={
+                **(result.get("data") or {}),
+                "message": message_row,
+                # AI-4 幂等可见性：命中重复时前端提示「相同操作在 10 分钟内已执行」，
+                # 用户确认后可携 force=true 显式重发
+                "deduplicated": bool(result.get("deduplicated")),
+                "draft_id": result.get("draft_id") or "",
+            },
             detail=result.get("detail"),
         )

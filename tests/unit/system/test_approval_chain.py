@@ -13,6 +13,7 @@ import datetime
 
 import pytest
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework.permissions import AllowAny
 from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.viewsets import ViewSet
@@ -192,7 +193,8 @@ class TestAdvance:
         record = _create_chain(applicant, chain_users)
         ok, detail = approve_request(record, chain_users[1])
         assert ok is False
-        assert "current level" in str(detail)
+        # 断言与 gettext 同源（本机有 .mo 显中文、CI 无 .mo 显英文）
+        assert str(_("You are not the approver of the current level")) in str(detail)
         record.refresh_from_db()
         assert record.current_level == 1
         assert record.status == PENDING
@@ -342,7 +344,7 @@ class TestApproveType:
         # 同一人重复提交：被唯一约束挡住
         again_ok, again_detail = approve_request(record, chain_users[0])
         assert again_ok is False
-        assert "already" in str(again_detail).lower()
+        assert str(_("You have already handled the current level")) in str(again_detail)
 
         # 第二人通过 → 该级完成并推进
         second_ok, _detail = approve_request(record, chain_users[1])

@@ -44,6 +44,7 @@ class AiNlQueryMixin:
         from system.utils.ai import is_enabled as ai_enabled_check
         from system.utils.ai import structured_chat_client
         from system.utils.ai_chat import message_payload, persist_message, system_error_message
+        from system.utils.ai_guard import guard_summary
         from system.utils.nl_query import (
             audit_nl_query,
             build_interpret_prompt,
@@ -53,12 +54,20 @@ class AiNlQueryMixin:
         )
 
         question = str(request.data.get("question") or "").strip()
+        guard = guard_summary(prompt=question)
         if not question:
             return ApiResponse(code=1001, detail=_("Question cannot be empty"))
         if not settings.AI_NL_QUERY_ENABLED:
             return ApiResponse(code=1001, detail=_("NL query is not enabled"))
         if not ai_enabled_check():
             return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
+
+        from system.utils.ai_usage import quota_error, tracked_chat
+
+        quota = quota_error(request.user, "nl")
+        if quota:
+            system_error_message(request.user, "nl", quota)
+            return ApiResponse(code=1001, detail=quota)
 
         datasets = visible_datasets(request.user)
         if not datasets:
@@ -72,7 +81,13 @@ class AiNlQueryMixin:
         try:
             # 结构化输出上限走公共入口：未配置 max_tokens 时用安全默认（AI 配置页可调大）
             client, max_tokens = structured_chat_client()
-            raw = client.chat(build_interpret_prompt(question, datasets), max_tokens=max_tokens)
+            raw = tracked_chat(
+                request.user,
+                "nl",
+                build_interpret_prompt(question, datasets, request.user),
+                client=client,
+                max_tokens=max_tokens,
+            )
             usage = getattr(client, "last_usage", None)
             dsl = parse_llm_json(raw)
             normalized = validate_dsl(dsl, request.user)
@@ -84,15 +99,15 @@ class AiNlQueryMixin:
             preview_count = queryset.count()
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
-            audit_nl_query(request.user, "interpret", question, dsl, error=detail, usage=usage)
+            audit_nl_query(request.user, "interpret", question, dsl, error=detail, usage=usage, guard=guard)
             system_error_message(request.user, "nl", detail)
             return ApiResponse(code=1001, detail=detail)
         except AiSdkError as exc:
             detail = readable_ai_error(exc)
-            audit_nl_query(request.user, "interpret", question, {}, error=detail)
+            audit_nl_query(request.user, "interpret", question, {}, error=detail, guard=guard)
             system_error_message(request.user, "nl", detail)
             return ApiResponse(code=1001, detail=detail)
-        audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count, usage=usage)
+        audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count, usage=usage, guard=guard)
         result = {
             "dsl": normalized,
             "dataset_name": dataset.name,
@@ -115,6 +130,7 @@ class AiNlQueryMixin:
         from system.utils.ai import is_enabled as ai_enabled_check
         from system.utils.ai import structured_chat_client
         from system.utils.ai_chat import message_payload, persist_message, system_error_message
+        from system.utils.ai_guard import guard_summary
         from system.utils.nl_query import (
             audit_nl_query,
             build_interpret_prompt,
@@ -124,6 +140,7 @@ class AiNlQueryMixin:
         )
 
         question = str(request.data.get("question") or "").strip()
+        guard = guard_summary(prompt=question)
         if not question:
             return ApiResponse(code=1001, detail=_("Question cannot be empty"), content_type="application/json")
         if not settings.AI_NL_QUERY_ENABLED:
@@ -134,6 +151,12 @@ class AiNlQueryMixin:
                 detail=_("AI assistant is not enabled or configured"),
                 content_type="application/json",
             )
+        from system.utils.ai_usage import quota_error, tracked_chat_stream
+
+        quota = quota_error(request.user, "nl")
+        if quota:
+            system_error_message(request.user, "nl", quota)
+            return ApiResponse(code=1001, detail=quota, content_type="application/json")
         datasets = visible_datasets(request.user)
         if not datasets:
             return ApiResponse(code=1001, detail=_("No visible datasets for NL query"), content_type="application/json")
@@ -146,7 +169,13 @@ class AiNlQueryMixin:
             reasoning_chunks: list = []
             try:
                 client, max_tokens = structured_chat_client()
-                for item in client.chat_stream(build_interpret_prompt(question, datasets), max_tokens=max_tokens):
+                for item in tracked_chat_stream(
+                    request.user,
+                    "nl",
+                    client,
+                    build_interpret_prompt(question, datasets, request.user),
+                    max_tokens=max_tokens,
+                ):
                     text = item.get("text") or ""
                     if not text:
                         continue
@@ -171,7 +200,7 @@ class AiNlQueryMixin:
                 preview_count = queryset.count()
             except DjangoValidationError as exc:
                 detail = "; ".join(exc.messages)
-                audit_nl_query(request.user, "interpret", question, {}, error=detail)
+                audit_nl_query(request.user, "interpret", question, {}, error=detail, guard=guard)
                 payload = (
                     _persist_nl_partial(request.user, reasoning_chunks, detail)
                     if chunks or reasoning_chunks
@@ -181,7 +210,7 @@ class AiNlQueryMixin:
                 return
             except AiSdkError as exc:
                 detail = readable_ai_error(exc)
-                audit_nl_query(request.user, "interpret", question, {}, error=detail)
+                audit_nl_query(request.user, "interpret", question, {}, error=detail, guard=guard)
                 payload = (
                     _persist_nl_partial(request.user, reasoning_chunks, detail)
                     if chunks or reasoning_chunks
@@ -189,7 +218,7 @@ class AiNlQueryMixin:
                 )
                 yield {"event": "error", "data": {"detail": detail, "message": payload}}
                 return
-            audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count)
+            audit_nl_query(request.user, "interpret", question, normalized, rows=preview_count, guard=guard)
             result = {
                 "dsl": normalized,
                 "dataset_name": dataset.name,

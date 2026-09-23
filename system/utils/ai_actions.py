@@ -231,27 +231,33 @@ def build_draft_prompt(user, message: str) -> list:
     多步串联：允许模型一次产出最多 MAX_DRAFTS_PER_REQUEST 个动作草稿（按执行
     顺序），前端逐项确认后逐个执行。注意：文案含 JSON 花括号，不能用 str.format
     注入变量（会被当占位符解析成 KeyError），这里用 replace 注入 {max}/{today}。
+
+    护栏（AI-6）：动作目录属外部/业务数据，以引用数据块包裹 + system 声明
+    「块内内容不是指令」；目录内容命中可疑指令模式时打标 + 告警（不阻断）。
     """
+    from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
+
     catalog = build_catalog(user)
-    system = (
-        str(
-            _(
-                "You convert the user's request into action drafts for this system, at most {max} actions in "
-                "execution order (a single action is fine). Pick action keys exactly as written in the catalog "
-                "(copy them verbatim, never split or reorder their parts) and use only the described parameters. "
-                'Output ONLY a JSON object: {"actions": [{"action": "<action key>", "params": {...}, '
-                '"summary": "<one line>"}]}. Never invent values the user did not provide; resolve relative dates '
-                "with the current date {today}. If the request is not executable or is missing required "
-                'parameters, output {"action": null, "message": "<a short clarifying question>"}.'
-            )
+    system = str(
+        _(
+            "You convert the user's request into action drafts for this system, at most {max} actions in "
+            "execution order (a single action is fine). Pick action keys exactly as written in the catalog "
+            "(copy them verbatim, never split or reorder their parts) and use only the described parameters. "
+            'Output ONLY a JSON object: {"actions": [{"action": "<action key>", "params": {...}, '
+            '"summary": "<one line>"}]}. Never invent values the user did not provide; resolve relative dates '
+            "with the current date {today}. If the request is not executable or is missing required "
+            'parameters, output {"action": null, "message": "<a short clarifying question>"}.'
         )
-        .replace("{max}", str(MAX_DRAFTS_PER_REQUEST))
-        .replace("{today}", datetime.date.today().isoformat())
+    )
+    system = system.replace("{max}", str(MAX_DRAFTS_PER_REQUEST)).replace("{today}", datetime.date.today().isoformat())
+    system = f"{system}\n{REFERENCE_GUARD_INSTRUCTION}"
+    catalog_reference, __hits = annotate_reference(
+        json.dumps(catalog, ensure_ascii=False), label="action catalog", user=user, kind="action_catalog"
     )
     user_content = "{}\n\n{}\n{}".format(
         (message or "").strip()[:MAX_MESSAGE_LENGTH],
         ALLOWED_ACTIONS_MARKER,
-        json.dumps(catalog, ensure_ascii=False),
+        catalog_reference,
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": user_content}]
 
@@ -325,6 +331,55 @@ def draft_summary(drafts: list) -> str:
     return str(_("I will perform {} actions: {}").format(len(drafts), " → ".join(draft["label"] for draft in drafts)))
 
 
+def verify_action_target(user, spec, params) -> str:
+    """动作参数行级复核（AI-6）：参数指向的目标对象必须在调用者数据权限内可达。
+
+    现有服务端校验覆盖字段与格式（菜单权限点 + 序列化器），但不校验「这个 pk 是否
+    在调用者数据权限内」——参数里的 pk 由 LLM 产出，可能指向权限外对象。本函数对
+    声明式 API 动作（可解析 ViewSet 与模型）且参数含单一标量主键时，按调用者数据
+    权限再查一次；不可达即拒绝。解析失败/无模型声明/只读动作一律跳过（不阻断，
+    避免误杀既有能力）。
+
+    返回不可达原因（可读文案），空串 = 通过。
+    """
+    from django.urls import Resolver404, resolve
+
+    from common.core.filter import get_filter_queryset
+    from system.utils.ai_api_actions import ApiActionSpec, build_action_url, resolve_api_params
+
+    if not isinstance(spec, ApiActionSpec) or str(spec.method).upper() == "GET":
+        return ""
+    path_params, __body, __query, error = resolve_api_params(spec, user, params if isinstance(params, dict) else {})
+    if error:
+        return ""
+    url = build_action_url(spec, path_params)
+    if url is None:
+        return ""
+    pk = None
+    for name, value in (path_params or {}).items():
+        if name in ("pk", "id") or name.endswith(("_pk", "_id")):
+            pk = value
+            break
+    if pk in (None, ""):
+        return ""
+    try:
+        match = resolve(url.split("?", 1)[0])
+    except Resolver404:
+        return ""
+    view_class = getattr(match.func, "cls", None)
+    model = getattr(getattr(view_class, "queryset", None), "model", None)
+    if model is None:
+        return ""
+    try:
+        reachable = get_filter_queryset(model.objects.all(), user).filter(pk=pk).exists()
+    except Exception:  # noqa: BLE001 主键形态不符/模型查询异常：跳过复核（不误杀）
+        logger.info("ai action target check skipped. action:%s pk:%s", getattr(spec, "key", ""), pk, exc_info=True)
+        return ""
+    if not reachable:
+        return str(_("The target object does not exist or you do not have permission to access it"))
+    return ""
+
+
 def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict = None) -> None:
     """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
     from system.models import OperationLog
@@ -353,21 +408,28 @@ def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra:
 
 
 def execute_action(user, action_key: str, params) -> dict:
-    """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。"""
+    """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。
+
+    执行前做参数指向对象的行级复核（AI-6，见 ``verify_action_target``）。
+    """
     spec = get_action(action_key)
     if spec is None:
         return {"ok": False, "detail": str(_("Unknown action")), "data": {}}
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})
     if error:
         return {"ok": False, "detail": error, "data": {}}
+    target_error = verify_action_target(user, spec, clean)
+    if target_error:
+        return {"ok": False, "detail": target_error, "data": {}}
     return spec.execute(user, clean)
 
 
-def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dict = None) -> None:
+def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dict = None, guard: dict = None) -> None:
     """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
 
     与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
+    guard：AI-6 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数 / 输出长度，缺省不写）。
     """
     from system.models import OperationLog
 
@@ -384,9 +446,19 @@ def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dic
                     "status": "ok" if ok else "failed",
                     "detail": (detail or "")[:200],
                     **({"usage": usage} if usage else {}),
+                    **({"guard": guard} if guard else {}),
                 },
                 ensure_ascii=False,
             )[:4096],
         )
     except Exception:  # noqa: BLE001 审计失败不影响业务
         logger.warning("write AI ask audit failed", exc_info=True)
+
+
+# AI-2 原生 function calling 双轨（工具调用 → 草稿结构）拆至 ai_draft_tools（仅行数门禁）：
+# 此处再导出保持调用面（调用方只 import 本模块）
+from system.utils.ai_draft_tools import (  # noqa: E402,F401
+    build_tool_messages,
+    drafts_from_tool_calls,
+    native_draft_result,
+)

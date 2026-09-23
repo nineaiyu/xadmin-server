@@ -28,7 +28,10 @@ from .oauth import *
 from .password import *
 from .permission import *
 from .role import *
+from .saved_view import *
+from .security import *
 from .session import *
+from .tag import *
 from .task import *
 from .token import *
 from .upload import *

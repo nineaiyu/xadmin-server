@@ -13,6 +13,7 @@ from .approved_actions import run_on_approved, snapshot_payload
 from .approvers import build_module, can_approve, find_active_pending, resolve_approvers
 from .chains import build_steps, can_act, create_steps, current_step, resolve_rule, sync_current_level
 from .constants import APPROVAL_HEADER, APPROVAL_QUERY_PARAM
+from .display import user_display
 from .notify import (
     _emit_approval_event,
     forbidden_response,
@@ -23,6 +24,7 @@ from .notify import (
 )
 from .payload import canonical_params, get_request_object_pk, get_request_params, path_intercepted
 from .queries import invalidate_pending_count_cache
+from .snapshot import build_target_snapshot
 
 
 def create_approval(view, request, module: str = ""):
@@ -59,6 +61,8 @@ def create_approval(view, request, module: str = ""):
         object_pk=get_request_object_pk(view),
         params=params,
         payload=snapshot_payload(request),
+        # U-1：目标对象轻量快照（变更前后事实对照；不可达时为空 dict 降级展示）
+        target_snapshot=build_target_snapshot(view, request),
         creator=request.user,
     )
     invalidate_pending_count_cache()
@@ -191,6 +195,7 @@ def approve_request(approval, user, comment: str = ""):
     updated = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
         status=ApprovalRequest.Status.APPROVED,
         approver=user,
+        approver_display=user_display(user),
         approved_at=now,
         expired_at=now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL)),
         updated_time=now,
@@ -249,6 +254,7 @@ def _approve_chain(approval, user, comment: str):
             defaults={
                 "status": ApprovalRequestStepAction.Status.APPROVED,
                 "comment": (comment or "")[:255] or None,
+                "approver_display": user_display(user),
             },
         )
         if not created:
@@ -260,6 +266,7 @@ def _approve_chain(approval, user, comment: str):
             if approved_count < required:
                 ApprovalRequestStep.objects.filter(pk=step.pk).update(
                     approver=user,
+                    approver_display=user_display(user),
                     comment=(comment or "")[:255] or None,
                     acted_at=now,
                     updated_time=now,
@@ -270,6 +277,7 @@ def _approve_chain(approval, user, comment: str):
         updated = ApprovalRequestStep.objects.filter(pk=step.pk, status=ApprovalRequestStep.Status.PENDING).update(
             status=ApprovalRequestStep.Status.APPROVED,
             approver=user,
+            approver_display=user_display(user),
             comment=(comment or "")[:255] or None,
             acted_at=now,
             updated_time=now,
@@ -294,6 +302,7 @@ def _approve_chain(approval, user, comment: str):
         ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
             status=ApprovalRequest.Status.APPROVED,
             approver=user,
+            approver_display=user_display(user),
             approved_at=now,
             expired_at=now + datetime.timedelta(seconds=int(SysConfig.APPROVAL_TOKEN_TTL)),
             updated_time=now,
@@ -334,6 +343,7 @@ def reject_request(approval, user, reason: str):
     updated = ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
         status=ApprovalRequest.Status.REJECTED,
         approver=user,
+        approver_display=user_display(user),
         approved_at=now,
         reason=(reason or "")[:255],
         updated_time=now,
@@ -376,6 +386,7 @@ def _reject_chain(approval, user, reason: str):
                 defaults={
                     "status": ApprovalRequestStepAction.Status.REJECTED,
                     "comment": (reason or "")[:255] or None,
+                    "approver_display": user_display(user),
                 },
             )
         updated = ApprovalRequestStep.objects.filter(
@@ -383,6 +394,7 @@ def _reject_chain(approval, user, reason: str):
         ).update(
             status=ApprovalRequestStep.Status.REJECTED,
             approver=user,
+            approver_display=user_display(user),
             comment=(reason or "")[:255] or None,
             acted_at=now,
             updated_time=now,
@@ -397,6 +409,7 @@ def _reject_chain(approval, user, reason: str):
         ApprovalRequest.objects.filter(pk=approval.pk, status=ApprovalRequest.Status.PENDING).update(
             status=ApprovalRequest.Status.REJECTED,
             approver=user,
+            approver_display=user_display(user),
             approved_at=now,
             reason=(reason or "")[:255],
             updated_time=now,

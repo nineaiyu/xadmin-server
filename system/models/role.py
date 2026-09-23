@@ -24,6 +24,10 @@ class UserRole(SoftDeleteModel, DbAuditModel, DbUuidModel):
     # 代码按 code 引用（审批人角色等治理配置），禁止删除与改 code，避免配置凭空失效
     builtin = models.BooleanField(verbose_name=_("Is builtin"), default=False)
     menu = models.ManyToManyField("system.Menu", verbose_name=_("Menu"), blank=True)
+    # 认证方式策略（F-9）：角色级收敛——mfa_required 任一角色要求即强制；
+    # allowed_mfa_types 为允许的验证方式白名单（空 = 不限，用户级只能继续收窄）
+    mfa_required = models.BooleanField(verbose_name=_("MFA required"), default=False)
+    allowed_mfa_types = models.JSONField(verbose_name=_("Allowed MFA types"), default=list, blank=True)
 
     class Meta:
         verbose_name = _("User role")

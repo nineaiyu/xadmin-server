@@ -17,6 +17,7 @@ from common.core.modelset import (
     BaseModelSet,
     CacheListResponseMixin,
     ChoicesAction,
+    ImpactPreviewAction,
     ImportExportDataAction,
     RankAction,
     RecycleBinAction,
@@ -43,7 +44,13 @@ class MenuFilter(BaseFilterSet):
 
 
 class MenuViewSet(
-    RecycleBinAction, BaseModelSet, RankAction, ImportExportDataAction, ChoicesAction, CacheListResponseMixin
+    RecycleBinAction,
+    BaseModelSet,
+    ImpactPreviewAction,
+    RankAction,
+    ImportExportDataAction,
+    ChoicesAction,
+    CacheListResponseMixin,
 ):
     """菜单"""
 

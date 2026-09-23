@@ -24,7 +24,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
-from common.core.modelset import BaseModelSet, ListDeleteModelSet
+from common.core.modelset import BaseModelSet, BatchPartialUpdateAction, ListDeleteModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from server.celery import app
@@ -202,7 +202,7 @@ def _clone_periodic_task(instance: PeriodicTask) -> PeriodicTask:
     return clone
 
 
-class PeriodicTaskViewSet(BaseModelSet):
+class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     """周期任务管理"""
 
     queryset = PeriodicTask.objects.all().order_by("name")
@@ -210,6 +210,8 @@ class PeriodicTaskViewSet(BaseModelSet):
     filterset_class = PeriodicTaskFilter
     ordering = ["name"]
     ordering_fields = ["name", "enabled", "date_changed"]
+    # F-1 批量更新白名单：批量启停用
+    batch_update_fields = ("enabled",)
 
     @extend_schema(
         request=build_object_type(properties={"enabled": build_basic_type(OpenApiTypes.BOOL)}),

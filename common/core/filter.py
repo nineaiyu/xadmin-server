@@ -8,8 +8,8 @@ from types import SimpleNamespace
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
-from django.db.models import Q, QuerySet
+from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.db.models import BooleanField, ManyToManyField, Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
@@ -198,6 +198,132 @@ class BaseFilterSet(filters.FilterSet):
         # spm 缺失/过期必须 fail-closed：selected 范围绝不能静默放行为全量
         # （异步导出重放在队列积压超过 spm TTL 时，曾因此把勾选导出退化成全量导出）
         raise RestValidationError(_("Resource selection has expired, please reselect"))
+
+
+class ControlledLookupFilterBackend(BaseFilterBackend):
+    """受控 lookup 透传（F-13）：在视图已声明过滤器的字段面上放开常用 lookup。
+
+    开启方式（显式 opt-in，未开启的视图零变化）::
+
+        class XxxViewSet(...):
+            controlled_lookup = True
+            extra_filter_class = [ControlledLookupFilterBackend]
+
+    参数形态 ``field__lookup=value``（多个条件 AND 组合）：
+
+    - 字段白名单 = ``filterset_class`` 已声明过滤器的 ``field_name`` 集合
+      （可再用视图 ``controlled_lookup_fields`` 显式追加）——不扩大字段面，只放开 lookup；
+    - lookup 限定 ``exact / icontains / startswith / in / gte / lte / isnull / ne``
+      （``ne`` = 取反）；**禁跨关系嵌套**（``a__b__icontains`` 直接 400）；
+    - **字段可见性 fail-closed**：非超管必须命中 ``request.fields`` 字段权限白名单，
+      否则 400 —— 过滤不能成为无权字段的探测侧信道；
+    - 值按模型字段 ``to_python`` 转换（失败 400，不落成 500）；``in`` 为逗号分隔多值；
+      M2M 字段只允许 ``exact / in / ne``；
+    - 条件数上限 ``max_conditions``（防参数滥用）。
+    """
+
+    allowed_lookups = ("exact", "icontains", "startswith", "in", "gte", "lte", "isnull", "ne")
+    m2m_lookups = ("exact", "in", "ne")
+    max_conditions = 20
+
+    def filter_queryset(self, request, queryset, view):
+        if not getattr(view, "controlled_lookup", False):
+            return queryset
+        keys = [key for key in request.query_params if "__" in key]
+        if not keys:
+            return queryset
+        if len(keys) > self.max_conditions:
+            raise RestValidationError(
+                _("Too many filter conditions (at most %(count)s)") % {"count": self.max_conditions}
+            )
+        allowed_fields = self._allowed_fields(view)
+        model = queryset.model
+        model_label = model._meta.label_lower
+        include = Q()
+        exclude = Q()
+        for key in keys:
+            field_name, _separator, lookup = key.rpartition("__")
+            if not field_name or "__" in field_name or lookup not in self.allowed_lookups:
+                raise RestValidationError(_("Unsupported filter expression: %(key)s") % {"key": key})
+            model_field = self._model_field(model, field_name)
+            if model_field is None or field_name not in allowed_fields:
+                raise RestValidationError(_("Unsupported filter field: %(key)s") % {"key": key})
+            if isinstance(model_field, ManyToManyField) and lookup not in self.m2m_lookups:
+                raise RestValidationError(_("Unsupported filter expression: %(key)s") % {"key": key})
+            if not self._field_visible(request, model_label, field_name):
+                raise RestValidationError(_("No permission to filter by field: %(field)s") % {"field": field_name})
+            value = request.query_params.get(key)
+            if lookup == "ne":
+                exclude &= Q(**{field_name: self._coerce(model_field, value)})
+                continue
+            lookup_expr = field_name if lookup == "exact" else f"{field_name}__{lookup}"
+            include &= Q(**{lookup_expr: self._coerce(model_field, value, lookup)})
+        if exclude:
+            queryset = queryset.exclude(exclude)
+        return queryset.filter(include) if include else queryset
+
+    @staticmethod
+    def _allowed_fields(view) -> set:
+        filterset_class = getattr(view, "filterset_class", None)
+        fields = {"pk"}  # pk 恒可用（列表接口本就返回主键，不属于字段权限收敛面）
+        if filterset_class is not None:
+            for filter_obj in filterset_class.get_filters().values():
+                field_name = getattr(filter_obj, "field_name", "") or ""
+                if field_name and "__" not in field_name:
+                    fields.add(field_name)
+        fields |= set(getattr(view, "controlled_lookup_fields", ()) or ())
+        return fields
+
+    @staticmethod
+    def _model_field(model, field_name):
+        if field_name == "pk":
+            return model._meta.pk
+        try:
+            return model._meta.get_field(field_name)
+        except FieldDoesNotExist:
+            return None
+
+    @staticmethod
+    def _field_visible(request, model_label: str, field_name: str) -> bool:
+        """与序列化器字段裁剪同口径：超管全量；其余按 request.fields（fail-closed）。"""
+        if not settings.PERMISSION_FIELD_ENABLED:
+            return True
+        if field_name == "pk":
+            return True
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_superuser", False):
+            return True
+        allowed = getattr(request, "fields", None)
+        if not isinstance(allowed, dict):
+            return False
+        return field_name in (allowed.get(model_label) or ())
+
+    def _coerce(self, model_field, value, lookup: str = "exact"):
+        if lookup == "isnull":
+            return str(value).strip().lower() in ("1", "true", "yes", "on")
+        if lookup == "in":
+            values = [item.strip() for item in str(value).split(",") if item.strip()]
+            if not values:
+                raise RestValidationError(_("Invalid filter value for %(field)s") % {"field": model_field.name})
+            return [self._to_python(model_field, item) for item in values]
+        return self._to_python(model_field, value)
+
+    @staticmethod
+    def _to_python(model_field, value):
+        try:
+            if isinstance(model_field, ManyToManyField):
+                return model_field.target_field.to_python(value)
+            if isinstance(model_field, BooleanField):
+                # 布尔值容错：API 侧常用小写 true/false（Django 原生只认 True/False/"True"/"1"）
+                normalized = str(value).strip().lower()
+                if normalized in ("1", "true", "yes", "on"):
+                    return True
+                if normalized in ("0", "false", "no", "off"):
+                    return False
+                raise ValueError(f"invalid boolean: {value!r}")
+            return model_field.to_python(value)
+        except Exception as exc:
+            raise RestValidationError(_("Invalid filter value for %(field)s") % {"field": model_field.name}) from exc
 
 
 class PkMultipleChoiceField(MultipleChoiceField):

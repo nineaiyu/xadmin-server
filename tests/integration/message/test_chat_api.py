@@ -303,7 +303,7 @@ class TestAiChat:
     def test_kb_command_returns_sources(self, auth_client, ai_enabled, monkeypatch):
         monkeypatch.setattr(
             "system.utils.ai.ask",
-            lambda question: {
+            lambda question, user=None: {
                 "answer": "根据文档，重置密码见 [1]。",
                 "sources": [{"title": "手册", "path": "upload/manual.md", "chunk_index": 0}],
             },

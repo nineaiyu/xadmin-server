@@ -62,29 +62,56 @@ def action_reply(user, request_text: str) -> tuple:
     - 灰度关闭/LLM 失败 → 抛可读校验错误（调用方落 system 消息降级，不静默）。
     """
     from common.sdk.ai.chat import AiSdkError
-    from system.utils.ai import structured_chat_client
+    from system.utils.ai import native_tools_enabled, structured_chat_client
     from system.utils.ai_actions import ai_action_enabled, build_draft_prompt, draft_summary, parse_draft
+    from system.utils.ai_guard import mask_text
 
     if not ai_action_enabled():
         raise DjangoValidationError(_("AI actions are not enabled"))
     if not request_text:
         raise DjangoValidationError(_("Please describe the request after /do"))
-    try:
-        # 客户端与结构化输出上限走公共入口（与助手页 action/interpret/stream 同一口径）
-        client, max_tokens = structured_chat_client()
-        raw = client.chat(build_draft_prompt(user, request_text), max_tokens=max_tokens)
-        result = parse_draft(raw, user)
-    except AiSdkError as exc:
-        logger.warning("chat ai action draft failed: %s", exc)
-        raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
+    if native_tools_enabled():
+        # AI-2 原生 function calling 轨道（能力探测通过 + 开关开启时优先）
+        from system.utils.ai_actions import native_draft_result
+
+        try:
+            result, track = native_draft_result(user, request_text)
+            logger.info("chat ai action draft track: %s (user=%s)", track, getattr(user, "pk", ""))
+        except AiSdkError as exc:
+            logger.warning("chat ai native action draft failed: %s", exc)
+            raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
+    else:
+        from system.utils.ai_usage import tracked_chat
+
+        logger.info("chat ai action draft track: prompt (user=%s)", getattr(user, "pk", ""))
+
+        try:
+            # 客户端与结构化输出上限走公共入口（与助手页 action/interpret/stream 同一口径）
+            client, max_tokens = structured_chat_client()
+            raw = tracked_chat(
+                user,
+                "action",
+                build_draft_prompt(user, request_text),
+                client=client,
+                track="prompt",  # AI-2 双轨对照：用量账本按轨道统计成功率
+                max_tokens=max_tokens,
+            )
+            result = parse_draft(raw, user)
+        except AiSdkError as exc:
+            logger.warning("chat ai action draft failed: %s", exc)
+            raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
     if result["kind"] == "message":
-        return result["message"], {"mode": "chat"}, "chat"
+        content, __hits = mask_text(result["message"], user)
+        return content, {"mode": "chat"}, "chat"
     drafts = result.get("drafts") or [result["draft"]]
     extra = {"mode": "action", "action_draft": drafts[0]}
     if len(drafts) > 1:
         # 多草稿串联：action_drafts 供前端逐项渲染确认卡片（action_draft 保留首个，兼容旧渲染）
         extra["action_drafts"] = drafts
-    return draft_summary(drafts), extra, "action"
+    summary, mask_hits = mask_text(draft_summary(drafts), user)
+    if mask_hits:
+        extra["guard"] = {"mask_hits": mask_hits}
+    return summary, extra, "action"
 
 
 def history_messages(room: ChatRoom, limit: int | None = None, drop_last_user: bool = False) -> list:
@@ -121,27 +148,38 @@ def build_chat_messages(room: ChatRoom, question: str) -> list:
     )
 
 
-def _llm_reply(messages: list) -> str:
-    from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
-    from system.utils.ai import ai_credentials
+def _llm_reply(messages: list, user=None) -> tuple:
+    """普通多轮：返回 ``(脱敏后文本, 脱敏命中数)``（AI-6 输出护栏 + AI-5 用量记账）。"""
+    from common.sdk.ai.chat import AiSdkError
+    from system.utils.ai_guard import mask_text
+    from system.utils.ai_usage import tracked_chat
 
     try:
-        return ChatCompletionsClient(ai_credentials()).chat(messages)
+        answer = tracked_chat(user, "chat", messages)
     except AiSdkError as exc:
         logger.warning("chat ai llm failed: %s", exc)
         raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
+    return mask_text(answer, user)
 
 
-def kb_answer(question: str) -> tuple:
-    """知识库问答：返回 (answer, sources)；无命中/未启用转可读校验错误。"""
+def kb_answer(question: str, user=None) -> tuple:
+    """知识库问答：返回 (answer, sources)；无命中/未启用转可读校验错误。
+
+    answer 已由 ``system.utils.ai.ask`` 走输出护栏脱敏。
+    """
     from system.utils.ai import ask
 
-    result = ask(question)
+    result = ask(question, user=user)
     return result["answer"], result.get("sources") or []
 
 
 def ai_reply_content(room: ChatRoom, question: str) -> tuple:
-    """按命令分流生成回复，返回 (content, extra, mode)。"""
+    """按命令分流生成回复，返回 (content, extra, mode)（输出文本统一过护栏脱敏）。"""
+    from system.utils.ai_usage import quota_error
+
+    quota = quota_error(room.owner, "chat")
+    if quota:
+        raise DjangoValidationError(quota)
     if is_action_command(question):
         # AI 房间归属者即发起用户（视图层已保证 room_type=ai）
         return action_reply(room.owner, strip_action_command(question))
@@ -149,22 +187,27 @@ def ai_reply_content(room: ChatRoom, question: str) -> tuple:
         kb_question = strip_kb_command(question)
         if not kb_question:
             raise DjangoValidationError(_("Please provide a question after /kb, e.g. /kb how to reset password"))
-        answer, sources = kb_answer(kb_question)
+        answer, sources = kb_answer(kb_question, user=room.owner)
         return answer, {"mode": "kb", "sources": sources}, "kb"
-    return _llm_reply(build_chat_messages(room, question)), {"mode": "chat"}, "chat"
+    answer, mask_hits = _llm_reply(build_chat_messages(room, question), room.owner)
+    extra = {"mode": "chat"}
+    if mask_hits:
+        extra["guard"] = {"mask_hits": mask_hits}
+    return answer, extra, "chat"
 
 
-def _llm_reply_stream(messages: list):
+def _llm_reply_stream(messages: list, user=None):
     """流式多轮：逐段产出 ``{"type": "reasoning"|"content", "text": ...}`` 事件。
 
-    AiSdkError 转可读校验错误（在生成器内抛出）。
+    AiSdkError 转可读校验错误（在生成器内抛出）；用量记账由 ``tracked_chat_stream`` 收口。
     """
     from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
     from system.utils.ai import ai_credentials
+    from system.utils.ai_usage import tracked_chat_stream
 
     client = ChatCompletionsClient(ai_credentials())
     try:
-        yield from client.chat_stream(messages)
+        yield from tracked_chat_stream(user, "chat", client, messages)
     except AiSdkError as exc:
         logger.warning("chat ai llm stream failed: %s", exc)
         raise DjangoValidationError(_("AI service is temporarily unavailable")) from exc
@@ -181,15 +224,26 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
     - 已有增量后中断 → 保留部分回答（extra.partial 记录中断原因）+ done 事件；
     - 只有思考没有回答（思考型模型思考过长被截断）→ 保留思考（extra.reasoning），
       以下落文案作内容并标记 extra.no_answer，前端展示思考过程与「未给出最终回答」。
+
+    输出护栏（AI-6）：正文与思考增量均经 ``StreamMasker`` 逐段脱敏（hold-back 防
+    跨帧敏感串泄漏），落库与广播用脱敏后文本；命中数写 extra.guard。
     """
+    from system.utils.ai_guard import StreamMasker
+    from system.utils.ai_usage import quota_error
+
     yield {"event": "meta", "data": {"question": question_payload}}
 
     chunks: list = []
     reasoning_chunks: list = []
     extra = {"mode": "chat"}
+    content_masker = StreamMasker(room.owner)
+    reasoning_masker = StreamMasker(room.owner)
     try:
+        quota = quota_error(room.owner, "chat")
+        if quota:
+            raise DjangoValidationError(quota)
         if is_action_command(question):
-            # `/do` 动作草稿：整段单 delta（草稿是结构化结果，无打字机语义）
+            # `/do` 动作草稿：整段单 delta（草稿是结构化结果，无打字机语义；摘要已脱敏）
             content, extra, __ = action_reply(room.owner, strip_action_command(question))
             chunks.append(content)
             yield {"event": "delta", "data": {"delta": content}}
@@ -197,21 +251,25 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
             kb_question = strip_kb_command(question)
             if not kb_question:
                 raise DjangoValidationError(_("Please provide a question after /kb, e.g. /kb how to reset password"))
-            answer, sources = kb_answer(kb_question)
+            answer, sources = kb_answer(kb_question, user=room.owner)
             extra = {"mode": "kb", "sources": sources}
             chunks.append(answer)
             yield {"event": "delta", "data": {"delta": answer}}
         else:
-            for item in _llm_reply_stream(build_chat_messages(room, question)):
+            for item in _llm_reply_stream(build_chat_messages(room, question), room.owner):
                 text = item.get("text") or ""
                 if not text:
                     continue
                 if item.get("type") == "reasoning":
-                    reasoning_chunks.append(text)
-                    yield {"event": "reasoning", "data": {"delta": text}}
+                    delta = reasoning_masker.feed(text)
+                    if delta:
+                        reasoning_chunks.append(delta)
+                        yield {"event": "reasoning", "data": {"delta": delta}}
                 else:
-                    chunks.append(text)
-                    yield {"event": "delta", "data": {"delta": text}}
+                    delta = content_masker.feed(text)
+                    if delta:
+                        chunks.append(delta)
+                        yield {"event": "delta", "data": {"delta": delta}}
     except DjangoValidationError as exc:
         detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
         if not chunks and not reasoning_chunks:
@@ -225,6 +283,18 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
         # 已有内容：保留部分回答；只有思考（流中断）：走下方「未给出最终回答」兜底
         if chunks:
             extra["partial"] = detail
+    # 冲刷脱敏器缓冲（中断场景也要补发已缓冲的安全文本）
+    content_tail = content_masker.flush()
+    if content_tail:
+        chunks.append(content_tail)
+        yield {"event": "delta", "data": {"delta": content_tail}}
+    reasoning_tail = reasoning_masker.flush()
+    if reasoning_tail:
+        reasoning_chunks.append(reasoning_tail)
+        yield {"event": "reasoning", "data": {"delta": reasoning_tail}}
+    mask_hits = content_masker.hits + reasoning_masker.hits
+    if mask_hits:
+        extra.setdefault("guard", {})["mask_hits"] = mask_hits
     if reasoning_chunks:
         extra["reasoning"] = _clip_reasoning("".join(reasoning_chunks))
     if not chunks:

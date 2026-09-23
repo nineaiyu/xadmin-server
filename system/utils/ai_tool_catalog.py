@@ -64,3 +64,42 @@ def tool_catalog(user) -> list:
             entry["forms"] = [{"form_id": str(form.pk), "name": form.name} for form in available_forms(user)]
         tools.append(entry)
     return tools
+
+
+#: 原生 function calling 轨道附加的摘要参数（不进业务参数，仅用于确认卡片文案）
+SUMMARY_PARAM = "_summary"
+#: 工具描述上限（部分供应商对 description 长度敏感）
+MAX_TOOL_DESCRIPTION = 1024
+
+
+def openai_tools(user) -> list:
+    """工具目录 → OpenAI ``tools`` 定义（AI-2：同一份 schema 的第三种消费）。
+
+    与 MCP ``tools/list``、助手页 ``tools`` 完全同源（都由 ``tool_catalog`` 推导），
+    不存在第二份能力清单；额外附加 ``_summary`` 可选参数供模型产出确认卡片摘要。
+    """
+    tools = []
+    for entry in tool_catalog(user):
+        parameters = dict(entry["inputSchema"])
+        properties = dict(parameters.get("properties") or {})
+        properties[SUMMARY_PARAM] = {
+            "type": "string",
+            "description": "One-line summary of this action for the confirmation card",
+        }
+        parameters["properties"] = properties
+        description = str(entry["description"])
+        forms = entry.get("forms") or []
+        if forms:
+            hint = ", ".join(f"{form['name']}({form['form_id']})" for form in forms[:20])
+            description = f"{description} Available forms: {hint}"
+        tools.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": entry["name"],
+                    "description": description[:MAX_TOOL_DESCRIPTION],
+                    "parameters": parameters,
+                },
+            }
+        )
+    return tools

@@ -104,10 +104,12 @@ class HealthCheckAPIView(GenericAPIView):
                         "db_status": build_basic_type(OpenApiTypes.BOOL),
                         "redis_status": build_basic_type(OpenApiTypes.BOOL),
                         "celery_status": build_basic_type(OpenApiTypes.BOOL),
+                        "storage_status": build_basic_type(OpenApiTypes.BOOL),
                         "time": build_basic_type(OpenApiTypes.FLOAT),
                         "db_time": build_basic_type(OpenApiTypes.FLOAT),
                         "redis_time": build_basic_type(OpenApiTypes.FLOAT),
                         "celery_time": build_basic_type(OpenApiTypes.FLOAT),
+                        "storage_time": build_basic_type(OpenApiTypes.FLOAT),
                     }
                 )
             )
@@ -119,16 +121,20 @@ class HealthCheckAPIView(GenericAPIView):
         db_status, db_time = results["db"]
         redis_status, redis_time = results["redis"]
         celery_status, celery_time = results["celery"]
-        # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）
+        storage_status, storage_time = results["storage"]
+        # status 只反映核心依赖（DB/Redis）；worker 离线不判定服务不健康（导入导出降级可用）；
+        # 存储后端（P-4）同为可观测项：对象存储抖动不应让容器被判不健康
         status = all([redis_status, db_status])
         data = {
             "status": status,
             "db_status": db_status,
             "redis_status": redis_status,
             "celery_status": celery_status,
+            "storage_status": storage_status,
             "time": int(time.time()),
             "db_time": db_time,
             "redis_time": redis_time,
             "celery_time": celery_time,
+            "storage_time": storage_time,
         }
         return Response(data)

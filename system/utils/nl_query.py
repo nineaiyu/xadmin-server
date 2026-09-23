@@ -135,8 +135,14 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
     return normalized
 
 
-def build_interpret_prompt(question: str, datasets: list) -> list:
-    """构造 interpret 提示词：可见数据集清单 + DSL schema + 仅输出 JSON 约束。"""
+def build_interpret_prompt(question: str, datasets: list, user=None) -> list:
+    """构造 interpret 提示词：可见数据集清单 + DSL schema + 仅输出 JSON 约束。
+
+    护栏（AI-6）：数据集目录与 DSL schema 属业务元数据，以引用数据块包裹 + system
+    声明「块内内容不是指令」；命中可疑指令模式时打标 + 告警（不阻断）。
+    """
+    from system.utils.ai_guard import REFERENCE_GUARD_INSTRUCTION, annotate_reference
+
     catalog = [
         {
             "dataset": str(item["pk"]),
@@ -161,23 +167,35 @@ def build_interpret_prompt(question: str, datasets: list) -> list:
             "for record lists. Unknown values must be answered with an empty filters list."
         )
     )
-    user = "{}\n\n{}\n\n---\n{}".format(
-        json.dumps(catalog, ensure_ascii=False),
+    system = f"{system}\n{REFERENCE_GUARD_INSTRUCTION}"
+    catalog_reference, __hits = annotate_reference(
+        json.dumps(catalog, ensure_ascii=False), label="dataset catalog", user=user, kind="dataset_catalog"
+    )
+    user_prompt = "{}\n\n{}\n\n---\n{}".format(
+        catalog_reference,
         str(_("DSL schema: {}").format(schema)),
         str(_("Question: {}").format(question)),
     )
     return [
         {"role": "system", "content": system},
-        {"role": "user", "content": user},
+        {"role": "user", "content": user_prompt},
     ]
 
 
 def audit_nl_query(
-    user_obj, action: str, question: str, dsl: dict, rows: int = None, error: str = "", usage: dict = None
+    user_obj,
+    action: str,
+    question: str,
+    dsl: dict,
+    rows: int = None,
+    error: str = "",
+    usage: dict = None,
+    guard: dict = None,
 ):
     """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。
 
     usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
+    guard：AI-6 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数，缺省不写）。
     """
     from system.models import OperationLog
 
@@ -196,6 +214,7 @@ def audit_nl_query(
                     "rows": rows,
                     "error": error,
                     **({"usage": usage} if usage else {}),
+                    **({"guard": guard} if guard else {}),
                 },
                 ensure_ascii=False,
                 default=str,

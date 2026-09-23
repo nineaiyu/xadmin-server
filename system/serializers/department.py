@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 
+from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -68,6 +69,9 @@ class DeptSerializer(BaseModelSerializer):
             },
             "parent": {"required": False, "attrs": ["pk", "name", "parent_id"]},
         }
+
+    # F-12 关联计数声明：注解名与字段名一致，列表/详情/导出由 RelationCountMixin 预聚合
+    relation_count_fields = {"user_count": Count("dept_query")}
 
     user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
 

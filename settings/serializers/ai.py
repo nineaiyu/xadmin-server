@@ -74,6 +74,23 @@ class AiAssistantSettingSerializer(serializers.Serializer):
     AI_MAX_RETRIES = serializers.IntegerField(default=0, min_value=0, max_value=3, label=_("Max retries"))
     AI_CONTEXT_LIMIT = serializers.IntegerField(default=20, min_value=2, max_value=50, label=_("Context messages"))
     AI_PERSONA = serializers.CharField(max_length=2000, required=False, allow_blank=True, label=_("Persona"))
+    AI_NATIVE_TOOLS_ENABLED = serializers.BooleanField(
+        default=False,
+        label=_("Native tool calling"),
+        help_text=_(
+            "Prefer native function calling for action drafts when the structured profile passed the "
+            "tool_calls capability probe; off = stable prompt-JSON track"
+        ),
+    )
+    AI_QUOTA_USER_DAILY_CALLS = serializers.IntegerField(
+        default=0, min_value=0, label=_("Daily call quota per user"), help_text=_("0 = unlimited")
+    )
+    AI_QUOTA_USER_DAILY_TOKENS = serializers.IntegerField(
+        default=0, min_value=0, label=_("Daily token quota per user"), help_text=_("0 = unlimited")
+    )
+    AI_QUOTA_MAX_CONCURRENT_STREAMS = serializers.IntegerField(
+        default=0, min_value=0, label=_("Concurrent streams limit"), help_text=_("0 = unlimited")
+    )
 
     def validate(self, attrs):
         # 留白模型名收敛默认值，避免空配置静默失效

@@ -9,7 +9,6 @@
 取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过」（visible_instances_for）。
 """
 
-from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -26,7 +25,9 @@ from common.core.modelset import (
     BaseModelSet,
     BaseViewSet,
     DetailAction,
+    ImpactPreviewAction,
     ListAction,
+    RelationCountMixin,
     SearchColumnsAction,
     SearchFieldsAction,
 )
@@ -45,6 +46,7 @@ from system.utils.approval_flow import (
     visible_instances_for,
 )
 from system.utils.approval_mfa import ensure_approval_action_confirmed
+from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 from system.views.admin.approval_instance_actions import ApprovalInstanceActionMixin
 
 #: 「全部在途」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
@@ -60,7 +62,7 @@ class ApprovalFlowFilter(BaseFilterSet):
         fields = ["name", "code", "is_active", "created_time"]
 
 
-class ApprovalFlowViewSet(BaseModelSet):
+class ApprovalFlowViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     """审批流程定义"""
 
     queryset = ApprovalFlow.objects.all()
@@ -71,10 +73,6 @@ class ApprovalFlowViewSet(BaseModelSet):
     ordering_fields = ["created_time", "name", "updated_time"]
     select_related_fields = ("creator",)
     prefetch_related_fields = ("nodes",)
-
-    def get_queryset(self):
-        # node_count 走 annotate 而非逐行 count（列表 N+1）；annotate 会清掉 Meta.ordering，显式补回
-        return super().get_queryset().annotate(nodes_count=Count("nodes")).order_by(*ApprovalFlow._meta.ordering)
 
     def perform_destroy(self, instance):
         """有历史实例的流程禁止删除（实例对流程是 PROTECT，直删会 500，这里给可读错误）。"""
@@ -136,13 +134,14 @@ class ApprovalFlowViewSet(BaseModelSet):
         return ApiResponse(detail=detail)
 
 
-class ApprovalInstanceFilter(BaseFilterSet):
+class ApprovalInstanceFilter(TagFilterMixin, BaseFilterSet):
     title = filters.CharFilter(field_name="title", lookup_expr="icontains")
+    tag = TagChoiceFilter()
     flow_name = filters.CharFilter(field_name="flow_name", lookup_expr="icontains")
 
     class Meta:
         model = ApprovalInstance
-        fields = ["title", "flow_name", "status", "flow", "creator", "created_time"]
+        fields = ["title", "flow_name", "status", "flow", "creator", "created_time", "tag"]
 
 
 class ApprovalInstanceScopeFilter(BaseFilterBackend):
@@ -180,6 +179,7 @@ class ApprovalInstanceScopeFilter(BaseFilterBackend):
 
 
 class ApprovalInstanceViewSet(
+    TaggedPrefetchMixin,
     BaseViewSet,
     # OnlyExportDataAction 继承 ListAction：必须排在 ListAction 之前，否则 MRO 冲突
     OnlyExportDataAction,
@@ -200,6 +200,8 @@ class ApprovalInstanceViewSet(
     ordering_fields = ["created_time", "finished_at"]
     select_related_fields = ("flow", "creator", "current_node")
     prefetch_related_fields = ("tasks", "tasks__assignee", "tasks__actor")
+    # P-1 通用标签：?tag=<标签名> 过滤 + 列表预取（TaggedPrefetchMixin）
+    extra_filter_class = [TagFilterBackend]
 
     def create(self, request, *args, **kwargs):
         """发起申请（按流程 form_schema 填写，落实例并进入首节点）"""
@@ -211,6 +213,8 @@ class ApprovalInstanceViewSet(
             applicant=request.user,
             title=serializer.validated_data.get("title"),
             form_data=serializer.validated_data.get("form_data") or {},
+            # F-5 抄送人：发起时追加（与节点级默认抄送合并，去重）
+            cc_users=request.data.get("cc_users") or [],
         )
         if error:
             raise ValidationError({"detail": error})

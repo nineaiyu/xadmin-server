@@ -19,7 +19,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, OnlyExportDataAction
+from common.core.modelset import BaseModelSet, ImpactPreviewAction, OnlyExportDataAction
 from common.core.response import ApiResponse
 from common.core.serializers import BaseModelSerializer
 from common.swagger.utils import get_default_response_schema
@@ -95,7 +95,7 @@ class SubmissionFilter(BaseFilterSet):
         fields = ["form", "creator"]
 
 
-class DynamicFormViewSet(BaseModelSet):
+class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
     """动态表单定义（管理员）。
 
     模板（is_template）与表单共用一张表：列表默认只出表单（kind=templates 时

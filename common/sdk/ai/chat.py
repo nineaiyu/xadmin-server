@@ -53,6 +53,8 @@ class ChatCompletionsClient:
         # 最近一次 chat() 的思考内容（reasoning_content，缺省 None）：用于「只有思考
         # 没有回答」的错误区分（见 chat() 的空回答判定）；流式场景由 chat_stream 逐段产出
         self.last_reasoning = None
+        # 最近一次 chat_tools() 的原始 tool_calls（规范化后的列表，缺省 []）
+        self.last_tool_calls = []
 
     def _client(self):
         if self.http is None:
@@ -146,6 +148,70 @@ class ChatCompletionsClient:
                 raise AiSdkError("The AI provider returned only reasoning content without a final answer")
             raise AiSdkError("The AI provider returned an empty answer")
         return str(content)
+
+    @staticmethod
+    def _normalize_tool_calls(raw) -> list:
+        """供应商 tool_calls → 统一形态 ``[{id, name, arguments}]``（arguments 保留原始字符串）。"""
+        calls = []
+        for item in raw or []:
+            if not isinstance(item, dict):
+                continue
+            function = item.get("function") if isinstance(item.get("function"), dict) else {}
+            name = str(function.get("name") or "").strip()
+            if not name:
+                continue
+            arguments = function.get("arguments")
+            if isinstance(arguments, (dict, list)):
+                arguments = json.dumps(arguments, ensure_ascii=False)
+            calls.append(
+                {
+                    "id": str(item.get("id") or ""),
+                    "name": name,
+                    "arguments": str(arguments or ""),
+                }
+            )
+        return calls
+
+    def chat_tools(self, messages: list, tools: list, tool_choice: str = "auto", **overrides) -> dict:
+        """原生 function calling（OpenAI tools 协议）：返回 ``{content, tool_calls, usage, reasoning}``。
+
+        ``tool_calls`` 规范化后为 ``[{id, name, arguments}]``（arguments 为 JSON 字符串，
+        由调用方容错解析）。与 ``chat()`` 同源错误口径：未配置 / 协议异常 / 既无内容
+        又无工具调用时抛 AiSdkError。``chat()`` / ``chat_stream()`` 行为零变化。
+        """
+        if not (self.base_url and self.api_key and self.model):
+            raise AiSdkError("AI client is not configured (base_url/api_key/model)")
+        if not tools:
+            raise AiSdkError("AI client tools must not be empty")
+        url = f"{self.base_url}/chat/completions"
+        response = self._post(url, self._body(messages, tools=tools, tool_choice=tool_choice, **overrides))
+        try:
+            payload = response.json()
+        except Exception as exc:
+            logger.warning("ai chat tools invalid json: %s", exc)
+            raise AiSdkError("The AI provider returned an invalid response") from exc
+        if not isinstance(payload, dict):
+            raise AiSdkError("The AI provider returned an invalid response")
+        choices = payload.get("choices") or []
+        message = ((choices[0] or {}).get("message") or {}) if choices else {}
+        content = message.get("content") or ""
+        reasoning = message.get("reasoning_content")
+        self.last_reasoning = str(reasoning) if reasoning else None
+        usage = payload.get("usage")
+        self.last_usage = usage if isinstance(usage, dict) else None
+        tool_calls = self._normalize_tool_calls(message.get("tool_calls"))
+        self.last_tool_calls = tool_calls
+        if not content and not tool_calls:
+            logger.warning("ai chat tools rejected: %s", str(payload)[:300])
+            if self.last_reasoning:
+                raise AiSdkError("The AI provider returned only reasoning content without a final answer")
+            raise AiSdkError("The AI provider returned an empty answer")
+        return {
+            "content": str(content),
+            "tool_calls": tool_calls,
+            "usage": self.last_usage,
+            "reasoning": self.last_reasoning,
+        }
 
     def chat_stream(self, messages: list, **overrides):
         """流式多轮：产出结构化增量事件（OpenAI `stream=true` SSE 兼容）。

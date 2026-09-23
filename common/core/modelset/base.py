@@ -12,6 +12,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models import QuerySet
 from rest_framework import serializers
 
+from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -29,6 +30,11 @@ class BaseViewSet:
     auto_prefetch_actions = ("list", "retrieve", "export_data")
 
     def perform_destroy(self, instance):
+        # 引用保护（F-2）：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认
+        # （未登记模型零开销直接放行）
+        from system.utils.impact import ensure_impact_confirmed
+
+        ensure_impact_confirmed(self, self.request, instances=[instance])
         return instance.delete()
 
     def filter_queryset(self, queryset):
@@ -108,6 +114,19 @@ class BaseViewSet:
         if self.request.query_params.get("type") in ["csv", "xlsx"] and self.request.path_info.endswith("export-data"):
             return None
         return super().paginate_queryset(queryset)
+
+    def get_serializer(self, *args, **kwargs):
+        """``?fields=`` 字段子集（F-13）：只收窄可见字段（与字段权限 / 应用授权求交），
+        不扩大任何字段面；仅 GET 生效（写路径语义不变），非 BaseModelSerializer 视图自动忽略。
+        """
+        if getattr(self.request, "method", None) == "GET" and "fields" not in kwargs:
+            fields_param = self.request.query_params.get("fields")
+            if fields_param:
+                serializer_class = self.get_serializer_class()
+                if issubclass(serializer_class, BaseModelSerializer):
+                    # 上限 100：防超长参数；实际生效范围仍由序列化器声明与字段权限决定
+                    kwargs["fields"] = [item.strip() for item in fields_param.split(",") if item.strip()][:100]
+        return super().get_serializer(*args, **kwargs)
 
     def get_serializer_class(self):
         action_serializer_name = f"{self.action}_serializer_class"

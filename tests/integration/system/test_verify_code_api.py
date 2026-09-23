@@ -169,16 +169,22 @@ class TestVerifyCodeConfig:
         assert resp.data["data"]["sms"] is False
 
     def test_get_config_category_missing(self, api_client):
-        """category 缺失 → 视图内 AttributeError 走 500 兜底。"""
+        """category 缺失 → 可读拒绝（1004），不再落到 AttributeError/500。"""
         resp = api_client.get(SEND_VERIFY_URL)
-        assert resp.status_code == 500, resp.data
-        assert resp.data["code"] == 500
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1004
 
     def test_get_config_category_invalid(self, api_client):
-        """category 非法 → 同样命中 getattr 失败的 500 兜底。"""
+        """category 非法（不在白名单）→ 同样可读拒绝（1004）。"""
         resp = api_client.get(SEND_VERIFY_URL, {"category": "hacker"})
-        assert resp.status_code == 500, resp.data
-        assert resp.data["code"] == 500
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1004
+
+    def test_post_category_missing(self, api_client):
+        """发送验证码缺 category → 可读拒绝（此前为 NameError/500，本地容器验收修复）。"""
+        resp = api_client.post(SEND_VERIFY_URL, {}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1004
 
 
 class TestSendVerifyCodeLoginReset:

@@ -20,7 +20,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImpactPreviewAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.analysis_tasks import schedule_report_run
@@ -93,7 +93,7 @@ class ReportFilter(BaseFilterSet):
         fields = ["dataset", "frequency", "is_active"]
 
 
-class ScreenViewSet(BaseAnalysisViewSet):
+class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
     """大屏模板（含远程控制：管理端下发指令，展示端经 ws/screen/<pk> 接收）"""
 
     queryset = Screen.objects.all()

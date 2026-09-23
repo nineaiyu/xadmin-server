@@ -30,6 +30,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 ALLOWED_ACTIONS_MARKER = "ALLOWED_ACTIONS_JSON:"
+#: AI-6 护栏的引用数据块边界（目录被包裹后仍可解析；与 system/utils/ai_guard.py 同口径）
+REFERENCE_BEGIN = "<<<REFERENCE_DATA>>>"
+REFERENCE_END = "<<<END_REFERENCE_DATA>>>"
 E2E_FORM_NAME_PREFIX = "E2E-AI动作"
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 FALLBACK_ANSWER = "这是 E2E 桩 LLM 的固定回答。"
@@ -38,6 +41,22 @@ STREAM_PROBE_MARKER = "E2E-STREAM-PROBE"
 #: 受限动作探针：请求里出现的 E2E 目标用户名（禁用用户用例）
 TARGET_USERNAME_RE = re.compile(r"e2e_ai_target_\d+")
 LONG_ANSWER = "".join(f"这是流式探针的第 {index} 段输出，用于验证增量到达。" for index in range(1, 21))
+
+
+def extract_catalog(text: str) -> dict:
+    """从标记后的文本中解析动作目录：兼容 AI-6 引用数据块包裹（取首个 { 到末个 }）。"""
+    if REFERENCE_BEGIN in text:
+        text = text.split(REFERENCE_BEGIN, 1)[1]
+    if REFERENCE_END in text:
+        text = text.split(REFERENCE_END, 1)[0]
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return {}
+    try:
+        payload = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def build_answer(messages: list) -> str:
@@ -57,11 +76,7 @@ def build_answer(messages: list) -> str:
     # 意图判断只看用户原始请求（marker 之前的部分）：动作目录里的中文描述
     # （如"向全部用户发布一条系统公告"）会干扰关键字判断
     request_text = user_text.split(ALLOWED_ACTIONS_MARKER, 1)[0]
-    catalog = {}
-    try:
-        catalog = json.loads(user_text.split(ALLOWED_ACTIONS_MARKER, 1)[1].strip())
-    except json.JSONDecodeError:
-        catalog = {}
+    catalog = extract_catalog(user_text.split(ALLOWED_ACTIONS_MARKER, 1)[1])
 
     # 动作草稿：优先命中 E2E 动作表单（按名字前缀）
     for action in catalog.get("actions", []) if isinstance(catalog, dict) else []:

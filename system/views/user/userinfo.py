@@ -47,6 +47,12 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
     def retrieve(self, request, *args, **kwargs):
         """获取{cls}信息"""
         data = super().retrieve(request, *args, **kwargs).data
+        # F-6 巡检处置联动：管理员要求改密时随用户信息下发（刷新页面后仍能引导改密；
+        # 改密成功由 record_password_hash 自动清除标记）。注意写入 data 子字典——
+        # 前端读 res.data.must_change_password（UserInfo 载荷内）
+        payload = data.get("data") if isinstance(data, dict) else None
+        if isinstance(payload, dict):
+            payload["must_change_password"] = bool(getattr(request.user, "must_change_password", False))
         # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue）
         return ApiResponse(
             **data,

@@ -121,15 +121,28 @@ class SendVerifyCodeAPIView(GenericAPIView):
         content = {"subject": subject, "message": message}
         return content, code
 
-    def get(self, request):
+    #: 允许的验证码场景（与 get_*_config 方法一一对应）；白名单校验避免缺参/拼错时 500
+    CATEGORY_KEYS = ("register", "login", "reset", "bind_email", "bind_phone")
+
+    def _get_category_config(self, request):
+        """按 category 取场景配置；未知/缺失 category 返回 None（由调用方给可读错误）。"""
         category = request.query_params.get("category")
-        get_config_func = getattr(self, f"get_{category}_config")
-        return ApiResponse(data=get_config_func(request))
+        if category not in self.CATEGORY_KEYS:
+            return None
+        return getattr(self, f"get_{category}_config")(request)
+
+    def get(self, request):
+        config = self._get_category_config(request)
+        if config is None:
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
+        return ApiResponse(data=config)
 
     def post(self, request):
         """发送验证码"""
         category = request.query_params.get("category")
-        config = getattr(self, f"get_{category}_config")(request)
+        config = self._get_category_config(request)
+        if config is None:
+            return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         if not config.get("access"):
             return ApiResponse(code=1001, detail=_("Forbidden send verification code"))
 

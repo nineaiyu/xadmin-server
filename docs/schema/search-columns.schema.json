@@ -75,6 +75,10 @@
         "type": "boolean",
         "description": "choices 超过 SEARCH_CHOICES_MAX_COUNT 被截断时为 true"
       },
+      "sortable": {
+        "type": "boolean",
+        "description": "该列是否支持表头排序：服务端 ViewSet 声明过 ordering_fields 的字段为 true；未声明排序的视图集不下发"
+      },
       "suggest_url": {
         "type": "string",
         "description": "远程联想端点：仅当资源混入 SuggestionsAction 且字段 input_type 为 api-search-* 时下发；候选集与写入校验同源"

@@ -21,7 +21,7 @@ from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet
+from common.core.modelset import BaseModelSet, ImpactPreviewAction, RelationCountMixin
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -40,7 +40,7 @@ class DatasetFilter(BaseFilterSet):
         fields = ["bound_model", "visibility"]
 
 
-class DatasetViewSet(BaseModelSet):
+class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     """数据集"""
 
     queryset = Dataset.objects.all()

@@ -27,13 +27,14 @@ def done_tasks_for(user):
 
 
 def visible_instances_for(user):
-    """实例可见域：超管全部；其余「我发起 ∪ 待我审批 ∪ 我参与过」。"""
+    """实例可见域：超管全部；其余「我发起 ∪ 待我审批 ∪ 我参与过 ∪ 我被抄送」。"""
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 
     if user.is_superuser:
         return ApprovalInstance.objects.all()
     involved = ApprovalNodeTask.objects.filter(Q(assignee=user) | Q(actor=user)).values_list("instance_id", flat=True)
-    return ApprovalInstance.objects.filter(Q(creator=user) | Q(pk__in=involved)).distinct()
+    # F-5 抄送人可见：抄送 = 知会与参与讨论（只读查看 + 评论）
+    return ApprovalInstance.objects.filter(Q(creator=user) | Q(pk__in=involved) | Q(cc_users=user)).distinct()
 
 
 def pending_count_for(user) -> int:

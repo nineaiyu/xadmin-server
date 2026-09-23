@@ -70,12 +70,17 @@ def preview_cache_path(upload, size: str = SIZE_THUMB) -> str:
 
 
 def source_path(upload) -> str | None:
-    """源文件在磁盘上的绝对路径；缺失或不存在返回 None。"""
+    """源文件的本地绝对路径；缺失或不存在返回 None。
+
+    对象存储后端（P-4）会先下载到本地缓存再返回（PIL / open 需要本地路径）。
+    """
+    from common.storage import storage_local_path
+
     filepath = getattr(upload, "filepath", None)
-    if not filepath:
+    name = getattr(filepath, "name", "") if filepath else ""
+    if not name:
         return None
-    path = filepath.path
-    return path if os.path.exists(path) else None
+    return storage_local_path(name)
 
 
 def _width_for(size: str) -> int:

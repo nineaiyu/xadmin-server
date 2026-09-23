@@ -94,15 +94,29 @@ PROBE_BUDGET_SECONDS = 1
 _probe_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-probe")
 
 
+def probe_storage():
+    """存储后端可达性探测（P-4）：本地 = MEDIA_ROOT 可写；对象存储 = 一次往返。
+
+    仅作为可观测项输出，不参与 health 的 status 判定（对象存储抖动不应让
+    容器被判不健康，与 celery 同口径）。
+    """
+    try:
+        from common.storage import storage_probe
+
+        return storage_probe()
+    except Exception as e:  # noqa: BLE001 适配层异常按不可达返回
+        return False, str(e)
+
+
 def probe_all(timeout=PROBE_BUDGET_SECONDS):
-    """并行执行 db/redis/celery 三项探测，返回 {name: (ok, cost)}。
+    """并行执行 db/redis/celery/storage 四项探测，返回 {name: (ok, cost)}。
 
     单项超预算即返回 ``(False, "probe timeout")``——探测线程由各自的连接超时
     自行收敛，不阻断响应。背景（2026-09-16 故障演练实测）：Redis 被冻结时
     串行探测累计超过 8 秒（且占用请求处理线程），超过容器 healthcheck 的
     5 秒超时，健康状态被误判为不健康。
     """
-    probes = {"db": probe_db, "redis": probe_redis, "celery": probe_celery}
+    probes = {"db": probe_db, "redis": probe_redis, "celery": probe_celery, "storage": probe_storage}
     futures = {name: _probe_pool.submit(fn) for name, fn in probes.items()}
     deadline = time.monotonic() + timeout
     results = {}

@@ -26,7 +26,10 @@ def _encrypt_api_key(value: str) -> str:
 
 
 class AiProfileSerializer(BaseModelSerializer):
-    """AI 配置档案：api_key 明文进 → 加密存；回显只给 api_key_set 布尔，永不回传密钥。"""
+    """AI 配置档案：api_key 明文进 → 加密存；回显只给 api_key_set 布尔，永不回传密钥。
+
+    capabilities 为能力探测结果（AI-1），可由管理端 PATCH 手工修正（探测结果允许覆盖）。
+    """
 
     creator = DisplayRelatedField(
         read_only=True, allow_null=True, label=_("Creator"), label_builder=lambda v: v.username
@@ -38,6 +41,8 @@ class AiProfileSerializer(BaseModelSerializer):
     # 显式声明绕开 DRF 3.16 对单字段 UniqueConstraint 自动生成的 UniqueValidator：
     # 激活互斥由 service 层 set_active_profile「自动顶掉旧档案」保证，不是报错语义
     is_active = serializers.BooleanField(required=False, default=False, label=_("Is active"))
+    purpose = serializers.ChoiceField(choices=AiProfile.Purpose.choices, required=False, label=_("Purpose"))
+    capabilities = serializers.JSONField(required=False, label=_("Capabilities"))
 
     class Meta:
         model = AiProfile
@@ -59,17 +64,47 @@ class AiProfileSerializer(BaseModelSerializer):
             "max_retries",
             "context_limit",
             "persona",
+            "purpose",
+            "capabilities",
+            "probed_at",
             "is_active",
             "remark",
             "creator",
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["api_key_set"]
-        table_fields = ["name", "model", "temperature", "max_tokens", "is_active", "remark", "updated_time"]
+        read_only_fields = ["api_key_set", "probed_at"]
+        table_fields = [
+            "name",
+            "purpose",
+            "model",
+            "temperature",
+            "max_tokens",
+            "is_active",
+            "remark",
+            "updated_time",
+        ]
 
     def get_api_key_set(self, obj) -> bool:
         return bool(obj.api_key)
+
+    def validate_capabilities(self, value):
+        """能力画像手工修正：结构必须为「能力名 → 结果 dict」+ 可选 model/probed_at 元信息。
+
+        结构错误直接拒绝，避免前端误写导致链路判据（tool_calls 准入）读到脏数据。
+        """
+        if value in (None, ""):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError(_("Capabilities must be an object"))
+        for key, item in value.items():
+            if key in ("model", "probed_at"):
+                continue
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(_("Capabilities must map capability names to objects"))
+            if "ok" in item and not isinstance(item["ok"], bool):
+                raise serializers.ValidationError(_("Capability ok flag must be a boolean"))
+        return value
 
     def get_unique_together_validators(self):
         # 条件唯一约束（is_active=True 部分索引）会生成 UniqueTogetherValidator 把

@@ -28,6 +28,8 @@ from settings.services import (
 from system.models import UserInfo
 from system.models.ldap import LdapUserBinding
 from system.serializers.fields import DictChoiceField
+from system.serializers.tag import TaggedObjectSerializerMixin
+from system.utils import user_invite
 
 logger = get_logger(__name__)
 
@@ -38,7 +40,7 @@ def ensure_local_password_changeable(user):
         raise ValidationError(_("Password is managed by the LDAP directory and cannot be changed locally"))
 
 
-class UserSerializer(BaseModelSerializer):
+class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
     # gender 下拉由数据字典驱动（字典类型 user_gender）：标签/选项在字典页维护即时生效；
     # 字典未配置时回退模型 GenderChoices，value 回调整型适配 IntegerField
     gender = DictChoiceField(
@@ -48,6 +50,10 @@ class UserSerializer(BaseModelSerializer):
         required=False,  # 模型 default=UNKNOWN 兜底；显式声明不继承 build_standard_field 的 default
         label=_("Gender"),
     )
+    # P-1 通用标签：只读回显（打标走 /api/system/tags/assign，权限回落 update 权限点）
+    tags = serializers.SerializerMethodField(label=_("Tags"))
+    # F-11 创建即邀请：write_only 开关（创建后由服务端置待激活 + 发邀请邮件，无需密码）
+    invite = serializers.BooleanField(write_only=True, required=False, default=False, label=_("Invite activation"))
 
     class Meta:
         model = UserInfo
@@ -67,8 +73,13 @@ class UserSerializer(BaseModelSerializer):
             "description",
             "last_login",
             "date_joined",
+            "date_expired",
+            "invite_status",
+            "invited_time",
             "roles",
             "rules",
+            "tags",
+            "invite",
             "deleted_at",
         ]
         read_only_fields = ["pk", "deleted_at"] + list(set([x.name for x in UserInfo._meta.fields]) - set(fields))
@@ -81,12 +92,15 @@ class UserSerializer(BaseModelSerializer):
             "block",
             "online_count",
             "is_active",
+            "invite_status",
             "dept",
             "phone",
+            "date_expired",
             "last_login",
             "date_joined",
             "roles",
             "rules",
+            "tags",
         ]
         extra_kwargs = {
             "pk": {"read_only": True},
@@ -94,6 +108,9 @@ class UserSerializer(BaseModelSerializer):
             "date_joined": {"read_only": True},
             "avatar": {"read_only": True},
             "password": {"write_only": True},
+            # F-11：邀请状态与邀请时间为服务端维护（写入口 = invite action），只读回显
+            "invite_status": {"read_only": True},
+            "invited_time": {"read_only": True},
             "roles": {"required": False, "attrs": ["pk", "name", "code"], "format": "{name}", "many": True},
             "rules": {
                 "required": False,
@@ -112,6 +129,13 @@ class UserSerializer(BaseModelSerializer):
     online_count = input_wrapper(serializers.SerializerMethodField)(
         read_only=True, input_type="number", label=_("Online count")
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # F-11 创建即邀请：邀请模式无需密码（由被邀请人自行设置）→ 放开字段级必填
+        request = self.context.get("request")
+        if user_invite.invite_requested(getattr(request, "data", None)):
+            self.fields["password"].required = False
 
     # username 在 DB 层保持全局唯一（auth.E003 约束 USERNAME_FIELD 必须 unique），
     # 模型字段 unique=True 使 DRF 自动生成的 UniqueValidator 只查活跃数据（默认管理器），
@@ -141,6 +165,10 @@ class UserSerializer(BaseModelSerializer):
         return len(self.context["user_online_layers"].get(obj.pk, []))
 
     def validate(self, attrs):
+        if attrs.get("invite"):
+            # F-11 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略
+            attrs.pop("password", None)
+            return attrs
         password = attrs.get("password")
         if password:
             if self.request.method == "POST":
@@ -163,7 +191,13 @@ class UserSerializer(BaseModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        invite = validated_data.pop("invite", False)
         instance = super().create(validated_data)
+        if invite:
+            # F-11 创建即邀请：密码置不可用（登录被拒），由被邀请人从邀请链接自行设置
+            instance.set_unusable_password()
+            instance.save(update_fields=["password"])
+            return instance
         # 建号即留存首条密码历史：后续改密的「最近 N 次不可复用」覆盖初始密码
         if validated_data.get("password"):
             record_password_hash(instance, instance.password)

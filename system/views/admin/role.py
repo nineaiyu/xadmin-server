@@ -10,7 +10,14 @@ from rest_framework.decorators import action
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet
-from common.core.modelset import BaseModelSet, ImportExportDataAction, RecycleBinAction
+from common.core.modelset import (
+    BaseModelSet,
+    BatchPartialUpdateAction,
+    ImpactPreviewAction,
+    ImportExportDataAction,
+    RecycleBinAction,
+    RelationCountMixin,
+)
 from common.utils import get_logger
 from system.builtin import BUILTIN_ROLE_CODES
 from system.models import UserRole
@@ -29,8 +36,19 @@ class RoleFilter(BaseFilterSet):
         fields = ["name", "code", "is_active", "description", "builtin"]
 
 
-class RoleViewSet(RecycleBinAction, BaseModelSet, ImportExportDataAction, RolePreviewAction):
+class RoleViewSet(
+    BatchPartialUpdateAction,
+    RecycleBinAction,
+    RelationCountMixin,
+    BaseModelSet,
+    ImpactPreviewAction,
+    ImportExportDataAction,
+    RolePreviewAction,
+):
     """角色"""
+
+    # F-1 批量更新白名单：批量启停用
+    batch_update_fields = ("is_active",)
 
     queryset = UserRole.objects.all()
     serializer_class = RoleSerializer

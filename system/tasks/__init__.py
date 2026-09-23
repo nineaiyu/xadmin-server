@@ -26,6 +26,7 @@ from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from system.models.task import TaskExecution
 from system.utils.ctasks import (
+    auto_clean_ai_usage,
     auto_clean_black_token,
     auto_clean_operation_log,
     auto_clean_preview_cache,
@@ -53,6 +54,17 @@ def auto_clean_operation_job():
 @register_as_period_task(crontab="22 2 * * *")
 def auto_clean_black_token_job():
     auto_clean_black_token(clean_day=7)
+
+
+@shared_task
+@register_as_period_task(crontab="0 8 * * *")
+def account_expiry_job():
+    """账号有效期维护（F-11）：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
+    from system.utils.account_expiry import disable_expired_accounts, notify_expiring_accounts
+
+    notified = notify_expiring_accounts()
+    disabled = disable_expired_accounts()
+    return {"notified": notified, "disabled": disabled}
 
 
 @shared_task
@@ -92,6 +104,13 @@ def auto_clean_task_execution_job():
     removed += TaskResult.objects.filter(date_done__lt=deadline).delete()[0]
     logger.info("Clean task execution history: %s rows", removed)
     return removed
+
+
+@shared_task
+@register_as_period_task(crontab="12 3 * * *")
+def auto_clean_ai_usage_job():
+    """AI 用量账本保留期清理（AI-5，保留期随 MONITOR_RETENTION_DAYS）。"""
+    auto_clean_ai_usage()
 
 
 @shared_task
@@ -284,6 +303,24 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
     from ._export import run_async_export
 
     return run_async_export(record_id, view_path, query_params, user_pk)
+
+
+@shared_task
+@register_as_period_task(crontab="23 4 * * *")
+def scan_account_risk_job():
+    """账号安全风险巡检（F-6）：弱项巡检一次，产出/刷新待处置风险清单。"""
+    from system.utils.account_risk import scan_account_risks
+
+    return scan_account_risks()
+
+
+@shared_task
+@register_as_period_task(crontab="12 3 * * *")
+def auto_clean_file_access_log_job():
+    """清理超过保留期的文件访问日志（F-8，FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
+    from system.utils.file_audit import clean_expired_file_access_logs
+
+    return clean_expired_file_access_logs()
 
 
 @shared_task(bind=True, verbose_name=_("Async import data"))

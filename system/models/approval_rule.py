@@ -149,6 +149,8 @@ class ApprovalRequestStep(DbAuditModel):
         blank=True,
         verbose_name=_("Approver"),
     )
+    # 处理人显示名快照（U-1）：用户删除/改名后审批痕迹仍可读
+    approver_display = models.CharField(_("Approver display"), max_length=128, blank=True, default="")
     comment = models.CharField(_("Comment"), max_length=255, blank=True, null=True)
     acted_at = models.DateTimeField(_("Acted at"), null=True, blank=True)
 
@@ -195,6 +197,8 @@ class ApprovalRequestStepAction(DbAuditModel):
         blank=True,
         verbose_name=_("Approver"),
     )
+    # 处理人显示名快照（U-1）：用户删除/改名后审批痕迹仍可读
+    approver_display = models.CharField(_("Approver display"), max_length=128, blank=True, default="")
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.APPROVED)
     comment = models.CharField(_("Comment"), max_length=255, blank=True, null=True)
 

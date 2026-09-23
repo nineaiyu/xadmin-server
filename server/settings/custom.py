@@ -27,6 +27,12 @@ PERMISSION_WHITE_URL = {
     "^/api/notifications/site-messages/unread$": ["*"],
     "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
+    # Passkey 凭据（F-9）：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
+    "^/api/system/passkeys": ["*"],
+    # 列表「我的视图」（F-4）：个人筛选偏好，视图内收口为「本人 + 共享只读」，同 PAT 口径
+    "^/api/system/saved-views": ["*"],
+    # 登录前 Passkey 挑战值（匿名，凭一次性 mfa_token）：与登录流程同级，不参与菜单权限
+    "^/api/system/login/mfa/passkey/": ["*"],
     # 应用接口范围选项（API 应用管理页表单枚举，同 choices/search-fields 口径）：
     # 返回的只是「当前用户可授权的接口」元数据（用户自己权限菜单派生，无业务数据行），
     # 且管理页的查看/编辑是两个独立权限点——按菜单收紧会让只有编辑权限的用户打不开勾选器。
@@ -54,6 +60,8 @@ ROUTE_IGNORE_URL = [
     "^/api/mfa/",  # 忽略 MFA 二次验证路由
     "^/api/system/api-applications/scope-options$",  # 接口范围选项：白名单元数据，无需再配权限点
     "^/api/system/api-applications/grant-options$",  # 资源授权目录：白名单元数据，无需再配权限点
+    "^/api/system/passkeys",  # Passkey 个人凭据：白名单路由，无需再配权限点
+    "^/api/system/saved-views",  # 我的视图：白名单路由，无需再配权限点
 ]
 
 # 访问权限配置

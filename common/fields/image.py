@@ -6,7 +6,6 @@
 # date : 1/17/2024
 import os
 
-from django.core.files.storage import FileSystemStorage, default_storage
 from django.db import models
 from django.db.models.fields.files import ImageFieldFile
 from imagekit.cachefiles import ImageCacheFile
@@ -40,7 +39,16 @@ def get_thumbnail(source, index, force=False):
 
 
 class ProcessedImageFieldFile(ImageFieldFile):
-    is_local_storage = isinstance(default_storage, FileSystemStorage)
+    @property
+    def is_local_storage(self):
+        """当前生效的存储后端是否本地文件系统。
+
+        P-4 可插拔后端（SwitchableStorage）下必须运行期判断：类属性在导入期求值，
+        切到对象存储后仍会误判为本地（缩略图删除 / URL 替换会打到错误的路径）。
+        """
+        from common.storage import storage_is_local
+
+        return storage_is_local()
 
     def save(self, name, content, save=True):
         filename, ext = os.path.splitext(name)

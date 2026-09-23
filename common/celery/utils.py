@@ -58,7 +58,9 @@ def create_or_update_celery_periodic_tasks(tasks):
     }
     :return:
     """
-    # Todo: check task valid, task and callback must be a celery task
+    # 任务名校验说明：此处**不**校验 task 是否为已注册 celery 任务——周期任务可能经
+    # load_init_json 先于业务模块 autodiscover 导入，硬校验会误报；无效任务名在 beat
+    # 触发时由 celery 自身报 NotRegistered 并记入日志（运维可见），无需在此重复拦截。
     for name, detail in tasks.items():
         interval = None
         crontab = None
