@@ -20,7 +20,7 @@ jobs:
 
       - name: Install uv
         # 版本由 pyproject.toml 的 [tool.uv].required-version 决定；缓存按 uv.lock 命中
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
