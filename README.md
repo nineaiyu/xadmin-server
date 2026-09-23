@@ -22,36 +22,47 @@ bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-o
 
 ```shell
 # 方式二：本机源码启动（Python 3.13+，需自备数据库（PostgreSQL/MySQL/SQLite）与 Redis）
-python3.13 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt   # 依赖清单由 pyproject.toml 导出，见下方「依赖管理」
+uv sync --all-groups          # 依赖以 uv.lock 为准，见下方「依赖管理」
+#   无 uv 时：python3.13 -m venv .venv && source .venv/bin/activate
+#             && pip install -r requirements.txt -r requirements-dev.txt
 cp config_example.yml config.yml   # 可跳过：不创建时自动使用内置默认配置并自动生成 SECRET_KEY
-python manage.py migrate
-python utils/init_data.py          # 幂等；--with-demo / --skip-ip-db / --admin-password
-python manage.py start all -d
+uv run python manage.py migrate    # 走 uv 时命令加 `uv run`；或 source .venv/bin/activate 后直接用 python
+uv run python utils/init_data.py   # 幂等；--with-demo / --skip-ip-db / --admin-password
+uv run python manage.py start all -d
 ```
 
 超管初始密码：`--admin-password` 或环境变量 `XADMIN_ADMIN_PASSWORD` 显式指定，未设置时随机生成并仅打印一次。
 
 ### 依赖管理（pyproject + uv）
 
-- **事实源**：`pyproject.toml`（运行依赖 + `dev` 组）；`requirements.txt` / `requirements-dev.txt` 是
-  `uv export` 的**导出产物**，请勿手工编辑（改依赖 = 改 pyproject 后重新导出）；
-- **uv 快路径**（需 [uv](https://docs.astral.sh/uv/) ≥ 0.12，环境重建为秒级）：
+- **事实源**：`pyproject.toml`（运行依赖 + `dev` 组）与 `uv.lock`（锁文件，入库）；
+- **安装路径（本地 / 容器 / CI 同口径）**：`uv.lock` 是唯一安装依据——本地开发
+  `uv sync --all-groups`（环境重建为秒级）；容器构建 `uv sync --frozen`（见 `Dockerfile-base` /
+  `Dockerfile-dev`）；CI `uv sync --locked` + `uv lock --check`（见 `.github/workflows/`）。
+  容器用 `--frozen` 的原因：`--locked` 的一致性校验会把当前 index 的候选集一并比对，
+  而构建走 `PIP_MIRROR`（镜像源与 PyPI 候选集不完全一致）时会误报「lock 需更新」，
+  跳过的那层校验由 CI 的 `uv lock --check` 补齐；
+- **`requirements.txt` / `requirements-dev.txt` 是 `uv export` 的导出产物**（请勿手工编辑，
+  改依赖 = 改 pyproject 后重新导出）。它们不再是安装依据，保留给三类固定用途：pip 生态安全扫描
+  （`pip-audit -r requirements.txt`）、无 uv 环境的手工与离线安装、国产化平台版本适配
+  （见 `docs/ops/deployment.md` §7）；
+- **uv 版本下界**：`[tool.uv].required-version`（CI 的 `astral-sh/setup-uv` 依此选版本；
+  容器内由 `ARG UV_VERSION` 固定，两处同源）：
 
 ```shell
-uv sync --all-groups              # 创建/同步 .venv（等价 pip install -r requirements.txt -r requirements-dev.txt）
+uv sync --all-groups              # 创建/同步 .venv（含 dev 组）
 uv lock                           # 变更 pyproject 依赖后刷新 uv.lock（入库，保证解析可复现）
 # 重新导出产物（pyproject.toml 头部注释同口径）：
 uv export --no-hashes --no-emit-project --no-group dev --no-annotate -o requirements.txt
 uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requirements-dev.txt
 ```
 
-- **pip 路径保持不变**（安装器 / Docker / CI 均按既有命令安装产物文件，见 `Dockerfile` 与 `.github/workflows/`）；
 - **可选依赖**（对象存储后端）：声明于 `[project.optional-dependencies].storage`，默认不装，
   未装时文件链路回退本地，启用方式 `uv sync --extra storage` 或 `pip install django-storages boto3`
   （详见 `docs/ops/storage.md`）；
-- 三方一致性（pyproject ↔ 产物 ↔ uv.lock）由 `tests/unit/test_dependency_manifest.py` 守护：
-  CI 跑纯解析校验（不依赖 uv 与网络），本机存在 uv 时额外校验「产物与导出逐行一致」。
+- **守护**（`tests/unit/test_dependency_manifest.py`，纯解析、不依赖网络）：pyproject ↔ 产物 ↔ uv.lock
+  三方一致、容器与 CI 的安装方式未回退到产物、uv 版本同源、`.dockerignore` 排除宿主环境；
+  本机存在 uv 时额外校验「产物与导出逐行一致」。
 
 ## 开发部署文档
 

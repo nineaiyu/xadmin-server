@@ -73,13 +73,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: pip
+
+      - name: Install uv
+        # 版本由 pyproject.toml 的 [tool.uv].required-version 决定；缓存按 uv.lock 命中
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          grep -v '^mysqlclient' requirements.txt > /tmp/requirements-perf.txt
-          pip install -r /tmp/requirements-perf.txt -r requirements-dev.txt
+        # 以 uv.lock 为唯一安装依据；压测环境无需编译 mysqlclient
+        run: uv sync --locked --no-install-package mysqlclient
 
       - name: Install k6
         run: |
@@ -91,13 +94,13 @@ jobs:
       - name: Migrate and seed
         run: |
           export XADMIN_ADMIN_PASSWORD="$LOADTEST_PASSWORD"
-          python manage.py migrate
-          python utils/init_data.py
-          python loadtest/seed_users.py --count "${{ github.event.inputs.seed_count || '1000' }}"
+          uv run --no-sync python manage.py migrate
+          uv run --no-sync python utils/init_data.py
+          uv run --no-sync python loadtest/seed_users.py --count "${{ github.event.inputs.seed_count || '1000' }}"
 
       - name: Start server (gunicorn + uvicorn worker)
         run: |
-          python -m gunicorn server.asgi:application \
+          uv run --no-sync python -m gunicorn server.asgi:application \
             -b 127.0.0.1:8896 -k uvicorn.workers.UvicornWorker \
             -w "${LOADTEST_WORKERS}" --graceful-timeout 30 &
           for _ in $(seq 1 60); do
@@ -119,7 +122,7 @@ jobs:
         id: compare
         run: |
           set -o pipefail
-          python loadtest/check_baseline.py \
+          uv run --no-sync python loadtest/check_baseline.py \
             --results loadtest/k6/results \
             --checks p95,error \
             --tolerance "${{ github.event.inputs.tolerance || '3.0' }}" \

@@ -39,8 +39,9 @@
 ```shell
 # 1) 安装可选依赖（声明于 pyproject.toml [project.optional-dependencies].storage，默认不装）
 #    开发环境（uv 快路径）：uv sync --extra storage
-#    容器内（兼容路径）：
+#    容器内（venv 的 pip 在 PATH 中；也可直接用容器内的 uv）：
 docker exec xadmin-server sh -c "pip install django-storages boto3"
+#    或：docker exec xadmin-server sh -c "uv pip install --python /data/py3 django-storages boto3"
 
 # 2) 写配置（界面或 SQL 均可；下面为界面路径）
 #    FILE_STORAGE_BACKEND = s3

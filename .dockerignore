@@ -1,0 +1,36 @@
+# Docker 构建上下文排除（Dockerfile 的 `COPY . .` 会消费本文件）。
+#
+# 依赖环境：容器内依赖一律由 uv 在构建期按 uv.lock 安装，宿主环境（尤其 .venv，
+# 平台相关）不得进入镜像——否则会把宿主平台的解释器与包混进目标架构镜像。
+
+# 虚拟环境与 Python 产物
+.venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# 版本控制与编辑器
+.git
+.idea/
+.vscode/
+.devcontainer/
+
+# 运行期数据（日志、上传、pid、静态收集），容器启动时重建
+data/
+tmp/
+static/
+upload/
+logs/
+
+# 本地配置（含密钥；构建阶段会重新置空）
+config.yml
+
+# 其他本地文件
+.DS_Store
+_delete/
+loadtest/results/

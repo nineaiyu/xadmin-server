@@ -13,11 +13,15 @@
 #   uv export --no-hashes --no-emit-project --no-group dev --no-annotate -o requirements.txt
 #   uv export --no-hashes --no-emit-project --only-group dev --no-annotate -o requirements-dev.txt
 #
-# 快路径（开发环境，秒级重建）：
-#   uv sync --all-groups
-# 兼容路径（安装器 / Docker / CI 既有调用保持不变）：
-#   pip install -r requirements.txt -r requirements-dev.txt
-# 可选依赖（对象存储后端，默认不装；不含在兼容路径产物中）：
+# 安装路径（本地 / 容器 / CI，一律以 uv.lock 为唯一安装依据）：
+#   uv sync --all-groups                       # 本地开发（含 dev 组）
+#   uv sync --frozen --no-dev                  # 容器构建（见 Dockerfile-base / Dockerfile-dev）：
+#                                              #   --frozen 跳过解析校验，因镜像源候选集与 PyPI
+#                                              #   不一致时 --locked 会误报「lock 需更新」；
+#                                              #   该一致性由 CI 的 uv lock --check 兜底守护
+# 产物用途（requirements*.txt 不再是安装依据）：
+#   pip-audit -r requirements.txt（安全扫描）/ 无 uv 环境的手工与离线安装 / 国产化平台版本适配
+# 可选依赖（对象存储后端，默认不装）：
 #   uv sync --extra storage     或     pip install django-storages boto3
 
 [project]
@@ -115,3 +119,6 @@ dev = [
 [tool.uv]
 # 本仓库只借助 uv 做依赖管理与锁文件，不将服务端作为可分发包构建
 package = false
+# 工具链版本下界（CI 的 astral-sh/setup-uv 依此选择版本；Dockerfile-base/Dockerfile-dev
+# 的 ARG UV_VERSION 与之对齐，容器构建保持一致口径）
+required-version = ">=0.12.5"

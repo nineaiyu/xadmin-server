@@ -35,11 +35,11 @@ fix(common): 操作日志中间件动词方法无兜底导致 500（TD-24）
 ## 3. 开发环境
 
 ```shell
-python3.13 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
+uv sync --all-groups                # 依赖以 uv.lock 为准（无 uv 时：python3.13 -m venv .venv
+                                    #   && pip install -r requirements.txt -r requirements-dev.txt）
 cp config_example.yml config.yml    # 本地开发建议 DB_ENGINE: sqlite3
-python manage.py migrate && python utils/init_data.py
-python manage.py start all
+uv run python manage.py migrate && uv run python utils/init_data.py
+uv run python manage.py start all
 ```
 
 详见 [docs/ops/deployment.md](docs/ops/deployment.md)。

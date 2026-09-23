@@ -42,7 +42,7 @@ SECRET_KEY:
 # DEBUG_DEV: true
 
 # django-silk 性能剖析（T3.1 性能基线，仅 DEBUG/DEBUG_DEV 环境生效）
-# 开启前先安装 dev 依赖：pip install -r requirements-dev.txt（含 django-silk），并执行 python manage.py migrate
+# 开启前先安装 dev 依赖：uv sync --all-groups（含 django-silk；无 uv 时 pip install -r requirements-dev.txt），并执行 python manage.py migrate
 # 面板地址 /silk（需员工/超级管理员登录）；k6 基线测定时必须保持关闭，避免剖析开销污染基线数据
 # SILK_ENABLED: true
 

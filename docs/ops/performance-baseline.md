@@ -128,8 +128,8 @@ BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD=<压测环境密码> ./ru
 ## 五、silk 剖析流程（归因时使用）
 
 ```bash
-# 1. 安装 dev 依赖（含 django-silk）
-pip install -r requirements-dev.txt
+# 1. 安装 dev 依赖（含 django-silk）；无 uv 环境改用 pip install -r requirements-dev.txt
+uv sync --all-groups
 
 # 2. 压测环境 config.yml 开启：DEBUG/DEBUG_DEV true + SILK_ENABLED: true
 python manage.py migrate          # 创建 silk 三张表

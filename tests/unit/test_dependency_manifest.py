@@ -238,3 +238,74 @@ def test_uv_export_reproduces_requirements_files():
         assert _content(target) == [
             line for line in result.stdout.splitlines() if line.strip() and not line.startswith("#")
         ], f"{target.name} 与 uv export 输出不一致（请勿手工编辑产物，改依赖请改 pyproject.toml 后重新导出）"
+
+
+# --- 安装路径守护 ---
+# 口径：pyproject.toml + uv.lock 是唯一安装依据；requirements*.txt 只服务 pip-audit、
+# 手工安装与国产化平台适配，容器与 CI 不得回退到「导出产物 + pip」的安装方式。
+
+DOCKERFILE_BASE = REPO_ROOT / "Dockerfile-base"
+DOCKERFILE_DEV = REPO_ROOT / "Dockerfile-dev"
+DOCKERIGNORE = REPO_ROOT / ".dockerignore"
+WORKFLOW_DIR = REPO_ROOT / ".github" / "workflows"
+
+INSTALL_FROM_EXPORT = "pip install -r requirements"
+
+
+def _dockerfiles() -> list[Path]:
+    return [DOCKERFILE_BASE, DOCKERFILE_DEV]
+
+
+def test_container_build_installs_from_lockfile():
+    """容器构建（base / dev 镜像）必须以锁文件安装，不得消费 requirements 产物。
+
+    容器内用 ``--frozen`` 而非 ``--locked``：``--locked`` 的一致性校验会把当前 index 的候选集
+    一并比对，而构建走 PIP_MIRROR（镜像源与 PyPI 候选集不完全一致）时会误报「lock 需更新」。
+    跳过的那层校验由 CI 的 ``uv lock --check`` 补齐（见 test_ci_installs_from_lockfile）。
+    """
+    for path in _dockerfiles():
+        text = path.read_text(encoding="utf-8")
+        assert "uv sync --frozen" in text, f"{path.name} 未以 uv.lock 安装（缺少 uv sync --frozen）"
+        assert INSTALL_FROM_EXPORT not in text, (
+            f"{path.name} 仍以 requirements 产物安装依赖（应改为 uv sync --frozen；"
+            f"requirements*.txt 仅用于 pip-audit 与手工安装）"
+        )
+
+
+def test_ci_installs_from_lockfile():
+    """CI 依赖安装必须以 uv.lock 为准，并显式校验 lock 与 pyproject 同步。"""
+    for name in ("test.yml", "perf.yml", "build-image.yml", "lint.yml"):
+        text = (WORKFLOW_DIR / name).read_text(encoding="utf-8")
+        assert "astral-sh/setup-uv" in text, f"{name} 未安装 uv（astral-sh/setup-uv）"
+        assert "uv sync --locked" in text, f"{name} 未以 uv.lock 锁定安装"
+        assert INSTALL_FROM_EXPORT not in text, f"{name} 仍以 requirements 产物安装依赖"
+    # 容器构建（--frozen）跳过了解析一致性校验，必须由 CI 显式守护 lock ↔ pyproject 同步
+    test_yml = (WORKFLOW_DIR / "test.yml").read_text(encoding="utf-8")
+    assert "uv lock --check" in test_yml, "test.yml 缺少锁文件一致性校验（uv lock --check）"
+
+
+def test_uv_version_consistent_in_pyproject_and_dockerfiles():
+    """uv 工具链版本同源：pyproject required-version ↔ Dockerfile ARG UV_VERSION。"""
+    pyproject = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    required = pyproject["tool"]["uv"]["required-version"]
+    matched = re.search(r"(\d+\.\d+\.\d+)", required)
+    assert matched, f"pyproject [tool.uv].required-version 无法解析出具体版本：{required!r}"
+    expected = matched.group(1)
+    for path in _dockerfiles():
+        arg = re.search(r"ARG UV_VERSION=([0-9.]+)", path.read_text(encoding="utf-8"))
+        assert arg, f"{path.name} 缺少 ARG UV_VERSION（容器内 uv 版本需显式固定）"
+        assert arg.group(1) == expected, (
+            f"{path.name} 的 UV_VERSION={arg.group(1)} 与 pyproject required-version（{expected}）不一致"
+        )
+
+
+def test_dockerignore_excludes_host_environment():
+    """.dockerignore 必须排除宿主虚拟环境与运行期数据（否则宿主平台的包会混进镜像）。"""
+    assert DOCKERIGNORE.exists(), "缺少 .dockerignore：宿主 .venv / data / .git 会进入构建上下文与镜像"
+    rules = {
+        line.strip()
+        for line in DOCKERIGNORE.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    }
+    for required_rule in (".venv", ".git", "data/"):
+        assert required_rule in rules, f".dockerignore 缺少排除规则：{required_rule}"

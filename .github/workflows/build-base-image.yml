@@ -6,6 +6,8 @@ on:
       - 'main'
       - 'dev'
     paths:
+      - 'uv.lock'
+      - 'pyproject.toml'
       - 'requirements.txt'
       - 'Dockerfile-base'
 

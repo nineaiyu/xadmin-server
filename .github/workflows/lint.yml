@@ -18,14 +18,20 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install uv
+        # ruff 版本取自 uv.lock 的 dev 组，与本地一致（避免 CI 拉到更新版本引入未同步的新规则）
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
       - name: Install ruff
-        run: pip install ruff
+        run: uv sync --locked --only-group dev
 
       - name: Run ruff format check
-        run: ruff format --check .
+        run: uv run --no-sync ruff format --check .
 
       - name: Run ruff check
-        run: ruff check .
+        run: uv run --no-sync ruff check .
 
   cross-app-imports:
     name: Cross-app import gate (T2.2)

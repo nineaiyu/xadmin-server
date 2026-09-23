@@ -9,7 +9,10 @@
 ### 1.1 环境准备
 
 ```shell
-# Python 3.13 虚拟环境
+# 依赖安装（推荐 uv：以 uv.lock 为唯一安装依据，秒级重建）
+uv sync --all-groups
+
+# 无 uv 环境（pip 路径，安装 uv export 产物；用途见 README「依赖管理」）
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
@@ -25,7 +28,7 @@ docker run -d --name xadmin-redis -p 6379:6379 redis:7.4
 
 ```shell
 cp config_example.yml config.yml   # 按需修改（sqlite 本地开发：DB_ENGINE: sqlite3）
-python manage.py migrate
+python manage.py migrate           # uv 环境加前缀 `uv run`（或先 source .venv/bin/activate）
 python utils/init_data.py          # 初始数据 + 超管账号（幂等，可重复执行；升级后建议执行一次）
 ```
 
@@ -347,7 +350,8 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 ### 6.3 镜像与供应链
 
 - 发布镜像经 trivy 扫描（HIGH/CRITICAL 阻断）并随 release 附 CycloneDX SBOM（T5.5），升级前可在 release 页面核对 SBOM 变更；
-- base 镜像由 `build-base-image.yml` 自动构建回写，基础层 CVE 修复通过重建 base 镜像消化。
+- base 镜像由 `build-base-image.yml` 自动构建回写（触发路径：`uv.lock` / `pyproject.toml` /
+  `requirements.txt` / `Dockerfile-base`；CI 提交新的 base tag 到 `Dockerfile`），基础层 CVE 修复通过重建 base 镜像消化。
 
 ## 7. 国产化适配要点
 
@@ -361,10 +365,11 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 
 > **老 ARM CPU 的 wheel 兼容**：`cryptography` 47.0+ 的 aarch64 manylinux wheel 使用了更激进的
 > CPU 基线，在部分较老的 ARM 主机（含 2026-09 前后的 ARM 虚拟机）上 import 即触发
-> `Illegal instruction (core dumped)`（现象：容器反复 Restarting (132)）。此类环境构建镜像前
-> 在服务器侧将 `requirements.txt` 中的 `cryptography` 调整为 `==46.0.7`，并同步把
+> `Illegal instruction (core dumped)`（现象：容器反复 Restarting (132)）。此类环境构建镜像前，
+> 在服务器侧把 `pyproject.toml` 中的 `cryptography` 调整为 `==46.0.7`，并同步把
 > `pyopenssl` 调整为 `==26.0.0`、`service-identity` 调整为 `==24.2.0`（三者对 cryptography
-> 的版本约束互斥）。该适配仅作用于构建上下文，属服务器本地改动，不要提交回仓库。
+> 的版本约束互斥），随后执行 `uv lock` 刷新 `uv.lock`——容器构建以 `uv sync --locked` 安装依赖，
+> 改 `requirements*.txt` 已不影响镜像内容。该适配仅作用于构建上下文，属服务器本地改动，不要提交回仓库。
 
 > 国产化数据库替换涉及迁移文件与第三方库兼容性，属大变更：先建独立分支跑全量门禁（pytest + E2E），并登记 ADR 后再合入。
 
