@@ -1,3 +1,11 @@
+# 构建参数（可用环境变量覆盖，无需改本文件）：
+#   PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple docker compose build
+#   UV_CONCURRENT_DOWNLOADS=8 docker compose build      # 镜像源按 IP 限流时调小，总吞吐反而更高
+x-build-args: &xadmin-build-args
+  PIP_MIRROR: ${PIP_MIRROR:-https://mirrors.aliyun.com/pypi/simple}
+  APT_MIRROR: ${APT_MIRROR:-http://mirrors.aliyun.com}
+  UV_CONCURRENT_DOWNLOADS: ${UV_CONCURRENT_DOWNLOADS:-50}
+
 networks:
   net:
     driver: bridge
@@ -124,6 +132,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-dev
+      args: *xadmin-build-args
     ulimits:
       core: 0
     restart: always
@@ -151,6 +160,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-dev
+      args: *xadmin-build-args
     ulimits:
       core: 0
     restart: always
@@ -177,6 +187,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-dev
+      args: *xadmin-build-args
     ulimits:
       core: 0
     restart: always
@@ -203,6 +214,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-dev
+      args: *xadmin-build-args
     ulimits:
       core: 0
     restart: always

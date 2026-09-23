@@ -25,22 +25,29 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
     && echo "no" | dpkg-reconfigure dash
 
 
+# uv 工具链（独立层：改依赖时不会重复下载 uv wheel；pip 缓存走 /root/.cache 挂载复用）
+ARG UV_VERSION=0.12.5
+
+RUN --mount=type=cache,target=/root/.cache,id=core \
+    pip install "uv==${UV_VERSION}" -i ${PIP_MIRROR}
+
 # install dependencies（以 uv.lock 为唯一安装依据，含 dev 组）
 # venv 置于 /data/py3：源码目录 /data/xadmin-server 运行时会被宿主 bind mount 覆盖，
 # 环境放在挂载点内会被宿主目录遮蔽。
 # 用 --frozen 而非 --locked：镜像源候选集与 PyPI 不一致时 --locked 会误报「lock 需更新」
 # （见 Dockerfile-base 同处注释）。
-ARG UV_VERSION=0.12.5
+# UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高。
+ARG UV_CONCURRENT_DOWNLOADS=50
 
 RUN --mount=type=cache,target=/root/.cache,id=core \
     --mount=type=bind,source=pyproject.toml,target=/data/xadmin-server/pyproject.toml \
     --mount=type=bind,source=uv.lock,target=/data/xadmin-server/uv.lock \
     set -ex \
-    && pip install --no-cache-dir "uv==${UV_VERSION}" -i ${PIP_MIRROR} \
     && cd /data/xadmin-server \
     && UV_PROJECT_ENVIRONMENT=/data/py3 \
        UV_PYTHON_DOWNLOADS=0 \
        UV_LINK_MODE=copy \
+       UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
        uv sync --frozen --all-groups --python-preference only-system --default-index ${PIP_MIRROR} \
     && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR}
 

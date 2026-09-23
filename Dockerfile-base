@@ -32,15 +32,21 @@ WORKDIR /data/
 
 ARG PIP_MIRROR=https://pypi.org/simple
 ARG UV_VERSION=0.12.5
+# UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高
+ARG UV_CONCURRENT_DOWNLOADS=50
+
+# uv 工具链（独立层：改依赖时不会重复下载 uv wheel；pip 缓存走 /root/.cache 挂载复用）
+RUN --mount=type=cache,target=/root/.cache,id=core \
+    pip install "uv==${UV_VERSION}" -i ${PIP_MIRROR}
 
 RUN --mount=type=cache,target=/root/.cache,id=core \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     set -ex \
-    && pip install --no-cache-dir "uv==${UV_VERSION}" -i ${PIP_MIRROR} \
     && UV_PROJECT_ENVIRONMENT=/data/py3 \
        UV_PYTHON_DOWNLOADS=0 \
        UV_LINK_MODE=copy \
        UV_COMPILE_BYTECODE=1 \
+       UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
        uv sync --frozen --no-dev --python-preference only-system --default-index ${PIP_MIRROR} \
     && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR}
