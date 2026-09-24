@@ -114,6 +114,64 @@ class TestUnifiedRows:
         assert row["type"] == "import" and row["total"] == 10 and row["failed_rows"] == 1
         assert str(record.pk) == row["pk"]
 
+    def test_task_rows_exclude_product_backed_executions(self, superuser):
+        """导出/导入记录投递时补建的执行行由产物行承载：统一视图按 pk 排除，一件事只显示一行。"""
+        record = _export(superuser, name="报表导出")
+        # 同一 pk 的执行历史（pk = celery task_id 契约，after_task_publish 自动补建）
+        TaskExecution.objects.create(pk=record.pk, name="system.tasks.run_report", creator=superuser)
+        standalone = TaskExecution.objects.create(pk="2" * 32, name="system.tasks.cleanup", creator=superuser)
+
+        rows, total = unified_rows(superuser)
+        assert [row["pk"] for row in rows].count(str(record.pk)) == 1  # 只以产物行出现一次
+        assert total == 2  # 1 条产物行 + 1 条独立执行行
+
+        task_rows, task_total = unified_rows(superuser, types=["task"])
+        assert task_total == 1 and len(task_rows) == 1
+        # 断言按名称（pk 形态：32 位字符串主键入库后按带连字符 UUID 输出）
+        assert task_rows[0]["name"] == standalone.name
+
+    def test_creator_and_time_range_filters(self, superuser, normal_user):
+        """触发人按用户名模糊匹配；时间范围过滤沿用 created_time 口径。"""
+        _export(superuser, name="超管导出")
+        _export(normal_user, name="用户导出")
+        TaskExecution.objects.create(pk="3" * 32, name="system.tasks.demo", creator=normal_user)
+
+        rows, total = unified_rows(superuser, creator=normal_user.username)
+        assert total == 2 and all(row["creator"] == normal_user.username for row in rows)
+
+        future = timezone.now() + timezone.timedelta(days=1)
+        past = timezone.now() - timezone.timedelta(days=1)
+        assert unified_rows(superuser, start=future)[1] == 0
+        assert unified_rows(superuser, end=past)[1] == 0
+        assert unified_rows(superuser, start=past, end=future)[1] == 3
+
+    def test_task_row_exposes_cost_and_periodic_task(self, superuser):
+        """执行行补齐耗时与所属定时任务，并标记可在任务中心清理。"""
+        from django_celery_beat.models import CrontabSchedule, PeriodicTask
+
+        schedule = CrontabSchedule.objects.create(
+            minute="1", hour="2", day_of_week="*", day_of_month="*", month_of_year="*"
+        )
+        periodic = PeriodicTask.objects.create(
+            name="每日清理", task="system.tasks.auto_clean_operation_job", crontab=schedule
+        )
+        finished = timezone.now()
+        TaskExecution.objects.create(
+            pk="4" * 32,
+            name="system.tasks.auto_clean_operation_job",
+            periodic_task=periodic,
+            creator=superuser,
+            status=TaskExecution.Status.SUCCESS,
+            date_start=finished - timezone.timedelta(seconds=5),
+            date_finished=finished,
+        )
+
+        row = unified_rows(superuser, types=["task"])[0][0]
+        assert row["periodic_task"] == "每日清理"
+        assert row["time_cost"] == 5.0
+        assert row["can_delete"] is True
+        assert row["module"] == ""
+
 
 class TestCancel:
     def test_pending_cancelled_immediately(self, superuser, _no_broker):

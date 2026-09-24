@@ -37,15 +37,18 @@ class SystemTaskCenterViewSet(GenericViewSet):
     def list(self, request, *args, **kwargs):
         """统一任务列表：``type`` 多选（task/export/import）、``status``/``keyword``/时间范围可过滤。"""
         types = [item.strip() for item in str(request.query_params.get("type") or "").split(",") if item.strip()]
+        params = request.query_params
+        # 时间范围同时接受列表页惯例的 created_time_after/before 与简写 start/end
         rows, total = task_center.unified_rows(
             request.user,
             types=types or None,
-            status=str(request.query_params.get("status") or "").strip(),
-            keyword=str(request.query_params.get("keyword") or "").strip(),
-            start=parse_datetime(str(request.query_params.get("start") or "")),
-            end=parse_datetime(str(request.query_params.get("end") or "")),
-            page=_int_param(request.query_params.get("page"), 1, minimum=1, maximum=10000),
-            size=_int_param(request.query_params.get("size"), 15),
+            status=str(params.get("status") or "").strip(),
+            keyword=str(params.get("keyword") or "").strip(),
+            creator=str(params.get("creator") or "").strip(),
+            start=parse_datetime(str(params.get("created_time_after") or params.get("start") or "")),
+            end=parse_datetime(str(params.get("created_time_before") or params.get("end") or "")),
+            page=_int_param(params.get("page"), 1, minimum=1, maximum=10000),
+            size=_int_param(params.get("size"), 15),
         )
         return ApiResponse(data={"results": rows, "total": total})
 

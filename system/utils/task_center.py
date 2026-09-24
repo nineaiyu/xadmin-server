@@ -17,6 +17,10 @@
 
 重跑口径（白名单，不开放任意重跑）：导出 / 导入 / 报表三类；新记录归属操作者，
 重放原任务参数（视图路径由原记录的 ``path`` 反解），产物与审计与首次执行同链路。
+
+执行历史（``TaskExecution``）已收敛到本页：任务日志页停用，其权限点迁到任务中心
+菜单下；导出/导入记录投递时补建的同 pk 执行行由产物行承载，统一视图按 pk 排除
+——同一件事只出现一行。顶栏任务中心抽屉保留为快捷入口。
 """
 
 from django.core.cache import cache
@@ -143,14 +147,18 @@ def _stage_of(record) -> str:
 
 
 def _task_row(record) -> dict:
+    time_cost = record.time_cost
     return {
         "type": TYPE_TASK,
         "pk": str(record.pk),
         "name": str(record.name or ""),
-        "module": str(getattr(record.periodic_task, "name", "") or ""),
+        "module": "",
+        # 执行历史无「来源模块」，所属定时任务单独成列（对手动执行留空）
+        "periodic_task": str(getattr(record.periodic_task, "name", "") or ""),
         "status": str(record.status),
         "progress": progress_of(record, TYPE_TASK),
         "stage": _stage_of(record),
+        "time_cost": round(time_cost, 3) if time_cost is not None else None,
         "creator": _creator_name(record),
         "created_time": _iso(record.created_time),
         "finished_time": _iso(record.date_finished),
@@ -158,6 +166,8 @@ def _task_row(record) -> dict:
         "has_file": False,
         "can_cancel": str(record.status) in ACTIVE_STATUSES,
         "can_rerun": False,
+        # 执行历史可在本页清理；产物记录（导出/导入）的删除仍在下载中心
+        "can_delete": True,
     }
 
 
@@ -175,8 +185,11 @@ def _export_row(record) -> dict:
         "finished_time": _iso(record.updated_time) if str(record.status) not in ACTIVE_STATUSES else None,
         "error": str(record.error or "")[:500],
         "has_file": bool(record.file_id),
+        "periodic_task": "",
+        "time_cost": None,
         "can_cancel": str(record.status) in ACTIVE_STATUSES,
         "can_rerun": str(record.status) not in ACTIVE_STATUSES,
+        "can_delete": False,
     }
 
 
@@ -197,17 +210,22 @@ def _import_row(record) -> dict:
         "total": record.total,
         "success_rows": record.success_rows,
         "failed_rows": record.failed_rows,
+        "periodic_task": "",
+        "time_cost": None,
         "can_cancel": str(record.status) in ACTIVE_STATUSES,
         "can_rerun": bool(record.source_file_id) and str(record.status) not in ACTIVE_STATUSES,
+        "can_delete": False,
     }
 
 
-def unified_rows(user, *, types=None, status="", keyword="", start=None, end=None, page=1, size=15):
+def unified_rows(user, *, types=None, status="", keyword="", creator="", start=None, end=None, page=1, size=15):
     """跨类型合并的任务行（按创建时间倒序 + 分页）。
 
     每类型先按各类型过滤条件取候选窗口（上限 ``MAX_UNIFIED_ROWS``）再合并排序，
     避免为统一视图引入第四张表或跨库 JOIN。
     """
+    from django.db.models import Exists, OuterRef, Q
+
     from system.models.export import ExportRecord
     from system.models.import_ import ImportRecord
     from system.models.task import TaskExecution
@@ -219,26 +237,43 @@ def unified_rows(user, *, types=None, status="", keyword="", start=None, end=Non
     # 前 N×size 行内（各类型自身按创建时间倒序），无需全表扫描即可保证分页正确性
     window = min(MAX_UNIFIED_ROWS, page * size)
 
-    def _filtered(queryset, keyword_field="name"):
+    def _filtered(queryset, keyword_q):
         queryset = _time_filters(_owner_filter(queryset, user), start, end)
         if status:
             queryset = queryset.filter(status=status)
         if keyword:
-            queryset = queryset.filter(**{f"{keyword_field}__icontains": keyword})
+            queryset = queryset.filter(keyword_q)
+        if creator:
+            queryset = queryset.filter(creator__username__icontains=creator)
         return queryset.order_by("-created_time")
 
     rows = []
     total = 0
     if TYPE_TASK in kinds:
-        queryset = _filtered(TaskExecution.objects.all())
+        # 同一主键契约：导出/导入记录投递时会自动补建同 pk 的 TaskExecution
+        # （pk = celery task_id），这部分执行历史已由产物行承载 —— 统一视图按 pk
+        # 排除，否则同一个任务会显示两行（「任务」+「导出/导入」）。
+        product_exists = Exists(ExportRecord.objects.filter(pk=OuterRef("pk"))) | Exists(
+            ImportRecord.objects.filter(pk=OuterRef("pk"))
+        )
+        queryset = _filtered(
+            TaskExecution.objects.annotate(_has_product=product_exists).filter(_has_product=False),
+            Q(name__icontains=keyword) | Q(periodic_task__name__icontains=keyword),
+        )
         total += queryset.count()
         rows += [_task_row(row) for row in queryset.select_related("periodic_task", "creator")[:window]]
     if TYPE_EXPORT in kinds:
-        queryset = _filtered(ExportRecord.objects.all())
+        queryset = _filtered(
+            ExportRecord.objects.all(),
+            Q(name__icontains=keyword) | Q(module__icontains=keyword),
+        )
         total += queryset.count()
         rows += [_export_row(row) for row in queryset.select_related("creator", "file")[:window]]
     if TYPE_IMPORT in kinds:
-        queryset = _filtered(ImportRecord.objects.all())
+        queryset = _filtered(
+            ImportRecord.objects.all(),
+            Q(name__icontains=keyword) | Q(module__icontains=keyword),
+        )
         total += queryset.count()
         rows += [_import_row(row) for row in queryset.select_related("creator", "source_file")[:window]]
     rows.sort(key=lambda row: row["created_time"] or timezone.now(), reverse=True)
