@@ -221,6 +221,7 @@ class SearchColumnsAction:
                             ),
                             "choices_truncated": build_basic_type(OpenApiTypes.BOOL),
                             "sortable": build_basic_type(OpenApiTypes.BOOL),
+                            "lookups": build_array_type(build_basic_type(OpenApiTypes.STR)),
                         }
                     )
                 )
@@ -331,5 +332,14 @@ class SearchColumnsAction:
             if tabs_info and tabs_label:
                 info["tabs_index"] = tabs_info.get(key, 0)
                 info["tabs_label"] = tabs_label[info["tabs_index"]]
+            # 受控 lookup：开启 controlled_lookup 的视图，为白名单字段下发可用表达式，
+            # 前端高级筛选据此渲染字段候选与操作符（与后端白名单同源，避免「选到即 400」）
+            if getattr(self, "controlled_lookup", False):
+                from common.core.filter import ControlledLookupFilterBackend
+
+                lookup_source = value.source if isinstance(value.source, str) else key
+                lookups = ControlledLookupFilterBackend.field_lookups(self, field, lookup_source)
+                if lookups:
+                    info["lookups"] = lookups
             results.append(info)
         return ApiResponse(data=results)

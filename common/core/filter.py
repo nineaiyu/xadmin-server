@@ -9,7 +9,18 @@ from types import SimpleNamespace
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import FieldDoesNotExist, ValidationError
-from django.db.models import BooleanField, ManyToManyField, Q, QuerySet
+from django.db.models import (
+    BooleanField,
+    DateField,
+    DateTimeField,
+    DecimalField,
+    FloatField,
+    IntegerField,
+    ManyToManyField,
+    Q,
+    QuerySet,
+    TimeField,
+)
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.fields import MultipleChoiceField
@@ -261,6 +272,31 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
         if exclude:
             queryset = queryset.exclude(exclude)
         return queryset.filter(include) if include else queryset
+
+    # 按字段类型细化的可用表达式（下发前端高级筛选，避免给出后端必然拒绝的选项）
+    range_lookups = ("exact", "in", "gte", "lte", "isnull", "ne")
+    text_lookups = ("exact", "icontains", "startswith", "in", "isnull", "ne")
+    bool_lookups = ("exact", "isnull", "ne")
+
+    @classmethod
+    def available_lookups(cls, model_field) -> list:
+        """字段类型对应的可用 lookup（与 filter_queryset 的判定同源）。"""
+        if model_field is None:
+            return []
+        if isinstance(model_field, ManyToManyField):
+            return list(cls.m2m_lookups)
+        if isinstance(model_field, BooleanField):
+            return list(cls.bool_lookups)
+        if isinstance(model_field, (DateField, DateTimeField, TimeField, IntegerField, FloatField, DecimalField)):
+            return list(cls.range_lookups)
+        return list(cls.text_lookups)
+
+    @classmethod
+    def field_lookups(cls, view, model_field, field_name: str) -> list:
+        """视图白名单命中的字段可用 lookup；未命中返回空列表（前端不下发该字段）。"""
+        if model_field is None or field_name not in cls._allowed_fields(view):
+            return []
+        return cls.available_lookups(model_field)
 
     @staticmethod
     def _allowed_fields(view) -> set:
