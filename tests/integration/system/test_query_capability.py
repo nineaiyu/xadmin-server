@@ -87,6 +87,22 @@ class TestControlledLookup:
         rows = _rows(auth_client.get(USER_URL, {"page": 1, "size": 100, "username__isnull": "false"}))
         assert len(rows) >= 3
 
+    def test_in_accepts_repeated_params(self, auth_client, lookup_users):
+        """重复参数（前端数组序列化 arrayFormat=repeat）与逗号分隔等价，不再只命中第一个值。"""
+        rows = _rows(
+            auth_client.get(USER_URL, {"page": 1, "size": 100, "username__in": ["lookup_alpha", "lookup_beta"]})
+        )
+        assert {row["username"] for row in rows} == {"lookup_alpha", "lookup_beta"}
+
+    def test_search_columns_exposes_field_lookups(self, auth_client, lookup_users):
+        """列元数据下发字段级 lookups（前端高级筛选候选与条件同源），主键按 key 兜底命中。"""
+        resp = auth_client.get(f"{USER_URL}/search-columns")
+        assert resp.status_code == 200, resp.content
+        columns = {item["key"]: item for item in resp.json()["data"]}
+        assert columns["gender"]["lookups"] == ["exact", "in", "gte", "lte", "isnull", "ne"]
+        assert "exact" in columns["pk"]["lookups"]
+        assert "lookups" not in columns.get("avatar", {})
+
     def test_pk_in(self, auth_client, lookup_users):
         pks = ",".join(str(user.pk) for user in lookup_users[:2])
         rows = _rows(auth_client.get(USER_URL, {"page": 1, "size": 100, "pk__in": pks}))

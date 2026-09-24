@@ -337,9 +337,22 @@ class SearchColumnsAction:
             if getattr(self, "controlled_lookup", False):
                 from common.core.filter import ControlledLookupFilterBackend
 
-                lookup_source = value.source if isinstance(value.source, str) else key
-                lookups = ControlledLookupFilterBackend.field_lookups(self, field, lookup_source)
-                if lookups:
-                    info["lookups"] = lookups
+                # 序列化器 source 与 filterset 字段名可能不一致（主键字段 pk 的 source 为 id / 空）：
+                # 依次按 source、key 解析模型字段与白名单，首个命中即下发
+                candidates = []
+                source_name = value.source if isinstance(value.source, str) else None
+                if source_name:
+                    candidates.append(source_name)
+                if key not in candidates:
+                    candidates.append(key)
+                model_cls = getattr(meta, "model", None)
+                for name in candidates:
+                    model_field = (
+                        ControlledLookupFilterBackend._model_field(model_cls, name) if model_cls is not None else None
+                    )
+                    lookups = ControlledLookupFilterBackend.field_lookups(self, model_field, name)
+                    if lookups:
+                        info["lookups"] = lookups
+                        break
             results.append(info)
         return ApiResponse(data=results)

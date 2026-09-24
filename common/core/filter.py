@@ -263,12 +263,12 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
                 raise RestValidationError(_("Unsupported filter expression: %(key)s") % {"key": key})
             if not self._field_visible(request, model_label, field_name):
                 raise RestValidationError(_("No permission to filter by field: %(field)s") % {"field": field_name})
-            value = request.query_params.get(key)
+            values = request.query_params.getlist(key)
             if lookup == "ne":
-                exclude &= Q(**{field_name: self._coerce(model_field, value)})
+                exclude &= Q(**{field_name: self._coerce(model_field, values)})
                 continue
             lookup_expr = field_name if lookup == "exact" else f"{field_name}__{lookup}"
-            include &= Q(**{lookup_expr: self._coerce(model_field, value, lookup)})
+            include &= Q(**{lookup_expr: self._coerce(model_field, values, lookup)})
         if exclude:
             queryset = queryset.exclude(exclude)
         return queryset.filter(include) if include else queryset
@@ -334,15 +334,24 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
             return False
         return field_name in (allowed.get(model_label) or ())
 
-    def _coerce(self, model_field, value, lookup: str = "exact"):
+    def _coerce(self, model_field, values, lookup: str = "exact"):
+        """查询参数值 → ORM 值。
+
+        `values` 为同一参数名的重复值列表（``getlist``）：既支持 ``a,b`` 逗号分隔，
+        也支持客户端数组序列化出的重复参数（``arrayFormat=repeat``）——此前只取
+        第一个值，多值 ``in`` 会静默退化成单值。
+        """
+        first = str(values[0]) if values else ""
         if lookup == "isnull":
-            return str(value).strip().lower() in ("1", "true", "yes", "on")
+            return first.strip().lower() in ("1", "true", "yes", "on")
         if lookup == "in":
-            values = [item.strip() for item in str(value).split(",") if item.strip()]
-            if not values:
+            items = []
+            for value in values:
+                items.extend(item.strip() for item in str(value).split(",") if item.strip())
+            if not items:
                 raise RestValidationError(_("Invalid filter value for %(field)s") % {"field": model_field.name})
-            return [self._to_python(model_field, item) for item in values]
-        return self._to_python(model_field, value)
+            return [self._to_python(model_field, item) for item in items]
+        return self._to_python(model_field, first)
 
     @staticmethod
     def _to_python(model_field, value):
