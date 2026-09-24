@@ -19,8 +19,19 @@ PARENT_MENU_MAP = {
 # 审计豁免（有权限点但不在可扫描路由面内，运行期经权限链正则回退命中，权限点有效）：
 # - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
 # - api-docs/*、api/flower/*、api/system/global-search：路由以无名 pattern / 代理注册，
-#   get_all_url_dict 忽略无名路由，故不出现在扫描面内。
-AUDIT_SKIP_PREFIXES = ("api/chat/", "api-docs/", "api/flower/", "api/system/global-search")
+#   get_all_url_dict 忽略无名路由，故不出现在扫描面内；
+# - api/system/ai/mcp：MCP 端点是无 actions 的 APIView，审计按 route.actions 过滤方法时
+#   恒不匹配；运行期由 IsAuthenticated 权限链按 path 正则命中权限点（非超管未授权即 403）；
+# - api/system/approval-instances/ongoing：页签级权限点（scope=ongoing 管理视角，无独立端点），
+#   经 common/core/permission.user_has_permission 按 path 授权，属设计内的功能开关权限点。
+AUDIT_SKIP_PREFIXES = (
+    "api/chat/",
+    "api-docs/",
+    "api/flower/",
+    "api/system/global-search",
+    "api/system/ai/mcp",
+    "api/system/approval-instances/ongoing",
+)
 # 已知「同端点双权限码」重复点：各自服务不同 UI 入口/动作（非脏数据，不报告、不合并）：
 # - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
 # - logs/operation GET：操作日志页(list:SystemOperationLog) 与用户页「变更历史」(changeHistory:SystemUser)；

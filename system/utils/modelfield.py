@@ -133,6 +133,23 @@ def get_app_model_fields():
     return {"kept": len(kept), "deleted": deleted, "models": processed}
 
 
+def _warmup_urlconf():
+    """预热 URLconf，确保各 app 的 views/serializers 模块已导入。
+
+    ``get_sub_serializer_fields`` 依赖 ``BaseModelSerializer.__subclasses__()``：管理命令
+    环境下 views 模块默认不加载，能收集到的序列化器子类远少于运行期（实测 36 vs 765 条），
+    ROLE 字段树会大面积缺项——角色页无法为这些字段配置权限白名单，且种子回写会把缺项固化。
+    预热失败不阻断（URLconf 异常时保持原行为）。
+    """
+    try:
+        from django.urls import get_resolver
+
+        # 访问 url_patterns 触发 URLconf 解析（include 是惰性导入，仅 import 模块不够）
+        _ = get_resolver().url_patterns
+    except Exception:  # noqa: BLE001 URLconf 不可用时降级
+        logger.warning("urlconf warm-up failed, role field tree may be incomplete", exc_info=True)
+
+
 @transaction.atomic
 def sync_model_field():
     """同步模型字段数据到数据库（角色字段树 + 数据权限字段树）。
@@ -141,6 +158,7 @@ def sync_model_field():
     ``{"data": {...}, "role": {...}}``
     """
     activate(settings.LANGUAGE_CODE)
+    _warmup_urlconf()
     data = get_app_model_fields()
     role = get_sub_serializer_fields()
     return {"data": data, "role": role}

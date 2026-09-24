@@ -13959,16 +13959,18 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "GET",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "list:SystemApprovalRule",
    "rank": 1,
    "path": "api/system/approval-rules$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c402"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c402",
+   "method": "GET",
+   "model": [
+    "8cb76db9-2c2f-4dd3-9932-ab0c162fab38"
+   ]
   }
  },
  {
@@ -13982,16 +13984,18 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "POST",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "create:SystemApprovalRule",
    "rank": 2,
    "path": "api/system/approval-rules$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c403"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c403",
+   "method": "POST",
+   "model": [
+    "8cb76db9-2c2f-4dd3-9932-ab0c162fab38"
+   ]
   }
  },
  {
@@ -14005,16 +14009,18 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "GET",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "retrieve:SystemApprovalRule",
    "rank": 3,
    "path": "api/system/approval-rules/(?P<pk>[^/.]+)$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c404"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c404",
+   "method": "GET",
+   "model": [
+    "8cb76db9-2c2f-4dd3-9932-ab0c162fab38"
+   ]
   }
  },
  {
@@ -14028,16 +14034,18 @@
    "modifier": 1,
    "dept_belong": null,
    "deleted_at": null,
-   "is_active": true,
-   "method": "PATCH",
-   "model": [],
    "parent": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c400",
    "menu_type": 2,
    "name": "partialUpdate:SystemApprovalRule",
    "rank": 4,
    "path": "api/system/approval-rules/(?P<pk>[^/.]+)$",
    "component": null,
-   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c405"
+   "is_active": true,
+   "meta": "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c405",
+   "method": "PATCH",
+   "model": [
+    "8cb76db9-2c2f-4dd3-9932-ab0c162fab38"
+   ]
   }
  },
  {
@@ -14392,12 +14400,13 @@
   "model": "system.menu",
   "pk": "bd5cfbb2-1e47-513d-ab83-a38978b32c71",
   "fields": {
-   "created_time": "2026-09-22T00:00:00.000Z",
-   "updated_time": "2026-09-22T00:00:00.000Z",
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "5d6774f0-eb58-5b3d-820f-8cad780d4111",
    "menu_type": 2,
    "name": "list:Tag",
@@ -14407,19 +14416,22 @@
    "is_active": true,
    "meta": "47bc0dd2-935c-59ac-a96b-4f68c1885e47",
    "method": "GET",
-   "model": []
+   "model": [
+    "f6ea7184-1167-4e5e-9bd3-6a7e7d83e46e"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "0b32818b-e7d4-58a2-b38b-c5c6d1f2b19d",
   "fields": {
-   "created_time": "2026-09-22T00:00:00.000Z",
-   "updated_time": "2026-09-22T00:00:00.000Z",
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "5d6774f0-eb58-5b3d-820f-8cad780d4111",
    "menu_type": 2,
    "name": "create:Tag",
@@ -14429,19 +14441,22 @@
    "is_active": true,
    "meta": "1378e35c-3523-53e7-8373-da98b360eebe",
    "method": "POST",
-   "model": []
+   "model": [
+    "f6ea7184-1167-4e5e-9bd3-6a7e7d83e46e"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "de211450-039b-5c52-abed-62cb0b68333a",
   "fields": {
-   "created_time": "2026-09-22T00:00:00.000Z",
-   "updated_time": "2026-09-22T00:00:00.000Z",
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "5d6774f0-eb58-5b3d-820f-8cad780d4111",
    "menu_type": 2,
    "name": "retrieve:Tag",
@@ -14451,19 +14466,22 @@
    "is_active": true,
    "meta": "1591fd9b-f042-52e2-a543-d52e6b78172a",
    "method": "GET",
-   "model": []
+   "model": [
+    "f6ea7184-1167-4e5e-9bd3-6a7e7d83e46e"
+   ]
   }
  },
  {
   "model": "system.menu",
   "pk": "4526afb2-fd26-5475-b196-172ef612f795",
   "fields": {
-   "created_time": "2026-09-22T00:00:00.000Z",
-   "updated_time": "2026-09-22T00:00:00.000Z",
+   "created_time": "2026-09-22T00:00:00Z",
+   "updated_time": "2026-09-22T00:00:00Z",
    "description": null,
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,
+   "deleted_at": null,
    "parent": "5d6774f0-eb58-5b3d-820f-8cad780d4111",
    "menu_type": 2,
    "name": "partialUpdate:Tag",
@@ -14473,7 +14491,9 @@
    "is_active": true,
    "meta": "e1840fd8-722a-5df9-ad73-5bbbe1d6d430",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "f6ea7184-1167-4e5e-9bd3-6a7e7d83e46e"
+   ]
   }
  },
  {
@@ -14809,6 +14829,7 @@
    "meta": "b6449a27-d00a-447d-b589-9d7b835d3838",
    "method": "GET",
    "model": [
+    "ee4d9a25-3f44-47a6-8a78-5461707576c1",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
   }
@@ -15086,7 +15107,9 @@
    "is_active": true,
    "meta": "ff8dc68f-2527-486d-a53d-52a698c6adaf",
    "method": "GET",
-   "model": []
+   "model": [
+    "79783ad2-aa29-489f-a8b0-f61b3aff5edc"
+   ]
   }
  },
  {
@@ -15109,7 +15132,9 @@
    "is_active": true,
    "meta": "62d1a4d3-3650-4e6a-96ed-435a43d0069e",
    "method": "POST",
-   "model": []
+   "model": [
+    "79783ad2-aa29-489f-a8b0-f61b3aff5edc"
+   ]
   }
  },
  {
@@ -15155,7 +15180,9 @@
    "is_active": true,
    "meta": "6f2a65d2-0aee-4ada-b230-a1beff551ac3",
    "method": "GET",
-   "model": []
+   "model": [
+    "79783ad2-aa29-489f-a8b0-f61b3aff5edc"
+   ]
   }
  },
  {
@@ -15178,7 +15205,9 @@
    "is_active": true,
    "meta": "ea940886-98b4-41ce-9633-bd03a422ae31",
    "method": "PATCH",
-   "model": []
+   "model": [
+    "79783ad2-aa29-489f-a8b0-f61b3aff5edc"
+   ]
   }
  },
  {

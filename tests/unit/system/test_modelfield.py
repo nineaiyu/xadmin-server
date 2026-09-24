@@ -89,6 +89,23 @@ class TestSyncModelField:
         sync_model_field()
         assert not ModelLabelField.objects.filter(pk=stale.pk).exists()
 
+    def test_role_tree_covers_key_models(self):
+        """ROLE 字段树必须覆盖已导入序列化器的模型节点（URLconf 预热，规模不得退化）。
+
+        历史缺陷：管理命令环境下 views 模块未导入，``BaseModelSerializer.__subclasses__()``
+        只能收集到少量子类（实测 36 vs 765 条），角色页无法为缺失字段配置权限白名单，
+        且种子回写会把缺项固化。
+        """
+        from system.models import ModelLabelField
+        from system.utils.modelfield import sync_model_field
+
+        sync_model_field()
+        role_qs = ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.ROLE)
+        assert role_qs.count() > 300, f"ROLE 字段树规模异常（{role_qs.count()}），检查 URLconf 预热"
+        covered = set(role_qs.filter(parent=None).values_list("name", flat=True))
+        for model_label in ("system.userinfo", "system.menu", "system.userrole", "system.datadict"):
+            assert model_label in covered, f"ROLE 字段树缺模型节点：{model_label}"
+
     def test_broken_serializer_is_skipped_not_fatal(self):
         """单个序列化器实例化异常只跳过并登记，不中断全量同步。"""
         from common.core.serializers import BaseModelSerializer
