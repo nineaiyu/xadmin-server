@@ -30,6 +30,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
 # PyPI 候选集不完全一致时会误报「lock 需更新」；lock ↔ pyproject 同步由 CI 的 uv lock --check 守护。
 WORKDIR /data/
 
+# 默认官方源：本 Dockerfile 由 CI（海外 runner）构建基础镜像。
+# 国内本地构建可 --build-arg PIP_MIRROR=https://mirrors.cloud.tencent.com/pypi/simple
 ARG PIP_MIRROR=https://pypi.org/simple
 ARG UV_VERSION=0.12.5
 # UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高

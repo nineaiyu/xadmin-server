@@ -1,7 +1,7 @@
 FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.14.7-slim
 
-# add pip cn mirrors
-ARG PIP_MIRROR=https://mirrors.aliyun.com/pypi/simple
+# add pip cn mirrors（腾讯云：阿里云 PyPI 镜像偶有版本同步滞后，曾缺 psycopg-pool==3.3.3 导致构建失败）
+ARG PIP_MIRROR=https://mirrors.cloud.tencent.com/pypi/simple
 ARG APT_MIRROR=http://mirrors.aliyun.com
 
 # Install APT dependencies
@@ -37,6 +37,8 @@ RUN --mount=type=cache,target=/root/.cache,id=core \
 # 不用 `uv sync --frozen`：--frozen 不重新解析，会直接用 uv.lock 里固化的 pythonhosted.org
 # 下载地址、绕过镜像源（astral-sh/uv#19625，详见 Dockerfile-base 同处注释）。
 # UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高。
+# -r 与挂载 target 都用绝对路径：本 RUN 执行时工作目录仍是基础镜像的 /（WORKDIR 在文件末尾才设置），
+# 相对路径会解析到 /requirements.txt，报 "File not found: requirements.txt"。
 ARG UV_CONCURRENT_DOWNLOADS=50
 
 RUN --mount=type=cache,target=/root/.cache,id=core \
@@ -45,7 +47,10 @@ RUN --mount=type=cache,target=/root/.cache,id=core \
     set -ex \
     && UV_PYTHON_DOWNLOADS=0 uv venv --python-preference only-system /data/py3 \
     && UV_CONCURRENT_DOWNLOADS=${UV_CONCURRENT_DOWNLOADS} \
-       uv pip install --python /data/py3 -r requirements.txt -r requirements-dev.txt --index-url ${PIP_MIRROR} \
+       uv pip install --python /data/py3 \
+          -r /data/xadmin-server/requirements.txt \
+          -r /data/xadmin-server/requirements-dev.txt \
+          --index-url ${PIP_MIRROR} \
     && uv pip install --python /data/py3 pip setuptools --index-url ${PIP_MIRROR}
 
 ENV PATH=/data/py3/bin:$PATH

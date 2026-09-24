@@ -1,8 +1,8 @@
 # 构建参数（可用环境变量覆盖，无需改本文件）：
-#   PIP_MIRROR=https://pypi.tuna.tsinghua.edu.cn/simple docker compose build
+#   PIP_MIRROR=https://pypi.org/simple docker compose build   # 默认腾讯云；镜像源同步滞后缺版本时用它兜底
 #   UV_CONCURRENT_DOWNLOADS=8 docker compose build      # 镜像源按 IP 限流时调小，总吞吐反而更高
 x-build-args: &xadmin-build-args
-  PIP_MIRROR: ${PIP_MIRROR:-https://mirrors.aliyun.com/pypi/simple}
+  PIP_MIRROR: ${PIP_MIRROR:-https://mirrors.cloud.tencent.com/pypi/simple}
   APT_MIRROR: ${APT_MIRROR:-http://mirrors.aliyun.com}
   UV_CONCURRENT_DOWNLOADS: ${UV_CONCURRENT_DOWNLOADS:-50}
 
