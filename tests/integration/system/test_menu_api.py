@@ -42,6 +42,20 @@ class TestMenuCrudSmoke:
         assert resp.status_code == 200, resp.data
         assert resp.data["data"]["is_active"] is False
 
+    def test_patch_is_active_without_meta(self, auth_client):
+        """行内启停只提交 is_active：PATCH 不携带 meta 时跳过 meta 更新，不得 500。
+
+        菜单的行内/批量启停是最高频操作，历史实现强制 pop("meta") 会让这类
+        字段级局部更新直接 KeyError（同时打穿批量更新链路）。
+        """
+        pk = _create_menu(auth_client)
+        resp = auth_client.patch(f"{MENU_URL}/{pk}", {"is_active": False}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert resp.data["data"]["is_active"] is False
+        instance = Menu.objects.get(pk=pk)
+        assert instance.is_active is False
+        assert instance.meta.title == "测试菜单"
+
     def test_delete_cascades_meta(self, auth_client):
         pk = _create_menu(auth_client)
         resp = auth_client.delete(f"{MENU_URL}/{pk}")
@@ -85,3 +99,68 @@ class TestMenuApiUrl:
         assert resp.status_code == 200
         assert resp.data["code"] == 1000
         assert len(resp.data["data"]) > 0
+
+
+class TestMenuBatchUpdate:
+    """批量启停：白名单只放开 is_active，逐项走序列化器校验。"""
+
+    def test_batch_disable(self, auth_client):
+        first = _create_menu(auth_client, name="batch-menu-a")
+        second = _create_menu(auth_client, name="batch-menu-b")
+        resp = auth_client.post(
+            f"{MENU_URL}/batch-update",
+            {"pks": [first, second], "fields": {"is_active": False}},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["updated"] == 2
+        assert Menu.objects.filter(pk__in=[first, second], is_active=False).count() == 2
+
+    def test_batch_update_rejects_other_fields(self, auth_client):
+        pk = _create_menu(auth_client, name="batch-menu-c")
+        resp = auth_client.post(
+            f"{MENU_URL}/batch-update",
+            {"pks": [pk], "fields": {"path": "/hacked"}},
+            format="json",
+        )
+        assert resp.data["code"] == 1004
+        assert Menu.objects.get(pk=pk).path == "/test"
+
+
+class TestMenuPermissionPreview:
+    """权限码批量生成：dry_run 预览与执行共用同一构造逻辑（不落库）。"""
+
+    VIEW = "system.views.admin.menu.MenuViewSet"
+
+    def test_dry_run_does_not_persist(self, auth_client):
+        pk = _create_menu(auth_client, name="preview-menu-a")
+        before = Menu.objects.filter(name__endswith=":preview-menu-a").count()
+        resp = auth_client.post(
+            f"{MENU_URL}/{pk}/permissions",
+            {"views": [self.VIEW], "component": "preview-menu-a", "dry_run": True},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        data = resp.data["data"]
+        assert data["create_count"] > 0
+        assert data["update_count"] == 0
+        assert all(item["action"] == "create" for item in data["results"])
+        assert all(item["name"].endswith(":preview-menu-a") for item in data["results"])
+        assert Menu.objects.filter(name__endswith=":preview-menu-a").count() == before
+
+    def test_dry_run_marks_existing_as_update(self, auth_client):
+        pk = _create_menu(auth_client, name="preview-menu-b")
+        payload = {"views": [self.VIEW], "component": "preview-menu-b"}
+        preview = auth_client.post(f"{MENU_URL}/{pk}/permissions", {**payload, "dry_run": True}, format="json")
+        expected = preview.data["data"]["create_count"]
+        assert expected > 0
+
+        created = auth_client.post(f"{MENU_URL}/{pk}/permissions", payload, format="json")
+        assert created.data["code"] == 1000, created.data
+
+        again = auth_client.post(f"{MENU_URL}/{pk}/permissions", {**payload, "dry_run": True}, format="json")
+        assert again.data["data"]["update_count"] == expected
+        assert again.data["data"]["create_count"] == 0
+        assert all(item["action"] == "update" for item in again.data["data"]["results"])

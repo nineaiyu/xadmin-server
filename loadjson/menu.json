@@ -2815,6 +2815,29 @@
  },
  {
   "model": "system.menu",
+  "pk": "b7c9e2f4-3a51-4d8e-9f02-6c1b8d4a7e30",
+  "fields": {
+   "created_time": "2026-09-24T00:00:00.000Z",
+   "updated_time": "2026-09-24T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f569df2-6149-462f-ad50-27f24370f5e2",
+   "menu_type": 2,
+   "name": "batchUpdate:SystemMenu",
+   "rank": 10007,
+   "path": "api/system/menu/batch-update$",
+   "component": null,
+   "is_active": true,
+   "meta": "f1a4d6c8-2b73-4e95-8a10-5d9c3f7b2e64",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
   "pk": "6ceed95d-f143-4c4d-8a22-71310e0d5f75",
   "fields": {
    "created_time": "2024-01-22T09:32:12.480Z",

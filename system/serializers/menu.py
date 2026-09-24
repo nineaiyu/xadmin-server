@@ -62,11 +62,13 @@ class MenuSerializer(BaseModelSerializer):
 
     def update(self, instance, validated_data):
         with transaction.atomic():
-            serializer = MenuMetaSerializer(
-                instance.meta, data=validated_data.pop("meta"), partial=True, context=self.context
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+            # meta 缺省时跳过：行内启停 / 批量启停只提交 is_active，不携带 meta，
+            # 强制要求携带会让所有字段级局部更新（PATCH）直接 500
+            meta_data = validated_data.pop("meta", None)
+            if meta_data is not None:
+                serializer = MenuMetaSerializer(instance.meta, data=meta_data, partial=True, context=self.context)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
             return super().update(instance, validated_data)
 
     def create(self, validated_data):

@@ -15,6 +15,7 @@ from common.base.magic import temporary_disable_signal
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseModelSet,
+    BatchPartialUpdateAction,
     CacheListResponseMixin,
     ChoicesAction,
     ImpactPreviewAction,
@@ -44,6 +45,7 @@ class MenuFilter(BaseFilterSet):
 
 
 class MenuViewSet(
+    BatchPartialUpdateAction,
     RecycleBinAction,
     BaseModelSet,
     ImpactPreviewAction,
@@ -59,6 +61,8 @@ class MenuViewSet(
     pagination_class = DynamicPageNumber(1000)
     ordering_fields = ["updated_time", "name", "created_time", "rank"]
     filterset_class = MenuFilter
+    # 批量更新白名单：批量启停（与行内启停同一字段口径，逐项走序列化器校验）
+    batch_update_fields = ("is_active",)
 
     def get_recycle_restore_queryset(self, pks):
         """成组恢复：目录删除时后代被标记同一 deleted_at，按时间戳成组恢复。"""
@@ -100,9 +104,14 @@ class MenuViewSet(
         """获取后端API列表"""
         return ApiResponse(data=get_all_url_dict(""))
 
-    @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
-    def _save_permissions(self, instance, permissions, skip_existing):
-        # 该代码禁用了信号，菜单数据不刷新
+    def _build_permission_items(self, instance, permissions, skip_existing):
+        """构造待写入的权限点（只读，不落库）。
+
+        返回 ``(action, 已有菜单或 None, 数据)`` 列表：``action=create`` 为新建（标题前缀 C-），
+        ``update`` 为覆盖既有权限点（前缀 U-）；``skip_existing`` 命中时整体跳过——
+        预览与执行共用本方法，保证「所见即所得」。
+        """
+        items = []
         rank = 10000
         for permission in permissions:
             rank += 1
@@ -121,15 +130,41 @@ class MenuViewSet(
                 "meta": {"title": permission.get("description")[:250]},
             }
             permission_menu = self.get_queryset().filter(menu_type=data["menu_type"], name=data["name"]).first()
+            if permission_menu and skip_existing:
+                continue
+            action = "update" if permission_menu else "create"
+            data["meta"]["title"] = ("U-" if permission_menu else "C-") + data["meta"]["title"]
+            items.append((action, permission_menu, data))
+        return items
+
+    @staticmethod
+    def _serialize_permission_items(items):
+        """预览载荷：逐条给出动作、权限码、接口与标题，附新建/覆盖计数。"""
+        results = [
+            {
+                "action": action,
+                "name": data["name"],
+                "path": data["path"],
+                "method": data["method"],
+                "title": data["meta"]["title"],
+            }
+            for action, _target, data in items
+        ]
+        return {
+            "results": results,
+            "create_count": len([item for item in results if item["action"] == "create"]),
+            "update_count": len([item for item in results if item["action"] == "update"]),
+        }
+
+    @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
+    def _save_permission_items(self, items):
+        # 该代码禁用了信号，菜单数据不刷新
+        for _action, permission_menu, data in items:
             if permission_menu:
-                if skip_existing:
-                    continue
-                data["meta"]["title"] = "U-" + data["meta"]["title"]
                 serializer = self.get_serializer(permission_menu, data=data, partial=True, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             else:
-                data["meta"]["title"] = "C-" + data["meta"]["title"]
                 serializer = self.get_serializer(data=data, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
@@ -140,8 +175,11 @@ class MenuViewSet(
                 properties={
                     "views": build_array_type(build_basic_type(OpenApiTypes.STR)),
                     "component": build_basic_type(OpenApiTypes.STR),
+                    "skip_existing": build_basic_type(OpenApiTypes.BOOL),
+                    "dry_run": build_basic_type(OpenApiTypes.BOOL),
                 },
                 required=["views"],
+                description="dry_run=true 仅预览将新建/覆盖的权限点，不落库",
             )
         ),
         responses=get_default_response_schema(),
@@ -152,16 +190,22 @@ class MenuViewSet(
         views = request.data.get("views")
         component = request.data.get("component")
         skip_existing = request.data.get("skip_existing")
+        dry_run = request.data.get("dry_run")
         if isinstance(views, list) and len(views) > 0:
             instance = self.get_object()
-
+            items = []
             for view in views:
                 code_suffix = view.split(".")[-1].replace("ViewSet", " ").replace("APIView", " ")
-                if len(views) == 1:
-                    if component:
-                        code_suffix = component
-                self._save_permissions(instance, get_view_permissions(view, code_suffix), skip_existing)
+                if len(views) == 1 and component:
+                    code_suffix = component
+                items.extend(
+                    self._build_permission_items(instance, get_view_permissions(view, code_suffix), skip_existing)
+                )
 
+            if dry_run:
+                return ApiResponse(data=self._serialize_permission_items(items))
+
+            self._save_permission_items(items)
             # 保存数据，触发刷新缓存信号
             instance.save(update_fields=["is_active"])
             return ApiResponse()

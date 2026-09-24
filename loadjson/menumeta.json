@@ -926,6 +926,32 @@
  },
  {
   "model": "system.menumeta",
+  "pk": "f1a4d6c8-2b73-4e95-8a10-5d9c3f7b2e64",
+  "fields": {
+   "created_time": "2026-09-24T00:00:00.000Z",
+   "updated_time": "2026-09-24T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "批量修改菜单",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0,
+   "watermark": false
+  }
+ },
+ {
+  "model": "system.menumeta",
   "pk": "25ec41f4-b92d-44aa-8ac3-437fd4b5fedc",
   "fields": {
    "created_time": "2024-11-01T02:47:52.694Z",
