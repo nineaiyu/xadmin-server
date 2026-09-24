@@ -57,7 +57,20 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
 
     class Meta:
         model = UserInfo
-        fields = ["username", "nickname", "phone", "email", "is_active", "gender", "pk", "dept", "role", "tag"]
+        # 顺序即搜索区展示顺序：标签是高频筛查条件，前置到第 2 位
+        # （搜索区收起态只渲染前 3 个字段，排在末尾等于"没有这个筛选项"）
+        fields = [
+            "username",
+            "tag",
+            "nickname",
+            "phone",
+            "email",
+            "is_active",
+            "gender",
+            "pk",
+            "dept",
+            "role",
+        ]
 
 
 class UserViewSet(
