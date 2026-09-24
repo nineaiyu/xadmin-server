@@ -121,18 +121,22 @@ class TestSeedDemoBook:
         metadata_actions = {"search_columns", "search_fields", "metadata"}
         # 页面级权限：非 ViewSet action（如行级变更历史查操作日志端点），同样需要登记
         page_level = {"changeHistory"}
+        # 权限点名 → ViewSet 方法名：回收站列表在框架内统一命名为 recycleList
+        # （与 loadjson 里其余模型的 recycleList:SystemXxx 一致），而方法名是 recycle
+        aliases = {"recycleList": "recycle"}
         mapping_actions = {
             name
             for klass in BookViewSet.__mro__
             for name, attr in vars(klass).items()
             if callable(attr) and hasattr(attr, "mapping")
         }
-        planned = {item[0] for item in PERMISSION_PLAN}
+        planned = {aliases.get(item[0], item[0]) for item in PERMISSION_PLAN}
+        mapped = {_to_action(name) for name in mapping_actions - metadata_actions}
 
         # 1) 自定义 action（非元数据）必须登记
-        assert {_to_action(name) for name in mapping_actions - metadata_actions} <= planned
+        assert mapped <= planned
         # 2) 标准 CRUD 必须存在，且计划内的动作均由「标准 CRUD ∪ 自定义 action ∪ 页面级权限」覆盖
         standard = {"list", "create", "retrieve", "update", "partialUpdate", "destroy"}
         for method in ("list", "create", "retrieve", "update", "partial_update", "destroy"):
             assert hasattr(BookViewSet, method), f"BookViewSet 缺少标准 CRUD 方法 {method}"
-        assert planned <= ({_to_action(name) for name in mapping_actions} | standard | page_level)
+        assert planned <= (mapped | standard | page_level)

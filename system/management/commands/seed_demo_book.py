@@ -96,7 +96,9 @@ PERMISSION_PLAN = [
     ("exportData", "GET", "api/demo/book/export-data$", "Demo-导出书籍"),
     ("exportAsync", "POST", "api/demo/book/export-async$", "Demo-异步导出"),
     # 回收站（软删除模型专用；Book 继承 SoftDeleteModel + 混入 RecycleBinAction）
-    ("recycle", "GET", "api/demo/book/recycle$", "Demo-回收站列表"),
+    # 动作名与框架回收站权限点保持一致（其余模型均为 recycleList / recycleRestore /
+    # recyclePurge）：前端按 `recycleList:Book` 判定入口可见性，名字不一致会永不显示
+    ("recycleList", "GET", "api/demo/book/recycle$", "Demo-回收站列表"),
     ("recycleRestore", "PATCH", "api/demo/book/recycle/restore$", "Demo-回收站恢复"),
     ("recyclePurge", "DELETE", "api/demo/book/recycle/purge$", "Demo-回收站物理清除"),
     # 页面级权限（非 ViewSet action）：行级「变更历史」查操作日志端点
