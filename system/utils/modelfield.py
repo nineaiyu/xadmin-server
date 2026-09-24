@@ -216,6 +216,27 @@ def get_field_lookup_info(fields):
     return [{"value": field, "label": field_info.get(field, field)} for field in fields]
 
 
+def get_field_meta(field) -> dict:
+    """字段形态元数据（配置页做控件适配与兼容性提示，不参与读侧编译）。
+
+    - internal_type：Django 字段内部类型（CharField / DateTimeField / ForeignKey ...）
+    - related_model：关系字段目标模型（label_lower），非关系字段为 None
+    - multiple：是否多值字段（多对多 / 反向一对多）
+    - null / verbose_name：可空提示与展示名
+    """
+    related_model = None
+    if getattr(field, "is_relation", False):
+        model = getattr(field, "related_model", None)
+        related_model = model._meta.label_lower if model is not None else None
+    return {
+        "internal_type": field.get_internal_type(),
+        "related_model": related_model,
+        "multiple": bool(getattr(field, "many_to_many", False) or getattr(field, "one_to_many", False)),
+        "null": bool(getattr(field, "null", False)),
+        "verbose_name": str(getattr(field, "verbose_name", "") or ""),
+    }
+
+
 def get_extra_field_lookups(field) -> list:
     """按字段类型返回框架自定义匹配符（与 data_scope.SPECIAL_MATCHES 同源）。
 

@@ -31,6 +31,45 @@ RULE_TYPE_TEXTS = {
     "value.table.dept.ids": "指定部门",
 }
 
+# 规则类型的配置端元数据（choices 接口下发，配置页据此渲染控件与分组）。
+#   input          值输入形态：none=运行期按当前用户注入（无需填写）、
+#                  text/json/number/datetime/datetimerange/seconds/user/role/dept/menu
+#   value_required 是否需要填写 value（input=none 的类型为 False）
+#   default_match  选择该类型后建议的匹配符（前端预置，可改）
+#   group          配置页分组：all=全部数据、runtime=跟随当前用户、explicit=指定对象、time=时间条件、free=自定义值
+RULE_TYPE_META = {
+    "value.all": {"input": "none", "value_required": False, "default_match": "all", "group": "all"},
+    "value.text": {"input": "text", "value_required": True, "default_match": "exact", "group": "free"},
+    "value.json": {"input": "json", "value_required": True, "default_match": "exact", "group": "free"},
+    "value.date": {"input": "seconds", "value_required": True, "default_match": "gte", "group": "time"},
+    "value.datetime": {"input": "datetime", "value_required": True, "default_match": "gte", "group": "time"},
+    "value.datetime.range": {
+        "input": "datetimerange",
+        "value_required": True,
+        "default_match": "range",
+        "group": "time",
+    },
+    "value.user.id": {"input": "none", "value_required": False, "default_match": "exact", "group": "runtime"},
+    "value.user.dept.id": {"input": "none", "value_required": False, "default_match": "exact", "group": "runtime"},
+    "value.user.dept.ids": {"input": "none", "value_required": False, "default_match": "in", "group": "runtime"},
+    "value.leader.dept.ids": {"input": "none", "value_required": False, "default_match": "in", "group": "runtime"},
+    "value.leader.user.ids": {"input": "none", "value_required": False, "default_match": "in", "group": "runtime"},
+    "value.table.user.ids": {"input": "user", "value_required": True, "default_match": "in", "group": "explicit"},
+    "value.table.role.ids": {"input": "role", "value_required": True, "default_match": "in", "group": "explicit"},
+    "value.table.dept.ids": {"input": "dept", "value_required": True, "default_match": "in", "group": "explicit"},
+    "value.table.menu.ids": {"input": "menu", "value_required": True, "default_match": "in", "group": "explicit"},
+    "value.dept.ids": {"input": "dept", "value_required": True, "default_match": "in", "group": "explicit"},
+}
+
+# 配置页分组标题（前端按 group 分段展示，新增类型只需在此登记）
+RULE_TYPE_GROUP_TEXTS = {
+    "all": "全部数据",
+    "runtime": "跟随当前用户（运行时按登录人取值）",
+    "explicit": "指定对象",
+    "time": "时间条件",
+    "free": "自定义值（需手动填写，谨慎使用）",
+}
+
 # match lookup → 过滤语义（与 common/core/data_scope.py 编译器支持的匹配符对齐）
 MATCH_TEXTS = {
     "exact": "等于",

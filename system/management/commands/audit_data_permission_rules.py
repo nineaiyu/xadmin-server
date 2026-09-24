@@ -11,7 +11,8 @@
    列出每条非法授权（含具体规则与失败原因）；
 2. 不生效提示（``[WARN]``，不影响退出码）：规则本身合法，但按当前绑定与引用关系
    对绑定对象恒为空集——未绑定任何用户/部门；「主管部门」类规则绑定对象中没有任何
-   部门主管；指定对象（用户/部门/角色/菜单）已被删除，规则可能不再命中任何数据。
+   部门主管；指定对象（用户/部门/角色/菜单）已被删除；绑定菜单含页面/目录（运行时只
+   匹配接口权限点，历史数据需重新保存以归一展开）。
 
 用法：
     python manage.py audit_data_permission_rules              # 只列出，不改库
@@ -76,6 +77,16 @@ def _ineffective_warnings(dp: DataPermission) -> list:
     warnings = []
     if not dp.userinfo_set.exists() and not dp.deptinfo_set.exists():
         warnings.append("未绑定任何用户或部门（不会对任何人生效）")
+
+    # 生效范围只认接口权限点：绑定页面/目录菜单的授权在请求上下文里永不命中
+    # （保存时序列化器已归一展开，此处覆盖历史数据）
+    scope_menus = list(dp.menu.values_list("menu_type", "name", "meta__title"))
+    stale = [title or name for menu_type, name, title in scope_menus if menu_type != Menu.MenuChoices.PERMISSION]
+    if stale:
+        warnings.append(
+            f"绑定菜单含页面/目录（{', '.join(stale[:5])}）：运行时只匹配接口权限点，"
+            "这些菜单不会命中，请重新保存以展开为接口权限点"
+        )
 
     if any(rule.get("type") in LEADER_TYPES for rule in rules):
         bound_pks = _bound_user_pks(dp)
