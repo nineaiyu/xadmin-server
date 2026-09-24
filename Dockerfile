@@ -35,6 +35,13 @@ RUN set -ex \
 COPY --from=stage-build /data /data
 COPY --from=stage-build /usr/local/bin /usr/local/bin
 
+# 语言包：.mo 为 gitignore 项（不随仓库分发），构建期编译进镜像，
+# 避免部署遗漏 compilemessages 时界面文案回退英文（仅项目 po，不扫描 venv）
+RUN cd /data/xadmin-server \
+    && for po in locale/*/LC_MESSAGES/django.po; do \
+        [ -f "${po}" ] && msgfmt -o "${po%.po}.mo" "${po}"; \
+    done
+
 # 以非 root 运行：容器仅需代码目录下的 tmp/（pid 文件）与 data/（日志/上传/sqlite）可写。
 # 注意：bind mount 覆盖这两个目录时，宿主目录属主需与这里一致（1001），
 # 否则容器内写入会失败；使用 named volume 时新卷会继承此处的属主。
