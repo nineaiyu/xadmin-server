@@ -3547,7 +3547,7 @@
    "name": "systemNoticeDir",
    "rank": 120,
    "path": "/system/notice/",
-   "component": "system/notify/index",
+   "component": null,
    "is_active": true,
    "meta": "010423b5-c1c5-4a31-bdaa-980f7545e6ce",
    "method": null,
