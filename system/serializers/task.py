@@ -18,6 +18,7 @@ from rest_framework import serializers
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system.models.task import TaskExecution
 from system.serializers.fields import DictChoiceField
+from system.utils.task_center import ACTIVE_STATUSES
 
 # celery crontab_parser 各字段的取值跨度（min-max 由 parser 按 steps 推导）
 _CRONTAB_STEPS = {
@@ -264,12 +265,30 @@ class TaskExecutionSerializer(BaseModelSerializer):
         read_only=True,
     )
     time_cost = serializers.SerializerMethodField(label=_("Time Cost"))
+    # 产物信息（列表动作按 pk 子查询带出；定时/即时任务为空值）：
+    # 导出/导入任务与执行记录共用主键，同一行即可表达类型、业务名、进度与产物文件
+    product_type = serializers.SerializerMethodField(label=_("Record type"))
+    product_name = serializers.SerializerMethodField(label=_("Record name"))
+    product_progress = serializers.SerializerMethodField(label=_("Progress"))
+    product_stage = serializers.SerializerMethodField(label=_("Progress stage"))
+    product_error = serializers.SerializerMethodField(label=_("Error message"))
+    product_has_file = serializers.SerializerMethodField(label=_("Output file"))
+    can_cancel = serializers.SerializerMethodField(label=_("Can cancel"))
+    can_rerun = serializers.SerializerMethodField(label=_("Can rerun"))
 
     class Meta:
         model = TaskExecution
         fields = [
             "pk",
             "name",
+            "product_type",
+            "product_name",
+            "product_progress",
+            "product_stage",
+            "product_error",
+            "product_has_file",
+            "can_cancel",
+            "can_rerun",
             "periodic_task",
             "args",
             "kwargs",
@@ -282,16 +301,46 @@ class TaskExecutionSerializer(BaseModelSerializer):
         ]
         table_fields = [
             "pk",
+            "product_type",
             "name",
             "periodic_task",
             "status",
-            "creator",
+            "product_progress",
             "time_cost",
+            "creator",
             "created_time",
+            "product_error",
             "date_start",
             "date_finished",
         ]
         read_only_fields = fields
+
+    def get_product_type(self, obj) -> str:
+        """产物类型（export/import；定时与即时任务为空）。"""
+        return str(getattr(obj, "product_type", "") or "")
+
+    def get_product_name(self, obj) -> str:
+        """产物记录的业务名（如「用户导出-20260924120000」），非产物任务为空。"""
+        return str(getattr(obj, "product_name", "") or "")
+
+    def get_product_progress(self, obj) -> int:
+        return int(getattr(obj, "product_progress", 0) or 0)
+
+    def get_product_stage(self, obj) -> str:
+        return str(getattr(obj, "product_stage", "") or "")
+
+    def get_product_error(self, obj) -> str:
+        return str(getattr(obj, "product_error", "") or "")[:500]
+
+    def get_product_has_file(self, obj) -> bool:
+        return bool(getattr(obj, "product_has_file", False))
+
+    def get_can_cancel(self, obj) -> bool:
+        return str(obj.status) in ACTIVE_STATUSES
+
+    def get_can_rerun(self, obj) -> bool:
+        """仅产物类（导出/导入）任务在终态后可重跑（白名单口径与任务中心一致）。"""
+        return bool(self.get_product_type(obj)) and str(obj.status) not in ACTIVE_STATUSES
 
     def get_time_cost(self, obj):
         cost = obj.time_cost

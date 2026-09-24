@@ -436,3 +436,83 @@ def test_ws_log_permission_export_record_owner(normal_user, superuser):
     assert can_read_task_log(superuser, str(record.pk)) is True
     other = UserInfo.objects.create_user(username="ws-other-2", password="x")
     assert can_read_task_log(other, str(record.pk)) is False
+
+
+def test_execution_list_exposes_product_info(superuser):
+    """列表按 pk 带出产物信息：导出/导入任务与执行记录共用主键，一行即有类型/业务名/进度/重跑能力。"""
+    from system.models.export import ExportRecord
+
+    export = ExportRecord.objects.create(
+        name="用户导出-20260924",
+        module="用户",
+        status=ExportRecord.Status.SUCCESS,
+        progress=100,
+        stage="渲染内容",
+        creator=superuser,
+    )
+    TaskExecution.objects.create(
+        pk=export.pk,
+        name="system.analysis_tasks.run_export",
+        creator=superuser,
+        status=TaskExecution.Status.SUCCESS,
+    )
+    running = TaskExecution.objects.create(
+        pk=str(uuid.uuid4()),
+        name="common.tasks.foo",
+        creator=superuser,
+        status=TaskExecution.Status.RUNNING,
+    )
+
+    request = APIRequestFactory().get("/api/system/tasks/executions")
+    force_authenticate(request, user=superuser)
+    viewset = TaskExecutionViewSet()
+    viewset.request = request
+    viewset.action = "list"
+    queryset = viewset.get_queryset()
+
+    product_row = TaskExecutionSerializer(queryset.get(pk=export.pk)).data
+    assert product_row["product_type"] == "export"
+    assert product_row["product_name"] == "用户导出-20260924"
+    assert product_row["product_progress"] == 100
+    assert product_row["product_stage"] == "渲染内容"
+    assert product_row["product_has_file"] is False
+    assert product_row["can_cancel"] is False
+    assert product_row["can_rerun"] is True
+
+    plain_row = TaskExecutionSerializer(queryset.get(pk=running.pk)).data
+    assert plain_row["product_type"] == ""
+    assert plain_row["product_name"] == ""
+    assert plain_row["can_cancel"] is True
+    assert plain_row["can_rerun"] is False
+
+
+def test_product_type_filter(superuser):
+    """记录类型过滤（导出/导入/任务）与列表注解同源：按产物表同 pk 记录判定。"""
+    from system.models.export import ExportRecord
+    from system.views.task import TaskExecutionFilter
+
+    export = ExportRecord.objects.create(name="导出记录", creator=superuser)
+    TaskExecution.objects.create(pk=export.pk, name="system.tasks.run_export", creator=superuser)
+    plain = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
+
+    queryset = TaskExecution.objects.all()
+    export_rows = TaskExecutionFilter({"product_type": "export"}, queryset=queryset).qs
+    assert {str(row.pk) for row in export_rows} == {str(export.pk)}
+    task_rows = TaskExecutionFilter({"product_type": "task"}, queryset=queryset).qs
+    assert {str(row.pk) for row in task_rows} == {str(plain.pk)}
+
+
+def test_execution_detail_without_annotation_stays_safe(superuser):
+    """详情动作不带产物注解：序列化仍可降级为空值，不得抛错。"""
+    execution = TaskExecution.objects.create(name="common.tasks.foo", creator=superuser)
+
+    request = APIRequestFactory().get(f"/api/system/tasks/executions/{execution.pk}")
+    force_authenticate(request, user=superuser)
+    viewset = TaskExecutionViewSet()
+    viewset.request = request
+    viewset.action = "retrieve"
+
+    row = TaskExecutionSerializer(viewset.get_queryset().get(pk=execution.pk)).data
+    assert row["product_type"] == "" and row["product_progress"] == 0
+    # 默认 PENDING 属活跃态（可取消），非产物任务不可重跑
+    assert row["can_cancel"] is True and row["can_rerun"] is False
