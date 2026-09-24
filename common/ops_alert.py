@@ -36,21 +36,34 @@ class OpsAlertMessage(SystemMessage):
     def __init__(self, payload: dict):
         self.payload = payload or {}
 
+    @classmethod
+    def template_variables(cls) -> tuple:
+        """模板可引用的业务变量（与 get_template_vars 同源，缺一会由守护测试拦下）。"""
+        return ("source", "event", "host", "time", "detail")
+
+    def get_template_vars(self) -> dict:
+        """业务变量取值：detail 与渠道文案同样截断，避免模板把整段堆栈带进短消息渠道。"""
+        return {
+            "source": self.payload.get("source") or "ops",
+            "event": str(self.payload.get("event") or ""),
+            "host": self.payload.get("host") or "-",
+            "time": self.payload.get("time") or "-",
+            "detail": (self.payload.get("detail") or "")[:2000],
+        }
+
     def get_html_msg(self) -> dict:
-        source = self.payload.get("source") or "ops"
-        event = self.payload.get("event") or _("Unknown event")
-        host = self.payload.get("host") or "-"
-        occurred_at = self.payload.get("time") or "-"
-        detail = (self.payload.get("detail") or "")[:2000]
+        # 取值与模板变量同源：渠道默认文案与模板覆盖层不会各写一套
+        context = self.get_template_vars()
+        event = context["event"] or _("Unknown event")
         subject = _("Ops alert: {}").format(event)
         message = (
-            f"<p>{_('Source')}: <code>{source}</code></p>"
+            f"<p>{_('Source')}: <code>{context['source']}</code></p>"
             f"<p>{_('Event')}: <code>{event}</code></p>"
-            f"<p>{_('Host')}: <code>{host}</code></p>"
-            f"<p>{_('Time')}: <code>{occurred_at}</code></p>"
+            f"<p>{_('Host')}: <code>{context['host']}</code></p>"
+            f"<p>{_('Time')}: <code>{context['time']}</code></p>"
         )
-        if detail:
-            message += f"<pre style='white-space:pre-wrap'>{detail}</pre>"
+        if context["detail"]:
+            message += f"<pre style='white-space:pre-wrap'>{context['detail']}</pre>"
         message += f"<p>{_('Please check the container status and host resource usage.')}</p>"
         return {"subject": subject, "message": message}
 

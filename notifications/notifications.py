@@ -95,6 +95,24 @@ class Message:
         """模板渲染可用的业务变量值（默认空，子类按需覆写）。"""
         return {}
 
+    @property
+    def user_display(self) -> str:
+        """接收人展示名（昵称优先，空则用户名）。
+
+        样例消息（模板预览、守护测试）可能没有真实用户，系统级消息也可能没有
+        接收人——此处退化为占位符，避免渲染期抛错导致整条通知静默丢失。
+        """
+        user = getattr(self, "user", None)
+        if user is None:
+            return "-"
+        return user.nickname or user.username
+
+    @property
+    def user_username(self) -> str:
+        """接收人用户名（同上：无用户时退化为占位符）。"""
+        user = getattr(self, "user", None)
+        return user.username if user is not None else "-"
+
     def apply_template_override(self, msg: dict) -> dict:
         """套用 DB 模板覆盖（未配置或渲染异常时原样返回）。"""
         from notifications.template_registry import apply_override

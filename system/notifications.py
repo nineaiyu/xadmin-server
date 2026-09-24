@@ -35,8 +35,8 @@ class DifferentCityLoginMessage(UserMessage):
         subject = _("Different city login reminder")
         context = dict(
             subject=subject,
-            name=self.user.nickname,
-            username=self.user.username,
+            name=self.user_display,
+            username=self.user_username,
             ip=self.ip,
             time=now,
             city=self.city,
@@ -78,8 +78,8 @@ class AbnormalLoginMessage(UserMessage):
         info = self.info or {}
         context = dict(
             subject=subject,
-            name=self.user.nickname,
-            username=self.user.username,
+            name=self.user_display,
+            username=self.user_username,
             # 维度清单在 Python 侧翻译好后传入模板，模板不再做带参数的翻译
             dimensions=[dimension_texts.get(d, d) for d in self.dimensions],
             ip=info.get("ip") or "-",
@@ -343,7 +343,7 @@ class ApprovalRequestMessage(UserMessage):
         subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
         context = dict(
             subject=subject,
-            name=self.user.nickname,
+            name=self.user_display,
             event=self.event,
             module=approval.module or "-",
             method=approval.method or "-",
@@ -399,8 +399,18 @@ class ApprovalFlowMessage(UserMessage):
 
     @classmethod
     def template_variables(cls) -> tuple:
-        """模板可用业务变量（与 get_template_vars 同源）。"""
-        return ("title", "flow_name", "node_name", "instance_no", "reason", "extra", "name", "event")
+        """模板可用业务变量（与 get_template_vars 同源，两者漂移由守护测试拦下）。"""
+        return (
+            "title",
+            "flow_name",
+            "node_name",
+            "instance_no",
+            "reason",
+            "extra",
+            "name",
+            "event",
+            "time",
+        )
 
     def get_template_vars(self) -> dict:
         instance = self.instance
@@ -411,15 +421,18 @@ class ApprovalFlowMessage(UserMessage):
             "instance_no": str(instance.pk or "")[:8].upper(),
             "reason": instance.reason or "",
             "extra": self.extra or "",
-            "name": self.user.nickname or self.user.username,
+            "name": self.user_display,
             "event": self.event,
+            # 渲染时刻：默认渠道模板（notify/msg_approval_flow.html）同样引用该变量，
+            # 不登记会导致自定义模板写 {{ time }} 被保存校验拒绝
+            "time": local_now_display(),
         }
 
     def get_html_msg(self) -> dict:
         subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
         # 业务变量（get_template_vars，与模板覆盖同源）+ 渲染补充字段
         context = dict(self.get_template_vars())
-        context.update(subject=subject, time=local_now_display())
+        context["subject"] = subject
         message = render_to_string("notify/msg_approval_flow.html", context)
         return {"subject": subject, "message": message}
 

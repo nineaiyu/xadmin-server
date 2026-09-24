@@ -34,12 +34,27 @@ class TaskFailureMessage(SystemMessage):
         self.exc = exc
         self.traceback_msg = (traceback_msg or "")[-2000:]
 
+    @classmethod
+    def template_variables(cls) -> tuple:
+        """模板可引用的业务变量（与 get_template_vars 同源，缺一会由守护测试拦下）。"""
+        return ("task_name", "exc", "traceback_msg")
+
+    def get_template_vars(self) -> dict:
+        """业务变量取值：模板覆盖层据此渲染 ``{{ task_name }}`` 等细粒度变量。"""
+        return {
+            "task_name": self.task_name,
+            "exc": str(self.exc),
+            "traceback_msg": self.traceback_msg,
+        }
+
     def get_html_msg(self) -> dict:
-        subject = _("Celery task failure alert: {}").format(self.task_name)
+        # 取值与模板变量同源：渠道默认文案与模板覆盖层不会各写一套
+        context = self.get_template_vars()
+        subject = _("Celery task failure alert: {}").format(context["task_name"])
         message = (
-            f"<p>{_('Task')}: <code>{self.task_name}</code></p>"
-            f"<p>{_('Error')}: <code>{self.exc}</code></p>"
-            f"<pre style='white-space:pre-wrap'>{self.traceback_msg}</pre>"
+            f"<p>{_('Task')}: <code>{context['task_name']}</code></p>"
+            f"<p>{_('Error')}: <code>{context['exc']}</code></p>"
+            f"<pre style='white-space:pre-wrap'>{context['traceback_msg']}</pre>"
         )
         return {"subject": subject, "message": message}
 

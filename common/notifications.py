@@ -199,7 +199,7 @@ class TaskMessage:
     def get_html_msg(self) -> dict:
         context = dict(
             subject=self.subject,
-            name=self.user.nickname,
+            name=self.user_display,
             **self.task,
         )
         message = render_to_string("notify/msg_task.html", context)

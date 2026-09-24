@@ -65,11 +65,16 @@ class MessageTemplateViewSet(GenericViewSet):
             row = overrides.get(info["message_type"])
             sample = _sample_message(cls)
             default_subject = ""
+            default_body = ""
             if sample is not None:
                 try:
-                    default_subject = str(sample.get_html_msg().get("subject") or "")
+                    base = sample.get_html_msg()
+                    default_subject = str(base.get("subject") or "")
+                    # 默认正文一并下发：编辑弹窗展示「代码默认长什么样」，覆盖才有参照
+                    default_body = str(base.get("message") or "")
                 except Exception:  # noqa: BLE001
                     default_subject = ""
+                    default_body = ""
             items.append(
                 {
                     "message_type": info["message_type"],
@@ -78,6 +83,9 @@ class MessageTemplateViewSet(GenericViewSet):
                     "category_label": str(info["category_label"]),
                     "is_system": issubclass(cls, SystemMessage),
                     "default_subject": default_subject,
+                    "default_body": default_body,
+                    # 无样例消息（gen_test_msg 未实现）的消息类型无法预览：前端据此禁用预览按钮
+                    "has_preview": sample is not None,
                     "variables": [*COMMON_VARIABLES, *cls.template_variables()],
                     "has_override": bool(
                         row and ((row.subject_template or "").strip() or (row.body_template or "").strip())
