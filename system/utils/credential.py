@@ -8,6 +8,7 @@
   salt/nonce），并失效配置缓存、写 OperationLog(module=system:credential) 审计。
 """
 
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.core.credentials import (
@@ -24,8 +25,14 @@ logger = get_logger(__name__)
 AUDIT_MODULE = "system:credential"
 
 
-def _iso(value) -> str:
-    return value.isoformat() if value else ""
+def _timestamp(value) -> str:
+    """最近更新时间的展示格式（与 DRF 的 DATETIME_FORMAT 同口径，前端无需再格式化）。"""
+    if not value:
+        return ""
+    try:
+        return timezone.localtime(value).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:  # noqa: BLE001 无时区信息等异常值回退 iso 字符串
+        return str(value)[:19].replace("T", " ")
 
 
 def write_credential_audit(detail: dict, user=None) -> None:
@@ -59,7 +66,7 @@ def credential_overview() -> dict:
             "scope": "setting",
             "configured": bool(row.value),
             "encrypted": bool(row.encrypted),
-            "updated_time": _iso(row.updated_time),
+            "updated_time": _timestamp(row.updated_time),
         }
         for row in Setting.objects.filter(encrypted=True).order_by("category", "name")
     ]
@@ -75,7 +82,7 @@ def credential_overview() -> dict:
                 "configured": status != "empty",
                 "status": status,
                 "encrypted": status in ("encrypted", "empty"),
-                "updated_time": _iso(row.updated_time) if row else "",
+                "updated_time": _timestamp(row.updated_time) if row else "",
                 "description": (row.description if row else "") or "",
             }
         )
