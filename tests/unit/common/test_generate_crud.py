@@ -404,3 +404,85 @@ class TestOptions:
                 output=str(backend),
                 frontend_root=str(client),
             )
+
+
+class TestImportGrouping:
+    """生成物 import 分组：口径与 ruff.toml 的 known-first-party 一致（否则产物 I001）。"""
+
+    def test_unregistered_new_app_treated_as_first_party(self):
+        """未登记在 FIRST_PARTY_TOP_LEVEL 的新 app 名必须按第一方归组。
+
+        回归背景（二开走查实测）：新建 app（如 asset）首次 `generate_crud` 时，
+        其 import 被当成第三方与 common.* 分组，产物 ruff check 直接 I001——
+        即「生成即过门禁」对内置 demo app 成立、对新 app 不成立。
+        """
+        from common.management.commands._generate_crud.merging import MergeMixin
+
+        lines = [
+            "from brandnew.models import Thing",
+            "from django_filters import rest_framework as filters",
+            "from common.core.filter import BaseFilterSet",
+        ]
+        assert MergeMixin._group_imports(lines, {"brandnew"}) == [
+            "from django_filters import rest_framework as filters",
+            "",
+            "from brandnew.models import Thing",
+            "from common.core.filter import BaseFilterSet",
+        ]
+
+    def test_extra_app_keeps_builtin_first_party_intact(self):
+        """已登记 app（demo）重复传入 extra 时分组结果不变（幂等）。"""
+        from common.management.commands._generate_crud.merging import MergeMixin
+
+        lines = [
+            "from demo.models import Book",
+            "from common.core.serializers import BaseModelSerializer",
+        ]
+        assert MergeMixin._group_imports(lines, {"demo"}) == MergeMixin._group_imports(lines)
+
+
+class TestDefaultOrdering:
+    """列表默认排序：模型未声明 Meta.ordering 时由生成物补声明。
+
+    回归背景（二开走查实测）：门禁 tests/unit/system/test_viewset_ordering.py 要求
+    列表 ViewSet 声明 ordering 或模型 Meta.ordering 非空——新生成的模块若两边都缺，
+    分页会抛 UnorderedObjectListWarning，且新 app 会被门禁直接判失败。
+    """
+
+    class _Field:
+        def __init__(self, name):
+            self.name = name
+
+    def _model(self, field_names, ordering=()):
+        field_cls = self._Field
+
+        class _Meta:
+            fields = [field_cls(name) for name in field_names]
+
+        _Meta.ordering = ordering
+
+        class _Model:
+            _meta = _Meta()
+
+        return _Model
+
+    def test_falls_back_to_pk_without_created_time(self):
+        from common.management.commands._generate_crud.analysis import AnalysisMixin
+
+        assert AnalysisMixin._default_ordering(self._model(["id", "name"])) == "-pk"
+
+    def test_uses_created_time_when_present(self):
+        from common.management.commands._generate_crud.analysis import AnalysisMixin
+
+        assert AnalysisMixin._default_ordering(self._model(["created_time"])) == "-created_time"
+
+    def test_empty_when_model_declares_ordering(self):
+        from common.management.commands._generate_crud.analysis import AnalysisMixin
+
+        assert AnalysisMixin._default_ordering(self._model(["pk"], ordering=("pk",))) == ""
+
+    def test_generated_views_omit_ordering_when_model_declares_it(self, workspace):
+        """demo.Book 已有 Meta.ordering → 产物不重复生成 ordering（避免双份真理）。"""
+        backend, _ = _generate(workspace)
+        views = (backend / "demo" / "views.py").read_text(encoding="utf-8")
+        assert "ordering = [" not in views

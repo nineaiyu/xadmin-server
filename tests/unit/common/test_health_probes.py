@@ -27,6 +27,28 @@ class TestProbeAll:
         assert ok is True
         assert isinstance(cost, float)
 
+    def test_storage_probe_path_is_unique_per_call(self):
+        """并发安全：探针文件必须按调用唯一命名。
+
+        回归背景（2026-09-25 全量 -n auto 实测偶发）：固定名 `.storage_probe` 下，
+        healthcheck / 多 worker 并发「先写后删」互相踩踏——后到者 os.remove 抛
+        FileNotFoundError → 探测被误判为不可达（隔离复跑必过，易当作负载瞬态）。
+        """
+        from common.storage.utils import _storage_probe_path
+
+        paths = {_storage_probe_path("/tmp/media") for _ in range(5)}
+        assert len(paths) == 5
+
+    def test_storage_probe_concurrent_calls_all_succeed(self):
+        """8 路并发探测互不影响（固定文件名会让其中一部分误判不可达）。"""
+        from concurrent.futures import ThreadPoolExecutor
+
+        from common.storage.utils import storage_probe
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(lambda _index: storage_probe(), range(8)))
+        assert all(ok for ok, _ in results), results
+
     def test_slow_probe_times_out_without_blocking(self, monkeypatch):
         """单项超预算：该项判失败，且总耗时不被慢探测拖长。"""
         from common.utils import health

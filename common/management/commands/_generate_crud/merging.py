@@ -127,14 +127,17 @@ class MergeMixin:
                 blocks.append([index])
 
         def is_first_party(line):
-            return line.startswith("from ") and line[len("from ") :].split()[0].split(".")[0] in FIRST_PARTY_TOP_LEVEL
+            if not line.startswith("from "):
+                return False
+            top = line[len("from ") :].split()[0].split(".")[0]
+            return top in FIRST_PARTY_TOP_LEVEL or top == ctx.get("app_label")
 
         target = next((block for block in blocks if any(is_first_party(lines[index]) for index in block)), blocks[-1])
         head, tail = target[0], target[-1]
         block_lines = [*lines[head : tail + 1], import_line]
         plain = [line for line in block_lines if not line.startswith("from ")]
         froms = [line for line in block_lines if line.startswith("from ")]
-        return [*lines[:head], *plain, *cls._group_imports(froms), *lines[tail + 1 :]]
+        return [*lines[:head], *plain, *cls._group_imports(froms, {ctx.get("app_label")}), *lines[tail + 1 :]]
 
     # ------------------------------------------------------------ 导入去重工具
 
@@ -167,13 +170,18 @@ class MergeMixin:
         return lines
 
     @staticmethod
-    def _group_imports(lines):
+    def _group_imports(lines, extra_first_party=frozenset()):
         """import 行按「标准库 → 第三方 → 第一方」分组，组内按模块排序并合并同模块。
 
         第一方（common/system/message 与生成的 app）**同属一组、组内不留空行**——
         口径与 ruff.toml 的 [lint.isort].known-first-party 一致（否则生成物 I001）；
         同模块的多条 from-import 合并为一行（isort 默认行为），name 顺序保持调用方给定。
+
+        `extra_first_party`：把生成目标 app 纳入第一方。新 app 名未登记在
+        `FIRST_PARTY_TOP_LEVEL` 时，其 import 会被误判为第三方而与 `common.*` 分组
+        （实测 I001：新 app 首次生成即失败），由调用方传入 `{ctx["app_label"]}` 修正。
         """
+        extra_first_party = extra_first_party or frozenset()
         merged: dict[str, list[str]] = {}
         for line in lines:
             module, names = line[len("from ") :].split(" import", 1)
@@ -188,7 +196,7 @@ class MergeMixin:
             top = module.split(".")[0]
             if top in sys.stdlib_module_names:
                 key = "stdlib"
-            elif top in FIRST_PARTY_TOP_LEVEL:
+            elif top in FIRST_PARTY_TOP_LEVEL or top in extra_first_party:
                 key = "app"
             else:
                 key = "third"

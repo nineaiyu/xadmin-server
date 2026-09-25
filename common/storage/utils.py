@@ -16,6 +16,7 @@ import hashlib
 import os
 import shutil
 import time
+import uuid
 from collections.abc import Iterator
 from urllib.parse import quote
 
@@ -215,6 +216,17 @@ def storage_presigned_url(
         return None
 
 
+def _storage_probe_path(root: str) -> str:
+    """探针文件的唯一路径（并发安全）。
+
+    背景：``health.probe_all()`` 会被容器 healthcheck 与 ``pytest -n auto`` 多 worker
+    同时触发；固定文件名下多个执行体「先写后删」互相踩踏——后到者 ``os.remove``
+    抛 FileNotFoundError → 探测被误判为存储不可达（2026-09-25 全量并行实测偶发，
+    隔离复跑必过，易被当作负载瞬态）。
+    """
+    return os.path.join(root, f".storage_probe.{os.getpid()}.{uuid.uuid4().hex[:8]}")
+
+
 def storage_probe():
     """存储后端可达性探测，返回 ``(ok, cost)``（与 health 探测同口径）。"""
     t1 = time.time()
@@ -222,7 +234,7 @@ def storage_probe():
         if storage_is_local():
             root = str(settings.MEDIA_ROOT)
             os.makedirs(root, exist_ok=True)
-            probe = os.path.join(root, ".storage_probe")
+            probe = _storage_probe_path(root)
             with open(probe, "w", encoding="utf-8") as file:
                 file.write("ok")
             os.remove(probe)

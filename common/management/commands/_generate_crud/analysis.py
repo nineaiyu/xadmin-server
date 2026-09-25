@@ -47,9 +47,24 @@ class AnalysisMixin:
             "locale_name": component[:1].lower() + component[1:],
             "basename": router_path,
             "with_import_export": options["with_import_export"],
+            "default_ordering": self._default_ordering(model),
         }
         ctx.update(self._field_plan(model))
         return ctx
+
+    @staticmethod
+    def _default_ordering(model) -> str:
+        """列表视图默认排序（空串表示无需生成）。
+
+        门禁 tests/unit/system/test_viewset_ordering.py 要求列表 ViewSet 声明
+        ``ordering`` 或模型 ``Meta.ordering`` 非空（``ordering_fields`` 只放开
+        ``?ordering=`` 参数）；模型未声明时生成 ``created_time`` 倒序（项目基类
+        字段），无该字段退回 pk 倒序——保证「生成即过门禁」对任意模型成立。
+        """
+        if getattr(model._meta, "ordering", None):
+            return ""
+        has_created_time = any(field.name == "created_time" for field in model._meta.fields)
+        return "-created_time" if has_created_time else "-pk"
 
     @staticmethod
     def _snake(name):

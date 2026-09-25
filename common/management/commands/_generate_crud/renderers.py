@@ -44,7 +44,7 @@ class RenderMixin:
                 note="字段声明同时驱动 search-columns 元数据与前端渲染：增删字段先想清楚三层影响"
                 "（元数据 / 权限码关联模型 / 前端列），参考 docs/architecture/framework-cookbook.md。",
             ),
-            *self._group_imports(imports),
+            *self._group_imports(imports, {ctx["app_label"]}),
             "",
             "",
             f"class {ctx['model_name']}Serializer(BaseModelSerializer):",
@@ -105,7 +105,7 @@ class RenderMixin:
                 note="数据权限由 BaseViewSet.get_queryset/filter_queryset 全局挂载，勿绕过；"
                 "自定义 action 的 docstring 必写（菜单与访问日志显示名取自它）。",
             ),
-            *self._group_imports(imports),
+            *self._group_imports(imports, {ctx["app_label"]}),
             "",
             "",
             f"class {ctx['model_name']}ViewSetFilter(BaseFilterSet):",
@@ -126,6 +126,7 @@ class RenderMixin:
             "",
             f"    queryset = {ctx['model_name']}.objects.all()",
             f"    serializer_class = {ctx['model_name']}Serializer",
+            *([f'    ordering = ["{ctx["default_ordering"]}"]'] if ctx.get("default_ordering") else []),
             '    ordering_fields = ["created_time"]',
             f"    filterset_class = {ctx['model_name']}ViewSetFilter",
             "",
