@@ -140,6 +140,20 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 - 补一条 E2E：参考 `xadmin-client/e2e/README.md` 的既有用例模式；
 - 字段权限/数据权限：角色页勾选字段白名单、数据权限规则（见 `docs/architecture/permission.md`）。
 
+## 生成物自带的门禁与默认值（2026-09-25 走查核实）
+
+`generate_crud` 的产物**开箱即可过项目门禁**，新模块无需额外修补：
+
+| 项 | 生成物默认行为 | 说明 |
+|----|----------------|------|
+| ruff check / format | 一次通过（import 按「标准库 → 第三方 → 第一方」分组，新 app 名自动归入第一方） | 生成后可直接提交 |
+| 列表默认排序 | 模型未声明 `Meta.ordering` 时自动生成 `ordering = ["-created_time"]`（无该字段则退回 `-pk`） | 满足 `tests/unit/system/test_viewset_ordering.py` 门禁，分页结果稳定 |
+| 关联字段形态 | `api-search-user`（远程搜索）＋ `format` 展示 | 数据量大时按 cookbook 换形态 |
+| AI 动作声明 | 生成只读动作骨架（写动作在注释中给出注册指引） | 按需注册到 `system/utils/ai_api_registry.py` |
+| 迁移文件 | `makemigrations` 产物与 ruff 格式略有差异 | 仓库 pre-commit 会自动格式化，无需手工处理 |
+
+实测链路（生成 → `loaddata` 权限种子 → 接口调用）：列表 / 新增 / `with_meta=1` 内联元数据 / 匿名访问 401 全部符合预期。
+
 ## 常见问题
 
 | 症状 | 原因与处理 |
