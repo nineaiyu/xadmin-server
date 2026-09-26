@@ -38,7 +38,7 @@ def _missing(biz_type: str, label=None) -> dict:
 
 
 def _render_dform_submission(instance) -> dict:
-    from dataset.models.dform import DynamicFormSubmission
+    from dataset.services import DynamicFormSubmission
 
     row = DynamicFormSubmission.objects.select_related("form", "creator").filter(pk=instance.biz_id).first()
     if row is None:

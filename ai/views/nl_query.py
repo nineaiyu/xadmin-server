@@ -90,11 +90,11 @@ class AiNlQueryMixin:
             usage = getattr(client, "last_usage", None)
             dsl = parse_llm_json(raw)
             normalized = validate_dsl(dsl, request.user)
-            from dataset.models.dataset import Dataset
+            from dataset.services import Dataset
 
             dataset = Dataset.objects.get(pk=normalized["dataset"])
             extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-            from dataset.utils.dataset import build_queryset
+            from dataset.services import build_queryset
 
             queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
             preview_count = queryset.count()
@@ -193,11 +193,11 @@ class AiNlQueryMixin:
                     )
                 dsl = parse_llm_json(raw)
                 normalized = validate_dsl(dsl, request.user)
-                from dataset.models.dataset import Dataset
+                from dataset.services import Dataset
 
                 dataset = Dataset.objects.get(pk=normalized["dataset"])
                 extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
-                from dataset.utils.dataset import build_queryset
+                from dataset.services import build_queryset
 
                 queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
                 preview_count = queryset.count()
@@ -249,7 +249,7 @@ class AiNlQueryMixin:
         from ai.utils.ai import is_enabled as ai_enabled_check
         from ai.utils.ai_chat import message_payload, persist_message, system_error_message
         from ai.utils.nl_query import audit_nl_query, validate_dsl
-        from dataset.utils.dataset import aggregate_dataset
+        from dataset.services import aggregate_dataset
 
         dsl = request.data.get("dsl")
         if not settings.AI_NL_QUERY_ENABLED:
@@ -258,7 +258,7 @@ class AiNlQueryMixin:
             return ApiResponse(code=1001, detail=_("AI assistant is not enabled or configured"))
         try:
             normalized = validate_dsl(dsl if isinstance(dsl, dict) else {}, request.user)
-            from dataset.models.dataset import Dataset
+            from dataset.services import Dataset
 
             dataset = Dataset.objects.get(pk=normalized["dataset"])
             if normalized["mode"] == "aggregate":
@@ -273,7 +273,7 @@ class AiNlQueryMixin:
                 rows = len(result["series"])
                 summary = str(_("Query finished: {} groups")).format(rows)
             else:
-                from dataset.utils.dataset import build_queryset
+                from dataset.services import build_queryset
 
                 extra = [{"field": f["field"], "op": f["op"], "value": f["value"]} for f in normalized["filters"]]
                 queryset, model, columns = build_queryset(dataset, request.user, extra_filters=extra)
