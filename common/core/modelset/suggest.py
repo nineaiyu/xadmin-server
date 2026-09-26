@@ -29,8 +29,8 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
-from rest_framework.decorators import action
 
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
 from common.swagger.utils import get_default_response_schema
@@ -74,7 +74,7 @@ class SuggestionsAction:
             }
         ),
     )
-    @action(methods=["get"], detail=False, url_path="suggestions")
+    @shared_list_action(methods=["get"], detail=False, url_path="suggestions")
     def suggestions(self, request, *args, **kwargs):
         """获取{cls}关联字段的联想候选（候选集与写入校验同源）"""
         field_name = (request.query_params.get("field") or "").strip()

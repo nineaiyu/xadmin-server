@@ -9,9 +9,9 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from system.models.import_ import ImportRecord, ImportTemplate
-from system.serializers.fields import DictChoiceField
 from system.serializers.task import DisplayRelatedField
 
 

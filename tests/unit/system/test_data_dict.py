@@ -246,7 +246,7 @@ def test_parent_cannot_be_self(superuser):
 
 def test_dict_choice_field_dict_driven_and_fallback():
     """守护：DictChoiceField 选项来自字典（bind 时解析，信号失效后生效），未配置时回退 fallback。"""
-    from system.serializers.fields import DictChoiceField
+    from common.core.fields import DictChoiceField
 
     cache.clear()
     parent = DataDict.objects.create(code="order_flag", label="订单标记")
@@ -274,8 +274,8 @@ def test_dict_choice_field_merge_fallback_and_color():
     """守护：merge_fallback 模式下字典项与回退项合并（字典优先、回退补缺），
     写入路径仍可能出现回退枚举值的字段（如登录类型）不会因字典只配部分选项而校验失败；
     color 随 choices 解析进 choice_colors，to_representation 与元数据均携带。"""
+    from common.core.fields import DictChoiceField
     from common.drf.metadata import SimpleMetadataWithFilters
-    from system.serializers.fields import DictChoiceField
 
     cache.clear()
     parent = DataDict.objects.create(code="login_type_dict", label="登录类型")
@@ -309,8 +309,8 @@ def test_dict_choice_field_metadata_type_is_labeled_choice():
     """
     from rest_framework import serializers
 
+    from common.core.fields import DictChoiceField
     from common.drf.metadata import SimpleMetadataWithFilters
-    from system.serializers.fields import DictChoiceField
 
     cache.clear()
     parent = DataDict.objects.create(code="meta_type_dict", label="元数据类型")

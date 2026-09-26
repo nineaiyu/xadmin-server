@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 """代码生成器：模型解析、字段规划与产物收集。"""
 
+import json
 from pathlib import Path
 
 from django.apps import apps
@@ -9,7 +10,15 @@ from django.conf import settings
 from django.core.management.base import CommandError
 from django.db import models
 
-from .constants import AUDIT_FIELDS, FILE_RELATED_MODEL, SEARCH_EXCLUDE_TYPES
+from system.services import Menu, UserRole, sync_model_field
+
+from .constants import (
+    AUDIT_FIELDS,
+    FILE_RELATED_MODEL,
+    IMPORT_EXPORT_PERMISSIONS,
+    PERMISSION_ACTIONS,
+    SEARCH_EXCLUDE_TYPES,
+)
 
 
 class AnalysisMixin:
@@ -379,16 +388,85 @@ class AnalysisMixin:
 
     # --------------------------------------------------------------- 后续步骤
 
+    def _bootstrap(self, ctx, options):
+        """--bootstrap：种子一条龙幂等入库。
+
+        步骤：sync_model_field（字段权限树）→ 回填种子 model 关联 → loaddata
+        菜单/权限点 →（显式 --grant-to 时）授予角色。幂等性：种子 pk 为 uuid5
+        确定性生成（loaddata 按主键 upsert）、sync_model_field 幂等、M2M 授权
+        幂等——重复执行内容不变。
+        """
+        if options.get("dry_run"):
+            self.stdout.write("--bootstrap 在 --dry-run 下跳过（只打印产物，不落盘）")
+            return
+        if options.get("skip_menu_seed"):
+            self.stdout.write("--bootstrap 跳过（--skip-menu-seed 无种子可入库）")
+            return
+
+        from django.core.management import call_command
+
+        # 1) 字段权限树先行：模型节点入库后，种子里的权限点才能关联到 model
+        sync_model_field()
+        model_pk = self._model_label_pk(ctx["model"])
+
+        seed_path = (
+            Path(options["output"] or settings.PROJECT_DIR)
+            / "loadjson"
+            / f"seed_{ctx['app_label']}_{ctx['model_snake']}.json"
+        )
+        if model_pk:
+            # 回填生成期未解析到的 model 关联（生成先行、同步在后的时序）；
+            # 若生成时已解析则种子本就带 pk，此处不产生写入（幂等）
+            entries = json.loads(seed_path.read_text(encoding="utf-8"))
+            patched = False
+            for entry in entries:
+                if (
+                    entry["model"] == "system.menu"
+                    and entry["fields"].get("menu_type") == 2
+                    and not entry["fields"].get("model")
+                ):
+                    entry["fields"]["model"] = [str(model_pk)]
+                    patched = True
+            if patched:
+                seed_path.write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        # 2) 菜单与权限点入库（loaddata 幂等 upsert）
+        call_command("loaddata", str(seed_path), verbosity=0)
+        self.stdout.write(f"--bootstrap: 菜单/权限点已入库（{seed_path.name}）")
+
+        # 3) 角色授权：显式 --grant-to 才执行（授权属业务决策，不自动猜）
+        grant_to = [code.strip() for code in (options.get("grant_to") or "").split(",") if code.strip()]
+        if not grant_to:
+            self.stdout.write("--bootstrap: 未指定 --grant-to，跳过角色授权（菜单管理里手工勾选亦可）")
+            return
+        permissions = list(PERMISSION_ACTIONS)
+        if ctx.get("with_import_export"):
+            permissions.extend(IMPORT_EXPORT_PERMISSIONS)
+        menu_names = [ctx["component"]] + [f"{action}:{ctx['component']}" for action, _, _ in permissions]
+        menus = list(Menu.objects.filter(name__in=menu_names, deleted_at__isnull=True))
+        roles = list(UserRole.objects.filter(code__in=grant_to, is_active=True, deleted_at__isnull=True))
+        missing_roles = sorted(set(grant_to) - {role.code for role in roles})
+        if missing_roles:
+            self.stdout.write(self.style.WARNING(f"--bootstrap: 角色不存在或已删除，跳过：{missing_roles}"))
+        if menus and roles:
+            for role in roles:
+                role.menu.add(*menus)
+            self.stdout.write(f"--bootstrap: 已授予角色 {[role.code for role in roles]} 共 {len(menus)} 个菜单/权限点")
+
     def _print_next_steps(self, ctx, options):
         """生成后「后续步骤」清单：把散落教程里的手工动作收敛为可复制命令。
 
         口径与 docs/guide/first-module-30min.md 同步：权限点种子入库 →
         字段权限树（模型节点缺失时）→ 菜单与授权 → doctor 自检 →（可选）模块声明。
+        --bootstrap 已代办的动作从清单中移除。
         """
+        bootstrapped = (
+            bool(options.get("bootstrap")) and not options.get("dry_run") and not options.get("skip_menu_seed")
+        )
         steps = []
         if ctx["app_label"] not in (getattr(settings, "XADMIN_APPS", None) or []):
             steps.append(f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（改后需重启进程）')
-        if not options["skip_menu_seed"]:
+        if not options["skip_menu_seed"] and not bootstrapped:
             seed = f"loadjson/seed_{ctx['app_label']}_{ctx['model_snake']}.json"
             steps.append(f"权限点与菜单入库：python manage.py loaddata {seed}")
             if not ctx.get("model_label_pk"):
@@ -396,12 +474,13 @@ class AnalysisMixin:
                     "字段权限树：python manage.py sync_model_field 后加 --force 重跑本命令"
                     "（模型节点写回种子后字段权限才可用）"
                 )
-        steps.append(f"菜单与授权：菜单管理里挂到目标目录；角色管理勾选 *:{ctx['component']} 权限点")
+        if not bootstrapped:
+            steps.append(f"菜单与授权：菜单管理里挂到目标目录；角色管理勾选 *:{ctx['component']} 权限点")
         steps.append("自检：python manage.py doctor（权限点缺口 / 依赖 / 契约一次看全）")
         if not options["with_module"]:
             steps.append("（可选）声明为可裁剪模块：重跑本命令加 --with-module，或 manage.py generate_module")
 
-        lines = ["", "后续步骤（命令在项目根执行）："]
+        lines = ["", "后续步骤（命令在项目根执行）："] if steps else [""]
         lines.extend(f"  {index}) {text}" for index, text in enumerate(steps, start=1))
         lines.append("")
         lines.append("复核：关联字段 input_type 是否符合数据量（大数据量换 api-search-* 形态）；")

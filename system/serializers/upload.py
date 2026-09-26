@@ -10,11 +10,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
 from system.models import UploadFile
-from system.serializers.fields import DictChoiceField
 from system.serializers.tag import TaggedObjectSerializerMixin
 from system.utils.preview import preview_kind
 

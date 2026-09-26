@@ -280,6 +280,75 @@ class TestMenuSeed:
         assert all(menu["fields"]["model"] == [] for menu in menus)
 
 
+class TestBootstrap:
+    """--bootstrap：sync_model_field + loaddata 一条龙幂等入库（--grant-to 显式授权）。"""
+
+    def test_bootstrap_loads_seed_and_grants_role(self, workspace):
+        from system.models import Menu
+        from system.models.role import UserRole
+
+        role = UserRole.objects.create(name="Ops", code="ops")
+        backend, _ = _generate(workspace, "--bootstrap", "--grant-to", "ops")
+
+        seed = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        menu_pks = [entry["pk"] for entry in seed if entry["model"] == "system.menu"]
+        assert Menu.objects.filter(pk__in=menu_pks).count() == len(menu_pks)
+        # 权限点已关联模型节点（字段权限可用）：bootstrap 内先跑 sync_model_field 并回填种子
+        for menu in Menu.objects.filter(pk__in=menu_pks, menu_type=2):
+            assert menu.model.count() == 1, f"权限点 {menu.name} 未关联模型节点"
+        # 授权：页面菜单 + 全部权限点挂到角色
+        assert role.menu.count() == len(menu_pks)
+
+    def test_bootstrap_idempotent(self, workspace):
+        """重复 --bootstrap：菜单数与授权数不变（uuid5 确定性 pk upsert + M2M 幂等）。"""
+        from system.models import Menu
+        from system.models.role import UserRole
+
+        UserRole.objects.create(name="Ops", code="ops")
+        # 执行两次本身即断言对象（幂等性来自第二次 run 的 upsert 行为）
+        self._run_twice(workspace)
+        menu_count = Menu.objects.filter(name__contains="Book").count()
+        role_menu_count = UserRole.objects.get(code="ops").menu.count()
+        assert menu_count > 0 and role_menu_count > 0
+
+        second_out = self._run_twice(workspace)
+        assert Menu.objects.filter(name__contains="Book").count() == menu_count
+        assert UserRole.objects.get(code="ops").menu.count() == role_menu_count
+        # 二次执行的后续步骤清单不再包含入库步骤（已代办）
+        assert "权限点与菜单入库" not in second_out
+
+    @staticmethod
+    def _run_twice(workspace) -> str:
+        import io
+
+        from django.core.management import call_command
+
+        backend, client = workspace
+        out = io.StringIO()
+        call_command(
+            "generate_crud",
+            "demo.Book",
+            "--bootstrap",
+            "--grant-to",
+            "ops",
+            "--force",
+            output=str(backend),
+            frontend_root=str(client),
+            stdout=out,
+        )
+        return out.getvalue()
+
+    def test_bootstrap_without_grant_skips_authorization(self, workspace, capsys):
+        from system.models import Menu
+        from system.models.role import UserRole
+
+        UserRole.objects.create(name="Ops", code="ops")
+        _generate(workspace, "--bootstrap")
+        assert Menu.objects.filter(name="DemoBook").exists()
+        assert UserRole.objects.get(code="ops").menu.count() == 0
+        assert "跳过角色授权" in capsys.readouterr().out
+
+
 class TestModuleDeclaration:
     """--with-module：顺带生成 {app}/modules.py（模板与 generate_module 同源）。"""
 

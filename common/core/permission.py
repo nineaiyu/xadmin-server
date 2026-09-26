@@ -14,10 +14,17 @@ from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
+from common.core import permission_meta
 from common.core.modules import filter_menu_queryset
 from common.utils import get_logger
 from server.utils import get_current_request, set_current_request
-from system.services import FieldPermission, Menu
+from system.services import (
+    FieldPermission,
+    Menu,
+    application_of_request,
+    enforce_application_grant,
+    resolve_request_menu_pk,
+)
 
 logger = get_logger(__name__)
 
@@ -80,9 +87,19 @@ def get_menu_pk(permission_data, url):
     # 1.直接get api/system/permission$   /api/system/config/system
     p_data = permission_data.get(f"{url[1:]}$")
     if not p_data:
+        # 回退分支（权限点 path 为存储的正则串，与 permission_sync/scan.py 同口径）：
+        # 历史写法 re.match 无尾锚——`api/user` 会粘连命中 /api/userfoo（越权面）。
+        # 收敛为段边界前缀：无 `$` 后缀时要求模式匹配后到达段边界（结尾或 `/`），
+        # 子路径覆盖能力不变（api/user 仍覆盖 /api/user/1），仅堵死跨字符粘连；
+        # 带 `$` 后缀（精确）语义不变。坏正则跳过该权限点（对齐 scan.find_covering
+        # 的 re.error 防御），避免单个坏权限点让该用户所有受控请求 500。
         for p_path, permission_item in permission_data.items():
-            if re.match(f"/{p_path}", url):
-                return permission_item
+            pattern = f"/{p_path}" if p_path.endswith("$") else f"/{p_path}(/.*)?"
+            try:
+                if re.fullmatch(pattern, url):
+                    return permission_item
+            except re.error:
+                continue
     return p_data
 
 
@@ -189,7 +206,7 @@ def user_can_update_menu(user, url) -> bool:
         except Exception as e:  # noqa: BLE001 权限查询失败按无更新权限处理
             logger.warning(f"check update permission failed. user:{user} error:{e}")
             continue
-        # 与 _resolve_menu_pk 同一套地址匹配口径（精确 path$ 优先，退化到前缀正则）
+        # 与 _resolve_menu_pk 同一套地址匹配口径（精确 path$ 优先，退化到段边界前缀）
         if permission_data and get_menu_pk(permission_data, url):
             return True
     return False
@@ -255,8 +272,6 @@ class IsAuthenticated(BasePermission):
         超管与白名单 URL 出口未解析菜单上下文（``request.user.menu`` 为空）——
         应用凭证在此按请求路径在启用权限菜单里命中一次（动作段解析所需）。
         """
-        from system.utils.api_grant import application_of_request, enforce_application_grant, resolve_request_menu_pk
-
         if getattr(request.user, "menu", None) is None and application_of_request(request) is not None:
             request.user.menu = resolve_request_menu_pk(request)
         enforce_application_grant(request, view)
@@ -281,36 +296,27 @@ class IsAuthenticated(BasePermission):
     def _resolve_menu_pk(request, permission_data):
         """解析当前请求命中的权限菜单主键（``permission_data[path] = (pk, model)``）。
 
-        两条 URL 特例集中在此处，便于审计：
-        1. ``search-columns`` 与对应 list 权限同口径；
-        2. 导入导出接口未单独绑定模型时，回退到 list / create 菜单
-           （异步导出/校验/异步导入/表头读取同此规则）。
+        子 action 的权限口径为声明式元数据（common/core/permission_meta.py），
+        核心类只消费注册表、不再硬编码后缀清单：
+        1. ``shared_list``（search-columns / suggestions / available-forms /
+           user-options 等）：剥掉 URL 尾部后缀，按父级 list 权限同口径解析；
+        2. ``parent_fallback``（export|import 系）：优先按自身权限点解析，
+           未单独绑定模型时回退到父级 list / create 菜单。
+        二开新增同类子 action 时，在 ViewSet 声明处改用对应装饰器即可，无需改本类。
         """
         url = request.path_info
-        match_group = re.match("(?P<url>.*)/search-columns$", url)
-        if match_group:
-            url = match_group.group("url")
-        # 远程联想与对应 list 权限同口径（候选集=字段自身 queryset，零新增枚举面）
-        match_group = re.match("(?P<url>.*)/suggestions$", url)
-        if match_group:
-            url = match_group.group("url")
-        # 可填报表单（available-forms）与对应 list 权限同口径：填报页数据源升级后，
-        # 存量角色未重新授权新增权限点时仍能填报（升级兼容，不影响新权限点单独授权）
-        match_group = re.match("(?P<url>.*)/available-forms$", url)
-        if match_group:
-            url = match_group.group("url")
-        # 选人控件数据源（user-options）同口径：选人属于填报链路的一部分，
-        # 关键字搜索 + 字段收敛（pk/用户名/昵称），不扩大通讯录枚举面
-        match_group = re.match("(?P<url>.*)/user-options$", url)
-        if match_group:
-            url = match_group.group("url")
+        shared = permission_meta.shared_list_pattern()
+        if shared:
+            url = shared.sub("", url, count=1)
         p_data = menu_data = get_menu_pk(permission_data, url)
         if not p_data:
             raise PermissionDenied(_("Permission denied"))
-        match_group = re.match("(?P<url>.*)/(export|import)-(data|async|validate|headers)$", url)
-        if match_group and p_data[1] is None:
-            url = match_group.group("url")
-            menu_data = get_menu_pk(permission_data, url)
+        fallback = permission_meta.parent_fallback_pattern()
+        if fallback:
+            match_group = fallback.search(url)
+            if match_group and p_data[1] is None:
+                url = url[: match_group.start()]
+                menu_data = get_menu_pk(permission_data, url)
         if not menu_data:
             menu_data = p_data
         return menu_data[0]

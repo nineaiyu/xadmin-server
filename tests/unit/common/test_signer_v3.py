@@ -71,3 +71,65 @@ def test_module_signer_writes_v3_and_reads_legacy():
     # 同一 SECRET_KEY 产出的旧格式密文仍可读（存量数据兼容）
     legacy = AESCipher(settings.SECRET_KEY).encrypt(b"legacy")
     assert signer.decrypt(legacy) == "legacy"
+
+
+def test_master_key_rotation_reads_old_ciphertext():
+    """主密钥轮换（3.4）：FIELD_ENCRYPTION_KEY 换新后，旧主密钥（SECRET_KEY）产出的
+    存量 v3 密文仍可读（写新读旧），新写入用新主密钥。"""
+    from django.conf import settings
+
+    from common.base.utils import AESCipherV3
+
+    old_master = settings.SECRET_KEY
+    legacy_cipher_text = AESCipherV3(old_master).encrypt("存量密文")
+    assert legacy_cipher_text.decode().startswith("v3:")
+
+    rotated = AESCipherV3("new-master-key", legacy_masters=(old_master,))
+    assert rotated.decrypt(legacy_cipher_text) == "存量密文"  # 读旧
+    new_cipher = rotated.encrypt("新写入")
+    assert rotated.decrypt(new_cipher) == "新写入"  # 写新
+    # 旧主密钥的 signer 读不出新主密钥密文（单向：旧不能读新）
+    with pytest.raises(ValueError):
+        AESCipherV3(old_master).decrypt(new_cipher)
+
+
+def test_legacy_master_chain_walks_in_order():
+    """多级轮换：legacy_masters 按序逐个试钥，两级历史密文均可读。"""
+    from common.base.utils import AESCipherV3
+
+    k1, k2, k3 = "master-v1", "master-v2", "master-v3"
+    c1 = AESCipherV3(k1).encrypt("一代")
+    c2 = AESCipherV3(k2, legacy_masters=(k1,)).encrypt("二代")
+    walker = AESCipherV3(k3, legacy_masters=(k2, k1))
+    assert walker.decrypt(c1) == "一代"
+    assert walker.decrypt(c2) == "二代"
+
+
+def test_all_masters_failed_still_raises():
+    """全部主密钥（含历史）认证失败：抛 ValueError，由调用方按解密失败降级。"""
+    from common.base.utils import AESCipherV3
+
+    cipher_text = AESCipherV3("master-a").encrypt("secret")
+    walker = AESCipherV3("master-b", legacy_masters=("master-c",))
+    with pytest.raises(ValueError):
+        walker.decrypt(cipher_text)
+
+
+def test_get_signer_uses_field_encryption_key_with_secret_fallback():
+    """FIELD_ENCRYPTION_KEY 配置后：写用新主密钥，读回退 SECRET_KEY 存量。"""
+    from django.conf import settings
+
+    from common.base.utils import AESCipherV3, get_signer
+
+    stock = AESCipherV3(settings.SECRET_KEY).encrypt("存量数据")  # 轮换前的存量 v3 密文
+    settings.FIELD_ENCRYPTION_KEY = "dedicated-field-key"
+    try:
+        signer = get_signer()
+        assert signer.decrypt(stock) == "存量数据"  # SECRET_KEY 作为历史主密钥兜底
+        fresh = signer.encrypt("新数据")
+        assert signer.decrypt(fresh) == "新数据"
+        # 旧主密钥 signer 解不出新密文
+        with pytest.raises(ValueError):
+            AESCipherV3(settings.SECRET_KEY).decrypt(fresh)
+    finally:
+        settings.FIELD_ENCRYPTION_KEY = ""

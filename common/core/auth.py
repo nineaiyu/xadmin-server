@@ -19,6 +19,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
 from common.utils import get_logger
+from system.services import emit_webhook_event, publish_api_quota_warning
 
 logger = get_logger(__name__)
 
@@ -179,14 +180,10 @@ def notify_api_quota_warning(application, used: int, quota: int) -> None:
         "quota": quota,
     }
     try:
-        from system.notifications import ApiQuotaWarningMessage
-
-        ApiQuotaWarningMessage(info).publish(is_async=True)
+        publish_api_quota_warning(info)
     except Exception:  # noqa: BLE001
         logger.warning("send api quota warning message failed", exc_info=True)
     try:
-        from system.utils.webhook import emit_webhook_event
-
         emit_webhook_event("api_quota.warning", info)
     except Exception:  # noqa: BLE001
         logger.warning("emit api quota warning event failed", exc_info=True)

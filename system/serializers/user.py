@@ -14,6 +14,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
 from common.base.utils import AESCipherV2
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
@@ -27,7 +28,6 @@ from settings.services import (
 )
 from system.models import UserInfo
 from system.models.ldap import LdapUserBinding
-from system.serializers.fields import DictChoiceField
 from system.serializers.tag import TaggedObjectSerializerMixin
 from system.utils import user_invite
 

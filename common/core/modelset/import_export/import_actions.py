@@ -11,9 +11,9 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
-from rest_framework.decorators import action
 
 from common.core.import_mapping import first_column_candidates, writable_field_options
+from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -185,7 +185,7 @@ class ImportAsyncAction:
             }
         ),
     )
-    @action(methods=["post"], detail=False, url_path="import-headers")
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-headers")
     def import_headers(self, request, *args, **kwargs):
         """读取导入文件首行表头并给出列映射候选{cls}（列映射步骤，不落库）"""
         from rest_framework.exceptions import ParseError
@@ -241,7 +241,7 @@ class ImportAsyncAction:
             }
         ),
     )
-    @action(methods=["post"], detail=False, url_path="import-validate")
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-validate")
     def import_validate(self, request, *args, **kwargs):
         """导入前校验{cls}数据（逐行校验不落库，返回字段级错误定位）"""
         from common.core.config import SysConfig
@@ -275,7 +275,7 @@ class ImportAsyncAction:
         request=OpenApiRequest(build_basic_type(OpenApiTypes.BINARY)),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="import-async")
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-async")
     def import_async(self, request, *args, **kwargs):
         """异步导入{cls}数据（大数据量，进度与错误报告在下载中心获取）"""
         from django.db import transaction

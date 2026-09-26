@@ -9,9 +9,9 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
-from rest_framework.decorators import action
 
 from common.core.modelset.crud import CreateAction, UpdateAction
+from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
 from common.core.utils import has_self_fields, topological_sort
 from common.utils import get_logger
@@ -37,7 +37,7 @@ class ImportExportDataAction(CreateAction, UpdateAction, ImportAsyncAction, Only
         ),
         responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
     )
-    @action(methods=["post"], detail=False, url_path="import-data")
+    @parent_fallback_action(methods=["post"], detail=False, url_path="import-data")
     @transaction.atomic
     def import_data(self, request, *args, **kwargs):
         """导入{cls}数据"""

@@ -20,6 +20,7 @@ from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction, OnlyExportDataAction
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.serializers import BaseModelSerializer
 from common.swagger.utils import get_default_response_schema
@@ -159,7 +160,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         return fields_out
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="available-forms")
+    @shared_list_action(methods=["get"], detail=False, url_path="available-forms")
     def available_forms(self, request, *args, **kwargs):
         """可填报表单（启用中）：填报页数据源。
 
@@ -183,7 +184,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="user-options")
+    @shared_list_action(methods=["get"], detail=False, url_path="user-options")
     def user_options(self, request, *args, **kwargs):
         """选人控件数据源：关键字搜索或按主键回显（≤20 条，仅基本展示字段）。
 

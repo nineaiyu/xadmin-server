@@ -8,6 +8,7 @@ import datetime
 import logging
 import re
 from collections import OrderedDict, defaultdict, deque
+from importlib import import_module
 
 from django.apps import apps
 from django.conf import settings
@@ -96,6 +97,29 @@ def get_all_url_dict(pre_url="/"):
     url_ordered_dict["#"] = {"name": "#", "url": "#", "view": "#", "label": "#"}
     recursion_urls(None, pre_url, md.urlpatterns, url_ordered_dict)  # 递归去获取所有的路由
     return url_ordered_dict.values()
+
+
+def collect_app_ws_urls():
+    """按 INSTALLED_APPS 收集各应用的 WebSocket 路由（约定：<app>/routing.py 的 urlpatterns）。
+
+    与 HTTP 侧 auto_register_app_url 同思路：新业务 app 自带 routing.py 即自动接入
+    server/asgi.py，无需修改工程层文件；无 routing 模块的应用（含三方库）静默跳过。
+    必须在 django.setup() 完成后调用（asgi.py 中置于 get_asgi_application() 之后）。
+    """
+    collected = []
+    for app_config in apps.get_app_configs():
+        try:
+            routing = import_module(f"{app_config.name}.routing")
+        except ModuleNotFoundError as e:
+            # 仅吞掉「无 routing.py」这一种情况；routing.py 内部 import 失败必须暴露
+            if e.name not in (f"{app_config.name}.routing", app_config.name):
+                raise
+            continue
+        urlpatterns = getattr(routing, "urlpatterns", None)
+        if urlpatterns:
+            collected.extend(urlpatterns)
+            logger.info(f"auto register {app_config.name} websocket url success")
+    return collected
 
 
 def auto_register_app_url(urlpatterns):

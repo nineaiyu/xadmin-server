@@ -21,6 +21,7 @@ from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet, ImpactPreviewAction
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.analysis_tasks import schedule_report_run
@@ -139,7 +140,7 @@ class ReportViewSet(BaseAnalysisViewSet):
     filterset_class = ReportFilter
 
     @extend_schema(responses=get_default_response_schema())
-    @action(methods=["get"], detail=False, url_path="user-options")
+    @shared_list_action(methods=["get"], detail=False, url_path="user-options")
     def user_options(self, request, *args, **kwargs):
         """IM 收件人候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 

@@ -20,6 +20,7 @@ from django.core.handlers.asgi import ASGIRequest
 from django.utils.module_loading import import_string
 
 from common.core.modules import ModuleTrimWebsocketMiddleware
+from common.core.utils import collect_app_ws_urls
 from common.utils import get_logger
 from server.utils import set_current_request
 
@@ -28,11 +29,9 @@ logger = get_logger(__name__)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
 django_asgi_app = get_asgi_application()
 
-# 写到上面会导致gunicorn启动失败
-from message.routing import urlpatterns as message_urlpatterns
-from system.routing import urlpatterns as system_urlpatterns
-
-urlpatterns = message_urlpatterns + system_urlpatterns
+# 写到上面会导致gunicorn启动失败。WS 路由按约定自动收集（<app>/routing.py），
+# 新业务应用无需修改本工程层文件；收集必须在 django.setup() 之后执行
+urlpatterns = collect_app_ws_urls()
 
 
 @database_sync_to_async

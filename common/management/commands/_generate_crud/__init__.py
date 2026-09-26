@@ -77,6 +77,16 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         parser.add_argument("--skip-menu-seed", action="store_true", help="不生成菜单种子 JSON")
         parser.add_argument("--dry-run", action="store_true", help="只打印产物，不落盘")
         parser.add_argument("--force", action="store_true", help="覆盖已存在的生成文件（共享文件仍走生成块合并）")
+        parser.add_argument(
+            "--bootstrap",
+            action="store_true",
+            help="生成后一条龙幂等入库：sync_model_field（字段权限树）→ 回填种子 model 关联 → loaddata 菜单/权限点",
+        )
+        parser.add_argument(
+            "--grant-to",
+            default="",
+            help="仅 --bootstrap 生效：把本页菜单与权限点授予指定角色（逗号分隔角色 code，如 admin,ops）；授权属业务决策，不传则跳过",
+        )
 
     # ------------------------------------------------------------------ 入口
 
@@ -85,4 +95,6 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         ctx = self._build_context(model, options)
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
+        if options.get("bootstrap"):
+            self._bootstrap(ctx, options)
         self._print_next_steps(ctx, options)

@@ -18,6 +18,7 @@
 
 import re
 
+import system.services as system_services
 from common.base.utils import signer
 from common.utils import get_logger
 
@@ -161,7 +162,8 @@ def plaintext_sensitive_keys() -> list:
     只读、异常降级为空清单（库未就绪时不阻断调用方）。
     """
     try:
-        from system.models import SystemConfig
+        # 属性访问式契约引用：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
+        SystemConfig = system_services.SystemConfig
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []
     offenders = []

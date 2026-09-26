@@ -76,13 +76,17 @@ class AESCipherV3:
     KEY_LENGTH = 32
     HKDF_INFO = b"xadmin-field-encryption"
 
-    def __init__(self, key: str | bytes):
+    def __init__(self, key: str | bytes, legacy_masters: tuple[str | bytes, ...] = ()):
+        """:param key: 当前主密钥（写路径）；:param legacy_masters: 历史主密钥（读路径兜底，
+        用于 FIELD_ENCRYPTION_KEY 与 SECRET_KEY 分离后的平滑轮换——存量 v3 密文
+        不记录生成密钥，解密时按「当前 → 历史」逐个尝试）。"""
         self.key = key.encode("utf-8") if isinstance(key, str) else key
+        self.legacy_masters = tuple(m.encode("utf-8") if isinstance(m, str) else m for m in legacy_masters)
         self._legacy = AESCipher(key.decode("utf-8") if isinstance(key, bytes) else key)
 
-    def _derive_key(self, salt: bytes) -> bytes:
+    def _derive_key(self, salt: bytes, master: bytes | None = None) -> bytes:
         return HKDF(
-            master=self.key,
+            master=master if master is not None else self.key,
             key_len=self.KEY_LENGTH,
             salt=salt,
             hashmod=SHA256,
@@ -108,15 +112,35 @@ class AESCipherV3:
         salt = data[: self.SALT_LENGTH]
         nonce = data[self.SALT_LENGTH : self.SALT_LENGTH + self.NONCE_LENGTH]
         body = data[self.SALT_LENGTH + self.NONCE_LENGTH :]
-        cipher = AES.new(self._derive_key(salt), AES.MODE_GCM, nonce=nonce)
-        # 认证失败（篡改/错钥）抛 ValueError，由调用方按解密失败处理
-        plain = cipher.decrypt_and_verify(body[: -self.TAG_LENGTH], body[-self.TAG_LENGTH :])
-        return plain.decode("utf-8")
+        # 主密钥轮换的「读旧」：当前主密钥认证失败时逐个尝试历史主密钥；
+        # 全部失败（篡改/错钥）抛最后一个 ValueError，由调用方按解密失败处理
+        last_error: ValueError | None = None
+        for master in (self.key, *self.legacy_masters):
+            cipher = AES.new(self._derive_key(salt, master), AES.MODE_GCM, nonce=nonce)
+            try:
+                plain = cipher.decrypt_and_verify(body[: -self.TAG_LENGTH], body[-self.TAG_LENGTH :])
+                return plain.decode("utf-8")
+            except ValueError as exc:
+                last_error = exc
+        raise last_error  # type: ignore[union-attr]
 
 
 def get_signer():
-    """字段级加解密器（S5）：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。"""
-    return AESCipherV3(settings.SECRET_KEY)
+    """字段级加解密器（S5）：写路径统一 v3（HKDF + AES-GCM），读路径兼容旧 v1 密文。
+
+    主密钥分离（3.4）：``FIELD_ENCRYPTION_KEY`` 显式配置后作为字段加密主密钥
+    （与 JWT 签名 / Django 会话的 SECRET_KEY 解耦，可独立轮换）；
+    轮换时把旧 SECRET_KEY（或旧 FIELD_ENCRYPTION_KEY）保留在
+    ``FIELD_ENCRYPTION_LEGACY_KEYS`` 中即可读出存量密文（写新读旧，逐项试钥）。
+    未配置时维持旧行为（主密钥 = SECRET_KEY）。改动密钥需重启进程。
+    """
+    primary = settings.FIELD_ENCRYPTION_KEY or settings.SECRET_KEY
+    legacy: tuple[str, ...] = ()
+    if settings.FIELD_ENCRYPTION_KEY:
+        legacy = tuple(
+            key for key in (settings.SECRET_KEY, *settings.FIELD_ENCRYPTION_LEGACY_KEYS) if key and key != primary
+        )
+    return AESCipherV3(primary, legacy_masters=legacy)
 
 
 signer: AESCipherV3 = get_signer()

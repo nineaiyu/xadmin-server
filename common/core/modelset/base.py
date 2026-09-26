@@ -14,6 +14,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
+from system.services import ensure_impact_confirmed
 
 logger = get_logger(__name__)
 
@@ -32,8 +33,6 @@ class BaseViewSet:
     def perform_destroy(self, instance):
         # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认
         # （未登记模型零开销直接放行）
-        from system.utils.impact import ensure_impact_confirmed
-
         ensure_impact_confirmed(self, self.request, instances=[instance])
         return instance.delete()
 

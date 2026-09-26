@@ -6,6 +6,13 @@ x-build-args: &xadmin-build-args
   APT_MIRROR: ${APT_MIRROR:-http://mirrors.aliyun.com}
   UV_CONCURRENT_DOWNLOADS: ${UV_CONCURRENT_DOWNLOADS:-50}
 
+# 应用容器凭据透传：Config 取值链为 config.yml → 环境变量 → 内置默认值，
+# 因此仅当 config.yml 未定义同名键时这里才生效（config.yml 仍是应用侧唯一定义处）。
+# 无 config.yml 的快速启动场景由 .env 提供与 PG/Redis 一致的凭据
+x-app-env: &xadmin-app-env
+  DB_PASSWORD: ${DB_PASSWORD:-}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
 networks:
   net:
     driver: bridge
@@ -52,9 +59,9 @@ services:
       TZ: ${TZ:-Asia/Shanghai}
       POSTGRES_DB: ${DB_DATABASE:-xadmin}
       POSTGRES_USER: ${DB_USER:-server}
-      # 密码以 config.yml 为唯一定义处，兜底值与既有部署对齐（config.yml 修改时同步）；
-      # 公开分发镜像前改为 ${DB_PASSWORD:?} 强制注入（触发条件）
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
+      # 凭据不在仓库中落值：由 .env / 环境变量强制注入（缺失即报错拒启）。
+      # dev_up.sh 会在 .env 缺失时从 config.yml 同步或随机生成；config.yml 仍是应用侧唯一定义处
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required - run utils/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
       - ${VOLUME_DIR:-../}/xadmin-postgresql/archive:/var/lib/postgresql/archive
@@ -72,11 +79,11 @@ services:
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always
-    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:-nineven}", "--port", "${REDIS_PORT:-6379}" ]
+    command: [ "redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required - run utils/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}", "--port", "${REDIS_PORT:-6379}" ]
     environment:
       TZ: ${TZ:-Asia/Shanghai}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-nineven}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required - run utils/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-redis/data:/data
     healthcheck:
@@ -98,7 +105,7 @@ services:
       PGHOST: postgresql
       PGPORT: 5432
       PGUSER: ${DB_USER:-server}
-      PGPASSWORD: ${DB_PASSWORD:-KGzKjZpWBp4R4RSa}
+      PGPASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required - run utils/dev_up.sh (auto-passes from config.yml), or set it in .env (see .env.example) / environment}
       PGDATABASE: ${DB_DATABASE:-xadmin}
       BACKUP_DIR: /backups
       KEEP_DAYS: 7
@@ -137,6 +144,7 @@ services:
       core: 0
     restart: always
     command: start web
+    environment: *xadmin-app-env
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
@@ -165,6 +173,7 @@ services:
       core: 0
     restart: always
     command: start celery_default
+    environment: *xadmin-app-env
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
@@ -192,6 +201,7 @@ services:
       core: 0
     restart: always
     command: start celery_heavy
+    environment: *xadmin-app-env
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
@@ -219,6 +229,7 @@ services:
       core: 0
     restart: always
     command: start beat
+    environment: *xadmin-app-env
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data

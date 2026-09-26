@@ -122,7 +122,7 @@
 2. **四通道互不兜底**：搜索 / 表单 / 详情 / 列表分别注册（`registerSearchRenderer` / `registerFormRenderer` / `registerDetailRenderer`）；对象/数组值必须**同时**给详情 `render` 与列表 `cellRenderer`；
 3. 在 `RePlusPage/src/utils/__tests__/renderers-pairing.spec.ts` 的分类清单登记（未登记即测试失败）；表单不可编辑的类型登记 `FORM_EXEMPT_TYPES` 说明理由；
 4. 后端侧：`common/drf/metadata.py::get_field_type` 加 isinstance 分支（若引入新字段类）+ 契约同步（改 Schema 时 `pnpm sync:contract`）；
-5. 验证：`pnpm vitest`（配对守护）+ `pnpm typecheck:strict` + 目标页面人工核验。
+5. 验证：`pnpm vitest`（配对守护）+ `pnpm typecheck`（strict 全仓单轨）+ 目标页面人工核验。
 
 ### R11 加一个独立页面（非 RePlusPage）
 
@@ -182,7 +182,11 @@ def clean_xxx_job(): ...
 1. 放 `{app}/tasks.py`（`autodiscover` 自动发现）；
 2. `module=` 填所属可裁剪模块 id（模块停用即不注册；内核任务留空）；
 3. 重启进程后自动注册（任一 Django 进程启动时执行 `create_or_update_registered_periodic_tasks`，幂等）；
-4. 重活加 `CELERY_TASK_ROUTES` 条目（走 heavy 队列）。
+4. 重活在本应用 `config.py` 声明队列路由（走 heavy 队列），无需改 settings 工程层：
+   ```python
+   # {app}/config.py
+   TASK_ROUTES = {"{app}.tasks.convert_xxx": "heavy"}  # 值也可用 {"queue": "heavy"}
+   ```
 
 **验证**：`/api/system/tasks/periodic` 列表出现该任务；「立即运行」可手工触发；`doctor` 无模块相关告警。
 

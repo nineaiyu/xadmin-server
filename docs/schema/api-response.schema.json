@@ -4,7 +4,12 @@
   "title": "ApiResponseEnvelope",
   "description": "所有业务接口的统一响应信封（common/core/response.py ApiResponse）。code=1000 为成功；业务载荷在 data（无载荷时缺省）；额外键（如 auths）由各接口经 kwargs 追加。服务端由 tests/unit/common/test_contract_schemas.py 持续校验。",
   "type": "object",
-  "required": ["code", "detail", "requestId", "timestamp"],
+  "required": [
+    "code",
+    "detail",
+    "requestId",
+    "timestamp"
+  ],
   "properties": {
     "code": {
       "type": "integer",
@@ -23,7 +28,27 @@
       "description": "服务端响应时间"
     },
     "data": {
-      "description": "业务载荷，形状由具体接口契约决定（如 routes-payload / search-columns / search-fields）；缺省表示无载荷"
+      "description": "业务载荷，形状由具体接口契约决定（如 routes-payload / search-columns / search-fields）；缺省表示无载荷",
+      "oneOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "additionalProperties": true

@@ -8,12 +8,11 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from common.core.fields import LabeledChoiceField
+from common.core.fields import DictChoiceField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from message.services import get_online_users_layers
 from system.models import OperationLog, UserLoginLog, UserSession
-from system.serializers.fields import DictChoiceField
 
 logger = get_logger(__name__)
 

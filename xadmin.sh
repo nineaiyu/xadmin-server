@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# 项目根定位 + 凭据同步：本脚本是 compose 管理入口，与 dev_up/dev_down 共用同一
+# 凭据解析（config.yml 为唯一定义处，自动维护 .env 派生缓存），
+# 否则裸 `docker compose` 命令会因 ${DB_PASSWORD:?} 插值失败
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+cd "${PROJECT_DIR}" || exit 1
+XADMIN_PROJECT_DIR="${PROJECT_DIR}"
+. "${PROJECT_DIR}/utils/compose_env.sh"
+sync_compose_credentials
 
 action=${1-}
 target=${2-}

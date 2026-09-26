@@ -20,6 +20,7 @@ from django_celery_beat.models import PeriodicTask
 from common.cache.lock import ReentrantLock
 from common.cache.redis import CacheList
 from common.celery.decorator import after_app_ready_start, register_as_period_task
+from common.celery.retry import retry_or_log
 from common.celery.utils import (
     create_or_update_celery_periodic_tasks,
     delete_celery_periodic_task,
@@ -85,12 +86,10 @@ def send_mail_async(*args, **kwargs):
     try:
         return send_mail(*args, connection=get_connection(), **kwargs)
     except Exception as e:
-        direct = task_self is None or getattr(task_self.request, "called_directly", False)
-        if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
-            countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
-            logger.warning(f"Sending mail failed, retry in {countdown}s: {e}")
-            raise task_self.retry(exc=e, countdown=countdown) from e
-        logger.error(f"Sending mail error: {e}")
+        retry_or_log(
+            task_self, e, what="Sending mail", max_seconds=MAIL_RETRY_BACKOFF_MAX, max_retries=MAIL_MAX_RETRIES
+        )
+        return None
 
 
 @shared_task(bind=True, acks_late=True, verbose_name=_("Send email attachment"))
@@ -116,12 +115,13 @@ def send_mail_attachment_async(*args, **kwargs):
     try:
         result = email.send()
     except Exception as e:
-        direct = task_self is None or getattr(task_self.request, "called_directly", False)
-        if not direct and task_self.request.retries < MAIL_MAX_RETRIES:
-            countdown = min(60 * (2**task_self.request.retries), MAIL_RETRY_BACKOFF_MAX)
-            logger.warning(f"Sending mail attachment failed, retry in {countdown}s: {e}")
-            raise task_self.retry(exc=e, countdown=countdown) from e
-        logger.error(f"Sending mail attachment error: {e}")
+        retry_or_log(
+            task_self,
+            e,
+            what="Sending mail attachment",
+            max_seconds=MAIL_RETRY_BACKOFF_MAX,
+            max_retries=MAIL_MAX_RETRIES,
+        )
         return None
     # 临时附件仅在发送成功后删除：失败重试时附件仍需存在（旧实现先删后发，重试必然失败）
     for attachment in attachment_list:

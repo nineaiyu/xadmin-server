@@ -15,9 +15,9 @@ from django.utils.translation import gettext_lazy as _
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework import serializers
 
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system.models.task import TaskExecution
-from system.serializers.fields import DictChoiceField
 from system.utils.task_center import ACTIVE_STATUSES
 
 # celery crontab_parser 各字段的取值跨度（min-max 由 parser 按 steps 推导）
@@ -128,13 +128,30 @@ def _validate_json_string(raw, expect_type, field_label):
     return raw
 
 
+def _task_routes_config() -> dict:
+    """取当前生效的任务路由表（dict 形态）。
+
+    `CELERY_TASK_ROUTES` 支持两种形态：静态 dict（用户在 config.yml 覆盖）与
+    可调用路由（common/celery/routing.py：内置表 + 各应用 config.TASK_ROUTES 声明，
+    celery 每次投递时求值）。需要枚举全部路由的消费方（队列/交换机下拉推导）
+    统一走此处取静态合并视图。
+    """
+    routes = getattr(settings, "CELERY_TASK_ROUTES", None)
+    if callable(routes):
+        from common.celery.routing import get_all_task_routes
+
+        return get_all_task_routes()
+    return routes or {}
+
+
 def _task_routing_options():
     """从 celery 配置推导可投递的队列（单一事实源，避免前端手填拼错）。
 
     取值 = 默认队列（CELERY_TASK_DEFAULT_QUEUE，缺省 celery）+ CELERY_TASK_ROUTES
-    中显式路由到的队列；新增队列只需在 settings 配置，下拉选项自动跟随。
+    中显式路由到的队列；新增队列只需声明路由（settings 或应用 config.TASK_ROUTES），
+    下拉选项自动跟随。
     """
-    routes = getattr(settings, "CELERY_TASK_ROUTES", None) or {}
+    routes = _task_routes_config()
     options = []
     default_queue = getattr(settings, "CELERY_TASK_DEFAULT_QUEUE", None) or "celery"
     if default_queue:
@@ -159,7 +176,7 @@ def _routing_key_choices():
 
 def _exchange_choices():
     # 项目 broker 为默认直接交换机（空名），未配置命名交换机时仅保留默认项
-    routes = getattr(settings, "CELERY_TASK_ROUTES", None) or {}
+    routes = _task_routes_config()
     options = []
     for route in routes.values():
         exchange = route.get("exchange") if isinstance(route, dict) else None

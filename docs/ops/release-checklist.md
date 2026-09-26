@@ -9,7 +9,7 @@
 ## 0. 每次发布都过（基线项）
 
 - [ ] **全量门禁**：server `ruff check` + `ruff format --check` + `pytest -n auto`（覆盖率 ≥85%）；
-      client `typecheck` + `typecheck:strict` + `eslint --max-warnings 0` + `prettier` + `stylelint` + `vitest` +
+      client `typecheck`（strict 全仓单轨）+ `eslint --max-warnings 0` + `prettier` + `stylelint` + `vitest` +
       `check:contract` + **`check:bundle-size`**（首屏闭包增长 ≤15 KB，超预算需在 PR 说明后刷新基线）
 - [ ] **CI 全绿**：GitHub Actions 最近一次运行 Unit Tests / Lint / E2E / security 全 success，无积压失败
       （教训：Unit Tests 曾自 09-14 起连续失败多日未察觉——本地编译 .mo 为中文、CI 无 .mo 为英文/组件域翻译，

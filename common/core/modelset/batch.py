@@ -18,6 +18,7 @@ from rest_framework.decorators import action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
+from system.services import ensure_impact_confirmed
 
 logger = get_logger(__name__)
 
@@ -81,8 +82,6 @@ class BatchDestroyAction:
         # 引用保护：登记在 IMPACT_GUARD_MODELS 的模型有影响面时要求显式确认。
         # 必须在分支前统一校验——逐行分支的 perform_destroy 异常会被吞（只记日志），
         # 放在分支内会造成「静默不删但提示成功」。
-        from system.utils.impact import ensure_impact_confirmed
-
         ensure_impact_confirmed(self, request, queryset=queryset)
         # 批量响应补逐项明细（data.success / data.failures）。
         # detail 文案与历史口径一致（既有前端与测试只读 detail），明细为增量字段。

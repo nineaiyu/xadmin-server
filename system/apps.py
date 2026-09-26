@@ -12,4 +12,13 @@ class SystemConfig(AppConfig):
 
         # 动态表单提交的「审批通过后自动落库」动作：进程启动时注册一次
         register_approval_handlers()
+
+        # 数据字典解析器注册进框架层：DictChoiceField（common.core.fields）由此
+        # 获得字典读取能力（带缓存 + 变更信号失效），common 保持零业务依赖
+        from common.core.fields import register_dict_items_resolver
+
+        from .utils.dict import get_dict_items
+
+        register_dict_items_resolver(get_dict_items)
+
         super().ready()

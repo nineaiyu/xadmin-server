@@ -94,7 +94,7 @@ search-fields 条目为子集：`key/label/help_text/input_type/choices/default`
    （表单不可编辑的类型登记 `FORM_EXEMPT_TYPES` 并写理由；新搜索键登记 `SEARCH_REGISTRY_TYPES`）；
 4. **取值口径**：`labeled_*` 系列值为 `{value,label,color?}`；关联字段为 `{pk,label}`……按既有渲染器
    同口径处理 `ElTag` 文字/边框覆盖（`src/utils/dict.ts`）；
-5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck:strict` + `pnpm check:contract`；
+5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck`（strict 全仓单轨）+ `pnpm check:contract`；
    改后端元数据后重启容器再跑 `pnpm test:e2e:fresh` 覆盖该字段的列表与详情。
 
 ## 四、与权限体系的关系

@@ -7,6 +7,7 @@ from functools import lru_cache
 
 from django.db.models import Q
 
+import system.services as system_services
 from common.utils import get_logger
 
 from .registry import _resolve_modules_cached, module_index, resolve_modules
@@ -114,9 +115,10 @@ def _disabled_menu_pks_uncached() -> frozenset:
     if not _disabled_specs():
         return frozenset()
     try:
-        from system.services import Menu
-
-        rows = list(Menu.objects.values_list("pk", "parent_id", "menu_type", "name", "path"))
+        # 属性访问式契约引用：本模块在 settings 加载期被 config 消费（早于应用注册表就绪），
+        # from-import 会在导入期触发模型加载；经模块命名空间访问把加载推迟到调用期，
+        # 迁移期/空库等场景仍按下方 except 退化为不裁剪
+        rows = list(system_services.Menu.objects.values_list("pk", "parent_id", "menu_type", "name", "path"))
     except Exception as exc:  # noqa: BLE001 迁移期/空库等场景下裁剪退化为不裁剪
         logger.warning("module menu filter skipped: %s", exc)
         return frozenset()
@@ -196,14 +198,14 @@ def filter_menu_queryset(queryset):
     if not hidden and not prefixes:
         return queryset
     try:
-        from system.services import Menu
-
         # 显式逐条 OR（不使用空 Q 起步：空 Q 参与 OR 的语义在 SQL 层不稳妥）
         conditions = []
         if hidden:
             conditions.append(Q(pk__in=tuple(hidden)))
         if prefixes:
-            conditions.append(Q(menu_type=Menu.MenuChoices.PERMISSION, path__regex=_prefix_regex(prefixes)))
+            conditions.append(
+                Q(menu_type=system_services.Menu.MenuChoices.PERMISSION, path__regex=_prefix_regex(prefixes))
+            )
         condition = conditions[0]
         for extra in conditions[1:]:
             condition |= extra

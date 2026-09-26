@@ -23,6 +23,12 @@ BASE_DIR = PROJECT_DIR
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = CONFIG.SECRET_KEY
 
+# 密钥分离（3.4）：字段加密主密钥与历史密钥清单（JWT 侧见 libs.py 的 SIMPLE_JWT.SIGNING_KEY）。
+# 留空 = 沿用 SECRET_KEY（旧行为）；显式配置后字段加密与 SECRET_KEY 解耦，可独立轮换，
+# 轮换期把旧密钥放入 FIELD_ENCRYPTION_LEGACY_KEYS 即可读出存量密文（写新读旧）
+FIELD_ENCRYPTION_KEY = CONFIG.FIELD_ENCRYPTION_KEY
+FIELD_ENCRYPTION_LEGACY_KEYS = CONFIG.FIELD_ENCRYPTION_LEGACY_KEYS
+
 DEBUG = CONFIG.DEBUG
 
 # SECRET_KEY 同时作为 JWT 签名密钥（SIMPLE_JWT.SIGNING_KEY），
@@ -57,20 +63,8 @@ ALLOWED_HOSTS = CONFIG.ALLOWED_HOSTS or (["*"] if DEBUG else [])
 # 反向代理信任清单（防 XFF 伪造，语义见 conf.py）：默认空 = 不信任任何 X-Forwarded-For
 TRUSTED_PROXY_IPS = CONFIG.TRUSTED_PROXY_IPS
 
-# ---------------------------------------------------------------------------
-# HTTPS 部署安全头（S3，语义见 conf.py；默认关闭 = HTTP 直连部署零影响）
-# 开启 SECURITY_HTTPS_ENABLED 后：HSTS 一年（含子域/preload）+ Secure Cookie。
-# 其余安全头（X-Content-Type-Options 等）Django 已默认下发，无需随开关变化。
-# HTTP→HTTPS 跳转是独立开关：需要代理层正确传递 X-Forwarded-Proto，
-# 纯 TCP stream 代理下开启会造成重定向循环（保持关闭，由网关侧做跳转）。
-# ---------------------------------------------------------------------------
-SECURITY_HTTPS_ENABLED = CONFIG.SECURITY_HTTPS_ENABLED
-SECURE_HSTS_SECONDS = 31536000 if SECURITY_HTTPS_ENABLED else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURITY_HTTPS_ENABLED
-SECURE_HSTS_PRELOAD = SECURITY_HTTPS_ENABLED
-SESSION_COOKIE_SECURE = SECURITY_HTTPS_ENABLED
-CSRF_COOKIE_SECURE = SECURITY_HTTPS_ENABLED
-SECURE_SSL_REDIRECT = CONFIG.SECURITY_HTTPS_REDIRECT_ENABLED
+# HTTPS 部署安全头拆分至 security_https.py（文件行数门禁），经 star-import 并入本模块
+from .security_https import *  # noqa: F401,F403
 
 # Application definition
 XADMIN_APPS = CONFIG.XADMIN_APPS

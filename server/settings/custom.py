@@ -25,7 +25,18 @@ PERMISSION_WHITE_URL = {
     "^/api/system/dict/items$": ["GET"],  # 数据字典消费端（前端 useDict 下拉），同 choices 口径
     "^/api/common/resources/cache$": ["*"],
     "^/api/notifications/site-messages/unread$": ["*"],
-    "^/api/mfa/": ["*"],  # MFA / 敏感操作二次验证，登录用户个人安全操作，无需菜单权限
+    # MFA / 敏感操作二次验证（3.3 收敛）：前缀通配改为精确端点 + 最小方法集——
+    # 个人安全操作无需菜单权限（视图内要求登录态），但新增端点不应自动豁免。
+    # 端点清单随 mfa/urls.py 的注册表（confirm / otp 两视图集，均 NoDetail 无 {pk} 路由）
+    "^/api/mfa/confirm$": ["GET", "POST"],  # GET=查询确认状态 / POST=发起二次确认
+    "^/api/mfa/confirm/send-code$": ["POST"],
+    "^/api/mfa/otp$": ["GET"],
+    "^/api/mfa/otp/close$": ["POST"],
+    "^/api/mfa/otp/confirm$": ["POST"],
+    "^/api/mfa/otp/disable$": ["POST"],
+    "^/api/mfa/otp/open$": ["POST"],
+    "^/api/mfa/otp/start$": ["POST"],
+    "^/api/mfa/otp/test$": ["POST"],
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径
     # Passkey 凭据：个人凭据个人管，视图内收口为本人（超管可查全量），同 PAT/MFA 口径
     "^/api/system/passkeys": ["*"],

@@ -160,11 +160,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends libreoffice && 
 ## 3. Docker 部署
 
 ```shell
+# 开发/体验形态（源码 bind mount，改代码重启容器即生效）
 docker compose up -d
+
+# 生产形态（代码烘焙进镜像、非 root、无源码挂载；需 docker compose >= 2.24.4）
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-- 密码策略：compose 对 postgres 提供与 `config.yml` 对齐的默认密码兜底（`${DB_PASSWORD:-KGzKjZpWBp4R4RSa}`），本地开发开箱即用；
-  **生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值（`config.yml` 中同步修改），否则使用默认密码等于裸奔。
+> 生产形态把应用数据目录 bind mount 到宿主 `./data`（与 db-backup 媒体备份同源），
+> 首次启用需 `chown 1001:1001 ./data`；改业务代码后需重新 build 镜像。
+
+- 密码策略：compose 不内置任何密码，`DB_PASSWORD` / `REDIS_PASSWORD` 未提供时直接拒绝启动
+  （`${DB_PASSWORD:?}`）。`config.yml` 是唯一定义处：`dev_up.sh` / `dev_down.sh` 每次运行都会把同名键的值
+  自动同步到 `.env`（脚本维护的派生缓存，供绕过脚本直接操作 compose 的命令使用），你只需编辑 `config.yml`。
+  **生产部署必须**使用随机值，复用任何公开示例密码等于裸奔。
 - HTTPS 部署（可选，默认关闭 = HTTP 直连部署零影响）：TLS 终止于反向代理/网关后，在 `config.yml`
   设 `SECURITY_HTTPS_ENABLED: true`，即下发 HSTS 一年（含子域/preload）与 Secure Cookie；
   若还需 Django 侧执行 HTTP→HTTPS 跳转，再开 `SECURITY_HTTPS_REDIRECT_ENABLED: true`
@@ -458,7 +467,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | `DB_HOST` | 同名 | `postgresql`（compose 服务名） | 否 | **非 Docker 本地开发改 `127.0.0.1`** |
 | `DB_PORT` | 同名 | `5432` | 否 | |
 | `DB_USER` / `DB_DATABASE` | 同名 | `server` / `xadmin` | 否 | |
-| `DB_PASSWORD` | 同名 | 空（compose 兜底 `KGzKjZpWBp4R4RSa`） | 生产必填 | 生产必须改为随机值，`config.yml` 与 compose `.env` 同步 |
+| `DB_PASSWORD` | 同名 | 空（compose 强制注入，见 `.env.example`） | 生产必填 | 生产必须改为随机值，`config.yml` 与 compose `.env` 同步 |
 | `DB_POOL` | 同名 | `true` | 否 | 仅 `DB_ENGINE=postgresql` 生效（psycopg3 服务端连接池） |
 | `DB_POOL_MIN_SIZE` / `DB_POOL_MAX_SIZE` | 同名 | `2` / `8` | 否 | 容量核算：`GUNICORN_MAX_WORKER × MAX_SIZE + celery 子进程数 × MAX_SIZE` 应小于 PG `max_connections` |
 
@@ -470,7 +479,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 |---|---|---|---|---|
 | `REDIS_HOST` | 同名 | `redis`（compose 服务名） | 否 | 非 Docker 本地开发改 `127.0.0.1` |
 | `REDIS_PORT` | 同名 | `6379` | 否 | |
-| `REDIS_PASSWORD` | 同名 | 空（compose 兜底 `nineven`） | 生产必填 | |
+| `REDIS_PASSWORD` | 同名 | 空（compose 强制注入，见 `.env.example`） | 生产必填 | |
 | `DEFAULT_CACHE_ID` / `CHANNEL_LAYERS_CACHE_ID` / `CELERY_BROKER_CACHE_ID` | 同名 | `1` / `2` / `3` | 否 | 缓存 / WebSocket / broker 三库分离 |
 
 ### 9.4 服务与任务

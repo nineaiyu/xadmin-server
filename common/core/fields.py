@@ -475,3 +475,9 @@ class ColorField(serializers.CharField):
     def __init__(self, **kwargs):
         self.input_type = "color"
         super().__init__(**kwargs)
+
+
+# 数据字典驱动字段拆分至 fields_dict.py（文件行数门禁）；此处保留兼容再导出，
+# 既有 `from common.core.fields import DictChoiceField / register_dict_items_resolver`
+# 的消费点无需改动，新代码建议直接 import common.core.fields_dict
+from common.core.fields_dict import DictChoiceField, register_dict_items_resolver  # noqa: E402,F401

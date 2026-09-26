@@ -11,9 +11,9 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from system.models.approval import ApprovalFlow, ApprovalInstance, ApprovalNodeTask
-from system.serializers.fields import DictChoiceField
 from system.serializers.tag import TaggedObjectSerializerMixin
 from system.serializers.task import DisplayRelatedField
 

@@ -19,7 +19,8 @@ logger = logging.getLogger("xadmin.conf")
 from .config import PROJECT_DIR, Config, import_string
 
 # 自动生成的 SECRET_KEY 持久化位置（相对项目根；data/ 已在 .gitignore 中）。
-# 持久化是为了重启与多进程一致：SECRET_KEY 同时是 JWT 签名与字段级加密（signer）的密钥，
+# 持久化是为了重启与多进程一致：SECRET_KEY 默认兼作 JWT 签名与字段加密主密钥
+# （密钥分离见 3.4：JWT_SIGNING_KEY / FIELD_ENCRYPTION_KEY 可独立配置），
 # 丢失会导致登录态失效与已加密数据无法解密。
 AUTO_SECRET_KEY_FILE = os.path.join("data", ".secret_key")
 AUTO_SECRET_KEY_LENGTH = 49

@@ -9,6 +9,12 @@ upload/*
 common/utils/ip/geoip/GeoLite2-City.mmdb
 common/utils/ip/ipip/ipipfree.ipdb
 config.yml
+# 部署凭据载体（compose 强制注入，见 .env.example 与 utils/dev_up.sh）
+.env
+.env.*
+!.env.example
+# AI 辅助开发过程产物（探针脚本/调试截图），不入库
+_delete/
 .venv/
 .pytest_cache/
 .ruff_cache/

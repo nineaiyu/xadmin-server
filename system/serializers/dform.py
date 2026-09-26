@@ -5,10 +5,9 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.fields import BasePrimaryKeyRelatedField
+from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from system.models.dform import DynamicForm, DynamicFormSubmission
-from system.serializers.fields import LabeledChoiceField
 from system.utils.dform import validate_draft_data, validate_schema, validate_submission_data
 
 

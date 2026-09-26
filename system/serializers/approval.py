@@ -16,9 +16,9 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer
 from system.models.approval import ApprovalRequest
-from system.serializers.fields import DictChoiceField
 from system.serializers.task import DisplayRelatedField
 from system.utils.approval import can_act
 

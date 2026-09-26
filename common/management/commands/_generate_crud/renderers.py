@@ -5,6 +5,8 @@
 import json
 import uuid
 
+from system.services import ModelLabelField
+
 from .constants import IMPORT_EXPORT_PERMISSIONS, PERMISSION_ACTIONS, SEED_NAMESPACE
 
 
@@ -415,8 +417,6 @@ class RenderMixin:
     def _model_label_pk(model):
         """菜单的 model 关联（字段权限数据源）：取 ROLE 树上的模型节点 pk，未同步则为空。"""
         try:
-            from system.models import ModelLabelField
-
             node = ModelLabelField.objects.filter(
                 name=model._meta.label_lower,
                 field_type=ModelLabelField.FieldChoices.ROLE,

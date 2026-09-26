@@ -7,6 +7,7 @@ settings app 对外服务契约层。
 禁止直接 import settings.utils 等内部实现，避免 app 间横向依赖扩散。
 """
 
+from settings.models import Setting
 from settings.utils.password import (
     PASSWORD_EXPIRED_MESSAGE,
     check_history_password,
@@ -26,6 +27,8 @@ from settings.utils.security import (
 )
 
 __all__ = [
+    # 模型契约（启动自检等迁移就绪探测场景）
+    "Setting",
     "check_password_rules",
     "check_leak_password",
     "check_history_password",

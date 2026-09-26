@@ -23,6 +23,7 @@ from common.base.utils import get_choices_dict
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
 from common.core.modelset.suggest import expose_suggest_url
+from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.core.serializers import BasePrimaryKeyRelatedField
 from common.swagger.utils import get_default_response_schema
@@ -228,7 +229,7 @@ class SearchColumnsAction:
             }
         )
     )
-    @action(methods=["get"], detail=False, url_path="search-columns")
+    @shared_list_action(methods=["get"], detail=False, url_path="search-columns")
     def search_columns(self, request, *args, **kwargs):
         """获取{cls}的展示字段"""
         results = []

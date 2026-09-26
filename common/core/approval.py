@@ -19,6 +19,7 @@ system/utils/approval.py（common 层惰性导入，跨 app 门禁合规）。
 import functools
 
 from common.utils import get_logger
+from system.services import process_approval
 
 logger = get_logger(__name__)
 
@@ -34,8 +35,6 @@ class ApprovalRequired:
         @functools.wraps(func)
         def wrapper(view_instance, request, *args, **kwargs):
             if self.enabled:
-                from system.utils.approval import process_approval
-
                 response = process_approval(view_instance, request)
                 if response is not None:
                     return response

@@ -14,11 +14,11 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from common.core.fields import DictChoiceField
 from common.core.filter import get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from notifications.models import MessageContent, MessageUserRead
-from system.serializers.fields import DictChoiceField
 from system.services import UploadFile, UserInfo
 
 logger = get_logger(__name__)

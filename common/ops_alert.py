@@ -18,7 +18,7 @@ from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
 from notifications.services import BACKEND, SystemMessage, SystemMsgSubscription, register_message
-from system.services import get_active_superuser_queryset
+from system.services import emit_webhook_event, get_active_superuser_queryset
 
 logger = logging.getLogger("xadmin")
 
@@ -108,7 +108,5 @@ def notify_ops_alert(payload: dict) -> bool:
         logger.warning("send ops alert failed", exc_info=True)
         return False
     # 出站 Webhook：运维告警事件（emit 全程吞异常）
-    from system.utils.webhook import emit_webhook_event
-
     emit_webhook_event("system.ops_alert", payload or {})
     return True

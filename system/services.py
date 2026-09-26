@@ -34,6 +34,7 @@ __all__ = [
     "ModeTypeAbstract",  # noqa: F822
     "DeptInfo",  # noqa: F822
     "ModelLabelField",  # noqa: F822
+    "UserRole",  # noqa: F822
     # 序列化器契约
     "UserInfoSerializer",  # noqa: F822
     # 信号契约
@@ -46,6 +47,27 @@ __all__ = [
     "get_users_by_perms",
     "get_active_user_pk_by_username",
     "serialize_user_info",
+    "register_user_session",
+    "websocket_session_logout",
+    # 契约委托函数（观察项收口：common 侧函数级业务 import 的模块级替代）
+    "emit_webhook_event",
+    "maybe_alert_sensitive_operation",
+    "publish_api_quota_warning",
+    "process_approval",
+    "apply_grant_fields",
+    "apply_grant_row_scope",
+    "application_of_request",
+    "enforce_application_grant",
+    "resolve_request_menu_pk",
+    "apply_mask",
+    "get_mask_rules",
+    "record_original_channel_access",
+    "ensure_impact_confirmed",
+    "impact_for_many",
+    "guarded_models",
+    "sync_model_field",
+    "scan_permission_gaps",
+    "api_action_specs",
 ]
 
 # 惰性再导出表：名字 -> 所属模块
@@ -63,8 +85,11 @@ _LAZY_EXPORTS = {
     "ModeTypeAbstract": "system.models",
     "DeptInfo": "system.models",
     "ModelLabelField": "system.models",
+    "UserRole": "system.models.role",
     "UserInfoSerializer": "system.serializers.userinfo",
     "invalid_user_cache_signal": "system.signal",
+    # AI 动作声明注册表（dict 常量；ai_meta / MCP tools 共用的单一来源）
+    "API_ACTION_SPECS": "system.utils.ai_api_registry",
 }
 
 
@@ -166,3 +191,137 @@ def websocket_session_logout(channel_name):
     UserSession.objects.filter(channel_name=channel_name, status=UserSession.Status.ONLINE).update(
         status=UserSession.Status.OFFLINE, last_active=timezone.now()
     )
+
+
+# ---------------------------------------------------------------------------
+# 契约委托函数（2026-09-26 观察项收口）：common 侧的函数级业务 import 全部
+# 收敛为本模块的模块级契约缝。委托体保持调用期惰性加载——与原函数级 import
+# 等价（循环依赖 / 迁移期降级语义不变），但缝隙在门禁 CONTRACT_SEAMS 显式
+# 登记可审计。新增委托时同步登记 CONTRACT_SEAMS 并更新 __all__。
+# ---------------------------------------------------------------------------
+
+
+def emit_webhook_event(event, payload):
+    """出站 Webhook 事件投递（system.utils.webhook 契约导出）。"""
+    from system.utils.webhook import emit_webhook_event as _emit
+
+    return _emit(event, payload)
+
+
+def maybe_alert_sensitive_operation(info):
+    """敏感操作告警分流（system.notifications 契约导出）。"""
+    from system.notifications import maybe_alert_sensitive_operation as _alert
+
+    return _alert(info)
+
+
+def publish_api_quota_warning(info):
+    """API 配额告警：系统消息 + 出站 Webhook（system.notifications 契约导出）。"""
+    from system.notifications import ApiQuotaWarningMessage
+
+    ApiQuotaWarningMessage(info).publish(is_async=True)
+
+
+def process_approval(view_instance, request):
+    """审批流拦截入口（system.utils.approval 契约导出）。"""
+    from system.utils.approval import process_approval as _process
+
+    return _process(view_instance, request)
+
+
+def apply_grant_fields(request, model_label, allowed):
+    """应用凭证字段授权：可见字段收敛（system.utils.api_grant 契约导出）。"""
+    from system.utils.api_grant import apply_grant_fields as _apply
+
+    return _apply(request, model_label, allowed)
+
+
+def apply_grant_row_scope(request, queryset):
+    """应用凭证行级授权：queryset 收敛（system.utils.api_grant 契约导出）。"""
+    from system.utils.api_grant import apply_grant_row_scope as _apply
+
+    return _apply(request, queryset)
+
+
+def application_of_request(request):
+    """请求关联的应用凭证（system.utils.api_grant 契约导出）。"""
+    from system.utils.api_grant import application_of_request as _resolve
+
+    return _resolve(request)
+
+
+def enforce_application_grant(request, view):
+    """应用凭证权限点校验（system.utils.api_grant 契约导出）。"""
+    from system.utils.api_grant import enforce_application_grant as _enforce
+
+    return _enforce(request, view)
+
+
+def resolve_request_menu_pk(request):
+    """按请求路径解析应用凭证菜单（system.utils.api_grant 契约导出）。"""
+    from system.utils.api_grant import resolve_request_menu_pk as _resolve
+
+    return _resolve(request)
+
+
+def apply_mask(value, rule):
+    """按掩码规则脱敏单值（system.utils.mask 契约导出）。"""
+    from system.utils.mask import apply_mask as _apply
+
+    return _apply(value, rule)
+
+
+def get_mask_rules(model_label):
+    """取模型掩码规则（system.utils.mask 契约导出）。"""
+    from system.utils.mask import get_mask_rules as _get
+
+    return _get(model_label)
+
+
+def record_original_channel_access(request, user, model_label=None):
+    """掩码通道明文访问审计（system.utils.mask 契约导出）。"""
+    from system.utils.mask import record_original_channel_access as _record
+
+    return _record(request, user, model_label)
+
+
+def ensure_impact_confirmed(view, request, instances=None, queryset=None):
+    """删除影响面确认校验（system.utils.impact 契约导出）。"""
+    from system.utils.impact import ensure_impact_confirmed as _ensure
+
+    return _ensure(view, request, instances=instances, queryset=queryset)
+
+
+def impact_for_many(objects) -> dict:
+    """批量影响面预览（system.utils.impact 契约导出）。"""
+    from system.utils.impact import impact_for_many as _impact
+
+    return _impact(objects)
+
+
+def guarded_models() -> set:
+    """登记影响面保护的模型清单（system.utils.impact 契约导出）。"""
+    from system.utils.impact import guarded_models as _guarded
+
+    return _guarded()
+
+
+def sync_model_field():
+    """模型字段权限树同步（system.utils.modelfield 契约导出）。"""
+    from system.utils.modelfield import sync_model_field as _sync
+
+    return _sync()
+
+
+def scan_permission_gaps():
+    """权限点缺口扫描（system.utils.permission_sync 契约导出）。"""
+    from system.utils.permission_sync import scan_permission_gaps as _scan
+
+    return _scan()
+
+
+def api_action_specs() -> dict:
+    """AI 动作声明注册表（system.utils.ai_api_registry 契约导出，dict 常量）。"""
+    from system.utils.ai_api_registry import API_ACTION_SPECS
+
+    return API_ACTION_SPECS

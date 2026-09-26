@@ -11,6 +11,7 @@ from common.core.permission import (
     get_menu_pk,
     get_user_menu_queryset,
     get_user_permission,
+    match_permission_white_url,
 )
 from system.models import Menu, UserInfo
 
@@ -90,6 +91,29 @@ class TestGetMenuPk:
     def test_no_match_returns_none(self):
         assert get_menu_pk({}, "/api/other") is None
 
+    def test_segment_prefix_covers_exact_and_children(self):
+        # 无 `$` 后缀的权限点按段边界前缀匹配：自身与子路径均覆盖
+        data = {"api/demo/book": (1, None)}
+        assert get_menu_pk(data, "/api/demo/book") == (1, None)
+        assert get_menu_pk(data, "/api/demo/book/1") == (1, None)
+
+    def test_segment_prefix_never_matches_across_chars(self):
+        # 对抗性：无尾锚的 re.match 前缀语义会让 /api/demo/userfoo 粘连命中
+        # api/demo/user 权限点（越权）；段边界锚定后必须拒绝
+        data = {"api/demo/user": (1, None)}
+        assert get_menu_pk(data, "/api/demo/userfoo") is None
+        assert get_menu_pk(data, "/api/demo/user-exports") is None
+
+    def test_dollar_anchor_stays_exact(self):
+        # 带 `$` 后缀（精确）语义不受回退分支锚定影响：不覆盖子路径
+        data = {"api/demo/book$": (1, None)}
+        assert get_menu_pk(data, "/api/demo/book/1") is None
+
+    def test_invalid_regex_permission_skipped_not_raised(self):
+        # 对抗性：坏正则权限点只应失效自身，不能让该用户所有受控请求 500
+        data = {"api/demo/[": (1, None)}
+        assert get_menu_pk(data, "/api/demo/book") is None
+
 
 class TestIsAuthenticatedPermission:
     permission = IsAuthenticated()
@@ -108,6 +132,28 @@ class TestIsAuthenticatedPermission:
         settings.PERMISSION_WHITE_URL = {"/api/common/health": ["GET"]}
         request = make_request("/api/common/health", normal_user)
         assert self.permission.has_permission(request, None) is True
+
+    def test_mfa_whitelist_exact_endpoints_and_methods(self):
+        """3.3 白名单收敛：mfa 前缀通配改为精确端点 + 最小方法集。"""
+        for method, path in [
+            ("POST", "/api/mfa/confirm"),
+            ("GET", "/api/mfa/confirm"),  # 查询确认状态
+            ("POST", "/api/mfa/confirm/send-code"),
+            ("GET", "/api/mfa/otp"),
+            ("POST", "/api/mfa/otp/close"),
+            ("POST", "/api/mfa/otp/confirm"),
+            ("POST", "/api/mfa/otp/disable"),
+            ("POST", "/api/mfa/otp/open"),
+            ("POST", "/api/mfa/otp/start"),
+            ("POST", "/api/mfa/otp/test"),
+        ]:
+            assert match_permission_white_url(method, path), f"{method} {path} 应命中白名单"
+
+    def test_mfa_whitelist_fail_closed_on_extra_methods_and_paths(self):
+        """未列出的方法与子路径不再豁免（前缀通配时代的越权面已封死）。"""
+        assert not match_permission_white_url("DELETE", "/api/mfa/confirm")
+        assert not match_permission_white_url("DELETE", "/api/mfa/otp")
+        assert not match_permission_white_url("POST", "/api/mfa/otp/nonexistent")
 
     def test_white_url_method_mismatch_denied(self, normal_user, settings):
         settings.PERMISSION_WHITE_URL = {"/api/common/health": ["POST"]}

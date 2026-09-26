@@ -16,6 +16,18 @@
 # 留空 = 开发/首次体验自动生成（持久化 data/.secret_key）；生产显式配置
 SECRET_KEY:
 
+# 密钥分离（可选，留空 = 沿用 SECRET_KEY，旧行为）：
+# JWT_SIGNING_KEY：JWT 签名独立密钥。设置后轮换 SECRET_KEY 不再使全部登录态失效
+#   （仅本次轮换需要用户重新登录一次）。生成方法同上。
+#JWT_SIGNING_KEY:
+#
+# FIELD_ENCRYPTION_KEY：字段加密主密钥（敏感 SystemConfig 值的落库加密）。
+#   设置后轮换 SECRET_KEY 不影响存量密文解密；轮换时把旧密钥按序放入
+#   FIELD_ENCRYPTION_LEGACY_KEYS（JSON 数组）即可读出存量密文（写新读旧）。
+#   注意：修改密钥需重启进程；存量 v3 密文不记录生成密钥，解密按当前→历史逐个试钥。
+#FIELD_ENCRYPTION_KEY:
+#FIELD_ENCRYPTION_LEGACY_KEYS: []
+
 # Development env open this, when error occur display the full process track, Production disable it
 # DEBUG 模式 开启DEBUG后遇到错误时可以看到更多日志，正式服要禁用，开发阶段，需要取消该注释，否则会导致前端ws连接失败
 # DEBUG: true
@@ -74,7 +86,7 @@ SECRET_KEY:
 # ### 更多数据库配置，参考官方文档：https://docs.djangoproject.com/zh-hans/5.0/ref/databases/
 # 创建竖数据库sql
 # create database xadmin default character set utf8mb4 COLLATE utf8mb4_bin;
-# grant all on xadmin.* to server@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
+# grant all on xadmin.* to server@'127.0.0.1' identified by '<your-db-password>';
 #
 # 下方默认值面向 docker compose 形态（主机名 = compose 服务名）；
 # 非 Docker 本地开发请改用本段末尾的「本地非 Docker」注释块（取消注释即覆盖上方默认值）。
@@ -86,7 +98,7 @@ DB_PORT: 5432
 
 DB_USER: server
 DB_DATABASE: xadmin
-#DB_PASSWORD: KGzKjZpWBp4R4RSa
+#DB_PASSWORD: <your-db-password>  # 需与 compose .env 的 DB_PASSWORD 一致
 
 # ---------------------------------------------------------------------------
 # 本地非 Docker 开发：按需取消注释（覆盖上方默认值）

@@ -11,7 +11,8 @@ from common.core.utils import PrintLogFormat
 from common.utils import test_ip_connectivity
 from common.utils.file import download_file
 from server.const import CONFIG
-from settings.models import Setting
+from settings.services import Setting
+from system.services import scan_permission_gaps
 
 logger = PrintLogFormat("xAdmin API Server", title_width=30, body_width=0)
 
@@ -122,6 +123,7 @@ def expire_caches():
 
 
 def check_settings():
+    # 启动自检依赖迁移就绪的表：查询失败在下方重试循环里降级
     for _ in range(60):
         try:
             Setting.objects.exists()
@@ -150,9 +152,7 @@ def check_permission_gaps():
     if not DEBUG:
         return
     try:
-        from system.utils import permission_sync as sync
-
-        gaps = sync.scan_permission_gaps()
+        gaps = scan_permission_gaps()
         if gaps:
             first_route, first_method, _ = gaps[0]
             logger.warning(

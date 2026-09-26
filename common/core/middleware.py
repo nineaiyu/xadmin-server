@@ -25,7 +25,7 @@ from common.utils.request import (
     get_request_user,
     get_verbose_name,
 )
-from system.services import OperationLog
+from system.services import OperationLog, PersonalAccessToken, maybe_alert_sensitive_operation
 
 logger = get_logger(__name__)
 
@@ -143,9 +143,8 @@ def resolve_auth_identity(request, response):
     HttpRequest，故优先从渲染上下文的 DRF request 取；认证失败（401）等拿不到
     auth 的场景退化为按 Authorization 头判定类型（不反查凭证，token_pk 留空）。
     """
-    # 惰性 import：middleware 在 common 层，避免顶层引入认证链造成循环依赖
+    # common.core.auth 保持惰性 import：middleware 在 common 层，避免顶层引入认证链造成循环依赖
     from common.core.auth import PersonalAccessTokenAuthentication
-    from system.services import PersonalAccessToken
 
     drf_request = None
     if hasattr(response, "renderer_context"):
@@ -285,8 +284,6 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             # Step3：移出请求事务，提交后再写日志；日志落库后做敏感操作告警判定
             write_operation_log(operation_log_id, info)
             try:
-                from system.notifications import maybe_alert_sensitive_operation
-
                 maybe_alert_sensitive_operation(info)
             except Exception:
                 # 告警链路异常不影响响应，也不影响日志本身

@@ -31,7 +31,7 @@ demo app 在「无 config.yml 的开发兜底」下默认启用（`XADMIN_APPS: 
 | 模型 | `demo/models.py`（`Book`） | 继承 `DbAuditModel`（自动带 pk / created_time / updated_time / creator） |
 | 序列化器 | `demo/serializers/book.py` | `fields` = 接口字段；`table_fields` = 列表默认列 |
 | 视图 | `demo/views.py`（`BookViewSet`） | 继承 `BaseModelSet`（CRUD/批量/元数据/回收站开箱即用） |
-| 路由 | `demo/urls.py` + `demo/config.py` | `config.py::URLPATTERNS` 由 `XADMIN_APPS` 自动注入总路由 |
+| 路由 | `demo/urls.py` + `demo/config.py` | `config.py::URLPATTERNS` 由 `XADMIN_APPS` 自动注入总路由；WS 路由放应用自身的 `routing.py`（同 `system/routing.py`，asgi 自动收集，无需改工程层）；重活队列在 `config.py::TASK_ROUTES` 声明（同 `demo/config.py` 已有的 URLPATTERNS 约定） |
 | 前端 | `xadmin-client/src/views/demo/book/` | `index.vue`（一行 `RePlusPage`）+ `utils/{api.ts,hook.tsx}` |
 
 > demo 的菜单 / 权限点 / 示例流程由 `python manage.py seed_demo_book` 灌入（`seed_demo_all` 已编排）：
@@ -105,6 +105,16 @@ python manage.py generate_crud crm.Customer             # 落盘
 
 ## 步骤 4：装载菜单种子 + 角色授权（7 min）
 
+**快捷方式**：生成时加 `--bootstrap --grant-to <角色code>` 可一条龙代办本步骤的前两步
+（幂等：字段权限树同步 → 回填种子 model 关联 → loaddata 入库 → 授权指定角色），
+只剩"分配角色给使用者"需要手工：
+
+```bash
+python manage.py generate_crud crm.Customer --bootstrap --grant-to admin --force
+```
+
+或按传统方式手工执行：
+
 ```bash
 python manage.py loaddata loadjson/seed_crm_customer.json
 ```
@@ -168,7 +178,7 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 ## 下一步阅读
 
 - [architecture/component-handbook.md](../architecture/component-handbook.md)：**组件手册**——组件职责 / 用法 / 依赖 / 配置项 / 扩展点
-- [guide/recipes.md](recipes.md)：**扩展流程处方集**——加字段 / 加按钮 / 自定义渲染器 / 定时任务等 22 条处方
+- [guide/recipes.md](recipes.md)：**扩展流程处方集**——加字段 / 加按钮 / 自定义渲染器 / 定时任务等 23 条处方
 - [architecture/方案选型与对比.md](../architecture/方案选型与对比.md)：方案选择与对比（元数据驱动 vs 手写等）
 - [framework-cookbook.md](../architecture/framework-cookbook.md)：ViewSet 选型、Action 覆写点、前端契约
 - [模块化与功能裁剪.md](../architecture/模块化与功能裁剪.md)：把模块变成可裁剪功能项

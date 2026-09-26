@@ -1,9 +1,10 @@
 [run]
-source = system,captcha,server,common,message,notifications,demo
+source = system,captcha,server,common,message,notifications,demo,settings,mfa
 omit =
     */migrations/*
     */tests/*
-    */settings/*
+    # 仅排除 server/settings 配置包；settings 业务 app 自 2026-09-26 起纳入测量（P2.8 盲区收口）
+    server/settings/*
     */wsgi.py
     */asgi.py
     **/apps.py

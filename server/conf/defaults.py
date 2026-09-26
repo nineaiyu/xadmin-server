@@ -4,6 +4,13 @@
 
 BASE_CONFIG = {
     "SECRET_KEY": "",
+    # 密钥分离（3.4）：留空 = 沿用 SECRET_KEY（旧行为）。
+    # JWT_SIGNING_KEY：JWT 签名独立密钥，设置后轮换 SECRET_KEY 不再使全部登录态失效（需重新登录一次）；
+    # FIELD_ENCRYPTION_KEY：字段加密主密钥，设置后轮换 SECRET_KEY 不影响存量密文解密；
+    # FIELD_ENCRYPTION_LEGACY_KEYS：轮换期间的历史主密钥清单（JSON 数组，读旧用），全部读不出即密文失效
+    "JWT_SIGNING_KEY": "",
+    "FIELD_ENCRYPTION_KEY": "",
+    "FIELD_ENCRYPTION_LEGACY_KEYS": [],
     # SECRET_KEY 缺失时的自动生成开关（开箱即用，见 server/conf/manager.py）：
     # - 无任何配置文件（回落 config_example.yml）或 DEBUG=true 时默认自动生成并持久化到 data/.secret_key；
     # - 显式 true 强制开启；显式 false（默认）且非上述场景时，缺失 SECRET_KEY 按生产口径拒绝启动；

@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from system.services import guarded_models, impact_for_many
 
 #: 单次预检的主键数上限（防大 payload 打爆计算器）
 IMPACT_MAX_ITEMS = 200
@@ -34,8 +35,6 @@ class ImpactPreviewAction:
     @action(methods=["post"], detail=False, url_path="impact")
     def impact(self, request, *args, **kwargs):
         """获取{cls}的影响面预览"""
-        from system.utils.impact import guarded_models, impact_for_many
-
         pks = request.data.get("pks") if isinstance(request.data, dict) else request.data
         if not isinstance(pks, (list, tuple)) or not pks:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))

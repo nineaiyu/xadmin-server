@@ -17,6 +17,8 @@
 
 import re
 
+from system.services import API_ACTION_SPECS
+
 #: OpenAPI 扩展字段前缀（与 drf-spectacular 的 x-* 约定一致）
 EXTENSION_PREFIX = "x-ai-"
 
@@ -31,8 +33,6 @@ def normalize_path(path: str) -> str:
 
 def declared_actions() -> dict:
     """声明式动作索引：``{(METHOD, "/api/.../ <pk>"): spec}``（注册表是唯一来源）。"""
-    from system.utils.ai_api_registry import API_ACTION_SPECS
-
     index = {}
     for spec in API_ACTION_SPECS.values():
         index[(str(spec.method).upper(), normalize_path(spec.path))] = spec

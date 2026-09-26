@@ -64,7 +64,7 @@
 | `Meta.tabs` | `TabsColumn("分组名", ["字段", ...])` 表单分栏 |
 | action 级序列化器 | ViewSet 类属性 `{action}_serializer_class`（如 `list_serializer_class`） |
 
-常用字段形态（`common/core/fields.py`、`system/serializers/fields.py`）：
+常用字段形态（均在 `common/core/fields.py`；`system/serializers/fields.py` 仅为兼容别名）：
 
 | 字段 | 元数据 `input_type` | 用途 |
 |---|---|---|
@@ -464,7 +464,7 @@ class KnowledgeApi extends BaseApi {
 | 契约与类型 | 服务端 `docs/schema/`（真源）→ 前端 `contract/schema`（`pnpm sync:contract` 一键镜像 + `gen:metadata-types` 生成类型）；CI `check:contract` 防绕过 |
 | 版本一致性 | `pnpm check:version`（tag ↔ `server/const.py` ↔ client `package.json`）；`doctor` 同源自检 |
 | 服务端门禁 | pytest（2800+，sqlite+FakeRedis 零外部依赖）/ ruff / 跨 app import / 文件行数 500 / 缓存键 / makemigrations / 文档事实（`check_doc_facts.py`） |
-| 前端门禁 | `typecheck` + `typecheck:strict`（全仓零错误）/ eslint（`no-explicit-any` error）/ prettier / stylelint / vitest / 文件行数 500 / bundle-size（+15KB 预算）/ 契约 |
+| 前端门禁 | `typecheck`（strict 全仓单轨零错误，2026-09-26 起双轨合一）/ eslint（`no-explicit-any` error）/ prettier / stylelint / vitest / 文件行数 500 / bundle-size（+15KB 预算）/ 契约 |
 | E2E | Playwright 双浏览器（chromium+webkit）+ 专项（smoke / visual / perf / a11y / csp）；纪律见 `xadmin-client/e2e/README.md`（**改后端必须 `test:e2e:fresh`**） |
 | 覆盖率 | 服务端 CI 门禁 `--cov-fail-under=85`（`.github/workflows/test.yml`）；前端 vitest 覆盖率阈值（含 registry / renders 等关键文件） |
 

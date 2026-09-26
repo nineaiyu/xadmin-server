@@ -42,7 +42,12 @@ if ! docker compose version >/dev/null 2>&1; then
   exit 1
 fi
 
+# 凭据解析：config.yml 为唯一定义处；同步 .env 派生缓存（绕过脚本直接操作
+# docker compose 的命令也依赖它），进程内 export 以 config.yml 为准
+. "$(dirname "$0")/compose_env.sh"
+
 echo "[dev-up] 1/3 启动后端容器（首次运行会自动构建镜像，可能需要数分钟）..."
+sync_compose_credentials
 docker compose up -d
 
 HEALTH_URL="http://127.0.0.1:8896/api/common/api/health"

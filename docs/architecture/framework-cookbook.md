@@ -54,6 +54,8 @@ demo/serializers/       序列化器（继承 BaseModelSerializer，声明式字
 demo/views.py           视图（继承 BaseModelSet + Mixin；filterset_class 声明搜索）
 demo/urls.py            SimpleRouter 注册
 demo/config.py          URLPATTERNS（自动注入总路由）+ PERMISSION_WHITE_REURL（白名单）
+                        + TASK_ROUTES（celery 队列路由声明，走 common/celery/routing.py 合并）
+app 自带 routing.py     WebSocket 路由（urlpatterns，asgi 按 INSTALLED_APPS 自动收集，无需改工程层；参照 system/routing.py）
 config.yml              XADMIN_APPS 注册 app
 菜单注册                 权限码/菜单/模型关联（xadmin-docs example/new-app-menu.md）
 ```
@@ -88,6 +90,7 @@ config.yml              XADMIN_APPS 注册 app
 | UploadFileAction | `upload` / `get_upload_size` | `http.upload()` |
 
 自定义 action 直接用 DRF `@action`，返回 `ApiResponse`；**docstring 必写**（菜单与访问日志的显示名取自它，见 demo/views.py 的 `push` 范例）。
+需要「与父级 list 权限同口径」或「父级兜底」的子 action，改用 `@shared_list_action` / `@parent_fallback_action`（`common/core/permission_meta.py`，声明即登记，勿在权限核心类加后缀特例）。
 
 ## 四、常用覆写点（BaseViewSet，modelset/base.py）
 
@@ -178,7 +181,7 @@ config.yml              XADMIN_APPS 注册 app
    （行内 `color` 优先），详情 `prop` 指到 `.value` 并用 `render` 渲染彩色 tag；`ElTag`
    传 `color` 需同时覆盖文字 / 边框（统一入口 `src/utils/dict.ts` 的 `dictTagProps` /
    `statusTagProps`）；
-5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck:strict` + `pnpm check:contract`；
+5. **门禁**：`pnpm vitest`（成对守护）+ `pnpm typecheck`（strict 全仓单轨）+ `pnpm check:contract`；
    改后端元数据后重启容器再跑 `pnpm test:e2e:fresh` 覆盖该字段的列表与详情。
 
 ### 权限

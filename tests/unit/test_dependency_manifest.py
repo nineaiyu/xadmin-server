@@ -16,6 +16,7 @@
 import re
 import shutil
 import subprocess
+import tempfile
 import tomllib
 from pathlib import Path
 
@@ -227,16 +228,21 @@ def test_uv_export_reproduces_requirements_files():
             ),
         ),
     ):
-        result = subprocess.run(
-            [uv, "export", "--frozen", *_EXPORT_ARGS, *extra_args, "-o", "-"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        assert result.returncode == 0, f"uv export 执行失败：{result.stderr}"
+        # 必须导出到临时文件而非 `-o -`：uv 会把 `-` 当作字面文件名在仓库根落盘
+        # （仓库曾被误提交的 `-` 垃圾文件即本测试的历史产物）
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            out_path = Path(tmp_dir) / f"{target.stem}.txt"
+            result = subprocess.run(
+                [uv, "export", "--frozen", *_EXPORT_ARGS, *extra_args, "-o", str(out_path)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            assert result.returncode == 0, f"uv export 执行失败：{result.stderr}"
+            exported = out_path.read_text(encoding="utf-8")
         assert _content(target) == [
-            line for line in result.stdout.splitlines() if line.strip() and not line.startswith("#")
+            line for line in exported.splitlines() if line.strip() and not line.startswith("#")
         ], f"{target.name} 与 uv export 输出不一致（请勿手工编辑产物，改依赖请改 pyproject.toml 后重新导出）"
 
 

@@ -1,0 +1,37 @@
+# 生产编排 overlay：叠加在默认栈之上使用（默认栈的 compose 即开发形态，见其文件头说明）
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# 与默认（开发）栈的差异：
+#   1. 应用镜像走生产 Dockerfile：代码烘焙进镜像、非 root（1001）、无源码 bind mount；
+#   2. 应用数据目录 bind mount 宿主 ./data（上传/日志），与 db-backup 的媒体备份同源。
+#      首次启用需 chown 1001:1001 ./data（容器内非 root，属主要求见 Dockerfile 注释）；
+#   3. 其余（凭据强制注入、网络、健康检查、备份/PITR）全部继承默认栈。
+#
+# 依赖 docker compose v2.24.4+（volumes 的 !reset 标签）；凭据注入见 .env.example。
+# 修改业务代码后需重新 build 镜像（默认栈的源码 bind mount 热更新仅限开发形态）。
+
+services:
+  server:
+    build:
+      dockerfile: Dockerfile
+    volumes: !override
+      - ./data:/data/xadmin-server/data
+
+  celery-worker:
+    build:
+      dockerfile: Dockerfile
+    volumes: !override
+      - ./data:/data/xadmin-server/data
+
+  celery-heavy:
+    build:
+      dockerfile: Dockerfile
+    volumes: !override
+      - ./data:/data/xadmin-server/data
+
+  celery-beat:
+    build:
+      dockerfile: Dockerfile
+    volumes: !override
+      - ./data:/data/xadmin-server/data

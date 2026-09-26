@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 # project : xadmin-server
 # filename : routes
 # author : ly_13
 # date : 4/21/2024
+import hashlib
+import json
+
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
 
@@ -27,6 +30,16 @@ def get_auths(user):
     return menu_obj.filter(menu_type=Menu.MenuChoices.PERMISSION).values_list("name", flat=True).distinct()
 
 
+def get_routes_version(data, auths) -> str:
+    """路由 + 按钮授权快照的内容指纹：任一菜单/授权变化即变化。
+
+    前端对本地路由快照（CachingAsyncRoutes）按此字段失效——在缓存函数内计算，
+    版本与载荷随同一份缓存整体翻转，保证「版本变了 ⇒ 内容也变了」。
+    """
+    payload = json.dumps([data, list(auths)], ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.md5(payload.encode("utf-8")).hexdigest()
+
+
 class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
     """获取菜单路由"""
 
@@ -45,8 +58,12 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
                 many=True,
                 ignore_field_permission=True,
             ).data
-
-            return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
+            auths = get_auths(user_obj)
+            return ApiResponse(
+                data=format_menu_data(menu_list_to_tree(route_list)),
+                auths=auths,
+                version=get_routes_version(route_list, auths),
+            )
         else:
             menu_queryset = get_user_menu_queryset(user_obj)
             if menu_queryset:
@@ -56,4 +73,9 @@ class UserRoutesAPIView(GenericAPIView, CacheDetailResponseMixin):
                     ignore_field_permission=True,
                 ).data
 
-        return ApiResponse(data=format_menu_data(menu_list_to_tree(route_list)), auths=get_auths(user_obj))
+        auths = get_auths(user_obj)
+        return ApiResponse(
+            data=format_menu_data(menu_list_to_tree(route_list)),
+            auths=auths,
+            version=get_routes_version(route_list, auths),
+        )

@@ -16,6 +16,7 @@ from rest_framework.serializers import ModelSerializer
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.utils import get_logger
 from server.utils import get_current_request
+from system.services import apply_grant_fields, apply_mask, get_mask_rules, record_original_channel_access
 
 logger = get_logger(__name__)
 
@@ -93,8 +94,6 @@ class BaseModelSerializer(ModelSerializer):
         """
         if not self.request:
             return allowed
-        from system.utils.api_grant import apply_grant_fields
-
         return apply_grant_fields(self.request, self.Meta.model._meta.label_lower, allowed)
 
     def __init__(self, instance=None, data=empty, fields=None, ignore_field_permission=False, **kwargs):
@@ -241,9 +240,7 @@ class BaseModelSerializer(ModelSerializer):
             except AttributeError:  # 只读请求对象兜底
                 pass
         if cached:
-            # 惰性 import：同上；审计内部按请求去重，列表逐行调用也只记一次
-            from system.utils.mask import record_original_channel_access
-
+            # 审计内部按请求去重，列表逐行调用也只记一次
             record_original_channel_access(request, user, model._meta.label_lower if model is not None else None)
         return cached
 
@@ -281,9 +278,6 @@ class BaseModelSerializer(ModelSerializer):
             return ret
         if self._mask_exempt(request, user, model):
             return ret
-        # 惰性 import：common 层不引 system（跨 app 门禁许可函数内惰性 import）
-        from system.utils.mask import apply_mask, get_mask_rules
-
         rules = get_mask_rules(model._meta.label_lower)
         if not rules:
             return ret
@@ -317,8 +311,6 @@ class BaseModelSerializer(ModelSerializer):
         model = getattr(getattr(self, "Meta", None), "model", None)
         if instance is None or not ret or model is None:
             return
-        from system.utils.mask import apply_mask, get_mask_rules
-
         rules = get_mask_rules(model._meta.label_lower)
         if not rules:
             return

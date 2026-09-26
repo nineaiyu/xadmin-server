@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from django.core.exceptions import ImproperlyConfigured
 
+from common.celery.routing import celery_task_route
+
 from ..const import CONFIG
 from .base import CACHES, CELERY_BROKER_CACHE_ID, REDIS_HOST, REDIS_PASSWORD, REDIS_PORT, SECRET_KEY
 
@@ -83,7 +85,9 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,  # 在登录的时候更新user表  last_login 字段
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
+    # 密钥分离（3.4）：显式配置 JWT_SIGNING_KEY 后与 Django SECRET_KEY 解耦，
+    # 轮换 SECRET_KEY（会话/CSRF）不再连带踢掉全部登录态；留空沿用 SECRET_KEY
+    "SIGNING_KEY": CONFIG.JWT_SIGNING_KEY or SECRET_KEY,
     "VERIFYING_KEY": None,
     "AUDIENCE": "x",
     "ISSUER": "server",
@@ -149,12 +153,10 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # 队列路由：heavy 队列承载导入/导出/批量操作等重任务（background_task_view_set_job），
-# 避免慢任务阻塞邮件/短信/站内信等轻量任务；worker 由 start celery_heavy 拉起消费 heavy 队列
-CELERY_TASK_ROUTES = {
-    "common.tasks.background_task_view_set_job": {"queue": "heavy"},
-    # Office 转 PDF 预览：CPU 密集型外部进程，禁止占用默认队列
-    "system.tasks.convert_office_preview_task": {"queue": "heavy"},
-}
+# 避免慢任务阻塞邮件/短信/站内信等轻量任务；worker 由 start celery_heavy 拉起消费 heavy 队列。
+# 采用可调用路由（common/celery/routing.py）：内置表兜底 + 各应用 config.py::TASK_ROUTES
+# 声明优先，二开应用改队列归属无需修改本工程层文件
+CELERY_TASK_ROUTES = celery_task_route
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 

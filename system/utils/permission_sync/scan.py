@@ -106,7 +106,11 @@ def _method_covers(perm, path, method):
 
 
 def find_covering(perms, path, method):
-    """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次正则前缀回退。"""
+    """与运行时 get_menu_pk 同口径：精确 `path$` 优先，其次段边界前缀回退。
+
+    回退分支与运行时一样锚定段边界（`(/.*)?`），无 `$` 的 `api/user` 不再粘连
+    命中 `/api/userfoo`——扫描器口径比运行时宽会产生「已覆盖」的漏报。
+    """
     exact = f"{path}$"
     for perm in perms:
         if perm.path == exact and _method_covers(perm, path, method):
@@ -115,8 +119,9 @@ def find_covering(perms, path, method):
     for perm in perms:
         if not _method_covers(perm, path, method):
             continue
+        pattern = "/" + perm.path if perm.path.endswith("$") else "/" + perm.path + r"(/.*)?"
         try:
-            if re.match("/" + perm.path, target):
+            if re.fullmatch(pattern, target):
                 return perm
         except re.error:
             continue

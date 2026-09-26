@@ -7,9 +7,9 @@ from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
-from rest_framework.decorators import action
 
 from common.core.modelset.crud import ListAction
+from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
 from common.drf.renders.csv import CSVFileRenderer
 from common.drf.renders.excel import ExcelFileRenderer
@@ -23,7 +23,7 @@ class OnlyExportDataAction(ListAction):
         ],
         responses={200: OpenApiResponse(build_basic_type(OpenApiTypes.BINARY))},
     )
-    @action(methods=["get"], detail=False, url_path="export-data")
+    @parent_fallback_action(methods=["get"], detail=False, url_path="export-data")
     def export_data(self, request, *args, **kwargs):
         """导出{cls}数据（type=csv|xlsx，缺省 xlsx）"""
         file_format = request.query_params.get("type", "xlsx")
@@ -44,7 +44,7 @@ class OnlyExportDataAction(ListAction):
         request=OpenApiRequest(build_object_type(properties={"type": build_basic_type(OpenApiTypes.STR)})),
         responses=get_default_response_schema(),
     )
-    @action(methods=["post"], detail=False, url_path="export-async")
+    @parent_fallback_action(methods=["post"], detail=False, url_path="export-async")
     def export_async(self, request, *args, **kwargs):
         """异步导出{cls}数据"""
         from django.apps import apps

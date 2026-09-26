@@ -118,6 +118,61 @@ class TestRoutesResponseCache:
         assert children["角色管理"]["meta"]["watermark"] is False
 
 
+class TestRoutesVersion:
+    """version 字段：路由+授权快照内容指纹，前端本地路由缓存据此失效（收权/菜单变更自愈）。"""
+
+    def test_response_contains_version(self, auth_client):
+        assert payload(auth_client.get(ROUTES_URL)).get("version")
+
+    def test_version_stable_on_cache_hit(self, auth_client):
+        first = payload(auth_client.get(ROUTES_URL))["version"]
+        second = payload(auth_client.get(ROUTES_URL))["version"]
+        assert first == second
+
+    def test_version_changes_when_menu_changes(self, auth_client):
+        before = payload(auth_client.get(ROUTES_URL))["version"]
+        meta = MenuMeta.objects.create(title="版本探测菜单")
+        Menu.objects.create(
+            name="版本探测菜单",
+            path="api/version-probe$",
+            method="GET",
+            menu_type=Menu.MenuChoices.MENU,
+            meta=meta,
+        )
+        cache.clear()  # 路由视图按用户缓存 24h，清缓存让新菜单进入载荷
+        after = payload(auth_client.get(ROUTES_URL))["version"]
+        assert before != after
+
+    def test_version_changes_when_auth_changed(self, auth_client):
+        """按钮权限（auths）变化同样翻转版本——收权即时失效的关键语义。"""
+        before = payload(auth_client.get(ROUTES_URL))["version"]
+        meta = MenuMeta.objects.create(title="版本探测权限点")
+        Menu.objects.create(
+            name="版本探测权限点",
+            path="api/version-probe-perm$",
+            method="GET",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            meta=meta,
+        )
+        cache.clear()
+        after = payload(auth_client.get(ROUTES_URL))["version"]
+        assert before != after
+
+
+class TestGetRoutesVersionUnit:
+    def test_stable_for_same_content(self):
+        from system.views.routes import get_routes_version
+
+        assert get_routes_version([{"path": "/a"}], ["auth1"]) == get_routes_version([{"path": "/a"}], ["auth1"])
+
+    def test_sensitive_to_data_and_auths(self):
+        from system.views.routes import get_routes_version
+
+        base = get_routes_version([{"path": "/a"}], ["auth1"])
+        assert get_routes_version([{"path": "/b"}], ["auth1"]) != base
+        assert get_routes_version([{"path": "/a"}], ["auth2"]) != base
+
+
 class CachedView(APIView):
     """最小化可缓存视图：计数器暴露视图方法的真实执行次数"""
 
