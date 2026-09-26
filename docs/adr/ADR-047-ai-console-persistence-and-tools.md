@@ -4,7 +4,7 @@
 - 日期：2026-09-20
 - 关联：[ADR-038](ADR-038-ai-assistant-restricted-actions.md)（受限动作与白名单注册表）；
   [ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期问答）；
-  `system/models/ai.py::AiChatMessage`、`system/utils/ai_chat.py`、`system/views/ai/`、
+  `ai/models/ai.py::AiChatMessage`、`ai/utils/ai_chat.py`、`ai/views/`、
   `xadmin-client/src/views/integration/ai/`
 
 ## 背景
@@ -31,7 +31,7 @@
   （`before_id` 倒序翻页）；`role = user/assistant/system`；`reasoning` 截断落库
   （与聊天室同口径 4000 字）；`extra` 承载 sources / nl / nl_run / action_draft /
   action_result / partial / error（DjangoJSONEncoder 兜底 UUID/datetime）；
-- 落库收口在 `system/utils/ai_chat.py`：各流式端点在「校验通过」后落 user 消息
+- 落库收口在 `ai/utils/ai_chat.py`：各流式端点在「校验通过」后落 user 消息
   （头前错误不落库），done/error 帧携带服务端持久化载荷（`message` 键）——
   前端乐观上屏按载荷对齐，刷新后从 `GET history` 得到同一份数据；
 - `history` 并入 `status:AiAssistant` 权限点路径正则（GET 组：

@@ -7,7 +7,6 @@
 
 
 from .abstract import *
-from .ai import *
 from .config import *
 from .dataset import *
 from .department import *

@@ -15,6 +15,7 @@ import pytest
 from django.conf import settings
 from django.core.management import call_command
 
+from ai.models.ai import AiKnowledgeDocument
 from approval.management.commands.seed_demo_flows import INSTANCE_PKS as FLOW_INSTANCE_PKS
 from approval.management.commands.seed_demo_leave import LEAVE_PKS
 from approval.models import Leave
@@ -38,7 +39,6 @@ from system.models import (
     UploadFile,
     UserInfo,
 )
-from system.models.ai import AiKnowledgeDocument
 from system.models.token import ApiApplication
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 

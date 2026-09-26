@@ -59,7 +59,7 @@ def taggable_visit_path(model) -> str:
 
 def ensure_tag_permission(user, model, pk) -> None:
     """打标权限校验：回落业务对象的 update 权限点（fail-closed）。"""
-    from system.utils.ai_actions import user_can_visit
+    from ai.utils.ai_actions import user_can_visit
 
     visit = taggable_visit_path(model)
     if not visit:

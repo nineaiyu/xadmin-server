@@ -49,7 +49,7 @@ class TestCallerErrorMapping:
     def test_action_draft_maps_to_django_validation_error(self):
         from django.core.exceptions import ValidationError as DjangoValidationError
 
-        from system.utils.ai_actions import _extract_json_object
+        from ai.utils.ai_actions import _extract_json_object
 
         with pytest.raises(DjangoValidationError):
             _extract_json_object("不是 JSON")
@@ -57,13 +57,13 @@ class TestCallerErrorMapping:
     def test_nl_query_maps_to_django_validation_error(self):
         from django.core.exceptions import ValidationError as DjangoValidationError
 
-        from system.utils.nl_query import parse_llm_json
+        from ai.utils.nl_query import parse_llm_json
 
         with pytest.raises(DjangoValidationError):
             parse_llm_json("不是 JSON")
 
     def test_nl_query_drops_unknown_keys(self):
-        from system.utils.nl_query import parse_llm_json
+        from ai.utils.nl_query import parse_llm_json
 
         payload = parse_llm_json('{"dataset": "x", "mode": "detail", "sql": "drop table"}')
         assert "sql" not in payload  # 未知键剥离（白名单外不带执行语义）

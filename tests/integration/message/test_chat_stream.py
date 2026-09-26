@@ -187,7 +187,7 @@ class TestStream:
 
     def test_kb_single_delta_with_sources(self, auth_client, ai_enabled, monkeypatch):
         monkeypatch.setattr(
-            "system.utils.ai.ask",
+            "ai.utils.ai.ask",
             lambda question, user=None: {
                 "answer": "根据文档，重置密码见 [1]。",
                 "sources": [{"title": "手册", "path": "upload/manual.md", "chunk_index": 0}],

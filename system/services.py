@@ -66,7 +66,6 @@ __all__ = [
     "guarded_models",
     "sync_model_field",
     "scan_permission_gaps",
-    "api_action_specs",
 ]
 
 # 惰性再导出表：名字 -> 所属模块
@@ -92,8 +91,6 @@ _LAZY_EXPORTS = {
     "DisplayRelatedField": "system.serializers.task",
     "TaggedObjectSerializerMixin": "system.serializers.tag",
     "invalid_user_cache_signal": "system.signal",
-    # AI 动作声明注册表（dict 常量；ai_meta / MCP tools 共用的单一来源）
-    "API_ACTION_SPECS": "system.utils.ai_api_registry",
 }
 
 
@@ -315,10 +312,3 @@ def scan_permission_gaps():
     from system.utils.permission_sync import scan_permission_gaps as _scan
 
     return _scan()
-
-
-def api_action_specs() -> dict:
-    """AI 动作声明注册表（system.utils.ai_api_registry 契约导出，dict 常量）。"""
-    from system.utils.ai_api_registry import API_ACTION_SPECS
-
-    return API_ACTION_SPECS

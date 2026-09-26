@@ -5,7 +5,7 @@
 - 关联：[下一年度规划建议](../plans/archive/下一年度规划建议-2027.10-2028.09.md)（已归档）§四.A2（W3–W4）；[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 一期问答）；
   [ADR-026](ADR-026-dynamic-form-approval.md)（动态表单 × 敏感操作审批 412 协议）；
   [ADR-032](ADR-032-approval-business-integration.md)（审批接入业务系统）；
-  `system/utils/ai_actions.py`、`message/ai.py`、`system/views/ai.py::action_execute`
+  `ai/utils/ai_actions.py`、`message/ai.py`、`system/views/ai.py::action_execute`
 
 ## 背景
 

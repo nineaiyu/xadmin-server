@@ -111,28 +111,3 @@ def auto_clean_preview_cache(keep_days=None):
         f"storage_cache:{removed_storage_cache}"
     )
     return result["removed_orphan"] + result["removed_expired"] + removed_storage_cache
-
-
-def auto_clean_ai_usage(retention_days=None, batch_size=2000):
-    """分批清理超保留期的 AI 用量记录：保留期取 MONITOR_RETENTION_DAYS。
-
-    用量账本是观测数据（与监控心跳同口径），过期即失去成本归因价值；
-    0/缺省 = 跟随系统配置，配置为 0 表示不清理。
-    """
-    from common.core.config import SysConfig
-    from system.models.ai import AiUsageRecord
-
-    if retention_days is None:
-        retention_days = SysConfig.MONITOR_RETENTION_DAYS
-    retention_days = int(retention_days or 0)
-    if retention_days <= 0:
-        return 0
-    deadline = timezone.now() - datetime.timedelta(days=retention_days)
-    removed = 0
-    while True:
-        pks = list(AiUsageRecord.objects.filter(created_time__lt=deadline).values_list("pk", flat=True)[:batch_size])
-        if not pks:
-            break
-        removed += AiUsageRecord.objects.filter(pk__in=pks).delete()[0]
-    logger.info(f"clean {removed} AI usage records (retention {retention_days} days)")
-    return removed

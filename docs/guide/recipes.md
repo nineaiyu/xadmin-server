@@ -270,7 +270,7 @@ python manage.py doctor            # 八项自检，修到全绿
 
 AI 助手只产出「动作草稿」，用户确认后才以**本人身份**执行——新增动作 = 在注册表加一条 `ActionSpec`：
 
-1. 注册表：`system/utils/ai_actions.py::ACTION_SPECS`（唯一白名单，LLM 输出按不可信输入处理）；
+1. 注册表：`ai/utils/ai_actions.py::ACTION_SPECS`（唯一白名单，LLM 输出按不可信输入处理）；
 2. 实现三件套（同文件内私有函数即可）：
    - `validate(user, params)`：逐项校验，返回 `(JSON 安全参数, 错误文案)`（错误文案会展示给用户）；
    - `execute(user, params)`：执行并返回 `{ok, detail, data}`；creator / 申请人恒为发起用户，**不接受任何「替他人」参数**；

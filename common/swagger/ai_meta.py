@@ -17,7 +17,7 @@
 
 import re
 
-from system.services import API_ACTION_SPECS
+from ai.services import API_ACTION_SPECS
 
 #: OpenAPI 扩展字段前缀（与 drf-spectacular 的 x-* 约定一致）
 EXTENSION_PREFIX = "x-ai-"

@@ -26,7 +26,6 @@ from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from system.models.task import TaskExecution
 from system.utils.ctasks import (
-    auto_clean_ai_usage,
     auto_clean_black_token,
     auto_clean_operation_log,
     auto_clean_preview_cache,
@@ -104,13 +103,6 @@ def auto_clean_task_execution_job():
     removed += TaskResult.objects.filter(date_done__lt=deadline).delete()[0]
     logger.info("Clean task execution history: %s rows", removed)
     return removed
-
-
-@shared_task
-@register_as_period_task(crontab="12 3 * * *")
-def auto_clean_ai_usage_job():
-    """AI 用量账本保留期清理（保留期随 MONITOR_RETENTION_DAYS）。"""
-    auto_clean_ai_usage()
 
 
 @shared_task

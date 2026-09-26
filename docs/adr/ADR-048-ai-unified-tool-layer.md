@@ -28,7 +28,7 @@
 
 ### D3 MCP 协议端点（Streamable HTTP，无状态）
 
-- `POST /api/system/ai/mcp`（`system/views/ai/mcp.py`）：JSON-RPC 2.0 单对象，方法 `initialize` / `ping` / `tools/list` / `tools/call`；通知（无 id）返回 202 空体；不返回 `Mcp-Session-Id`（无状态模式，协议允许）；batch 请求返回 -32600。
+- `POST /api/system/ai/mcp`（`ai/views/mcp.py`）：JSON-RPC 2.0 单对象，方法 `initialize` / `ping` / `tools/list` / `tools/call`；通知（无 id）返回 202 空体；不返回 `Mcp-Session-Id`（无状态模式，协议允许）；batch 请求返回 -32600。
 - `tools/list` 与助手页 `tools` 端点同源（`tool_catalog`），另附 `annotations.readOnlyHint`（全 GET 动作）与 `_meta.x-requires-approval`；`tools/call` 走 `execute_action` 唯一收口 + `audit_ai_action` 审计（changes 含 `channel: "mcp"`）。
 - **高危动作在 MCP 通道一律拒绝**（isError + 引导走 Web 控制台）：MCP 无 412 审批协议（一次性令牌重放由 Web 前端拦截器驱动），机器通道不给破坏性操作开后门。
 - 认证走既有 DRF 认证链：外部客户端用 **PAT**（`Authorization: Pat <token>`）或 JWT，以令牌属主身份执行，权限双门与 Web 控制台同口径；PAT 可用 scope/IP 白名单进一步收敛。

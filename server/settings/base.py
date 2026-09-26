@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "system.apps.SystemConfig",  # 系统管理
     "approval.apps.ApprovalConfig",  # 审批流（3.1 拆分批次2 自 system 迁出）
+    "ai.apps.AiConfig",  # AI 平台与知识库（3.1 拆分批次3 自 system 迁出）
     "settings.apps.SettingsConfig",  # 设置相关
     "mfa.apps.MfaConfig",  # MFA / 敏感操作二次验证
     "notifications.apps.NotificationsConfig",  # 消息通知相关

@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
+        ("approval", "0001_initial"),
         ("system", "0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -137,7 +138,7 @@ class Migration(migrations.Migration):
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
                         related_name="demo_books",
-                        to="system.approvalinstance",
+                        to="approval.approvalinstance",
                         verbose_name="审批实例",
                     ),
                 ),

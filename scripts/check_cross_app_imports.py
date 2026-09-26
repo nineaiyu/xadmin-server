@@ -47,6 +47,10 @@ ALLOWLIST = {
     "demo/models.py": "FK 跨 app model 引用（规划允许保留）",
     "system/management/commands/dump_init_json.py": "管理命令（合法保留）",
     "system/management/commands/load_init_json.py": "管理命令（合法保留）",
+    # 演示数据种子命令：与 load_init_json 同口径的管理命令合法保留（跨 app
+    # 模块级 import 仅存在于命令入口，非运行期业务链路）
+    "system/management/commands/seed_demo_content.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_org.py": "管理命令（合法保留）",
 }
 
 # ---------------------------------------------------------------------------
@@ -131,7 +135,7 @@ CONTRACT_SEAMS = {
         "system.services": "启动自检权限点缺口扫描（scan_permission_gaps）",
     },
     "common/swagger/ai_meta.py": {
-        "system.services": "AI 动作声明注册表（API_ACTION_SPECS，OpenAPI 元数据派生）",
+        "ai.services": "AI 动作声明注册表（API_ACTION_SPECS，OpenAPI 元数据派生，3.1 拆分批次3 起 ai 自持契约门面）",
     },
 }
 
@@ -210,7 +214,9 @@ def scan() -> list[tuple[str, int, str]]:
             continue
         for py in path.rglob("*.py"):
             rel = relative_module(py)
-            parts = py.parts
+            parts = rel.split("/")
+            # src_app 取相对路径首段——不能用 py.parts[0]：iterdir 产出绝对路径，
+            # 其首段恒为 "/"，会让本扫描整体空转（2026-09-26 批次3 修复的存量缺陷）
             if any(seg in {"migrations", "tests", "__pycache__", ".venv", "node_modules"} for seg in parts):
                 continue
             src_app = parts[0]

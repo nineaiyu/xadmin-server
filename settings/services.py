@@ -43,3 +43,18 @@ __all__ = [
     "ResetBlockUtil",
     "SendVerifyCodeBlockUtil",
 ]
+
+
+def __getattr__(name):
+    # 惰性再导出（视图模块导入较重，启动期不需要）
+    _lazy = {
+        "AiAssistantSettingSerializer": "settings.serializers.ai",
+        "BaseSettingViewSet": "settings.views.settings",
+    }
+    if name in _lazy:
+        from importlib import import_module
+
+        value = getattr(import_module(_lazy[name]), name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
