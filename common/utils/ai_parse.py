@@ -7,6 +7,9 @@
 同一模型输出在两个入口得到不同结果。这里收敛为唯一实现；各调用方只负责把
 ``AiOutputParseError`` 转成自己框架的错误类型（Django / DRF ValidationError）
 与各自的后续处理（如 NL 的未知键剥离）。
+
+位置（common/utils）：无状态、零模型依赖的纯解析件，且拆分后 AI 域与
+数据分析域（nl_query）两个业务 app 都要消费——放框架层避免兄弟 app 互引。
 """
 
 import json

@@ -89,7 +89,7 @@ def user_can_visit(user, method: str, path: str) -> bool:
 
 def _extract_json_object(text: str) -> dict:
     """robust 解析 LLM 输出：剥 markdown 码栅后取首个 JSON 对象（公共实现在 ai_parse）。"""
-    from system.utils.ai_parse import AiOutputParseError, extract_json_object
+    from common.utils.ai_parse import AiOutputParseError, extract_json_object
 
     try:
         return extract_json_object(text)

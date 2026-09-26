@@ -64,7 +64,7 @@ def _entry(ok: bool, detail: str, extra: dict = None) -> dict:
 
 def probe_json(client) -> tuple:
     """结构化 JSON 能力：要求输出固定对象并校验可解析。"""
-    from system.utils.ai_parse import extract_json_object
+    from common.utils.ai_parse import extract_json_object
 
     try:
         raw = client.chat([{"role": "user", "content": JSON_PROBE_PROMPT}], temperature=0, max_tokens=PROBE_MAX_TOKENS)

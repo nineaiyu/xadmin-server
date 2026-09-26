@@ -48,7 +48,7 @@ def parse_llm_json(text: str) -> dict:
     validate_dsl 的白名单（只读取 DSL_KEYS 内的键）独立保证，未知键不带任何执行
     语义，整体拒绝只会让模型轻微偏差（如多余的 "stat"）导致整个请求失败。
     """
-    from system.utils.ai_parse import AiOutputParseError, extract_json_object
+    from common.utils.ai_parse import AiOutputParseError, extract_json_object
 
     try:
         payload = extract_json_object(text)

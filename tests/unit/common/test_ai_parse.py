@@ -7,7 +7,7 @@
 
 import pytest
 
-from system.utils.ai_parse import AiOutputParseError, extract_json_object
+from common.utils.ai_parse import AiOutputParseError, extract_json_object
 
 
 class TestExtractJsonObject:
