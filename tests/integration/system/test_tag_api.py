@@ -50,7 +50,7 @@ class TestTagCrud:
         assert {item["key"] for item in data["resources"]} == {
             "system.userinfo",
             "system.uploadfile",
-            "system.approvalinstance",
+            "approval.approvalinstance",
         }
 
 

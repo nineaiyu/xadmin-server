@@ -9,13 +9,6 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.account_risk import AccountRiskViewSet
-from system.views.admin.approval import ApprovalRequestViewSet
-from system.views.admin.approval_delegation import ApprovalDelegationViewSet
-from system.views.admin.approval_flow import (
-    ApprovalFlowViewSet,
-    ApprovalInstanceViewSet,
-)
-from system.views.admin.approval_rule import ApprovalRuleViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dept import DeptViewSet
@@ -23,7 +16,6 @@ from system.views.admin.dict import DataDictViewSet
 from system.views.admin.export import ExportRecordViewSet
 from system.views.admin.file import UploadFileViewSet
 from system.views.admin.import_ import ImportRecordViewSet, ImportTemplateViewSet
-from system.views.admin.leave import LeaveViewSet
 from system.views.admin.login_policy import LoginAccessPolicyViewSet
 from system.views.admin.loginlog import LoginLogViewSet
 from system.views.admin.mask import DataMaskRuleViewSet
@@ -175,13 +167,6 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
-router.register("approvals", ApprovalRequestViewSet, basename="approval_request")
-# 审批规则：按请求路径配置多级审批链（指定人/角色，逐级通知与推进）
-router.register("approval-rules", ApprovalRuleViewSet, basename="approval_rule")
-# 全量审批流引擎：流程定义 + 流程实例（流程审批中心）+ 审批委托（三期）
-router.register("approval-flows", ApprovalFlowViewSet, basename="approval_flow")
-router.register("approval-instances", ApprovalInstanceViewSet, basename="approval_instance")
-router.register("approval-delegations", ApprovalDelegationViewSet, basename="approval_delegation")
 router.register("dept", DeptViewSet, basename="dept")
 router.register("menu", MenuViewSet, basename="menu")
 router.register("role", RoleViewSet, basename="role")
@@ -215,8 +200,6 @@ router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook
 # 动态表单
 router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
 router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
-# 请假申请：审批流引擎的第一个真实业务接入方
-router.register("leaves", LeaveViewSet, basename="leave")
 # AI 助手：配置（Setting 体系）与问答
 no_detail_router.register("ai/assistant/config", AiAssistantSettingViewSet, basename="ai-assistant-config")
 no_detail_router.register("ai/assistant", AiAssistantViewSet, basename="ai-assistant")
@@ -254,6 +237,9 @@ router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center"
 router.register("tags", TagViewSet, basename="tag")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
+# 审批流域（approval app，3.1 拆分批次2）：路由迁 approval/urls.py，同前缀挂载
+# 保持 /api/system/... 权限点路径与视图名（system 命名空间）完全不变
+urlpatterns += [path("", include("approval.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
 # MCP 协议端点（Streamable HTTP 无状态）：外部 MCP 客户端经 PAT 接入统一工具层

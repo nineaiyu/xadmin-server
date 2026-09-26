@@ -228,7 +228,7 @@ IMPACT_CALCULATORS = {
     "system.deptinfo": _impact_deptinfo,
     "system.datadict": _impact_datadict,
     "system.dataset": _impact_dataset,
-    "system.approvalflow": _impact_approvalflow,
+    "approval.approvalflow": _impact_approvalflow,
     "system.dynamicform": _impact_dynamicform,
     "system.screen": _impact_screen,
     "system.menu": _impact_menu,

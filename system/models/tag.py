@@ -25,7 +25,7 @@ from common.core.models import DbAuditModel, DbUuidModel
 TAGGABLE_MODELS = {
     "system.userinfo": {"label": _("User"), "visit": "/api/system/user/<pk>"},
     "system.uploadfile": {"label": _("File"), "visit": "/api/system/file/<pk>"},
-    "system.approvalinstance": {"label": _("Approval instance"), "visit": "/api/system/approval-instances/<pk>"},
+    "approval.approvalinstance": {"label": _("Approval instance"), "visit": "/api/system/approval-instances/<pk>"},
 }
 
 

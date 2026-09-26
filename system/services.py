@@ -53,7 +53,6 @@ __all__ = [
     "emit_webhook_event",
     "maybe_alert_sensitive_operation",
     "publish_api_quota_warning",
-    "process_approval",
     "apply_grant_fields",
     "apply_grant_row_scope",
     "application_of_request",
@@ -87,6 +86,11 @@ _LAZY_EXPORTS = {
     "ModelLabelField": "system.models",
     "UserRole": "system.models.role",
     "UserInfoSerializer": "system.serializers.userinfo",
+    # 周期任务/审批序列化器的展示增强字段（DisplayRelatedField）与打标序列化混入
+    # （TaggedObjectSerializerMixin）：审批域拆分后经本契约门面消费（模块级 import
+    # 不违反跨 app 门禁的 services 契约通道）
+    "DisplayRelatedField": "system.serializers.task",
+    "TaggedObjectSerializerMixin": "system.serializers.tag",
     "invalid_user_cache_signal": "system.signal",
     # AI 动作声明注册表（dict 常量；ai_meta / MCP tools 共用的单一来源）
     "API_ACTION_SPECS": "system.utils.ai_api_registry",
@@ -220,13 +224,6 @@ def publish_api_quota_warning(info):
     from system.notifications import ApiQuotaWarningMessage
 
     ApiQuotaWarningMessage(info).publish(is_async=True)
-
-
-def process_approval(view_instance, request):
-    """审批流拦截入口（system.utils.approval 契约导出）。"""
-    from system.utils.approval import process_approval as _process
-
-    return _process(view_instance, request)
 
 
 def apply_grant_fields(request, model_label, allowed):

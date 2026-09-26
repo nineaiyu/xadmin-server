@@ -100,7 +100,7 @@ CONTRACT_SEAMS = {
         "system.services": "API 配额告警发布（系统消息 + 出站 Webhook）",
     },
     "common/core/approval.py": {
-        "system.services": "审批流拦截入口（process_approval 装饰器消费）",
+        "approval.services": "审批流拦截入口（process_approval 装饰器消费，3.1 拆分批次2 起 approval 自持契约门面）",
     },
     "common/core/credentials.py": {
         "system.services": "凭据巡检消费 SystemConfig（属性访问式引用，保留迁移期降级）",

@@ -11,6 +11,7 @@
 import pytest
 from django.core.management import call_command
 
+from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from common.core.config import SysConfig
 from system.management.commands.seed_demo_book import (
     APPROVAL_PATTERNS,
@@ -23,7 +24,6 @@ from system.management.commands.seed_demo_book import (
     PERMISSION_PLAN,
 )
 from system.models import Menu, MenuMeta
-from system.models.approval import ApprovalFlow, ApprovalFlowNode
 
 pytestmark = pytest.mark.django_db
 

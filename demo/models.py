@@ -84,7 +84,7 @@ class Book(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     )
     # 上架审批流程实例：终态由 approval_instance_finished 信号回写 status（见 demo/services.py）
     instance = models.ForeignKey(
-        "system.ApprovalInstance",
+        "approval.ApprovalInstance",
         related_name="demo_books",
         on_delete=models.SET_NULL,
         null=True,

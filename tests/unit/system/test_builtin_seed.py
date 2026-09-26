@@ -24,9 +24,9 @@ import pytest
 from django.apps import apps
 from django.conf import settings as dj_settings
 
+from approval.serializers.approval_flow import FORM_FIELD_TYPES
+from approval.utils.approval_flow import CONDITION_OPS
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.serializers.approval_flow import FORM_FIELD_TYPES
-from system.utils.approval_flow import CONDITION_OPS
 from system.utils.dform import validate_schema, validate_submission_data
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
@@ -185,7 +185,7 @@ def test_seed_submissions_pass_validation():
 
 def test_seed_demo_flows_command_aligns_with_seed():
     """seed_demo_flows 的流程 code / 审批人改写目标必须与种子对齐（防改名静默失效）。"""
-    from system.management.commands import seed_demo_flows as command
+    from approval.management.commands import seed_demo_flows as command
 
     codes = {item["fields"]["code"] for item in _load("approvalflow.json")}
     assert set(command.FLOW_CODES) <= codes, "seed_demo_flows.FLOW_CODES 与种子流程 code 不一致"

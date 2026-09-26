@@ -17,13 +17,13 @@ import json
 
 import pytest
 
+from approval.models.approval import ApprovalRequest
+from approval.models.leave import Leave
+from approval.utils.approval import approve_request
 from message.models import ChatMessage
 from system.models import Menu, OperationLog, UserInfo
 from system.models.ai import AiChatMessage
-from system.models.approval import ApprovalRequest
 from system.models.dform import DynamicForm, DynamicFormSubmission
-from system.models.leave import Leave
-from system.utils.approval import approve_request
 
 pytestmark = pytest.mark.django_db
 
@@ -126,7 +126,7 @@ def flow_approver(db):
 
 
 def make_leave_flow(assignee_value="leave_approver"):
-    from system.models.approval import ApprovalFlow, ApprovalFlowNode
+    from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 
     flow = ApprovalFlow.objects.create(
         name="请假审批",

@@ -17,10 +17,10 @@ import json
 import pytest
 from django.urls import resolve
 
+from approval.models.approval import ApprovalRequest
+from approval.utils.approval import approve_request
 from common.core.config import SysConfig
 from system.models import OperationLog, SystemConfig, UserRole
-from system.models.approval import ApprovalRequest
-from system.utils.approval import approve_request
 
 pytestmark = pytest.mark.django_db
 

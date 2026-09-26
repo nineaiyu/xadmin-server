@@ -143,8 +143,8 @@ def _collect_risks(now):
 
 def scan_account_risks(operator=None) -> dict:
     """执行一次巡检（幂等），返回 {"created", "updated", "resolved", "total"}。"""
+    from approval.utils.approval.display import user_display
     from system.models import AccountRisk
-    from system.utils.approval.display import user_display
 
     now = timezone.now()
     items = _collect_risks(now)

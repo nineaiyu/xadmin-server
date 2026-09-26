@@ -33,8 +33,8 @@ class TestEventContract:
 
     def test_required_fields_present_in_wiring_payloads(self):
         """关键信号源的 payload 必须覆盖契约 required 字段（真实接线点抽查）。"""
-        from system.utils.approval import _emit_approval_event
-        from system.utils.approval_flow import _emit_flow_event
+        from approval.utils.approval import _emit_approval_event
+        from approval.utils.approval_flow import _emit_flow_event
 
         delivered = []
 
@@ -42,8 +42,8 @@ class TestEventContract:
             delivered.append((event, data))
             return 0
 
-        import system.utils.approval as approval_module
-        import system.utils.approval_flow as flow_module
+        import approval.utils.approval as approval_module
+        import approval.utils.approval_flow as flow_module
         import system.utils.webhook as webhook_module
 
         original = webhook_module.emit_webhook_event

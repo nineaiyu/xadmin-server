@@ -15,9 +15,9 @@ import os
 import pytest
 from django.conf import settings as dj_settings
 
+from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import DataDict, UserRole
-from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from system.utils.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 
 pytestmark = pytest.mark.django_db
@@ -35,9 +35,9 @@ def _read(name):
 class TestFilterConflictingRows:
     def test_no_conflict_keeps_rows(self):
         rows = {
-            "system.approvalflow": [
+            "approval.approvalflow": [
                 {
-                    "model": "system.approvalflow",
+                    "model": "approval.approvalflow",
                     "pk": EXPENSE_SEED_PK,
                     "fields": {"code": "brand_new", "name": "新流程"},
                 }
@@ -45,14 +45,14 @@ class TestFilterConflictingRows:
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert notes == []
-        assert filtered["system.approvalflow"] == rows["system.approvalflow"]
+        assert filtered["approval.approvalflow"] == rows["approval.approvalflow"]
 
     def test_same_pk_is_not_conflict(self):
         ApprovalFlow.objects.create(pk=EXPENSE_SEED_PK, code="demo_expense", name="同一条")
         rows = {
-            "system.approvalflow": [
+            "approval.approvalflow": [
                 {
-                    "model": "system.approvalflow",
+                    "model": "approval.approvalflow",
                     "pk": EXPENSE_SEED_PK,
                     "fields": {"code": "demo_expense", "name": "同一条"},
                 }
@@ -60,51 +60,55 @@ class TestFilterConflictingRows:
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert notes == []
-        assert len(filtered["system.approvalflow"]) == 1
+        assert len(filtered["approval.approvalflow"]) == 1
 
     def test_conflicting_natural_key_dropped(self):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
         rows = {
-            "system.approvalflow": [
+            "approval.approvalflow": [
                 {
-                    "model": "system.approvalflow",
+                    "model": "approval.approvalflow",
                     "pk": EXPENSE_SEED_PK,
                     "fields": {"code": "demo_expense", "name": "种子"},
                 }
             ]
         }
         filtered, notes = filter_conflicting_rows(rows)
-        assert filtered["system.approvalflow"] == []
+        assert filtered["approval.approvalflow"] == []
         assert len(notes) == 1
         assert "demo_expense" in notes[0] and "demo_expense" in notes[0]
 
     def test_cascade_drops_referencing_rows(self):
         ApprovalFlow.objects.create(pk="cd81e9b1-f744-495d-b0ba-5d3b2273752a", code="demo_expense", name="库内对象")
         rows = {
-            "system.approvalflow": [
+            "approval.approvalflow": [
                 {
-                    "model": "system.approvalflow",
+                    "model": "approval.approvalflow",
                     "pk": EXPENSE_SEED_PK,
                     "fields": {"code": "demo_expense", "name": "种子"},
                 },
-                {"model": "system.approvalflow", "pk": LEAVE_SEED_PK, "fields": {"code": "leave", "name": "请假审批"}},
-            ],
-            "system.approvalflownode": [
                 {
-                    "model": "system.approvalflownode",
+                    "model": "approval.approvalflow",
+                    "pk": LEAVE_SEED_PK,
+                    "fields": {"code": "leave", "name": "请假审批"},
+                },
+            ],
+            "approval.approvalflownode": [
+                {
+                    "model": "approval.approvalflownode",
                     "pk": "node-a",
                     "fields": {"flow": EXPENSE_SEED_PK, "name": "节点A"},
                 },
                 {
-                    "model": "system.approvalflownode",
+                    "model": "approval.approvalflownode",
                     "pk": "node-b",
                     "fields": {"flow": LEAVE_SEED_PK, "name": "节点B"},
                 },
             ],
         }
         filtered, notes = filter_conflicting_rows(rows)
-        assert [row["pk"] for row in filtered["system.approvalflow"]] == [LEAVE_SEED_PK]
-        assert [row["pk"] for row in filtered["system.approvalflownode"]] == ["node-b"]
+        assert [row["pk"] for row in filtered["approval.approvalflow"]] == [LEAVE_SEED_PK]
+        assert [row["pk"] for row in filtered["approval.approvalflownode"]] == ["node-b"]
         assert len(notes) == 2
 
     def test_m2m_reference_trimmed(self):
@@ -139,16 +143,16 @@ class TestFilterConflictingRows:
             pk="0ba28b97-24e2-4d34-a87a-787626fc5611", flow_id=LEAVE_SEED_PK, order=1, name="库内节点"
         )
         rows = {
-            "system.approvalflownode": [
+            "approval.approvalflownode": [
                 {
-                    "model": "system.approvalflownode",
+                    "model": "approval.approvalflownode",
                     "pk": "5eed0007-0000-4000-8000-000000000005",
                     "fields": {"flow": LEAVE_SEED_PK, "order": 1, "name": "种子节点"},
                 }
             ]
         }
         filtered, notes = filter_conflicting_rows(rows)
-        assert filtered["system.approvalflownode"] == []
+        assert filtered["approval.approvalflownode"] == []
         assert len(notes) == 1
         assert "flow=" in notes[0] and "order=1" in notes[0]
 
@@ -157,9 +161,9 @@ class TestFilterConflictingRows:
         node_pk = "5eed0007-0000-4000-8000-000000000005"
         ApprovalFlowNode.objects.create(pk=node_pk, flow_id=LEAVE_SEED_PK, order=1, name="同一条")
         rows = {
-            "system.approvalflownode": [
+            "approval.approvalflownode": [
                 {
-                    "model": "system.approvalflownode",
+                    "model": "approval.approvalflownode",
                     "pk": node_pk,
                     "fields": {"flow": LEAVE_SEED_PK, "order": 1, "name": "同一条"},
                 }
@@ -167,7 +171,7 @@ class TestFilterConflictingRows:
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert notes == []
-        assert len(filtered["system.approvalflownode"]) == 1
+        assert len(filtered["approval.approvalflownode"]) == 1
 
     def test_composite_unique_null_value_kept(self):
         """组合键含 NULL 时不判冲突（PG 的 UNIQUE 视 NULL 互不相等）。"""
@@ -176,9 +180,9 @@ class TestFilterConflictingRows:
             pk="0ba28b97-24e2-4d34-a87a-787626fc5611", flow_id=LEAVE_SEED_PK, order=1, name="库内节点"
         )
         rows = {
-            "system.approvalflownode": [
+            "approval.approvalflownode": [
                 {
-                    "model": "system.approvalflownode",
+                    "model": "approval.approvalflownode",
                     "pk": "node-no-order",
                     "fields": {"flow": LEAVE_SEED_PK, "order": None, "name": "缺序节点"},
                 }
@@ -186,7 +190,7 @@ class TestFilterConflictingRows:
         }
         filtered, notes = filter_conflicting_rows(rows)
         assert notes == []
-        assert len(filtered["system.approvalflownode"]) == 1
+        assert len(filtered["approval.approvalflownode"]) == 1
 
 
 class TestUniqueChecks:

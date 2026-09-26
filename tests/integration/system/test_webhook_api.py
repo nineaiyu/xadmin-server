@@ -219,8 +219,8 @@ class TestEventWiring:
         url, handler = receiver
         for event in ("approval.submitted", "approval.approved", "approval.cancelled"):
             make_subscription(url=url, event=event)
+        from approval.utils.approval import approve_request, cancel_request, create_approval
         from common.core.config import SysConfig
-        from system.utils.approval import approve_request, cancel_request, create_approval
 
         SysConfig.set_value("APPROVAL_ENABLED", True)
         cache.clear()
@@ -240,8 +240,8 @@ class TestEventWiring:
         url, handler = receiver
         for event in ("flow.submitted", "flow.approved", "flow.cancelled"):
             make_subscription(url=url, event=event)
-        from system.models import ApprovalFlow, ApprovalFlowNode, ApprovalNodeTask
-        from system.utils.approval_flow import approve_task, cancel_instance, create_instance
+        from approval.models import ApprovalFlow, ApprovalFlowNode, ApprovalNodeTask
+        from approval.utils.approval_flow import approve_task, cancel_instance, create_instance
 
         flow = ApprovalFlow.objects.create(name="WH测试流", code="wh_flow_test", form_schema=[])
         ApprovalFlowNode.objects.create(

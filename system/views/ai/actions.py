@@ -262,7 +262,7 @@ class AiActionExecuteMixin:
             return ApiResponse(code=1001, detail=error)
 
         if spec.requires_approval(request.user, clean):
-            from system.utils.approval import (
+            from approval.utils.approval import (
                 APPROVAL_HEADER,
                 APPROVAL_QUERY_PARAM,
                 consume_approval,

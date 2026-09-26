@@ -31,12 +31,12 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from approval.models.approval import ApprovalDelegation
 from message import chat as chat_service
 from message.models import ChatMessage
 from notifications.models import MessageContent
 from system.models import UserInfo
 from system.models.ai import AiKnowledgeDocument
-from system.models.approval import ApprovalDelegation
 from system.models.token import ApiApplication
 from system.models.upload import UploadFile
 from system.models.webhook import WebhookDelivery, WebhookSubscription

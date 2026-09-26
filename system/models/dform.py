@@ -20,7 +20,7 @@ class DynamicForm(DbAuditModel, DbUuidModel):
     approval_required = models.BooleanField(_("Approval required"), default=False)
     # 绑定审批流程：提交进入流程引擎（多级审批），实例终态回写提交状态
     approval_flow = models.ForeignKey(
-        "system.ApprovalFlow",
+        "approval.ApprovalFlow",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -68,7 +68,7 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
         db_index=True,
     )
     instance = models.ForeignKey(
-        "system.ApprovalInstance",
+        "approval.ApprovalInstance",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

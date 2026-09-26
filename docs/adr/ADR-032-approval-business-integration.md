@@ -4,7 +4,7 @@
 - 日期：2026-09-14
 - 关联：[ADR-012](ADR-012-approval-flow-engine.md) / [ADR-016](ADR-016-approval-flow-phase2.md)（审批流引擎一/二期）；
   [ADR-026](ADR-026-dynamic-form-approval.md)（表单挂接敏感操作审批）；`system/utils/approval.py`（令牌审批协议）；
-  `system/models/leave.py`、`system/utils/leave.py`（本文交付的业务接入）
+  `approval/models/leave.py`、`approval/utils/leave.py`（本文交付的业务接入）
 
 ## 背景
 
@@ -52,7 +52,7 @@
   避免两处状态不一致；
 - 状态机：`DRAFT → PENDING → APPROVED / REJECTED`，`CANCELLED` 为撤回；状态由引擎终态信号回写，
   业务视图**不提供审批动作**（审批统一在「流程审批」中心处理，杜绝第二套审批入口）；
-- 校验（`system/utils/leave.py:validate_leave_payload`，接口与提交前各校验一次）：结束日期不得早于开始日期、
+- 校验（`approval/utils/leave.py:validate_leave_payload`，接口与提交前各校验一次）：结束日期不得早于开始日期、
   天数 ≤ 起止跨度（允许半天 0.5）、同一申请人不得存在区间重叠的未结束申请；
 - 流程解析（`resolve_leave_flow`）：配置 `LEAVE_APPROVAL_FLOW_CODE`（默认 `leave`）→ `leave_<类型>` →
   `leave` 前缀的启用流程；**找不到流程即拒绝提交**并提示管理员，而不是静默直通。

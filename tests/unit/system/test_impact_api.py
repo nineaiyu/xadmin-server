@@ -107,7 +107,7 @@ class TestImpactRegistryAlignment:
         ("system.views.admin.dept", "DeptViewSet"),
         ("system.views.admin.dict", "DataDictViewSet"),
         ("system.views.dataset", "DatasetViewSet"),
-        ("system.views.admin.approval_flow", "ApprovalFlowViewSet"),
+        ("approval.views.approval_flow", "ApprovalFlowViewSet"),
         ("system.views.dform", "DynamicFormViewSet"),
         ("system.views.analysis", "ScreenViewSet"),
         ("system.views.admin.menu", "MenuViewSet"),

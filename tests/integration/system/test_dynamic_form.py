@@ -257,7 +257,7 @@ class TestFormApproval:
         assert response.status_code == 412
         assert response.data["type"] == "approval_required"
         approval_id = response.data["data"]["approval_id"]
-        from system.models.approval import ApprovalRequest
+        from approval.models.approval import ApprovalRequest
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approval.status == ApprovalRequest.Status.PENDING
@@ -281,7 +281,7 @@ class TestFormApproval:
         # 未携令牌重发：find_active_pending 命中同一单，仍 412（不重复建单）
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         assert response.status_code == 412
-        from system.models.approval import ApprovalRequest
+        from approval.models.approval import ApprovalRequest
 
         assert ApprovalRequest.objects.count() == 1
 
@@ -291,8 +291,8 @@ class TestFormApproval:
         client = client_for(normal_user)
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
-        from system.models.approval import ApprovalRequest
-        from system.utils.approval import approve_request
+        from approval.models.approval import ApprovalRequest
+        from approval.utils.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True
@@ -315,8 +315,8 @@ class TestFormApproval:
         client = client_for(normal_user)
         response = client.post(SUBMISSION_URL, {"form": str(gated_form.pk), "data": {"name": "张三"}}, format="json")
         approval_id = response.data["data"]["approval_id"]
-        from system.models.approval import ApprovalRequest
-        from system.utils.approval import approve_request
+        from approval.models.approval import ApprovalRequest
+        from approval.utils.approval import approve_request
 
         approval = ApprovalRequest.objects.get(pk=approval_id)
         assert approve_request(approval, superuser)[0] is True

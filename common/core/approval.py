@@ -18,8 +18,8 @@ system/utils/approval.py（common 层惰性导入，跨 app 门禁合规）。
 
 import functools
 
+from approval.services import process_approval
 from common.utils import get_logger
-from system.services import process_approval
 
 logger = get_logger(__name__)
 

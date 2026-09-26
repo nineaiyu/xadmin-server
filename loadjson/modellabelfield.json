@@ -10900,7 +10900,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.leave",
+      "name": "approval.leave",
       "label": "请假申请"
     }
   },
@@ -13570,7 +13570,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalinstance",
+      "name": "approval.approvalinstance",
       "label": "审批实例"
     }
   },
@@ -13735,7 +13735,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalnodetask",
+      "name": "approval.approvalnodetask",
       "label": "审批节点任务"
     }
   },
@@ -13900,7 +13900,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalflow",
+      "name": "approval.approvalflow",
       "label": "审批流程"
     }
   },
@@ -14080,7 +14080,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalflownode",
+      "name": "approval.approvalflownode",
       "label": "审批流程节点"
     }
   },
@@ -14320,7 +14320,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalrequest",
+      "name": "approval.approvalrequest",
       "label": "审批单"
     }
   },
@@ -16270,7 +16270,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.leave",
+      "name": "approval.leave",
       "label": "请假申请"
     }
   },
@@ -18415,7 +18415,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalflowversion",
+      "name": "approval.approvalflowversion",
       "label": "审批流程版本"
     }
   },
@@ -18685,7 +18685,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalnodetask",
+      "name": "approval.approvalnodetask",
       "label": "审批节点任务"
     }
   },
@@ -18970,7 +18970,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalinstance",
+      "name": "approval.approvalinstance",
       "label": "审批实例"
     }
   },
@@ -19255,7 +19255,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalflownode",
+      "name": "approval.approvalflownode",
       "label": "审批流程节点"
     }
   },
@@ -19450,7 +19450,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalflow",
+      "name": "approval.approvalflow",
       "label": "审批流程"
     }
   },
@@ -19735,7 +19735,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalrequest",
+      "name": "approval.approvalrequest",
       "label": "审批单"
     }
   },
@@ -20650,7 +20650,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvaldelegation",
+      "name": "approval.approvaldelegation",
       "label": "审批委托"
     }
   },
@@ -21400,7 +21400,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvaldelegation",
+      "name": "approval.approvaldelegation",
       "label": "审批委托"
     }
   },
@@ -22720,7 +22720,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalrule",
+      "name": "approval.approvalrule",
       "label": "审批规则"
     }
   },
@@ -22825,7 +22825,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalrulelevel",
+      "name": "approval.approvalrulelevel",
       "label": "审批规则层级"
     }
   },
@@ -23065,7 +23065,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.approvalinstancecomment",
+      "name": "approval.approvalinstancecomment",
       "label": "审批实例评论"
     }
   },
@@ -26380,7 +26380,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalrequeststepaction",
+      "name": "approval.approvalrequeststepaction",
       "label": "审批步骤动作"
     }
   },
@@ -26680,7 +26680,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalrequeststep",
+      "name": "approval.approvalrequeststep",
       "label": "审批单流转"
     }
   },
@@ -26890,7 +26890,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalrulelevel",
+      "name": "approval.approvalrulelevel",
       "label": "审批规则层级"
     }
   },
@@ -27085,7 +27085,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalrule",
+      "name": "approval.approvalrule",
       "label": "审批规则"
     }
   },
@@ -27265,7 +27265,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.approvalinstancecomment",
+      "name": "approval.approvalinstancecomment",
       "label": "审批实例评论"
     }
   },

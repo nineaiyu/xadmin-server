@@ -213,7 +213,7 @@ def clean_xxx_job(): ...
 
 ### R17 业务接入审批流
 
-参考实现：请假业务 `system/utils/leave.py`（含注释版四步）。
+参考实现：请假业务 `approval/utils/leave.py`（含注释版四步）。
 
 1. **提交**：`instance, error = create_instance(flow=<流程>, applicant=user, title=..., form_data={...}, biz_type="leave", biz_id=str(obj.pk))`——`biz_type/biz_id` 是业务绑定，引擎不感知业务字段；
 2. **回写**：监听终态信号 `system.signal.approval_instance_finished`，按 `instance.biz_type / biz_id` 更新业务状态（信号里做幂等；引擎侧失败不阻断审批）；

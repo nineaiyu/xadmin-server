@@ -11,18 +11,18 @@
 
 import pytest
 
-from common.core.config import SysConfig
-from demo.models import Book
-from demo.services import BOOK_BIZ_TYPE, BOOK_FLOW_CODE
-from system.models import UserInfo
-from system.models.approval import (
+from approval.models.approval import (
     ApprovalFlow,
     ApprovalFlowNode,
     ApprovalNodeTask,
     ApprovalRequest,
 )
-from system.utils.approval import approve_request
-from system.utils.approval_flow import approve_task, reject_task
+from approval.utils.approval import approve_request
+from approval.utils.approval_flow import approve_task, reject_task
+from common.core.config import SysConfig
+from demo.models import Book
+from demo.services import BOOK_BIZ_TYPE, BOOK_FLOW_CODE
+from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 

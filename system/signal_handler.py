@@ -226,7 +226,7 @@ def sync_business_status_handler(sender, instance, status=None, reason="", **kwa
         return
     try:
         if biz_type == "leave":
-            from system.utils.leave import sync_leave_instance
+            from approval.utils.leave import sync_leave_instance
 
             sync_leave_instance(instance, status, reason)
         elif biz_type == "dform_submission":

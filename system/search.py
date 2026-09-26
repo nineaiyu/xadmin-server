@@ -26,7 +26,7 @@ from django.db.models import Q, QuerySet
 
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_menu_pk, get_user_permission
-from system.models import ApprovalRequest, DeptInfo, Leave, OperationLog, UploadFile, UserInfo
+from system.models import DeptInfo, OperationLog, UploadFile, UserInfo
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
@@ -37,6 +37,18 @@ def _match_keyword(queryset: QuerySet, text_fields, keyword: str) -> QuerySet:
     for field_name in text_fields:
         condition |= Q(**{f"{field_name}__icontains": keyword})
     return queryset.filter(condition)
+
+
+def _approval_queryset():
+    from approval.models import ApprovalRequest
+
+    return ApprovalRequest.objects.all().order_by("-created_time")
+
+
+def _leave_queryset():
+    from approval.models import Leave
+
+    return Leave.objects.select_related("creator").order_by("-created_time")
 
 
 def _approval_row_scope(user, queryset: QuerySet) -> QuerySet:
@@ -138,7 +150,7 @@ SEARCH_PROVIDERS = (
         label="审批单",
         route="/system/approval/index",
         list_url="api/system/approvals",
-        queryset=lambda: ApprovalRequest.objects.all().order_by("-created_time"),
+        queryset=_approval_queryset,
         text_fields=("path", "module", "object_pk"),
         display_field="path",
         meta_fields=("module", "status"),
@@ -149,7 +161,7 @@ SEARCH_PROVIDERS = (
         label="请假申请",
         route="/system/leave/index",
         list_url="api/system/leaves",
-        queryset=lambda: Leave.objects.select_related("creator").order_by("-created_time"),
+        queryset=_leave_queryset,
         text_fields=("reason",),
         display_field="reason",
         meta_fields=("leave_type", "status"),

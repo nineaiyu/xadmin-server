@@ -34,7 +34,7 @@ def _models():
 
 def resolve_book_flow():
     """解析上架审批流程定义（code=demo_book 的启用流程）；缺失返回 None。"""
-    from system.models.approval import ApprovalFlow
+    from approval.models.approval import ApprovalFlow
 
     return ApprovalFlow.objects.filter(code=BOOK_FLOW_CODE, is_active=True).first()
 
@@ -55,7 +55,7 @@ def submit_book(book, user):
     if flow is None:
         return False, f"未找到启用的上架审批流程（code: {BOOK_FLOW_CODE}），请先执行 seed_demo_book"
 
-    from system.utils.approval_flow import create_instance
+    from approval.utils.approval_flow import create_instance
 
     instance, error = create_instance(
         flow=flow,
@@ -88,7 +88,7 @@ def sync_book_instance(instance, status, reason: str = "") -> None:
     - APPROVED → 已上架（同时启用 ``is_active``，演示「审批通过产生业务效果」）；
     - REJECTED → 已驳回；CANCELLED → 回到草稿。
     """
-    from system.models.approval import ApprovalInstance
+    from approval.models.approval import ApprovalInstance
 
     if getattr(instance, "biz_type", "") != BOOK_BIZ_TYPE or not instance.biz_id:
         return

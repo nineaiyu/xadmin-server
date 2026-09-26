@@ -15,23 +15,10 @@ import pytest
 from django.conf import settings
 from django.core.management import call_command
 
-from message.models import ChatMessage
-from notifications.models import MessageContent
-from system.management.commands.seed_demo_flows import INSTANCE_PKS as FLOW_INSTANCE_PKS
-from system.management.commands.seed_demo_leave import LEAVE_PKS
-from system.models import (
-    DeptInfo,
-    DynamicForm,
-    DynamicFormSubmission,
-    Leave,
-    Menu,
-    MenuMeta,
-    ModelLabelField,
-    UploadFile,
-    UserInfo,
-)
-from system.models.ai import AiKnowledgeDocument
-from system.models.approval import (
+from approval.management.commands.seed_demo_flows import INSTANCE_PKS as FLOW_INSTANCE_PKS
+from approval.management.commands.seed_demo_leave import LEAVE_PKS
+from approval.models import Leave
+from approval.models.approval import (
     ApprovalDelegation,
     ApprovalFlow,
     ApprovalFlowNode,
@@ -39,6 +26,19 @@ from system.models.approval import (
     ApprovalInstance,
     ApprovalRequest,
 )
+from message.models import ChatMessage
+from notifications.models import MessageContent
+from system.models import (
+    DeptInfo,
+    DynamicForm,
+    DynamicFormSubmission,
+    Menu,
+    MenuMeta,
+    ModelLabelField,
+    UploadFile,
+    UserInfo,
+)
+from system.models.ai import AiKnowledgeDocument
 from system.models.token import ApiApplication
 from system.models.webhook import WebhookDelivery, WebhookSubscription
 

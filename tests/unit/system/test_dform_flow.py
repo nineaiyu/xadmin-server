@@ -11,15 +11,15 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from system.models import UserInfo
-from system.models.approval import (
+from approval.models.approval import (
     ApprovalFlow,
     ApprovalFlowNode,
     ApprovalInstance,
     ApprovalRequest,
 )
+from approval.utils.approval import approve_request
+from system.models import UserInfo
 from system.models.dform import DynamicForm, DynamicFormSubmission
-from system.utils.approval import approve_request
 from system.utils.dform_flow import (
     DFORM_BIZ_TYPE,
     create_flow_instance,

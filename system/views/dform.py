@@ -215,7 +215,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         - 携令牌：消费一次性令牌（校验指纹/归属/有效期），成功放行；
         - 未携令牌：复用同一内容的在途审批单，否则新建并返回 412 待审批。
         """
-        from system.utils.approval import (
+        from approval.utils.approval import (
             APPROVAL_HEADER,
             APPROVAL_QUERY_PARAM,
             consume_approval,
@@ -313,7 +313,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         # 在此返回成功语义，而不是被「仅草稿可提交」拒绝（自动完成时状态已不是草稿）
         approved_replay = False
         if needs_approval:
-            from system.utils.approval import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
+            from approval.utils.approval import APPROVAL_HEADER, APPROVAL_QUERY_PARAM, consume_approval
 
             token = request.headers.get(APPROVAL_HEADER) or request.query_params.get(APPROVAL_QUERY_PARAM)
             if token:

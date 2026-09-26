@@ -78,7 +78,7 @@ class Command(BaseCommand):
 
     def _restore_builtin_flow_nodes(self):
         """恢复被演示命令改写的流程节点审批人与版本号（严格限定：当前值含 demo_flow_ 标记）。"""
-        from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
+        from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 
         # 种子 pk 是字符串、ORM 主键是 UUID 对象：统一按字符串比对
         seed = {str(row["pk"]): row["fields"].get("assignee_value", "") for row in _load_seed(NODE_SEED_FILE)}

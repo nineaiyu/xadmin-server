@@ -15,7 +15,7 @@ class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
     """审批流程外键：取值域不做行级数据权限过滤（定义类资源，与表单定义同口径）。"""
 
     def get_queryset(self):
-        from system.models.approval import ApprovalFlow
+        from approval.models.approval import ApprovalFlow
 
         return ApprovalFlow.objects.all()
 
@@ -116,7 +116,7 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         """审批轨迹：实例任务的展示口径（状态/审批人/意见/时间/加签/委托来源）。"""
         if not obj.instance_id:
             return []
-        from system.serializers.approval_flow import ApprovalNodeTaskSerializer
+        from approval.serializers.approval_flow import ApprovalNodeTaskSerializer
 
         tasks = obj.instance.tasks.all()
         return ApprovalNodeTaskSerializer(tasks, many=True, context=self.context).data

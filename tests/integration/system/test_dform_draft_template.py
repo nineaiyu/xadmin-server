@@ -11,8 +11,8 @@
 
 import pytest
 
+from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from system.models import UserInfo
-from system.models.approval import ApprovalFlow, ApprovalFlowNode
 from system.models.dform import DynamicForm, DynamicFormSubmission
 from system.models.dict import DataDict
 
@@ -136,8 +136,8 @@ class TestDraftOperationApproval:
         normal_user.roles.first().menu.add(*menus)
 
     def test_draft_submit_then_auto_complete_and_replay(self, api_client, normal_user, menu_factory):
-        from system.models.approval import ApprovalRequest
-        from system.utils.approval import approve_request
+        from approval.models.approval import ApprovalRequest
+        from approval.utils.approval import approve_request
 
         approver = UserInfo.objects.create_superuser(
             username="draft_op_approver", email="draft_op@example.com", password="Test@123456"

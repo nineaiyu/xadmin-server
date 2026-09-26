@@ -116,7 +116,7 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 清理
 
     def _reset(self):
-        from system.models.approval import ApprovalFlow, ApprovalInstance
+        from approval.models.approval import ApprovalFlow, ApprovalInstance
 
         # 先清流程实例（ApprovalInstance.flow 为 PROTECT），再清流程定义（节点 CASCADE）
         removed = ApprovalInstance.objects.filter(biz_type="demo_book").delete()[0]
@@ -137,7 +137,7 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 流程 / 菜单 / 权限点
 
     def _ensure_flow(self):
-        from system.models.approval import ApprovalFlow, ApprovalFlowNode
+        from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 
         flow, _created = ApprovalFlow.objects.update_or_create(
             pk=FLOW_PK,

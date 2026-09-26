@@ -10,7 +10,8 @@
 import pytest
 from django.core.files.base import ContentFile
 
-from system.models import ApprovalRequest, OperationLog, UploadFile, UserInfo
+from approval.models import ApprovalRequest
+from system.models import OperationLog, UploadFile, UserInfo
 from system.search import _approval_row_scope
 
 pytestmark = pytest.mark.django_db

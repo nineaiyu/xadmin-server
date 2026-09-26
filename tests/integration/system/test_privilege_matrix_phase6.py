@@ -18,8 +18,8 @@
 
 import pytest
 
+from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from system.models import UserInfo
-from system.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 
 pytestmark = pytest.mark.django_db
 

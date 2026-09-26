@@ -23,8 +23,8 @@ def log_file_access(*, upload=None, user=None, action, request=None, result=True
     from system.models import FileAccessLog
 
     try:
+        from approval.utils.approval.display import user_display
         from common.utils.request import get_request_ip
-        from system.utils.approval.display import user_display
 
         ip = get_request_ip(request) if request is not None else ""
         FileAccessLog.objects.create(

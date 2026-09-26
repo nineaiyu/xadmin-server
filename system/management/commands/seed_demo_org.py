@@ -21,6 +21,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from approval.models.approval import ApprovalFlow, ApprovalFlowNode
 from system.models import (
     DataPermission,
     DeptInfo,
@@ -31,7 +32,6 @@ from system.models import (
     UserInfo,
     UserRole,
 )
-from system.models.approval import ApprovalFlow, ApprovalFlowNode
 
 DEFAULT_PASSWORD = "Demo@2026!"
 
@@ -88,7 +88,7 @@ ROLE_NAMES = {
 # 需要放行的模型（字段权限按模型全字段，数据权限按 value.all 全量放行）
 GRANT_MODELS = [
     "system.approvalflow",
-    "system.approvalinstance",
+    "approval.approvalinstance",
     "system.approvalrequest",
     "system.dynamicform",
     "system.dynamicformsubmission",

@@ -357,7 +357,8 @@ class ApprovalRequestMessage(UserMessage):
 
     @classmethod
     def gen_test_msg(cls):
-        from system.models import ApprovalRequest, UserInfo
+        from approval.models import ApprovalRequest
+        from system.models import UserInfo
 
         user = UserInfo.objects.first()
         approval = ApprovalRequest(module="User", method="DELETE", path="/api/system/user/1", creator=user)
@@ -438,7 +439,8 @@ class ApprovalFlowMessage(UserMessage):
 
     @classmethod
     def gen_test_msg(cls):
-        from system.models import ApprovalFlow, ApprovalInstance, UserInfo
+        from approval.models import ApprovalFlow, ApprovalInstance
+        from system.models import UserInfo
 
         user = UserInfo.objects.first()
         instance = ApprovalInstance(flow=ApprovalFlow(name="Test", code="test"), flow_name="Test", title="Test")

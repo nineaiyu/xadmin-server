@@ -12,6 +12,7 @@ from django.core.management.commands.loaddata import Command as LoadCommand
 from django.db import DEFAULT_DB_ALIAS
 from django.db.models.signals import ModelSignal
 
+from approval.models import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from common.core.config import SysConfig
 from common.core.modules import ModuleSeedFilter
 from settings.models import Setting

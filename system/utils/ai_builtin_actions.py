@@ -72,8 +72,8 @@ def _form_fields(form) -> list:
 
 def _validate_leave(user, params: dict):
     """校验请假参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
-    from system.models.leave import Leave
-    from system.utils.leave import leave_days, validate_leave_payload
+    from approval.models.leave import Leave
+    from approval.utils.leave import leave_days, validate_leave_payload
 
     allowed_types = {choice[0] for choice in Leave.LeaveType.choices}
     leave_type = str(params.get("leave_type") or Leave.LeaveType.ANNUAL).strip()
@@ -112,8 +112,8 @@ def _validate_leave(user, params: dict):
 
 def _execute_leave(user, params: dict) -> dict:
     """创建请假单并立即提交审批（与 LeaveViewSet.create 同口径：无流程/无审批人时保留草稿）。"""
-    from system.models.leave import Leave
-    from system.utils.leave import submit_leave
+    from approval.models.leave import Leave
+    from approval.utils.leave import submit_leave
 
     leave = Leave.objects.create(
         leave_type=params["leave_type"],

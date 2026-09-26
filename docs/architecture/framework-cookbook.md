@@ -133,7 +133,7 @@ config.yml              XADMIN_APPS 注册 app
 
 1. **响应**：统一 `ApiResponse`（`code=1000` 成功）；协议已 JSON Schema 冻结（`docs/schema/`），改动先改 Schema 再补 `tests/unit/common/test_contract_schemas.py`；
 2. **审计**：请求级中间件自动落 OperationLog（UpdateAction 做 diff 含 M2M），业务代码**不要手写审计**；
-3. **并发防护**：测试库为 sqlite `:memory:`（不支持 `select_for_update`），状态流转用**条件更新 CAS**（范例 `system/utils/approval/`）；
+3. **并发防护**：测试库为 sqlite `:memory:`（不支持 `select_for_update`），状态流转用**条件更新 CAS**（范例 `approval/utils/approval/`）；
 4. **数据权限**：查询集过滤统一走 `get_filter_queryset`，手写裸 filter 会绕过数据权限与审计口径；
 5. **权限码**：PERMISSION 菜单 `name` = `动作:组件名`，且必须关联 `model`（见 example/new-app-menu.md）；
 6. **新业务能力一律独立 app**，`system` 不再扩容（ADR-015 / T17 评估结论）。

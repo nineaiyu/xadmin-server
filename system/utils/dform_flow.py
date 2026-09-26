@@ -30,7 +30,7 @@ def create_flow_instance(submission, applicant):
 
     失败时调用方回滚事务：宁可拒绝提交，也不留下状态与实例不一致的提交行。
     """
-    from system.utils.approval_flow import create_instance
+    from approval.utils.approval_flow import create_instance
 
     form = submission.form
     if form.approval_flow_id is None:
@@ -140,7 +140,7 @@ def register_approval_handlers():
 
     两条链路：新建提交（POST 列表）与草稿提交（POST {pk}/submit）——后者更新既有行。
     """
-    from system.utils.approval import register_on_approved
+    from approval.utils.approval import register_on_approved
 
     register_on_approved(r"^/api/system/dynamic-form-submissions/?$", submit_from_approval)
     register_on_approved(r"^/api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
@@ -148,7 +148,7 @@ def register_approval_handlers():
 
 def sync_dform_instance(instance, status, reason: str = "") -> None:
     """流程实例终态回写表单提交状态：由信号接收器调用（幂等）。"""
-    from system.models.approval import ApprovalInstance
+    from approval.models.approval import ApprovalInstance
 
     if getattr(instance, "biz_type", "") != DFORM_BIZ_TYPE or not instance.biz_id:
         return
