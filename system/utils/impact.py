@@ -100,7 +100,7 @@ def _impact_deptinfo(obj) -> list:
 
 
 def _impact_datadict(obj) -> list:
-    from system.models import DynamicForm
+    from dataset.models import DynamicForm
 
     children = obj.children.count() if getattr(obj, "parent_id", None) is None else 0
     forms = []
@@ -123,7 +123,7 @@ def _impact_datadict(obj) -> list:
 
 
 def _impact_dataset(obj) -> list:
-    from system.models import Dashboard, Report, Screen
+    from dataset.models import Dashboard, Report, Screen
 
     dashboards = []
     for dashboard in Dashboard.objects.only("name", "layout").iterator():
@@ -227,10 +227,10 @@ IMPACT_CALCULATORS = {
     "system.userrole": _impact_userrole,
     "system.deptinfo": _impact_deptinfo,
     "system.datadict": _impact_datadict,
-    "system.dataset": _impact_dataset,
+    "dataset.dataset": _impact_dataset,
     "approval.approvalflow": _impact_approvalflow,
-    "system.dynamicform": _impact_dynamicform,
-    "system.screen": _impact_screen,
+    "dataset.dynamicform": _impact_dynamicform,
+    "dataset.screen": _impact_screen,
     "system.menu": _impact_menu,
 }
 

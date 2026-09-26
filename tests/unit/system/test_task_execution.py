@@ -452,7 +452,7 @@ def test_execution_list_exposes_product_info(superuser):
     )
     TaskExecution.objects.create(
         pk=export.pk,
-        name="system.analysis_tasks.run_export",
+        name="dataset.analysis_tasks.run_export",
         creator=superuser,
         status=TaskExecution.Status.SUCCESS,
     )

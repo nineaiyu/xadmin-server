@@ -7,16 +7,8 @@
 
 import pytest
 
-from system.models import (
-    Dashboard,
-    DataDict,
-    Dataset,
-    DynamicForm,
-    Menu,
-    Screen,
-    UserInfo,
-    UserRole,
-)
+from dataset.models import Dashboard, Dataset, DynamicForm, Screen
+from system.models import DataDict, Menu, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -106,10 +98,10 @@ class TestImpactRegistryAlignment:
         ("system.views.admin.role", "RoleViewSet"),
         ("system.views.admin.dept", "DeptViewSet"),
         ("system.views.admin.dict", "DataDictViewSet"),
-        ("system.views.dataset", "DatasetViewSet"),
+        ("dataset.views.dataset", "DatasetViewSet"),
         ("approval.views.approval_flow", "ApprovalFlowViewSet"),
-        ("system.views.dform", "DynamicFormViewSet"),
-        ("system.views.analysis", "ScreenViewSet"),
+        ("dataset.views.dform", "DynamicFormViewSet"),
+        ("dataset.views.analysis", "ScreenViewSet"),
         ("system.views.admin.menu", "MenuViewSet"),
     )
 

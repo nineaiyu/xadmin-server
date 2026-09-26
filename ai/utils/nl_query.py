@@ -19,7 +19,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from system.utils.dataset import (
+from dataset.utils.dataset import (
     ALLOWED_METRICS,
     ALLOWED_OPS,
     ROW_LIMIT_CAP,
@@ -30,7 +30,7 @@ from system.utils.dataset import (
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from system.models.dataset import Dataset
+    from dataset.models.dataset import Dataset
 
 NL_ROW_LIMIT_CAP = 200
 DSL_KEYS = {"dataset", "mode", "filters", "group_by", "metric", "date_trunc", "value_field", "limit"}
@@ -38,7 +38,7 @@ DSL_KEYS = {"dataset", "mode", "filters", "group_by", "metric", "date_trunc", "v
 
 def visible_datasets(user_obj) -> list:
     """当前用户可见数据集（shared ∪ 本人创建；superuser 全部）。"""
-    from system.models.dataset import Dataset
+    from dataset.models.dataset import Dataset
 
     queryset = Dataset.objects.all()
     if not getattr(user_obj, "is_superuser", False):
@@ -87,7 +87,7 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
     if str(dsl["dataset"]) not in allowed_pks:
         raise ValidationError(_("Unknown dataset in NL query"))
 
-    from system.models.dataset import Dataset
+    from dataset.models.dataset import Dataset
 
     dataset = Dataset.objects.get(pk=dsl["dataset"])
     mode = dsl.get("mode") or "rows"

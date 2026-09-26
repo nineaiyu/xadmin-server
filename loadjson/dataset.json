@@ -1,6 +1,6 @@
 [
   {
-    "model": "system.dataset",
+    "model": "dataset.dataset",
     "pk": "5eed0001-0000-4000-8000-000000000001",
     "fields": {
       "name": "示例-全部用户",
@@ -18,7 +18,7 @@
     }
   },
   {
-    "model": "system.dataset",
+    "model": "dataset.dataset",
     "pk": "5eed0001-0000-4000-8000-000000000002",
     "fields": {
       "name": "示例-表单提交",

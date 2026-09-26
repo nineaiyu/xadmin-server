@@ -27,12 +27,11 @@ from approval.models.approval import (
     ApprovalInstance,
     ApprovalRequest,
 )
+from dataset.models import DynamicForm, DynamicFormSubmission
 from message.models import ChatMessage
 from notifications.models import MessageContent
 from system.models import (
     DeptInfo,
-    DynamicForm,
-    DynamicFormSubmission,
     Menu,
     MenuMeta,
     ModelLabelField,
@@ -55,8 +54,8 @@ GRANT_MODELS = [
     "system.approvalflow",
     "system.approvalinstance",
     "system.approvalrequest",
-    "system.dynamicform",
-    "system.dynamicformsubmission",
+    "dataset.dynamicform",
+    "dataset.dynamicformsubmission",
     "system.leave",
 ]
 

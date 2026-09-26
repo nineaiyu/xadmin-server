@@ -11,6 +11,7 @@ import pytest
 from django.core.management import call_command
 
 from approval.models.approval import ApprovalFlow
+from dataset.models.dform import DynamicForm
 from system.models import (
     DataPermission,
     DeptInfo,
@@ -20,7 +21,6 @@ from system.models import (
     UserInfo,
     UserRole,
 )
-from system.models.dform import DynamicForm
 
 pytestmark = pytest.mark.django_db
 

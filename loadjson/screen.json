@@ -1,6 +1,6 @@
 [
   {
-    "model": "system.screen",
+    "model": "dataset.screen",
     "pk": "5eed0003-0000-4000-8000-000000000003",
     "fields": {
       "name": "示例-运营大屏",

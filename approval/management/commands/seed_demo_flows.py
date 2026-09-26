@@ -68,7 +68,7 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 清理与用户
 
     def _reset(self):
-        from system.models import DynamicFormSubmission
+        from dataset.models import DynamicFormSubmission
 
         # 固定 pk 段 + 演示标题兜底（覆盖历史上非幂等版本/中断运行留下的随机 pk 残留）
         demo_titles = ApprovalInstance.objects.filter(title__endswith="（演示）").values_list("pk", flat=True)
@@ -384,8 +384,8 @@ class Command(BaseCommand):
         self.stdout.write(f"demo approval requests created: {len(rows)}")
 
     def _create_demo_submissions(self, applier: UserInfo):
-        from system.models import DynamicForm, DynamicFormSubmission
-        from system.utils.dform import validate_submission_data
+        from dataset.models import DynamicForm, DynamicFormSubmission
+        from dataset.utils.dform import validate_submission_data
 
         if DynamicFormSubmission.objects.filter(pk__in=SUBMISSION_PKS).exists():
             self.stdout.write("demo form submissions already exist, skip")

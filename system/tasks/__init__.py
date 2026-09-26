@@ -37,7 +37,7 @@ logger = get_logger(__name__)
 
 # LDAP 同步周期任务：celery autodiscover 只导入 <app>.tasks，
 # 子包任务必须在此显式引入才会注册到 django_celery_beat
-from system.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
+from dataset.analysis_tasks import dispatch_scheduled_reports as _dispatch_scheduled_reports  # noqa: F401,E402
 from system.ldap.tasks import sync_ldap_directory_job as _sync_ldap_directory_job  # noqa: F401,E402
 from system.webhook_tasks import deliver_webhook as _deliver_webhook  # noqa: F401,E402
 

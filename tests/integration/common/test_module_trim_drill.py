@@ -92,10 +92,11 @@ def _run_ws_middleware(path):
 def _registered_ws_regexes():
     """message/system routing 中实际注册的 WS 路径正则（唯一事实源的运行期投影）。"""
 
+    from dataset.routing import urlpatterns as dataset_patterns
     from message.routing import urlpatterns as message_patterns
     from system.routing import urlpatterns as system_patterns
 
-    return [pattern.pattern.regex.pattern for pattern in (*message_patterns, *system_patterns)]
+    return [pattern.pattern.regex.pattern for pattern in (*message_patterns, *system_patterns, *dataset_patterns)]
 
 
 @pytest.fixture(scope="module", autouse=True)

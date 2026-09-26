@@ -15,6 +15,7 @@ from django.db.models.signals import ModelSignal
 from approval.models import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from common.core.config import SysConfig
 from common.core.modules import ModuleSeedFilter
+from dataset.models import Dashboard, Dataset, DynamicForm, DynamicFormSubmission, Report, Screen
 from settings.models import Setting
 from system.models import *
 from system.utils.dict import invalid_dict_cache

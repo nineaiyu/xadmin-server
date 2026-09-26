@@ -26,8 +26,8 @@ from django.conf import settings as dj_settings
 
 from approval.serializers.approval_flow import FORM_FIELD_TYPES
 from approval.utils.approval_flow import CONDITION_OPS
+from dataset.utils.dform import validate_schema, validate_submission_data
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.utils.dform import validate_schema, validate_submission_data
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 

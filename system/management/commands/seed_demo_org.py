@@ -22,10 +22,10 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
+from dataset.models import DynamicForm
 from system.models import (
     DataPermission,
     DeptInfo,
-    DynamicForm,
     FieldPermission,
     Menu,
     ModelLabelField,
@@ -90,8 +90,8 @@ GRANT_MODELS = [
     "system.approvalflow",
     "approval.approvalinstance",
     "system.approvalrequest",
-    "system.dynamicform",
-    "system.dynamicformsubmission",
+    "dataset.dynamicform",
+    "dataset.dynamicformsubmission",
     "system.leave",
 ]
 

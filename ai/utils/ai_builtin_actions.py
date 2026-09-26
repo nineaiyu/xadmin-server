@@ -50,7 +50,7 @@ def _parse_decimal(value):
 
 def available_forms(user) -> list:
     """可提交的动态表单（启用中，目录按创建时间倒序取前 N 个）。"""
-    from system.models.dform import DynamicForm
+    from dataset.models.dform import DynamicForm
 
     limit, __ = _limits()
     return list(DynamicForm.objects.filter(is_active=True).order_by("-created_time")[:limit])
@@ -140,7 +140,7 @@ def _execute_leave(user, params: dict) -> dict:
 
 def _resolve_form(params: dict):
     """按 form_id 取启用中的表单；返回 (form, 错误文案)。"""
-    from system.models.dform import DynamicForm
+    from dataset.models.dform import DynamicForm
 
     form_id = str(params.get("form_id") or "").strip()
     if not form_id:
@@ -158,7 +158,7 @@ def _resolve_form(params: dict):
 
 def _validate_dform(user, params: dict):
     """校验动态表单提交参数：返回 (JSON 安全的规范化参数, 错误文案)。"""
-    from system.utils.dform import validate_submission_data
+    from dataset.utils.dform import validate_submission_data
 
     form, error = _resolve_form(params)
     if error:
@@ -183,7 +183,7 @@ def _dform_requires_approval(user, params: dict) -> bool:
 
 
 def _execute_dform(user, params: dict) -> dict:
-    from system.models.dform import DynamicFormSubmission
+    from dataset.models.dform import DynamicFormSubmission
 
     form, error = _resolve_form(params)
     if error:

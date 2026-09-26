@@ -1,6 +1,6 @@
 [
   {
-    "model": "system.dashboard",
+    "model": "dataset.dashboard",
     "pk": "5eed0002-0000-4000-8000-000000000002",
     "fields": {
       "name": "示例-运营看板",

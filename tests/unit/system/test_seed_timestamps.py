@@ -11,8 +11,8 @@ import pytest
 from django.core.management import call_command
 from django.core.management.commands.loaddata import Command as LoadDataCommand
 
+from dataset.models import Dataset
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import Dataset
 from system.utils.seed import backfill_null_timestamps
 
 pytestmark = pytest.mark.django_db

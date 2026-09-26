@@ -419,8 +419,8 @@ def _rerun_import(record, user) -> dict:
 
 
 def _rerun_report(record) -> dict:
-    from system.analysis_tasks import _precreate_record, run_scheduled_report
-    from system.models.dataset import Report
+    from dataset.analysis_tasks import _precreate_record, run_scheduled_report
+    from dataset.models.dataset import Report
 
     report_id = str((record.params or {}).get("report_id") or "")
     report = Report.objects.filter(pk=report_id).first() if report_id else None

@@ -115,7 +115,7 @@ class ApiApplicationGrant(DbAuditModel):
         on_delete=models.CASCADE,
         related_name="grants",
     )
-    # 目标模型标签（system.dataset）或 *（全部模型）
+    # 目标模型标签（dataset.dataset）或 *（全部模型）
     model = models.CharField(_("Model"), max_length=128)
     # 权限点动作段清单（list/retrieve/create/...）或 ["*"]（全部动作）
     actions = models.JSONField(_("Actions"), default=list)

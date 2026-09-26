@@ -11860,7 +11860,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.dashboard",
+      "name": "dataset.dashboard",
       "label": "仪表盘"
     }
   },
@@ -12055,7 +12055,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.dataset",
+      "name": "dataset.dataset",
       "label": "数据集"
     }
   },
@@ -12175,7 +12175,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.dynamicformsubmission",
+      "name": "dataset.dynamicformsubmission",
       "label": "动态表单提交"
     }
   },
@@ -12310,7 +12310,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.dynamicform",
+      "name": "dataset.dynamicform",
       "label": "动态表单"
     }
   },
@@ -13000,7 +13000,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.report",
+      "name": "dataset.report",
       "label": "报表"
     }
   },
@@ -13135,7 +13135,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.screen",
+      "name": "dataset.screen",
       "label": "大屏"
     }
   },
@@ -17125,7 +17125,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.dynamicformsubmission",
+      "name": "dataset.dynamicformsubmission",
       "label": "动态表单提交"
     }
   },
@@ -17305,7 +17305,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.dynamicform",
+      "name": "dataset.dynamicform",
       "label": "动态表单"
     }
   },
@@ -17635,7 +17635,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.report",
+      "name": "dataset.report",
       "label": "报表"
     }
   },
@@ -17830,7 +17830,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.screen",
+      "name": "dataset.screen",
       "label": "大屏"
     }
   },
@@ -17995,7 +17995,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.dashboard",
+      "name": "dataset.dashboard",
       "label": "仪表盘"
     }
   },
@@ -18235,7 +18235,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.dataset",
+      "name": "dataset.dataset",
       "label": "数据集"
     }
   },

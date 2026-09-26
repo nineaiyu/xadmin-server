@@ -28,7 +28,6 @@ from system.views.admin.permission import DataPermissionViewSet
 from system.views.admin.role import RoleViewSet
 from system.views.admin.saved_view import SavedListViewSet
 from system.views.admin.user import UserViewSet
-from system.views.analysis import ReportViewSet, ScreenViewSet
 from system.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
@@ -52,9 +51,6 @@ from system.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTok
 from system.views.auth.verify_code import SendVerifyCodeAPIView
 from system.views.configs import ConfigsViewSet
 from system.views.dashboard import DashboardViewSet
-from system.views.dataset import DashboardViewSet as DataDashboardViewSet
-from system.views.dataset import DatasetViewSet
-from system.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
 from system.views.modules import SystemModuleViewSet
 from system.views.monitor import MonitorViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
@@ -182,17 +178,9 @@ router.register("credentials", CredentialViewSet, basename="credential")
 # 功能模块清单（只读）：模块等级/依赖/启停状态与裁剪配置片段
 router.register("modules", SystemModuleViewSet, basename="module")
 # 数据集与仪表盘（可视化一期）
-router.register("datasets", DatasetViewSet, basename="dataset")
-router.register("dashboards", DataDashboardViewSet, basename="dashboards")
-# 大屏与定时报表
-router.register("screens", ScreenViewSet, basename="screen")
-router.register("reports", ReportViewSet, basename="report")
 # 出站 Webhook
 router.register("webhooks/subscriptions", WebhookSubscriptionViewSet, basename="webhook-subscription")
 router.register("webhooks/deliveries", WebhookDeliveryViewSet, basename="webhook-delivery")
-# 动态表单
-router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
-router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
 # AI 助手：配置（Setting 体系）与问答
 # AI 知识库文档管理：上传/预览/启停/删除 + 仓库文档重建
 # AI 配置档案：多套凭据/采样参数，激活唯一（无激活档案回落 Setting 通路）
@@ -231,6 +219,8 @@ urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_rout
 urlpatterns += [path("", include("approval.urls"))]
 # AI 平台域（ai app，3.1 拆分批次3）：路由迁 ai/urls.py，同前缀挂载
 urlpatterns += [path("", include("ai.urls"))]
+# 数据分析与动态表单域（dataset app，3.1 拆分批次4）：路由迁 dataset/urls.py，同前缀挂载
+urlpatterns += [path("", include("dataset.urls"))]
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
 # MCP 协议端点（Streamable HTTP 无状态）：外部 MCP 客户端经 PAT 接入统一工具层

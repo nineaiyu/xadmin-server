@@ -230,7 +230,7 @@ def sync_business_status_handler(sender, instance, status=None, reason="", **kwa
 
             sync_leave_instance(instance, status, reason)
         elif biz_type == "dform_submission":
-            from system.utils.dform_flow import sync_dform_instance
+            from dataset.utils.dform_flow import sync_dform_instance
 
             sync_dform_instance(instance, status, reason)
         elif biz_type == "demo_book":

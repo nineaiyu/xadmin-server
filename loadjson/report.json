@@ -1,6 +1,6 @@
 [
   {
-    "model": "system.report",
+    "model": "dataset.report",
     "pk": "5eed0004-0000-4000-8000-000000000004",
     "fields": {
       "name": "示例-用户日报",
