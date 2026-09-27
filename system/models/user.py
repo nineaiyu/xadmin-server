@@ -102,6 +102,10 @@ class UserInfo(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel, AbstractUser):
     invited_time = models.DateTimeField(verbose_name=_("Invited at"), null=True, blank=True)
 
     roles = models.ManyToManyField(to="system.UserRole", verbose_name=_("Role permission"), blank=True)
+    # 岗位（人员维度，不参与权限判定；一人可兼多岗，见 system/models/post.py）
+    posts = models.ManyToManyField(
+        to="system.Post", verbose_name=_("Posts"), blank=True, related_name="users", related_query_name="post_query"
+    )
     rules = models.ManyToManyField(to="system.DataPermission", verbose_name=_("Data permission"), blank=True)
     dept = models.ForeignKey(
         to="system.DeptInfo",

@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+"""岗位序列化器：表格列 + 关联计数（成员数）+ 未删除唯一校验。"""
+
+from django.db.models import Count
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
+from common.core.serializers import BaseModelSerializer
+from system.models import Post
+
+
+class PostMemberSerializer(serializers.Serializer):
+    """岗位成员变更载荷：增量 add / remove（幂等），至少给出一侧。"""
+
+    add = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=True)
+    remove = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=True)
+
+    def validate(self, attrs):
+        if not attrs.get("add") and not attrs.get("remove"):
+            raise serializers.ValidationError(_("Provide members to add or remove"))
+        return attrs
+
+
+class PostSerializer(BaseModelSerializer):
+    class Meta:
+        model = Post
+        fields = [
+            "pk",
+            "name",
+            "code",
+            "dept",
+            "dept_name",
+            "rank",
+            "is_active",
+            "user_count",
+            "description",
+            "updated_time",
+        ]
+        table_fields = [
+            "pk",
+            "name",
+            "code",
+            "dept_name",
+            "user_count",
+            "is_active",
+            "description",
+            "updated_time",
+        ]
+        read_only_fields = ["pk"]
+
+    dept_name = serializers.SerializerMethodField(read_only=True, label=_("Dept"))
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_dept_name(self, obj):
+        return obj.dept.name if obj.dept_id else ""
+
+    # 关联计数声明：列表/详情/导出由 RelationCountMixin 预聚合（成员数），
+    # 单对象序列化回退为单次 COUNT
+    relation_count_fields = {"user_count": Count("post_query")}
+    user_count = serializers.SerializerMethodField(read_only=True, label=_("User count"))
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_user_count(self, obj):
+        count = getattr(obj, "user_count", None)
+        return count if count is not None else obj.users.count()
+
+    # 名称/编码的唯一性为「未删除数据」条件约束（见 Meta.constraints），
+    # DRF 不会为带 condition 的 UniqueConstraint 自动生成校验器，这里显式校验，
+    # 保证重复时返回 400 而非数据库 IntegrityError
+    def _validate_active_unique(self, field_name, value):
+        queryset = Post.objects.filter(**{field_name: value})
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError(_("This field already exists"))
+        return value
+
+    def validate_name(self, value):
+        return self._validate_active_unique("name", value)
+
+    def validate_code(self, value):
+        return self._validate_active_unique("code", value)

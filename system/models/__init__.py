@@ -21,6 +21,7 @@ from .module import *
 from .oauth import *
 from .password import *
 from .permission import *
+from .post import *
 from .role import *
 from .saved_view import *
 from .security import *

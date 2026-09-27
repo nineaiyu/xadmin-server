@@ -25,6 +25,7 @@ from system.views.admin.online import UserOnlineViewSet
 from system.views.admin.operationlog import OperationLogViewSet
 from system.views.admin.passkey import PasskeyViewSet
 from system.views.admin.permission import DataPermissionViewSet
+from system.views.admin.post import PostViewSet
 from system.views.admin.role import RoleViewSet
 from system.views.admin.saved_view import SavedListViewSet
 from system.views.admin.user import UserViewSet
@@ -157,6 +158,7 @@ router.register("personal-access-tokens", PersonalAccessTokenViewSet, basename="
 # 系统设置相关路由
 router.register("user", UserViewSet, basename="user")
 router.register("dept", DeptViewSet, basename="dept")
+router.register("posts", PostViewSet, basename="post")
 router.register("menu", MenuViewSet, basename="menu")
 router.register("role", RoleViewSet, basename="role")
 router.register("permission", DataPermissionViewSet, basename="permission")

@@ -6,6 +6,7 @@ from system.models import *
 
 admin.site.register(UserInfo)
 admin.site.register(DeptInfo)
+admin.site.register(Post)
 admin.site.register(ModelLabelField)
 admin.site.register(UserLoginLog)
 admin.site.register(OperationLog)

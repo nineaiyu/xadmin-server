@@ -11,7 +11,8 @@ SKIP_ROUTE_PREFIXES = ("api/demo/",)
 PARENT_MENU_MAP = {
     "api/dataset/dynamic-form-submissions": "FormMySubmission",
     "api/approval/approval-delegations": "SystemApprovalDelegation",
-    # 安全域
+    # 组织与安全域
+    "api/system/posts": "SystemPost",
     "api/system/account-risks": "SystemAccountRisk",
     "api/system/login-policies": "SystemLoginPolicy",
     "api/notifications/message-templates": "SettingMessage",
