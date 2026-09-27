@@ -7,8 +7,8 @@ from rest_framework import serializers
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
-from dataset.models.dform import DynamicForm, DynamicFormSubmission
-from dataset.utils.dform import validate_draft_data, validate_schema, validate_submission_data
+from dataset.models.dform import MAX_SCHEMA_HISTORY, DynamicForm, DynamicFormSubmission
+from dataset.utils.dform import normalize_schema, validate_draft_data, validate_submission_data
 
 
 class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
@@ -36,6 +36,7 @@ class DynamicFormSerializer(BaseModelSerializer):
             "name",
             "description",
             "schema",
+            "schema_version",
             "is_active",
             "approval_required",
             "approval_flow",
@@ -43,7 +44,7 @@ class DynamicFormSerializer(BaseModelSerializer):
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["pk", "created_time", "updated_time"]
+        read_only_fields = ["pk", "schema_version", "created_time", "updated_time"]
         # RePlusPage 列表列：schema 列由前端渲染「字段数」（不直接展示 JSON）
         table_fields = [
             "name",
@@ -56,8 +57,8 @@ class DynamicFormSerializer(BaseModelSerializer):
         ]
 
     def validate_schema(self, value):
-        validate_schema(value if isinstance(value, dict) else {})
-        return value
+        """写入侧规范化：字段 + 联动规则（未声明键丢弃，缺省不写入 linkages）。"""
+        return normalize_schema(value if isinstance(value, dict) else {})
 
     def validate(self, attrs):
         """模板约束：创建后不可改模板标记；模板不绑定审批流程（只做 schema 复用）。"""
@@ -69,6 +70,29 @@ class DynamicFormSerializer(BaseModelSerializer):
         if is_template and attrs.get("approval_flow"):
             raise serializers.ValidationError(_("A form template cannot bind an approval flow"))
         return attrs
+
+    def update(self, instance, validated_data):
+        """schema 实质变更 → 版本 +1 并归档变更前快照（保留最近 MAX_SCHEMA_HISTORY 个）。
+
+        同内容保存（规范化后相等）不产生新版本，避免「点一次保存就 +1」的噪声版本。
+        """
+        new_schema = validated_data.get("schema")
+        if new_schema is not None and new_schema != (instance.schema or {}):
+            request = self.context.get("request")
+            user = getattr(request, "user", None)
+            history = list(instance.schema_history or [])
+            history.insert(
+                0,
+                {
+                    "version": instance.schema_version or 1,
+                    "schema": instance.schema or {},
+                    "updated_time": instance.updated_time.isoformat() if instance.updated_time else "",
+                    "updated_by": getattr(user, "username", "") or "",
+                },
+            )
+            validated_data["schema_history"] = history[:MAX_SCHEMA_HISTORY]
+            validated_data["schema_version"] = (instance.schema_version or 1) + 1
+        return super().update(instance, validated_data)
 
 
 class FormPkField(serializers.PrimaryKeyRelatedField):
@@ -98,6 +122,7 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             "form",
             "form_name",
             "form_schema",
+            "schema_version",
             "data",
             "status",
             "instance",
@@ -106,7 +131,7 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             "created_time",
             "updated_time",
         ]
-        read_only_fields = ["pk", "creator", "created_time", "updated_time", "instance"]
+        read_only_fields = ["pk", "schema_version", "creator", "created_time", "updated_time", "instance"]
         table_fields = ["form_name", "status", "creator", "created_time"]
 
     def get_form_schema(self, obj) -> list:
@@ -136,6 +161,9 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         if self.context.get("draft"):
             attrs["data"] = validate_draft_data(data)
         else:
-            # 提交侧校验：与 schema 定义同源（未知键/required/选项/边界；字典字段读字典值）
+            # 提交侧校验：与 schema 定义同源（未知键/required/选项/边界；字典字段读字典值；
+            # 联动规则参与：隐藏字段跳过校验且不落库、动态必填覆盖字段定义）
             attrs["data"] = validate_submission_data(form.schema, data)
+        # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
+        attrs["schema_version"] = form.schema_version or 1
         return attrs

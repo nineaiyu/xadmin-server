@@ -92,6 +92,77 @@ def test_retrieval_hit_rate(corpus):
 
 
 @pytest.mark.django_db
+def test_hybrid_hit_rate_with_stub_embeddings(corpus, monkeypatch):
+    """向量通道接入后的 hit@5 不回归（假 embedding：与词频同源的哈希袋向量）。
+
+    口径说明：CI 不接外部 embedding 服务，这里用「token 哈希袋」假向量模拟一个与
+    词频通道一致的语义空间——验证的是**融合链路本身不破坏召回**（RRF 排序、
+    索引构建、陈旧判定、回退分支）。真实 embedding 的 hit@5 需在配置
+    ``purpose=embedding`` 档案的环境执行 ``manage.py build_ai_embeddings`` 后复测，
+    本用例的打印值可作为对照基线。
+    """
+    from ai.models.ai import AiProfile
+    from ai.utils.ai_embeddings import build_embeddings, invalidate_vector_index, vector_index
+    from ai.utils.ai_index import _tokenize
+
+    class _HashBagEmbeddingClient:
+        """确定性假客户端：token 哈希袋 → 64 维计数向量（余弦 ≈ 词元重合度）。"""
+
+        model = "stub-hash-bag"
+
+        def __init__(self, credentials=None, http_client=None):
+            self.model = str((credentials or {}).get("model") or type(self).model)
+            self.last_usage = {"prompt_tokens": 1, "total_tokens": 1}
+
+        def embed(self, texts):
+            vectors = []
+            for text in texts:
+                vector = [0.0] * 64
+                for token in _tokenize(text or ""):
+                    vector[hash(token) % 64] += 1.0
+                vectors.append(vector)
+            return vectors
+
+    profile = AiProfile.objects.create(
+        name="eval-stub-embedding",
+        base_url="http://ai.local/v1",
+        model="stub-hash-bag",
+        purpose=AiProfile.Purpose.EMBEDDING,
+        is_active=True,
+    )
+    profile.api_key_plain = "test-key"
+    profile.save(update_fields=["api_key"])
+    monkeypatch.setattr("common.sdk.ai.embeddings.EmbeddingClient", _HashBagEmbeddingClient)
+    try:
+        summary = build_embeddings()
+        assert summary["enabled"] and summary["ok"], summary
+        assert vector_index(), "向量索引应可用（假向量已落库）"
+
+        cases = _load_eval()["cases"]
+        hits = 0
+        details = []
+        for case in cases:
+            retrieved = retrieve(case["question"], top_k=TOP_K)
+            paths = [item["chunk"].source_path for item in retrieved]
+            hit = any(path in case["expected"] for path in paths)
+            hits += 1 if hit else 0
+            details.append(f"{'HIT ' if hit else 'MISS'} [{case['id']}] top{TOP_K}={paths}")
+        hit_rate = hits / len(cases)
+        print(
+            f"\n[ai-retrieval-eval] hybrid(stub embedding) hit@5 = {hits}/{len(cases)} = {hit_rate:.1%}"
+            f" | vectors = {summary['embedded']} | dim = {summary['dim']}"
+        )
+        for line in details:
+            if line.startswith("MISS"):
+                print(line)
+        assert hit_rate >= HIT_RATE_FLOOR, (
+            f"混合检索 hit@5 {hit_rate:.1%} 低于门禁 {HIT_RATE_FLOOR:.0%}（融合链路回归）。\n" + "\n".join(details)
+        )
+    finally:
+        invalidate_vector_index()
+
+
+@pytest.mark.django_db
 def test_retrieval_scale_gate_recorded(corpus):
     """记录向量升级的规模门控实测值（分块数），供 metrics 回填与 ADR 决策引用。"""
     assert corpus["chunk_total"] > 0

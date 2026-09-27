@@ -5,8 +5,9 @@
 安全口径：
 - 知识库文档两类来源：仓库文件（docs/**/*.md + 根 README/CONTRIBUTING，命令同步）
   与管理端上传（存 DB 全文）；ask 链路不查询任何业务模型（不触生产数据）；
-- 检索为零依赖词频重叠评分（CJK 二元组 + ASCII 词 + 标题加成），
-  向量嵌入升级路径登记候选池；
+- 检索基线为零依赖词频重叠评分（CJK 二元组 + ASCII 词 + 标题加成）；
+  配置 ``purpose=embedding`` 激活档案并构建向量后走 RRF 混合检索
+  （``ai/utils/ai_embeddings.py``，见 ADR-065），未配置 = 零变化；
 - LLM 配置经 Setting 值级加密（AI_API_KEY write_only），未启用/未配置统一
   可读降级。
 """
@@ -22,6 +23,7 @@ from django.utils.translation import gettext_lazy as _
 from ai.utils.ai_config import (  # noqa: F401 配置/凭据拆至 ai_config（行数门禁），此处再导出保持调用面
     BUILTIN_PERSONA,
     PURPOSE_CHAT,
+    PURPOSE_EMBEDDING,
     PURPOSE_STRUCTURED,
     STRUCTURED_MAX_TOKENS,
     active_profile,
@@ -30,6 +32,9 @@ from ai.utils.ai_config import (  # noqa: F401 配置/凭据拆至 ai_config（�
     ai_credentials,
     ai_persona,
     ai_structured_max_tokens,
+    embedding_credentials,
+    embedding_enabled,
+    embedding_profile,
     is_configured,
     is_enabled,
     native_tools_enabled,
@@ -96,23 +101,46 @@ def _chunk_markdown(text: str) -> list:
 
 
 def rebuild_chunks(doc) -> int:
-    """按文档全文重建其全部分块（先删后插），返回块数。"""
+    """按文档全文重建其全部分块（先删后插），返回块数。
+
+    向量保留：正文未变的块（``content_hash`` 相同）沿用既有 embedding——重建会
+    重新分配块主键，若不保留则每次仓库同步/重传都会让向量全部失效，重算即
+    embedding API 成本；陈旧块（正文变更）不带向量，由显式构建补齐。
+    """
     from ai.models.ai import AiKnowledgeChunk
 
+    preserved = {}
+    existing = AiKnowledgeChunk.objects.filter(source_path=doc.path).exclude(embedding__isnull=True)
+    for content_hash, embedding, embedding_model, embedding_hash, embedding_dim in existing.values_list(
+        "content_hash", "embedding", "embedding_model", "embedding_hash", "embedding_dim"
+    ):
+        preserved.setdefault(content_hash, (embedding, embedding_model, embedding_hash, embedding_dim))
     AiKnowledgeChunk.objects.filter(source_path=doc.path).delete()
     chunks = _chunk_markdown(doc.content or "")
-    AiKnowledgeChunk.objects.bulk_create(
-        [
+    rows = []
+    for index, chunk in enumerate(chunks):
+        content_hash = hashlib.sha256(chunk.encode("utf-8")).hexdigest()
+        vector = preserved.get(content_hash)
+        rows.append(
             AiKnowledgeChunk(
                 source_path=doc.path,
                 title=(doc.title or doc.path)[:255],
                 chunk_index=index,
                 content=chunk,
-                content_hash=hashlib.sha256(chunk.encode("utf-8")).hexdigest(),
+                content_hash=content_hash,
+                **(
+                    {
+                        "embedding": vector[0],
+                        "embedding_model": vector[1],
+                        "embedding_hash": vector[2],
+                        "embedding_dim": vector[3],
+                    }
+                    if vector
+                    else {}
+                ),
             )
-            for index, chunk in enumerate(chunks)
-        ]
-    )
+        )
+    AiKnowledgeChunk.objects.bulk_create(rows)
     return len(chunks)
 
 

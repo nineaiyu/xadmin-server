@@ -9848,6 +9848,82 @@ msgstr "报表设计"
 msgid "Report designer payload (empty = legacy single-sheet export)"
 msgstr "报表设计载荷（为空 = 存量单表导出）"
 
+
+msgid "Invalid form linkages"
+msgstr "表单联动规则格式不正确"
+
+msgid "Form linkages exceed the limit of {}"
+msgstr "联动规则数量超过上限 {}"
+
+msgid "Invalid form linkage rule"
+msgstr "联动规则格式不正确"
+
+msgid "Linkage target {} is not a field of this form"
+msgstr "联动目标 {} 不是本表单的字段"
+
+msgid "Linkage trigger {} is not a field of this form"
+msgstr "联动触发字段 {} 不是本表单的字段"
+
+msgid "A linkage rule cannot target its own trigger field"
+msgstr "联动规则的目标字段不能与触发字段相同"
+
+msgid "Unknown linkage operator: {}"
+msgstr "未知的联动操作符：{}"
+
+msgid "Unknown linkage effect: {}"
+msgstr "未知的联动效果：{}"
+
+msgid "A linkage value list is required for operator {}"
+msgstr "操作符 {} 需要提供取值列表"
+
+msgid "Invalid linkage value"
+msgstr "联动规则取值不正确"
+
+msgid "A schema version is required"
+msgstr "请选择要回滚的版本"
+
+msgid "Schema version {} does not exist"
+msgstr "版本 {} 不存在"
+
+msgid "Rolled back to schema version {}"
+msgstr "已回滚到版本 {}"
+
+msgid "No active embedding profile is configured"
+msgstr "未配置可用的向量化档案（用途 = 文本向量化）"
+
+msgid "Embedding build stopped: {}"
+msgstr "向量构建中止：{}"
+
+msgid "Embeddings built: {} chunks"
+msgstr "向量构建完成：{} 块"
+
+msgid "Text embedding"
+msgstr "文本向量化"
+
+msgid "Knowledge embedding"
+msgstr "知识库向量化"
+
+msgid "Embedding"
+msgstr "向量"
+
+msgid "Embedding model"
+msgstr "向量模型"
+
+msgid "Embedding source hash"
+msgstr "向量来源 hash"
+
+msgid "Embedding dimension"
+msgstr "向量维度"
+
+msgid "Schema version"
+msgstr "Schema 版本"
+
+msgid "Form schema version"
+msgstr "表单 Schema 版本"
+
+msgid "Schema history"
+msgstr "Schema 历史"
+
 #~ msgid "The username or password you entered is incorrect,"
 #~ msgstr "您输入的用户名或密码不正确，"
 

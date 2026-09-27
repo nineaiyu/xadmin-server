@@ -12,10 +12,12 @@
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.plumbing import build_object_type
+from drf_spectacular.plumbing import build_basic_type, build_object_type
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
 
 from common.core.filter import BaseFilterSet
@@ -120,6 +122,57 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
 
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, modifier=self.request.user)
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="schema-history")
+    def schema_history(self, request, *args, **kwargs):
+        """schema 版本历史（新 → 旧）：每项含 schema 全文，供查看/对比/回滚。
+
+        保留最近 MAX_SCHEMA_HISTORY（20）个版本；版本号单调递增，回滚同样生成新版本。
+        """
+        form = self.get_object()
+        return ApiResponse(
+            data={
+                "current": form.schema_version or 1,
+                "updated_time": form.updated_time.isoformat() if form.updated_time else "",
+                "history": list(form.schema_history or []),
+            }
+        )
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={"version": build_basic_type(OpenApiTypes.INT)},
+                required=["version"],
+                description="要回滚到的历史版本号",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True)
+    def rollback(self, request, *args, **kwargs):
+        """回滚 schema 到指定历史版本：应用其 schema 并生成新版本（历史保留，可再次回滚）。
+
+        写入校验与常规编辑同源（规范化 + 字段/联动校验），避免历史脏数据绕过校验落库。
+        """
+        form = self.get_object()
+        try:
+            version = int(request.data.get("version"))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(_("A schema version is required")) from exc
+        target = next(
+            (item for item in (form.schema_history or []) if int(item.get("version") or 0) == version),
+            None,
+        )
+        if target is None:
+            raise ValidationError(_("Schema version {} does not exist").format(version))
+        serializer = self.get_serializer(form, data={"schema": target.get("schema") or {}}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ApiResponse(
+            data=self.get_serializer(form).data,
+            detail=_("Rolled back to schema version {}").format(version),
+        )
 
 
 class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):

@@ -15770,5 +15770,74 @@
    "method": "GET",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "158a5476-edac-41ed-9f27-6a6f1076e83c",
+  "fields": {
+   "created_time": "2026-09-27T12:31:09.143Z",
+   "updated_time": "2026-09-27T12:31:09.143Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "schemaHistory:FormDesigner",
+   "rank": 10001,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)/schema-history$",
+   "component": null,
+   "is_active": true,
+   "meta": "2230af0f-b2fb-4c47-b974-4089ca19cc97",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "13963346-dcbb-47c4-9dc5-f609d19f8594",
+  "fields": {
+   "created_time": "2026-09-27T12:31:09.142Z",
+   "updated_time": "2026-09-27T12:31:09.142Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "75ac286c-caa8-5bf7-b068-e257aeb967d8",
+   "menu_type": 2,
+   "name": "rollback:FormDesigner",
+   "rank": 10000,
+   "path": "api/dataset/dynamic-forms/(?P<pk>[^/.]+)/rollback$",
+   "component": null,
+   "is_active": true,
+   "meta": "72ceacef-8214-43b6-a9ea-b6fbef39501d",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "5938cb8b-72b5-493d-b371-7e17cc850941",
+  "fields": {
+   "created_time": "2026-09-27T12:31:09.141Z",
+   "updated_time": "2026-09-27T12:31:09.141Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "416faea3-f2b5-4630-a6ac-4df1c9894023",
+   "menu_type": 2,
+   "name": "buildEmbeddings:AiKnowledge",
+   "rank": 10000,
+   "path": "api/ai/knowledge-documents/build-embeddings$",
+   "component": null,
+   "is_active": true,
+   "meta": "b12d2cf5-64a8-449e-b2ee-78f92467af5b",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

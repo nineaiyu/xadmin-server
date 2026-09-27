@@ -153,3 +153,55 @@ class AiKnowledgeDocumentViewSet(
         """重新扫描仓库文档（docs/）并返回同步摘要（上传文档不受影响）。"""
         summary = sync_knowledge()
         return ApiResponse(data=summary, detail=_("Repository documents synced"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="vector-status")
+    def vector_status(self, request, *args, **kwargs):
+        """向量通道状态：是否启用（embedding 档案）/ 模型 / 维度 / 已构建与陈旧条数。
+
+        未配置 embedding 档案时 ``enabled=false``，检索完全走词频（零变化）。
+        """
+        from ai.utils.ai_embeddings import vector_stats
+
+        return ApiResponse(data=vector_stats())
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "force": build_basic_type(OpenApiTypes.BOOL),
+                    "document": build_basic_type(OpenApiTypes.UUID),
+                },
+                description="force=全量重算；document=限定单个文档（缺省全库）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=False, url_path="build-embeddings")
+    def build_embeddings(self, request, *args, **kwargs):
+        """构建/刷新知识块向量（显式触发；未配置 embedding 档案时拒绝并给出引导）。
+
+        幂等：只补「未向量化 / 模型变更 / 正文变更」的块；``force=true`` 全量重算。
+        供应商不可用时返回 1001 与已完成的条数（部分成功保留，不静默丢失语义）。
+        """
+        from ai.utils.ai_embeddings import build_embeddings as build_knowledge_embeddings
+
+        document = None
+        document_pk = request.data.get("document")
+        if document_pk:
+            document = self.get_queryset().filter(pk=document_pk).first()
+            if document is None:
+                raise ValidationError(_("Document does not exist"))
+        summary = build_knowledge_embeddings(document=document, force=bool(request.data.get("force")))
+        if not summary.get("enabled"):
+            return ApiResponse(code=1001, detail=_("No active embedding profile is configured"), data=summary)
+        if not summary.get("ok"):
+            return ApiResponse(
+                code=1001,
+                detail=_("Embedding build stopped: {}").format(summary.get("detail") or ""),
+                data=summary,
+            )
+        return ApiResponse(
+            data=summary,
+            detail=_("Embeddings built: {} chunks").format(summary.get("embedded", 0)),
+        )

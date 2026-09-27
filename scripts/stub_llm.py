@@ -19,6 +19,7 @@
 端点：
 - POST /v1/chat/completions（含 stream 字段也按整体回答返回，本桩只服务非流式调用；
   流式链路由 tests/integration/message/test_chat_stream.py 的进程内桩覆盖）
+- POST /v1/embeddings（知识库向量化链路：确定性假向量，同文本恒同向量）
 - GET /health → 200（playwright webServer 就绪探测）
 """
 
@@ -26,6 +27,7 @@ import datetime
 import json
 import re
 import time
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -41,6 +43,17 @@ STREAM_PROBE_MARKER = "E2E-STREAM-PROBE"
 #: 受限动作探针：请求里出现的 E2E 目标用户名（禁用用户用例）
 TARGET_USERNAME_RE = re.compile(r"e2e_ai_target_\d+")
 LONG_ANSWER = "".join(f"这是流式探针的第 {index} 段输出，用于验证增量到达。" for index in range(1, 21))
+#: 假向量维度（够小便于断言，维度一致性由客户端校验覆盖）
+EMBEDDING_DIM = 16
+
+
+def build_embedding(text: str) -> list:
+    """确定性假向量：字符 crc32 分桶计数后归一（同文本恒同向量，进程无关）。"""
+    vector = [0.0] * EMBEDDING_DIM
+    for char in str(text or ""):
+        vector[zlib.crc32(char.encode("utf-8")) % EMBEDDING_DIM] += 1.0
+    norm = sum(value * value for value in vector) ** 0.5 or 1.0
+    return [round(value / norm, 6) for value in vector]
 
 
 def extract_catalog(text: str) -> dict:
@@ -252,8 +265,37 @@ class StubLLMHandler(BaseHTTPRequestHandler):
             return
         self._send_json({"detail": "not found"}, status=404)
 
+    def _handle_embeddings(self) -> None:
+        """OpenAI 兼容 /v1/embeddings：input 为字符串或字符串列表，按序返回假向量。"""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            payload = json.loads(self.rfile.read(length) or b"{}")
+        except Exception:  # noqa: BLE001
+            payload = {}
+        raw = payload.get("input") if isinstance(payload, dict) else None
+        items = [raw] if isinstance(raw, str) else list(raw or [])
+        items = [str(item) for item in items]
+        self._send_json(
+            {
+                "object": "list",
+                "model": payload.get("model", "stub-embed") if isinstance(payload, dict) else "stub-embed",
+                "data": [
+                    {"object": "embedding", "index": index, "embedding": build_embedding(text)}
+                    for index, text in enumerate(items)
+                ],
+                "usage": {
+                    "prompt_tokens": sum(len(text) for text in items),
+                    "total_tokens": sum(len(text) for text in items),
+                },
+            }
+        )
+
     def do_POST(self):  # noqa: N802
-        if urlparse(self.path).path != "/v1/chat/completions":
+        path = urlparse(self.path).path
+        if path == "/v1/embeddings":
+            self._handle_embeddings()
+            return
+        if path != "/v1/chat/completions":
             self._send_json({"detail": "not found"}, status=404)
             return
         try:

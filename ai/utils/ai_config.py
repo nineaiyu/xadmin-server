@@ -21,9 +21,11 @@ BUILTIN_PERSONA = (
 # reasoning token、挂起数分钟），结构化结果本身短，给上限防挂起与额度失控；
 # 档案显式配置了 max_tokens 时尊重用户配置，不覆盖。
 STRUCTURED_MAX_TOKENS = 2048
-# 档案用途（与 AiProfile.Purpose 同口径）：chat 供问答/聊天，structured 供 NL 查数/动作草稿
+# 档案用途（与 AiProfile.Purpose 同口径）：chat 供问答/聊天，structured 供 NL 查数/动作草稿，
+# embedding 供知识库向量化（检索升级）；embedding **不做用途回落**（模型不可互换）
 PURPOSE_CHAT = "chat"
 PURPOSE_STRUCTURED = "structured"
+PURPOSE_EMBEDDING = "embedding"
 
 
 def ai_structured_max_tokens() -> int:
@@ -67,6 +69,31 @@ def profile_for(purpose: str = PURPOSE_CHAT):
 def active_profile():
     """当前激活的 AI 配置档案（问答用途优先；至多每种用途一个激活行）。"""
     return profile_for(PURPOSE_CHAT)
+
+
+def embedding_profile():
+    """向量化用途的激活档案（无则 None）。
+
+    与 ``profile_for`` 的关键差异：**不做用途回落**——embedding 模型与 chat/structured
+    模型不可互换（chat 模型打 /embeddings 会被供应商拒绝，或维度/语义完全不同），
+    因此没有独立的 embedding 档案 = 向量链路整体不启用（词频检索零变化）。
+    """
+    from ai.models.ai import AiProfile
+
+    return AiProfile.objects.filter(is_active=True, purpose=PURPOSE_EMBEDDING).first()
+
+
+def embedding_credentials():
+    """向量化客户端凭据：无激活 embedding 档案 / 档案未配置齐全时返回 None。"""
+    profile = embedding_profile()
+    if profile is None or not profile.is_configured:
+        return None
+    return profile_credentials(profile)
+
+
+def embedding_enabled() -> bool:
+    """向量通道是否可启用（存在可用的 embedding 档案）。"""
+    return embedding_credentials() is not None
 
 
 def set_active_profile(profile, active: bool = True) -> None:

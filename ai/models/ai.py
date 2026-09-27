@@ -66,13 +66,25 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
 
 
 class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
-    """文档知识块：按 ## 边界切分（长块滑动窗口），检索的最小单元。"""
+    """文档知识块：按 ## 边界切分（长块滑动窗口），检索的最小单元。
+
+    可选向量列（embedding*）：配置 ``purpose=embedding`` 的激活档案后由管理端显式
+    构建（页面按钮 / ``build_ai_embeddings`` 命令），供混合检索的向量通道使用；
+    未构建 = 词频检索零变化。``embedding_hash`` 记录向量化时的正文 hash（与
+    ``content_hash`` 不一致即判定陈旧，检索时跳过该块、由词频通道兜底）。
+    """
 
     source_path = models.CharField(_("Source path"), max_length=255, db_index=True)
     title = models.CharField(_("Title"), max_length=255, blank=True, default="")
     chunk_index = models.IntegerField(_("Chunk index"), default=0)
     content = models.TextField(_("Content"))
     content_hash = models.CharField(_("Content hash"), max_length=64)
+    # 向量以 float32 小端二进制落库（见 ai/utils/ai_embeddings.py 的编解码），
+    # 比 JSON 文本省 ~5 倍体积且省去检索时的文本解析
+    embedding = models.BinaryField(_("Embedding"), null=True, blank=True, editable=False)
+    embedding_model = models.CharField(_("Embedding model"), max_length=128, blank=True, default="")
+    embedding_hash = models.CharField(_("Embedding source hash"), max_length=64, blank=True, default="")
+    embedding_dim = models.IntegerField(_("Embedding dimension"), default=0)
     synced_at = models.DateTimeField(_("Synced at"), auto_now=True)
 
     class Meta:
@@ -100,6 +112,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
     class Purpose(models.TextChoices):
         CHAT = "chat", _("Chat / Q&A")
         STRUCTURED = "structured", _("Structured output")
+        EMBEDDING = "embedding", _("Text embedding")
 
     name = models.CharField(_("Profile name"), max_length=64, unique=True)
     base_url = models.CharField(_("Base URL"), max_length=256)
@@ -177,6 +190,7 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
         CHAT = "chat", _("Chat")
         NL = "nl", _("NL query")
         ACTION = "action", _("Action execution")
+        EMBEDDING = "embedding", _("Knowledge embedding")
 
     class Track(models.TextChoices):
         """草稿链路轨道（双轨对照）：原生 function calling / prompt-JSON。"""

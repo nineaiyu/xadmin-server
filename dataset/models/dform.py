@@ -7,9 +7,17 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel, DbUuidModel
 
+#: schema 历史版本保留条数（回滚窗口；超出丢弃最旧，避免 JSON 列无界增长）
+MAX_SCHEMA_HISTORY = 20
+
 
 class DynamicForm(DbAuditModel, DbUuidModel):
-    """表单定义：收敛控件集 JSON Schema（写入侧双侧校验）。"""
+    """表单定义：收敛控件集 JSON Schema（写入侧双侧校验）。
+
+    版本化：schema 每次**实质变更**（规范化后不等）版本 +1，变更前快照进
+    ``schema_history``（含联动规则，新→旧）；提交记录引用提交时的版本
+    （``DynamicFormSubmission.schema_version``），历史版本可查看/回滚。
+    """
 
     name = models.CharField(_("Name"), max_length=128, unique=True)
     description = models.CharField(_("Description"), max_length=512, blank=True, default="")
@@ -30,6 +38,10 @@ class DynamicForm(DbAuditModel, DbUuidModel):
     # 表单模板：模板行只保存 schema（供「从模板新建」复用），不进入可填报表单列表，
     # 也不参与填报（available-forms / 提交外键均排除）；管理入口 = 表单设计器。
     is_template = models.BooleanField(_("Is template"), default=False, db_index=True)
+    # schema 版本：每次实质变更 +1；回滚同样生成新版本（不删除历史）
+    schema_version = models.PositiveIntegerField(_("Schema version"), default=1)
+    # 历史版本快照（新 → 旧）：[{version, schema, updated_time, updated_by}]，上限 MAX_SCHEMA_HISTORY
+    schema_history = models.JSONField(_("Schema history"), default=list, blank=True)
 
     class Meta:
         db_table = "system_dynamicform"  # 3.1 拆分批次4：迁 dataset app，表名不变
@@ -60,6 +72,8 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
         DynamicForm, on_delete=models.CASCADE, related_name="submissions", verbose_name=_("Dynamic form")
     )
     data = models.JSONField(_("Data"), default=dict)
+    # 保存时的表单 schema 版本（审计与展示口径；提交校验始终按提交当时的 schema）
+    schema_version = models.PositiveIntegerField(_("Form schema version"), default=1)
     status = models.CharField(
         _("Status"),
         max_length=16,
