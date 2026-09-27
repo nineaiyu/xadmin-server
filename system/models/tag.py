@@ -7,8 +7,8 @@
 - **白名单准入**：仅登记在 ``TAGGABLE_MODELS`` 的对象可打标（不做全模型铺开）；
 - **关联形态**：``TaggedItem`` 用 ``content_type + object_id`` 关联目标对象，
   目标模型侧声明 ``GenericRelation("system.TaggedItem")``（可预取，列表零 N+1）；
-- **权限**：标签管理 4 个权限点；打标权限回落业务对象的 update 权限点
-  （不新增对象级权限点，避免权限点膨胀）；
+- **权限**：标签管理 4 个权限点；打标权限回落业务对象的写权限点（默认 update，
+  白名单可按资源声明 ``method``；不新增对象级权限点，避免权限点膨胀）；
 - **治理**：使用计数 + 删除保护（被引用时提示先解绑）。
 
 首批试点 3 个对象：系统用户 / 文件 / 审批实例。
@@ -20,12 +20,18 @@ from django.utils.translation import gettext_lazy as _
 
 from common.core.models import DbAuditModel, DbUuidModel
 
-#: 可打标对象白名单："app_label.model"（小写）→ 展示名 + 打标权限的回落访问路径（PATCH 模板）
-#: 打标权限回落业务对象的 update 权限点（不新增对象级权限点）
+#: 可打标对象白名单："app_label.model"（小写）→ 展示名 + 打标权限的回落权限模板：
+#: ``visit`` 为含 ``<pk>`` 占位符的路径，``method`` 缺省 PATCH（即 update 权限点）。
+#: 审批单是流程对象、不可整体更新（无 PATCH 权限点），回落到「评论」权限点——
+#: 同为单据上的元数据写入动作，语义最接近。
 TAGGABLE_MODELS = {
     "system.userinfo": {"label": _("User"), "visit": "/api/system/user/<pk>"},
     "system.uploadfile": {"label": _("File"), "visit": "/api/system/file/<pk>"},
-    "approval.approvalinstance": {"label": _("Approval instance"), "visit": "/api/approval/approval-instances/<pk>"},
+    "approval.approvalinstance": {
+        "label": _("Approval instance"),
+        "visit": "/api/approval/approval-instances/<pk>/comment",
+        "method": "POST",
+    },
 }
 
 

@@ -48,6 +48,8 @@ SEARCH_TRGM_EXEMPT = {
     ("system_operationlog", "path"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_operationlog", "module"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
     ("system_operationlog", "ipaddress"): "写热表（每请求落审计）+ 超管低频检索，维持索引评审既有结论",
+    ("system_tag", "name"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
+    ("system_tag", "remark"): "小表（管理配置类，百级以内），顺序扫描成本可忽略",
 }
 
 

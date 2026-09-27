@@ -40,6 +40,12 @@ class TestTagCrud:
     def test_name_required_and_color_validated(self, auth_client):
         assert auth_client.post(TAGS_URL, {"name": "  "}, format="json").status_code == 400
         assert auth_client.post(TAGS_URL, {"name": "x", "color": "red"}, format="json").status_code == 400
+        # 严格十六进制口径（COLOR_PATTERN）：非 #、位数不足/超长、非法字符都拒绝
+        for bad in ("409EFF", "#409EF", "#409EFFF", "#zzzzzz", "#409EFF;"):
+            assert auth_client.post(TAGS_URL, {"name": "x", "color": bad}, format="json").status_code == 400, bad
+        ok = auth_client.post(TAGS_URL, {"name": "合法色", "color": "#409EFF"}, format="json")
+        assert ok.status_code == 200
+        assert ok.json()["data"]["color"] == "#409EFF"
 
     def test_duplicate_name_rejected(self, auth_client):
         auth_client.post(TAGS_URL, {"name": "重复"}, format="json")
@@ -109,6 +115,26 @@ class TestAssign:
             format="json",
         ).json()
         assert replaced["code"] == 1000 and TaggedItem.objects.count() == 2
+
+    def test_assign_approval_instance(self, auth_client):
+        """审批实例打标：回落 comment 权限点（超管直通），打标后对象序列化器回显。"""
+        from approval.models import ApprovalFlow, ApprovalInstance
+
+        flow = ApprovalFlow.objects.create(name="打标流程", code="tag_flow", form_schema=[], version=1)
+        instance = ApprovalInstance.objects.create(flow=flow, flow_name=flow.name, title="打标审批单", status="PENDING")
+        tag = Tag.objects.create(name="加急")
+        response = auth_client.post(
+            f"{TAGS_URL}/assign",
+            {"resource": "approval.approvalinstance", "pk": str(instance.pk), "tags": [str(tag.pk)]},
+            format="json",
+        )
+        assert response.status_code == 200, response.data
+        assert [item["name"] for item in response.json()["data"]["tags"]] == ["加急"]
+        rows = auth_client.get("/api/approval/approval-instances", {"title": "打标审批单"}).json()["data"]["results"]
+        assert [item["name"] for item in rows[0]["tags"]] == ["加急"]
+        # ?tag= 过滤（AND 语义过滤器已接审批实例列表）
+        filtered = auth_client.get("/api/approval/approval-instances", {"tag": "加急"}).json()["data"]["results"]
+        assert any(row["pk"] == str(instance.pk) for row in filtered)
 
     def test_normal_user_without_object_permission_rejected(self, normal_user):
         """双门：菜单权限点（403）或业务对象 update 权限回落（1001）任一拦截即通过。"""

@@ -26,7 +26,7 @@ from django.db.models import Q, QuerySet
 
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_menu_pk, get_user_permission
-from system.models import DeptInfo, OperationLog, UploadFile, UserInfo
+from system.models import DeptInfo, OperationLog, Tag, UploadFile, UserInfo
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
@@ -144,6 +144,15 @@ SEARCH_PROVIDERS = (
         queryset=lambda: UploadFile.objects.all().order_by("-created_time"),
         text_fields=("filename",),
         display_field="filename",
+    ),
+    SearchProvider(
+        key="tag",
+        label="标签",
+        route="/system/tag/index",
+        list_url="api/system/tags",
+        queryset=lambda: Tag.objects.all().order_by("name"),
+        text_fields=("name", "remark"),
+        display_field="name",
     ),
     SearchProvider(
         key="approval",

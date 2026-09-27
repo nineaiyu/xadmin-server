@@ -44,7 +44,8 @@ PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontai
 | system_leave          | `idx_leave_reason_trgm`                                                             | 请假分组 reason                   |
 
 **豁免**（登记理由，覆盖守护在 `tests/unit/system/test_search_indexes.py`）：
-DeptInfo.name/code（小表）；OperationLog.path/module/ipaddress（写热表 + 超管低频检索，维持 §二 结论）。
+DeptInfo.name/code（小表）；OperationLog.path/module/ipaddress（写热表 + 超管低频检索，维持 §二 结论）；
+Tag.name/remark（标签分组，管理配置类小表——百级以内，顺序扫描成本可忽略）。
 
 **验证方式**（PG 库上）：`EXPLAIN SELECT id FROM system_userinfo WHERE username ILIKE '%关键词%';`
 应出现 `Bitmap Index Scan on idx_userinfo_username_trgm`；单字符关键词不使用索引（trigram 需 ≥2 字符）。

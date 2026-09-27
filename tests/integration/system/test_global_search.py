@@ -48,6 +48,35 @@ class TestGlobalSearchAPI:
         assert user_group["items"][0]["text"] == "alice-search"
         assert user_group["items"][0]["meta"]["nickname"] == "爱丽丝"
 
+    def test_tag_group_matches_name(self, auth_client):
+        """标签分组：按名称/备注命中，路由指向标签管理页。"""
+        from system.models import Tag
+
+        Tag.objects.create(name="重点客户标签", remark="季度评选")
+        Tag.objects.create(name="无关标签")
+        resp = auth_client.get(SEARCH_URL, {"keyword": "重点客户"})
+        groups = resp.data["data"]["groups"]
+        tag_group = _group(groups, "tag")
+        assert tag_group is not None
+        assert tag_group["route"] == "/system/tag/index"
+        assert tag_group["items"][0]["text"] == "重点客户标签"
+
+    def test_tag_group_hidden_without_tag_page_permission(self, api_client, menu_factory):
+        """页面权限门：仅有搜索权限、无 list:Tag 的用户看不到标签分组。"""
+        from system.models import Tag, UserRole
+
+        menu = menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET")
+        role = UserRole.objects.create(name="仅搜索无标签", code="search-no-tag")
+        role.menu.add(menu)
+        plain = UserInfo.objects.create_user(username="search-no-tag", password="x")
+        plain.roles.add(role)
+        Tag.objects.create(name="隐身标签")
+
+        api_client.force_authenticate(user=plain)
+        resp = api_client.get(SEARCH_URL, {"keyword": "隐身标签"})
+        assert resp.status_code == 200
+        assert _group(resp.data["data"]["groups"], "tag") is None
+
     def test_file_group_matches_filename(self, auth_client, searchable_data):
         resp = auth_client.get(SEARCH_URL, {"keyword": "采购合同"})
         groups = resp.data["data"]["groups"]

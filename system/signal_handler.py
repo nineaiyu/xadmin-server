@@ -259,3 +259,17 @@ def post_migrate_sync_builtin_roles(sender, **kwargs):
         logger.info("builtin roles synced via post_migrate, changed: %s", changed)
     except Exception:
         logger.exception("sync builtin roles failed")
+
+
+@receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_tags")
+def post_migrate_sync_builtin_tags(sender, **kwargs):
+    """migrate 后同步内置标签（幂等）：与内置角色同一时点与容错口径。"""
+    if getattr(sender, "name", None) != "system":
+        return
+    from system.builtin import sync_builtin_tags
+
+    try:
+        changed = sync_builtin_tags()
+        logger.info("builtin tags synced via post_migrate, changed: %s", changed)
+    except Exception:
+        logger.exception("sync builtin tags failed")

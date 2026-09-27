@@ -9552,6 +9552,10 @@ msgstr "刷新令牌无效或已撤销"
 msgid "token is required"
 msgstr "token 为必填项"
 
+#: system/views/tag.py:95
+msgid "Builtin tags cannot be deleted"
+msgstr "内置标签不允许删除"
+
 #: system/views/tag.py:96
 #, python-brace-format
 msgid "The tag is in use by {} objects; unbind it before deleting"

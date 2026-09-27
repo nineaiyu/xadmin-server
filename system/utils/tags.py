@@ -5,8 +5,8 @@
 - 白名单：``system.models.tag.TAGGABLE_MODELS``（"app_label.model" 小写 → 展示名）；
 - 读写形态：``TaggedItem`` 通过 ``content_type + object_id`` 关联目标对象，
   目标模型侧 ``GenericRelation`` 支持 ``prefetch_related("tagged_items__tag")``；
-- 打标权限回落业务对象的 update 权限点（由调用方/视图声明），标签本身的 CRUD 走
-  独立 4 个权限点；
+- 打标权限回落业务对象的写权限点（默认 update，白名单可按资源声明 method），标签
+  本身的 CRUD 走独立 4 个权限点；
 - 过滤：``?tag=<id|name>``（多值 AND 语义），与数据权限编译器叠加。
 """
 
@@ -49,22 +49,22 @@ def taggable_resources() -> list:
     return [{"key": key, "label": str(meta["label"])} for key, meta in TAGGABLE_MODELS.items()]
 
 
-def taggable_visit_path(model) -> str:
-    """对象打标所需的业务权限路径模板（白名单外返回空串）。"""
+def taggable_visit(model) -> tuple[str, str]:
+    """对象打标所需的业务权限模板（白名单外返回空串）：返回 (method, path 模板)。"""
     from system.models.tag import TAGGABLE_MODELS
 
     meta = TAGGABLE_MODELS.get(resource_key(model)) or {}
-    return str(meta.get("visit") or "")
+    return str(meta.get("method") or "PATCH").upper(), str(meta.get("visit") or "")
 
 
 def ensure_tag_permission(user, model, pk) -> None:
-    """打标权限校验：回落业务对象的 update 权限点（fail-closed）。"""
+    """打标权限校验：回落业务对象的写权限点（fail-closed，模板见 TAGGABLE_MODELS）。"""
     from ai.utils.ai_actions import user_can_visit
 
-    visit = taggable_visit_path(model)
+    method, visit = taggable_visit(model)
     if not visit:
         raise DjangoValidationError(_("The object type cannot be tagged"))
-    if not user_can_visit(user, "PATCH", visit.replace("<pk>", str(pk))):
+    if not user_can_visit(user, method, visit.replace("<pk>", str(pk))):
         raise DjangoValidationError(_("You do not have permission to tag this object"))
 
 

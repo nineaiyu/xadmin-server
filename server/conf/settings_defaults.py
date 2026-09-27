@@ -222,8 +222,9 @@ SETTINGS_CONFIG = {
     # 字段级审计 diff 白名单（模型 _meta.label）：命中白名单的 update 请求会额外
     # 做 2 次查询以计算 old/new。默认开「用户管理」——它是当前唯一挂了「变更历史」
     # 入口的页面（changeHistory:SystemUser 权限菜单），关闭此项会让变更明细恒为
-    # 空（前端显示「—」）；新增带入口的页面时在此追加，置空数组 = 整体关闭
-    "AUDIT_DIFF_MODELS": ["system.UserInfo"],
+    # 空（前端显示「—」）；「标签管理」同登记：标签是被多页面引用的分类元数据，
+    # 改名/改色需要在操作日志（has_changes 过滤）里留审计轨迹。置空数组 = 整体关闭
+    "AUDIT_DIFF_MODELS": ["system.UserInfo", "system.Tag"],
     # 验证码配置
     "VERIFY_CODE_TTL": 5 * 60,  # Unit: second
     "VERIFY_CODE_LIMIT": 60,

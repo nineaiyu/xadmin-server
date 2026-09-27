@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """通用标签中心序列化器：标签 CRUD + 可打标对象的只读 tags 字段。"""
 
+import re
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -35,6 +37,8 @@ class TagSerializer(BaseModelSerializer):
             "usage_count",
         ]
         table_fields = ["name", "color", "usage_count", "builtin", "remark", "updated_time"]
+        # builtin 由内置同步机制（system/builtin.py）维护，API 写路径不可篡改
+        read_only_fields = ["pk", "builtin"]
 
     def get_usage_count(self, obj) -> int:
         annotated = getattr(obj, "usage_count", None)
@@ -50,7 +54,7 @@ class TagSerializer(BaseModelSerializer):
 
     def validate_color(self, value):
         color = (value or "").strip()
-        if color and not color.startswith("#"):
+        if color and not re.match(COLOR_PATTERN, color):
             raise serializers.ValidationError(_("Color must be a hex value like #409EFF"))
         return color
 

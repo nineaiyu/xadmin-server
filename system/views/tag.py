@@ -3,9 +3,9 @@
 """通用标签中心视图：标签 CRUD + 打标 / 批量打标 + 白名单资源清单。
 
 - 权限：标签管理 4 个权限点（list/create/partialUpdate/destroy:Tag）；
-  打标（assign / batch-assign）回落业务对象的 update 权限点（``user_can_visit``
-  与 AI 动作同一匹配函数，不新增对象级权限点）；
-- 删除保护：被引用（有打标对象）的标签拒绝删除，提示先解绑；
+  打标（assign / batch-assign）回落业务对象的写权限点（``user_can_visit``
+  与 AI 动作同一匹配函数，不新增对象级权限点；回落模板见 TAGGABLE_MODELS）；
+- 删除保护：内置标签不可删；被引用（有打标对象）的标签拒绝删除，提示先解绑；
 - 过滤：列表 ``?tag=<id|name>``（多值 AND）落在对象视图集的 ``TagFilterBackend`` 上。
 """
 
@@ -90,6 +90,9 @@ class TagViewSet(
         return instance
 
     def perform_destroy(self, instance):
+        if instance.builtin:
+            # 内置标签不允许删除（与模型 docstring 同口径；误删可由 post_migrate 补回）
+            raise RestValidationError(_("Builtin tags cannot be deleted"))
         used = instance.tagged_items.count()
         if used:
             # DRF 异常出口：删除保护是可读业务失败（400 + detail），不是 500
