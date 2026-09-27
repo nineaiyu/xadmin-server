@@ -290,6 +290,10 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 - **评估登记**：`convert_type` 的「宽容解析 + 严格消费」组合当前总能暴露坏值（消费点均有类型转换），
   但**弱类型消费点**（直接按 str 使用）存在静默接受面——登记评估出口
   （不急切修改：动全局配置解析影响面大）。
+  - **2026-09-27 收口（ADR-072）**：实测 `SysConfig` **66 个系统级 property 零类型漂移**
+    （property 返回值类型与默认值逐一一致），评估出口关闭；新增守护
+    `tests/unit/server/test_config_type_contract.py`（逐项契约断言 + 注入式负向验证，
+    新增 property 自动纳入），未来出现漂移即失败——不再依赖人工复核。
 
 ### 第十轮（2032-12，SLO 窗口）：SECRET_KEY 轮换（JWT 签名失效验证）
 
@@ -313,6 +317,11 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
   **脱敏机制在工作**（password → 掩码；username 走 `v2:` AES 密文），且 DEBUG 级不进生产日志；
   **唯一遗留**：登录中间态 `tmp_token` 完整落入操作日志 `body`（短时效中间态，低风险）——
   登记评估出口；DEBUG 正文裁剪同步登记。
+  - **2026-09-27 收口（ADR-072）**：实际遗留面比登记描述更宽——除请求体 `token` 外，
+    **响应快照 `response_result` 会记录登录响应的 `access`/`refresh` 明文**，且 DEBUG/慢请求
+    日志正文此前为未脱敏原样打印。已统一为「递归按敏感键掩码 + 按大字段上限截断」
+    （请求体 / 响应快照 / DEBUG 正文 / 慢请求日志四路同口径，`sure_password` 等复合键一并纳入）；
+    由 `test_operation_log_middleware.py` 的嵌套容器与响应脱敏用例守护。
 
 ### 第十二轮（2033-06，审计与安全窗口）：敏感文件权限审计（含加固）
 
@@ -320,6 +329,9 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 - **加固执行**：`chmod 600 config.yml`（host 与容器共享挂载，一处生效；服务读取正常无影响）；
 - **登记**：installer 侧 config 生成权限随发布节奏核对；`data` 目录 750 收紧列为可选加固项；
 - **结论**：权限面第一轮收敛（644→600），审计与加固机制建立。
+  - **2026-09-27 收口（ADR-072）**：`data` 目录可选加固落地——installer `scripts/utils.sh::prepare_config`
+    增加幂等 `chmod 750 ${VOLUME_DIR}/server/data`（仅目录位，不递归改文件，保留容器内既有属主/权限语义），
+    安装 / 升级 / 配置三个调用路径共用；`bash -n` 语法门禁通过。
 
 ### 第十三轮（2033-12，SLO 窗口）：磁盘压力（tmpfs 小盘）——备份链路 fail-safe
 
@@ -439,3 +451,9 @@ DB 故障返回空列表不阻断请求（读取点在 serializer 字段绑定/�
 
 **发现与处置**：① 缓存失效日志高频 WARN → 降 debug；② decrypt（v1 观察）WARN 切换后归零；
 ③ **Redis 冻结韧性缺陷五轮修复**（§六）；④ metrics 死开关（修复 + 守护测试）。
+
+## 八、观察登记（滚动）
+
+| 日期 | 项 | 证据与现状 | 处置 |
+|------|----|-----------|------|
+| 2026-09-27 | **安全设置页「路由匹配但组件为空」空白**（AES v1 开启/关闭无关；A6 浏览器验收过程发现） | 浏览器访问 `/#/settings/security/index`：面包屑与侧栏高亮正常，但 `#main-content` 仅剩 `<!---->`（Vue 条件渲染空态）、**无 DEV「动态路由组件未匹配」报错**（该分支会在 dev 显式 console.error）、无任何 settings 请求发出；同批的短信设置 / 基本设置页正常可访问。已核对：库内菜单 `component=settings/security/index` 正确、`src/views/settings/security/index.vue` 存在。初步判断为 `LayFrame` 侧 `Comp` 为空（路由节点 component 未落到 `router-view`），非接口/权限故障 | 待深挖（优先核对 `resolveComponentKey` 对 `settings/security/*` 的命中与多层 tab 页的 keep-alive 传递；复现：临时超管登录后直接 goto 该路径）。**观察项，不阻塞发布**（异常时回滚路径不受影响） |

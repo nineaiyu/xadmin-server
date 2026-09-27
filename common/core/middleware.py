@@ -81,11 +81,22 @@ class CSPModeMiddleware:
 # 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
 # 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
-# 操作日志脱敏字段清单
+# 操作日志脱敏字段清单（按**键名**匹配，递归生效——请求体与响应体共用）
 # code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
 # token / verify_token：临时令牌与验证码票据（登录/注册/重置/绑定加密握手），
+# access / refresh：登录响应里的 JWT（响应快照同口径收敛），
 # 严禁明文落日志
-SENSITIVE_FIELDS = {"password", "old_password", "access", "refresh", "code", "token", "verify_token"}
+SENSITIVE_FIELDS = {
+    "password",
+    "old_password",
+    "new_password",
+    "sure_password",
+    "access",
+    "refresh",
+    "code",
+    "token",
+    "verify_token",
+}
 
 
 def _log_field_limit():
@@ -107,16 +118,38 @@ OPERATION_LOG_MODULE_MAX = OperationLog._meta.get_field("module").max_length
 HEALTH_CHECK_PATH = "/api/common/api/health"
 
 
+def desensitize_payload(value):
+    """递归脱敏：dict 按键名掩码、list 逐项处理，其余（标量 / 非容器）原样返回。
+
+    请求体（含嵌套 payload、嵌套 list）与**响应体**共用同一口径——登录响应的
+    ``access`` / ``refresh`` 与临时令牌响应的 ``token`` 都在此收敛，不再明文
+    进操作日志的 ``body`` / ``response_result`` 与 DEBUG/慢请求日志。
+    掩码保留长度信息（与原值等长），便于排障时识别字段是否为空。
+    """
+    if isinstance(value, dict):
+        return {
+            key: ("*" * len(str(item)) if key in SENSITIVE_FIELDS and item else desensitize_payload(item))
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [desensitize_payload(item) for item in value]
+    return value
+
+
 def desensitize_body(body):
-    """对请求体中的敏感字段做掩码处理，返回脱敏后的 dict。"""
-    if not isinstance(body, dict):
-        return body
-    masked = dict(body)
-    for field in SENSITIVE_FIELDS:
-        value = masked.get(field)
-        if value:
-            masked[field] = "*" * len(str(value))
-    return masked
+    """对请求体中的敏感字段做掩码处理（递归入口，兼容既有调用点）。"""
+    return desensitize_payload(body)
+
+
+def log_body_preview(payload) -> str:
+    """日志正文预览：脱敏 + 按大字段上限截断（DEBUG / 慢请求日志共用）。
+
+    ``OPERATION_LOG_FIELD_MAX=0``（不落大字段）时同样不落正文——配置意图对
+    运行日志一致；脱敏先于截断，避免截断把敏感串留在前缀里。
+    """
+    limit = _log_field_limit()
+    text = json.dumps(desensitize_payload(payload), cls=encoders.JSONEncoder, default=str)
+    return text[:limit] if limit else ""
 
 
 def write_operation_log(operation_log_id, info):
@@ -233,10 +266,12 @@ def build_operation_log_info(request, response, request_start_time):
         "changes": json.dumps(changes, cls=encoders.JSONEncoder, default=str)[:limit]
         if (changes := getattr(request, "operation_log_changes", None))
         else None,
+        # 响应体同口径脱敏：登录响应（access/refresh）与临时令牌响应（token）等
+        # 敏感值不落操作日志（与请求体 body 共用 desensitize_payload，ADR-072）
         "response_result": json.dumps(
             {
                 "code": response_data.get("code"),
-                "data": response_data.get("data"),
+                "data": desensitize_payload(response_data.get("data")),
                 "detail": response_data.get("detail"),
             },
             cls=encoders.JSONEncoder,
@@ -258,7 +293,9 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         request.request_ip = get_request_ip(request)
         request.request_data = get_request_data(request)
         request.request_start_time = time.time()
-        logger.debug(f"request start. {request.method} {request.path} {getattr(request, 'request_data', {})}")
+        # DEBUG 正文同样脱敏 + 截断（与操作日志 / 慢请求日志同口径）：明文
+        # token / password 落日志文件等同泄露凭证（ADR-072）
+        logger.debug(f"request start. {request.method} {request.path} {log_body_preview(request.request_data)}")
 
     def __handle_response(self, request, response):
         request_start_time = getattr(request, "request_start_time", time.time())
@@ -270,7 +307,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             # 明文 token/password/code 落日志文件等同泄露凭证
             logger.warning(
                 f"exec time {exec_time} over {threshold}s. {request.method} {request.path} "
-                f"{desensitize_body(getattr(request, 'request_data', {}))} "
+                f"{log_body_preview(request.request_data)} "
                 f"request_id:{getattr(request, 'request_uuid', None)}"
             )
         # 判断有无log_id属性，使用All记录时，会出现此情况
@@ -290,7 +327,9 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 logger.warning("sensitive operation alert failed", exc_info=True)
 
         transaction.on_commit(_after_commit)
-        logger.debug(f"request end. {request.method} {request.path} {getattr(request, 'request_data', {})} log:{info}")
+        logger.debug(
+            f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
+        )
         return True
 
     def process_view(self, request, view_func, view_args, view_kwargs):

@@ -72,6 +72,70 @@ class TestFieldTruncation:
         assert masked["verify_token"] == "*" * len("vt-abc")
         assert masked["username"] == "alice"
 
+    def test_desensitize_recurses_nested_containers(self):
+        """嵌套 dict / list 里的敏感键同样收敛（审批 payload、批量提交体等结构）。"""
+        body = {
+            "items": [
+                {"password": "s1", "name": "a"},
+                {"token": "tmp_token_x", "nested": {"refresh": "r1"}},
+            ],
+            "plain": "keep",
+        }
+        masked = desensitize_body(body)
+        assert masked["items"][0]["password"] == "**"
+        assert masked["items"][0]["name"] == "a"
+        assert masked["items"][1]["token"] == "*" * len("tmp_token_x")
+        assert masked["items"][1]["nested"]["refresh"] == "**"
+        assert masked["plain"] == "keep"
+        # 原始结构不被污染（深拷贝语义）
+        assert body["items"][0]["password"] == "s1"
+
+    def test_desensitize_non_container_passthrough(self):
+        assert desensitize_body("raw") == "raw"
+        assert desensitize_body(None) is None
+
+
+class TestResponseDesensitization:
+    """响应快照与请求体同口径：登录 access/refresh 与临时令牌 token 不落操作日志。"""
+
+    @staticmethod
+    def _build(response_data):
+        request = type(
+            "R",
+            (),
+            {
+                "META": {"HTTP_USER_AGENT": "pytest-agent"},
+                "method": "POST",
+                "path": "/api/system/auth/token",
+                "request_data": {},
+                "request_ip": "127.0.0.1",
+                "request_module": "auth",
+                "request_uuid": None,
+                "user": None,
+            },
+        )()
+        response = type("R", (), {"status_code": 200, "data": response_data})()
+        return build_operation_log_info(request, response, 0)
+
+    def test_response_result_masks_credentials(self):
+        info = self._build(
+            {
+                "code": 1000,
+                "data": {"token": "tmp_token_abc", "access": "eyJ.access", "refresh": "eyJ.refresh"},
+                "detail": None,
+            }
+        )
+        payload = json.loads(info["response_result"])
+        assert payload["data"]["token"] == "*" * len("tmp_token_abc")
+        assert payload["data"]["access"] == "*" * len("eyJ.access")
+        assert payload["data"]["refresh"] == "*" * len("eyJ.refresh")
+        assert "tmp_token_abc" not in info["response_result"]
+
+    def test_response_result_keeps_business_data(self):
+        info = self._build({"code": 1000, "data": {"count": 3, "items": [{"name": "x"}]}, "detail": None})
+        payload = json.loads(info["response_result"])
+        assert payload["data"] == {"count": 3, "items": [{"name": "x"}]}
+
     def test_truncation_constants(self):
         assert MAX_LOG_FIELD == 4096
 
@@ -169,6 +233,26 @@ class TestConfigurableFieldLimit:
         """坏配置（非数字）回落默认值，不把日志组装打成 500（按默认 4096 原样保留）。"""
         info = self._build(monkeypatch, "not-a-number")
         assert info["body"] == json.dumps({"data": "x" * 100})
+
+    def test_log_body_preview_masks_then_truncates(self, monkeypatch):
+        """DEBUG / 慢请求日志正文：先脱敏再截断（截断不会把敏感串留在前缀）。"""
+        from common.core.config import SysConfig
+        from common.core.middleware import log_body_preview
+
+        preview = log_body_preview({"password": "secret-value", "name": "abc"})
+        assert "secret-value" not in preview
+        assert '"name": "abc"' in preview
+
+        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_FIELD_MAX", property(lambda self: 10), raising=False)
+        truncated = log_body_preview({"field": "x" * 100})
+        assert len(truncated) == 10
+
+    def test_log_body_preview_zero_limit_stores_nothing(self, monkeypatch):
+        from common.core.config import SysConfig
+        from common.core.middleware import log_body_preview
+
+        monkeypatch.setattr(type(SysConfig), "OPERATION_LOG_FIELD_MAX", property(lambda self: 0), raising=False)
+        assert log_body_preview({"token": "tmp_token_x"}) == ""
 
 
 class TestAuthIdentity:

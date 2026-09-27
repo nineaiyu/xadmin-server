@@ -89,10 +89,18 @@
 1. [x] 置 `SECURITY_AES_V1_DECRYPT_ENABLED=false`（`config.yml` 启动期配置；2026-09-16 执行），重启 server/worker/heavy
       - **前置修复**：该键此前**未转发到 django settings**（读取方 `getattr(settings, ...)` 永远落默认 `True`，开关形同虚设）——
         已补 `server/settings/setting.py` 转发 + `tests/unit/server/test_settings_forwarding.py` 全量 SECURITY_* 转发对账守护
-2. [ ] 回归：登录（密码走 AES 传输）、修改密码、系统配置密钥类字段读写、IM/OAuth 凭证类配置
+2. [x] 回归：登录（密码走 AES 传输）、修改密码、系统配置密钥类字段读写、IM/OAuth 凭证类配置
       - 2026-09-16 已验：生产进程内 v1 密文解密返回空串（拒绝）、v2 解密不受影响
-        （单测覆盖 `test_legacy_rejected_when_disabled` / `test_v2_unaffected_when_disabled`）；
-        浏览器端全流程回归按用户决策跳过——下次真实登录即最终验收（异常时按第 3 条回滚）
+        （单测覆盖 `test_legacy_rejected_when_disabled` / `test_v2_unaffected_when_disabled`）
+      - **2026-09-27 浏览器端全流程验收完成**（本机 compose 生产口径，`SECURITY_AES_V1_DECRYPT_ENABLED=false`）：
+        真实浏览器（vite dev → compose 后端）用临时超管执行——**登录**（账号/密码走 AES v2 传输，
+        服务端解密成功）、**修改密码**（412 敏感操作二次确认 → 密码方式确认 → 自动重发 → 保存成功；
+        并复核了密码历史策略「不能与最近 3 次重复」的拦截行为）、**安全设置 / 短信设置 / 基本设置**三页
+        可访问且无 JS 错误。附带证据：操作日志（OperationLog）中 `password` / `token` / `refresh` 已按
+        新口径掩码（`access`/`refresh` 曾为响应快照明文，见 ADR-072）
+      - 观察项（与 AES 无关）：安全设置页主区在本次验收中出现一次「路由匹配但组件为空」空白
+        （`#main-content` 仅剩 `<!---->`、无 DEV「组件未匹配」报错、无请求发出），
+        已登记 observability 观察表待深挖；不影响上述四项结论（异常时按第 3 条回滚）
 3. [x] 保留 1 个发布窗口的回滚准备（改回 `true` + 重启 即恢复兼容）
 
 **验收**：观察窗口内无 `aes_v1_decrypt_used`；上述回归路径全部通过。
