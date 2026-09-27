@@ -11,6 +11,9 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dashboard, Dataset, Report, Screen
+from dataset.utils.dataset import numeric_columns_of
+from dataset.utils.report_design import ReportDesignError, normalize_report_design
+from dataset.utils.screen_layout import ScreenLayoutError, normalize_screen_layout
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SEND_TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -26,7 +29,17 @@ class ScreenSerializer(BaseModelSerializer):
 
     class Meta:
         model = Screen
-        fields = ["pk", "name", "dashboards", "interval", "refresh", "visibility", "created_time", "updated_time"]
+        fields = [
+            "pk",
+            "name",
+            "dashboards",
+            "layout",
+            "interval",
+            "refresh",
+            "visibility",
+            "created_time",
+            "updated_time",
+        ]
         read_only_fields = ["pk", "created_time", "updated_time"]
         # RePlusPage 列表列
         table_fields = ["name", "dashboards", "interval", "refresh", "visibility", "updated_time"]
@@ -39,6 +52,14 @@ class ScreenSerializer(BaseModelSerializer):
             if str(pk) not in known:
                 raise serializers.ValidationError(_("Unknown dashboard in layout"))
         return value
+
+    def validate_layout(self, value):
+        """窗格载荷：规范化 + 越界/重叠/未知仪表盘校验（单一事实源见 dataset.utils.screen_layout）。"""
+        known = Dashboard.objects.values_list("pk", flat=True)
+        try:
+            return normalize_screen_layout(value, known)
+        except ScreenLayoutError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     def validate_interval(self, value):
         if not (5 <= int(value) <= 3600):
@@ -90,6 +111,7 @@ class ReportSerializer(BaseModelSerializer):
             "metric",
             "date_trunc",
             "value_field",
+            "design",
             "frequency",
             "send_time",
             "weekday",
@@ -156,6 +178,16 @@ class ReportSerializer(BaseModelSerializer):
 
     def validate(self, attrs):
         merged_mode = attrs.get("mode", getattr(self.instance, "mode", "rows"))
+        # 报表设计（P2.2 批次二）：列 / 聚合字段都按数据集与数值列校验，单一事实源在
+        # dataset.utils.report_design；空载荷 = 存量口径（全列明细单表），不做强制。
+        if "design" in attrs:
+            dataset = attrs.get("dataset", getattr(self.instance, "dataset", None))
+            try:
+                attrs["design"] = normalize_report_design(
+                    attrs.get("design"), dataset, numeric_columns_of(dataset) if dataset else []
+                )
+            except ReportDesignError as exc:
+                raise serializers.ValidationError(str(exc)) from exc
         if merged_mode not in ("rows", "aggregate"):
             raise serializers.ValidationError(_("Invalid report mode"))
         if merged_mode == "aggregate":

@@ -73,12 +73,54 @@ def _excel_safe(value):
     return value
 
 
+def _sheet_title(component, index: int) -> str:
+    """组件 sheet 名：标题（非法字符替换、截断）+ 序号前缀（保证唯一且 ≤31 字符）。"""
+    title = str(component.get("title") or component.get("type") or _("Chart"))
+    for char in "[]:*?/\\":
+        title = title.replace(char, " ")
+    title = title.strip()[:24] or str(_("Chart"))
+    return f"{index}-{title}"
+
+
+def _render_component_sheet(wb, report, user, component, index: int) -> None:
+    """单个聚合组件落一张独立 sheet（名称/值两列）。
+
+    单组件失败（字段被删、字段权限收紧等）只写一行提示，不拖垮整份报表投递：
+    投递的可用性优先于单个图表，失败原因落日志供排查。
+    """
+    from dataset.utils.dataset import aggregate_dataset
+
+    sheet = wb.create_sheet(_sheet_title(component, index))
+    sheet.append([str(_("Name")), str(_("Value"))])
+    try:
+        result = aggregate_dataset(
+            report.dataset,
+            user,
+            group_by=component.get("group_by", ""),
+            metric=component.get("metric") or "count",
+            date_trunc=component.get("date_trunc") or None,
+            value_field=component.get("value_field") or None,
+        )
+    except Exception:  # noqa: BLE001 单组件失败不影响其余 sheet
+        logger.warning("scheduled report component failed: %s", component.get("id"), exc_info=True)
+        sheet.append([str(_("Chart data unavailable")), ""])
+        return
+    for item in result["series"]:
+        sheet.append([_excel_safe(item["name"]), _excel_safe(item["value"])])
+
+
 def _render_workbook(report, user) -> tuple:
-    """执行数据集并渲染 xlsx 到内存。返回 (bytes, sheet_rows)。"""
+    """执行数据集并渲染 xlsx 到内存。返回 (bytes, 明细行数)。
+
+    P2.2 批次二：`design` 决定明细列与行数上限（空 = 存量全列口径），并为每个聚合组件
+    追加独立 sheet；`mode == "aggregate"` 的存量单表行为不变。
+    """
     from openpyxl import Workbook
 
     from dataset.utils.dataset import aggregate_dataset, execute_dataset
+    from dataset.utils.report_design import design_components, design_export_columns, design_table_limit
 
+    design = report.design or {}
     wb = Workbook()
     ws = wb.active
     ws.title = str(_("Report"))
@@ -92,22 +134,35 @@ def _render_workbook(report, user) -> tuple:
             date_trunc=report.date_trunc or None,
             value_field=report.value_field or None,
         )
-        ws.append([_("Name"), _("Value")])
+        # openpyxl 只接受 str：gettext_lazy 代理不是 str 实例，必须显式转换
+        ws.append([str(_("Name")), str(_("Value"))])
         rows = [[_excel_safe(item["name"]), _excel_safe(item["value"])] for item in result["series"]]
     else:
         result = execute_dataset(report.dataset, user)
-        ws.append(list(result["columns"]))
-        rows = [[_excel_safe(row.get(col)) for col in result["columns"]] for row in result["rows"]]
+        columns = design_export_columns(design, result["columns"])
+        limit = design_table_limit(design)
+        ws.append(list(columns))
+        rows = [[_excel_safe(row.get(col)) for col in columns] for row in result["rows"][:limit]]
     for row in rows:
         ws.append(row)
+
+    for index, component in enumerate(design_components(design), start=1):
+        _render_component_sheet(wb, report, user, component, index)
+
     buffer = io.BytesIO()
     wb.save(buffer)
     return buffer.getvalue(), len(rows)
 
 
 def _deliver_email(report, filename: str, content: bytes, rows: int) -> None:
+    from dataset.utils.report_design import design_components
+
     subject = "{} - {}".format(report.name, timezone.localtime().strftime("%Y-%m-%d %H:%M"))
     body = str(_("Scheduled report {}. {} rows generated. The xlsx file is attached.").format(subject, rows))
+    # 设计报表：正文补一行组件清单（图表数据在附件的独立 sheet 内，正文不适配 HTML）
+    charts = [str(component.get("title") or component.get("type")) for component in design_components(report.design)]
+    if charts:
+        body = "{}\n{}".format(body, str(_("Designed charts: {}").format(", ".join(charts))))
     mail = EmailMessage(subject=subject, body=body, to=list(report.recipients or []))
     mail.attach(filename, content, EXPORT_MIME)
     mail.send()

@@ -70,10 +70,17 @@ class Dashboard(DbAuditModel, DbUuidModel):
 
 
 class Screen(DbAuditModel, DbUuidModel):
-    """大屏模板：跨仪表盘的全屏轮播配置。"""
+    """大屏模板：跨仪表盘的全屏轮播配置；layout 非空时按画布窗格渲染（P2.2 批次一）。"""
 
     name = models.CharField(_("Name"), max_length=128, unique=True)
     dashboards = models.JSONField(_("Dashboards"), default=list, help_text=_("Ordered dashboard pks"))
+    #: 画布窗格（12 列栅格绝对定位）：空 = 维持仪表盘轮播（存量数据与旧客户端零影响）
+    layout = models.JSONField(
+        _("Layout"),
+        default=list,
+        blank=True,
+        help_text=_("Canvas panes on a 12-column grid (empty = carousel mode)"),
+    )
     interval = models.IntegerField(_("Interval"), default=15, help_text=_("Seconds per dashboard"))
     refresh = models.IntegerField(_("Refresh"), default=60, help_text=_("Data refresh seconds"))
     visibility = models.CharField(
@@ -106,6 +113,13 @@ class Report(DbAuditModel, DbUuidModel):
     dataset = models.ForeignKey(Dataset, on_delete=models.PROTECT, verbose_name=_("Dataset"))
     mode = models.CharField(
         _("Mode"), max_length=16, default="rows", choices=[("rows", _("Rows")), ("aggregate", _("Aggregate"))]
+    )
+    #: 报表设计（P2.2 批次二）：明细列 + 行数上限 + 聚合组件；空 = 存量口径（全列明细单表）
+    design = models.JSONField(
+        _("Design"),
+        default=dict,
+        blank=True,
+        help_text=_("Report designer payload (empty = legacy single-sheet export)"),
     )
     group_by = models.CharField(_("Group by"), max_length=128, blank=True, default="")
     metric = models.CharField(_("Metric"), max_length=16, default="count", blank=True)
