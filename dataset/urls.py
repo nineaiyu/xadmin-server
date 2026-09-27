@@ -12,6 +12,7 @@ from dataset.views.analysis import ReportViewSet, ScreenViewSet
 from dataset.views.dataset import DashboardViewSet as DataDashboardViewSet
 from dataset.views.dataset import DatasetViewSet
 from dataset.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
+from dataset.views.form_data import DynamicFormDataViewSet
 
 app_name = "dataset"
 
@@ -24,5 +25,7 @@ router.register("reports", ReportViewSet, basename="report")
 # 动态表单
 router.register("dynamic-forms", DynamicFormViewSet, basename="dynamic-form")
 router.register("dynamic-form-submissions", DynamicFormSubmissionViewSet, basename="dynamic-form-submission")
+# 表单数据（管理端）：按表单浏览/筛选/导出全部提交（行级可见域 = 数据权限编译器）
+router.register("form-data", DynamicFormDataViewSet, basename="form-data")
 
 urlpatterns = router.urls

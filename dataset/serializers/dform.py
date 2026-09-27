@@ -9,6 +9,42 @@ from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dform import MAX_SCHEMA_HISTORY, DynamicForm, DynamicFormSubmission
 from dataset.utils.dform import normalize_schema, validate_draft_data, validate_submission_data
+from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
+
+
+def export_dynamic_fields(queryset) -> list[tuple[str, str]]:
+    """导出动态列：按行集合涉及的表单合并字段（key 去重、保留出现顺序）。
+
+    「我的填报」与「表单数据」（管理端）两个导出口径共用：列集合跟随过滤后的行
+    集合，跨表单导出时按表单出现顺序合并。**含历史字段**——当前 schema 已删除、
+    但按版本快照可解析的字段一并出列并标注历史（改版后旧值不再随列消失）。
+    """
+    form_ids = list(queryset.values_list("form_id", flat=True).distinct())
+    if not form_ids:
+        return []
+    forms = DynamicForm.objects.filter(pk__in=form_ids, is_template=False)
+    return [(key_of(item), str(item.get("label") or key_of(item))) for item in merged_fields_of_forms(forms)]
+
+
+def form_schema_of(obj) -> list:
+    """表单 schema 快照（详情展示口径：字段 label 与复杂控件按**提交时版本**渲染）。
+
+    - 提交版本命中 `schema_history` 快照 → 用快照（改版后回看历史提交，字段标签与
+      控件形态与提交时一致）；当前 schema 已删除的字段标注历史；
+    - 快照缺失（版本超出保留窗口）→ 当前 schema 为底 + `data` 中无法识别的键兜底
+      （值确定可见，不回退为「看不见」）。
+    """
+    return submission_schema(obj)
+
+
+def approval_trail_of(obj, context) -> list:
+    """审批轨迹：实例任务的展示口径（状态/审批人/意见/时间/加签/委托来源）。"""
+    if not obj.instance_id:
+        return []
+    from approval.serializers.approval_flow import ApprovalNodeTaskSerializer
+
+    tasks = obj.instance.tasks.all()
+    return ApprovalNodeTaskSerializer(tasks, many=True, context=context).data
 
 
 class ApprovalFlowRelatedField(BasePrimaryKeyRelatedField):
@@ -135,16 +171,10 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         table_fields = ["form_name", "status", "creator", "created_time"]
 
     def get_form_schema(self, obj) -> list:
-        return list((obj.form.schema or {}).get("fields") or []) if obj.form_id else []
+        return form_schema_of(obj)
 
     def get_approval_trail(self, obj) -> list:
-        """审批轨迹：实例任务的展示口径（状态/审批人/意见/时间/加签/委托来源）。"""
-        if not obj.instance_id:
-            return []
-        from approval.serializers.approval_flow import ApprovalNodeTaskSerializer
-
-        tasks = obj.instance.tasks.all()
-        return ApprovalNodeTaskSerializer(tasks, many=True, context=self.context).data
+        return approval_trail_of(obj, self.context)
 
     def validate(self, attrs):
         form = attrs.get("form") or getattr(self.instance, "form", None)
@@ -167,3 +197,100 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
         attrs["schema_version"] = form.schema_version or 1
         return attrs
+
+
+class SubmissionDataField(serializers.Field):
+    """动态表单提交的「数据列」字段：从 instance.data 按 key 取值（导出展示口径）。
+
+    导出列集合由视图在导出前按涉及表单的 schema 注入（`dynamic_fields` 上下文），
+    未在 schema 声明的历史 data 键不导出（表单已删除字段的旧值不再出现在表头）。
+    """
+
+    def __init__(self, data_key, **kwargs):
+        self.data_key = data_key
+        super().__init__(**kwargs)
+
+    def get_attribute(self, instance):
+        return (instance.data or {}).get(self.data_key)
+
+    def to_representation(self, value):
+        return value
+
+
+class SubmissionExportSerializer(BaseModelSerializer):
+    """动态表单提交导出序列化器（C2）：固定列 + 按表单 schema 展开的动态数据列。
+
+    复用导出框架（export-data / 渲染器按 `Meta.model` 定文件名、按 fields 出列）；
+    动态字段在 `__init__` 末尾注入（绕开字段权限裁剪：导出列由 schema 决定）。
+    「我的填报」与「表单数据」（管理端）两个导出口径共用。
+    """
+
+    form_name = serializers.SerializerMethodField(label=_("Form"))
+    creator_name = serializers.SerializerMethodField(label=_("Creator"))
+
+    class Meta:
+        model = DynamicFormSubmission
+        fields = ["pk", "form_name", "creator_name", "created_time"]
+        table_fields = ["form_name", "creator_name", "created_time"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for key, label in self.context.get("dynamic_fields") or []:
+            # required=False：导出列标题不带 *（required 标记只对导入模板有意义）
+            field = SubmissionDataField(data_key=key, label=label, required=False)
+            # 手动绑定 field_name：渲染器按 field.field_name 取值与出列名
+            field.field_name = key
+            self.fields[key] = field
+
+    def get_form_name(self, obj):
+        return obj.form.name if obj.form_id else ""
+
+    def get_creator_name(self, obj):
+        return getattr(obj.creator, "username", "") or ""
+
+
+class FormDataListSerializer(BaseModelSerializer):
+    """表单数据（管理端）列表序列化器：固定列 + data 全量（前端按表单 schema 渲染动态列）。
+
+    与「我的填报」的读写序列化器分离（列表契约只承载列表语义）：
+    不做写校验、不含 form_schema / approval_trail（详情口径，避免列表逐行展开
+    schema 与流程任务造成载荷膨胀）；提交人按 username 回显（非超管同样稳定）。
+    """
+
+    ignore_field_permission = True
+    form_name = serializers.CharField(source="form.name", read_only=True, label=_("Form"))
+    status = LabeledChoiceField(choices=DynamicFormSubmission.Status.choices, required=False, read_only=True)
+    creator = BasePrimaryKeyRelatedField(
+        attrs=["username"],
+        read_only=True,
+        ignore_field_permission=True,
+        format="{username}",
+        label=_("Creator"),
+    )
+
+    class Meta:
+        model = DynamicFormSubmission
+        fields = ["pk", "form_name", "schema_version", "data", "status", "creator", "created_time", "updated_time"]
+        read_only_fields = fields
+        table_fields = ["form_name", "status", "creator", "created_time"]
+
+
+class FormDataDetailSerializer(FormDataListSerializer):
+    """表单数据（管理端）详情：列表口径 + schema 快照 / 审批轨迹 / 流程实例号。"""
+
+    form_schema = serializers.SerializerMethodField(label=_("Form schema"))
+    approval_trail = serializers.SerializerMethodField(label=_("Approval trail"))
+    instance = serializers.SerializerMethodField(label=_("Approval instance"))
+
+    class Meta(FormDataListSerializer.Meta):
+        fields = [*FormDataListSerializer.Meta.fields, "form_schema", "approval_trail", "instance"]
+        read_only_fields = fields
+
+    def get_form_schema(self, obj) -> list:
+        return form_schema_of(obj)
+
+    def get_approval_trail(self, obj) -> list:
+        return approval_trail_of(obj, self.context)
+
+    def get_instance(self, obj):
+        return str(obj.instance_id) if obj.instance_id else None

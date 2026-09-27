@@ -86,8 +86,10 @@ PERMISSION_SHOW_PREFIX = [
     r"api/flower",
     r"api-docs",
 ]
-# 数据权限配置
-PERMISSION_DATA_AUTH_APPS = ["system", "settings", "notifications"]
+# 数据权限配置：登记在此的 app 模型进入「数据权限」规则选择器的表树
+# （get_app_model_fields 重建 DATA 树）；dataset 的加入用于「表单数据」管理端
+# 列表（dataset.dynamicformsubmission 行级可见域），未配置授权的模型零影响。
+PERMISSION_DATA_AUTH_APPS = ["system", "settings", "notifications", "dataset"]
 
 API_LOG_ENABLE = CONFIG.API_LOG_ENABLE
 API_LOG_METHODS = CONFIG.API_LOG_METHODS  # 'ALL'

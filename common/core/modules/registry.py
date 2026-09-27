@@ -98,10 +98,14 @@ MODULES: tuple[ModuleSpec, ...] = (
     ),
     ModuleSpec(
         "dform",
-        "表单采集（设计器 + 我的填报）",
+        "表单采集（设计器 / 我的填报 / 表单数据）",
         OPTIONAL,
-        menus=("FormDesigner", "FormMySubmission"),
-        routes=(r"^/api/dataset/dynamic-forms", r"^/api/dataset/dynamic-form-submissions"),
+        menus=("FormDesigner", "FormMySubmission", "FormData"),
+        routes=(
+            r"^/api/dataset/dynamic-forms",
+            r"^/api/dataset/dynamic-form-submissions",
+            r"^/api/dataset/form-data",
+        ),
     ),
     ModuleSpec(
         "approval_flow",

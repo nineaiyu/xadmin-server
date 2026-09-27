@@ -10,6 +10,7 @@ SKIP_ROUTE_PREFIXES = ("api/demo/",)
 # 无同源权限点时，按路由前缀指定父菜单（Menu.name，必须为页面菜单）
 PARENT_MENU_MAP = {
     "api/dataset/dynamic-form-submissions": "FormMySubmission",
+    "api/dataset/form-data": "FormData",
     "api/approval/approval-delegations": "SystemApprovalDelegation",
     # 组织与安全域
     "api/system/posts": "SystemPost",

@@ -15839,5 +15839,150 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "34cb7d31-bba4-53c1-b5e5-732632323259",
+  "fields": {
+   "created_time": "2026-09-13T00:00:00.000Z",
+   "updated_time": "2026-09-13T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "parent": "f1512129-7889-51f5-8c9d-465097901510",
+   "menu_type": 1,
+   "name": "FormData",
+   "rank": 3,
+   "path": "/form-collection/data/index",
+   "component": "form/data/index",
+   "is_active": true,
+   "meta": "089339dd-ceec-577d-a944-57950daf8a0d",
+   "method": "",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "91954e2a-ba18-401b-a897-ac203fa523bf",
+  "fields": {
+   "created_time": "2026-09-27T14:03:22.852Z",
+   "updated_time": "2026-09-27T14:03:22.852Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "list:FormData",
+   "rank": 10000,
+   "path": "api/dataset/form-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "493693a6-3350-43ee-ae8a-62db84bdc27f",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a889d17f-b990-4257-b784-4e4e76c86f9e",
+  "fields": {
+   "created_time": "2026-09-27T14:03:23.267Z",
+   "updated_time": "2026-09-27T14:03:23.267Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "retrieve:FormData",
+   "rank": 10001,
+   "path": "api/dataset/form-data/(?P<pk>[^/.]+)$",
+   "component": null,
+   "is_active": true,
+   "meta": "5c7c25f2-8bcd-4415-87c9-b7543a7cb3ec",
+   "method": "GET",
+   "model": [
+    "87e4c24b-1bd7-4e9c-96dd-af4b910e9cde",
+    "9a41849c-1791-4420-b6cd-1b59f90034bc",
+    "cee6e3f6-88e6-4e46-b330-a24053cfa852"
+   ]
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "dc938b7f-6b85-4edb-937e-1f8c0ab8218a",
+  "fields": {
+   "created_time": "2026-09-27T14:03:23.684Z",
+   "updated_time": "2026-09-27T14:03:23.684Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "exportAsync:FormData",
+   "rank": 10002,
+   "path": "api/dataset/form-data/export-async$",
+   "component": null,
+   "is_active": true,
+   "meta": "d805b8b2-6e80-4cc2-8258-1c165bd465ab",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1ae80dfa-5f86-4137-a7f9-55af432848ae",
+  "fields": {
+   "created_time": "2026-09-27T14:03:24.097Z",
+   "updated_time": "2026-09-27T14:03:24.097Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "exportData:FormData",
+   "rank": 10003,
+   "path": "api/dataset/form-data/export-data$",
+   "component": null,
+   "is_active": true,
+   "meta": "0f40e54c-4142-4d5a-b767-bbfdddadfb3f",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "1c99ff12-5320-4fe8-b59e-2be24359e48b",
+  "fields": {
+   "created_time": "2026-09-27T14:03:24.510Z",
+   "updated_time": "2026-09-27T14:03:24.510Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "34cb7d31-bba4-53c1-b5e5-732632323259",
+   "menu_type": 2,
+   "name": "formOptions:FormData",
+   "rank": 10004,
+   "path": "api/dataset/form-data/form-options$",
+   "component": null,
+   "is_active": true,
+   "meta": "c37ce526-80d3-4375-9535-780bc4e0fd39",
+   "method": "GET",
+   "model": []
+  }
  }
 ]
