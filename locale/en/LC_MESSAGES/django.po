@@ -9547,6 +9547,73 @@ msgstr "Invalid page index"
 msgid "Page index out of range"
 msgstr "Page index out of range"
 
+
+#: dataset/utils/columns.py
+msgid "Dataset column cannot be empty"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Unsupported column type: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Column type is only supported for JSON paths: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Only one-level JSON path is supported: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Invalid JSON path: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Field {} is not a JSON field: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "Duplicated JSON column alias: {}"
+msgstr ""
+
+#: dataset/utils/columns.py
+msgid "JSON column alias conflicts with a model field: {}"
+msgstr ""
+
+#: dataset/utils/dataset.py
+msgid "JSON path is not supported for date field (trend): {}"
+msgstr ""
+
+#: dataset/utils/dataset.py
+msgid "JSON path is not supported for date trunc: {}"
+msgstr ""
+
+#: dataset/utils/dataset.py
+msgid "Value field is required for aggregation"
+msgstr ""
+
+
+#: dataset/utils/dform_history.py
+msgid " (historical)"
+msgstr ""
+
+
+#: dataset/utils/dataset.py
+msgid "JSON trend column requires |date type: {}"
+msgstr ""
+
+#: dataset/utils/dataset.py
+msgid "JSON trend field requires |date type: {}"
+msgstr ""
+
+#: dataset/utils/dataset.py
+msgid "Trend field must be in columns"
+msgstr ""
+
+#: dataset/utils/dform.py
+msgid "Field {} must be a date (YYYY-MM-DD)"
+msgstr ""
+
 #~ msgid "Database"
 #~ msgstr "Database"
 

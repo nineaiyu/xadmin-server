@@ -9924,6 +9924,73 @@ msgstr "表单 Schema 版本"
 msgid "Schema history"
 msgstr "Schema 历史"
 
+
+#: dataset/utils/columns.py
+msgid "Dataset column cannot be empty"
+msgstr "数据集列不能为空"
+
+#: dataset/utils/columns.py
+msgid "Unsupported column type: {}"
+msgstr "不支持的列类型：{}"
+
+#: dataset/utils/columns.py
+msgid "Column type is only supported for JSON paths: {}"
+msgstr "仅 JSON 路径列支持类型标注：{}"
+
+#: dataset/utils/columns.py
+msgid "Only one-level JSON path is supported: {}"
+msgstr "仅支持一层 JSON 路径：{}"
+
+#: dataset/utils/columns.py
+msgid "Invalid JSON path: {}"
+msgstr "非法 JSON 路径：{}"
+
+#: dataset/utils/columns.py
+msgid "Field {} is not a JSON field: {}"
+msgstr "字段 {} 不是 JSON 字段：{}"
+
+#: dataset/utils/columns.py
+msgid "Duplicated JSON column alias: {}"
+msgstr "JSON 列别名重复：{}"
+
+#: dataset/utils/columns.py
+msgid "JSON column alias conflicts with a model field: {}"
+msgstr "JSON 列别名与模型字段冲突：{}"
+
+#: dataset/utils/dataset.py
+msgid "JSON path is not supported for date field (trend): {}"
+msgstr "时间字段（趋势）不支持 JSON 路径：{}"
+
+#: dataset/utils/dataset.py
+msgid "JSON path is not supported for date trunc: {}"
+msgstr "时间趋势分组不支持 JSON 路径：{}"
+
+#: dataset/utils/dataset.py
+msgid "Value field is required for aggregation"
+msgstr "聚合需要指定取值字段"
+
+
+#: dataset/utils/dform_history.py
+msgid " (historical)"
+msgstr "（历史）"
+
+
+#: dataset/utils/dataset.py
+msgid "JSON trend column requires |date type: {}"
+msgstr "JSON 趋势列需要 |date 类型标注：{}"
+
+#: dataset/utils/dataset.py
+msgid "JSON trend field requires |date type: {}"
+msgstr "JSON 趋势字段需要 |date 类型标注：{}"
+
+#: dataset/utils/dataset.py
+msgid "Trend field must be in columns"
+msgstr "趋势字段必须在数据列中"
+
+#: dataset/utils/dform.py
+msgid "Field {} must be a date (YYYY-MM-DD)"
+msgstr "字段 {} 必须是日期（YYYY-MM-DD）"
+
 #~ msgid "The username or password you entered is incorrect,"
 #~ msgstr "您输入的用户名或密码不正确，"
 
