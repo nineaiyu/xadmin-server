@@ -17,6 +17,14 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from message.attachments import (  # noqa: F401 再导出：附件链路（上传/取件/载荷）统一经 chat_service 调用
+    ATTACHMENT_MESSAGE_TYPES,
+    attachment_extra,
+    attachment_payload,
+    mark_attachment_used,
+    resolve_sender_attachment,
+    validate_attachment_kind,
+)
 from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面（含内部使用）保持不变
     _normalize_user_pks,
     _user_pk,
@@ -28,9 +36,14 @@ from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面�
     parse_mentions,
     user_brief,
 )
+from message.chat_rooms import (  # noqa: F401 再导出：会话列表构造（含批量预取）
+    UNSET,
+    online_user_pks,
+    prefetch_room_context,
+    room_to_dict,
+)
 from message.models import (
     AI_MAX_CONTENT_LENGTH,
-    GROUP_MEMBERS_PREVIEW,
     MAX_CONTENT_LENGTH,
     MAX_GROUP_MEMBERS,
     RECALL_WINDOW_MINUTES,
@@ -239,13 +252,22 @@ def create_message(
     message_type: str = ChatMessage.MessageType.TEXT,
     client_msg_id: str = "",
     extra: dict = None,
+    attachment=None,
 ) -> tuple:
     """落库一条消息，返回 (message, created)。
 
     幂等：同一发送者 + 同一 client_msg_id 命中已有消息时直接返回旧消息
     （断线重发 / 乐观上屏重复提交都不产生第二行）。
     AI / 系统消息放宽长度上限（模型回答常超用户输入上限）。
+    附件消息（image / file）必须携带 attachment（已做过归属校验的上传件），
+    内容缺省取文件名；落库同时把附件由临时态转正（见 message/attachments.py）。
     """
+    if message_type in ATTACHMENT_MESSAGE_TYPES:
+        if attachment is None:
+            raise DjangoValidationError(_("Attachment not found"))
+        validate_attachment_kind(attachment, message_type)
+        content = (content or "").strip() or attachment.filename
+        extra = {"file": attachment_extra(attachment), **(extra or {})}
     limit = MAX_CONTENT_LENGTH if message_type == ChatMessage.MessageType.TEXT else AI_MAX_CONTENT_LENGTH
     content = validate_content(content, limit)
     sender_pk = _user_pk(sender) if sender is not None else None
@@ -263,7 +285,9 @@ def create_message(
                 content=content,
                 client_msg_id=client_msg_id or "",
                 extra=extra or {},
+                attachment=attachment,
             )
+            mark_attachment_used(attachment)
             ChatRoom.objects.filter(pk=room.pk).update(
                 last_message=content[:200], last_message_time=message.created_time or timezone.now()
             )
@@ -294,6 +318,11 @@ def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: di
     room_type = ""
     if room is not None:
         room_type = room.room_type
+    extra = dict(message.extra or {})
+    file_payload = attachment_payload(message)
+    if file_payload is not None:
+        # 附件取件 URL 由消息 pk 派生（历史/广播同形状），随 extra["file"] 一起下发
+        extra["file"] = file_payload
     return {
         "id": message.pk,
         "room_id": message.room_id,
@@ -306,7 +335,7 @@ def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: di
         "is_recalled": message.is_recalled,
         "created_time": (message.created_time or timezone.now()).isoformat(),
         "client_msg_id": message.client_msg_id,
-        "extra": message.extra or {},
+        "extra": extra,
     }
 
 
@@ -374,52 +403,6 @@ def recall_message(user, message_id) -> ChatMessage:
 # ---------------------------------------------------------------- 列表
 
 
-def room_to_dict(room: ChatRoom, user, unread_count: int = 0, online_pks: set = None) -> dict:
-    """会话列表行（前端左侧栏渲染契约）。
-
-    群聊附加：群主/成员数与成员预览（前 GROUP_MEMBERS_PREVIEW 人，供头像堆叠与选人回显）。
-    """
-    peer = None
-    if room.room_type == ChatRoom.RoomType.PRIVATE:
-        from system.models import UserInfo
-
-        peer_obj = UserInfo.objects.filter(
-            pk__in=room.members.exclude(user_id=_user_pk(user)).values("user_id")
-        ).first()
-        if peer_obj is not None:
-            peer = user_brief(peer_obj)
-            if online_pks is not None:
-                peer["online"] = peer_obj.pk in online_pks
-    payload = {
-        "id": room.pk,
-        "room_type": room.room_type,
-        "room_key": room.room_key,
-        "name": room.name,
-        "peer": peer,
-        "owner_pk": room.owner_id,
-        "last_message": room.last_message,
-        "last_message_time": room.last_message_time.isoformat() if room.last_message_time else "",
-        "unread_count": unread_count,
-    }
-    if room.room_type == ChatRoom.RoomType.GROUP:
-        member_rows = list(room.members.select_related("user").order_by("created_time", "pk")[:GROUP_MEMBERS_PREVIEW])
-        payload["member_count"] = room.members.count()
-        payload["members"] = [user_brief(row.user) for row in member_rows]
-        payload["is_owner"] = room.owner_id == _user_pk(user)
-    return payload
-
-
-def online_user_pks() -> set:
-    """在线用户快照（失败降级为空集：在线态属增强展示，不应阻断会话列表）。"""
-    try:
-        from message.utils import get_online_users
-
-        return set(get_online_users())
-    except Exception:  # noqa: BLE001
-        logger.warning("get online users failed", exc_info=True)
-        return set()
-
-
 def list_user_rooms(user, ai_enabled: bool = False) -> list:
     """我的会话列表：公共聊天室 → AI 助手（开关开启时）→ 有消息的私聊/AI + 全部群聊。
 
@@ -458,7 +441,21 @@ def list_user_rooms(user, ai_enabled: bool = False) -> list:
             -room.pk,
         )
     )
-    result.extend(room_to_dict(room, user, unread_map.get(room.pk, 0), online_pks) for room in rooms[:ROOM_LIST_LIMIT])
+    # 列表批量预取：对端/成员预览/成员数 3 次查询覆盖整页（替代逐房间 N 次）
+    page_rooms = rooms[:ROOM_LIST_LIMIT]
+    peer_map, preview_map, count_map = prefetch_room_context(page_rooms, user)
+    result.extend(
+        room_to_dict(
+            room,
+            user,
+            unread_map.get(room.pk, 0),
+            online_pks,
+            peer=peer_map.get(room.pk, UNSET),
+            member_preview=preview_map.get(room.pk, UNSET),
+            member_count=count_map.get(room.pk, UNSET),
+        )
+        for room in page_rooms
+    )
     return result
 
 

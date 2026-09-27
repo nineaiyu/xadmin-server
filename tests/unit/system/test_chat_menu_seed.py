@@ -5,7 +5,7 @@
 fail-closed 拒绝（403）；而权限点 `path` 写错（如多写尾斜杠）**同样**是 403，
 且现象一模一样、极难排查。这里把「种子 → 真实路由」的对应关系钉死：
 
-1. 6 个权限点存在且方法/路径与 §决策 4 一致；
+1. 权限点清单（含附件上传 / 取件）存在且方法/路径与端点一致；
 2. 每个权限点路径的正则确实覆盖对应的真实端点（`django.urls.resolve` 可解析 + 正则命中）；
 3. 权限点挂在聊天室页面菜单下，且 4 个内置角色均已授权（否则普通用户进不去聊天室）。
 """
@@ -26,6 +26,8 @@ CHAT_POINTS = {
     "list:ChatRoom": ("api/chat/room$", "GET", "/api/chat/room"),
     "create:ChatRoom": ("api/chat/room/open-private$", "POST", "/api/chat/room/open-private"),
     "list:ChatMessage": ("api/chat/message$", "GET", "/api/chat/message"),
+    "upload:ChatMessage": ("api/chat/message/upload$", "POST", "/api/chat/message/upload"),
+    "file:ChatMessage": (r"api/chat/message/(?P<pk>[^/.]+)/file$", "GET", "/api/chat/message/1/file"),
     "recall:ChatMessage": (r"api/chat/message/(?P<pk>[^/.]+)/recall$", "POST", "/api/chat/message/1/recall"),
     "list:ChatContact": ("api/chat/contacts$", "GET", "/api/chat/contacts"),
     "ask:ChatRoom": ("api/chat/ai/message$", "POST", "/api/chat/ai/message"),

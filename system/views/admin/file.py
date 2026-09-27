@@ -6,11 +6,7 @@
 # date : 7/24/2024
 
 import datetime
-import hashlib
-import os
-import re
 
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
@@ -26,7 +22,6 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
 
 from common.base.magic import cache_response
-from common.core.config import SysConfig, get_personal_config_data, get_personal_int_config
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
 from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
@@ -37,7 +32,7 @@ from common.utils import get_logger
 from system.models import FileAccessLog, UploadFile
 from system.serializers.upload import UploadFileSerializer
 from system.utils.dict import get_dict_items
-from system.utils.file_audit import log_file_access, validate_upload_extension
+from system.utils.file_audit import log_file_access
 from system.utils.preview import (
     KIND_IMAGE,
     KIND_OFFICE,
@@ -53,7 +48,15 @@ from system.utils.preview import (
     touch_preview_cache,
 )
 from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
-from system.utils.upload_category import UPLOAD_CATEGORY_DICT, resolve_upload_category
+from system.utils.upload_category import UPLOAD_CATEGORY_DICT
+from system.utils.upload_store import (
+    INVALID_CODE,
+    UploadError,
+    check_upload_limits,
+    get_user_quota_mb,
+    invalidate_upload_stats_cache,
+    store_upload_file,
+)
 from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
 
 logger = get_logger(__name__)
@@ -66,68 +69,9 @@ PREVIEW_UNSUPPORTED_CODE = 1005
 PREVIEW_PREPARING_CODE = 1006
 
 
-def get_upload_max_size(user_obj):
-    """单文件上传大小上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""
-    personal_data = get_personal_config_data(user_obj, "FILE_UPLOAD_SIZE")
-    if personal_data is not None and isinstance(personal_data.get("value"), int) and personal_data["value"] > 0:
-        return min(SysConfig.FILE_UPLOAD_SIZE, personal_data["value"])
-    return SysConfig.FILE_UPLOAD_SIZE
-
-
-def get_user_quota_mb(user_obj):
-    """个人文件存储配额（MB）：个人行优先，未设置继承系统级（0 = 不限）。"""
-    return get_personal_int_config(user_obj, "FILE_STORAGE_QUOTA_MB", SysConfig.FILE_STORAGE_QUOTA_MB)
-
-
-def get_user_count_limit(user_obj):
-    """个人上传文件数量上限：个人行优先，未设置继承系统级（0 = 不限）。"""
-    return get_personal_int_config(user_obj, "FILE_UPLOAD_COUNT_LIMIT", SysConfig.FILE_UPLOAD_COUNT_LIMIT)
-
-
-def sanitize_filename(name, max_length=255):
-    """清洗客户端文件名：去除路径部分、控制字符与首尾空白，并限制长度。
-
-    客户端提交的文件名不可信：可能携带路径分隔符（伪造存储路径）或控制字符。
-    """
-    if not name:
-        return str(_("Unnamed file"))
-    # 同时处理 POSIX(/) 与 Windows(\) 分隔符，防止路径穿越
-    base = os.path.basename(str(name).replace("\\", "/")).strip()
-    base = re.sub(r"[\x00-\x1f\x7f]", "", base)
-    if not base or base in (".", ".."):
-        return str(_("Unnamed file"))
-    return base[:max_length]
-
-
-def file_md5(file_obj) -> str:
-    """计算上传文件的 md5（落盘前求值：命中去重时无需再写一份磁盘文件）。
-
-    上传链路原先由 ``UploadFile.save()`` 读已落盘文件计算 md5；去重需要在落盘**之前**
-    拿到内容指纹，故此处统一改为前置计算并显式入库（save() 见 md5sum 非空即跳过）。
-    """
-    digest = hashlib.md5()
-    for chunk in file_obj.chunks():
-        digest.update(chunk)
-    return digest.hexdigest()
-
-
-def find_dedup_source(creator, md5sum):
-    """去重来源：同属主的既有活动上传件；跨用户不复用（避免越权复用他人文件的存储路径）。
-
-    只认 ``is_upload=True`` 且未软删除的记录（回收站中的文件不参与复用），
-    空 md5（异常文件）不复用。
-    """
-    if not md5sum:
-        return None
-    return UploadFile.objects.filter(creator=creator, md5sum=md5sum, is_upload=True).order_by("-created_time").first()
-
-
-def invalidate_upload_stats_cache(user_pk):
-    """失效个人文件统计短缓存（键口径与 get_stats_cache_key 一致）。
-
-    上传成功后立刻刷新页面时，10s 短缓存会返回旧的使用率，故主动失效。
-    """
-    cache.delete(f"magic_cache_response_UploadFileViewSet_stats_{user_pk}")
+# 上传落库内核（扩展名/大小/配额校验、md5 去重、分类、存储）见
+# system/utils/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
+# 避免两处规则各自演化；本模块的 upload / stats 响应口径不变。
 
 
 class UploadFileFilter(TagFilterMixin, BaseFilterSet):
@@ -392,92 +336,25 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
         """上传文件"""
 
         files = request.FILES.getlist("file", [])
+        # 先全量校验再统一落库（内核见 system/utils/upload_store.py）：任一文件不合规
+        # 直接返回错误（1002/1003/1004 且不落盘），避免多文件上传时「前面的已落库、
+        # 后面的被拒」造成部分写入
+        try:
+            check_upload_limits(request.user, files)
+        except UploadError as exc:
+            return ApiResponse(code=exc.code, detail=exc.detail)
+        # 统一落库：整批包在同一事务内，任一文件写入失败则整体回滚（与前置全量校验配套）
         result = []
-        file_upload_max_size = get_upload_max_size(request.user)
-        # 配额校验前置到落盘之前（超额 1004 且不落盘）；仅有限额配置时才查聚合。
-        # 配额/数量上限个人行优先，未设置继承系统级
-        quota_mb = get_user_quota_mb(request.user) or 0
-        count_limit = get_user_count_limit(request.user) or 0
-        owner_files = UploadFile.objects.filter(creator=request.user)
-        used_size = (owner_files.aggregate(size=Sum("filesize"))["size"] or 0) if quota_mb else 0
-        used_count = owner_files.count() if count_limit else 0
-        # 先全量校验再统一落库：任一文件不合规直接返回错误，避免多文件上传时
-        # 「前面的已落库、后面的被拒」造成部分写入
-        for file_obj in files:
-            # 上传安全策略：扩展名黑名单（默认拒绝可执行 / 脚本类）+ 可选白名单，fail-closed
-            extension_error = validate_upload_extension(file_obj.name)
-            if extension_error:
-                return ApiResponse(code=1002, detail=extension_error)
-            try:
-                file_size = file_obj.size
-            except Exception as e:
-                logger.error(f"user:{request.user} upload file type error Exception:{e}")
-                return ApiResponse(code=1002, detail=_("Wrong upload file type"))
-            if file_size > file_upload_max_size:
-                return ApiResponse(
-                    code=1003, detail=_("upload file size cannot exceed {}").format(file_upload_max_size)
-                )
-            if quota_mb and used_size + file_size > quota_mb * 1024 * 1024:
-                return ApiResponse(
-                    code=QUOTA_EXCEEDED_CODE,
-                    detail=_("Storage quota exceeded ({} MB), please clean up and retry").format(quota_mb),
-                )
-            if count_limit and used_count + 1 > count_limit:
-                return ApiResponse(
-                    code=QUOTA_EXCEEDED_CODE,
-                    detail=_("File count limit exceeded ({}), please clean up and retry").format(count_limit),
-                )
-            used_size += file_size
-            used_count += 1
-        # 统一落库：整批包在同一事务内，任一文件写入失败则整体回滚，
-        # 避免「前面的已落库、后面的失败」造成部分写入（与前置全量校验配套）
         dedup_hits = 0
         try:
             with transaction.atomic():
                 for file_obj in files:
-                    filename = sanitize_filename(file_obj.name)
-                    # md5 在落盘前求值：命中去重时不能再写一份磁盘文件
-                    md5sum = file_md5(file_obj)
-                    # 自动分类：按 MIME/扩展名推断，且只写字典中存在的分类值
-                    # （去重命中与正常落盘共用同一结果，避免两条路径分类不一致）
-                    category = resolve_upload_category(filename, file_obj.content_type)
-                    source = find_dedup_source(request.user, md5sum)
-                    if source:
-                        # 去重命中：复用既有物理文件，仅新建引用记录（不落盘）。
-                        # 归属语义不受影响（新记录仍是本次属主的上传件），删除任一记录时
-                        # 物理文件由 UploadFile.file_still_referenced 守护保留
-                        dedup_hits += 1
-                        result.append(
-                            UploadFile.objects.create(
-                                creator=request.user,
-                                filename=filename,
-                                is_upload=True,
-                                is_tmp=True,
-                                filepath=source.filepath.name,
-                                mime_type=file_obj.content_type,
-                                filesize=file_obj.size,
-                                md5sum=md5sum,
-                                category=category,
-                            )
-                        )
-                        continue
-                    result.append(
-                        UploadFile.objects.create(
-                            creator=request.user,
-                            # 客户端原始文件名不可信：去掉路径部分并做非法字符/长度清洗
-                            filename=filename,
-                            is_upload=True,
-                            is_tmp=True,
-                            filepath=file_obj,
-                            mime_type=file_obj.content_type,
-                            filesize=file_obj.size,
-                            md5sum=md5sum,
-                            category=category,
-                        )
-                    )
+                    upload, dedup_hit = store_upload_file(request.user, file_obj)
+                    dedup_hits += 1 if dedup_hit else 0
+                    result.append(upload)
         except Exception as e:
             logger.exception(f"user:{request.user} upload file save failed: {e}")
-            return ApiResponse(code=1002, detail=_("Failed to save uploaded file"))
+            return ApiResponse(code=INVALID_CODE, detail=_("Failed to save uploaded file"))
         if result:
             # 配额使用率卡片依赖 stats 短缓存，上传后主动失效避免读到旧值
             invalidate_upload_stats_cache(request.user.pk)

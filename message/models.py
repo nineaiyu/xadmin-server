@@ -124,6 +124,9 @@ class ChatMessage(DbBaseModel):
         TEXT = "text", _("Text")
         AI = "ai", _("AI reply")
         SYSTEM = "system", _("System message")
+        # 附件消息（内容为文件名 + 附件外键引用；见 message/attachments.py）
+        IMAGE = "image", _("Image")
+        FILE = "file", _("File")
 
     room = models.ForeignKey(ChatRoom, verbose_name=_("Room"), on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(
@@ -145,6 +148,16 @@ class ChatMessage(DbBaseModel):
     recalled_time = models.DateTimeField(_("Recalled time"), null=True, blank=True)
     # AI 回复的引用来源等结构化附加信息（text 消息为空 dict）
     extra = models.JSONField(_("Extra"), default=dict, blank=True)
+    # 附件（图片 / 文件消息）：外键引用上传件，兼作「附件是否仍被业务使用」的引用依据
+    # （UploadFile.has_business_reference 由此保护磁盘文件不被保留期清理误删）
+    attachment = models.ForeignKey(
+        "system.UploadFile",
+        verbose_name=_("Attachment"),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
 
     class Meta:
         verbose_name = _("Chat message")
@@ -162,3 +175,7 @@ class ChatMessage(DbBaseModel):
 
     def __str__(self):
         return f"{self.room_id}#{self.pk}"
+
+
+# 附件消息类型（图片 / 文件）：发送时必须携带 attachment，渲染信息存 extra["file"]
+ATTACHMENT_MESSAGE_TYPES = frozenset({ChatMessage.MessageType.IMAGE, ChatMessage.MessageType.FILE})

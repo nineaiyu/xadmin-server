@@ -87,6 +87,9 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     """聊天室消息载荷（ws/chat/ 通道）：落库后广播的完整消息记录。
 
     id 为自增主键（即游标），client_msg_id 供发送端做本地幂等对齐。
+    message_type 取值 text / ai / system / image / file；附件消息（image / file）
+    的上行帧额外携带 `file_pk`（先经上传端点取得），下行载荷的 extra 内附
+    ChatAttachmentPayload（含受鉴权取件 url）。
     """
 
     id: int
@@ -100,6 +103,23 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     created_time: str
     client_msg_id: str
     extra: dict[str, Any]
+
+
+class ChatAttachmentPayload(TypedDict, total=False):
+    """附件渲染信息（附件消息的 ``extra["file"]``）。
+
+    - ``url``：受鉴权取件地址（图片 img / 文件下载共用；撤回或附件被清理后为空）；
+    - ``missing``：附件记录已失效（外键 SET_NULL / 消息已撤回），前端渲染占位提示。
+    """
+
+    pk: str
+    filename: str
+    filesize: int
+    mime_type: str
+    category: str
+    kind: str
+    url: str
+    missing: bool
 
 
 class ChatRecallPayload(TypedDict, total=False):

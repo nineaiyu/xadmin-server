@@ -10,7 +10,9 @@
   不再依赖「URL 第二段用户名是否是本人」这条隐式规则。
 
 上行 action（protocol.MessageAction）：
-- `chat_message {room_id, content, client_msg_id}` → 落库后广播（幂等：同 client_msg_id 不重复落库/广播）；
+- `chat_message {room_id, content, client_msg_id, message_type?, file_pk?}` → 落库后广播
+  （幂等：同 client_msg_id 不重复落库/广播）；message_type=image/file 时携带 `file_pk`
+  （先经 `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；
 - `chat_recall {message_id}` → 本人在 2 分钟内撤回，双方同步；
 - `chat_read {room_id}` → 清零未读并回执最新已读游标。
 
@@ -27,7 +29,7 @@ from common.core.config import UserConfig
 from common.utils import get_logger
 from message import chat as chat_service
 from message.base import AsyncJsonWebsocket
-from message.models import ChatRoom, ChatRoomMember
+from message.models import ChatMessage, ChatRoom, ChatRoomMember
 from message.protocol import MessageAction
 from message.utils import (
     async_push_message,
@@ -136,13 +138,25 @@ class ChatNotify(AsyncJsonWebsocket):
                 await self.close()
 
     async def handle_send(self, data):
+        # 消息类型：text（缺省）/ image / file；附件消息携带 file_pk（先经 REST 上传取得）
+        message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
+        if message_type not in ChatMessage.MessageType.values:
+            message_type = ChatMessage.MessageType.TEXT
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
+            attachment = None
+            if message_type in chat_service.ATTACHMENT_MESSAGE_TYPES:
+                # 归属校验 fail-closed：只能引用本人上传的文件（他人 pk 一律拒绝）
+                attachment = await database_sync_to_async(chat_service.resolve_sender_attachment)(
+                    data.get("file_pk"), self.user
+                )
             message, created = await database_sync_to_async(chat_service.create_message)(
                 room,
                 self.user,
                 data.get("content"),
+                message_type=message_type,
                 client_msg_id=str(data.get("client_msg_id") or "")[:64],
+                attachment=attachment,
             )
         except DjangoValidationError as exc:
             await self.send_base_json(MessageAction.CHAT_MESSAGE.value, code=1001, detail="; ".join(exc.messages))

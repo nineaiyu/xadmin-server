@@ -117,8 +117,9 @@ class FileAccessActionMixin:
     @action(methods=["get"], detail=False)
     def config(self, request, *args, **kwargs):
         """获取上传配置"""
-        # 延迟导入：get_upload_max_size 定义在主视图模块（避免模块级循环导入）
-        from system.views.admin.file import get_upload_max_size
+        # 延迟导入：上传配置内核在 utils 层（与文件中心/聊天附件同源），
+        # 延迟取用避免与主视图模块形成模块级循环
+        from system.utils.upload_store import get_upload_max_size
 
         return ApiResponse(
             data={

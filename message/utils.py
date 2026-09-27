@@ -145,9 +145,20 @@ async def get_layers_form_group(group):
 
 @async_to_sync
 async def get_online_users_layers(user_pks):
-    """批量获取多个用户的在线 channel layers，一次同步桥接完成全部查询，user_pk 自动去重"""
+    """批量获取多个用户的在线 channel layers，一次同步桥接完成全部查询，user_pk 自动去重。
+
+    优先走 layer 的批量接口（get_layers_for_groups：按节点归并 pipeline，单 Redis
+    部署下整个请求一次往返），替代逐用户串行查询；不支持批量接口的实现回退逐用户。
+    """
+    pks = list(dict.fromkeys(user_pks))
+    if not pks:
+        return {}
+    if hasattr(channel_layer, "get_layers_for_groups"):
+        groups = [get_user_layer_group_name(user_pk) for user_pk in pks]
+        layers = await channel_layer.get_layers_for_groups(groups)
+        return {user_pk: layers.get(group, []) for user_pk, group in zip(pks, groups, strict=True)}
     result = {}
-    for user_pk in dict.fromkeys(user_pks):
+    for user_pk in pks:
         result[user_pk] = await get_layers_form_group(get_user_layer_group_name(user_pk))
     return result
 
