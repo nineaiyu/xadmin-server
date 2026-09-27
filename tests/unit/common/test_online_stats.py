@@ -106,6 +106,43 @@ class TestOnlineReverseIndex:
         assert pks == []
 
 
+class TestOnlineLayersBatch:
+    """批量在线 channel 查询：走 layer 的批量接口（单 Redis 部署一次往返）。"""
+
+    def test_uses_batch_interface_once(self, monkeypatch):
+        calls = []
+
+        class SpyLayer:
+            async def get_layers_for_groups(self, groups):
+                calls.append(list(groups))
+                return {group: [f"chan-{group}"] for group in groups}
+
+        monkeypatch.setattr(msg_utils, "channel_layer", SpyLayer())
+        result = msg_utils.get_online_users_layers([1, 2, 1])  # 重复 pk 自动去重
+        expected = {
+            1: [f"chan-{msg_utils.get_user_layer_group_name(1)}"],
+            2: [f"chan-{msg_utils.get_user_layer_group_name(2)}"],
+        }
+        assert result == expected
+        assert len(calls) == 1, "应合并为一次批量调用（而非逐用户往返）"
+
+    def test_falls_back_to_per_user_query(self, monkeypatch):
+        class LegacyLayer:
+            async def get_layers(self, group):
+                return ["legacy"]
+
+        monkeypatch.setattr(msg_utils, "channel_layer", LegacyLayer())
+        assert msg_utils.get_online_users_layers([5]) == {5: ["legacy"]}
+
+    def test_empty_input_no_call(self, monkeypatch):
+        class Boom:
+            async def get_layers_for_groups(self, groups):
+                raise AssertionError("空入参不应触发查询")
+
+        monkeypatch.setattr(msg_utils, "channel_layer", Boom())
+        assert msg_utils.get_online_users_layers([]) == {}
+
+
 class TestGroupNameParsing:
     def test_parse_user_group(self):
         assert parse_online_user_pk("websocket_group_123") == 123

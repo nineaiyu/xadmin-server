@@ -51,7 +51,7 @@ def get_user_menu_queryset(user_obj):
 @MagicCacheData.make_cache(timeout=10, key_func=lambda *args: f"{args[0].pk}_{args[1]}")
 def get_user_field_queryset(user_obj, menu):
     q = Q()
-    data = {}
+    data: dict[str, set[str]] = {}
     has_q = False
     # 一次取出角色列表复用，避免 count() 与 all() 各查一次库
     roles = list(user_obj.roles.all())
@@ -185,7 +185,8 @@ def check_pat_scope(request) -> bool:
         return True
     from common.core.auth import path_allowed_by_scopes
 
-    return path_allowed_by_scopes(request.path, scopes, getattr(request, "method", None))
+    method = getattr(request, "method", None)
+    return path_allowed_by_scopes(request.path, scopes, str(method) if method else None)
 
 
 def user_can_update_menu(user, url) -> bool:

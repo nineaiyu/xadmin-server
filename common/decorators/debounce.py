@@ -13,7 +13,7 @@ import inspect
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 
 from common.core.db.utils import open_db_connection
 from common.utils import get_logger
@@ -41,9 +41,9 @@ class EventLoopThread(threading.Thread):
 _loop_thread = None
 _executor = None
 _state_lock = threading.Lock()
-_loop_debouncer_func_task_cache = {}
-_loop_debouncer_func_args_cache = {}
-_loop_debouncer_func_task_time_cache = {}
+_loop_debouncer_func_task_cache: dict[str, Future] = {}
+_loop_debouncer_func_args_cache: dict[str, dict] = {}
+_loop_debouncer_func_task_time_cache: dict[str, float] = {}
 
 
 def _get_loop_thread():

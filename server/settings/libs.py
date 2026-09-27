@@ -52,6 +52,9 @@ REST_FRAMEWORK = {
         "register": "50/d",
         "reset_password": "50/d",
         "login": "50/h",
+        # 文档站登录（/api-docs/login/）：与主登录同口径接入账号锁定之外的单列
+        # 更严限流，避免该入口被用作口令爆破通道
+        "api_docs_login": "10/m",
         **CONFIG.DEFAULT_THROTTLE_RATES,
     },
     "DEFAULT_PAGINATION_CLASS": "common.core.pagination.PageNumber",

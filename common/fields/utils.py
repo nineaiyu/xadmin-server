@@ -26,7 +26,7 @@ def get_file_absolute_uri(value: FieldFile, request=None, use_url=True):
     return value.name
 
 
-def input_wrapper(func):
+def input_wrapper(func: type[RFField]):
     """
     增加 input_type 参数，用于前端识别
     """

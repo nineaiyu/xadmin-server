@@ -23,6 +23,8 @@ class CustomAutoSchema(AutoSchema):
     def get_operation(self, path, path_regex, path_prefix, method, registry):
         """按 AI 注册表 + 视图 ai_meta 注入 ``x-ai-*`` 扩展（未涉及端点零变化）。"""
         operation = super().get_operation(path, path_regex, path_prefix, method, registry)
+        if operation is None:  # 端点被忽略时保持原样返回 None
+            return operation
         try:
             from common.swagger.ai_meta import ai_operation_meta, operation_extensions
 

@@ -76,6 +76,58 @@ class TestApiLogin:
         assert response["Location"] == SWAGGER_UI_URL
 
 
+class TestApiLoginHardening:
+    """文档站登录加固（S-1）：开放重定向拦截 + 账号锁定接入（与主登录共用计数）。"""
+
+    CREDENTIALS = {"username": "admin", "password": "Admin@123456"}
+
+    def test_external_next_is_rejected(self, superuser, api_client):
+        """外部域 next 回落到默认文档地址（防钓鱼跳转）。"""
+        resp = api_client.post(f"{LOGIN_URL}?next=https://evil.example.com/phish", self.CREDENTIALS, format="json")
+        assert resp.status_code == 302
+        assert resp["Location"] == SWAGGER_UI_URL
+
+    def test_protocol_relative_next_is_rejected(self, superuser, api_client):
+        resp = api_client.post(f"{LOGIN_URL}?next=//evil.example.com/phish", self.CREDENTIALS, format="json")
+        assert resp.status_code == 302
+        assert resp["Location"] == SWAGGER_UI_URL
+
+    def test_same_origin_absolute_next_is_allowed(self, superuser, api_client):
+        target = "http://testserver/api-docs/redoc/"
+        resp = api_client.post(f"{LOGIN_URL}?next={target}", self.CREDENTIALS, format="json")
+        assert resp.status_code == 302
+        assert resp["Location"] == target
+
+    def test_locked_account_rejected_even_with_valid_password(self, superuser, api_client):
+        """锁定判据复用主登录的失败计数键：达阈值后正确口令同样被拒。"""
+        from settings.services import LoginBlockUtil
+
+        block = LoginBlockUtil("admin", "127.0.0.1")
+        for _ in range(int(settings.SECURITY_LOGIN_LIMIT_COUNT)):
+            block.incr_failed_count()
+        assert block.is_block()
+
+        resp = api_client.post(LOGIN_URL, self.CREDENTIALS, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["code"] == 1001
+        # 本机有 .mo 时中文、CI 无 .mo 时英文，断言双语（项目既有一致口径）
+        detail = str(resp.json()["detail"])
+        assert "locked" in detail.lower() or "锁定" in detail
+
+    def test_failed_login_increments_shared_counter(self, superuser, api_client):
+        from settings.services import LoginBlockUtil
+
+        api_client.post(LOGIN_URL, {"username": "admin", "password": "bad-pass"}, format="json")
+        assert LoginBlockUtil("admin", "127.0.0.1").get_failed_count() >= 1
+
+    def test_success_clears_failed_counter(self, superuser, api_client):
+        from settings.services import LoginBlockUtil
+
+        api_client.post(LOGIN_URL, {"username": "admin", "password": "bad-pass"}, format="json")
+        assert api_client.post(LOGIN_URL, self.CREDENTIALS, format="json").status_code == 302
+        assert LoginBlockUtil("admin", "127.0.0.1").get_failed_count() == 0
+
+
 class TestApiLogout:
     def test_logout_redirects_to_login_page(self, superuser):
         request = _attach_session(rf.get("/api-docs/logout/"))

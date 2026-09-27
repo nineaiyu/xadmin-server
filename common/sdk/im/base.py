@@ -31,7 +31,7 @@ class BaseImClient:
     # 缓存 key 前缀（子类覆盖，如 "im_dingtalk_token_"）
     token_cache_prefix = ""
 
-    def __init__(self, credentials: dict = None, http_client=None):
+    def __init__(self, credentials: dict | None = None, http_client=None):
         # 凭据留存实例：token 缓存 key 由凭据摘要派生（改密即换 key，不沿用旧 token）
         self.credentials = credentials or {}
         self.http = http_client

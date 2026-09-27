@@ -52,7 +52,7 @@ def split_scope_entry(pattern) -> tuple:
     return None, text
 
 
-def path_allowed_by_scopes(path: str, scopes, method: str = None) -> bool:
+def path_allowed_by_scopes(path: str, scopes, method: str | None = None) -> bool:
     """PAT scope 判定：空清单 = 不限（既有 token 向后兼容）。
 
     条目语义（大小写不敏感，与 SENSITIVE_OPERATION_PATHS 同口径，re.search 子串命中）：

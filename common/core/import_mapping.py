@@ -55,7 +55,7 @@ def iter_writable_fields(fields):
 
 def build_field_index(fields):
     """构造「归一化表头 → 序列化字段名」索引（字段名与 label 双向可命中）。"""
-    index = {}
+    index: dict[str, str] = {}
     for name, field in iter_writable_fields(fields):
         index.setdefault(normalize_header(name), name)
         label = getattr(field, "label", None)

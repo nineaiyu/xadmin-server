@@ -265,6 +265,24 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
   - https://xadmin.example.com
 ```
 
+### 3.2 受鉴权媒体与出站请求（2026-09-27）
+
+媒体文件（`/media/`）统一经应用鉴权，不存在匿名直链：
+
+- nginx 侧 `/media/` 转发后端（Django 校验 Cookie JWT 或 session，匿名 403）；
+- 配置 `MEDIA_X_ACCEL_PREFIX: /_protected_media` 后，鉴权通过由 `X-Accel-Redirect`
+  内转到 nginx 的 `internal` 位置零拷贝直出（`xadmin-web/default.conf` 已内置该位置）；
+  未配置（默认空）时由应用进程输出文件——功能一致，仅性能差异；
+- `DEBUG=true` 恒由应用输出（开发 / E2E 直连无 nginx）；
+- 细粒度文件授权与访问审计仍在受鉴权 `download` / `preview` 端点。
+
+出站请求（Webhook 投递、AI base_url）默认拒绝私网 / 环回 / link-local 目标（SSRF 防护）：
+
+- IP 字面量与可解析域名在执行侧严格校验；Webhook 投递固定解析结果连接（防 DNS rebinding）；
+- 内网 Webhook 接收端须在「系统管理 → 系统配置」登记 `OUTBOUND_ALLOWED_HOSTS`
+  （逗号分隔域名 / IP），白名单是私网目标的唯一放行途径；
+- AI 服务地址允许私网 / 环回（内网自建推理、本地联调），但拒绝云元数据与 link-local 地址。
+
 ## 4. 可观测性
 
 ### 4.1 健康检查
@@ -336,6 +354,12 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 > `python manage.py post_upgrade`（= 内置种子 `load_init_json` + `compilemessages` + 配置缓存失效 + 权限点缺口扫描，
 > 幂等可重跑；**安装器升级流程已自动调用**），随后重启容器——权限点未灌库时非超管角色不会出现新入口（接口 403），
 > 文案未编译时中文界面回退英文。仅需补权限点时可改用 `sync_menu_permissions`（二者按版本说明择一）。
+
+> **2026-09-27 升级注意**：① 媒体文件不再有匿名直链（`/media/` 经应用鉴权，见 §3.2），
+> 前端需重新构建部署；② 菜单种子删除了已失效的「任务中心」菜单（`SystemTaskCenter`，
+> 指向不存在的视图）——`load_init_json` 不删除既有数据，存量库如需清理请手工删除该菜单行
+> （保留亦不影响，其原为停用状态）；③ 可选新配置 `MEDIA_X_ACCEL_PREFIX`（媒体零拷贝直出）
+> 与 `OUTBOUND_ALLOWED_HOSTS`（出站白名单，内网 Webhook 接收端必配）。
 
 > 历史版本注意：compose 内置与 `config.yml` 对齐的数据库/Redis 默认密码兜底（单机自用决策，见 docker-compose.yml 注释）——*
 *生产部署必须**通过环境变量或 `.env` 覆盖 `DB_PASSWORD` / `REDIS_PASSWORD` 为随机值，并在 `config.yml` 中同步修改（config.yml
@@ -458,6 +482,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | `SECURITY_HTTPS_REDIRECT_ENABLED` | 同名 | `false` | 否 | 要求代理传递 `X-Forwarded-Proto` |
 | `CORS_ALLOW_ALL_ORIGINS` / `CORS_ALLOWED_ORIGINS` | 同名 | `false` / `[]` | 跨域部署必填 | 同源（nginx 反代）部署无需配置 |
 | `LANGUAGE_CODE` / `TIME_ZONE` | 同名 | `zh-hans` / `Asia/Shanghai` | 否 | |
+| `MEDIA_X_ACCEL_PREFIX` | 同名 | 空 | 否 | 受鉴权媒体的 nginx 内部重定向前缀；生产推荐 `/_protected_media`（需 nginx 声明同名前缀的 `internal` location，见 [§3.2](#32-受鉴权媒体与出站请求2026-09-27)） |
 
 ### 9.2 数据库
 
@@ -523,7 +548,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | 类别 | 覆盖范围 | 生效方式 |
 |---|---|---|
 | **进程级配置** | 本表 §9.1–§9.6 全部键 | 进程启动期读取 → 改后**重启**（`python manage.py restart` 或 `docker compose up -d`） |
-| **运行期参数** | `SysConfig` 属性键：`FILE_UPLOAD_SIZE` / `PICTURE_UPLOAD_SIZE` / `PAT_RATE_LIMIT` / `CSP_MODE` / `CSP_REPORT_URI` / `OAUTH_PROVIDERS` / `SCIM_*` / `AUDIT_DIFF_MODELS` / 审批相关 / 文件预览与保留期 / 导入导出保留期 / `CHAT_HISTORY_DAYS` / `BACKUP_ALERT_TOKEN` / `OPS_ALERT_TOKEN` 等 | 管理页「系统管理 → 系统配置」修改后**即时生效**（保存即失效缓存）。这些键的默认值单源回读 `config.yml`（即上表值可作为初值），有 DB 行时以行值为准 |
+| **运行期参数** | `SysConfig` 属性键：`FILE_UPLOAD_SIZE` / `PICTURE_UPLOAD_SIZE` / `PAT_RATE_LIMIT` / `CSP_MODE` / `CSP_REPORT_URI` / `OAUTH_PROVIDERS` / `SCIM_*` / `AUDIT_DIFF_MODELS` / `OUTBOUND_ALLOWED_HOSTS` / 审批相关 / 文件预览与保留期 / 导入导出保留期 / `CHAT_HISTORY_DAYS` / `BACKUP_ALERT_TOKEN` / `OPS_ALERT_TOKEN` 等 | 管理页「系统管理 → 系统配置」修改后**即时生效**（保存即失效缓存）。这些键的默认值单源回读 `config.yml`（即上表值可作为初值），有 DB 行时以行值为准 |
 | **用户级配置** | `WEB_SITE_CONFIG` / `PUSH_MESSAGE_NOTICE` / `PUSH_CHAT_MESSAGE` | 用户可在「账户设置」页覆盖个人值，即时生效 |
 
 > 完整运行期参数清单与语义见 `loadjson/systemconfig.json`（种子初值）与

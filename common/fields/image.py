@@ -19,7 +19,7 @@ from pilkit.utils import suggest_extension
 def source_name(generator, index):
     source_filename = getattr(generator.source, "name", None)
     ext = suggest_extension(source_filename or "", generator.format)
-    return f"{os.path.splitext(source_filename)[0]}_{index}{ext}"
+    return f"{os.path.splitext(source_filename or '')[0]}_{index}{ext}"
 
 
 def get_thumbnail(source, index, force=False):
@@ -62,7 +62,7 @@ class ProcessedImageFieldFile(ImageFieldFile):
         # Clear the image dimensions cache
         if hasattr(self, "_dimensions_cache"):
             del self._dimensions_cache
-        name = self.name
+        name = getattr(self, "name", "")
         if self.is_local_storage:
             try:
                 for i in self.field.scales:

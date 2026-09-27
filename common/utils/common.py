@@ -51,7 +51,7 @@ def get_docker_mem_usage_if_limit():
             usage_in_bytes = int(f.readline())
 
         with open("/sys/fs/cgroup/memory/memory.stat") as f:
-            inactive_file = 0
+            inactive_file: int | str = 0
             for line in f:
                 if line.startswith("total_inactive_file"):
                     name, inactive_file = line.split()

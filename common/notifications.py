@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.db.models.aggregates import Avg
 from django.db.models.functions import Round
@@ -196,6 +198,11 @@ class ServerPerformanceCheckUtil:
 
 
 class TaskMessage:
+    if TYPE_CHECKING:  # 子类（任务消息）与 UserMessage 提供的属性（mixin 模式）
+        subject: str
+        user_display: str
+        task: dict
+
     def get_html_msg(self) -> dict:
         context = dict(
             subject=self.subject,

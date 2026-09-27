@@ -8,6 +8,7 @@
 
 import json
 import re
+from typing import Any
 
 from django.template import Context, Template, TemplateSyntaxError
 from django.template.base import VariableNode
@@ -69,7 +70,7 @@ class ConfigCacheBase:
     def invalid_config_cache(self, key="*"):
         UserSystemConfigCache(f"{self.px}_{key}").del_many()
 
-    def get_render_value(self, value: str) -> dict:
+    def get_render_value(self, value: str) -> Any:
         if value:
             try:
                 context_dict = {}

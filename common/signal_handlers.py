@@ -89,7 +89,7 @@ def on_after_setup_logger(sender=None, logger=None, loglevel=None, format=None, 
 class Counter:
     def __init__(self):
         self.counter = 0
-        self.time = 0
+        self.time: float = 0
 
     def __gt__(self, other):
         return self.counter > other.counter
@@ -103,8 +103,8 @@ class Counter:
 
 def on_request_finished_logging_db_query(sender, **kwargs):
     queries = connection.queries
-    counters = defaultdict(Counter)
-    table_queries = defaultdict(list)
+    counters: defaultdict[str, Counter] = defaultdict(Counter)
+    table_queries: defaultdict[str, list] = defaultdict(list)
     for query in queries:
         if not query["sql"] or not query["sql"].startswith("SELECT"):
             continue
@@ -117,8 +117,8 @@ def on_request_finished_logging_db_query(sender, **kwargs):
         counters["total"].time += float(time)
         table_queries[table_name].append(query)
 
-    counters = sorted(counters.items(), key=lambda x: x[1])
-    if not counters:
+    sorted_counters = sorted(counters.items(), key=lambda x: x[1])
+    if not sorted_counters:
         return
 
     method = "GET"
@@ -130,7 +130,7 @@ def on_request_finished_logging_db_query(sender, **kwargs):
 
     print(f">>>. [{method}] {path}")
 
-    for name, counter in counters:
+    for name, counter in sorted_counters:
         logger.debug(f"Query {counter.counter:3} times using {counter.time:.2f}s {name}")
 
 

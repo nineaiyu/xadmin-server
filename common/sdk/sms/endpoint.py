@@ -28,7 +28,7 @@ class SMS:
 
     def __init__(self, backend=None):
         backend = backend or settings.SMS_BACKEND
-        if backend not in BACKENDS:
+        if backend not in BACKENDS:  # type: ignore[attr-defined]  # TextChoices 元类实现 __contains__，stub 未覆盖
             raise APIException(
                 code="sms_provider_not_support", detail=_("SMS provider not support: {}").format(backend)
             )
@@ -53,4 +53,4 @@ class SMS:
             raise APIException(
                 code="verify_code_sign_tmpl_invalid", detail=_("SMS verification code signature or template invalid")
             )
-        return self.send_sms([phone_number], sign_name, template_code, OrderedDict(code=code))
+        return self.send_sms([phone_number], sign_name or "", template_code or "", OrderedDict(code=code))

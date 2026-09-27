@@ -14,6 +14,7 @@ get_recycle_purge_queryset 两个 hook 即可，不要整段复制 action。
 """
 
 from datetime import timedelta
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.db import transaction
@@ -32,10 +33,18 @@ from common.utils import get_logger
 logger = get_logger(__name__)
 
 # drf-spectacular 中字符串类型为 STR（无 STRING 别名）
-_PKS_ARRAY = build_array_type(build_basic_type(OpenApiTypes.STR))
+_PKS_ARRAY = build_array_type(build_basic_type(OpenApiTypes.STR) or {})
 
 
 class RecycleBinAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_queryset(self) -> Any: ...
+
+        def filter_queryset(self, queryset) -> Any: ...
+
+        def list(self, request, *args, **kwargs) -> Any: ...
+
     def get_recycle_restore_queryset(self, pks):
         """恢复目标查询集（已含数据权限过滤）；成组语义的模型可覆写扩展范围。"""
         model = self.get_queryset().model

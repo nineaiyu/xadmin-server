@@ -38,6 +38,13 @@ from ai.utils.ai_config import (  # noqa: F401 配置/凭据拆至 ai_config（�
     set_active_profile,
     structured_chat_client,
 )
+from ai.utils.ai_retrieval import (  # noqa: F401 检索链路拆至 ai_retrieval（含块级分词缓存），此处再导出保持调用面
+    MAX_QUESTION_LENGTH,
+    SCORE_THRESHOLD,
+    TOP_K,
+    _tokenize,
+    retrieve,
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -47,9 +54,6 @@ PROJECT_DIR = Path(__file__).resolve().parents[2]
 DOCS_DIR = PROJECT_DIR / "docs"
 ROOT_DOCS = ["README.md", "CONTRIBUTING.md"]
 CHUNK_WINDOW = 1200  # 长块滑动窗口字符数
-TOP_K = 5
-SCORE_THRESHOLD = 2
-MAX_QUESTION_LENGTH = 500
 # 上传文档：名称与全文上限（知识库为文本资产，DB 存储，200KB 文本已覆盖手册级文档）
 MAX_UPLOAD_NAME_LENGTH = 120
 MAX_UPLOAD_CONTENT_LENGTH = 200_000
@@ -222,45 +226,6 @@ def sync_knowledge() -> dict:
     }
     logger.info("AI knowledge sync: %s", summary)
     return summary
-
-
-def _tokenize(text: str) -> list:
-    """CJK 二元组 + ASCII 词。"""
-    tokens = []
-    for word in re.findall(r"[A-Za-z0-9_]+|[\u4e00-\u9fff]+", text.lower()):
-        if re.fullmatch(r"[a-z0-9_]+", word):
-            tokens.append(word)
-        else:
-            tokens.extend(word[i : i + 2] for i in range(len(word) - 1))
-    return tokens
-
-
-def retrieve(question: str, top_k: int = TOP_K) -> list:
-    """词频重叠评分检索，返回 [{chunk 实例, score}]（score 降序，阈值过滤）。"""
-    from ai.models.ai import AiKnowledgeChunk
-
-    question = (question or "").strip()[:MAX_QUESTION_LENGTH]
-    if not question:
-        return []
-    query_tokens = set(_tokenize(question))
-    scored = []
-    for chunk in AiKnowledgeChunk.objects.all().only("id", "source_path", "title", "content", "chunk_index"):
-        content_tokens = _tokenize(chunk.content)
-        if not content_tokens:
-            continue
-        freq = {}
-        for token in content_tokens:
-            freq[token] = freq.get(token, 0) + 1
-        # 命中数（去重词元）：入阈条件；排序分再做长度归一 + 标题加成
-        raw_hits = sum(1 for token in query_tokens if freq.get(token))
-        title_hit = 1 if query_tokens & set(_tokenize(chunk.title)) else 0
-        boosted = raw_hits + title_hit
-        if boosted < SCORE_THRESHOLD:
-            continue
-        score = boosted / (len(content_tokens) ** 0.5)
-        scored.append((score, chunk))
-    scored.sort(key=lambda item: item[0], reverse=True)
-    return [{"chunk": chunk, "score": round(score, 4)} for score, chunk in scored[:top_k]]
 
 
 def _prepare_rag(question: str, user=None) -> tuple:

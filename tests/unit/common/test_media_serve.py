@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
-"""common/utils/media.py：媒体文件响应（目录拒绝、404、304 与文件流）。"""
+"""common/utils/media.py：媒体文件响应（鉴权、目录拒绝、404、304 与文件流）。"""
 
 import pytest
 from django.http import Http404, HttpResponseNotModified
 from django.test import RequestFactory
 
 from common.utils.media import get_media_path, media_serve
+
+
+class _Authenticated:
+    """已认证请求的最小替身（媒体视图只依赖 is_authenticated）。"""
+
+    is_authenticated = True
 
 
 @pytest.fixture
@@ -24,12 +30,25 @@ def image_file(media_root):
 
 @pytest.fixture
 def rf():
-    return RequestFactory(HTTP_USER_AGENT="pytest-agent")
+    """已认证请求工厂（媒体服务要求登录态，见 test_anonymous_forbidden）。"""
+    factory = RequestFactory(HTTP_USER_AGENT="pytest-agent")
+
+    def _get(path, **kwargs):
+        request = factory.get(path, **kwargs)
+        request.user = _Authenticated()
+        return request
+
+    return _get
 
 
 class TestMediaServe:
+    def test_anonymous_forbidden(self, media_root, image_file):
+        request = RequestFactory(HTTP_USER_AGENT="pytest-agent").get("/media/logo.png")
+        response = media_serve(request, "logo.png", document_root=str(media_root))
+        assert response.status_code == 403
+
     def test_serve_existing_file(self, rf, media_root, image_file):
-        request = rf.get("/media/logo.png")
+        request = rf("/media/logo.png")
         response = media_serve(request, "logo.png", document_root=str(media_root))
         assert response.status_code == 200
         assert response["Content-Type"] == "image/png"
@@ -37,21 +56,28 @@ class TestMediaServe:
         assert b"".join(response.streaming_content) == image_file.read_bytes()
 
     def test_directory_index_forbidden(self, rf, media_root):
-        request = rf.get("/media/sub/")
+        request = rf("/media/sub/")
         with pytest.raises(Http404):
             media_serve(request, "sub", document_root=str(media_root))
 
     def test_missing_file_raises_404(self, rf, media_root):
-        request = rf.get("/media/nope.png")
+        request = rf("/media/nope.png")
         with pytest.raises(Http404):
             media_serve(request, "nope.png", document_root=str(media_root))
 
     def test_not_modified_returns_304(self, rf, media_root, image_file):
         from django.utils.http import http_date
 
-        request = rf.get("/media/logo.png", HTTP_IF_MODIFIED_SINCE=http_date(image_file.stat().st_mtime + 10))
+        request = rf("/media/logo.png", HTTP_IF_MODIFIED_SINCE=http_date(image_file.stat().st_mtime + 10))
         response = media_serve(request, "logo.png", document_root=str(media_root))
         assert isinstance(response, HttpResponseNotModified)
+
+    def test_x_accel_redirect_when_prefix_configured(self, rf, media_root, image_file, settings):
+        settings.MEDIA_X_ACCEL_PREFIX = "/_protected_media"
+        request = rf("/media/logo.png")
+        response = media_serve(request, "logo.png", document_root=str(media_root))
+        assert response.status_code == 200
+        assert response["X-Accel-Redirect"] == "/_protected_media/logo.png"
 
 
 class TestGetMediaPath:

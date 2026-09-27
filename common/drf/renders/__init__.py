@@ -88,7 +88,7 @@ class SseRendererMixin:
     def get_renderers(self):
         if getattr(self, "action", None) in self.sse_actions:
             return [renderers.JSONRenderer(), EventStreamRenderer()]
-        return super().get_renderers()
+        return super().get_renderers()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
 
 class PassthroughRenderer(renderers.BaseRenderer):

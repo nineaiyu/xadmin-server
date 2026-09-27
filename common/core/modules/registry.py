@@ -199,7 +199,7 @@ def discovered_modules() -> tuple:
 
     from django.apps import apps as django_apps
 
-    discovered = []
+    discovered: list[ModuleSpec] = []
     for app_config in django_apps.get_app_configs():
         module_path = f"{app_config.name}.modules"
         try:

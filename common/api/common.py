@@ -28,7 +28,7 @@ class ResourcesIDCacheAPIView(GenericAPIView):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"resources": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"resources": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["resources"],
                 description="主键列表",
             )

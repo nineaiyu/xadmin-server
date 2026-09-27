@@ -35,8 +35,10 @@ class CSVFileRenderer(BaseFileRenderer):
 
     def write_row(self, row):
         row = self.__render_row(row)
+        assert self.writer is not None  # initial_writer() 已初始化
         self.writer.writerow(row)
 
     def get_rendered_value(self):
+        assert self.buffer is not None  # initial_writer() 已初始化
         value = self.buffer.getvalue()
         return value

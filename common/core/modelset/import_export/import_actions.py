@@ -4,6 +4,7 @@
 
 import codecs
 import json
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.db.models import Q
@@ -33,6 +34,16 @@ class ImportAsyncAction:
     - import-async：行数据序列化为 JSON 落 UploadFile(is_tmp=True)，任务内
       直接读行导入（大文件不塞 broker 消息，也不重复解析）。
     """
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_queryset(self) -> Any: ...
+
+        def get_parsers(self) -> Any: ...
+
+        def get_serializer_class(self) -> Any: ...
+
+        def get_serializer(self, *args, **kwargs) -> Any: ...
 
     def _get_rows_and_titles(self, request):
         """从文件解析器产物中取行数据与原表头（含列映射预处理）。"""
@@ -247,7 +258,8 @@ class ImportAsyncAction:
         from common.core.config import SysConfig
 
         rows, _column_titles = self._get_rows_and_titles(request)
-        errors, limit = [], SysConfig.IMPORT_VALIDATE_ERROR_LIMIT
+        errors: list = []
+        limit = SysConfig.IMPORT_VALIDATE_ERROR_LIMIT
         invalid_count = 0
         for idx, row in enumerate(rows, start=1):
             serializer = self.get_serializer(data=row)
@@ -295,13 +307,13 @@ class ImportAsyncAction:
         # 行数据落 UploadFile(is_tmp=True)：任务内直接读 JSON，不重复解析原文件
         record.source_file = self._save_rows_file(rows, request.user, f"{record.pk}_rows.json")
         record.save(update_fields=["source_file", "updated_time"])
-        args = [str(record.pk), view_path, user_pk]
+        task_args = [str(record.pk), view_path, user_pk]
         task = import_string("system.tasks.async_import_data_task")
         if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
             # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
-            task.apply(args=args, task_id=str(record.pk))
+            task.apply(args=task_args, task_id=str(record.pk))
         else:
-            transaction.on_commit(lambda: task.apply_async(args=args, task_id=str(record.pk)))
+            transaction.on_commit(lambda: task.apply_async(args=task_args, task_id=str(record.pk)))
         return ApiResponse(
             data={"record_id": str(record.pk), "task_id": str(record.pk)},
             detail=_("Import task submitted"),

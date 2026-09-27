@@ -30,7 +30,10 @@ def get_request_user(request):
     if user and user.is_authenticated:
         return user
     try:
-        user, token = JWTAuthentication().authenticate(request)
+        auth_result = JWTAuthentication().authenticate(request)
+        if auth_result is None:  # 未命中凭证时沿用「抛错进入 refresh 兜底」的既有语义
+            raise ValueError("authentication failed")
+        user, token = auth_result
     except Exception:
         try:
             body = getattr(request, "request_data", {})

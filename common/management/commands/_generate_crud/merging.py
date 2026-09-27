@@ -4,6 +4,7 @@
 
 import ast
 import sys
+from typing import TYPE_CHECKING, Any
 
 from django.core.management.base import CommandError
 
@@ -12,6 +13,9 @@ from .constants import BLOCK_END, BLOCK_START, FIRST_PARTY_TOP_LEVEL, _import_na
 
 class MergeMixin:
     """生成产物写入：新建 / 生成块合并 / urls 注册行插入。"""
+
+    if TYPE_CHECKING:  # 宿主 Command 提供的接口（mixin 模式）
+        stdout: Any
 
     @staticmethod
     def _existing_text(path):
@@ -144,7 +148,7 @@ class MergeMixin:
     @staticmethod
     def _imported_names(text):
         """目标文件顶层已导入的名字集合（含别名），用于生成块内 import 去重（防 F811）。"""
-        names = set()
+        names: set[str] = set()
         if not text:
             return names
         try:
@@ -191,7 +195,7 @@ class MergeMixin:
                 if name and name not in bucket:
                     bucket.append(name)
 
-        groups = {"stdlib": [], "third": [], "app": []}
+        groups: dict[str, list[str]] = {"stdlib": [], "third": [], "app": []}
         for module in sorted(merged):
             top = module.split(".")[0]
             if top in sys.stdlib_module_names:

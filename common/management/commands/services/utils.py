@@ -9,14 +9,14 @@ from .services.base import BaseService
 
 
 class ServicesUtil:
-    def __init__(self, services, run_daemon=False, force_stop=False, stop_daemon=False):
+    def __init__(self, services: list[BaseService], run_daemon=False, force_stop=False, stop_daemon=False):
         self._services = services
         self.run_daemon = run_daemon
         self.force_stop = force_stop
         self.stop_daemon = stop_daemon
         self.EXIT_EVENT = threading.Event()
         self.check_interval = 30
-        self.files_preserve_map = {}
+        self.files_preserve_map: dict[str, str] = {}
 
     def restart(self):
         self.stop()
@@ -44,7 +44,6 @@ class ServicesUtil:
         ):
             celery_prepare()
         for service in self._services:
-            service: BaseService
             service.start()
             self.files_preserve_map[service.name] = service.log_file
 
@@ -52,7 +51,6 @@ class ServicesUtil:
 
     def stop(self):
         for service in self._services:
-            service: BaseService
             service.stop(force=self.force_stop)
 
         if self.stop_daemon:
@@ -73,7 +71,6 @@ class ServicesUtil:
 
     def _watch(self):
         for service in self._services:
-            service: BaseService
             service.watch()
             if service.EXIT_EVENT.is_set():
                 self.EXIT_EVENT.set()
@@ -89,7 +86,6 @@ class ServicesUtil:
 
     def show_status(self):
         for service in self._services:
-            service: BaseService
             service.show_status()
 
     # -- daemon --

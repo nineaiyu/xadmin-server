@@ -6,7 +6,7 @@
 选择、文件导出绕过分页。拆分自 modelset.py，行为保持不变。
 """
 
-from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import QuerySet
@@ -16,12 +16,21 @@ from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.services import ensure_impact_confirmed
 
+if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+    from rest_framework.request import Request
+
 logger = get_logger(__name__)
 
 
 class BaseViewSet:
-    action: Callable
-    extra_filter_class = []
+    #: 当前请求命中的 action 名（DRF ViewSetMixin 在 initialize_request 中按方法写入）
+    action: str
+    extra_filter_class: list[type] = []
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+        request: "Request"
+        values_queryset: Any
+        filter_backends: list[type]
     # 查询优化：显式声明的关联字段，在所有 action 生效，支持 creator__dept 嵌套写法
     select_related_fields = ()
     prefetch_related_fields = ()
@@ -44,7 +53,7 @@ class BaseViewSet:
     def get_queryset(self):
         if getattr(self, "values_queryset", None):
             return self.values_queryset
-        return super().get_queryset()
+        return super().get_queryset()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
     def optimize_queryset(self, queryset):
         """
@@ -81,7 +90,8 @@ class BaseViewSet:
         cached = getattr(self, "_serializer_related_fields", None)
         if cached is not None:
             return cached
-        select_related, prefetch_related = [], []
+        select_related: list[str] = []
+        prefetch_related: list[str] = []
         try:
             serializer_class = self.get_serializer_class()
             model = getattr(getattr(serializer_class, "Meta", None), "model", None)
@@ -112,7 +122,7 @@ class BaseViewSet:
         # 文件导出的时候，忽略 paginate_queryset
         if self.request.query_params.get("type") in ["csv", "xlsx"] and self.request.path_info.endswith("export-data"):
             return None
-        return super().paginate_queryset(queryset)
+        return super().paginate_queryset(queryset)  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
     def get_serializer(self, *args, **kwargs):
         """``?fields=`` 字段子集：只收窄可见字段（与字段权限 / 应用授权求交），
@@ -125,11 +135,11 @@ class BaseViewSet:
                 if issubclass(serializer_class, BaseModelSerializer):
                     # 上限 100：防超长参数；实际生效范围仍由序列化器声明与字段权限决定
                     kwargs["fields"] = [item.strip() for item in fields_param.split(",") if item.strip()][:100]
-        return super().get_serializer(*args, **kwargs)
+        return super().get_serializer(*args, **kwargs)  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
 
     def get_serializer_class(self):
         action_serializer_name = f"{self.action}_serializer_class"
         action_serializer_class = getattr(self, action_serializer_name, None)
         if action_serializer_class:
             return action_serializer_class
-        return super().get_serializer_class()
+        return super().get_serializer_class()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）

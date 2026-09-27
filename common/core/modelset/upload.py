@@ -5,6 +5,8 @@
 各视图按需混入（BaseModelSet 默认不包含）。拆分自 modelset.py。
 """
 
+from typing import TYPE_CHECKING, Any
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -16,6 +18,9 @@ from rest_framework.parsers import MultiPartParser
 from common.core.config import SysConfig, get_personal_config_data
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+
+if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+    from rest_framework.request import Request
 
 
 class UploadFileAction:
@@ -29,6 +34,11 @@ class UploadFileAction:
     }
     FILE_UPLOAD_FIELD = "avatar"
     FILE_UPLOAD_SIZE = settings.FILE_UPLOAD_SIZE
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+        request: "Request"
+
+        def get_object(self) -> Any: ...
 
     def get_upload_size(self):
         """头像上传上限：系统级为天花板，真实个人行只能收紧（min 语义）。"""

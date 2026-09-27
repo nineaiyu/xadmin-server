@@ -14,6 +14,7 @@ from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
+from common.utils.outbound import OutboundBlocked, validate_outbound_url
 from system.services import DisplayRelatedField
 
 # 名称中的路径分隔符会破坏 upload/ 前缀隔离，统一拒绝
@@ -121,6 +122,13 @@ class AiProfileSerializer(BaseModelSerializer):
         url = (value or "").strip()
         if not (url.startswith("http://") or url.startswith("https://")):
             raise serializers.ValidationError(_("Base URL must start with http:// or https://"))
+        # 出站地址归属校验（SSRF）：AI 服务允许内网/环回（自建推理服务与本地联调），
+        # 但拒绝云元数据 / link-local / 隧道地址；域名当前不可解析不阻断保存，
+        # 发送侧仍会做地址校验
+        try:
+            validate_outbound_url(url, allow_private=True, allow_loopback=True, strict_resolve=False)
+        except OutboundBlocked as exc:
+            raise serializers.ValidationError([str(item) for item in exc.messages]) from exc
         return url
 
     def create(self, validated_data):

@@ -67,14 +67,14 @@ def format_data(data: QueryDict | dict):
         key_split = key.split(".")
         if len(key_split) == 1:  # 直接key
             if key_split[0] == "pks":  # 用于批量操作
-                try:
+                if isinstance(data, QueryDict):
                     value = data.getlist(key_split[0])
-                except Exception:
+                else:
                     value = data.get(key_split[0])
             new_data[key_split[0]] = value
         else:
             if re.match(r"\d+", key_split[1]):  # 列表
-                info: list = new_data.get(key_split[0])
+                info: list = new_data.get(key_split[0]) or []
                 if not info:
                     new_data[key_split[0]] = [{}]
                     result = format_data({".".join(key_split[1:]): value})
@@ -91,11 +91,11 @@ def format_data(data: QueryDict | dict):
                         new_data[key_split[0]].append({})
                     new_data[key_split[0]][int(lk[0])].update(result.get(lk[0]))
             else:  # 字典
-                info: dict = new_data.get(key_split[0], {})
-                if not info:
+                info_dict: dict = new_data.get(key_split[0], {})
+                if not info_dict:
                     new_data[key_split[0]] = format_data({".".join(key_split[1:]): value})
                 else:
-                    info.update(format_data({".".join(key_split[1:]): value}))
+                    info_dict.update(format_data({".".join(key_split[1:]): value}))
 
     return new_data
 

@@ -176,7 +176,9 @@ class SendVerifyCodeAPIView(GenericAPIView):
         SendVerifyCodeBlockUtil(target, ipaddr).incr_failed_count()
 
         try:
-            username, extra = getattr(self, f"check_{category}_config")(request, form_type, query_key, target)
+            username, extra, should_send = getattr(self, f"check_{category}_config")(
+                request, form_type, query_key, target
+            )
         except APIException as e:
             # 业务校验失败（ValidateError 等），异常文案本身面向用户
             LoginIpBlockUtil(ipaddr).set_block_if_need()
@@ -188,17 +190,23 @@ class SendVerifyCodeAPIView(GenericAPIView):
             return ApiResponse(code=1001, detail=_("Operation failed. Abnormal data"))
 
         dryrun = form_type == "username"
-        try:
-            content, code = self.prepare_code_data(username)
-            SendAndVerifyCodeUtil(target, code, backend=form_type, dryrun=dryrun, **content).gen_and_send_async()
-        except ValueError as e:
-            # 发送工具抛出的 ValueError 为业务校验文案
-            logger.warning("Send verify code failed: %s", e)
-            return ApiResponse(code=1002, detail=str(e))
+        code = ""
+        if should_send:
+            try:
+                content, code = self.prepare_code_data(username)
+                SendAndVerifyCodeUtil(target, code, backend=form_type, dryrun=dryrun, **content).gen_and_send_async()
+            except ValueError as e:
+                # 发送工具抛出的 ValueError 为业务校验文案
+                logger.warning("Send verify code failed: %s", e)
+                return ApiResponse(code=1002, detail=str(e))
+        else:
+            # 防枚举：目标不存在时不发送，但支付同等的模板渲染开销（响应时间对齐），
+            # 响应文案/结构与其他请求完全一致（后续验证码校验必然失败）
+            self.prepare_code_data(username or target)
         cache_data = {"target": target, "form_type": form_type, "query_key": query_key, "extra": extra}
         verify_token = TokenTempCache.generate_cache_token(settings.VERIFY_CODE_TTL, cache_data)
         data = {"verify_token": verify_token, "extra": extra}
-        if dryrun:
+        if dryrun and code:
             data["verify_code"] = code
 
         return ApiResponse(data=data, detail=_("The verification code has been sent"))
@@ -251,6 +259,10 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
     @staticmethod
     def check_register_config(request, form_type, query_key, target):
+        """注册场景：目标已存在时明确告知（注册流程必须提示占用，否则用户无法完成注册）。
+
+        返回 ``(username, extra, should_send)``；注册链路始终发送验证码。
+        """
         extra = request.data.get("extra", {})
         if form_type == "sms":
             detail = _("Phone already exist")
@@ -262,22 +274,21 @@ class SendVerifyCodeAPIView(GenericAPIView):
         user = UserInfo.objects.filter(**{query_key: target}).exists()
         if user:
             raise ValidateError(detail)
-        return "", extra
+        return "", extra, True
 
     @staticmethod
     def check_reset_config(request, form_type, query_key, target):
-        extra = request.data.get("extra", {})
-        if form_type == "sms":
-            detail = _("Phone does not exist")
-        elif form_type == "email":
-            detail = _("Email does not exist")
-        else:
-            detail = _("Username does not exist")
+        """重置/登录场景：不区分账号是否存在（防用户枚举）。
 
+        账号不存在（或已停用）时不发送验证码，但同样返回成功与统一文案，
+        后续验证码校验必然失败——攻击者无法据此判断账号是否存在；
+        注册场景（check_register_config）保留明确文案。
+        """
+        extra = request.data.get("extra", {})
         user = UserInfo.objects.filter(is_active=True, **{query_key: target}).first()
         if not user:
-            raise ValidateError(detail)
-        return user.username, extra
+            return "", extra, False
+        return user.username, extra, True
 
     def check_login_config(self, request, form_type, query_key, target):
         return self.check_reset_config(request, form_type, query_key, target)
@@ -296,13 +307,14 @@ class SendVerifyCodeAPIView(GenericAPIView):
 
     @staticmethod
     def check_bind_email_config(request, form_type, query_key, target):
+        """绑定场景：回显目标用户资料（绑定流程需要展示「绑定到哪个账号」）。"""
         extra = request.data.get("extra", {})
         user = UserInfo.objects.filter(**{query_key: target}).first()
         if user:
             extra["avatar"] = get_file_absolute_uri(user.avatar, request)
             extra["username"] = user.username
             extra["nickname"] = user.nickname
-        return "", extra
+        return "", extra, True
 
     @staticmethod
     def get_bind_phone_config(request):

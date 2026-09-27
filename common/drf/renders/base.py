@@ -35,9 +35,10 @@ class BaseFileRenderer(BaseRenderer):
         return json.dumps(response_data)
 
     def set_response_disposition(self, response):
-        serializer = self.serializer
-        if response and hasattr(serializer, "Meta") and hasattr(serializer.Meta, "model"):
-            filename_prefix = serializer.Meta.model.__name__.lower()
+        meta = getattr(self.serializer, "Meta", None)
+        model = getattr(meta, "model", None)
+        if response and model is not None:
+            filename_prefix = model.__name__.lower()
         else:
             filename_prefix = "download"
         suffix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -49,11 +50,11 @@ class BaseFileRenderer(BaseRenderer):
         response["Access-Control-Expose-Headers"] = "Content-Disposition"
 
     def get_rendered_fields(self):
-        fields = self.serializer.fields
+        fields_map = getattr(self.serializer, "fields", None) or {}
         meta = getattr(self.serializer, "Meta", None)
-        pk_field = fields.get("pk")
+        pk_field = fields_map.get("pk")
         if self.template == "import":
-            fields = [v for k, v in fields.items() if not v.read_only and k not in ["id", "pk"]]
+            fields = [v for k, v in fields_map.items() if not v.read_only and k not in ["id", "pk"]]
             fields_unimport = getattr(meta, "fields_unimport", [])
             fields = [v for v in fields if v.field_name not in fields_unimport]
             # 当模型存在自关联字段时，import 模板需要包含 pk 字段用于拓扑排序
@@ -62,11 +63,11 @@ class BaseFileRenderer(BaseRenderer):
                 if has_self_fields(meta.model, field_names):
                     fields.insert(0, pk_field)
         elif self.template == "update":
-            fields = [v for k, v in fields.items() if not v.read_only]
+            fields = [v for k, v in fields_map.items() if not v.read_only]
             if pk_field:
                 fields.insert(0, pk_field)
         else:
-            fields = [v for k, v in fields.items() if not v.write_only and k not in ["id", "pk"]]
+            fields = [v for k, v in fields_map.items() if not v.write_only and k not in ["id", "pk"]]
             if pk_field:
                 fields.insert(0, pk_field)
 
@@ -303,6 +304,7 @@ class BaseFileRenderer(BaseRenderer):
         filename_pattern = re.compile(r'filename="([^"]+)"')
         content_disposition = response["Content-Disposition"]
         match = filename_pattern.search(content_disposition)
+        assert match is not None  # Content-Disposition 由本渲染器写入，必含 filename
         filename = match.group(1)
         response["Content-Disposition"] = content_disposition.replace(self.format, "zip")
 

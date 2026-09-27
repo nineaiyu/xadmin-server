@@ -3,6 +3,7 @@
 
 import time
 from functools import wraps
+from typing import Any
 
 
 def cached_method(ttl=20):
@@ -14,7 +15,7 @@ def cached_method(ttl=20):
     - 缓存只增不主动清理，进程内长期驻留，不要用于大对象或高基数 key；
     - 多进程/多 worker 之间不共享，不保证一致性。
     """
-    _cache = {}
+    _cache: dict[Any, dict[str, Any]] = {}
 
     def decorator(func):
         @wraps(func)

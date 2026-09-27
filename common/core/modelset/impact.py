@@ -9,6 +9,8 @@
 未混入的视图不生成该路由（前端探测 404 后静默跳过，零侵入）。
 """
 
+from typing import TYPE_CHECKING, Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -26,9 +28,15 @@ IMPACT_MAX_ITEMS = 200
 class ImpactPreviewAction:
     """影响面预检：删除 / 批量删除 / 停用前的影响范围与引用方清单。"""
 
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_queryset(self) -> Any: ...
+
+        def filter_queryset(self, queryset) -> Any: ...
+
     @extend_schema(
         request=OpenApiRequest(
-            build_object_type(properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))})
+            build_object_type(properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})})
         ),
         responses=get_default_response_schema(),
     )

@@ -86,7 +86,7 @@ class OnlyExportDataAction(ListAction):
             file_format=file_format,
             params=params,
         )
-        args = [
+        task_args = [
             str(record.pk),
             f"{self.__class__.__module__}.{self.__class__.__name__}",
             params,
@@ -95,9 +95,9 @@ class OnlyExportDataAction(ListAction):
         task = import_string("system.tasks.async_export_data_task")
         if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
             # 测试/E2E：send_task/apply_async 在 eager 下不执行，改 apply 同步跑完
-            task.apply(args=args, task_id=str(record.pk))
+            task.apply(args=task_args, task_id=str(record.pk))
         else:
-            transaction.on_commit(lambda: task.apply_async(args=args, task_id=str(record.pk)))
+            transaction.on_commit(lambda: task.apply_async(args=task_args, task_id=str(record.pk)))
         return ApiResponse(
             data={"record_id": str(record.pk), "task_id": str(record.pk)},
             detail=_("Export task submitted"),

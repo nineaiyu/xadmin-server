@@ -33,7 +33,7 @@ class RankAction:
     get_queryset: Callable
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="rank")
@@ -63,7 +63,7 @@ class BatchDestroyAction:
     perform_destroy: Callable
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")
@@ -191,19 +191,21 @@ class BatchPartialUpdateAction:
     perform_update: Callable
 
     # 视图声明：允许批量修改的字段白名单（None/空 = 未开放批量更新）
-    batch_update_fields = ()
+    batch_update_fields: tuple | dict = ()
 
     def get_batch_update_fields(self) -> set:
-        fields = self.batch_update_fields or ()
-        if isinstance(fields, dict):
-            fields = fields.keys()
-        return {str(field) for field in fields}
+        fields = self.batch_update_fields
+        entries = fields.keys() if isinstance(fields, dict) else (fields or ())
+        names: set[str] = set()
+        for name in entries:
+            names.add(str(name))
+        return names
 
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "fields": build_object_type(),
                 },
                 required=["pks", "fields"],

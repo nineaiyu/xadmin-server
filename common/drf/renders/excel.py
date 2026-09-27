@@ -1,6 +1,7 @@
 import json
 import os
 from tempfile import NamedTemporaryFile, mktemp
+from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
@@ -19,8 +20,9 @@ class ExcelFileRenderer(BaseFileRenderer):
     media_type = "application/xlsx"
     format = "xlsx"
 
-    wb = None
-    ws = None
+    # 工作簿/工作表在 initial_writer() 中创建（渲染器协议保证先初始化后写入）
+    wb: Any = None
+    ws: Any = None
     row_count = 0
 
     def initial_writer(self):

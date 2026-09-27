@@ -49,12 +49,12 @@ class ChatCompletionsClient:
         self.http = http_client
         # 最近一次成功 chat() 的 token 用量（供应商 payload.usage 原样，缺省 None）：
         # 供调用方写审计（成本维度观测），不改变 chat() 的返回契约
-        self.last_usage = None
+        self.last_usage: dict | None = None
         # 最近一次 chat() 的思考内容（reasoning_content，缺省 None）：用于「只有思考
         # 没有回答」的错误区分（见 chat() 的空回答判定）；流式场景由 chat_stream 逐段产出
-        self.last_reasoning = None
+        self.last_reasoning: str | None = None
         # 最近一次 chat_tools() 的原始 tool_calls（规范化后的列表，缺省 []）
-        self.last_tool_calls = []
+        self.last_tool_calls: list = []
 
     def _client(self):
         if self.http is None:
@@ -156,7 +156,8 @@ class ChatCompletionsClient:
         for item in raw or []:
             if not isinstance(item, dict):
                 continue
-            function = item.get("function") if isinstance(item.get("function"), dict) else {}
+            raw_function = item.get("function")
+            function: dict = raw_function if isinstance(raw_function, dict) else {}
             name = str(function.get("name") or "").strip()
             if not name:
                 continue

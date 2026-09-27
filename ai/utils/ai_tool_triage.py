@@ -41,6 +41,7 @@ TRIAGE_RESOURCES = {
     "system/mask-rules": ("exempt", "数据脱敏规则为安全配置面"),
     "system/modules": ("exempt", "模块裁剪为运维动作，需人工确认影响面"),
     "system/personal-access-tokens": ("exempt", "个人访问令牌为用户自助凭证面"),
+    "system/posts": ("exempt", "岗位为组织人员维度配置面（不参与权限判定），成员分配涉及人员归属需人工确认"),
     "system/role": ("exempt", "角色与权限为安全配置面，AI 不参与授权变更"),
     "system/search": ("exempt", "全局搜索为前端交互内部接口"),
     "system/tasks": ("exempt", "任务中心查询与取消/重跑为运维操作面"),

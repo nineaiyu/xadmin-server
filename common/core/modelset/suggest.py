@@ -23,6 +23,7 @@
 """
 
 import re
+from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -57,6 +58,12 @@ class SuggestionsAction:
 
     suggestion_search_fields: dict = {}
     suggestion_fields: tuple = ()
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_serializer_class(self) -> Any: ...
+
+        def get_serializer_context(self) -> dict: ...
 
     @extend_schema(
         parameters=[],

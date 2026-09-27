@@ -73,6 +73,7 @@ def record_http_request(method: str, view: str, status: int, duration: float) ->
     """记录一次 HTTP 请求；任何异常都不得影响主流程。"""
     if not _DEP_AVAILABLE:
         return
+    assert _REQUESTS is not None and _DURATION is not None  # 依赖可用时已初始化
     try:
         view_name = view or "unknown"
         _REQUESTS.labels(method=method, view=view_name, status=str(status)).inc()
@@ -90,6 +91,7 @@ def record_task_result(task_name: str, status: str, duration: float | None = Non
     """
     if not _DEP_AVAILABLE:
         return
+    assert _TASKS is not None and _TASK_DURATION is not None  # 依赖可用时已初始化
     name = task_name or "unknown"
     status_name = str(status or "UNKNOWN")
     try:

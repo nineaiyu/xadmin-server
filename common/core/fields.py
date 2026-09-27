@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/6/2024
 from functools import partial
+from typing import Any
 
 import phonenumbers
 from django.conf import settings
@@ -31,7 +32,7 @@ def attr_get(obj, attr, sp="."):
     return func(obj)
 
 
-_CHOICES_MAX_CACHE = {"value": None, "expires": 0.0}
+_CHOICES_MAX_CACHE: dict[str, Any] = {"value": None, "expires": 0.0}
 
 
 def get_search_choices_max_count(default=200, ttl=60):
@@ -189,7 +190,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
             queryset = queryset[: max_count + 1]
 
         if is_column:
-            result = []
+            result_list: list = []
             for item in queryset:
                 data = self.to_representation(item)
                 if isinstance(data, dict):
@@ -197,14 +198,16 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
                         data["value"] = data.get("pk")
                 else:
                     data = {"value": data, "label": data}
-                result.append(data)
+                result_list.append(data)
+            result: list | dict = result_list
         else:
-            result = {}
+            result_map: dict = {}
             for item in queryset:
                 key = self.to_representation(item)
                 if isinstance(key, dict):
                     key = key.get("pk")
-                result[key] = self.display_value(item)
+                result_map[key] = self.display_value(item)
+            result = result_map
 
         if max_count and cutoff is None and len(result) > max_count:
             self.choices_truncated = True
@@ -229,7 +232,7 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         if self.ignore_field_permission or getattr(self.request, "ignore_field_permission", False):
             return set(self.attrs)
 
-        allow_fields = []
+        allow_fields: list | set = []
         if self.request and settings.PERMISSION_FIELD_ENABLED:
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = self.attrs

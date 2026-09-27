@@ -9,6 +9,7 @@
 import time
 from functools import WRAPPER_ASSIGNMENTS, wraps
 from importlib import import_module
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -59,7 +60,7 @@ def call_function_try_attempts(try_attempts=3, sleep_time=2, failed_callback=Non
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            res = False, {}
+            res: tuple[bool, Any] = (False, {})
             start_time = time.time()
             for i in range(try_attempts):
                 res = func(*args, **kwargs)

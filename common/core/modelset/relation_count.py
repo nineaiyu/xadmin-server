@@ -36,7 +36,7 @@ class RelationCountMixin:
     """按序列化器声明为 queryset 预聚合关联计数。"""
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset()  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
         counts = self._relation_count_fields()
         if not counts:
             return queryset

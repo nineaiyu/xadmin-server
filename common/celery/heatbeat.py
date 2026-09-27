@@ -21,14 +21,14 @@ def heartbeat(sender, **kwargs):
 
 
 @worker_ready.connect
-def worker_ready(sender, **kwargs):
+def on_worker_ready(sender, **kwargs):
     worker_name = sender.hostname.split("@")[0]
     ready_path = Path(os.path.join(temp_dir, f"worker_ready_{worker_name}"))
     ready_path.touch()
 
 
 @worker_shutdown.connect
-def worker_shutdown(sender, **kwargs):
+def on_worker_shutdown(sender, **kwargs):
     worker_name = sender.hostname.split("@")[0]
     for signal in ["ready", "heartbeat"]:
         path = Path(os.path.join(temp_dir, f"worker_{signal}_{worker_name}"))

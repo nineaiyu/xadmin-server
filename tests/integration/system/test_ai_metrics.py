@@ -116,20 +116,21 @@ class TestAiMetrics:
         assert all((row["module"] or "").startswith("AI:") for row in data["by_module"])
 
     def test_token_usage_aggregation(self, metrics_client, metrics_user):
+        """token 用量来自 AI 用量账本（DB 侧聚合列），不逐行解析审计 changes JSON。"""
+        from ai.utils.ai_usage import record_usage
+
         base, _ = self._query(metrics_client)
+        record_usage(metrics_user, "docs", usage={"prompt_tokens": 120, "completion_tokens": 30})
+        record_usage(metrics_user, "nl_query", usage={"prompt_tokens": 80, "completion_tokens": 20})
+        # 诱饵：审计日志里的 usage 不再参与统计（防回退到逐行解析实现）
         seed_ai_log(
             "AI:ask",
             True,
             metrics_user,
-            usage={"prompt_tokens": 120, "completion_tokens": 30, "total_tokens": 150},
-        )
-        seed_ai_log(
-            "AI:nl_query",
-            True,
-            metrics_user,
-            usage={"prompt_tokens": 80, "completion_tokens": 20, "total_tokens": 100},
+            usage={"prompt_tokens": 9999, "completion_tokens": 9999, "total_tokens": 19998},
         )
         data, _ = self._query(metrics_client)
         assert data["tokens"]["prompt"] >= base["tokens"]["prompt"] + 200
+        assert data["tokens"]["prompt"] < base["tokens"]["prompt"] + 9999
         assert data["tokens"]["completion"] >= base["tokens"]["completion"] + 50
         assert data["tokens"]["total"] == data["tokens"]["prompt"] + data["tokens"]["completion"]

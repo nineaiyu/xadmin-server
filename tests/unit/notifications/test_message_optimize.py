@@ -84,6 +84,34 @@ class TestUnreadBatching:
         assert UserNoticeSerializer(notice, context=context).data["unread"] is False
 
 
+class TestUnreadSummaryCache:
+    """未读汇总短缓存：角标口径（list/unread）命中 30s 缓存，标记已读后主动失效。"""
+
+    UNREAD_URL = f"{SITE_MSG_URL}/unread"
+
+    def test_summary_cached_and_invalidated_on_read(self, auth_client, superuser):
+        _make_message(superuser, MessageContent.NoticeChoices.USER, "cache-probe", unread=True)
+        first = auth_client.get(self.UNREAD_URL)
+        total = first.data["data"]["total"]
+        assert total >= 1
+
+        # 新增未读：TTL 内命中缓存（短缓存语义 = 角标最多滞后 TTL）
+        _make_message(superuser, MessageContent.NoticeChoices.USER, "cache-probe-2", unread=True)
+        assert auth_client.get(self.UNREAD_URL).data["data"]["total"] == total
+
+        # 全部已读 → 主动失效 → 角标立即归零；list 的未读总数同源
+        auth_client.patch(f"{SITE_MSG_URL}/all-read")
+        assert auth_client.get(self.UNREAD_URL).data["data"]["total"] == 0
+        assert auth_client.get(SITE_MSG_URL).data["unread_count"] == 0
+
+    def test_filtered_list_uses_live_count(self, auth_client, superuser):
+        """带筛选参数时未读数按当前条件实时统计（不走角标缓存）。"""
+        _make_message(superuser, MessageContent.NoticeChoices.USER, "live-1", unread=True)
+        _make_message(superuser, MessageContent.NoticeChoices.USER, "live-2", unread=True)
+        resp = auth_client.get(SITE_MSG_URL, {"title": "live-1"})
+        assert resp.data["unread_count"] == 1
+
+
 class TestReadMessage:
     def test_fixed_three_queries(self, api_client, normal_user, message_page):
         pks = [m.pk for m in message_page]

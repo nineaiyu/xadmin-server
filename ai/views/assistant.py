@@ -207,20 +207,9 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
                 "pk", "username"
             )
         }
-        # token 用量（成本维度）：解析窗口内审计 changes 的 usage 字段（缺 usage 的记录记 0）
-        import json as _json
+        # token 用量（成本维度）：DB 侧聚合 AI 用量账本（不再逐行解析审计 changes JSON）
+        from ai.utils.ai_usage import usage_tokens_since
 
-        prompt_tokens = completion_tokens = 0
-        for raw_changes in base.values_list("changes", flat=True):
-            try:
-                usage = (_json.loads(raw_changes or "{}") or {}).get("usage") or {}
-            except (TypeError, ValueError):
-                continue
-            try:
-                prompt_tokens += int(usage.get("prompt_tokens") or 0)
-                completion_tokens += int(usage.get("completion_tokens") or 0)
-            except (TypeError, ValueError):
-                continue
         return ApiResponse(
             data={
                 "days": days,
@@ -233,11 +222,7 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
                     {"username": name_map.get(row["object_pk"], row["object_pk"][:12]), "count": row["count"]}
                     for row in top_rows
                 ],
-                "tokens": {
-                    "prompt": prompt_tokens,
-                    "completion": completion_tokens,
-                    "total": prompt_tokens + completion_tokens,
-                },
+                "tokens": usage_tokens_since(since),
             }
         )
 

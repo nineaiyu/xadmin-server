@@ -67,7 +67,8 @@ class ListAction(mixins.ListModelMixin):
             except Exception as e:
                 logger.warning(f"inline metadata {action_name} failed on {self.__class__.__name__}: {e}")
             finally:
-                self.action = original_action
+                if original_action is not None:
+                    self.action = original_action
 
 
 class DestroyAction(mixins.DestroyModelMixin):

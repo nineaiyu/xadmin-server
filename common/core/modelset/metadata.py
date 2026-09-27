@@ -6,7 +6,7 @@
 """
 
 import json
-from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 from django.forms.widgets import DateTimeInput, SelectMultiple
 from django.utils.translation import gettext_lazy as _
@@ -33,7 +33,10 @@ logger = get_logger(__name__)
 
 
 class ChoicesAction:
-    choices_models: []
+    choices_models: list = []
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+        queryset: Any
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -69,7 +72,7 @@ class ChoicesAction:
 
 
 class SearchFieldsAction:
-    filterset_class: Callable
+    filterset_class: Any
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -192,7 +195,14 @@ class SearchFieldsAction:
 
 
 class SearchColumnsAction:
-    filterset_class: Callable
+    filterset_class: Any
+
+    if TYPE_CHECKING:  # 宿主 ViewSet / DRF 提供的接口（mixin 模式）
+        metadata_class: Any
+
+        def get_serializer(self) -> Any: ...
+
+        def get_ordering_fields(self, request) -> Any: ...
 
     @extend_schema(
         responses=get_default_response_schema(
@@ -222,7 +232,7 @@ class SearchColumnsAction:
                             ),
                             "choices_truncated": build_basic_type(OpenApiTypes.BOOL),
                             "sortable": build_basic_type(OpenApiTypes.BOOL),
-                            "lookups": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                            "lookups": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                         }
                     )
                 )
@@ -265,7 +275,7 @@ class SearchColumnsAction:
 
         metadata_class = self.metadata_class()
         serializer = self.get_serializer()
-        fields = getattr(serializer, "fields", [])
+        fields = getattr(serializer, "fields", None) or {}
         meta = getattr(serializer, "Meta", {})
 
         # 表头排序声明面：与 DRF OrderingFilter 的 ordering_fields 同源，

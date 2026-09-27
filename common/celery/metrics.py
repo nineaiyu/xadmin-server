@@ -11,13 +11,14 @@
 """
 
 import time
+from typing import Any
 
 from celery.signals import task_postrun, task_prerun
 
 from common.metrics import record_task_result
 
 # task_id -> 开始时间（worker 进程内字典；prerun 未记录时仅计数不记耗时）
-_start_times = {}
+_start_times: dict[Any, float] = {}
 
 
 @task_prerun.connect
@@ -29,5 +30,5 @@ def on_task_prerun(task_id=None, **kwargs):
 def on_task_postrun(sender=None, task_id=None, task=None, state=None, **kwargs):
     started = _start_times.pop(task_id, None)
     duration = (time.time() - started) if started else None
-    name = getattr(task, "name", None) or getattr(sender, "name", "unknown")
+    name = str(getattr(task, "name", None) or getattr(sender, "name", "unknown"))
     record_task_result(name, str(state or "UNKNOWN"), duration)

@@ -4,13 +4,26 @@
 # filename : media
 # author : ly_13
 # date : 1/17/2024
+"""媒体文件服务（受鉴权）。
+
+口径：
+- **不再有匿名直链**：nginx 侧的 `/media/` 静态直出已移除，请求统一经本视图
+  鉴权（Cookie JWT：浏览器同源 img/link 请求；或 Django session）；
+- 生产 nginx 部署可开启 `MEDIA_X_ACCEL_PREFIX`（如 `/_protected_media`）：
+  鉴权通过后返回 `X-Accel-Redirect` 内部重定向，由 nginx 直出文件（零拷贝）；
+  该内部位置必须声明 `internal`（不可外部寻址）；
+- 细粒度文件授权（数据权限 + 访问审计）仍由受鉴权 download / preview 端点承担，
+  本视图的鉴权粒度是「登录态」。
+"""
+
 import mimetypes
 import os
 import posixpath
 from pathlib import Path
 
 from django.apps import apps
-from django.http import FileResponse, Http404, HttpResponseNotModified
+from django.conf import settings
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseNotModified
 from django.utils._os import safe_join
 from django.utils.http import http_date
 from django.utils.translation import gettext_lazy as _
@@ -59,20 +72,55 @@ def _storage_serve(request, path):
     return response
 
 
+def _is_authenticated(request) -> bool:
+    """媒体请求鉴权：Cookie JWT（浏览器同源请求）或已建立的 Django session。"""
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return True
+    try:
+        from common.core.auth import CookieJWTAuthentication
+
+        result = CookieJWTAuthentication().authenticate(request)
+    except Exception:  # noqa: BLE001 凭证无效/会话失效一律按未认证处理
+        return False
+    if not result:
+        return False
+    request.user = result[0]
+    return True
+
+
 def media_serve(request, path, document_root=None, show_indexes=False):
+    """受鉴权媒体服务：鉴权 → （可选）X-Accel 内转 → 本进程输出。"""
+    if not _is_authenticated(request):
+        return HttpResponseForbidden()
+
     path = posixpath.normpath(path).lstrip("/")
     fullpath = Path(safe_join(document_root, path))
     if fullpath.is_dir():
         if show_indexes:
             return directory_index(path, fullpath)
         raise Http404(_("Directory indexes are not allowed here."))
+    relative_path = path
     if not fullpath.exists():
         media_path = get_media_path(path)
         if media_path:
+            relative_path = media_path
             fullpath = Path(safe_join(document_root, media_path))
         else:
             # 对象存储后端：本地目录无该文件时回落到存储读取（远端内容应用层代理）
             return _storage_serve(request, path)
+
+    accel_prefix = str(getattr(settings, "MEDIA_X_ACCEL_PREFIX", "") or "").strip().rstrip("/")
+    if accel_prefix and not settings.DEBUG:
+        # 生产 nginx：内部重定向给 nginx 直出（零拷贝）；内部位置声明 internal，
+        # 外部不可寻址——鉴权已在上方完成。DEBUG（开发/E2E 直连）走下面的本进程输出
+        content_type, encoding = mimetypes.guess_type(str(fullpath))
+        response = HttpResponse(content_type=content_type or "application/octet-stream")
+        if encoding:
+            response.headers["Content-Encoding"] = encoding
+        response["X-Accel-Redirect"] = f"{accel_prefix}/{relative_path}"
+        return response
+
     # Respect the If-Modified-Since header.
     statobj = fullpath.stat()
     if not was_modified_since(request.META.get("HTTP_IF_MODIFIED_SINCE"), statobj.st_mtime):

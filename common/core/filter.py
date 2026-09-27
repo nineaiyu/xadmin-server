@@ -343,7 +343,7 @@ class ControlledLookupFilterBackend(BaseFilterBackend):
         if lookup == "isnull":
             return first.strip().lower() in ("1", "true", "yes", "on")
         if lookup == "in":
-            items = []
+            items: list[str] = []
             for value in values:
                 items.extend(item.strip() for item in str(value).split(",") if item.strip())
             if not items:

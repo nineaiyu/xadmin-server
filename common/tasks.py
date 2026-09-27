@@ -72,12 +72,11 @@ def send_mail_async(*args, **kwargs):
     """
     task_self, args = _strip_task_self(args)
     if len(args) == 3:
-        args = list(args)
-        args[0] = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {args[0]}"
+        args_list = list(args)
+        args_list[0] = f"{settings.EMAIL_SUBJECT_PREFIX or ''} {args_list[0]}"
         from_email = settings.EMAIL_FROM or settings.EMAIL_HOST_USER
-        args.insert(2, from_email)
-
-    args = tuple(args)
+        args_list.insert(2, from_email)
+        args = tuple(args_list)
 
     subject = args[0] if len(args) > 0 else kwargs.get("subject")
     recipient_list = args[3] if len(args) > 3 else kwargs.get("recipient_list")
@@ -228,7 +227,7 @@ def check_server_performance_period():
 
 @shared_task(verbose_name=_("Run background task view set"))
 def background_task_view_set_job(view: str, meta: dict, data: str, action_map: dict):
-    cache = CacheList(f"view_task_{meta.get('task_id').split('_')[0]}", timeout=3600 * 24)
+    cache = CacheList(f"view_task_{(meta.get('task_id') or '').split('_')[0]}", timeout=3600 * 24)
     task_info = {
         "start_time": local_now_display(),
         "task_id": meta.get("task_id"),
@@ -262,7 +261,7 @@ def background_task_view_set_job(view: str, meta: dict, data: str, action_map: d
     task_info["status"] = result.data.get("code") == 1000
     cache.push(task_info)
     # 分片结果汇总判定：持锁时长随分片数浮动，看门狗自动续期防锁先于业务失效
-    with ReentrantLock(f"view_task_summary_{meta.get('task_id').split('_')[0]}", timeout=180):
+    with ReentrantLock(f"view_task_summary_{(meta.get('task_id') or '').split('_')[0]}", timeout=180):
         if cache.len() and cache.len() == meta["task_count"]:
             task_results = cache.get_all()
             cache.delete()

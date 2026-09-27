@@ -118,7 +118,7 @@ class RedisChannelLayer(_RedisChannelLayer):
         替代旧实现的逐 group 串行 ZREMRANGEBYSCORE + ZRANGE。
         """
         result = {}
-        by_index = {}
+        by_index: dict[int, list[str]] = {}
         for group in groups:
             by_index.setdefault(self.consistent_hash(group), []).append(group)
 

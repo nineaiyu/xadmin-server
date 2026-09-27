@@ -437,6 +437,8 @@ STATIC_ROOT = os.path.join(DATA_DIR, "static")
 # Media配置
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(DATA_DIR, "upload")
+# 受保护媒体的 nginx 内部重定向前缀（默认空 = 应用进程输出；生产建议 /_protected_media）
+MEDIA_X_ACCEL_PREFIX = CONFIG.MEDIA_X_ACCEL_PREFIX
 from server.settings.storage import STORAGES  # noqa: E402,F401 可插拔存储后端装配（本体见该模块）
 
 # 审计日志冷归档目录：默认 DATA_DIR/log_archive；环境变量 LOG_ARCHIVE_DIR 可覆盖

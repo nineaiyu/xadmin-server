@@ -137,6 +137,9 @@ CONTRACT_SEAMS = {
     "common/swagger/ai_meta.py": {
         "ai.services": "AI 动作声明注册表（API_ACTION_SPECS，OpenAPI 元数据派生，3.1 拆分批次3 起 ai 自持契约门面）",
     },
+    "common/swagger/views.py": {
+        "settings.services": "文档站登录接入账号/IP 锁定（LoginBlockUtil / LoginIpBlockUtil，与主登录链路同计数）",
+    },
 }
 
 # common 内模块级业务 import（含 services 契约层）：from <app>[.sub] import / import <app>[.sub]

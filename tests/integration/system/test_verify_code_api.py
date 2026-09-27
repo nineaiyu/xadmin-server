@@ -190,15 +190,19 @@ class TestVerifyCodeConfig:
 class TestSendVerifyCodeLoginReset:
     """login / reset 类别发送：目标用户存在性校验与 dryrun 回显。"""
 
-    def test_login_send_user_not_exist(self, api_client, login_send_free):
+    def test_login_send_user_not_exist_silent(self, api_client, login_send_free):
+        """防枚举：目标不存在同样返回成功（统一文案），但不生成验证码。"""
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=login",
             {"form_type": "username", "target": "ghost"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
-        assert resp.data["code"] == 1001
-        _assert_bilingual(str(resp.data["detail"]), "Username does not exist", "用户名不存在")
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["verify_token"]
+        # 未发送：dryrun 不回显验证码，缓存中也没有该目标的验证码
+        assert not resp.data["data"].get("verify_code")
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("ghost")) is None
 
     def test_login_send_user_exist(self, api_client, normal_user, login_send_free):
         resp = api_client.post(
@@ -215,8 +219,8 @@ class TestSendVerifyCodeLoginReset:
         assert data["extra"] == {"k": "v"}
         assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan")) == data["verify_code"]
 
-    def test_login_send_inactive_user_rejected(self, api_client, normal_user, login_send_free):
-        """login 类别只对启用用户下发（check_reset_config 过滤 is_active=True）。"""
+    def test_login_send_inactive_user_silent(self, api_client, normal_user, login_send_free):
+        """停用账号同样不泄露状态：静默成功但不生成验证码（check_reset_config 过滤 is_active）。"""
         normal_user.is_active = False
         normal_user.save(update_fields=["is_active"])
         resp = api_client.post(
@@ -224,7 +228,9 @@ class TestSendVerifyCodeLoginReset:
             {"form_type": "username", "target": "zhangsan"},
             format="json",
         )
-        assert resp.data["code"] == 1001
+        assert resp.data["code"] == 1000, resp.data
+        assert not resp.data["data"].get("verify_code")
+        assert cache.get(VERIFY_CODE_KEY_TPL.format("zhangsan")) is None
 
     def test_reset_send_username_form_not_allowed(self, api_client, login_send_free):
         """reset 类别配置不含 basic 通道：username 表单直接判数据异常（1004）。"""
@@ -256,21 +262,24 @@ class TestSendVerifyCodeLoginReset:
         assert resp.data["data"]["verify_token"]
         assert "verify_code" not in resp.data["data"]
 
-    def test_reset_send_email_user_not_exist(self, api_client, settings):
-        """reset 类别 email 通道：目标用户不存在 → 用户名/邮箱不存在文案。"""
+    def test_reset_send_email_user_not_exist_silent(self, api_client, settings, monkeypatch):
+        """防枚举：reset 类别目标不存在同样返回成功，但不实际发送（不泄露存在性）。"""
         settings.SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
         settings.SECURITY_RESET_PASSWORD_TEMP_TOKEN_ENABLED = False
         settings.SECURITY_RESET_PASSWORD_ENCRYPTED_ENABLED = False
         settings.SECURITY_RESET_PASSWORD_BY_EMAIL_ENABLED = True
         settings.EMAIL_ENABLED = True
+        sent = []
+        monkeypatch.setattr(SendAndVerifyCodeUtil, "gen_and_send_async", lambda self: sent.append(self))
         resp = api_client.post(
             SEND_VERIFY_URL + "?category=reset",
             {"form_type": "email", "target": "ghost@example.com"},
             format="json",
         )
         assert resp.status_code == 200, resp.data
-        assert resp.data["code"] == 1001
-        _assert_bilingual(str(resp.data["detail"]), "Email does not exist", "邮件不存在")
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["verify_token"]
+        assert sent == [], "目标不存在时不应发送验证码"
 
     def test_login_send_encrypted_target(self, api_client, normal_user, settings):
         """encrypted + temp token 开启：先用临时 token 加密 target，服务端解密后下发。"""

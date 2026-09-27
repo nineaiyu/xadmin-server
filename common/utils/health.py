@@ -10,6 +10,7 @@ healthz（common/api/common.py）与系统监控面板（system/views/monitor.py
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -49,7 +50,7 @@ def probe_redis():
 # 本次返回旧值（首次为 (False, 0.0)，30s 内收敛为真实状态）。
 _CELERY_PROBE_TIMEOUT = 2.5
 _CELERY_PROBE_CACHE_TTL = 30
-_celery_probe_cache = {"at": 0.0, "value": (False, 0.0)}
+_celery_probe_cache: dict[str, Any] = {"at": 0.0, "value": (False, 0.0)}
 _celery_probe_refreshing = threading.Lock()
 
 

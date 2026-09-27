@@ -4,6 +4,7 @@
 
 import json
 import uuid
+from typing import TYPE_CHECKING
 
 from system.services import ModelLabelField
 
@@ -12,6 +13,14 @@ from .constants import IMPORT_EXPORT_PERMISSIONS, PERMISSION_ACTIONS, SEED_NAMES
 
 class RenderMixin:
     """把生成上下文渲染为各端源码文本。"""
+
+    if TYPE_CHECKING:  # 组合使用的兄弟 mixin（MergeMixin）提供（mixin 模式）
+
+        def _render_imports(self, specs, existing_names) -> list[str]: ...
+
+        def _imported_names(self, text) -> set[str]: ...
+
+        def _group_imports(self, lines, extra_first_party=frozenset()) -> list[str]: ...
 
     # ------------------------------------------------------------ Python 模板
 

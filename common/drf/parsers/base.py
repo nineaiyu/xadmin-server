@@ -50,7 +50,7 @@ class BaseFileParser(BaseParser):
 
     def convert_to_field_names(self, column_titles):
         fields_map = {}
-        fields = self.serializer_fields
+        fields: dict = self.serializer_fields or {}
         for k, v in fields.items():
             # id 是只读的, 导入更新资产平台会失败
             if v.read_only and k not in ["id", "pk"]:
@@ -155,7 +155,7 @@ class BaseFileParser(BaseParser):
         """
         new_row = {}
         for k, v in row_data.items():
-            field = self.serializer_fields.get(k)
+            field = (self.serializer_fields or {}).get(k)
             v = self.parse_value(field, v)
             new_row[k] = v
         return new_row

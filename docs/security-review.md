@@ -191,3 +191,52 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | typescript | 6.0.3 → 7.0.2 已评估：**暂不升级**（vue-tsc 与 TS 7 不兼容），见 ADR-014 |
 | 其他窗口 | dev 工具 minor（@iconify/json、@types/node、lint-staged、pinyin-pro）与
   major（@iconify/vue 4→5、cropperjs 1→2、cssnano 8→9、postcss-import 16→17）交由 renovate 常规窗口 |
+
+## 五期登记（2026-09-27）：架构盘点安全项处置与接受项台账
+
+来源：`docs/plans/全面架构盘点与重构方案-2026.09.md` §3.2（S-1~S-6）与 §十执行记录。
+
+### S-1 接口文档登录：开放重定向 + 锁定旁路 —— 已处置
+
+- next 回跳同源校验（`common/swagger/views.py::_safe_next_url`，`url_has_allowed_host_and_scheme`，
+  `ALLOWED_HOSTS` 的通配 `*` 不并入判定）；外部域一律回落默认文档地址。
+- 接入主登录同源锁定：失败累计 / 成功清零共用 `LoginBlockUtil` / `LoginIpBlockUtil` 计数键，
+  锁定语义与主链路一致。
+- 单列更严限流 `api_docs_login`（10/m），与匿名默认限流（60/m）叠加。
+
+### S-2 出站请求 SSRF（Webhook / AI base_url） —— 已处置
+
+- 统一守卫 `common/utils/outbound.py`：协议白名单；link-local（含云元数据）/ 多播 / 保留 /
+  unspecified / 6to4 / Teredo / IPv4-mapped 地址**任何模式拒绝**；私网与环回按场景放行。
+- Webhook：写入侧校验（https 强制 + loopback http 联调例外 + IP 字面量归属），
+  发送侧严格解析 + **固定解析结果连接**（`pinned_request`：IP 直连 + Host 头 + TLS SNI 域名），
+  消除 DNS rebinding 窗口；`OUTBOUND_ALLOWED_HOSTS`（SysConfig）是私网目标的唯一放行途径。
+- AI base_url：允许私网 / 环回（内网自建推理与本地联调），拒绝元数据与链路本地地址；
+  写入侧不做域名解析（避免本地 DNS 屏蔽误伤），域名指向的元数据由执行侧语义收敛（响应非 LLM 格式）。
+
+### S-3 `/media/` 直链无鉴权 —— 已处置（X-Accel 内转方案）
+
+- nginx `/media/` 静态直出移除，统一转发应用鉴权（Cookie JWT / session，匿名 403）；
+  鉴权通过后经 `X-Accel-Redirect` 内转到 `internal` 的 `/_protected_media/`（不可外部寻址）由
+  nginx 零拷贝直出；`MEDIA_X_ACCEL_PREFIX` 默认空（应用进程输出，DEBUG 恒直出）。
+- 口径：本视图鉴权粒度 = 登录态；细粒度文件授权与访问审计仍由受鉴权 download / preview 端点承担。
+- 守护：`tests/integration/common/test_media_access.py`（含 nginx 配置同源断言）。
+
+### S-4 消息模板预览 XSS 面 —— 已处置
+
+- `MessageTemplateForm.vue` 的默认正文与预览结果统一经 `sanitizeHtml`（DOMPurify，
+  与公告展示同源白名单），存储型 XSS 面收敛。
+
+### S-5 用户枚举 —— 已处置
+
+- 重置 / 登录验证码发送链路不再区分账号是否存在：目标不存在（或停用）静默成功、
+  不发送验证码、响应文案与结构一致（时间开销对齐：等价模板渲染）。
+- 注册链路保留「已存在」明确文案：注册必须告知占用，否则用户无法完成注册（接受项，见表）。
+
+### S-6 接受项台账（接受理由 + 重开条件）
+
+| 项 | 现状 | 接受理由 | 重开条件 |
+|---|---|---|---|
+| JWT 存 JS 可读 Cookie（`xadmin-client/src/utils/auth.ts`） | `SameSite=Lax` 挡 CSRF；XSS 面由 CSP 强制头（`script-src 'self'`）兜底 | 无感刷新与既有前端链路依赖 Cookie 读 token；改为 HttpOnly 需要整套刷新链路改造 | 出现可绕过 CSP 的 XSS 面，或前端改造为 BFF 形态 |
+| HTTP 直连部署时 Cookie 无 Secure（`SECURITY_HTTPS_ENABLED` 三态） | 非 HTTPS 部署不下发 Secure（否则浏览器丢弃，登录循环）；生产推荐 HTTPS + HSTS（nginx 已备注释开关） | 保留内网 HTTP 直连可用性 | 全站强制 HTTPS 后，服务端置 `SECURITY_HTTPS_ENABLED=true` 并启用 HSTS |
+| 注册链路账号占用提示（S-5 保留项） | 注册时明确返回「用户名/邮箱/手机已存在」 | 注册流程必须告知占用；已有验证码 + 限流门槛 | 注册改为邀请制（无需公开提示占用） |

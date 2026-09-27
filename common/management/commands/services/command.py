@@ -23,7 +23,7 @@ class Services(TextChoices):
         from . import services
 
         services_map = {
-            cls.gunicorn.value: services.GunicornService,
+            cls.gunicorn.value: services.GunicornService,  # type: ignore[attr-defined]  # TextChoices 成员 value 由元类动态生成
             cls.flower: services.FlowerService,
             cls.celery_default: services.CeleryDefaultService,
             cls.celery_heavy: services.CeleryHeavyService,
@@ -49,7 +49,9 @@ class Services(TextChoices):
 
     @classmethod
     def export_services_values(cls):
-        return [cls.all.value, cls.web.value, cls.task.value] + [s.value for s in cls.all_services()]
+        return [cls.all.value, cls.web.value, cls.task.value] + [  # type: ignore[attr-defined]  # TextChoices 成员 value 由元类动态生成
+            s.value for s in cls.all_services()
+        ]
 
     @classmethod
     def get_service_objects(cls, service_names, **kwargs):
@@ -85,8 +87,8 @@ class Action(TextChoices):
 class BaseActionCommand(BaseCommand):
     help = "Service Base Command"
 
-    action = None
-    util = None
+    action: str | None = None
+    util: "ServicesUtil | None" = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,14 +109,16 @@ class BaseActionCommand(BaseCommand):
         parser.add_argument("-f", "--force", nargs="?", const=True)
 
     def initial_util(self, *args, **options):
-        service_names = options.get("services")
+        service_names = options.get("services") or []
         service_kwargs = {"worker_gunicorn": options.get("worker")}
         services = Services.get_service_objects(service_names=service_names, **service_kwargs)
 
+        stop_action = Action.stop.value  # type: ignore[attr-defined]  # TextChoices 成员 value 由元类动态生成
+        all_service = Services.all.value  # type: ignore[attr-defined]  # TextChoices 成员 value 由元类动态生成
         kwargs = {
             "services": services,
             "run_daemon": options.get("daemon", False),
-            "stop_daemon": self.action == Action.stop.value and Services.all.value in service_names,
+            "stop_daemon": self.action == stop_action and all_service in service_names,
             "force_stop": options.get("force") or False,
         }
         self.util = ServicesUtil(**kwargs)
@@ -126,14 +130,18 @@ class BaseActionCommand(BaseCommand):
         _handle()
 
     def _handle_start(self):
+        assert self.util is not None  # initial_util 已初始化
         self.util.start_and_watch()
         os._exit(0)
 
     def _handle_stop(self):
+        assert self.util is not None  # initial_util 已初始化
         self.util.stop()
 
     def _handle_restart(self):
+        assert self.util is not None  # initial_util 已初始化
         self.util.restart()
 
     def _handle_status(self):
+        assert self.util is not None  # initial_util 已初始化
         self.util.show_status()

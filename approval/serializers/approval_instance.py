@@ -70,6 +70,29 @@ class ApprovalInstanceCommentSerializer(BaseModelSerializer):
 
 
 class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
+    """实例序列化器：列表与详情契约分离。
+
+    列表（list）只返回表格列（Meta.table_fields）+ 行内按钮所需字段
+    （my_task / form_data / tags）；审批轨迹（tasks）、表单快照（form_schema）、
+    关联业务对象（related_object）、节点进度（node_progress）、讨论（comments）、
+    抄送（cc_users）、关联标识（biz_type / biz_id）与驳回原因（reason）均为
+    详情专属——避免列表响应随轨迹与快照膨胀，并消除 related_object 的逐行
+    业务表查询（列表页不渲染该卡片）。
+    """
+
+    # 列表裁剪的详情专属字段（导出走独立轻量序列化器，不受影响）
+    LIST_EXCLUDED_FIELDS = (
+        "tasks",
+        "form_schema",
+        "related_object",
+        "node_progress",
+        "comments",
+        "cc_users",
+        "reason",
+        "biz_type",
+        "biz_id",
+    )
+
     flow = DisplayRelatedField(queryset=ApprovalFlow.objects.all(), label=_("Flow"), label_builder=lambda v: v.name)
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Applicant"), label_builder=_username)
     # 通用标签：只读回显（打标走 /api/system/tags/assign）
@@ -147,11 +170,21 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             "related_object",
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 仅 list 裁剪：retrieve / create / 动作响应保持全量（前端详情独立请求 retrieve）
+        if getattr(self.context.get("view"), "action", None) != "list":
+            return
+        for name in self.LIST_EXCLUDED_FIELDS:
+            self.fields.pop(name, None)
+
     def get_current_node_name(self, obj) -> str:
         return getattr(obj.current_node, "name", "") or ""
 
     def get_node_progress(self, obj):
-        """当前节点进度（比例会签达标线预览）：复用列表 prefetch 的 tasks，避免 N+1。"""
+        """当前节点进度（比例会签达标线预览）：列表不计算（字段已裁剪）。"""
+        if getattr(self.context.get("view"), "action", None) == "list":
+            return None
         from approval.utils.approval_flow import node_progress_for
 
         return node_progress_for(obj, tasks=obj.tasks.all())
@@ -171,10 +204,15 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         )
 
     def get_form_schema(self, obj) -> list:
+        """表单字段快照：列表不返回（字段已裁剪，前端详情用 retrieve 渲染）。"""
+        if getattr(self.context.get("view"), "action", None) == "list":
+            return []
         return list(getattr(obj.flow, "form_schema", None) or []) if obj.flow_id else []
 
     def get_related_object(self, obj):
-        """关联业务对象当前状态（白名单渲染器）。"""
+        """关联业务对象当前状态（白名单渲染器）：仅详情返回，列表零业务表查询。"""
+        if getattr(self.context.get("view"), "action", None) != "retrieve":
+            return None
         from approval.utils.approval_flow.biz import biz_summary
 
         return biz_summary(obj)

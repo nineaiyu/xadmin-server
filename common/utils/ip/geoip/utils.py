@@ -39,6 +39,8 @@ def get_ip_city_by_geoip(ip):
     except ValueError:
         return _("Invalid ip")
 
+    if reader is None:  # 初始化失败时保持原有「查不到返回 Unknown」语义
+        return _("Unknown")
     try:
         response = reader.city(ip)
     except GeoIP2Error:

@@ -275,6 +275,15 @@ class BaseConfCache(ConfigCacheBase):
         return self.get_value("OAUTH_PROVIDERS", CONFIG.OAUTH_PROVIDERS)
 
     @property
+    def OUTBOUND_ALLOWED_HOSTS(self):
+        """出站请求域名/IP 白名单（逗号分隔，默认空 = 不启用）。
+
+        白名单是私网目标的唯一放行途径：Webhook 等出站请求默认拒绝私网/环回/
+        link-local 地址（防 SSRF）；内网自建接收端在此登记后放行（元数据地址仍拒）。
+        """
+        return self.get_value("OUTBOUND_ALLOWED_HOSTS", CONFIG.OUTBOUND_ALLOWED_HOSTS)
+
+    @property
     def FILE_PREVIEW_CACHE_KEEP_DAYS(self):
         """预览缓存保留天数（默认 7）：缓存是派生产物，过期删除后按需重建。"""
         return int(self.get_value("FILE_PREVIEW_CACHE_KEEP_DAYS", CONFIG.FILE_PREVIEW_CACHE_KEEP_DAYS))

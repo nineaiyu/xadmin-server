@@ -219,6 +219,14 @@ SETTINGS_CONFIG = {
     "FILE_S3_ADDRESSING_STYLE": "",  # path / virtual（空 = 由 boto3 决定）
     # 第三方登录 provider 列表（空 = 整体休眠，登录页不显示第三方入口）
     "OAUTH_PROVIDERS": [],
+    # 受保护媒体的 nginx 内部重定向前缀（默认空 = 应用进程直接输出文件）。
+    # 生产 nginx 部署推荐配置 /_protected_media：鉴权后返回 X-Accel-Redirect，
+    # 文件由 nginx 直出（零拷贝）；nginx 需声明 `location ^~ /_protected_media/ { internal; ... }`
+    "MEDIA_X_ACCEL_PREFIX": "",
+    # 出站请求域名/IP 白名单（逗号或换行分隔，默认空 = 不启用）。
+    # 服务端主动发起的请求（Webhook 投递）默认拒绝私网/环回/link-local 目标（防 SSRF）；
+    # 内网自建接收端必须显式登记在此，登记后跳过地址归属校验（仍拒绝 link-local/元数据）。
+    "OUTBOUND_ALLOWED_HOSTS": "",
     # 字段级审计 diff 白名单（模型 _meta.label）：命中白名单的 update 请求会额外
     # 做 2 次查询以计算 old/new。默认开「用户管理」——它是当前唯一挂了「变更历史」
     # 入口的页面（changeHistory:SystemUser 权限菜单），关闭此项会让变更明细恒为

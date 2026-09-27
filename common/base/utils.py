@@ -38,12 +38,11 @@ class AESCipher:
         return self._unpack_data(cipher.decrypt(enc[AES.block_size :]))
 
     @staticmethod
-    def _pack_data(s):
+    def _pack_data(s: bytes | str) -> bytes:
         if isinstance(s, str):
             s = s.encode("utf-8")
-        return s + ((AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size)).encode(
-            "utf-8"
-        )
+        padding = (AES.block_size - len(s) % AES.block_size) * chr(AES.block_size - len(s) % AES.block_size)
+        return s + padding.encode("utf-8")
 
     @staticmethod
     def _unpack_data(s):
@@ -85,13 +84,15 @@ class AESCipherV3:
         self._legacy = AESCipher(key.decode("utf-8") if isinstance(key, bytes) else key)
 
     def _derive_key(self, salt: bytes, master: bytes | None = None) -> bytes:
-        return HKDF(
+        derived = HKDF(
             master=master if master is not None else self.key,
             key_len=self.KEY_LENGTH,
             salt=salt,
             hashmod=SHA256,
             context=self.HKDF_INFO,
         )
+        assert isinstance(derived, bytes)  # num_keys 缺省为 1，返回单段密钥
+        return derived
 
     def encrypt(self, raw: bytes | str) -> bytes:
         if isinstance(raw, str):
@@ -122,7 +123,8 @@ class AESCipherV3:
                 return plain.decode("utf-8")
             except ValueError as exc:
                 last_error = exc
-        raise last_error  # type: ignore[union-attr]
+        assert last_error is not None  # 循环至少尝试一次当前主密钥
+        raise last_error
 
 
 def get_signer():
@@ -208,16 +210,14 @@ def menu_list_to_tree(data: list, root_field: str = "parent") -> list:
 
     for d in data:
         # 如果找不到父级项，则是根节点
-        parent = d.get(root_field)
-        if isinstance(parent, dict) and "pk" in parent:
-            parent = parent.get("pk")
-        parent: dict = mapping.get(str(parent))
+        parent_key = d.get(root_field)
+        if isinstance(parent_key, dict) and "pk" in parent_key:
+            parent_key = parent_key.get("pk")
+        parent: dict | None = mapping.get(str(parent_key))
         if parent is None:
             container.append(d)
         else:
-            children: list = parent.get("children")
-            if not children:
-                children = []
+            children: list = parent.get("children") or []
             children.append(d)
             parent.update({"children": children, "count": len(children)})
     return container

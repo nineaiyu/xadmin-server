@@ -7,7 +7,10 @@
 - secret 沿用 Setting 的 signer 值级加密（落库密文、投递时解密）；
 - 签名 GitHub 风格：`sha256=HMAC(secret, "{timestamp}.{raw_body}")`，
   timestamp 参与签名防重放（接收方建议 5 分钟窗口校验）；
-- URL 白名单在写入侧校验（https 强制，loopback http 例外供联调）。
+- URL 在写入侧校验（https 强制，loopback http 例外供联调）并做出站地址归属校验
+  （SSRF 防护：私网/环回/link-local 拒绝，`OUTBOUND_ALLOWED_HOSTS` 白名单可放行）；
+- 投递侧固定解析结果连接（`common/utils/outbound.py::pinned_request`），
+  在发送前再次校验，消除 DNS rebinding 窗口。
 """
 
 import hashlib
@@ -20,6 +23,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import signer
 from common.utils import get_logger
+from common.utils.outbound import parse_allowed_hosts, validate_outbound_url
 
 logger = get_logger(__name__)
 
@@ -226,15 +230,35 @@ def event_catalog_payload() -> list:
     return catalog
 
 
+def outbound_allowed_hosts() -> tuple:
+    """出站白名单（逗号分隔的域名/IP，默认空 = 不启用）：Webhook 私网目标的放行途径。"""
+    from common.core.config import SysConfig
+
+    return parse_allowed_hosts(SysConfig.OUTBOUND_ALLOWED_HOSTS)
+
+
 def validate_url(url: str) -> str:
-    """写入侧 URL 校验：https 强制，loopback http 例外（联调/测试）。"""
+    """写入侧 URL 校验：https 强制（loopback http 例外）+ 字面量地址归属校验。
+
+    - 域名写入侧不解析（可能尚未上线/仅内网 DNS 可见/被本地 DNS 屏蔽）——
+      归属校验统一在发送侧严格执行（`pinned_request` 解析校验 + 固定解析结果连接）；
+    - 白名单命中 = 显式授权，跳过地址校验（内网自建接收端须登记）；
+    - IP 字面量的私网/环回/link-local 目标（非 loopback http 联调例外）写入即拒绝。
+    """
     url = str(url or "").strip()
-    if url.startswith("https://"):
-        return url
-    for host in LOOPBACK_HOSTS:
-        if url.startswith(f"http://{host}:") or url == f"http://{host}":
-            return url
-    raise ValidationError(_("Webhook url must use https (loopback http is allowed for testing)"))
+    allowed = url.startswith("https://")
+    if not allowed:
+        allowed = any(url.startswith(f"http://{host}:") or url == f"http://{host}" for host in LOOPBACK_HOSTS)
+    if not allowed:
+        raise ValidationError(_("Webhook url must use https (loopback http is allowed for testing)"))
+    validate_outbound_url(
+        url,
+        allow_private=False,
+        allow_loopback=True,
+        allowed_hosts=outbound_allowed_hosts(),
+        strict_resolve=False,
+    )
+    return url
 
 
 def validate_events(events) -> list:

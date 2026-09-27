@@ -27,6 +27,8 @@ def get_ip_city_by_ipip(ip):
         init_ipip_db()
     except Exception:
         return None
+    if ipip_db is None:  # 初始化失败时保持原有「查不到返回 None」语义
+        return None
     try:
         info = ipip_db.find_info(ip, "CN")
     except ValueError:

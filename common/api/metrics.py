@@ -21,8 +21,8 @@ class MetricsAPIView(APIView):
     端点自身免认证（由令牌校验替代），不参与业务权限链。
     """
 
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes: list[type] = []
+    permission_classes: list[type] = []
 
     @extend_schema(exclude=True)
     def get(self, request):

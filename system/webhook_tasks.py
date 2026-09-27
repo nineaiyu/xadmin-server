@@ -15,6 +15,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from common.utils import get_logger
+from common.utils.outbound import pinned_request
 from system.utils.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
 
 logger = get_logger(__name__)
@@ -23,20 +24,34 @@ DELIVER_TIMEOUT = 10
 
 
 def _default_client():
-    import requests
-
-    return requests
+    """生产路径返回 None（走固定解析连接）；测试/联调可注入 requests 兼容客户端。"""
+    return None
 
 
 def _post(client, url, body: bytes, headers: dict):
-    """POST 原始字节体；返回 (status_code, body_text)。网络异常转 (0, msg)。"""
+    """POST 原始字节体；返回 (status_code, body_text)。网络异常转 (0, msg)。
+
+    生产路径（client=None）先做发送侧严格校验（拒绝私网/环回/link-local，
+    白名单放行），再把连接目标固定为已校验 IP（防 DNS rebinding）；
+    注入客户端路径（测试离线桩）保持原样调用，不做固定连接。
+    """
+    from system.utils.webhook import outbound_allowed_hosts
+
+    merged_headers = {"Content-Type": "application/json", **headers}
     try:
-        response = client.post(
-            url,
-            data=body,
-            headers={"Content-Type": "application/json", **headers},
-            timeout=DELIVER_TIMEOUT,
-        )
+        if client is None:
+            response = pinned_request(
+                "POST",
+                url,
+                allow_private=False,
+                allow_loopback=True,
+                allowed_hosts=outbound_allowed_hosts(),
+                data=body,
+                headers=merged_headers,
+                timeout=DELIVER_TIMEOUT,
+            )
+        else:
+            response = client.post(url, data=body, headers=merged_headers, timeout=DELIVER_TIMEOUT)
         try:
             text = response.text[:500]
         except Exception:  # noqa: BLE001

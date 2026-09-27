@@ -7,9 +7,9 @@
 
 from functools import wraps
 
-_need_registered_period_tasks = []
-_after_app_ready_start_tasks = []
-_after_app_shutdown_clean_periodic_tasks = []
+_need_registered_period_tasks: list[dict] = []
+_after_app_ready_start_tasks: list[str] = []
+_after_app_shutdown_clean_periodic_tasks: list[str] = []
 
 
 def add_register_period_task(task):

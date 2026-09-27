@@ -9622,6 +9622,232 @@ msgstr "页码参数非法"
 msgid "Page index out of range"
 msgstr "页码超出范围"
 
+#: common/utils/outbound.py
+msgid "Only http/https outbound urls are allowed"
+msgstr "仅允许 http/https 出站地址"
+
+#: common/utils/outbound.py
+msgid "Outbound url must contain a host"
+msgstr "出站地址必须包含主机名"
+
+#: common/utils/outbound.py
+msgid "Outbound target address is not allowed: {}"
+msgstr "出站目标地址不允许访问：{}"
+
+#: common/utils/outbound.py
+msgid "Outbound target must not be a loopback address (allow_loopback is off): {}"
+msgstr "出站目标不允许为环回地址（未开启 loopback 放行）：{}"
+
+#: common/utils/outbound.py
+msgid "Outbound target must not be a private address: {}"
+msgstr "出站目标不允许为私网地址：{}"
+
+#: common/utils/outbound.py
+msgid "Outbound target domain cannot be resolved: {}"
+msgstr "出站目标域名无法解析：{}"
+
+#: common/utils/outbound.py
+msgid "Outbound target resolved to an invalid address: {}"
+msgstr "出站目标解析结果不是合法地址：{}"
+
+#: message/models.py
+msgid "Image"
+msgstr "图片"
+
+#: message/models.py
+msgid "Attachment"
+msgstr "附件"
+
+#: message/attachments.py
+msgid "Attachment not found"
+msgstr "附件不存在"
+
+#: message/attachments.py message/views.py
+msgid "Only image files can be sent as image messages"
+msgstr "只有图片文件可以作为图片消息发送"
+
+#: message/views.py
+msgid "No file uploaded"
+msgstr "未选择上传文件"
+
+# P2.2 批次一 / 批次二新增文案（大屏画布设计器、报表设计器）：手工追加 zh 译文
+
+#: dataset/utils/screen_layout.py:53
+msgid "Invalid screen layout box: {}"
+msgstr "窗格坐标非法：{}"
+
+#: dataset/utils/screen_layout.py:62
+msgid "Invalid screen layout"
+msgstr "大屏布局格式不正确"
+
+#: dataset/utils/screen_layout.py:68
+msgid "Invalid screen layout pane: {}"
+msgstr "窗格格式不正确（第 {} 个）"
+
+#: dataset/utils/screen_layout.py:72
+msgid "Unknown screen pane type: {}"
+msgstr "未知的窗格类型：{}"
+
+#: dataset/utils/screen_layout.py:76
+msgid "Invalid screen pane id: {}"
+msgstr "窗格标识非法（第 {} 个）"
+
+#: dataset/utils/screen_layout.py:83
+msgid "Screen pane position cannot be negative: {}"
+msgstr "窗格位置不能为负：{}"
+
+#: dataset/utils/screen_layout.py:85
+msgid "Screen pane size must be positive: {}"
+msgstr "窗格尺寸必须为正：{}"
+
+#: dataset/utils/screen_layout.py:87
+msgid "Screen pane exceeds the grid width: {}"
+msgstr "窗格超出栅格宽度：{}"
+
+#: dataset/utils/screen_layout.py:89
+msgid "Screen pane exceeds the grid height: {}"
+msgstr "窗格超出栅格高度：{}"
+
+#: dataset/utils/screen_layout.py:95
+msgid "Screen pane title is too long: {}"
+msgstr "窗格标题过长：{}"
+
+#: dataset/utils/screen_layout.py:102
+msgid "Unknown dashboard in pane: {}"
+msgstr "窗格引用了未知仪表盘：{}"
+
+#: dataset/utils/screen_layout.py:108
+msgid "Screen pane text is too long: {}"
+msgstr "窗格文本过长：{}"
+
+#: dataset/utils/screen_layout.py:112
+msgid "Invalid screen pane align: {}"
+msgstr "窗格对齐方式非法：{}"
+
+#: dataset/utils/screen_layout.py:118
+msgid "Screen pane font size must be 14~72: {}"
+msgstr "窗格字号需在 14~72 之间：{}"
+
+#: dataset/utils/screen_layout.py:123
+msgid "Screen panes overlap: {}"
+msgstr "窗格重叠：{}"
+
+#: dataset/utils/screen_layout.py:127
+msgid "Too many screen panes (max {})"
+msgstr "窗格数量超过上限（最多 {} 个）"
+
+#: dataset/utils/report_design.py:42
+msgid "Invalid report design number: {}"
+msgstr "报表设计数值非法：{}"
+
+#: dataset/utils/report_design.py:49
+msgid "Invalid report metric: {}"
+msgstr "未知的聚合方式：{}"
+
+#: dataset/utils/report_design.py:52
+msgid "Unknown report field: {}"
+msgstr "未知的报表字段：{}"
+
+#: dataset/utils/report_design.py:55
+msgid "Value field is required for {} in {}"
+msgstr "{} 必须指定数值字段（{}）"
+
+#: dataset/utils/report_design.py:57
+msgid "Value field is not numeric in {}: {}"
+msgstr "数值字段不是数值类型（{}）：{}"
+
+#: dataset/utils/report_design.py:66
+msgid "Invalid report design"
+msgstr "报表设计格式不正确"
+
+#: dataset/utils/report_design.py:75
+msgid "Invalid report design columns"
+msgstr "报表设计列格式不正确"
+
+#: dataset/utils/report_design.py:82
+msgid "Unknown report column: {}"
+msgstr "未知的报表列：{}"
+
+#: dataset/utils/report_design.py:89
+msgid "Report row limit must be {}~{}"
+msgstr "明细行数上限需在 {}~{} 之间"
+
+#: dataset/utils/report_design.py:95
+msgid "Invalid report design components"
+msgstr "报表设计组件格式不正确"
+
+#: dataset/utils/report_design.py:97
+msgid "Too many report components (max {})"
+msgstr "报表组件数量超过上限（最多 {} 个）"
+
+#: dataset/utils/report_design.py:102
+msgid "component {}"
+msgstr "第 {} 个组件"
+
+#: dataset/utils/report_design.py:104
+msgid "Invalid report component: {}"
+msgstr "报表组件格式不正确（第 {} 个）"
+
+#: dataset/utils/report_design.py:108
+msgid "Invalid report component id: {}"
+msgstr "组件标识非法（第 {} 个）"
+
+#: dataset/utils/report_design.py:110
+msgid "Duplicated report component id: {}"
+msgstr "组件标识重复：{}"
+
+#: dataset/utils/report_design.py:115
+msgid "Unknown report component type: {}"
+msgstr "未知的组件类型：{}"
+
+#: dataset/utils/report_design.py:119
+msgid "Report component title is too long: {}"
+msgstr "组件标题过长：{}"
+
+#: dataset/utils/report_design.py:123
+msgid "Invalid report component span: {}"
+msgstr "组件宽度非法：{}"
+
+#: dataset/utils/report_design.py:129
+msgid "Metric card does not take a group by: {}"
+msgstr "指标卡不能设置分组字段：{}"
+
+#: dataset/utils/report_design.py:133
+msgid "Group by is required for {}: {}"
+msgstr "{} 组件必须设置分组字段：{}"
+
+#: dataset/utils/report_design.py:135
+msgid "Unknown report group by: {}"
+msgstr "未知的分组字段：{}"
+
+#: dataset/utils/report_design.py:137
+msgid "Invalid report date trunc: {}"
+msgstr "时间粒度非法：{}"
+
+#: dataset/analysis_tasks.py:78
+msgid "Chart"
+msgstr "图表"
+
+#: dataset/analysis_tasks.py:106
+msgid "Chart data unavailable"
+msgstr "图表数据不可用"
+
+#: dataset/analysis_tasks.py:165
+msgid "Designed charts: {}"
+msgstr "设计图表：{}"
+
+#: dataset/models/dataset.py:82
+msgid "Canvas panes on a 12-column grid (empty = carousel mode)"
+msgstr "画布窗格（12 列栅格；为空 = 轮播模式）"
+
+#: dataset/models/dataset.py:119
+msgid "Design"
+msgstr "报表设计"
+
+#: dataset/models/dataset.py:122
+msgid "Report designer payload (empty = legacy single-sheet export)"
+msgstr "报表设计载荷（为空 = 存量单表导出）"
+
 #~ msgid "The username or password you entered is incorrect,"
 #~ msgstr "您输入的用户名或密码不正确，"
 

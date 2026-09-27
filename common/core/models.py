@@ -7,6 +7,7 @@
 import os
 import time
 import uuid
+from typing import TYPE_CHECKING, Any
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -39,10 +40,14 @@ class AutoCleanFileMixin:
     当对象包含文件字段，更新或者删除的时候，自动删除底层文件
     """
 
+    if TYPE_CHECKING:  # 宿主 Model 提供的接口（mixin 模式）
+        _meta: Any
+        pk: Any
+
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields")
         if kwargs.get("force_insert", None):
-            filelist = []
+            filelist: list[tuple] = []
         elif update_fields and not (set(update_fields) & self._file_field_names):
             # 本次保存不涉及文件字段时，文件内容不可能变化，
             # 跳过 diff 前置 SELECT。UserInfo 每次登录更新 last_login、
@@ -50,7 +55,7 @@ class AutoCleanFileMixin:
             filelist = []
         else:
             filelist = self.__get_filelist(self._meta.model.objects.filter(pk=self.pk).first())
-        result = super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)  # type: ignore[misc]  # 宿主 Model 提供基类实现（mixin 模式）
         self.__delete_file(filelist, True)
         return result
 
@@ -86,7 +91,7 @@ class AutoCleanFileMixin:
         # 磁盘删除守护必须在记录删除**之前**求值：反向外键会随 DELETE 被 SET_NULL
         # 或级联删除，删除后再判定引用必然查不到（守护形同失效）
         keep_flags = {name: self.file_still_referenced(field, name) for field, name, _file in filelist}
-        result = super().delete(*args, **kwargs)
+        result = super().delete(*args, **kwargs)  # type: ignore[misc]  # 宿主 Model 提供基类实现（mixin 模式）
         self.__delete_file(filelist, keep_flags=keep_flags)
         self.__delete_related_files(related_filelist)
         return result
@@ -132,7 +137,7 @@ class AutoCleanFileMixin:
         return filelist
 
     def __get_related_filelist(self, obj=None):
-        filelist = []
+        filelist: list = []
         if obj is None:
             obj = self
         for field in obj._meta.get_fields():

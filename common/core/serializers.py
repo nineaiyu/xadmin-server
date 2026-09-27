@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 12/21/2023
 from inspect import isfunction
+from typing import Any
 
 from django.conf import settings
 from django.db.models import QuerySet
@@ -27,9 +28,9 @@ class BaseModelSerializer(ModelSerializer):
     ignore_field_permission = False  # 忽略字段权限
 
     class Meta:
-        model = None
-        table_fields = []  # 用于控制前端table的字段展示
-        tabs = []
+        model: Any = None
+        table_fields: list = []  # 用于控制前端table的字段展示
+        tabs: list = []
 
     def get_field_names(self, declared_fields, info):
         """将默认的id字段 转换为 pk，并并入 Meta.tabs 声明的分组字段。
@@ -73,7 +74,7 @@ class BaseModelSerializer(ModelSerializer):
         ):
             return self._converge_grant_fields(set(fields) & _fields)
 
-        allow_fields = []
+        allow_fields: list | set = []
         # 获取权限字段，如果没有配置，则为定义的所有字段
         if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
@@ -171,7 +172,7 @@ class BaseModelSerializer(ModelSerializer):
             file_obj.save(update_fields=["is_tmp"])
 
     def create(self, validated_data):
-        n_file_objs = []
+        n_file_objs: list = []
         for _name, file_data, many in self._iter_upload_file_fields(validated_data):
             if many:
                 n_file_objs.extend(file_data or [])
@@ -184,8 +185,8 @@ class BaseModelSerializer(ModelSerializer):
         return result
 
     def update(self, instance, validated_data):
-        n_file_objs = []
-        d_file_objs = []
+        n_file_objs: list = []
+        d_file_objs: list = []
         for name, file_data, many in self._iter_upload_file_fields(validated_data):
             if many:
                 # 关联实例各取一次，避免原来 set(...all()) 两次触发同一查询
@@ -314,7 +315,7 @@ class BaseModelSerializer(ModelSerializer):
         rules = get_mask_rules(model._meta.label_lower)
         if not rules:
             return
-        rule_map = {}
+        rule_map: dict = {}
         for rule in rules:
             rule_map.setdefault(rule["field"], rule)
         for name in list(ret):

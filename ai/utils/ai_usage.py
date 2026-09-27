@@ -128,6 +128,24 @@ def invalidate_usage_cache(user) -> None:
         logger.debug("invalidate AI usage cache failed", exc_info=True)
 
 
+def usage_tokens_since(since) -> dict:
+    """窗口内 token 合计（prompt / completion / total）：DB 侧聚合账本列。
+
+    供观测端点使用——不解析审计日志的 JSON（原实现把窗口内全部日志拉进内存逐行
+    解析 changes.usage，90 天窗口下是明显的 CPU 与内存热点）。
+    """
+    from ai.models.ai import AiUsageRecord
+
+    rows = AiUsageRecord.objects.filter(created_time__gte=since).aggregate(
+        prompt=Sum("tokens_in"), completion=Sum("tokens_out"), total=Sum("tokens_total")
+    )
+    return {
+        "prompt": int(rows["prompt"] or 0),
+        "completion": int(rows["completion"] or 0),
+        "total": int(rows["total"] or 0),
+    }
+
+
 def quota_error(user, feature: str = "") -> str:
     """配额检查：返回空串 = 通过；否则返回可读拒绝文案（i18n）。"""
     limits = quota_limits()
