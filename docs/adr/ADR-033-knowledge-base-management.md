@@ -3,7 +3,8 @@
 - 状态：已接受（2026-09-14 实现落地）
 - 关联：[ADR-023](ADR-023-ai-assistant-phase1.md)（AI 助手一期：docs/ RAG 问答）；
   [ADR-024](ADR-024-nl-query-phase2.md)（NL 查数）；ADR-015 重依赖红线（不引 markdown 渲染依赖）；
-  `ai/models/ai.py`、`system/utils/ai.py`、`system/views/ai.py`
+  `ai/models/ai.py`、`ai/utils/ai.py`、`ai/views/knowledge.py`
+  （原 `system/utils/ai.py`、`system/views/ai.py`，ADR-057 拆分后迁移）
 
 ## 背景
 
@@ -91,11 +92,11 @@ AiKnowledgeDocument（文档登记：repo | upload）
 
 - `ai/models/ai.py`：`AiKnowledgeDocument`（迁移 `0006_aiknowledgedocument`），
   `UPLOAD_PATH_PREFIX` / `upload_document_path`；
-- `system/utils/ai.py`：`rebuild_chunks` / `remove_chunks` / `upsert_upload_document` /
+- `ai/utils/ai.py`（原 `system/utils/ai.py`，ADR-057 迁移）：`rebuild_chunks` / `remove_chunks` / `upsert_upload_document` /
   `set_document_active`，`sync_knowledge` 重写（文档表驱动 + upload 隔离 + 孤儿块清理）；
-- `system/serializers/ai.py`：`KnowledgeUploadSerializer`（名称/内容/大小校验）、
+- `ai/serializers/ai.py`（原 `system/serializers/ai.py`）：`KnowledgeUploadSerializer`（名称/内容/大小校验）、
   `AiKnowledgeDocumentSerializer`（列表轻量 / 详情全文+分块 / is_active 联动分块）；
-- `system/views/ai.py`：`AiKnowledgeDocumentViewSet`（上传同名覆盖 / 删除仅 upload /
+- `ai/views/knowledge.py`（原 `system/views/ai.py`）：`AiKnowledgeDocumentViewSet`（上传同名覆盖 / 删除仅 upload /
   `sync-repo`）；
 - 菜单种子：页面 + 6 权限点（menu.json/menumeta.json）；po 词条 zh/en；
 - 前端：`src/api/system/knowledge.ts`、`src/views/integration/knowledge/`（RePlusPage +

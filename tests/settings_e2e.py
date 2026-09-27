@@ -43,6 +43,12 @@ SECURITY_LOGIN_CAPTCHA_ENABLED = False
 SECURITY_LOGIN_ENCRYPTED_ENABLED = False
 SECURITY_LOGIN_LIMIT_COUNT = 50
 VERIFY_CODE_LIMIT = 1000
+# 忘记密码链路 E2E：关图片验证码（无法自动识别），验证码值本身仍走真实发送/校验，
+# 错误验证码拒绝分支在浏览器内实测（成功分支由后端集成测试覆盖）。邮件渠道默认因
+# 未配置 SMTP 关闭（EMAIL_ENABLED=False），E2E 强制开启配合 locmem 后端——验证码
+# 投递留在服务端进程内，浏览器内不可读取
+EMAIL_ENABLED = True
+SECURITY_RESET_PASSWORD_CAPTCHA_ENABLED = False
 # IP 限流必须放宽：E2E 全套件共享 127.0.0.1，且登录锁定用例会连续失败 50 次，
 # 默认阈值（50 次/30min）会把本机 IP 整体封禁，导致后续所有用例无法登录
 SECURITY_LOGIN_IP_LIMIT_COUNT = 100000

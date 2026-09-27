@@ -176,7 +176,7 @@ ACTION_SPECS = {
         requires_approval=_dform_requires_approval,
         available=_dform_available,
     ),
-    # ---- 声明式动作（复用业务接口）：声明见 system/utils/ai_api_actions.py ----
+    # ---- 声明式动作（复用业务接口）：声明见 ai/utils/ai_api_actions.py ----
     **API_ACTION_SPECS,
     ACTION_DASHBOARD_OVERVIEW: ActionSpec(
         key=ACTION_DASHBOARD_OVERVIEW,

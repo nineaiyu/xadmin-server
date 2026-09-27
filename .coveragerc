@@ -1,5 +1,7 @@
 [run]
-source = system,captcha,server,common,message,notifications,demo,settings,mfa
+# 2026-09-27：纳入 ai / approval / dataset（ADR-057 拆分后的三大业务 app）与 utils，
+# 消除 85% 门禁对高复杂度 app 的测量盲区；门禁阈值按全口径实测重校（docs/metrics.md）
+source = system,captcha,server,common,message,notifications,demo,settings,mfa,ai,approval,dataset,utils
 omit =
     */migrations/*
     */tests/*

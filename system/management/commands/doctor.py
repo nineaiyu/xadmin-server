@@ -257,7 +257,7 @@ class Command(BaseCommand):
                 FAIL,
                 "AI 声明（生成物）",
                 f"{len(broken)} 条声明对不上路由：{broken[:3]}",
-                "跑 generate_crud 重新生成，或修正声明 path（口径见 system/utils/ai_api_actions.py）",
+                "跑 generate_crud 重新生成，或修正声明 path（口径见 ai/utils/ai_api_actions.py）",
             )
         elif checked:
             self._report(PASS, "AI 声明（生成物）", f"{len(checked)} 条声明路径可解析（模块 {len(modules)} 个）")

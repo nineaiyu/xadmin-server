@@ -113,9 +113,97 @@ dev = [
     "pytest-xdist>=3.0",
     "fakeredis[lua]>=2.23",
     "ruff>=0.6",
+    # 静态类型检查（2026-09-27 引入）：首批仅测 common 框架内核，口径见 [tool.mypy]，逐步扩面
+    "mypy>=1.14",
     # 性能剖析（T3.1 性能基线）：config.yml 中 SILK_ENABLED: true 时启用，仅 dev 环境
     "django-silk>=5.4",
 ]
+
+[tool.mypy]
+# 2026-09-27 引入（增量收口模式）：首批仅测 common 框架内核（二开 ViewSet/权限/模型层的
+# 基座，价值最高、体量可控）。约定：
+#   - files 只列受检范围；follow_imports=silent 让依赖模块参与分析但不报错；
+#   - 存量豁免清单（overrides）**只减不增**：修好一个摘一个，新文件不得进入；
+#   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
+python_version = "3.13"
+files = ["common"]
+exclude = ["migrations/"]
+follow_imports = "silent"
+ignore_missing_imports = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+# 存量豁免（2026-09-27 基线 62 文件 / 113 错）：均为可收口的类型债（None 默认值与
+# dict 注解不符、DRF 无 stub 导致的注解缺失、Choices 与裸 tuple 混用、untyped def 内
+# 未校验的属性访问等），随重构逐文件清零、摘除后不得回加
+module = [
+    "common.api.common",
+    "common.api.metrics",
+    "common.base.magic",
+    "common.base.utils",
+    "common.cache.channel",
+    "common.celery.decorator",
+    "common.celery.heatbeat",
+    "common.celery.metrics",
+    "common.core.auth",
+    "common.core.config.base",
+    "common.core.fields",
+    "common.core.filter",
+    "common.core.import_mapping",
+    "common.core.models",
+    "common.core.modelset.base",
+    "common.core.modelset.batch",
+    "common.core.modelset.crud",
+    "common.core.modelset.impact",
+    "common.core.modelset.metadata",
+    "common.core.modelset.recycle",
+    "common.core.modelset.viewsets",
+    "common.core.modelset.import_export.export_actions",
+    "common.core.modelset.import_export.import_actions",
+    "common.core.modelset.relation_count",
+    "common.core.modelset.suggest",
+    "common.core.modelset.upload",
+    "common.core.modules.registry",
+    "common.core.permission",
+    "common.core.serializers",
+    "common.decorators.cache",
+    "common.decorators.debounce",
+    "common.drf.parsers.axios_form_data",
+    "common.drf.parsers.base",
+    "common.drf.renders",
+    "common.drf.renders.base",
+    "common.drf.renders.csv",
+    "common.drf.renders.excel",
+    "common.fields.image",
+    "common.fields.utils",
+    "common.management.commands._generate_crud.analysis",
+    "common.management.commands._generate_crud.merging",
+    "common.management.commands._generate_crud.renderers",
+    "common.management.commands.restart",
+    "common.management.commands.services.command",
+    "common.management.commands.services.utils",
+    "common.management.commands.start",
+    "common.management.commands.status",
+    "common.management.commands.stop",
+    "common.metrics",
+    "common.notifications",
+    "common.sdk.ai.chat",
+    "common.sdk.im.base",
+    "common.sdk.sms.endpoint",
+    "common.signal_handlers",
+    "common.swagger.utils",
+    "common.swagger.views",
+    "common.tasks",
+    "common.utils.common",
+    "common.utils.health",
+    "common.utils.ip.geoip.utils",
+    "common.utils.ip.ipip.utils",
+    "common.utils.request",
+]
+ignore_errors = true
 
 [tool.uv]
 # 本仓库只借助 uv 做依赖管理与锁文件，不将服务端作为可分发包构建

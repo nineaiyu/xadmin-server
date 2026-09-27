@@ -37,7 +37,9 @@ jobs:
       - name: Run tests (parallel)
         # -n auto 并行（sqlite 内存库每 worker 独立、FakeRedis 进程内无交叉污染）
         # --cov-fail-under=85 覆盖率门禁：2026-09-18 上调 82 → 85（实测 87%，满足
-        # ≤ 实测 -2pp 上移规则；Q1 阶段二目标提前达成），关键模块另行按模块跟踪
+        # ≤ 实测 -2pp 上移规则；Q1 阶段二目标提前达成），关键模块另行按模块跟踪。
+        # 2026-09-27 测量口径扩至 ADR-057 拆分后的全部 app（补 ai/approval/dataset/utils），
+        # 全口径实测 88%（ai 88% / approval 88% / dataset 86%），85% 门禁维持不变
         run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85
 
       - name: Django system checks (database-tagged)

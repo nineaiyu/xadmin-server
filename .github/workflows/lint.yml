@@ -47,6 +47,30 @@ jobs:
       - name: Check cross-app direct imports
         run: python scripts/check_cross_app_imports.py
 
+  mypy:
+    name: Type check (mypy, common 内核)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        # mypy 版本取自 uv.lock 的 dev 组，与本地一致（口径见 pyproject [tool.mypy]）
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dev dependencies
+        run: uv sync --locked --only-group dev
+
+      - name: Run mypy
+        # 增量收口模式：受检范围与存量豁免清单见 pyproject [tool.mypy]（豁免只减不增）
+        run: uv run --no-sync mypy
+
   file-length:
     name: File length gate
     runs-on: ubuntu-latest

@@ -182,7 +182,7 @@ class RenderMixin:
     def _render_ai_declarations(self, ctx, options):
         """AI 动作声明骨架：只读动作直接给出，写动作以注释给出。
 
-        与 ``system/utils/ai_api_registry.py`` 同一格式（``api_action`` 声明式复用
+        与 ``ai/utils/ai_api_registry.py`` 同一格式（``api_action`` 声明式复用
         业务接口）：注册 = 在 registry 里 import 本模块的声明并并入 ``API_ACTION_SPECS``。
         产物过 ``manage.py ai_tool_audit``（端点可发现）与 ``doctor``（声明路径可解析）。
         """
@@ -198,8 +198,7 @@ class RenderMixin:
             "# -*- coding:utf-8 -*-",
             f'"""{ctx["verbose_name"]} 的 AI 动作声明骨架（generate_crud 生成）。',
             "",
-            "注册方式：在 system/utils/ai_api_registry.py 里 import 本模块的 AI_READ_ACTIONS，"
-            "并并入 API_ACTION_SPECS；",
+            "注册方式：在 ai/utils/ai_api_registry.py 里 import 本模块的 AI_READ_ACTIONS，并并入 API_ACTION_SPECS；",
             "只读动作可直接注册（AI 工具目录 / MCP / 原生 function calling 三者同源）。",
             "",
             "写动作（create/update/destroy）启用前需确认：412 审批口径、字段权限、幂等语义，",
@@ -208,7 +207,7 @@ class RenderMixin:
             "",
             "from django.utils.translation import gettext_lazy as _",
             "",
-            "from system.utils.ai_api_actions import api_action",
+            "from ai.utils.ai_api_actions import api_action",
             "",
             f'RESOURCE_PATH = "{resource}"',
             "",

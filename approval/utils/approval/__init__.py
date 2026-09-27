@@ -17,8 +17,9 @@ action 上，DRF dispatch 在权限校验之后执行 handler，装饰器因此�
 前端分流审批必须同时看 HTTP 412 与 ``type=approval_required``，不能只凭 code。
 
 本包按职责拆分（constants / approved_actions / payload / approvers / notify /
-lifecycle / queries / periodic），对外 API 由本文件统一再导出，导入路径保持
-``system.utils.approval`` 不变。
+lifecycle / queries / periodic），对外 API 由本文件统一再导出。原路径
+``system.utils.approval`` 已随 ADR-057 app 拆分迁移为 ``approval.utils.approval``
+（旧路径 shim 已退役）。
 """
 
 from .approved_actions import ON_APPROVED_HANDLERS, register_on_approved, run_on_approved, snapshot_payload
