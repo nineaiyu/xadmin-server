@@ -27,6 +27,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.serializers.dataset import DashboardSerializer, DatasetSerializer
+from dataset.utils.columns import json_fields_of_bound_model
 from dataset.utils.dataset import aggregate_dataset, available_fields, available_models, execute_dataset
 
 logger = get_logger(__name__)
@@ -90,12 +91,13 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="meta")
     def meta(self, request, *args, **kwargs):
-        """设计器元数据：模型白名单与字段清单。"""
+        """设计器元数据：模型白名单、字段清单与可用的 JSON 路径根字段。"""
         models = available_models()
         return ApiResponse(
             data={
                 "models": models,
                 "fields": {name: available_fields(name) for name in models},
+                "json_fields": {name: json_fields_of_bound_model(name) for name in models},
             }
         )
 

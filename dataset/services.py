@@ -6,6 +6,7 @@
 使用数据集执行面与动态表单校验面，避免直接依赖内部 utils/models 结构。
 """
 
+from dataset.utils.columns import parse_column
 from dataset.utils.dataset import (
     ALLOWED_METRICS,
     ALLOWED_OPS,
@@ -29,6 +30,7 @@ __all__ = [
     "execute_dataset",
     "filter_layout_for_user",
     "get_whitelisted_model",
+    "parse_column",
     "validate_submission_data",
 ]
 

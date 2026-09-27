@@ -492,6 +492,11 @@ def validate_submission_data(schema: dict, data) -> dict:
             outside = [v for v in value if v not in allowed]
             if outside:
                 raise ValidationError(_("Field {} has invalid options: {}").format(label, outside))
+        elif ftype == "date":
+            # 日期值契约 YYYY-MM-DD（与明细子表 date 列同口径）：数据集趋势按 ISO 前缀截断分桶，
+            # 非 ISO 值会让桶失真（ADR-071 D3）
+            if not isinstance(value, str) or not DATE_RE.match(value):
+                raise ValidationError(_("Field {} must be a date (YYYY-MM-DD)").format(label))
         elif ftype == "switch":
             if not isinstance(value, bool):
                 raise ValidationError(_("Field {} must be boolean").format(label))

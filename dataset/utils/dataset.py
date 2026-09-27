@@ -17,6 +17,14 @@ from django.db.models.functions import Trunc
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from dataset.utils.columns import (
+    annotations_for,
+    date_bucket_expression,
+    expression_of,
+    parse_column,
+    resolve_columns,
+    visible_root_of,
+)
 
 logger = get_logger(__name__)
 
@@ -61,10 +69,11 @@ def get_whitelisted_model(bound_model: str):
 
 
 def _check_fields(bound_model: str, fields, allow_empty=True):
+    """列清单校验：模型字段（白名单）或 JSON 路径（根字段白名单 + JSONField）。"""
+    model = get_whitelisted_model(bound_model)
     whitelist = set(available_fields(bound_model))
     for field in fields or []:
-        if field not in whitelist:
-            raise ValidationError(_("Field {}.{} is not available for datasets").format(bound_model, field))
+        parse_column(model, field, whitelist)
     if not allow_empty and not fields:
         raise ValidationError(_("Dataset columns cannot be empty"))
 
@@ -75,12 +84,12 @@ def validate_filters(bound_model: str, filters):
         return
     if not isinstance(filters, list):
         raise ValidationError(_("Invalid dataset filters"))
+    model = get_whitelisted_model(bound_model)
     whitelist = set(available_fields(bound_model))
     for item in filters:
         if not isinstance(item, dict) or not item.get("field") or not item.get("op"):
             raise ValidationError(_("Invalid dataset filters"))
-        if item["field"] not in whitelist:
-            raise ValidationError(_("Field {}.{} is not available for datasets").format(bound_model, item["field"]))
+        parse_column(model, item["field"], whitelist)
         if item["op"] not in ALLOWED_OPS:
             raise ValidationError(_("Filter op {} is not allowed").format(item["op"]))
         if item["op"] == "in" and not isinstance(item.get("value"), (list, tuple)):
@@ -91,17 +100,28 @@ def validate_filters(bound_model: str, filters):
 
 def validate_dataset(instance) -> None:
     """保存侧整体校验（模型/列/过滤/排序/limit/config）。"""
-    get_whitelisted_model(instance.bound_model)
+    model = get_whitelisted_model(instance.bound_model)
+    whitelist = set(available_fields(instance.bound_model))
     _check_fields(instance.bound_model, instance.columns, allow_empty=False)
     validate_filters(instance.bound_model, instance.filters)
     if instance.ordering:
         field = instance.ordering.lstrip("-")
         if field not in (instance.columns or []):
             raise ValidationError(_("Ordering field must be in columns"))
+        parse_column(model, field, whitelist)
     if not (0 < int(instance.row_limit) <= ROW_LIMIT_CAP):
         raise ValidationError(_("Row limit must be between 1 and {}").format(ROW_LIMIT_CAP))
-    date_field = (instance.config or {}).get("date_field")
-    if date_field and date_field not in available_fields(instance.bound_model):
+    date_field = str((instance.config or {}).get("date_field") or "")
+    if not date_field:
+        return
+    spec = parse_column(model, date_field, whitelist)
+    if spec.is_json:
+        # JSON 趋势字段必须带 |date 标注且在 columns 内（与聚合分桶要求同源，ADR-071 D4）
+        if spec.value_type != "date":
+            raise ValidationError(_("JSON trend field requires |date type: {}").format(spec.raw))
+        if spec.raw not in (instance.columns or []):
+            raise ValidationError(_("Trend field must be in columns"))
+    elif date_field not in whitelist:
         raise ValidationError(_("Field {}.{} is not available for datasets").format(instance.bound_model, date_field))
 
 
@@ -128,7 +148,8 @@ def _group_label(value, model_field=None) -> str:
 def numeric_columns_of(dataset) -> list:
     """数据集列中的数值字段（sum/avg 聚合候选）：供前端 value_field 选择器使用。
 
-    历史列在模型演进后可能失配（字段被删/改名）：逐列静默跳过，不阻断列表读取。
+    含 JSON 路径列（``data.amount|number`` 的类型标注即候选）；历史列在模型演进后
+    可能失配（字段被删/改名）：逐列静默跳过，不阻断列表读取。
     """
     try:
         model = apps.get_model(*str(dataset.bound_model or "").split(".", 1))
@@ -139,36 +160,64 @@ def numeric_columns_of(dataset) -> list:
     numeric = []
     for field in dataset.columns or []:
         try:
-            model_field = model._meta.get_field(field)
+            spec = parse_column(model, field)
+        except ValidationError:  # 非法声明 / 历史列失配 → 不影响其余列
+            continue
+        if spec.is_json:
+            if spec.value_type == "number":
+                numeric.append(spec.raw)
+            continue
+        try:
+            model_field = model._meta.get_field(spec.raw)
         except Exception:  # noqa: BLE001 历史列失配 → 不影响其余列
             continue
         if model_field.__class__.__name__ in NUMERIC_FIELD_CLASSES:
-            numeric.append(field)
+            numeric.append(spec.raw)
     return numeric
 
 
-def _check_numeric(model, field: str):
+def _check_numeric(model, field: str, whitelist=None):
+    """sum/avg 取值字段：模型数值字段，或带 ``|number`` 标注的 JSON 路径。"""
+    spec = parse_column(model, field, whitelist)
+    if spec.is_json:
+        if spec.value_type != "number":
+            raise ValidationError(_("Field {} is not numeric, cannot aggregate").format(spec.raw))
+        return spec
     try:
-        model_field = model._meta.get_field(field)
+        model_field = model._meta.get_field(spec.raw)
     except Exception as exc:
-        raise ValidationError(_("Field {} is not available for datasets").format(field)) from exc
+        raise ValidationError(_("Field {} is not available for datasets").format(spec.raw)) from exc
     if model_field.__class__.__name__ not in NUMERIC_FIELD_CLASSES:
-        raise ValidationError(_("Field {} is not numeric, cannot aggregate").format(field))
+        raise ValidationError(_("Field {} is not numeric, cannot aggregate").format(spec.raw))
+    return spec
 
 
 def build_queryset(dataset, user_obj, extra_filters=None):
-    """执行侧查询构建：白名单复核 → filters → 排序 → 数据权限过滤（fail-closed）。"""
+    """执行侧查询构建：白名单复核 → JSON 列注解 → filters → 排序 → 数据权限过滤。
+
+    JSON 路径列统一注解为 ``json_<根>_<键>`` 别名：筛选 / 排序 / 分组全部走别名，
+    使 ``|number`` 标注列的比较与聚合作用于 Cast 表达式（跨库语义一致，见 ADR-069 D2）。
+    数据权限过滤 fail-closed（无授权 → none()）。
+    """
     model = get_whitelisted_model(dataset.bound_model)
-    _check_fields(dataset.bound_model, dataset.columns, allow_empty=False)
+    whitelist = set(available_fields(dataset.bound_model))
+    specs = resolve_columns(model, dataset.columns, whitelist)
     validate_filters(dataset.bound_model, dataset.filters)
 
-    columns = [str(col) for col in (dataset.columns or [])]
+    columns = [spec.raw for spec in specs]
     queryset = model.objects.all()
+    annotations = annotations_for(specs)
+    if annotations:
+        queryset = queryset.annotate(**annotations)
     conditions = list(dataset.filters or []) + list(extra_filters or [])
     for item in conditions:
-        queryset = queryset.filter(**{f"{item['field']}__{item['op']}": item.get("value")})
+        alias = parse_column(model, item["field"], whitelist).alias
+        queryset = queryset.filter(**{f"{alias}__{item['op']}": item.get("value")})
     if dataset.ordering:
-        queryset = queryset.order_by(dataset.ordering)
+        ordering = str(dataset.ordering)
+        descending = ordering.startswith("-")
+        alias = parse_column(model, ordering.lstrip("-"), whitelist).alias
+        queryset = queryset.order_by(f"-{alias}" if descending else alias)
     # 行级数据权限：fail-closed 继承数据权限编译器（无授权 → none()）
     from common.core.filter import get_filter_queryset
 
@@ -217,18 +266,24 @@ def viewer_visible_fields(bound_model: str, user_obj):
 def execute_dataset(dataset, user_obj):
     """执行数据集：返回白名单列的行数据（row_limit 上限）。
 
-    输出列 = 数据集 columns ∩ 浏览者字段权限白名单（超管/无字段配置 = 全量，
-    显式授权即收敛）；交集为空时返回空结果（不泄露行数等任何业务数据）。
+    输出列 = 数据集 columns ∩ 浏览者字段权限白名单（JSON 路径列按根字段收敛；
+    超管/无字段配置 = 全量，显式授权即收敛）；交集为空返回空结果（不泄露行数等
+    任何业务数据）。JSON 列经别名注解后重命名回列声明，行键与列头始终一致。
     """
     queryset, model, columns = build_queryset(dataset, user_obj)
+    whitelist = set(available_fields(dataset.bound_model))
     limit = min(int(dataset.row_limit or 1000), ROW_LIMIT_CAP)
+    specs = [parse_column(model, column, whitelist) for column in columns]
     visible = viewer_visible_fields(dataset.bound_model, user_obj)
     if visible is not None:
-        columns = [col for col in columns if col in visible]
-    if not columns:
+        specs = [spec for spec in specs if visible_root_of(spec) in visible]
+    if not specs:
         return {"columns": [], "rows": [], "total": 0, "limit": limit}
-    rows = list(queryset.values(*columns)[:limit])
-    return {"columns": columns, "rows": rows, "total": queryset.count(), "limit": limit}
+    alias_map = {spec.alias: spec.raw for spec in specs if spec.alias != spec.raw}
+    rows = list(queryset.values(*[spec.alias for spec in specs])[:limit])
+    if alias_map:
+        rows = [{alias_map.get(key, key): value for key, value in row.items()} for row in rows]
+    return {"columns": [spec.raw for spec in specs], "rows": rows, "total": queryset.count(), "limit": limit}
 
 
 def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=None, value_field=None):
@@ -244,25 +299,29 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
         raise ValidationError(_("Metric {} is not allowed").format(metric))
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
-    if group_by and group_by not in whitelist:
-        raise ValidationError(_("Field {}.{} is not available for datasets").format(dataset.bound_model, group_by))
+    group_spec = parse_column(model, group_by, whitelist) if group_by else None
+    # JSON 趋势列必须带 |date 标注（值契约 YYYY-MM-DD，分桶走 Substr 前缀截断，见 ADR-071）
+    if date_trunc and group_spec is not None and group_spec.is_json and group_spec.value_type != "date":
+        raise ValidationError(_("JSON trend column requires |date type: {}").format(group_spec.raw))
 
     visible = viewer_visible_fields(dataset.bound_model, user_obj)
     if visible is not None:
-        if group_by and group_by not in visible:
-            raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, group_by))
-        if value_field and value_field not in visible:
-            raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, value_field))
+        if group_spec is not None and visible_root_of(group_spec) not in visible:
+            raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, group_spec.raw))
+        if value_field:
+            value_visible = parse_column(model, value_field, whitelist)
+            if visible_root_of(value_visible) not in visible:
+                raise ValidationError(_("No field permission for {}.{}").format(dataset.bound_model, value_visible.raw))
 
     queryset, __, __ = build_queryset(dataset, user_obj, extra_filters=[])
     annotation = Count("pk")
     if metric in ("sum", "avg"):
-        if not value_field or value_field not in whitelist:
-            raise ValidationError(
-                _("Field {}.{} is not available for datasets").format(dataset.bound_model, value_field)
-            )
-        _check_numeric(model, value_field)
-        annotation = Sum(value_field) if metric == "sum" else Avg(value_field)
+        if not value_field:
+            raise ValidationError(_("Value field is required for aggregation"))
+        value_spec = _check_numeric(model, value_field, whitelist)
+        # 模型字段用字段名引用；JSON 路径用 Cast 表达式（数值比较与聚合同一口径）
+        expression = expression_of(value_spec) or value_spec.root
+        annotation = Sum(expression) if metric == "sum" else Avg(expression)
 
     if not group_by:
         # 无分组纯聚合：单桶（趋势/分组语义不成立，date_trunc 忽略）
@@ -276,9 +335,29 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
     if date_trunc:
         if date_trunc not in ALLOWED_DATE_TRUNC:
             raise ValidationError(_("Date trunc {} is not allowed").format(date_trunc))
-        model_field = model._meta.get_field(group_by)
+        if group_spec.is_json:
+            # JSON 日期列：Substr 前缀即桶（桶名与模型字段路径同格式，无需 Python 再格式化）
+            rows = (
+                queryset.annotate(bucket_name=date_bucket_expression(group_spec, date_trunc))
+                .values("bucket_name")
+                .annotate(agg_value=annotation)
+                .order_by("bucket_name")
+                .values("bucket_name", "agg_value")[:AGGREGATE_BUCKET_LIMIT]
+            )
+            return {
+                "name": group_by,
+                "metric": metric,
+                "series": [
+                    {
+                        "name": row["bucket_name"] or "",
+                        "value": row["agg_value"] if row["agg_value"] is not None else 0,
+                    }
+                    for row in rows
+                ],
+            }
+        model_field = model._meta.get_field(group_spec.root)
         if not isinstance(model_field, DateTimeField):
-            raise ValidationError(_("Field {} is not a datetime, cannot trend").format(group_by))
+            raise ValidationError(_("Field {} is not a datetime, cannot trend").format(group_spec.raw))
         # Django 6：values(kw=注解别名) 的字符串引用被拒，统一用位置式 values；
         # 必须先 values(桶) 再 annotate 聚合（GROUP BY 桶），顺序颠倒会按
         # (桶, 聚合值) 联合分组——每桶裂成多行，趋势图出现重复数据点
@@ -298,13 +377,14 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
             for row in rows
         ]
     else:
-        # 分组标签走字段元数据映射：布尔 → 启用/禁用、choices → display 文案
-        group_field = model._meta.get_field(group_by)
-        queryset = queryset.values(group_by).annotate(agg_value=annotation).order_by("-agg_value")
-        rows = queryset.values(group_by, "agg_value")[:AGGREGATE_BUCKET_LIMIT]
+        # 分组标签走字段元数据映射：布尔 → 启用/禁用、choices → display 文案；
+        # JSON 路径列无字段元数据 → 原始值（_group_label(value, None) 同口径）
+        group_field = None if group_spec.is_json else model._meta.get_field(group_spec.root)
+        queryset = queryset.values(group_spec.alias).annotate(agg_value=annotation).order_by("-agg_value")
+        rows = queryset.values(group_spec.alias, "agg_value")[:AGGREGATE_BUCKET_LIMIT]
         series = [
             {
-                "name": _group_label(row[group_by], group_field),
+                "name": _group_label(row[group_spec.alias], group_field),
                 "value": row["agg_value"] if row["agg_value"] is not None else 0,
             }
             for row in rows

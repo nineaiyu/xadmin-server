@@ -25,6 +25,7 @@ from dataset.services import (
     ROW_LIMIT_CAP,
     available_fields,
     get_whitelisted_model,
+    parse_column,
 )
 
 logger = get_logger(__name__)
@@ -67,10 +68,10 @@ def parse_llm_json(text: str) -> dict:
 
 
 def _validate_filter_field(dataset: "Dataset", field: str, op: str, value) -> None:
-    """过滤字段必须在该数据集的模型白名单内，op 在 ALLOWED_OPS。"""
+    """过滤字段必须在该数据集的模型白名单内（含 JSON 路径列），op 在 ALLOWED_OPS。"""
+    model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
-    if field not in whitelist:
-        raise ValidationError(_("Field {}.{} is not available for datasets").format(dataset.bound_model, field))
+    parse_column(model, field, whitelist)
     if op not in ALLOWED_OPS:
         raise ValidationError(_("Filter op {} is not allowed").format(op))
     if op == "in" and not isinstance(value, (list, tuple)):
@@ -126,14 +127,10 @@ def validate_dsl(dsl: dict, user_obj) -> dict:
                 "value_field": str(dsl.get("value_field") or ""),
             }
         )
-        # sum/avg 的取值字段须在白名单（数值校验由 aggregate 执行层兜底）
+        # sum/avg 的取值字段须在白名单（模型字段或 JSON 路径列；数值校验由 aggregate 执行层兜底）
         if normalized["metric"] in ("sum", "avg"):
-            if normalized["value_field"] not in set(available_fields(dataset.bound_model)):
-                raise ValidationError(
-                    _("Field {}.{} is not available for datasets").format(
-                        dataset.bound_model, normalized["value_field"]
-                    )
-                )
+            value_model = get_whitelisted_model(dataset.bound_model)
+            parse_column(value_model, normalized["value_field"], set(available_fields(dataset.bound_model)))
     else:
         # 行模式：校验绑定模型在白名单内（查询列 = 数据集列白名单）
         get_whitelisted_model(dataset.bound_model)
