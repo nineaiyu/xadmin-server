@@ -17,8 +17,8 @@ from system.models.log import OperationLog
 
 pytestmark = pytest.mark.django_db
 
-PROFILES_URL = "/api/system/ai/profiles"
-ASSISTANT_URL = "/api/system/ai/assistant"
+PROFILES_URL = "/api/ai/profiles"
+ASSISTANT_URL = "/api/ai/assistant"
 
 
 class _FakeResponse:

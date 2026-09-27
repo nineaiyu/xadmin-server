@@ -9,8 +9,8 @@ DEAD_ENDPOINT_PREFIXES = ()
 SKIP_ROUTE_PREFIXES = ("api/demo/",)
 # 无同源权限点时，按路由前缀指定父菜单（Menu.name，必须为页面菜单）
 PARENT_MENU_MAP = {
-    "api/system/dynamic-form-submissions": "FormMySubmission",
-    "api/system/approval-delegations": "SystemApprovalDelegation",
+    "api/dataset/dynamic-form-submissions": "FormMySubmission",
+    "api/approval/approval-delegations": "SystemApprovalDelegation",
     # 安全域
     "api/system/account-risks": "SystemAccountRisk",
     "api/system/login-policies": "SystemLoginPolicy",
@@ -20,17 +20,17 @@ PARENT_MENU_MAP = {
 # - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
 # - api-docs/*、api/flower/*、api/system/global-search：路由以无名 pattern / 代理注册，
 #   get_all_url_dict 忽略无名路由，故不出现在扫描面内；
-# - api/system/ai/mcp：MCP 端点是无 actions 的 APIView，审计按 route.actions 过滤方法时
+# - api/ai/mcp：MCP 端点是无 actions 的 APIView，审计按 route.actions 过滤方法时
 #   恒不匹配；运行期由 IsAuthenticated 权限链按 path 正则命中权限点（非超管未授权即 403）；
-# - api/system/approval-instances/ongoing：页签级权限点（scope=ongoing 管理视角，无独立端点），
+# - api/approval/approval-instances/ongoing：页签级权限点（scope=ongoing 管理视角，无独立端点），
 #   经 common/core/permission.user_has_permission 按 path 授权，属设计内的功能开关权限点。
 AUDIT_SKIP_PREFIXES = (
     "api/chat/",
     "api-docs/",
     "api/flower/",
     "api/system/global-search",
-    "api/system/ai/mcp",
-    "api/system/approval-instances/ongoing",
+    "api/ai/mcp",
+    "api/approval/approval-instances/ongoing",
 )
 # 已知「同端点双权限码」重复点：各自服务不同 UI 入口/动作（非脏数据，不报告、不合并）：
 # - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
@@ -52,7 +52,7 @@ SHARED_METHOD_PATHS = {
     # chat/room/{pk}/members GET+POST：查看成员 / 增删成员共用 members:ChatRoom 权限码
     "api/chat/room/(?P<pk>[^/.]+)/members$": ("GET", "POST"),
     # screens/{pk}/command GET+POST：查询控制态 / 下发控制指令共用 command:DataScreen 权限码
-    "api/system/screens/(?P<pk>[^/.]+)/command$": ("GET", "POST"),
+    "api/dataset/screens/(?P<pk>[^/.]+)/command$": ("GET", "POST"),
 }
 # 需保持「模型绑定为空」的动作：导入导出链（字段权限回退到 list/create 菜单的口径）
 IMPORT_EXPORT_ACTIONS = (

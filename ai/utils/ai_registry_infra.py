@@ -133,7 +133,7 @@ INFRA_ACTION_SPECS = {
         label=_("List knowledge base documents"),
         description=_("Documents in the AI knowledge base (title, enabled state, source)"),
         method="GET",
-        path="/api/system/ai/knowledge-documents",
+        path="/api/ai/knowledge-documents",
         params={"title": {"type": "string", "required": False, "in": IN_QUERY, "description": "Title keyword"}},
     ),
     "ai.metrics": api_action(
@@ -141,7 +141,7 @@ INFRA_ACTION_SPECS = {
         label=_("Show AI assistant usage metrics"),
         description=_("AI assistant usage of recent days (requests, success rate, top users, token usage)"),
         method="GET",
-        path="/api/system/ai/assistant/metrics",
+        path="/api/ai/assistant/metrics",
         params={},
     ),
     # ---- Webhook（只读） ----

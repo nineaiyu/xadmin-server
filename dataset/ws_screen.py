@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """大屏远程控制：状态缓存 + WebSocket 下行通道。
 
-- 管理端经 `POST /api/system/screens/{pk}/command` 下发指令（切换仪表盘 / 翻页 /
+- 管理端经 `POST /api/dataset/screens/{pk}/command` 下发指令（切换仪表盘 / 翻页 /
   刷新 / 恢复轮播），控制态落缓存（TTL 24h）后广播到 `screen_display_{pk}` 组；
 - 展示端（大屏页面）连接 `ws/screen/<pk>`：连接即回放当前控制态，保证后开的
   展示端与最近一次指令一致；断线重连同样以回放对齐；

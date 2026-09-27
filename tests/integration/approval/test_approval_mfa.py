@@ -15,9 +15,9 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-INSTANCES_URL = "/api/system/approval-instances"
-APPROVALS_URL = "/api/system/approvals"
-FLOWS_URL = "/api/system/approval-flows"
+INSTANCES_URL = "/api/approval/approval-instances"
+APPROVALS_URL = "/api/approval/approvals"
+FLOWS_URL = "/api/approval/approval-flows"
 
 
 def make_flow(code="mfa_gate", approver_name="flow_approver_mfa"):

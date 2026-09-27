@@ -18,8 +18,8 @@ from system.models.dict import DataDict
 
 pytestmark = pytest.mark.django_db
 
-FORMS_URL = "/api/system/dynamic-forms"
-SUBMISSIONS_URL = "/api/system/dynamic-form-submissions"
+FORMS_URL = "/api/dataset/dynamic-forms"
+SUBMISSIONS_URL = "/api/dataset/dynamic-form-submissions"
 
 
 def _make_form(**overrides):
@@ -105,10 +105,10 @@ class TestDraftLifecycle:
         submission = DynamicFormSubmission.objects.create(
             form=form, data={}, status=DynamicFormSubmission.Status.DRAFT, creator=owner, modifier=owner
         )
-        list_menu = menu_factory("list:FormMySubmission", path="api/system/dynamic-form-submissions$", method="GET")
+        list_menu = menu_factory("list:FormMySubmission", path="api/dataset/dynamic-form-submissions$", method="GET")
         submit_menu = menu_factory(
             "submit:FormMySubmission",
-            path="api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$",
+            path="api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$",
             method="POST",
         )
         normal_user.roles.first().menu.add(list_menu, submit_menu)
@@ -125,11 +125,11 @@ class TestDraftOperationApproval:
 
     def _grant(self, normal_user, menu_factory):
         menus = [
-            menu_factory("list:FormMySubmission", path="api/system/dynamic-form-submissions$", method="GET"),
-            menu_factory("create:FormMySubmission", path="api/system/dynamic-form-submissions$", method="POST"),
+            menu_factory("list:FormMySubmission", path="api/dataset/dynamic-form-submissions$", method="GET"),
+            menu_factory("create:FormMySubmission", path="api/dataset/dynamic-form-submissions$", method="POST"),
             menu_factory(
                 "submit:FormMySubmission",
-                path="api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$",
+                path="api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$",
                 method="POST",
             ),
         ]

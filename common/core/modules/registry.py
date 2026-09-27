@@ -45,8 +45,8 @@ MODULES: tuple[ModuleSpec, ...] = (
         "敏感操作审批（拦截 + 审批单 + 多级审批规则）",
         STANDARD,
         menus=("SystemApprovalRequest", "SystemApprovalRule"),
-        permissions=("api/system/approvals", "api/system/approval-rules"),
-        routes=(r"^/api/system/approvals", r"^/api/system/approval-rules"),
+        permissions=("api/approval/approvals", "api/approval/approval-rules"),
+        routes=(r"^/api/approval/approvals", r"^/api/approval/approval-rules"),
         note="关闭后 APPROVAL_REQUIRED_PATHS 拦截整体失效（无审批单可落）",
     ),
     ModuleSpec(
@@ -79,7 +79,7 @@ MODULES: tuple[ModuleSpec, ...] = (
         "AI 助手与知识库",
         OPTIONAL,
         menus=("AiAssistant", "AiAssistantConfig", "AiKnowledge"),
-        routes=(r"^/api/system/ai/",),
+        routes=(r"^/api/ai/",),
         note="聊天室内的 AI 助手属于 chat 模块，不受本开关影响",
     ),
     ModuleSpec(
@@ -88,10 +88,10 @@ MODULES: tuple[ModuleSpec, ...] = (
         OPTIONAL,
         menus=("DataDashboard", "DataDataset", "DataReport", "DataScreen"),
         routes=(
-            r"^/api/system/datasets",
-            r"^/api/system/dashboards",
-            r"^/api/system/screens",
-            r"^/api/system/reports",
+            r"^/api/dataset/datasets",
+            r"^/api/dataset/dashboards",
+            r"^/api/dataset/screens",
+            r"^/api/dataset/reports",
         ),
         ws_routes=(r"^/ws/screen/",),
         note="关闭后定时报表周期任务与 ws/screen 展示通道一并停止",
@@ -101,7 +101,7 @@ MODULES: tuple[ModuleSpec, ...] = (
         "表单采集（设计器 + 我的填报）",
         OPTIONAL,
         menus=("FormDesigner", "FormMySubmission"),
-        routes=(r"^/api/system/dynamic-forms", r"^/api/system/dynamic-form-submissions"),
+        routes=(r"^/api/dataset/dynamic-forms", r"^/api/dataset/dynamic-form-submissions"),
     ),
     ModuleSpec(
         "approval_flow",
@@ -114,10 +114,10 @@ MODULES: tuple[ModuleSpec, ...] = (
             "SystemLeave",
         ),
         routes=(
-            r"^/api/system/approval-flows",
-            r"^/api/system/approval-instances",
-            r"^/api/system/approval-delegations",
-            r"^/api/system/leaves",
+            r"^/api/approval/approval-flows",
+            r"^/api/approval/approval-instances",
+            r"^/api/approval/approval-delegations",
+            r"^/api/approval/leaves",
         ),
     ),
     ModuleSpec(

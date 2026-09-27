@@ -8,8 +8,8 @@ from system.models import Menu, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-FLOWS_URL = "/api/system/approval-flows"
-INSTANCES_URL = "/api/system/approval-instances"
+FLOWS_URL = "/api/approval/approval-flows"
+INSTANCES_URL = "/api/approval/approval-instances"
 
 
 def make_flow(code="leave_api", nodes=None, form_schema=None, is_active=True):
@@ -169,7 +169,7 @@ class TestApprovalFlowCrud:
         api_client.force_authenticate(user=normal_user)
         denied = api_client.get(FLOWS_URL)
         assert denied.status_code == 403
-        grant(role, menu_factory, "list:SystemApprovalFlow", "api/system/approval-flows$", "GET")
+        grant(role, menu_factory, "list:SystemApprovalFlow", "api/approval/approval-flows$", "GET")
         allowed = api_client.get(FLOWS_URL)
         assert allowed.data["code"] == 1000
 
@@ -201,7 +201,7 @@ class TestApprovalInstanceApi:
         """普通用户：无菜单权限 403；授权后可读列表（失败关闭）。"""
         api_client.force_authenticate(user=normal_user)
         assert api_client.get(INSTANCES_URL).status_code == 403
-        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/approval/approval-instances$", "GET")
         allowed = api_client.get(INSTANCES_URL)
         assert allowed.data["code"] == 1000
         assert allowed.data["data"]["total"] == 0
@@ -333,7 +333,7 @@ class TestApprovalInstanceApi:
 
         outsider = UserInfo.objects.create_user(username="flow_outsider", password="Test@123456")
         outsider.roles.add(role)
-        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/approval/approval-instances$", "GET")
         api_client.force_authenticate(user=outsider)
         assert api_client.get(INSTANCES_URL).data["data"]["total"] == 0
 
@@ -364,12 +364,12 @@ class TestApprovalInstanceApi:
 
     def test_phase2_branch_api_lifecycle(self, api_client, applicant, approver_client, approver, menu_factory, role):
         """金额条件分支：小额走快车道直达归档节点，全程未经过大额终审。"""
-        grant(role, menu_factory, "list:SystemApprovalFlow", "api/system/approval-flows$", "GET")
-        grant(role, menu_factory, "add:SystemApprovalFlow", "api/system/approval-flows$", "POST")
-        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
-        grant(role, menu_factory, "add:SystemApprovalInstance", "api/system/approval-instances$", "POST")
-        grant(role, menu_factory, "approve:SystemApprovalInstance", "api/system/approval-instances/approve$", "POST")
-        grant(role, menu_factory, "change:SystemApprovalFlow", "api/system/approval-flows$", "PUT")
+        grant(role, menu_factory, "list:SystemApprovalFlow", "api/approval/approval-flows$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalFlow", "api/approval/approval-flows$", "POST")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/approval/approval-instances$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalInstance", "api/approval/approval-instances$", "POST")
+        grant(role, menu_factory, "approve:SystemApprovalInstance", "api/approval/approval-instances/approve$", "POST")
+        grant(role, menu_factory, "change:SystemApprovalFlow", "api/approval/approval-flows$", "PUT")
         api_client.force_authenticate(user=applicant)
 
         resp = api_client.post(
@@ -426,11 +426,11 @@ class TestApprovalInstanceApi:
 
     def test_phase2_versions_and_rollback_api(self, api_client, applicant, approver, menu_factory, role):
         """版本列表 + 回滚 API：有 PENDING 实例时回滚被拒，无在途时成功。"""
-        grant(role, menu_factory, "list:SystemApprovalFlow", "api/system/approval-flows$", "GET")
-        grant(role, menu_factory, "add:SystemApprovalFlow", "api/system/approval-flows$", "POST")
-        grant(role, menu_factory, "change:SystemApprovalFlow", "api/system/approval-flows$", "PUT")
-        grant(role, menu_factory, "list:SystemApprovalInstance", "api/system/approval-instances$", "GET")
-        grant(role, menu_factory, "add:SystemApprovalInstance", "api/system/approval-instances$", "POST")
+        grant(role, menu_factory, "list:SystemApprovalFlow", "api/approval/approval-flows$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalFlow", "api/approval/approval-flows$", "POST")
+        grant(role, menu_factory, "change:SystemApprovalFlow", "api/approval/approval-flows$", "PUT")
+        grant(role, menu_factory, "list:SystemApprovalInstance", "api/approval/approval-instances$", "GET")
+        grant(role, menu_factory, "add:SystemApprovalInstance", "api/approval/approval-instances$", "POST")
         api_client.force_authenticate(user=applicant)
 
         resp = api_client.post(

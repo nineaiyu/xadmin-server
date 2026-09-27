@@ -15,7 +15,7 @@ from ai.utils.ai_guard import REDACTED, REFERENCE_BEGIN, REFERENCE_END, REFERENC
 
 pytestmark = pytest.mark.django_db
 
-ASSISTANT_URL = "/api/system/ai/assistant"
+ASSISTANT_URL = "/api/ai/assistant"
 
 
 class _FakeResponse:

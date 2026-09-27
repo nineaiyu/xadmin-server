@@ -9,7 +9,7 @@ from dataset.models.dataset import Dataset, Report
 
 pytestmark = pytest.mark.django_db
 
-REPORTS_URL = "/api/system/reports"
+REPORTS_URL = "/api/dataset/reports"
 
 
 @pytest.fixture

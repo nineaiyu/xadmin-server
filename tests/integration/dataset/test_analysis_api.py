@@ -17,8 +17,8 @@ from system.models import ModelLabelField, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-SCREEN_URL = "/api/system/screens"
-REPORT_URL = "/api/system/reports"
+SCREEN_URL = "/api/dataset/screens"
+REPORT_URL = "/api/dataset/reports"
 
 
 @pytest.fixture
@@ -54,14 +54,14 @@ def screen_urls():
             name=name, path=path, method=method, menu_type=Menu.MenuChoices.PERMISSION, meta=meta
         )
 
-    detail = "api/system/screens/(?P<pk>[^/.]+)"
-    report_detail = "api/system/reports/(?P<pk>[^/.]+)"
+    detail = "api/dataset/screens/(?P<pk>[^/.]+)"
+    report_detail = "api/dataset/reports/(?P<pk>[^/.]+)"
     menus = [
-        _make("list:Screen", "api/system/screens$", "GET"),
-        _make("create:Screen", "api/system/screens$", "POST"),
+        _make("list:Screen", "api/dataset/screens$", "GET"),
+        _make("create:Screen", "api/dataset/screens$", "POST"),
         _make("partialUpdate:Screen", detail + "$", "PATCH"),
-        _make("list:Report", "api/system/reports$", "GET"),
-        _make("create:Report", "api/system/reports$", "POST"),
+        _make("list:Report", "api/dataset/reports$", "GET"),
+        _make("create:Report", "api/dataset/reports$", "POST"),
         _make("partialUpdate:Report", report_detail + "$", "PATCH"),
         _make("run:Report", report_detail + "/run$", "POST"),
     ]

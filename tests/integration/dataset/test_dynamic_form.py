@@ -14,8 +14,8 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-FORM_URL = "/api/system/dynamic-forms"
-SUBMISSION_URL = "/api/system/dynamic-form-submissions"
+FORM_URL = "/api/dataset/dynamic-forms"
+SUBMISSION_URL = "/api/dataset/dynamic-form-submissions"
 
 SCHEMA = {
     "fields": [
@@ -44,14 +44,14 @@ def grant_form_menus(user):
             name=name, path=path, method=method, menu_type=Menu.MenuChoices.PERMISSION, meta=meta
         )
 
-    detail = "api/system/dynamic-forms/(?P<pk>[^/.]+)"
-    sub_detail = "api/system/dynamic-form-submissions/(?P<pk>[^/.]+)"
+    detail = "api/dataset/dynamic-forms/(?P<pk>[^/.]+)"
+    sub_detail = "api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)"
     menus = [
-        _make("list:DynamicForm", "api/system/dynamic-forms$", "GET"),
-        _make("create:DynamicForm", "api/system/dynamic-forms$", "POST"),
+        _make("list:DynamicForm", "api/dataset/dynamic-forms$", "GET"),
+        _make("create:DynamicForm", "api/dataset/dynamic-forms$", "POST"),
         _make("retrieve:DynamicForm", detail + "$", "GET"),
-        _make("list:DynamicFormSubmission", "api/system/dynamic-form-submissions$", "GET"),
-        _make("create:DynamicFormSubmission", "api/system/dynamic-form-submissions$", "POST"),
+        _make("list:DynamicFormSubmission", "api/dataset/dynamic-form-submissions$", "GET"),
+        _make("create:DynamicFormSubmission", "api/dataset/dynamic-form-submissions$", "POST"),
         _make("partialUpdate:DynamicFormSubmission", sub_detail + "$", "PATCH"),
         _make("destroy:DynamicFormSubmission", sub_detail + "$", "DELETE"),
     ]

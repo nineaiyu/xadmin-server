@@ -23,8 +23,8 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-FLOWS_URL = "/api/system/approval-flows"
-INSTANCES_URL = "/api/system/approval-instances"
+FLOWS_URL = "/api/approval/approval-flows"
+INSTANCES_URL = "/api/approval/approval-instances"
 
 
 def grant(role, menu_factory, path, method, name):
@@ -115,7 +115,7 @@ class TestApprovalFlowPrivilegeMatrix:
 
     def test_m33_approve_requires_current_node_assignee(self, api_client, carol, role, menu_factory, instance):
         """M33：跨节点参与人（可见实例但非当前节点待办人）审批 → 400，状态不变。"""
-        grant(role, menu_factory, "api/system/approval-instances/(?P<pk>[^/.]+)/approve$", "POST", "flow-approve")
+        grant(role, menu_factory, "api/approval/approval-instances/(?P<pk>[^/.]+)/approve$", "POST", "flow-approve")
         carol.roles.add(role)
         api_client.force_authenticate(user=carol)
         resp = api_client.post(f"{INSTANCES_URL}/{instance.pk}/approve", {}, format="json")
@@ -129,7 +129,7 @@ class TestApprovalFlowPrivilegeMatrix:
         grant(
             role,
             menu_factory,
-            "api/system/approval-instances/(?P<pk>[^/.]+)$",
+            "api/approval/approval-instances/(?P<pk>[^/.]+)$",
             "GET",
             "flow-instance-detail",
         )
@@ -139,7 +139,7 @@ class TestApprovalFlowPrivilegeMatrix:
 
     def test_m35_add_sign_requires_current_node_participant(self, api_client, carol, role, menu_factory, instance):
         """M35：非当前节点参与人加签 → 业务失败，任务集不变。"""
-        grant(role, menu_factory, "api/system/approval-instances/(?P<pk>[^/.]+)/add-sign$", "POST", "flow-add-sign")
+        grant(role, menu_factory, "api/approval/approval-instances/(?P<pk>[^/.]+)/add-sign$", "POST", "flow-add-sign")
         carol.roles.add(role)
         api_client.force_authenticate(user=carol)
         before = ApprovalNodeTask.objects.filter(instance=instance).count()
@@ -149,7 +149,7 @@ class TestApprovalFlowPrivilegeMatrix:
 
     def test_m36_cancel_requires_applicant(self, api_client, carol, role, menu_factory, instance):
         """M36：非申请人撤回他人申请 → 业务失败，实例仍为 PENDING。"""
-        grant(role, menu_factory, "api/system/approval-instances/(?P<pk>[^/.]+)/cancel$", "POST", "flow-cancel")
+        grant(role, menu_factory, "api/approval/approval-instances/(?P<pk>[^/.]+)/cancel$", "POST", "flow-cancel")
         carol.roles.add(role)
         api_client.force_authenticate(user=carol)
         resp = api_client.post(f"{INSTANCES_URL}/{instance.pk}/cancel", {}, format="json")

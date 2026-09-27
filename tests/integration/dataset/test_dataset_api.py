@@ -15,8 +15,8 @@ from system.models import DataPermission, ModelLabelField, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
-DATASET_URL = "/api/system/datasets"
-DASHBOARD_URL = "/api/system/dashboards"
+DATASET_URL = "/api/dataset/datasets"
+DASHBOARD_URL = "/api/dataset/dashboards"
 
 
 @pytest.fixture(autouse=True)
@@ -64,19 +64,19 @@ def grant_dataset_menus(normal_user):
             name=name, path=path, method=method, menu_type=Menu.MenuChoices.PERMISSION, meta=meta
         )
 
-    detail = "api/system/datasets/(?P<pk>[^/.]+)"
-    dash_detail = "api/system/dashboards/(?P<pk>[^/.]+)"
+    detail = "api/dataset/datasets/(?P<pk>[^/.]+)"
+    dash_detail = "api/dataset/dashboards/(?P<pk>[^/.]+)"
     menus = [
-        _make("list:Dataset", "api/system/datasets$", "GET"),
-        _make("create:Dataset", "api/system/datasets$", "POST"),
+        _make("list:Dataset", "api/dataset/datasets$", "GET"),
+        _make("create:Dataset", "api/dataset/datasets$", "POST"),
         _make("retrieve:Dataset", detail + "$", "GET"),
         _make("partialUpdate:Dataset", detail + "$", "PATCH"),
         _make("update:Dataset", detail + "$", "PUT"),
         _make("destroy:Dataset", detail + "$", "DELETE"),
         _make("execute:Dataset", detail + "/execute$", "POST"),
         _make("aggregate:Dataset", detail + "/aggregate$", "POST"),
-        _make("list:DataDashboard", "api/system/dashboards$", "GET"),
-        _make("create:DataDashboard", "api/system/dashboards$", "POST"),
+        _make("list:DataDashboard", "api/dataset/dashboards$", "GET"),
+        _make("create:DataDashboard", "api/dataset/dashboards$", "POST"),
         _make("partialUpdate:DataDashboard", dash_detail, "PATCH"),
     ]
 

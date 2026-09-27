@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""审批流路由：经 system/urls.py 以 ``path("", include("approval.urls"))`` 挂载。
+"""审批流路由：独立前缀挂载（server/urls.py ``^api/approval/``）。
 
-URL 前缀保持 ``/api/system/...``（Menu.path 权限点、前端路由、模块裁剪
-ModuleSpec 的 routes 正则均以此为键，拆分不改路径）；不设 app_name，
-视图名继续落在 system 命名空间下，与拆分前完全一致。
+URL 前缀与 app 对齐（ADR-059）：``/api/approval/...``；Menu.path 权限点、
+前端 API 层、模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 
 from rest_framework.routers import SimpleRouter
@@ -14,6 +13,8 @@ from approval.views.approval_delegation import ApprovalDelegationViewSet
 from approval.views.approval_flow import ApprovalFlowViewSet, ApprovalInstanceViewSet
 from approval.views.approval_rule import ApprovalRuleViewSet
 from approval.views.leave import LeaveViewSet
+
+app_name = "approval"
 
 router = SimpleRouter(False)
 router.register("approvals", ApprovalRequestViewSet, basename="approval_request")

@@ -13,7 +13,7 @@ from ai.utils.ai import retrieve
 
 pytestmark = pytest.mark.django_db
 
-KNOWLEDGE_URL = "/api/system/ai/knowledge-documents"
+KNOWLEDGE_URL = "/api/ai/knowledge-documents"
 
 DOC_CONTENT = """# 内网使用指南
 
@@ -213,7 +213,7 @@ class TestPermissions:
         meta = MenuMeta.objects.create(title="list:AiKnowledge")
         menu = Menu.objects.create(
             name="list:AiKnowledge",
-            path="api/system/ai/knowledge-documents$",
+            path="api/ai/knowledge-documents$",
             method="GET",
             menu_type=Menu.MenuChoices.PERMISSION,
             meta=meta,

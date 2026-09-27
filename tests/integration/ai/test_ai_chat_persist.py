@@ -17,7 +17,7 @@ from ai.models.ai import AiChatMessage
 
 pytestmark = pytest.mark.django_db
 
-ASSISTANT_URL = "/api/system/ai/assistant"
+ASSISTANT_URL = "/api/ai/assistant"
 KNOWLEDGE_CONTENT = "数据集是绑定白名单模型的受控查询，执行时按调用者数据权限过滤。"
 
 
@@ -203,7 +203,7 @@ class TestHistory:
         meta = MenuMeta.objects.create(title="status:AiAssistant")
         menu = Menu.objects.create(
             name="status:AiAssistant",
-            path=r"api/system/ai/assistant/(status|metrics|history|tools)$",
+            path=r"api/ai/assistant/(status|metrics|history|tools)$",
             method="GET",
             menu_type=Menu.MenuChoices.PERMISSION,
             meta=meta,

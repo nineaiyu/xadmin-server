@@ -56,7 +56,7 @@ class TestImpactPreview:
             name="影响面看板", layout=[{"id": "card-1", "dataset": str(dataset.pk)}], creator=superuser
         )
         Screen.objects.create(name="影响面大屏", dashboards=[str(dataset.pk)], creator=superuser)
-        body = auth_client.post("/api/system/datasets/impact", {"pks": [str(dataset.pk)]}, format="json").json()
+        body = auth_client.post("/api/dataset/datasets/impact", {"pks": [str(dataset.pk)]}, format="json").json()
         counts = {item["key"]: item["count"] for item in body["data"]["results"][0]["items"]}
         assert counts["dataset_cards"] == 1
         assert counts["dataset_screens"] == 1
@@ -87,7 +87,7 @@ class TestImpactPreview:
 
     def test_unsupported_resource_not_available(self, auth_client):
         """未混入影响面 Action 的视图不提供 /impact（404/405；前端探测后静默跳过）。"""
-        response = auth_client.post("/api/system/leaves/impact", {"pks": ["1"]}, format="json")
+        response = auth_client.post("/api/approval/leaves/impact", {"pks": ["1"]}, format="json")
         assert response.status_code in (404, 405)
 
 

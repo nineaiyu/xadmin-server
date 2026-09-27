@@ -27,7 +27,7 @@ from system.models import Menu, OperationLog, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-EXECUTE_URL = "/api/system/ai/assistant/action/execute"
+EXECUTE_URL = "/api/ai/assistant/action/execute"
 CHAT_URL = "/api/chat/ai/message"
 
 LEAVE_PARAMS = {
@@ -96,12 +96,10 @@ def grant_perms(role, menu_factory, perms):
         role.menu.add(perm)
 
 
-AI_EXECUTE_PERM = (
-    ("actionExecute:AiAssistant", "api/system/ai/assistant/action/(interpret(/stream)?|execute)$", "POST"),
-)
+AI_EXECUTE_PERM = (("actionExecute:AiAssistant", "api/ai/assistant/action/(interpret(/stream)?|execute)$", "POST"),)
 CHAT_PERMS = (("ask:ChatRoom", "api/chat/ai/message$", "POST"),)
-LEAVE_CREATE_PERMS = (("create:SystemLeave", "api/system/leaves$", "POST"),)
-DFORM_CREATE_PERMS = (("create:FormMySubmission", "api/system/dynamic-form-submissions$", "POST"),)
+LEAVE_CREATE_PERMS = (("create:SystemLeave", "api/approval/leaves$", "POST"),)
+DFORM_CREATE_PERMS = (("create:FormMySubmission", "api/dataset/dynamic-form-submissions$", "POST"),)
 
 
 @pytest.fixture
@@ -636,7 +634,7 @@ class TestCatalogExtensions:
 class TestActionInterpretStream:
     """助手页指令执行草稿（SSE）：meta → reasoning* → delta* → done | error。"""
 
-    INTERPRET_URL = "/api/system/ai/assistant/action/interpret/stream"
+    INTERPRET_URL = "/api/ai/assistant/action/interpret/stream"
 
     def test_gate_returns_json(self, action_client, settings):
         settings.AI_ASSISTANT_ENABLED = True

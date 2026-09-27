@@ -48,7 +48,7 @@ class TestTargetSnapshot:
         role = UserRole.objects.create(name="详情角色", code="u1_role2")
         auth_client.delete(f"/api/system/role/{role.pk}")
         approval = ApprovalRequest.objects.get(status=ApprovalRequest.Status.PENDING)
-        body = auth_client.get(f"/api/system/approvals/{approval.pk}").json()["data"]
+        body = auth_client.get(f"/api/approval/approvals/{approval.pk}").json()["data"]
         assert body["target_snapshot"]["pk"] == str(role.pk)
 
     def test_patch_style_changes_diff_rendered(self):
@@ -153,7 +153,7 @@ class TestRelatedObject:
         instance = ApprovalInstance.objects.create(
             flow=flow, flow_name=flow.name, title="病假", creator=superuser, biz_type="leave", biz_id=str(leave.pk)
         )
-        body = auth_client.get(f"/api/system/approval-instances/{instance.pk}").json()["data"]
+        body = auth_client.get(f"/api/approval/approval-instances/{instance.pk}").json()["data"]
         assert body["biz_type"] == "leave"
         assert body["related_object"]["type"] == "leave"
 

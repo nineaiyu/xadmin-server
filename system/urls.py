@@ -214,13 +214,8 @@ router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center"
 router.register("tags", TagViewSet, basename="tag")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
-# 审批流域（approval app，3.1 拆分批次2）：路由迁 approval/urls.py，同前缀挂载
-# 保持 /api/system/... 权限点路径与视图名（system 命名空间）完全不变
-urlpatterns += [path("", include("approval.urls"))]
-# AI 平台域（ai app，3.1 拆分批次3）：路由迁 ai/urls.py，同前缀挂载
-urlpatterns += [path("", include("ai.urls"))]
-# 数据分析与动态表单域（dataset app，3.1 拆分批次4）：路由迁 dataset/urls.py，同前缀挂载
-urlpatterns += [path("", include("dataset.urls"))]
+# 审批流 / AI 平台 / 数据分析与动态表单三域已迁独立前缀（server/urls.py，ADR-059）：
+# /api/approval/... /api/ai/... /api/dataset/...
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]
 # MCP 协议端点（Streamable HTTP 无状态）：外部 MCP 客户端经 PAT 接入统一工具层

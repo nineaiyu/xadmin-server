@@ -328,7 +328,7 @@ class Command(BaseCommand):
                 REQUEST_PKS[1],
                 ApprovalRequest.Status.APPROVED,
                 "POST",
-                "/api/system/dynamic-form-submissions",
+                "/api/dataset/dynamic-form-submissions",
                 None,
                 {"form_name": "示例-入职信息登记", "name": "临时人员（演示）"},
                 approver,

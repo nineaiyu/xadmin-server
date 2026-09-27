@@ -21,12 +21,12 @@ from system.models import Menu, MenuMeta, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
-TRANSFER_PATH = r"api/system/approval-instances/(?P<pk>[^/.]+)/transfer$"
-ADD_SIGN_PATH = r"api/system/approval-instances/(?P<pk>[^/.]+)/add-sign$"
-ONGOING_PATH = "api/system/approval-instances/ongoing$"
-TRANSFER_URL = "/api/system/approval-instances/{pk}/transfer"
-ADD_SIGN_URL = "/api/system/approval-instances/{pk}/add-sign"
-LIST_URL = "/api/system/approval-instances"
+TRANSFER_PATH = r"api/approval/approval-instances/(?P<pk>[^/.]+)/transfer$"
+ADD_SIGN_PATH = r"api/approval/approval-instances/(?P<pk>[^/.]+)/add-sign$"
+ONGOING_PATH = "api/approval/approval-instances/ongoing$"
+TRANSFER_URL = "/api/approval/approval-instances/{pk}/transfer"
+ADD_SIGN_URL = "/api/approval/approval-instances/{pk}/add-sign"
+LIST_URL = "/api/approval/approval-instances"
 
 
 @pytest.fixture
@@ -271,7 +271,7 @@ class TestOngoingScopeApi:
     def test_ongoing_visible_with_permission(self, applicant, approver, normal_user, grant_permission):
         instance = make_instance(applicant, approver, code="ongoing_ok")
         # 列表端点本身仍需 list 权限点；ongoing 是叠加的管理视角授权
-        grant_permission(normal_user, "list:SystemApprovalInstance", "api/system/approval-instances$", method="GET")
+        grant_permission(normal_user, "list:SystemApprovalInstance", "api/approval/approval-instances$", method="GET")
         grant_permission(normal_user, "ongoing:SystemApprovalInstance", ONGOING_PATH, method="GET")
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=normal_user)
@@ -299,7 +299,7 @@ class TestOngoingScopeApi:
     def test_batch_transfer_two_instances(self, applicant, approver, target, grant_permission):
         """批量转交：两条待办一次交给同一人（逐条独立，全成功）"""
         grant_permission(
-            approver, "batchTransfer:SystemApprovalInstance", r"api/system/approval-instances/batch-transfer$"
+            approver, "batchTransfer:SystemApprovalInstance", r"api/approval/approval-instances/batch-transfer$"
         )
         first = make_instance(applicant, approver, code="batch_two_a")
         second = make_instance(applicant, approver, code="batch_two_b")
@@ -323,7 +323,7 @@ class TestOngoingScopeApi:
     def test_batch_transfer_partial_failure(self, applicant, approver, target, outsider, grant_permission):
         """混入非我待办的实例：可转的照转，失败项带明细（不整体拒绝）"""
         grant_permission(
-            approver, "batchTransfer:SystemApprovalInstance", r"api/system/approval-instances/batch-transfer$"
+            approver, "batchTransfer:SystemApprovalInstance", r"api/approval/approval-instances/batch-transfer$"
         )
         mine = make_instance(applicant, approver, code="batch_partial_a")
         # 审批人是 outsider 的实例：approver 对它没有待办
@@ -346,7 +346,7 @@ class TestOngoingScopeApi:
     ):
         """全部失败：整体业务失败（1001）并把明细带回，前端可直接提示首条原因"""
         grant_permission(
-            approver, "batchTransfer:SystemApprovalInstance", r"api/system/approval-instances/batch-transfer$"
+            approver, "batchTransfer:SystemApprovalInstance", r"api/approval/approval-instances/batch-transfer$"
         )
         other = make_instance(applicant, outsider, code="batch_allfail")
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
@@ -362,7 +362,7 @@ class TestOngoingScopeApi:
     def test_batch_transfer_rejects_invisible_instance(self, applicant, approver, target, outsider, grant_permission):
         """越权 pk（我不参与、非我发起）：计失败且不泄露存在性文案之外的细节"""
         grant_permission(
-            approver, "batchTransfer:SystemApprovalInstance", r"api/system/approval-instances/batch-transfer$"
+            approver, "batchTransfer:SystemApprovalInstance", r"api/approval/approval-instances/batch-transfer$"
         )
         hidden = make_instance(applicant, outsider, code="batch_hidden")
         client = APIClient(HTTP_USER_AGENT="pytest-agent")

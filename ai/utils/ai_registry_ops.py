@@ -88,7 +88,7 @@ OPS_ACTION_SPECS = {
         label=_("List datasets"),
         description=_("List datasets available for analysis (id, name, source model)"),
         method="GET",
-        path="/api/system/datasets",
+        path="/api/dataset/datasets",
         params={"name": {"type": "string", "required": False, "in": IN_QUERY, "description": "Name keyword (fuzzy)"}},
     ),
     "dataset.meta": api_action(
@@ -96,7 +96,7 @@ OPS_ACTION_SPECS = {
         label=_("Show dataset designer metadata"),
         description=_("Whitelisted models and fields usable in dataset queries and filters"),
         method="GET",
-        path="/api/system/datasets/meta",
+        path="/api/dataset/datasets/meta",
         params={},
     ),
     "dataset.execute": api_action(
@@ -104,7 +104,7 @@ OPS_ACTION_SPECS = {
         label=_("Run a dataset query"),
         description=_("Execute a dataset and return row data (row-level data permissions of the caller apply)"),
         method="POST",
-        path="/api/system/datasets/<pk>/execute",
+        path="/api/dataset/datasets/<pk>/execute",
         params={"pk": {"type": "pk", "required": True, "in": "path", "description": "Dataset id (from dataset.list)"}},
     ),
     "dataset.aggregate": api_action(
@@ -115,7 +115,7 @@ OPS_ACTION_SPECS = {
             "(count/sum/avg/max/min + value field), optionally truncated by date"
         ),
         method="POST",
-        path="/api/system/datasets/<pk>/aggregate",
+        path="/api/dataset/datasets/<pk>/aggregate",
         params={
             "pk": {"type": "pk", "required": True, "in": "path", "description": "Dataset id (from dataset.list)"},
             "group_by": {"type": "string", "required": False, "in": "body", "description": "Field to group by"},

@@ -12,7 +12,7 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-DELEGATIONS_URL = "/api/system/approval-delegations"
+DELEGATIONS_URL = "/api/approval/approval-delegations"
 
 
 def make_flow(code="deleg_gate"):

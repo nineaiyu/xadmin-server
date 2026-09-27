@@ -16,7 +16,7 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-INSTANCES_URL = "/api/system/approval-instances"
+INSTANCES_URL = "/api/approval/approval-instances"
 
 
 @pytest.fixture
@@ -162,7 +162,7 @@ class TestDiscussion:
 
         perm_name = "deleteComment:SystemApprovalInstance"
         perm = Menu.objects.filter(name=perm_name).first() or menu_factory(
-            perm_name, path="api/system/approval-instances/.*/comment/delete$", method="POST"
+            perm_name, path="api/approval/approval-instances/.*/comment/delete$", method="POST"
         )
         approver.roles.add(role)
         role.menu.add(perm)

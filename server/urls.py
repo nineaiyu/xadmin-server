@@ -40,6 +40,12 @@ urlpatterns = [
     re_path("^admin/", admin.site.urls),
     re_path("^api/common/", include("common.urls", namespace="common")),
     re_path("^api/system/", include("system.urls", namespace="system")),
+    # 审批流域（approval app）：URL 前缀与 app 对齐（ADR-059）
+    re_path("^api/approval/", include("approval.urls", namespace="approval")),
+    # AI 平台域（ai app）：URL 前缀与 app 对齐（ADR-059）
+    re_path("^api/ai/", include("ai.urls", namespace="ai")),
+    # 数据分析与动态表单域（dataset app）：URL 前缀与 app 对齐（ADR-059）
+    re_path("^api/dataset/", include("dataset.urls", namespace="dataset")),
     # 聊天室：会话/历史/私聊/撤回/联系人/AI 助手
     re_path("^api/chat/", include("message.urls", namespace="chat")),
     # SCIM 2.0 用户目录同步（S1）：独立 Bearer Token 鉴权，不走 JWT/菜单权限链

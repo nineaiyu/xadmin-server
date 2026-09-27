@@ -16,8 +16,8 @@ from system.models import Menu, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-LEAVES_URL = "/api/system/leaves"
-INSTANCES_URL = "/api/system/approval-instances"
+LEAVES_URL = "/api/approval/leaves"
+INSTANCES_URL = "/api/approval/approval-instances"
 
 
 def make_leave_flow(code="leave", assignee_value="leave_approver"):
@@ -48,9 +48,9 @@ def grant(role, menu_factory, name, path, method):
 
 
 APPROVER_PERMS = (
-    ("list:SystemApprovalInstance", "api/system/approval-instances$", "GET"),
-    ("approve:SystemApprovalInstance", "api/system/approval-instances/(?P<pk>[^/.]+)/approve$", "POST"),
-    ("reject:SystemApprovalInstance", "api/system/approval-instances/(?P<pk>[^/.]+)/reject$", "POST"),
+    ("list:SystemApprovalInstance", "api/approval/approval-instances$", "GET"),
+    ("approve:SystemApprovalInstance", "api/approval/approval-instances/(?P<pk>[^/.]+)/approve$", "POST"),
+    ("reject:SystemApprovalInstance", "api/approval/approval-instances/(?P<pk>[^/.]+)/reject$", "POST"),
 )
 
 
@@ -73,12 +73,12 @@ def approver_client(approver):
 
 
 LEAVE_PERMS = (
-    ("list:SystemLeave", "api/system/leaves$", "GET"),
-    ("create:SystemLeave", "api/system/leaves$", "POST"),
-    ("retrieve:SystemLeave", "api/system/leaves/(?P<pk>[^/.]+)$", "GET"),
-    ("destroy:SystemLeave", "api/system/leaves/(?P<pk>[^/.]+)$", "DELETE"),
-    ("submit:SystemLeave", "api/system/leaves/(?P<pk>[^/.]+)/submit$", "POST"),
-    ("cancel:SystemLeave", "api/system/leaves/(?P<pk>[^/.]+)/cancel$", "POST"),
+    ("list:SystemLeave", "api/approval/leaves$", "GET"),
+    ("create:SystemLeave", "api/approval/leaves$", "POST"),
+    ("retrieve:SystemLeave", "api/approval/leaves/(?P<pk>[^/.]+)$", "GET"),
+    ("destroy:SystemLeave", "api/approval/leaves/(?P<pk>[^/.]+)$", "DELETE"),
+    ("submit:SystemLeave", "api/approval/leaves/(?P<pk>[^/.]+)/submit$", "POST"),
+    ("cancel:SystemLeave", "api/approval/leaves/(?P<pk>[^/.]+)/cancel$", "POST"),
 )
 
 
@@ -233,12 +233,12 @@ class TestLeavePermission:
     def test_list_requires_menu_permission(self, api_client, normal_user, role, menu_factory):
         api_client.force_authenticate(user=normal_user)
         assert api_client.get(LEAVES_URL).status_code == 403
-        grant(role, menu_factory, "list:SystemLeave", "api/system/leaves$", "GET")
+        grant(role, menu_factory, "list:SystemLeave", "api/approval/leaves$", "GET")
         assert api_client.get(LEAVES_URL).data["code"] == 1000
 
     def test_create_requires_menu_permission(self, api_client, normal_user, role, menu_factory):
         api_client.force_authenticate(user=normal_user)
-        grant(role, menu_factory, "list:SystemLeave", "api/system/leaves$", "GET")
+        grant(role, menu_factory, "list:SystemLeave", "api/approval/leaves$", "GET")
         assert api_client.post(LEAVES_URL, payload(), format="json").status_code == 403
-        grant(role, menu_factory, "create:SystemLeave", "api/system/leaves$", "POST")
+        grant(role, menu_factory, "create:SystemLeave", "api/approval/leaves$", "POST")
         assert api_client.post(LEAVES_URL, payload(), format="json").data["code"] == 1000

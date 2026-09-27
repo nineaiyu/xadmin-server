@@ -5,7 +5,7 @@
 - **缺口清零守护**（入 CI）：全量路由无未注册候选 —— 新资源域出现即红，强制做一次
   「注册动作 or 登记不 AI 化」的决策（`system/utils/ai_tool_triage.py`）；
 - --fail-on-gap：缺口非空时退出码 1；
-- 豁免清单：AI 自身端点（api/system/ai/*）不计入候选；
+- 豁免清单：AI 自身端点（api/ai/*）不计入候选；
 - OpenAPI：声明式动作按 (method, path) 命中即注入 x-ai-*，视图 ai_meta 可覆盖。
 """
 
@@ -48,8 +48,8 @@ class TestAuditCommand:
         import json
 
         payload = json.loads(run_audit(**{"json": True, "show_exempted": True}))
-        assert all(not row["url"].startswith("api/system/ai/") for row in payload["candidates"])
-        assert any(row["url"].startswith("api/system/ai/") for row in payload["exempted"])
+        assert all(not row["url"].startswith("api/ai/") for row in payload["candidates"])
+        assert any(row["url"].startswith("api/ai/") for row in payload["exempted"])
         # 声明的动作必须命中路由（失效声明为空 = 注册表与路由面一致）
         assert payload["stale"] == []
 

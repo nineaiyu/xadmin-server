@@ -15,7 +15,7 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-URGE_URL = "/api/system/approval-instances/{pk}/urge"
+URGE_URL = "/api/approval/approval-instances/{pk}/urge"
 
 
 @pytest.fixture

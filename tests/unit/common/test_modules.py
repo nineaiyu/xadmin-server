@@ -146,7 +146,7 @@ class TestRouteGate:
         module_config(disable=["chat", "ai"])
         patterns = disabled_route_patterns()
         assert any(pattern.match("/api/chat/room") for pattern in patterns)
-        assert any(pattern.match("/api/system/ai/profiles") for pattern in patterns)
+        assert any(pattern.match("/api/ai/profiles") for pattern in patterns)
         assert not any(pattern.match("/api/system/user") for pattern in patterns)
 
     def test_middleware_blocks_disabled_module_with_404(self, module_config):

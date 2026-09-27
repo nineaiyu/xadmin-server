@@ -50,7 +50,7 @@ from common.swagger.utils import get_default_response_schema
 from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 #: 「全部在途」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
-ONGOING_PERMISSION_PATH = "api/system/approval-instances/ongoing$"
+ONGOING_PERMISSION_PATH = "api/approval/approval-instances/ongoing$"
 
 
 class ApprovalFlowFilter(BaseFilterSet):

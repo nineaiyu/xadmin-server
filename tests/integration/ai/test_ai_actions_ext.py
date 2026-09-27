@@ -24,10 +24,10 @@ from system.models import OperationLog, SystemConfig, UserRole
 
 pytestmark = pytest.mark.django_db
 
-EXECUTE_URL = "/api/system/ai/assistant/action/execute"
-MCP_URL = "/api/system/ai/mcp"
+EXECUTE_URL = "/api/ai/assistant/action/execute"
+MCP_URL = "/api/ai/mcp"
 
-AI_EXECUTE_PERM = (("actionExecute:AiAssistant", "api/system/ai/assistant/action/(interpret/stream|execute)$", "POST"),)
+AI_EXECUTE_PERM = (("actionExecute:AiAssistant", "api/ai/assistant/action/(interpret/stream|execute)$", "POST"),)
 MONITOR_PERMS = (("list:SystemMonitor", r"api/system/monitor/overview$", "GET"),)
 MONITOR_EVENTS_PERMS = (("events:SystemMonitor", r"api/system/monitor/events$", "GET"),)
 DELETE_ROLE_PERMS = (("destroy:SystemRole", r"api/system/role/(?P<pk>[^/.]+)$", "DELETE"),)
@@ -171,9 +171,9 @@ class TestDashboardOverview:
         grant_perms(
             role,
             menu_factory,
-            (("status:AiAssistant", r"api/system/ai/assistant/(status|metrics|history|tools)$", "GET"),),
+            (("status:AiAssistant", r"api/ai/assistant/(status|metrics|history|tools)$", "GET"),),
         )
-        response = actor_client.get("/api/system/ai/assistant/tools")
+        response = actor_client.get("/api/ai/assistant/tools")
         assert response.data["code"] == 1000, response.data
         names = {entry["name"] for entry in response.data["data"]["tools"]}
         assert "dashboard.overview" in names
@@ -255,7 +255,7 @@ class TestHighRiskApproval:
         grant_perms(
             role,
             menu_factory,
-            (("mcp:AiMcp", r"api/system/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
+            (("mcp:AiMcp", r"api/ai/mcp$", "POST"),) + DELETE_ROLE_PERMS,
         )
         api_client.force_authenticate(user=user)
         payload = {
@@ -279,7 +279,7 @@ class TestMultiDrafts:
 
         monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
 
-    INTERPRET_URL = "/api/system/ai/assistant/action/interpret/stream"
+    INTERPRET_URL = "/api/ai/assistant/action/interpret/stream"
 
     def test_single_actions_array(self, actor_client, ai_action_settings, actor, monkeypatch, menu_factory):
         grant_perms(actor.roles.first(), menu_factory, MONITOR_PERMS)

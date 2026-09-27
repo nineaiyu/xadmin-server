@@ -16,7 +16,7 @@ from system.models import Menu, OperationLog, UserInfo
 
 pytestmark = pytest.mark.django_db
 
-METRICS_URL = "/api/system/ai/assistant/metrics"
+METRICS_URL = "/api/ai/assistant/metrics"
 
 
 def seed_ai_log(module, ok, user, days_ago=0, usage=None):
@@ -42,7 +42,7 @@ def metrics_user(db, role, menu_factory):
     user = UserInfo.objects.create_user(username="ai_metric_admin", password="Test@123456", nickname="观测量")
     user.roles.add(role)
     perm = Menu.objects.filter(name="status:AiAssistant").first() or menu_factory(
-        "status:AiAssistant", path="api/system/ai/assistant/(status|metrics)$", method="GET"
+        "status:AiAssistant", path="api/ai/assistant/(status|metrics)$", method="GET"
     )
     role.menu.add(perm)
     return user

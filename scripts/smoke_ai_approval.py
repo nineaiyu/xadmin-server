@@ -56,7 +56,7 @@ def smoke_ai(user: str) -> None:
     print(f"\n== AI 助手（{user}）==")
     session = client_as(user)
 
-    resp = session.get(f"{BASE}/api/system/ai/assistant/status")
+    resp = session.get(f"{BASE}/api/ai/assistant/status")
     body = resp.json()
     check(
         "status 可用",
@@ -64,7 +64,7 @@ def smoke_ai(user: str) -> None:
         f"enabled={body.get('data', {}).get('enabled')}",
     )
 
-    resp = session.get(f"{BASE}/api/system/ai/assistant/tools")
+    resp = session.get(f"{BASE}/api/ai/assistant/tools")
     tools = (resp.json().get("data") or {}).get("tools") or []
     check(
         "工具目录非空（权限点命中）",
@@ -72,11 +72,11 @@ def smoke_ai(user: str) -> None:
         f"{len(tools)} 个动作",
     )
 
-    resp = session.post(f"{BASE}/api/system/ai/assistant/ask", json={"question": "系统有哪些功能？"})
+    resp = session.post(f"{BASE}/api/ai/assistant/ask", json={"question": "系统有哪些功能？"})
     answer = (resp.json().get("data") or {}).get("answer") or ""
     check("文档问答返回回答", resp.status_code == 200 and len(answer) > 0, f"{len(answer)} 字")
 
-    resp = session.get(f"{BASE}/api/system/ai/assistant/history")
+    resp = session.get(f"{BASE}/api/ai/assistant/history")
     check(
         "对话历史可读（status 组正则含 history）",
         resp.status_code == 200 and resp.json().get("code") == 1000,
@@ -87,14 +87,14 @@ def smoke_approval(applicant: str, approver: str, admin: str) -> None:
     print(f"\n== 审批流程（{applicant} → {approver} → {admin}）==")
     staff, lead, boss = client_as(applicant), client_as(approver), client_as(admin)
 
-    flows = staff.get(f"{BASE}/api/system/approval-instances/available-flows").json().get("data") or []
+    flows = staff.get(f"{BASE}/api/approval/approval-instances/available-flows").json().get("data") or []
     leave = next((flow for flow in flows if flow.get("code") == "leave"), None)
     if not check("可发起流程列表含 leave", leave is not None, f"{[f.get('code') for f in flows]}"):
         return
 
     # days>3 触发第二节点（节点条件：days > 3 → 人事复核）
     resp = staff.post(
-        f"{BASE}/api/system/approval-instances",
+        f"{BASE}/api/approval/approval-instances",
         json={"flow": leave["pk"], "title": "上线冒烟-请假", "form_data": {"days": 5, "reason": "脚本冒烟"}},
     )
     payload = resp.json()
@@ -102,15 +102,15 @@ def smoke_approval(applicant: str, approver: str, admin: str) -> None:
         return
     instance_pk = payload["data"]["pk"]
 
-    resp = lead.post(f"{BASE}/api/system/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-节点1"})
+    resp = lead.post(f"{BASE}/api/approval/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-节点1"})
     if not check("主管通过（节点1）", resp.json().get("code") == 1000, str(resp.json().get("detail"))):
         return
 
-    resp = boss.post(f"{BASE}/api/system/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-节点2"})
+    resp = boss.post(f"{BASE}/api/approval/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-节点2"})
     if not check("人事复核通过（节点2）", resp.json().get("code") == 1000, str(resp.json().get("detail"))):
         return
 
-    detail = boss.get(f"{BASE}/api/system/approval-instances/{instance_pk}").json().get("data") or {}
+    detail = boss.get(f"{BASE}/api/approval/approval-instances/{instance_pk}").json().get("data") or {}
     status = detail.get("status") or {}
     check(
         "实例终态为已通过",
@@ -118,7 +118,7 @@ def smoke_approval(applicant: str, approver: str, admin: str) -> None:
         json.dumps(status, ensure_ascii=False),
     )
 
-    pending = boss.get(f"{BASE}/api/system/approval-instances/pending-count").json().get("data") or {}
+    pending = boss.get(f"{BASE}/api/approval/approval-instances/pending-count").json().get("data") or {}
     check("待办计数可读", "pending" in pending, str(pending))
 
 
@@ -127,13 +127,13 @@ def smoke_transfer(applicant: str, approver: str, admin: str) -> None:
     print(f"\n== 审批转交 + 管理视角（{applicant} → {approver} → {admin}）==")
     staff, lead, boss = client_as(applicant), client_as(approver), client_as(admin)
 
-    flows = staff.get(f"{BASE}/api/system/approval-instances/available-flows").json().get("data") or []
+    flows = staff.get(f"{BASE}/api/approval/approval-instances/available-flows").json().get("data") or []
     leave = next((flow for flow in flows if flow.get("code") == "leave"), None)
     if not check("可发起流程列表含 leave", leave is not None):
         return
 
     resp = staff.post(
-        f"{BASE}/api/system/approval-instances",
+        f"{BASE}/api/approval/approval-instances",
         json={"flow": leave["pk"], "title": "上线冒烟-转交", "form_data": {"days": 2, "reason": "脚本冒烟-转交"}},
     )
     payload = resp.json()
@@ -142,17 +142,17 @@ def smoke_transfer(applicant: str, approver: str, admin: str) -> None:
     instance_pk = payload["data"]["pk"]
 
     resp = lead.post(
-        f"{BASE}/api/system/approval-instances/{instance_pk}/transfer",
+        f"{BASE}/api/approval/approval-instances/{instance_pk}/transfer",
         json={"username": admin, "comment": "脚本冒烟-转交"},
     )
     if not check("转交待办给管理员", resp.json().get("code") == 1000, str(resp.json().get("detail"))):
         return
 
-    pending = boss.get(f"{BASE}/api/system/approval-instances?scope=pending").json().get("data") or {}
+    pending = boss.get(f"{BASE}/api/approval/approval-instances?scope=pending").json().get("data") or {}
     pending_pks = {row.get("pk") for row in (pending.get("results") or [])}
     check("管理员待办接管该申请", str(instance_pk) in pending_pks, f"待办 {pending.get('total')} 条")
 
-    resp = boss.get(f"{BASE}/api/system/approval-instances?scope=ongoing")
+    resp = boss.get(f"{BASE}/api/approval/approval-instances?scope=ongoing")
     ongoing = resp.json().get("data") or {}
     ongoing_pks = {str(row.get("pk")) for row in (ongoing.get("results") or [])}
     check(
@@ -161,7 +161,9 @@ def smoke_transfer(applicant: str, approver: str, admin: str) -> None:
         f"在途 {ongoing.get('total')} 条",
     )
 
-    resp = boss.post(f"{BASE}/api/system/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-转交后通过"})
+    resp = boss.post(
+        f"{BASE}/api/approval/approval-instances/{instance_pk}/approve", json={"comment": "冒烟-转交后通过"}
+    )
     check("转交后由管理员通过", resp.json().get("code") == 1000, str(resp.json().get("detail")))
 
 
@@ -170,7 +172,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
     print(f"\n== 导出 + 批量转交 + 达标线（{applicant} / {approver} / {admin}）==")
     staff, lead, boss = client_as(applicant), client_as(approver), client_as(admin)
 
-    flows = staff.get(f"{BASE}/api/system/approval-instances/available-flows").json().get("data") or []
+    flows = staff.get(f"{BASE}/api/approval/approval-instances/available-flows").json().get("data") or []
     leave = next((flow for flow in flows if flow.get("code") == "leave"), None)
     if not check("可发起流程列表含 leave", leave is not None):
         return
@@ -178,7 +180,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
     pks = []
     for index in (1, 2):
         resp = staff.post(
-            f"{BASE}/api/system/approval-instances",
+            f"{BASE}/api/approval/approval-instances",
             json={
                 "flow": leave["pk"],
                 "title": f"上线冒烟-批量{index}",
@@ -193,7 +195,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
     check("发起 2 条申请", len(pks) == 2)
 
     # 导出（申请人视角：导出自己的申请；字段权限已按演示角色配置）
-    resp = staff.get(f"{BASE}/api/system/approval-instances/export-data?type=csv")
+    resp = staff.get(f"{BASE}/api/approval/approval-instances/export-data?type=csv")
     content = resp.content.decode("utf-8-sig", errors="replace")
     check(
         "导出 CSV 含申请数据",
@@ -203,7 +205,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
 
     # 批量转交：两条一次交给管理员
     resp = lead.post(
-        f"{BASE}/api/system/approval-instances/batch-transfer",
+        f"{BASE}/api/approval/approval-instances/batch-transfer",
         json={"pks": pks, "username": admin, "comment": "脚本冒烟-批量转交"},
     )
     body = resp.json()
@@ -211,7 +213,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
     check("批量转交 2 条待办", body.get("code") == 1000 and success == 2, str(body.get("detail")))
 
     # 达标线预览：转交后由管理员持有待办，读详情看节点进度
-    row = boss.get(f"{BASE}/api/system/approval-instances/{pks[0]}").json().get("data") or {}
+    row = boss.get(f"{BASE}/api/approval/approval-instances/{pks[0]}").json().get("data") or {}
     progress = row.get("node_progress") or {}
     check(
         "节点进度（达标线）可见",
@@ -221,7 +223,7 @@ def smoke_export_batch_progress(applicant: str, approver: str, admin: str) -> No
 
     # 收尾：管理员通过两条（避免遗留测试数据占据待办）
     for pk in pks:
-        resp = boss.post(f"{BASE}/api/system/approval-instances/{pk}/approve", json={"comment": "冒烟-批量后通过"})
+        resp = boss.post(f"{BASE}/api/approval/approval-instances/{pk}/approve", json={"comment": "冒烟-批量后通过"})
         if resp.json().get("code") != 1000:
             check(f"收尾通过 {str(pk)[:8]}", False, str(resp.json().get("detail")))
             return

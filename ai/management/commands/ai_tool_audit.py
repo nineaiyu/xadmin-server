@@ -24,7 +24,7 @@ from django.core.management.base import BaseCommand
 
 #: 明确不 AI 化的路由前缀（AI 自身 / 认证 / 文档 / 实时通道 / 内部观测）
 EXEMPT_PREFIXES = (
-    "api/system/ai/",
+    "api/ai/",
     "api/system/auth/",
     "api/system/login",
     "api/system/logout",

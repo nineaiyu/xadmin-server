@@ -142,8 +142,8 @@ def register_approval_handlers():
     """
     from approval.utils.approval import register_on_approved
 
-    register_on_approved(r"^/api/system/dynamic-form-submissions/?$", submit_from_approval)
-    register_on_approved(r"^/api/system/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
+    register_on_approved(r"^/api/dataset/dynamic-form-submissions/?$", submit_from_approval)
+    register_on_approved(r"^/api/dataset/dynamic-form-submissions/(?P<pk>[^/.]+)/submit$", update_from_approval)
 
 
 def sync_dform_instance(instance, status, reason: str = "") -> None:

@@ -60,11 +60,11 @@ class TestGenerateModuleCommand:
             "--menu",
             "AiAssistant",
             "--permission",
-            "api/system/ai/",
+            "api/ai/",
         )
         content = (demo_app / "modules.py").read_text(encoding="utf-8")
         assert 'menus=("Chat", "AiAssistant"),' in content
-        assert 'permissions=("api/system/ai/",),' in content
+        assert 'permissions=("api/ai/",),' in content
 
     def test_unknown_menu_warns(self, demo_app):
         output = run_generate("my_biz", "--app", "demo", "--menu", "NotExistMenu")

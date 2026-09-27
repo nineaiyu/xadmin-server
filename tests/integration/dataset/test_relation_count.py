@@ -21,7 +21,7 @@ from system.views.admin.role import RoleViewSet
 pytestmark = pytest.mark.django_db
 
 ROLE_URL = "/api/system/role"
-DATASET_URL = "/api/system/datasets"
+DATASET_URL = "/api/dataset/datasets"
 USER_URL = "/api/system/user"
 
 

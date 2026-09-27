@@ -59,7 +59,7 @@ BASELINE = {
     "/api/system/imports": (3, 5),
     "/api/system/tasks/executions": (3, 5),
     "/api/system/file": (3, 5),
-    "/api/system/approvals": (3, 5),
+    "/api/approval/approvals": (3, 5),
 }
 
 

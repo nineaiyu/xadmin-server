@@ -161,7 +161,7 @@ def test_approve_request_auto_completes_submission(applicant, approver):
     approval = ApprovalRequest.objects.create(
         module="动态表单提交",
         method="POST",
-        path="/api/system/dynamic-form-submissions",
+        path="/api/dataset/dynamic-form-submissions",
         params={},
         payload={"form": str(plain.pk), "data": {"amount": 120, "reason": "出差"}},
         creator=applicant,
@@ -189,7 +189,7 @@ def test_auto_complete_skipped_without_payload(applicant, approver):
     approval = ApprovalRequest.objects.create(
         module="动态表单提交",
         method="POST",
-        path="/api/system/dynamic-form-submissions",
+        path="/api/dataset/dynamic-form-submissions",
         params={},
         payload={},
         creator=applicant,
@@ -209,7 +209,7 @@ def test_auto_complete_failure_does_not_break_approval(applicant, approver):
     approval = ApprovalRequest.objects.create(
         module="动态表单提交",
         method="POST",
-        path="/api/system/dynamic-form-submissions",
+        path="/api/dataset/dynamic-form-submissions",
         params={},
         payload={"form": str(plain.pk), "data": {}},
         creator=applicant,

@@ -13,7 +13,7 @@ from dataset.models.dform import DynamicForm, DynamicFormSubmission
 
 pytestmark = pytest.mark.django_db
 
-EXPORT_URL = "/api/system/dynamic-form-submissions/export-data"
+EXPORT_URL = "/api/dataset/dynamic-form-submissions/export-data"
 
 
 def _make_form(**overrides):
@@ -39,7 +39,7 @@ def export_menu(db, menu_factory, role):
     """普通用户的导出权限点（权限菜单驱动；超管不需要）。"""
     menu = menu_factory(
         "exportData:FormMySubmission",
-        path="api/system/dynamic-form-submissions/export-data$",
+        path="api/dataset/dynamic-form-submissions/export-data$",
         method="GET",
     )
     role.menu.add(menu)

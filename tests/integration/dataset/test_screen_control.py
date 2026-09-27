@@ -17,7 +17,7 @@ from dataset.ws_screen import ScreenDisplayNotify, can_view_screen, load_screen_
 
 pytestmark = pytest.mark.django_db
 
-SCREEN_URL = "/api/system/screens"
+SCREEN_URL = "/api/dataset/screens"
 
 
 @pytest.fixture

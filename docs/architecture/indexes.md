@@ -34,7 +34,7 @@
 全局搜索的 `icontains` 是**前缀通配**（`LIKE '%关键词%'`），B-tree 无法命中；
 PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontains，非 PG / 扩展不可用
 自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`，建索引/回滚见
-迁移 `system/migrations/0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more.py`（vendor 守卫 + 失败只告警）。
+快照按表归属拆在 `system/migrations/0004_accountrisk_apiapplication_apiapplicationgrant_and_more.py`（system 侧 5 个）与 `approval/migrations/0001_initial.py`（approval 侧 4 个）（vendor 守卫 + 失败只告警，见 ADR-058）。
 
 | 表                     | 索引                                                                                  | 服务的检索字段                     |
 |-----------------------|-------------------------------------------------------------------------------------|-----------------------------|

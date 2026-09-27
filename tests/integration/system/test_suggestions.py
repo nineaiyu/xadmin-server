@@ -14,8 +14,8 @@ import pytest
 
 from system.models import UserInfo
 
-SUGGEST_URL = "/api/system/approval-delegations/suggestions"
-COLUMNS_URL = "/api/system/approval-delegations/search-columns"
+SUGGEST_URL = "/api/approval/approval-delegations/suggestions"
+COLUMNS_URL = "/api/approval/approval-delegations/search-columns"
 
 pytestmark = pytest.mark.django_db
 
@@ -32,7 +32,7 @@ def delegate_user(db):
 
 @pytest.fixture
 def delegation_menu(menu_factory):
-    return menu_factory("list:SystemApprovalDelegation", path="api/system/approval-delegations$", method="GET")
+    return menu_factory("list:SystemApprovalDelegation", path="api/approval/approval-delegations$", method="GET")
 
 
 class TestSuggestionsContract:
@@ -91,7 +91,7 @@ class TestSuggestionsContract:
         resp = auth_client.get(COLUMNS_URL)
         assert resp.data["code"] == 1000
         columns = {item["key"]: item for item in resp.data["data"]}
-        assert columns["delegate"]["suggest_url"] == "/api/system/approval-delegations/suggestions"
+        assert columns["delegate"]["suggest_url"] == "/api/approval/approval-delegations/suggestions"
         assert "suggest_url" not in columns["delegator"]
 
     def test_inline_metadata_with_meta_exposes_suggest_url(self, auth_client):
@@ -100,11 +100,11 @@ class TestSuggestionsContract:
         回归守护：内联路径下 request.path_info 是资源前缀本身（无 /search-columns
         后缀），get_suggest_url 的路径推导曾因此返回 None 导致联想不生效。
         """
-        resp = auth_client.get("/api/system/approval-delegations", {"with_meta": "1"})
+        resp = auth_client.get("/api/approval/approval-delegations", {"with_meta": "1"})
         assert resp.data["code"] == 1000
         columns = resp.data["data"].get("search_columns") or []
         delegate = next(item for item in columns if item["key"] == "delegate")
-        assert delegate["suggest_url"] == "/api/system/approval-delegations/suggestions"
+        assert delegate["suggest_url"] == "/api/approval/approval-delegations/suggestions"
 
 
 class TestSuggestionsPermission:

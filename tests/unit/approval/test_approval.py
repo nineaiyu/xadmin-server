@@ -325,7 +325,7 @@ class TestApprovalActions:
         from rest_framework.request import Request as DRFRequest
 
         request = DRFRequest(
-            _request(normal_user, "post", "/api/system/approvals/batch-approve", data={"pks": [approval_id]})
+            _request(normal_user, "post", "/api/approval/approvals/batch-approve", data={"pks": [approval_id]})
         )
         view = ApprovalRequestViewSet()
         view.request = request
@@ -358,7 +358,7 @@ class TestApprovalActions:
         from system.services import get_users_by_perm
 
         # 权限码挂 PERMISSION 类型菜单，经角色授权给 normal_user（role=common）
-        perm = menu_factory("approve:SystemApprovalRequest", path="api/system/approvals$", method="POST")
+        perm = menu_factory("approve:SystemApprovalRequest", path="api/approval/approvals$", method="POST")
         role.menu.add(perm)
         # 停用菜单不参与反查
         inactive = menu_factory("approve:SystemOther", path="api/system/other$", method="POST", is_active=False)
@@ -405,26 +405,26 @@ class TestApprovalActions:
     def test_viewset_approve_and_scope_list(self, superuser, normal_user, role, menu_factory, api_client):
         """审批中心 ViewSet：通过动作 + 待我审批/我发起的取值域。"""
         # normal_user 走自定义 IsAuthenticated 的 RBAC 菜单链路，需授列表权限
-        perm = menu_factory("审批查询", path="api/system/approvals$", method="GET")
+        perm = menu_factory("审批查询", path="api/approval/approvals$", method="GET")
         role.menu.add(perm)
 
         _enable_interception()
         response = _submit(normal_user)
         approval_id = response.data["data"]["approval_id"]
 
-        request = _request(superuser, "post", f"/api/system/approvals/{approval_id}/approve")
+        request = _request(superuser, "post", f"/api/approval/approvals/{approval_id}/approve")
         ApprovalRequestViewSet.as_view({"post": "approve"})(request, pk=approval_id)
         assert ApprovalRequest.objects.get(pk=approval_id).status == APPROVED_STATUS
 
         # 待我审批页签（超管）：已通过单不在其中（total 口径）
-        request = _request(superuser, "get", "/api/system/approvals", {"scope": "pending"})
+        request = _request(superuser, "get", "/api/approval/approvals", {"scope": "pending"})
         response_pending = ApprovalRequestViewSet.as_view({"get": "list"})(request)
         assert response_pending.data["data"]["total"] == 0
 
         # 我发起的页签（normal_user）：可见自己发起的单。
         # 普通 user 的字段权限为空 → 序列化行被裁剪为空 dict，断言用 total 口径
         api_client.force_authenticate(user=normal_user)
-        response_mine = api_client.get("/api/system/approvals", {"scope": "mine"})
+        response_mine = api_client.get("/api/approval/approvals", {"scope": "mine"})
         assert response_mine.data["code"] == 1000
         assert response_mine.data["data"]["total"] == 1
 
@@ -435,11 +435,11 @@ class TestApprovalActions:
         approval_id = response.data["data"]["approval_id"]
 
         api_client.force_authenticate(user=superuser)
-        response_no_reason = api_client.post(f"/api/system/approvals/{approval_id}/reject", {}, format="json")
+        response_no_reason = api_client.post(f"/api/approval/approvals/{approval_id}/reject", {}, format="json")
         assert response_no_reason.status_code == 400
 
         response_reject = api_client.post(
-            f"/api/system/approvals/{approval_id}/reject", {"reason": "风险操作"}, format="json"
+            f"/api/approval/approvals/{approval_id}/reject", {"reason": "风险操作"}, format="json"
         )
         assert response_reject.data["code"] == 1000
         assert ApprovalRequest.objects.get(pk=approval_id).status == ApprovalRequest.Status.REJECTED
@@ -453,9 +453,9 @@ class TestApprovalOperations:
         approval_id = _submit(normal_user).data["data"]["approval_id"]
         api_client.force_authenticate(user=superuser)
 
-        no_reason = api_client.post("/api/system/approvals/batch-reject", {"pks": [approval_id]}, format="json")
+        no_reason = api_client.post("/api/approval/approvals/batch-reject", {"pks": [approval_id]}, format="json")
         assert no_reason.status_code == 400
-        no_pks = api_client.post("/api/system/approvals/batch-reject", {"reason": "风险操作"}, format="json")
+        no_pks = api_client.post("/api/approval/approvals/batch-reject", {"reason": "风险操作"}, format="json")
         assert no_pks.status_code == 400
         assert ApprovalRequest.objects.get(pk=approval_id).status == PENDING_STATUS
 
@@ -469,7 +469,7 @@ class TestApprovalOperations:
 
         api_client.force_authenticate(user=superuser)
         response = api_client.post(
-            "/api/system/approvals/batch-reject",
+            "/api/approval/approvals/batch-reject",
             {"pks": [first, second], "reason": "风险操作"},
             format="json",
         )
@@ -492,7 +492,7 @@ class TestApprovalOperations:
 
         request = DRFRequest(
             _request(
-                normal_user, "post", "/api/system/approvals/batch-reject", data={"pks": [approval_id], "reason": "x"}
+                normal_user, "post", "/api/approval/approvals/batch-reject", data={"pks": [approval_id], "reason": "x"}
             )
         )
         view = ApprovalRequestViewSet()
@@ -556,8 +556,8 @@ class TestApprovalOperations:
         _submit(normal_user)
         cache.clear()
         api_client.force_authenticate(user=superuser)
-        assert api_client.get("/api/system/approvals/pending-count").data["data"]["pending"] == 1
-        stats = api_client.get("/api/system/approvals/stats").data["data"]
+        assert api_client.get("/api/approval/approvals/pending-count").data["data"]["pending"] == 1
+        stats = api_client.get("/api/approval/approvals/stats").data["data"]
         assert {"days", "submitted", "approved", "rejected", "avg_approval_seconds", "pending"} <= set(stats)
 
 

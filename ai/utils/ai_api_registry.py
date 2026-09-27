@@ -359,7 +359,7 @@ API_ACTION_SPECS = {
         label=_("List approval requests"),
         description=_("Approval requests visible to the caller (mine to approve / submitted by me), newest first"),
         method="GET",
-        path="/api/system/approvals",
+        path="/api/approval/approvals",
         params={
             "status": {
                 "type": "string",
@@ -374,7 +374,7 @@ API_ACTION_SPECS = {
         label=_("Count my pending approvals"),
         description=_("Number of approval requests waiting for me to review"),
         method="GET",
-        path="/api/system/approvals/pending-count",
+        path="/api/approval/approvals/pending-count",
         params={},
     ),
     ACTION_APPROVAL_STATS: api_action(
@@ -382,7 +382,7 @@ API_ACTION_SPECS = {
         label=_("Show approval statistics"),
         description=_("Approval stats of recent 30 days (submitted/approved/rejected, average duration, my pending)"),
         method="GET",
-        path="/api/system/approvals/stats",
+        path="/api/approval/approvals/stats",
         params={},
     ),
     ACTION_APPROVAL_APPROVE: api_action(
@@ -393,7 +393,7 @@ API_ACTION_SPECS = {
             "flow itself). Request id comes from approval.list; the applicant cannot approve their own request"
         ),
         method="POST",
-        path="/api/system/approvals/<pk>/approve",
+        path="/api/approval/approvals/<pk>/approve",
         params={
             "pk": {
                 "type": "pk",
@@ -412,7 +412,7 @@ API_ACTION_SPECS = {
             "approval flow itself). Request id comes from approval.list"
         ),
         method="POST",
-        path="/api/system/approvals/<pk>/reject",
+        path="/api/approval/approvals/<pk>/reject",
         params={
             "pk": {
                 "type": "pk",

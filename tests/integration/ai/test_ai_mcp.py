@@ -17,7 +17,7 @@ from system.models import OperationLog
 
 pytestmark = pytest.mark.django_db
 
-MCP_URL = "/api/system/ai/mcp"
+MCP_URL = "/api/ai/mcp"
 
 
 @pytest.fixture

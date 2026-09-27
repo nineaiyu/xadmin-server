@@ -108,7 +108,7 @@ def user_has_permission(user, path: str, method: str = "GET") -> bool:
 
     用于「无独立路由、但需按权限点授权的功能开关」场景（如审批实例的
     ``scope=ongoing`` 管理视角）：权限点 path 与 menu.path 同格式（形如
-    ``api/system/approval-instances/ongoing$``），命中的是菜单-角色授权关系，
+    ``api/approval/approval-instances/ongoing$``），命中的是菜单-角色授权关系，
     与 ``get_user_permission`` 缓存同源（改授权后随缓存失效生效）。
     """
     if not user or not getattr(user, "is_authenticated", False):

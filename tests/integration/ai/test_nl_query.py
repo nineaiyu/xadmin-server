@@ -36,8 +36,8 @@ def _iter_stream(response):
     return content
 
 
-INTERPRET_URL = "/api/system/ai/assistant/nl-query/interpret"
-RUN_URL = "/api/system/ai/assistant/nl-query/run"
+INTERPRET_URL = "/api/ai/assistant/nl-query/interpret"
+RUN_URL = "/api/ai/assistant/nl-query/run"
 
 
 @pytest.fixture(autouse=True)
@@ -344,8 +344,8 @@ def grant_menus(user):
         )
 
     menus = [
-        _make("interpret:AiAssistant", "api/system/ai/assistant/nl-query/interpret$", "POST"),
-        _make("run:AiAssistant", "api/system/ai/assistant/nl-query/run$", "POST"),
+        _make("interpret:AiAssistant", "api/ai/assistant/nl-query/interpret$", "POST"),
+        _make("run:AiAssistant", "api/ai/assistant/nl-query/run$", "POST"),
     ]
     role = user.roles.first() or __import__("system.models", fromlist=["UserRole"]).UserRole.objects.create(
         name=f"role-{user.username}", code=user.username

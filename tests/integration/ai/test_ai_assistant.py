@@ -35,8 +35,8 @@ def _iter_stream(response):
     return content
 
 
-CONFIG_URL = "/api/system/ai/assistant/config"
-ASSISTANT_URL = "/api/system/ai/assistant"
+CONFIG_URL = "/api/ai/assistant/config"
+ASSISTANT_URL = "/api/ai/assistant"
 KNOWLEDGE_DOC = """# 测试知识文档
 
 ## 数据集介绍
@@ -232,7 +232,7 @@ class TestAsk:
         meta = MenuMeta.objects.create(title="ask:AiAssistant")
         menu = Menu.objects.create(
             name="ask:AiAssistant",
-            path="api/system/ai/assistant/ask$",
+            path="api/ai/assistant/ask$",
             method="POST",
             menu_type=Menu.MenuChoices.PERMISSION,
             meta=meta,

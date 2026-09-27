@@ -20,7 +20,7 @@ from ai.utils.ai import (
 
 pytestmark = pytest.mark.django_db
 
-PROFILES_URL = "/api/system/ai/profiles"
+PROFILES_URL = "/api/ai/profiles"
 
 
 @pytest.fixture(autouse=True)

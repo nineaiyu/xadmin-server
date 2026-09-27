@@ -16,7 +16,7 @@ USER_URL = "/api/system/user/batch-update"
 ROLE_URL = "/api/system/role/batch-update"
 DEPT_URL = "/api/system/dept/batch-update"
 TASK_URL = "/api/system/tasks/periodic/batch-update"
-LEAVE_URL = "/api/system/leaves/batch-update"
+LEAVE_URL = "/api/approval/leaves/batch-update"
 ROLE_DESTROY_URL = "/api/system/role/batch-destroy"
 MISSING_PK = "999999999"
 

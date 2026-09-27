@@ -11,7 +11,7 @@ from system.models import UserInfo
 
 pytestmark = pytest.mark.django_db
 
-USER_OPTIONS_URL = "/api/system/dynamic-form-submissions/user-options"
+USER_OPTIONS_URL = "/api/dataset/dynamic-form-submissions/user-options"
 
 
 @pytest.fixture

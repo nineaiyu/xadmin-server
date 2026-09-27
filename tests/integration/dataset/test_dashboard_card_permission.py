@@ -15,7 +15,7 @@ from system.models import DataPermission, FieldPermission, ModelLabelField, User
 
 pytestmark = pytest.mark.django_db
 
-DASHBOARDS_URL = "/api/system/dashboards"
+DASHBOARDS_URL = "/api/dataset/dashboards"
 
 # 行级数据权限：全部数据（value.all）——数据权限默认拒绝，无授权的用户行集为 none()
 DATA_PERMISSION_ALL_RULES = [
@@ -209,7 +209,7 @@ class TestEscalationMatrixPhase2:
 
     def test_cross_role_view_api(self, api_client, shared_dashboard, menu_factory):
         """同一仪表盘：role_a 只见 c1/c3，role_b 只见 c2/c3（跨角色不可互相越看）。"""
-        menu = menu_factory(name="dash-list", path="api/system/dashboards$", method="GET")
+        menu = menu_factory(name="dash-list", path="api/dataset/dashboards$", method="GET")
         user_a, role_a = self.make_user_with_role("matrix_a", "role_a")
         user_b, role_b = self.make_user_with_role("matrix_b", "role_b")
         role_a.menu.add(menu)
