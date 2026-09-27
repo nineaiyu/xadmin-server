@@ -11,10 +11,19 @@
 
 import importlib
 
+import pytest
+
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-MIGRATION = importlib.import_module("system.migrations.0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more")
+# trgm 索引快照按表归属拆在两个迁移里（ADR-058）：system 侧 5 个 + approval 侧 4 个
+MIGRATIONS = [
+    importlib.import_module(module_path)
+    for module_path in (
+        "system.migrations.0004_accountrisk_apiapplication_apiapplicationgrant_and_more",
+        "approval.migrations.0001_initial",
+    )
+]
 
 
 def _provider_table(provider) -> str:
@@ -58,16 +67,19 @@ class TestCoverage:
 
 class TestMigrationDrift:
     def test_snapshot_matches_runtime_registry(self):
-        snapshot = {name: (table, field) for name, table, field in MIGRATION.TRGM_INDEXES}
+        snapshot = {}
+        for migration in MIGRATIONS:
+            snapshot.update({name: (table, field) for name, table, field in migration.TRGM_INDEXES})
         registry = {item.name: (item.table, item.field) for item in search_indexes.SEARCH_TRGM_INDEXES}
         assert snapshot == registry, "迁移快照与 system/search_indexes.py 清单漂移（新增字段请补新迁移）"
 
-    def test_state_operations_match_snapshot(self):
-        operations = MIGRATION.Migration.operations
+    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
+    def test_state_operations_match_snapshot(self, migration):
+        operations = migration.Migration.operations
         state_ops = [op for op in operations if hasattr(op, "state_operations") and op.state_operations]
         assert len(state_ops) == 1, "迁移应仅有单个 SeparateDatabaseAndState（state 声明 + 受控执行）"
         declared = {op.index.name for op in state_ops[0].state_operations}
-        assert declared == {name for name, _table, _field in MIGRATION.TRGM_INDEXES}
+        assert declared == {name for name, _table, _field in migration.TRGM_INDEXES}
 
 
 class TestSqlShape:
@@ -121,19 +133,22 @@ class _NonPgConnection:
 
 
 class TestDegradation:
-    def test_migration_skips_non_postgres(self):
-        MIGRATION._create_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
-        MIGRATION._drop_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
+    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
+    def test_migration_skips_non_postgres(self, migration):
+        migration._create_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
+        migration._drop_indexes(None, _FakeSchemaEditor(_NonPgConnection()))
 
-    def test_migration_creates_extension_then_all_indexes(self):
+    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
+    def test_migration_creates_extension_then_all_indexes(self, migration):
         connection = _RecordingPgConnection()
-        MIGRATION._create_indexes(None, _FakeSchemaEditor(connection))
+        migration._create_indexes(None, _FakeSchemaEditor(connection))
         assert connection.log[0] == search_indexes.TRGM_EXTENSION_SQL
         created = connection.log[1:]
-        assert len(created) == len(MIGRATION.TRGM_INDEXES)
+        assert len(created) == len(migration.TRGM_INDEXES)
         assert all("USING gin" in sql and sql.startswith("CREATE INDEX IF NOT EXISTS") for sql in created)
 
-    def test_migration_degrades_when_extension_unavailable(self):
+    @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
+    def test_migration_degrades_when_extension_unavailable(self, migration):
         connection = _RecordingPgConnection(fail_extension=True)
-        MIGRATION._create_indexes(None, _FakeSchemaEditor(connection))
+        migration._create_indexes(None, _FakeSchemaEditor(connection))
         assert connection.log == [], "扩展不可用时不应再尝试建索引（检索回退顺序扫描）"

@@ -14,7 +14,7 @@
 破坏匹配（已在 E2E 库实证）；通配符只会放大检索范围，不构成注入（参数化）或越权
 （权限门在查询集层）。PostgreSQL 部署下由 pg_trgm GIN 索引加速前缀通配检索
 （清单/豁免/降级语义见 `system/search_indexes.py`，登记于 docs/architecture/indexes.md，
-迁移 `0004_aiknowledgechunk_aiknowledgedocument_aiprofile_and_more`）——**检索语义不变**：非 PG 或扩展不可用时自动回退
+索引快照按表归属拆在 system.0004 与 approval.0001 两个迁移，见 ADR-058）——**检索语义不变**：非 PG 或扩展不可用时自动回退
 顺序扫描，结果与排序口径一致；关键词 ≥2 字符才可能命中索引（单字符无 trigram）。
 """
 
@@ -149,7 +149,7 @@ SEARCH_PROVIDERS = (
         key="approval",
         label="审批单",
         route="/system/approval/index",
-        list_url="api/system/approvals",
+        list_url="api/approval/approvals",
         queryset=_approval_queryset,
         text_fields=("path", "module", "object_pk"),
         display_field="path",
@@ -160,7 +160,7 @@ SEARCH_PROVIDERS = (
         key="leave",
         label="请假申请",
         route="/system/leave/index",
-        list_url="api/system/leaves",
+        list_url="api/approval/leaves",
         queryset=_leave_queryset,
         text_fields=("reason",),
         display_field="reason",

@@ -10045,7 +10045,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.aiprofile",
+      "name": "ai.aiprofile",
       "label": "AI 配置档案"
     }
   },
@@ -10420,7 +10420,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.aiprofile",
+      "name": "ai.aiprofile",
       "label": "AI 配置档案"
     }
   },
@@ -13330,7 +13330,7 @@
       "dept_belong": null,
       "field_type": 0,
       "parent": null,
-      "name": "system.aiknowledgedocument",
+      "name": "ai.aiknowledgedocument",
       "label": "AI 知识库文档"
     }
   },
@@ -19945,7 +19945,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.aiknowledgechunk",
+      "name": "ai.aiknowledgechunk",
       "label": "AI 知识块"
     }
   },
@@ -20185,7 +20185,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.aiknowledgedocument",
+      "name": "ai.aiknowledgedocument",
       "label": "AI 知识库文档"
     }
   },
@@ -27580,7 +27580,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.aichatmessage",
+      "name": "ai.aichatmessage",
       "label": "AI 对话消息"
     }
   },
@@ -27850,7 +27850,7 @@
       "dept_belong": null,
       "field_type": 1,
       "parent": null,
-      "name": "system.aiusagerecord",
+      "name": "ai.aiusagerecord",
       "label": "AI 用量记录"
     }
   },
