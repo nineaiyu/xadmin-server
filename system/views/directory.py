@@ -4,6 +4,7 @@
 
 - 只读：仅 list（含 search-columns/search-fields 元数据），无写动作；
 - 数据权限随全局 BaseDataPermissionFilter 生效（调用者看不到的用户不在名录中）；
+- 按部门浏览含全部下级部门（点上级部门看到整棵子树的成员，符合名录浏览直觉）；
 - 岗位维度筛选与审批人解析同口径：仅启用且未删除岗位的在岗用户
   （M2M join 不经过默认管理器，需显式过滤软删除——见 approval/conditions.py 同款注释）。
 """
@@ -14,16 +15,17 @@ from django_filters import rest_framework as filters
 from common.core.filter import BaseFilterSet
 from common.core.modelset import OnlyListModelSet
 from common.core.pagination import DynamicPageNumber
-from system.models import UserInfo
+from system.models import DeptInfo, UserInfo
 from system.serializers.directory import DirectorySerializer
 
 
 class DirectoryFilter(BaseFilterSet):
     keyword = filters.CharFilter(method="filter_keyword")
+    dept = filters.UUIDFilter(method="filter_dept")
 
     class Meta:
         model = UserInfo
-        fields = ["dept", "posts", "gender"]
+        fields = ["posts", "gender"]
 
     def filter_keyword(self, queryset, name, value):
         value = str(value or "").strip()
@@ -35,6 +37,15 @@ class DirectoryFilter(BaseFilterSet):
             | Q(email__icontains=value)
             | Q(phone__icontains=value)
         )
+
+    def filter_dept(self, queryset, name, value):
+        """按部门浏览：含全部下级部门（点上级部门看到整棵子树的成员）。
+
+        部门树缓存结果含自身 + 后代；非法/不存在的部门主键由 UUIDFilter 前置拦截。
+        """
+        if not value:
+            return queryset
+        return queryset.filter(dept__in=DeptInfo.recursion_dept_info(dept_id=value))
 
 
 class DirectoryViewSet(OnlyListModelSet):

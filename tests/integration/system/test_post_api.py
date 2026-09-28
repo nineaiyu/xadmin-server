@@ -147,3 +147,30 @@ class TestPostMembers:
         assert resp.json()["code"] == 1000
         rows = resp.json()["data"]
         assert rows and set(rows[0]) == {"pk", "username", "nickname"}
+
+
+class TestSearchPostCandidates:
+    """岗位搜索候选（/api/system/search/post）：选人下拉与通讯录岗位视角共用。
+
+    候选清单带 user_count（人员名录展示岗位规模），且只含启用未删除岗位。
+    """
+
+    SEARCH_URL = "/api/system/search/post"
+
+    def test_candidates_carry_user_count(self, auth_client):
+        from system.models import UserInfo
+
+        post = Post.objects.create(name="候选岗", code="cand_post")
+        member = UserInfo.objects.create_user(username="cand_user", password="Test@123456")
+        member.posts.add(post)
+
+        resp = auth_client.get(self.SEARCH_URL, {"name": "候选岗"})
+        assert resp.json()["code"] == 1000, resp.json()
+        rows = resp.json()["data"]["results"]
+        assert rows and rows[0]["user_count"] == 1
+
+    def test_candidates_exclude_inactive(self, auth_client):
+        Post.objects.create(name="停用岗", code="cand_off", is_active=False)
+        resp = auth_client.get(self.SEARCH_URL, {"name": "停用岗"})
+        assert resp.json()["code"] == 1000
+        assert resp.json()["data"]["results"] == []

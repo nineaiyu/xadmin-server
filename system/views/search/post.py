@@ -8,7 +8,7 @@
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet
-from common.core.modelset import OnlyListModelSet
+from common.core.modelset import OnlyListModelSet, RelationCountMixin
 from common.utils import get_logger
 from system.models import Post
 from system.serializers.post import PostSerializer
@@ -28,12 +28,16 @@ class SearchPostFilter(BaseFilterSet):
 class SearchPostSerializer(PostSerializer):
     class Meta:
         model = Post
-        fields = ["pk", "name", "code", "dept", "dept_name", "rank", "is_active", "updated_time"]
+        fields = ["pk", "name", "code", "dept", "dept_name", "rank", "is_active", "user_count", "updated_time"]
         read_only_fields = [x.name for x in Post._meta.fields]
 
 
-class SearchPostViewSet(OnlyListModelSet):
-    """岗位搜索（通知选人等场景的远程搜索候选，仅启用岗位）"""
+class SearchPostViewSet(RelationCountMixin, OnlyListModelSet):
+    """岗位搜索（通知选人等场景的远程搜索候选，仅启用岗位）
+
+    候选清单带成员数（``user_count``，与岗位管理页同口径），供人员名录类页面
+    展示岗位规模；成员数注解由 RelationCountMixin 按序列化器声明预聚合。
+    """
 
     queryset = Post.objects.all()
     serializer_class = SearchPostSerializer

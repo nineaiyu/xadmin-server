@@ -66,6 +66,19 @@ class TestDirectoryScope:
         names = {row["username"] for row in resp.data["data"]["results"]}
         assert "dir_member" in names and "dir_fin_user" not in names
 
+    def test_dept_filter_includes_descendants(self, auth_client, member, dept):
+        """部门浏览含下级：点上级部门命中整棵子树成员；子部门不反向包含父部门。"""
+        child = DeptInfo.objects.create(name="前端组", code="dir_dev_fe", parent=dept)
+        UserInfo.objects.create_user(username="dir_child", password="Test@123456", dept=child)
+
+        resp = auth_client.get(DIRECTORY_URL, {"dept": str(dept.pk)})
+        names = {row["username"] for row in resp.data["data"]["results"]}
+        assert {"dir_member", "dir_child"}.issubset(names)
+
+        resp = auth_client.get(DIRECTORY_URL, {"dept": str(child.pk)})
+        names = {row["username"] for row in resp.data["data"]["results"]}
+        assert names == {"dir_child"}
+
     def test_post_filter_and_labels(self, auth_client, member, dept):
         """岗位筛选仅命中持岗用户；行内岗位标签含 pk/name/code（人员维度展示）。"""
         post = Post.objects.create(name="安全员", code="dir_post", dept=dept)
