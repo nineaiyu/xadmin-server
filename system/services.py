@@ -35,6 +35,7 @@ __all__ = [
     "DeptInfo",  # noqa: F822
     "ModelLabelField",  # noqa: F822
     "UserRole",  # noqa: F822
+    "Post",  # noqa: F822
     # 序列化器契约
     "UserInfoSerializer",  # noqa: F822
     # 信号契约
@@ -84,6 +85,7 @@ _LAZY_EXPORTS = {
     "DeptInfo": "system.models",
     "ModelLabelField": "system.models",
     "UserRole": "system.models.role",
+    "Post": "system.models",
     "UserInfoSerializer": "system.serializers.userinfo",
     # 周期任务/审批序列化器的展示增强字段（DisplayRelatedField）与打标序列化混入
     # （TaggedObjectSerializerMixin）：审批域拆分后经本契约门面消费（模块级 import

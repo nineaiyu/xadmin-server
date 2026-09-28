@@ -20,8 +20,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.models import Post
-from system.services import UserInfo, UserRole
+from system.services import Post, UserInfo, UserRole
 
 CANDIDATE_LIMIT = 1000
 
