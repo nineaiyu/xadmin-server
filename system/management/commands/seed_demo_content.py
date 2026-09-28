@@ -217,7 +217,11 @@ class Command(BaseCommand):
                 continue
             message_type = ChatMessage.MessageType.SYSTEM if sender is None else ChatMessage.MessageType.TEXT
             message, is_created = chat_service.create_message(
-                room, sender, content, message_type=message_type, client_msg_id=client_id
+                room,
+                sender,
+                content,
+                message_type=message_type,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+                client_msg_id=client_id,
             )
             if is_created:
                 stamp = timezone.now() - timedelta(minutes=minutes_ago)

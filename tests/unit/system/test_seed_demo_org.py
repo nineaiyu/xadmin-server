@@ -27,10 +27,10 @@ pytestmark = pytest.mark.django_db
 # 真实环境由 load_init_json 灌入菜单与字段树；测试库为空，这里按命令依赖的最小集构造
 PAGE_PATHS = [
     "/form-collection/my/index",
-    "/system/approval/instance/index",
-    "/system/approval/index",
+    "/approval/instance/index",
+    "/approval/index",
     "/user/notice/index",
-    "/system/leave/index",
+    "/approval/leave/index",
 ]
 
 

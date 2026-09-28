@@ -45,10 +45,10 @@ pytestmark = pytest.mark.django_db
 
 PAGE_PATHS = [
     "/form-collection/my/index",
-    "/system/approval/instance/index",
-    "/system/approval/index",
+    "/approval/instance/index",
+    "/approval/index",
     "/user/notice/index",
-    "/system/leave/index",
+    "/approval/leave/index",
 ]
 GRANT_MODELS = [
     "system.approvalflow",

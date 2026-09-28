@@ -69,14 +69,14 @@ USERS = [
 ROLE_MENUS = {
     "demo_staff_role": [
         "/form-collection/my/index",
-        "/system/approval/instance/index",
+        "/approval/instance/index",
         "/user/notice/index",
-        "/system/leave/index",
+        "/approval/leave/index",
         "/integration/ai/index",
     ],
     "demo_leader_role": [
-        "/system/approval/index",
-        "/system/approval/instance/index",
+        "/approval/index",
+        "/approval/instance/index",
         "/user/notice/index",
         "/integration/ai/index",
     ],

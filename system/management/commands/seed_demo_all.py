@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""一键加载全部演示数据：图书示例 / 组织 / 审批 / 请假 / 内容 / 演示用户。
+"""一键加载全部演示数据：图书示例 / 组织 / 审批 / 请假 / 内容 / 演示账号 / 用户。
 
 等价于依次执行：
 
@@ -9,6 +9,8 @@
     seed_demo_flows    审批实例 + 轻量审批单 + 表单提交
     seed_demo_leave    请假业务闭环（通过/驳回/待审/草稿）
     seed_demo_content  通知公告 / 聊天室 / 知识库 / 文件 / 委托 / Webhook / 应用
+    seed_demo_admin    对外演示账号 admin（密码 admin123）+ 演示模式角色
+    seed_demo_extras   岗位 / 标签打标 / AI 助手会话 / 导出中心记录
     seed_demo_users    批量演示用户（撑起数据集的趋势与分布）
 
 全程幂等，可重复执行；``--reset`` 先调用 ``seed_demo_clean`` 彻底清理再加载。
@@ -45,6 +47,8 @@ class Command(BaseCommand):
             ("审批实例与表单提交", lambda: call_command("seed_demo_flows")),
             ("请假业务闭环", lambda: call_command("seed_demo_leave")),
             ("内容数据（通知/聊天/知识库/文件等）", lambda: call_command("seed_demo_content")),
+            ("演示账号与权限（admin/admin123 + 演示模式角色）", lambda: call_command("seed_demo_admin")),
+            ("补充演示数据（岗位/标签/AI 会话/导出记录）", lambda: call_command("seed_demo_extras")),
         ]
         if not options["skip_users"]:
             steps.append(

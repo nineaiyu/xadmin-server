@@ -36,11 +36,15 @@ logger = get_logger(__name__)
 # 级联扫描的最大轮次：A 行被跳过 → 引用 A 的 B 行被跳过 → 引用 B 的 C 行……
 _MAX_CASCADE_ROUNDS = 5
 
+# 唯一键占用查询每批的键数：上千个键一次 OR 拼接会超 SQLite 表达式树深度
+# （单元测试环境即崩），分批查询顺带规避超长 SQL。
+_QUERY_CHUNK = 150
+
 
 def read_seed_rows(model_names, file_root) -> dict:
     """读取种子目录下各模型的文件，返回 ``{model_label: [row, ...]}``。"""
 
-    rows_by_model = {}
+    rows_by_model: dict[str, list] = {}
     for model in model_names:
         path = os.path.join(file_root, f"{model._meta.model_name}.json")
         if not os.path.exists(path):
@@ -69,9 +73,13 @@ def write_seed_rows(rows_by_model, model_names, target_dir) -> list:
 def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
     """剔除与库内数据冲突的种子行，返回 ``(rows_by_model, notes)``。
 
-    冲突判定：某行在**唯一键**（字段级 ``unique=True``，或单字段 / 多字段 ``UniqueConstraint``）
-    上的取值，已被库里另一主键的对象占用。随后级联处理引用被剔除行的行（外键整行剔除、
-    m2m 列表移除对应主键）。
+    冲突判定：某行在**唯一键**（字段级 ``unique=True``、``unique_together``，或单字段 /
+    多字段 ``UniqueConstraint``）上的取值，已被库里另一主键的对象占用。随后级联处理引用
+    被剔除行的行（外键整行剔除、m2m 列表移除对应主键）。
+
+    NULL 参与判定（NULL 与 NULL 视为同一取值）：库约束虽然视 NULL 互不相等，但"同名
+    根节点"这类 NULL 键组合在业务上是同一行——放开会让 ``loaddata`` 插入重复行
+    （现场：字段标签树 67 个 ``parent=NULL`` 的模型根节点与库内同名的种子行共存成双根）。
     """
 
     dropped: dict = {}
@@ -86,38 +94,41 @@ def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
         for field_names, condition in _unique_checks(model):
             # 每个唯一键过滤后重新取当前行（前一个键可能已剔除若干行）
             rows = pending.get(label) or []
-            keys = {}
+            keys: dict[tuple, tuple] = {}
             for row in rows:
                 values = tuple(row["fields"].get(name) for name in field_names)
-                # 含 NULL 的组合键不参与判定：PG 的 UNIQUE 视 NULL 互不相等
-                if any(value is None for value in values):
-                    continue
                 keys.setdefault(tuple(_normalize_unique(value) for value in values), values)
             if not keys:
                 continue
-            if len(field_names) == 1:
-                queryset = model._default_manager.using(using).filter(
-                    **{f"{field_names[0]}__in": [values[0] for values in keys.values()]}
-                )
-            else:
-                query = Q()
-                for values in keys.values():
-                    query |= Q(**dict(zip(field_names, values, strict=True)))
-                queryset = model._default_manager.using(using).filter(query)
+            base = model._default_manager.using(using).all()
             if condition is not None:
-                queryset = queryset.filter(condition)
-            existing = {
-                tuple(_normalize_unique(value) for value in values): pk
-                for *values, pk in queryset.values_list(*field_names, "pk")
-            }
+                base = base.filter(condition)
+            existing: dict = {}
+            if len(field_names) == 1:
+                column = field_names[0]
+                all_values = [values[0] for values in keys.values()]
+                non_null = [value for value in all_values if value is not None]
+                if len(non_null) < len(all_values):
+                    # Django 把 ``column=None`` 翻译为 IS NULL：NULL 键组合同样参与判定
+                    for pk in base.filter(**{f"{column}__isnull": True}).values_list("pk", flat=True):
+                        existing[(_normalize_unique(None),)] = pk
+                for start in range(0, len(non_null), _QUERY_CHUNK):
+                    chunk = non_null[start : start + _QUERY_CHUNK]
+                    for *values, pk in base.filter(**{f"{column}__in": chunk}).values_list(column, "pk"):
+                        existing[(_normalize_unique(values[0]),)] = pk
+            else:
+                key_values = list(keys.values())
+                for start in range(0, len(key_values), _QUERY_CHUNK):
+                    query = Q()
+                    for values in key_values[start : start + _QUERY_CHUNK]:
+                        query |= Q(**dict(zip(field_names, values, strict=True)))
+                    for *values, pk in base.filter(query).values_list(*field_names, "pk"):
+                        existing[tuple(_normalize_unique(value) for value in values)] = pk
             if not existing:
                 continue
             kept = []
             for row in rows:
                 values = tuple(row["fields"].get(name) for name in field_names)
-                if any(value is None for value in values):
-                    kept.append(row)
-                    continue
                 owner = existing.get(tuple(_normalize_unique(value) for value in values))
                 if owner is not None and str(owner) != str(row["pk"]):
                     desc = "、".join(f"{name}={value}" for name, value in zip(field_names, values, strict=True))
@@ -156,11 +167,13 @@ def filter_conflicting_rows(rows_by_model, *, using=DEFAULT_DB_ALIAS) -> tuple:
 def _unique_checks(model) -> list:
     """模型的唯一键清单：``[(字段名元组, 额外过滤 Q), ...]``。
 
-    两类都算唯一键：
+    三类都算唯一键：
     1. 字段级 ``unique=True``（单字段）；
     2. ``UniqueConstraint``——单字段或**多字段组合**（含条件约束，如角色/菜单的
-       "未删除数据唯一"、流程节点的 ``(flow, order)``、字典项的 ``(parent, code)``）。
-       组合键必须覆盖：漏判会让 ``loaddata`` 撞唯一约束，单事务回滚**全部**种子。
+       "未删除数据唯一"、流程节点的 ``(flow, order)``、字典项的 ``(parent, code)``）；
+    3. 老式 ``unique_together``——如字段标签的 ``(name, parent)``。迁移层会把它建成
+       数据库唯一约束，但不在 ``_meta.constraints`` 里，漏判会让 ``loaddata`` 撞唯一
+       约束，单事务回滚**全部**种子。
     """
 
     checks: list = []
@@ -172,6 +185,8 @@ def _unique_checks(model) -> list:
         if not fields:
             continue
         checks.append((tuple(fields), getattr(constraint, "condition", None)))
+    for fields in model._meta.unique_together:
+        checks.append((tuple(fields), None))
     # 去重：同一字段可能同时命中字段级 unique 与约束
     seen, unique_checks = set(), []
     for field_names, condition in checks:

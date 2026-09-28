@@ -17,7 +17,7 @@ from django.conf import settings as dj_settings
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.models import DataDict, UserRole
+from system.models import DataDict, ModelLabelField, UserRole
 from system.utils.seed import _unique_checks, build_seed_fixtures, filter_conflicting_rows
 
 pytestmark = pytest.mark.django_db
@@ -174,7 +174,7 @@ class TestFilterConflictingRows:
         assert len(filtered["approval.approvalflownode"]) == 1
 
     def test_composite_unique_null_value_kept(self):
-        """组合键含 NULL 时不判冲突（PG 的 UNIQUE 视 NULL 互不相等）。"""
+        """NULL 键只与 NULL 判冲突：库内同键取值非 NULL 时不误伤。"""
         ApprovalFlow.objects.create(pk=LEAVE_SEED_PK, code="leave", name="请假审批")
         ApprovalFlowNode.objects.create(
             pk="0ba28b97-24e2-4d34-a87a-787626fc5611", flow_id=LEAVE_SEED_PK, order=1, name="库内节点"
@@ -192,6 +192,30 @@ class TestFilterConflictingRows:
         assert notes == []
         assert len(filtered["approval.approvalflownode"]) == 1
 
+    def test_null_key_matches_db_null(self):
+        """NULL 键与库内 NULL 视为同一取值：同名根节点换 pk 重现时按冲突跳过。
+
+        现场背景：字段同步用新 pk 重建过 ``(name, parent=NULL)`` 的字段树根节点，
+        种子行若不判冲突会与库内行共存成双根——PG 的 UNIQUE 对 NULL 互不相等，
+        拦不住这种业务上的重复行（现场共 67 个根节点）。
+        """
+        ModelLabelField.objects.create(
+            pk="dbce1001-0000-4000-8000-000000000001", name="system.post", label="Post", field_type=1
+        )
+        rows = {
+            "system.modellabelfield": [
+                {
+                    "model": "system.modellabelfield",
+                    "pk": "dbce1002-0000-4000-8000-000000000002",
+                    "fields": {"name": "system.post", "parent": None, "label": "Post", "field_type": 1},
+                }
+            ]
+        }
+        filtered, notes = filter_conflicting_rows(rows)
+        assert filtered["system.modellabelfield"] == []
+        assert len(notes) == 1
+        assert "name=system.post" in notes[0]
+
 
 class TestUniqueChecks:
     def test_composite_constraints_included(self):
@@ -199,6 +223,10 @@ class TestUniqueChecks:
         assert ("flow", "order") in {names for names, _ in _unique_checks(ApprovalFlowNode)}
         assert ("flow", "version") in {names for names, _ in _unique_checks(ApprovalFlowVersion)}
         assert ("parent", "code") in {names for names, _ in _unique_checks(DataDict)}
+
+    def test_unique_together_included(self):
+        """老式 ``unique_together`` 同样进入检查清单（不在 _meta.constraints 里，漏判必崩）。"""
+        assert ("name", "parent") in {names for names, _ in _unique_checks(ModelLabelField)}
 
 
 class TestBuildSeedFixtures:

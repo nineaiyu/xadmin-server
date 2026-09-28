@@ -118,7 +118,7 @@ class Command(BaseCommand):
         deactivate = options["deactivate"]
         strict = options["strict"]
         invalid = []
-        warnings = []
+        warnings: list[tuple] = []
         for dp in DataPermission.objects.all().order_by("created_time"):
             try:
                 validate_rules(dp.rules or [])
