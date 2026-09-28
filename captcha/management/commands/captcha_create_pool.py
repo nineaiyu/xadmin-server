@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, **options):
-        verbose = int(options.get("verbosity"))
+        verbose = int(options.get("verbosity") or 0)
         count = options.get("pool_size")
         CaptchaStore.create_pool(count)
         verbose and self.stdout.write(f"Created {count} new captchas\n")

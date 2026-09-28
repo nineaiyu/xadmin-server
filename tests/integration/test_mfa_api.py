@@ -76,6 +76,32 @@ class TestOTPBind:
         assert resp.data["code"] == 1001
 
 
+class TestBindingPolicyGate:
+    """绑定入口与验证同口径：方式白名单收窄到空集时拒绝绑定（共享/演示账号防锁死）。"""
+
+    def test_start_rejected_when_policy_disallows(self, authed_client, normal_user):
+        normal_user.allowed_mfa_types = ["none"]
+        normal_user.save(update_fields=["allowed_mfa_types"])
+        resp = authed_client.post(OTP_START_URL)
+        assert resp.data["code"] == 1001
+        assert "policy" in resp.data["detail"] or "不允许" in resp.data["detail"]
+
+    def test_confirm_rejected_when_policy_disallows(self, authed_client, normal_user):
+        # start 在收窄前发出（候选密钥已进缓存），confirm 仍须拒绝落库
+        resp = authed_client.post(OTP_START_URL)
+        assert resp.data["code"] == 1000
+        normal_user.allowed_mfa_types = ["none"]
+        normal_user.save(update_fields=["allowed_mfa_types"])
+        resp = authed_client.post(OTP_CONFIRM_URL, {"code": "000000"})
+        assert resp.data["code"] == 1001
+        normal_user.refresh_from_db()
+        assert not normal_user.otp_secret_key
+
+    def test_unrestricted_account_still_binds(self, authed_client):
+        resp = authed_client.post(OTP_START_URL)
+        assert resp.data["code"] == 1000
+
+
 class TestUserConfirm:
     def test_methods_by_confirm_type(self, authed_client):
         """未绑定 OTP、无手机邮箱的用户：mfa 级别无可用方式，password 级别仅密码可用。"""

@@ -59,8 +59,8 @@ def _register_session_safe(request, user, login_type):
 def _login_type_for(user) -> "UserLoginLog.LoginTypeChoices":
     """账密登录来源：LdapBindBackend 认证成功记 LDAP，其余按本地账密。"""
     if getattr(user, "_ldap_authenticated", False):
-        return UserLoginLog.LoginTypeChoices.LDAP
-    return UserLoginLog.LoginTypeChoices.USERNAME
+        return UserLoginLog.LoginTypeChoices.LDAP  # type: ignore[return-value]  # Choices 元类
+    return UserLoginLog.LoginTypeChoices.USERNAME  # type: ignore[return-value]  # 同上
 
 
 class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -78,7 +78,8 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
         session = _register_session_safe(self.context.get("request"), self.user, login_type)
         if session:
             try:
-                refresh = RefreshToken(data["refresh"])
+                # simplejwt 标注入参为 Token，运行期接受已编码串
+                refresh = RefreshToken(data["refresh"])  # type: ignore[arg-type]
                 data["refresh"], data["access"] = bind_session_claim(refresh, session.pk)
             except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
                 logger.warning("bind session claim failed", exc_info=True)

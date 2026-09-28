@@ -245,6 +245,15 @@ class TestPasskeyApi:
         resp = auth_client.post(REGISTER_URL, payload, format="json", HTTP_ORIGIN=ORIGIN)
         assert resp.data["code"] == 1001
 
+    def test_register_rejected_when_policy_disallows(self, auth_client, superuser):
+        """方式白名单收窄到空集的账号（如共享演示账号）绑定入口直接拒绝。"""
+        superuser.allowed_mfa_types = ["none"]
+        superuser.save(update_fields=["allowed_mfa_types"])
+        resp = auth_client.post(REGISTER_URL, {}, format="json", HTTP_ORIGIN=ORIGIN)
+        assert resp.data["code"] == 1001
+        assert "policy" in resp.data["detail"] or "不允许" in resp.data["detail"]
+        assert UserPasskey.objects.count() == 0
+
 
 class TestMfaMethodPolicy:
     def test_global_allow_list_restricts(self, superuser, settings):
@@ -286,3 +295,45 @@ class TestMfaMethodPolicy:
         superuser.roles.add(role)
         # 无任何可用验证方式 → 降级（避免登录死锁）
         assert is_login_mfa_required(superuser) is False
+
+
+class TestPasskeyConfirmFlow:
+    """敏感操作二次确认（412 链路）支持 Passkey。
+
+    历史缺口：PasskeyBackend.global_enabled 改查 SECURITY_MFA_METHODS（登录白名单），
+    未走 SECURITY_MFA_CONFIRM_BACKENDS，导致 412 确认方式列表永远不含 passkey。
+    """
+
+    CONFIRM_URL = "/api/mfa/confirm"
+
+    def test_methods_include_passkey_when_enabled(self, auth_client, superuser, settings):
+        settings.SECURITY_MFA_CONFIRM_BACKENDS = ["otp", "sms", "email", "password", "passkey"]
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        _bind_passkey(superuser, private_key)
+        resp = auth_client.get(self.CONFIRM_URL, {"confirm_type": "mfa"})
+        names = [m["name"] for m in resp.data["data"]["methods"]]
+        assert "passkey" in names
+
+    def test_methods_exclude_passkey_when_disabled(self, auth_client, superuser, settings):
+        settings.SECURITY_MFA_CONFIRM_BACKENDS = ["otp", "sms", "email", "password"]
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        _bind_passkey(superuser, private_key)
+        resp = auth_client.get(self.CONFIRM_URL, {"confirm_type": "mfa"})
+        names = [m["name"] for m in resp.data["data"]["methods"]]
+        assert "passkey" not in names
+
+    def test_confirm_with_passkey_assertion(self, auth_client, superuser, settings):
+        settings.SECURITY_MFA_CONFIRM_BACKENDS = ["otp", "sms", "email", "password", "passkey"]
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        passkey = _bind_passkey(superuser, private_key, credential_id=b"confirm-cred")
+        payload = _assertion_payload(superuser, private_key, credential_id=b"confirm-cred")
+        resp = auth_client.post(
+            self.CONFIRM_URL,
+            {"confirm_type": "mfa", "method": "passkey", "code": json.dumps(payload)},
+            format="json",
+            HTTP_ORIGIN=ORIGIN,
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["expire_at"]
+        passkey.refresh_from_db()
+        assert passkey.last_used_at is not None

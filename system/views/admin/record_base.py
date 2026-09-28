@@ -7,6 +7,7 @@
 （文件字段名、文案、终态集合）与各自的 OpenAPI schema 声明。
 """
 
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from django.http import FileResponse
@@ -25,6 +26,9 @@ from system.utils.task_log import read_task_log_chunk
 
 
 class RecordStatsMixin:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+        queryset: Any
+
     """记录类视图的统计 action 公共实现（导出 / 导入 / 任务执行）。
 
     口径与缓存键集中在此，避免三处各自实现后漂移：
@@ -63,6 +67,10 @@ class RecordOwnerFilter(BaseFilterBackend):
 
 
 class RecordFileDownloadMixin:
+    if TYPE_CHECKING:
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     """记录关联文件下载的公共实现（经 DRF 鉴权，避免拿到 URL 即可下载敏感文件）。
 
     子类需声明 ``download_file_field``（记录上指向 UploadFile 的字段名）与
@@ -98,12 +106,16 @@ class RecordFileDownloadMixin:
 
 
 class RecordTaskLogMixin:
+    if TYPE_CHECKING:
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     """记录任务日志增量读取的公共实现。
 
     子类需声明 ``log_finished_statuses``（视为终态、无需再轮询的状态集合）。
     """
 
-    log_finished_statuses = ()
+    log_finished_statuses: tuple[Any, ...] = ()
 
     def read_record_task_log(self, request):
         record = self.get_object()

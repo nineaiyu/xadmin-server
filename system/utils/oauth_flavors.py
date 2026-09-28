@@ -18,6 +18,7 @@
 """
 
 import hashlib
+from typing import Any, NoReturn
 from urllib.parse import urlencode
 
 from django.core.cache import cache
@@ -117,12 +118,12 @@ def _json(response) -> dict:
     return payload if isinstance(payload, dict) else {}
 
 
-def _reject(action: str, provider: dict, detail, exc=None):
+def _reject(action: str, provider: dict, detail, exc=None) -> NoReturn:
     logger.warning("oauth flavor %s rejected. provider:%s detail:%s", action, provider.get("key"), detail)
     raise OAuthError(_ERR_REJECTED) from exc
 
 
-def _contact(action: str, provider: dict, exc):
+def _contact(action: str, provider: dict, exc) -> NoReturn:
     logger.warning("oauth flavor %s failed. provider:%s error:%s", action, provider.get("key"), exc)
     raise OAuthError(_ERR_CONTACT) from exc
 
@@ -282,7 +283,8 @@ def exchange_code_feishu(provider, code, redirect_uri, http_client=None):
         _contact("feishu exchange", provider, exc)
     if payload.get("code") not in (0, None):
         _reject("feishu exchange", provider, payload.get("msg") or payload)
-    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    raw_data = payload.get("data")
+    data: dict[str, Any] = raw_data if isinstance(raw_data, dict) else {}
     token = payload.get("access_token") or data.get("access_token")
     if not token:
         _reject("feishu exchange", provider, payload)
@@ -300,7 +302,8 @@ def fetch_userinfo_feishu(provider, token_payload, http_client=None):
         _contact("feishu userinfo", provider, exc)
     if payload.get("code") not in (0, None):
         _reject("feishu userinfo", provider, payload.get("msg") or payload)
-    userinfo = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    raw_userinfo = payload.get("data")
+    userinfo: dict[str, Any] = raw_userinfo if isinstance(raw_userinfo, dict) else {}
     if not userinfo:
         _reject("feishu userinfo", provider, payload)
     return _require_subject(

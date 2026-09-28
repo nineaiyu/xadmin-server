@@ -11,6 +11,8 @@
 ∩ 角色级 allowed_mfa_types ∩ 用户级 allowed_mfa_types —— 角色 / 用户只能收窄。
 """
 
+from typing import Any
+
 from django.conf import settings
 
 from common.utils import get_logger
@@ -50,7 +52,7 @@ def get_user_mfa_policy(user) -> dict:
       各维度为空 = 该维度不限制，全部为空时返回 None（不限制）；
     - ``mfa_required``：任一启用角色声明 mfa_required 即强制（登录时要求二次验证）。
     """
-    policy = {"methods": None, "mfa_required": False}
+    policy: dict[str, Any] = {"methods": None, "mfa_required": False}
     if user is None or not getattr(user, "pk", None):
         return policy
 
@@ -94,7 +96,8 @@ def get_backend(user, name, request=None):
             continue
         if not _method_allowed(user, cls.name):
             return None
-        backend = cls(user, request=request)
+        # 注册项均为 BaseMFA 的具体子类（抽象 check_code 已实现），mypy 按抽象基类推断故忽略
+        backend = cls(user, request=request)  # type: ignore[abstract]
         if backend.is_active():
             return backend
     return None
@@ -110,7 +113,7 @@ def get_enabled_backends(user, request=None, levels=None):
             continue
         if not _method_allowed(user, cls.name):
             continue
-        backend = cls(user, request=request)
+        backend = cls(user, request=request)  # type: ignore[abstract]  # 同上（具体子类）
         if backend.is_active():
             backends.append(backend)
     return backends

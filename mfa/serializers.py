@@ -19,7 +19,9 @@ class ConfirmSerializer(serializers.Serializer):
         choices=ConfirmType.choices, default=ConfirmType.MFA, label=_("Confirm type")
     )
     method = serializers.ChoiceField(choices=_METHOD_CHOICES, label=_("Verification method"))
-    code = serializers.CharField(max_length=128, label=_("Verification code / password"))
+    # 4096：容纳 Passkey 断言 JSON（client_data_json + authenticator_data + signature 的
+    # base64url 串），OTP/密码等短验证码同样适用；登录 MFA 链路本就不限长，口径对齐
+    code = serializers.CharField(max_length=4096, label=_("Verification code / password"))
 
 
 class SendCodeSerializer(serializers.Serializer):

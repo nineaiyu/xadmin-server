@@ -248,7 +248,7 @@ class TaggedPrefetchMixin:
     def optimize_queryset(self, queryset):
         from django.db.models import QuerySet
 
-        queryset = super().optimize_queryset(queryset)
+        queryset = super().optimize_queryset(queryset)  # type: ignore[misc]  # 宿主 mixin 未声明同名优化钩子
         if not isinstance(queryset, QuerySet):
             return queryset
         if getattr(self, "action", None) in self.tagged_prefetch_actions:

@@ -22,25 +22,14 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from common.core.credentials import (
-    SENSITIVE_KEY_PATTERN,
     SENSITIVE_SETTING_KEYS,
     encryption_status,
     plaintext_sensitive_keys,
+    plaintext_setting_names,
 )
 from common.utils import get_logger
 
 logger = get_logger(__name__)
-
-
-def _plaintext_setting_names() -> list:
-    """Setting 中「名字敏感但 encrypted=False」的行（明文风险面）。"""
-    from settings.models import Setting
-
-    offenders = []
-    for name in Setting.objects.filter(encrypted=False).values_list("name", flat=True):
-        if SENSITIVE_KEY_PATTERN.search(str(name or "")):
-            offenders.append(name)
-    return sorted(offenders)
 
 
 class Command(BaseCommand):
@@ -125,7 +114,7 @@ class Command(BaseCommand):
         for key in offenders:
             row = SystemConfig.objects.filter(key=key).first()
             self.stdout.write(self.style.ERROR(f"[plaintext] {key}: {str(getattr(row, 'value', ''))[:40]}…"))
-        setting_offenders = _plaintext_setting_names()
+        setting_offenders = plaintext_setting_names()
         for name in setting_offenders:
             self.stdout.write(self.style.ERROR(f"[plaintext] Setting {name}: encrypted=False"))
         if offenders or setting_offenders:

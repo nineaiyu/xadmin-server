@@ -48,6 +48,7 @@ def captcha_image(request, key, scale=1):
     else:
         raise ImproperlyConfigured("settings.CAPTCHA_FONT_PATH needs to be a path to a font or list of paths to fonts")
 
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont
     if fontpath.lower().strip().endswith("ttf"):
         font = ImageFont.truetype(fontpath, settings.CAPTCHA_FONT_SIZE * scale)
     else:
@@ -62,7 +63,7 @@ def captcha_image(request, key, scale=1):
     image = makeimg(size, settings.CAPTCHA_BACKGROUND_COLOR)
     xpos = 2
 
-    charlist = []
+    charlist: list[str] = []
     for char in text:
         if char in settings.CAPTCHA_PUNCTUATION and len(charlist) >= 1:
             charlist[-1] += char
@@ -77,7 +78,7 @@ def captcha_image(request, key, scale=1):
             charimage = charimage.rotate(
                 random.randrange(*settings.CAPTCHA_LETTER_ROTATION),
                 expand=0,
-                resample=Image.BICUBIC,
+                resample=Image.BICUBIC,  # type: ignore[attr-defined]  # Pillow 运行期存在、stub 未导出
             )
         charimage = charimage.crop(charimage.getbbox())
         maskimage = Image.new("L", size)

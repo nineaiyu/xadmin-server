@@ -25,8 +25,8 @@ from system.utils import user_invite
 class InviteValidateAPIView(GenericAPIView):
     """邀请令牌预检"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [ResetPasswordThrottle]
 
     @extend_schema(
@@ -42,8 +42,8 @@ class InviteValidateAPIView(GenericAPIView):
 class InviteAcceptAPIView(GenericAPIView):
     """邀请激活：设置密码（令牌一次性）"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [ResetPasswordThrottle]
 
     @extend_schema(

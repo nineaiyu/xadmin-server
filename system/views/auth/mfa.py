@@ -50,8 +50,8 @@ def _get_mfa_user(request):
 class LoginMFAPasskeyChallengeAPIView(APIView):
     """获取 Passkey 登录验证的挑战值（匿名，凭一次性 mfa_token 识别待验证用户）"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [LoginThrottle]
 
     @extend_schema(
@@ -75,8 +75,8 @@ class LoginMFAPasskeyChallengeAPIView(APIView):
 class LoginMFASendCodeAPIView(APIView):
     """发送登录 MFA 挑战验证码"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [LoginThrottle]
 
     @extend_schema(
@@ -106,8 +106,8 @@ class LoginMFASendCodeAPIView(APIView):
 class LoginMFAVerifyAPIView(APIView):
     """登录 MFA 二次验证，通过后签发正式 JWT"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [LoginThrottle]
 
     @extend_schema(

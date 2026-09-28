@@ -7,6 +7,7 @@
 """
 
 import os
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 from django.db.models import Count
@@ -42,6 +43,11 @@ def inline_file_response(source, content_type, filename):
 class FileAccessActionMixin:
     """下载 / 访问记录 / 删除留痕 / 上传配置（self 由组合它的 ViewSet 提供）。"""
 
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+        request: Any
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     def perform_destroy(self, instance):
         # 文件访问审计：删除留痕（批量删除逐行走本方法）
         log_file_access(
@@ -51,7 +57,7 @@ class FileAccessActionMixin:
             request=self.request,
             filename=instance.filename,
         )
-        return super().perform_destroy(instance)
+        return super().perform_destroy(instance)  # type: ignore[misc]  # 宿主 ViewSet 未提供同名方法
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="download")

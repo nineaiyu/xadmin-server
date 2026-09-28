@@ -30,6 +30,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models import Menu, ModelLabelField
 from system.serializers.menu import MenuSerializer
 from system.signal_handler import clean_cache_handler
+from system.utils import permission_sync as sync
 from system.utils.menu import get_view_permissions
 
 
@@ -104,6 +105,97 @@ class MenuViewSet(
         """获取后端API列表"""
         return ApiResponse(data=get_all_url_dict(""))
 
+    @staticmethod
+    def _suggest_permission_code(suffix, action):
+        """按「批量生成权限」同一 code 规则给出建议权限码（无法归属视图时为空）。"""
+        if not suffix or not action:
+            return ""
+        code = action.title().replace("_", "").replace("-", "")
+        return f"{code[0].lower()}{code[1:]}:{suffix}"
+
+    def _serialize_gap_items(self, gaps, routes, perms):
+        """正向缺口：代码有路由、库内无权限点。
+
+        ``resolve_view_context`` 逐视图解析一次后缀与父菜单（同源权限点优先），
+        避免逐条缺口查库；缺口仅在补权限前出现，正常库为空。
+        """
+        by_view: dict[str, list] = {}
+        for route, method, gap_action in gaps:
+            by_view.setdefault(route.view, []).append((route, method, gap_action))
+        view_urls: dict[str, set] = {}
+        for route in routes:
+            view_urls.setdefault(route.view, set()).add(route.url)
+
+        items = []
+        for view, entries in by_view.items():
+            suffix, parent, _source = sync.resolve_view_context(view, view_urls.get(view, set()), perms)
+            for route, method, gap_action in entries:
+                items.append(
+                    {
+                        "problem": "missing",
+                        "code": self._suggest_permission_code(suffix, gap_action),
+                        "method": method,
+                        "path": route.url,
+                        "menu": parent.name if parent else "",
+                        "pk": None,
+                        "view": view.rsplit(".", 1)[-1],
+                        "suggestion": "generate",
+                    }
+                )
+        return items
+
+    @staticmethod
+    def _serialize_perm_items(perms, problem, suggestion):
+        """游离/重复权限点：字段取自库内菜单，父菜单经 select_related 预取不触发逐条查询。"""
+        return [
+            {
+                "problem": problem,
+                "code": perm.name,
+                "method": (perm.method or "").upper(),
+                "path": perm.path,
+                "menu": perm.parent.name if perm.parent_id else "",
+                "pk": str(perm.pk),
+                "view": "",
+                "suggestion": suggestion,
+            }
+            for perm in perms
+        ]
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="permission-audit")
+    def permission_audit(self, request, *args, **kwargs):
+        """菜单权限检测：只读报告代码路由与库内权限点之间的三类问题。
+
+        复用同步内核（``scan_gaps`` / ``audit_permission_menus``），仅报告不落库：
+        正向缺口、游离权限点（无对应路由）、重复权限码。
+        """
+        routes = sync.build_route_index()
+        # select_related 一次性取回父菜单，供游离/重复项直接读 name，避免 N+1
+        perms = list(
+            Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, deleted_at__isnull=True).select_related("parent")
+        )
+        gaps = sync.scan_gaps(routes, perms)
+        unmatched, duplicates, _exempted, _known = sync.audit_permission_menus(routes, perms)
+
+        missing = self._serialize_gap_items(gaps, routes, perms)
+        orphan = self._serialize_perm_items(unmatched, "orphan", "verify")
+        duplicate = self._serialize_perm_items(duplicates, "duplicate", "merge")
+        return ApiResponse(
+            data={
+                "summary": {
+                    "missing": len(missing),
+                    "orphan": len(orphan),
+                    "duplicate": len(duplicate),
+                    "total": len(missing) + len(orphan) + len(duplicate),
+                    "routes": len(routes),
+                    "permissions": len(perms),
+                },
+                "missing": missing,
+                "orphan": orphan,
+                "duplicate": duplicate,
+            }
+        )
+
     def _build_permission_items(self, instance, permissions, skip_existing):
         """构造待写入的权限点（只读，不落库）。
 
@@ -173,7 +265,7 @@ class MenuViewSet(
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "views": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "views": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "component": build_basic_type(OpenApiTypes.STR),
                     "skip_existing": build_basic_type(OpenApiTypes.BOOL),
                     "dry_run": build_basic_type(OpenApiTypes.BOOL),

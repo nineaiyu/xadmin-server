@@ -16,6 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.core.modelset import BaseViewSet, DestroyAction, ListAction, SearchColumnsAction
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from mfa.services import is_method_binding_allowed
 from system.models import UserPasskey
 from system.serializers.security import UserPasskeySerializer
 from system.utils.webauthn import (
@@ -89,6 +90,9 @@ class PasskeyViewSet(BaseViewSet, ListAction, SearchColumnsAction, DestroyAction
     def register(self, request, *args, **kwargs):
         """绑定一个 Passkey 凭据"""
         user = request.user
+        # 与验证同口径的方式白名单（共享/演示账号策略可收窄到不允许绑定）
+        if not is_method_binding_allowed(user, "passkey"):
+            return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if user.passkeys.count() >= MAX_PASSKEYS_PER_USER:
             return ApiResponse(
                 code=1001, detail=_("The number of passkeys has reached the limit ({})").format(MAX_PASSKEYS_PER_USER)

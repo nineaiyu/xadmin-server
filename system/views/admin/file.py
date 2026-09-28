@@ -311,7 +311,7 @@ class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAc
     @extend_schema(
         description="文件上传",
         request=OpenApiRequest(
-            build_object_type(properties={"file": build_array_type(build_basic_type(OpenApiTypes.BINARY))})
+            build_object_type(properties={"file": build_array_type(build_basic_type(OpenApiTypes.BINARY) or {})})
         ),
         responses={
             200: inline_serializer(

@@ -249,7 +249,7 @@ class OpenOAuthApproveAPIView(APIView):
 class OpenOAuthTokenAPIView(APIView):
     """授权码 / 刷新令牌换发（匿名可达，凭 client 凭据 + code/refresh 双重校验）。"""
 
-    authentication_classes = []
+    authentication_classes: list[type] = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -330,7 +330,7 @@ class OpenOAuthTokenAPIView(APIView):
 class OpenOAuthRevokeAPIView(APIView):
     """撤销（RFC 7009）：优先 refresh（联动失效关联 access），其次 access 凭证本身。"""
 
-    authentication_classes = []
+    authentication_classes: list[type] = []
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):

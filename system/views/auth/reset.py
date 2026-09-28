@@ -31,8 +31,8 @@ from system.utils.auth import verify_sms_email_code
 class ResetPasswordAPIView(GenericAPIView):
     """重置密码"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [ResetPasswordThrottle]
 
     @extend_schema(

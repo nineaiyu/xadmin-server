@@ -118,7 +118,7 @@ def resolve_request_menu_pk(request):
     两次 URL 特例（search-columns 与 list 同权、import/export 回退）与
     ``IsAuthenticated._resolve_menu_pk`` 保持一致。
     """
-    url = getattr(request, "path_info", None) or getattr(request, "path", "")
+    url = str(getattr(request, "path_info", None) or getattr(request, "path", "") or "")
     method = (getattr(request, "method", "") or "").upper()
     permission_data = {
         path: pk

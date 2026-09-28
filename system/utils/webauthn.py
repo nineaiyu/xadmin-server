@@ -149,8 +149,8 @@ def _public_key_from_cose(cose_key: bytes):
         )
         return numbers.public_key(), alg or -7
     if kty == 3:  # RSA
-        numbers = rsa.RSAPublicNumbers(int.from_bytes(cose.get(-2), "big"), int.from_bytes(cose.get(-1), "big"))
-        return numbers.public_key(), alg or -257
+        rsa_numbers = rsa.RSAPublicNumbers(int.from_bytes(cose.get(-2), "big"), int.from_bytes(cose.get(-1), "big"))
+        return rsa_numbers.public_key(), alg or -257
     if kty == 1:  # OKP
         if cose.get(-1) != 6:  # crv: 6 = Ed25519
             raise ValueError(str(_("Unsupported elliptic curve")))

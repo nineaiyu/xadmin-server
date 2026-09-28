@@ -191,6 +191,61 @@ class TestPolicyApi:
         assert resp.data["code"] != 1000
 
 
+class TestBuiltinDefaultPolicies:
+    """内置默认登录策略：新装即具备基础安全策略，且不得把任何人锁在门外。
+
+    口径（loadjson/loginaccesspolicy.json）：
+    - priority 取 500+，管理员自建策略（表单默认 100）先命中，内置项只兜底；
+    - 夜间 require_mfa 在用户无可用 MFA 方式时降级放行（复用既有防自锁语义）；
+    - 管理员角色策略为 record，只留痕不改行为。
+    """
+
+    @staticmethod
+    def _load_seed():
+        from django.core.management import call_command
+
+        call_command("loaddata", "loadjson/loginaccesspolicy.json", verbosity=0)
+
+    def test_builtin_policies_loaded(self, superuser):
+        self._load_seed()
+        policies = {p.name: p for p in LoginAccessPolicy.objects.all()}
+        assert set(policies) == {"非工作时间登录需二次验证", "管理员账号登录留痕"}
+        night = policies["非工作时间登录需二次验证"]
+        assert night.action == LoginAccessPolicy.Action.REQUIRE_MFA
+        assert night.start_time == time(22, 0) and night.end_time == time(6, 0)
+        assert night.priority >= 500
+        admin = policies["管理员账号登录留痕"]
+        assert admin.action == LoginAccessPolicy.Action.RECORD
+        assert admin.target_type == LoginAccessPolicy.TargetType.ROLE
+        assert admin.target_value == "SystemAdmin"
+
+    def test_builtin_priorities_do_not_shadow_admin_policies(self, superuser, normal_user):
+        self._load_seed()
+        LoginAccessPolicy.objects.create(
+            name="管理员自建拒绝",
+            priority=100,
+            target_type=LoginAccessPolicy.TargetType.ALL,
+            action=LoginAccessPolicy.Action.REJECT,
+        )
+        # 深夜登录：自建策略 priority 更小 → 先命中，内置夜间策略不得掩盖它
+        when = timezone.make_aware(timezone.datetime(2026, 9, 22, 23, 30))
+        result = evaluate_login_policy(normal_user, "8.8.8.8", when)
+        assert result["policy"] == "管理员自建拒绝"
+        assert result["action"] == "reject"
+
+    def test_night_policy_requires_mfa_but_never_locks_out(self, api_client, normal_user, login_free):
+        self._load_seed()
+        # 无可用 MFA 方式 → 降级放行（即使命中内置夜间策略也不得拒登）
+        result = evaluate_login_policy(
+            normal_user, "8.8.8.8", timezone.make_aware(timezone.datetime(2026, 9, 22, 23, 30))
+        )
+        assert result["policy"] == "非工作时间登录需二次验证"
+        assert result["action"] == "require_mfa"
+        resp = _login(api_client)
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["access"]
+
+
 class TestSessionLimit:
     def test_limit_kicks_oldest_session(self, normal_user, settings):
         from system.utils.session import register_user_session

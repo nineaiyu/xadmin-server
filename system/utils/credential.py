@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""凭据治理工具：聚合只读清单 + 重加密 + 审计（管理命令与 API 共用）。
+"""凭据治理工具：聚合只读清单 + 轮换/重加密 + 审计（管理命令与 API 共用）。
 
-- ``credential_overview()``：Setting 加密项 / SystemConfig 敏感键 / 模型字段级凭据的
-  只读聚合（名称 / 类型 / 存储形态 / 加密状态 / 最近更新时间），供「凭据与密钥」页；
-- ``rotate_system_config`` / ``rotate_setting``：重加密（明文 → 首次加密；密文 → 轮换
-  salt/nonce），并失效配置缓存、写 OperationLog(module=system:credential) 审计。
+两类动作语义必须区分，不能互相冒充：
+
+- **原地轮换**（``regenerate_system_config`` / ``rotate_model_field``）：仅用于服务端
+  自生成的密钥，重新生成随机值并加密落库——旧值立即失效，外部集成需同步更新；
+- **重加密**（``rotate_system_config`` / ``rotate_setting``）：明文 → 首次加密、密文 →
+  轮换 salt/nonce，**值不变**，供 ``rotate_credential`` 命令做明文修复/迁移。
+
+外部签发的凭据（模型厂商 api_key、OAuth client_secret、S3 密钥、邮箱/IM 密钥等）**不提供
+原地轮换**（会生成对端不认的假值、打挂集成），只在总览里标注「更换入口」；``credential_overview()``
+**不回传任何明文或可解密值**。所有写动作失效配置缓存并写 OperationLog(module=system:credential)。
 """
+
+import secrets
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -17,12 +25,97 @@ from common.core.credentials import (
     encrypt_setting_value,
     encryption_status,
     plaintext_sensitive_keys,
+    plaintext_setting_names,
 )
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
 AUDIT_MODULE = "system:credential"
+
+#: 掩码占位：只表达「已配置」，不含长度/前缀等可推断信息
+MASK = "••••••"
+
+#: 系统自生成、可原地重生的 SystemConfig 键（轮换 = 重新生成随机值后加密落库）
+ROTATABLE_SYSTEM_CONFIG_KEYS = ("SCIM_TOKEN", "BACKUP_ALERT_TOKEN", "OPS_ALERT_TOKEN")
+
+#: 外部签发、只能替换的 SystemConfig 键 → 更换入口（去对应配置页更换，不提供轮换）
+REPLACE_ONLY_SYSTEM_CONFIG_KEYS = {
+    "OAUTH_PROVIDERS": "/system/config/system/index",
+    "FILE_S3_ACCESS_KEY": "/system/config/system/index",
+    "FILE_S3_SECRET_KEY": "/system/config/system/index",
+}
+
+#: Setting 分类 → 更换入口（Setting 体系凭据均为外部签发，只能去对应设置页替换）
+SETTING_CATEGORY_ENTRY = {
+    "ai": "/integration/ai/config",
+    "ldap": "/settings/ldap",
+    "email": "/settings/message",
+    "notify_im": "/settings/message",
+    "sms": "/settings/sms",
+    "basic": "/settings/basic",
+}
+DEFAULT_SETTING_ENTRY = "/system/setting/index"
+
+#: 模型字段级凭据白名单（轮换入参只认这里的键，杜绝任意模型字段注入）。
+#: ``rotatable=True`` 仅限服务端生成、可安全重生的密钥；外部签发字段只标注更换入口。
+MODEL_CREDENTIAL_FIELDS = {
+    "AiProfile.api_key": {
+        "app_label": "ai",
+        "model": "AiProfile",
+        "field": "api_key",
+        "label": _("AI profile API key"),
+        "rotatable": False,
+        "change_entry": "/integration/ai/config",
+    },
+    "WebhookSubscription.secret": {
+        "app_label": "system",
+        "model": "WebhookSubscription",
+        "field": "secret",
+        "label": _("Webhook signing secret"),
+        "rotatable": True,
+        "change_entry": "",
+    },
+    "ApiApplication.callback_secret_encrypted": {
+        "app_label": "system",
+        "model": "ApiApplication",
+        "field": "callback_secret_encrypted",
+        "label": _("Open platform callback secret"),
+        "rotatable": True,
+        "change_entry": "",
+    },
+}
+
+#: 不可原地轮换的统一提示（视图/命令复用同一文案口径）
+NOT_ROTATABLE_DETAIL = _("This credential cannot be rotated in place; replace it on its config page")
+NOT_CONFIGURED_DETAIL = _("The credential is not configured yet")
+
+#: 建议轮换阈值（天）：自生成密钥超过该时长未轮换（或从未轮换）时在总览标记提醒。
+#: 只做提醒不强制（轮换会使旧值立即失效，外部集成需同步更新，节奏由运维定）。
+CREDENTIAL_ROTATE_SUGGEST_DAYS = 90
+
+#: 凭据用途提示（使用方）：静态知识随总览下发，这把钥匙给谁用、干什么不用猜
+SYSTEM_CONFIG_USAGE_HINTS = {
+    "SCIM_TOKEN": _("Used by SCIM 2.0 directory clients for provisioning API access"),
+    "BACKUP_ALERT_TOKEN": _("Used by database backup jobs to report failures"),
+    "OPS_ALERT_TOKEN": _("Used by ops scripts to send alert notifications"),
+    "OAUTH_PROVIDERS": _("Used by third-party login (OAuth2/OIDC) providers"),
+    "FILE_S3_ACCESS_KEY": _("Used by file storage (S3-compatible object store)"),
+    "FILE_S3_SECRET_KEY": _("Used by file storage (S3-compatible object store)"),
+}
+MODEL_CREDENTIAL_USAGE_HINTS = {
+    "AiProfile.api_key": _("Used by AI assistant / knowledge base model calls"),
+    "WebhookSubscription.secret": _("Used to sign outgoing webhook deliveries"),
+    "ApiApplication.callback_secret_encrypted": _("Used by open-platform apps for callback signature"),
+}
+SETTING_CATEGORY_USAGE_HINTS = {
+    "ai": _("Used by AI assistant / knowledge base model calls"),
+    "ldap": _("Used by LDAP/AD directory binding and sync"),
+    "email": _("Used by SMTP mail sending"),
+    "notify_im": _("Used by IM notifications (WeCom/DingTalk/Feishu/Slack)"),
+    "sms": _("Used by SMS provider for verification codes and notifications"),
+    "basic": _("Used by platform base settings"),
+}
 
 
 def _timestamp(value) -> str:
@@ -33,6 +126,40 @@ def _timestamp(value) -> str:
         return timezone.localtime(value).strftime("%Y-%m-%d %H:%M:%S")
     except Exception:  # noqa: BLE001 无时区信息等异常值回退 iso 字符串
         return str(value)[:19].replace("T", " ")
+
+
+def _last_rotated_time(key: str):
+    """最近一次成功「原地轮换」时间（回溯审计台账）；从未轮换返回 None。
+
+    审计行由 :func:`write_credential_audit` 落库（object_pk=凭据键，changes JSON 带
+    action），重加密（encrypt 动作）不算轮换——值没变，不产生新的安全有效期。
+    """
+    import json
+
+    from system.models import OperationLog
+
+    rows = (
+        OperationLog.objects.filter(module=AUDIT_MODULE, object_pk=key, response_code=1000)
+        .order_by("-created_time")
+        .values_list("changes", "created_time")[:20]
+    )
+    for changes, created in rows:
+        try:
+            detail = json.loads(changes or "{}")
+        except Exception:  # noqa: BLE001 非法历史行跳过
+            continue
+        if detail.get("action") == "rotate" and detail.get("ok", True):
+            return created
+    return None
+
+
+def _rotation_fields(key: str, *, rotatable: bool, configured: bool) -> dict:
+    """总览行的轮换追踪字段：上次轮换时间 + 建议轮换标记（仅自生成可轮换键有意义）。"""
+    if not rotatable:
+        return {"last_rotated": "", "rotate_overdue": False}
+    last = _last_rotated_time(key)
+    overdue = configured and (last is None or (timezone.now() - last).days >= CREDENTIAL_ROTATE_SUGGEST_DAYS)
+    return {"last_rotated": _timestamp(last), "rotate_overdue": overdue}
 
 
 def write_credential_audit(detail: dict, user=None) -> None:
@@ -55,44 +182,74 @@ def write_credential_audit(detail: dict, user=None) -> None:
 
 
 def credential_overview() -> dict:
-    """凭据聚合清单（只读）：不返回任何密文或明文值，只给状态。"""
+    """凭据聚合清单（只读）：不返回任何密文或明文值，只给状态与可运维动作。"""
+    plaintext = sorted(set(plaintext_sensitive_keys()) | {f"Setting:{name}" for name in plaintext_setting_names()})
+    return {
+        "settings": _setting_rows(),
+        "system_configs": _system_config_rows(),
+        "model_fields": _model_credential_rows(),
+        "plaintext": plaintext,
+    }
+
+
+def _setting_rows() -> list:
+    """Setting 加密项：Setting 体系的敏感键均为外部签发，只能去对应设置页替换。"""
     from settings.models import Setting
+
+    rows = []
+    for row in Setting.objects.filter(encrypted=True).order_by("category", "name"):
+        configured = bool(row.value)
+        rows.append(
+            {
+                "name": row.name,
+                "scope": "setting",
+                "label": row.name,
+                "category": row.category,
+                "description": "",
+                "configured": configured,
+                "encrypted": True,
+                "plaintext": False,
+                "status": "encrypted" if configured else "empty",
+                "rotatable": False,
+                "change_entry": SETTING_CATEGORY_ENTRY.get(row.category, DEFAULT_SETTING_ENTRY),
+                "used_by": str(SETTING_CATEGORY_USAGE_HINTS.get(row.category, "")),
+                "masked": MASK if configured else "",
+                "updated_time": _timestamp(row.updated_time),
+            }
+        )
+    return rows
+
+
+def _system_config_rows() -> list:
+    """SystemConfig 敏感键：区分「自生成可轮换」与「外部签发只能替换」。"""
     from system.models import SystemConfig
 
-    settings_rows = [
-        {
-            "name": row.name,
-            "category": row.category,
-            "scope": "setting",
-            "configured": bool(row.value),
-            "encrypted": bool(row.encrypted),
-            "updated_time": _timestamp(row.updated_time),
-        }
-        for row in Setting.objects.filter(encrypted=True).order_by("category", "name")
-    ]
-    config_rows = []
+    rows = []
     for key, fields in SENSITIVE_SETTING_KEYS.items():
         row = SystemConfig.objects.filter(key=key).first()
         status = encryption_status(key, row.value if row else None)
-        config_rows.append(
+        configured = status != "empty"
+        rotatable = key in ROTATABLE_SYSTEM_CONFIG_KEYS
+        rows.append(
             {
                 "name": key,
                 "scope": "system_config",
+                "label": key,
                 "fields": list(fields) or ["*"],
-                "configured": status != "empty",
-                "status": status,
-                "encrypted": status in ("encrypted", "empty"),
-                "updated_time": _timestamp(row.updated_time) if row else "",
                 "description": (row.description if row else "") or "",
+                "configured": configured,
+                "encrypted": status in ("encrypted", "empty"),
+                "plaintext": status == "plaintext",
+                "status": status,
+                "rotatable": rotatable,
+                "change_entry": "" if rotatable else REPLACE_ONLY_SYSTEM_CONFIG_KEYS.get(key, ""),
+                "used_by": str(SYSTEM_CONFIG_USAGE_HINTS.get(key, "")),
+                "masked": MASK if configured else "",
+                "updated_time": _timestamp(row.updated_time) if row else "",
+                **_rotation_fields(key, rotatable=rotatable, configured=configured),
             }
         )
-    model_rows = _model_credential_rows()
-    return {
-        "settings": settings_rows,
-        "system_configs": config_rows,
-        "model_fields": model_rows,
-        "plaintext": plaintext_sensitive_keys(),
-    }
+    return rows
 
 
 def _model_credential_rows() -> list:
@@ -100,27 +257,100 @@ def _model_credential_rows() -> list:
     from django.apps import apps
 
     rows = []
-    checks = (
-        ("system", "AiProfile", "api_key", _("AI profile API key")),
-        ("system", "WebhookSubscription", "secret", _("Webhook signing secret")),
-        ("system", "ApiApplication", "callback_secret_encrypted", _("Open platform callback secret")),
-    )
-    for app_label, model_name, field, label in checks:
+    for name, meta in MODEL_CREDENTIAL_FIELDS.items():
         try:
-            model = apps.get_model(app_label, model_name)
-            configured = model.objects.exclude(**{field: ""}).exclude(**{f"{field}__isnull": True}).count()
+            model = apps.get_model(meta["app_label"], meta["model"])
         except Exception:  # noqa: BLE001 模型缺失（模块裁剪）不阻断聚合
             continue
+        field = meta["field"]
+        queryset = model.objects.exclude(**{field: ""}).exclude(**{f"{field}__isnull": True})
+        configured = queryset.count()
+        latest = queryset.order_by("-updated_time").values_list("updated_time", flat=True).first()
         rows.append(
             {
-                "name": f"{model_name}.{field}",
-                "label": str(label),
+                "name": name,
                 "scope": "model_field",
+                "label": str(meta["label"]),
+                "description": "",
+                "configured": configured > 0,
                 "configured_count": configured,
                 "encrypted": True,
+                "plaintext": False,
+                "status": "encrypted" if configured else "empty",
+                "rotatable": bool(meta.get("rotatable")),
+                "change_entry": meta.get("change_entry", ""),
+                "used_by": str(MODEL_CREDENTIAL_USAGE_HINTS.get(name, "")),
+                "masked": MASK if configured else "",
+                "updated_time": _timestamp(latest),
+                **_rotation_fields(name, rotatable=bool(meta.get("rotatable")), configured=configured > 0),
             }
         )
     return rows
+
+
+def regenerate_system_config(key: str, user=None) -> dict:
+    """原地轮换系统自生成的 SystemConfig 键：重新生成随机值并加密落库。
+
+    外部签发的注册键（OAuth/S3）拒绝原地轮换，返回更换入口提示，避免造假值打挂集成。
+    返回 ``{ok, action, detail}``。
+    """
+    from common.core.config import SysConfig
+    from system.models import SystemConfig
+
+    key = str(key or "").strip()
+    if key not in ROTATABLE_SYSTEM_CONFIG_KEYS:
+        return {"ok": False, "action": "skip", "detail": str(NOT_ROTATABLE_DETAIL)}
+    row = SystemConfig.objects.filter(key=key).first()
+    if row is None or encryption_status(key, row.value) == "empty":
+        return {"ok": False, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
+    row.value = encrypt_setting_value(key, secrets.token_urlsafe(32))
+    row.save(update_fields=["value", "updated_time"])
+    SysConfig.invalid_config_cache(key=key)
+    detail = {"key": key, "scope": "system_config", "action": "rotate", "ok": True}
+    write_credential_audit(detail, user=user)
+    return {"ok": True, "action": "rotate", "detail": ""}
+
+
+def rotate_model_field(name: str, user=None) -> dict:
+    """原地轮换白名单内的模型字段级凭据：逐行重新生成随机值并加密落库。
+
+    只接受 :data:`MODEL_CREDENTIAL_FIELDS` 中的键且 ``rotatable=True``，杜绝任意
+    模型字段注入；Webhook / 回调密钥变更会影响对端验签，调用方（视图）负责二次确认。
+    返回 ``{ok, action, detail, count}``。
+    """
+    from django.apps import apps
+
+    from system.utils.webhook import encrypt_secret
+
+    name = str(name or "").strip()
+    meta = MODEL_CREDENTIAL_FIELDS.get(name)
+    if meta is None or not meta.get("rotatable"):
+        return {"ok": False, "action": "skip", "detail": str(NOT_ROTATABLE_DETAIL)}
+    try:
+        model = apps.get_model(meta["app_label"], meta["model"])
+    except Exception:  # noqa: BLE001 模型缺失（模块裁剪）不处理
+        logger.warning("rotate model credential skipped, model missing. name:%s", name)
+        return {"ok": False, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
+    field = meta["field"]
+    queryset = model.objects.exclude(**{field: ""}).exclude(**{f"{field}__isnull": True})
+    count = 0
+    for row in queryset:
+        setattr(row, field, encrypt_secret(_model_secret_plaintext(name)))
+        row.save(update_fields=[field, "updated_time"])
+        count += 1
+    detail = {"key": name, "scope": "model_field", "action": "rotate", "ok": True, "count": count}
+    write_credential_audit(detail, user=user)
+    if count == 0:
+        return {"ok": True, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
+    return {"ok": True, "action": "rotate", "detail": "", "count": count}
+
+
+def _model_secret_plaintext(name: str) -> str:
+    """生成模型字段级凭据的新明文（回调密钥沿用 ``apc_`` 前缀，与创建路径同口径）。"""
+    raw = secrets.token_urlsafe(32)
+    if name == "ApiApplication.callback_secret_encrypted":
+        return f"apc_{raw}"
+    return raw
 
 
 def rotate_system_config(key: str, user=None) -> dict:
@@ -133,10 +363,10 @@ def rotate_system_config(key: str, user=None) -> dict:
         return {"ok": False, "action": "skip", "detail": str(_("Not a registered sensitive key: {}").format(key))}
     row = SystemConfig.objects.filter(key=key).first()
     if row is None:
-        return {"ok": False, "action": "skip", "detail": str(_("The credential is not configured yet"))}
+        return {"ok": False, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
     status = encryption_status(key, row.value)
     if status == "empty":
-        return {"ok": True, "action": "skip", "detail": str(_("The credential is not configured yet"))}
+        return {"ok": True, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
     action = "encrypt" if status == "plaintext" else "rotate"
     plain = decrypt_setting_value(key, row.value)
     row.value = encrypt_setting_value(key, plain)
@@ -155,7 +385,7 @@ def rotate_setting(name: str, user=None) -> dict:
     name = str(name or "").strip()
     row = Setting.objects.filter(name=name, encrypted=True).first()
     if row is None or not row.value:
-        return {"ok": False, "action": "skip", "detail": str(_("The credential is not configured yet"))}
+        return {"ok": False, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
     try:
         plain = signer.decrypt(row.value)
         row.value = signer.encrypt(plain.encode("utf-8")).decode("utf-8")

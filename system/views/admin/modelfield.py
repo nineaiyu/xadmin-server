@@ -97,7 +97,7 @@ class ModelLabelFieldViewSet(ListDeleteModelSet, ImportExportDataAction):
             OpenApiParameter(name="table", required=True, type=str),
             OpenApiParameter(name="field", required=True, type=str),
         ],
-        responses=get_default_response_schema({"data": build_array_type(build_basic_type(OpenApiTypes.STR))}),
+        responses=get_default_response_schema({"data": build_array_type(build_basic_type(OpenApiTypes.STR) or {})}),
     )
     @action(methods=["get"], detail=False, queryset=ModelLabelField.objects, filterset_class=None)
     def lookups(self, request, *args, **kwargs):

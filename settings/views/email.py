@@ -54,13 +54,16 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
         except SMTPSenderRefused as e:
             error = e.smtp_error
             if isinstance(error, bytes):
+                decoded = ""
                 for coding in ("gbk", "utf8"):
                     try:
-                        error = error.decode(coding)
+                        decoded = error.decode(coding)
                     except UnicodeDecodeError:
                         continue
                     else:
                         break
+                # 两种编码都解不出时退回 bytes 原文（str(bytes) 至少可读形态不丢信息）
+                return ApiResponse(code=1001, detail=decoded or str(error))
             return ApiResponse(code=1001, detail=str(error))
         except Exception as e:
             logger.error(e)

@@ -34,7 +34,7 @@ from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
-from system.models import OperationLog, UserInfo, UserOAuthBinding
+from system.models import OperationLog, Post, UserInfo, UserOAuthBinding
 from system.serializers.user import ResetPasswordSerializer, UserSerializer
 from system.utils import user_invite
 from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
@@ -54,6 +54,8 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
     phone = filters.CharFilter(field_name="phone", lookup_expr="icontains")
     # 联动：角色列表「用户数」可点击跳转到按角色筛选的用户列表（传角色 pk）
     role = filters.CharFilter(field_name="roles", lookup_expr="pk")
+    # 按岗位（多对多）筛选：多选主键，命中所选任一岗位即返回（空岗位用户不误筛）
+    posts = filters.ModelMultipleChoiceFilter(field_name="posts", queryset=Post.objects.all())
 
     class Meta:
         model = UserInfo
@@ -70,6 +72,7 @@ class UserFilter(TagFilterMixin, BaseFilterSet):
             "pk",
             "dept",
             "role",
+            "posts",
         ]
 
 
@@ -136,7 +139,7 @@ class UserViewSet(
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["pks"],
                 description="主键列表",
             )
@@ -203,7 +206,7 @@ class UserViewSet(
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"channel_names": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"channel_names": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["channel_names"],
                 description="列表",
             )

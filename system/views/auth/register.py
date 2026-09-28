@@ -28,8 +28,8 @@ from system.utils.session import bind_session_claim, register_user_session
 class RegisterViewAPIView(GenericAPIView):
     """用户注册"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
     throttle_classes = [RegisterThrottle]
 
     @extend_schema(

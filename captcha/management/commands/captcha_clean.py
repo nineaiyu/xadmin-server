@@ -10,7 +10,7 @@ class Command(BaseCommand):
     def handle(self, **options):
         from captcha.models import CaptchaStore
 
-        verbose = int(options.get("verbosity"))
+        verbose = int(options.get("verbosity") or 0)
         expired_keys = CaptchaStore.objects.filter(expiration__lte=timezone.now()).count()
         if verbose >= 1:
             print(f"Currently {expired_keys} expired hashkeys")

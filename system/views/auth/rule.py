@@ -17,7 +17,7 @@ from settings.services import get_password_check_rules
 class PasswordRulesAPIView(GenericAPIView):
     """密码规则配置信息"""
 
-    permission_classes = []
+    permission_classes: list[type] = []
 
     @extend_schema(
         responses=get_default_response_schema(

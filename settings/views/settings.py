@@ -5,6 +5,8 @@
 # author : ly_13
 # date : 7/31/2024
 
+from typing import Any
+
 from django.conf import settings
 from django_filters import rest_framework as filters
 
@@ -22,7 +24,7 @@ class BaseSettingViewSet(NoDetailModelSet):
     queryset = Setting.objects.all()
     serializer_class = BasicSettingSerializer
     category = "basic"
-    serializer_class_mapper = {}
+    serializer_class_mapper: dict[str, Any] = {}
 
     def get_serializer_class(self):
         if not self.serializer_class_mapper:

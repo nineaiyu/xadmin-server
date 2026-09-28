@@ -74,7 +74,7 @@ class SecurityBlockIpViewSet(ListDeleteModelSet):
         return 1, 1
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")

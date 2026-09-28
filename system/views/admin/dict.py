@@ -65,7 +65,7 @@ class DataDictViewSet(
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["pks"],
             )
         ),
@@ -108,7 +108,7 @@ class DataDictViewSet(
     @extend_schema(
         request=build_object_type(
             properties={
-                "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                 "is_active": build_basic_type(OpenApiTypes.BOOL),
             }
         ),

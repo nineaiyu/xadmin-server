@@ -143,7 +143,7 @@ def verify_id_token(provider: dict, id_token: str, nonce: str | None = None, htt
         raise OAuthError(_("The identity provider returned an invalid id_token"))
 
     claims = None
-    last_error = None
+    last_error: str | Exception | None = None
     # 密钥轮换：首次失败强制刷新 JWKS 再试一次
     for force_refresh in (False, True):
         jwks = fetch_jwks(provider, jwks_uri, http_client, force_refresh=force_refresh)

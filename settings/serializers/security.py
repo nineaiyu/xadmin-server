@@ -377,7 +377,7 @@ class SecurityMFASerializer(serializers.Serializer):
     )
 
     SECURITY_MFA_CONFIRM_BACKENDS = serializers.ListField(
-        default=["otp", "sms", "email", "password"],
+        default=["otp", "sms", "email", "password", "passkey"],
         label=_("Verification methods"),
         allow_empty=True,
         child=serializers.ChoiceField(
@@ -386,6 +386,7 @@ class SecurityMFASerializer(serializers.Serializer):
                 ("sms", _("SMS verification code")),
                 ("email", _("Email verification code")),
                 ("password", _("Login password")),
+                ("passkey", _("Passkey")),
             ]
         ),
         help_text=_("Verification methods allowed to be used for sensitive operation verification"),

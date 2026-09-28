@@ -104,8 +104,8 @@ logger = get_logger(__name__)
 class SendVerifyCodeAPIView(GenericAPIView):
     """获取验证码配置"""
 
-    permission_classes = []
-    authentication_classes = []
+    permission_classes: list[type] = []
+    authentication_classes: list[type] = []
 
     @staticmethod
     def prepare_code_data(username):

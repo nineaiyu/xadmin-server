@@ -19,7 +19,12 @@ from mfa.cache import OtpBindCache, UserConfirmStateCache
 from mfa.confirm import UserConfirmation
 from mfa.const import CONFIRM_TYPE_TTL_SETTING, ConfirmType
 from mfa.serializers import ConfirmSerializer, OtpBindConfirmSerializer, SendCodeSerializer
-from mfa.services import get_confirm_methods, send_user_mfa_code, verify_user_confirm
+from mfa.services import (
+    get_confirm_methods,
+    is_method_binding_allowed,
+    send_user_mfa_code,
+    verify_user_confirm,
+)
 from settings.services import MFABlockUtils
 
 logger = get_logger(__name__)
@@ -27,6 +32,16 @@ logger = get_logger(__name__)
 
 def _get_confirm_type(value):
     return value if value in ConfirmType.values else ConfirmType.MFA
+
+
+def _binding_disallowed(user, backend_name):
+    """绑定入口与验证同口径：该方式不在账号方式白名单（交集）内则拒绝绑定。
+
+    验证侧 ``get_enabled_backends`` 本就按白名单过滤，但绑定入口此前不校验——
+    共享账号（如公开演示账号）被他人绑定 MFA 后，策略强制二次验证会锁死共享登录。
+    判定实现在 mfa.services.is_method_binding_allowed（契约层）。
+    """
+    return not is_method_binding_allowed(user, backend_name)
 
 
 def _state_expire_at(state):
@@ -118,6 +133,8 @@ class UserOTPViewSet(GenericViewSet):
     @action(methods=["post"], detail=False, url_path="start")
     def start(self, request, *args, **kwargs):
         """发起绑定：生成候选密钥与 otpauth URI（前端渲染二维码）"""
+        if _binding_disallowed(request.user, OtpBackend.name):
+            return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if request.user.mfa_enabled:
             return ApiResponse(code=1001, detail=_("OTP is already bound"))
         bind_cache = OtpBindCache(request.user)
@@ -132,6 +149,8 @@ class UserOTPViewSet(GenericViewSet):
     def confirm(self, request, *args, **kwargs):
         """确认绑定：校验动态码后写入密钥，并自动开启登录 MFA"""
         user = request.user
+        if _binding_disallowed(user, OtpBackend.name):
+            return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if user.mfa_enabled:
             return ApiResponse(code=1001, detail=_("OTP is already bound"))
         secret = OtpBindCache(user).get_secret()

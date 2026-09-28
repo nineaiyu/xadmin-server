@@ -32,9 +32,13 @@ class PasskeyBackend(BaseMFA):
 
     @classmethod
     def global_enabled(cls) -> bool:
-        """全局允许方式白名单（SECURITY_MFA_METHODS，空 = 不额外限制）。"""
-        methods = [str(item) for item in (getattr(settings, "SECURITY_MFA_METHODS", []) or []) if str(item).strip()]
-        return not methods or cls.name in methods
+        """全局允许方式白名单（与其他后端同口径：SECURITY_MFA_CONFIRM_BACKENDS）。
+
+        登录场景的策略层收窄（SECURITY_MFA_METHODS ∩ 角色 ∩ 用户白名单）由
+        get_user_mfa_policy 交集处理，与 otp/sms/email 完全一致；
+        此前本类改查 SECURITY_MFA_METHODS，导致敏感操作二次确认（412）无法启用 Passkey。
+        """
+        return cls.name in settings.SECURITY_MFA_CONFIRM_BACKENDS
 
     def is_active(self) -> bool:
         """当前用户至少绑定了一个 Passkey 凭据才可用。"""

@@ -36,6 +36,17 @@ def _serialize_backend(backend):
     }
 
 
+def is_method_binding_allowed(user, method: str) -> bool:
+    """绑定入口与验证同口径：方式是否在账号方式白名单（交集）内。
+
+    白名单收窄到空集的账号（如共享演示账号）禁止绑定任何 MFA，防止绑定后触发
+    策略强制二次验证锁死共享登录。供绑定入口（含跨 app 的 system Passkey 注册）
+    使用——业务层只 import 本模块，不直连 mfa.backends。
+    """
+    methods = get_user_mfa_policy(user).get("methods")
+    return methods is None or method in methods
+
+
 def _check_mfa_block(user, ipaddr):
     """MFA 验证防爆破锁定校验，返回锁定提示文案（未锁定返回 None）"""
     if MFABlockUtils(user.username, ipaddr).is_block():

@@ -71,7 +71,7 @@ class AccountRiskViewSet(OnlyListModelSet):
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "action": build_basic_type(OpenApiTypes.STR),
                     "remark": build_basic_type(OpenApiTypes.STR),
                 },

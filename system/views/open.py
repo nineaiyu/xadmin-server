@@ -183,7 +183,7 @@ class ApiApplicationTokenAPIView(APIView):
     匿名可达（白名单 + AllowAny）：凭证即身份，与登录接口同口径。
     """
 
-    authentication_classes = []
+    authentication_classes: list[type] = []
     permission_classes = [AllowAny]
 
     @staticmethod

@@ -71,6 +71,11 @@ class SimpleMetadataWithFilters(SimpleMetadata):
             tp = "labeled_choice"
         elif class_name == "JSONField":
             tp = "json"
+        elif isinstance(field, serializers.DictField):
+            # DRF 把 DictField 记为 "nested object"，前端没有该渲染器，回退成纯文本
+            # 输入框并把对象值字符串化成 "[object Object]"（如 LDAP 组到角色映射）；
+            # 语义是自由键值 JSON，复用 JSON 编辑器（isinstance 同时覆盖 HStoreField）
+            tp = "json"
         elif isinstance(field, BasePrimaryKeyRelatedField):
             # isinstance 而非精确类名匹配，业务侧子类（如 DisplayRelatedField）同样生效
             tp = "object_related_field"

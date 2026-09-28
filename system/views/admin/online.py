@@ -90,7 +90,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         # 该 action 的 pk 是「用户主键」（UserInfo 为 BigAutoField 整型，非会话行 UUID）：
         # 非法入参先返回可读 400，避免 pk 字段校验抛 ValidationError 500
         try:
-            user_pk = int(user_pk)
+            user_pk = int(user_pk or 0)
         except (TypeError, ValueError):
             return ApiResponse(code=400, detail=_("User not found"))
         if (
@@ -105,7 +105,7 @@ class UserOnlineViewSet(ListDeleteModelSet, OnlyExportDataAction):
         )
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema({"users": build_basic_type(OpenApiTypes.NUMBER)}),
     )
     @action(methods=["post"], detail=False, url_path="batch-force-logout")

@@ -133,7 +133,7 @@ class DashboardViewSet(GenericViewSet):
 
     @extend_schema(
         responses=get_default_response_schema(
-            {"data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER)))}
+            {"data": build_array_type(build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}))}
         )
     )
     @action(methods=["GET"], detail=False, queryset=UserInfo.objects.all(), url_path="user-active")

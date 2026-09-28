@@ -48,10 +48,9 @@ class CaptchaStore(models.Model):
     def __str__(self):
         return self.challenge
 
+    @classmethod
     def remove_expired(cls):
         cls.objects.filter(expiration__lte=timezone.now()).delete()
-
-    remove_expired = classmethod(remove_expired)
 
     @classmethod
     def generate_key(cls, generator=None):

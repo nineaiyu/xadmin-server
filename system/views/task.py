@@ -357,7 +357,7 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
         return ApiResponse(data={"task_id": str(execution.pk)})
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="batch-run")
@@ -380,7 +380,7 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     @extend_schema(
         request=build_object_type(
             properties={
-                "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                 "enabled": build_basic_type(OpenApiTypes.BOOL),
             }
         ),

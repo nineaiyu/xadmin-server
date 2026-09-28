@@ -164,3 +164,58 @@ class TestMenuPermissionPreview:
         assert again.data["data"]["update_count"] == expected
         assert again.data["data"]["create_count"] == 0
         assert all(item["action"] == "update" for item in again.data["data"]["results"])
+
+
+class TestMenuPermissionAudit:
+    """菜单权限检测：只读报告缺口 / 游离权限点 / 重复权限码，不落库。"""
+
+    AUDIT_URL = f"{MENU_URL}/permission-audit"
+    ITEM_KEYS = {"problem", "code", "method", "path", "menu", "pk", "view", "suggestion"}
+
+    def test_structure_and_read_only(self, auth_client):
+        before = Menu.objects.count()
+        resp = auth_client.get(self.AUDIT_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.data["code"] == 1000
+        data = resp.data["data"]
+        assert {"summary", "missing", "orphan", "duplicate"} <= set(data)
+        # 库内无权限点时，代码路由全部计入正向缺口
+        assert data["summary"]["missing"] == len(data["missing"]) > 0
+        summary = data["summary"]
+        assert summary["total"] == summary["missing"] + summary["orphan"] + summary["duplicate"]
+        assert set(data["missing"][0]) == self.ITEM_KEYS
+        assert data["missing"][0]["problem"] == "missing"
+        # 只读：检测不得写入/改动任何菜单
+        assert Menu.objects.count() == before
+
+    def test_missing_contains_known_route(self, auth_client):
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        targets = {(item["method"], item["path"]) for item in data["missing"]}
+        assert ("GET", "api/system/menu$") in targets
+
+    def test_orphan_permission_reported(self, auth_client, menu_factory):
+        perm = menu_factory("legacyGone:SystemGone", path="api/legacy/gone$", method="GET")
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        orphan = [item for item in data["orphan"] if item["pk"] == str(perm.pk)]
+        assert len(orphan) == 1
+        assert orphan[0]["problem"] == "orphan"
+        assert orphan[0]["code"] == "legacyGone:SystemGone"
+        assert orphan[0]["method"] == "GET"
+        assert orphan[0]["path"] == "api/legacy/gone$"
+        assert orphan[0]["suggestion"] == "verify"
+
+    def test_duplicate_permission_reported(self, auth_client, menu_factory):
+        menu_factory("dupA:SystemGone", path="api/legacy/dup$", method="GET")
+        menu_factory("dupB:SystemGone", path="api/legacy/dup$", method="GET")
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        # 同一 (path, method) 的第二条记录计入重复；库序不定，按路径断言
+        dup = [item for item in data["duplicate"] if item["path"] == "api/legacy/dup$"]
+        assert len(dup) == 1
+        assert dup[0]["problem"] == "duplicate"
+        assert dup[0]["code"] in {"dupA:SystemGone", "dupB:SystemGone"}
+        assert dup[0]["suggestion"] == "merge"
+
+    def test_requires_permission(self, api_client, normal_user):
+        """非超管未获授权：检测接口按菜单权限链拒绝（403）。"""
+        api_client.force_authenticate(user=normal_user)
+        assert api_client.get(self.AUDIT_URL).status_code == 403

@@ -139,7 +139,7 @@ def bucket_points(raw_points, interval_seconds):
     """按时间桶求均值（桶时间取桶起点），跳过缺失值不拉低均值。"""
     if not raw_points:
         return []
-    buckets = {}
+    buckets: dict[int, dict] = {}
     for point in raw_points:
         key = int(point["time"].timestamp()) // interval_seconds * interval_seconds
         bucket = buckets.setdefault(key, {"sums": {}, "counts": {}})
