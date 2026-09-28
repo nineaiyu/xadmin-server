@@ -97,7 +97,7 @@ class LeaveViewSet(BaseModelSet):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["pks"],
             )
         ),

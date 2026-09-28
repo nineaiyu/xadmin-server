@@ -193,7 +193,7 @@ def resolve_view_context(view, view_route_urls, perms, default_parent=None):
 
 def build_plans(gaps, routes, perms, default_parent=None):
     """把缺口规划为待创建的权限点（不落库）。返回 (plans, unresolved)。"""
-    by_view = {}
+    by_view: dict[str, list] = {}
     for route, method, action in gaps:
         by_view.setdefault(route.view, []).append((route, method, action))
 

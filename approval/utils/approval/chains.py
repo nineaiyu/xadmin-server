@@ -35,7 +35,7 @@ def resolve_rule(path: str):
 
 
 def resolve_level_users(level):
-    """级次候选人：user=用户名清单，role=角色 code 清单（仅启用账号，两者均支持逗号多值）。"""
+    """级次候选人：user=用户名清单，role/post=角色/岗位 code 清单（仅启用账号，均支持逗号多值）。"""
     from system.models import UserInfo
 
     values = [value.strip() for value in str(level.assignee_value or "").split(",") if value.strip()]
@@ -47,6 +47,14 @@ def resolve_level_users(level):
             roles__is_active=True,
             roles__deleted_at__isnull=True,
             roles__code__in=values,
+        ).distinct()
+    if level.assignee_type == "post":
+        # 岗位人员维度（不参与权限判定）：仅启用且未删除岗位的在岗用户
+        return UserInfo.objects.filter(
+            is_active=True,
+            posts__is_active=True,
+            posts__deleted_at__isnull=True,
+            posts__code__in=values,
         ).distinct()
     return UserInfo.objects.filter(is_active=True, username__in=values)
 

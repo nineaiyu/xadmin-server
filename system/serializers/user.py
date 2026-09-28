@@ -77,6 +77,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "invite_status",
             "invited_time",
             "roles",
+            "posts",
             "rules",
             "tags",
             "invite",
@@ -99,6 +100,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "last_login",
             "date_joined",
             "roles",
+            "posts",
             "rules",
             "tags",
         ]
@@ -112,6 +114,8 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "invite_status": {"read_only": True},
             "invited_time": {"read_only": True},
             "roles": {"required": False, "attrs": ["pk", "name", "code"], "format": "{name}", "many": True},
+            # 岗位与角色同口径：用户表单内可直接编辑（多选），与岗位页成员分配互为补充
+            "posts": {"required": False, "attrs": ["pk", "name", "code"], "format": "{name}", "many": True},
             "rules": {
                 "required": False,
                 "attrs": ["pk", "name", "get_mode_type_display"],

@@ -23,7 +23,7 @@ from approval.utils.approval_flow import (
     validate_form,
 )
 from common.core.config import SysConfig
-from system.models import DeptInfo, UserInfo, UserRole
+from system.models import DeptInfo, Post, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -140,6 +140,49 @@ class TestConditionAndAssignee:
         applicant.dept = None
         applicant.save(update_fields=["dept"])
         assert resolve_assignees(node, applicant, {}) == []
+
+    def test_resolve_assignees_by_post(self, applicant, approver, approver2):
+        """post 节点：按岗位 code 解析在岗用户；停用/软删岗位剔除、兼岗去重、申请人剔除。"""
+        backend_post = Post.objects.create(name="后端工程师", code="flow_post_backend")
+        security_post = Post.objects.create(name="安全员", code="flow_post_security")
+        # 兼岗：approver 两岗均命中，去重后只出现一次
+        approver.posts.add(backend_post, security_post)
+        approver2.posts.add(security_post)
+        flow = make_flow()
+        node = ApprovalFlowNode.objects.create(
+            flow=flow,
+            name="岗位",
+            order=1,
+            assignee_type=ApprovalFlowNode.AssigneeType.POST,
+            assignee_value="flow_post_backend, flow_post_security",
+        )
+        assert {u.pk for u in resolve_assignees(node, applicant, {})} == {approver.pk, approver2.pk}
+
+        # 停用岗位不再参与解析
+        security_post.is_active = False
+        security_post.save(update_fields=["is_active"])
+        assert {u.pk for u in resolve_assignees(node, applicant, {})} == {approver.pk}
+
+        # 软删除（回收站）岗位不参与解析
+        security_post.deleted_at = timezone.now()
+        security_post.save(update_fields=["deleted_at"])
+        assert {u.pk for u in resolve_assignees(node, applicant, {})} == {approver.pk}
+
+        # 申请人持岗 → 剔除本人，避免自审
+        security_post.deleted_at = None
+        security_post.save(update_fields=["deleted_at"])
+        applicant.posts.add(security_post)
+        assert {u.pk for u in resolve_assignees(node, applicant, {})} == {approver.pk}
+
+        # 未知岗位 code → 无候选（发起会被拒绝）
+        empty_node = ApprovalFlowNode.objects.create(
+            flow=flow,
+            name="岗位-空",
+            order=2,
+            assignee_type=ApprovalFlowNode.AssigneeType.POST,
+            assignee_value="post_not_exists",
+        )
+        assert resolve_assignees(empty_node, applicant, {}) == []
 
     def test_validate_form_required(self):
         flow = ApprovalFlow.objects.create(
@@ -274,6 +317,53 @@ class TestEngineFlow:
                 "Please adjust the department leader or the approver of this node"
             )
         ).format("上级审批")
+
+    def test_create_instance_post_no_approver_detail(self, applicant):
+        """post 节点无候选时区分「岗位不存在/停用」与「岗位无在岗成员」（可操作提示）。"""
+        flow = make_flow(
+            code="post_detail",
+            nodes=[
+                {
+                    "name": "岗位审批",
+                    "assignee_type": ApprovalFlowNode.AssigneeType.POST,
+                    "assignee_value": "post_ghost",
+                }
+            ],
+        )
+        _instance, error = create_instance(flow=flow, applicant=applicant, title="x", form_data={})
+        assert error == str(
+            _gettext(
+                "Node {} has no available approver: the configured posts do not exist or are disabled. "
+                "Please check the post configuration of this node"
+            )
+        ).format("岗位审批")
+
+        # 岗位存在且启用，但无在岗成员
+        post = Post.objects.create(name="安全员", code="post_no_members")
+        flow2 = make_flow(
+            code="post_detail2",
+            nodes=[
+                {
+                    "name": "岗位审批",
+                    "assignee_type": ApprovalFlowNode.AssigneeType.POST,
+                    "assignee_value": post.code,
+                }
+            ],
+        )
+        _instance, error = create_instance(flow=flow2, applicant=applicant, title="x", form_data={})
+        assert error == str(
+            _gettext(
+                "Node {} has no available approver: no active user holds the configured posts. "
+                "Please assign members to the posts first"
+            )
+        ).format("岗位审批")
+
+        # 补上成员后可正常发起
+        holder = UserInfo.objects.create_user(username="post_holder", password="Test@123456")
+        holder.posts.add(post)
+        instance, error = create_instance(flow=flow2, applicant=applicant, title="x", form_data={})
+        assert error is None
+        assert instance.tasks.filter(assignee=holder, status=ApprovalNodeTask.Status.PENDING).exists()
 
     def test_condition_skips_node(self, applicant, approver, approver2):
         flow = make_flow(

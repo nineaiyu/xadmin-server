@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""岗位（Post）视图：CRUD + 成员（用户）分配 + 选人候选。
+"""岗位（Post）视图：CRUD + 成员（用户）分配 + 选人候选 + 维度预览。
 
 成员管理口径与群成员变更一致：``{add: [...], remove: [...]}`` 增量变更（幂等），
 不提供整体替换（避免前端漏传即清空）；新增只接受在用用户，移除对不存在的关联静默跳过。
@@ -27,6 +27,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import Post
 from system.serializers.post import PostMemberSerializer, PostSerializer
+from system.utils.modelset import PostPreviewAction
 from system.utils.user_options import search_user_options
 
 logger = get_logger(__name__)
@@ -50,7 +51,7 @@ class PostFilter(BaseFilterSet):
         fields = ["name", "code", "is_active", "dept"]
 
 
-class PostViewSet(RelationCountMixin, BatchPartialUpdateAction, RecycleBinAction, BaseModelSet):
+class PostViewSet(RelationCountMixin, PostPreviewAction, BatchPartialUpdateAction, RecycleBinAction, BaseModelSet):
     """岗位"""
 
     queryset = Post.objects.all()

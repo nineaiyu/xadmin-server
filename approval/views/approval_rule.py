@@ -20,6 +20,7 @@ from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from system.models import Post
 from system.services import UserInfo, UserRole
 
 CANDIDATE_LIMIT = 1000
@@ -54,11 +55,12 @@ class ApprovalRuleViewSet(BaseModelSet):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="candidate-options")
     def candidate_options(self, request, *args, **kwargs):
-        """审批人候选目录：启用用户 + 启用角色（审批模块自给自足，不依赖搜索模块）。
+        """审批人候选目录：启用用户 + 启用角色 + 启用岗位（审批模块自给自足，不依赖搜索模块）。
 
         配置审批人是审批模块的核心操作：全局搜索（/api/system/search/user）属于
         独立可裁剪模块，standard 预设下被禁用会让审批人下拉永远搜不到、退化为
         手填——故在本模块内提供目录端点（单次拉取 + 前端本地过滤，管理员低频操作）。
+        岗位仅作为人员维度参与审批人解析（不参与权限判定）。
         """
         users = list(
             UserInfo.objects.filter(is_active=True)
@@ -68,4 +70,9 @@ class ApprovalRuleViewSet(BaseModelSet):
         roles = list(
             UserRole.objects.filter(is_active=True, deleted_at__isnull=True).order_by("code").values("code", "name")
         )
-        return ApiResponse(data={"users": users, "roles": roles, "truncated": len(users) >= CANDIDATE_LIMIT})
+        posts = list(
+            Post.objects.filter(is_active=True, deleted_at__isnull=True).order_by("code").values("code", "name")
+        )
+        return ApiResponse(
+            data={"users": users, "roles": roles, "posts": posts, "truncated": len(users) >= CANDIDATE_LIMIT}
+        )

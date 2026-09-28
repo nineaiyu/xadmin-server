@@ -51,7 +51,9 @@ class ApprovalRuleLevel(DbAuditModel):
 
     assignee_value 语义：
     - assignee_type=user：用户名（逗号分隔多选，如 ``"zhangsan,lisi"``）；
-    - assignee_type=role：角色 code（逗号分隔多选，如 ``"book_approver,SystemAdmin"``）。
+    - assignee_type=role：角色 code（逗号分隔多选，如 ``"book_approver,SystemAdmin"``）；
+    - assignee_type=post：岗位 code（逗号分隔多选，按 UserInfo.posts 解析，
+      仅启用且未删除岗位的在岗用户；不参与权限判定）。
 
     approve_type（级内多人审批方式，与流程引擎口径一致）：
     - OR（或签，默认）：任一候选人通过即该级通过，进入下一级；
@@ -61,6 +63,7 @@ class ApprovalRuleLevel(DbAuditModel):
     class AssigneeType(models.TextChoices):
         USER = "user", _("User")
         ROLE = "role", _("Role")
+        POST = "post", _("Post")
 
     class ApproveType(models.TextChoices):
         OR = "OR", _("Any one approves")

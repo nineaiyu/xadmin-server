@@ -98,8 +98,9 @@ def _no_approver_detail(node, applicant) -> str:
     """节点无候选时的失败原因（含解决路径）：发起校验 fail-closed 的用户可读提示。
 
     leader 节点区分子场景给出可操作建议（申请人无部门 / 部门无负责人 / 负责人即
-    申请人本人）；其余（角色无成员、指定用户不存在、表单字段未解析出用户名、
-    委托展开后为空等）按节点审批人配置排查。仅做提示文案，不改变 fail-closed 语义。
+    申请人本人）；post 节点区分「岗位不存在或停用」与「岗位无在岗成员」；其余
+    （角色无成员、指定用户不存在、表单字段未解析出用户名、委托展开后为空等）按
+    节点审批人配置排查。仅做提示文案，不改变 fail-closed 语义。
     """
     if node.assignee_type == node.AssigneeType.LEADER:
         dept = getattr(applicant, "dept", None)
@@ -122,6 +123,27 @@ def _no_approver_detail(node, applicant) -> str:
                 _(
                     "Node {} has no available approver: the applicant is the department leader. "
                     "Please adjust the department leader or the approver of this node"
+                )
+            ).format(node.name)
+    if node.assignee_type == node.AssigneeType.POST:
+        from system.models import Post
+
+        codes = [
+            value.strip() for value in str(node.assignee_value or "").replace("，", ",").split(",") if value.strip()
+        ]
+        posts = Post.objects.filter(code__in=codes, is_active=True, deleted_at__isnull=True)
+        if not posts.exists():
+            return str(
+                _(
+                    "Node {} has no available approver: the configured posts do not exist or are disabled. "
+                    "Please check the post configuration of this node"
+                )
+            ).format(node.name)
+        if not _users().objects.filter(is_active=True, posts__in=posts).exists():
+            return str(
+                _(
+                    "Node {} has no available approver: no active user holds the configured posts. "
+                    "Please assign members to the posts first"
                 )
             ).format(node.name)
     return str(_("Node {} has no available approver. Please check the approver configuration of this node")).format(

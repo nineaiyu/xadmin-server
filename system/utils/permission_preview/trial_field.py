@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """权限可视化：字段权限实时试算。"""
 
+from typing import Any
+
 from django.conf import settings
 from django.db.models import Q
 from rest_framework.exceptions import ValidationError
@@ -27,7 +29,7 @@ def _direct_user_field_matrix(user_obj: UserInfo, menu_pk) -> dict:
     if user_obj.dept:
         q |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
         has_q = True
-    data = {}
+    data: dict[str, Any] = {}
     if not has_q:
         return data
     queryset = FieldPermission.objects.filter(q).filter(menu=menu_pk)

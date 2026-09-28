@@ -21,9 +21,15 @@ previews），对外 API 由本文件统一再导出，导入路径保持
 ``system.utils.permission_preview`` 不变。
 """
 
-from .constants import DEPT_PREVIEW_NOTES, PREVIEW_USER_SAMPLE_LIMIT, PREVIEW_VALUE_NAME_LIMIT, TRIAL_SAMPLE_LIMIT
+from .constants import (
+    DEPT_PREVIEW_NOTES,
+    POST_PREVIEW_NOTES,
+    PREVIEW_USER_SAMPLE_LIMIT,
+    PREVIEW_VALUE_NAME_LIMIT,
+    TRIAL_SAMPLE_LIMIT,
+)
 from .decode import decode_data_permission, decode_rule
-from .previews import get_dept_preview, get_role_preview, get_user_preview
+from .previews import get_dept_preview, get_post_preview, get_role_preview, get_user_preview
 from .queries import (
     get_trial_candidates,
     get_user_api_permissions,
@@ -36,12 +42,14 @@ from .trial_field import run_field_trial
 
 __all__ = [
     "DEPT_PREVIEW_NOTES",
+    "POST_PREVIEW_NOTES",
     "PREVIEW_USER_SAMPLE_LIMIT",
     "PREVIEW_VALUE_NAME_LIMIT",
     "TRIAL_SAMPLE_LIMIT",
     "decode_data_permission",
     "decode_rule",
     "get_dept_preview",
+    "get_post_preview",
     "get_role_preview",
     "get_trial_candidates",
     "get_user_api_permissions",

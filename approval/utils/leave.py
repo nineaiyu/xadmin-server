@@ -43,7 +43,7 @@ def leave_days(start_date, end_date) -> Decimal:
     return Decimal(max(span, 0))
 
 
-def validate_leave_payload(*, start_date, end_date, days=None, creator=None, exclude_pk=None) -> str:
+def validate_leave_payload(*, start_date, end_date, days=None, creator=None, exclude_pk=None) -> str | None:
     """业务校验：返回错误文案，通过返回 None。
 
     - 结束日期不得早于开始日期；

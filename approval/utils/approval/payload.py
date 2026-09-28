@@ -33,7 +33,7 @@ def get_request_params(request):
     return body
 
 
-def get_request_object_pk(view) -> str:
+def get_request_object_pk(view) -> str | None:
     """detail 路由的对象主键（pk 兜底 id），list 路由返回 None。"""
     kwargs = getattr(view, "kwargs", None) or {}
     value = kwargs.get("pk") or kwargs.get("id")

@@ -54,6 +54,9 @@ def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: st
         return "不限（全部）"
     if subject == "dept":
         return _resolve_dept_subject_text(f_type, val)
+    if user_obj is None:
+        # 缺目标用户上下文时退化为原值（预览文案不应因上下文缺失而抛异常）
+        return str(val)
     if f_type == "value.user.id":
         return f"目标用户本人（{user_obj.username}）"
     if f_type == "value.user.dept.id":
@@ -83,7 +86,7 @@ def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: st
         led = getattr(user_obj, "leader_depts", None)
         if led is None or not led.exists():
             return "目标用户不是任何部门主管"
-        dept_pks = []
+        dept_pks: list[str] = []
         for dept in led.filter(is_active=True):
             dept_pks.extend(str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk))
         queryset = UserInfo.objects.filter(dept__in=dept_pks)
@@ -106,8 +109,8 @@ def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: st
         names = queryset.values_list("name", flat=True)[:PREVIEW_VALUE_NAME_LIMIT]
         return _join_names(names, total=queryset.count())
     if f_type == "value.date":
-        seconds = json.loads(val) if isinstance(val, str) else val
-        direction = "过去" if int(seconds) < 0 else "未来"
+        seconds = int(json.loads(val) if isinstance(val, str) else val or 0)
+        direction = "过去" if seconds < 0 else "未来"
         return f"{direction} {_humanize_seconds(seconds)}内"
     if f_type == "value.datetime.range":
         return "{} ~ {}".format(*val) if isinstance(val, list) and len(val) == 2 else str(val)
@@ -120,13 +123,14 @@ def decode_rule(rule: dict, user_obj: UserInfo | None, label_cache: dict | None 
     """单条规则 JSON → 可读文案结构（table/field/type/match/value 全部附 label）。"""
     table = rule.get("table")
     field = rule.get("field")
+    rule_type = str(rule.get("type") or "")
     return {
         "table": table,
-        "table_label": "全部表" if table == "*" else _model_label(table, label_cache),
+        "table_label": "全部表" if table == "*" else _model_label(str(table or ""), label_cache),
         "field": field,
-        "field_label": "全部字段" if field == "*" else _field_label(table, field, label_cache),
+        "field_label": ("全部字段" if field == "*" else _field_label(str(table or ""), str(field or ""), label_cache)),
         "type": rule.get("type"),
-        "type_text": RULE_TYPE_TEXTS.get(rule.get("type"), str(rule.get("type"))),
+        "type_text": RULE_TYPE_TEXTS.get(rule_type, rule_type),
         "match": rule.get("match", "exact"),
         "match_text": MATCH_TEXTS.get(rule.get("match", "exact"), str(rule.get("match", "exact"))),
         "value": rule.get("value"),

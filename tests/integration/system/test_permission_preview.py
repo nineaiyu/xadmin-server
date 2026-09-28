@@ -521,6 +521,59 @@ def test_dept_preview_filters_users_by_caller_scope(api_client, normal_user, dep
     assert response.data["data"]["users"]["total"] == 0
 
 
+# ---------- 岗位预览（人员维度，无授权段） ----------
+
+
+def post_preview_url(post) -> str:
+    return f"/api/system/posts/{post.pk}/preview"
+
+
+def test_post_preview_contract(auth_client, normal_user, dept):
+    from system.models import Post
+
+    post = Post.objects.create(name="安全员", code="preview_post", dept=dept)
+    normal_user.posts.add(post)
+
+    response = auth_client.get(post_preview_url(post))
+    assert response.status_code == 200
+    data = response.data["data"]
+    assert data["post"]["code"] == "preview_post"
+    assert data["post"]["dept"]["name"] == dept.name
+    assert data["users"]["total"] >= 1
+    assert any(user["username"] == "zhangsan" for user in data["users"]["list"])
+    assert data["users"]["truncated"] is False
+    # 岗位不参与权限判定：无授权段，仅有固定说明
+    assert data["notes"]
+    assert "menu_tree" not in data and "field_permissions" not in data and "data_permissions" not in data
+
+
+def test_post_preview_filters_users_by_caller_scope(api_client, normal_user, dept, menu_factory):
+    """水平越权防线：调用者数据范围内看不到持岗用户时，成员列表为空。"""
+    from system.models import DataPermission, Post
+
+    role = normal_user.roles.first()
+    role.menu.add(
+        menu_factory(name="preview:SystemPost", path="api/system/posts/(?P<pk>[^/.]+)/preview$", method="GET")
+    )
+    # 授予 system.post 的可见范围（否则 get_object 404），但不授予 system.userinfo 范围
+    normal_user.rules.add(
+        DataPermission.objects.create(
+            name="仅本岗位可见",
+            rules=[
+                {"table": "system.post", "field": "code", "type": "value.text", "value": "scope_post", "match": "exact"}
+            ],
+        )
+    )
+    post = Post.objects.create(name="范围岗位", code="scope_post", dept=dept)
+    normal_user.posts.add(post)
+    api_client.force_authenticate(user=normal_user)
+
+    response = api_client.get(post_preview_url(post))
+    assert response.status_code == 200, response.data
+    assert response.data["data"]["users"]["total"] == 0
+    assert response.data["data"]["users"]["list"] == []
+
+
 # ---------- 试算草稿（配置页即时验证影响面） ----------
 
 

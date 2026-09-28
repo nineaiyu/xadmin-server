@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""权限可视化：用户/部门/角色三个维度的只读预览载荷。"""
+"""权限可视化：用户/部门/角色/岗位四个维度的只读预览载荷。"""
 
 from django.conf import settings
 
 from common.core.filter import get_filter_queryset
-from system.models import DataPermission, DeptInfo, FieldPermission, Menu, UserInfo, UserRole
+from system.models import DataPermission, DeptInfo, FieldPermission, Menu, Post, UserInfo, UserRole
 
-from .constants import DEPT_PREVIEW_NOTES, PREVIEW_USER_SAMPLE_LIMIT
+from .constants import DEPT_PREVIEW_NOTES, POST_PREVIEW_NOTES, PREVIEW_USER_SAMPLE_LIMIT
 from .decode import decode_data_permission
 from .labels import _new_label_cache
 from .queries import (
@@ -200,4 +200,42 @@ def get_role_preview(role_obj: UserRole, operator: UserInfo) -> dict:
             "sample_limit": PREVIEW_USER_SAMPLE_LIMIT,
             "list": users,
         },
+    }
+
+
+def get_post_preview(post_obj: Post, operator: UserInfo) -> dict:
+    """岗位维度预览载荷（岗位信息 + 持有用户采样 + 固定说明）。
+
+    岗位不参与权限判定，故无菜单树 / 数据权限 / 字段权限段；成员列表与部门/角色
+    预览同口径——经调用者数据权限过滤（不泄漏调用者不可见的用户）。
+    """
+    users_queryset = get_filter_queryset(UserInfo.objects.filter(posts=post_obj), operator)
+    total = users_queryset.count()
+    users = [
+        {
+            "pk": str(user.pk),
+            "username": user.username,
+            "nickname": user.nickname,
+            "dept": {"pk": str(user.dept.pk), "name": user.dept.name} if user.dept else None,
+            "is_active": user.is_active,
+        }
+        for user in users_queryset[:PREVIEW_USER_SAMPLE_LIMIT]
+    ]
+    return {
+        "post": {
+            "pk": str(post_obj.pk),
+            "name": post_obj.name,
+            "code": post_obj.code,
+            "rank": post_obj.rank,
+            "is_active": post_obj.is_active,
+            "description": post_obj.description or "",
+            "dept": {"pk": str(post_obj.dept.pk), "name": post_obj.dept.name} if post_obj.dept else None,
+        },
+        "users": {
+            "total": total,
+            "truncated": total > PREVIEW_USER_SAMPLE_LIMIT,
+            "sample_limit": PREVIEW_USER_SAMPLE_LIMIT,
+            "list": users,
+        },
+        "notes": POST_PREVIEW_NOTES,
     }

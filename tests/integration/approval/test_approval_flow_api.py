@@ -475,3 +475,38 @@ class TestApprovalInstanceApi:
         assert len(detail["nodes"]) == 1
         versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
         assert versions[0]["version"] == 3
+
+    def test_post_assignee_lifecycle(self, applicant, auth_client, approver_client, api_client, approver):
+        """post 节点全链路：API 建含岗位节点流程 → 发起解析在岗用户 → 审批通过。"""
+        from system.models import Post
+
+        post = Post.objects.create(name="安全员", code="api_post_security")
+        approver.posts.add(post)
+
+        created = auth_client.post(
+            FLOWS_URL,
+            {
+                "name": "岗位流程",
+                "code": "post_lifecycle",
+                "form_schema": [{"key": "days", "label": "天数", "type": "number", "required": True}],
+                "nodes": [{"name": "安全审批", "assignee_type": "post", "assignee_value": post.code}],
+            },
+            format="json",
+        )
+        assert created.data["code"] == 1000, created.data
+        flow_pk = created.data["data"]["pk"]
+
+        api_client.force_authenticate(user=applicant)
+        submitted = api_client.post(
+            INSTANCES_URL, {"flow": str(flow_pk), "title": "岗位审批申请", "form_data": {"days": 1}}, format="json"
+        )
+        assert submitted.data["code"] == 1000, submitted.data
+        instance_pk = submitted.data["data"]["pk"]
+        # 岗位成员被解析为候选审批人并进入待办
+        assert ApprovalNodeTask.objects.filter(instance_id=instance_pk, assignee=approver).exists()
+        assert approver_client.get(INSTANCES_URL, {"scope": "pending"}).data["data"]["total"] == 1
+
+        approved = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"comment": "同意"}, format="json")
+        assert approved.data["code"] == 1000
+        instance = ApprovalInstance.objects.get(pk=instance_pk)
+        assert instance.status == ApprovalInstance.Status.APPROVED

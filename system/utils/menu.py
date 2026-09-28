@@ -43,7 +43,7 @@ def get_related_models(model):
 
 
 def get_view_permissions(view_string, code_suffix=""):
-    permissions = []
+    permissions: list[dict] = []
 
     url_paths = [url for url in get_all_url_dict("") if url.get("view") == view_string]
     if not url_paths:

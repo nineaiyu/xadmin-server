@@ -148,8 +148,12 @@ class Command(BaseCommand):
                 node.save(update_fields=["assignee_value", "updated_time"])
             flow.version = (flow.version or 0) + 1
             flow.save(update_fields=["version", "updated_time"])
-            ApprovalFlowVersion.objects.create(
-                flow=flow, version=flow.version, snapshot=self._snapshot(flow), remark="演示审批人配置"
+            # 幂等：loaddata 会把 flow.version/nodes 重置回种子值，重绑后同一版本号
+            # 可能已有快照（重灌种子场景），就地刷新而不是重复建行。
+            ApprovalFlowVersion.objects.update_or_create(
+                flow=flow,
+                version=flow.version,
+                defaults={"snapshot": self._snapshot(flow), "remark": "演示审批人配置"},
             )
             self.stdout.write(f"rebind assignees: {flow.code} -> v{flow.version}")
 

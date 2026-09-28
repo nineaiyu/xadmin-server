@@ -48,7 +48,7 @@ def remind_pending_tasks(now=None) -> int:
     return reminded
 
 
-def clean_finished_instances(keep_days: int = None, batch_size: int = 2000) -> int:
+def clean_finished_instances(keep_days: int | None = None, batch_size: int = 2000) -> int:
     """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天；级联任务）。"""
     from django.db import transaction
 

@@ -144,7 +144,8 @@ class ApprovalFlowNode(DbAuditModel):
 
     - approve_type：OR（或签，任一通过即节点通过）/ AND（会签，全部通过才通过）；
     - assignee_type：role（角色 code）/ user（用户名，逗号分隔）/ leader（申请人
-      所在部门 leader）/ field（表单字段 key，值为用户名或用户名列表）；
+      所在部门 leader）/ field（表单字段 key，值为用户名或用户名列表）/ post
+      （岗位 code，逗号分隔；按 UserInfo.posts 解析，不参与权限判定）；
     - timeout_hours：>0 时超时未处理由 beat 任务提醒当前节点审批人（每任务每日一次）。
     """
 
@@ -159,6 +160,7 @@ class ApprovalFlowNode(DbAuditModel):
         USER = "user", _("User")
         LEADER = "leader", _("Leader")
         FIELD = "field", _("Form field")
+        POST = "post", _("Post")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     flow = models.ForeignKey(

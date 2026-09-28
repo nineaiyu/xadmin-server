@@ -13,6 +13,8 @@
 - 多值关系（M2M）不展开（避免一次 N 查询），以「(多值)」占位。
 """
 
+from typing import Any
+
 from common.utils import get_logger
 
 from .payload import get_request_object_pk
@@ -58,7 +60,7 @@ def _iter_changes(obj, request):
     if not isinstance(data, dict):
         return []
     model = type(obj)
-    changes = []
+    changes: list[dict[str, Any]] = []
     for field in data:
         if len(changes) >= MAX_SNAPSHOT_FIELDS:
             break

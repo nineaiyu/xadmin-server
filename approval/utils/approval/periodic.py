@@ -11,7 +11,7 @@ from .queries import invalidate_pending_count_cache
 logger = get_logger(__name__)
 
 
-def expire_pending_approvals(pending_days: int = None) -> int:
+def expire_pending_approvals(pending_days: int | None = None) -> int:
     """PENDING 超时置 EXPIRED（APPROVAL_PENDING_TIMEOUT，默认 3 天，清理任务调用）。"""
     import datetime
 
@@ -45,7 +45,7 @@ def expire_pending_approvals(pending_days: int = None) -> int:
     return count
 
 
-def remind_pending_approvals(remind_hours: int = None) -> int:
+def remind_pending_approvals(remind_hours: int | None = None) -> int:
     """超时未处理的 PENDING 单向审批人补发一次提醒，返回提醒过的单数。
 
     - 阈值 = APPROVAL_REMIND_HOURS（默认 24h，0 = 不提醒）；
@@ -94,7 +94,7 @@ def remind_pending_approvals(remind_hours: int = None) -> int:
     return reminded
 
 
-def clean_expired_approvals(keep_days: int = None, batch_size: int = 2000) -> int:
+def clean_expired_approvals(keep_days: int | None = None, batch_size: int = 2000) -> int:
     """清理超过保留期的审批单（APPROVAL_KEEP_DAYS，默认 180 天，分批删）。"""
     import datetime
 

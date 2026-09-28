@@ -50,6 +50,8 @@ def eval_condition(condition, form_data) -> bool:
         if op == "not_empty":
             return actual not in (None, "", [], {})
         if op in ("gt", "gte", "lt", "lte"):
+            if actual is None or expect is None:
+                return False  # 缺值不参与比较（与 float(None) 抛错同分支）
             left, right = float(actual), float(expect)
             return {"gt": left > right, "gte": left >= right, "lt": left < right, "lte": left <= right}[op]
     except (TypeError, ValueError):
@@ -110,6 +112,14 @@ def resolve_assignee_pairs(node, applicant, form_data) -> list:
         if not names:
             return []
         queryset = queryset.filter(username__in=names)
+    elif assignee_type == node.AssigneeType.POST:
+        # 岗位人员维度（不参与权限判定）：code 多值，仅启用且未删除岗位的在岗用户
+        codes = _split_values(node.assignee_value)
+        if not codes:
+            return []
+        queryset = queryset.filter(
+            posts__is_active=True, posts__deleted_at__isnull=True, posts__code__in=codes
+        ).distinct()
     else:
         return []
 
@@ -183,7 +193,7 @@ def next_node(flow, after_order, form_data, node=None):
     return None
 
 
-def simulate_path(flow, form_data, node=None) -> list:
+def simulate_path(flow, form_data, node=None) -> list | None:
     """按 form_data 模拟推进，返回途经节点序列（发起预校验 + 步数兜底）。
 
     排他网关在给定 form_data 下出口唯一，路径确定；步数上限 = 节点数 + 1，
@@ -207,7 +217,7 @@ def simulate_path(flow, form_data, node=None) -> list:
     return path
 
 
-def validate_form(flow, form_data) -> str:
+def validate_form(flow, form_data) -> str | None:
     """按 form_schema 校验表单：必填缺失 / key 非法返回错误文案，通过返回 None。"""
     if form_data is None:
         form_data = {}

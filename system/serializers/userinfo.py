@@ -31,15 +31,35 @@ class UserInfoSerializer(BaseModelSerializer):
     class Meta:
         model = UserInfo
         write_fields = ["username", "nickname", "gender"]
-        fields = write_fields + ["email", "last_login", "pk", "phone", "avatar", "roles", "date_joined", "dept"]
+        fields = write_fields + [
+            "email",
+            "last_login",
+            "pk",
+            "phone",
+            "avatar",
+            "roles",
+            "posts",
+            "date_joined",
+            "dept",
+        ]
         read_only_fields = list(set([x.name for x in models.UserInfo._meta.fields]) - set(write_fields))
 
     dept = serializers.CharField(source="dept.name", read_only=True)
     roles = serializers.SerializerMethodField()
+    # 岗位为人员维度标识（不参与权限判定）：仅展示启用岗位，个人中心只读回显
+    posts = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.ListField)
     def get_roles(self, obj):
         return list(obj.roles.values_list("name", flat=True))
+
+    @extend_schema_field(serializers.ListField)
+    def get_posts(self, obj):
+        return list(
+            obj.posts.filter(is_active=True, deleted_at__isnull=True)
+            .order_by("rank", "name")
+            .values_list("name", flat=True)
+        )
 
 
 class ChangePasswordSerializer(serializers.Serializer):

@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """权限可视化：菜单/API/数据/字段权限的直查（不经缓存）。"""
 
+from typing import Any
+
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
@@ -158,7 +160,7 @@ def get_user_data_permissions(user_obj: UserInfo) -> dict:
 
 def _field_groups(field_permission: FieldPermission) -> list:
     """FieldPermission.field M2M → 按父模型分组的字段结构。"""
-    models = {}
+    models: dict[str, Any] = {}
     for field in field_permission.field.all().select_related("parent"):
         parent = field.parent
         if not parent:

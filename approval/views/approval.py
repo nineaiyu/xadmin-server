@@ -124,7 +124,7 @@ class ApprovalRequestViewSet(
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                 },
                 required=["pks"],
                 description="主键列表",
@@ -161,7 +161,7 @@ class ApprovalRequestViewSet(
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "reason": build_basic_type(OpenApiTypes.STR),
                 },
                 required=["pks", "reason"],

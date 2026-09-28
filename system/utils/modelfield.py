@@ -244,7 +244,7 @@ def get_extra_field_lookups(field) -> list:
     """
     from common.core.data_scope import SPECIAL_MATCHES
 
-    extras = []
+    extras: list[str] = []
     if getattr(field, "many_to_many", False):
         extras.extend(("m2m", "m2m_all"))
     if field.get_internal_type() == "GenericIPAddressField":

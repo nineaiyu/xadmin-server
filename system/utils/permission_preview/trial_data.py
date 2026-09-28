@@ -65,7 +65,7 @@ def _grants_for_user(user_obj: UserInfo, menu_ctx) -> list:
     仅用于试算诊断展示；实际过滤仍由 get_filter_queryset 独立完成。
     """
     dq = Q(menu__isnull=True) | Q(menu__isnull=False, menu__pk=menu_ctx)
-    rows = []
+    rows: list[tuple] = []
     dept = user_obj.dept
     if dept and dept.pk:
         chain = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk, is_parent=True)]

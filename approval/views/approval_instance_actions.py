@@ -7,6 +7,7 @@
 """
 
 import re
+from typing import TYPE_CHECKING, Any
 
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -43,6 +44,14 @@ COMMENT_MAX_LENGTH = 2000
 
 class ApprovalInstanceActionMixin:
     """实例动作端点（self 由组合它的 ViewSet 提供：get_object / filter_queryset 等）。"""
+
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
+        def get_queryset(self, *args, **kwargs): ...
+
+        def filter_queryset(self, queryset, *args, **kwargs): ...
 
     def _resolve_comment_mentions(self, content, exclude_user):
         """解析评论中的 @用户名 → 启用用户列表（排除自己，去重保序）。"""
@@ -161,7 +170,7 @@ class ApprovalInstanceActionMixin:
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "comment": build_basic_type(OpenApiTypes.STR),
                 },
                 required=["pks"],
@@ -201,7 +210,7 @@ class ApprovalInstanceActionMixin:
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "reason": build_basic_type(OpenApiTypes.STR),
                 },
                 required=["pks", "reason"],
@@ -414,7 +423,7 @@ class ApprovalInstanceActionMixin:
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "username": build_basic_type(OpenApiTypes.STR),
                     "comment": build_basic_type(OpenApiTypes.STR),
                 },

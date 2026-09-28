@@ -10,6 +10,7 @@
 """
 
 import pytest
+from django.utils.translation import gettext as _gettext
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models import DataPermission, Menu, ModelLabelField
@@ -79,7 +80,10 @@ class TestSerializerScope:
         serializer = DataPermissionSerializer()
         with pytest.raises(Exception) as exc:
             serializer.validate_menu([page])
-        assert "permission" in str(exc.value).lower()
+        # 文案断言 gettext 同源（有 .mo 显中文、无 .mo 显英文，写死任一语言都会跨环境假红）
+        assert str(_gettext("The selected menus contain no API permission, please select a page with APIs")) in str(
+            exc.value
+        )
 
     def test_validate_menu_keeps_empty_scope(self):
         serializer = DataPermissionSerializer()
