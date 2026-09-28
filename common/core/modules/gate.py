@@ -24,18 +24,29 @@ def _disabled_specs() -> tuple:
 
 
 @lru_cache(maxsize=1)
-def _disabled_route_regexes() -> tuple:
-    patterns = []
+def _disabled_route_pairs() -> tuple:
+    """(编译正则, 模块 id) 对：网关命中后能报出「哪个模块被停用」。"""
+
+    pairs = []
     for spec in _disabled_specs():
         for prefix in spec.routes:
-            patterns.append(re.compile(prefix))
-    return tuple(patterns)
+            pairs.append((re.compile(prefix), spec.id))
+    return tuple(pairs)
 
 
 def disabled_route_patterns() -> tuple:
     """禁用模块的请求路径正则（空元组 = 无裁剪，调用方走零开销旁路）。"""
 
-    return _disabled_route_regexes()
+    return tuple(pattern for pattern, _mid in _disabled_route_pairs())
+
+
+def match_disabled_module(path: str) -> str:
+    """返回命中的停用模块 id（未命中返回空串）；供网关 404 响应携带模块标识。"""
+
+    for pattern, module_id in _disabled_route_pairs():
+        if pattern.match(path or ""):
+            return module_id
+    return ""
 
 
 @lru_cache(maxsize=1)

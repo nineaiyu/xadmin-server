@@ -10,6 +10,7 @@ import concurrent.futures
 import threading
 import time
 from datetime import timedelta
+from typing import Any
 
 from django.conf import settings
 from django.utils import timezone
@@ -27,7 +28,7 @@ MONITOR_TREND_POINTS = 60
 
 # 网卡速率：psutil 只提供累计计数器，速率由进程内上次快照差分得出
 # （WS 5s 推送与 HTTP 轮询共享，窗口为两次采集的实际间隔）
-_net_rate_state = {"time": None, "sent": 0, "recv": 0}
+_net_rate_state: dict[str, Any] = {"time": None, "sent": 0, "recv": 0}
 _net_rate_lock = threading.Lock()
 
 
@@ -314,7 +315,7 @@ TASK_HEALTH_TOP_TASKS = 10
 TASK_HEALTH_MIN_SAMPLE = 10
 
 
-def collect_task_health(days: int = None):
+def collect_task_health(days: int | None = None):
     """任务执行健康度（近 N 天聚合）。
 
     - 成功率按终态（SUCCESS/FAILURE/REVOKED）计算，PENDING/RUNNING 在途不计；
@@ -341,9 +342,9 @@ def collect_task_health(days: int = None):
 
     if terminal_count < TASK_HEALTH_MIN_SAMPLE:
         state = "healthy"
-    elif success_rate >= 0.99:
+    elif (success_rate or 0) >= 0.99:
         state = "healthy"
-    elif success_rate >= 0.90:
+    elif (success_rate or 0) >= 0.90:
         state = "degraded"
     else:
         state = "failing"

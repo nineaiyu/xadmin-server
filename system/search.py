@@ -26,7 +26,7 @@ from django.db.models import Q, QuerySet
 
 from common.core.filter import get_filter_queryset
 from common.core.permission import get_menu_pk, get_user_permission
-from system.models import DeptInfo, OperationLog, Tag, UploadFile, UserInfo
+from system.models import DeptInfo, OperationLog, Post, Tag, UploadFile, UserInfo
 
 KEYWORD_MAX_LENGTH = 50
 GROUP_LIMIT = 5
@@ -137,6 +137,16 @@ SEARCH_PROVIDERS = (
         display_field="name",
     ),
     SearchProvider(
+        key="post",
+        label="岗位",
+        route="/system/post/index",
+        list_url="api/system/posts",
+        queryset=lambda: Post.objects.all().order_by("name"),
+        text_fields=("name", "code"),
+        display_field="name",
+        meta_fields=("code",),
+    ),
+    SearchProvider(
         key="file",
         label="文件",
         route="/system/file/index",
@@ -157,7 +167,7 @@ SEARCH_PROVIDERS = (
     SearchProvider(
         key="approval",
         label="审批单",
-        route="/system/approval/index",
+        route="/approval/index",
         list_url="api/approval/approvals",
         queryset=_approval_queryset,
         text_fields=("path", "module", "object_pk"),
@@ -168,7 +178,7 @@ SEARCH_PROVIDERS = (
     SearchProvider(
         key="leave",
         label="请假申请",
-        route="/system/leave/index",
+        route="/approval/leave/index",
         list_url="api/approval/leaves",
         queryset=_leave_queryset,
         text_fields=("reason",),

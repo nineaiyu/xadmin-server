@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 10/18/2024
 import os
+from typing import Any
 
 from ..const import CELERY_LOG_DIR, CONFIG, LOG_DIR, TMP_DIR
 
@@ -17,7 +18,7 @@ FILE_FORMATTER = "json" if str(CONFIG.LOG_FORMAT).lower() == "json" else "main"
 # 按天滚动的历史日志保留天数（0 表示不清理）
 LOG_BACKUP_COUNT = int(CONFIG.LOG_BACKUP_COUNT or 0)
 
-LOGGING = {
+LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {

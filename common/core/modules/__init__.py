@@ -41,6 +41,7 @@ from .gate import (
     filter_menu_queryset,
     invalidate_trimmed_caches,
     is_ws_path_trimmed,
+    match_disabled_module,
     permission_prefixes_of,
 )
 from .override import (
@@ -73,6 +74,7 @@ from .registry import (
     resolve_modules,
     validate_deployment_config,
 )
+from .routes import derive_route_prefixes
 from .scaffold import module_id_conflict, render_modules_source
 from .seeding import ModuleSeedFilter
 from .specs import (
@@ -106,6 +108,7 @@ __all__ = [
     "compute_hidden_menu_pks",
     "config_snippet",
     "deployment_config",
+    "derive_route_prefixes",
     "desired_modules",
     "disabled_module_ids",
     "disabled_permission_prefixes",
@@ -117,6 +120,7 @@ __all__ = [
     "invalidate_trimmed_caches",
     "is_module_enabled",
     "is_ws_path_trimmed",
+    "match_disabled_module",
     "load_override",
     "module_diff",
     "module_id_conflict",

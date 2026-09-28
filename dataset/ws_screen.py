@@ -117,6 +117,8 @@ def can_view_screen(user, screen_pk) -> bool:
 class ScreenDisplayNotify(AsyncJsonWebsocket):
     """大屏展示端连接：连接回放控制态，随后被动接收控制帧。"""
 
+    disconnected = False  # 已断开标记（disconnect 后不再续期所在组）
+
     async def connect(self):
         self.user = self.scope["user"]
         if not self.user:

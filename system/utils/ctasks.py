@@ -6,6 +6,7 @@
 # date : 6/29/2023
 
 import datetime
+from typing import Any
 
 from celery.utils.log import get_task_logger
 from django.utils import timezone
@@ -75,7 +76,7 @@ def auto_clean_upload_file(keep_days=None, batch_size=2000):
     if not days or days <= 0:
         return 0
     deadline = timezone.now() - datetime.timedelta(days=days)
-    skipped = set()
+    skipped: set[Any] = set()
     removed = 0
     while True:
         records = list(

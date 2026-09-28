@@ -12,6 +12,9 @@ x-build-args: &xadmin-build-args
 x-app-env: &xadmin-app-env
   DB_PASSWORD: ${DB_PASSWORD:-}
   REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+  # 开发态热加载开关：`bash utils/dev_up.sh --hot` 会 export DEBUG=true
+  # （gunicorn --reload，web 容器改代码自动重载）；空值 = 未启用，默认行为不变
+  DEBUG: ${DEBUG:-}
 
 networks:
   net:

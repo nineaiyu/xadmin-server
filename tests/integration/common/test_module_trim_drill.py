@@ -45,8 +45,10 @@ from common.core.modules import (
     invalidate_trimmed_caches,
     is_module_enabled,
     is_ws_path_trimmed,
+    match_disabled_module,
     module_index,
     permission_prefixes_of,
+    reset_module_state,
 )
 
 TRIMMED = "chat"
@@ -139,6 +141,19 @@ class TestRouteLayer:
         response = Client().get("/api/chat/room")
         assert response.status_code == 404
         assert response.json()["code"] == 1001
+        assert response.json()["module"] == TRIMMED
+
+    def test_gate_detail_follows_accept_language(self, module_config):
+        """网关早退在 LocaleMiddleware 之前：detail 须按请求语言翻译。
+
+        随机取默认为 zh 的 `_()` 会让英文界面收到中文提示；断言英文请求拿到 msgid
+        原文（en 词条为空译文，回落 msgid，本地有 .mo 与 CI 无 .mo 口径一致）。
+        """
+
+        module_config(disable=[TRIMMED])
+        response = Client().get("/api/chat/room", headers={"accept-language": "en"})
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Feature not enabled"
 
     def test_core_path_not_gated(self, module_config):
         module_config(disable=[TRIMMED])
@@ -240,6 +255,50 @@ class TestCacheInvalidationLayer:
         assert invalidate_trimmed_caches() == 0
 
 
+DERIVED_MODULE_ID = "third_derived"
+DERIVED_SAMPLE_REST = "/api/third-derived/items"
+
+
+def _fake_config(route: str):
+    """构造第三方 app 的 config.py（URLPATTERNS 指向 route 前缀）。"""
+
+    from django.urls import include, path
+
+    config = types.ModuleType("third_derived_app.config")
+    config.URLPATTERNS = [path(route, include("third_derived_app.urls"))]
+    return config
+
+
+@pytest.fixture
+def derived_route_app(monkeypatch):
+    """第三方 app：只声明菜单，**不写 routes**（路由前缀由 URLPATTERNS 推导）。"""
+
+    package = types.ModuleType("third_derived_app")
+    package.__path__ = []
+    urls = types.ModuleType("third_derived_app.urls")
+    urls.urlpatterns = []
+    declaration = types.ModuleType("third_derived_app.modules")
+    declaration.MODULES = (ModuleSpec(DERIVED_MODULE_ID, "第三方推导模块", OPTIONAL),)
+    for name, module in (
+        ("third_derived_app", package),
+        ("third_derived_app.urls", urls),
+        ("third_derived_app.modules", declaration),
+    ):
+        monkeypatch.setitem(sys.modules, name, module)
+    monkeypatch.setitem(sys.modules, "third_derived_app.config", _fake_config("api/third-derived/"))
+
+    class _AppConfig:
+        name = "third_derived_app"
+        path = os.path.dirname(__file__)
+
+    monkeypatch.setattr(django_apps, "get_app_configs", lambda: [_AppConfig()])
+    yield
+    # 同 TestThirdPartyDeclarationPath：mock 期间发起 HTTP 请求会污染进程级模板目录缓存
+    from django.template.utils import get_app_template_dirs
+
+    get_app_template_dirs.cache_clear()
+
+
 class TestThirdPartyDeclarationPath:
     """第三方 app 声明路径验证：app 侧 modules.py 声明与内置模块六层裁剪同口径。
 
@@ -303,6 +362,40 @@ class TestThirdPartyDeclarationPath:
         response = Client().get(self.SAMPLE_REST)
         assert response.status_code == 404
         assert response.json()["code"] == 1001
+        assert response.json()["module"] == self.MODULE_ID  # 第三方模块同样携带标识
+
+    def test_derived_routes_from_urlpatterns_gate_the_path(self, derived_route_app, module_config):
+        """声明不写 routes：拦截前缀由 ``config.py::URLPATTERNS`` 推导（单一事实源）。"""
+
+        module_config(disable=[DERIVED_MODULE_ID])
+        response = Client().get(DERIVED_SAMPLE_REST)
+        assert response.status_code == 404
+        assert response.json()["code"] == 1001
+        assert response.json()["module"] == DERIVED_MODULE_ID
+
+    def test_derived_routes_follow_urlpatterns_change(self, derived_route_app, module_config, monkeypatch):
+        """改了 config.py 前缀 → 拦截前缀自动跟随，声明侧无需同步（漂移场景的反证）。"""
+
+        relocated = "/api/third-derived-v2/items"
+        module_config(disable=[DERIVED_MODULE_ID])
+        monkeypatch.setitem(
+            sys.modules,
+            "third_derived_app.config",
+            _fake_config("api/third-derived-v2/"),
+        )
+        reset_module_state()
+        # 旧前缀不再归属该模块（该路径本就未注册，回落普通 404 而非网关 JSON）
+        assert match_disabled_module(DERIVED_SAMPLE_REST) == ""
+        assert match_disabled_module(relocated) == DERIVED_MODULE_ID
+        response = Client().get(relocated)
+        assert response.status_code == 404
+        assert response.json()["module"] == DERIVED_MODULE_ID
+
+    def test_explicit_routes_survive_under_derived_config(self, third_party_app, module_config):
+        """显式声明优先：声明了 routes 的第三方模块不因存在 URLPATTERNS 而被改写。"""
+
+        module_config(disable=[self.MODULE_ID])
+        assert module_index()[self.MODULE_ID].routes == self.SPEC.routes
 
         module_config()
         response = Client().get(self.SAMPLE_REST)

@@ -332,6 +332,10 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
             "series": [{"name": str(_("Total")), "value": aggregated if aggregated is not None else 0}],
         }
 
+    if group_spec is None:
+        # 分组字段已由 parse_column 校验（非法即抛错），此处仅收窄类型、同文案兜底
+        raise ValidationError(_("Field {} is not available for datasets").format(group_by))
+
     if date_trunc:
         if date_trunc not in ALLOWED_DATE_TRUNC:
             raise ValidationError(_("Date trunc {} is not allowed").format(date_trunc))

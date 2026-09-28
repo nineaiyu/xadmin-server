@@ -52,6 +52,7 @@ from system.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTok
 from system.views.auth.verify_code import SendVerifyCodeAPIView
 from system.views.configs import ConfigsViewSet
 from system.views.dashboard import DashboardViewSet
+from system.views.directory import DirectoryViewSet
 from system.views.modules import SystemModuleViewSet
 from system.views.monitor import MonitorViewSet
 from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
@@ -65,6 +66,7 @@ from system.views.routes import UserRoutesAPIView
 from system.views.search.dept import SearchDeptViewSet
 from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
+from system.views.search.post import SearchPostViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
 from system.views.tag import TagViewSet
@@ -143,10 +145,14 @@ router_url = [
 router.register("dashboard", DashboardViewSet, basename="dashboard")
 router.register("monitor", MonitorViewSet, basename="monitor")
 
+# 通讯录（人员名录，只读）
+router.register("directory", DirectoryViewSet, basename="SystemDirectory")
+
 # 仅数据搜索
 router.register("search/user", SearchUserViewSet, basename="SearchUser")
 router.register("search/role", SearchRoleViewSet, basename="SearchRole")
 router.register("search/dept", SearchDeptViewSet, basename="SearchDept")
+router.register("search/post", SearchPostViewSet, basename="SearchPost")
 router.register("search/menu", SearchMenuViewSet, basename="SearchMenu")
 
 # 个人用户信息

@@ -154,6 +154,17 @@ class TestRouteGate:
         response = Client().get("/api/chat/room")
         assert response.status_code == 404
         assert response.json()["code"] == 1001
+        # 响应携带命中模块 id：前端据此给出「模块已停用」专用提示
+        assert response.json()["module"] == "chat"
+
+    def test_match_disabled_module_returns_id(self, module_config):
+        from common.core.modules import match_disabled_module
+
+        module_config(disable=["chat", "ai"])
+        assert match_disabled_module("/api/chat/room") == "chat"
+        assert match_disabled_module("/api/ai/profiles") == "ai"
+        assert match_disabled_module("/api/system/user") == ""
+        assert match_disabled_module("") == ""
 
     def test_middleware_passes_through_other_paths(self, module_config):
         module_config(disable=["chat"])

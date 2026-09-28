@@ -27,8 +27,8 @@
 - **原因**：app 未注册，或注册了但没有 `your_app/config.py::URLPATTERNS`（此时启动日志有一条
   「缺少 `your_app/config.py` 的 URLPATTERNS，该应用路由未注入」告警——注册后模型才在
   `INSTALLED_APPS` 内，所以「先注册、后由 `generate_crud` 生成 config.py」是正常顺序）。
-- **做法**：`config.yml` 的 `XADMIN_APPS: [your_app]`；`python manage.py generate_crud <app>.<Model>`
-  会写出 `config.py`（已存在则需 `--force`）；
+- **做法**：`config.yml` 的 `XADMIN_APPS: [your_app]`（或 `generate_crud` 加 `--register-app` 自动写入）；
+  `python manage.py generate_crud <app>.<Model>` 会写出 `config.py`（已存在则需 `--force`）；
   改配置后**重启进程**（挂载代码不热加载：`docker compose restart server celery-worker celery-heavy celery-beat`）。
 
 ### 4. 数据权限"消失"：手写 `Model.objects.filter(...)` 绕过数据权限
@@ -46,9 +46,11 @@
 
 ### 6. 改了后端代码，接口行为没变
 
-- **原因**：容器是源码挂载 + 进程常驻，**不热加载**；且 `xadmin-celery-*` 是独立进程
+- **原因**：容器是源码挂载 + 进程常驻，**默认不热加载**；且 `xadmin-celery-*` 是独立进程
   （导出/报表等任务跑在 worker 里，只重启 web 不够）。
-- **做法**：`docker compose restart server celery-worker celery-heavy celery-beat`。
+- **做法**：`docker compose restart server celery-worker celery-heavy celery-beat`；
+  或用 `bash utils/dev_up.sh --hot` 启动（DEBUG=true → gunicorn `--reload`，web 容器改代码自动重载；
+  celery / beat 与 config.yml、`XADMIN_APPS` 等配置变更仍需 restart）。
 
 ## 二、后端：配置与启动
 

@@ -77,6 +77,10 @@ async def _tail_has_mark(path):
 class TaskLogNotify(AsyncJsonWebsocket):
     """一条连接只服务一条执行记录：从 0 增量推送到输出完成。"""
 
+    pk = ""
+    offset = 0  # 已推送到的文件字节偏移
+    disconnected = False
+
     async def connect(self):
         self.user = self.scope["user"]
         if not self.user:

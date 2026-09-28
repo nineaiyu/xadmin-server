@@ -5,7 +5,9 @@
 import json
 import logging
 import os
+from collections.abc import Callable
 from importlib import import_module
+from typing import Any
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -55,7 +57,7 @@ class Config(dict):
     defaults.update(base)
     defaults.update(libs)
     defaults.update(settings)
-    old_config_map = {}
+    old_config_map: dict[str, str] = {}
 
     def __init__(self, *args):
         super().__init__(*args)
@@ -64,7 +66,7 @@ class Config(dict):
         default_value = self.defaults.get(k)
         if default_value is None:
             return v
-        tp = type(default_value)
+        tp: Callable[[Any], Any] = type(default_value)
         # 对bool特殊处理
         if tp is bool and isinstance(v, str):
             if v.lower() in ("true", "1"):

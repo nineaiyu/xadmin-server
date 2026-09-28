@@ -51,6 +51,10 @@ class Command(LoadCommand):
         # 3) 流程节点 assignee_value 用 "xadmin,isummer" 双环境占位（字符串不做
         #    FK 校验），seed_demo_flows 会改写为演示审批人并落新版本快照。
         DataMaskRule,
+        # 登录访问策略内置默认项（非工作时间要求二次验证 + 管理员登录留痕）：
+        # 新装即具备基础安全策略；priority 取 500+ 让管理员自建策略（默认 100）先命中，
+        # require_mfa 在用户无可用 MFA 方式时降级放行，不会造成登录死锁
+        LoginAccessPolicy,
         ApprovalFlow,
         ApprovalFlowNode,
         ApprovalFlowVersion,
@@ -100,6 +104,18 @@ class Command(LoadCommand):
         # 信号在导入期被整体屏蔽（含 DataDict post_save 失效钩子），而缓存后端
         # （Redis）跨进程存活：导入后主动全量失效，避免消费端拿到旧字典
         invalid_dict_cache()
-        # 同理：loaddata 按 pk 覆盖 SystemConfig 字段且信号被屏蔽，种子更新后
-        # 主动失效系统配置缓存，避免旧缓存压过新种子
+        # 同理：loaddata 按 pk 覆盖 SystemConfig 字段且信号被屏蔽，
+        # 种子更新后主动失效系统配置缓存，避免旧缓存压过新种子
         SysConfig.invalid_config_cache()
+        # 菜单/角色授权在种子里也会被按 pk 覆盖（parent/path 等），而 Menu 的
+        # post_save 失效钩子同样被屏蔽：不清路由与权限点缓存时，存量用户最长
+        # 24 小时仍看到旧菜单树（改了种子却"没生效"的典型表现）
+        self._invalidate_route_caches()
+
+    @staticmethod
+    def _invalidate_route_caches():
+        from system.signal_handler import batch_invalid_cache
+
+        pks = list(UserInfo.objects.values_list("pk", flat=True))
+        if pks:
+            batch_invalid_cache(pks)

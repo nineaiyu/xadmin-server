@@ -133,12 +133,13 @@ def _generate_jpeg(source_path_: str, target_path: str, width: int) -> None:
 
     with Image.open(source_path_) as img:
         # 手机/相机照片的方向信息在 EXIF 里，不纠正会出现"躺着"的缩略图
-        img = ImageOps.exif_transpose(img)
-        if img.width > width:
-            img.thumbnail((width, width))
-        if img.mode not in ("RGB", "L"):
-            img = img.convert("RGB")
-        img.save(target_path, "JPEG", quality=85)
+        # exif_transpose 返回 Image（与原 ImageFile 不是同一类型），落到独立变量
+        image = ImageOps.exif_transpose(img)
+        if image.width > width:
+            image.thumbnail((width, width))
+        if image.mode not in ("RGB", "L"):
+            image = image.convert("RGB")
+        image.save(target_path, "JPEG", quality=85)
 
 
 def read_text_preview(upload, max_bytes: int | None = None) -> tuple[str, bool]:

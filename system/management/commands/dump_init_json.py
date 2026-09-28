@@ -36,6 +36,7 @@ class Command(BaseCommand):
         DataPermission,
         FieldPermission,
         ModelLabelField,
+        LoginAccessPolicy,
         Setting,
     ]
 

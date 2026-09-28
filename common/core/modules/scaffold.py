@@ -21,6 +21,9 @@ _TEMPLATE = '''#!/usr/bin/env python
 
 随 app 安装自动纳入模块清单（`python manage.py modules`）；等级决定各发行预设下
 是否默认开启：core（不可裁）/ standard（默认开）/ optional（按需开）。
+
+路由前缀未写 `routes` 时按本 app 的 `config.py::URLPATTERNS` 自动推导
+（单一事实源，见 common/core/modules/routes.py）；显式声明可覆盖。
 """
 
 from common.core.modules import ModuleSpec

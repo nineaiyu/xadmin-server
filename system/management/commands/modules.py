@@ -84,6 +84,8 @@ class Command(BaseCommand):
         except ImproperlyConfigured as exc:
             raise CommandError(str(exc)) from None
 
+        self._warn_override()
+
         if options.get("config"):
             self._write_config(resolution)
             return
@@ -92,6 +94,22 @@ class Command(BaseCommand):
         if options.get("impact"):
             self._write_impact(resolution)
         self._write_config(resolution)
+
+    def _warn_override(self):
+        """后台覆盖行会整体替换部署基线：存在时改 config.yml / 环境变量不生效，必须提前告知。"""
+
+        from common.core.modules import override_active
+
+        if not override_active():
+            return
+        self.stdout.write(
+            self.style.WARNING(
+                "注意：存在后台覆盖行（系统管理 → 模块管理 写入，存于 system.ModuleOverride 表），"
+                "其优先级高于 config.yml / 环境变量——当前修改部署基线不会生效。\n"
+                "恢复部署基线：python manage.py modules --clear-override 后重启进程。"
+            )
+        )
+        self.stdout.write("")
 
     def _write_table(self, resolution, preview: bool):
         title = "功能模块清单（预演，未改动实际配置）" if preview else "功能模块清单（当前生效）"

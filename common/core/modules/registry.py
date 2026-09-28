@@ -14,6 +14,7 @@ from django.core.exceptions import ImproperlyConfigured
 from common.utils import get_logger
 
 from .override import load_override
+from .routes import _apply_derived_routes
 from .specs import _PRESET_LEVELS, CORE, DEFAULT_PRESET, OPTIONAL, PRESETS, STANDARD, ModuleResolution, ModuleSpec
 
 logger = get_logger(__name__)
@@ -199,6 +200,8 @@ def discovered_modules() -> tuple:
     与 ``XADMIN_APPS`` → ``{app}/config.py``（路由注册）对称的二开契约：
     app 侧提供模块级 ``MODULES`` 元组（``ModuleSpec``），随 app 安装自动纳入清单，
     无需改动本项目源码。导入失败只告警跳过（扩展点故障不应拖垮内核启动）。
+
+    声明未写 ``routes`` 时按 app 的 ``config.py::URLPATTERNS`` 推导（见 ``routes`` 模块）。
     """
 
     from django.apps import apps as django_apps
@@ -217,7 +220,7 @@ def discovered_modules() -> tuple:
         if not declared:
             continue
         logger.info("module declaration found: %s (%s 个)", module_path, len(declared))
-        discovered.extend(declared)
+        discovered.extend(_apply_derived_routes(app_config.name, declared))
     return tuple(discovered)
 
 
@@ -378,7 +381,7 @@ def reset_module_state() -> None:
         "_resolve_modules_cached",
         "_baseline",
         "_disabled_specs",
-        "_disabled_route_regexes",
+        "_disabled_route_pairs",
         "_disabled_ws_regexes",
         "_disabled_menu_pks_uncached",
         "all_module_specs",

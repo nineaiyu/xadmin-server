@@ -13,7 +13,7 @@ xadmin-基于Django+vue3的rbac权限管理系统
 
 ```shell
 # 方式一：Docker 一键体验（起后端全栈 + 幂等初始化 + 启动前端；需 Docker 与 Node/pnpm）
-bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-only 仅起后端；--help 查看帮助
+bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-only 仅起后端；--hot 热加载（改后端代码自动重载）；--help 查看帮助
 ```
 
 - 浏览器打开 <http://127.0.0.1:8848>，账号 `xadmin`，初始密码在初始化输出中**仅打印一次**；

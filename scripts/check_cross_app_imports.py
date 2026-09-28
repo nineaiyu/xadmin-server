@@ -51,6 +51,7 @@ ALLOWLIST = {
     # 模块级 import 仅存在于命令入口，非运行期业务链路）
     "system/management/commands/seed_demo_content.py": "管理命令（合法保留）",
     "system/management/commands/seed_demo_org.py": "管理命令（合法保留）",
+    "system/management/commands/seed_demo_extras.py": "管理命令（合法保留）",
 }
 
 # ---------------------------------------------------------------------------

@@ -96,6 +96,31 @@ class TestClearOverride:
 
 
 @pytest.mark.django_db
+class TestOverrideWarning:
+    """后台覆盖行告警：覆盖行存在时 config.yml / 环境变量基线不生效，必须提前告知。"""
+
+    def test_warns_when_override_active(self):
+        from common.core.modules import clear_override, reset_module_state, save_override
+
+        save_override(preset="standard")
+        try:
+            output = run_modules()
+            output_config = run_modules("--preset", "core", "--config")
+        finally:
+            clear_override()
+            reset_module_state()
+
+        assert "后台覆盖行" in output
+        assert "--clear-override" in output
+        # --config 片段模式下同样告警（该模式最容易让二开者误以为粘贴片段即可生效）
+        assert "后台覆盖行" in output_config
+
+    def test_silent_without_override(self):
+        output = run_modules()
+        assert "后台覆盖行" not in output
+
+
+@pytest.mark.django_db
 class TestModulesImpact:
     """`--impact`：在某组合下、针对当前库的影响面（只读）。"""
 

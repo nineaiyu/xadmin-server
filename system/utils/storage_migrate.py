@@ -16,6 +16,7 @@
 """
 
 import hashlib
+from typing import Any
 
 from django.core.files.base import File
 from django.core.files.storage import FileSystemStorage, Storage
@@ -139,7 +140,7 @@ def migrate_uploads(
 
     ``dry_run`` 只统计不写入（会读取源端做存在性 / 大小判断）。
     """
-    stats = {
+    stats: dict[str, Any] = {
         "scanned": 0,
         "copied": 0,
         "skipped": 0,

@@ -6,6 +6,7 @@
 选择、文件导出绕过分页。拆分自 modelset.py，行为保持不变。
 """
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import FieldDoesNotExist
@@ -25,15 +26,15 @@ logger = get_logger(__name__)
 class BaseViewSet:
     #: 当前请求命中的 action 名（DRF ViewSetMixin 在 initialize_request 中按方法写入）
     action: str
-    extra_filter_class: list[type] = []
+    extra_filter_class: Sequence[type] = []
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
         request: "Request"
         values_queryset: Any
-        filter_backends: list[type]
+        filter_backends: Sequence[type]
     # 查询优化：显式声明的关联字段，在所有 action 生效，支持 creator__dept 嵌套写法
-    select_related_fields = ()
-    prefetch_related_fields = ()
+    select_related_fields: tuple[str, ...] = ()
+    prefetch_related_fields: tuple[str, ...] = ()
     # 是否根据 serializer 的关联字段自动推断 select_related / prefetch_related
     auto_prefetch_related = True
     # 自动推断仅在这些 action 生效（这些 action 会逐行序列化关联对象，存在 N+1 查询）

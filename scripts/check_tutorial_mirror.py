@@ -80,6 +80,8 @@ TOOL_PARAMS = {
     "--frozen-lockfile",
     "--filter",
     "--backend-only",
+    "--hot",
+    "--with-demo",
     "--update",
     "--append",
     "--print-major",

@@ -15,6 +15,8 @@
 重叠一律拒绝：栅格画布上重叠几乎总是误操作，且会让「谁在上层」变成隐式行为。
 """
 
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 
 #: 允许的窗格类型：仪表盘 / 文本 / 时钟（首批三件组件）
@@ -62,7 +64,7 @@ def normalize_screen_layout(raw, dashboard_pks) -> list:
         raise ScreenLayoutError(_("Invalid screen layout"))
 
     known_dashboards = {str(pk) for pk in dashboard_pks}
-    normalised = []
+    normalised: list[dict[str, Any]] = []
     for index, item in enumerate(raw):
         if not isinstance(item, dict):
             raise ScreenLayoutError(_("Invalid screen layout pane: {}").format(index + 1))

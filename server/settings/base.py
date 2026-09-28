@@ -273,7 +273,7 @@ def _resolve_db_engine(value: str) -> str:
     return value
 
 
-DB_OPTIONS = {}
+DB_OPTIONS: dict[str, object] = {}
 DB_ENGINE = CONFIG.DB_ENGINE.lower()
 ENGINE = _resolve_db_engine(CONFIG.DB_ENGINE)
 
@@ -310,7 +310,8 @@ if DB_POOL_ENABLED:
 
     from common.db import check_db_connection
 
-    ConnectionPool.check_connection = staticmethod(check_db_connection)
+    # 运行期替换第三方类方法（配置期生效于全部连接池，mypy 视其为不可赋值）
+    ConnectionPool.check_connection = staticmethod(check_db_connection)  # type: ignore[method-assign, assignment]
 
     DB_OPTIONS["pool"] = {
         "min_size": int(CONFIG.DB_POOL_MIN_SIZE),

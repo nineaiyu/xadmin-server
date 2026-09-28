@@ -107,7 +107,8 @@ def run_async_import(record_id, view_path, user_pk):
     record.save(update_fields=["status", "updated_time"])
     start_time, state = local_now_display(), True
     total = success_rows = 0
-    errors, column_titles = [], []
+    errors: list[dict] = []
+    column_titles: list[str] = []
     aborted, abort_reason = False, None
     try:
         if not record.source_file or not record.source_file.filepath:

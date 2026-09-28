@@ -260,7 +260,7 @@ class Command(BaseCommand):
                 "跑 generate_crud 重新生成，或修正声明 path（口径见 ai/utils/ai_api_actions.py）",
             )
         elif checked:
-            self._report(PASS, "AI 声明（生成物）", f"{len(checked)} 条声明路径可解析（模块 {len(modules)} 个）")
+            self._report(PASS, "AI 声明（生成物）", f"{checked} 条声明路径可解析（模块 {modules} 个）")
         else:
             self._report(PASS, "AI 声明（生成物）", "无声明文件（非 AI 化模块，跳过）")
 

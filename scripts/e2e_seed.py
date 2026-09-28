@@ -265,6 +265,35 @@ def seed_monitor_scene():
     print(f"monitor scene seeded: {points} heartbeat points + 1 firing alert")
 
 
+def seed_demo_book_scene():
+    """「二开样板页」场景：把生成器产出的菜单/权限点种子入库（防样板腐烂）。
+
+    - 种子由 ``generate_crud demo.Book`` **现场生成到临时目录**（不落仓库），
+      再 ``loaddata`` 入库：菜单结构与二开者照抄的产物同源，生成器改了结构
+      而前端样板页没跟上时，对应 E2E 用例会立刻失败；
+    - demo 已在测试 settings 的 ``XADMIN_APPS`` 内，API 与路由真实可用；
+    - 失败只打印跳过（种子脚本的健壮性优先，用例侧断言会暴露缺失）。
+    """
+
+    import io
+    import tempfile
+    from pathlib import Path
+
+    from django.core.management import call_command
+
+    try:
+        tmp_root = Path(tempfile.mkdtemp(prefix="e2e_demo_seed_"))
+        call_command("generate_crud", "demo.Book", "--skip-frontend", output=str(tmp_root), stdout=io.StringIO())
+        seed = tmp_root / "loadjson" / "seed_demo_book.json"
+        if not seed.exists():
+            print("skip demo book scene: 生成器未产出菜单种子")
+            return
+        call_command("loaddata", str(seed))
+        print("demo book scene seeded (generator-produced menu + permissions)")
+    except Exception as exc:  # noqa: BLE001 场景种子失败不影响主流程
+        print(f"skip demo book scene: {exc}")
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -401,6 +430,9 @@ def main() -> None:
 
     # ---- 系统监控场景：心跳历史与告警记录（监控页图表/告警卡数据源）----
     seed_monitor_scene()
+
+    # ---- 二开样板页场景：生成器产出的 demo.Book 菜单与权限点（防样板腐烂）----
+    seed_demo_book_scene()
 
     print("E2E seed done")
 

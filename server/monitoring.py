@@ -9,6 +9,7 @@
 """
 
 import logging
+from typing import Any
 
 from .const import CONFIG
 
@@ -24,7 +25,7 @@ def init_monitoring():
         logger.warning("SENTRY_DSN configured but sentry-sdk is not installed; skip error monitoring")
         return
 
-    integrations = []
+    integrations: list[Any] = []
     try:
         from sentry_sdk.integrations.django import DjangoIntegration
 

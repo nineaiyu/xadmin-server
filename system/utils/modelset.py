@@ -4,6 +4,8 @@
 # filename : modelset
 # author : ly_13
 # date : 12/24/2023
+from typing import TYPE_CHECKING, Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -18,6 +20,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models import DataPermission, SystemConfig, UserRole
 from system.utils.permission_preview import (
     get_dept_preview,
+    get_post_preview,
     get_role_preview,
     get_user_preview,
     run_data_trial,
@@ -43,6 +46,10 @@ def _extract_pks(items):
 
 
 class ChangeRolePermissionAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -79,6 +86,10 @@ class ChangeRolePermissionAction:
 
 
 class PermissionPreviewAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     """用户权限预览（可见菜单/API 码/数据权限规则解码/字段权限矩阵 + 实时试算）。
 
     取数全部直查 DB，不经过 24h/10s 权限缓存，确保反映当前配置
@@ -127,6 +138,10 @@ class PermissionPreviewAction:
 
 
 class DeptPreviewAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     """部门维度授权预览（挂载角色 / 数据权限 / 字段权限 / 成员采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
@@ -137,6 +152,10 @@ class DeptPreviewAction:
 
 
 class RolePreviewAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     """角色授权预览（授权菜单树 / 字段权限 / 持有用户采样）。"""
 
     @extend_schema(request=None, responses=get_default_response_schema())
@@ -146,7 +165,25 @@ class RolePreviewAction:
         return ApiResponse(data=get_role_preview(self.get_object(), request.user))
 
 
+class PostPreviewAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
+    """岗位维度预览（岗位信息 / 持有用户采样；岗位不参与权限判定，无授权段）。"""
+
+    @extend_schema(request=None, responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="preview")
+    def preview(self, request, *args, **kwargs):
+        """获取{cls}的授权预览"""
+        return ApiResponse(data=get_post_preview(self.get_object(), request.user))
+
+
 class InvalidConfigCacheAction:
+    if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
+
+        def get_object(self, *args, **kwargs) -> Any: ...
+
     @extend_schema(request=None, responses=get_default_response_schema())
     @action(methods=["post"], detail=True)
     def invalid(self, request, *args, **kwargs):

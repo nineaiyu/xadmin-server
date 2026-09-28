@@ -56,7 +56,8 @@ class TestSerializerRelatedFieldsInference:
         view.action = "list"
         select_fields, prefetch_fields = view.get_serializer_related_fields()
         assert select_fields == ["dept"]
-        assert prefetch_fields == ["roles", "rules"]
+        # posts（岗位）与 roles/rules 同为多对多关联字段，预取口径一致
+        assert prefetch_fields == ["roles", "posts", "rules"]
 
     def test_login_log_viewset_inference(self):
         view = LoginLogViewSet()
@@ -84,7 +85,7 @@ class TestOptimizeQuerysetBehavior:
         result = view.optimize_queryset(UserInfo.objects.all())
         assert result.query.select_related
         # 通用标签：用户列表额外预取标签（TaggedPrefetchMixin，逐行序列化零 N+1）
-        assert set(result._prefetch_related_lookups) == {"roles", "rules", "tagged_items__tag"}
+        assert set(result._prefetch_related_lookups) == {"roles", "posts", "rules", "tagged_items__tag"}
 
     def test_explicit_fields_apply_on_all_actions(self):
         view = LoginLogViewSet()
@@ -143,9 +144,9 @@ class TestListQueryCount:
 
         baseline = len(ctx_base.captured_queries)
         optimized = len(ctx_opt.captured_queries)
-        # 页内 6 个用户（含 superuser），每个用户 dept/roles/rules 三个关联字段：
-        # 基线 18 条逐行查询，优化后被 2 条 M2M 批量查询替代（dept 走 JOIN），净省 16 条
-        assert baseline - optimized == 16
+        # 页内 6 个用户（含 superuser），每个用户 dept/roles/rules/posts 四个关联字段：
+        # 基线 24 条逐行查询，优化后被 3 条 M2M 批量查询替代（dept 走 JOIN），净省 21 条
+        assert baseline - optimized == 21
 
     def test_login_log_list_query_count_and_response(self, auth_client, user_page, monkeypatch):
         monkeypatch.setattr(LoginLogViewSet, "auto_prefetch_related", False)

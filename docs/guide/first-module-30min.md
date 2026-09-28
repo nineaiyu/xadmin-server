@@ -69,6 +69,9 @@ class Customer(DbAuditModel):
 XADMIN_APPS: [demo, crm]
 ```
 
+> 也可以跳过手改：步骤 3 的 `generate_crud` 加 `--register-app` 会把 app 自动写入
+> `config.yml` 的 `XADMIN_APPS`（幂等，打印 diff）。
+
 ```bash
 python manage.py makemigrations crm
 python manage.py migrate crm
@@ -96,9 +99,9 @@ python manage.py generate_crud crm.Customer             # 落盘
 | 前端页面 | `xadmin-client/src/views/crm/customer/index.vue` + `utils/{api.ts,hook.tsx}` |
 | 菜单种子 | `loadjson/seed_crm_customer.json`（菜单 + 全部权限点，pk 由 uuid5 派生，可重复装载） |
 
-补充参数：`--with-import-export`（加导入导出）、`--component CrmCustomer`（自定义组件名）、
-`--parent <菜单pk>`（挂到指定目录）、`--with-module`（顺带生成 `crm/modules.py` 可裁剪模块声明）、
-`--skip-frontend`；重复执行是幂等的。
+补充参数：`--register-app`（自动写入 `XADMIN_APPS` 注册）、`--with-import-export`（加导入导出）、
+`--component CrmCustomer`（自定义组件名）、`--parent <菜单pk>`（挂到指定目录）、
+`--with-module`（顺带生成 `crm/modules.py` 可裁剪模块声明）、`--skip-frontend`；重复执行是幂等的。
 
 生成器输出尾部的「后续步骤」清单即下面步骤 4~5 的可复制命令，照着执行即可；
 另请务必复核两点：关联字段 `input_type` 是否符合数据量；菜单是否要挂到已有目录。
@@ -172,7 +175,7 @@ python manage.py sync_menu_permissions --update-seed   # 同时回写 loadjson �
 | 非超管 403 / 整页不渲染 | 权限点未授权（角色管理）或未入库（`sync_menu_permissions`）；先跑 `doctor` |
 | 列表有数据但单元格空白 | 序列化器 `table_fields` 未声明该字段（元数据驱动，前端没有本地列定义） |
 | 新增字段前端不显示 | 序列化器 `fields` / `table_fields` 未加；再跑 `sync_model_field` 同步字段权限树 |
-| 接口 404 | app 未注册进 `XADMIN_APPS`（改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`） |
+| 接口 404 | app 未注册进 `XADMIN_APPS`（`generate_crud --register-app` 可自动写入；改后需重启进程：`docker compose restart server celery-worker celery-heavy celery-beat`，或平时用 `bash utils/dev_up.sh --hot` 启动） |
 | 改代码不生效 | 挂载代码不热加载，重启对应容器即可 |
 
 ## 下一步阅读

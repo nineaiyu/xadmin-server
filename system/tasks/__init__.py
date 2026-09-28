@@ -255,6 +255,32 @@ def auto_clean_file_access_log_job():
     return clean_expired_file_access_logs()
 
 
+@shared_task
+@register_as_period_task(crontab="17 4 * * *")
+def demo_account_selfheal_job():
+    """公开演示账号自愈（skipped when demo data is absent，非演示环境零成本跳过）。
+
+    每日恢复 seed_demo_admin 发布态一次：重置演示密码、重挂演示角色与菜单裁剪、
+    重申 MFA 白名单收窄，并清除该账号的登录失败锁定与 MFA 锁定——防恶意访客
+    改密码 / 故意输错锁死公共演示登录（密码本就公开，锁定无安全增益）。
+    演示账号被人工停用或移入回收站视为有意下线，跳过不自愈。
+    """
+    from django.core.management import call_command
+
+    from settings.utils.security import LoginBlockUtil, MFABlockUtils
+    from system.management.commands.seed_demo_admin import ADMIN_USERNAME
+    from system.models import UserInfo
+
+    user = UserInfo.all_objects.filter(username=ADMIN_USERNAME, is_superuser=False).first()
+    if user is None or user.deleted_at or not user.is_active:
+        return None
+    call_command("seed_demo_admin")
+    LoginBlockUtil.unblock_user(ADMIN_USERNAME)
+    MFABlockUtils.unblock_user(ADMIN_USERNAME)
+    logger.info("Demo account self-heal done: %s", ADMIN_USERNAME)
+    return ADMIN_USERNAME
+
+
 @shared_task(bind=True, verbose_name=_("Async import data"))
 def async_import_data_task(self, record_id, view_path, user_pk):
     """异步执行数据导入：任务内解析源文件，逐行 savepoint 导入并生成失败行报告。

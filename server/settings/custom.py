@@ -89,7 +89,12 @@ PERMISSION_SHOW_PREFIX = [
 # 数据权限配置：登记在此的 app 模型进入「数据权限」规则选择器的表树
 # （get_app_model_fields 重建 DATA 树）；dataset 的加入用于「表单数据」管理端
 # 列表（dataset.dynamicformsubmission 行级可见域），未配置授权的模型零影响。
-PERMISSION_DATA_AUTH_APPS = ["system", "settings", "notifications", "dataset"]
+# approval / ai 是 3.1 批次自 system 拆出的 app：模型原以 system.* 前缀在表树内，
+# 拆分后未回归导致规则选择器看不到审批/AI 模型（写入校验与读侧编译均按 table
+# 现算，表树只是选择器数据源，登记即恢复拆分前的可选面）。
+# demo 必须在列：Book 示例的数据权限/字段权限是文档化演示场景（demo/README.md），
+# 而内置种子含 demo.book 字段树——缺席会导致每次「字段同步」把 demo 子树清掉。
+PERMISSION_DATA_AUTH_APPS = ["system", "settings", "notifications", "dataset", "approval", "ai", "demo"]
 
 API_LOG_ENABLE = CONFIG.API_LOG_ENABLE
 API_LOG_METHODS = CONFIG.API_LOG_METHODS  # 'ALL'

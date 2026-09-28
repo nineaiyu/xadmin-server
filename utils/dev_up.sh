@@ -5,13 +5,14 @@
 #   3) 启动前端 dev server（存在 ../xadmin-client 时；Ctrl+C 仅退出前端）
 #
 # 依赖：docker（含 compose v2）、curl；启动前端需 Node >= 22.22.1 与 pnpm >= 11
-# 用法：bash utils/dev_up.sh [--with-demo] [--backend-only]
+# 用法：bash utils/dev_up.sh [--with-demo] [--backend-only] [--hot]
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 WITH_DEMO=0
 BACKEND_ONLY=0
+HOT=0
 
 usage() {
   cat <<'EOF'
@@ -20,6 +21,7 @@ usage() {
 选项:
   --with-demo     初始化后追加演示数据（组织 / 审批 / 表单 / 聊天 / 知识库等，耗时约 1-2 分钟）
   --backend-only  仅启动后端，不启动前端 dev server
+  --hot           开发热加载（DEBUG=true，web 容器改后端代码自动重载；celery/beat 与配置变更仍需 restart）
   -h, --help      显示本帮助
 EOF
 }
@@ -28,6 +30,7 @@ for arg in "$@"; do
   case "$arg" in
     --with-demo) WITH_DEMO=1 ;;
     --backend-only) BACKEND_ONLY=1 ;;
+    --hot) HOT=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "[dev-up] 未知参数: $arg"; usage; exit 1 ;;
   esac
@@ -45,6 +48,16 @@ fi
 # 凭据解析：config.yml 为唯一定义处；同步 .env 派生缓存（绕过脚本直接操作
 # docker compose 的命令也依赖它），进程内 export 以 config.yml 为准
 . "$(dirname "$0")/compose_env.sh"
+
+if [ "$HOT" = "1" ]; then
+  # 取值链 config.yml > 环境变量：config.yml 显式设置 DEBUG 时 env 注入不生效，须提示
+  if grep -qE '^DEBUG:' config.yml 2>/dev/null; then
+    echo "[dev-up] 警告：config.yml 显式设置了 DEBUG，环境变量不生效——请注释掉该行后重跑 --hot"
+  fi
+  export DEBUG=true
+  echo "[dev-up] 热加载模式（DEBUG=true）：web 容器改后端代码自动重载；"
+  echo "[dev-up] celery / beat 与 config.yml、XADMIN_APPS 等配置变更仍需: docker compose restart server celery-worker celery-heavy celery-beat"
+fi
 
 echo "[dev-up] 1/3 启动后端容器（首次运行会自动构建镜像，可能需要数分钟）..."
 sync_compose_credentials

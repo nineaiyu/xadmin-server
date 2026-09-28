@@ -12,6 +12,7 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponseForbidden, JsonResponse
+from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
 from .utils import set_current_request
@@ -65,11 +66,24 @@ class EndMiddleware:
         return response
 
 
+def _module_gate_detail(request) -> str:
+    """模块网关 404 的文案（按请求语言翻译）。
+
+    网关排在 `LocaleMiddleware` 之前（早退路径不经过语言协商），直接取 `_()` 会落到
+    进程默认语言——英文界面会收到中文提示；这里按请求显式激活语言后再取文案，
+    协商口径与 `LocaleMiddleware` 相同（Accept-Language / cookie / 默认语言）。
+    """
+
+    with translation.override(translation.get_language_from_request(request)):
+        return str(_("Feature not enabled"))
+
+
 class ModuleGateMiddleware:
     """功能模块裁剪的路由级拦截（见 common/core/modules.py）。
 
     命中「已停用模块」路由前缀的请求直接返回 404，语义等价于该功能不存在，
     避免出现「页面已隐藏、接口仍可达」的半残状态。未配置停用模块时零开销。
+    响应体携带 ``module``（命中模块 id），供前端给出「模块已停用」专用提示。
     """
 
     def __init__(self, get_response):
@@ -81,13 +95,14 @@ class ModuleGateMiddleware:
 
     def __call__(self, request):
         if self.patterns:
-            path = request.path
-            for pattern in self.patterns:
-                if pattern.match(path):
-                    return JsonResponse(
-                        {"code": 1001, "detail": str(_("Feature not enabled")), "data": None},
-                        status=404,
-                    )
+            from common.core.modules import match_disabled_module
+
+            module_id = match_disabled_module(request.path)
+            if module_id:
+                return JsonResponse(
+                    {"code": 1001, "detail": _module_gate_detail(request), "data": None, "module": module_id},
+                    status=404,
+                )
         return self.get_response(request)
 
 

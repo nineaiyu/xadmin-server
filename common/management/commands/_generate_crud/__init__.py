@@ -35,6 +35,7 @@ from .constants import (
     SEED_NAMESPACE,
 )
 from .merging import MergeMixin
+from .registration import RegistrationMixin
 from .renderers import RenderMixin
 
 __all__ = [
@@ -51,7 +52,7 @@ __all__ = [
 ]
 
 
-class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
+class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCommand):
     help = "Generate CRUD scaffold (serializer/views/urls/config + client page + menu seed) for an existing model"
 
     def add_arguments(self, parser):
@@ -65,6 +66,11 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         parser.add_argument("--with-tags", action="store_true", help="AI 声明文件附带标签接入声明（白名单）")
         parser.add_argument("--with-tests", action="store_true", help="生成 pytest 测试骨架（tests/unit/<app>/）")
         parser.add_argument("--with-module", action="store_true", help="同时生成 {app}/modules.py 模块声明（可裁剪）")
+        parser.add_argument(
+            "--register-app",
+            action="store_true",
+            help="生成后把 app 写入 config.yml 的 XADMIN_APPS（幂等，打印 diff；改后需重启进程）",
+        )
         parser.add_argument("--module-id", default="", help="模块 id（默认 app label，仅 --with-module 时使用）")
         parser.add_argument(
             "--module-level",
@@ -95,6 +101,9 @@ class Command(AnalysisMixin, MergeMixin, RenderMixin, BaseCommand):
         ctx = self._build_context(model, options)
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
+        ctx["app_registered"] = False
+        if options.get("register_app"):
+            ctx["app_registered"] = self._register_app(ctx, options)
         if options.get("bootstrap"):
             self._bootstrap(ctx, options)
         self._print_next_steps(ctx, options)

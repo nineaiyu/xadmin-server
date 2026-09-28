@@ -121,13 +121,15 @@ dev = [
 
 [tool.mypy]
 # 2026-09-27 引入（增量收口模式）：首批仅测 common 框架内核（二开 ViewSet/权限/模型层的
-# 基座，价值最高、体量可控）。约定：
+# 基座，价值最高、体量可控）；2026-09-28 扩面到全部业务 app（files 白名单），
+# 存量告警就地修复后为 0（无 overrides 豁免）。约定：
 #   - files 只列受检范围；follow_imports=silent 让依赖模块参与分析但不报错；
-#   - 存量豁免（overrides 豁免清单）已于同日全部清零：62 文件 / 226 错 → 0，
-#     新文件不得再进入豁免，新增告警就地修复；
+#   - 新文件随所属 app 自动纳入，新增告警就地修复，不得再进豁免清单；
+#   - 免不了的框架误报走精确 ignore（Django Choices 元类 / simplejwt 标注 /
+#     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
 python_version = "3.13"
-files = ["common"]
+files = ["ai", "approval", "captcha", "common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "utils"]
 exclude = ["migrations/"]
 follow_imports = "silent"
 ignore_missing_imports = true

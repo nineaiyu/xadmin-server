@@ -80,7 +80,7 @@ SETTINGS_CONFIG = {
     "SECURITY_TEMP_TOKEN_EXPIRE": 600,
     # MFA / 敏感操作二次验证
     "SECURITY_MFA_CONFIRM_ENABLED": True,  # 敏感操作二次验证总开关
-    "SECURITY_MFA_CONFIRM_BACKENDS": ["otp", "sms", "email", "password"],  # 允许的验证方式
+    "SECURITY_MFA_CONFIRM_BACKENDS": ["otp", "sms", "email", "password", "passkey"],  # 允许的验证方式
     "SECURITY_MFA_VERIFY_TTL": 3600,  # MFA 方式确认有效期（秒）
     "SECURITY_MFA_PASSWORD_CONFIRM_TTL": 300,  # 密码方式确认有效期（秒）
     "SECURITY_MFA_LOGIN_PROTECT_ENABLED": True,  # 绑定 OTP 的用户登录时强制二次验证

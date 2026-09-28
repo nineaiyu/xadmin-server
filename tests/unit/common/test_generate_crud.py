@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 from django.conf import settings
 from django.core.management import call_command
 
@@ -360,8 +361,20 @@ class TestModuleDeclaration:
         assert 'id="demo"' in content
         assert 'level="optional"' in content
         assert 'menus=("DemoBook",),' in content
-        assert 'routes=("^/api/demo/",),' in content
+        # demo 有 config.py::URLPATTERNS：路由前缀交由运行期推导（单一事实源），
+        # 声明侧不重复书写；生成物 docstring 说明该口径
+        assert "routes=" not in content
+        assert "URLPATTERNS" in content
         compile(content, str(target), "exec")  # 生成物可直接执行
+        _assert_ruff_clean(backend)
+
+    def test_with_module_keeps_routes_without_urlpatterns(self, workspace, monkeypatch):
+        """无可推导来源的 app（内置 app 形态）保留显式路由前缀兜底。"""
+
+        monkeypatch.setattr("common.core.modules.derive_route_prefixes", lambda app_label: ())
+        backend, _ = _generate(workspace, "--with-module")
+        content = (backend / "demo" / "modules.py").read_text(encoding="utf-8")
+        assert 'routes=("^/api/demo/",),' in content
         _assert_ruff_clean(backend)
 
     def test_module_id_conflict_degrades_to_notice(self, workspace, capsys):
@@ -555,3 +568,82 @@ class TestDefaultOrdering:
         backend, _ = _generate(workspace)
         views = (backend / "demo" / "views.py").read_text(encoding="utf-8")
         assert "ordering = [" not in views
+
+
+class TestRegisterApp:
+    """`--register-app`：app 自动写入 config.yml 的 XADMIN_APPS（幂等，复验后落盘）。"""
+
+    @staticmethod
+    def _write_config(workspace, content: str) -> Path:
+        backend, _client = workspace
+        (backend / "config.yml").write_text(content, encoding="utf-8")
+        return backend / "config.yml"
+
+    def test_inline_list_extended(self, workspace, settings):
+        settings.XADMIN_APPS = []  # 测试 settings 里 demo 已注册；置空模拟未注册的新 app
+        config = self._write_config(workspace, "HTTP_LISTEN_PORT: 8896\nXADMIN_APPS: []\n")
+        _generate(workspace, "--register-app")
+        updated = yaml.safe_load(config.read_text(encoding="utf-8"))
+        assert updated["XADMIN_APPS"] == ["demo"]
+        assert updated["HTTP_LISTEN_PORT"] == 8896  # 其余键不受影响
+
+    def test_inline_list_appends_existing_items(self, workspace, settings):
+        settings.XADMIN_APPS = []
+        config = self._write_config(workspace, "XADMIN_APPS: [demo2]\n")
+        _generate(workspace, "--register-app")
+        assert yaml.safe_load(config.read_text(encoding="utf-8"))["XADMIN_APPS"] == ["demo2", "demo"]
+
+    def test_block_list_inserts_after_key(self, workspace, settings):
+        settings.XADMIN_APPS = []
+        config = self._write_config(workspace, "XADMIN_APPS:\n  - demo2\n")
+        _generate(workspace, "--register-app")
+        text = config.read_text(encoding="utf-8")
+        assert yaml.safe_load(text)["XADMIN_APPS"] == ["demo", "demo2"]
+        assert "  - demo2" in text  # 原条目保留（非整块重写）
+
+    def test_missing_key_appends_block(self, workspace, settings, capsys):
+        settings.XADMIN_APPS = []
+        config = self._write_config(workspace, "HTTP_LISTEN_PORT: 8896\n")
+        _generate(workspace, "--register-app")
+        updated = yaml.safe_load(config.read_text(encoding="utf-8"))
+        assert updated["XADMIN_APPS"] == ["demo"]
+        assert "--register-app: 已写入" in capsys.readouterr().out
+
+    def test_idempotent_second_run_skips(self, workspace, settings, capsys):
+        settings.XADMIN_APPS = []
+        config = self._write_config(workspace, "XADMIN_APPS: []\n")
+        _generate(workspace, "--register-app")
+        first = config.read_text(encoding="utf-8")
+        _generate(workspace, "--register-app")
+        assert config.read_text(encoding="utf-8") == first
+        assert "已在 config.yml 的 XADMIN_APPS 中，跳过" in capsys.readouterr().out
+
+    def test_registered_in_settings_skips(self, workspace, capsys):
+        # 测试 settings 默认 XADMIN_APPS 含 demo：不改配置文件、直接跳过
+        config = self._write_config(workspace, "XADMIN_APPS: []\n")
+        _generate(workspace, "--register-app")
+        assert config.read_text(encoding="utf-8") == "XADMIN_APPS: []\n"
+        assert "已在 XADMIN_APPS 中，跳过" in capsys.readouterr().out
+
+    def test_without_config_prints_copy_hint(self, workspace, settings, capsys):
+        settings.XADMIN_APPS = []
+        backend, _client = workspace
+        call_command("generate_crud", "demo.Book", output=str(backend), frontend_root=str(_client), register_app=True)
+        assert "cp config_example.yml config.yml" in capsys.readouterr().out
+        assert not (backend / "config.yml").exists()  # 不代建配置（避免 SECRET_KEY 语义漂移）
+
+    def test_dry_run_prints_without_write(self, workspace, settings, capsys):
+        settings.XADMIN_APPS = []
+        config = self._write_config(workspace, "XADMIN_APPS: []\n")
+        _generate(workspace, "--register-app", "--dry-run")
+        assert config.read_text(encoding="utf-8") == "XADMIN_APPS: []\n"
+        assert "(dry-run)" in capsys.readouterr().out
+
+    def test_next_steps_mention_registered_app(self, workspace, settings, capsys):
+        settings.XADMIN_APPS = []
+        self._write_config(workspace, "XADMIN_APPS: []\n")
+        _generate(workspace, "--register-app")
+        output = capsys.readouterr().out
+        steps = output.split("后续步骤", 1)[1]
+        assert "已由 --register-app 写入" in steps
+        assert "重启进程后生效" in steps

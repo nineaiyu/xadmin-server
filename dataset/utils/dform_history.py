@@ -55,7 +55,7 @@ def schema_for_version(form, version) -> dict:
             if not isinstance(item, dict):
                 continue
             try:
-                snapshot_version = int(item.get("version"))
+                snapshot_version = int(item.get("version") or 0)
             except (TypeError, ValueError):
                 continue
             if snapshot_version == target:

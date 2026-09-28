@@ -206,7 +206,7 @@ class AnalysisMixin(FieldPlanMixin):
         模块 id 已存在时不中断生成，降级为提示（换 --module-id 或去掉 --with-module）；
         模板与 `generate_module` 同源（common/core/modules/scaffold.py）。
         """
-        from common.core.modules import module_id_conflict, render_modules_source
+        from common.core.modules import derive_route_prefixes, module_id_conflict, render_modules_source
 
         module_id = options["module_id"] or ctx["app_label"]
         key = f"modules-{ctx['app_label']}"
@@ -222,6 +222,10 @@ class AnalysisMixin(FieldPlanMixin):
         app_config = apps.get_app_config(ctx["app_label"])
         # 菜单根 name 取生成的页面菜单名（component）；跳过菜单种子时无从声明，留空
         menus = () if options["skip_menu_seed"] else (ctx["component"],)
+        # 路由前缀：app 有 config.py::URLPATTERNS 时留空（运行期按同一事实源推导，
+        # 见 common/core/modules/routes.py）；没有才写显式兜底声明（如内置 app 的
+        # 路由挂在 server/urls.py，无可推导来源）。
+        routes = () if derive_route_prefixes(ctx["app_label"]) else (f"^/api/{ctx['app_label']}/",)
         return {
             "label": "模块声明",
             "path": Path(options["output"] or settings.PROJECT_DIR) / ctx["app_label"] / "modules.py",
@@ -231,7 +235,7 @@ class AnalysisMixin(FieldPlanMixin):
                 label=module_id,
                 level=options["module_level"],
                 menus=menus,
-                routes=(f"^/api/{ctx['app_label']}/",),
+                routes=routes,
             ),
             "mode": "create",
             "key": key,
@@ -364,8 +368,16 @@ class AnalysisMixin(FieldPlanMixin):
             bool(options.get("bootstrap")) and not options.get("dry_run") and not options.get("skip_menu_seed")
         )
         steps = []
-        if ctx["app_label"] not in (getattr(settings, "XADMIN_APPS", None) or []):
-            steps.append(f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（改后需重启进程）')
+        if ctx["app_label"] in (getattr(settings, "XADMIN_APPS", None) or []):
+            pass  # 本就注册（或本进程已加载新配置），无需提示
+        elif ctx.get("app_registered"):
+            steps.append(
+                f'应用注册：已由 --register-app 写入 config.yml 的 XADMIN_APPS（含 "{ctx["app_label"]}"），重启进程后生效'
+            )
+        else:
+            steps.append(
+                f'应用注册：config.yml 的 XADMIN_APPS 加入 "{ctx["app_label"]}"（或重跑本命令加 --register-app；改后需重启进程）'
+            )
         if not options["skip_menu_seed"] and not bootstrapped:
             seed = f"loadjson/seed_{ctx['app_label']}_{ctx['model_snake']}.json"
             steps.append(f"权限点与菜单入库：python manage.py loaddata {seed}")

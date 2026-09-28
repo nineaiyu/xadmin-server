@@ -23,6 +23,7 @@ select/radio/checkbox 的选项可以内联（options）或绑定数据字典（
 
 import json
 import re
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -326,7 +327,7 @@ def evaluate_linkages(schema: dict, data) -> dict:
     同一目标多条命中时按数组顺序后者覆盖前者（隐藏与必填两个维度独立覆盖）。
     """
     fields = schema.get("fields") if isinstance(schema, dict) else None
-    state = {}
+    state: dict[str, dict[str, Any]] = {}
     if not isinstance(fields, list):
         return state
     for item in fields:
@@ -362,7 +363,7 @@ def normalize_table_row(item: dict, label: str, row) -> dict:
     unknown = set(row) - set(known)
     if unknown:
         raise ValidationError(_("Field {} has unknown columns: {}").format(label, ", ".join(sorted(unknown))))
-    normalized = {}
+    normalized: dict[str, Any] = {}
     for column in columns:
         column_key = column["key"]
         column_type = column.get("type")
@@ -439,7 +440,7 @@ def validate_submission_data(schema: dict, data) -> dict:
         raise ValidationError(_("Unknown submission keys: {}").format(", ".join(sorted(unknown))))
 
     controls = evaluate_linkages(schema, data)
-    normalized = {}
+    normalized: dict[str, Any] = {}
     for item in fields:
         key = item["key"]
         ftype = item["type"]

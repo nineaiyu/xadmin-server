@@ -65,6 +65,7 @@ def _collect_panel():
 
 
 class MonitorNotify(AsyncJsonWebsocket):
+    disconnected = False
     """一条连接持续推送面板指标；断开即停，无分组广播（面板数据按连接隔离推送）。"""
 
     async def connect(self):

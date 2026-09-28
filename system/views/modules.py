@@ -131,7 +131,7 @@ class SystemModuleViewSet(GenericViewSet):
     # 非模型视图：queryset 仅用于权限链与元数据机制，不参与查询
     queryset = Menu.objects.none()
     serializer_class = None
-    ordering_fields = []
+    ordering_fields: list[str] = []
 
     @extend_schema(responses=modules_response_schema())
     def list(self, request, *args, **kwargs):
