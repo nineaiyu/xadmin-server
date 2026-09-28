@@ -7,7 +7,7 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-client_name_mapper = {}
+client_name_mapper: dict[str, str] = {}
 
 
 class BACKEND(models.TextChoices):

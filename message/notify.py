@@ -6,6 +6,7 @@
 # date : 6/2/2023
 import asyncio
 import os
+from typing import Any
 
 import aiofiles
 from channels.db import database_sync_to_async
@@ -38,7 +39,7 @@ def get_can_push_message(pk):
 
 
 async def notify_at_user_msg(data: dict, username: str):
-    text = data.get("text")
+    text = data.get("text") or ""
     if text.startswith("@"):
         target = text.split(" ")[0].split("@")
         if len(target) > 1:
@@ -81,7 +82,7 @@ class MessageNotify(AsyncJsonWebsocket):
         super().__init__(args, kwargs)
         self.group_name = ""
         self.disconnected = True
-        self.user = None
+        self.user: Any = None
         self.ws_session_registered = False
 
     async def connect(self):

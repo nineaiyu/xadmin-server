@@ -82,7 +82,7 @@ def room_to_dict(
     room: ChatRoom,
     user,
     unread_count: int = 0,
-    online_pks: set = None,
+    online_pks: set | None = None,
     *,
     peer=UNSET,
     member_preview=UNSET,

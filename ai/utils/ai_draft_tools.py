@@ -9,6 +9,7 @@
 
 import datetime
 import json
+from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -48,7 +49,7 @@ def _tool_call_params(call: dict) -> tuple:
     if isinstance(raw, str):
         raw = raw.strip()
         if not raw:
-            params = {}
+            params: Any = {}
         else:
             try:
                 params = json.loads(raw)

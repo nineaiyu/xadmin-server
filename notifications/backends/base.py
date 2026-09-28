@@ -28,11 +28,11 @@ def log_unbound_users(backend_name, requirement, unbound_users):
 
 
 class BackendBase:
-    # User 表中的字段
-    account_field = None
+    # User 表中的字段（子类必须设置；未设置时按空名回落，取号为空即视为未绑定）
+    account_field: str = ""
 
-    # Django setting 中的字段名
-    is_enable_field_in_settings = None
+    # Django setting 中的字段名（子类必须设置；未设置时 is_enable 回落 False）
+    is_enable_field_in_settings: str = ""
 
     def get_accounts(self, users):
         accounts = []

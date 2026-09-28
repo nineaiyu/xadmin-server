@@ -55,7 +55,7 @@ VISION_PROBE_DATA_URL = (
 )
 
 
-def _entry(ok: bool, detail: str, extra: dict = None) -> dict:
+def _entry(ok: bool, detail: str, extra: dict | None = None) -> dict:
     entry = {"ok": bool(ok), "detail": str(detail)[:300], "at": timezone.now().isoformat()}
     if extra:
         entry.update(extra)

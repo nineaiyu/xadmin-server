@@ -18,7 +18,9 @@
 
 import datetime
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -123,10 +125,10 @@ class ActionSpec:
     params: dict
     #: ((method, path), ...)：执行所需底层业务权限点（路径与菜单权限点 path 同口径）
     required_visits: tuple
-    validate: object
-    execute: object
-    requires_approval: object
-    available: object
+    validate: Callable[..., Any]
+    execute: Callable[..., Any]
+    requires_approval: Callable[..., bool]
+    available: Callable[..., bool]
 
     def has_permission(self, user) -> bool:
         """业务权限 + 可用性双门（执行前与草稿生成前共用）。"""
@@ -135,7 +137,7 @@ class ActionSpec:
         )
 
 
-ACTION_SPECS = {
+ACTION_SPECS: dict[str, Any] = {
     ACTION_LEAVE_SUBMIT: ActionSpec(
         key=ACTION_LEAVE_SUBMIT,
         label=_("Submit a leave request"),
@@ -379,7 +381,7 @@ def verify_action_target(user, spec, params) -> str:
     return ""
 
 
-def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict = None) -> None:
+def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict | None = None) -> None:
     """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
     from system.models import OperationLog
 
@@ -423,7 +425,9 @@ def execute_action(user, action_key: str, params) -> dict:
     return spec.execute(user, clean)
 
 
-def audit_ai_ask(user_obj, question: str, ok: bool, detail: str = "", usage: dict = None, guard: dict = None) -> None:
+def audit_ai_ask(
+    user_obj, question: str, ok: bool, detail: str = "", usage: dict | None = None, guard: dict | None = None
+) -> None:
     """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
 
     与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。

@@ -21,7 +21,7 @@ import array
 import math
 import threading
 import time
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from common.utils import get_logger
 
@@ -293,7 +293,7 @@ def build_embeddings(
     from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials
 
-    summary = {
+    summary: dict[str, Any] = {
         "enabled": False,
         "ok": True,
         "model": "",

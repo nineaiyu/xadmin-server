@@ -70,6 +70,11 @@ def get_users_notice_q(user_obj):
     q |= Q(notice_type=MessageContent.NoticeChoices.NOTICE)
     q |= Q(notice_type=MessageContent.NoticeChoices.DEPT, notice_dept=user_obj.dept)
     q |= Q(notice_type=MessageContent.NoticeChoices.ROLE, notice_role__in=user_obj.roles.all())
+    # 岗位通知：仅启用岗位的在岗用户可见（与审批人解析/计数同口径）
+    q |= Q(
+        notice_type=MessageContent.NoticeChoices.POST,
+        notice_post__in=user_obj.posts.filter(is_active=True, deleted_at__isnull=True),
+    )
     return q
 
 
@@ -207,7 +212,7 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
-                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR))},
+                properties={"pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {})},
                 required=["pks"],
                 description="主键列表",
             )

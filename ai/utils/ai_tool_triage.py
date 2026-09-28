@@ -32,6 +32,7 @@ TRIAGE_RESOURCES = {
     "system/api-applications": ("exempt", "开放平台应用凭据为集成运维面"),
     "system/credentials": ("exempt", "凭据总览与轮换为高危运维动作，需人工确认"),
     "system/dept": ("exempt", "部门树维护在组织管理页面（权限与数据域强相关）"),
+    "system/directory": ("exempt", "通讯录为只读人员名录页面链路（无写动作）"),
     "system/dict": ("exempt", "数据字典为平台配置面（AI 读侧走字典选项下发）"),
     "system/exports": ("exempt", "下载中心记录查询与产物下载为页面链路"),
     "system/file": ("exempt", "文件中心（上传/预览/回收站）为页面链路，含上传策略校验"),

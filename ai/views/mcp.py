@@ -49,7 +49,7 @@ def _rpc_result(msg_id, result) -> JsonResponse:
     return JsonResponse({"jsonrpc": "2.0", "id": msg_id, "result": result}, json_dumps_params={"ensure_ascii": False})
 
 
-def _rpc_error(msg_id, code: int, message: str, data: dict = None) -> JsonResponse:
+def _rpc_error(msg_id, code: int, message: str, data: dict | None = None) -> JsonResponse:
     error = {"code": code, "message": message}
     if data is not None:
         error["data"] = data

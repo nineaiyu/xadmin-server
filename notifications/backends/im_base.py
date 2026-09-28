@@ -10,6 +10,8 @@
   订阅页等其他链路。
 """
 
+from typing import Any
+
 from .base import BackendBase, log_unbound_users
 
 
@@ -47,7 +49,7 @@ class ImBindingBackend(BackendBase):
             .values_list("user_id", "subject")
         )
         # 同一用户同 provider 受唯一约束；跨 provider key 重名时取最新绑定
-        user_subject = {}
+        user_subject: dict[str, Any] = {}
         for user_id, subject in bindings:
             user_subject.setdefault(user_id, str(subject))
 

@@ -18,6 +18,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
         USER = 2, _("User notification")
         DEPT = 3, _("Department notification")
         ROLE = 4, _("Role notification")
+        POST = 5, _("Post notification")
 
     class LevelChoices(models.TextChoices):
         DEFAULT = "info", _("Ordinary notices")
@@ -34,6 +35,8 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     )
     notice_dept = models.ManyToManyField("system.DeptInfo", blank=True, verbose_name=_("The notified department"))
     notice_role = models.ManyToManyField("system.UserRole", blank=True, verbose_name=_("The notified role"))
+    # 岗位为人员维度（不参与权限判定）：按「持有该岗位的用户」展开接收人
+    notice_post = models.ManyToManyField("system.Post", blank=True, verbose_name=_("The notified post"))
     level = models.CharField(
         verbose_name=_("Notice level"), choices=LevelChoices, default=LevelChoices.DEFAULT, max_length=20
     )
@@ -52,7 +55,7 @@ class MessageContent(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 
     @classmethod
     def get_notice_choices(cls):
-        return [cls.NoticeChoices.NOTICE, cls.NoticeChoices.DEPT, cls.NoticeChoices.ROLE]
+        return [cls.NoticeChoices.NOTICE, cls.NoticeChoices.DEPT, cls.NoticeChoices.ROLE, cls.NoticeChoices.POST]
 
     class Meta:
         verbose_name = _("Message content")

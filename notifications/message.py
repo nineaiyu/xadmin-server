@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 from notifications.models import MessageContent
 
-SYSTEM = MessageContent.NoticeChoices.SYSTEM
+SYSTEM: int = MessageContent.NoticeChoices.SYSTEM  # type: ignore[assignment]  # Choices 成员由元类生成（运行期为枚举值）
 
 
 class SiteMessageUtil:
@@ -60,7 +60,7 @@ class SiteMessageUtil:
         message: str,
         notice_type: int,
         level: MessageContent.LevelChoices,
-        extra_json: dict = None,
+        extra_json: dict | None = None,
     ):
         if isinstance(users, (QuerySet, list)):
             recipients = users
@@ -78,18 +78,42 @@ class SiteMessageUtil:
 
     @classmethod
     def notify_success(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
     ):
-        return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.SUCCESS, extra_json)
+        # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
+        return cls.base_notify(
+            users,
+            title,
+            message,
+            notice_type,
+            MessageContent.LevelChoices.SUCCESS,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+            extra_json,
+        )
 
     @classmethod
     def notify_info(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
     ):
-        return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.PRIMARY, extra_json)
+        # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
+        return cls.base_notify(
+            users,
+            title,
+            message,
+            notice_type,
+            MessageContent.LevelChoices.PRIMARY,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+            extra_json,
+        )
 
     @classmethod
     def notify_error(
-        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict = None
+        cls, users: list | QuerySet, title: str, message: str, notice_type: int = SYSTEM, extra_json: dict | None = None
     ):
-        return cls.base_notify(users, title, message, notice_type, MessageContent.LevelChoices.DANGER, extra_json)
+        # type ignore[arg-type]：Choices 成员同上（元类在运行期转为枚举成员）
+        return cls.base_notify(
+            users,
+            title,
+            message,
+            notice_type,
+            MessageContent.LevelChoices.DANGER,  # type: ignore[arg-type]  # Choices 元类（运行期为枚举成员）
+            extra_json,
+        )

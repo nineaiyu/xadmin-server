@@ -178,7 +178,7 @@ async def async_push_layer_message(channel_name: str, message: dict, message_typ
 
 
 @async_to_sync
-async def send_logout_msg(user_pk: str | int, channel_names: list[str] = None):
+async def send_logout_msg(user_pk: str | int, channel_names: list[str] | None = None):
     group_name = get_user_layer_group_name(user_pk)
     if not channel_names:
         channel_names = await get_layers_form_group(group_name)

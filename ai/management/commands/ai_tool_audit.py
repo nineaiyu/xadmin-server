@@ -156,7 +156,7 @@ class Command(BaseCommand):
 
     def _report(self, candidates, stale, exempted, options):
         limit = max(1, int(options["limit"]))
-        by_domain = {}
+        by_domain: dict[str, list] = {}
         for row in candidates:
             by_domain.setdefault(row["domain"], []).append(row)
         self.stdout.write(

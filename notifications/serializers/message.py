@@ -45,6 +45,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             "notice_user",
             "notice_dept",
             "notice_role",
+            "notice_post",
             "message",
             "created_time",
             "user_count",
@@ -68,6 +69,7 @@ class NoticeMessageSerializer(BaseModelSerializer):
             },
             "notice_dept": {"attrs": ["pk", "name"], "many": True, "format": "{name}", "input_type": "api-search-dept"},
             "notice_role": {"attrs": ["pk", "name"], "many": True, "format": "{name}", "input_type": "api-search-role"},
+            "notice_post": {"attrs": ["pk", "name"], "many": True, "format": "{name}", "input_type": "api-search-post"},
         }
 
     files = serializers.JSONField(write_only=True, label=_("Uploaded attachments"))
@@ -103,6 +105,14 @@ class NoticeMessageSerializer(BaseModelSerializer):
             return UserInfo.objects.filter(dept__in=obj.notice_dept.all()).count()
         if obj.notice_type == MessageContent.NoticeChoices.ROLE:
             return UserInfo.objects.filter(roles__in=obj.notice_role.all()).count()
+        if obj.notice_type == MessageContent.NoticeChoices.POST:
+            # 仅启用岗位的在岗用户（与审批人解析同口径）
+            return (
+                UserInfo.objects.filter(is_active=True, posts__in=obj.notice_post.all())
+                .filter(posts__is_active=True, posts__deleted_at__isnull=True)
+                .distinct()
+                .count()
+            )
         # 以 notice_user 表达接收人的类型（USER/SYSTEM/NOTICE）：整页一次聚合查询，
         # 替代逐行 count()（列表页每行一次 COUNT 的 N+1）
         counts = self._page_user_counts(obj)
@@ -173,18 +183,28 @@ class NoticeMessageSerializer(BaseModelSerializer):
         if notice_type == MessageContent.NoticeChoices.ROLE:
             attrs.pop("notice_dept", None)
             attrs.pop("notice_user", None)
+            attrs.pop("notice_post", None)
             if not attrs.get("notice_role"):
                 raise ValidationError(_("The notice role cannot be null"))
 
         if notice_type == MessageContent.NoticeChoices.DEPT:
             attrs.pop("notice_user", None)
             attrs.pop("notice_role", None)
+            attrs.pop("notice_post", None)
             if not attrs.get("notice_dept"):
                 raise ValidationError(_("The notice department cannot be null"))
+
+        if notice_type == MessageContent.NoticeChoices.POST:
+            attrs.pop("notice_user", None)
+            attrs.pop("notice_dept", None)
+            attrs.pop("notice_role", None)
+            if not attrs.get("notice_post"):
+                raise ValidationError(_("The notice post cannot be null"))
 
         if notice_type == MessageContent.NoticeChoices.USER:
             attrs.pop("notice_role", None)
             attrs.pop("notice_dept", None)
+            attrs.pop("notice_post", None)
             if not attrs.get("notice_user"):
                 raise ValidationError(_("The notice user cannot be null"))
 

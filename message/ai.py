@@ -9,6 +9,8 @@
 - 会话走 REST 同步（LLM 5~60s，不占用 WS 长连接）；流式走 `ai_stream_events`（SSE，二期）。
 """
 
+from typing import Any
+
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -190,7 +192,7 @@ def ai_reply_content(room: ChatRoom, question: str) -> tuple:
         answer, sources = kb_answer(kb_question, user=room.owner)
         return answer, {"mode": "kb", "sources": sources}, "kb"
     answer, mask_hits = _llm_reply(build_chat_messages(room, question), room.owner)
-    extra = {"mode": "chat"}
+    extra: dict[str, Any] = {"mode": "chat"}
     if mask_hits:
         extra["guard"] = {"mask_hits": mask_hits}
     return answer, extra, "chat"
@@ -235,7 +237,7 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
 
     chunks: list = []
     reasoning_chunks: list = []
-    extra = {"mode": "chat"}
+    extra: dict[str, Any] = {"mode": "chat"}
     content_masker = StreamMasker(room.owner)
     reasoning_masker = StreamMasker(room.owner)
     try:
@@ -274,7 +276,11 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
         detail = "; ".join(getattr(exc, "messages", None) or [str(exc)])
         if not chunks and not reasoning_chunks:
             fallback, __ = chat_service.create_message(
-                room, None, detail, message_type=ChatMessage.MessageType.SYSTEM, extra={"error": True, "mode": "chat"}
+                room,
+                None,
+                detail,
+                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+                extra={"error": True, "mode": "chat"},
             )
             payload = chat_service.message_payload(fallback, room=room)
             push_room_event(room, payload)
@@ -303,7 +309,11 @@ def ai_stream_events(room: ChatRoom, question: str, question_payload: dict):
         extra["no_answer"] = True
         chunks.append(str(_("The model did not provide a final answer; please retry or switch models")))
     reply, __ = chat_service.create_message(
-        room, None, "".join(chunks), message_type=ChatMessage.MessageType.AI, extra=extra
+        room,
+        None,
+        "".join(chunks),
+        message_type=ChatMessage.MessageType.AI,  # type: ignore[arg-type]  # 同上
+        extra=extra,
     )
     payload = chat_service.message_payload(reply, room=room)
     push_room_event(room, payload)

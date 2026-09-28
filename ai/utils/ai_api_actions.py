@@ -23,6 +23,7 @@ requires_approval/available），可直接混装进同一注册表，调用方�
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -71,8 +72,8 @@ class ApiActionSpec:
     method: str
     path: str
     params: dict
-    requires_approval: object
-    available: object
+    requires_approval: Callable[..., bool]
+    available: Callable[..., bool]
 
     @property
     def required_visits(self) -> tuple:
@@ -132,7 +133,7 @@ def api_action(
     method: str,
     path: str,
     params: dict,
-    defaults: dict = None,
+    defaults: dict | None = None,
     requires_approval=None,
     available=None,
 ) -> ApiActionSpec:

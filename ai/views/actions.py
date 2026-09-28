@@ -199,7 +199,7 @@ class AiActionExecuteMixin:
                 room,
                 None,
                 str(_("Action executed: {}").format(detail))[:2000],
-                message_type=ChatMessage.MessageType.SYSTEM,
+                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
                 extra={"mode": "action", "action_result": result.get("data") or {}},
             )
             push_room_event(room, chat_service.message_payload(message, room=room))

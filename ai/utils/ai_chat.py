@@ -34,7 +34,7 @@ def normalize_feature(value) -> str:
 
     text = str(value or "").strip().lower()
     valid = {choice[0] for choice in AiChatMessage.Feature.choices}
-    return text if text in valid else AiChatMessage.Feature.DOCS
+    return text if text in valid else str(AiChatMessage.Feature.DOCS)
 
 
 def clip_content(text: str) -> str:
@@ -51,7 +51,7 @@ def clip_reasoning(text: str) -> str:
     return text[:MAX_REASONING_STORED] + "…"
 
 
-def persist_message(user, feature: str, role: str, content: str = "", reasoning: str = "", extra: dict = None):
+def persist_message(user, feature: str, role: str, content: str = "", reasoning: str = "", extra: dict | None = None):
     """落一条助手消息；返回消息行（失败返回 None，不阻断主链路）。
 
     持久化失败不影响对话本身（与审计同口径：吞异常 + 日志），但调用方在

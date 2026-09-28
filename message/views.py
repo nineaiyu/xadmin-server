@@ -401,14 +401,22 @@ class ChatAiViewSet(SseRendererMixin, GenericViewSet):
         except DjangoValidationError as exc:
             detail = _validation_detail(exc)
             fallback, __ = chat_service.create_message(
-                room, None, detail, message_type=ChatMessage.MessageType.SYSTEM, extra={"error": True, "mode": "chat"}
+                room,
+                None,
+                detail,
+                message_type=ChatMessage.MessageType.SYSTEM,  # type: ignore[arg-type]  # Choices 元类
+                extra={"error": True, "mode": "chat"},
             )
             payload = chat_service.message_payload(fallback, room=room)
             push_room_event(room, payload)
             return ApiResponse(code=1001, detail=detail, data={"question": question_payload, "message": payload})
 
         reply, __ = chat_service.create_message(
-            room, None, answer, message_type=ChatMessage.MessageType.AI, extra=extra
+            room,
+            None,
+            answer,
+            message_type=ChatMessage.MessageType.AI,  # type: ignore[arg-type]  # 同上
+            extra=extra,
         )
         payload = chat_service.message_payload(reply, room=room)
         push_room_event(room, payload)

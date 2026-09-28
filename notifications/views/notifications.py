@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -42,7 +44,11 @@ class MsgSubscriptionBackend:
     def backends(self, request, *args, **kwargs):
         """获取消息通知后端"""
         return ApiResponse(
-            data=[{"value": backend, "label": backend.label} for backend in BACKEND if backend.is_enable]
+            data=[
+                {"value": backend, "label": backend.label}
+                for backend in BACKEND  # type: ignore[attr-defined]  # TextChoices 迭代由元类提供
+                if backend.is_enable
+            ]
         )
 
     #: 测试消息是否发给「当前登录用户」（个人订阅页=True；系统订阅页发给全部超管=False）
@@ -102,7 +108,7 @@ class SystemMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubs
             category_label = msg["category_label"]
 
             if category not in category_children_mapper:
-                children = []
+                children: list[Any] = []
 
                 data.append({"category": category, "category_label": category_label, "children": children})
                 category_children_mapper[category] = children
@@ -144,7 +150,7 @@ class UserMsgSubscriptionViewSet(ListModelMixin, DetailUpdateModelSet, MsgSubscr
             category_label = msg["category_label"]
 
             if category not in category_children_mapper:
-                children = []
+                children: list[Any] = []
                 data.append({"category": category, "category_label": category_label, "children": children})
                 category_children_mapper[category] = children
 

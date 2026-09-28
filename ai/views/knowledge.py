@@ -90,7 +90,7 @@ class AiKnowledgeDocumentViewSet(
         instance.delete()
 
     @extend_schema(
-        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR))),
+        request=OpenApiRequest(build_array_type(build_basic_type(OpenApiTypes.STR) or {})),
         responses=get_default_response_schema(),
     )
     @action(methods=["post"], detail=False, url_path="batch-destroy")
@@ -118,7 +118,7 @@ class AiKnowledgeDocumentViewSet(
         request=OpenApiRequest(
             build_object_type(
                 properties={
-                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR)),
+                    "pks": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                     "is_active": build_basic_type(OpenApiTypes.BOOL),
                 },
                 required=["pks", "is_active"],

@@ -20,6 +20,7 @@
 """
 
 import asyncio
+from typing import Any
 
 from channels.db import database_sync_to_async
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -76,7 +77,7 @@ class ChatNotify(AsyncJsonWebsocket):
 
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
-        self.user = None
+        self.user: Any = None
         self.disconnected = True
         self.group_name = ""  # 本人聊天组（私聊/AI/未读）
         self.public_group = ""  # 公共聊天室广播组
@@ -141,7 +142,7 @@ class ChatNotify(AsyncJsonWebsocket):
         # 消息类型：text（缺省）/ image / file；附件消息携带 file_pk（先经 REST 上传取得）
         message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
         if message_type not in ChatMessage.MessageType.values:
-            message_type = ChatMessage.MessageType.TEXT
+            message_type = str(ChatMessage.MessageType.TEXT)
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
             attachment = None

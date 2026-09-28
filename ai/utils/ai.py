@@ -109,7 +109,7 @@ def rebuild_chunks(doc) -> int:
     """
     from ai.models.ai import AiKnowledgeChunk
 
-    preserved = {}
+    preserved: dict[str, tuple] = {}
     existing = AiKnowledgeChunk.objects.filter(source_path=doc.path).exclude(embedding__isnull=True)
     for content_hash, embedding, embedding_model, embedding_hash, embedding_dim in existing.values_list(
         "content_hash", "embedding", "embedding_model", "embedding_hash", "embedding_dim"

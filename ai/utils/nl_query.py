@@ -191,10 +191,10 @@ def audit_nl_query(
     action: str,
     question: str,
     dsl: dict,
-    rows: int = None,
+    rows: int | None = None,
     error: str = "",
-    usage: dict = None,
-    guard: dict = None,
+    usage: dict | None = None,
+    guard: dict | None = None,
 ):
     """NL 查数语义审计：落 OperationLog(module=AI:nl_query, auth_type=ai)。
 

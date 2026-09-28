@@ -197,7 +197,7 @@ def _throttled(user, name: str) -> bool:
         return False
 
 
-def audit_ai_security(user, kind: str, detail: str = "", extra: dict = None) -> None:
+def audit_ai_security(user, kind: str, detail: str = "", extra: dict | None = None) -> None:
     """安全事件审计：落 OperationLog(module=AI:security, status_code=1001)。
 
     非 1000 状态码使事件进入监控面板的错误事件流（``collect_error_events``），

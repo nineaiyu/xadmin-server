@@ -249,9 +249,9 @@ def create_message(
     room: ChatRoom,
     sender,
     content: str,
-    message_type: str = ChatMessage.MessageType.TEXT,
+    message_type: str = ChatMessage.MessageType.TEXT,  # type: ignore[assignment]  # Choices 元类：运行期为枚举成员
     client_msg_id: str = "",
-    extra: dict = None,
+    extra: dict | None = None,
     attachment=None,
 ) -> tuple:
     """落库一条消息，返回 (message, created)。
@@ -301,7 +301,7 @@ def create_message(
     return message, True
 
 
-def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: dict = None) -> dict:
+def message_payload(message: ChatMessage, room=None, sender=None, avatar_map: dict | None = None) -> dict:
     """消息 → 前端渲染载荷（WS 广播 / REST 历史共用同一形状）。
 
     room / sender / avatar_map 为可选预取参数：批量场景（历史列表）传入 avatar_map
