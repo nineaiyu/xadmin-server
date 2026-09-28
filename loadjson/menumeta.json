@@ -17350,7 +17350,7 @@
    "modifier": 1,
    "dept_belong": null,
    "title": "menus.directory",
-   "icon": null,
+   "icon": "ri:contacts-book-line",
    "r_svg_name": null,
    "is_show_menu": true,
    "is_show_parent": false,
