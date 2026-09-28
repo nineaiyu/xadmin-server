@@ -294,6 +294,44 @@ def seed_demo_book_scene():
         print(f"skip demo book scene: {exc}")
 
 
+def seed_directory_scene():
+    """通讯录场景：岗位维度数据（岗位 + 成员）。
+
+    通讯录按部门/按岗位两种视角浏览人员：部门树复用既有 E2E 部门（主管场景已在
+    用户种子中建好），岗位清单来自 search/post——这里补两个岗位并分配成员，
+    让岗位视角在 E2E 有真实数据（而不是只有空态）。
+    """
+    from system.models import Post, UserInfo
+
+    dev, _ = Post.objects.get_or_create(name="E2E研发岗", defaults={"code": "e2e_dev", "rank": 10})
+    # 安全岗刻意用长名称（与演示库「示例-安全员（全组织）」同形）：名录列表视图的
+    # 岗位标签必须在单元格内截断，长名称是这组回归断言的素材
+    safety, _ = Post.objects.get_or_create(name="E2E-安全员（全组织演示）", defaults={"code": "e2e_safety", "rank": 20})
+    for username in ("e2e_user", "e2e_member"):
+        user = UserInfo.objects.filter(username=username).first()
+        if user:
+            dev.users.add(user)
+    scoped = UserInfo.objects.filter(username="e2e_scoped").first()
+    if scoped:
+        safety.users.add(scoped)
+    print("directory scene seeded (2 posts + members)")
+
+
+def disable_login_mfa_policy():
+    """停用内置「非工作时间登录需二次验证」策略（22:00-06:00 全用户）。
+
+    该策略命中时登录返回 mfa_required，自动化无法完成邮箱验证码（locmem 后端），
+    夜间跑批时全量登录用例会被拦截——与 tests/settings_e2e.py 关闭登录验证码 /
+    传输加密同口径：E2E 环境放开登录辅助安全项（策略行为由后端集成测试覆盖）。
+    """
+    from system.models import LoginAccessPolicy
+
+    disabled = LoginAccessPolicy.objects.filter(action=LoginAccessPolicy.Action.REQUIRE_MFA, is_active=True).update(
+        is_active=False
+    )
+    print(f"login require_mfa policies disabled: {disabled}")
+
+
 def main() -> None:
     # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
     for suffix in ("", "-wal", "-shm"):
@@ -433,6 +471,12 @@ def main() -> None:
 
     # ---- 二开样板页场景：生成器产出的 demo.Book 菜单与权限点（防样板腐烂）----
     seed_demo_book_scene()
+
+    # ---- 通讯录场景：岗位清单与成员（按岗位视角的真实数据）----
+    seed_directory_scene()
+
+    # ---- 登录辅助安全项：非工作时间 MFA 策略会让夜间跑批的登录被拦截 ----
+    disable_login_mfa_policy()
 
     print("E2E seed done")
 
