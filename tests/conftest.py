@@ -10,6 +10,23 @@ from system.models import DeptInfo, Menu, MenuMeta, UserInfo, UserRole
 
 
 @pytest.fixture(autouse=True)
+def _clean_index_meta():
+    """知识库索引元数据短缓存为进程内层，cache.clear() 清不到（跨测试会读到旧行）。
+
+    独立 fixture 命名：部分测试文件自带 `_clean_cache`（同名覆盖 conftest 版本），
+    清理必须挂在不被覆盖的名字上才能对所有测试生效。
+    """
+    try:
+        from ai.utils.index_meta import invalidate_index_meta
+    except ImportError:  # ai 应用被模块裁剪时不阻断
+        yield
+        return
+    invalidate_index_meta()
+    yield
+    invalidate_index_meta()
+
+
+@pytest.fixture(autouse=True)
 def _clean_cache():
     """每个测试前后清空缓存，避免 MagicCacheData（权限缓存 24h）跨测试污染。"""
     from common.core.config.base import ConfigCacheBase

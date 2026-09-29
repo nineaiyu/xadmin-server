@@ -50,6 +50,7 @@ from ai.utils.ai_retrieval import (  # noqa: F401 检索链路拆至 ai_retrieva
     _tokenize,
     retrieve,
 )
+from ai.utils.index_meta import invalidate_index_meta
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -141,6 +142,8 @@ def rebuild_chunks(doc) -> int:
             )
         )
     AiKnowledgeChunk.objects.bulk_create(rows)
+    # 块集合变化：清索引元数据签名缓存（本进程立即生效，多 worker 由短 TTL 兜底）
+    invalidate_index_meta()
     return len(chunks)
 
 
@@ -149,6 +152,7 @@ def remove_chunks(path: str) -> None:
     from ai.models.ai import AiKnowledgeChunk
 
     AiKnowledgeChunk.objects.filter(source_path=path).delete()
+    invalidate_index_meta()
 
 
 def upsert_upload_document(name: str, content: str, creator=None):

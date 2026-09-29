@@ -59,24 +59,35 @@ class TestRetrievalIndexParity:
         assert {borderline.pk, full_hit.pk} <= hits
 
     def test_content_change_invalidates_entry(self):
+        from ai.utils.ai_index import invalidate_chunk_index
+
         chunk = make_chunk("docs/c.md", 0, CONTENT_A)
         assert chunk.pk in hit_pks("数据库备份")
 
         chunk.content = CONTENT_B
         chunk.content_hash = "changed-hash"
         chunk.save(update_fields=["content", "content_hash"])
+        invalidate_chunk_index()  # 真实写入路径（rebuild_chunks）的显式失效
 
         assert chunk.pk in hit_pks("会签规则"), "内容变更后新问题应命中"
         assert chunk.pk not in hit_pks("数据库备份"), "内容变更后旧问题不应命中"
 
     def test_deleted_chunk_removed(self):
+        from ai.utils.ai_index import invalidate_chunk_index
+
         chunk = make_chunk("docs/d.md", 0, CONTENT_A)
         assert chunk.pk in hit_pks("数据库备份")
         chunk.delete()
+        invalidate_chunk_index()  # 真实写入路径（remove_chunks）的显式失效
         assert chunk.pk not in hit_pks("数据库备份")
 
     def test_new_chunk_picked_up(self):
+        from ai.utils.ai_index import invalidate_chunk_index
+
+        make_chunk("docs/other.md", 0, CONTENT_B)  # 先预热元数据缓存
+        assert hit_pks("会签规则")
         chunk = make_chunk("docs/new.md", 0, CONTENT_A)
+        invalidate_chunk_index()  # 真实写入路径（rebuild_chunks）的显式失效
         assert chunk.pk in hit_pks("数据库备份"), "新增块应被增量索引纳管"
 
     def test_capacity_overflow_falls_back(self, monkeypatch):
@@ -86,3 +97,50 @@ class TestRetrievalIndexParity:
         monkeypatch.setattr(ai_index, "MAX_INDEXED_CHUNKS", 0)
         assert ai_index.chunk_token_index() is None
         assert chunk.pk in hit_pks("数据库备份"), "退避路径（逐块分词全扫）仍可检索"
+
+
+class TestMetaRowsShortCache:
+    """索引元数据签名短缓存：窗口内复用、写入路径显式失效、TTL 过期自愈。"""
+
+    @staticmethod
+    def _meta_queries(ctx):
+        """元数据签名查询（values_list 带 content_hash 列）；命中回读不含该列。"""
+        return [
+            q["sql"]
+            for q in ctx.captured_queries
+            if "system_aiknowledgechunk" in q["sql"] and "content_hash" in q["sql"]
+        ]
+
+    def test_repeated_retrieval_reuses_meta_rows(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from ai.utils.ai_index import invalidate_chunk_index
+
+        make_chunk("docs/meta.md", 0, CONTENT_A)
+        invalidate_chunk_index()
+        with CaptureQueriesContext(connection) as first:
+            assert hit_pks("数据库备份")
+        with CaptureQueriesContext(connection) as second:
+            assert hit_pks("数据库备份")
+        assert self._meta_queries(first), "首次检索需要拉取块元数据"
+        assert self._meta_queries(second) == [], "窗口内第二次检索不再全表拉元数据（命中短缓存）"
+
+    def test_write_path_invalidation_picks_up_new_chunk_immediately(self):
+        """写入路径（rebuild_chunks/remove_chunks）显式失效：新块无需等 TTL。"""
+        from ai.utils.index_meta import invalidate_index_meta
+
+        hit_pks("数据库备份")  # 预热元数据缓存（不假设库中块集合为空）
+        chunk = make_chunk("docs/meta-new.md", 0, CONTENT_A)
+        invalidate_index_meta()  # 模拟 rebuild_chunks 的显式失效
+        assert chunk.pk in hit_pks("数据库备份")
+
+    def test_stale_window_heals_after_ttl(self, monkeypatch):
+        """未显式失效（直改库）时，TTL 过期后签名比对自愈，不长期陈旧。"""
+        from ai.utils import index_meta
+
+        chunk = make_chunk("docs/meta-stale.md", 0, CONTENT_A)
+        assert chunk.pk in hit_pks("数据库备份")
+        monkeypatch.setattr(index_meta, "META_CACHE_TTL_SECONDS", 0)  # 下次读取即过期
+        chunk.delete()
+        assert chunk.pk not in hit_pks("数据库备份"), "TTL 过期后块删除应被发现"

@@ -127,15 +127,29 @@ def rrf_fuse(token_ranked: list, vector_ranked: list, top_k: int) -> list:
 # ------------------------------------------------------------------ 索引（增量缓存）
 
 
+def _load_meta_rows():
+    from ai.models.ai import AiKnowledgeChunk
+
+    return list(
+        AiKnowledgeChunk.objects.exclude(embedding__isnull=True)
+        .order_by("source_path", "chunk_index")
+        .values_list("pk", "content_hash", "embedding_hash", "embedding_model", "embedding_dim")
+    )
+
+
 def vector_index():
     """pk → VectorEntry（增量刷新后返回浅拷贝）；不可用时返回 None。
 
     可用性判据：存在 embedding 档案 + 未超容量 + 索引条数达到最小可用条数。
     只纳管「新鲜」向量（``embedding_hash == content_hash`` 且模型与当前档案一致），
     陈旧向量不参与向量通道（避免用旧正文的语义召回当前问题）。
+
+    元数据行经 ``index_meta`` 短 TTL 缓存（同 scope 的签名比对在窗口内复用），
+    构建/写入路径会显式清缓存（见 ``invalidate_vector_index``）。
     """
     from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials
+    from ai.utils.index_meta import SCOPE_VECTOR_META, cached_meta_rows
 
     global _OVERFLOW_WARNED
 
@@ -143,11 +157,7 @@ def vector_index():
     if credentials is None:
         return None
     model = str(credentials.get("model") or "")
-    rows = list(
-        AiKnowledgeChunk.objects.exclude(embedding__isnull=True)
-        .order_by("source_path", "chunk_index")
-        .values_list("pk", "content_hash", "embedding_hash", "embedding_model", "embedding_dim")
-    )
+    rows = cached_meta_rows(SCOPE_VECTOR_META, _load_meta_rows)
     if len(rows) > MAX_INDEXED_VECTORS:
         if not _OVERFLOW_WARNED:
             logger.warning(
@@ -197,10 +207,16 @@ def _build_entry(signature: str, blob):
 
 
 def invalidate_vector_index() -> None:
-    """清空向量索引与查询缓存（构建完成后调用；签名比对本身也能发现变化）。"""
+    """清空向量索引与查询缓存（构建完成后调用；签名比对本身也能发现变化）。
+
+    同时清本进程的元数据签名缓存：构建写库后无需等短 TTL 即可检索到新向量。
+    """
+    from ai.utils.index_meta import SCOPE_VECTOR_META, invalidate_index_meta
+
     with _LOCK:
         _INDEX.clear()
         _QUERY_CACHE.clear()
+    invalidate_index_meta(SCOPE_VECTOR_META)
 
 
 # ------------------------------------------------------------------ 检索（向量通道 / 混合）

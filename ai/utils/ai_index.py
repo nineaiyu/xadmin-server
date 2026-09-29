@@ -68,19 +68,29 @@ def _build_entry(signature: str, content: str, title: str) -> ChunkTokens:
     )
 
 
+def _load_meta_rows():
+    from ai.models.ai import AiKnowledgeChunk
+
+    return list(
+        AiKnowledgeChunk.objects.order_by("source_path", "chunk_index").values_list("pk", "content_hash", "title")
+    )
+
+
 def chunk_token_index():
     """块 pk → ChunkTokens（增量刷新后返回浅拷贝）；超容量停用缓存时返回 None。
 
     每次调用做一次轻量签名比对（pk + content_hash + title，按模型 ordering），
     仅变化块回读全文重新分词；块删除自动清理。
+
+    元数据行经 ``index_meta`` 短 TTL 缓存（同 scope 的签名比对在窗口内复用），
+    块写入路径会显式清缓存（见 ``invalidate_chunk_index``）。
     """
     from ai.models.ai import AiKnowledgeChunk
+    from ai.utils.index_meta import SCOPE_CHUNK_META, cached_meta_rows
 
     global _OVERFLOW_WARNED
 
-    rows = list(
-        AiKnowledgeChunk.objects.order_by("source_path", "chunk_index").values_list("pk", "content_hash", "title")
-    )
+    rows = cached_meta_rows(SCOPE_CHUNK_META, _load_meta_rows)
     if len(rows) > MAX_INDEXED_CHUNKS:
         if not _OVERFLOW_WARNED:
             logger.warning(
@@ -110,6 +120,12 @@ def chunk_token_index():
 
 
 def invalidate_chunk_index() -> None:
-    """清空缓存（写入路径可选调用；签名比对本身能发现变化，此入口供测试/运维）。"""
+    """清空缓存（写入路径可选调用；签名比对本身能发现变化，此入口供测试/运维）。
+
+    同时清本进程的元数据签名缓存：块集合变化后无需等短 TTL。
+    """
+    from ai.utils.index_meta import SCOPE_CHUNK_META, invalidate_index_meta
+
     with _LOCK:
         _INDEX.clear()
+    invalidate_index_meta(SCOPE_CHUNK_META)
