@@ -193,12 +193,21 @@ def credential_overview() -> dict:
 
 
 def _setting_rows() -> list:
-    """Setting 加密项：Setting 体系的敏感键均为外部签发，只能去对应设置页替换。"""
+    """Setting 凭据行：加密项 + 名字命中敏感模式的**明文行**（后者标红提示）。
+
+    Setting 体系的敏感键均为外部签发，只能去对应设置页替换；明文行（历史遗留 /
+    直改库）可由 ``rotate_credential`` 命令就地加密修复，故一并列在总览里。
+    """
+    from django.db.models import Q
+
     from settings.models import Setting
 
+    plaintext_names = plaintext_setting_names()
+    queryset = Setting.objects.filter(Q(encrypted=True) | Q(name__in=plaintext_names)).order_by("category", "name")
     rows = []
-    for row in Setting.objects.filter(encrypted=True).order_by("category", "name"):
+    for row in queryset:
         configured = bool(row.value)
+        plaintext = not row.encrypted
         rows.append(
             {
                 "name": row.name,
@@ -207,9 +216,9 @@ def _setting_rows() -> list:
                 "category": row.category,
                 "description": "",
                 "configured": configured,
-                "encrypted": True,
-                "plaintext": False,
-                "status": "encrypted" if configured else "empty",
+                "encrypted": bool(row.encrypted),
+                "plaintext": plaintext,
+                "status": "plaintext" if plaintext and configured else ("empty" if not configured else "encrypted"),
                 "rotatable": False,
                 "change_entry": SETTING_CATEGORY_ENTRY.get(row.category, DEFAULT_SETTING_ENTRY),
                 "used_by": str(SETTING_CATEGORY_USAGE_HINTS.get(row.category, "")),
@@ -378,23 +387,45 @@ def rotate_system_config(key: str, user=None) -> dict:
 
 
 def rotate_setting(name: str, user=None) -> dict:
-    """重加密单个 Setting 加密项（encrypted=True）；返回 ``{ok, action, detail}``。"""
+    """重加密/首次加密单个 Setting 敏感项；返回 ``{ok, action, detail}``。
+
+    两种输入形态（值一律不变，仅加密态收敛）：
+
+    - ``encrypted=True``：解密后重加密（轮换 salt/nonce），``action=rotate``；
+    - **明文行（``encrypted=False``）**：把库内 JSON 文本原样加密并置 encrypted=True，
+      ``action=encrypt``——``plaintext_setting_names()`` 检出的存量明文由此可修复
+      （``rotate_credential`` 命令口径与 SystemConfig 侧一致）；
+    - 值已是 v3 密文但标记为明文（标记漂移）：只校正 encrypted 标记，不重复加密。
+    """
     from common.base.utils import signer
+    from common.core.credentials import is_cipher_str
     from settings.models import Setting
 
     name = str(name or "").strip()
-    row = Setting.objects.filter(name=name, encrypted=True).first()
+    row = Setting.objects.filter(name=name).first()
     if row is None or not row.value:
         return {"ok": False, "action": "skip", "detail": str(NOT_CONFIGURED_DETAIL)}
     try:
-        plain = signer.decrypt(row.value)
-        row.value = signer.encrypt(plain.encode("utf-8")).decode("utf-8")
-        row.save(update_fields=["value", "updated_time"])
+        if not row.encrypted and is_cipher_str(row.value):
+            # 标记漂移：值已是密文，重复加密会让 cleared_value 解出内层密文
+            row.encrypted = True
+            row.save(update_fields=["encrypted", "updated_time"])
+            action = "fix_flag"
+        elif row.encrypted:
+            plain = signer.decrypt(row.value)
+            row.value = signer.encrypt(plain).decode("utf-8")
+            row.save(update_fields=["value", "updated_time"])
+            action = "rotate"
+        else:
+            row.value = signer.encrypt(row.value.encode("utf-8")).decode("utf-8")
+            row.encrypted = True
+            row.save(update_fields=["value", "encrypted", "updated_time"])
+            action = "encrypt"
     except Exception as exc:  # noqa: BLE001 解密失败（密钥轮换/损坏）按失败返回
         logger.warning("rotate setting credential failed. name:%s", name, exc_info=True)
         detail = {"key": name, "scope": "setting", "action": "rotate", "ok": False, "error": str(exc)[:200]}
         write_credential_audit(detail, user=user)
         return {"ok": False, "action": "rotate", "detail": str(_("Credential re-encryption failed"))}
-    detail = {"key": name, "scope": "setting", "action": "rotate", "ok": True}
+    detail = {"key": name, "scope": "setting", "action": action, "ok": True}
     write_credential_audit(detail, user=user)
-    return {"ok": True, "action": "rotate", "detail": ""}
+    return {"ok": True, "action": action, "detail": ""}

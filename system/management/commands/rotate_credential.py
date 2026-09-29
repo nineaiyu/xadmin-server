@@ -6,12 +6,14 @@
     python manage.py rotate_credential --audit             # 只巡检（发现明文退出码 1）
     python manage.py rotate_credential --all --dry-run     # 预演全部敏感项
     python manage.py rotate_credential --key SCIM_TOKEN --yes
-    python manage.py rotate_credential --all --yes         # 全部重加密（含 Setting 加密项）
+    python manage.py rotate_credential --key AI_API_KEY --yes   # Setting 敏感名同样支持
+    python manage.py rotate_credential --all --yes         # 全部重加密（含 Setting 行）
 
 口径：
 - SystemConfig 敏感键：``SENSITIVE_SETTING_KEYS`` 注册表（值内字段级加密）；
   明文 → 首次加密；密文 → 解密后重加密（轮换 salt/nonce）；
-- Setting（``encrypted=True``）：重写密文（同样的重加密语义）；
+- Setting：``encrypted=True`` 重写密文（同样的重加密语义）；**明文敏感行**
+  （历史遗留/直改库）就地加密并置 encrypted=True——值不变，仅收敛加密态；
 - 落库前默认 dry-run，必须显式 ``--yes`` 才执行（高危动作二次确认）；
 - 每次执行写 OperationLog(module=system:credential) 审计，并失效配置缓存。
 """
@@ -19,6 +21,7 @@
 import sys
 
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.utils import timezone
 
 from common.core.credentials import (
@@ -26,6 +29,7 @@ from common.core.credentials import (
     encryption_status,
     plaintext_sensitive_keys,
     plaintext_setting_names,
+    sensitive_setting_names,
 )
 from common.utils import get_logger
 
@@ -36,7 +40,9 @@ class Command(BaseCommand):
     help = "轮换/巡检敏感凭据（SystemConfig 值内加密 + Setting 加密项重加密）"
 
     def add_arguments(self, parser):
-        parser.add_argument("--key", action="append", default=[], help="指定 SystemConfig 键（可多次）")
+        parser.add_argument(
+            "--key", action="append", default=[], help="指定键：SystemConfig 敏感键或 Setting 敏感名（可多次）"
+        )
         parser.add_argument("--all", action="store_true", help="处理全部敏感项（含 Setting 加密项）")
         parser.add_argument("--audit", action="store_true", help="只巡检明文，不改库")
         parser.add_argument("--dry-run", action="store_true", help="只打印计划，不改库")
@@ -46,12 +52,19 @@ class Command(BaseCommand):
         keys = [key for key in (options.get("key") or []) if key]
         if options.get("all") and not keys:
             keys = sorted(SENSITIVE_SETTING_KEYS)
-        for key in [item for item in keys if item not in SENSITIVE_SETTING_KEYS]:
-            self.stdout.write(self.style.WARNING(f"[skip] {key}: 不在敏感键注册表 SENSITIVE_SETTING_KEYS"))
+        # --key 亦可指向 Setting 体系的敏感名（AI_API_KEY / EMAIL_HOST_PASSWORD…）：
+        # 这两类键都不在 SENSITIVE_SETTING_KEYS 里，按名字命中敏感模式 + 库内存在判定
+        setting_keys = [
+            key for key in keys if key not in SENSITIVE_SETTING_KEYS and key in set(sensitive_setting_names())
+        ]
+        for key in [item for item in keys if item not in SENSITIVE_SETTING_KEYS and item not in setting_keys]:
+            self.stdout.write(
+                self.style.WARNING(f"[skip] {key}: 不在敏感键注册表（SystemConfig/Setting 均未登记该敏感名）")
+            )
         keys = [key for key in keys if key in SENSITIVE_SETTING_KEYS]
 
         if options.get("audit"):
-            return self._audit_only(keys)
+            return self._audit_only(keys, setting_keys)
 
         from system.models import SystemConfig
         from system.utils.credential import rotate_setting, rotate_system_config
@@ -82,18 +95,26 @@ class Command(BaseCommand):
                 skipped += 1
 
         setting_count = 0
-        if options.get("all"):
+        if options.get("all") or setting_keys:
             from settings.models import Setting
 
-            names = list(Setting.objects.filter(encrypted=True).exclude(value="").values_list("name", flat=True))
+            # 覆盖两类行：加密项（重加密）与明文敏感行（首次加密，值不变）——
+            # plaintext_setting_names() 检出的存量明文是显式风险，必须能被本命令修复
+            names = setting_keys or list(
+                Setting.objects.filter(Q(encrypted=True) | Q(name__in=plaintext_setting_names()))
+                .exclude(value="")
+                .values_list("name", flat=True)
+            )
             for name in names:
                 if not execute:
-                    self.stdout.write(f"[计划 rotate] Setting {name}")
+                    row = Setting.objects.filter(name=name).first()
+                    action = "rotate" if row is not None and row.encrypted else "encrypt"
+                    self.stdout.write(f"[计划 {action}] Setting {name}")
                     setting_count += 1
                     continue
                 result = rotate_setting(name)
                 if result.get("ok"):
-                    self.stdout.write(self.style.SUCCESS(f"[rotate] Setting {name}"))
+                    self.stdout.write(self.style.SUCCESS(f"[{result.get('action') or 'rotate'}] Setting {name}"))
                     setting_count += 1
                 else:
                     self.stdout.write(self.style.WARNING(f"[skip] Setting {name}: {result.get('detail')}"))
@@ -104,7 +125,7 @@ class Command(BaseCommand):
         )
         return None
 
-    def _audit_only(self, keys):
+    def _audit_only(self, keys, setting_keys=None):
         """只巡检：明文敏感项输出清单，发现即非零退出（可入运维巡检/CI）。"""
         from system.models import SystemConfig
 
@@ -115,6 +136,8 @@ class Command(BaseCommand):
             row = SystemConfig.objects.filter(key=key).first()
             self.stdout.write(self.style.ERROR(f"[plaintext] {key}: {str(getattr(row, 'value', ''))[:40]}…"))
         setting_offenders = plaintext_setting_names()
+        if setting_keys:
+            setting_offenders = [name for name in setting_offenders if name in set(setting_keys)]
         for name in setting_offenders:
             self.stdout.write(self.style.ERROR(f"[plaintext] Setting {name}: encrypted=False"))
         if offenders or setting_offenders:

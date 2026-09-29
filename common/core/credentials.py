@@ -156,6 +156,23 @@ def encryption_status(key: str, value) -> str:
     return "encrypted" if all(is_cipher_str(item) for item in values) else "plaintext"
 
 
+def sensitive_setting_names() -> list:
+    """巡检：Setting 中「名字命中敏感模式」的行名（不看 encrypted 标记）。
+
+    供 ``rotate_credential --key AI_API_KEY``（Setting 侧重加密/首次加密）解析目标名；
+    异常降级为空清单，与其它巡检函数同口径。
+    """
+    try:
+        from settings.models import Setting
+    except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
+        return []
+    try:
+        names = Setting.objects.values_list("name", flat=True)
+    except Exception:  # noqa: BLE001 查询失败不阻断
+        return []
+    return sorted({str(name) for name in names if SENSITIVE_KEY_PATTERN.search(str(name or ""))})
+
+
 def plaintext_setting_names() -> list:
     """巡检：Setting 中「名字命中敏感模式但 encrypted=False」的行（明文风险面）。
 

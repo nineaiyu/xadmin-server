@@ -191,3 +191,78 @@ class TestCredentialRotationTracking:
         configs = {row["name"]: row for row in data["system_configs"]}
         assert configs["OAUTH_PROVIDERS"]["rotate_overdue"] is False
         assert configs["OAUTH_PROVIDERS"]["last_rotated"] == ""
+
+
+class TestSettingPlaintextRemediation:
+    """Setting 明文敏感行：总览可见 + 可就地加密（值不变，仅收敛加密态）。"""
+
+    @staticmethod
+    def _plain_row(name="AI_API_KEY", value="sk-plain-secret", category="ai"):
+        from settings.models import Setting
+
+        return Setting.objects.create(name=name, value=json.dumps(value), category=category, encrypted=False)
+
+    def test_overview_lists_plaintext_setting_row(self, auth_client):
+        self._plain_row()
+        data = auth_client.get(f"{URL}/overview").json()["data"]
+        rows = {row["name"]: row for row in data["settings"]}
+        assert rows["AI_API_KEY"]["status"] == "plaintext"
+        assert rows["AI_API_KEY"]["encrypted"] is False
+        assert rows["AI_API_KEY"]["plaintext"] is True
+        assert "Setting:AI_API_KEY" in data["plaintext"]
+        assert "sk-plain-secret" not in json.dumps(data, ensure_ascii=False)
+
+    def test_rotate_setting_encrypts_plaintext_row(self):
+        from common.core.credentials import plaintext_setting_names
+        from system.utils.credential import rotate_setting
+
+        row = self._plain_row()
+        result = rotate_setting("AI_API_KEY")
+        assert result == {"ok": True, "action": "encrypt", "detail": ""}
+        row.refresh_from_db()
+        assert row.encrypted is True
+        assert row.value.startswith("v3:")
+        assert row.cleaned_value == "sk-plain-secret"
+        assert "AI_API_KEY" not in plaintext_setting_names()
+
+    def test_rotate_setting_reencrypts_existing_cipher(self):
+        from system.utils.credential import rotate_setting
+
+        row = self._plain_row()
+        rotate_setting("AI_API_KEY")
+        row.refresh_from_db()
+        before = row.value
+        result = rotate_setting("AI_API_KEY")
+        row.refresh_from_db()
+        assert result["action"] == "rotate"
+        assert row.value != before  # salt/nonce 轮换
+        assert row.cleaned_value == "sk-plain-secret"
+
+    def test_rotate_setting_fixes_drifted_flag(self):
+        """值已是密文但 encrypted=False（标记漂移）：只校正标记，不重复加密。"""
+        from common.base.utils import signer
+        from settings.models import Setting
+        from system.utils.credential import rotate_setting
+
+        cipher = signer.encrypt(json.dumps("sk-drift").encode()).decode()
+        row = Setting.objects.create(name="AI_API_KEY", value=cipher, category="ai", encrypted=False)
+        result = rotate_setting("AI_API_KEY")
+        row.refresh_from_db()
+        assert result["action"] == "fix_flag"
+        assert row.encrypted is True
+        assert row.value == cipher
+        assert row.cleaned_value == "sk-drift"
+
+    def test_command_encrypts_named_setting(self):
+        """CLI：--key 指向 Setting 敏感名 → 就地加密（审计/命令口径与总览同源）。"""
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        row = self._plain_row()
+        out = StringIO()
+        call_command("rotate_credential", "--key", "AI_API_KEY", "--yes", stdout=out)
+        row.refresh_from_db()
+        assert row.encrypted is True
+        assert row.value.startswith("v3:")
+        assert "[encrypt] Setting AI_API_KEY" in out.getvalue()
