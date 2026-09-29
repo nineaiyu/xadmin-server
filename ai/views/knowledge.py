@@ -28,6 +28,7 @@ from common.core.modelset import (
     UpdateAction,
 )
 from common.core.response import ApiResponse
+from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 
 
@@ -41,6 +42,7 @@ class AiKnowledgeDocumentFilter(BaseFilterSet):
 
 
 class AiKnowledgeDocumentViewSet(
+    AiThrottleMixin,
     BaseViewSet,
     CreateAction,
     DestroyAction,
@@ -69,6 +71,9 @@ class AiKnowledgeDocumentViewSet(
     ordering = ["-synced_at"]
     ordering_fields = ["synced_at", "created_time", "title"]
     select_related_fields = ("creator",)
+
+    #: 仓库全量同步与向量构建为高成本重操作：按管理类限流
+    ai_admin_actions = ("sync_repo", "build_embeddings")
 
     def create(self, request, *args, **kwargs):
         """上传文档（文本）：同名视为覆盖更新，重建分块后立即参与检索。"""

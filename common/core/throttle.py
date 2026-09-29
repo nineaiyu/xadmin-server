@@ -68,6 +68,49 @@ class Download2Throttle(UserRateThrottle):
     scope = "download2"
 
 
+class AiChatThrottle(UserRateThrottle):
+    """AI 对话类端点限流（文档问答 / NL 查数 / 受限动作 / 聊天室 AI，含流式）。
+
+    LLM 代理调用是全站外部成本最高的入口：应用层节流（注入告警去重）与用量
+    配额（日调用 / 日 token / 并发流式）都不限制「短时间突发」，此按用户维度
+    的 DRF 限流补齐这一层（超限 429，不影响配额统计口径）。
+    """
+
+    scope = "ai_chat"
+
+
+class AiAdminThrottle(UserRateThrottle):
+    """AI 管理类重操作限流（连接测试 / 档案探测 / 知识库同步 / 向量构建）。
+
+    这些动作会外呼供应商或全量扫描知识库，管理端误操作/脚本重试即可放大成本。
+    """
+
+    scope = "ai_admin"
+
+
+class AiThrottleMixin:
+    """AI 端点限流挂载：按 action 追加限流类（不替换默认链，保留匿名/PAT 限流）。
+
+    子类声明命中集合：``ai_chat_actions`` / ``ai_admin_actions`` 为 action 名元组；
+    ``ai_chat_all`` / ``ai_admin_all`` 为 True 时该类全部请求命中（聊天室 AI 视图、
+    MCP 端点等无 DRF action 语义的场景）。
+    """
+
+    ai_chat_actions: tuple = ()
+    ai_admin_actions: tuple = ()
+    ai_chat_all: bool = False
+    ai_admin_all: bool = False
+
+    def get_throttles(self):
+        throttles = list(super().get_throttles())  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
+        action = getattr(self, "action", None)
+        if self.ai_chat_all or (action and action in self.ai_chat_actions):
+            throttles.append(AiChatThrottle())
+        if self.ai_admin_all or (action and action in self.ai_admin_actions):
+            throttles.append(AiAdminThrottle())
+        return throttles
+
+
 class PatThrottle(SimpleRateThrottle):
     """PAT 凭证级限流：按 token_hash 计数（PAT_RATE_LIMIT，空/0 = 不限）。
 

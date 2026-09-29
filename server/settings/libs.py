@@ -55,6 +55,11 @@ REST_FRAMEWORK = {
         # 文档站登录（/api-docs/login/）：与主登录同口径接入账号锁定之外的单列
         # 更严限流，避免该入口被用作口令爆破通道
         "api_docs_login": "10/m",
+        # AI 对话类端点（问答/NL/受限动作/聊天室 AI，含流式）：LLM 外呼是最高成本入口，
+        # 按用户维度防突发（人工问答远低于该值；批量跑批/多浏览器回归不触顶）
+        "ai_chat": "120/m",
+        # AI 管理类重操作（连接测试/档案探测/知识库同步/向量构建）
+        "ai_admin": "10/m",
         **CONFIG.DEFAULT_THROTTLE_RATES,
     },
     "DEFAULT_PAGINATION_CLASS": "common.core.pagination.PageNumber",

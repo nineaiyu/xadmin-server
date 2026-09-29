@@ -29,6 +29,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
 from common.core.permission import IsAuthenticated
+from common.core.throttle import AiThrottleMixin
 from common.utils import get_logger
 
 logger = get_logger(__name__)
@@ -69,10 +70,14 @@ def _tool_requires_approval(spec, user) -> bool:
         return False
 
 
-class McpEndpointAPIView(APIView):
+class McpEndpointAPIView(AiThrottleMixin, APIView):
     """MCP Streamable HTTP 端点（无状态，JSON 响应，无 SSE 流）"""
 
     permission_classes = [IsAuthenticated]
+
+    #: JSON-RPC 单端点（initialize / tools/list / tools/call）：整端点按对话类限流，
+    #: 与 PAT 凭证限流、动作权限双门叠加（限流是纵深，不替代鉴权）
+    ai_chat_all = True
 
     def _check_enabled(self, msg_id):
         """灰度门禁（与 action/execute 同口径）：动作开关 + 助手配置。"""

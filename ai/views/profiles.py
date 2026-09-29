@@ -25,6 +25,7 @@ from common.core.modelset import (
     UpdateAction,
 )
 from common.core.response import ApiResponse
+from common.core.throttle import AiThrottleMixin
 from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -42,6 +43,7 @@ class AiProfileFilter(BaseFilterSet):
 
 
 class AiProfileViewSet(
+    AiThrottleMixin,
     BaseViewSet,
     CreateAction,
     DestroyAction,
@@ -70,6 +72,9 @@ class AiProfileViewSet(
     ordering = ["-is_active", "name"]
     ordering_fields = ["name", "is_active", "updated_time", "created_time"]
     select_related_fields = ("creator",)
+
+    #: test / probe 均外呼供应商（probe 多次调用）：按管理类重操作限流
+    ai_admin_actions = ("test", "probe")
 
     def perform_create(self, serializer):
         # 先清同用途激活行再插入：用途级部分唯一索引（uniq_ai_profile_purpose_active）下

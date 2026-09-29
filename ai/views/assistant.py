@@ -22,6 +22,7 @@ from ai.utils.ai import ask, is_configured, is_enabled
 from ai.views.actions import AiActionExecuteMixin
 from ai.views.nl_query import AiNlQueryMixin
 from common.core.response import ApiResponse
+from common.core.throttle import AiThrottleMixin
 from common.drf.renders import SseRendererMixin, sse_response
 from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
@@ -31,11 +32,14 @@ from settings.services import AiAssistantSettingSerializer, BaseSettingViewSet
 logger = get_logger(__name__)
 
 
-class AiAssistantSettingViewSet(BaseSettingViewSet):
+class AiAssistantSettingViewSet(AiThrottleMixin, BaseSettingViewSet):
     """AI 助手配置与连接测试"""
 
     serializer_class = AiAssistantSettingSerializer
     category = "ai"
+
+    #: 连接测试（create）会真实 ping LLM：按管理类重操作限流
+    ai_admin_actions = ("create",)
 
     @staticmethod
     def _test_credentials(data: dict) -> dict:
@@ -94,7 +98,7 @@ class AiAssistantSettingViewSet(BaseSettingViewSet):
         return ApiResponse(detail=_("AI provider OK: {}").format(reply[:80]))
 
 
-class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin, GenericViewSet):
+class AiAssistantViewSet(AiThrottleMixin, AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin, GenericViewSet):
     """AI 使用/二开助手（基于 docs/ 知识库的 RAG 问答，不触生产数据）
 
     actions：status/metrics/ask/ask_stream（本文件）+ nl-query/*（nl_query.py mixin）
@@ -106,6 +110,17 @@ class AiAssistantViewSet(AiNlQueryMixin, AiActionExecuteMixin, SseRendererMixin,
 
     #: 需要 SSE 协商的流式 action（三入口各自的流式端点）
     sse_actions = ("ask_stream", "nl_interpret_stream", "action_interpret_stream")
+
+    #: LLM 调用类 action（问答 / NL 查数 / 受限动作）：按用户限流，状态与历史等只读动作不限
+    ai_chat_actions = (
+        "ask",
+        "ask_stream",
+        "nl_interpret",
+        "nl_interpret_stream",
+        "nl_run",
+        "action_interpret_stream",
+        "action_execute",
+    )
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="status")

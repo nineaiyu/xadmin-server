@@ -37,7 +37,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.viewsets import GenericViewSet
 
 from common.core.response import ApiResponse
-from common.core.throttle import UploadThrottle
+from common.core.throttle import AiThrottleMixin, UploadThrottle
 from common.drf.renders import SseRendererMixin, sse_response
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -354,13 +354,16 @@ class ChatContactViewSet(GenericViewSet):
         return ApiResponse(data=data)
 
 
-class ChatAiViewSet(SseRendererMixin, GenericViewSet):
+class ChatAiViewSet(AiThrottleMixin, SseRendererMixin, GenericViewSet):
     """聊天室 AI 助手（通用多轮 + `/kb` 知识库问答）"""
 
     queryset = ChatRoom.objects.none()
 
     #: 需要 SSE 协商的流式 action
     sse_actions = ("stream",)
+
+    #: 两个 action 均调用 LLM（含流式）：整类按对话类限流
+    ai_chat_all = True
 
     @extend_schema(request=ChatAiMessageSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="message")
