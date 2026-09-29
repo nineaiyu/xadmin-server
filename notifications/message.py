@@ -3,8 +3,9 @@ from django.db.models import QuerySet
 
 from common.core.config import batch_user_config
 from common.utils import get_logger
-from message.utils import get_online_users, push_messages
+from message.utils import get_online_users
 from notifications.serializers.message import NoticeMessageSerializer
+from notifications.tasks import json_safe, push_messages_job
 from system.services import UserInfo
 
 logger = get_logger(__name__)
@@ -49,7 +50,12 @@ class SiteMessageUtil:
         # 整个推送循环一次桥接完成，用户开关一次批量读取，
         # 不再出现"每用户一次桥接 + ~4 条命令 + 双重序列化"的串行放大
         enabled = batch_user_config(sorted(targets), "PUSH_MESSAGE_NOTICE", True)
-        push_messages([pk for pk in sorted(targets) if enabled.get(pk, True)], notice_message)
+        pending = [pk for pk in sorted(targets) if enabled.get(pk, True)]
+        if not pending:
+            return notify_obj
+        # 全量扇出交由 Celery 异步投递（数千年在线时逐人 group_send 会拖住请求线程）；
+        # 参数经 JSON 清洗（UUID / gettext_lazy 等非原生类型转字符串）
+        push_messages_job.delay(json_safe(pending), json_safe(notice_message))
         return notify_obj
 
     @classmethod

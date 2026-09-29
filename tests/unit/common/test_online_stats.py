@@ -168,7 +168,8 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2, 3])
         pushes = []
         monkeypatch.setattr(
-            "notifications.message.push_messages", lambda pks, message: pushes.append((list(pks), message))
+            "message.utils.push_messages",
+            lambda pks, message, message_type="push_message": pushes.append((list(pks), message)),
         )
         monkeypatch.setattr(
             "notifications.message.batch_user_config", lambda pks, key, default=None: {pk: True for pk in pks}
@@ -185,8 +186,10 @@ class TestBatchPush:
 
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2])
         pushes = []
-        monkeypatch.setattr("notifications.message.push_messages", lambda pks, message: pushes.append(list(pks)))
-        # notifications.message 通过 from-import 绑定名字，需 patch 其自身命名空间
+        monkeypatch.setattr(
+            "message.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
+        )
+        # 推送任务内 from-import message.utils.push_messages，patch 源头模块命名空间
         monkeypatch.setattr(
             "notifications.message.batch_user_config", lambda pks, key, default=None: {1: False, 2: True}
         )
@@ -198,7 +201,9 @@ class TestBatchPush:
         msg = self._make_message()
         monkeypatch.setattr("notifications.message.get_online_users", lambda: [])
         pushes = []
-        monkeypatch.setattr("notifications.message.push_messages", lambda pks, message: pushes.append(list(pks)))
+        monkeypatch.setattr(
+            "message.utils.push_messages", lambda pks, message, message_type="push_message": pushes.append(list(pks))
+        )
 
         SiteMessageUtil.push_notice_messages(msg, [1, 2])
         assert pushes == []
@@ -209,8 +214,10 @@ class TestBatchPush:
         monkeypatch.setattr("notifications.message.get_online_users", lambda: list(range(50)))
         calls = {"push_messages": 0}
         monkeypatch.setattr(
-            "notifications.message.push_messages",
-            lambda pks, message: calls.__setitem__("push_messages", calls["push_messages"] + 1),
+            "message.utils.push_messages",
+            lambda pks, message, message_type="push_message": calls.__setitem__(
+                "push_messages", calls["push_messages"] + 1
+            ),
         )
         monkeypatch.setattr(
             "notifications.message.batch_user_config", lambda pks, key, default=None: {pk: True for pk in pks}
@@ -218,6 +225,64 @@ class TestBatchPush:
 
         SiteMessageUtil.push_notice_messages(msg, list(range(50)))
         assert calls == {"push_messages": 1}
+
+    def test_push_notice_messages_dispatches_celery_job(self, monkeypatch):
+        """全量扇出改由 Celery 任务投递（请求线程不再直接逐人推送），参数为 JSON 原生类型。"""
+        import json
+        from types import SimpleNamespace
+
+        msg = self._make_message()
+        monkeypatch.setattr("notifications.message.get_online_users", lambda: [1, 2])
+        monkeypatch.setattr(
+            "notifications.message.batch_user_config", lambda pks, key, default=None: {pk: True for pk in pks}
+        )
+        dispatched = []
+        monkeypatch.setattr(
+            "notifications.message.push_messages_job",
+            SimpleNamespace(delay=lambda pks, message, message_type="push_message": dispatched.append((pks, message))),
+        )
+
+        SiteMessageUtil.push_notice_messages(msg, [1, 2])
+
+        assert len(dispatched) == 1
+        pks, message = dispatched[0]
+        assert pks == [1, 2]
+        assert message["message_type"] == "notify_message"
+        json.dumps([pks, message])  # celery JSON 序列化安全（无非原生类型）
+
+
+class TestPushMessagesJob:
+    def test_job_calls_batch_push_once(self, monkeypatch):
+        from notifications.tasks import push_messages_job
+
+        pushes = []
+
+        def fake_push(pks, message, message_type="push_message"):
+            pushes.append((list(pks), message, message_type))
+
+        monkeypatch.setattr("message.utils.push_messages", fake_push)
+        assert push_messages_job([1, 2], {"a": 1}) == 2
+        assert pushes == [([1, 2], {"a": 1}, "push_message")]
+
+    def test_job_empty_targets_skipped(self, monkeypatch):
+        from notifications.tasks import push_messages_job
+
+        monkeypatch.setattr(
+            "message.utils.push_messages", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError)
+        )
+        assert push_messages_job([], {}) == 0
+
+    def test_json_safe_normalizes_non_native_types(self):
+        import uuid
+
+        from django.utils.translation import gettext_lazy as _
+
+        from notifications.tasks import json_safe
+
+        result = json_safe({"pk": uuid.UUID(int=1), "label": _("Test label"), "items": [uuid.UUID(int=2)]})
+        assert result["pk"] == str(uuid.UUID(int=1))
+        assert result["label"] == "Test label"
+        assert result["items"] == [str(uuid.UUID(int=2))]
 
     def test_batch_user_config_single_get_many(self, monkeypatch):
         """N 个用户的配置读取只有一次 get_many"""
