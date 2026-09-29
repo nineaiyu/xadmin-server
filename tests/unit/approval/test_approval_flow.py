@@ -473,6 +473,105 @@ class TestEngineFlow:
         assert not ApprovalNodeTask.objects.filter(instance_id=instance.pk).exists()
 
 
+class TestPendingCountPreciseInvalidation:
+    """待办计数缓存精确失效：只清受影响用户，不再全量扫活跃用户清 5000 键。"""
+
+    @staticmethod
+    def _record_cleared(monkeypatch):
+        from django.core.cache import cache
+
+        cleared = []
+        real_delete_many = cache.delete_many
+
+        def recording(keys, *args, **kwargs):
+            cleared.extend(keys)
+            return real_delete_many(keys, *args, **kwargs)
+
+        monkeypatch.setattr(cache, "delete_many", recording)
+        return cleared
+
+    def test_approve_clears_actor_and_cancelled_only(self, applicant, approver, approver2, monkeypatch):
+        """或签：一人通过 → 失效集 = 处理人 + 同节点被作废候选；无关用户不被清。"""
+        bystander = UserInfo.objects.create_user(username="flow_bystander", password="Test@123456")
+        flow = make_flow(nodes=[{"name": "或签", "approve_type": ApprovalFlowNode.ApproveType.OR}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="精确失效", form_data={})
+        assert error is None, error
+        task = instance.tasks.get(assignee=approver)
+        cleared = self._record_cleared(monkeypatch)
+
+        ok, detail = approve_task(task.pk, approver, "同意")
+        assert ok, detail
+        keys = set(cleared)
+        assert f"approval_flow_pending_count_{approver.pk}" in keys  # 处理人
+        assert f"approval_flow_pending_count_{approver2.pk}" in keys  # 或签被作废的候选
+        assert f"approval_flow_pending_count_{bystander.pk}" not in keys  # 无关用户
+        assert f"approval_flow_pending_count_{applicant.pk}" not in keys  # 申请人不在待办口径内
+        # 功能回归：受影响者计数即时正确（缓存已精确清）
+        assert pending_count_for(approver) == 0
+
+    def test_reject_clears_all_cancelled_assignees_only(self, applicant, approver, approver2, monkeypatch):
+        """驳回：失效集 = 处理人 + 整单被作废待办的 assignee。"""
+        bystander = UserInfo.objects.create_user(username="flow_bystander2", password="Test@123456")
+        flow = make_flow(nodes=[{"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="驳回失效", form_data={})
+        assert error is None, error
+        assert instance.tasks.filter(status=ApprovalNodeTask.Status.PENDING).count() == 2
+        task = instance.tasks.get(assignee=approver)
+        cleared = self._record_cleared(monkeypatch)
+
+        ok, detail = reject_task(task.pk, approver, "不符合要求")
+        assert ok, detail
+        keys = set(cleared)
+        assert f"approval_flow_pending_count_{approver.pk}" in keys
+        assert f"approval_flow_pending_count_{approver2.pk}" in keys
+        assert f"approval_flow_pending_count_{bystander.pk}" not in keys
+        assert pending_count_for(approver2) == 0
+
+    def test_cancel_clears_pending_assignees_only(self, applicant, approver, approver2, monkeypatch):
+        """撤回：失效集 = 被作废待办的 assignee（pending 列表一次性给出，无需全量）。"""
+        bystander = UserInfo.objects.create_user(username="flow_bystander3", password="Test@123456")
+        flow = make_flow(nodes=[{"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="撤回失效", form_data={})
+        assert error is None, error
+        cleared = self._record_cleared(monkeypatch)
+
+        ok, detail = cancel_instance(instance, applicant)
+        assert ok, detail
+        keys = set(cleared)
+        assert keys == {
+            f"approval_flow_pending_count_{approver.pk}",
+            f"approval_flow_pending_count_{approver2.pk}",
+        }
+        assert f"approval_flow_pending_count_{bystander.pk}" not in keys
+
+    def test_cancel_pending_tasks_returns_assignees(self, applicant, approver, approver2):
+        """作废任务返回 assignee pk 列表（计数失效集；assignee 为空的任务不计入）。"""
+        from approval.utils.approval_flow.engine import _cancel_pending_tasks
+
+        flow = make_flow(nodes=[{"name": "会签", "approve_type": ApprovalFlowNode.ApproveType.AND}])
+        instance, error = create_instance(flow=flow, applicant=applicant, title="返回值", form_data={})
+        assert error is None, error
+        ApprovalNodeTask.objects.create(
+            instance=instance,
+            node=instance.current_node,
+            node_name="审计节点",
+            node_order=99,
+            assignee=None,
+            status=ApprovalNodeTask.Status.PENDING,
+        )
+        pks = _cancel_pending_tasks(instance)
+        assert sorted(pks) == sorted([approver.pk, approver2.pk])
+
+    def test_no_full_scan_invalidation_call_left(self):
+        """源码级守护：全量失效（无参调用）已移除，防止回退。"""
+        import inspect
+
+        from approval.utils.approval_flow import engine, extra_actions
+
+        for module in (engine, extra_actions):
+            assert "_invalidate_pending_count()" not in inspect.getsource(module)
+
+
 class TestBranchRoutes:
     """二期条件分支：排他网关出口路由 + 线性回退。"""
 

@@ -11,6 +11,12 @@ from django.utils.translation import gettext_lazy as _
 from approval.utils.approval.display import user_display
 from common.utils import get_logger
 
+from .assignees import (
+    _no_approver_detail as _no_approver_detail,  # noqa: PLC0414 显式再导出（engine 调用面与外部引用保持）
+)
+from .assignees import (
+    _resolve_instance_cc as _resolve_instance_cc,
+)
 from .conditions import (
     next_node,
     resolve_assignee_pairs,
@@ -18,7 +24,7 @@ from .conditions import (
     simulate_path,
     validate_form,
 )
-from .constants import _FLOW_FINISH_EVENTS, _models, _users
+from .constants import _FLOW_FINISH_EVENTS, _models
 
 logger = get_logger(__name__)
 
@@ -44,18 +50,18 @@ def _notify(users, event, instance, extra=None):
         transaction.on_commit(partial(_send, user))
 
 
-def _invalidate_pending_count(users=None):
-    """失效待办计数缓存：默认全量（规模有界），亦可指定受影响用户。"""
+def _invalidate_pending_count(users):
+    """失效待办计数缓存（精确集合：处理人 / 被作废任务 assignee / 新节点候选等）。
+
+    历史实现无参时全量清「所有活跃用户」（UserInfo 全表扫描 + 最多 5000 键的
+    delete_many），每个审批动作都触发一次；改为精确集后每个调用点只需给出本次
+    动作实际影响的用户（接受 UserInfo 对象或 pk），无关用户不再被清。
+    计数缓存 TTL 仅 10s：即便个别路径漏清也会自愈，不构成一致性问题。
+    """
     from django.core.cache import cache
 
-    if users is None:
-        UserInfo = _users()
-        try:
-            pks = list(UserInfo.objects.filter(is_active=True).values_list("pk", flat=True)[:5000])
-        except Exception:  # noqa: BLE001 计数缓存异常不影响主流程
-            return
-    else:
-        pks = [user.pk for user in users]
+    pks = {user.pk if hasattr(user, "pk") else user for user in users}
+    pks.discard(None)
     if pks:
         cache.delete_many([f"approval_flow_pending_count_{pk}" for pk in pks])
 
@@ -102,99 +108,6 @@ def _enter_node(instance, node) -> bool:
     _notify(candidates, "submitted", instance)
     _invalidate_pending_count(candidates)
     return bool(tasks)
-
-
-def _no_approver_detail(node, applicant) -> str:
-    """节点无候选时的失败原因（含解决路径）：发起校验 fail-closed 的用户可读提示。
-
-    leader 节点区分子场景给出可操作建议（申请人无部门 / 部门无负责人 / 负责人即
-    申请人本人）；post 节点区分「岗位不存在或停用」与「岗位无在岗成员」；其余
-    （角色无成员、指定用户不存在、表单字段未解析出用户名、委托展开后为空等）按
-    节点审批人配置排查。仅做提示文案，不改变 fail-closed 语义。
-    """
-    if node.assignee_type == node.AssigneeType.LEADER:
-        dept = getattr(applicant, "dept", None)
-        if dept is None:
-            return str(
-                _(
-                    "Node {} has no available approver: the applicant has no department yet. "
-                    "Please assign a department with leader to the applicant first"
-                )
-            ).format(node.name)
-        if getattr(dept, "leader", None) is None:
-            return str(
-                _(
-                    "Node {} has no available approver: the applicant's department has no leader. "
-                    "Please configure a department leader first"
-                )
-            ).format(node.name)
-        if dept.leader_id == applicant.pk:
-            return str(
-                _(
-                    "Node {} has no available approver: the applicant is the department leader. "
-                    "Please adjust the department leader or the approver of this node"
-                )
-            ).format(node.name)
-    if node.assignee_type == node.AssigneeType.POST:
-        from system.models import Post
-
-        codes = [
-            value.strip() for value in str(node.assignee_value or "").replace("，", ",").split(",") if value.strip()
-        ]
-        posts = Post.objects.filter(code__in=codes, is_active=True, deleted_at__isnull=True)
-        if not posts.exists():
-            return str(
-                _(
-                    "Node {} has no available approver: the configured posts do not exist or are disabled. "
-                    "Please check the post configuration of this node"
-                )
-            ).format(node.name)
-        if not _users().objects.filter(is_active=True, posts__in=posts).exists():
-            return str(
-                _(
-                    "Node {} has no available approver: no active user holds the configured posts. "
-                    "Please assign members to the posts first"
-                )
-            ).format(node.name)
-    return str(_("Node {} has no available approver. Please check the approver configuration of this node")).format(
-        node.name
-    )
-
-
-def _resolve_instance_cc(path, applicant, extra=None):
-    """实例抄送人：全部可达节点 cc 并集 + 发起时追加（去重、仅启用用户、不含申请人）。
-
-    标识兼容「用户 pk」与「用户名」两种形态：设计器节点与发起弹窗可直接沿用
-    审批人选择器的用户名，API 调用方可传 pk；非法标识静默跳过（抄送为附加能力，
-    不阻断发起）。
-    """
-    UserInfo = _users()
-
-    identifiers = []
-    for node in path or []:
-        for item in node.cc_users or []:
-            text = str(item or "").strip()
-            if text and text not in identifiers:
-                identifiers.append(text)
-    for item in extra or []:
-        text = str(item or "").strip()
-        if text and text not in identifiers:
-            identifiers.append(text)
-    if not identifiers:
-        return []
-    pk_field = UserInfo._meta.pk
-    users = []
-    for text in identifiers[:20]:
-        user = None
-        try:
-            user = UserInfo.objects.filter(pk=pk_field.to_python(text)).first()
-        except Exception:  # noqa: BLE001 非主键形态（用户名）走下方兜底
-            user = None
-        if user is None:
-            user = UserInfo.objects.filter(username=text).first()
-        if user and user.is_active and user.pk != applicant.pk and user not in users:
-            users.append(user)
-    return users
 
 
 def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id="", cc_users=None):
@@ -329,13 +242,20 @@ def _notify_business_finished(instance, status, reason=None) -> None:
         )
 
 
-def _cancel_pending_tasks(instance, node=None):
+def _cancel_pending_tasks(instance, node=None) -> list:
+    """作废待办任务（整单或指定节点）；返回被作废任务的 assignee pk 列表。
+
+    返回值为待办计数缓存的精确失效集（先取值再 UPDATE；assignee 为空的任务
+    本就计入不了任何人的待办）。
+    """
     ApprovalNodeTask = _models().Task
 
     queryset = ApprovalNodeTask.objects.filter(instance=instance, status=ApprovalNodeTask.Status.PENDING)
     if node is not None:
         queryset = queryset.filter(node=node)
+    assignee_pks = list(queryset.exclude(assignee=None).values_list("assignee", flat=True))
     queryset.update(status=ApprovalNodeTask.Status.CANCELLED, updated_time=timezone.now())
+    return assignee_pks
 
 
 def _advance(instance, node):
@@ -349,8 +269,10 @@ def _advance(instance, node):
     while True:
         following = next_node(instance.flow, node.order, instance.form_data, node=node)
         if following is None:
+            # 终态通过：当前节点任务已由本次动作处理完毕（含或签/比例会签的作废，
+            # 失效集在调用点给出），实例到达终态后不存在遗留 PENDING 任务——
+            # 此处无需再失效任何人的待办计数。
             if _finish_instance(instance, ApprovalInstance.Status.APPROVED):
-                _invalidate_pending_count()
                 _notify([instance.creator], "approved", instance)
             return
         entered = _enter_node(instance, following)
@@ -412,10 +334,11 @@ def approve_task(task_pk, user, comment: str = ""):
             return False, str(_("The task has been processed"))
 
         node = task.node
-        _invalidate_pending_count()
+        # 精确失效集：处理人自己 + 被作废任务的 assignee（新节点候选人在 _enter_node 内失效）
+        invalidated = {user.pk}
         if node.approve_type == node.ApproveType.OR:
             # 或签：任一通过即节点通过，其余待办作废
-            _cancel_pending_tasks(instance, node=node)
+            invalidated.update(_cancel_pending_tasks(instance, node=node))
             _advance(instance, node)
         elif node.approve_type == node.ApproveType.RATIO:
             # 比例会签：通过数/候选总数 ≥ ratio% 即通过；
@@ -426,10 +349,10 @@ def approve_task(task_pk, user, comment: str = ""):
             pending = node_tasks.filter(status=ApprovalNodeTask.Status.PENDING).count()
             required = -(-total * (node.approve_ratio or 100) // 100)  # ceil
             if approved >= required:
-                _cancel_pending_tasks(instance, node=node)
+                invalidated.update(_cancel_pending_tasks(instance, node=node))
                 _advance(instance, node)
             elif approved + pending < required:
-                _cancel_pending_tasks(instance)
+                invalidated.update(_cancel_pending_tasks(instance))
                 if _finish_instance(
                     instance,
                     ApprovalInstance.Status.REJECTED,
@@ -443,6 +366,7 @@ def approve_task(task_pk, user, comment: str = ""):
             ).exists()
             if not remaining:
                 _advance(instance, node)
+        _invalidate_pending_count(invalidated)
         return True, None
 
 
@@ -489,10 +413,12 @@ def _reject_task_locked(task_pk, user, reason: str):
     if not updated:
         return False, str(_("The task has been processed"))
 
-    _cancel_pending_tasks(instance)
+    # 精确失效集：处理人自己 + 被作废任务（整单全部 PENDING）的 assignee
+    invalidated = {user.pk}
+    invalidated.update(_cancel_pending_tasks(instance))
     if _finish_instance(instance, ApprovalInstance.Status.REJECTED, reason=reason):
         _notify([instance.creator], "rejected", instance, extra=reason)
-    _invalidate_pending_count()
+    _invalidate_pending_count(invalidated)
     return True, None
 
 
@@ -527,5 +453,6 @@ def _cancel_instance_locked(instance, user):
     _cancel_pending_tasks(instance)
     if _finish_instance(instance, ApprovalInstance.Status.CANCELLED):
         _notify([task.assignee for task in pending], "cancelled", instance)
-    _invalidate_pending_count()
+    # 精确失效集：被作废待办的全体 assignee（pending 已加载，无需二次查询）
+    _invalidate_pending_count({task.assignee_id for task in pending})
     return True, None
