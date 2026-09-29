@@ -109,11 +109,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="uploadsession",
-            index=models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_uploadsession_resume"),
+            index=models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_upsess_resume"),
         ),
         migrations.AddIndex(
             model_name="uploadsession",
-            index=models.Index(fields=["status", "created_time"], name="idx_uploadsession_status_created"),
+            index=models.Index(fields=["status", "created_time"], name="idx_upsess_status_created"),
         ),
         migrations.AddConstraint(
             model_name="uploadsessionpart",

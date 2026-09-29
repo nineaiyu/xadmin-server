@@ -171,9 +171,9 @@ class UploadSession(DbAuditModel):
         verbose_name_plural = verbose_name
         indexes = [
             # 断点续传命中：同属主同名同大小的未完成会话
-            models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_uploadsession_resume"),
+            models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_upsess_resume"),
             # 过期清理（pending 会话 + 终态会话行）按时间扫描
-            models.Index(fields=["status", "created_time"], name="idx_uploadsession_status_created"),
+            models.Index(fields=["status", "created_time"], name="idx_upsess_status_created"),
         ]
 
     def __str__(self):

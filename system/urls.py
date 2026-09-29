@@ -9,6 +9,7 @@ from rest_framework.routers import SimpleRouter
 
 from common.core.routers import NoDetailRouter
 from system.views.admin.account_risk import AccountRiskViewSet
+from system.views.admin.codegen import SystemCodeGenViewSet
 from system.views.admin.config import SystemConfigViewSet, UserPersonalConfigViewSet
 from system.views.admin.credential import CredentialViewSet
 from system.views.admin.dept import DeptViewSet
@@ -178,6 +179,8 @@ router.register("login-policies", LoginAccessPolicyViewSet, basename="login_poli
 router.register("passkeys", PasskeyViewSet, basename="passkey")
 # 列表「我的视图」
 router.register("saved-views", SavedListViewSet, basename="saved_view")
+# 代码生成器 GUI（只读引擎适配：模型清单/字段计划/预览/下载）
+router.register("codegen", SystemCodeGenViewSet, basename="system-codegen")
 
 # 配置相关
 router.register("config/system", SystemConfigViewSet, basename="sysconfig")

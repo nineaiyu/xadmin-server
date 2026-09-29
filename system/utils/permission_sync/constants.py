@@ -17,6 +17,8 @@ PARENT_MENU_MAP = {
     "api/system/account-risks": "SystemAccountRisk",
     "api/system/login-policies": "SystemLoginPolicy",
     "api/notifications/message-templates": "SettingMessage",
+    # 代码生成器 GUI（generate_crud 引擎的只读端点）
+    "api/system/codegen": "SystemCodeGen",
 }
 # 审计豁免（有权限点但不在可扫描路由面内，运行期经权限链正则回退命中，权限点有效）：
 # - api/chat/*：不在 PERMISSION_SHOW_PREFIX（框架未纳入菜单生成面），权限点手工维护；
