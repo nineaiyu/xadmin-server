@@ -230,6 +230,77 @@ class TestScimGroups:
         assert not UserRole.objects.filter(code="scim_team").exists()
 
 
+class TestGovernanceGuards:
+    """治理面护栏：内置角色与超管账号不接受 SCIM 写操作（fail-closed）。
+
+    场景：单一全局 SCIM_TOKEN 泄露 / IdP 侧误操作，不得摧毁治理配置（内置角色
+    code 被代码与治理配置引用）与超管账号（停用即锁死管理面）。
+    """
+
+    @pytest.fixture
+    def builtin_role(self):
+        from system.builtin import sync_builtin_roles
+
+        sync_builtin_roles()
+        return UserRole.objects.get(code="SystemAdmin")
+
+    def test_builtin_role_delete_denied(self, api_client, scim_enabled, builtin_role):
+        resp = api_client.delete(f"{SCIM_BASE}/Groups/{builtin_role.pk}", **AUTH)
+        assert resp.status_code == 403
+        assert resp.json()["scimType"] == "mutability"
+        assert UserRole.objects.filter(pk=builtin_role.pk).exists()
+
+    def test_builtin_role_write_denied(self, api_client, scim_enabled, builtin_role, superuser):
+        patched = api_client.patch(
+            f"{SCIM_BASE}/Groups/{builtin_role.pk}",
+            {"Operations": [{"op": "replace", "path": "externalId", "value": "hacked"}]},
+            format="json",
+            **AUTH,
+        )
+        assert patched.status_code == 403
+        replaced = api_client.put(
+            f"{SCIM_BASE}/Groups/{builtin_role.pk}", {"displayName": "改写"}, format="json", **AUTH
+        )
+        assert replaced.status_code == 403
+        added = api_client.patch(
+            f"{SCIM_BASE}/Groups/{builtin_role.pk}",
+            {"Operations": [{"op": "add", "path": "members", "value": [{"value": str(superuser.pk)}]}]},
+            format="json",
+            **AUTH,
+        )
+        assert added.status_code == 403
+        builtin_role.refresh_from_db()
+        assert builtin_role.code == "SystemAdmin"
+        assert not superuser.roles.filter(pk=builtin_role.pk).exists()
+
+    def test_superuser_write_denied(self, api_client, scim_enabled, superuser):
+        deleted = api_client.delete(f"{SCIM_BASE}/Users/{superuser.pk}", **AUTH)
+        assert deleted.status_code == 403
+        patched = api_client.patch(
+            f"{SCIM_BASE}/Users/{superuser.pk}",
+            {"Operations": [{"op": "replace", "path": "active", "value": False}]},
+            format="json",
+            **AUTH,
+        )
+        assert patched.status_code == 403
+        replaced = api_client.put(
+            f"{SCIM_BASE}/Users/{superuser.pk}",
+            {"userName": "hijacked", "active": False},
+            format="json",
+            **AUTH,
+        )
+        assert replaced.status_code == 403
+        superuser.refresh_from_db()
+        assert superuser.is_active is True
+        assert superuser.username == "admin"
+
+    def test_regular_user_still_writable(self, api_client, scim_enabled):
+        """对照：护栏只拦治理面对象，普通用户链路行为不变。"""
+        created = api_client.post(f"{SCIM_BASE}/Users", {"userName": "scim_plain"}, format="json", **AUTH)
+        assert created.status_code == 201
+        assert api_client.delete(f"{SCIM_BASE}/Users/{created.json()['id']}", **AUTH).status_code == 204
+
+
 class TestIdpFlavorMock:
     """真实 IdP（Okta / Entra）请求形态的本地 mock 验证（不依赖外部租户）。
 

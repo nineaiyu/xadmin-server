@@ -7,6 +7,8 @@
 - **凭据不下发**：payload 无 password 时置不可用密码（登录走 OAuth2/OIDC 联邦）；
 - **停用即失效**：active=false / DELETE 复用 `force_logout_user`（令牌失效时间戳 +
   refresh 拉黑 + WS 踢线 + 会话置离线），与在线用户管理同一套链路；
+- **治理面护栏（fail-closed）**：内置角色（builtin / 内置 code）与超管账号不接受
+  SCIM 写操作——单一全局 SCIM_TOKEN 泄露或 IdP 误操作不得摧毁治理配置与超管账号；
 - **组 → 角色**：Group 映射 `UserRole`（displayName → name，externalId → code，
   缺省 code 由 displayName 规范化生成），成员即 `UserInfo.roles` 关系；
 - **审计**：所有写操作落 OperationLog（auth_type=scim，changes 记字段级 diff，
@@ -21,6 +23,8 @@ from datetime import UTC
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from system.scim.errors import ScimApiError  # noqa: F401 再导出：既有导入路径（views/测试）不变
+from system.scim.guards import ensure_group_writable, ensure_user_writable
 
 logger = get_logger(__name__)
 
@@ -37,16 +41,6 @@ SCHEMA_RESOURCE_TYPE = "urn:ietf:params:scim:schemas:core:2.0:ResourceType"
 LIST_COUNT_DEFAULT = 100
 LIST_COUNT_MAX = 500
 GROUP_CODE_PATTERN = re.compile(r"[^0-9a-zA-Z_]+")
-
-
-class ScimApiError(Exception):
-    """SCIM 协议错误：视图统一渲染为 RFC 7644 §3.12 的 Error 文档。"""
-
-    def __init__(self, status: int, detail: str, scim_type: str = ""):
-        self.status = status
-        self.detail = detail
-        self.scim_type = scim_type
-        super().__init__(detail)
 
 
 def _iso(value) -> str:
@@ -244,6 +238,7 @@ def update_user(user, payload: dict) -> list:
     """PUT：整体替换（未提供字段按 SCIM 语义置空/默认；username 不可空）。"""
     from system.models import UserInfo
 
+    ensure_user_writable(user)
     if "userName" not in payload:
         raise ScimApiError(400, str(_("userName is required")), scim_type="invalidValue")
     username = str(payload.get("userName") or "").strip()
@@ -268,6 +263,7 @@ def patch_user(user, operations: list) -> list:
     """
     from system.models import UserInfo
 
+    ensure_user_writable(user)
     changed: list = []
     for operation in operations or []:
         if not isinstance(operation, dict):
@@ -319,6 +315,7 @@ def deactivate_user(user, operator: str = "scim") -> int:
     """停用用户并踢掉全部会话（与在线用户强制下线同一链路）。"""
     from system.utils.session import force_logout_user
 
+    ensure_user_writable(user)
     if user.is_active:
         user.is_active = False
         user.save(update_fields=["is_active", "updated_time"])
@@ -352,6 +349,7 @@ def create_group(payload: dict):
 
 
 def update_group(role, payload: dict) -> None:
+    ensure_group_writable(role)
     display_name = str(payload.get("displayName") or "").strip()
     if display_name:
         role.name = display_name[:128]
@@ -370,6 +368,7 @@ def update_group(role, payload: dict) -> None:
 def patch_group(role, operations: list) -> None:
     from system.models import UserRole
 
+    ensure_group_writable(role)
     for operation in operations or []:
         if not isinstance(operation, dict):
             raise ScimApiError(400, str(_("Invalid patch operation")), scim_type="invalidValue")
@@ -449,6 +448,7 @@ def _resolve_member(member: dict):
 
 
 def delete_group(role) -> None:
+    ensure_group_writable(role)
     role.delete()
 
 
