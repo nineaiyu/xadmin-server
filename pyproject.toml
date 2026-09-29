@@ -88,6 +88,8 @@ dependencies = [
     "cryptography==50.0.1",
     # Passkey CBOR 解析：源码直接 import cbor2，显式声明防传递依赖漂移
     "cbor2==5.9.0",
+    # 密码哈希 argon2id（PASSWORD_HASHERS 首位；登录时存量 PBKDF2 自动重哈希）
+    "argon2-cffi==25.1.0",
 ]
 
 [project.optional-dependencies]
