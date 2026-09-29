@@ -5,9 +5,14 @@
 表单绑定审批流程后，提交进入流程引擎（多级审批），实例终态经
 ``approval_instance_finished`` 信号回写提交状态；被驳回的提交允许申请人
 修改数据后重新提交（重新发起流程实例）。未绑定流程的表单不受影响。
+
+并发收敛：发起前按「源状态」做条件更新占位（CAS）并整体事务化——双击 / 重放
+只有一次能推进到 PENDING，失败路径不留「状态与实例不一致」的行。
 """
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -19,6 +24,10 @@ logger = get_logger(__name__)
 DFORM_BIZ_TYPE = "dform_submission"
 
 
+class _FlowRollback(Exception):
+    """内部信号：本次发起流程实例的尝试需要整体回滚（失败原因即 detail）。"""
+
+
 def build_instance_title(form, applicant) -> str:
     """流程实例标题：表单名 + 提交人，便于审批列表一眼区分。"""
     username = getattr(applicant, "nickname", "") or getattr(applicant, "username", "")
@@ -28,7 +37,9 @@ def build_instance_title(form, applicant) -> str:
 def create_flow_instance(submission, applicant):
     """为绑定流程的表单提交创建流程实例并置 PENDING。返回 (ok, detail)。
 
-    失败时调用方回滚事务：宁可拒绝提交，也不留下状态与实例不一致的提交行。
+    并发安全（双击 / 重放）：以「读取时的源状态」做条件更新（CAS）把提交行推进到
+    PENDING——只有一次尝试能占到（Postgres 下调用方另有行锁），失败路径整体回滚
+    本次尝试的写入（含刚创建的实例），不留下状态与实例不一致的提交行。
     """
     from approval.utils.approval_flow import create_instance
 
@@ -41,32 +52,53 @@ def create_flow_instance(submission, applicant):
     if not flow.is_active:
         return False, str(_("The approval flow is not active"))
 
-    instance, error = create_instance(
-        flow=flow,
-        applicant=applicant,
-        title=build_instance_title(form, applicant),
-        form_data=submission.data or {},
-        biz_type=DFORM_BIZ_TYPE,
-        biz_id=str(submission.pk),
-    )
-    if error:
-        return False, error
-
-    submission.instance = instance
-    submission.status = DynamicFormSubmission.Status.PENDING
-    submission.save(update_fields=["instance", "status", "updated_time"])
+    source_status = submission.status
+    try:
+        with transaction.atomic():
+            # 先 CAS 占位再发起：占不到说明并发请求已推进，不创建实例（无孤儿实例/无幻影通知）；
+            # 发起失败则整体回滚（CAS 一并还原，行保持可重试的源状态）
+            advanced = DynamicFormSubmission.objects.filter(pk=submission.pk, status=source_status).update(
+                status=DynamicFormSubmission.Status.PENDING,
+                updated_time=timezone.now(),
+            )
+            if not advanced:
+                raise _FlowRollback(str(_("The submission has already been submitted")))
+            instance, error = create_instance(
+                flow=flow,
+                applicant=applicant,
+                title=build_instance_title(form, applicant),
+                form_data=submission.data or {},
+                biz_type=DFORM_BIZ_TYPE,
+                biz_id=str(submission.pk),
+            )
+            if error:
+                raise _FlowRollback(error)
+            DynamicFormSubmission.objects.filter(pk=submission.pk).update(
+                instance=instance, updated_time=timezone.now()
+            )
+            submission.instance = instance
+            submission.status = DynamicFormSubmission.Status.PENDING
+    except _FlowRollback as exc:
+        return False, str(exc)
     return True, None
 
 
 def resubmit_submission(submission, user):
-    """被驳回后重新提交：仅申请人、仅 REJECTED；按当前数据发起新流程实例。返回 (ok, detail)。"""
-    if submission.creator_id != user.pk and not getattr(user, "is_superuser", False):
-        return False, str(_("Only the applicant can resubmit the submission"))
-    if submission.status != DynamicFormSubmission.Status.REJECTED:
-        return False, str(_("Only rejected submissions can be resubmitted"))
-    if not submission.form.is_active:
-        return False, str(_("This form is no longer accepting submissions"))
-    return create_flow_instance(submission, user)
+    """被驳回后重新提交：仅申请人、仅 REJECTED；按当前数据发起新流程实例。返回 (ok, detail)。
+
+    行锁内复核状态：并发重放也只有一次能推进（配合 create_flow_instance 的源状态 CAS）。
+    """
+    with transaction.atomic():
+        locked = DynamicFormSubmission.objects.select_for_update().filter(pk=submission.pk).first()
+        if locked is None:
+            return False, str(_("The submission does not exist"))
+        if locked.creator_id != user.pk and not getattr(user, "is_superuser", False):
+            return False, str(_("Only the applicant can resubmit the submission"))
+        if locked.status != DynamicFormSubmission.Status.REJECTED:
+            return False, str(_("Only rejected submissions can be resubmitted"))
+        if not locked.form.is_active:
+            return False, str(_("This form is no longer accepting submissions"))
+        return create_flow_instance(locked, user)
 
 
 def submit_from_approval(approval, user):

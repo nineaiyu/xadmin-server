@@ -325,24 +325,36 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             messages = getattr(exc, "messages", None) or [str(exc)]
             return ApiResponse(code=1001, detail=str(messages[0]))
 
-        instance.data = normalized
-        instance.save(update_fields=["data", "updated_time"])
+        # 并发收敛（双击 / 重放）：事务 + 行锁内复核状态后再写库；配合
+        # create_flow_instance 的源状态 CAS，两次并发提交只有一次能推进到 PENDING，
+        # 另一次拿到可读提示而不是各自发起一个流程实例
+        from django.db import transaction
 
-        if form.approval_flow_id:
-            ok, detail = create_flow_instance(instance, request.user)
-            if not ok:
-                return ApiResponse(code=1001, detail=detail)
-            return ApiResponse(detail=_("Application submitted"))
+        with transaction.atomic():
+            locked = DynamicFormSubmission.objects.select_for_update().filter(pk=instance.pk).first()
+            if locked is None:
+                return ApiResponse(code=1001, detail=_("The submission does not exist"))
+            if locked.status != DynamicFormSubmission.Status.DRAFT:
+                return ApiResponse(code=1001, detail=_("Only draft submissions can be submitted"))
+            instance = locked
+            instance.data = normalized
+            instance.save(update_fields=["data", "updated_time"])
 
-        if needs_approval and not approved_replay:
-            gate = self._operation_approval_gate(request)
-            if gate is not None:
-                return gate
+            if form.approval_flow_id:
+                ok, detail = create_flow_instance(instance, request.user)
+                if not ok:
+                    return ApiResponse(code=1001, detail=detail)
+                return ApiResponse(detail=_("Application submitted"))
 
-        # 操作审批令牌消费成功 / 无需审批：草稿转为已生效提交
-        instance.status = ""
-        instance.save(update_fields=["status", "updated_time"])
-        return ApiResponse(detail=_("The submission has been saved"))
+            if needs_approval and not approved_replay:
+                gate = self._operation_approval_gate(request)
+                if gate is not None:
+                    return gate
+
+            # 操作审批令牌消费成功 / 无需审批：草稿转为已生效提交
+            instance.status = ""
+            instance.save(update_fields=["status", "updated_time"])
+            return ApiResponse(detail=_("The submission has been saved"))
 
     def get_queryset(self):
         queryset = super().get_queryset()

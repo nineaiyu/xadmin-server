@@ -228,3 +228,62 @@ def test_schema_validation_still_enforced_on_write():
 
     with pytest.raises(ValidationError):
         validate_schema({"fields": [{"key": "x", "label": "X", "type": "unknown"}]})
+
+
+class TestSubmitConcurrencyGuard:
+    """并发收敛：双击 / 重放不得产生重复流程实例（源状态 CAS + 行锁）。"""
+
+    def test_stale_object_cannot_create_second_instance(self, form, applicant):
+        """两个请求各自读到同一 DRAFT 行：只有第一次能推进（第二次拿到可读失败）。"""
+        submission = make_submission(form, applicant)
+        stale = DynamicFormSubmission.objects.get(pk=submission.pk)
+
+        ok, detail = create_flow_instance(submission, applicant)
+        assert ok and detail is None
+
+        ok_second, detail_second = create_flow_instance(stale, applicant)
+        assert ok_second is False
+        assert detail_second
+
+        assert ApprovalInstance.objects.filter(biz_type=DFORM_BIZ_TYPE, biz_id=str(submission.pk)).count() == 1
+        submission.refresh_from_db()
+        assert submission.status == DynamicFormSubmission.Status.PENDING
+        assert submission.instance_id is not None
+
+    def test_cas_failure_creates_no_instance(self, form, applicant):
+        """占位失败时不创建实例（无孤儿实例、无幻影通知）。"""
+        submission = make_submission(form, applicant)
+        create_flow_instance(submission, applicant)
+        before = ApprovalInstance.objects.count()
+
+        stale = DynamicFormSubmission.objects.get(pk=submission.pk)
+        stale.status = DynamicFormSubmission.Status.DRAFT  # 旧对象携带的过期源状态
+        ok, _detail = create_flow_instance(stale, applicant)
+
+        assert ok is False
+        assert ApprovalInstance.objects.count() == before
+
+    def test_flow_failure_keeps_source_status(self, form, applicant):
+        """发起失败整体回滚：CAS 一并还原，行保持可重试的源状态。"""
+        form.approval_flow.is_active = False
+        form.approval_flow.save(update_fields=["is_active", "updated_time"])
+        submission = make_submission(form, applicant)
+        ok, _detail = create_flow_instance(submission, applicant)
+        assert ok is False
+        submission.refresh_from_db()
+        assert submission.status == ""
+
+    def test_resubmit_rejects_stale_rejected_object(self, form, applicant):
+        """驳回重提同样只允许一次：并发重放第二次失败且不新增实例。"""
+        submission = make_submission(form, applicant)
+        create_flow_instance(submission, applicant)
+        sync_dform_instance(submission.instance, ApprovalInstance.Status.REJECTED, "材料不齐")
+        submission.refresh_from_db()
+
+        stale = DynamicFormSubmission.objects.get(pk=submission.pk)
+        ok, _detail = resubmit_submission(submission, applicant)
+        assert ok
+        ok_second, detail_second = resubmit_submission(stale, applicant)
+        assert ok_second is False
+        assert detail_second
+        assert ApprovalInstance.objects.filter(biz_type=DFORM_BIZ_TYPE, biz_id=str(submission.pk)).count() == 2
