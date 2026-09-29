@@ -242,3 +242,14 @@ class TestExpireAndClean:
         assert UserSession.touch(session.pk) is False  # 60s 门控窗口内不再写库
         cache.delete(f"session_touch_{session.pk}")
         assert UserSession.touch(session.pk) is True
+
+    def test_touch_gate_is_single_step(self, superuser, monkeypatch):
+        """门控必须是单步占位：get+set 之间并发请求会双双通过门控，多写一次 last_active。"""
+        session = register_user_session(None, superuser, UserLoginLog.LoginTypeChoices.USERNAME)
+
+        def _fail_get(*args, **kwargs):
+            pytest.fail("touch 门控不得使用 cache.get + cache.set 两步")
+
+        monkeypatch.setattr("django.core.cache.cache.get", _fail_get)
+        assert UserSession.touch(session.pk) is True
+        assert UserSession.touch(session.pk) is False

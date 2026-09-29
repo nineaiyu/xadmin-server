@@ -65,8 +65,8 @@ class UserSession(DbAuditModel):
         from django.core.cache import cache
 
         gate_key = f"session_touch_{session_pk}"
-        if cache.get(gate_key):
+        # 单步占位（get+set 非原子：并发请求可能同时通过门控，多写一次 last_active）
+        if not cache.add(gate_key, 1, timeout=gate_seconds):
             return False
-        cache.set(gate_key, True, timeout=gate_seconds)
         cls.objects.filter(pk=session_pk, status=cls.Status.ONLINE).update(last_active=timezone.now())
         return True
