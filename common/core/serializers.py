@@ -75,7 +75,10 @@ class BaseModelSerializer(ModelSerializer):
             return self._converge_grant_fields(set(fields) & _fields)
 
         allow_fields: list | set = []
-        # 获取权限字段，如果没有配置，则为定义的所有字段
+        # 取角色-菜单维度的字段白名单（request.fields[模型]）；**未配置 = 零字段**
+        # （fail-closed，接口输出空对象，而非"未配置即全字段"）——漏配字段权限会被
+        # 静默裁空，故审计面把「角色有权限点无字段权限」列为告警
+        # （system/utils/permission_sync/audit.py::audit_field_permissions）。
         if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = _fields

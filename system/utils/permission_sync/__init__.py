@@ -16,7 +16,7 @@
 """
 
 from .apply import apply_binding_fixes, apply_plans, grant_to_roles, plan_binding_fixes
-from .audit import audit_permission_menus
+from .audit import audit_field_permissions, audit_permission_menus
 from .constants import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
@@ -58,6 +58,7 @@ __all__ = [
     "RouteInfo",
     "apply_binding_fixes",
     "apply_plans",
+    "audit_field_permissions",
     "audit_permission_menus",
     "build_plans",
     "build_route_index",

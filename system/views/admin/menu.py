@@ -164,10 +164,12 @@ class MenuViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="permission-audit")
     def permission_audit(self, request, *args, **kwargs):
-        """菜单权限检测：只读报告代码路由与库内权限点之间的三类问题。
+        """菜单权限检测：只读报告代码路由与库内权限点之间的四类问题。
 
-        复用同步内核（``scan_gaps`` / ``audit_permission_menus``），仅报告不落库：
-        正向缺口、游离权限点（无对应路由）、重复权限码。
+        复用同步内核（``scan_gaps`` / ``audit_permission_menus`` /
+        ``audit_field_permissions``），仅报告不落库：正向缺口、游离权限点（无对应路由）、
+        重复权限码，以及「角色已获模型权限点但未配置字段权限」（该组合下接口输出空对象，
+        见 audit 内核注释）。
         """
         routes = sync.build_route_index()
         # select_related 一次性取回父菜单，供游离/重复项直接读 name，避免 N+1
@@ -180,21 +182,42 @@ class MenuViewSet(
         missing = self._serialize_gap_items(gaps, routes, perms)
         orphan = self._serialize_perm_items(unmatched, "orphan", "verify")
         duplicate = self._serialize_perm_items(duplicates, "duplicate", "merge")
+        field_unconfigured = self._serialize_field_audit_items(sync.audit_field_permissions())
         return ApiResponse(
             data={
                 "summary": {
                     "missing": len(missing),
                     "orphan": len(orphan),
                     "duplicate": len(duplicate),
-                    "total": len(missing) + len(orphan) + len(duplicate),
+                    "field_unconfigured": len(field_unconfigured),
+                    "total": len(missing) + len(orphan) + len(duplicate) + len(field_unconfigured),
                     "routes": len(routes),
                     "permissions": len(perms),
                 },
                 "missing": missing,
                 "orphan": orphan,
                 "duplicate": duplicate,
+                "field_unconfigured": field_unconfigured,
             }
         )
+
+    @staticmethod
+    def _serialize_field_audit_items(items):
+        """角色字段权限缺口条目：多一列 role（同一权限点可能多个角色未配置）。"""
+        return [
+            {
+                "problem": "field_unconfigured",
+                "code": menu.name,
+                "method": (menu.method or "").upper(),
+                "path": menu.path,
+                "menu": menu.parent.name if menu.parent_id else "",
+                "role": role.name,
+                "pk": str(menu.pk),
+                "view": "",
+                "suggestion": "configure",
+            }
+            for role, menu in items
+        ]
 
     def _build_permission_items(self, instance, permissions, skip_existing):
         """构造待写入的权限点（只读，不落库）。

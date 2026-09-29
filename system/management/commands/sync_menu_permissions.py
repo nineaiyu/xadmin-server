@@ -115,6 +115,19 @@ class Command(BaseCommand):
         for perm in duplicates[:DETAIL_LIMIT]:
             self.stdout.write(self.style.WARNING(f"  ~ 重复权限点：{perm.name} | {perm.path} | {perm.method}"))
 
+        field_gaps = sync.audit_field_permissions()
+        if field_gaps:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"[字段权限] {len(field_gaps)} 个（角色, 权限点）组合未配置字段权限："
+                    "这些角色在该接口上输出空对象（零字段 fail-closed，去角色页配置字段白名单）"
+                )
+            )
+            for role, menu in field_gaps[:DETAIL_LIMIT]:
+                self.stdout.write(
+                    self.style.WARNING(f"  ~ {role.name} | {menu.name} | {menu.method or '-'} {menu.path}")
+                )
+
         if dry_run:
             return
 

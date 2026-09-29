@@ -178,15 +178,70 @@ class TestMenuPermissionAudit:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1000
         data = resp.data["data"]
-        assert {"summary", "missing", "orphan", "duplicate"} <= set(data)
+        assert {"summary", "missing", "orphan", "duplicate", "field_unconfigured"} <= set(data)
         # 库内无权限点时，代码路由全部计入正向缺口
         assert data["summary"]["missing"] == len(data["missing"]) > 0
         summary = data["summary"]
-        assert summary["total"] == summary["missing"] + summary["orphan"] + summary["duplicate"]
+        assert summary["total"] == (
+            summary["missing"] + summary["orphan"] + summary["duplicate"] + summary["field_unconfigured"]
+        )
         assert set(data["missing"][0]) == self.ITEM_KEYS
         assert data["missing"][0]["problem"] == "missing"
         # 只读：检测不得写入/改动任何菜单
         assert Menu.objects.count() == before
+
+    def test_field_permission_gap_reported(self, auth_client, menu_factory):
+        """角色已获模型权限点但未配置字段权限：列入审计（零字段 fail-closed 可见化）。"""
+        from system.models import FieldPermission, ModelLabelField, UserRole
+
+        model_root = ModelLabelField.objects.create(name="system.post", label="岗位")
+        perm = menu_factory("list:SystemPost", path="api/system/post$", method="GET")
+        perm.model.add(model_root)
+        role = UserRole.objects.create(name="字段权限缺口角色", code="field_gap_role")
+        role.menu.add(perm)
+
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        assert data["summary"]["field_unconfigured"] == len(data["field_unconfigured"]) >= 1
+        item = next(row for row in data["field_unconfigured"] if row["pk"] == str(perm.pk))
+        assert item == {
+            "problem": "field_unconfigured",
+            "code": "list:SystemPost",
+            "method": "GET",
+            "path": "api/system/post$",
+            "menu": "",
+            "role": "字段权限缺口角色",
+            "pk": str(perm.pk),
+            "view": "",
+            "suggestion": "configure",
+        }
+
+        # 空字段白名单的 FieldPermission 行同样产出空白名单 → 仍计入缺口
+        empty_row = FieldPermission.objects.create(role=role, menu=perm)
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        assert any(row["pk"] == str(perm.pk) for row in data["field_unconfigured"])
+
+        # 配好字段白名单后不再报告
+        child = ModelLabelField.objects.create(name="name", label="名称", parent=model_root)
+        empty_row.field.add(child)
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        assert all(row["pk"] != str(perm.pk) for row in data["field_unconfigured"])
+
+    def test_field_permission_gap_ignores_unbound_or_unused(self, auth_client, menu_factory):
+        """非模型权限点、未授予角色的权限点不进字段权限审计面。"""
+        from system.models import ModelLabelField, UserRole
+
+        model_root = ModelLabelField.objects.create(name="system.post2", label="岗位2")
+        unbound = menu_factory("list:SystemPost2", path="api/system/post2$", method="GET")
+        role = UserRole.objects.create(name="其他角色", code="other_role")
+        role.menu.add(unbound)  # 未绑定模型 → 不参与字段权限
+
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        assert all(row["pk"] != str(unbound.pk) for row in data["field_unconfigured"])
+
+        granted_elsewhere = menu_factory("list:SystemPost3", path="api/system/post3$", method="GET")
+        granted_elsewhere.model.add(model_root)  # 绑定模型但没有任何角色持有
+        data = auth_client.get(self.AUDIT_URL).data["data"]
+        assert all(row["pk"] != str(granted_elsewhere.pk) for row in data["field_unconfigured"])
 
     def test_missing_contains_known_route(self, auth_client):
         data = auth_client.get(self.AUDIT_URL).data["data"]
