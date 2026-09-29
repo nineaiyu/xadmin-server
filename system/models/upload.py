@@ -128,3 +128,75 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 
     def __str__(self):
         return f"{self.filename}"
+
+
+class UploadSession(DbAuditModel):
+    """分片上传会话：大文件分片/断点续传协议的会话侧记录（协议见 system/utils/upload_chunk.py）。
+
+    会话只承载「传输中」状态，不承载文件本体：分片写入存储的
+    ``upload_sessions/<pk>/part-<index>``，完成时合并并经既有上传内核
+    （``store_upload_file``）落库为 :class:`UploadFile`——安全校验（扩展名 /
+    大小 / 配额）、去重与分类全部复用同一管线，不出现第二套口径。
+
+    断点续传 = 客户端对同名同大小文件重新 init 时命中未完成会话，按已收
+    分片索引续传；过期未完成会话由 ``auto_clean_upload_sessions`` 定时清理。
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        COMPLETED = "completed", _("Completed")
+        ABORTED = "aborted", _("Aborted")
+
+    filename = models.CharField(verbose_name=_("Filename"), max_length=255)
+    # 大文件口径：整型上限（int32 ≈ 2.1GB）不够，会话侧用 bigint；最终落库仍受
+    # FILE_UPLOAD_SIZE 政策上限约束（init 期校验）
+    filesize = models.BigIntegerField(verbose_name=_("Filesize"))
+    total_chunks = models.IntegerField(verbose_name=_("Total chunks"))
+    chunk_size = models.IntegerField(verbose_name=_("Chunk size"))
+    # 客户端可选声明的内容指纹（整文件 md5）：complete 时一致性校验，为空跳过
+    md5sum = models.CharField(max_length=36, verbose_name=_("File md5sum"), blank=True, default="")
+    mime_type = models.CharField(max_length=255, verbose_name=_("Mime type"), blank=True, default="")
+    status = models.CharField(verbose_name=_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING)
+    upload = models.ForeignKey(
+        UploadFile,
+        verbose_name=_("Upload file"),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="upload_sessions",
+    )
+
+    class Meta:
+        verbose_name = _("Upload session")
+        verbose_name_plural = verbose_name
+        indexes = [
+            # 断点续传命中：同属主同名同大小的未完成会话
+            models.Index(fields=["creator", "filename", "filesize", "status"], name="idx_uploadsession_resume"),
+            # 过期清理（pending 会话 + 终态会话行）按时间扫描
+            models.Index(fields=["status", "created_time"], name="idx_uploadsession_status_created"),
+        ]
+
+    def __str__(self):
+        return f"{self.filename}({self.status})"
+
+
+class UploadSessionPart(models.Model):
+    """分片上传会话的单个已收分片（存在性 + 尺寸记录；分片本体在存储侧）。
+
+    独立行而非会话行上的 JSON 列表：并发上传不同分片互不覆盖（唯一约束兜底
+    重复传输），complete 校验「行数 = 总分片数且尺寸之和 = 文件大小」。
+    """
+
+    session = models.ForeignKey(
+        UploadSession, verbose_name=_("Upload session"), on_delete=models.CASCADE, related_name="parts"
+    )
+    index = models.IntegerField(verbose_name=_("Chunk index"))
+    size = models.IntegerField(verbose_name=_("Chunk size"))
+
+    class Meta:
+        verbose_name = _("Upload session part")
+        verbose_name_plural = verbose_name
+        constraints = [models.UniqueConstraint(fields=["session", "index"], name="uniq_uploadsession_part_index")]
+
+    def __str__(self):
+        return f"{self.session_id}#{self.index}"

@@ -149,14 +149,16 @@ def check_upload_limits(user_obj, file_objs) -> list:
     return sizes
 
 
-def store_upload_file(user_obj, file_obj, *, is_tmp: bool = True) -> tuple:
+def store_upload_file(user_obj, file_obj, *, is_tmp: bool = True, md5sum: str = "") -> tuple:
     """单文件落库：md5 前置计算 → 同属主去重（复用物理文件）→ 分类 → 写记录。
 
     返回 ``(upload, dedup_hit)``；调用方负责事务边界与 stats 缓存失效。
+    分片上传的 complete 路径已在合并期算出 md5（``md5sum`` 传入），避免整文件
+    二次全量读；缺省仍由本函数从内容求值。
     """
     filename = sanitize_filename(file_obj.name)
     # md5 在落盘前求值：命中去重时不能再写一份磁盘文件
-    md5sum = file_md5(file_obj)
+    md5sum = md5sum or file_md5(file_obj)
     # 自动分类：按 MIME/扩展名推断，且只写字典中存在的分类值
     # （去重命中与正常落盘共用同一结果，避免两条路径分类不一致）
     category = resolve_upload_category(filename, file_obj.content_type)

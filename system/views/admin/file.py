@@ -58,6 +58,7 @@ from system.utils.upload_store import (
     store_upload_file,
 )
 from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
+from system.views.admin.file_chunk import ChunkUploadActionMixin
 
 logger = get_logger(__name__)
 
@@ -84,8 +85,10 @@ class UploadFileFilter(TagFilterMixin, BaseFilterSet):
         fields = ["filename", "category", "mime_type", "md5sum", "description", "is_upload", "is_tmp", "tag"]
 
 
-class UploadFileViewSet(FileAccessActionMixin, TaggedPrefetchMixin, RecycleBinAction, BaseModelSet):
-    """文件"""
+class UploadFileViewSet(
+    FileAccessActionMixin, ChunkUploadActionMixin, TaggedPrefetchMixin, RecycleBinAction, BaseModelSet
+):
+    """文件（含分片上传 / 断点续传：chunk/* 子动作见 file_chunk.py）"""
 
     queryset = UploadFile.objects.all()
     serializer_class = UploadFileSerializer

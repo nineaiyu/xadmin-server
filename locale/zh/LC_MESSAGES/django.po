@@ -10676,3 +10676,98 @@ msgstr "向量构建任务已提交"
 #: dataset/utils/dform_flow.py
 msgid "Fields referenced by the approval flow cannot be removed: {}"
 msgstr "以下字段已被审批流程引用，不能删除：{}"
+
+#: system/utils/upload_chunk.py
+msgid "Chunk size must be between {} and {} bytes"
+msgstr "分片大小须在 {} 到 {} 字节之间"
+
+#: system/utils/upload_chunk.py
+msgid "total_chunks does not match filesize/chunk_size (expected {})"
+msgstr "total_chunks 与 filesize/chunk_size 不一致（应为 {}）"
+
+#: system/utils/upload_chunk.py
+msgid "Too many chunks (max {})"
+msgstr "分片数量过多（上限 {}）"
+
+#: system/utils/upload_chunk.py
+msgid "Too many requests, please retry later"
+msgstr "请求过于频繁，请稍后重试"
+
+#: system/utils/upload_chunk.py
+msgid "Invalid upload plan"
+msgstr "上传计划不合法"
+
+#: system/utils/upload_chunk.py
+msgid "Invalid upload session"
+msgstr "上传会话无效"
+
+#: system/utils/upload_chunk.py
+msgid "Upload session already finished"
+msgstr "上传会话已结束"
+
+#: system/utils/upload_chunk.py
+msgid "Upload is incomplete"
+msgstr "上传未完整（分片缺失）"
+
+#: system/utils/upload_chunk.py
+msgid "Upload checksum mismatch, please retry"
+msgstr "上传校验不一致，请重试"
+
+#: system/utils/upload_chunk.py
+msgid "Chunk index out of range"
+msgstr "分片序号越界"
+
+#: system/utils/upload_chunk.py
+msgid "Chunk size mismatch"
+msgstr "分片大小不符"
+
+#: system/views/admin/file_chunk.py
+msgid "Missing session / index / file"
+msgstr "缺少 session / index / file"
+
+#: system/views/admin/file_chunk.py
+msgid "Upload session created"
+msgstr "上传会话已创建"
+
+#: system/views/admin/file_chunk.py
+msgid "Existing upload session resumed"
+msgstr "已续传既有上传会话"
+
+#: system/views/admin/file_chunk.py
+msgid "Chunk uploaded"
+msgstr "分片已上传"
+
+#: system/views/admin/file_chunk.py
+msgid "Upload session aborted"
+msgstr "上传会话已放弃"
+
+#: system/models/upload.py
+msgid "Upload session"
+msgstr "分片上传会话"
+
+#: system/models/upload.py
+msgid "Upload sessions"
+msgstr "分片上传会话"
+
+#: system/models/upload.py
+msgid "Upload session part"
+msgstr "分片上传分片"
+
+#: system/models/upload.py
+msgid "Upload session parts"
+msgstr "分片上传分片"
+
+#: system/models/upload.py
+msgid "Total chunks"
+msgstr "总分片数"
+
+#: system/models/upload.py
+msgid "Chunk size"
+msgstr "分片大小"
+#: system/models/upload.py
+msgid "Completed"
+msgstr "已完成"
+
+#: system/models/upload.py
+msgid "Aborted"
+msgstr "已放弃"

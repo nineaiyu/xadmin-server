@@ -9728,3 +9728,98 @@ msgstr ""
 msgid "Fields referenced by the approval flow cannot be removed: {}"
 msgstr ""
 
+
+#: xadmin
+msgid "Chunk size must be between {} and {} bytes"
+msgstr ""
+
+#: xadmin
+msgid "total_chunks does not match filesize/chunk_size (expected {})"
+msgstr ""
+
+#: xadmin
+msgid "Too many chunks (max {})"
+msgstr ""
+
+#: xadmin
+msgid "Too many requests, please retry later"
+msgstr ""
+
+#: xadmin
+msgid "Invalid upload plan"
+msgstr ""
+
+#: xadmin
+msgid "Invalid upload session"
+msgstr ""
+
+#: xadmin
+msgid "Upload session already finished"
+msgstr ""
+
+#: xadmin
+msgid "Upload is incomplete"
+msgstr ""
+
+#: xadmin
+msgid "Upload checksum mismatch, please retry"
+msgstr ""
+
+#: xadmin
+msgid "Chunk index out of range"
+msgstr ""
+
+#: xadmin
+msgid "Chunk size mismatch"
+msgstr ""
+
+#: xadmin
+msgid "Missing session / index / file"
+msgstr ""
+
+#: xadmin
+msgid "Upload session created"
+msgstr ""
+
+#: xadmin
+msgid "Existing upload session resumed"
+msgstr ""
+
+#: xadmin
+msgid "Chunk uploaded"
+msgstr ""
+
+#: xadmin
+msgid "Upload session aborted"
+msgstr ""
+
+#: xadmin
+msgid "Upload session"
+msgstr ""
+
+#: xadmin
+msgid "Upload sessions"
+msgstr ""
+
+#: xadmin
+msgid "Upload session part"
+msgstr ""
+
+#: xadmin
+msgid "Upload session parts"
+msgstr ""
+
+#: xadmin
+msgid "Total chunks"
+msgstr ""
+
+#: xadmin
+msgid "Chunk size"
+msgstr ""
+#: xadmin
+msgid "Completed"
+msgstr ""
+
+#: xadmin
+msgid "Aborted"
+msgstr ""

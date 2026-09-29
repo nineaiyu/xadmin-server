@@ -189,6 +189,15 @@ def auto_clean_user_session_job():
 
 
 @shared_task
+@register_as_period_task(crontab="6 3 * * *")
+def auto_clean_upload_sessions_job():
+    """清理过期分片上传会话（分片文件 + 会话行；断点续传「传到一半放弃」的兜底）。"""
+    from system.utils.upload_chunk import auto_clean_upload_sessions
+
+    return auto_clean_upload_sessions(clean_day=1)
+
+
+@shared_task
 @register_as_period_task(crontab="22 3 * * *")
 def auto_clean_pat_job():
     """清理个人访问令牌：过期超 30 天的凭证，以及停用且 30 天未更新的凭证。"""
