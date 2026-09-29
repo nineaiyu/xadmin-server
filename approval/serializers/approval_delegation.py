@@ -63,11 +63,25 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
             "remark",
         ]
 
+    def _check_delegator_ownership(self, delegator):
+        """委托归属护栏：非超管只能以自己的名义创建/维护委托。
+
+        生效委托在节点解析时会直接替换「待办归属」（引擎只判行存在，不复查是谁建的），
+        若能以他人名义建委托，等于收编他人的全部待办，属横向越权；这里 fail-closed 拒绝。
+        """
+        request = getattr(self, "request", None)
+        user = getattr(request, "user", None) if request is not None else None
+        if user is None or not getattr(user, "is_authenticated", False) or getattr(user, "is_superuser", False):
+            return
+        if delegator is not None and delegator.pk != user.pk:
+            raise serializers.ValidationError({"delegator": _("Delegations can only be created in your own name")})
+
     def validate(self, attrs):
         delegator = attrs.get("delegator") or getattr(self.instance, "delegator", None)
         delegate = attrs.get("delegate") or getattr(self.instance, "delegate", None)
         start = attrs.get("start_time") or getattr(self.instance, "start_time", None)
         end = attrs.get("end_time") or getattr(self.instance, "end_time", None)
+        self._check_delegator_ownership(delegator)
         if delegator and delegate and delegator.pk == delegate.pk:
             raise serializers.ValidationError({"delegate": _("Delegator and delegate cannot be the same person")})
         if start and end and end <= start:

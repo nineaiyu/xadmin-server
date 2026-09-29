@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-"""审批委托（审批流三期）集成测试：解析矩阵 + CRUD 与校验。"""
+"""审批委托（审批流三期）集成测试：解析矩阵 + CRUD 与校验 + 委托归属越权护栏。"""
 
 import datetime
 
 import pytest
+from django.core.cache import cache as django_cache
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from approval.models.approval import ApprovalDelegation, ApprovalFlow, ApprovalFlowNode
 from approval.utils.approval_flow import resolve_assignees
-from system.models import UserInfo
+from system.models import DataPermission, FieldPermission, Menu, MenuMeta, ModelLabelField, UserInfo, UserRole
 
 pytestmark = pytest.mark.django_db
 
@@ -170,3 +172,180 @@ class TestDelegationCrud:
             format="json",
         )
         assert resp.status_code == 400, resp.data
+
+
+class TestDelegationOwnership:
+    """委托归属越权护栏（对抗性用例）。
+
+    生效委托在节点解析时直接替换「待办归属」（引擎只判行存在、不复查建立者），
+    非超管若能以他人名义建委托即等于收编他人全部待办；取值域同理必须收敛到本人。
+
+    非超管请求同时受行级/字段级权限收敛（本项目 fail-closed）：用例显式配置
+    「全部数据 + 字段白名单」，否则断言会因权限裁剪而失去意义（恒空 / 写忽略）。
+    """
+
+    CREATE_PATH = "api/approval/approval-delegations$"
+    LIST_PATH = "api/approval/approval-delegations$"
+    DETAIL_PATH = r"api/approval/approval-delegations/(?P<pk>[^/.]+)$"
+    ALL_PATH = "api/approval/approval-delegations/all$"
+    MODEL_LABEL = "approval.approvaldelegation"
+    WRITABLE_FIELDS = ("delegator", "delegate", "start_time", "end_time", "flow_codes", "is_active", "remark")
+
+    @pytest.fixture
+    def other(self, db):
+        return UserInfo.objects.create_user(username="deleg_other", password="Test@123456")
+
+    @pytest.fixture
+    def other_agent(self, db):
+        return UserInfo.objects.create_user(username="deleg_other_agent", password="Test@123456")
+
+    @pytest.fixture
+    def grant_data_all(self, db):
+        """行级「全部数据」授权（数据权限默认拒绝：无授权时列表恒空、FK 校验失败）。"""
+
+        def _grant(user, *tables):
+            rules = [
+                {"table": table, "field": "id", "type": "value.all", "match": "all", "value": "", "exclude": False}
+                for table in tables
+            ]
+            user.rules.add(DataPermission.objects.create(name=f"全部数据-{user.username}", rules=rules))
+            django_cache.clear()
+
+        return _grant
+
+    @pytest.fixture
+    def grant_permission(self, db):
+        """把权限点（菜单）授予用户角色；fields 非空时同步配置模型字段白名单。
+
+        授权变更后清缓存（权限结果按用户+方法缓存 24h，字段权限 10s）。
+        """
+
+        def _grant(user, name, path, method="GET", fields=()):
+            role = user.roles.first()
+            if role is None:
+                role = UserRole.objects.create(name=f"角色-{user.username}", code=f"role-{user.username}")
+                user.roles.add(role)
+            menu = Menu.objects.create(
+                name=name,
+                path=path,
+                method=method,
+                menu_type=Menu.MenuChoices.PERMISSION,
+                meta=MenuMeta.objects.create(title=name),
+            )
+            role.menu.add(menu)
+            if fields:
+                root = self._ensure_label(self.MODEL_LABEL)
+                permission = FieldPermission.objects.create(role=role, menu=menu)
+                permission.field.add(*[self._ensure_label(field, root) for field in fields])
+            django_cache.clear()
+            return menu
+
+        return _grant
+
+    @staticmethod
+    def _ensure_label(name, parent=None):
+        label = ModelLabelField.objects.filter(
+            name=name, parent=parent, field_type=ModelLabelField.FieldChoices.ROLE
+        ).first()
+        if label is None:
+            label = ModelLabelField.objects.create(
+                name=name, label=name, parent=parent, field_type=ModelLabelField.FieldChoices.ROLE
+            )
+        return label
+
+    @staticmethod
+    def _client(user):
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=user)
+        return client
+
+    @staticmethod
+    def _payload(delegator, delegate):
+        now = timezone.now()
+        return {
+            "delegator": str(delegator.pk),
+            "delegate": str(delegate.pk),
+            "start_time": (now - datetime.timedelta(minutes=5)).isoformat(),
+            "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+        }
+
+    def test_create_for_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
+        """以他人名义建委托：拒绝且不落行（否则收编他人待办）。"""
+        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_permission(
+            normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
+        )
+        resp = self._client(normal_user).post(DELEGATIONS_URL, self._payload(other, agent), format="json")
+        assert resp.status_code == 400, resp.data
+        assert not ApprovalDelegation.objects.filter(delegator=other).exists()
+
+    def test_create_in_own_name_allowed(self, normal_user, agent, grant_permission, grant_data_all):
+        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_permission(
+            normal_user, "create:SystemApprovalDelegation", self.CREATE_PATH, method="POST", fields=self.WRITABLE_FIELDS
+        )
+        resp = self._client(normal_user).post(DELEGATIONS_URL, self._payload(normal_user, agent), format="json")
+        assert resp.data["code"] == 1000, resp.data
+        assert ApprovalDelegation.objects.filter(delegator=normal_user, delegate=agent).exists()
+
+    def test_list_scoped_to_own(self, normal_user, other, agent, other_agent, grant_permission, grant_data_all):
+        """列表只含本人作为委托人的记录（他人委托记录不可见）。"""
+        grant_data_all(normal_user, self.MODEL_LABEL)
+        grant_permission(normal_user, "list:SystemApprovalDelegation", self.LIST_PATH, method="GET")
+        make_delegation(normal_user, agent)
+        make_delegation(other, other_agent)
+        resp = self._client(normal_user).get(DELEGATIONS_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.json()["data"]["total"] == 1
+
+    def test_management_permission_sees_all(
+        self, normal_user, other, agent, other_agent, grant_permission, grant_data_all
+    ):
+        """「查看全部委托记录」授权后可见全部（管理视角权限点）。"""
+        grant_data_all(normal_user, self.MODEL_LABEL)
+        grant_permission(normal_user, "list:SystemApprovalDelegation", self.LIST_PATH, method="GET")
+        grant_permission(normal_user, "all:ApprovalDelegation", self.ALL_PATH, method="GET")
+        make_delegation(normal_user, agent)
+        make_delegation(other, other_agent)
+        resp = self._client(normal_user).get(DELEGATIONS_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.json()["data"]["total"] == 2
+
+    def test_superuser_sees_all(self, superuser, other, other_agent):
+        make_delegation(other, other_agent)
+        resp = self._client(superuser).get(DELEGATIONS_URL)
+        assert resp.status_code == 200, resp.data
+        assert resp.json()["data"]["total"] == 1
+
+    def test_detail_and_destroy_of_others_hidden(
+        self, normal_user, other, other_agent, grant_permission, grant_data_all
+    ):
+        """他人记录的详情/删除按不可见处理，且不产生副作用。"""
+        grant_data_all(normal_user, self.MODEL_LABEL)
+        grant_permission(normal_user, "retrieve:SystemApprovalDelegation", self.DETAIL_PATH, method="GET")
+        grant_permission(normal_user, "destroy:SystemApprovalDelegation", self.DETAIL_PATH, method="DELETE")
+        row = make_delegation(other, other_agent)
+        client = self._client(normal_user)
+        detail = client.get(f"{DELEGATIONS_URL}/{row.pk}")
+        assert detail.status_code in (400, 404), detail.data
+        deleted = client.delete(f"{DELEGATIONS_URL}/{row.pk}")
+        assert deleted.status_code in (400, 404), deleted.data
+        assert ApprovalDelegation.objects.filter(pk=row.pk).exists()
+
+    def test_update_delegator_to_others_rejected(self, normal_user, other, agent, grant_permission, grant_data_all):
+        """改委托人也走同一护栏：本人记录不能改成以他人名义。"""
+        grant_data_all(normal_user, "system.userinfo", self.MODEL_LABEL)
+        grant_permission(
+            normal_user,
+            "partialUpdate:SystemApprovalDelegation",
+            self.DETAIL_PATH,
+            method="PATCH",
+            fields=self.WRITABLE_FIELDS,
+        )
+        row = make_delegation(normal_user, agent)
+        resp = self._client(normal_user).patch(
+            f"{DELEGATIONS_URL}/{row.pk}", {"delegator": str(other.pk)}, format="json"
+        )
+        assert resp.status_code == 400, resp.data
+        row.refresh_from_db()
+        assert row.delegator_id == normal_user.pk

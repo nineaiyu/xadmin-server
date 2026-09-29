@@ -25,7 +25,8 @@ PARENT_MENU_MAP = {
 # - api/ai/mcp：MCP 端点是无 actions 的 APIView，审计按 route.actions 过滤方法时
 #   恒不匹配；运行期由 IsAuthenticated 权限链按 path 正则命中权限点（非超管未授权即 403）；
 # - api/approval/approval-instances/ongoing：页签级权限点（scope=ongoing 管理视角，无独立端点），
-#   经 common/core/permission.user_has_permission 按 path 授权，属设计内的功能开关权限点。
+#   经 common/core/permission.user_has_permission 按 path 授权，属设计内的功能开关权限点；
+# - api/approval/approval-delegations/all：同款功能开关权限点（列表取值域「查看全部委托记录」）。
 AUDIT_SKIP_PREFIXES = (
     "api/chat/",
     "api-docs/",
@@ -33,6 +34,7 @@ AUDIT_SKIP_PREFIXES = (
     "api/system/global-search",
     "api/ai/mcp",
     "api/approval/approval-instances/ongoing",
+    "api/approval/approval-delegations/all",
 )
 # 已知「同端点双权限码」重复点：各自服务不同 UI 入口/动作（非脏数据，不报告、不合并）：
 # - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
