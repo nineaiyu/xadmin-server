@@ -198,8 +198,7 @@ def test_all_and_clean_roundtrip(admin, menus, field_trees, builtin_flows, demo_
     assert MessageContent.objects.filter(title__startswith="演示：").count() == 2
     assert UserInfo.objects.filter(username="demo_flow_lily").exists()
 
-    # 演示账号必须可登录：演示在途单需要本人处理/撤回（不可登录账号会让演示单永久卡死，
-    # 并因「在途实例存在时流程节点不可编辑」把演示流程一并锁死）
+    # 演示账号必须可登录：演示在途单需要本人处理/撤回（不可登录账号会让演示单永久卡死）
     lily = UserInfo.objects.get(username="demo_flow_lily")
     chen = UserInfo.objects.get(username="demo_flow_chen")
     assert lily.has_usable_password()
@@ -223,10 +222,14 @@ def test_all_and_clean_roundtrip(admin, menus, field_trees, builtin_flows, demo_
     assert DeptInfo.objects.filter(code__in=["demo_rd", "demo_fin"]).count() == 0
     assert AiKnowledgeDocument.objects.filter(path__startswith="upload/演示-").count() == 0
 
-    # 回滚：流程节点审批人恢复种子值、演示版本快照清空、版本号回落
-    node.refresh_from_db()
-    assert node.assignee_value == "xadmin,isummer"
+    # 回滚：定义还原成种子形态——种子行复活（审批人恢复种子值）、演示落的新行退役、
+    # 演示版本快照清空、版本号回落
     assert ApprovalFlowVersion.objects.filter(remark="演示审批人配置").count() == 0
+    assert ApprovalFlowVersion.objects.filter(remark="场景模板").count() == 0
+    assert ApprovalFlowNode.all_objects.filter(pk=node.pk, version_to__isnull=True).exists() is False
+    restored_node = ApprovalFlowNode.objects.filter(flow__code="demo_leave").order_by("order").first()
+    assert restored_node is not None
+    assert restored_node.assignee_value == "xadmin,isummer"
     flow = ApprovalFlow.objects.get(code="demo_leave")
     assert flow.version == 1
 

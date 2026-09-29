@@ -110,6 +110,15 @@ def _enter_node(instance, node) -> bool:
     return bool(tasks)
 
 
+def _instance_version(instance):
+    """实例钉住的定义版本：推进按该版本取节点集；空/0 回退当前生效定义。
+
+    改造前的老实例理论上都有 flow_version（发起时写入），这里兜底手工造的历史行。
+    """
+    version = getattr(instance, "flow_version", None)
+    return version if version and version > 0 else None
+
+
 def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id="", cc_users=None):
     """发起申请：校验表单与全部可达节点候选，建实例并进入首节点。
 
@@ -126,10 +135,16 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     事务边界：发起链路整体在一个事务内（校验失败提前返回，不产生写入），中途异常
     整体回滚——不会留下「PENDING 但无任何节点任务」的卡死单；业务接入方无需自行
     包事务（嵌套 atomic 即 savepoint，无害）。
+
+    版本化：流程行加锁后再模拟路径，保证「路径所求的节点集」与「实例钉住的
+    flow_version」一致（与并发改版串行化）；实例按钉住版本推进，改版不影响在途单。
     """
-    ApprovalInstance = _models().Instance
+    ApprovalFlow, ApprovalInstance = _models().Flow, _models().Instance
 
     with transaction.atomic():
+        flow = ApprovalFlow.objects.select_for_update().filter(pk=flow.pk).first()
+        if flow is None:
+            return None, str(_("The flow does not exist"))
         if not flow.is_active:
             return None, str(_("The flow is disabled"))
         error = validate_form(flow, form_data)
@@ -267,7 +282,9 @@ def _advance(instance, node):
     ApprovalInstance = _models().Instance
 
     while True:
-        following = next_node(instance.flow, node.order, instance.form_data, node=node)
+        following = next_node(
+            instance.flow, node.order, instance.form_data, node=node, version=_instance_version(instance)
+        )
         if following is None:
             # 终态通过：当前节点任务已由本次动作处理完毕（含或签/比例会签的作废，
             # 失效集在调用点给出），实例到达终态后不存在遗留 PENDING 任务——
@@ -318,7 +335,7 @@ def approve_task(task_pk, user, comment: str = ""):
         if task.node_id and instance.current_node_id != task.node_id:
             return False, str(_("The task is not in the current node"))
         if task.node is None:
-            # 节点被删除（有 PENDING 实例的流程禁止改动节点，理论不可达；fail-closed 兜底）
+            # 节点行缺失（改版只收口不删除，理论不可达；沿用 fail-closed 兜底历史数据）
             return False, str(_("The node has been removed, please contact the administrator"))
 
         now = timezone.now()
@@ -425,8 +442,8 @@ def _reject_task_locked(task_pk, user, reason: str):
 def cancel_instance(instance, user):
     """撤回：申请人本人或超管、仅 PENDING；待办作废并通知当前节点审批人。返回 (ok, detail)。
 
-    超管放行用于运营清障：演示/离职账号发起的在途单若无人可撤回，会永久阻塞
-    该流程的节点编辑（在途实例存在时流程定义不可改动）。
+    超管放行用于运营清障：演示/离职账号发起的在途单若无人可撤回，可请管理员代为
+    撤回终止（流程改版自绑定版本起不再受在途单阻塞，此处只为尽早收敛脏单）。
     """
     with transaction.atomic():
         return _cancel_instance_locked(instance, user)

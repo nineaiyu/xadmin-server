@@ -2,23 +2,23 @@
 # -*- coding:utf-8 -*-
 """全量审批流引擎一期序列化器。
 
-- ApprovalFlowSerializer：流程定义 + 节点列表嵌套写入（nodes 整体替换式更新）；
-  有 PENDING 实例的流程禁止改动节点（避免在途实例指向被删节点）。
+- ApprovalFlowSerializer：流程定义 + 节点列表嵌套写入（nodes 整体替换式更新）。
+  改版走版本化路径（收口当前生效行 + 新版本落行，见 docs/adr/ADR-073-in-flight-
+  flow-versioning.md）：有 PENDING 实例时同样允许改节点/回滚——在途实例按自身
+  ``flow_version`` 过滤节点集，定义变更只影响之后发起的新单。
 - ApprovalInstanceSerializer：实例只读展示 + 发起申请写入（flow/title/form_data）；
   列表附带 my_task（当前用户在当前节点的待办任务），供待办面板直接发起审批动作。
 - ApprovalNodeTaskSerializer：节点任务（审批轨迹）。
 """
 
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from approval.models.approval import (
     ApprovalFlow,
     ApprovalFlowNode,
-    ApprovalFlowVersion,
-    ApprovalInstance,
 )
 from approval.serializers.approval_instance import (  # noqa: F401 实例/任务序列化器拆出后保持既有导入面
     ApprovalInstanceExportSerializer,
@@ -26,6 +26,7 @@ from approval.serializers.approval_instance import (  # noqa: F401 实例/任务
     ApprovalNodeTaskSerializer,
 )
 from approval.utils.approval_flow import CONDITION_OPS
+from approval.utils.approval_flow.versioning import apply_definition, build_snapshot
 from common.core.serializers import BaseModelSerializer
 from system.services import DisplayRelatedField
 
@@ -34,19 +35,6 @@ FORM_FIELD_TYPES = ("text", "textarea", "number", "date", "select")
 
 def _username(value):
     return getattr(value, "username", str(value))
-
-
-def _normalize_cc_users(value, limit=20):
-    """抄送人（用户 pk 列表）标准化：去空 / 去重 / 限长。"""
-    if not value:
-        return []
-    items = value if isinstance(value, (list, tuple)) else [value]
-    result = []
-    for item in items:
-        text = str(item or "").strip()
-        if text and text not in result:
-            result.append(text)
-    return result[:limit]
 
 
 class ApprovalFlowNodeSerializer(BaseModelSerializer):
@@ -76,8 +64,9 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     node_count = serializers.SerializerMethodField(label=_("Node count"))
 
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
-    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT
-    relation_count_fields = {"node_count": Count("nodes")}
+    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT。
+    # filter 限定当前生效行：历史版本节点不计入「节点数」展示。
+    relation_count_fields = {"node_count": Count("nodes", filter=Q(nodes__version_to__isnull=True))}
 
     class Meta:
         model = ApprovalFlow
@@ -229,29 +218,23 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         for order in edges:
             _visit(order)
 
-    def _assert_nodes_mutable(self, instance):
-        if instance.instances.filter(status=ApprovalInstance.Status.PENDING).exists():
-            raise serializers.ValidationError(_("The flow has pending applications, nodes cannot be changed"))
-
     @transaction.atomic
     def create(self, validated_data):
         nodes = validated_data.pop("nodes", [])
         flow = super().create(validated_data)
-        self._replace_nodes(flow, nodes)
-        self._snapshot_version(flow, nodes, remark=_("Initial version"))
+        apply_definition(flow, nodes, remark=_("Initial version"))
         return flow
 
     @transaction.atomic
     def update(self, instance, validated_data):
         nodes = validated_data.pop("nodes", None)
-        flow = super().update(instance, validated_data)
-        if nodes is not None:
-            self._assert_nodes_mutable(flow)
-            flow.nodes.all().delete()
-            self._replace_nodes(flow, nodes)
-        # 定义（节点或表单）有实质变化才落版本快照（改 name 等元数据不算）
+        # 行锁：并发改版时「版本号分配 + 旧行收口 + 新行落库」串行化
+        # （版本快照的 (flow, version) 唯一约束仍作二层兜底）
+        flow = ApprovalFlow.objects.select_for_update().get(pk=instance.pk)
+        flow = super().update(flow, validated_data)
+        # 定义（节点或表单）有实质变化才落新版本；无变化时节点行保持原样（主键不变）
         if nodes is not None and self._definition_changed(flow, nodes):
-            self._snapshot_version(flow, nodes, remark=_("Nodes updated"))
+            apply_definition(flow, nodes, remark=_("Nodes updated"))
         return flow
 
     def _definition_changed(self, flow, nodes) -> bool:
@@ -259,75 +242,28 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         latest = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
         if latest is None:
             return True
-        current = self._build_snapshot(flow, nodes)
         import json
 
         return json.dumps(latest, sort_keys=True, ensure_ascii=False) != json.dumps(
-            current, sort_keys=True, ensure_ascii=False
-        )
-
-    def _build_snapshot(self, flow, nodes) -> dict:
-        return {
-            "name": flow.name,
-            "code": flow.code,
-            "is_active": flow.is_active,
-            "form_schema": flow.form_schema or [],
-            "nodes": [
-                {
-                    "name": (node.get("name") or "").strip()[:64],
-                    "order": int(node.get("order") or index + 1),
-                    "approve_type": node.get("approve_type") or ApprovalFlowNode.ApproveType.OR,
-                    "approve_ratio": int(node.get("approve_ratio") or 100),
-                    "assignee_type": node.get("assignee_type") or ApprovalFlowNode.AssigneeType.ROLE,
-                    "assignee_value": (node.get("assignee_value") or "").strip()[:255],
-                    "condition": node.get("condition") or {},
-                    "routes": node.get("routes") or [],
-                    "layout": node.get("layout") or {},
-                    "timeout_hours": int(node.get("timeout_hours") or 0),
-                    "cc_users": _normalize_cc_users(node.get("cc_users")),
-                }
-                for index, node in enumerate(nodes or [])
-            ],
-        }
-
-    def _snapshot_version(self, flow, nodes, remark):
-        """版本号 +1 并落全量快照。"""
-        flow.version = (flow.version or 0) + 1
-        flow.save(update_fields=["version", "updated_time"])
-        ApprovalFlowVersion.objects.create(
-            flow=flow, version=flow.version, snapshot=self._build_snapshot(flow, nodes or []), remark=str(remark)
+            build_snapshot(flow, nodes), sort_keys=True, ensure_ascii=False
         )
 
     def rollback_to_version(self, flow, version: int, remark=""):
-        """回滚到历史版本：快照写入活定义（节点/表单）并落新版本。返回 (ok, detail)。"""
+        """回滚到历史版本：快照写入活定义（节点/表单）并落新版本。返回 (ok, detail)。
+
+        与改节点同口径：在途实例按自身 ``flow_version`` 推进，回滚只影响之后发起的新单，
+        因此不再受 PENDING 实例限制。
+        """
         snapshot = flow.versions.filter(version=version).values_list("snapshot", flat=True).first()
         if snapshot is None:
             return False, str(_("The flow version does not exist"))
-        try:
-            self._assert_nodes_mutable(flow)
-        except serializers.ValidationError as exc:
-            return False, str(exc.detail[0] if isinstance(exc.detail, list) else exc.detail)
-        nodes = snapshot.get("nodes") or []
-        flow.form_schema = snapshot.get("form_schema") or []
-        flow.save(update_fields=["form_schema", "updated_time"])
-        flow.nodes.all().delete()
-        self._replace_nodes(flow, nodes)
-        self._snapshot_version(flow, nodes, remark=remark or str(_("Rollback from version {}").format(version)))
-        return True, None
-
-    def _replace_nodes(self, flow, nodes):
-        for index, node in enumerate(nodes or []):
-            ApprovalFlowNode.objects.create(
-                flow=flow,
-                name=(node.get("name") or "").strip()[:64],
-                order=int(node.get("order") or index + 1),
-                approve_type=node.get("approve_type") or ApprovalFlowNode.ApproveType.OR,
-                approve_ratio=int(node.get("approve_ratio") or 100),
-                assignee_type=node.get("assignee_type") or ApprovalFlowNode.AssigneeType.ROLE,
-                assignee_value=(node.get("assignee_value") or "").strip()[:255],
-                condition=node.get("condition") or {},
-                routes=node.get("routes") or [],
-                layout=node.get("layout") or {},
-                timeout_hours=int(node.get("timeout_hours") or 0),
-                cc_users=_normalize_cc_users(node.get("cc_users")),
+        with transaction.atomic():
+            flow = ApprovalFlow.objects.select_for_update().get(pk=flow.pk)
+            flow.form_schema = snapshot.get("form_schema") or []
+            flow.save(update_fields=["form_schema", "updated_time"])
+            apply_definition(
+                flow,
+                snapshot.get("nodes") or [],
+                remark=remark or str(_("Rollback from version {}").format(version)),
             )
+        return True, None

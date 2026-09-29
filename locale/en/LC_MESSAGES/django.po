@@ -5621,8 +5621,8 @@ msgstr ""
 msgid "Branch routes contain a loop"
 msgstr ""
 
-#: system/serializers/approval_flow.py:234
-msgid "The flow has pending applications, nodes cannot be changed"
+#: approval/utils/approval_flow/engine.py:147
+msgid "The flow does not exist"
 msgstr ""
 
 #: system/serializers/approval_flow.py:241

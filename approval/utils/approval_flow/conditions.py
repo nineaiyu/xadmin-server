@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
 
-from .constants import _delegations, _users
+from .constants import _delegations, _models, _users
 
 logger = get_logger(__name__)
 
@@ -161,24 +161,43 @@ def _expand_delegations(users, node, applicant) -> list:
     return list(expanded.values())
 
 
-def matching_nodes(flow, form_data) -> list:
+def nodes_effective_at(flow, version=None):
+    """节点定义查询面：实例钉住版本时取该版本生效行；``None`` → 当前生效定义。
+
+    历史行只在 ``all_objects`` 中（默认管理器只暴露当前生效行，见 ADR-073）；
+    version 为空/0（历史脏数据）回退当前定义，与绑版本改造前行为一致。
+    """
+    if version and version > 0:
+        return _models().Node.all_objects.filter(flow=flow).effective_at(version)
+    return flow.nodes.all()
+
+
+def matching_nodes(flow, form_data, version=None) -> list:
     """按 order 升序返回条件命中的节点（发起时用于校验 + 取首节点）。"""
-    return [node for node in flow.nodes.all().order_by("order") if eval_condition(node.condition, form_data)]
+    return [
+        node
+        for node in nodes_effective_at(flow, version).order_by("order")
+        if eval_condition(node.condition, form_data)
+    ]
 
 
-def next_node(flow, after_order, form_data, node=None):
+def next_node(flow, after_order, form_data, node=None, version=None):
     """当前节点的下一节点；返回 None = 流程结束。
 
     二期路由优先：node.routes 逐条求值，首个命中跳转 target
     （排他网关）；全部未命中或无 routes 时回退一期线性语义（order 之后首个
     条件命中节点）。target 无效（节点已不存在）记日志后同样回退线性。
+
+    版本化推进：``version`` 为实例钉住的 flow_version（在途单按旧定义走完，
+    不受改版影响）；缺省 None = 当前生效定义。
     """
+    nodes = nodes_effective_at(flow, version)
     if node is not None:
         for route in node.routes or []:
             if not eval_condition(route.get("condition"), form_data):
                 continue
             target_order = route.get("target")
-            target = flow.nodes.filter(order=target_order).first()
+            target = nodes.filter(order=target_order).first()
             if target is not None:
                 return target
             logger.warning(
@@ -187,27 +206,27 @@ def next_node(flow, after_order, form_data, node=None):
                 node.pk,
                 target_order,
             )
-    for following in flow.nodes.filter(order__gt=after_order).order_by("order"):
+    for following in nodes.filter(order__gt=after_order).order_by("order"):
         if eval_condition(following.condition, form_data):
             return following
     return None
 
 
-def simulate_path(flow, form_data, node=None) -> list | None:
+def simulate_path(flow, form_data, node=None, version=None) -> list | None:
     """按 form_data 模拟推进，返回途经节点序列（发起预校验 + 步数兜底）。
 
     排他网关在给定 form_data 下出口唯一，路径确定；步数上限 = 节点数 + 1，
     超限视为路由成环（fail-closed：发起报错，环配置在保存时已被校验拦截，
-    此处兜底历史数据）。
+    此处兜底历史数据）。``version`` 语义同 next_node。
     """
-    nodes = matching_nodes(flow, form_data)
+    nodes = matching_nodes(flow, form_data, version)
     if not nodes:
         return []
-    limit = flow.nodes.count() + 1
+    limit = nodes_effective_at(flow, version).count() + 1
     path = [nodes[0]]
     current = nodes[0]
     while len(path) <= limit:
-        following = next_node(flow, current.order, form_data, node=current)
+        following = next_node(flow, current.order, form_data, node=current, version=version)
         if following is None:
             break
         path.append(following)

@@ -27,12 +27,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from approval.models import (
-    ApprovalFlowVersion,
     ApprovalInstance,
     ApprovalNodeTask,
     ApprovalRequest,
 )
 from approval.utils.approval_flow import approve_task, create_instance, reject_task
+from approval.utils.approval_flow.versioning import apply_definition
 from system.services import DeptInfo, UserInfo
 
 # 内置示例流程 code（loadjson/approvalflow.json）
@@ -108,33 +108,13 @@ class Command(BaseCommand):
 
     # ---------------------------------------------------------------- 流程定义改写
 
-    @staticmethod
-    def _snapshot(flow) -> dict:
-        """与 ApprovalFlowSerializer._build_snapshot 同形态的当前定义快照。"""
-        return {
-            "name": flow.name,
-            "code": flow.code,
-            "is_active": flow.is_active,
-            "form_schema": flow.form_schema or [],
-            "nodes": [
-                {
-                    "name": node.name,
-                    "order": node.order,
-                    "approve_type": node.approve_type,
-                    "approve_ratio": node.approve_ratio,
-                    "assignee_type": node.assignee_type,
-                    "assignee_value": node.assignee_value,
-                    "condition": node.condition or {},
-                    "routes": node.routes or [],
-                    "layout": node.layout or {},
-                    "timeout_hours": node.timeout_hours,
-                }
-                for node in flow.nodes.order_by("order")
-            ],
-        }
-
     def _rebind_assignees(self):
-        """把内置流程节点审批人改写为演示用户并落新版本快照（幂等：值相同不落版）。"""
+        """把内置流程节点审批人改写为演示用户并落新版本快照（幂等：值相同不落版）。
+
+        走版本化路径（生效行收口 + 新版本落行）：在途单按自身钉住的版本仍读旧行，
+        不会被演示重绑改写；``snapshot_upsert`` 兼容重灌种子场景（loaddata 会把
+        ``flow.version`` 重置回种子值，同一版本号可能已有快照）。
+        """
         from approval.models import ApprovalFlow, ApprovalFlowNode
 
         for flow in ApprovalFlow.objects.filter(code__in=FLOW_CODES):
@@ -143,19 +123,25 @@ class Command(BaseCommand):
                 continue
             if all(node.assignee_value == DEMO_ASSIGNEE_VALUE for node in targets):
                 continue
-            for node in targets:
-                node.assignee_value = DEMO_ASSIGNEE_VALUE
-                node.save(update_fields=["assignee_value", "updated_time"])
-            flow.version = (flow.version or 0) + 1
-            flow.save(update_fields=["version", "updated_time"])
-            # 幂等：loaddata 会把 flow.version/nodes 重置回种子值，重绑后同一版本号
-            # 可能已有快照（重灌种子场景），就地刷新而不是重复建行。
-            ApprovalFlowVersion.objects.update_or_create(
-                flow=flow,
-                version=flow.version,
-                defaults={"snapshot": self._snapshot(flow), "remark": "演示审批人配置"},
-            )
-            self.stdout.write(f"rebind assignees: {flow.code} -> v{flow.version}")
+            target_pks = {node.pk for node in targets}
+            specs = [
+                {
+                    "name": node.name,
+                    "order": node.order,
+                    "approve_type": node.approve_type,
+                    "approve_ratio": node.approve_ratio,
+                    "assignee_type": node.assignee_type,
+                    "assignee_value": DEMO_ASSIGNEE_VALUE if node.pk in target_pks else node.assignee_value,
+                    "condition": node.condition or {},
+                    "routes": node.routes or [],
+                    "layout": node.layout or {},
+                    "timeout_hours": node.timeout_hours,
+                    "cc_users": node.cc_users or [],
+                }
+                for node in flow.nodes.order_by("order")
+            ]
+            new_version = apply_definition(flow, specs, remark="演示审批人配置", snapshot_upsert=True)
+            self.stdout.write(f"rebind assignees: {flow.code} -> v{new_version}")
 
     # ---------------------------------------------------------------- 流程实例（真实引擎推进）
 

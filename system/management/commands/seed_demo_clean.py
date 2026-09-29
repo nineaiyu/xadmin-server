@@ -34,13 +34,17 @@ from django.conf import settings
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db.models import ProtectedError
+from django.utils import timezone
 
+from system.management.commands.seed_demo_org import TEMPLATE_VERSION_REMARK
 from system.models import DeptInfo, UserInfo
 
 DEMO_USER_PREFIX = "demo_"
 DEMO_ASSIGNEE_MARK = "demo_flow_"
 DEMO_DEPT_CODE = "demo"
 DEMO_VERSION_REMARK = "演示审批人配置"
+#: 演示命令落下的版本快照备注（回滚时一并删除）
+DEMO_VERSION_REMARKS = (DEMO_VERSION_REMARK, TEMPLATE_VERSION_REMARK)
 # 内置种子文件（回滚依据：与 load_init_json 同一来源，保证口径一致）
 NODE_SEED_FILE = "approvalflownode.json"
 FLOW_SEED_FILE = "approvalflow.json"
@@ -83,32 +87,57 @@ class Command(BaseCommand):
     # ---------------------------------------------------------------- 回滚
 
     def _restore_builtin_flow_nodes(self):
-        """恢复被演示命令改写的流程节点审批人与版本号（严格限定：当前值含 demo_flow_ 标记）。"""
+        """恢复演示命令改写的流程定义：种子行复活 + 演示落的新行退役 + 快照/版本回落。
+
+        版本化改造后改版不再物理删除节点行：演示重绑与场景模板都走「收口旧行 +
+        按新版本落新行」。卸载口径 = 把定义还原成种子文件的样子——种子行恢复
+        「自 v1 起生效」，演示落下的新行退役（对任何版本都不再生效），演示版本
+        快照删除、版本号回落到现存最新快照。审批人恢复严格限定：当前值含
+        demo_flow_ 标记才改写为种子值。
+        """
+        from django.db import transaction
+
         from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalFlowVersion
+
+        demo_versions = ApprovalFlowVersion.objects.filter(remark__in=DEMO_VERSION_REMARKS)
+        flow_ids = list(demo_versions.values_list("flow_id", flat=True).distinct())
+        removed = demo_versions.delete()[0]
+        self.stdout.write(f"removed demo flow version snapshots: {removed}")
 
         # 种子 pk 是字符串、ORM 主键是 UUID 对象：统一按字符串比对
         seed = {str(row["pk"]): row["fields"].get("assignee_value", "") for row in _load_seed(NODE_SEED_FILE)}
         restored = 0
-        for node in ApprovalFlowNode.objects.filter(pk__in=list(seed)):
-            seed_value = seed.get(str(node.pk))
-            if seed_value is None:
-                continue
-            if DEMO_ASSIGNEE_MARK in (node.assignee_value or "") and node.assignee_value != seed_value:
-                node.assignee_value = seed_value
-                node.save(update_fields=["assignee_value", "updated_time"])
-                restored += 1
-        self.stdout.write(f"restored builtin flow nodes: {restored}")
-
-        demo_versions = ApprovalFlowVersion.objects.filter(remark=DEMO_VERSION_REMARK)
-        flow_ids = list(demo_versions.values_list("flow_id", flat=True).distinct())
-        removed = demo_versions.delete()[0]
-        self.stdout.write(f"removed demo flow version snapshots: {removed}")
-        for flow in ApprovalFlow.objects.filter(pk__in=flow_ids):
-            latest = ApprovalFlowVersion.objects.filter(flow=flow).order_by("-version").first()
-            target = latest.version if latest else 1
-            if flow.version != target:
-                flow.version = target
-                flow.save(update_fields=["version", "updated_time"])
+        with transaction.atomic():
+            # 先退役演示落的新行，再复活种子行：同 order 不能在收口的瞬间并存
+            # 两个生效行（条件唯一约束），顺序反了会撞约束
+            retired = (
+                ApprovalFlowNode.all_objects.filter(flow_id__in=flow_ids)
+                .exclude(pk__in=list(seed))
+                .update(version_to=1, updated_time=timezone.now())
+            )
+            for node in ApprovalFlowNode.all_objects.filter(pk__in=list(seed), flow_id__in=flow_ids):
+                update_fields = []
+                if node.version_to is not None or node.version_from != 1:
+                    node.version_from, node.version_to = 1, None
+                    update_fields += ["version_from", "version_to"]
+                seed_value = seed.get(str(node.pk))
+                if (
+                    seed_value is not None
+                    and DEMO_ASSIGNEE_MARK in (node.assignee_value or "")
+                    and node.assignee_value != seed_value
+                ):
+                    node.assignee_value = seed_value
+                    update_fields.append("assignee_value")
+                if update_fields:
+                    node.save(update_fields=[*update_fields, "updated_time"])
+                    restored += 1
+            for flow in ApprovalFlow.objects.filter(pk__in=flow_ids):
+                latest = ApprovalFlowVersion.objects.filter(flow=flow).order_by("-version").first()
+                target = latest.version if latest else 1
+                if flow.version != target:
+                    flow.version = target
+                    flow.save(update_fields=["version", "updated_time"])
+        self.stdout.write(f"restored builtin flow nodes: {restored}; retired demo rows: {retired}")
 
     def _restore_demo_dept_leader(self):
         """恢复「演示部门」负责人为种子值（seed_demo_leave 曾改写为演示审批人）。"""

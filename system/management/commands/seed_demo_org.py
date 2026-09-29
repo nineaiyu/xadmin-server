@@ -22,6 +22,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode
+from approval.utils.approval_flow.versioning import apply_definition
 from dataset.models import DynamicForm
 from system.models import (
     DataPermission,
@@ -34,6 +35,21 @@ from system.models import (
 )
 
 DEFAULT_PASSWORD = "Demo@2026!"
+#: 场景模板落版本快照的备注（seed_demo_clean 依赖同名字面量做回滚清理）
+TEMPLATE_VERSION_REMARK = "场景模板"
+
+
+def _template_applied(flow, specs) -> bool:
+    """场景模板是否已应用（幂等判据）：按 (order, name, assignee_type, condition) 比对。
+
+    ``assignee_value`` 不参与比对：内置流程的审批人由 seed_demo_flows 重绑为演示
+    用户（写在该命令的版本快照里），参与比对会让两条命令互相回写、空转版本号。
+    """
+    current = [
+        (node.order, node.name, node.assignee_type, node.condition or {}) for node in flow.nodes.order_by("order")
+    ]
+    desired = [(int(spec["order"]), spec["name"], spec["assignee_type"], spec.get("condition") or {}) for spec in specs]
+    return current == desired
 
 
 def _builtin_flow_pks() -> set:
@@ -272,23 +288,26 @@ class Command(BaseCommand):
                 "description": "开箱模板：金额 ≥1000 时追加财务审批节点",
             },
         )
-        flow.nodes.all().delete()
-        ApprovalFlowNode.objects.create(
-            flow=flow,
-            name="部门主管审批",
-            order=1,
-            approve_type=ApprovalFlowNode.ApproveType.OR,
-            assignee_type=ApprovalFlowNode.AssigneeType.LEADER,
-        )
-        ApprovalFlowNode.objects.create(
-            flow=flow,
-            name="财务复核",
-            order=2,
-            approve_type=ApprovalFlowNode.ApproveType.OR,
-            assignee_type=ApprovalFlowNode.AssigneeType.USER,
-            assignee_value="demo_fin",
-            condition={"field": "amount", "op": "gte", "value": 1000},
-        )
+        # 节点改写走版本化路径（生效行收口 + 新版本落行）：有在途演示单时旧行保留，
+        # 在途单按自身钉住的版本推进；模板已应用则不空转版本号（幂等）。
+        expense_nodes = [
+            {
+                "name": "部门主管审批",
+                "order": 1,
+                "approve_type": ApprovalFlowNode.ApproveType.OR,
+                "assignee_type": ApprovalFlowNode.AssigneeType.LEADER,
+            },
+            {
+                "name": "财务复核",
+                "order": 2,
+                "approve_type": ApprovalFlowNode.ApproveType.OR,
+                "assignee_type": ApprovalFlowNode.AssigneeType.USER,
+                "assignee_value": "demo_fin",
+                "condition": {"field": "amount", "op": "gte", "value": 1000},
+            },
+        ]
+        if not _template_applied(flow, expense_nodes):
+            apply_definition(flow, expense_nodes, remark=TEMPLATE_VERSION_REMARK, snapshot_upsert=True)
 
         # 2) 入职登记表：绑定「入职审批流程」，演示表单与流程引擎联动
         onboarding_flow, _ = ApprovalFlow.objects.update_or_create(

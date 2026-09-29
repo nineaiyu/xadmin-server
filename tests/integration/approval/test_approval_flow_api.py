@@ -2,6 +2,7 @@
 """全量审批流引擎一期 API 集成：流程定义 CRUD + 流程审批中心主链路 + 菜单权限。"""
 
 import pytest
+from django.db.models import Q
 
 from approval.models.approval import ApprovalFlow, ApprovalFlowNode, ApprovalInstance, ApprovalNodeTask
 from system.models import Menu, UserInfo
@@ -144,11 +145,12 @@ class TestApprovalFlowCrud:
         assert refused.status_code == 400
         assert ApprovalFlow.objects.filter(pk=flow.pk).exists()
 
-    def test_flow_update_blocked_with_pending_instance(self, auth_client, approver):
+    def test_flow_update_allowed_with_pending_instance(self, auth_client, approver):
+        """改版解锁：有 PENDING 实例时同样允许改节点（旧行收口留档，在途单不受影响）。"""
         flow = make_flow(
-            code="pending_lock", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
+            code="pending_edit", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"}]
         )
-        applicant = UserInfo.objects.create_user(username="pending_lock_user", password="Test@123456")
+        applicant = UserInfo.objects.create_user(username="pending_edit_user", password="Test@123456")
         ApprovalInstance.objects.create(flow=flow, flow_name=flow.name, title="x", creator=applicant)
         response = auth_client.patch(
             f"{FLOWS_URL}/{flow.pk}",
@@ -163,7 +165,10 @@ class TestApprovalFlowCrud:
             },
             format="json",
         )
-        assert response.status_code == 400
+        assert response.data["code"] == 1000, response.data
+        assert ApprovalFlowNode.objects.filter(flow=flow).count() == 1  # 当前生效行
+        assert ApprovalFlowNode.all_objects.filter(flow=flow).count() == 2  # 旧行收口留档
+        assert response.data["data"]["nodes"][0]["name"] == "改节点"
 
     def test_flow_list_requires_permission(self, api_client, normal_user, role, menu_factory):
         api_client.force_authenticate(user=normal_user)
@@ -425,7 +430,7 @@ class TestApprovalInstanceApi:
         assert ApprovalNodeTask.objects.filter(instance_id=instance_pk, node_order=2).exists() is False
 
     def test_phase2_versions_and_rollback_api(self, api_client, applicant, approver, menu_factory, role):
-        """版本列表 + 回滚 API：有 PENDING 实例时回滚被拒，无在途时成功。"""
+        """版本列表 + 回滚 API：有 PENDING 实例时同样允许（在途单按自身版本走完）。"""
         grant(role, menu_factory, "list:SystemApprovalFlow", "api/approval/approval-flows$", "GET")
         grant(role, menu_factory, "add:SystemApprovalFlow", "api/approval/approval-flows$", "POST")
         grant(role, menu_factory, "change:SystemApprovalFlow", "api/approval/approval-flows$", "PUT")
@@ -460,21 +465,24 @@ class TestApprovalInstanceApi:
         versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
         assert [item["version"] for item in versions] == [2, 1]
 
-        # 有 PENDING 实例：回滚 400
+        # 有 PENDING 实例：改版解锁——回滚同样允许（节点恢复为 1 个 + 落 v3）
         created = api_client.post(INSTANCES_URL, {"flow": flow_pk, "title": "在途单", "form_data": {}}, format="json")
         assert created.data["code"] == 1000, created.data
         instance_pk = created.data["data"]["pk"]
-        blocked = api_client.post(f"{FLOWS_URL}/{flow_pk}/rollback", {"version": 1}, format="json")
-        assert blocked.data["code"] != 1000, blocked.data
-
-        # 结束在途（撤回）→ 回滚成功：节点恢复为 1 个 + 落 v3
-        api_client.post(f"{INSTANCES_URL}/{instance_pk}/cancel", {}, format="json")
         rolled = api_client.post(f"{FLOWS_URL}/{flow_pk}/rollback", {"version": 1, "remark": "恢复初始"}, format="json")
         assert rolled.data["code"] == 1000, rolled.data
         detail = api_client.get(f"{FLOWS_URL}/{flow_pk}").data["data"]
         assert len(detail["nodes"]) == 1
         versions = api_client.get(f"{FLOWS_URL}/{flow_pk}/versions").data["data"]
         assert versions[0]["version"] == 3
+
+        # 在途单仍钉住 v2：按 v2 的两节点定义推进（回滚只影响之后的单）
+        instance = ApprovalInstance.objects.get(pk=instance_pk)
+        assert instance.flow_version == 2
+        effective_v2 = ApprovalFlowNode.all_objects.filter(flow_id=flow_pk, version_from__lte=2).filter(
+            Q(version_to__isnull=True) | Q(version_to__gt=2)
+        )
+        assert effective_v2.count() == 2
 
     def test_post_assignee_lifecycle(self, applicant, auth_client, approver_client, api_client, approver):
         """post 节点全链路：API 建含岗位节点流程 → 发起解析在岗用户 → 审批通过。"""

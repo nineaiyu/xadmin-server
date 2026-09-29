@@ -57,9 +57,8 @@ def cancel_stuck_instances(timeout_minutes: int = STUCK_INSTANCE_TIMEOUT_MINUTES
 
     正常发起必然是「实例 + 首节点任务」同时落库（见 create_instance 的事务边界；
     业务接入方如请假提交也已事务化），出现无任务的 PENDING 实例说明发起链路曾中断
-    （异常 / 历史脏数据）：这类单无人可处理，且会锁住流程改版（存在在途实例时禁止
-    改动节点），必须由兜底任务收敛。终态跃迁复用 _finish_instance（CAS + Webhook +
-    业务回调 + 申请人通知，只发生一次）。
+    （异常 / 历史脏数据）：这类单无人可处理、会长期挂在在途列表，必须由兜底任务收敛。
+    终态跃迁复用 _finish_instance（CAS + Webhook + 业务回调 + 申请人通知，只发生一次）。
     """
     ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
 

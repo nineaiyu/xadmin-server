@@ -721,28 +721,38 @@ class TestRatioApprove:
 
 
 class TestFlowVersions:
-    """二期版本管理：保存落快照 / 回滚写回 / PENDING 拒绝回滚。"""
+    """版本管理：保存落快照 / 回滚写回 / 改版解锁（在途实例按自身版本推进）。"""
+
+    #: 节点审批人配置（role / flow_approver：与 make_flow 默认一致，实例可正常发起）
+    NODE_CORE = {"assignee_type": "role", "assignee_value": "flow_approver"}
 
     def _flow_with_nodes(self, code):
-        flow = make_flow(code, nodes=[{"name": "节点一", "order": 1}])
-        serializer = ApprovalFlowSerializer(instance=flow)
-        serializer._snapshot_version(flow, [{"name": "节点一", "order": 1}], remark="初始版本")
+        """经序列化器创建流程（v1 + 初始快照 + 生效节点行），与 UI 保存同口径。"""
+        serializer = ApprovalFlowSerializer()
+        flow = serializer.create(
+            {
+                "name": f"流程-{code}",
+                "code": code,
+                "nodes": [{"name": "节点一", "order": 1, **self.NODE_CORE}],
+            }
+        )
         return flow, serializer
 
     def test_rollback_writes_snapshot_back(self, applicant):
 
         flow, serializer = self._flow_with_nodes("ver_rollback")
-        # 变更定义（加节点）→ 落 v2
-        nodes_v2 = [{"name": "节点一", "order": 1}, {"name": "节点二", "order": 2}]
-        flow.nodes.all().delete()
-        serializer._replace_nodes(flow, nodes_v2)
-        serializer._snapshot_version(flow, nodes_v2, remark="加节点")
+        # 变更定义（加节点）→ v2：旧行收口 + 新版本落行（不物理删除）
+        nodes_v2 = [{"name": "节点一", "order": 1, **self.NODE_CORE}, {"name": "节点二", "order": 2, **self.NODE_CORE}]
+        flow = serializer.update(flow, {"nodes": nodes_v2})
         assert flow.versions.count() == 2
-        assert flow.nodes.count() == 2
+        assert flow.version == 2
+        assert flow.nodes.count() == 2  # 当前生效行
+        assert ApprovalFlowNode.all_objects.filter(flow=flow).count() == 3  # v1 行收口留档
 
-        # 回滚到 v1 → 活定义恢复单节点 + 落 v3（回滚也是一次变更）
+        # 回滚到 v1 → 生效定义恢复单节点 + 落 v3（回滚也是一次变更）
         ok, detail = serializer.rollback_to_version(flow, 1)
         assert ok is True
+        assert not detail
         assert flow.nodes.count() == 1
         assert flow.versions.count() == 3
         assert flow.versions.order_by("-version").first().version == 3
@@ -753,13 +763,22 @@ class TestFlowVersions:
         ok, _detail = serializer.rollback_to_version(flow, 99)
         assert ok is False
 
-    def test_rollback_blocked_with_pending_instance(self, applicant, approver):
+    def test_rollback_allowed_with_pending_instance(self, applicant, approver):
+        """改版解锁：有在途实例时回滚允许；在途单按自身版本走完，不受回滚影响。"""
 
         flow, serializer = self._flow_with_nodes("ver_pending")
-        create_instance(flow=flow, applicant=applicant, title="在途", form_data={})
+        instance, error = create_instance(flow=flow, applicant=applicant, title="在途", form_data={})
+        assert error is None
         ok, detail = serializer.rollback_to_version(flow, 1)
-        assert ok is False
-        assert detail  # 返回可读错误（zh: 该流程存在待审批申请，节点不可修改）
+        assert ok is True
+        assert not detail
+
+        # 旧单仍可完成（v1 只有首节点，通过即终态）
+        task = instance.tasks.get(status=ApprovalNodeTask.Status.PENDING)
+        ok, _detail = approve_task(task.pk, approver)
+        assert ok is True
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
 
     def test_create_instance_records_flow_version(self, applicant, approver):
         flow, _serializer = self._flow_with_nodes("ver_record")

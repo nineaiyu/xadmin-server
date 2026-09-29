@@ -139,6 +139,34 @@ class ApprovalFlow(DbAuditModel):
         return f"{self.name}({self.code})"
 
 
+class ApprovalFlowNodeQuerySet(models.QuerySet):
+    """节点查询集：按版本有效区间取「定义事实」。
+
+    有效区间语义：``version_from <= V AND (version_to IS NULL OR version_to > V)``。
+    历史行（``version_to`` 已落值）只对钉住旧版本的实例可见——改版不再物理删除节点，
+    在途单按自身 flow_version 推进（见 docs/adr/ADR-073-in-flight-flow-versioning.md）。
+    """
+
+    def effective_at(self, version=None):
+        """在指定版本生效的节点；``version=None`` → 当前生效定义（version_to 为空）。"""
+        if version is None:
+            return self.filter(version_to__isnull=True)
+        return self.filter(version_from__lte=version).filter(
+            models.Q(version_to__isnull=True) | models.Q(version_to__gt=version)
+        )
+
+
+class ApprovalFlowNodeManager(models.Manager):
+    """默认管理器：只暴露当前生效节点（历史行走 ``all_objects``）。
+
+    `flow.nodes.all()` / `prefetch_related("nodes")` / 序列化读取因此天然只见当前
+    定义（管理面不显示历史行）；版本化推进与历史查询显式走 ``all_objects``。
+    """
+
+    def get_queryset(self) -> ApprovalFlowNodeQuerySet:
+        return ApprovalFlowNodeQuerySet(self.model, using=self._db).filter(version_to__isnull=True)
+
+
 class ApprovalFlowNode(DbAuditModel):
     """流程节点：顺序由 order 决定，condition 命中才经过该节点（空 = 无条件）。
 
@@ -146,7 +174,8 @@ class ApprovalFlowNode(DbAuditModel):
     - assignee_type：role（角色 code）/ user（用户名，逗号分隔）/ leader（申请人
       所在部门 leader）/ field（表单字段 key，值为用户名或用户名列表）/ post
       （岗位 code，逗号分隔；按 UserInfo.posts 解析，不参与权限判定）；
-    - timeout_hours：>0 时超时未处理由 beat 任务提醒当前节点审批人（每任务每日一次）。
+    - timeout_hours：>0 时超时未处理由 beat 任务提醒当前节点审批人（每任务每日一次）；
+    - version_from / version_to：定义有效区间（改版 = 旧行收口 + 新版本落新行，不删行）。
     """
 
     class ApproveType(models.TextChoices):
@@ -188,6 +217,13 @@ class ApprovalFlowNode(DbAuditModel):
     timeout_hours = models.IntegerField(_("Timeout hours"), default=0)
     # 抄送人：节点级默认抄送（用户 pk 列表）；实例发起时解析为实例级 cc_users 快照
     cc_users = models.JSONField(_("CC users"), default=list, blank=True)
+    # 定义有效区间：version_from 起生效（含）、version_to 止失效（不含，NULL = 仍生效）
+    version_from = models.IntegerField(_("Effective from version"), default=1)
+    version_to = models.IntegerField(_("Effective until version"), null=True, blank=True, default=None)
+
+    # 默认管理器只返回当前生效行；版本历史/按版本推进显式走 all_objects（见类定义）
+    objects = ApprovalFlowNodeManager()
+    all_objects = ApprovalFlowNodeQuerySet.as_manager()
 
     class Meta:
         db_table = "system_approvalflownode"  # 3.1 拆分批次2：迁 approval app，表名不变
@@ -195,7 +231,12 @@ class ApprovalFlowNode(DbAuditModel):
         verbose_name = _("Approval flow node")
         verbose_name_plural = verbose_name
         constraints = [
-            models.UniqueConstraint(fields=["flow", "order"], name="uniq_approval_flow_node_order"),
+            # 条件唯一：当前生效行之间 (flow, order) 唯一；历史行与当前行可同 order 共存
+            models.UniqueConstraint(
+                fields=["flow", "order"],
+                condition=models.Q(version_to__isnull=True),
+                name="uniq_flow_node_order_active",
+            ),
         ]
 
     def __str__(self):
@@ -232,7 +273,8 @@ class ApprovalInstance(DbAuditModel):
     biz_type = models.CharField(_("Business type"), max_length=64, blank=True, default="", db_index=True)
     biz_id = models.CharField(_("Business id"), max_length=64, blank=True, default="")
     status = models.CharField(_("Status"), max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True)
-    # 发起时的流程定义版本号（纯追溯字段：推进仍读活定义）
+    # 发起时的流程定义版本号（钉住语义：推进按该版本过滤节点集，改版不影响在途单；
+    # 空值（历史脏数据）回退「当前生效定义」，与绑版本改造前一致）
     flow_version = models.IntegerField(_("Flow version"), null=True, blank=True)
     current_node = models.ForeignKey(
         "approval.ApprovalFlowNode",
@@ -348,8 +390,9 @@ class ApprovalNodeTask(DbAuditModel):
 class ApprovalFlowVersion(DbAuditModel):
     """流程定义版本快照：每次节点/表单定义变化落一条全量快照。
 
-    用途 = 变更审计追溯 + 一键回滚（回滚把历史快照写回活定义并落新版本）；
-    不做「在途实例绑版本」（推进仍读活定义，靠 PENDING 锁维持一致性）。
+    用途 = 变更审计追溯 + 一键回滚（回滚把历史快照写回活定义并落新版本）。
+    在途实例按自身 ``flow_version`` 推进（节点有效区间，见 ApprovalFlowNodeQuerySet）——
+    改版不再需要 PENDING 锁，历史快照与实例钉住的版本行互为佐证。
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -2112,9 +2112,9 @@ msgstr "分支路由不能指向自身（节点 {}）"
 msgid "Branch routes contain a loop"
 msgstr "分支路由存在环路"
 
-#: approval/serializers/approval_flow.py:234
-msgid "The flow has pending applications, nodes cannot be changed"
-msgstr "该流程存在待审批申请，节点不可修改"
+#: approval/utils/approval_flow/engine.py:147
+msgid "The flow does not exist"
+msgstr "流程不存在"
 
 #: approval/serializers/approval_flow.py:241
 msgid "Initial version"
