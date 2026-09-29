@@ -21,7 +21,7 @@ bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-o
 - 首次运行会自动构建镜像（数分钟）。
 
 ```shell
-# 方式二：本机源码启动（Python 3.13+，需自备数据库（PostgreSQL/MySQL/SQLite）与 Redis）
+# 方式二：本机源码启动（Python 3.14+，需自备数据库（PostgreSQL/MySQL/SQLite）与 Redis）
 uv sync --all-groups          # 依赖以 uv.lock 为准，见下方「依赖管理」
 #   无 uv 时：python3.13 -m venv .venv && source .venv/bin/activate
 #             && pip install -r requirements.txt -r requirements-dev.txt

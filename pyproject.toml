@@ -29,7 +29,7 @@
 name = "xadmin-server"
 version = "0.0.0"
 description = "xadmin server（依赖管理用途；发布版本见 server/const.py）"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "django==6.0.8",
     "djangorestframework==3.18.1",
@@ -128,7 +128,7 @@ dev = [
 #   - 免不了的框架误报走精确 ignore（Django Choices 元类 / simplejwt 标注 /
 #     drf-spectacular 的 build_basic_type 可能返回 None / 运行期替换第三方方法）；
 #   - CI 在 lint.yml 独立 job 跑 `uv run --no-sync mypy`，配置即口径。
-python_version = "3.13"
+python_version = "3.14"
 files = ["ai", "approval", "captcha", "common", "dataset", "demo", "message", "mfa", "notifications", "server", "settings", "system", "utils"]
 exclude = ["migrations/"]
 follow_imports = "silent"

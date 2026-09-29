@@ -43,7 +43,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Install uv
         # 版本由 pyproject.toml 的 [tool.uv].required-version 决定；缓存按 uv.lock 命中

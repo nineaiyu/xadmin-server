@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install uv
         # ruff 版本取自 uv.lock 的 dev 组，与本地一致（避免 CI 拉到更新版本引入未同步的新规则）
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Check cross-app direct imports
         run: python scripts/check_cross_app_imports.py
@@ -56,7 +56,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install uv
         # mypy 版本取自 uv.lock 的 dev 组，与本地一致（口径见 pyproject [tool.mypy]）
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Check oversized source files
         # 防巨型文件回潮：>500 行新增即失败；存量基线只减不增
@@ -95,7 +95,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Check doc facts against code sources
         # 文档单一事实源防漂移：「当前状态」版本串必须与 requirements.txt / server/const.py /

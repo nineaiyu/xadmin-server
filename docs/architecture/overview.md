@@ -10,7 +10,7 @@
 
 | 维度    | 后端 xadmin-server                                       | 前端 xadmin-client                    |
 |-------|--------------------------------------------------------|-------------------------------------|
-| 语言/框架 | Python 3.13+ / Django 6.0.8 + DRF 3.18.1               | TypeScript / Vue 3 + Vite(rolldown) |
+| 语言/框架 | Python 3.14+ / Django 6.0.8 + DRF 3.18.1               | TypeScript / Vue 3 + Vite(rolldown) |
 | 认证    | SimpleJWT 双 Token + 黑名单                                | Cookie 承载 Token，Axios 无感刷新          |
 | 实时通信  | Django Channels + Redis（Daphne）                        | 原生 WebSocket 封装                     |
 | 任务    | Celery + django-celery-beat/results（default/heavy 双队列） | —                                   |
