@@ -5019,6 +5019,10 @@ msgstr "群聊"
 msgid "User {} mentioned you in the chat room"
 msgstr "用户 {} 在聊天室提到了你"
 
+#: message/consumers.py:158
+msgid "Sending too fast, please slow down"
+msgstr "您发送得太快啦，请稍后再试"
+
 #: message/consumers.py:299 message/models.py:87
 msgid "Chat room"
 msgstr "聊天室"

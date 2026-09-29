@@ -1116,6 +1116,10 @@ msgstr "Group chat"
 msgid "User {} mentioned you in the chat room"
 msgstr "User {} mentioned you in the chat room"
 
+#: message/consumers.py:158
+msgid "Sending too fast, please slow down"
+msgstr "Sending too fast, please slow down"
+
 #: message/consumers.py:284 message/models.py:87
 msgid "Chat room"
 msgstr "Chat room"

@@ -383,3 +383,75 @@ class TestRecallAndRead:
             assert closed == [None]
 
         async_to_sync(scenario)()
+
+
+class TestSendRateLimit:
+    """WS 上行发送限流（每用户每秒 N 条）：恶意连接高频灌消息会放大成 DB 写与推送风暴。"""
+
+    def test_over_limit_rejected_without_persisting(self, ws_layer, superuser, monkeypatch):
+        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 2)
+        room = chat_service.get_public_room()
+        sent = _capture_group_send(ws_layer, monkeypatch)
+
+        async def scenario():
+            consumer, captured, __ = _make_consumer(ws_layer, superuser)
+            for index in range(4):
+                await consumer.receive(
+                    json.dumps(
+                        {
+                            "action": "chat_message",
+                            "data": {
+                                "room_id": room.pk,
+                                "content": f"刷屏 {index}",
+                                "client_msg_id": f"c-rate-{index}",
+                            },
+                        }
+                    )
+                )
+            return captured
+
+        captured = async_to_sync(scenario)()
+
+        # 前两条放行，后续回执 1001（可读错误）且不落库、不广播
+        assert ChatMessage.objects.filter(room=room).count() == 2
+        assert len(sent) == 2
+        rejected = [item for item in captured if item["code"] == 1001]
+        assert len(rejected) == 2
+        assert rejected[0]["detail"]
+
+    def test_limit_is_per_user(self, ws_layer, alice, bob, monkeypatch):
+        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
+        room = chat_service.get_public_room()
+        _capture_group_send(ws_layer, monkeypatch)
+
+        async def scenario():
+            for index, user in enumerate((alice, bob)):
+                consumer, captured, __ = _make_consumer(ws_layer, user, channel=f"specific.chat-{index}")
+                await consumer.receive(
+                    json.dumps(
+                        {
+                            "action": "chat_message",
+                            "data": {"room_id": room.pk, "content": f"你好 {index}", "client_msg_id": f"c-per-{index}"},
+                        }
+                    )
+                )
+                # 另一用户不受影响（限流按用户维度，不串号）
+                assert not [item for item in captured if item["code"] == 1001]
+
+        async_to_sync(scenario)()
+        assert ChatMessage.objects.filter(room=room).count() == 2
+
+    def test_recall_not_blocked_by_send_limit(self, ws_layer, alice, bob, monkeypatch):
+        """撤回/已读不受发送限流影响（限流只挡新增消息）。"""
+        monkeypatch.setattr("message.consumers.CHAT_SEND_LIMIT_PER_SECOND", 1)
+        room = chat_service.get_public_room()
+        _capture_group_send(ws_layer, monkeypatch)
+        message, _ = chat_service.create_message(room, alice, "先发一条")
+
+        async def scenario():
+            consumer, captured, __ = _make_consumer(ws_layer, alice)
+            await consumer.receive(json.dumps({"action": "chat_recall", "data": {"message_id": message.pk}}))
+            return captured
+
+        captured = async_to_sync(scenario)()
+        assert [item for item in captured if item["code"] == 1001] == []

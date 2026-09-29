@@ -41,6 +41,18 @@ from message.utils import (
 
 logger = get_logger(__name__)
 
+#: 单个用户每秒可发送的聊天消息条数（Redis 固定窗口计数）。
+#: WS 上行不受 DRF 限流覆盖，恶意连接可高频灌消息：每条都会落库 + 广播 + 计未读，
+#: 放大成 DB 写与推送风暴（每用户每秒 5 条已远高于人工输入速度）。
+CHAT_SEND_LIMIT_PER_SECOND = 5
+
+
+def allow_chat_send(user_pk) -> bool:
+    """聊天消息发送速率判定（每用户每秒上限）。"""
+    from common.core.throttle import allow_by_identity
+
+    return allow_by_identity(user_pk, scope="chat_send", limit=CHAT_SEND_LIMIT_PER_SECOND, window_seconds=1)
+
 
 def unread_rows(user) -> list:
     """本人未读会话（room_id, unread_count）列表（连接建立时的首屏对齐）。"""
@@ -139,6 +151,14 @@ class ChatNotify(AsyncJsonWebsocket):
                 await self.close()
 
     async def handle_send(self, data):
+        # 限流：超过每用户每秒上限时回执可读错误并丢弃本条（幂等重发同样受控）
+        if not await database_sync_to_async(allow_chat_send)(self.user.pk):
+            logger.warning("chat send rate limited: user=%s", self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_MESSAGE.value, code=1001, detail=str(_("Sending too fast, please slow down"))
+            )
+            return
+
         # 消息类型：text（缺省）/ image / file；附件消息携带 file_pk（先经 REST 上传取得）
         message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
         if message_type not in ChatMessage.MessageType.values:
