@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """定时报表任务：调度分发 + 执行渲染 + 多渠道路送达（邮件 + IM）。
 
-- 分发器每小时跑一次（crontab "5 * * * *"），命中 frequency/send_time/weekday
-  的 active 报表派发执行；执行与分发解耦（长渲染不阻塞扫描）；
+- 分发器每小时跑一次（crontab "5 * * * *"）派发三档报表、每分钟一次派发 cron 报表；
+  到期判定 = 「最近一次应当执行的时刻」晚于「上次执行时刻（首次执行前取建单时刻）」，
+  因此 beat 延迟 / worker 停机 / 任务积压时会在恢复后补跑漏掉的期次；执行与分发解耦
+  （长渲染不阻塞扫描）；
 - 执行以**创建者**权限上下文运行数据集（menu 上下文为空 ⇒ 仅未绑菜单的全局
   授权生效，fail-closed 语义不变）；
 - 产物复用下载中心：派发方预创建 ExportRecord（pk == celery task_id 契约），
@@ -15,7 +17,7 @@
 
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import time as dt_time
 from uuid import UUID
 
@@ -34,29 +36,81 @@ EXPORT_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 
 def report_due(report, now=None) -> bool:
-    """调度命中判定：cron_expression 优先；否则 frequency × send_time(× weekday)。now 仅供测试注入。"""
-    if (getattr(report, "cron_expression", "") or "").strip():
-        return _cron_due(report.cron_expression, now)
+    """到期判定：cron_expression 优先；否则 frequency × send_time(× weekday)。now 仅供测试注入。
+
+    判定口径是「最近一次应当执行的时刻」晚于「上次执行时刻（首次执行前取建单时刻）」，
+    而不是「当前分钟正好等于 send_time」——后者在 beat 延迟 / worker 停机 / 任务积压时
+    错过命中分钟就整期漏发（daily 要再等一天），且要求分钟必须精确相等。
+    """
     now = now or timezone.localtime()
-    if f"{now.hour:02d}:{now.minute:02d}" != report.send_time:
+    due_at = last_due_at(report, now)
+    if due_at is None:
         return False
-    if report.frequency == "daily":
+    reference = getattr(report, "last_run_at", None) or getattr(report, "created_time", None)
+    if reference is None:
+        # 无参考点（未落库的裸对象）：视为到期，交由调用方判定
         return True
-    if report.frequency == "weekly":
-        return now.weekday() == int(report.weekday)
-    # monthly：每月第一天命中
-    return now.day == 1
+    return reference < due_at
 
 
-def _cron_due(expression: str, now=None) -> bool:
-    """cron 表达式命中判定（分钟级）：非法表达式视为不命中（fail-closed）。"""
+def last_due_at(report, now=None):
+    """最近一次「应当执行」的时刻（无则 None）：cron 取上一个命中时刻，三档取到期点。"""
+    now = now or timezone.localtime()
+    expression = (getattr(report, "cron_expression", "") or "").strip()
+    if expression:
+        return _last_cron_hit(expression, now)
+    return _three_tier_due_at(report, now)
+
+
+def _last_cron_hit(expression: str, now=None):
+    """cron 表达式在 now 之前（含当分钟）的最近命中时刻：非法表达式返回 None（fail-closed）。"""
     from croniter import croniter
 
     expression = (expression or "").strip()
     if not croniter.is_valid(expression):
-        return False
+        return None
     now = now or timezone.localtime()
-    return bool(croniter.match(expression, now.replace(second=0, microsecond=0)))
+    moment = now.replace(second=0, microsecond=0)
+    if croniter.match(expression, moment):
+        return moment
+    return croniter(expression, moment).get_prev(datetime)
+
+
+def _parse_send_time(value: str):
+    """HH:MM → (hour, minute)：格式异常返回 None（fail-closed，不误发）。"""
+    try:
+        raw_hour, raw_minute = str(value or "").split(":", 1)
+        hour, minute = int(raw_hour), int(raw_minute)
+    except (TypeError, ValueError):
+        return None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+    return hour, minute
+
+
+def _three_tier_due_at(report, now=None):
+    """daily / weekly / monthly 的最近一次到期时刻（send_time 非法返回 None）。"""
+    now = now or timezone.localtime()
+    parsed = _parse_send_time(getattr(report, "send_time", ""))
+    if parsed is None:
+        return None
+    now = now.replace(second=0, microsecond=0)
+    today_at = now.replace(hour=parsed[0], minute=parsed[1])
+    frequency = str(getattr(report, "frequency", "") or "")
+    if frequency == "daily":
+        return today_at if today_at <= now else today_at - timedelta(days=1)
+    if frequency == "weekly":
+        weekday = int(getattr(report, "weekday", 0) or 0)
+        candidate = today_at - timedelta(days=(now.weekday() - weekday) % 7)
+        if candidate > now:
+            candidate -= timedelta(days=7)
+        return candidate
+    if frequency == "monthly":
+        first_of_month = today_at.replace(day=1)
+        if first_of_month <= now:
+            return first_of_month
+        return (first_of_month - timedelta(days=1)).replace(day=1)
+    return None
 
 
 def _excel_safe(value):

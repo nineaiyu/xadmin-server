@@ -122,31 +122,56 @@ class TestScreen:
 
 
 class TestReportSchedule:
+    """到期判定：以「最近一次应当执行的时刻」为基准（含漏跑补偿）。"""
+
     def test_daily_match(self, dataset, superuser):
         report = _make_report(dataset, superuser, frequency="daily", send_time="08:00")
         due = timezone.localtime().replace(hour=8, minute=0)
         from dataset.analysis_tasks import report_due
+        from dataset.models.dataset import Report
 
+        # 建单先于命中时刻 → 命中后到期（可在命中后的任意扫描时刻补跑）
+        Report.objects.filter(pk=report.pk).update(created_time=due - timezone.timedelta(days=1))
+        report.refresh_from_db()
         assert report_due(report, due) is True
+        assert report_due(report, due.replace(hour=9)) is True
+
+        # 已经跑过本次命中 → 不再重复派发
+        Report.objects.filter(pk=report.pk).update(last_run_at=due)
+        report.refresh_from_db()
         assert report_due(report, due.replace(hour=9)) is False
+        # 次日同一时刻再次到期
+        assert report_due(report, due + timezone.timedelta(days=1)) is True
 
     def test_weekday_match(self, dataset, superuser):
         report = _make_report(dataset, superuser, frequency="weekly", send_time="08:00", weekday=0)
         from dataset.analysis_tasks import report_due
+        from dataset.models.dataset import Report
 
         monday = timezone.localtime().replace(hour=8, minute=0)
         while monday.weekday() != 0:
             monday = monday + timezone.timedelta(days=1)
+        Report.objects.filter(pk=report.pk).update(created_time=monday - timezone.timedelta(days=7))
+        report.refresh_from_db()
+
         assert report_due(report, monday) is True
+        Report.objects.filter(pk=report.pk).update(last_run_at=monday)
+        report.refresh_from_db()
         tuesday = monday + timezone.timedelta(days=1)
         assert report_due(report, tuesday) is False
 
     def test_monthly_first_day(self, dataset, superuser):
         report = _make_report(dataset, superuser, frequency="monthly", send_time="08:00")
         from dataset.analysis_tasks import report_due
+        from dataset.models.dataset import Report
 
         first = timezone.localtime().replace(day=1, hour=8, minute=0)
+        Report.objects.filter(pk=report.pk).update(created_time=first - timezone.timedelta(days=31))
+        report.refresh_from_db()
+
         assert report_due(report, first) is True
+        Report.objects.filter(pk=report.pk).update(last_run_at=first)
+        report.refresh_from_db()
         assert report_due(report, first.replace(day=2)) is False
 
     def test_recipients_email_validated(self, auth_client, dataset):
