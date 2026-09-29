@@ -794,3 +794,77 @@ class TestCreateAtomicityAndStuckCleanup:
         assert cancel_stuck_instances() == 0
         fresh.refresh_from_db()
         assert fresh.status == ApprovalInstance.Status.PENDING
+
+
+class TestNotifyDeferredToCommit:
+    """流程通知入队延迟到事务提交后（回滚不留幻影通知）。
+
+    用 `django_db(transaction=True)` 走真实事务：非事务档下 pytest-django 会把测试包在
+    atomic 里，提交语义不可观测（回调永不执行），无法区分「入队」与「立即投递」。
+    """
+
+    @staticmethod
+    def _record(monkeypatch):
+        events = []
+
+        class _Recorder:
+            def __init__(self, user, event, instance, extra=None):
+                events.append(event)
+
+            def publish(self, **kwargs):
+                pass
+
+        monkeypatch.setattr("system.notifications.ApprovalFlowMessage", _Recorder)
+        return events
+
+    @staticmethod
+    def _user():
+        return type("U", (), {"pk": 1})()
+
+    @staticmethod
+    def _instance():
+        return type("I", (), {"pk": "x"})()
+
+    @pytest.mark.django_db(transaction=True)
+    def test_notify_immediate_without_transaction(self, monkeypatch):
+        """无活动事务：提交后立即投递（语义与改造前一致，不改变既有调用方观感）。"""
+        from approval.utils.approval_flow.engine import _notify
+
+        events = self._record(monkeypatch)
+        _notify([self._user()], "submitted", self._instance())
+        assert events == ["submitted"]
+
+    @pytest.mark.django_db(transaction=True)
+    def test_notify_deferred_until_commit(self, monkeypatch):
+        from django.db import transaction
+
+        from approval.utils.approval_flow.engine import _notify
+
+        events = self._record(monkeypatch)
+        with transaction.atomic():
+            _notify([self._user()], "approved", self._instance())
+            # 事务内不入队投递（提交前发布会在回滚时留下幻影通知）
+            assert events == []
+        assert events == ["approved"]
+
+    @pytest.mark.django_db(transaction=True)
+    def test_notify_dropped_when_transaction_rolls_back(self, monkeypatch):
+        """核心守卫：推进失败回滚后不得投递通知（否则点进去 404）。"""
+        from django.db import transaction
+
+        from approval.utils.approval_flow.engine import _notify
+
+        events = self._record(monkeypatch)
+        with pytest.raises(RuntimeError):
+            with transaction.atomic():
+                _notify([self._user()], "submitted", self._instance())
+                raise RuntimeError("推进失败")
+        assert events == []
+
+    def test_notify_skips_empty_users(self, monkeypatch, django_capture_on_commit_callbacks):
+        from approval.utils.approval_flow.engine import _notify
+
+        events = self._record(monkeypatch)
+        with django_capture_on_commit_callbacks(execute=True):
+            _notify([None, self._user()], "cc", self._instance())
+        assert events == ["cc"]

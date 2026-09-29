@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """全量审批流引擎：实例推进（发起 / 通过 / 驳回 / 撤回 / 加签）。"""
 
+from functools import partial
+
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -22,16 +24,24 @@ logger = get_logger(__name__)
 
 
 def _notify(users, event, instance, extra=None):
-    """向用户列表推送流程通知（单条失败只记日志，不阻断推进）。"""
+    """向用户列表推送流程通知（单条失败只记日志，不阻断推进）。
+
+    入队延迟到事务提交后（`transaction.on_commit`）：发起/通过/驳回/撤回/加签都在
+    `transaction.atomic()` 内推进实例，提交前入队一旦事务回滚，就会留下指向不存在
+    实例的通知（点进去 404）。无活动事务时 Django 立即执行回调，语义与改造前一致。
+    """
     from system.notifications import ApprovalFlowMessage
 
-    for user in users:
-        if not user:
-            continue
+    def _send(user):
         try:
             ApprovalFlowMessage(user, event, instance, extra=extra).publish(is_async=True)
         except Exception:  # noqa: BLE001 通知链路故障不影响审批主流程
             logger.warning("send approval flow notify failed. instance:%s user:%s", instance.pk, user.pk, exc_info=True)
+
+    for user in users:
+        if not user:
+            continue
+        transaction.on_commit(partial(_send, user))
 
 
 def _invalidate_pending_count(users=None):
