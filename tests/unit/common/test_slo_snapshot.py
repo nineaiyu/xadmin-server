@@ -66,6 +66,17 @@ class TestComputeSlo:
         assert result["p95_seconds"]["value"] == 0.5
         assert result["p95_seconds"]["samples"] == 100.0
 
+    def test_queue_backlog_from_metric(self):
+        """队列积压口径：取各队列最大值，并保留逐队列明细（2026-09-29 起进指标端点）。"""
+        samples = [
+            {"name": "xadmin_celery_queue_length", "labels": {"queue": "celery"}, "value": 3.0},
+            {"name": "xadmin_celery_queue_length", "labels": {"queue": "heavy"}, "value": 12.0},
+        ]
+        result = compute_slo(samples)
+        assert result["queue_backlog"]["value"] == 12.0
+        assert result["queue_backlog"]["max_queue"] == "heavy"
+        assert result["queue_backlog"]["queues"] == {"celery": 3.0, "heavy": 12.0}
+
     def test_missing_data_paths(self):
         result = compute_slo([])
         assert result["availability"]["value"] is None
@@ -73,6 +84,7 @@ class TestComputeSlo:
         assert result["task_success"]["value"] is None
         assert result["queue_backlog"]["value"] is None
         assert "note" in result["availability"]
+        assert "note" in result["queue_backlog"]
 
 
 class TestSnapshotAccumulation:

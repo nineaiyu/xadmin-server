@@ -1,0 +1,8 @@
+# 复制为 utils/monitoring/metrics_token 后填入与 config.yml 一致的 METRICS_TOKEN。
+#
+#   cp utils/monitoring/metrics_token.example utils/monitoring/metrics_token
+#   vi utils/monitoring/metrics_token   # 只写令牌本身，无引号、无换行
+#   chmod 600 utils/monitoring/metrics_token
+#
+# Prometheus 以 credentials_file 方式读取（不落配置文本、不进仓库；该文件已被 .gitignore 忽略）。
+PLACEHOLDER_REPLACE_ME

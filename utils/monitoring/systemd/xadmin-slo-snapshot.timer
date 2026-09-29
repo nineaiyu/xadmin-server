@@ -1,0 +1,12 @@
+# 每日 06:17 采集一次（SLO 校准需 ≥3 个月跨重启趋势；见 docs/ops/observability.md §三）。
+# Persistent=true：机器关机/休眠错过的时点由 systemd 在启动后补跑一次。
+[Unit]
+Description=Daily xadmin SLO snapshot (06:17, catch-up enabled)
+
+[Timer]
+OnCalendar=*-*-* 06:17:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

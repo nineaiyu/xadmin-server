@@ -221,3 +221,39 @@ class TestDbBackupScript:
         assert "backup FAILED" in result.stderr
         assert list(sandbox["backup_dir"].glob("*.sql.gz")) == []
         assert list(sandbox["backup_dir"].glob("*.tmp")) == []
+
+
+class TestRemoteRequired:
+    """生产强制异地副本（P1-35）：缺失要可见（告警文案 + 单次模式退出码），
+    但**不得阻断本地备份**（本地备份永远优先）。"""
+
+    def test_missing_remote_fails_single_run_but_keeps_local_backup(self, sandbox):
+        result = run_script(sandbox, BACKUP_REMOTE_REQUIRED="1")
+        assert result.returncode == 1
+        assert "异地副本未配置" in result.stderr
+        # 关键：本地备份照常产出（不允许因配置缺失停掉本地备份）
+        assert len(list(sandbox["backup_dir"].glob("*.sql.gz"))) == 1
+        assert (sandbox["backup_dir"] / ".latest_backup").is_file()
+
+    def test_partial_config_still_counts_as_missing(self, sandbox):
+        """只配了 TYPE 没配 TARGET（或反之）同样是缺失。"""
+        result = run_script(sandbox, BACKUP_REMOTE_REQUIRED="1", BACKUP_REMOTE_TYPE="local")
+        assert result.returncode == 1
+        assert "异地副本未配置" in result.stderr
+
+    def test_configured_remote_passes(self, sandbox):
+        result = run_script(
+            sandbox,
+            BACKUP_REMOTE_REQUIRED="1",
+            BACKUP_REMOTE_TYPE="local",
+            BACKUP_REMOTE_TARGET=str(sandbox["remote_dir"]),
+        )
+        assert result.returncode == 0
+        assert "异地副本未配置" not in result.stderr
+        assert any(p.name.endswith(".sql.gz") for p in sandbox["remote_dir"].iterdir())
+
+    def test_not_enforced_by_default(self, sandbox):
+        """默认关闭：未配置异地副本时退出码 0（行为与改造前一致）。"""
+        result = run_script(sandbox)
+        assert result.returncode == 0
+        assert "异地副本未配置" not in result.stderr

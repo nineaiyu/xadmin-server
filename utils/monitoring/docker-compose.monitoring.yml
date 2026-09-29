@@ -1,0 +1,81 @@
+# 监控参考编排（可选，独立于主栈）：Prometheus + Grafana + blackbox-exporter。
+#
+# 定位：把「指标端点（/api/common/api/metrics，需 METRICS_ENABLED=true + METRICS_TOKEN）」
+# 与「健康探针」接到一个可长期留存、可告警的 Prometheus 上，并给出开箱 Grafana 面板。
+# 主栈自带的能力（监控页趋势 / db-backup 告警 / OOM watcher / SLO 快照）不受影响，
+# 本编排补齐的是「HTTP 可用性 / P95 / 任务成功率 / 队列积压」四项 SLO 的自动投递面。
+#
+# 用法（仓库根执行）：
+#   cp utils/monitoring/metrics_token.example utils/monitoring/metrics_token
+#   vi utils/monitoring/metrics_token && chmod 600 utils/monitoring/metrics_token
+#   docker compose -f utils/monitoring/docker-compose.monitoring.yml up -d
+#   # Prometheus http://127.0.0.1:9090   Grafana http://127.0.0.1:3000（初始 admin/admin）
+#
+# 与主栈的网络：默认接入主栈网络（<项目名>_net，项目名默认取 compose 所在目录名），
+# 因此可以直接抓 server:8896；主栈目录名不同时用 XADMIN_STACK_NETWORK 覆盖。
+#
+# 镜像：参考编排默认 `latest`（离线环境请改为私有镜像仓库地址并 pin 版本，
+# 季度核对流程见 docs/ops/monitoring-stack.md）。
+name: xadmin-monitoring
+
+networks:
+  stack:
+    external: true
+    name: ${XADMIN_STACK_NETWORK:-xadmin-server_net}
+
+services:
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:latest}
+    container_name: xadmin-prometheus
+    restart: always
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+      # 指标令牌：独立文件（600，gitignore），不进镜像与仓库
+      - ./metrics_token:/etc/prometheus/metrics_token:ro
+      - ${MONITORING_DATA_DIR:-../monitoring-data}/prometheus:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD", "promtool", "query", "instant", "http://127.0.0.1:9090", "vector(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - stack
+
+  blackbox:
+    image: ${BLACKBOX_IMAGE:-prom/blackbox-exporter:latest}
+    container_name: xadmin-blackbox
+    restart: always
+    command: ["--config.file=/etc/blackbox/blackbox.yml"]
+    volumes:
+      - ./blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    networks:
+      - stack
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:latest}
+    container_name: xadmin-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${MONITORING_DATA_DIR:-../monitoring-data}/grafana:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - stack

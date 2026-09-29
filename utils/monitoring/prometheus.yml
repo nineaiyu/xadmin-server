@@ -1,0 +1,40 @@
+# Prometheus 参考配置（xadmin 监控栈）：指标抓取 + 健康探针。
+#
+# 变量（compose 启动时替换，见 docker-compose.monitoring.yml）：
+#   XADMIN_SCRAPE_TARGET 应用地址（默认 server:8896，主栈容器名）
+# 令牌：metrics_token 文件（compose 挂载 /etc/prometheus/metrics_token，600 权限）
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  # 应用指标：HTTP 请求/耗时 + Celery 任务（跨进程聚合）+ 授权池缓存键 + 队列积压
+  - job_name: xadmin-app
+    metrics_path: /api/common/api/metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
+    static_configs:
+      - targets: ["${XADMIN_SCRAPE_TARGET}"]
+        labels:
+          instance: xadmin
+          service: xadmin-server
+
+  # 探针：/api/common/api/health 的可达性与耗时（可用性 SLO 的外部视角）
+  - job_name: xadmin-health
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets: ["http://${XADMIN_SCRAPE_TARGET}/api/common/api/health"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115

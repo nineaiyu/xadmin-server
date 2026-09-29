@@ -1,0 +1,15 @@
+# SLO 快照采集（由 xadmin-slo-snapshot.timer 触发，单次执行）
+#
+#   install -m 644 utils/monitoring/systemd/xadmin-slo-snapshot.{service,timer} /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now xadmin-slo-snapshot.timer
+#   systemctl list-timers xadmin-slo-snapshot.timer
+[Unit]
+Description=xadmin SLO snapshot collector (metrics endpoint -> JSONL)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/xadmin/ops-alert.env
+WorkingDirectory=/opt/xadmin/xadmin-server
+ExecStart=/usr/bin/env bash utils/slo_snapshot_cron.sh

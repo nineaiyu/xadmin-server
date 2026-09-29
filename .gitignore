@@ -27,5 +27,9 @@ htmlcov/
 loadtest/results/
 loadtest/k6/results
 
+# 监控栈运行期产物（指标令牌 + TSDB/面板数据卷，见 utils/monitoring/）
+utils/monitoring/metrics_token
+monitoring-data/
+
 # mypy 增量缓存
 .mypy_cache/

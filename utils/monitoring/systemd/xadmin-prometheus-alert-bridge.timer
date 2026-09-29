@@ -1,0 +1,11 @@
+# 每分钟轮询一次 Prometheus 的 firing 告警；重复告警由脚本内的抑制窗口合并（默认 4h）。
+[Unit]
+Description=Poll Prometheus alerts every minute and bridge to xadmin ops-alert
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

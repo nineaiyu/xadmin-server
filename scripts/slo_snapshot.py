@@ -8,7 +8,7 @@ SLO 四项（定义见 docs/ops/observability.md §三）：
 2. **API P95 延迟** = ``xadmin_http_request_duration_seconds`` 直方图（跨 view 汇总，
    桶级近似：返回累计 ≥95% 的首桶 ``le``）；
 3. **任务成功率** = ``xadmin_celery_tasks_total`` 的 SUCCESS / total（跨进程聚合口径）；
-4. **队列积压** = 不在指标端点内（broker 深度，用健康检查 / redis 口径核对）——标注跳过。
+4. **队列积压** = ``xadmin_celery_queue_length``（broker 直读 LLEN，取各队列最大值）。
 
 口径提醒：HTTP/任务指标为**进程启动起累计**（非月度），正式校准需结合长期数据
 （见 observability §三「SLO 数据源与校准」）。
@@ -125,8 +125,17 @@ def compute_slo(samples: list) -> dict:
             "note": "无任务样本（跨进程聚合自 worker 首轮执行起有值）",
         }
 
-    # 4) 队列积压（端点外）
-    result["queue_backlog"] = {"value": None, "note": "指标端点不含 broker 深度（健康检查 / redis 口径核对）"}
+    # 4) 队列积压（broker 直读口径，2026-09-29 起进指标端点）
+    queues = {}
+    for sample in samples:
+        if sample["name"] != "xadmin_celery_queue_length":
+            continue
+        queues[str(sample["labels"].get("queue", "")) or "unknown"] = sample["value"]
+    if queues:
+        max_queue = max(queues, key=lambda name: queues[name])
+        result["queue_backlog"] = {"value": queues[max_queue], "queues": queues, "max_queue": max_queue}
+    else:
+        result["queue_backlog"] = {"value": None, "note": "无队列样本（redis broker 不可用或未配置）"}
     return result
 
 
@@ -179,7 +188,12 @@ def render(result: dict) -> str:
         )
     else:
         lines.append(f"任务成功率  : 无数据（{task.get('note')}）")
-    lines.append(f"队列积压    : 见健康检查 / redis 口径（{result['queue_backlog']['note']}）")
+    backlog = result["queue_backlog"]
+    if backlog["value"] is not None:
+        detail = ", ".join(f"{name}={value:.0f}" for name, value in sorted(backlog["queues"].items()))
+        lines.append(f"队列积压    : {backlog['value']:.0f}（{detail}）")
+    else:
+        lines.append(f"队列积压    : 无数据（{backlog.get('note')}）")
     return "\n".join(lines)
 
 

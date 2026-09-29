@@ -1,0 +1,22 @@
+# 容器 OOM 事件告警（宿主侧常驻 agent）
+#
+#   install -m 644 utils/monitoring/systemd/xadmin-oom-alert.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now xadmin-oom-alert
+#   systemctl status xadmin-oom-alert          # 观察游标/投递日志
+#
+# 需要 docker socket 访问权限（默认以 root 运行；也可改为加入 docker 组的专用账号）。
+[Unit]
+Description=xadmin container OOM alert watcher (docker events -> ops-alert)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/xadmin/ops-alert.env
+WorkingDirectory=/opt/xadmin/xadmin-server
+ExecStart=/usr/bin/env bash utils/oom_alert.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

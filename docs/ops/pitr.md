@@ -32,7 +32,8 @@
       - "archive_command=test ! -f /var/lib/postgresql/archive/%f.gz && gzip < %p > /var/lib/postgresql/archive/%f.gz"
     volumes:
       - ${VOLUME_DIR:-../}/xadmin-postgresql/data:/var/lib/postgresql/data
-      - ${VOLUME_DIR:-../}/xadmin-postgresql/archive:/var/lib/postgresql/archive   # 独立卷
+      # 独立卷；换独立盘/NFS 时只改宿主路径：PITR_ARCHIVE_DIR=/mnt/pitr-archive
+      - ${PITR_ARCHIVE_DIR:-${VOLUME_DIR:-../}/xadmin-postgresql/archive}:/var/lib/postgresql/archive
 ```
 
 要点：
@@ -105,5 +106,6 @@ recovery_target_action = 'promote'
 - 若未来写入量级增长（WAL > 数 GB/天），复核方向：archive_timeout 提到 300s（RPO 5 分钟）
   或保留期下调；
 - **独立盘迁移条件**：当前归档目录与数据同盘（单机退让，同盘故障两者同失的风险已标注）；
-  换独立盘/挂载点后仅改 compose 中归档卷宿主路径，并把迁移完成日期回填本节；
+  迁移动作已收敛为**只改宿主路径**——`PITR_ARCHIVE_DIR=/mnt/pitr-archive docker compose up -d postgresql`
+  （容器内路径 `/var/lib/postgresql/archive` 恒定，归档器与恢复脚本零改动；存量归档先拷到新盘再重建容器）；
 - 演练频次：与季度备份演练同一周期（`backup-drill-reminder.yml` 提醒 workflow 复用）。

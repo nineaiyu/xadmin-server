@@ -215,9 +215,32 @@ cd loadtest/k6 && env BASE_URL=... USERNAME=admin PASSWORD=xxx CHECK=1 ./run-all
 # CI 断崖档：跳过 RPS（与环境强相关），P95 容差放宽
 .venv/bin/python loadtest/check_baseline.py --checks p95,error --tolerance 3.0
 
-# 固定环境重新测定（三轮中位数）后刷新快照
+# 固定环境重新测定（三轮中位数）后刷新快照 —— 见下方「三轮中位数流程」
 .venv/bin/python loadtest/check_baseline.py --update --update-note "2026-xx-xx 复测，环境：xxx"
 ```
+
+**三轮中位数流程（`loadtest/median_results.py`）**
+
+手工保存三轮结果再逐指标取中位数易错且不可复算，故固化为一条命令链：
+
+```bash
+cd loadtest/k6
+for round in 1 2 3; do RESULT_DIR="results/round${round}" BASE_URL=... USERNAME=admin PASSWORD=xxx ./run-all.sh; done
+cd ../..
+
+# 取中位数（异常轮次整轮作废：该轮失败率非 0 / 缺结果）
+.venv/bin/python loadtest/median_results.py \
+    loadtest/k6/results/round1 loadtest/k6/results/round2 loadtest/k6/results/round3 \
+    --out loadtest/k6/results/median
+
+# 用中位数结果刷新基线快照
+.venv/bin/python loadtest/check_baseline.py --update --results loadtest/k6/results/median \
+    --update-note "2026-xx-xx 复测（三轮中位数），环境：xxx"
+```
+
+- 有效轮次 < 2 时该用例不写入输出（摘要里列出作废原因），不会把缺项当成"不变"；
+- 输出结构（p95 / rps / trends）与 k6 结果同形，`check_baseline.py` 直接可读；
+- 输出目录默认 `loadtest/k6/results/median`，可加 `--cases` 只聚合指定用例。
 
 退出码：`0` 通过 / `1` 存在劣化 / `2` 输入错误（缺基线或结果目录）。
 
@@ -231,3 +254,8 @@ cd loadtest/k6 && env BASE_URL=... USERNAME=admin PASSWORD=xxx CHECK=1 ./run-all
 
 **快照刷新纪律**：改动 `common/core/`、元数据接口、索引、连接池、缓存策略后，
 在固定环境重跑三轮并 `--update` 刷新快照，同时在 metrics.md §三 回填记录中写明环境与方法。
+
+> **待办（P1-37）**：当前快照（2026-09-08）是「ASGI 每请求新建 DB 连接」修复**之前**的保守口径
+> （修复后实测 routes P95 53.7→32.5ms、失败率 20.33%→0%），门禁灵敏度因此打折。
+> 工具链已就绪（三轮中位数流程 + `--update`），**待固定环境（容器栈 + 专用 PG/Redis + 1000 种子用户）
+> 可用时执行一次复测并收紧快照**；复测前不放宽 `p95_ratio`（1.2）——收紧需用真实数据，不用估计值。

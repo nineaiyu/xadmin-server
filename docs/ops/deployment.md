@@ -220,6 +220,24 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 - 媒体目录：`BACKUP_MEDIA=true`（默认）时把 `./data/upload` 打包为同名 `.media.tar.gz` 一并备份。
 - 异地副本：`BACKUP_REMOTE_TYPE` 支持 `local`（独立磁盘/NFS 挂载点）、`rsync`（远端主机）、`rclone`（云对象存储）；
   留空表示未启用。**生产必须指向与源库不同故障域的存储**，否则同盘故障仍会双丢。
+  - **生产强制（`BACKUP_REMOTE_REQUIRED`）**：生产 overlay（`docker-compose.prod.yml`）默认置 `1` ——
+    脚本在启动自检发现「异地副本未配置」时记 ERROR + 走备份告警通道上报，并在**单次模式**
+    （`BACKUP_ONCE=1`，演练/外部 cron）以退出码 1 暴露给调度侧；**常驻循环仍照常做本地备份**
+    （本地备份永远优先，不会因缺异地配置停备）。确无第二故障域可用的部署显式
+    `BACKUP_REMOTE_REQUIRED=0` 关闭，并在发布清单留痕。基础栈（开发形态）默认 `0`，行为不变。
+- **独立盘迁移（只改宿主路径，容器内路径不变）**：归档与异地副本各有一个宿主路径变量，
+  迁移独立盘/NFS 时不需要改归档器、恢复脚本或 compose 结构：
+
+```shell
+# WAL 归档卷 → 第二块盘（新库/迁移场景先拷存量归档，再重建容器）
+PITR_ARCHIVE_DIR=/mnt/pitr-archive docker compose up -d postgresql
+
+# local 型异地副本 → 独立盘/NFS
+BACKUP_REMOTE_DIR=/mnt/backup-remote docker compose up -d db-backup
+```
+
+  两者未设置时分别回落 `${VOLUME_DIR}/xadmin-postgresql/archive` 与
+  `${VOLUME_DIR}/xadmin-db-backups-remote`；迁移日期回填 [pitr.md](pitr.md) §6。
 - 手动/单次备份（脚本已支持单次模式，无需再手写 pg_dump）：
 
 ```shell

@@ -145,6 +145,64 @@ class TestTaskRedisAggregate:
         assert b"xadmin_http" in payload
 
 
+class TestQueueDepthGauge:
+    """队列积压（SLO 第四项）：broker 直读 LLEN + 队列名与 worker 拉起参数同源。"""
+
+    def test_render_reads_broker_llen(self, monkeypatch):
+        import common.metrics as metrics_module
+
+        class _FakeClient:
+            closed = False
+
+            def llen(self, name):
+                return {"celery": 3, "heavy": 12}[name]
+
+            def close(self):
+                self.closed = True
+
+        client = _FakeClient()
+        calls = {}
+
+        def _from_url(url, **kwargs):
+            calls["url"] = url
+            calls["kwargs"] = kwargs
+            return client
+
+        monkeypatch.setattr("redis.from_url", _from_url)
+        monkeypatch.setattr("django.conf.settings.CELERY_BROKER_URL", "redis://:pw@redis:6379/3", raising=False)
+        output = metrics_module.render_metrics()[0].decode()
+        assert "# TYPE xadmin_celery_queue_length gauge" in output
+        assert 'xadmin_celery_queue_length{queue="celery"} 3' in output
+        assert 'xadmin_celery_queue_length{queue="heavy"} 12' in output
+        # broker DB 与 cache DB 不同：必须按 broker URL 直连，且用完即关
+        assert calls["url"] == "redis://:pw@redis:6379/3"
+        assert calls["kwargs"]["socket_timeout"] == 0.5
+        assert client.closed is True
+
+    def test_render_degrades_without_broker(self, monkeypatch):
+        import common.metrics as metrics_module
+
+        def _boom(*args, **kwargs):
+            raise ConnectionError("broker down")
+
+        monkeypatch.setattr("redis.from_url", _boom)
+        monkeypatch.setattr("django.conf.settings.CELERY_BROKER_URL", "redis://:pw@redis:6379/3", raising=False)
+        payload, _ = metrics_module.render_metrics()
+        assert b"xadmin_http" in payload
+        assert b"xadmin_celery_queue_length" not in payload
+
+    def test_queue_names_match_worker_services(self):
+        """队列名漂移守护：指标里的队列 = worker 服务实际拉起的队列。"""
+        from common.management.commands.services.services.celery_default import CeleryDefaultService
+        from common.management.commands.services.services.celery_heavy import CeleryHeavyService
+        from common.metrics import CELERY_QUEUE_NAMES
+
+        assert tuple(CELERY_QUEUE_NAMES) == (
+            CeleryDefaultService(name="celery_default").queue,
+            CeleryHeavyService(name="celery_heavy").queue,
+        )
+
+
 class TestGrantsCacheGauge:
     """授权池缓存键基数（观察项）：scan 计数 + redis 不可用降级。"""
 

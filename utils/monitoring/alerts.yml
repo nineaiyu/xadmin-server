@@ -1,0 +1,96 @@
+# 告警规则（xadmin 监控栈）：与 docs/ops/observability.md §三「SLO」表同口径。
+#
+# 规则只做「判定」；投递由两条路径承担（详见 docs/ops/monitoring-stack.md）：
+#   ① 宿主侧 scripts/prometheus_alert_bridge.py 轮询 /api/v1/alerts，
+#      把 firing 告警写进平台既有的 /api/common/api/ops-alert（站内信 + 邮件 + Webhook）；
+#   ② 组织已有 Alertmanager / 云监控接 Prometheus 远端读。
+groups:
+  - name: xadmin-availability
+    rules:
+      - alert: XadminTargetDown
+        expr: up{job="xadmin-app"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "xadmin 指标端点不可达（{{ $labels.instance }}）"
+          description: "抓取失败超过 2 分钟：应用进程或网络异常，先看 healthz 与容器状态（docs/ops/runbook.md）。"
+
+      - alert: XadminHealthProbeFailed
+        expr: probe_success{job="xadmin-health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "xadmin 健康探针失败（{{ $labels.instance }}）"
+          description: "healthz 连续 2 分钟非 2xx：DB/Redis 依赖或应用已不可用。"
+
+      - alert: XadminAvailabilityLow
+        expr: |
+          sum(rate(xadmin_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(xadmin_http_requests_total[5m])), 1) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "xadmin 5xx 率 > 1%（持续 5 分钟）"
+          description: "可用性 SLO（≥ 99.5%/月）正在被消耗：查 5xx 明细与最近发布（release-checklist §0）。"
+
+  - name: xadmin-latency
+    rules:
+      - alert: XadminApiLatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(xadmin_http_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "xadmin API P95 > 1s（持续 10 分钟）"
+          description: "P95 SLO 目标 < 500ms；先看慢请求日志与 DB/Redis 指标（observability §三）。"
+
+  - name: xadmin-tasks
+    rules:
+      - alert: XadminTaskFailureRateHigh
+        expr: |
+          (
+            sum(increase(xadmin_celery_tasks_total{status="SUCCESS"}[1d]))
+              / clamp_min(sum(increase(xadmin_celery_tasks_total[1d])), 1) < 0.99
+          )
+            and sum(increase(xadmin_celery_tasks_total[1d])) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "xadmin 任务成功率 < 99%（近 24h）"
+          description: "任务成功率 SLO ≥ 99%/日；查任务日志页的失败记录与 worker 日志。"
+
+      - alert: XadminQueueBacklogHigh
+        expr: max(xadmin_celery_queue_length) > 500
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "xadmin 队列积压 > 500（{{ $labels.queue }}）"
+          description: "队列 SLO 常态 < 100；先确认 beat/worker 是否停摆（observability 演练记录·beat 停摆）。"
+
+      - alert: XadminQueueBacklogWarning
+        expr: max(xadmin_celery_queue_length) > 100
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "xadmin 队列积压 > 100（{{ $labels.queue }}）"
+          description: "轻量任务被长任务拖住或 worker 副本不足：查 heavy 队列与 worker 并发。"
+
+  # 观察项（默认注释：阈值随部署规模变化，按需开启并调参）：
+  # 授权池缓存键基数 = 用户 × 菜单量级，TTL 300s 兜底（见 docs/cache-keys-audit.md 收敛预案）。
+  # - alert: XadminAuthzGrantsCacheKeysHigh
+  #   expr: xadmin_authz_grants_cache_keys > 50000
+  #   for: 30m
+  #   labels:
+  #     severity: info
+  #   annotations:
+  #     summary: "授权池缓存键基数偏高（{{ $value }}）"

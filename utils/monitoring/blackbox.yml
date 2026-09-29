@@ -1,0 +1,8 @@
+# 健康探针模块（blackbox-exporter）：只做「2xx 即可」的可用性判定。
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      valid_status_codes: [200]

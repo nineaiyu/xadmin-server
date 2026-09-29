@@ -55,7 +55,11 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | `xadmin_http_request_duration_seconds` | Histogram | method, view |
 | `xadmin_celery_tasks_total` | Counter | task, status（SUCCESS / FAILURE / REVOKED …） |
 | `xadmin_celery_task_duration_seconds` | Histogram | task |
+| `xadmin_celery_queue_length` | Gauge | queue（celery / heavy；broker 直读 LLEN，2026-09-29 起进端点——队列积压 SLO 的数据源） |
 | `xadmin_authz_grants_cache_keys` | Gauge | 无（授权池缓存存活键数，SCAN 计数；TTL 300s 兜底，见 cache-keys-audit.md 观察项） |
+
+> **消费端**：[monitoring-stack.md](monitoring-stack.md) 提供 Prometheus + Grafana + blackbox 参考编排、
+> SLO 告警规则与「告警 → 站内信/邮件/Webhook」桥接脚本（宿主侧 systemd 单元样例同处）。
 
 ### 系统监控面板（SystemMonitor，2026-09-19 增强）
 
@@ -86,7 +90,7 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | HTTP 可用性 | `xadmin_http_requests_total{status}`（web 进程） | ✅ 端点启用 |
 | API P95 延迟 | `xadmin_http_request_duration_seconds`（web 进程） | ✅ 端点启用 |
 | 任务成功率 | `xadmin_celery_tasks_total{task,status}` —— **跨进程聚合** | ✅ 本窗口补齐：worker 写 redis（`xadmin:metrics:celery_tasks`），端点在渲染时附加（进程内计数器不导出，避免口径重复）；实测 worker 容器 → server 端点跨进程链路 ✓ |
-| 队列积压 | redis `llen` / health 探测 | ✅ |
+| 队列积压 | `xadmin_celery_queue_length`（broker 直读 LLEN，celery / heavy 两队列） | ✅ 端点启用（2026-09-29） |
 
 **说明**：任务耗时直方图（`xadmin_celery_task_duration_seconds`）已按同一模式**跨进程聚合**
 （2026-09-16 交付：worker 写 redis 累积桶 + sum/count，端点渲染完整 histogram——**零值桶输出**，
@@ -143,7 +147,7 @@ tail -5 <仓库>/tmp/slo_cron.log                                 # 执行日志
 | API 应用配额软告警 | 开放平台 | 站内信 | ✅ 已接 |
 | 主机资源阈值（CPU / 内存 / 磁盘） | 主机监控心跳 + 周期检查 | 站内信 / 邮件（`ServerPerformanceMessage`）；2026-09-19 起同时落 `MonitorAlert` 流水（监控页可查/可导出） | ✅ 已接 |
 | **容器 OOM** | `docker events` 的 `oom` 事件 | `utils/oom_alert.sh` → `/api/common/api/ops-alert` → 站内信 + 邮件 + Webhook `system.ops_alert` | ✅ 新增（A1，第十六轮验证） |
-| HTTP 可用性 / P95 延迟 / 队列积压 | Prometheus 指标 + SLO 阈值 | 指标端点已暴露；自动投递需外部 Prometheus / Alertmanager | ⏳ 登记（部署形态就绪后按需） |
+| HTTP 可用性 / P95 延迟 / 任务成功率 / 队列积压 | Prometheus 指标 + SLO 阈值（`utils/monitoring/alerts.yml`） | 参考栈抓取判定 → 宿主侧 `scripts/prometheus_alert_bridge.py` → `ops-alert`（站内信 + 邮件 + Webhook `system.ops_alert`），与 OOM 告警同链路 | ✅ 已接（P1-36，见 [monitoring-stack.md](monitoring-stack.md)） |
 
 维护约定：新增告警必须经演练验证（本清单同步登记证据）；仅接已证实场景，避免告警噪音。
 

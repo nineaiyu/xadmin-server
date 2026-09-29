@@ -212,6 +212,40 @@ def _render_task_durations(raw) -> list:
 #: 授权池缓存键（common/core/filter.py：``data_permission_grants_<版本>_<用户>_<部门>_<菜单>``）
 GRANTS_CACHE_KEY_PATTERN = "*data_permission_grants_*"
 
+#: Celery 队列名（broker 内 list 键）：默认队列与重任务队列，
+#: 与 worker 拉起参数同源（services/celery_default.py 的 "celery" / celery_heavy.py 的 "heavy"）
+CELERY_QUEUE_NAMES = ("celery", "heavy")
+
+
+def _render_queue_depth() -> bytes:
+    """队列积压（SLO「队列积压」的数据源）：broker 内待消费任务数。
+
+    broker 与 cache 不是同一个 redis DB（CELERY_BROKER_CACHE_ID=3 vs DEFAULT_CACHE_ID=1），
+    因此按 ``CELERY_BROKER_URL`` 直连取 ``LLEN``：短超时 + 用完即关（抓取周期 15-30s，
+    连接成本可忽略）；redis 不可用/未配置时跳过并保持端点其余指标可用。
+    """
+    try:
+        import redis
+        from django.conf import settings
+
+        url = str(getattr(settings, "CELERY_BROKER_URL", "") or "")
+        if not url:
+            return b""
+        client = redis.from_url(url, socket_connect_timeout=0.2, socket_timeout=0.5)
+        try:
+            depths = {name: int(client.llen(name)) for name in CELERY_QUEUE_NAMES}
+        finally:
+            client.close()
+    except Exception as e:  # noqa: BLE001 指标旁路：不影响端点其余指标
+        logger.debug(f"render queue depth metrics failed: {e}")
+        return b""
+    lines = [
+        "# HELP xadmin_celery_queue_length Celery 队列积压（broker 内待消费任务数）",
+        "# TYPE xadmin_celery_queue_length gauge",
+    ]
+    lines.extend(f'xadmin_celery_queue_length{{queue="{name}"}} {depth}' for name, depth in depths.items())
+    return ("\n".join(lines) + "\n").encode()
+
 
 def _render_grants_cache() -> bytes:
     """授权池缓存存活键数（观察项）。
@@ -245,7 +279,7 @@ def render_metrics():
     避免与聚合口径在输出中重复；授权池缓存键基数为观察项 gauge（同源由 redis 直读）。
     """
     payload = generate_latest()
-    for extra in (_render_task_redis(), _render_grants_cache()):
+    for extra in (_render_task_redis(), _render_grants_cache(), _render_queue_depth()):
         if extra:
             payload += extra
     return payload, CONTENT_TYPE_LATEST

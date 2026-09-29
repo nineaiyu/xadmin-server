@@ -31,6 +31,10 @@ MEDIA_DIR=${MEDIA_DIR:-/media}
 BACKUP_REMOTE_TYPE=${BACKUP_REMOTE_TYPE:-}
 BACKUP_REMOTE_TARGET=${BACKUP_REMOTE_TARGET:-}
 BACKUP_REMOTE_KEEP_DAYS=${BACKUP_REMOTE_KEEP_DAYS:-${KEEP_DAYS}}
+# 生产强制异地副本：置 1 时对「未配置异地副本」做启动自检（ERROR + 告警），
+# 单次模式以退出码暴露（调度侧可感知）；常驻循环仍继续本地备份——
+# 不因缺异地配置停掉本地备份（本地备份永远优先）
+BACKUP_REMOTE_REQUIRED=${BACKUP_REMOTE_REQUIRED:-0}
 
 BACKUP_ONCE=${BACKUP_ONCE:-0}
 
@@ -237,8 +241,28 @@ check_wal_archive() {
     log "wal archive check done (failing=${failing} pending=${backlog_count:-?} oldest=${backlog_age:-?}s)"
 }
 
+# 启动自检（P1-35）：生产要求异地副本非空时，缺失必须「可见且可监控」——
+# 只报警不阻断（本地备份照常执行），单次模式另以退出码暴露给调度侧
+REMOTE_MISSING=0
+check_remote_required() {
+    if [[ "${BACKUP_REMOTE_REQUIRED}" != "1" ]]; then
+        return 0
+    fi
+    if [[ -n "${BACKUP_REMOTE_TYPE}" && -n "${BACKUP_REMOTE_TARGET}" ]]; then
+        return 0
+    fi
+    REMOTE_MISSING=1
+    warn "异地副本未配置（BACKUP_REMOTE_REQUIRED=1）：生产承诺的异地副本缺失，本地备份仍将继续；
+    请配置 BACKUP_REMOTE_TYPE=local|rsync|rclone + BACKUP_REMOTE_TARGET（见 docs/ops/deployment.md §3.1），
+    或显式置 BACKUP_REMOTE_REQUIRED=0 关闭强制（须在发布清单留痕）"
+    send_alert "remote replica REQUIRED but not configured" \
+        "BACKUP_REMOTE_REQUIRED=1 但 BACKUP_REMOTE_TYPE/TARGET 为空（本地备份不受影响）"
+}
+
 mkdir -p "${BACKUP_DIR}"
-log "db-backup started (interval=${BACKUP_INTERVAL}s keep=${KEEP_DAYS}d media=${BACKUP_MEDIA} remote=${BACKUP_REMOTE_TYPE:-none} once=${BACKUP_ONCE})"
+log "db-backup started (interval=${BACKUP_INTERVAL}s keep=${KEEP_DAYS}d media=${BACKUP_MEDIA} remote=${BACKUP_REMOTE_TYPE:-none} required=${BACKUP_REMOTE_REQUIRED} once=${BACKUP_ONCE})"
+check_remote_required
+
 FAILED=0
 while true; do
     if do_backup; then
@@ -259,6 +283,9 @@ done
 
 # 单次模式（演练/外部 cron）必须把失败暴露为退出码，否则调度侧无法感知；
 # 常驻循环模式继续存活等待下一轮，避免容器抖动重启
-if [[ "${FAILED}" == "1" && "${BACKUP_ONCE}" == "1" ]]; then
+if [[ "${BACKUP_ONCE}" == "1" && "${FAILED}" == "1" ]]; then
+    exit 1
+fi
+if [[ "${BACKUP_ONCE}" == "1" && "${REMOTE_MISSING}" == "1" ]]; then
     exit 1
 fi
