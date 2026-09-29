@@ -30,6 +30,7 @@ from system.models import (
     UserRole,
 )
 from system.signal import approval_instance_finished, invalid_user_cache_signal
+from system.utils.api_grant import invalid_menu_path_cache
 from system.utils.dict import invalid_dict_cache
 from system.utils.mask import invalid_mask_cache
 
@@ -63,6 +64,8 @@ def clean_cache_handler(sender, instance, **kwargs):
     pk1 = UserRole.objects.filter(menu=instance, userinfo__isnull=False).values_list("userinfo", flat=True).distinct()
     pk2 = DeptInfo.objects.filter(roles__menu=instance).values_list("dept_query", flat=True).distinct()
     batch_invalid_cache(set(pk1) | set(pk2))
+    # 应用授权的 path→pk 映射短缓存（超管/白名单出口按地址回查菜单）同源失效
+    invalid_menu_path_cache()
     logger.info(f"invalid cache {instance}")
 
 

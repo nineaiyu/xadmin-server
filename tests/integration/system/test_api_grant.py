@@ -257,6 +257,64 @@ class TestMenuMatchBoundary:
             assert resolve_request_menu_pk(request) == expected, url
 
 
+class TestMenuPathCache:
+    """path→pk 映射短缓存：按 HTTP 方法维度缓存、菜单变更信号即时失效、缓存故障降级直查。"""
+
+    @staticmethod
+    def _request(url, method="GET"):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(path_info=url, path=url, method=method)
+
+    def test_second_lookup_hits_cache(self, menu_factory):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from system.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+
+        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        invalid_menu_path_cache()  # 清掉工厂创建期间可能写入的缓存
+        request = self._request("/api/system/user")
+        with CaptureQueriesContext(connection) as first_ctx:
+            first = resolve_request_menu_pk(request)
+        assert first == menu.pk
+        assert len(first_ctx.captured_queries) == 1  # 首次全表 values_list
+        with CaptureQueriesContext(connection) as second_ctx:
+            second = resolve_request_menu_pk(request)
+        assert second == menu.pk
+        assert len(second_ctx.captured_queries) == 0  # 第二次命中缓存
+
+    def test_method_dimension_is_independent(self, menu_factory):
+        from system.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+
+        menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        invalid_menu_path_cache()
+        assert resolve_request_menu_pk(self._request("/api/system/user", "GET")) is not None
+        # POST 维度的映射独立缓存，无 POST 权限菜单时不得被 GET 键串台
+        assert resolve_request_menu_pk(self._request("/api/system/user", "POST")) is None
+
+    def test_menu_change_signal_invalidates_cache(self, menu_factory):
+        from system.utils.api_grant import resolve_request_menu_pk
+
+        request = self._request("/api/system/user")
+        assert resolve_request_menu_pk(request) is None  # 空映射同样入缓存
+        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+        # 菜单保存信号已失效映射缓存：无需等待 TTL 即可见
+        assert resolve_request_menu_pk(request) == menu.pk
+
+    def test_cache_failure_falls_back_to_query(self, menu_factory, monkeypatch):
+        from system.utils.api_grant import resolve_request_menu_pk
+
+        menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("cache down")
+
+        monkeypatch.setattr("system.utils.api_grant.cache.get", boom)
+        monkeypatch.setattr("system.utils.api_grant.cache.set", boom)
+        assert resolve_request_menu_pk(self._request("/api/system/user")) == menu.pk
+
+
 class TestGrantOptions:
     def test_catalog_lists_models_actions_fields(self, auth_client, user_menus):
         resp = auth_client.get(f"{APPS_URL}/grant-options")

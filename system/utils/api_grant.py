@@ -38,6 +38,11 @@ ANY = "*"
 # 菜单元信息（动作段 / 绑定模型）短缓存：菜单变更在窗口内自愈，窗口外零查询
 MENU_META_CACHE_TTL = 60
 MENU_META_CACHE_KEY = "api_grant_menu_meta_{pk}"
+# 权限菜单 path→pk 映射（按 HTTP 方法维度）短缓存：仅服务「超管 / 白名单 URL 出口的
+# 应用凭证请求」的按地址回查；菜单变更经信号即时失效（窗口内自愈）。
+MENU_PATH_CACHE_TTL = 60
+MENU_PATH_CACHE_KEY = "api_grant_menu_paths_{method}"
+MENU_PATH_CACHE_METHODS = ("GET", "PUT", "DELETE", "POST", "PATCH")
 
 # 动作段 → 中文展示名（管理面目录用；未命中回退动作段原文）
 ACTION_LABELS = {
@@ -112,6 +117,39 @@ def resolve_menu_meta(menu_pk):
     return meta
 
 
+def _permission_path_pk_map(method: str):
+    """「启用权限菜单」的 ``path → pk`` 映射（按 HTTP 方法维度，短缓存）。
+
+    缓存故障不影响判定（降级直查）；空映射同样入缓存（避免无规则时穿透）。
+    """
+    cache_key = MENU_PATH_CACHE_KEY.format(method=method)
+    try:
+        data = cache.get(cache_key)
+    except Exception:  # noqa: BLE001 缓存故障不影响判定（直查）
+        data = None
+    if data is not None:
+        return data
+    data = {
+        path: pk
+        for path, pk in Menu.objects.filter(
+            menu_type=Menu.MenuChoices.PERMISSION, is_active=True, method=method
+        ).values_list("path", "pk")
+    }
+    try:
+        cache.set(cache_key, data, MENU_PATH_CACHE_TTL)
+    except Exception:  # noqa: BLE001
+        pass
+    return data
+
+
+def invalid_menu_path_cache():
+    """失效权限菜单 ``path → pk`` 映射缓存（全部方法维度；菜单变更信号调用）。"""
+    try:
+        cache.delete_many([MENU_PATH_CACHE_KEY.format(method=method) for method in MENU_PATH_CACHE_METHODS])
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def resolve_request_menu_pk(request):
     """按请求 path + method 在「启用权限菜单」里命中菜单 pk（与权限层同口径）。
 
@@ -121,12 +159,7 @@ def resolve_request_menu_pk(request):
     """
     url = str(getattr(request, "path_info", None) or getattr(request, "path", "") or "")
     method = (getattr(request, "method", "") or "").upper()
-    permission_data = {
-        path: pk
-        for path, pk in Menu.objects.filter(
-            menu_type=Menu.MenuChoices.PERMISSION, is_active=True, method=method
-        ).values_list("path", "pk")
-    }
+    permission_data = _permission_path_pk_map(method)
     if not permission_data:
         return None
     match = re.match("(?P<url>.*)/search-columns$", url)
