@@ -24,6 +24,7 @@
 | M15 | 数据权限 | 未授权数据权限时默认拒绝（含本人数据） | 列表空 / 详情 400 |
 | M16 | 数据权限 | 菜单作用域授权不跨菜单泄漏 | 他菜单下不可见 |
 | M17 | 字段权限 | 字段白名单同时约束读与写 | 响应裁剪 / 写入忽略 |
+| M18 | 数据权限 | 借 empower 给自己/部门挂取值域外的全量规则 | 规则按取值域过滤（不落库） |
 
 约定：菜单授权遵循生产种子数据惯例（loadjson/menu.json）——列表路由以
 `$` 精确锚定，详情路由用 `(?P<pk>[^/.]+)$` 正则；权限结果按用户+方法缓存
@@ -321,3 +322,41 @@ class TestFieldPermission:
         assert resp.data["data"]["name"] == "改名成功"
         own.refresh_from_db()
         assert own.price == 999.99
+
+
+class TestEmpowerScopeIsolation:
+    """M18：empower 指派数据权限规则受调用者取值域约束。
+
+    规则与角色同口径过行级数据权限：取值域外的规则不落库，否则持有 empower
+    权限点但无数据权限管理权限的用户可给自己/部门挂「全量数据」规则，
+    直接突破第二层数据权限。
+    """
+
+    EMPOWER_PATH = r"api/system/user/(?P<pk>[^/.]+)/empower$"
+
+    @staticmethod
+    def _all_rule():
+        return DataPermission.objects.create(
+            name="全量数据规则",
+            rules=[{"type": "value.all", "field": "*", "match": "all", "table": "*", "value": "*", "exclude": False}],
+        )
+
+    def test_foreign_rule_not_assignable(self, api_client, normal_user, role, menu_factory):
+        """取值域仅本人（规则不覆盖数据权限模型）时，全量规则不能挂到自己名下。"""
+        grant_menu(role, menu_factory, self.EMPOWER_PATH, "POST")
+        normal_user.rules.add(make_owner_permission("self-userinfo", "system.userinfo", "pk"))
+        full = self._all_rule()
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": [str(full.pk)]}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert full not in normal_user.rules.all()
+
+    def test_visible_rule_assignable(self, api_client, normal_user, role, menu_factory):
+        """正向对照：调用者自身持有全量数据权限（table=*）时指派正常生效。"""
+        grant_menu(role, menu_factory, self.EMPOWER_PATH, "POST")
+        normal_user.rules.add(self._all_rule())
+        target = make_owner_permission("own-book", "demo.book", "admin")
+        api_client.force_authenticate(user=normal_user)
+        resp = api_client.post(f"{USER_LIST_URL}/{normal_user.pk}/empower", {"rules": [str(target.pk)]}, format="json")
+        assert resp.status_code == 200, resp.data
+        assert target in normal_user.rules.all()

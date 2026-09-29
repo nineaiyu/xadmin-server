@@ -95,8 +95,12 @@ class DeptSerializer(BaseModelSerializer):
                 ).all()
             )
         if rules is not None:
+            # 与 roles 同口径过行级数据权限：部门编辑带上取值域外的规则时不挂载
             instance.rules.set(
-                DataPermission.objects.filter(pk__in=[item.pk for item in rules if getattr(item, "pk", None)]).all()
+                get_filter_queryset(
+                    DataPermission.objects.filter(pk__in=[item.pk for item in rules if getattr(item, "pk", None)]),
+                    self.request.user,
+                ).all()
             )
 
     def create(self, validated_data):

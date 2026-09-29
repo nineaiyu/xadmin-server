@@ -79,8 +79,12 @@ class ChangeRolePermissionAction:
                     get_filter_queryset(UserRole.objects.filter(pk__in=_extract_pks(roles)), request.user).all()
                 )
             if rules is not None:
-                # 数据权限按「或」合并（取最宽生效），无需附加模式开关
-                instance.rules.set(DataPermission.objects.filter(pk__in=_extract_pks(rules)).all())
+                # 数据权限按「或」合并（取最宽生效），无需附加模式开关；
+                # 与 roles 同口径过行级数据权限：可指派的规则必须在调用者取值域内，
+                # 否则持有 empower 权限点但无数据权限管理权限的用户可挂任意全量规则
+                instance.rules.set(
+                    get_filter_queryset(DataPermission.objects.filter(pk__in=_extract_pks(rules)), request.user).all()
+                )
             return ApiResponse()
         return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
 
