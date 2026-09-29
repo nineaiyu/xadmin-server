@@ -9,6 +9,7 @@
 取值域：超管全部；普通用户「我发起 ∪ 待我审批 ∪ 我参与过」（visible_instances_for）。
 """
 
+from django.db.models import Prefetch, QuerySet
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -51,6 +52,18 @@ from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin,
 
 #: 「全部在途」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
 ONGOING_PERMISSION_PATH = "api/approval/approval-instances/ongoing$"
+
+#: 详情/动作响应的全量任务预取（流转时间线 + 节点进度消费）
+TASK_PREFETCH_FIELDS: tuple[str, ...] = ("tasks", "tasks__assignee", "tasks__actor")
+
+#: 列表/导出的当前待办预取（to_attr=pending_tasks，序列化器按属性优先读取）
+PENDING_TASKS_PREFETCH = Prefetch(
+    "tasks",
+    queryset=ApprovalNodeTask.objects.filter(status=ApprovalNodeTask.Status.PENDING).select_related(
+        "assignee", "actor"
+    ),
+    to_attr="pending_tasks",
+)
 
 
 class ApprovalFlowFilter(BaseFilterSet):
@@ -199,9 +212,29 @@ class ApprovalInstanceViewSet(
     ordering = ["-created_time"]
     ordering_fields = ["created_time", "finished_at"]
     select_related_fields = ("flow", "creator", "current_node")
-    prefetch_related_fields = ("tasks", "tasks__assignee", "tasks__actor")
+    #: 全量任务预取（详情/动作响应：流转时间线 + 节点进度消费）
+    prefetch_related_fields = TASK_PREFETCH_FIELDS
+    #: 只渲染表格列的 action：任务预取收敛为「仅当前待办」（历史任务不进内存）
+    pending_prefetch_actions = ("list", "export_data")
     # 通用标签：?tag=<标签名> 过滤 + 列表预取（TaggedPrefetchMixin）
     extra_filter_class = [TagFilterBackend]
+
+    def optimize_queryset(self, queryset):
+        """任务预取按 action 收敛：列表/导出只预取当前待办。
+
+        历史实现在列表页把每条实例的全部节点任务 prefetch 进内存（随流程长度
+        线性膨胀，而表格列只用 current_assignees / my_task）；列表与导出改取
+        ``pending_tasks``（PENDING 任务，含处理人），详情与动作响应保持全量。
+        """
+        if getattr(self, "action", None) in self.pending_prefetch_actions and isinstance(queryset, QuerySet):
+            original = self.prefetch_related_fields
+            self.prefetch_related_fields = ()  # 实例级遮蔽：本次不预取全量任务
+            try:
+                queryset = super().optimize_queryset(queryset)
+            finally:
+                self.prefetch_related_fields = original
+            return queryset.prefetch_related(PENDING_TASKS_PREFETCH)
+        return super().optimize_queryset(queryset)
 
     def create(self, request, *args, **kwargs):
         """发起申请（按流程 form_schema 填写，落实例并进入首节点）"""

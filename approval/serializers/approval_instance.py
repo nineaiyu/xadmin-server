@@ -21,6 +21,18 @@ def _username(value):
     return getattr(value, "username", str(value))
 
 
+def _pending_tasks_of(obj) -> list:
+    """实例的当前待办任务（PENDING）。
+
+    列表/导出场景走 ``pending_tasks`` 预取（只加载当前待办，历史任务不随流程
+    长度进入内存）；详情/动作响应回退全量 ``tasks`` 预取后过滤。
+    """
+    pending = getattr(obj, "pending_tasks", None)
+    if pending is not None:
+        return [task for task in pending if task.status == ApprovalNodeTask.Status.PENDING]
+    return [task for task in obj.tasks.all() if task.status == ApprovalNodeTask.Status.PENDING]
+
+
 class ApprovalNodeTaskSerializer(BaseModelSerializer):
     assignee = DisplayRelatedField(read_only=True, allow_null=True, label=_("Assignee"), label_builder=_username)
     actor = DisplayRelatedField(read_only=True, allow_null=True, label=_("Actor"), label_builder=_username)
@@ -199,8 +211,8 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
             return ""
         return ", ".join(
             task.assignee_display or task.assignee.nickname or task.assignee.username
-            for task in obj.tasks.all()
-            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
+            for task in _pending_tasks_of(obj)
+            if task.assignee_id
         )
 
     def get_form_schema(self, obj) -> list:
@@ -231,8 +243,8 @@ class ApprovalInstanceSerializer(TaggedObjectSerializerMixin, BaseModelSerialize
         user = getattr(request, "user", None)
         if not user or not getattr(user, "is_authenticated", False) or obj.status != ApprovalInstance.Status.PENDING:
             return None
-        for task in obj.tasks.all():
-            if task.assignee_id == user.pk and task.status == ApprovalNodeTask.Status.PENDING:
+        for task in _pending_tasks_of(obj):
+            if task.assignee_id == user.pk:
                 return {"pk": str(task.pk), "node_name": task.node_name, "node_order": task.node_order}
         return None
 
@@ -287,6 +299,6 @@ class ApprovalInstanceExportSerializer(BaseModelSerializer):
             return ""
         return ", ".join(
             task.assignee_display or task.assignee.nickname or task.assignee.username
-            for task in obj.tasks.all()
-            if task.status == ApprovalNodeTask.Status.PENDING and task.assignee_id
+            for task in _pending_tasks_of(obj)
+            if task.assignee_id
         )
