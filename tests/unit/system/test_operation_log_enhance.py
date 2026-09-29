@@ -7,8 +7,9 @@ from datetime import timedelta
 import pytest
 from django.core.cache import cache
 from django.utils import timezone
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 
+from system.models import Menu, MenuMeta
 from system.models.log import OperationLog
 from system.models.user import UserInfo
 from system.notifications import SensitiveOperationMessage, maybe_alert_sensitive_operation
@@ -175,3 +176,37 @@ def test_alert_path_regex_filter(monkeypatch):
     assert published == []
     maybe_alert_sensitive_operation({"method": "DELETE", "path": "/api/system/role/1"})
     assert len(published) == 1
+
+
+# ---------------------------------------------------------------- 只读收口
+
+
+class TestAuditLogReadOnly:
+    """审计日志只读：删除能力已下线（防灭迹），清理走 log_archive 归档驱动。"""
+
+    def test_delete_endpoints_removed(self, superuser):
+        log = _make_log()
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=superuser)
+        assert client.delete(f"{LIST_URL}/{log.pk}").status_code in (404, 405)
+        assert client.post(f"{LIST_URL}/batch-destroy", {"pks": [str(log.pk)]}, format="json").status_code in (404, 405)
+        assert OperationLog.objects.filter(pk=log.pk).exists()
+
+    def test_retired_permission_points_pruned_by_migration(self):
+        """迁移清掉存量库里已下线的两条权限点（含菜单元信息），授权树不留残项。"""
+        import importlib
+
+        from django.apps import apps as django_apps
+
+        migration = importlib.import_module("system.migrations.0006_retire_operation_log_delete_permissions")
+        menu = Menu.objects.create(
+            name="destroy:SystemOperationLog",
+            path=r"api/system/logs/operation/(?P<pk>[^/.]+)$",
+            method="DELETE",
+            menu_type=Menu.MenuChoices.PERMISSION,
+            meta=MenuMeta.objects.create(title="删除操作日志数据"),
+        )
+        meta_pk = menu.meta_id
+        migration.retire_operation_log_delete_permissions(django_apps, None)
+        assert not Menu.all_objects.filter(pk=menu.pk).exists()
+        assert not MenuMeta.objects.filter(pk=meta_pk).exists()

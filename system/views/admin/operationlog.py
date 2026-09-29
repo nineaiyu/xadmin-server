@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend, PkMultipleFilter
-from common.core.modelset import ListDeleteModelSet, OnlyExportDataAction
+from common.core.modelset import OnlyExportDataAction, OnlyListModelSet
 from system.models import OperationLog
 from system.serializers.log import OperationLogSerializer
 
@@ -67,8 +67,13 @@ class OperationLogFilter(BaseFilterSet):
         ]
 
 
-class OperationLogViewSet(ListDeleteModelSet, OnlyExportDataAction):
-    """操作日志"""
+class OperationLogViewSet(OnlyListModelSet, OnlyExportDataAction):
+    """操作日志（只读 + 导出）
+
+    审计痕迹不可经 API 抹除：不提供删除 / 批量删除端点。凭证轮换、OAuth 授权、
+    SCIM 审计与业务操作日志同表存储，删除能力等于允许灭迹；留存的收敛由
+    ``manage.py log_archive``（归档水位驱动清理）在服务端统一执行。
+    """
 
     queryset = OperationLog.objects.all()
     serializer_class = OperationLogSerializer

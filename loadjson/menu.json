@@ -1982,29 +1982,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "4a4ee30a-523b-4a1e-a9c1-6097a26f1979",
-  "fields": {
-   "created_time": "2024-01-22T09:32:10.798Z",
-   "updated_time": "2024-10-31T08:08:15.751Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
-   "menu_type": 2,
-   "name": "destroy:SystemOperationLog",
-   "rank": 112,
-   "path": "api/system/logs/operation/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "66cc6396-6fb7-4356-85e5-43e24940a25f",
-   "method": "DELETE",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "4baa5cde-5bf5-4d7d-a017-213a2949bc5e",
   "fields": {
    "created_time": "2024-11-01T01:36:38.203Z",
@@ -2642,29 +2619,6 @@
     "b5e9a978-60a6-41d4-843c-bbb5f1339113",
     "14071ee3-6725-4fcc-962d-ad7898efa284"
    ]
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "66aa0535-a958-4bc0-9667-8b49004d90a5",
-  "fields": {
-   "created_time": "2024-01-22T09:32:10.378Z",
-   "updated_time": "2024-10-31T08:08:15.690Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "33662086-715b-4478-b60d-a346c8c4f66b",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemOperationLog",
-   "rank": 109,
-   "path": "api/system/logs/operation/batch-destroy$",
-   "component": null,
-   "is_active": true,
-   "meta": "22b683f4-6fae-4a4f-b2a0-b853f459cfaf",
-   "method": "POST",
-   "model": []
   }
  },
  {
@@ -13369,6 +13323,29 @@
    "is_active": true,
    "meta": "03f078a1-0fd5-4872-8113-f4d5a27120b7",
    "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "c3a1f003-5a03-4b03-8c03-00000000000a",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8a8a9349-cdaf-48cd-a0ba-4bc0c9f3bacd",
+   "menu_type": 2,
+   "name": "all:ApprovalDelegation",
+   "rank": 10006,
+   "path": "api/approval/approval-delegations/all$",
+   "component": null,
+   "is_active": true,
+   "meta": "c3a1f004-5a04-4b04-8c04-00000000000a",
+   "method": "GET",
    "model": []
   }
  },
