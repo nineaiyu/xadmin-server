@@ -26,7 +26,6 @@ from channels.db import database_sync_to_async
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
-from common.core.config import UserConfig
 from common.utils import get_logger
 from message import chat as chat_service
 from message.base import AsyncJsonWebsocket
@@ -59,13 +58,20 @@ def unread_rows(user) -> list:
     return list(ChatRoomMember.objects.filter(user=user, unread_count__gt=0).values_list("room_id", "unread_count"))
 
 
-def can_push_chat(user_pk) -> bool:
-    """用户是否允许聊天消息站内信提醒（个人偏好 PUSH_CHAT_MESSAGE）。
+def batch_push_chat_enabled(user_pks) -> dict:
+    """批量读取「聊天消息站内信提醒」偏好（``{pk: bool}``）。
 
-    必须是独立同步函数：在协程里直接取 `UserConfig(pk).PUSH_CHAT_MESSAGE`
+    与用户级配置同源（键 PUSH_CHAT_MESSAGE、系统默认 True）：群聊/私聊扇出
+    一次批量读取替代逐人缓存读 + 逐人 database_sync_to_async 桥接。
+    必须是独立同步函数：协程里直接取 ``UserConfig(pk).PUSH_CHAT_MESSAGE``
     会触发同步 ORM 查询（Django SynchronousOnlyOperation）。
     """
-    return bool(UserConfig(user_pk).PUSH_CHAT_MESSAGE)
+    from common.core.config import batch_user_config
+
+    pks = list(dict.fromkeys(user_pks))
+    if not pks:
+        return {}
+    return {pk: bool(value) for pk, value in batch_user_config(pks, "PUSH_CHAT_MESSAGE", True).items()}
 
 
 def has_chat_permission(user) -> bool:
@@ -253,19 +259,16 @@ class ChatNotify(AsyncJsonWebsocket):
             return
         if room.room_type != ChatRoom.RoomType.PRIVATE:
             return
-        peer_pks = await database_sync_to_async(chat_service.room_member_pks)(room)
-        for user_pk in peer_pks:
-            if user_pk == self.user.pk:
-                continue
-            if await self.chat_channel_alive(user_pk):
-                # 对端聊天室页面在线：消息已实时送达，不再弹站内信（避免重复提醒）
-                continue
-            if not await database_sync_to_async(can_push_chat)(user_pk):
-                continue
+        member_pks = await database_sync_to_async(chat_service.room_member_pks)(room)
+        targets = await self.offline_notice_targets(member_pks)
+        if not targets:
+            return
+        title = str(_("New private message from {}").format(payload.get("sender_name") or ""))
+        for user_pk in targets:
             await async_push_message(
                 user_pk,
                 {
-                    "title": str(_("New private message from {}").format(payload.get("sender_name") or "")),
+                    "title": title,
                     "message": payload.get("content", ""),
                     "level": "info",
                     "notice_type": {"label": str(_("Private chat")), "value": 0},
@@ -278,14 +281,11 @@ class ChatNotify(AsyncJsonWebsocket):
     async def notify_group(self, room, payload: dict):
         """群聊站内信：提醒不在聊天室页面的成员（在线者已实时收到，不重复提醒）。"""
         member_pks = await database_sync_to_async(chat_service.room_member_pks)(room)
+        targets = await self.offline_notice_targets(member_pks)
+        if not targets:
+            return
         title = str(_("New group message from {} in {}").format(payload.get("sender_name") or "", room.name))
-        for user_pk in member_pks:
-            if user_pk == self.user.pk:
-                continue
-            if await self.chat_channel_alive(user_pk):
-                continue
-            if not await database_sync_to_async(can_push_chat)(user_pk):
-                continue
+        for user_pk in targets:
             await async_push_message(
                 user_pk,
                 {
@@ -307,13 +307,18 @@ class ChatNotify(AsyncJsonWebsocket):
         except Exception:  # noqa: BLE001 提及通知属增强链路，失败不影响消息投递
             logger.warning("parse mentions failed", exc_info=True)
             return
+        pks = [target.pk for target in targets if target.pk != self.user.pk]
+        if not pks:
+            return
+        enabled = await database_sync_to_async(batch_push_chat_enabled)(pks)
+        title = str(_("User {} mentioned you in the chat room").format(self.user.username))
         for target in targets:
-            if not await database_sync_to_async(can_push_chat)(target.pk):
+            if target.pk == self.user.pk or not enabled.get(target.pk, True):
                 continue
             await async_push_message(
                 target.pk,
                 {
-                    "title": str(_("User {} mentioned you in the chat room").format(self.user.username)),
+                    "title": title,
                     "message": content,
                     "level": "info",
                     "notice_type": {"label": str(_("Chat room")), "value": 0},
@@ -330,3 +335,42 @@ class ChatNotify(AsyncJsonWebsocket):
             return bool(channels)
         except Exception:  # noqa: BLE001
             return False
+
+    async def chat_channels_alive(self, user_pks) -> set:
+        """批量判定这些用户是否正开着聊天室页面（扇出合并为一次 pipeline 往返）。
+
+        逐人 ``get_layers`` 会退化成「每人 2 条命令 + 1 次往返」；channel layer
+        的 ``get_layers_for_groups`` 把同节点全部 group 合并（生产 Redis 单节点
+        下整个扇出一次往返）。查询失败按「不在线」处理（与单条口径一致）。
+        """
+        pks = list(dict.fromkeys(user_pks))
+        if not pks:
+            return set()
+        groups = {pk: get_chat_user_group_name(pk) for pk in pks}
+        batch_getter = getattr(self.channel_layer, "get_layers_for_groups", None)
+        if batch_getter is None:  # 无批量原语的 layer：回退逐条查询（语义不变）
+            online = set()
+            for pk in pks:
+                if await self.chat_channel_alive(pk):
+                    online.add(pk)
+            return online
+        try:
+            layers = await batch_getter(list(groups.values()))
+        except Exception:  # noqa: BLE001
+            return set()
+        return {pk for pk, group in groups.items() if layers.get(group)}
+
+    async def offline_notice_targets(self, user_pks) -> list:
+        """私聊/群聊扇出的站内信目标：不在聊天室页面 + 开启提醒偏好（批量预取）。
+
+        在线态与偏好各一次批量读取（替代逐人 2 次往返的串行放大），候选顺序保留。
+        """
+        targets = [pk for pk in dict.fromkeys(user_pks) if pk != self.user.pk]
+        if not targets:
+            return []
+        online = await self.chat_channels_alive(targets)
+        pending = [pk for pk in targets if pk not in online]
+        if not pending:
+            return []
+        enabled = await database_sync_to_async(batch_push_chat_enabled)(pending)
+        return [pk for pk in pending if enabled.get(pk, True)]

@@ -333,6 +333,115 @@ class TestSendPrivate:
         assert len(sent) == 3
 
 
+class TestGroupFanoutBatch:
+    """群聊扇出批量预取：一条群消息的在线判定与偏好读取各一次批量往返。"""
+
+    @pytest.fixture
+    def group_room(self, alice):
+        from message.models import ChatRoomMember, group_room_key
+        from system.models import UserInfo
+
+        members = [
+            UserInfo.objects.create_user(username=f"fanout{index}", password="Test@123456") for index in range(6)
+        ]
+        room = ChatRoom.objects.create(
+            room_type=ChatRoom.RoomType.GROUP, room_key=group_room_key(), name="扇出群", owner=alice
+        )
+        ChatRoomMember.objects.create(room=room, user=alice)
+        for user in members:
+            ChatRoomMember.objects.create(room=room, user=user)
+        return room, members
+
+    def test_single_batch_query_for_layer_and_preference(
+        self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled
+    ):
+        from message import consumers as consumers_module
+
+        room, members = group_room
+        calls = {"layers": 0, "groups": [], "pref": 0}
+        original = ws_layer.get_layers_for_groups
+
+        async def counting_batch(groups):
+            calls["layers"] += 1
+            calls["groups"] = list(groups)
+            return await original(groups)
+
+        monkeypatch.setattr(ws_layer, "get_layers_for_groups", counting_batch)
+
+        def counting_pref(pks):
+            calls["pref"] += 1
+            return {pk: True for pk in pks}
+
+        monkeypatch.setattr(consumers_module, "batch_push_chat_enabled", counting_pref)
+        pushes = []
+
+        async def fake_push(user_pk, message, **kwargs):
+            pushes.append(user_pk)
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "群消息", "client_msg_id": "c-group-batch"})
+
+        async_to_sync(scenario)()
+
+        # 一次批量在线判定（覆盖全体其他成员组）+ 一次批量偏好读取（非逐人 2N 次）
+        assert calls["layers"] == 1
+        assert calls["pref"] == 1
+        assert len(calls["groups"]) == len(members)
+        assert sorted(pushes) == sorted(user.pk for user in members)
+
+    def test_online_member_skipped_without_push(self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled):
+        room, members = group_room
+        online_user = members[0]
+        pushes = []
+
+        async def fake_push(user_pk, message, **kwargs):
+            pushes.append(user_pk)
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+
+        async def scenario():
+            # 该成员聊天室页面在线（连接在其个人聊天组）：实时可达，不再重复弹站内信
+            await ws_layer.group_add(get_chat_user_group_name(online_user.pk), "specific.online-member")
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "群消息2", "client_msg_id": "c-group-online"})
+
+        async_to_sync(scenario)()
+
+        assert online_user.pk not in pushes
+        assert sorted(pushes) == sorted(user.pk for user in members[1:])
+
+    def test_preference_off_skips_target(self, ws_layer, alice, group_room, monkeypatch, chat_push_enabled):
+        from message import consumers as consumers_module
+
+        room, members = group_room
+        muted = members[-1]
+        pushes = []
+
+        async def fake_push(user_pk, message, **kwargs):
+            pushes.append(user_pk)
+
+        monkeypatch.setattr("message.consumers.async_push_message", fake_push)
+
+        original_batch = consumers_module.batch_push_chat_enabled
+
+        def with_muted(pks):
+            return {pk: pk != muted.pk for pk in original_batch(pks)}
+
+        monkeypatch.setattr(consumers_module, "batch_push_chat_enabled", with_muted)
+
+        async def scenario():
+            consumer, __, ___ = _make_consumer(ws_layer, alice)
+            await consumer.handle_send({"room_id": room.pk, "content": "群消息3", "client_msg_id": "c-group-mute"})
+
+        async_to_sync(scenario)()
+
+        assert muted.pk not in pushes
+        assert sorted(pushes) == sorted(user.pk for user in members[:-1])
+
+
 class TestRecallAndRead:
     def test_recall_broadcasts_to_room(self, ws_layer, alice, bob, monkeypatch):
         room = chat_service.get_or_create_private_room(alice, bob)
