@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """captcha 辅助函数单元测试（挑战生成 / 噪点函数 / 图片构造 / URL 反解）。"""
 
+import operator
 import random
+from pathlib import Path
 
 import pytest
 from django.test import override_settings
@@ -64,14 +66,32 @@ class TestNoiseFilterFunctions:
         assert list(filter_functions()) == []
 
 
+#: 测试侧独立求解（显式运算表，测试里同样不使用 eval）
+_MATH = {"+": operator.add, "-": operator.sub, "*": operator.mul}
+
+
+def _solve(expression: str) -> int:
+    for symbol, func in _MATH.items():
+        if symbol in expression[1:]:
+            left, _, right = expression.partition(symbol)
+            return func(int(left), int(right))
+    raise AssertionError(f"无法解析算式：{expression}")
+
+
 class TestMathChallenge:
     @override_settings(CAPTCHA_MATH_CHALLENGE_OPERATOR="×")
     def test_result_is_consistent(self):
         for _ in range(20):
             challenge, answer = math_challenge()
             assert challenge.endswith("=")
-            expression = challenge.rstrip("=").replace("×", "*")
-            assert str(eval(expression)) == answer
+            assert str(_solve(challenge.rstrip("=").replace("×", "*"))) == answer
+
+    def test_implementation_has_no_eval(self):
+        """静态扫描红旗守护：数学验证码不得用 eval（改显式运算表）。"""
+        from captcha import helpers as captcha_helpers
+
+        source = Path(captcha_helpers.__file__).read_text(encoding="utf-8")
+        assert "eval(" not in source
 
     def test_subtraction_operand_swap(self):
         """被减数小于减数时应交换操作数，保证结果非负。"""

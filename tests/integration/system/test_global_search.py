@@ -168,6 +168,39 @@ class TestGlobalSearchAPI:
         assert resp.data["data"]["groups"] == []
 
 
+class TestGroupTotals:
+    """分组计数口径：未饱和不跑 COUNT（省查询），饱和时补 COUNT 取真实总数。"""
+
+    def test_unsaturated_group_skips_count_query(self, auth_client):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        for index in range(3):
+            UserInfo.objects.create_user(username=f"unsat_{index}", password="x")
+
+        with CaptureQueriesContext(connection) as captured:
+            resp = auth_client.get(SEARCH_URL, {"keyword": "unsat_", "scope": "user"})
+        assert resp.status_code == 200
+        group = _group(resp.data["data"]["groups"], "user")
+        assert group["total"] == 3
+        assert len(group["items"]) == 3
+        statements = [query["sql"].lower() for query in captured]
+        assert not any("count(" in sql and "unsat_" in sql for sql in statements), statements
+
+    def test_saturated_group_reports_true_total(self, auth_client):
+        from system.search import GROUP_LIMIT
+
+        total_created = GROUP_LIMIT + 3
+        for index in range(total_created):
+            UserInfo.objects.create_user(username=f"sat_{index}", password="x")
+
+        resp = auth_client.get(SEARCH_URL, {"keyword": "sat_", "scope": "user"})
+        group = _group(resp.data["data"]["groups"], "user")
+        # 展示截断到分组上限，但总数必须是真实条数（前端显示「共 N 条」）
+        assert len(group["items"]) == GROUP_LIMIT
+        assert group["total"] == total_created
+
+
 class TestPagePermissionGate:
     """分组级页面权限门（system/search.py::SearchProvider.visible_to）。"""
 

@@ -47,7 +47,10 @@ class BaseViewSet:
         return instance.delete()
 
     def filter_queryset(self, queryset):
-        for backend in set(set(self.filter_backends) | set(self.extra_filter_class or [])):
+        # 有序去重（dict.fromkeys）：`set()` 的迭代顺序不定，多后端组合时过滤顺序
+        # 会随哈希漂移——数据权限/受控 lookup 等后端的求值顺序必须稳定可预期
+        backends = dict.fromkeys(list(self.filter_backends) + list(self.extra_filter_class or []))
+        for backend in backends:
             queryset = backend().filter_queryset(self.request, queryset, self)
         return self.optimize_queryset(queryset)
 

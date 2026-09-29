@@ -5,6 +5,7 @@
 # author : ly_13
 # date : 8/10/2024
 
+import hashlib
 import json
 
 from django.core.cache import cache
@@ -88,6 +89,50 @@ class DeptInfo(DbAuditModel, DbUuidModel):
                     dept_list.append(dept.get(pk))
                     cls._recursion_dept_info(dept.get(pk), dept_all_list, dept_list, is_parent)
         return json.loads(json.dumps(list(set(dept_list)), cls=encoders.JSONEncoder))
+
+    @classmethod
+    def dept_tree_pks(cls, dept_ids, is_parent=False):
+        """批量展开：一次取全表 + 内存建索引（结果 = 逐个 ``recursion_dept_info`` 的并集）。
+
+        数据权限编译期按「部门集合」展开子树时，逐 pk 调用会各自全表扫描（缓存未命中
+        时 N 个部门 = N 次全表查询）；这里一次查询 + parent→children 索引 + 迭代展开，
+        结果与逐个调用并集**逐项一致**（含输入部门自身，已归一为字符串主键，可直接
+        用于 ``dept__in=``）。结果按「输入集合 + 方向」缓存，缓存键前缀与单条路径同源
+        （``dept_recursion_*``），因此共用同一失效信号。
+        """
+        wanted = sorted({str(item) for item in dept_ids or [] if item is not None})
+        if not wanted:
+            return []
+        digest = hashlib.md5(",".join(wanted).encode()).hexdigest()[:12]
+        cache_key = f"dept_recursion_batch_{int(bool(is_parent))}_{digest}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        children: dict = {}
+        parents: dict = {}
+        for row in cls.objects.values("pk", "parent"):
+            pk, parent = str(row["pk"]), row["parent"]
+            parents[pk] = str(parent) if parent is not None else None
+            children.setdefault(str(parent) if parent is not None else "", []).append(pk)
+
+        result = set()
+        stack = list(wanted)
+        while stack:
+            current = stack.pop()
+            if current in result:
+                continue
+            result.add(current)
+            if is_parent:
+                upstream = parents.get(current)
+                if upstream:
+                    stack.append(upstream)
+            else:
+                stack.extend(children.get(current, []))
+
+        payload = json.loads(json.dumps(sorted(result), cls=encoders.JSONEncoder))
+        cache.set(cache_key, payload, cls.DEPT_TREE_CACHE_TTL)
+        return payload
 
     @classmethod
     def invalid_dept_tree_cache(cls):

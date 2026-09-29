@@ -80,12 +80,6 @@ class MenuViewSet(
             instances.append(directory)
         return instances
 
-    # @cache_response(timeout=600, key_func='get_cache_key')
-    # def list(self, request, *args, **kwargs):
-    #     """获取{cls}的列表"""
-    #     data = super().list(request, *args, **kwargs).data
-    #     return ApiResponse(**data)
-
     @extend_schema(
         responses=get_default_response_schema(
             {

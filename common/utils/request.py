@@ -7,6 +7,7 @@
 import base64
 import ipaddress
 import json
+import re
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
@@ -17,6 +18,9 @@ from user_agents import parse
 
 from common.core.auth import GetUserFromAccessToken
 from common.core.utils import get_doc_first_line
+
+#: multipart 请求体解析上限（只解析小表单的字段名；超大请求不读正文，避免整包进内存）
+MULTIPART_FIELD_PARSE_LIMIT = 64 * 1024
 
 
 def get_request_user(request):
@@ -116,8 +120,26 @@ def get_request_data(request):
     if request_data:
         return request_data
     if request.META.get("CONTENT_TYPE", "").startswith("multipart/"):
-        # 避免字段检查直接报错，axios中form-data数据字段和json字段不统一
-        return "multipart/form-data"
+        # multipart（文件上传/表单直传）：只记**字段名清单**，审计日志因此能看到
+        # 「提交了哪些字段」（旧实现返回哨兵字符串，日志里没有任何字段信息）。
+        #
+        # 两条硬约束：
+        # ① 不能碰 ``request.POST``——那会触发 Django 自己的 multipart 解析并耗尽请求流，
+        #    后续 DRF 只能退回 Django 的 POST/FILES（绕过本仓 AxiosMultiPartParser 的
+        #    点号键展开）；
+        # ② 不能无条件读 ``request.body``——大文件上传不能整包进内存。
+        # 因此仅在 Content-Length ≤ 阈值时读正文（读到的正文被 Django 缓存，DRF 解析
+        # 仍走 BytesIO(带点号键展开)），超大请求只留标记。
+        try:
+            length = int(request.META.get("CONTENT_LENGTH") or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if 0 < length <= MULTIPART_FIELD_PARSE_LIMIT:
+            # 前缀断言 [;\s]：避免把 filename="..." 也当成字段名（filename 里含 "name="）
+            names = re.findall(rb'[;\s]name="([^"]{1,128})"', request.body)
+            fields = sorted({name.decode("utf-8", "ignore") for name in names})
+            return {"_multipart_fields": fields}
+        return {"_multipart_fields": [], "_multipart_body_skipped": True}
     data: dict = {**request.GET.dict(), **request.POST.dict()}
     if not data:
         try:

@@ -15,6 +15,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import close_old_connections, connection
 from django.http.response import HttpResponse
+from redis.exceptions import LockError
 
 from common.utils import get_logger
 
@@ -284,6 +285,9 @@ class MagicCacheResponse:
 
         return inner
 
+    #: 单飞锁 TTL（秒）：锁只覆盖「一次回源 + 回写」，超时后其它请求自行回源
+    LOCK_TTL = 60
+
     def process_cache_response(self, view_instance, view_method, request, args, kwargs):
         func_key = self.calculate_key(
             view_instance=view_instance, view_method=view_method, request=request, args=args, kwargs=kwargs
@@ -295,38 +299,71 @@ class MagicCacheResponse:
         else:
             cache_key = f"{cache_key}_{func_name}"
         timeout = self.calculate_timeout(view_instance=view_instance)
-        n_time = time.time()
         # no_cache 旁路：代码内标记（export_data）或显式查询参数（监控面板手动刷新）。
         # 仅需登录的只读接口使用，绕过读取并跳过回写，避免刷新拿到窗口内旧数据
         query = getattr(request, "query_params", None) or getattr(request, "GET", {})
         no_cache = bool(getattr(request, "no_cache", False)) or query.get("no_cache") in ("1", "true")
+
         if no_cache:
-            res = None
-        else:
-            res = cache.get(cache_key)
-        if res and n_time - res.get("c_time", n_time) < timeout - self.invalid_time:
-            logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
-            content, status, headers = res["data"]
-            response = HttpResponse(content=content, status=status)
-            response.renderer_context = view_instance.get_renderer_context()
-            for k, v in headers.values():
-                response[k] = v
-        else:
-            response = view_method(view_instance, request, *args, **kwargs)
-            response = view_instance.finalize_response(request, response, *args, **kwargs)
-            response.render()
+            return self._execute_view(
+                view_instance, view_method, request, args, kwargs, cache_key, timeout, store=False
+            )
 
-            if not response.status_code >= 400 and not no_cache:
-                data = (response.rendered_content, response.status_code, {k: (k, v) for k, v in response.items()})
-                res = {"c_time": n_time, "data": data}
-                cache.set(cache_key, res, timeout)
-                logger.debug(
-                    f"exec {func_name} finished. time:{time.time() - n_time}  cache_key:{cache_key} result:{res}"
+        res = self._load_valid(cache_key, timeout)
+        if res is not None:
+            return self._serve_cached(res, view_instance, func_name, cache_key)
+
+        # 单飞（与 MagicCacheData 同范式）：并发未命中时只让一个请求回源，
+        # 其余在锁上排队，拿到锁后二次检查复用首次结果——避免缓存窗口到期瞬间
+        # N 个请求同时回源（列表页大查询尤其明显）
+        try:
+            with cache.lock(f"locker_{cache_key}", timeout=self.LOCK_TTL, blocking_timeout=self.LOCK_TTL + 5):
+                res = self._load_valid(cache_key, timeout)
+                if res is not None:
+                    return self._serve_cached(res, view_instance, func_name, cache_key)
+                return self._execute_view(
+                    view_instance, view_method, request, args, kwargs, cache_key, timeout, store=True
                 )
+        except LockError:
+            # 等锁超时：读缓存只是优化、不是正确性要求，退化为直接回源（旧行为）
+            logger.warning(f"acquire response cache lock timeout, fallback to direct render. key:{cache_key}")
+            return self._execute_view(view_instance, view_method, request, args, kwargs, cache_key, timeout, store=True)
 
+    def _load_valid(self, cache_key: str, timeout) -> dict | None:
+        """读取未过期缓存载荷（窗口内才命中；no_cache 分支不走这里）。"""
+        res = cache.get(cache_key)
+        if res and time.time() - res.get("c_time", time.time()) < timeout - self.invalid_time:
+            return res
+        return None
+
+    def _serve_cached(self, res: dict, view_instance, func_name: str, cache_key: str) -> HttpResponse:
+        logger.info(f"exec {func_name} finished. cache_key:{cache_key}  cache data exist")
+        content, status, headers = res["data"]
+        response = HttpResponse(content=content, status=status)
+        response.renderer_context = view_instance.get_renderer_context()
+        for k, v in headers.values():
+            response[k] = v
+        return self._ensure_closable(response)
+
+    def _execute_view(self, view_instance, view_method, request, args, kwargs, cache_key, timeout, store: bool):
+        """回源渲染；``store`` 为真且响应非 4xx/5xx 时回写缓存。"""
+        n_time = time.time()
+        func_name = f"{view_instance.__class__.__name__}_{view_method.__name__}"
+        response = view_method(view_instance, request, *args, **kwargs)
+        response = view_instance.finalize_response(request, response, *args, **kwargs)
+        response.render()
+
+        if store and not response.status_code >= 400:
+            data = (response.rendered_content, response.status_code, {k: (k, v) for k, v in response.items()})
+            res = {"c_time": n_time, "data": data}
+            cache.set(cache_key, res, timeout)
+            logger.debug(f"exec {func_name} finished. time:{time.time() - n_time}  cache_key:{cache_key} result:{res}")
+        return self._ensure_closable(response)
+
+    @staticmethod
+    def _ensure_closable(response: HttpResponse) -> HttpResponse:
         if not hasattr(response, "_closable_objects"):
             response._closable_objects = []
-
         return response
 
     def calculate_key(self, view_instance, view_method, request, args, kwargs):

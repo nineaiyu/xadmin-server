@@ -98,10 +98,16 @@ class SearchProvider:
         if self.row_scope is not None:
             queryset = self.row_scope(user, queryset)
         queryset = get_filter_queryset(queryset, user)
-        total = queryset.count()
-        if not total:
+        # 先取「限值 + 1」行：未饱和时条数即总数（省掉一次全量 COUNT，全局搜索 8 个
+        # provider 每轮少 8 次计数查询）；只有饱和（结果 ≥ limit）才补一次 COUNT 取真实总数
+        rows = list(queryset.values("pk", self.display_field, *self.meta_fields)[: self.limit + 1])
+        if not rows:
             return None
-        rows = list(queryset.values("pk", self.display_field, *self.meta_fields)[: self.limit])
+        if len(rows) <= self.limit:
+            total = len(rows)
+        else:
+            rows = rows[: self.limit]
+            total = queryset.count()
         items = [
             {
                 "pk": str(row["pk"]),

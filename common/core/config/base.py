@@ -60,6 +60,19 @@ class ConfigCacheBase:
     L1_MAX_ENTRIES = 512
     _L1_STORE: dict[str, tuple[float, Any]] = {}
 
+    # 短 TTL 键（秒 → 覆盖值）：这些键的运维热修正常见做法是**直接改库行**
+    # （绕过 post_save 信号 → 缓存不失效），默认 30 天缓存会让改动长期不生效。
+    # 给 60s 短 TTL 自愈：读路径最多 1 分钟回归新值，且 L1 同步收紧。
+    SHORT_TTL_KEYS = {
+        "BACKUP_ALERT_TOKEN": 60,
+        "OPS_ALERT_TOKEN": 60,
+        "SCIM_TOKEN": 60,
+    }
+
+    def _ttl_for(self, key: str) -> int:
+        """键级缓存时长：短 TTL 键优先，其余用实例默认（30 天）。"""
+        return self.SHORT_TTL_KEYS.get(key, self.timeout)
+
     def __init__(
         self,
         px="system",
@@ -101,12 +114,12 @@ class ConfigCacheBase:
         return copy.deepcopy(value)
 
     @classmethod
-    def _l1_set(cls, l1_key, value) -> None:
+    def _l1_set(cls, l1_key, value, ttl=None) -> None:
         if len(cls._L1_STORE) >= cls.L1_MAX_ENTRIES:
             # 容量兜底：用户级配置键理论上无界，超限整体清空（粗粒度但安全）
             cls._L1_STORE.clear()
         # 同样拷贝入池：调用方随后可能变更自己拿到的那份（如 db_data 直接返回）
-        cls._L1_STORE[l1_key] = (time.monotonic() + cls.L1_TTL, copy.deepcopy(value))
+        cls._L1_STORE[l1_key] = (time.monotonic() + (ttl or cls.L1_TTL), copy.deepcopy(value))
 
     @classmethod
     def _l1_clear(cls, l1_key) -> None:
@@ -179,6 +192,7 @@ class ConfigCacheBase:
     def get_data(self, key, default_data=None, ignore_access=True):
         cache = self.cache(f"{self.px}_{key}")
         l1_key = self._l1_key(key)
+        ttl = self._ttl_for(key)
         cache_data = self._l1_get(l1_key)
         if cache_data is None:
             try:
@@ -189,7 +203,7 @@ class ConfigCacheBase:
             if cache_data is not None:
                 # 写穿 L1：Redis 已有值（含 access=False / no_row 标记）原样缓存，
                 # 访问控制在 L1 之外判定，语义与直读 Redis 一致
-                self._l1_set(l1_key, cache_data)
+                self._l1_set(l1_key, cache_data, ttl=min(ttl, self.L1_TTL))
         if cache_data is not None and cache_data.get("key", "") == key:
             if cache_data.get("no_row"):
                 return self._absence_value(key, default_data)
@@ -207,10 +221,10 @@ class ConfigCacheBase:
             return self._absence_value(key, default_data)
         db_data["value"] = self.get_render_value(json.dumps(db_data["value"]))
         try:
-            cache.set_storage_cache(db_data, timeout=self.timeout)
+            cache.set_storage_cache(db_data, timeout=ttl)
         except Exception:  # noqa: BLE001 写缓存失败不影响本次读数
             logger.warning("config cache write failed, skipped", exc_info=True)
-        self._l1_set(l1_key, db_data)
+        self._l1_set(l1_key, db_data, ttl=min(ttl, self.L1_TTL))
         if ignore_access or db_data.get("access"):
             return db_data
         return {}

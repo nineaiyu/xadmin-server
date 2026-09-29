@@ -124,21 +124,22 @@ def _pk_list(value):
 
 
 def _flatten_dept_tree(raw):
-    """指定部门列表 → 各自及全部下级的并集。"""
-    merged = []
-    for pk in _pk_list(raw):
-        merged.extend(DeptInfo.recursion_dept_info(str(pk)))
-    return merged
+    """指定部门列表 → 各自及全部下级的并集。
+
+    批量展开（`DeptInfo.dept_tree_pks`）：一次取全表 + 内存索引，替代逐 pk 递归
+    各自全表扫描（缓存未命中时 N 个部门 = N 次全表查询）；结果与逐个并集等价。
+    """
+    return DeptInfo.dept_tree_pks(_pk_list(raw))
 
 
 def _leader_dept_pks(user):
     """用户作为 leader 的启用部门及其全部下级并集（无主管职责返回空）。"""
     if user is None or not hasattr(user, "leader_depts"):
         return []
-    pks = []
-    for dept in user.leader_depts.filter(is_active=True):
-        pks.extend(DeptInfo.recursion_dept_info(dept.pk))
-    return pks
+    led_pks = list(user.leader_depts.filter(is_active=True).values_list("pk", flat=True))
+    if not led_pks:
+        return []
+    return DeptInfo.dept_tree_pks(led_pks)
 
 
 def _leader_user_pks(user):

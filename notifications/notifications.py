@@ -153,10 +153,14 @@ class Message:
         邮件/短信按各自开关过滤），保证测试消息能真实落库/投递。
 
         `user` 非空时只发给该用户（个人消息订阅页「发送测试」= 发给自己）。
+
+        无上下文样例的消息类型（`gen_test_msg` 返回空，如重置密码成功提醒需要真实请求）：
+        **抛 NotImplementedError** 由调用方归一为「该消息类型不支持测试发送」——
+        旧行为是静默 return，管理员点「发送测试消息」后看不到任何反馈（静默无效）。
         """
         msg = cls.gen_test_msg()
         if not msg:
-            return
+            raise NotImplementedError(f"no test message sample for {cls.get_message_type()}")
         if user is not None:
             user_ids = [user.pk]
         else:
@@ -331,10 +335,12 @@ class UserMessage(Message):
 
         覆盖基类「发给全部超管」的语义——用户消息（如异地登录提醒）发给超管没有意义，
         发给一个真实用户才能验证模板与渠道是否可用；`user` 非空时按指定用户发送。
+
+        无样例的消息类型同样抛 NotImplementedError（与基类同口径，避免静默无效）。
         """
         msg = cls.gen_test_msg()
         if not msg:
-            return
+            raise NotImplementedError(f"no test message sample for {cls.get_message_type()}")
         target = user or cls.get_test_user()
         if target is None:
             logger.warning("send test msg failed. No user found for %s", cls.get_message_type())

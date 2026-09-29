@@ -1,9 +1,14 @@
+import operator
 import random
 import re
 
 from django.conf import settings
 from django.urls import reverse
 from PIL import Image
+
+#: 数学验证码的运算表：显式映射（不用 eval——输入虽全部内部生成，
+#: 但静态扫描把 eval 判为红旗，且字典求值语义更清晰）
+_MATH_OPERATORS = {"+": operator.add, "-": operator.sub, "*": operator.mul}
 
 
 def _callable_from_string(string_or_callable):
@@ -33,15 +38,15 @@ def filter_functions():
 
 
 def math_challenge():
-    operators = ("+", "*", "-")
+    symbol = random.choice(tuple(_MATH_OPERATORS))
     operands = (random.randint(1, 10), random.randint(1, 10))
-    operator = random.choice(operators)
-    if operands[0] < operands[1] and "-" == operator:
+    if operands[0] < operands[1] and "-" == symbol:
         operands = (operands[1], operands[0])
-    challenge = f"{operands[0]}{operator}{operands[1]}"
+    challenge = f"{operands[0]}{symbol}{operands[1]}"
+    answer = _MATH_OPERATORS[symbol](*operands)
     return (
         "{}=".format(challenge.replace("*", settings.CAPTCHA_MATH_CHALLENGE_OPERATOR)),
-        str(eval(challenge)),
+        str(answer),
     )
 
 

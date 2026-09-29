@@ -114,6 +114,12 @@ FACTS = [
         "pattern": r"覆盖率 ≥(\d+)%",
         "source": "workflow:cov_fail_under",
     },
+    {
+        "doc": "docs/README.md",
+        "label": "文档索引 ADR 篇数",
+        "pattern": r"架构决策记录索引（(\d+) 篇",
+        "source": "adr:count",
+    },
     # —— 跨仓：对外文档站（xadmin-docs）中的"当前状态"事实 ——
     {
         "doc": "guide/index.md",
@@ -293,6 +299,15 @@ def _workflow_value(key: str):
     return matched.group(1) if matched else None
 
 
+def _adr_count() -> str:
+    """ADR 文件数事实源：``docs/adr/ADR-*.md``（不含索引 README）。
+
+    索引里的「N 篇」是人工维护的计数，历史上漂移过（写 53、实际 66）——
+    改由文件系统直接计数，新增 ADR 忘记改索引即失败。
+    """
+    return str(len(list((REPO_ROOT / "docs" / "adr").glob("ADR-*.md"))))
+
+
 def _client_engine(key: str):
     """客户端 package.json 的 engines.<key>（跨仓；仓库缺失或解析失败返回 None）。"""
     package = _client_root() / "package.json"
@@ -323,7 +338,11 @@ def _resolve_source(source: str):
         return _workflow_value(key)
     if kind == "client_engine":
         return _client_engine(key)
-    raise SystemExit(f"未知事实源：{source}（支持 requirements[:minor] / const:VERSION / workflow / client_engine）")
+    if kind == "adr" and key == "count":
+        return _adr_count()
+    raise SystemExit(
+        f"未知事实源：{source}（支持 requirements[:minor] / const:VERSION / workflow / client_engine / adr:count）"
+    )
 
 
 def collect_violations(

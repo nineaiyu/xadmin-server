@@ -98,10 +98,17 @@ class TestUserPostsWritable:
 
 class TestUserActionsSmoke:
     def test_delete_superuser_forbidden(self, confirmed_client):
+        """超管禁止删除：可读业务错误（400 + 文案），不是 500。
+
+        历史行为是 perform_destroy 抛裸 Exception → 归一 500，前端只能看到
+        「服务器错误」，排查与提示都失真；这里锁定 400 + 可读 detail。
+        """
         auth_client = confirmed_client
         pk = UserInfo.objects.create_superuser(username="admin2", email="a2@example.com", password="Admin@123456").pk
         resp = auth_client.delete(f"{USER_URL}/{pk}")
-        assert resp.status_code == 500
+        assert resp.status_code == 400
+        assert resp.data["code"] == 400  # ValidationError 的业务码口径 = HTTP 状态码
+        assert "超级管理员" in str(resp.data["detail"])
         assert UserInfo.objects.filter(pk=pk).exists()
 
     def test_batch_destroy_excludes_superuser(self, confirmed_client):

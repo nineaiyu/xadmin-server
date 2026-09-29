@@ -10,6 +10,7 @@ from typing import Any
 
 import aiofiles
 from channels.db import database_sync_to_async
+from django.conf import settings
 
 from common.celery.utils import get_celery_task_log_path
 from common.core.config import UserConfig
@@ -125,6 +126,17 @@ class MessageNotify(AsyncJsonWebsocket):
     async def receive_json(self, action, data, content, **kwargs):
         match action:
             case "chat_message":
+                # 历史通道（ws/message）的聊天广播：**无落库、无内容校验、无权限校验**，
+                # 且可向共享组注入任意帧（连接握手允许落到 message_system_default_0）。
+                # 前端已切换到 ws/chat（落库 + 校验 + 权限 + 限流），本路径默认关闭
+                # （fail-closed）：仅在确需兼容老客户端时显式开启
+                # CHAT_LEGACY_WS_BROADCAST_ENABLED: true。
+                if not settings.CHAT_LEGACY_WS_BROADCAST_ENABLED:
+                    logger.warning(
+                        "legacy ws/message chat_message rejected (disabled; use ws/chat). user=%s", self.user.pk
+                    )
+                    await self.close()
+                    return
                 data["pk"] = self.user.pk
                 data["username"] = self.user.username
                 # Send message to room group

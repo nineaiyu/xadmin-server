@@ -84,6 +84,10 @@ BASE_CONFIG = {
     # CORS 跨域配置，同源部署（nginx 反代）无需配置；跨域部署请配置白名单
     "CORS_ALLOW_ALL_ORIGINS": False,
     "CORS_ALLOWED_ORIGINS": [],
+    # CSRF 受信源（Django 4+ 需带 scheme，如 https://xadmin.example.com）。
+    # 留空 = 沿用 CORS_ALLOWED_ORIGINS（跨域部署下 admin/会话表单 POST 不再撞 CSRF 失败）；
+    # 需要独立白名单时在此显式配置。
+    "CSRF_TRUSTED_ORIGINS": [],
     "LANGUAGE_CODE": "zh-hans",
     "TIME_ZONE": "Asia/Shanghai",
     # 服务配置
@@ -159,6 +163,10 @@ BASE_CONFIG = {
     "AI_API_KEY": "",
     "AI_MODEL": "gpt-4o-mini",
     "AI_TIMEOUT": 60,
+    # 历史 ws/message 通道的 chat_message 兼容开关（默认关）：
+    # 该路径无落库/无校验直广播，前端已切换 ws/chat（落库 + 校验 + 权限 + 限流），
+    # 仅确需兼容老客户端时显式开启（见 message/notify.py）
+    "CHAT_LEGACY_WS_BROADCAST_ENABLED": False,
     # AI 二期 NL 查数：默认关闭灰度
     "AI_NL_QUERY_ENABLED": False,
     # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：默认关闭灰度，

@@ -135,10 +135,15 @@ class TestSendMsgErrorPaths:
 
 
 class TestSendTestMsg:
-    def test_no_test_msg_is_noop(self):
-        """gen_test_msg 返回 None 的消息类型不发任何内容。"""
+    def test_no_test_msg_raises_not_implemented(self):
+        """无样例（gen_test_msg 返回 None）的消息类型：抛 NotImplementedError 而非静默返回。
+
+        旧行为是静默 return —— 管理员点「发送测试消息」后既没有消息也看不到提示；
+        抛出后由视图归一为 1004「该消息类型不支持测试发送」，且同样不落任何内容。
+        """
         before = MessageContent.objects.count()
-        ResetPasswordSuccessMsg.send_test_msg()
+        with pytest.raises(NotImplementedError):
+            ResetPasswordSuccessMsg.send_test_msg()
         assert MessageContent.objects.count() == before
 
     def test_test_msg_send_path_runs(self, normal_user):

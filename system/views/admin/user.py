@@ -13,7 +13,7 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from common.core.approval import ApprovalRequired
 from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
@@ -111,8 +111,10 @@ class UserViewSet(
         return permissions
 
     def perform_destroy(self, instance):
+        # 抛 ValidationError（400 + 可读文案）而不是裸 Exception（会归一成 500，
+        # 前端只能看到「服务器错误」，排查与提示都失真）
         if instance.is_superuser:
-            raise Exception(_("The super administrator disallows deletion"))
+            raise ValidationError(_("The super administrator disallows deletion"))
         return instance.delete()
 
     def create(self, request, *args, **kwargs):

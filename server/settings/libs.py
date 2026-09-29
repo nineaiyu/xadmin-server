@@ -123,6 +123,11 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = CONFIG.CORS_ALLOW_ALL_ORIGINS
 CORS_ALLOWED_ORIGINS = CONFIG.CORS_ALLOWED_ORIGINS
 
+# CSRF 受信源：Django 4+ 要求带 scheme 的完整源；跨域部署下若只配了 CORS 白名单，
+# 会话态（admin / 表单）的 POST 仍会被 CSRF 拒绝——默认沿用 CORS 白名单，
+# 需要独立白名单时在 config.yml 配 CSRF_TRUSTED_ORIGINS（两者语义都是「可信前端源」）。
+CSRF_TRUSTED_ORIGINS = CONFIG.CSRF_TRUSTED_ORIGINS or list(CORS_ALLOWED_ORIGINS)
+
 if CORS_ALLOW_ALL_ORIGINS and CORS_ALLOW_CREDENTIALS:
     # 「带凭证 + 任意源放行」等价于允许任意站点携带登录态调用 API（凭证外泄/CSRF 面），
     # 属高危组合：直接拒绝启动，强制改用 CORS_ALLOWED_ORIGINS 白名单
@@ -186,9 +191,13 @@ CELERY_RESULT_EXPIRES = 3600 * 24 * 7  # 任务结果过期时间
 TASK_EXECUTION_KEEP_DAYS = int(CONFIG.get("TASK_EXECUTION_KEEP_DAYS", 30))
 
 CELERY_WORKER_DISABLE_RATE_LIMITS = True  # 任务发出后，经过一段时间还未收到acknowledge , 就将任务重新交给其他worker执行
-# 预取须与并发量级匹配：60（≈6 倍并发）会让单 worker 囤积大量任务，
-# worker 异常退出时这些任务会被大面积重投
-CELERY_WORKER_PREFETCH_MULTIPLIER = 10
+# 预取倍数（默认队列的 worker）：与并发量级匹配即可，取 4。
+# 取值口径：默认 worker 线程池并发 = CELERY_WORKER_COUNT（默认 4，见 conf/defaults.py），
+# 预取 4 倍并发在「长任务排队」与「worker 崩溃重投」之间取平衡——
+# 过大（如历史注释里的 60）会让单 worker 囤积大量未确认任务，
+# worker 异常退出时这些任务被大面积重投；heavy 队列则由
+# services/celery_heavy.py 固定 prefetch=1（长任务串行消费）。
+CELERY_WORKER_PREFETCH_MULTIPLIER = 4
 
 # 软超时：到达后先抛 SoftTimeLimitExceeded 让任务优雅收尾（清理临时文件/回写状态），
 # 再由 CELERY_TASK_TIME_LIMIT（30min 硬超时）强制终止

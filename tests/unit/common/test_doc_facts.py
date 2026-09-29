@@ -7,6 +7,7 @@
 """
 
 import importlib.util
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -19,6 +20,20 @@ _spec.loader.exec_module(check_doc_facts)
 class TestRepoDocs:
     def test_current_repo_docs_match_code_facts(self):
         assert check_doc_facts.collect_violations(REPO_ROOT) == []
+
+
+class TestAdrCountSource:
+    """ADR 篇数事实源（adr:count）：索引写「N 篇」必须等于实际 ADR 文件数。"""
+
+    def test_adr_count_matches_files(self):
+        expected = len(list((REPO_ROOT / "docs" / "adr").glob("ADR-*.md")))
+        assert check_doc_facts._adr_count() == str(expected)
+
+    def test_index_count_claim_matches_actual(self):
+        text = (REPO_ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+        matched = re.search(r"架构决策记录索引（(\d+) 篇", text)
+        assert matched, "文档索引里的 ADR 篇数描述被删（受保护事实失去载体）"
+        assert matched.group(1) == check_doc_facts._adr_count()
 
 
 class TestCheckerLogic:
