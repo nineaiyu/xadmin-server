@@ -29,7 +29,7 @@ from common.core.utils import get_all_url_dict
 from common.swagger.utils import get_default_response_schema
 from system.models import Menu, ModelLabelField
 from system.serializers.menu import MenuSerializer
-from system.signal_handler import clean_cache_handler
+from system.signal_handler import clean_cache_handler, invalidate_menu_user_caches
 from system.utils import permission_sync as sync
 from system.utils.menu import get_view_permissions
 
@@ -273,7 +273,13 @@ class MenuViewSet(
 
     @temporary_disable_signal(post_save, receiver=clean_cache_handler, sender=Menu)
     def _save_permission_items(self, items):
-        # 该代码禁用了信号，菜单数据不刷新
+        """构造/覆盖权限点并返回落库实例（信号临时禁用，失效由调用方统一执行）。
+
+        逐条保存若触发信号，会按每个权限点各自扫一遍用户/角色/部门（同一批内
+        重复扫描）；改为收集实例后一次精确失效，保证「被覆盖更新的子权限点」
+        也进失效集——只失效父菜单会让这些用户最长 24h 持旧权限（路由缓存 TTL）。
+        """
+        saved = []
         for _action, permission_menu, data in items:
             if permission_menu:
                 serializer = self.get_serializer(permission_menu, data=data, partial=True, ignore_field_permission=True)
@@ -283,6 +289,8 @@ class MenuViewSet(
                 serializer = self.get_serializer(data=data, ignore_field_permission=True)
                 serializer.is_valid(raise_exception=True)
                 self.perform_create(serializer)
+            saved.append(getattr(serializer, "instance", None))
+        return saved
 
     @extend_schema(
         request=OpenApiRequest(
@@ -320,8 +328,9 @@ class MenuViewSet(
             if dry_run:
                 return ApiResponse(data=self._serialize_permission_items(items))
 
-            self._save_permission_items(items)
-            # 保存数据，触发刷新缓存信号
+            saved = self._save_permission_items(items)
+            # 保存数据，触发刷新缓存信号（父菜单）；本次变更的子权限点一并精确失效
             instance.save(update_fields=["is_active"])
+            invalidate_menu_user_caches([instance, *saved])
             return ApiResponse()
         return ApiResponse(code=1001)

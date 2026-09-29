@@ -23,6 +23,7 @@ from system.models import (
     DataPermission,
     DeptInfo,
     Menu,
+    MenuMeta,
     SystemConfig,
     TaskExecution,
     UserInfo,
@@ -58,15 +59,46 @@ def batch_invalid_cache(pks, batch_length=1000):
             keys[0](data)
 
 
-@receiver([post_save, pre_delete], sender=Menu)
-def clean_cache_handler(sender, instance, **kwargs):
+def invalidate_menu_user_caches(menus) -> None:
+    """失效菜单相关的用户权限/路由缓存（Menu 与 MenuMeta 变更共用同一实现）。
+
+    失效面 = 全部超管（auths 快照含全部启用权限点）+ 拥有这些菜单的角色所属用户
+    + 通过角色间接持有的部门用户；另清应用授权的 path→pk 映射短缓存。
+    接受菜单实例序列（调用方可能一次变更多个：批量生成权限点、父菜单 + 子权限点）。
+    """
+    menus = [menu for menu in menus if menu is not None]
+    if not menus:
+        return
     batch_invalid_cache(UserInfo.objects.filter(is_superuser=True).values_list("pk", flat=True))
-    pk1 = UserRole.objects.filter(menu=instance, userinfo__isnull=False).values_list("userinfo", flat=True).distinct()
-    pk2 = DeptInfo.objects.filter(roles__menu=instance).values_list("dept_query", flat=True).distinct()
+    pk1 = UserRole.objects.filter(menu__in=menus, userinfo__isnull=False).values_list("userinfo", flat=True).distinct()
+    pk2 = DeptInfo.objects.filter(roles__menu__in=menus).values_list("dept_query", flat=True).distinct()
     batch_invalid_cache(set(pk1) | set(pk2))
     # 应用授权的 path→pk 映射短缓存（超管/白名单出口按地址回查菜单）同源失效
     invalid_menu_path_cache()
+
+
+@receiver([post_save, pre_delete], sender=Menu)
+def clean_cache_handler(sender, instance, **kwargs):
+    invalidate_menu_user_caches([instance])
     logger.info(f"invalid cache {instance}")
+
+
+@receiver([post_save, pre_delete], sender=MenuMeta)
+def clean_menu_meta_cache_handler(sender, instance, **kwargs):
+    """菜单元数据（标题/图标/隐藏/tag/水印等）变更：路由快照同源失效。
+
+    RouteSerializer 输出嵌套 meta；meta 独立保存（菜单页改标题/图标，或
+    MenuMeta 走 ORM 直改）不触发 Menu 的 post_save——漏挂会让路由缓存最长
+    24h（TTL）不更新。meta 与 Menu 是 OneToOne，反查可能不存在（先建 meta
+    后绑定，或级联删除场景），按缺失跳过。
+    """
+    try:
+        menu = instance.menu
+    except Exception:  # noqa: BLE001 Meta 未绑定菜单 / 菜单已删除
+        menu = None
+    if menu is not None:
+        invalidate_menu_user_caches([menu])
+        logger.info(f"invalid menu meta cache {instance}")
 
 
 @receiver([post_save, pre_delete], sender=SystemConfig)

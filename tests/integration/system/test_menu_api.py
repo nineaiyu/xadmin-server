@@ -128,6 +128,68 @@ class TestMenuBatchUpdate:
         assert Menu.objects.get(pk=pk).path == "/test"
 
 
+class TestMenuCacheInvalidation:
+    """菜单与菜单元数据的缓存失效：路由快照（TTL 24h）与权限数据必须即时清。
+
+    - MenuMeta 独立保存（改标题/图标/隐藏）不触发 Menu 的 post_save，漏挂最长 24h 不生效；
+    - 批量生成权限点曾只失效父菜单，被覆盖更新的子权限点用户最长 24h 持旧权限。
+    """
+
+    @staticmethod
+    def _prime(user):
+        """预热该用户的路由快照 + 权限数据缓存键（只关心是否被清空）。"""
+        import time
+
+        from django.core.cache import cache
+
+        keys = [
+            f"magic_cache_response_UserRoutesAPIView_get_{user.pk}",
+            f"magic_cache_data_get_user_permission_{user.pk}_GET",
+        ]
+        for key in keys:
+            cache.set(key, {"status": "ok", "c_time": time.time(), "data": []}, 300)
+        return keys
+
+    def test_menu_meta_change_invalidates_routes(self, menu_factory, normal_user, superuser):
+        """菜单元数据独立保存：持有该菜单的角色用户与超管的路由快照都失效。"""
+        from django.core.cache import cache
+
+        menu = menu_factory("菜单元数据", menu_type=Menu.MenuChoices.MENU, path="/menu/meta")
+        normal_user.roles.first().menu.add(menu)
+        keys = self._prime(normal_user) + self._prime(superuser)
+
+        menu.meta.title = "改名后的标题"
+        menu.meta.save()
+
+        assert all(cache.get(key) is None for key in keys)
+
+    def test_unbound_menu_meta_change_is_safe(self):
+        """未绑定菜单的 meta（先建后绑/级联删除）：保存不报错。"""
+        from system.models import MenuMeta
+
+        meta = MenuMeta.objects.create(title="游离元数据")
+        meta.title = "游离元数据2"
+        meta.save()
+        assert MenuMeta.objects.get(pk=meta.pk).title == "游离元数据2"
+
+    def test_bulk_permission_save_invalidates_child_menus(self, auth_client, normal_user):
+        """批量生成权限点：被覆盖更新的子权限点用户缓存一并失效（不只父菜单）。"""
+        from django.core.cache import cache
+
+        parent = _create_menu(auth_client, name="cache-menu")
+        payload = {"views": [TestMenuPermissionPreview.VIEW], "component": "cache-menu"}
+        assert auth_client.post(f"{MENU_URL}/{parent}/permissions", payload, format="json").data["code"] == 1000
+        child = Menu.objects.filter(name__endswith=":cache-menu").first()
+        assert child is not None
+        normal_user.roles.first().menu.add(child)
+        keys = self._prime(normal_user)
+
+        # 第二次执行全部走「覆盖更新」分支（旧实现只失效父菜单，这些键会残留）
+        assert auth_client.post(f"{MENU_URL}/{parent}/permissions", payload, format="json").data["code"] == 1000
+
+        assert all(cache.get(key) is None for key in keys)
+
+
 class TestMenuPermissionPreview:
     """权限码批量生成：dry_run 预览与执行共用同一构造逻辑（不落库）。"""
 
