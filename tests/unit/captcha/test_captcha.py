@@ -41,3 +41,24 @@ class TestCaptchaValid:
         captcha.expiration = timezone.now() - datetime.timedelta(minutes=1)
         captcha.save()
         assert CaptchaAuth(captcha_key=result["captcha_key"]).valid(captcha.response) is False
+
+
+class TestCaptchaAtomicConsume:
+    def test_valid_uses_single_delete_statement(self):
+        """一次性语义靠单条 DELETE 的受影响行数判定。
+
+        get() + delete() 是两条语句：并发同码在两条语句之间双双匹配成功，
+        一次性语义被破坏（守卫断言 SQL 形态，改造回归会立刻暴露）。
+        """
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        result = CaptchaAuth().generate()
+        captcha = CaptchaStore.objects.get(hashkey=result["captcha_key"])
+
+        with CaptureQueriesContext(connection) as ctx:
+            assert CaptchaAuth(captcha_key=result["captcha_key"]).valid(captcha.response) is True
+
+        statements = [query["sql"].strip().upper() for query in ctx.captured_queries]
+        assert len(statements) == 1, statements
+        assert statements[0].startswith("DELETE")

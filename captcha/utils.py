@@ -34,10 +34,12 @@ class CaptchaAuth:
         return {"captcha_image": captcha_image, "captcha_key": self.captcha_key, "length": code_length}
 
     def valid(self, verify_code):
-        try:
-            CaptchaStore.objects.get(
-                response=verify_code.strip(" ").lower(), hashkey=self.captcha_key, expiration__gt=timezone.now()
-            ).delete()
-        except CaptchaStore.DoesNotExist:
-            return False
-        return True
+        """校验并消费一次验证码（一次性语义）。
+
+        `get() + delete()` 非原子：并发同码可双双通过。改为按删除行数判定——
+        单条 SQL 内「匹配到即删除」，仅一个并发请求能拿到 1 行（抢到的通过，其余失败）。
+        """
+        deleted, _ = CaptchaStore.objects.filter(
+            response=verify_code.strip(" ").lower(), hashkey=self.captcha_key, expiration__gt=timezone.now()
+        ).delete()
+        return deleted > 0
