@@ -32,6 +32,14 @@ class GunicornService(BaseService):
             "10240",
             "--max-requests-jitter",
             "2048",
+            # 显式声明连接与退出参数（勿依赖默认值）：
+            # - keep-alive 5s（默认 2s）：L4 nginx 与前端复用连接，5s 减少握手开销；
+            # - graceful-timeout 30s：滚动重建/缩容时等在途请求跑完再退出——UvicornWorker
+            #   下 --timeout 语义弱化（请求超时由底座自管），优雅退出只能靠它控制。
+            # 压测基线（.github/workflows/perf.yml、docs/ops/performance-baseline.md）
+            # 使用同一组参数，否则基线不可比。
+            "--keep-alive",
+            "5",
             "--graceful-timeout",
             "30",
             "--access-logformat",

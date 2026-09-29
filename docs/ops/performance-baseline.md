@@ -53,6 +53,9 @@
 3. **启动服务**：`python manage.py runserver` 仅适合冒烟；正式测定用 gunicorn（与生产同参，
    `python manage.py services gunicorn`），并记录 worker 数/机器规格——
    这些是基线的环境元数据，换环境后基线不可比。
+   启动参数固定为 `--keep-alive 5 --graceful-timeout 30`（生产同源：
+   `common/management/commands/services/services/gunicorn.py`；CI 见 `.github/workflows/perf.yml`）——
+   keep-alive 直接影响连接复用率与 P95，改参后必须重测基线。
 
 ### 3.1 可复现压测环境（2026-09-06 首测实际采用）
 
