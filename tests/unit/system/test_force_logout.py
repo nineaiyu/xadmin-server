@@ -125,3 +125,57 @@ def test_auth_failure_is_authentication_failed():
     """认证层对失效 token 统一 401（AuthenticationFailed），不会 500。"""
     with pytest.raises((TokenError, AuthenticationFailed)):
         ServerAccessToken("not-a-token").verify()
+
+
+class TestVerifyRoundTrip:
+    """认证热路径：三处失效检查合并为一次 get_many（每请求 3 次 Redis 往返 → 1 次）。"""
+
+    @staticmethod
+    def _token_with_sid(user):
+        token = ServerAccessToken.for_user(user)
+        token["sid"] = "sid-probe"
+        return str(token)
+
+    def _spy_get_many(self, monkeypatch):
+        import django.core.cache as django_cache
+
+        calls = []
+        original = django_cache.cache.get_many
+        monkeypatch.setattr(
+            "django.core.cache.cache.get_many",
+            lambda keys, *args, **kwargs: (calls.append(list(keys)), original(keys, *args, **kwargs))[1],
+        )
+        return calls
+
+    def test_single_get_many_covers_all_revocation_keys(self, monkeypatch):
+        import hashlib
+
+        from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
+
+        user = _make_user()
+        raw = self._token_with_sid(user)
+        token = ServerAccessToken(raw.encode())
+        user_id = token.payload.get("user_id")
+        expected = [
+            BlackAccessTokenCache(user_id, hashlib.md5(raw.encode()).hexdigest()).cache_key,
+            UserTokenRevokedCache(user_id).cache_key,
+            SessionTokenRevokedCache("sid-probe").cache_key,
+        ]
+
+        calls = self._spy_get_many(monkeypatch)
+        token.verify()
+
+        # 恰好一次往返，键与三个缓存类一致（顺序无关，集合相等即可）
+        assert len(calls) == 1
+        assert set(calls[0]) == set(expected)
+
+    def test_sid_less_token_queries_two_keys(self, monkeypatch):
+        """旧 token 无 sid claim：不查会话级键（避免恒 miss 的多余键）。"""
+        user = _make_user()
+        token = ServerAccessToken(str(ServerAccessToken.for_user(user)).encode())
+
+        calls = self._spy_get_many(monkeypatch)
+        token.verify()
+
+        assert len(calls) == 1
+        assert len(calls[0]) == 2

@@ -221,20 +221,31 @@ class ServerAccessToken(AccessToken):
     """
 
     def verify(self):
+        # 认证热路径：黑名单 / 用户级失效 / 会话级失效三处键值一次 get_many 取回
+        # （原先三次独立 GET = 每个已认证请求 3 次 Redis 往返，合并后 1 次；
+        # django-redis 下 get_many 走单次管线，语义与逐个 cache.get 完全一致）
+        from django.core.cache import cache
+
         user_id = self.payload.get("user_id")
         # token 在认证链路为 bytes，兼容 str 入参（测试/工具直调）
         raw_token = self.token if isinstance(self.token, bytes) else str(self.token).encode()
-        if BlackAccessTokenCache(user_id, hashlib.md5(raw_token).hexdigest()).get_storage_cache():
+        sid = self.payload.get("sid")
+        black_key = BlackAccessTokenCache(user_id, hashlib.md5(raw_token).hexdigest()).cache_key
+        revoked_key = UserTokenRevokedCache(user_id).cache_key
+        session_key = SessionTokenRevokedCache(sid).cache_key if sid else None
+        keys = [black_key, revoked_key] + ([session_key] if session_key else [])
+        values = cache.get_many(keys)
+
+        if values.get(black_key):
             raise TokenError(_("Token is invalid or expired"))
         # 强制下线（踢全部会话）：服务端拿不到用户的 token 清单，用「失效时间戳 +
         # iat 比较」拒绝被踢时刻之前签发的所有 access token
-        revoked_at = UserTokenRevokedCache(user_id).get_storage_cache()
+        revoked_at = values.get(revoked_key)
         if revoked_at and float(self.payload.get("iat", 0)) <= float(revoked_at):
             raise TokenError(_("Token is invalid or expired"))
         # 单会话下线（在线用户页行维度）：按登录时写入的 sid claim 精确拒绝，
         # 不影响该用户其他在用登录；旧 token 无 sid 自然跳过
-        sid = self.payload.get("sid")
-        if sid and SessionTokenRevokedCache(sid).get_storage_cache():
+        if session_key and values.get(session_key):
             raise TokenError(_("Token is invalid or expired"))
         super().verify()
 
