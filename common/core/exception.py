@@ -21,6 +21,15 @@ logger = getLogger("drf_exception")
 unexpected_exception_logger = getLogger("unexpected_exception")
 
 
+class ReadableThrottled(Throttled):
+    """带可读业务文案的限流异常：全局处理器采用其 detail，不归一为通用「手速太快」。
+
+    DRF 原生 Throttled 在本项目统一归一为前端友好文案；但开放平台的
+    **应用限流 / 每日配额**需要给调用方可区分的语义（等一分钟还是等明天），
+    故由本子类显式声明「文案权威」。
+    """
+
+
 def common_exception_handler(exc, context):
     if settings.DEBUG_DEV:
         logger.exception("Print traceback exception for Debug")
@@ -31,7 +40,10 @@ def common_exception_handler(exc, context):
     logger.error(f"{context['view'].__class__.__name__} ERROR: {exc} ret:{ret}")
     # 各分支显式指定的业务码，优先于 HTTP 状态码写入响应体（见函数末尾）
     business_code = None
-    if isinstance(exc, Throttled):
+    if isinstance(exc, ReadableThrottled):
+        business_code = 999
+        ret.data = {"code": 999, "detail": exc.detail}
+    elif isinstance(exc, Throttled):
         if not exc.wait:
             detail = _("Your visit is too fast, please visit again later")
         else:

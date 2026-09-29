@@ -9652,3 +9652,19 @@ msgstr "The application was cancelled automatically: the submission did not comp
 
 #~ msgid "Type /kb <question> to ask the knowledge base"
 #~ msgstr "Type /kb <question> to ask the knowledge base"
+
+#: system/serializers/token.py:102
+msgid "Invalid scope pattern: %(entry)s"
+msgstr ""
+
+#: system/models/token.py:88
+msgid "Enforce daily quota"
+msgstr ""
+
+#: system/models/token.py:90
+msgid "Reject requests with 429 once the daily quota is exceeded (off = warn only)"
+msgstr ""
+
+#: common/core/auth.py:233
+msgid "Daily quota exceeded for this application"
+msgstr ""

@@ -158,7 +158,12 @@ class TestClientCredentials:
         token = _issue_token(application).data["data"]["access_token"]
         client = _pat_client(token)
         assert client.post(APPS_URL, {"name": "probe-1"}, format="json").status_code == 201
-        assert client.post(APPS_URL, {"name": "probe-2"}, format="json").status_code == 429
+        blocked = client.post(APPS_URL, {"name": "probe-2"}, format="json")
+        assert blocked.status_code == 429
+        # 应用限流保留可读文案（ReadableThrottled），不归一为通用「手速太快」
+        from django.utils.translation import gettext as _
+
+        assert str(blocked.data["detail"]) == _("Rate limit exceeded for this application")
 
 
 class TestCallbackProbe:

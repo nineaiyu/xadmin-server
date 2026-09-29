@@ -64,7 +64,8 @@ class ApiApplication(DbAuditModel):
     应用只负责凭证换发、范围（scopes / ip_allowlist）、按应用限流与回调登记。
 
     二期增量：``grants``（模型×动作×字段×行四级授权，只收敛不提权）、
-    ``daily_quota``（每日配额软告警）、OAuth 授权码（refresh 见 OAuthRefreshToken）。
+    ``daily_quota``（每日配额，默认软告警 + ``daily_quota_hard`` 可切硬阻断）、
+    OAuth 授权码（refresh 见 OAuthRefreshToken）。
     """
 
     name = models.CharField(_("Application name"), max_length=128)
@@ -84,6 +85,12 @@ class ApiApplication(DbAuditModel):
     # 每日请求配额（0 = 不限）；达 quota_alert_percent 百分比当日首次越线发告警（软，不阻断）
     daily_quota = models.IntegerField(_("Daily quota"), default=0)
     quota_alert_percent = models.IntegerField(_("Quota alert percent"), default=80)
+    # 超限是否阻断：默认软口径（只告警）；开启后超 daily_quota 的请求 429
+    daily_quota_hard = models.BooleanField(
+        _("Enforce daily quota"),
+        default=False,
+        help_text=_("Reject requests with 429 once the daily quota is exceeded (off = warn only)"),
+    )
     is_active = models.BooleanField(_("Is active"), default=True)
     expired_at = models.DateTimeField(_("Expired at"), null=True, blank=True)
 

@@ -170,6 +170,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
             "token_ttl_seconds",
             "daily_quota",
             "quota_alert_percent",
+            "daily_quota_hard",
             "is_active",
             "expired_at",
             "description",

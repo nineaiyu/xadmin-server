@@ -196,11 +196,13 @@ def hash_pat_token(raw_token: str) -> str:
 
 
 def check_api_application_quota(application) -> None:
-    """每日配额计数 + 软告警（不阻断请求）。
+    """每日配额计数 + 告警，``daily_quota_hard`` 开启时超限硬阻断（429）。
 
     计数键按「应用 + 自然日」（TTL 两天，跨日自然滚动）；达到
     ``quota_alert_percent`` 阈值当日首次越线时发一次告警（站内信给超管 +
-    webhook 事件 ``api_quota.warning``），不拒绝请求（软口径）。
+    webhook 事件 ``api_quota.warning``）。默认软口径不拒绝请求；应用开启
+    ``daily_quota_hard`` 后**超过** ``daily_quota`` 的请求抛 429——对外承诺的
+    「每日 X 次」由此可被真正执行（否则只有每分钟硬限，日配额形同观测项）。
     """
     quota = application.daily_quota or 0
     if quota <= 0:
@@ -218,6 +220,17 @@ def check_api_application_quota(application) -> None:
     except ValueError:  # 窗口刚过期被清理：按首次计数处理
         cache.add(count_key, 1, 60 * 60 * 48)
         count = 1
+    if count > quota and application.daily_quota_hard:
+        from common.core.exception import ReadableThrottled
+
+        logger.warning(
+            "api application daily quota exceeded. app:%s client_id:%s used:%s quota:%s",
+            application.pk,
+            application.client_id,
+            count,
+            quota,
+        )
+        raise ReadableThrottled(detail=_("Daily quota exceeded for this application"))
     threshold = max(1, int(quota * (application.quota_alert_percent or 80) / 100))
     if count < threshold:
         return
@@ -259,7 +272,8 @@ def check_api_application_rate_limit(application) -> None:
         return
     from django.core.cache import cache
     from django.utils import timezone
-    from rest_framework.exceptions import Throttled
+
+    from common.core.exception import ReadableThrottled
 
     window = int(timezone.now().timestamp() // 60)
     key = f"api_app_rate_{application.pk}_{window}"
@@ -271,7 +285,8 @@ def check_api_application_rate_limit(application) -> None:
         cache.add(key, 1, 60)
         count = 1
     if count > limit:
-        raise Throttled(detail=_("Rate limit exceeded for this application"))
+        # 可读文案：调用方需区分「等下一分钟」与「等次日配额重置」
+        raise ReadableThrottled(detail=_("Rate limit exceeded for this application"))
 
 
 class ServerAccessToken(AccessToken):
@@ -414,7 +429,7 @@ class PersonalAccessTokenAuthentication(BaseAuthentication):
             if not application.is_active or (application.expired_at and application.expired_at <= now):
                 raise AuthenticationFailed(_("Token is invalid or expired"))
             check_api_application_rate_limit(application)
-            # 每日配额计数与软告警（不阻断请求，仅观测）
+            # 每日配额计数与告警；应用开启 daily_quota_hard 时超限 429
             check_api_application_quota(application)
 
         request.pat_scopes = pat.scopes or []

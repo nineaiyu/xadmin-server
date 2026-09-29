@@ -10503,3 +10503,19 @@ msgstr "申请已被系统自动取消：发起未完成"
 
 #~ msgid "Type /kb <question> to ask the knowledge base"
 #~ msgstr "输入 /kb 加问题可向知识库提问"
+
+#: system/serializers/token.py:102
+msgid "Invalid scope pattern: %(entry)s"
+msgstr "非法的令牌范围条目：%(entry)s"
+
+#: system/models/token.py:88
+msgid "Enforce daily quota"
+msgstr "超限硬阻断"
+
+#: system/models/token.py:90
+msgid "Reject requests with 429 once the daily quota is exceeded (off = warn only)"
+msgstr "开启后超过每日配额的请求返回 429（关闭时只告警不阻断）"
+
+#: common/core/auth.py:233
+msgid "Daily quota exceeded for this application"
+msgstr "该应用已超出每日配额"

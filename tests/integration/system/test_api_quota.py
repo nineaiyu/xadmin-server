@@ -87,6 +87,35 @@ class TestQuotaWarning:
         out_of_range = auth_client.patch(f"{APPS_URL}/{application['pk']}", {"quota_alert_percent": 101}, format="json")
         assert out_of_range.status_code == 400
 
+    def test_hard_quota_blocks_after_exceeded(self, auth_client):
+        """daily_quota_hard 开启：超过日配额即 429（对外承诺的「每日 X 次」可执行）。"""
+        application = _create_application(auth_client, daily_quota=2, daily_quota_hard=True)
+        client = _pat_client(_issue_raw(application))
+        assert client.get(USER_URL).status_code == 200
+        assert client.get(USER_URL).status_code == 200
+        blocked = client.get(USER_URL)
+        assert blocked.status_code == 429
+        # 业务码 999 + 可读文案（不归一为通用「手速太快」）：调用方据此区分等次日与等一分钟
+        from django.utils.translation import gettext as _
+
+        assert blocked.data["code"] == 999
+        assert str(blocked.data["detail"]) == _("Daily quota exceeded for this application")
+
+    def test_soft_quota_never_blocks(self, auth_client):
+        """未开启硬口径（默认）：超限仍放行，行为与改造前一致。"""
+        application = _create_application(auth_client, daily_quota=1)
+        assert application["daily_quota_hard"] is False
+        client = _pat_client(_issue_raw(application))
+        for _ in range(3):
+            assert client.get(USER_URL).status_code == 200
+
+    def test_hard_flag_editable_via_api(self, auth_client):
+        """开关可经 API 读写（配置页可直接开启/关闭）。"""
+        application = _create_application(auth_client, daily_quota=10, daily_quota_hard=True)
+        assert application["daily_quota_hard"] is True
+        resp = auth_client.patch(f"{APPS_URL}/{application['pk']}", {"daily_quota_hard": False}, format="json")
+        assert resp.data["data"]["daily_quota_hard"] is False
+
 
 class TestUsageStats:
     def test_stats_aggregates_operation_logs(self, auth_client):
