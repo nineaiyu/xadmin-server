@@ -207,6 +207,56 @@ class TestGrantManagement:
         assert resp.data["code"] == 1001
 
 
+class TestMenuMatchBoundary:
+    """菜单解析的段边界口径（对抗性）：不得跨字符粘连、不得漏覆盖子路径。"""
+
+    def test_no_cross_char_prefix_match(self):
+        from system.utils.api_grant import _match_menu_pk
+
+        data = {"api/system/user": "pk-a"}
+        assert _match_menu_pk(data, "/api/system/userfoo") is None
+        assert _match_menu_pk(data, "/api/system/user-exports") is None
+
+    def test_segment_prefix_covers_children(self):
+        from system.utils.api_grant import _match_menu_pk
+
+        data = {"api/system/user": "pk-a"}
+        assert _match_menu_pk(data, "/api/system/user") == "pk-a"
+        assert _match_menu_pk(data, "/api/system/user/1") == "pk-a"
+
+    def test_exact_anchor_keeps_exact_semantics(self):
+        from system.utils.api_grant import _match_menu_pk
+
+        data = {"api/system/user$": "pk-a"}
+        assert _match_menu_pk(data, "/api/system/user") == "pk-a"
+        assert _match_menu_pk(data, "/api/system/user/1") is None
+
+    def test_match_parity_with_runtime_chain(self, menu_factory):
+        """开放平台菜单解析与运行期判定必须同源（历史上一处漏改锚定导致偏差）。"""
+        from types import SimpleNamespace
+
+        from common.core.permission import get_menu_pk
+        from system.models import Menu
+        from system.utils.api_grant import resolve_request_menu_pk
+
+        menu_factory("list:SystemUser", path="api/system/user", method="GET")
+        menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
+        menus = list(Menu.objects.filter(menu_type=Menu.MenuChoices.PERMISSION, method="GET"))
+        permission_data = {menu.path: (menu.pk, None) for menu in menus}
+        for url in (
+            "/api/system/user",
+            "/api/system/user/1",
+            "/api/system/userfoo",
+            "/api/system/user-exports",
+            "/api/system/dept",
+            "/api/system/dept/1",
+        ):
+            runtime = get_menu_pk(permission_data, url)
+            expected = runtime[0] if runtime else None
+            request = SimpleNamespace(path_info=url, path=url, method="GET")
+            assert resolve_request_menu_pk(request) == expected, url
+
+
 class TestGrantOptions:
     def test_catalog_lists_models_actions_fields(self, auth_client, user_menus):
         resp = auth_client.get(f"{APPS_URL}/grant-options")

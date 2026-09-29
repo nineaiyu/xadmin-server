@@ -16,6 +16,7 @@ from rest_framework.permissions import BasePermission
 from common.base.magic import MagicCacheData
 from common.core import permission_meta
 from common.core.modules import filter_menu_queryset
+from common.core.utils import permission_path_matches
 from common.utils import get_logger
 from server.utils import get_current_request, set_current_request
 from system.services import (
@@ -87,19 +88,12 @@ def get_menu_pk(permission_data, url):
     # 1.直接get api/system/permission$   /api/system/config/system
     p_data = permission_data.get(f"{url[1:]}$")
     if not p_data:
-        # 回退分支（权限点 path 为存储的正则串，与 permission_sync/scan.py 同口径）：
-        # 历史写法 re.match 无尾锚——`api/user` 会粘连命中 /api/userfoo（越权面）。
-        # 收敛为段边界前缀：无 `$` 后缀时要求模式匹配后到达段边界（结尾或 `/`），
-        # 子路径覆盖能力不变（api/user 仍覆盖 /api/user/1），仅堵死跨字符粘连；
-        # 带 `$` 后缀（精确）语义不变。坏正则跳过该权限点（对齐 scan.find_covering
-        # 的 re.error 防御），避免单个坏权限点让该用户所有受控请求 500。
+        # 回退分支：逐条覆盖匹配（口径见 permission_path_matches，与扫描/应用授权同源）。
+        # 无 `$` 后缀按段边界前缀覆盖（api/user 仍覆盖 /api/user/1，但不粘连 /api/userfoo）；
+        # 带 `$` 后缀（精确）语义不变；坏正则跳过该权限点。
         for p_path, permission_item in permission_data.items():
-            pattern = f"/{p_path}" if p_path.endswith("$") else f"/{p_path}(/.*)?"
-            try:
-                if re.fullmatch(pattern, url):
-                    return permission_item
-            except re.error:
-                continue
+            if permission_path_matches(p_path, url):
+                return permission_item
     return p_data
 
 
@@ -110,6 +104,11 @@ def user_has_permission(user, path: str, method: str = "GET") -> bool:
     ``scope=ongoing`` 管理视角）：权限点 path 与 menu.path 同格式（形如
     ``api/approval/approval-instances/ongoing$``），命中的是菜单-角色授权关系，
     与 ``get_user_permission`` 缓存同源（改授权后随缓存失效生效）。
+
+    判定口径：带 ``$`` 后缀 = 精确权限点，只认精确持有——不能走覆盖匹配，
+    否则详情类权限点（``.../(?P<pk>[^/.]+)$``）会把任意单段路径（如 ``all``）
+    覆盖进来，功能开关被无权用户误命中；无 ``$`` 后缀按请求地址语义处理，
+    回退到与运行时同口径的段边界前缀覆盖（供 URL 形态的预检复用）。
     """
     if not user or not getattr(user, "is_authenticated", False):
         return False
@@ -120,6 +119,8 @@ def user_has_permission(user, path: str, method: str = "GET") -> bool:
     data = get_user_permission(user, (method or "GET").upper())
     if data.get(normalized):
         return True
+    if normalized.endswith("$"):
+        return False
     return bool(get_menu_pk(data, f"/{normalized}"))
 
 

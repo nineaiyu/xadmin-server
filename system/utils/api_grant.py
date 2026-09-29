@@ -28,6 +28,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied
 
 from common.core.data_scope import ScopeResult, compile_grant
+from common.core.utils import permission_path_matches
 from common.utils import get_logger
 from system.models import Menu, ModelLabelField
 
@@ -140,11 +141,17 @@ def resolve_request_menu_pk(request):
 
 
 def _match_menu_pk(permission_data, url):
+    """按请求地址命中菜单 pk：精确 `path$` 优先，其次段边界前缀回退。
+
+    回退匹配复用 ``common.core.utils.permission_path_matches``（与运行期判定、
+    权限点扫描同源，单点口径）：历史实现为无锚定 ``re.match``，`api/user` 会
+    粘连命中 `/api/userfoo` 并把动作段错配，让未授权动作被误放。
+    """
     direct = permission_data.get(f"{url[1:]}$")
     if direct:
         return direct
     for path, pk in permission_data.items():
-        if re.match(f"/{path}", url):
+        if permission_path_matches(path, url):
             return pk
     return None
 

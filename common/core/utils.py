@@ -31,6 +31,30 @@ def get_doc_first_line(doc):
     return lines[0].strip() if lines else ""
 
 
+def permission_path_matches(permission_path: str, url: str) -> bool:
+    """权限点 path 是否覆盖请求地址（唯一实现，三处消费方共用）。
+
+    权限点 path 与 ``menu.path`` 同格式，两种语义：
+
+    - 带 ``$`` 后缀 = 精确锚定：仅自身整段匹配，不覆盖子路径；
+    - 无 ``$`` 后缀 = 段边界前缀：自身与子路径均覆盖（``api/user`` 覆盖
+      ``/api/user/1``），且不跨字符粘连（``api/user`` 不命中 ``/api/userfoo``）；
+    - 坏正则视为不命中（单个坏权限点不能让该用户所有受控请求 500）。
+
+    历史上运行期判定 / 权限点扫描 / 应用授权各有平行实现，其中一处漏改锚定；
+    口径收敛到本函数，消费方只做「精确优先 + 逐条回退」编排，勿再自写正则。
+    """
+    pattern = str(permission_path or "").lstrip("/")
+    target = str(url or "")
+    if not target.startswith("/"):
+        target = f"/{target}"
+    full = f"/{pattern}" if pattern.endswith("$") else f"/{pattern}(/.*)?"
+    try:
+        return re.fullmatch(full, target) is not None
+    except re.error:
+        return False
+
+
 def check_show_url(url):
     for prefix in settings.PERMISSION_SHOW_PREFIX:
         if re.match(prefix, url):

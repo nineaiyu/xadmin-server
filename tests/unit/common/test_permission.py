@@ -12,7 +12,9 @@ from common.core.permission import (
     get_user_menu_queryset,
     get_user_permission,
     match_permission_white_url,
+    user_has_permission,
 )
+from common.core.utils import permission_path_matches
 from system.models import Menu, UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -113,6 +115,59 @@ class TestGetMenuPk:
         # 对抗性：坏正则权限点只应失效自身，不能让该用户所有受控请求 500
         data = {"api/demo/[": (1, None)}
         assert get_menu_pk(data, "/api/demo/book") is None
+
+
+class TestPermissionPathMatches:
+    """共享匹配函数（运行期判定 / 权限点扫描 / 应用授权三处同源口径）。"""
+
+    def test_exact_anchor(self):
+        assert permission_path_matches("api/demo/book$", "/api/demo/book") is True
+        assert permission_path_matches("api/demo/book$", "/api/demo/book/1") is False
+
+    def test_segment_prefix_covers_children(self):
+        assert permission_path_matches("api/demo/book", "/api/demo/book") is True
+        assert permission_path_matches("api/demo/book", "/api/demo/book/1") is True
+
+    def test_segment_prefix_never_matches_across_chars(self):
+        assert permission_path_matches("api/demo/user", "/api/demo/userfoo") is False
+        assert permission_path_matches("api/demo/user", "/api/demo/user-exports") is False
+
+    def test_invalid_regex_does_not_match(self):
+        assert permission_path_matches("api/demo/[", "/api/demo/book") is False
+
+
+class TestUserHasPermission:
+    """功能开关权限点判定（无独立路由的按 path 授权）。"""
+
+    def test_exact_point_required(self, normal_user, role, menu_factory):
+        menu = menu_factory("all:ApprovalDelegation", path="api/approval/approval-delegations/all$", method="GET")
+        role.menu.add(menu)
+        assert user_has_permission(normal_user, "api/approval/approval-delegations/all$", "GET") is True
+
+    def test_missing_point_denied(self, normal_user, role, menu_factory):
+        menu = menu_factory("list:SystemApprovalDelegation", path="api/approval/approval-delegations$", method="GET")
+        role.menu.add(menu)
+        assert user_has_permission(normal_user, "api/approval/approval-delegations/all$", "GET") is False
+
+    def test_detail_point_does_not_cover_literal_segment(self, normal_user, role, menu_factory):
+        """对抗性：详情类权限点（pk 正则）不得把 `all`/`ongoing` 这类字面量段覆盖进来。"""
+        menu = menu_factory(
+            "retrieve:SystemApprovalDelegation",
+            path=r"api/approval/approval-delegations/(?P<pk>[^/.]+)$",
+            method="GET",
+        )
+        role.menu.add(menu)
+        assert user_has_permission(normal_user, "api/approval/approval-delegations/all$", "GET") is False
+        assert user_has_permission(normal_user, "api/approval/approval-instances/ongoing$", "GET") is False
+
+    def test_url_like_path_keeps_prefix_fallback(self, normal_user, role, menu_factory):
+        """无 `$` 后缀按请求地址语义：段边界前缀覆盖仍生效（URL 形态预检复用）。"""
+        menu = menu_factory("p-list", path="api/approval/approval-delegations", method="GET")
+        role.menu.add(menu)
+        assert user_has_permission(normal_user, "/api/approval/approval-delegations/all", "GET") is True
+
+    def test_superuser_exempt(self, superuser):
+        assert user_has_permission(superuser, "api/approval/approval-delegations/all$", "GET") is True
 
 
 class TestIsAuthenticatedPermission:
