@@ -376,6 +376,9 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 5. **滚动重启**：`docker compose up -d` 逐服务重建，观察 healthz 四项全 `true` 再继续；
 6. **验证**：登录冒烟（登录 → 菜单加载 → 任一列表页 → 一次导入导出）。
 
+> 多副本 / 横向扩展（迁移一次性、beat 单例、nginx 多后端轮询、扩缩容与回退）见
+> [scale-out.md](scale-out.md)。
+
 > 涉及新增菜单/权限点或 gettext 文案的版本，升级后执行：
 > `python manage.py post_upgrade`（= 内置种子 `load_init_json` + `compilemessages` + 配置缓存失效 + 权限点缺口扫描，
 > 幂等可重跑；**安装器升级流程已自动调用**），随后重启容器——权限点未灌库时非超管角色不会出现新入口（接口 403），

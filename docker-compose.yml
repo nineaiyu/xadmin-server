@@ -31,6 +31,9 @@ services:
     restart: always
     volumes:
       - ./utils/nginx.conf:/etc/nginx/nginx.conf:r
+      # 后端形态（单副本变量式 / 多副本 upstream+zone+resolve）：多副本部署由
+      # docker-compose.scale.yml 覆盖挂载 multi 版，主配置保持不变
+      - ./utils/xadmin-backend.single.conf:/etc/nginx/xadmin-backend.conf:r
       - ./data/logs:/var/log/nginx
     ports:
       - "8896:8896"
@@ -231,6 +234,11 @@ services:
     ulimits:
       core: 0
     restart: always
+    # 单例声明：beat 是全局调度器，多副本会重复投递周期任务
+    # （django_celery_beat 的 DatabaseScheduler 不做跨进程互斥）。声明 1 副本，
+    # 横向扩展时只扩 server / celery-worker / celery-heavy（见 docs/ops/scale-out.md）。
+    deploy:
+      replicas: 1
     command: start beat
     environment: *xadmin-app-env
     volumes:

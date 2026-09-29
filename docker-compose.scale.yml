@@ -1,0 +1,40 @@
+# 多副本横向扩展 overlay（叠加在 prod overlay 之上，单机多副本形态）：
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.scale.yml \
+#     build server
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.scale.yml \
+#     run --rm migrate
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.scale.yml \
+#     up -d --scale server=3 --scale celery-worker=2
+#
+# 与单副本形态的差异（四项都是多副本必需项，逐条对应 runbook）：
+#   1. 去 container_name：显式容器名与 --scale 互斥（容器名交由 compose 生成）；
+#   2. AUTO_MIGRATE=false：迁移改由一次性 migrate 服务先执行（见 deployment.md §6.1）；
+#   3. nginx 换多后端 upstream（zone + resolve）：所有副本参与轮询，副本扩缩容 /
+#      重建换 IP 运行期自动跟随（单副本用的变量式 proxy_pass 只会命中其中一台）；
+#   4. celery-beat 保持 1 副本（base compose 已声明 deploy.replicas: 1）——重复 beat
+#      会重复投递周期任务，纵向扩展时不要扩它。
+#
+# 边界：仍是单机形态（PG/Redis/备份服务不在此 overlay 内）；跨主机扩展需要共享
+# DB/Redis/媒体卷并自行准备负载均衡，见 docs/ops/scale-out.md「限制与边界」。
+#
+# 依赖 compose v2.24.4+（!reset / !override 标签）。
+
+services:
+  server:
+    # 去固定容器名（--scale 要求）；同时关闭启动自动迁移
+    container_name: !reset
+    environment:
+      AUTO_MIGRATE: "false"
+
+  celery-worker:
+    container_name: !reset
+
+  celery-heavy:
+    container_name: !reset
+
+  nginx:
+    volumes: !override
+      - ./utils/nginx.conf:/etc/nginx/nginx.conf:r
+      - ./utils/xadmin-backend.multi.conf:/etc/nginx/xadmin-backend.conf:r
+      - ./data/logs:/var/log/nginx

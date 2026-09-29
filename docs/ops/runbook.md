@@ -126,3 +126,5 @@
 - **处置**：先确认配置未被改回静态 `upstream` / `proxy_pass http://server:8896;`（`docker exec xadmin-nginx
   nginx -t` 校验，正常应无 emerg）；server 未就绪期间客户端连接断开 / 502 属预期，server healthy 后 **10s 内
   自动恢复，无需重启 nginx**。安装器 LB 层（`config_init/nginx/lb_http_server.conf`）已同口径修复。
+  多副本形态例外：`utils/xadmin-backend.multi.conf`（`upstream + zone + resolve`）在 nginx 启动期即要求
+  `server` 可解析，首次 up 可能先 emerg 一次并由 `restart: always` 重试收敛（见 [scale-out.md](scale-out.md)）。
