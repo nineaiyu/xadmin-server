@@ -105,3 +105,19 @@ class TestWsFrame:
         # 未知 action 必须失败（新增 action 需双端同步登记后再放行）
         errors = list(Draft7Validator(schema).iter_errors({"action": "unknown", "v": 1}))
         assert errors, "未知 action 应被 Schema 拒绝"
+
+    def test_action_enum_matches_message_action(self):
+        """schema 的 action 枚举与 MessageAction 双向一致。
+
+        发现的漂移面：新增后端 action 只改枚举不改 schema → 前端生成类型缺该 action
+        （客户端常量对账通过不了，但反方向漏登记不报）；或 schema 多出未实现的 action。
+        本用例把双端枚举钉在同一个集合上，任一侧单独变更即失败。
+        """
+        schema = _load_schema("ws-frame.schema.json")
+        schema_actions = set(schema["definitions"]["action"]["enum"])
+        enum_actions = {action.value for action in MessageAction}
+        assert schema_actions == enum_actions, (
+            f"schema 与 MessageAction 动作集合不一致："
+            f"仅 schema 有 {sorted(schema_actions - enum_actions)}；"
+            f"仅枚举有 {sorted(enum_actions - schema_actions)}"
+        )
