@@ -210,3 +210,75 @@ class TestLeaveSubmitAndSync:
         task = ApprovalNodeTask.objects.get(instance=instance, assignee=approver)
         assert approve_task(task.pk, approver)[0] is True
         assert instance.tasks.count() == 1
+
+
+class TestLeaveSubmitCriticalSection:
+    """提交临界区（重叠校验 TOCTOU 守卫）。
+
+    「先查后写」的重叠校验必须与落 PENDING 在同一把锁保护的临界区内：
+    校验在锁外时，两个并发提交都读不到对方（此时双方都还不是 PENDING），
+    双双通过后落库成两条重叠单。
+    """
+
+    def test_overlap_recheck_runs_inside_locked_transaction(self, applicant, approver, monkeypatch):
+        from django.db import connection
+
+        import approval.utils.leave as leave_utils
+
+        observed = {}
+        original_lock = leave_utils._lock_creator_submissions
+
+        def spy_lock(creator_id):
+            observed["locked_creator"] = creator_id
+            observed["in_atomic_at_lock"] = connection.in_atomic_block
+            return original_lock(creator_id)
+
+        original_validate = leave_utils.validate_leave_payload
+
+        def spy_validate(**kwargs):
+            observed["in_atomic_at_validate"] = connection.in_atomic_block
+            return original_validate(**kwargs)
+
+        monkeypatch.setattr(leave_utils, "_lock_creator_submissions", spy_lock)
+        monkeypatch.setattr(leave_utils, "validate_leave_payload", spy_validate)
+
+        make_leave_flow()
+        leave = make_leave(applicant)
+        ok, detail = submit_leave(leave, applicant)
+
+        assert ok, detail
+        assert observed["locked_creator"] == applicant.pk
+        assert observed["in_atomic_at_lock"] is True
+        # 复检必须在临界区内（锁已持有）
+        assert observed["in_atomic_at_validate"] is True
+
+    def test_sequential_overlap_still_rejected(self, applicant, approver):
+        """锁内复检不改变既有语义：在先的重叠单仍拒绝后续提交。"""
+        make_leave_flow()
+        first = make_leave(applicant)
+        assert submit_leave(first, applicant)[0] is True
+
+        second = make_leave(applicant, reason="重叠请假")
+        ok, detail = submit_leave(second, applicant)
+        assert ok is False
+        assert detail  # 「已存在区间重叠的申请」文案
+        second.refresh_from_db()
+        assert second.status == Leave.Status.DRAFT
+
+    def test_failed_submit_leaves_no_partial_state(self, applicant, approver, monkeypatch):
+        """临界区整体事务化：中途失败不留「PENDING 但无实例」的半成品。"""
+        from approval.utils import approval_flow
+
+        make_leave_flow()
+        leave = make_leave(applicant)
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("engine down")
+
+        monkeypatch.setattr(approval_flow, "create_instance", boom)
+        with pytest.raises(RuntimeError):
+            submit_leave(leave, applicant)
+
+        leave.refresh_from_db()
+        assert leave.status == Leave.Status.DRAFT
+        assert leave.instance_id is None

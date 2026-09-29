@@ -14,6 +14,7 @@
 import datetime
 from decimal import Decimal
 
+from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -33,6 +34,20 @@ def _models():
     from approval.models.leave import Leave
 
     return Leave
+
+
+def _lock_creator_submissions(creator_id) -> None:
+    """同申请人「提交请假」临界区串行化（行锁）。调用方须在事务内。
+
+    重叠校验是「先查后写」：两个并发提交都读不到对方（此时双方都还不是 PENDING），
+    双双通过后落库成两条重叠单。锁住申请人这一条稳定行即可让同人的提交串行；
+    只锁「未结束单」不够——并发新建时两边锁到的是同一批旧行，互斥不住新增。
+    """
+    if not creator_id:
+        return
+    from system.models import UserInfo
+
+    list(UserInfo.objects.select_for_update().filter(pk=creator_id).values_list("pk", flat=True))
 
 
 def leave_days(start_date, end_date) -> Decimal:
@@ -103,6 +118,9 @@ def submit_leave(leave, user):
 
     仅 DRAFT / REJECTED / CANCELLED 可提交（PENDING 在途、APPROVED 已批准不可重提）；
     提交成功业务单置 PENDING 并绑定流程实例，后续状态由信号回写。
+
+    重叠校验在锁内复检：整段（复检 → 建实例 → 落 PENDING）在申请人行锁保护的同一
+    临界区里，避免「先查后写」在并发提交时双双通过（见 `_lock_creator_submissions`）。
     """
     Leave = _models()
     if leave.creator_id is None:
@@ -114,41 +132,43 @@ def submit_leave(leave, user):
     if leave.status == Leave.Status.APPROVED:
         return False, str(_("The request has been approved"))
 
-    error = validate_leave_payload(
-        start_date=leave.start_date,
-        end_date=leave.end_date,
-        days=leave.days,
-        creator=leave.creator,
-        exclude_pk=leave.pk,
-    )
-    if error:
-        return False, error
-
-    flow = resolve_leave_flow(leave.leave_type)
-    if flow is None:
-        return False, str(_("No leave approval flow is configured, please contact the administrator"))
-
     # create_instance 的 form_data 会做 JSON 序列化，故这里做一次 ROUND_TRIP 校验，
     # 避免 Decimal/date 直接进 JSONField 时悄悄降级（引擎条件节点按 key 取这些值）
     form_data = leave.form_data
 
     from approval.utils.approval_flow import create_instance
 
-    instance, error = create_instance(
-        flow=flow,
-        applicant=leave.creator,
-        title=leave.approval_title,
-        form_data=form_data,
-        biz_type=LEAVE_BIZ_TYPE,
-        biz_id=str(leave.pk),
-    )
-    if error:
-        return False, error
+    with transaction.atomic():
+        _lock_creator_submissions(leave.creator_id)
+        error = validate_leave_payload(
+            start_date=leave.start_date,
+            end_date=leave.end_date,
+            days=leave.days,
+            creator=leave.creator,
+            exclude_pk=leave.pk,
+        )
+        if error:
+            return False, error
 
-    leave.instance = instance
-    leave.status = Leave.Status.PENDING
-    leave.modifier = user
-    leave.save(update_fields=["instance", "status", "modifier", "updated_time"])
+        flow = resolve_leave_flow(leave.leave_type)
+        if flow is None:
+            return False, str(_("No leave approval flow is configured, please contact the administrator"))
+
+        instance, error = create_instance(
+            flow=flow,
+            applicant=leave.creator,
+            title=leave.approval_title,
+            form_data=form_data,
+            biz_type=LEAVE_BIZ_TYPE,
+            biz_id=str(leave.pk),
+        )
+        if error:
+            return False, error
+
+        leave.instance = instance
+        leave.status = Leave.Status.PENDING
+        leave.modifier = user
+        leave.save(update_fields=["instance", "status", "modifier", "updated_time"])
     return True, None
 
 
