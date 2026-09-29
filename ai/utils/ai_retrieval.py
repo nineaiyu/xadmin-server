@@ -91,12 +91,42 @@ def _hybrid(scored: list, question: str, top_k: int):
         return None
 
 
+#: 兜底扫描候选上限：预筛后仍超过该行数时按模型默认排序截断（有界扫描，日志留痕）
+_FALLBACK_SCAN_LIMIT = 5000
+
+
 def _retrieve_full_scan(query_tokens: set, top_k: int) -> list:
-    """无缓存兜底：逐块读全文分词评分（历史实现；仅在缓存停用时走）。"""
+    """无缓存兜底：DB 侧 icontains 预筛 + 逐块分词评分（仅在缓存停用时走）。
+
+    预筛条件 = 「任一查询词元出现」的 OR 组合：词元（CJK 二元组 / ASCII 词）恒为原文
+    子串，预筛因此是命中集合的**超集**——评分与召回跟历史全表扫描逐行等价，但把
+    Python 侧候选从「全库」收敛为「可能相关」，大语料下不再把整表读进内存。
+    预筛后仍超 ``_FALLBACK_SCAN_LIMIT`` 时按模型默认排序截断（无界扫描不保留）。
+    """
+    from django.db.models import Q
+
     from ai.models.ai import AiKnowledgeChunk
 
+    candidates = AiKnowledgeChunk.objects.all().only("id", "source_path", "title", "content", "chunk_index")
+    prefilter = None
+    for token in query_tokens:
+        if len(token) < 2:
+            continue
+        condition = Q(content__icontains=token) | Q(title__icontains=token)
+        prefilter = condition if prefilter is None else (prefilter | condition)
+    if prefilter is not None:
+        candidates = candidates.filter(prefilter)
+
+    chunks = list(candidates[: _FALLBACK_SCAN_LIMIT + 1])
+    if len(chunks) > _FALLBACK_SCAN_LIMIT:
+        logger.warning(
+            "ai retrieval fallback scan truncated at %s chunks (corpus exceeds bound)",
+            _FALLBACK_SCAN_LIMIT,
+        )
+        chunks = chunks[:_FALLBACK_SCAN_LIMIT]
+
     scored = []
-    for chunk in AiKnowledgeChunk.objects.all().only("id", "source_path", "title", "content", "chunk_index"):
+    for chunk in chunks:
         content_tokens = _tokenize(chunk.content)
         if not content_tokens:
             continue

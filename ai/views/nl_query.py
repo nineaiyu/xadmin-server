@@ -33,6 +33,11 @@ def _persist_nl_partial(user, reasoning_chunks: list, detail: str) -> dict:
     return message_payload(row)
 
 
+def _preview_text(count: int, capped: bool) -> str:
+    """预览计数文案：截断时标注「≥ N」（探测上限见 ai.utils.nl_query.PREVIEW_PROBE_LIMIT）。"""
+    return f"≥{count}" if capped else str(count)
+
+
 class AiNlQueryMixin:
     """NL 查数：解释（含流式）/ 执行（以调用者数据权限编译过滤）。"""
 
@@ -46,6 +51,7 @@ class AiNlQueryMixin:
         from ai.utils.ai_guard import guard_summary
         from ai.utils.nl_query import (
             audit_nl_query,
+            bounded_preview_count,
             build_interpret_prompt,
             parse_llm_json,
             validate_dsl,
@@ -97,7 +103,7 @@ class AiNlQueryMixin:
             from dataset.services import build_queryset
 
             queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
-            preview_count = queryset.count()
+            preview_count, preview_capped = bounded_preview_count(queryset, model)
         except DjangoValidationError as exc:
             detail = "; ".join(exc.messages)
             audit_nl_query(request.user, "interpret", question, dsl, error=detail, usage=usage, guard=guard)
@@ -113,9 +119,12 @@ class AiNlQueryMixin:
             "dsl": normalized,
             "dataset_name": dataset.name,
             "preview_count": preview_count,
+            "preview_capped": preview_capped,
             "mode": normalized["mode"],
         }
-        summary = str(_("Query ready: {} (preview {} rows)")).format(dataset.name, preview_count)
+        summary = str(_("Query ready: {} (preview {} rows)")).format(
+            dataset.name, _preview_text(preview_count, preview_capped)
+        )
         row = persist_message(request.user, "nl", "assistant", content=summary, extra={"nl": result})
         return ApiResponse(data={**result, "message": message_payload(row)})
 
@@ -134,6 +143,7 @@ class AiNlQueryMixin:
         from ai.utils.ai_guard import guard_summary
         from ai.utils.nl_query import (
             audit_nl_query,
+            bounded_preview_count,
             build_interpret_prompt,
             parse_llm_json,
             validate_dsl,
@@ -200,7 +210,7 @@ class AiNlQueryMixin:
                 from dataset.services import build_queryset
 
                 queryset, model, __ = build_queryset(dataset, request.user, extra_filters=extra)
-                preview_count = queryset.count()
+                preview_count, preview_capped = bounded_preview_count(queryset, model)
             except DjangoValidationError as exc:
                 detail = "; ".join(exc.messages)
                 audit_nl_query(request.user, "interpret", question, {}, error=detail, guard=guard)
@@ -226,10 +236,13 @@ class AiNlQueryMixin:
                 "dsl": normalized,
                 "dataset_name": dataset.name,
                 "preview_count": preview_count,
+                "preview_capped": preview_capped,
                 "mode": normalized["mode"],
             }
             # 模型正文是 JSON（机器结果），对话流落库用可读摘要 + 结构化 extra
-            summary = str(_("Query ready: {} (preview {} rows)")).format(dataset.name, preview_count)
+            summary = str(_("Query ready: {} (preview {} rows)")).format(
+                dataset.name, _preview_text(preview_count, preview_capped)
+            )
             row = persist_message(
                 request.user,
                 "nl",

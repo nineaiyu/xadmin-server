@@ -36,6 +36,25 @@ if TYPE_CHECKING:
 NL_ROW_LIMIT_CAP = 200
 DSL_KEYS = {"dataset", "mode", "filters", "group_by", "metric", "date_trunc", "value_field", "limit"}
 
+#: 预览计数探测上限：超过即标记 capped（口径为「≥ N」）
+PREVIEW_PROBE_LIMIT = NL_ROW_LIMIT_CAP
+
+
+def bounded_preview_count(queryset, model, limit: int = PREVIEW_PROBE_LIMIT) -> tuple:
+    """受限预览计数：取 limit+1 行判定是否截断，替代全量 ``COUNT(*)``。
+
+    NL 解释的预览计数只是给用户看量级；全量 ``COUNT`` 在大表 + 复杂过滤下会把
+    SSE 尾帧拖住（流式回答已结束却迟迟不 done）。改为 pk 投影的 LIMIT+1 探测：
+
+    返回 ``(count, capped)``——``capped=True`` 时 ``count`` 是**下限**（真实行数 ≥ count），
+    调用方在文案与载荷上都应标注「≥ N」。
+    """
+    pk_name = model._meta.pk.name
+    rows = list(queryset.values_list(pk_name, flat=True)[: limit + 1])
+    if len(rows) > limit:
+        return limit, True
+    return len(rows), False
+
 
 def visible_datasets(user_obj) -> list:
     """当前用户可见数据集（shared ∪ 本人创建；superuser 全部）。"""

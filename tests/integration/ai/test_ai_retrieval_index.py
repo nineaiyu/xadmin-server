@@ -98,6 +98,28 @@ class TestRetrievalIndexParity:
         assert ai_index.chunk_token_index() is None
         assert chunk.pk in hit_pks("数据库备份"), "退避路径（逐块分词全扫）仍可检索"
 
+    def test_fallback_prefilters_in_sql(self):
+        """兜底扫描先在 DB 侧 icontains 预筛：SQL 带 WHERE 子句且不再全表读入。
+
+        预筛是命中集合的超集（词元恒为原文子串），召回与评分不变——同用例下
+        兜底结果仍与索引路径一致（另见 TestRetrievalIndexParity 的逐行对比）。
+        """
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from ai.utils.ai_index import _tokenize
+        from ai.utils.ai_retrieval import _retrieve_full_scan
+
+        hit = make_chunk("docs/pf.md", 0, CONTENT_A, title="备份")
+        make_chunk("docs/pf.md", 1, "完全无关的正文内容", title="无关")
+
+        with CaptureQueriesContext(connection) as captured:
+            results = _retrieve_full_scan(set(_tokenize("数据库备份")), 5)
+        assert hit.pk in [item["chunk"].pk for item in results]
+        select_sql = [query["sql"].lower() for query in captured if query["sql"].lower().startswith("select")]
+        assert select_sql, "应有候选查询"
+        assert any("like" in sql and "where" in sql for sql in select_sql), select_sql
+
 
 class TestMetaRowsShortCache:
     """索引元数据签名短缓存：窗口内复用、写入路径显式失效、TTL 过期自愈。"""

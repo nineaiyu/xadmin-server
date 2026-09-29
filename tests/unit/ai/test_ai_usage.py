@@ -16,6 +16,7 @@ from ai.utils.ai_usage import (
     quota_limits,
     record_usage,
     release_stream_slot,
+    stream_slots_in_use,
     today_usage,
     usage_summary,
 )
@@ -140,6 +141,37 @@ class TestQuota:
         from server.conf import Config
 
         assert Config.defaults["AI_QUOTA_MAX_CONCURRENT_STREAMS"] > 0
+
+    def test_slot_key_ttl_renewed_on_each_acquire(self, monkeypatch):
+        """每次获取续期：长会话不让计数键中途过期（旧实现只在创建时设 TTL）。"""
+        from django.core.cache import cache
+
+        from ai.utils.ai_usage import STREAM_SLOT_KEY, STREAM_SLOT_TTL
+
+        calls = []
+        original = cache.touch
+
+        def _touch(key, timeout=None, version=None):
+            calls.append((key, timeout))
+            return original(key, timeout, version)
+
+        monkeypatch.setattr(cache, "touch", _touch)
+        assert acquire_stream_slot() is True
+        assert calls and calls[-1] == (STREAM_SLOT_KEY, STREAM_SLOT_TTL)
+        release_stream_slot()
+
+    def test_rejected_acquire_rolls_back_counter(self, monkeypatch):
+        """超限拒绝必须回退本次自增：否则计数越堆越高，恢复后长时间拒绝新请求。"""
+        from common.core.config import SysConfig
+
+        monkeypatch.setattr(type(SysConfig), "AI_QUOTA_MAX_CONCURRENT_STREAMS", property(lambda self: 2), raising=False)
+        assert acquire_stream_slot() is True
+        assert acquire_stream_slot() is True
+        assert acquire_stream_slot() is False
+        assert stream_slots_in_use() == 2  # 被拒的那次没有把计数推到 3
+        release_stream_slot()
+        assert stream_slots_in_use() == 1
+        assert acquire_stream_slot() is True
 
 
 class TestTrackedWrappers:
