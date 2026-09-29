@@ -36,26 +36,52 @@ ROW_LIMIT_CAP = 5000
 NUMERIC_FIELD_CLASSES = ("IntegerField", "BigIntegerField", "SmallIntegerField", "FloatField", "DecimalField")
 
 
+def _request_memo(key, loader):
+    """请求级 memo：白名单与字段权限在同一请求内不变（多卡片同屏只查一次）。
+
+    容器挂在当前请求对象上随请求销毁，跨请求零残留；无请求上下文
+    （Celery 定时报表、管理命令、测试直调）不缓存，行为与改造前一致。
+    """
+    from server.utils import get_current_request
+
+    request = get_current_request()
+    if request is None:
+        return loader()
+    store = getattr(request, "_dataset_whitelist_memo", None)
+    if store is None:
+        store = {}
+        request._dataset_whitelist_memo = store
+    if key not in store:
+        store[key] = loader()
+    return store[key]
+
+
 def available_models() -> list:
     """模型白名单：ModelLabelField DATA 根节点（label_lower 列表）。"""
     from system.models import ModelLabelField
 
-    return list(
-        ModelLabelField.objects.filter(field_type=ModelLabelField.FieldChoices.DATA, parent__isnull=True).values_list(
-            "name", flat=True
+    def _load():
+        return tuple(
+            ModelLabelField.objects.filter(
+                field_type=ModelLabelField.FieldChoices.DATA, parent__isnull=True
+            ).values_list("name", flat=True)
         )
-    )
+
+    return list(_request_memo("available_models", _load))
 
 
 def available_fields(bound_model: str) -> list:
     """模型字段白名单：该模型 DATA 节点的子节点字段名。"""
     from system.models import ModelLabelField
 
-    return list(
-        ModelLabelField.objects.filter(
-            field_type=ModelLabelField.FieldChoices.DATA, parent__name=bound_model
-        ).values_list("name", flat=True)
-    )
+    def _load():
+        return tuple(
+            ModelLabelField.objects.filter(
+                field_type=ModelLabelField.FieldChoices.DATA, parent__name=bound_model
+            ).values_list("name", flat=True)
+        )
+
+    return list(_request_memo(("available_fields", bound_model), _load))
 
 
 def get_whitelisted_model(bound_model: str):
@@ -236,31 +262,38 @@ def viewer_visible_fields(bound_model: str, user_obj):
       字段权限是显式授权行为（白名单制），而数据集执行不走菜单序列化裁剪链路；
       若在此 fail-closed 全裁，所有未配置字段权限的普通用户的仪表盘都会被裁空；
     - ``set``：白名单字段名集合（执行/聚合列与其求交集后输出）。
+
+    结果按请求级 memo 缓存（键含用户 pk）：同请求多卡片同屏只查一次。
     """
-    from django.db.models import Q
 
-    from system.models import FieldPermission
+    def _load():
+        from django.db.models import Q
 
-    if getattr(user_obj, "is_superuser", False):
-        return None
-    conditions = Q()
-    has_role = False
-    roles = list(user_obj.roles.all())
-    if roles:
-        conditions |= Q(role__in=roles) & Q(role__is_active=True)
-        has_role = True
-    if getattr(user_obj, "dept", None):
-        conditions |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
-        has_role = True
-    if not has_role:
-        return None
-    fields = set(
-        FieldPermission.objects.filter(conditions)
-        .filter(field__parent__name=bound_model)
-        .values_list("field__name", flat=True)
-        .distinct()
-    )
-    return fields or None
+        from system.models import FieldPermission
+
+        if getattr(user_obj, "is_superuser", False):
+            return None
+        conditions = Q()
+        has_role = False
+        roles = list(user_obj.roles.all())
+        if roles:
+            conditions |= Q(role__in=roles) & Q(role__is_active=True)
+            has_role = True
+        if getattr(user_obj, "dept", None):
+            conditions |= Q(role__deptinfo=user_obj.dept) & Q(role__deptinfo__is_active=True)
+            has_role = True
+        if not has_role:
+            return None
+        fields = set(
+            FieldPermission.objects.filter(conditions)
+            .filter(field__parent__name=bound_model)
+            .values_list("field__name", flat=True)
+            .distinct()
+        )
+        return frozenset(fields) if fields else None
+
+    cached = _request_memo(("viewer_visible_fields", bound_model, getattr(user_obj, "pk", None)), _load)
+    return set(cached) if cached is not None else None
 
 
 def execute_dataset(dataset, user_obj):
