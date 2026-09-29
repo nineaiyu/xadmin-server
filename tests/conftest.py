@@ -12,9 +12,13 @@ from system.models import DeptInfo, Menu, MenuMeta, UserInfo, UserRole
 @pytest.fixture(autouse=True)
 def _clean_cache():
     """每个测试前后清空缓存，避免 MagicCacheData（权限缓存 24h）跨测试污染。"""
+    from common.core.config.base import ConfigCacheBase
+
     cache.clear()
+    ConfigCacheBase._L1_STORE.clear()  # 配置 L1 为进程内层，cache.clear() 清不到
     yield
     cache.clear()
+    ConfigCacheBase._L1_STORE.clear()
 
 
 @pytest.fixture(autouse=True, scope="session")

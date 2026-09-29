@@ -6,8 +6,10 @@
 # date : 12/15/2023
 """系统配置缓存：数据访问基类与序列化器。"""
 
+import copy
 import json
 import re
+import time
 from typing import Any
 
 from django.template import Context, Template, TemplateSyntaxError
@@ -49,6 +51,15 @@ class ConfigCacheBase:
     # 绕过信号的 ORM 直建行在该窗口内自愈
     ABSENCE_CACHE_TIMEOUT = 60
 
+    # 进程内 L1：标量配置（CSP_MODE / CSP_REPORT_URI / SLOW_REQUEST_THRESHOLD 等）
+    # 每请求要读 3+ 次，是固定开销链上的 Redis 往返大头；30s 内改走进程内存。
+    # 一致性口径：同进程写路径（post_save/pre_delete 信号、invalid_config_cache、
+    # 凭据轮换）同步清理本层；跨进程最迟 L1_TTL 生效——配置变更无需秒级一致，
+    # 与 fields.get_search_choices_max_count 的进程内缓存先例同口径。
+    L1_TTL = 30
+    L1_MAX_ENTRIES = 512
+    _L1_STORE: dict[str, tuple[float, Any]] = {}
+
     def __init__(
         self,
         px="system",
@@ -69,6 +80,43 @@ class ConfigCacheBase:
 
     def invalid_config_cache(self, key="*"):
         UserSystemConfigCache(f"{self.px}_{key}").del_many()
+        # 同进程 L1 同步清理：否则本进程最长 L1_TTL 内仍读到旧值
+        self._l1_clear(self._l1_key(key))
+
+    def _l1_key(self, key) -> str:
+        """L1 键（进程内命名空间）：与 Redis 缓存类共用 px/key 口径，保持失效对得上。"""
+        return f"{self.px}_{key}"
+
+    @classmethod
+    def _l1_get(cls, l1_key) -> Any:
+        entry = cls._L1_STORE.get(l1_key)
+        if not entry:
+            return None
+        expires, value = entry
+        if expires <= time.monotonic():
+            cls._L1_STORE.pop(l1_key, None)
+            return None
+        # 深拷贝返回：Redis 路径每次都是反序列化的新对象，L1 必须保持同一语义
+        # （否则调用方就地变更会污染进程内缓存，影响后续所有请求）
+        return copy.deepcopy(value)
+
+    @classmethod
+    def _l1_set(cls, l1_key, value) -> None:
+        if len(cls._L1_STORE) >= cls.L1_MAX_ENTRIES:
+            # 容量兜底：用户级配置键理论上无界，超限整体清空（粗粒度但安全）
+            cls._L1_STORE.clear()
+        # 同样拷贝入池：调用方随后可能变更自己拿到的那份（如 db_data 直接返回）
+        cls._L1_STORE[l1_key] = (time.monotonic() + cls.L1_TTL, copy.deepcopy(value))
+
+    @classmethod
+    def _l1_clear(cls, l1_key) -> None:
+        """按 Redis 同款语义清理：``*`` 结尾为前缀匹配，否则精确键。"""
+        if isinstance(l1_key, str) and l1_key.endswith("*"):
+            head = l1_key[:-1]
+            for key in [k for k in cls._L1_STORE if k.startswith(head)]:
+                cls._L1_STORE.pop(key, None)
+            return
+        cls._L1_STORE.pop(l1_key, None)
 
     def get_render_value(self, value: str) -> Any:
         if value:
@@ -130,11 +178,18 @@ class ConfigCacheBase:
 
     def get_data(self, key, default_data=None, ignore_access=True):
         cache = self.cache(f"{self.px}_{key}")
-        try:
-            cache_data = cache.get_storage_cache()
-        except Exception:  # noqa: BLE001 Redis 不可用（故障演练 2029-10）：降级读库，不阻断请求
-            logger.warning("config cache read failed, fallback to db", exc_info=True)
-            cache_data = None
+        l1_key = self._l1_key(key)
+        cache_data = self._l1_get(l1_key)
+        if cache_data is None:
+            try:
+                cache_data = cache.get_storage_cache()
+            except Exception:  # noqa: BLE001 Redis 不可用（故障演练 2029-10）：降级读库，不阻断请求
+                logger.warning("config cache read failed, fallback to db", exc_info=True)
+                cache_data = None
+            if cache_data is not None:
+                # 写穿 L1：Redis 已有值（含 access=False / no_row 标记）原样缓存，
+                # 访问控制在 L1 之外判定，语义与直读 Redis 一致
+                self._l1_set(l1_key, cache_data)
         if cache_data is not None and cache_data.get("key", "") == key:
             if cache_data.get("no_row"):
                 return self._absence_value(key, default_data)
@@ -148,12 +203,14 @@ class ConfigCacheBase:
                 cache.set_storage_cache({"key": key, "no_row": True}, timeout=self.ABSENCE_CACHE_TIMEOUT)
             except Exception:  # noqa: BLE001 写缓存失败不影响本次读数
                 logger.warning("config cache write failed, skipped", exc_info=True)
+            self._l1_set(l1_key, {"key": key, "no_row": True})
             return self._absence_value(key, default_data)
         db_data["value"] = self.get_render_value(json.dumps(db_data["value"]))
         try:
             cache.set_storage_cache(db_data, timeout=self.timeout)
         except Exception:  # noqa: BLE001 写缓存失败不影响本次读数
             logger.warning("config cache write failed, skipped", exc_info=True)
+        self._l1_set(l1_key, db_data)
         if ignore_access or db_data.get("access"):
             return db_data
         return {}
