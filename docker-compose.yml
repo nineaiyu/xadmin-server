@@ -154,6 +154,9 @@ services:
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    # 停止宽限期须大于 gunicorn --graceful-timeout 30（否则 docker 默认 10s 就 SIGKILL，
+    # 在途请求被截断、滚动重建必然断连——见 docs/ops/blue-green.md）
+    stop_grace_period: 40s
     healthcheck:
       test: "curl -fsL http://localhost:8896/api/common/api/health > /dev/null"
       interval: 10s
@@ -183,6 +186,9 @@ services:
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    # celery 收到 SIGTERM 走 warm shutdown（跑完在途任务再退）；默认 10s 会 SIGKILL
+    # 长任务，这里放宽到 120s（更长的任务用 docker compose stop -t 覆盖）
+    stop_grace_period: 120s
     healthcheck:
       test: "bash utils/check_celery.sh celery"
       interval: 10s
@@ -211,6 +217,8 @@ services:
     volumes:
       - ./:/data/xadmin-server
     #      - ${VOLUME_DIR:-.}/server/data:/data/xadmin-server/data
+    # 重队列（导出/报表/导入）单任务可能数分钟：warm shutdown 宽限期放宽到 300s
+    stop_grace_period: 300s
     healthcheck:
       test: "bash utils/check_celery.sh heavy"
       interval: 10s

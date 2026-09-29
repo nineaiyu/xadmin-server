@@ -85,6 +85,9 @@ reload/restart nginx。
   `server` 可解析，编排首次 `up` 时 nginx 可能失败一次并由 `restart: always` 重试
   到 DNS 出现（数十秒收敛）；稳态与单副本形态无差异。
 
+> 只是发布期间不想断连（不追求多副本）时，不必扩副本：直接用
+> [blue-green.md](blue-green.md) 的叠加滚动发布（同样依赖本 overlay 的 nginx 多后端与迁移前置）。
+
 ## 四、回退到单副本
 
 1. 先缩容：`docker compose $FILES up -d --scale server=1`；

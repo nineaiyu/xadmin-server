@@ -377,7 +377,8 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 6. **验证**：登录冒烟（登录 → 菜单加载 → 任一列表页 → 一次导入导出）。
 
 > 多副本 / 横向扩展（迁移一次性、beat 单例、nginx 多后端轮询、扩缩容与回退）见
-> [scale-out.md](scale-out.md)。
+> [scale-out.md](scale-out.md)；**要求零停机**（发布期间不断连）改用
+> [blue-green.md](blue-green.md) 的叠加滚动发布（前置：`stop_grace_period` + gunicorn `--graceful-timeout` + nginx `resolve`）。
 
 > 涉及新增菜单/权限点或 gettext 文案的版本，升级后执行：
 > `python manage.py post_upgrade`（= 内置种子 `load_init_json` + `compilemessages` + 配置缓存失效 + 权限点缺口扫描，

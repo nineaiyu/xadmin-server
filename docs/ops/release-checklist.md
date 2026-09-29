@@ -27,6 +27,9 @@
       命中走「紧急升级（6.1 override）」或「补丁后移」二选一，结论追加到 §4 执行记录
       （完整口径见 [../security-review.md](../security-review.md) 六期登记 S-1）
 - [ ] **备份**：发布前执行备份（异地副本 + 媒体目录，RPO 6h 口径见演练记录）；确认失败告警可达
+- [ ] **发布窗口公告**：compose 单副本形态的滚动重建会断开在途连接（重启 3–10 秒内 502/断连属预期）、
+      离线安装器升级为停机迁移 → 提前公告窗口与影响面；要求零停机时改用
+      [blue-green.md](blue-green.md) 的叠加滚动发布（发布前记录旧 image id 供回滚）
 - [ ] **发布后 30 分钟观察**：`GET /api/common/api/health`、`data/logs/server.log` 错误率、celery 队列无积压、
       `data/logs/unexpected_exception.log` 无新增
 

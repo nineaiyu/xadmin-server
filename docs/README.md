@@ -45,6 +45,7 @@
 | [ops/deployment.md](ops/deployment.md) | **部署与运维手册**：配置速查表（§9）/ Docker / 备份恢复 / 升级回滚 |
 | [ops/runbook.md](ops/runbook.md) | 故障处置（常见故障 → 处置步骤） |
 | [ops/scale-out.md](ops/scale-out.md) | 横向扩展 runbook（单机多副本：迁移一次性 / beat 单例 / nginx 多后端轮询 + 验证与回退） |
+| [ops/blue-green.md](ops/blue-green.md) | 零停机发布 runbook（叠加滚动：迁移兼容性 / 加新摘旧 / 回滚与边界） |
 | [ops/pitr.md](ops/pitr.md) | WAL 归档与时间点恢复（PITR） |
 | [ops/log-archive.md](ops/log-archive.md) | 审计日志冷归档（归档水位驱动清理 / 离线恢复查询 / 校验与演练） |
 | [ops/storage.md](ops/storage.md) | 文件存储后端：声明式可插拔（local / S3）+ 搬迁校验命令 + health 探针 + 排障 |

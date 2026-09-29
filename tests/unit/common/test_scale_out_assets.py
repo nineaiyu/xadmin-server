@@ -6,6 +6,7 @@
 """
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -13,6 +14,21 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def _compose_text() -> str:
+    return (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+
+
+def _service_block(name: str, next_name: str) -> str:
+    text = _compose_text()
+    return text.split(f"\n  {name}:")[1].split(f"\n  {next_name}:")[0]
+
+
+def _gunicorn_cmd() -> str:
+    from common.management.commands.services.services.gunicorn import GunicornService
+
+    return " ".join(GunicornService(name="gunicorn", worker_gunicorn=2).cmd)
 
 
 class TestScaleOverlay:
@@ -53,6 +69,38 @@ class TestScaleOverlay:
 
     def test_scale_out_doc_registered(self):
         assert "ops/scale-out.md" in (ROOT / "docs/README.md").read_text(encoding="utf-8")
+
+
+class TestZeroDowntimeAssets:
+    """零停机发布（P1-39）：宽限期与启动宽限的关系、runbook 登记。"""
+
+    def test_server_grace_period_exceeds_gunicorn_graceful_timeout(self, capsys):
+        """停止宽限期必须大于 gunicorn 优雅退出时长，否则 docker 默认 10s 就 SIGKILL。"""
+        block = _service_block("server", "celery-worker")
+        period = int(re.search(r"stop_grace_period: (\d+)s", block).group(1))
+        timeout = int(re.search(r"--graceful-timeout (\d+)", _gunicorn_cmd()).group(1))
+        assert period > timeout
+
+    def test_worker_grace_periods_allow_warm_shutdown(self):
+        """worker/heavy 宽限期覆盖在途任务（heavy 更长：导出/报表单任务数分钟）。"""
+        worker = _service_block("celery-worker", "celery-heavy")
+        heavy = _service_block("celery-heavy", "celery-beat")
+        worker_period = int(re.search(r"stop_grace_period: (\d+)s", worker).group(1))
+        heavy_period = int(re.search(r"stop_grace_period: (\d+)s", heavy).group(1))
+        assert worker_period >= 120
+        assert heavy_period >= worker_period
+
+    def test_healthcheck_start_period(self):
+        """启动期不误判 unhealthy（web 启动含 migrate/collectstatic/编译文案）。"""
+        assert "start_period: 90s" in _service_block("server", "celery-worker")
+
+    def test_blue_green_doc_registered(self):
+        assert "ops/blue-green.md" in (ROOT / "docs/README.md").read_text(encoding="utf-8")
+        doc = (ROOT / "docs/ops/blue-green.md").read_text(encoding="utf-8")
+        # 四条前置能力必须在文中出现（否则读者按缺件的流程操作）
+        for asset in ("migrate", "xadmin-backend.multi.conf", "graceful-timeout", "start_period"):
+            assert asset in doc
+        assert "docker-compose.scale.yml" in doc
 
 
 @pytest.mark.parametrize(
