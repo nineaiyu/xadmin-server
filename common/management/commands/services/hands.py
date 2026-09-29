@@ -34,6 +34,7 @@ CELERY_FLOWER_HOST = CONFIG.CELERY_FLOWER_HOST or "127.0.0.1"
 CELERY_FLOWER_PORT = CONFIG.CELERY_FLOWER_PORT or 5555
 CELERY_FLOWER_AUTH = CONFIG.CELERY_FLOWER_AUTH or ""
 DEBUG = CONFIG.DEBUG or False
+AUTO_MIGRATE = CONFIG.AUTO_MIGRATE if CONFIG.AUTO_MIGRATE is not None else True
 APPS_DIR = settings.BASE_DIR
 LOG_DIR = os.path.join(APPS_DIR, "data", "logs")
 TMP_DIR = os.path.join(APPS_DIR, "tmp")
@@ -81,6 +82,19 @@ def perform_db_migrate():
     except Exception as e:
         logger.error(f"Perform migrate failed, {e} exit")
         sys.exit(11)
+
+
+def maybe_migrate():
+    """按 AUTO_MIGRATE 决定是否在启动时迁移。
+
+    多副本/滚动发布必须关掉（本容器是否迁移不可控且并发迁移互相竞争），
+    改由一次性 migrate 服务先跑完再起副本；关闭时只记日志不退出，缺表由副本
+    首次查询暴露（更符合「谁先准备好谁先服务」的滚动语义）。
+    """
+    if AUTO_MIGRATE:
+        perform_db_migrate()
+    else:
+        logger.info("AUTO_MIGRATE=false, skip auto migrate. Run the one-off migrate service first.")
 
 
 def collect_static():
@@ -168,7 +182,7 @@ def server_prepare():
     collect_static()
     compile_i18n_file()
     check_port_is_used()
-    perform_db_migrate()
+    maybe_migrate()
     expire_caches()
     download_ip_db()
     check_permission_gaps()

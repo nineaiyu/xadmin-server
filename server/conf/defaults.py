@@ -18,6 +18,10 @@ BASE_CONFIG = {
     "SECRET_KEY_AUTO_GENERATE": False,
     "DEBUG": False,
     "DEBUG_DEV": False,
+    # web 容器启动时是否自动执行数据库迁移（默认开：单副本形态行为不变）。
+    # 多副本/滚动发布置 false，改由一次性服务先迁移（见 docker-compose.prod.yml 的
+    # migrate 服务与 docs/ops/deployment.md），避免两个副本同时迁移。
+    "AUTO_MIGRATE": True,
     # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
     # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
     "SILK_ENABLED": False,

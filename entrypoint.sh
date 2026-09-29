@@ -36,6 +36,14 @@ if [[ "$action" != "bash" && "$action" != "sh" ]]; then
     ensure_locale
 fi
 
+# 一次性迁移动作（`command: ["migrate"]`）：在独立容器里跑完迁移即退出。
+# 用途：多副本/滚动发布前的显式迁移步骤（web 侧配 AUTO_MIGRATE=false 即不再自动迁移），
+# 也用于发布窗口内的手工迁移。必须**先于**下面的 pid 清理返回：service 缺省是 all，
+# 清理会删掉其它正在运行容器管理的 pid 文件（见下方注释）。
+if [[ "$action" == "migrate" ]]; then
+    exec python manage.py migrate --noinput
+fi
+
 if [[ "$action" != "bash" && "$action" != "sh" && "$action" != "sleep" ]]; then
     # 只清理当前容器管理的服务 pid：多 worker 容器共享同一 tmp 目录，
     # 全量 rm 会误删其他容器的 pid 文件，导致其 watcher 误判停止而重复拉起同名 worker

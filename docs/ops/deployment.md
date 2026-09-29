@@ -359,7 +359,20 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
 1. **备份先行**：确认最近一次 `db-backup` 产出完好（或手动 `pg_dump` 一次）；
 2. **读变更说明**：Release Notes 中「升级注意」段落（破坏性迁移、新增必配项）；
 3. **拉取新镜像/代码**：`docker compose pull`（或 `git pull` + 重建）；
-4. **单实例迁移**：`python manage.py migrate`——多副本部署时保证只有一个实例执行迁移（其余实例先缩容），避免 DDL 互相锁；
+4. **单实例迁移**：迁移只能执行一次（避免 DDL 互相锁）。生产形态推荐用一次性服务先迁移，
+   成功后再起 web/worker：
+
+   ```bash
+   # 生产 overlay（代码烘焙进镜像）
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml build server
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   ```
+
+   多副本 / 滚动发布必须同时给 web 侧配 `AUTO_MIGRATE=false`（web 容器不再在启动时迁移，
+   由上述 `migrate` 服务承担）；单副本默认 `AUTO_MIGRATE=true`，行为与既有版本一致。
+   源码挂载形态（开发 compose）亦可手动 `python manage.py migrate` 或
+   `docker compose run --rm -e AUTO_MIGRATE=false server migrate`。
 5. **滚动重启**：`docker compose up -d` 逐服务重建，观察 healthz 四项全 `true` 再继续；
 6. **验证**：登录冒烟（登录 → 菜单加载 → 任一列表页 → 一次导入导出）。
 

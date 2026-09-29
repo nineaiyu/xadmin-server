@@ -12,6 +12,34 @@
 # 修改业务代码后需重新 build 镜像（默认栈的源码 bind mount 热更新仅限开发形态）。
 
 services:
+  # 一次性数据库迁移服务（不常驻、无 container_name）：
+  #
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml build server
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+  #
+  # 用途：① 多副本/滚动发布的前置步骤（web 侧配 AUTO_MIGRATE=false，避免两个副本
+  # 同时迁移）；② 发布窗口内需要「先迁移后放量」时的手工步骤；③ 迁移失败时不必
+  # 反复重启 web 容器。单副本沿用启动自动迁移（AUTO_MIGRATE 默认 true）行为不变。
+  migrate:
+    image: xadmin-server
+    hostname: xadmin-migrate
+    restart: "no"
+    command: ["migrate"]
+    environment:
+      # 与基础栈同源：config.yml → 环境变量 → 内置默认值
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes: !override
+      - ./data:/data/xadmin-server/data
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - net
+
   server:
     build:
       dockerfile: Dockerfile
