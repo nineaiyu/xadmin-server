@@ -10,7 +10,7 @@
 
 - [ ] **全量门禁**：server `ruff check` + `ruff format --check` + `pytest -n auto`（覆盖率 ≥85%）；
       client `typecheck`（strict 全仓单轨）+ `eslint --max-warnings 0` + `prettier` + `stylelint` + `vitest` +
-      `check:contract` + **`check:bundle-size`**（首屏闭包增长 ≤15 KB，超预算需在 PR 说明后刷新基线）
+      `check:contract` + **`check:bundle-size`**（首屏闭包 **分账**：代码账本与 i18n 语料账本各 ≤15 KB，超预算需在 PR 说明后刷新基线）
 - [ ] **CI 全绿**：GitHub Actions 最近一次运行 Unit Tests / Lint / E2E / security 全 success，无积压失败
       （教训：Unit Tests 曾自 09-14 起连续失败多日未察觉——本地编译 .mo 为中文、CI 无 .mo 为英文/组件域翻译，
       文案断言写死单语言在 CI 必挂，须 zh/en 双语兼容）
