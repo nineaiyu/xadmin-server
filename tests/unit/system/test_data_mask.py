@@ -321,6 +321,37 @@ class TestMaskOriginalChannel:
             _serialize(normal_user)
         mock_logger_plain.warning.assert_not_called()
 
+    def test_original_channel_access_persisted_to_operation_log(self, normal_user, role, menu_factory):
+        """原文通道访问落库（module=mask:original，可按人/按模型检索），每请求一条。"""
+        from django.core.cache import cache
+
+        from system.models import OperationLog
+
+        normal_user.phone = PHONE
+        normal_user.save()
+        _rule()
+        perm = menu_factory("用户更新", path="api/system/user/(?P<pk>[^/.]+)$", method="PUT")
+        role.menu.add(perm)
+        cache.clear()
+        OperationLog.objects.filter(module="mask:original").delete()
+
+        request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/system/user/{normal_user.pk}")
+        other = UserInfo.objects.create_user(username="audit_target2", password="Test@123456")
+        _ = UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
+
+        rows = OperationLog.objects.filter(module="mask:original")
+        assert rows.count() == 1  # 列表逐行调用只记一条
+        row = rows.first()
+        assert row.creator_id == normal_user.pk
+        assert row.object_pk == "system.userinfo"
+        assert row.path == f"/api/system/user/{normal_user.pk}"
+        assert row.method == "GET"
+
+        # 未走原文通道（无 ?mask=false）不落库
+        _make_request_with_params(normal_user, path=f"/api/system/user/{normal_user.pk}")
+        _serialize(normal_user)
+        assert OperationLog.objects.filter(module="mask:original").count() == 1
+
     def test_real_change_still_written(self, normal_user):
         """真实改动（提交值 != 掩码结果）照常写入。"""
         normal_user.nickname = "张三丰"

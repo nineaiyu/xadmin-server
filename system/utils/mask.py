@@ -18,6 +18,8 @@ logger = get_logger(__name__)
 
 MASK_CACHE_PREFIX = "data_mask_"
 MASK_CACHE_TIMEOUT = 300
+#: 原文通道审计的 OperationLog 模块名（可按 module 检索）
+ORIGINAL_CHANNEL_MODULE = "mask:original"
 
 
 def _segment(value, keep_head, keep_tail, mask_char):
@@ -93,9 +95,10 @@ def get_mask_rules(model_label):
 def record_original_channel_access(request, user, model_label=None):
     """原文通道（``?mask=false`` + 对该菜单有更新权限）访问审计。
 
-    记录「谁、在什么路径、看了哪个模型的原文」，供事后回溯。仅写日志不落库：
-    读操作写 OperationLog 会污染操作日志表，且该事件已随请求日志留痕。
-    每个请求只记一次（列表序列化会逐行调用豁免判定）。
+    记录「谁、在什么路径、看了哪个模型的原文」，落 **OperationLog(module=mask:original)**
+    + 日志文件双通道：日志文件不可检索、不参与告警联动，敏感读必须可按人/按模型回溯
+    （见 ADR / 安全审查的「脱敏原文通道」项）。每个请求只记一次（列表序列化会逐行
+    调用豁免判定）；审计失败只记日志，不影响读请求本身。
     """
     if getattr(request, "_mask_original_audited", False):
         return
@@ -103,12 +106,28 @@ def record_original_channel_access(request, user, model_label=None):
         request._mask_original_audited = True
     except AttributeError:  # 只读请求对象兜底
         return
+    path = getattr(request, "path_info", None) or getattr(request, "path", None)
     logger.warning(
         "mask original channel accessed. user:%s path:%s model:%s",
         getattr(user, "pk", None),
-        getattr(request, "path_info", None) or getattr(request, "path", None),
+        path,
         model_label or "*",
     )
+    try:
+        from system.services import OperationLog
+
+        OperationLog.objects.create(
+            module=ORIGINAL_CHANNEL_MODULE,
+            path=path or "",
+            method=getattr(request, "method", "") or "",
+            object_pk=model_label or "*",
+            status_code=1000,
+            response_result="original-channel",
+            creator=user if getattr(user, "pk", None) else None,
+            request_uuid=getattr(request, "request_uuid", None),
+        )
+    except Exception:  # noqa: BLE001 审计失败不影响读请求
+        logger.warning("write mask original channel audit failed", exc_info=True)
 
 
 def invalid_mask_cache(model_label=None):
