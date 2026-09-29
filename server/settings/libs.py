@@ -116,6 +116,23 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 }
 
+# 会话存储：cached_db（Redis 读 + DB 写穿）。
+# 默认 DB 会话在「请求携带 sessionid」时每请求多一次库读（DRF 认证链含
+# SessionAuthentication，取 user 会加载会话）；cached_db 把读路径收敛到 Redis，
+# 写路径仍落库（Redis 清空/驱逐不丢会话），多副本部署下会话天然共享。
+# 会话 cookie 的安全属性见 server/settings/security_https.py（SESSION_COOKIE_SECURE）。
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+
+# 密码哈希：argon2id 优先（抗 GPU/ASIC，内存硬），存量 PBKDF2-SHA256 校验仍走原 hasher。
+# 渐进迁移：AbstractBaseUser.check_password 自带 setter——登录校验通过且存储哈希
+# 不是首选 hasher 时自动以新 hasher 重哈希落库，无需批量迁移；新设密码一律 argon2id。
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
+
 CORS_ALLOW_CREDENTIALS = True
 # 生产环境请在 config.yml 配置 CORS_ALLOWED_ORIGINS 白名单；
 # 同源部署（nginx 反代）不受 CORS 影响，无需配置。

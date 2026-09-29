@@ -129,8 +129,7 @@ class ResetPasswordSuccessMsg(UserMessage):
 
     @classmethod
     def gen_test_msg(cls):
-        # 重置成功通知由真实改密事件触发，没有可安全构造的测试场景：
-        # 显式返回 None，「发送测试消息」端点对 None 静默跳过（noop 而非报错）
+        # 无可安全构造的测试场景（真实改密事件触发）：显式返回 None，测试消息端点对 None noop
         return None
 
 

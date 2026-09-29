@@ -24,19 +24,22 @@ ARGON2_FIRST = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
-BASE_SETTINGS = Path(__file__).resolve().parents[3] / "server" / "settings" / "base.py"
+LIB_SETTINGS = Path(__file__).resolve().parents[3] / "server" / "settings" / "libs.py"
 
 
 def _production_hashers() -> list[str]:
-    """从 server/settings/base.py 源码解析生产 PASSWORD_HASHERS（测试运行时被 MD5 快速哈希覆盖）。"""
-    tree = ast.parse(BASE_SETTINGS.read_text(encoding="utf-8"))
+    """从 server/settings/libs.py 源码解析生产 PASSWORD_HASHERS（测试运行时被 MD5 快速哈希覆盖）。
+
+    密码哈希与会话引擎随其余框架级配置（DRF/JWT/CORS）落在 libs.py；base.py 保留指针注释。
+    """
+    tree = ast.parse(LIB_SETTINGS.read_text(encoding="utf-8"))
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(
             isinstance(target, ast.Name) and target.id == "PASSWORD_HASHERS" for target in node.targets
         ):
             assert isinstance(node.value, (ast.List, ast.Tuple))
             return [element.value for element in node.value.elts]
-    raise AssertionError("server/settings/base.py 未找到 PASSWORD_HASHERS 声明（守护口径失效，请更新测试）")
+    raise AssertionError("server/settings/libs.py 未找到 PASSWORD_HASHERS 声明（守护口径失效，请更新测试）")
 
 
 class TestArgon2Migration:

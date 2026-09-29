@@ -10,8 +10,6 @@
 - 可访问性一律 fail-closed：非成员访问私聊、非归属访问他人 AI 会话均按「房间不存在」拒绝。
 """
 
-import json
-
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import F, Max, Q
@@ -56,12 +54,12 @@ from message.models import (
     group_room_key,
     private_room_key,
 )
+from message.recall_audit import (  # noqa: F401 RECALL_AUDIT_MODULE 再导出：调用面/测试沿用 chat_service 常量
+    RECALL_AUDIT_MODULE,
+    write_recall_snapshot,
+)
 
 logger = get_logger(__name__)
-
-# 撤回审计（操作日志 module 值）与快照正文截断长度
-RECALL_AUDIT_MODULE = "chat:recall"
-RECALL_SNAPSHOT_MAX = 2000
 
 # 会话列表 / 联系人默认条数
 ROOM_LIST_LIMIT = 100
@@ -387,37 +385,6 @@ def mark_read(room: ChatRoom, user, message_id=None) -> int:
     return member.last_read_id
 
 
-def _write_recall_snapshot(message, user) -> None:
-    """撤回审计快照：原文本体从消息行清空，但**留一份到操作日志**。
-
-    合规口径：撤回不再等于「不可审计的物理删除」——超管可在操作日志按
-    module=chat:recall 检索到被撤回的原文（随日志保留期与冷归档管理）。
-    审计写入失败不影响撤回本身（消息内容仍按撤回语义清空）。
-    """
-    try:
-        from system.services import OperationLog
-
-        OperationLog.objects.create(
-            module=RECALL_AUDIT_MODULE,
-            path=f"/api/chat/message/{message.pk}/recall",
-            method="POST",
-            object_pk=str(message.pk),
-            body=json.dumps(
-                {
-                    "message_type": message.message_type,
-                    "content": (message.content or "")[:RECALL_SNAPSHOT_MAX],
-                    "truncated": len(message.content or "") > RECALL_SNAPSHOT_MAX,
-                },
-                ensure_ascii=False,
-            ),
-            status_code=1000,
-            response_result="recalled-content-snapshot",
-            creator=user if getattr(user, "pk", None) else None,
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响撤回（内容仍会被清空）
-        logger.warning("write chat recall audit snapshot failed", exc_info=True)
-
-
 def recall_message(user, message_id) -> ChatMessage:
     """撤回：仅本人、窗口内、未撤回（超窗/越权返回可读校验错误）。"""
     message = ChatMessage.objects.filter(pk=message_id).first()
@@ -430,7 +397,7 @@ def recall_message(user, message_id) -> ChatMessage:
     created = message.created_time or timezone.now()
     if timezone.now() - created > timezone.timedelta(minutes=RECALL_WINDOW_MINUTES):
         raise DjangoValidationError(_("Messages can only be recalled within {} minutes").format(RECALL_WINDOW_MINUTES))
-    _write_recall_snapshot(message, user)
+    write_recall_snapshot(message, user)
     message.is_recalled = True
     message.recalled_time = timezone.now()
     message.content = ""
