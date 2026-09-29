@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 
+from common.core.auth import split_scope_entry
 from common.core.permission import get_user_permission
 from common.utils import get_logger
 from system.models import Menu
@@ -58,6 +59,37 @@ def scope_entry(method: str, path: str) -> str:
     if not body:
         return ""
     return f"{method} ^/{body}/?$"
+
+
+# 锚定包裹形态（归一化产物）：`^(?:core)(/.*)?$` / `^(?:core)$`
+_ANCHORED_WRAPPER_RE = re.compile(r"^\^\(\?:(.*)\)(\(/\.\*\)\?)?\$")
+
+
+def scope_display_value(entry: str) -> str:
+    """scope 条目 → 人可读展示形态（**仅展示层**，判定语义与存储值不变）。
+
+    同意页/只读列表展示的是「请求范围」，展示正则会让用户困惑；条目保存时已统一
+    锚定（见 ``common.core.auth.normalize_scope_entry``），这里反向还原可读形态：
+
+    - ``GET ^/api/system/user/?$``（权限点勾选生成）→ ``GET /api/system/user``；
+    - ``^(?:/api/system/user)(/.*)?$``（手写条目归一化后）→ ``/api/system/user``；
+    - 无法识别的自定义正则原样返回（不过度猜测，避免误导）。
+    """
+    text = str(entry or "").strip()
+    if not text:
+        return ""
+    method, path = split_scope_entry(text)
+    body = path.strip()
+    match = _ANCHORED_WRAPPER_RE.match(body)
+    if match:
+        body = match.group(1)
+    elif body.startswith("^") and body.endswith("$"):
+        body = body[1:-1]
+        if body.endswith("/?"):
+            body = body[:-2]
+    if body and not body.startswith("/"):
+        body = f"/{body}"
+    return f"{method} {body}" if method else body
 
 
 def scope_display_path(path: str) -> str:

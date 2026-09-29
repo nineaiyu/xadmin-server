@@ -79,14 +79,22 @@ def _pat_client(raw_token):
 
 class TestAuthorizeFlow:
     def test_authorize_returns_consent_data(self, auth_client):
+        """同意页数据：scope 以可读形态展示（存储/判定为锚定正则，见 P1-21 收口）。"""
         application = _create_application(auth_client, scopes=["api/system/user"])
         resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application))
         assert resp.data["code"] == 1000
         data = resp.data["data"]
         assert data["application"]["client_id"] == application["client_id"]
-        assert data["scopes"] == ["api/system/user"]
+        assert data["scopes"] == ["/api/system/user"]
         assert data["state"] == "st-123"
         assert data["user"]["username"] == "admin"
+
+    def test_authorize_accepts_readable_scope_subset(self, auth_client):
+        """请求范围按锚定口径比对：客户端按可读形态请求（api/system/user）同样命中。"""
+        application = _create_application(auth_client, scopes=["api/system/user"])
+        resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application, scope="api/system/user"))
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["scopes"] == ["/api/system/user"]
 
     def test_authorize_requires_login(self, api_client):
         resp = api_client.get(f"{OAUTH_URL}/authorize", {"client_id": "app_x", "redirect_uri": CALLBACK})
@@ -126,7 +134,8 @@ class TestAuthorizeFlow:
         payload = resp.data["data"]
         assert payload["token_type"] == "Pat"
         assert payload["refresh_token"].startswith("aort_")
-        assert payload["scope"] == ["api/system/user"]
+        # 签发凭证的 scope 为锚定形态（与库内应用 scope / PAT scope 同口径）
+        assert payload["scope"] == ["^(?:/api/system/user)(/.*)?$"]
 
         # access 走既有认证链（creator = 授权用户 = 超管），scope 生效
         client = _pat_client(payload["access_token"])

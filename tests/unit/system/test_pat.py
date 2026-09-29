@@ -406,8 +406,21 @@ def test_scope_enforced_when_permission_classes_overridden(superuser):
 
 
 def test_scope_invalid_regex_not_500(superuser):
-    """scope 含非法正则：跳过该条不 500，其余条目照常生效。"""
-    plain = _create_token(superuser, scopes=["[invalid", "/api/system/user"]).data["data"]["token"]
+    """库内既有非法正则条目：运行期跳过该条不 500，其余条目照常生效。
+
+    写入侧已改为直接拒绝（见 ``TestScopeAnchoring::test_invalid_scope_regex_rejected_on_write``），
+    此处守护历史库数据（绕过序列化器直写）的运行期容忍度。
+    """
+    from common.core.auth import hash_pat_token
+
+    plain = "pat_legacy-invalid-regex"
+    PersonalAccessToken.objects.create(
+        name="legacy-invalid",
+        token_hash=hash_pat_token(plain),
+        token_prefix=plain[:12],
+        scopes=["[invalid", "/api/system/user"],
+        creator=superuser,
+    )
     assert _probe(plain, "/api/system/user").status_code == 200
     assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
 
@@ -473,7 +486,7 @@ def test_pat_throttle_limit_and_unlimited(superuser):
 
 
 def test_scopes_crud_cleaning_via_api(superuser):
-    """scope 编辑：清洗空白/去重/丢弃空串；None = 不限。"""
+    """scope 编辑：清洗空白/去重/丢弃空串/逐条锚定；None = 不限。"""
     response = _create_token(superuser)
     pk = response.data["data"]["pk"]
 
@@ -486,12 +499,102 @@ def test_scopes_crud_cleaning_via_api(superuser):
     force_authenticate(request, user=superuser)
     response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
     assert response.data["code"] == 1000
-    assert response.data["data"]["scopes"] == ["/api/system/user", "/api/system/role"]
+    assert response.data["data"]["scopes"] == [
+        "^(?:/api/system/user)(/.*)?$",
+        "^(?:/api/system/role)(/.*)?$",
+    ]
 
     request = APIRequestFactory().patch(f"{TOKENS_URL}/{pk}", {"scopes": None}, format="json")
     force_authenticate(request, user=superuser)
     response = PersonalAccessTokenViewSet.as_view({"patch": "partial_update"})(request, pk=pk)
     assert response.data["data"]["scopes"] == []
+
+
+class TestScopeAnchoring:
+    """scope 条目锚定收口：手写 ``api/system/user`` 不再粘连命中 ``/api/system/user-logs``。"""
+
+    def test_normalize_scope_entry_forms(self):
+        """规范化形态：前缀语义 / 精确语义 / 方法前缀 / 已锚定原样 / 非法拒绝。"""
+        from common.core.auth import normalize_scope_entry
+
+        assert normalize_scope_entry("api/system/user") == "^(?:/api/system/user)(/.*)?$"
+        assert normalize_scope_entry("GET api/system/user") == "GET ^(?:/api/system/user)(/.*)?$"
+        assert normalize_scope_entry(" /api/system/user/ ") == "^(?:/api/system/user)(/.*)?$"
+        # 尾 $ = 精确语义（仅该地址本身）
+        assert normalize_scope_entry("api/system/user$") == "^(?:/api/system/user)$"
+        # 已完整锚定（权限点勾选生成形态）：原样保留
+        assert normalize_scope_entry("GET ^/api/system/user/?$") == "GET ^/api/system/user/?$"
+        assert normalize_scope_entry("") == ""
+        assert normalize_scope_entry("   ") == ""
+        with pytest.raises(ValueError):
+            normalize_scope_entry("[invalid")
+
+    def test_scope_display_value_readable_forms(self):
+        """展示形态还原（仅展示层，判定语义不变）。"""
+        from system.utils.pat_scope import scope_display_value
+
+        assert scope_display_value("GET ^/api/system/user/?$") == "GET /api/system/user"
+        assert scope_display_value("^(?:/api/system/user)(/.*)?$") == "/api/system/user"
+        assert scope_display_value("^(?:/api/system/user)$") == "/api/system/user"
+        assert scope_display_value("") == ""
+        # 自定义正则原样返回（不过度猜测）
+        assert scope_display_value(r"^/api/system/user/[^/]+/?$") == "/api/system/user/[^/]+"
+
+    def test_saved_entry_is_anchored_and_blocks_glued_prefix(self, superuser):
+        """保存即锚定：库内条目为锚定形态，粘连地址（-logs）与相似前缀被 403。"""
+        plain = _create_token(superuser, scopes=["api/system/user"]).data["data"]["token"]
+        record = PersonalAccessToken.objects.get(token_prefix=plain[:12])
+        assert record.scopes == ["^(?:/api/system/user)(/.*)?$"]
+
+        assert _probe(plain, "/api/system/user").status_code == 200
+        assert _probe(plain, "/api/system/user/1").status_code == 200
+        assert _probe(plain, "/api/system/user-logs").status_code == status.HTTP_403_FORBIDDEN
+        assert _probe(plain, "/api/system/role").status_code == status.HTTP_403_FORBIDDEN
+
+    def test_runtime_anchoring_covers_legacy_rows(self, superuser):
+        """历史库中的非锚定条目运行期同样锚定（不改库也收口，防上线前存量漏改）。"""
+        from common.core.auth import hash_pat_token
+
+        plain = "pat_legacy-unanchored-entry"
+        PersonalAccessToken.objects.create(
+            name="legacy",
+            token_hash=hash_pat_token(plain),
+            token_prefix=plain[:12],
+            scopes=["api/system/user"],
+            creator=superuser,
+        )
+        assert _probe(plain, "/api/system/user/1").status_code == 200
+        assert _probe(plain, "/api/system/user-logs").status_code == status.HTTP_403_FORBIDDEN
+
+    def test_invalid_scope_regex_rejected_on_write(self, superuser):
+        """非法正则条目写入即 400（不再静默跳过）。"""
+        request = APIRequestFactory().post(TOKENS_URL, {"name": "bad-scope", "scopes": ["[invalid"]}, format="json")
+        force_authenticate(request, user=superuser)
+        # DRF 异常处理器会 set_rollback：包独立 atomic 块，保持外层测试事务可用
+        with transaction.atomic():
+            response = PersonalAccessTokenViewSet.as_view({"post": "create"})(request)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "[invalid" in json.dumps(response.data, ensure_ascii=False)
+        assert not PersonalAccessToken.objects.filter(name="bad-scope").exists()
+
+    def test_application_scopes_anchored_on_write(self, superuser):
+        """开放平台应用 scope 同口径锚定（应用 scope 会作为 OAuth 访问凭证下发）。"""
+        from rest_framework.test import APIRequestFactory, force_authenticate
+
+        from system.models.token import ApiApplication
+        from system.views.open import ApiApplicationViewSet
+
+        request = APIRequestFactory().post(
+            "/api/system/api-applications",
+            {"name": "锚定应用", "scopes": ["api/system/user"], "rate_limit_per_minute": 0},
+            format="json",
+        )
+        force_authenticate(request, user=superuser)
+        response = ApiApplicationViewSet.as_view({"post": "create"})(request)
+        assert response.data["code"] == 1000, response.data
+
+        record = ApiApplication.objects.get(pk=response.data["data"]["pk"])
+        assert record.scopes == ["^(?:/api/system/user)(/.*)?$"]
 
 
 class TestScopeOptions:

@@ -30,12 +30,13 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from common.core.auth import hash_pat_token
+from common.core.auth import hash_pat_token, normalize_scope_entry
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.log import OperationLog
 from system.models.token import ApiApplication, OAuthRefreshToken, PersonalAccessToken
 from system.services import UserInfo
+from system.utils.pat_scope import scope_display_value
 from system.views.open import verify_application_credentials
 
 AUTH_CODE_TTL_SECONDS = 300
@@ -97,16 +98,37 @@ def verify_pkce(code_challenge: str, method: str, verifier: str) -> bool:
 
 
 def resolve_requested_scopes(application, scope_param):
-    """请求范围 → 应用 scope 子集（省略 = 全部；提供即必须逐项命中，否则 (None, 错误)）。"""
+    """请求范围 → 应用 scope 子集（省略 = 全部；提供即必须逐项命中，否则 (None, 错误)）。
+
+    比对与返回均按**锚定形态**：应用 scope 保存时已归一化（见
+    ``common.core.auth.normalize_scope_entry``），客户端按可读形态请求
+    （``api/system/user``）与已锚定条目等价；签发凭证时口径统一落锚定值。
+    """
     granted = [str(item) for item in (application.scopes or [])]
     raw = str(scope_param or "").strip()
     if not raw:
         return granted, None
     requested = [item.strip() for item in raw.split(",") if item.strip()]
-    unknown = [item for item in requested if item not in granted]
+    allowed = set(granted)
+    for item in granted:
+        try:
+            allowed.add(normalize_scope_entry(item))
+        except ValueError:  # 库内历史非法条目：忽略该条，其余条目照常
+            continue
+    resolved = []
+    unknown = []
+    for item in requested:
+        try:
+            normalized = normalize_scope_entry(item)
+        except ValueError:
+            normalized = ""
+        if item in allowed or (normalized and normalized in allowed):
+            resolved.append(normalized or item)
+        else:
+            unknown.append(item)
     if unknown:
         return None, _("Requested scope is not allowed: %(scope)s") % {"scope": ", ".join(unknown)}
-    return requested, None
+    return resolved, None
 
 
 def issue_oauth_access_token(application, user, scopes):
@@ -215,7 +237,8 @@ class OpenOAuthAuthorizeAPIView(APIView):
         return ApiResponse(
             data={
                 "application": {"client_id": application.client_id, "name": application.name},
-                "scopes": scopes,
+                # 同意页展示用可读形态（存储与判定仍是锚定正则，见 normalize_scope_entry）
+                "scopes": [scope_display_value(item) for item in scopes],
                 "user": {"pk": request.user.pk, "username": request.user.username},
                 "redirect_uri": redirect_uri,
                 "state": state,

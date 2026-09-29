@@ -12,9 +12,35 @@ import secrets
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.auth import hash_pat_token
+from common.core.auth import hash_pat_token, normalize_scope_entry
 from common.core.serializers import BaseModelSerializer
 from system.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
+
+
+def _clean_scope_entries(value):
+    """scope 清单写入口径（PAT 与开放平台应用共用，应用 scope 会下发为 OAuth 访问凭证）。
+
+    - 非清单/含非字符串项 → 400；
+    - 去空白、丢弃空串、去重；
+    - 逐条经 :func:`normalize_scope_entry` 锚定（手写 `api/system/user` 不再粘连
+      命中 `/api/system/user-logs`），正则非法直接拒绝而非静默跳过。
+    """
+    if value in (None, ""):
+        return []
+    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+        raise serializers.ValidationError(_("Scopes must be a list of path strings"))
+    cleaned = []
+    for item in value:
+        text = item.strip()
+        if not text:
+            continue
+        try:
+            entry = normalize_scope_entry(text)
+        except ValueError as exc:
+            raise serializers.ValidationError(_("Invalid scope pattern: %(entry)s") % {"entry": text}) from exc
+        if entry and entry not in cleaned:
+            cleaned.append(entry)
+    return cleaned
 
 
 class PersonalAccessTokenSerializer(BaseModelSerializer):
@@ -75,17 +101,13 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         return getattr(obj, "_plain_token", None)
 
     def validate_scopes(self, value):
-        """scope 清单清洗：字符串清单、去空白、去重；None/空 = 不限。"""
-        if value in (None, ""):
-            return []
-        if not isinstance(value, list):
-            raise serializers.ValidationError(_("Scopes must be a list of path strings"))
-        cleaned = []
-        for item in value:
-            item = str(item or "").strip()
-            if item and item not in cleaned:
-                cleaned.append(item)
-        return cleaned
+        """scope 清单清洗：字符串清单、去空白、去重、**逐条锚定**；None/空 = 不限。
+
+        手写条目（如 ``api/system/user``）在保存时规范为锚定形态
+        ``^(?:/api/system/user)(/.*)?$``：放行该地址及其子路径，但不再粘性命中
+        ``/api/system/user-logs``；``^…$`` 形态（权限点勾选生成的条目）原样保留。
+        """
+        return _clean_scope_entries(value)
 
     def validate_ip_allowlist(self, value):
         """IP 白名单清洗：去空白、去重、逐条校验 IP/CIDR 格式；None/空 = 不限。"""
@@ -174,9 +196,8 @@ class ApiApplicationSerializer(BaseModelSerializer):
         return [validate_url(url) for url in value]
 
     def validate_scopes(self, value):
-        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
-            raise serializers.ValidationError(_("Scopes must be a list of strings"))
-        return [item.strip() for item in value if item.strip()]
+        """应用 scope 与 PAT 同口径锚定（应用 scope 会作为 OAuth 访问凭证下发）。"""
+        return _clean_scope_entries(value)
 
     def validate_ip_allowlist(self, value):
         if not isinstance(value, list):
