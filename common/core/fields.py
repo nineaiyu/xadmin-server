@@ -17,7 +17,7 @@ from rest_framework import serializers
 from rest_framework.request import Request
 
 from common.core.filter import get_filter_queryset
-from common.core.mask import apply_output_mask
+from common.core.mask import apply_related_output_mask
 from common.fields.utils import get_file_absolute_uri
 from server.utils import get_current_request
 
@@ -278,22 +278,9 @@ class BasePrimaryKeyRelatedField(serializers.RelatedField):
         return data
 
     def _mask_related(self, data, value):
-        """关联对象输出掩码：请求上下文缺失（如 celery 内序列化）时原样返回。
-
-        豁免口径与主链路一致：字段自身 / 根序列化器显式豁免 / 请求级豁免
-        （``IsAuthenticated`` 对超管与白名单出口置位）统一由 ``mask_exempt`` 判定。
-        """
+        """关联输出掩码：request 懒加载在字段侧，规则应用见 ``common.core.mask``。"""
         self.__add_request()
-        request = self.request
-        user = getattr(request, "user", None) if request is not None else None
-        if user is None:
-            return data
-        ignore = self.ignore_field_permission
-        node = getattr(self, "parent", None)
-        while node is not None and not ignore:
-            ignore = bool(getattr(node, "ignore_field_permission", False))
-            node = getattr(node, "parent", None)
-        return apply_output_mask(data, request, user, value._meta.model, ignore)
+        return apply_related_output_mask(self, data, value)
 
     def _get_related_memo(self):
         """请求级关联对象缓存。

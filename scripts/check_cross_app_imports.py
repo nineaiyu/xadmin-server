@@ -113,6 +113,9 @@ CONTRACT_SEAMS = {
     "common/core/serializers.py": {
         "system.services": "应用凭证字段授权 + 字段掩码应用/规则/明文访问审计",
     },
+    "common/core/mask.py": {
+        "system.services": "字段掩码规则加载/应用与原文通道访问审计（与 common/core/serializers.py 同一契约缝）",
+    },
     "common/core/modelset/base.py": {
         "system.services": "删除影响面确认校验（ensure_impact_confirmed）",
     },

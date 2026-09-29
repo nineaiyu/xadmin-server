@@ -76,6 +76,25 @@ def mask_role_pks(request, user) -> set:
     return role_pks
 
 
+def apply_related_output_mask(field, data, value):
+    """关联字段（``BasePrimaryKeyRelatedField.attrs``）输出掩码的唯一实现。
+
+    请求上下文缺失（celery 内序列化等）时原样返回；豁免口径与主链路一致——
+    字段自身 / 根序列化器链上的 ``ignore_field_permission`` / 请求级豁免统一由
+    ``mask_exempt`` 判定。字段类只负责懒加载 request 并在拼 label 之前调用本函数。
+    """
+    request = getattr(field, "request", None)
+    user = getattr(request, "user", None) if request is not None else None
+    if user is None:
+        return data
+    ignore = bool(getattr(field, "ignore_field_permission", False))
+    node = getattr(field, "parent", None)
+    while node is not None and not ignore:
+        ignore = bool(getattr(node, "ignore_field_permission", False))
+        node = getattr(node, "parent", None)
+    return apply_output_mask(data, request, user, value._meta.model, ignore)
+
+
 def apply_output_mask(data, request, user, model, ignore_field_permission=False):
     """按 model 的脱敏规则对输出字典逐字段掩码；豁免 / 无规则 / 非字典时原样返回。
 
