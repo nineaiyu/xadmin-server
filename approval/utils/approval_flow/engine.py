@@ -199,40 +199,45 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
 
     cc_users：发起时追加的抄送人（用户 pk 列表）；实例抄送人 = 可达节点
     ``cc_users`` 并集 + 本参数，落实例快照并即时知会（终态再次知会）。
+
+    事务边界：发起链路整体在一个事务内（校验失败提前返回，不产生写入），中途异常
+    整体回滚——不会留下「PENDING 但无任何节点任务」的卡死单；业务接入方无需自行
+    包事务（嵌套 atomic 即 savepoint，无害）。
     """
     ApprovalInstance = _models().Instance
 
-    if not flow.is_active:
-        return None, str(_("The flow is disabled"))
-    error = validate_form(flow, form_data)
-    if error:
-        return None, error
-    path = simulate_path(flow, form_data)
-    if path is None:
-        return None, str(_("The flow routes contain a loop, please contact the administrator"))
-    if not path:
-        return None, str(_("The flow has no available node"))
-    for node in path:
-        if not resolve_assignees(node, applicant, form_data):
-            return None, _no_approver_detail(node, applicant)
+    with transaction.atomic():
+        if not flow.is_active:
+            return None, str(_("The flow is disabled"))
+        error = validate_form(flow, form_data)
+        if error:
+            return None, error
+        path = simulate_path(flow, form_data)
+        if path is None:
+            return None, str(_("The flow routes contain a loop, please contact the administrator"))
+        if not path:
+            return None, str(_("The flow has no available node"))
+        for node in path:
+            if not resolve_assignees(node, applicant, form_data):
+                return None, _no_approver_detail(node, applicant)
 
-    instance = ApprovalInstance.objects.create(
-        flow=flow,
-        flow_name=flow.name,
-        title=(title or "").strip()[:128],
-        form_data=form_data or {},
-        creator=applicant,
-        current_node=path[0],
-        flow_version=flow.version,
-        biz_type=(biz_type or "")[:64],
-        biz_id=str(biz_id or "")[:64],
-    )
-    cc_list = _resolve_instance_cc(path, applicant, cc_users)
-    if cc_list:
-        instance.cc_users.set(cc_list)
-        _notify(cc_list, "cc", instance)
-    _enter_node(instance, path[0])
-    _emit_flow_event("flow.submitted", instance)
+        instance = ApprovalInstance.objects.create(
+            flow=flow,
+            flow_name=flow.name,
+            title=(title or "").strip()[:128],
+            form_data=form_data or {},
+            creator=applicant,
+            current_node=path[0],
+            flow_version=flow.version,
+            biz_type=(biz_type or "")[:64],
+            biz_id=str(biz_id or "")[:64],
+        )
+        cc_list = _resolve_instance_cc(path, applicant, cc_users)
+        if cc_list:
+            instance.cc_users.set(cc_list)
+            _notify(cc_list, "cc", instance)
+        _enter_node(instance, path[0])
+        _emit_flow_event("flow.submitted", instance)
     return instance, None
 
 

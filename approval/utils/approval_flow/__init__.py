@@ -54,7 +54,7 @@ from .engine import (
     reject_task,
 )
 from .extra_actions import add_sign, transfer_task, urge_instance
-from .periodic import clean_finished_instances, remind_pending_tasks
+from .periodic import cancel_stuck_instances, clean_finished_instances, remind_pending_tasks
 from .queries import (
     done_tasks_for,
     instance_stats,
@@ -73,6 +73,7 @@ __all__ = [
     "add_sign",
     "approve_task",
     "cancel_instance",
+    "cancel_stuck_instances",
     "clean_finished_instances",
     "create_instance",
     "done_tasks_for",

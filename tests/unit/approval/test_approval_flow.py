@@ -731,3 +731,66 @@ class TestConcurrencyGuard:
         instance.refresh_from_db()
         assert instance.status == ApprovalInstance.Status.APPROVED  # 第二次不得覆盖终态
         assert instance.finished_at is not None
+
+
+class TestCreateAtomicityAndStuckCleanup:
+    """发起事务化（不留卡死单）+ 卡死单兜底清理。"""
+
+    def test_create_instance_rolls_back_on_failure(self, applicant, approver, monkeypatch):
+        """发起中途异常：实例整体回滚，不留「PENDING 但无任何节点任务」的卡死单。"""
+        flow = make_flow(nodes=[{"name": "初审"}])
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("enter node failed")
+
+        monkeypatch.setattr("approval.utils.approval_flow.engine._enter_node", boom)
+        with pytest.raises(RuntimeError):
+            create_instance(flow=flow, applicant=applicant, title="发起失败", form_data={})
+        assert not ApprovalInstance.objects.filter(flow=flow).exists()
+        assert not ApprovalNodeTask.objects.filter(instance__flow=flow).exists()
+
+    def test_cancel_stuck_instances(self, applicant, approver):
+        """超时且无任务的在途实例被兜底 CANCELLED；有任务的在途实例不受影响。"""
+        from approval.utils.approval_flow import cancel_stuck_instances
+        from approval.utils.approval_flow.periodic import STUCK_INSTANCE_TIMEOUT_MINUTES
+
+        flow = make_flow(nodes=[{"name": "初审"}])
+        stuck = ApprovalInstance.objects.create(
+            flow=flow,
+            flow_name=flow.name,
+            title="卡死单",
+            creator=applicant,
+            current_node=None,
+            flow_version=flow.version,
+        )
+        ApprovalInstance.objects.filter(pk=stuck.pk).update(
+            created_time=timezone.now() - datetime.timedelta(minutes=STUCK_INSTANCE_TIMEOUT_MINUTES + 5)
+        )
+        healthy, error = create_instance(flow=flow, applicant=applicant, title="正常单", form_data={})
+        assert error is None
+
+        assert cancel_stuck_instances() == 1
+        stuck.refresh_from_db()
+        assert stuck.status == ApprovalInstance.Status.CANCELLED
+        assert stuck.finished_at is not None
+        healthy.refresh_from_db()
+        assert healthy.status == ApprovalInstance.Status.PENDING
+
+        # 幂等：重复执行不重复处理
+        assert cancel_stuck_instances() == 0
+
+    def test_fresh_pending_instance_not_cancelled(self, applicant, approver):
+        """门槛内的无任务实例不动（避免误伤正在发起的请求）。"""
+        from approval.utils.approval_flow import cancel_stuck_instances
+
+        flow = make_flow(nodes=[{"name": "初审"}])
+        fresh = ApprovalInstance.objects.create(
+            flow=flow,
+            flow_name=flow.name,
+            title="刚创建",
+            creator=applicant,
+            flow_version=flow.version,
+        )
+        assert cancel_stuck_instances() == 0
+        fresh.refresh_from_db()
+        assert fresh.status == ApprovalInstance.Status.PENDING

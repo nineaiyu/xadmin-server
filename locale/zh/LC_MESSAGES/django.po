@@ -10226,6 +10226,26 @@ msgstr "仅失败或已耗尽的投递可以重试"
 msgid "Delivery re-dispatched"
 msgstr "投递已重新派发"
 
+#: approval/serializers/approval_delegation.py:77
+msgid "Delegations can only be created in your own name"
+msgstr "只能以自己的名义创建委托"
+
+#: system/scim/resources.py:58
+msgid "Superuser accounts cannot be modified via SCIM"
+msgstr "超管账号不接受 SCIM 改写"
+
+#: system/scim/resources.py:71
+msgid "Builtin roles cannot be modified via SCIM"
+msgstr "内置角色不接受 SCIM 改写"
+
+#: dataset/utils/dform_flow.py:65
+msgid "The submission has already been submitted"
+msgstr "该提交已被提交"
+
+#: approval/utils/approval_flow/periodic.py:77
+msgid "The application was cancelled automatically: the submission did not complete"
+msgstr "申请已被系统自动取消：发起未完成"
+
 #~ msgid "Credential re-encrypted"
 #~ msgstr "凭据已重新加密"
 

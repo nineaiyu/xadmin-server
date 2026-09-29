@@ -9614,6 +9614,26 @@ msgstr ""
 msgid "Field {} must be a date (YYYY-MM-DD)"
 msgstr ""
 
+#: approval/serializers/approval_delegation.py:77
+msgid "Delegations can only be created in your own name"
+msgstr "Delegations can only be created in your own name"
+
+#: system/scim/resources.py:58
+msgid "Superuser accounts cannot be modified via SCIM"
+msgstr "Superuser accounts cannot be modified via SCIM"
+
+#: system/scim/resources.py:71
+msgid "Builtin roles cannot be modified via SCIM"
+msgstr "Builtin roles cannot be modified via SCIM"
+
+#: dataset/utils/dform_flow.py:65
+msgid "The submission has already been submitted"
+msgstr "The submission has already been submitted"
+
+#: approval/utils/approval_flow/periodic.py:77
+msgid "The application was cancelled automatically: the submission did not complete"
+msgstr "The application was cancelled automatically: the submission did not complete"
+
 #~ msgid "Database"
 #~ msgstr "Database"
 

@@ -64,6 +64,21 @@ def auto_remind_approval_flow_job():
 
 
 @shared_task
+@register_as_period_task(crontab="*/15 * * * *", module="approval_flow")
+def auto_cancel_stuck_approval_flow_job():
+    """卡死单兜底：PENDING 且无任何节点任务的实例（发起链路中断的残留）
+
+    置 CANCELLED——这类单无人可处理，且会锁住流程改版（在途实例存在时禁止改节点）。
+    """
+    from approval.utils.approval_flow import cancel_stuck_instances
+
+    count = cancel_stuck_instances()
+    if count:
+        logger.warning("Cancel stuck approval flow instances: %s rows", count)
+    return count
+
+
+@shared_task
 @register_as_period_task(crontab="12 4 * * *", module="approval_flow")
 def auto_clean_approval_flow_job():
     """清理超过保留期的流程实例（APPROVAL_FLOW_KEEP_DAYS，默认 365 天，分批删，级联任务）。"""
