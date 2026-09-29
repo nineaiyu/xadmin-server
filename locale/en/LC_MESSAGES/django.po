@@ -9668,3 +9668,7 @@ msgstr ""
 #: common/core/auth.py:233
 msgid "Daily quota exceeded for this application"
 msgstr ""
+
+#: dataset/utils/dform.py:436
+msgid "Field {} contains files that do not belong to you"
+msgstr ""

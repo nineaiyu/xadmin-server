@@ -294,3 +294,96 @@ class TestDictDrivenFields:
         )
         resp = auth_client.post(f"{SUBMISSIONS_URL}", {"form": form.pk, "data": {"p": "any"}}, format="json")
         assert resp.status_code == 400, resp.data
+
+
+class TestUploadOwnership:
+    """upload 控件值归属断言：文件必须存在且由提交人上传（防引用他人文件 pk）。"""
+
+    @staticmethod
+    def _upload_form(name="附件表单"):
+        return _make_form(
+            name=name,
+            schema={"fields": [{"key": "files", "label": "附件", "type": "upload"}]},
+        )
+
+    @staticmethod
+    def _make_upload(creator, filename):
+        from django.core.files.base import ContentFile
+
+        from system.models import UploadFile
+
+        row = UploadFile(filename=filename, is_upload=True, is_tmp=False, creator=creator)
+        row.filepath.save(f"e2e/{filename}", ContentFile(b"e2e-upload"), save=True)
+        return row
+
+    def test_owner_can_submit_own_upload(self, auth_client, superuser):
+        form = self._upload_form("归属-本人")
+        row = self._make_upload(superuser, "owner.pdf")
+        resp = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": str(row.pk), "filename": "owner.pdf"}]}},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_others_upload_rejected(self, auth_client, normal_user):
+        """引用他人文件：提交被拒（fail-closed），不落库。"""
+        from django.utils.translation import gettext as _
+
+        form = self._upload_form("归属-他人")
+        row = self._make_upload(normal_user, "others.pdf")
+        before = DynamicFormSubmission.objects.count()
+        resp = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": str(row.pk)}]}},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+        assert str(resp.data["detail"] if "detail" in resp.data else resp.data)  # 可读错误
+        assert _("Field {} contains files that do not belong to you").format("附件") in str(resp.data)
+        assert DynamicFormSubmission.objects.count() == before
+
+    def test_missing_file_rejected(self, auth_client):
+        """不存在/非法形态的文件 pk：同样 fail-closed。"""
+        import uuid
+
+        form = self._upload_form("归属-不存在")
+        resp = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": str(uuid.uuid4())}]}},
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+        illegal = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": "not-a-uuid"}]}},
+            format="json",
+        )
+        assert illegal.status_code == 400, illegal.data
+
+    def test_draft_submit_rechecks_ownership(self, auth_client, normal_user, superuser):
+        """草稿轻校验不查文件；提交端点按 schema 重校验时才做归属断言。"""
+        form = self._upload_form("归属-草稿提交")
+        others = self._make_upload(normal_user, "draft-others.pdf")
+        created = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": str(others.pk)}]}, "as_draft": True},
+            format="json",
+        )
+        assert created.data["code"] == 1000, created.data
+        pk = created.data["data"]["pk"]
+
+        rejected = auth_client.post(f"{SUBMISSIONS_URL}/{pk}/submit", {}, format="json")
+        assert rejected.data["code"] == 1001, rejected.data
+        assert "附件" in str(rejected.data["detail"])
+
+        # 换成提交人自己的文件：同一链路通过（超管无豁免，仍按 creator 判定）
+        own = self._make_upload(superuser, "draft-own.pdf")
+        created = auth_client.post(
+            SUBMISSIONS_URL,
+            {"form": form.pk, "data": {"files": [{"pk": str(own.pk)}]}, "as_draft": True},
+            format="json",
+        )
+        ok = auth_client.post(f"{SUBMISSIONS_URL}/{created.data['data']['pk']}/submit", {}, format="json")
+        assert ok.data["code"] == 1000, ok.data

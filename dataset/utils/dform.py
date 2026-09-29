@@ -4,7 +4,8 @@
 
 安全边界：控件类型收敛 14 种；key 格式固定且表单内唯一；字段数 ≤50；
 提交数据未知键/required 缺失/选项外取值/数值越界/超长一律拒绝。
-upload 仅接受文件 pk 字符串数组（不落文件本体）；table 禁嵌套、限行列数；
+upload 仅接受文件条目（pk 等字段，不落文件本体）；给出提交人时断言文件存在且归属该用户；
+table 禁嵌套、限行列数；
 user 仅接受用户主键（不校验存在性——纯函数无 DB，落库后由业务读取时兜底）；
 cascader 仅接受命中选项树叶子路径的值序列；
 select/radio/checkbox 的选项可以内联（options）或绑定数据字典（dict）——
@@ -402,6 +403,28 @@ def field_option_values(item: dict) -> list:
     return list(item.get("options") or [])
 
 
+def assert_upload_ownership(value, label, user) -> None:
+    """upload 控件值归属断言：文件必须**存在且由提交人上传**（fail-closed）。
+
+    历史实现只校验「条目是带 pk 的对象」——可以引用他人文件 pk（访问侧靠
+    UploadFile 数据权限兜底，跨角色/字段权限配置下仍可能读到别人的附件）。
+    提交链路统一在提交校验时批量断言；无用户上下文（种子/脚本）由调用方传 None 跳过。
+    """
+    from system.services import UploadFile
+
+    pks = [str(item.get("pk") or "").strip() for item in value]
+    pks = [pk for pk in pks if pk]
+    if not pks:
+        return
+    try:
+        owned = {str(pk) for pk in UploadFile.objects.filter(pk__in=pks, creator=user).values_list("pk", flat=True)}
+    except Exception:  # noqa: BLE001 非法 pk 形态等：按全部不归属处理（fail-closed）
+        owned = set()
+    invalid = [pk for pk in pks if pk not in owned]
+    if invalid:
+        raise ValidationError(_("Field {} contains files that do not belong to you").format(label))
+
+
 def validate_draft_data(data) -> dict:
     """草稿轻校验：数据须为对象、键为合法字段 key 形态、体积封顶；不做必填/取值校验。
 
@@ -422,11 +445,14 @@ def validate_draft_data(data) -> dict:
     return data
 
 
-def validate_submission_data(schema: dict, data) -> dict:
+def validate_submission_data(schema: dict, data, user=None) -> dict:
     """提交数据校验：未知键拒绝 + required + 类型/选项/边界校验。返回规范化 data。
 
     联动优先：先按原始数据求值联动规则——被隐藏的字段跳过全部校验且不写入
     （隐藏即不生效），动态必填/非必填覆盖字段自身定义（见 ``evaluate_linkages``）。
+
+    ``user`` 给出时，upload 控件值额外做归属断言（文件必须存在且由该用户上传）；
+    省略（种子/脚本/无请求上下文）则跳过该断言，其余校验不变。
     """
     fields = schema.get("fields") if isinstance(schema, dict) else None
     if not isinstance(fields, list):
@@ -513,6 +539,8 @@ def validate_submission_data(schema: dict, data) -> dict:
             for item in value:
                 if not isinstance(item, dict) or not str(item.get("pk") or "").strip():
                     raise ValidationError(_("Field {} contains an invalid file").format(label))
+            if user is not None and getattr(user, "pk", None):
+                assert_upload_ownership(value, label, user)
         elif ftype == "daterange":
             if not isinstance(value, list) or len(value) != 2:
                 raise ValidationError(_("Field {} must be a date range").format(label))

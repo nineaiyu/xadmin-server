@@ -320,7 +320,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         if data is None:
             data = instance.data or {}
         try:
-            normalized = validate_submission_data(form.schema, data)
+            normalized = validate_submission_data(form.schema, data, user=request.user)
         except DjangoValidationError as exc:
             messages = getattr(exc, "messages", None) or [str(exc)]
             return ApiResponse(code=1001, detail=str(messages[0]))

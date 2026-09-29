@@ -169,7 +169,7 @@ def _validate_dform(user, params: dict):
     if not isinstance(data, dict):
         return {}, str(_("Submission data must be an object"))
     try:
-        normalized = validate_submission_data(form.schema, data)
+        normalized = validate_submission_data(form.schema, data, user=user)
     except DjangoValidationError as exc:
         return {}, "; ".join(exc.messages)
     return {"form_id": str(form.pk), "data": normalized, "form_name": form.name}, None

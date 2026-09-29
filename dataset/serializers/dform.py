@@ -193,7 +193,7 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         else:
             # 提交侧校验：与 schema 定义同源（未知键/required/选项/边界；字典字段读字典值；
             # 联动规则参与：隐藏字段跳过校验且不落库、动态必填覆盖字段定义）
-            attrs["data"] = validate_submission_data(form.schema, data)
+            attrs["data"] = validate_submission_data(form.schema, data, user=getattr(self.request, "user", None))
         # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
         attrs["schema_version"] = form.schema_version or 1
         return attrs

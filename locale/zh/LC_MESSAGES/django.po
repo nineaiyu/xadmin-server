@@ -10519,3 +10519,7 @@ msgstr "开启后超过每日配额的请求返回 429（关闭时只告警不�
 #: common/core/auth.py:233
 msgid "Daily quota exceeded for this application"
 msgstr "该应用已超出每日配额"
+
+#: dataset/utils/dform.py:436
+msgid "Field {} contains files that do not belong to you"
+msgstr "字段 {} 包含不属于你的文件"

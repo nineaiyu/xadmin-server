@@ -114,7 +114,8 @@ def submit_from_approval(approval, user):
     if form is None:
         return False, str(_("The form does not exist or is no longer accepting submissions"))
     try:
-        data = validate_submission_data(form.schema, payload.get("data") or {})
+        # 数据来自申请人提交时的快照：文件归属按申请人（审批单 creator）判定
+        data = validate_submission_data(form.schema, payload.get("data") or {}, user=approval.creator)
     except ValidationError as exc:
         messages = getattr(exc, "messages", None) or [str(exc)]
         return False, str(messages[0])
@@ -155,7 +156,7 @@ def update_from_approval(approval, user):
     if not form.is_active:
         return False, str(_("This form is no longer accepting submissions"))
     try:
-        data = validate_submission_data(form.schema, payload.get("data") or submission.data)
+        data = validate_submission_data(form.schema, payload.get("data") or submission.data, user=submission.creator)
     except ValidationError as exc:
         messages = getattr(exc, "messages", None) or [str(exc)]
         return False, str(messages[0])
