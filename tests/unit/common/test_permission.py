@@ -136,6 +136,47 @@ class TestPermissionPathMatches:
         assert permission_path_matches("api/demo/[", "/api/demo/book") is False
 
 
+class TestPermissionPathCompileCache:
+    """编译缓存与字面量前缀剪枝：回退遍历不因 re 模块编译缓存冲刷而反复重编译。"""
+
+    def test_pattern_compiled_once_across_calls(self):
+        from common.core.utils import _compile_permission_pattern
+
+        pattern = "api/demo/compile-cache-probe$"
+        _compile_permission_pattern.cache_clear()
+        assert permission_path_matches(pattern, "/api/demo/compile-cache-probe") is True
+        assert _compile_permission_pattern.cache_info().misses == 1
+        assert permission_path_matches(pattern, "/api/demo/compile-cache-probe") is True
+        info = _compile_permission_pattern.cache_info()
+        assert info.misses == 1  # 第二次命中缓存，不再编译
+        assert info.hits >= 1
+
+    def test_invalid_regex_cached_as_no_match(self):
+        from common.core.utils import _compile_permission_pattern
+
+        _compile_permission_pattern.cache_clear()
+        assert permission_path_matches("api/demo/[", "/api/demo/book") is False
+        assert permission_path_matches("api/demo/[", "/api/demo/book") is False
+        info = _compile_permission_pattern.cache_info()
+        assert info.misses == 1 and info.hits >= 1  # 坏正则结果同样入缓存
+
+    def test_literal_prefix_stops_before_regex_metachar(self):
+        from common.core.utils import _compile_permission_pattern
+
+        prefix, compiled = _compile_permission_pattern(r"api/system/user/(?P<pk>[^/.]+)$")
+        assert prefix == "/api/system/user/"
+        assert compiled is not None
+        prefix, _ = _compile_permission_pattern("api/demo/user")
+        assert prefix == "/api/demo/user"
+
+    def test_regex_detail_pattern_matches_and_rejects(self):
+        """剪枝不得改变含正则 path 的匹配结果（详情类权限点主路径）。"""
+        pattern = r"api/system/user/(?P<pk>[^/.]+)$"
+        assert permission_path_matches(pattern, "/api/system/user/abc-123") is True
+        assert permission_path_matches(pattern, "/api/system/user/abc/extra") is False
+        assert permission_path_matches(pattern, "/api/system/dept/abc") is False
+
+
 class TestUserHasPermission:
     """功能开关权限点判定（无独立路由的按 path 授权）。"""
 

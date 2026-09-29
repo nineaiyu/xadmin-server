@@ -8,6 +8,7 @@ import datetime
 import logging
 import re
 from collections import OrderedDict, defaultdict, deque
+from functools import lru_cache
 from importlib import import_module
 
 from django.apps import apps
@@ -31,6 +32,33 @@ def get_doc_first_line(doc):
     return lines[0].strip() if lines else ""
 
 
+# 权限点 path 编译缓存：权限点数量级 600+（×5 个 HTTP 方法维度），超过 re 模块
+# 自带 512 条编译缓存——逐条回退匹配时会被冲刷导致反复重编译；本缓存让编译在
+# 进程内只发生一次，并预计算字面量前缀供匹配时零语义风险短路。
+_PERMISSION_LITERAL_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/_-:~")
+
+
+@lru_cache(maxsize=8192)
+def _compile_permission_pattern(pattern: str):
+    """编译权限点 path（已去前导 ``/``）→ ``(字面量前缀, 编译后正则)``。
+
+    正则为 None 表示坏正则（该权限点视为不命中，不影响其它权限点）。
+    前缀 = 编译模式从开头起连续的字面量字符（到首个正则元字符为止）；
+    目标地址不以该前缀开头必然不匹配，可直接短路（宁短勿错）。
+    """
+    full = f"/{pattern}" if pattern.endswith("$") else f"/{pattern}(/.*)?"
+    stop = len(full)
+    for index, char in enumerate(full):
+        if char not in _PERMISSION_LITERAL_CHARS:
+            stop = index
+            break
+    prefix = full[:stop]
+    try:
+        return prefix, re.compile(full)
+    except re.error:
+        return prefix, None
+
+
 def permission_path_matches(permission_path: str, url: str) -> bool:
     """权限点 path 是否覆盖请求地址（唯一实现，三处消费方共用）。
 
@@ -43,14 +71,20 @@ def permission_path_matches(permission_path: str, url: str) -> bool:
 
     历史上运行期判定 / 权限点扫描 / 应用授权各有平行实现，其中一处漏改锚定；
     口径收敛到本函数，消费方只做「精确优先 + 逐条回退」编排，勿再自写正则。
+
+    匹配性能：编译与字面量前缀经进程内缓存（``_compile_permission_pattern``），
+    回退遍历（O(权限点数)）中前缀不符的条目在 startswith 处短路，
+    且不依赖 re 模块 512 条编译缓存（超限即反复重编译）。
     """
     pattern = str(permission_path or "").lstrip("/")
     target = str(url or "")
     if not target.startswith("/"):
         target = f"/{target}"
-    full = f"/{pattern}" if pattern.endswith("$") else f"/{pattern}(/.*)?"
+    prefix, compiled = _compile_permission_pattern(pattern)
+    if compiled is None or not target.startswith(prefix):
+        return False
     try:
-        return re.fullmatch(full, target) is not None
+        return compiled.fullmatch(target) is not None
     except re.error:
         return False
 
