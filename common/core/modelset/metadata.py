@@ -6,8 +6,10 @@
 """
 
 import json
+from hashlib import md5
 from typing import TYPE_CHECKING, Any
 
+from django.core.cache import cache
 from django.forms.widgets import DateTimeInput, SelectMultiple
 from django.utils.translation import gettext_lazy as _
 from django_filters.utils import get_model_field
@@ -30,6 +32,37 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 
 logger = get_logger(__name__)
+
+#: 元数据载荷缓存时长：前端每个列表页都会取（首开还经 with_meta=1 内联进列表响应），
+#: 现场重建 filterset + 逐字段求值是 k6 最慢用例之一。缓存键含用户主键（字段权限按
+#: 用户不同）；载荷级缓存（而非响应级）保证 with_meta 内联路径读到的仍是普通响应对象。
+METADATA_CACHE_TIMEOUT = 60 * 5
+
+
+def metadata_cache_key(view_instance, method_name, request) -> str:
+    """载荷缓存键：视图集 + 方法 + 用户主键（+ ``?fields=`` 摘要）。
+
+    ``?fields=`` 会收窄 search-columns 的序列化器字段（BaseViewSet.get_serializer），
+    因此并入键；其余查询参数（分页/排序/搜索）不影响元数据输出，不入键——独立元数据
+    接口与列表内联调用因此共用同一份缓存。
+    """
+    user_pk = getattr(getattr(request, "user", None), "pk", "anonymous")
+    query = getattr(request, "query_params", None)
+    if query is None:
+        query = getattr(request, "GET", {}) or {}
+    raw_fields = query.get("fields") if hasattr(query, "get") else None
+    digest = f"_{md5(str(raw_fields).encode('utf-8')).hexdigest()[:12]}" if raw_fields else ""
+    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}"
+
+
+def metadata_cache_bypass(request) -> bool:
+    """``?no_cache=1`` 旁路：与 cache_response 的刷新口径一致（读跳过、也不回写）。"""
+    query = getattr(request, "query_params", None)
+    if query is None:
+        query = getattr(request, "GET", {}) or {}
+    if getattr(request, "no_cache", False):
+        return True
+    return bool(hasattr(query, "get") and query.get("no_cache") in ("1", "true"))
 
 
 class ChoicesAction:
@@ -104,6 +137,12 @@ class SearchFieldsAction:
     @action(methods=["get"], detail=False, url_path="search-fields")
     def search_fields(self, request, *args, **kwargs):
         """获取{cls}的查询字段"""
+        cache_key = metadata_cache_key(self, "search_fields", request)
+        cache_bypass = metadata_cache_bypass(request)
+        if not cache_bypass:
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return ApiResponse(data=cached)
         results = []
         if getattr(self, "filterset_class", None) is None:
             # 非模型视图集（内存 queryset / 未声明 filterset，如 IP 拦截名单）：
@@ -191,6 +230,8 @@ class SearchFieldsAction:
         except Exception as e:
             # ordering 段失败不影响已收集的字段元数据
             logger.error(f"get search-field ordering failed {e}")
+        if not cache_bypass:
+            cache.set(cache_key, results, METADATA_CACHE_TIMEOUT)
         return ApiResponse(data=results)
 
 
@@ -242,6 +283,12 @@ class SearchColumnsAction:
     @shared_list_action(methods=["get"], detail=False, url_path="search-columns")
     def search_columns(self, request, *args, **kwargs):
         """获取{cls}的展示字段"""
+        cache_key = metadata_cache_key(self, "search_columns", request)
+        cache_bypass = metadata_cache_bypass(request)
+        if not cache_bypass:
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return ApiResponse(data=cached)
         results = []
 
         # def check_upload_tp(value, tp):
@@ -366,4 +413,6 @@ class SearchColumnsAction:
                         info["lookups"] = lookups
                         break
             results.append(info)
+        if not cache_bypass:
+            cache.set(cache_key, results, METADATA_CACHE_TIMEOUT)
         return ApiResponse(data=results)
