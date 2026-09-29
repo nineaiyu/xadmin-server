@@ -209,15 +209,43 @@ def _render_task_durations(raw) -> list:
     return lines
 
 
+#: 授权池缓存键（common/core/filter.py：``data_permission_grants_<版本>_<用户>_<部门>_<菜单>``）
+GRANTS_CACHE_KEY_PATTERN = "*data_permission_grants_*"
+
+
+def _render_grants_cache() -> bytes:
+    """授权池缓存存活键数（观察项）。
+
+    键空间 = 用户 × 菜单（含部门维度），TTL 300s 兜底；本仓决策为「维持 + 监控」
+    （不做键去 menu 维度、也不做版本分段淘汰，收敛预案见 docs/cache-keys-audit.md）：
+    这里给出存活键数，供监控侧设阈值观察，超预期再评估收敛方案。
+    SCAN 游标遍历（不用 KEYS，避免大 keyspace 阻塞）；redis 不可用返回空。
+    """
+    try:
+        from django_redis import get_redis_connection
+
+        conn = get_redis_connection("default")
+        count = sum(1 for _ in conn.scan_iter(match=GRANTS_CACHE_KEY_PATTERN, count=1000))
+    except Exception as e:  # noqa: BLE001 指标旁路：不影响端点其余指标
+        logger.debug(f"render grants cache metrics failed: {e}")
+        return b""
+    lines = [
+        "# HELP xadmin_authz_grants_cache_keys 授权池缓存存活键数（用户×菜单，TTL 300s）",
+        "# TYPE xadmin_authz_grants_cache_keys gauge",
+        f"xadmin_authz_grants_cache_keys {count}",
+    ]
+    return ("\n".join(lines) + "\n").encode()
+
+
 def render_metrics():
     """返回 (payload, content_type)。
 
     celery 任务指标来自 redis 跨进程聚合（worker 写入，本端点附加渲染）——
     进程内 Counter/Histogram 未注册进 registry（见 _TASKS/_TASK_DURATION），
-    避免与聚合口径在输出中重复。
+    避免与聚合口径在输出中重复；授权池缓存键基数为观察项 gauge（同源由 redis 直读）。
     """
     payload = generate_latest()
-    task_payload = _render_task_redis()
-    if task_payload:
-        payload += task_payload
+    for extra in (_render_task_redis(), _render_grants_cache()):
+        if extra:
+            payload += extra
     return payload, CONTENT_TYPE_LATEST

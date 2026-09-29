@@ -143,3 +143,32 @@ class TestTaskRedisAggregate:
         monkeypatch.setattr("django_redis.get_redis_connection", _boom)
         payload, _ = metrics_module.render_metrics()
         assert b"xadmin_http" in payload
+
+
+class TestGrantsCacheGauge:
+    """授权池缓存键基数（观察项）：scan 计数 + redis 不可用降级。"""
+
+    def test_render_counts_grants_keys(self, monkeypatch):
+        import common.metrics as metrics_module
+
+        class _FakeConn:
+            def scan_iter(self, match=None, count=None):
+                assert match == metrics_module.GRANTS_CACHE_KEY_PATTERN
+                yield b":1:data_permission_grants_1_1__"
+                yield b":1:data_permission_grants_1_2__5"
+
+        monkeypatch.setattr("django_redis.get_redis_connection", lambda *args, **kwargs: _FakeConn())
+        output = metrics_module.render_metrics()[0].decode()
+        assert "# TYPE xadmin_authz_grants_cache_keys gauge" in output
+        assert "xadmin_authz_grants_cache_keys 2" in output
+
+    def test_render_degrades_without_redis(self, monkeypatch):
+        import common.metrics as metrics_module
+
+        def _boom(*args, **kwargs):
+            raise ConnectionError("redis down")
+
+        monkeypatch.setattr("django_redis.get_redis_connection", _boom)
+        payload, _ = metrics_module.render_metrics()
+        assert b"xadmin_http" in payload
+        assert b"xadmin_authz_grants_cache_keys" not in payload

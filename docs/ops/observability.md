@@ -55,6 +55,7 @@ SENTRY_TRACES_SAMPLE_RATE: 0.1   # 0.0 = 仅错误上报（默认）；建议生
 | `xadmin_http_request_duration_seconds` | Histogram | method, view |
 | `xadmin_celery_tasks_total` | Counter | task, status（SUCCESS / FAILURE / REVOKED …） |
 | `xadmin_celery_task_duration_seconds` | Histogram | task |
+| `xadmin_authz_grants_cache_keys` | Gauge | 无（授权池缓存存活键数，SCAN 计数；TTL 300s 兜底，见 cache-keys-audit.md 观察项） |
 
 ### 系统监控面板（SystemMonitor，2026-09-19 增强）
 
@@ -441,7 +442,7 @@ DB 故障返回空列表不阻断请求（读取点在 serializer 字段绑定/�
 
 | 项 | 值 | 备注 |
 |----|----|------|
-| 指标端点 | ✅ `/api/common/api/metrics`（Bearer）| 4 指标族：http_requests/duration + celery_tasks/task_duration |
+| 指标端点 | ✅ `/api/common/api/metrics`（Bearer）| 5 指标族：http_requests/duration + celery_tasks/task_duration + authz_grants_cache_keys |
 | HTTP 请求形态 | health 7 次全 200 | 打点验证；正式基线待运行累积 |
 | 队列积压 | 0（redis `llen celery`）| 即时 |
 | 今日 WARN | 102,447 → **已降噪**（96% = 缓存失效日志）| MagicCache/MagicCacheResponse 4 处 warning→debug |
