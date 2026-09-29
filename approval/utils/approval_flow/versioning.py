@@ -51,6 +51,7 @@ def build_snapshot(flow, nodes) -> dict:
                 "routes": node.get("routes") or [],
                 "layout": node.get("layout") or {},
                 "timeout_hours": int(node.get("timeout_hours") or 0),
+                "timeout_action": node.get("timeout_action") or ApprovalFlowNode.TimeoutAction.NONE,
                 "cc_users": normalize_cc_users(node.get("cc_users")),
             }
             for index, node in enumerate(nodes or [])
@@ -81,6 +82,7 @@ def create_node_rows(flow, nodes, version: int) -> None:
                 routes=node.get("routes") or [],
                 layout=node.get("layout") or {},
                 timeout_hours=int(node.get("timeout_hours") or 0),
+                timeout_action=node.get("timeout_action") or ApprovalFlowNode.TimeoutAction.NONE,
                 cc_users=normalize_cc_users(node.get("cc_users")),
                 version_from=version,
             )

@@ -175,6 +175,7 @@ class ApprovalFlowNode(DbAuditModel):
       所在部门 leader）/ field（表单字段 key，值为用户名或用户名列表）/ post
       （岗位 code，逗号分隔；按 UserInfo.posts 解析，不参与权限判定）；
     - timeout_hours：>0 时超时未处理由 beat 任务提醒当前节点审批人（每任务每日一次）；
+    - timeout_action：超时自动动作（提醒之外的分支执行，见 periodic.execute_timeout_actions）；
     - version_from / version_to：定义有效区间（改版 = 旧行收口 + 新版本落新行，不删行）。
     """
 
@@ -190,6 +191,17 @@ class ApprovalFlowNode(DbAuditModel):
         LEADER = "leader", _("Leader")
         FIELD = "field", _("Form field")
         POST = "post", _("Post")
+
+    class TimeoutAction(models.TextChoices):
+        """超时自动动作（timeout_hours 到点后由 beat 按分支执行；none = 仅提醒）。"""
+
+        NONE = "none", _("No action")
+        # 系统自动通过该任务（会签语义下其余候选人仍需处理）
+        APPROVE = "approve", _("Auto approve")
+        # 系统自动驳回整单（终态 REJECTED，原因注明超时自动驳回）
+        REJECT = "reject", _("Auto reject")
+        # 升级转交：任务转给处理人所在部门的 leader（无 leader 时保持待办继续提醒）
+        TRANSFER_UP = "transfer_up", _("Escalate to leader")
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     flow = models.ForeignKey(
@@ -215,6 +227,10 @@ class ApprovalFlowNode(DbAuditModel):
     # 画布坐标（@vue-flow 节点定位）：{"x": 100, "y": 200}；仅前端布局用
     layout = models.JSONField(_("Canvas layout"), default=dict, blank=True)
     timeout_hours = models.IntegerField(_("Timeout hours"), default=0)
+    # 超时自动动作：none 仅提醒；approve/reject 到点由系统代为处理；transfer_up 升级给 leader
+    timeout_action = models.CharField(
+        _("Timeout action"), max_length=16, choices=TimeoutAction.choices, default=TimeoutAction.NONE
+    )
     # 抄送人：节点级默认抄送（用户 pk 列表）；实例发起时解析为实例级 cc_users 快照
     cc_users = models.JSONField(_("CC users"), default=list, blank=True)
     # 定义有效区间：version_from 起生效（含）、version_to 止失效（不含，NULL = 仍生效）

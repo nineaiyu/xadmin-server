@@ -176,6 +176,20 @@ EVENT_CATALOG = {
             "reason": {"type": "string", "required": False, "description": _("Finish reason")},
         },
     },
+    # 退回重审：实例回退到已途经节点（非终态，status 恒为 PENDING，reason 为退回原因）
+    "flow.returned": {
+        "label": _("Flow application returned"),
+        "version": 1,
+        "fields": {
+            "instance_no": {"type": "string", "required": True, "description": _("Instance number")},
+            "title": {"type": "string", "required": True, "description": _("Instance title")},
+            "flow_name": {"type": "string", "required": True, "description": _("Flow name")},
+            "status": {"type": "string", "required": True, "description": _("Instance status")},
+            "creator": {"type": "string", "required": True, "description": _("Creator username")},
+            "current_node": {"type": "string", "required": False, "description": _("Current node")},
+            "reason": {"type": "string", "required": False, "description": _("Finish reason")},
+        },
+    },
     # 开放平台：应用每日配额达阈值（软告警，不阻断）
     "api_quota.warning": {
         "label": _("API application quota warning"),

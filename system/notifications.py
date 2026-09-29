@@ -366,87 +366,8 @@ class ApprovalRequestMessage(UserMessage):
         return cls(user, "submitted", approval)
 
 
-@register_message
-class ApprovalFlowMessage(UserMessage):
-    """流程审批通知（全量审批流引擎）：
-
-    submitted（待审批，发节点审批人）/ approved、rejected（结果，发申请人）/
-    remind（节点超时提醒，发审批人）/ added（被加签，发新增审批人）/
-    cancelled（撤回，发当前节点审批人）。
-    """
-
-    category = "Audit"
-    category_label = _("Audit")
-    message_type_label = _("Approval flow notice")
-
-    EVENT_TITLES = {
-        "submitted": _("New approval application"),
-        "approved": _("Approval application approved"),
-        "rejected": _("Approval application rejected"),
-        "remind": _("Approval task pending reminder"),
-        "urge": _("Approval request urged by the applicant"),
-        "added": _("Added as approval approver"),
-        "transferred": _("Approval task transferred to you"),
-        "cancelled": _("Approval application cancelled"),
-        # 协作事件：抄送知会（发起 / 终态）与讨论区 @ 提醒
-        "cc": _("Approval application copied to you"),
-        "mentioned": _("You were mentioned in the approval discussion"),
-    }
-
-    def __init__(self, user, event: str, instance, extra: str = ""):
-        self.event = event
-        self.instance = instance
-        self.extra = extra
-        super().__init__(user)
-
-    @classmethod
-    def template_variables(cls) -> tuple:
-        """模板可用业务变量（与 get_template_vars 同源，两者漂移由守护测试拦下）。"""
-        return (
-            "title",
-            "flow_name",
-            "node_name",
-            "instance_no",
-            "reason",
-            "extra",
-            "name",
-            "event",
-            "time",
-        )
-
-    def get_template_vars(self) -> dict:
-        instance = self.instance
-        return {
-            "title": instance.title or "-",
-            "flow_name": instance.flow_name or "-",
-            "node_name": getattr(instance.current_node, "name", "") or self.extra or "-",
-            "instance_no": str(instance.pk or "")[:8].upper(),
-            "reason": instance.reason or "",
-            "extra": self.extra or "",
-            "name": self.user_display,
-            "event": self.event,
-            # 渲染时刻：默认渠道模板（notify/msg_approval_flow.html）同样引用该变量，
-            # 不登记会导致自定义模板写 {{ time }} 被保存校验拒绝
-            "time": local_now_display(),
-        }
-
-    def get_html_msg(self) -> dict:
-        subject = self.EVENT_TITLES.get(self.event, self.EVENT_TITLES["submitted"])
-        # 业务变量（get_template_vars，与模板覆盖同源）+ 渲染补充字段
-        context = dict(self.get_template_vars())
-        context["subject"] = subject
-        message = render_to_string("notify/msg_approval_flow.html", context)
-        return {"subject": subject, "message": message}
-
-    @classmethod
-    def gen_test_msg(cls):
-        from approval.models import ApprovalFlow, ApprovalInstance
-        from system.models import UserInfo
-
-        user = UserInfo.objects.first()
-        instance = ApprovalInstance(flow=ApprovalFlow(name="Test", code="test"), flow_name="Test", title="Test")
-        return cls(user, "submitted", instance)
-
+# ApprovalFlowMessage（流程审批通知）已随行数门禁抽至独立模块；此 re-export 维持既有导入面
+from system.notifications_approval_flow import ApprovalFlowMessage  # noqa: E402,F401 显式再导出
 
 SENSITIVE_ALERT_THROTTLE_SECONDS = 60
 

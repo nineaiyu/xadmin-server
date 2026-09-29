@@ -16100,4 +16100,74 @@
    "model": []
   }
  }
+,
+ {
+  "model": "system.menu",
+  "pk": "d5378e58-1bd0-4fe9-92c9-04dfe891e8fc",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "5feaef1d-2839-5c83-8e37-953a58025d17",
+   "menu_type": 2,
+   "name": "returnTargets:SystemApprovalInstance",
+   "rank": 1,
+   "path": "api/approval/approval-instances/(?P<pk>[^/.]+)/return-targets$",
+   "component": "",
+   "is_active": true,
+   "meta": "309f8363-b258-4940-996a-fc64fddb8a5b",
+   "method": "GET",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "18a50789-24ef-433f-b8e6-285b6648667a",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "5feaef1d-2839-5c83-8e37-953a58025d17",
+   "menu_type": 2,
+   "name": "returnNode:SystemApprovalInstance",
+   "rank": 1,
+   "path": "api/approval/approval-instances/(?P<pk>[^/.]+)/return$",
+   "component": "",
+   "is_active": true,
+   "meta": "52242751-b6cc-4ffa-bd90-6469f22013ec",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "3818f6b0-c3be-42fb-b6d6-b8a1b7163488",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "5feaef1d-2839-5c83-8e37-953a58025d17",
+   "menu_type": 2,
+   "name": "removeSign:SystemApprovalInstance",
+   "rank": 1,
+   "path": "api/approval/approval-instances/(?P<pk>[^/.]+)/remove-sign$",
+   "component": "",
+   "is_active": true,
+   "meta": "29294c42-f556-499b-87e5-ae4e4a8a7e16",
+   "method": "POST",
+   "model": []
+  }
+ }
 ]

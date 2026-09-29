@@ -52,6 +52,8 @@ class ApprovalFlowNodeSerializer(BaseModelSerializer):
             "routes",
             "layout",
             "timeout_hours",
+            # 超时自动动作（none/approve/reject/transfer_up；仅在 timeout_hours>0 时生效）
+            "timeout_action",
             # 节点级默认抄送人（用户 pk 列表）
             "cc_users",
         ]
@@ -238,12 +240,20 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         return flow
 
     def _definition_changed(self, flow, nodes) -> bool:
-        """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。"""
+        """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。
+
+        历史快照缺 `timeout_action`（字段后补）时按默认值回填再比较，避免
+        语义未变的存量定义被误判为「有变化」而多落一个版本。
+        """
         latest = flow.versions.order_by("-version").values_list("snapshot", flat=True).first()
         if latest is None:
             return True
         import json
 
+        latest = json.loads(json.dumps(latest))
+        for node in latest.get("nodes") or []:
+            if isinstance(node, dict):
+                node.setdefault("timeout_action", ApprovalFlowNode.TimeoutAction.NONE)
         return json.dumps(latest, sort_keys=True, ensure_ascii=False) != json.dumps(
             build_snapshot(flow, nodes), sort_keys=True, ensure_ascii=False
         )

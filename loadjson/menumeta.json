@@ -17366,4 +17366,80 @@
    "dynamic_level": 0
   }
  }
+,
+ {
+  "model": "system.menumeta",
+  "pk": "309f8363-b258-4940-996a-fc64fddb8a5b",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "ApprovalInstanceReturnTargets",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "52242751-b6cc-4ffa-bd90-6469f22013ec",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "ApprovalInstanceReturn",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "29294c42-f556-499b-87e5-ae4e4a8a7e16",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00Z",
+   "updated_time": "2026-09-29T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "ApprovalInstanceRemoveSign",
+   "icon": "",
+   "r_svg_name": "",
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "transition_enter": "",
+   "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ }
 ]

@@ -15,7 +15,8 @@ ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审�
 - 或签 OR：任一 APPROVED 即节点通过，其余 PENDING 行置 CANCELLED；
 - 会签 AND：全部 APPROVED 才通过；任一行 REJECTED → 实例驳回（终态）；
 - 申请人不能审批自己的节点（候选解析时剔除申请人；无候选在发起时即报错）；
-- 驳回/撤回均终止实例；加签在「当前节点」追加候选（会签语义下必须通过）。
+- 驳回/撤回均终止实例；退回（returns）把实例回退到已途经节点重开重审；
+- 加签在「当前节点」追加候选（会签语义下必须通过），减签移除加签行（仅 AND/RATIO）。
 
 并发说明：审批动作（approve / reject / cancel / add_sign）在**实例行锁**
 （``select_for_update``）内串行执行——同一实例的并发操作不会重复推进（下一节点
@@ -54,8 +55,8 @@ from .engine import (
     create_instance,
     reject_task,
 )
-from .extra_actions import add_sign, transfer_task, urge_instance
-from .periodic import cancel_stuck_instances, clean_finished_instances, remind_pending_tasks
+from .extra_actions import add_sign, remove_sign, transfer_task, urge_instance
+from .periodic import cancel_stuck_instances, clean_finished_instances, execute_timeout_actions, remind_pending_tasks
 from .queries import (
     done_tasks_for,
     instance_stats,
@@ -64,6 +65,7 @@ from .queries import (
     pending_tasks_for,
     visible_instances_for,
 )
+from .returns import return_instance, returnable_nodes
 
 __all__ = [
     "CONDITION_OPS",
@@ -79,6 +81,7 @@ __all__ = [
     "create_instance",
     "done_tasks_for",
     "eval_condition",
+    "execute_timeout_actions",
     "instance_stats",
     "matching_nodes",
     "next_node",
@@ -88,8 +91,11 @@ __all__ = [
     "pending_tasks_for",
     "remind_pending_tasks",
     "reject_task",
+    "remove_sign",
     "resolve_assignee_pairs",
     "resolve_assignees",
+    "return_instance",
+    "returnable_nodes",
     "simulate_path",
     "transfer_task",
     "urge_instance",

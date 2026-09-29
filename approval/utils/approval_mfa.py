@@ -6,8 +6,9 @@
 变更前走 412（``user_confirm_required``）协议 —— 与「敏感操作审批令牌」是两套独立
 协议，本项复用 MFA 的确认状态缓存（前端 http 层已支持弹验证窗并自动重发）。
 
-支持的动作名：``approve`` / ``reject`` / ``cancel`` / ``add_sign`` / ``transfer`` /
-``batch_approve`` / ``batch_reject`` / ``rollback``（流程定义回滚）。
+支持的动作名：``approve`` / ``reject`` / ``return``（退回节点）/ ``cancel`` /
+``add_sign`` / ``remove_sign``（减签）/ ``transfer`` / ``batch_approve`` /
+``batch_reject`` / ``rollback``（流程定义回滚）。
 覆盖两个入口：审批中心（ApprovalRequest）与审批流引擎（ApprovalInstance / 流程定义）。
 
 跨 app 仅经 mfa 的 services 契约层，且惰性 import（common 侧模块不反向依赖 mfa）。

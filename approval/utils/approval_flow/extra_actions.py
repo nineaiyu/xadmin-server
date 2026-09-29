@@ -128,6 +128,71 @@ def add_sign(instance, user, usernames, comment: str = ""):
         return True, None
 
 
+def remove_sign(instance, user, task_pk, comment: str = ""):
+    """减签：移除加签追加的候选审批人（其待办作废，审计行保留）。返回 (ok, detail)。
+
+    - 仅可移除 ``is_added=True`` 的加签行（流程定义解析出的初始候选属流程语义，
+      不能通过减签改写——需要换人时用转交）；仅当前节点 / PENDING 任务；
+    - 或签节点下加签本就无约束力（同 add_sign 拒绝口径），减签同样拒绝并引导转交；
+    - 会签语义下减签即降低所需通过人数（剩余待办通过即流转）；比例会签与节点进度
+      同口径排除已作废行（减签即时降低达标线；转交一出一进、总数不变）；
+    - 权限：当前节点任一任务的处理人/被指派人或超管；实例行锁与审批推进互斥。
+    """
+    ApprovalInstance, ApprovalNodeTask = _models().Instance, _models().Task
+
+    with transaction.atomic():
+        instance = ApprovalInstance.objects.select_for_update().filter(pk=instance.pk).first()
+        if instance is None:
+            return False, str(_("The application does not exist"))
+        if instance.status != ApprovalInstance.Status.PENDING:
+            return False, str(_("Only pending applications can be counter-signed"))
+        if instance.current_node_id is None:
+            return False, str(_("The application has no active node"))
+
+        node = instance.current_node
+        if node.approve_type == node.ApproveType.OR:
+            return False, str(
+                _(
+                    "The current node is an OR-sign node: any approver can move it forward, "
+                    "so counter-signing has no effect. Please use transfer instead"
+                )
+            )
+        is_participant = (
+            ApprovalNodeTask.objects.filter(instance=instance, node=node)
+            .filter(Q(assignee=user) | Q(actor=user))
+            .exists()
+        )
+        if not (is_participant or user.is_superuser):
+            return False, str(_("Only the current node approvers can counter-sign"))
+
+        task = ApprovalNodeTask.objects.filter(pk=task_pk, instance=instance).first()
+        if task is None:
+            return False, str(_("The task does not exist"))
+        if task.node_id != instance.current_node_id:
+            return False, str(_("The task is not in the current node"))
+        if task.status != ApprovalNodeTask.Status.PENDING:
+            return False, str(_("The task has been processed"))
+        if not task.is_added:
+            return False, str(_("Only tasks added by counter-sign can be removed"))
+
+        note = str(_("Removed by counter-sign removal"))
+        if (comment or "").strip():
+            note = f"{note}: {comment.strip()[:200]}"
+        updated = ApprovalNodeTask.objects.filter(pk=task.pk, status=ApprovalNodeTask.Status.PENDING).update(
+            status=ApprovalNodeTask.Status.CANCELLED,
+            comment=note[:255],
+            updated_time=timezone.now(),
+        )
+        if not updated:
+            return False, str(_("The task has been processed"))
+
+        removed = [task.assignee] if task.assignee_id else []
+        if removed:
+            engine._notify(removed, "sign_removed", instance, extra=task.node_name)
+        engine._invalidate_pending_count({task.assignee_id} if task.assignee_id else set())
+        return True, None
+
+
 def transfer_task(task_pk, user, to_username: str, comment: str = ""):
     """转交：把当前待办转给另一名用户处理（一次性，区别于长期「委托」）。返回 (ok, detail)。
 

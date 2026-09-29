@@ -64,6 +64,23 @@ def auto_remind_approval_flow_job():
 
 
 @shared_task
+@register_as_period_task(crontab="7,37 * * * *", module="approval_flow")
+def auto_execute_timeout_approval_flow_job():
+    """流程节点超时自动动作：节点 timeout_action 非空的任务到点后由系统按分支处理。
+
+    approve = 自动通过（节点结算与人工同口径）/ reject = 自动驳回整单 /
+    transfer_up = 升级转交处理人部门 leader（无 leader 跳过并节流重试）。
+    与提醒任务（*/30 的 :00/:30）错峰在 :07/:37 执行，避免同一 beat 窗口双读大表。
+    """
+    from approval.utils.approval_flow import execute_timeout_actions
+
+    counts = execute_timeout_actions()
+    if any(counts.values()):
+        logger.info("Execute approval flow timeout actions: %s", counts)
+    return counts
+
+
+@shared_task
 @register_as_period_task(crontab="*/15 * * * *", module="approval_flow")
 def auto_cancel_stuck_approval_flow_job():
     """卡死单兜底：PENDING 且无任何节点任务的实例（发起链路中断的残留）

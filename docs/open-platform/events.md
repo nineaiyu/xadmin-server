@@ -187,6 +187,21 @@
 | `current_node` | string | 否 | Current node |
 | `reason` | string | 否 | Finish reason |
 
+### `flow.returned`
+
+- 版本：1
+- 说明：Flow application returned
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `instance_no` | string | 是 | Instance number |
+| `title` | string | 是 | Instance title |
+| `flow_name` | string | 是 | Flow name |
+| `status` | string | 是 | Instance status |
+| `creator` | string | 是 | Creator username |
+| `current_node` | string | 否 | Current node |
+| `reason` | string | 否 | Finish reason |
+
 ### `api_quota.warning`
 
 - 版本：1

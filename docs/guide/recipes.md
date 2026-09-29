@@ -217,7 +217,7 @@ def clean_xxx_job(): ...
 
 1. **提交**：`instance, error = create_instance(flow=<流程>, applicant=user, title=..., form_data={...}, biz_type="leave", biz_id=str(obj.pk))`——`biz_type/biz_id` 是业务绑定，引擎不感知业务字段；
 2. **回写**：监听终态信号 `system.signal.approval_instance_finished`，按 `instance.biz_type / biz_id` 更新业务状态（信号里做幂等；引擎侧失败不阻断审批）；
-3. **流转**：审批动作（通过/驳回/加签/催办/委托）全部在流程审批中心完成，业务页只展示状态与轨迹（`ApprovalInstance` 查询）；
+3. **流转**：审批动作（通过/驳回/退回/加签/减签/转交/催办/委托）全部在流程审批中心完成，业务页只展示状态与轨迹（`ApprovalInstance` 查询）；
 4. 前置：流程/节点/审批人在流程设计器配置；`biz_type` 常量放本业务模块。
 
 **验证**：提交 → 生成实例与任务 → 审批通过 → 业务状态回写；驳回/撤回路径同样回写。

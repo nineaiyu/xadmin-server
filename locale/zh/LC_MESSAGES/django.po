@@ -10523,3 +10523,100 @@ msgstr "该应用已超出每日配额"
 #: dataset/utils/dform.py:436
 msgid "Field {} contains files that do not belong to you"
 msgstr "字段 {} 包含不属于你的文件"
+
+#: approval/models/approval.py
+msgid "Timeout action"
+msgstr "超时自动动作"
+
+#: approval/models/approval.py
+msgid "No action"
+msgstr "不动作"
+
+#: approval/models/approval.py
+msgid "Auto approve"
+msgstr "超时自动通过"
+
+#: approval/models/approval.py
+msgid "Auto reject"
+msgstr "超时自动驳回"
+
+#: approval/models/approval.py
+msgid "Escalate to leader"
+msgstr "超时升级给部门负责人"
+
+#: approval/utils/approval_flow/periodic.py
+msgid "System (timeout)"
+msgstr "系统（超时）"
+
+#: approval/utils/approval_flow/periodic.py
+msgid "Auto approved on timeout"
+msgstr "超时未处理，已自动通过"
+
+#: approval/utils/approval_flow/periodic.py
+msgid "Auto rejected on timeout"
+msgstr "超时未处理，已自动驳回"
+
+#: approval/utils/approval_flow/periodic.py
+msgid "Escalated to {} on timeout"
+msgstr "超时自动升级转交至 {}"
+
+#: approval/utils/approval_flow/periodic.py
+msgid "Auto escalated on timeout"
+msgstr "超时未处理，已升级转交"
+
+#: approval/utils/approval_flow/returns.py
+msgid "Return reason is required"
+msgstr "退回原因必填"
+
+#: approval/utils/approval_flow/returns.py
+msgid "Only pending applications can be returned"
+msgstr "仅审批中的申请可以退回"
+
+#: approval/utils/approval_flow/returns.py
+msgid "Only the current node approvers can return the application"
+msgstr "仅当前节点审批人可以退回申请"
+
+#: approval/utils/approval_flow/returns.py
+msgid "There is no earlier node to return to"
+msgstr "没有可退回的更早节点"
+
+#: approval/utils/approval_flow/returns.py
+msgid "The return target must be an earlier node that has been visited"
+msgstr "退回目标必须是已途经的更早节点"
+
+#: approval/utils/approval_flow/returns.py
+msgid "Returned to node {}: {}"
+msgstr "已退回至节点 {}：{}"
+
+#: approval/utils/approval_flow/extra_actions.py
+msgid "Removed by counter-sign removal"
+msgstr "减签移除"
+
+#: approval/utils/approval_flow/extra_actions.py
+msgid "Only tasks added by counter-sign can be removed"
+msgstr "仅加签追加的任务可以减签"
+
+#: approval/views/approval_instance_actions.py
+msgid "The added approver has been removed"
+msgstr "已移除加签审批人"
+
+#: approval/views/approval_instance_actions.py
+msgid "The application has been returned"
+msgstr "申请已退回，等待重新审批"
+
+#: system/notifications.py
+msgid "Approval task auto-processed on timeout"
+msgstr "审批任务已超时自动处理"
+
+#: system/notifications.py
+msgid "Your added approval task has been removed"
+msgstr "你被加签的审批任务已被移除"
+
+#: system/notifications.py
+msgid "Approval returned for re-processing"
+msgstr "审批单已退回，需重新处理"
+
+#: system/utils/webhook.py
+msgid "Flow application returned"
+msgstr "审批申请已退回"
+

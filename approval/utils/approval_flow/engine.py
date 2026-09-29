@@ -307,6 +307,55 @@ def _load_task(task_pk):
     return ApprovalNodeTask.objects.select_related("instance", "node", "assignee", "actor").filter(pk=task_pk).first()
 
 
+def _settle_node_after_approve(instance, node) -> set:
+    """节点通过后的结算（OR/RATIO/AND 共用）：返回需要失效待办计数的 assignee pk 集合。
+
+    人工通过（approve_task）与超时自动通过（periodic.execute_timeout_actions）共用：
+    - 或签：节点即通过，其余待办作废并推进；
+    - 比例会签：达标即推进；剩余可决人数不足以达标时提前驳回整单；
+    - 会签：无剩余待办才推进。
+    调用方持有实例行锁；调用前本任务已完成（或签外不自动作废他人）。
+    """
+    ApprovalNodeTask = _models().Task
+    ApprovalInstance = _models().Instance
+
+    invalidated: set = set()
+    if node.approve_type == node.ApproveType.OR:
+        # 或签：任一通过即节点通过，其余待办作废
+        invalidated.update(_cancel_pending_tasks(instance, node=node))
+        _advance(instance, node)
+    elif node.approve_type == node.ApproveType.RATIO:
+        # 比例会签：通过数/候选总数 ≥ ratio% 即通过；已作废行（转交换人/减签移除）
+        # 不计入候选总数——减签才能真正降低达标线（转交一出一进、总数不变）；
+        # 剩余可决人数不足以达标时提前驳回（全员拒绝必然落入此条件）
+        node_tasks = ApprovalNodeTask.objects.filter(instance=instance, node=node).exclude(
+            status=ApprovalNodeTask.Status.CANCELLED
+        )
+        total = node_tasks.count()
+        approved = node_tasks.filter(status=ApprovalNodeTask.Status.APPROVED).count()
+        pending = node_tasks.filter(status=ApprovalNodeTask.Status.PENDING).count()
+        required = -(-total * (node.approve_ratio or 100) // 100)  # ceil
+        if approved >= required:
+            invalidated.update(_cancel_pending_tasks(instance, node=node))
+            _advance(instance, node)
+        elif approved + pending < required:
+            invalidated.update(_cancel_pending_tasks(instance))
+            if _finish_instance(
+                instance,
+                ApprovalInstance.Status.REJECTED,
+                str(_("Approval ratio cannot be reached, the application is rejected")),
+            ):
+                _notify([instance.creator], "rejected", instance)
+        # 其余：等待更多审批人处理
+    else:
+        remaining = ApprovalNodeTask.objects.filter(
+            instance=instance, node=node, status=ApprovalNodeTask.Status.PENDING
+        ).exists()
+        if not remaining:
+            _advance(instance, node)
+    return invalidated
+
+
 def approve_task(task_pk, user, comment: str = ""):
     """通过当前待办任务：或签任一通过/会签全部通过后推进。返回 (ok, detail)。
 
@@ -353,36 +402,7 @@ def approve_task(task_pk, user, comment: str = ""):
         node = task.node
         # 精确失效集：处理人自己 + 被作废任务的 assignee（新节点候选人在 _enter_node 内失效）
         invalidated = {user.pk}
-        if node.approve_type == node.ApproveType.OR:
-            # 或签：任一通过即节点通过，其余待办作废
-            invalidated.update(_cancel_pending_tasks(instance, node=node))
-            _advance(instance, node)
-        elif node.approve_type == node.ApproveType.RATIO:
-            # 比例会签：通过数/候选总数 ≥ ratio% 即通过；
-            # 剩余可决人数不足以达标时提前驳回（全员拒绝必然落入此条件）
-            node_tasks = ApprovalNodeTask.objects.filter(instance=instance, node=node)
-            total = node_tasks.count()
-            approved = node_tasks.filter(status=ApprovalNodeTask.Status.APPROVED).count()
-            pending = node_tasks.filter(status=ApprovalNodeTask.Status.PENDING).count()
-            required = -(-total * (node.approve_ratio or 100) // 100)  # ceil
-            if approved >= required:
-                invalidated.update(_cancel_pending_tasks(instance, node=node))
-                _advance(instance, node)
-            elif approved + pending < required:
-                invalidated.update(_cancel_pending_tasks(instance))
-                if _finish_instance(
-                    instance,
-                    ApprovalInstance.Status.REJECTED,
-                    str(_("Approval ratio cannot be reached, the application is rejected")),
-                ):
-                    _notify([instance.creator], "rejected", instance)
-            # 其余：等待更多审批人处理
-        else:
-            remaining = ApprovalNodeTask.objects.filter(
-                instance=instance, node=node, status=ApprovalNodeTask.Status.PENDING
-            ).exists()
-            if not remaining:
-                _advance(instance, node)
+        invalidated.update(_settle_node_after_approve(instance, node))
         _invalidate_pending_count(invalidated)
         return True, None
 

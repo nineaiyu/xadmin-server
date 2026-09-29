@@ -29,9 +29,14 @@ from approval.utils.approval_flow import (
     node_progress_for,
     pending_count_for,
     reject_task,
+    return_instance,
+    returnable_nodes,
     transfer_task,
     urge_instance,
     visible_instances_for,
+)
+from approval.utils.approval_flow import (
+    remove_sign as remove_sign_task,
 )
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
 from common.core.response import ApiResponse
@@ -391,6 +396,84 @@ class ApprovalInstanceActionMixin:
         # 加签会抬高节点任务总数 → 返回新达标线（前端提示「加签后需 N 人通过」）
         instance.refresh_from_db()
         return ApiResponse(data={"node_progress": node_progress_for(instance)}, detail=_("The approver has been added"))
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "task": build_basic_type(OpenApiTypes.STR),
+                    "comment": build_basic_type(OpenApiTypes.STR),
+                },
+                required=["task"],
+                description="要移除的加签任务主键 + 说明",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True, url_path="remove-sign")
+    def remove_sign(self, request, *args, **kwargs):
+        """减签：移除加签追加的候选（仅 is_added 的 PENDING 任务；或签节点拒绝）"""
+        ensure_approval_action_confirmed(request, "remove_sign")
+        instance = self.get_object()
+        if not (
+            request.user.is_superuser
+            or instance.tasks.filter(Q(assignee=request.user) | Q(actor=request.user)).exists()
+        ):
+            raise PermissionDenied(_("Permission denied"))
+        ok, detail = remove_sign_task(
+            instance, request.user, request.data.get("task"), (request.data.get("comment") or "").strip()
+        )
+        if not ok:
+            return ApiResponse(code=1001, detail=detail)
+        # 减签会降低节点任务总数 → 返回新达标线（与加签同口径的进度提示）
+        instance.refresh_from_db()
+        return ApiResponse(
+            data={"node_progress": node_progress_for(instance)}, detail=_("The added approver has been removed")
+        )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=True, url_path="return-targets")
+    def return_targets(self, request, *args, **kwargs):
+        """可退回节点（已途经、非当前，按 order 降序）：退回弹窗数据源"""
+        instance = self.get_object()
+        return ApiResponse(data=returnable_nodes(instance))
+
+    @extend_schema(
+        request=OpenApiRequest(
+            build_object_type(
+                properties={
+                    "task": build_basic_type(OpenApiTypes.STR),
+                    "reason": build_basic_type(OpenApiTypes.STR),
+                    "target_order": build_basic_type(OpenApiTypes.INT),
+                },
+                required=["reason"],
+                description="退回原因（必填）+ 目标节点 order（缺省 = 上一途经节点，须已途经）",
+            )
+        ),
+        responses=get_default_response_schema(),
+    )
+    @action(methods=["post"], detail=True, url_path="return")
+    def return_node(self, request, *args, **kwargs):
+        """退回：当前节点待办作废，实例回退到已途经节点重新审批（处理人或超管）"""
+        ensure_approval_action_confirmed(request, "return")
+        instance = self.get_object()
+        reason = (request.data.get("reason") or "").strip()
+        if not reason:
+            raise ValidationError(_("Return reason is required"))
+        ok, detail = return_instance(
+            instance,
+            request.user,
+            reason,
+            target_order=request.data.get("target_order"),
+            task_pk=request.data.get("task"),
+        )
+        if not ok:
+            return ApiResponse(code=1001, detail=detail)
+        instance.refresh_from_db()
+        return ApiResponse(
+            data={"current_node": getattr(instance.current_node, "name", "")},
+            detail=_("The application has been returned"),
+        )
 
     @extend_schema(
         request=OpenApiRequest(

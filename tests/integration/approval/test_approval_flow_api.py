@@ -518,3 +518,144 @@ class TestApprovalInstanceApi:
         assert approved.data["code"] == 1000
         instance = ApprovalInstance.objects.get(pk=instance_pk)
         assert instance.status == ApprovalInstance.Status.APPROVED
+
+
+class TestApprovalFlowP2Actions:
+    """P2 三件 API 面：超时动作契约（timeout_action 落定义）+ 退回 + 减签。"""
+
+    @pytest.fixture
+    def applicant(self, db):
+        return UserInfo.objects.create_superuser(
+            username="flow_p2_applicant", email="p2@example.com", password="Test@123456"
+        )
+
+    @pytest.fixture
+    def approver_client(self, approver, approver_role):
+        from rest_framework.test import APIClient
+
+        client = APIClient(HTTP_USER_AGENT="pytest-agent")
+        client.force_authenticate(user=approver)
+        return client
+
+    def _start(self, api_client, flow, title="P2申请"):
+        api_client.force_authenticate(user=UserInfo.objects.get(username="flow_p2_applicant"))
+        created = api_client.post(INSTANCES_URL, {"flow": str(flow.pk), "title": title, "form_data": {}}, format="json")
+        assert created.data["code"] == 1000, created.data
+        return created.data["data"]["pk"]
+
+    def test_flow_definition_accepts_timeout_action(self, auth_client):
+        """节点定义面：timeout_action 进序列化器与版本快照（none 默认）。"""
+        created = auth_client.post(
+            FLOWS_URL,
+            {
+                "name": "超时动作流程",
+                "code": "p2_timeout_action",
+                "form_schema": [],
+                "nodes": [
+                    {"name": "初审", "assignee_type": "user", "assignee_value": "u1", "timeout_hours": 2},
+                    {
+                        "name": "终审",
+                        "order": 2,
+                        "assignee_type": "user",
+                        "assignee_value": "u2",
+                        "timeout_hours": 4,
+                        "timeout_action": "approve",
+                    },
+                ],
+            },
+            format="json",
+        )
+        assert created.data["code"] == 1000, created.data
+        flow_pk = created.data["data"]["pk"]
+        nodes = {row["name"]: row for row in created.data["data"]["nodes"]}
+        # choices 字段序列化为 {value, label}
+        assert nodes["终审"]["timeout_action"]["value"] == "approve"
+        assert nodes["初审"]["timeout_action"]["value"] == "none"
+        # 版本快照同步携带（回滚保真）
+        snapshot = ApprovalFlow.objects.get(pk=flow_pk).versions.get(version=1).snapshot
+        assert snapshot["nodes"][1]["timeout_action"] == "approve"
+
+    def test_return_api_roundtrip(self, applicant, approver_client, api_client, approver):
+        """退回 API：原因必填 → 缺省退回上一途经节点 → 详情轨迹与可退回列表一致。"""
+        flow = make_flow(
+            code="p2_return_api",
+            nodes=[
+                {"name": "初审", "assignee_type": "user", "assignee_value": "flow_approver"},
+                {"name": "终审", "assignee_type": "user", "assignee_value": "flow_approver"},
+            ],
+        )
+        instance_pk = self._start(api_client, flow, "退回API申请")
+
+        approved = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"comment": "同意"}, format="json")
+        assert approved.data["code"] == 1000
+
+        # 可退回节点：已途经、非当前（当前 = 终审）
+        targets = approver_client.get(f"{INSTANCES_URL}/{instance_pk}/return-targets")
+        assert targets.data["code"] == 1000
+        assert [row["name"] for row in targets.data["data"]] == ["初审"]
+
+        # 原因必填（400 校验层）
+        missing = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/return", {}, format="json")
+        assert missing.status_code == 400
+
+        returned = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/return", {"reason": "材料不全"}, format="json")
+        assert returned.data["code"] == 1000, returned.data
+        assert returned.data["data"]["current_node"] == "初审"
+
+        instance = ApprovalInstance.objects.get(pk=instance_pk)
+        assert instance.status == ApprovalInstance.Status.PENDING
+        assert instance.current_node.name == "初审"
+        assert instance.tasks.filter(node_order=1, status=ApprovalNodeTask.Status.PENDING).exists()
+        cancelled = instance.tasks.filter(node_order=2, status=ApprovalNodeTask.Status.CANCELLED).first()
+        assert "材料不全" in (cancelled.comment or "")
+
+        # 退回后重开待办可继续审批至终态
+        reopened = instance.tasks.get(node_order=1, status=ApprovalNodeTask.Status.PENDING, assignee=approver)
+        ok = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"comment": "重新通过"}, format="json")
+        assert ok.data["code"] == 1000
+        final = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {}, format="json")
+        assert final.data["code"] == 1000
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
+        assert reopened
+
+    def test_remove_sign_api_roundtrip(self, applicant, approver_client, api_client, approver, normal_user):
+        """减签 API：加签后移除追加候选 → 会签所需人数降低 → 剩余通过即流转。"""
+        flow = make_flow(
+            code="p2_rmsign_api",
+            nodes=[
+                {
+                    "name": "会签",
+                    "approve_type": ApprovalFlowNode.ApproveType.AND,
+                    "assignee_type": "user",
+                    "assignee_value": "flow_approver",
+                }
+            ],
+        )
+        instance_pk = self._start(api_client, flow, "减签API申请")
+
+        added = approver_client.post(
+            f"{INSTANCES_URL}/{instance_pk}/add-sign", {"usernames": normal_user.username}, format="json"
+        )
+        assert added.data["code"] == 1000, added.data
+        instance = ApprovalInstance.objects.get(pk=instance_pk)
+        added_task = instance.tasks.get(
+            node=instance.current_node, is_added=True, status=ApprovalNodeTask.Status.PENDING
+        )
+
+        removed = approver_client.post(
+            f"{INSTANCES_URL}/{instance_pk}/remove-sign",
+            {"task": str(added_task.pk), "comment": "不用会审了"},
+            format="json",
+        )
+        assert removed.data["code"] == 1000, removed.data
+        assert removed.data["data"]["node_progress"]["total"] == 1
+
+        added_task.refresh_from_db()
+        assert added_task.status == ApprovalNodeTask.Status.CANCELLED
+        assert "不用会审了" in (added_task.comment or "")
+
+        approved = approver_client.post(f"{INSTANCES_URL}/{instance_pk}/approve", {"comment": "同意"}, format="json")
+        assert approved.data["code"] == 1000
+        instance.refresh_from_db()
+        assert instance.status == ApprovalInstance.Status.APPROVED
