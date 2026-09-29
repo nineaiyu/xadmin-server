@@ -180,11 +180,13 @@ BASE_CONFIG = {
     # 原生 function calling 双轨：默认关（AI 配置页能力探测通过后可开启）；
     # 关闭时动作草稿走稳定的 prompt-JSON 轨道（存量桩 / 弱模型零破坏）
     "AI_NATIVE_TOOLS_ENABLED": False,
-    # 用量配额（0 = 不限，默认宽松）：用户日调用次数 / 用户日 token 估算 /
-    # 全局并发流式上限（超限给可读提示；写类动作 fail-closed）
+    # 用量配额（0 = 不限）：用户日调用次数 / 用户日 token 估算 /
+    # 全局并发流式上限（超限给可读提示；写类动作 fail-closed）。
+    # 并发流式非零兜底：流式每条独占一个请求线程直至模型超时，无上限时高并发会
+    # 耗尽线程拖垮 HTTP 面；20 为单机档位，按 worker 数 / 线程预算上调（0 = 显式关闭）
     "AI_QUOTA_USER_DAILY_CALLS": 0,
     "AI_QUOTA_USER_DAILY_TOKENS": 0,
-    "AI_QUOTA_MAX_CONCURRENT_STREAMS": 0,
+    "AI_QUOTA_MAX_CONCURRENT_STREAMS": 20,
 }
 
 LIBS_CONFIG = {

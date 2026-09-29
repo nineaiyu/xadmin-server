@@ -89,7 +89,13 @@ class AiAssistantSettingSerializer(serializers.Serializer):
         default=0, min_value=0, label=_("Daily token quota per user"), help_text=_("0 = unlimited")
     )
     AI_QUOTA_MAX_CONCURRENT_STREAMS = serializers.IntegerField(
-        default=0, min_value=0, label=_("Concurrent streams limit"), help_text=_("0 = unlimited")
+        default=20,
+        min_value=0,
+        label=_("Concurrent streams limit"),
+        help_text=_(
+            "Global cap for concurrent AI streams (each stream holds a request thread until the model "
+            "timeout). Built-in default 20, raise it to match the deployment size; 0 = unlimited"
+        ),
     )
 
     def validate(self, attrs):

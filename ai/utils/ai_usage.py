@@ -4,9 +4,10 @@
 
 - **账本写入口收敛**：``tracked_chat`` / ``tracked_chat_stream`` / ``tracked_chat_tools``
   是各链路的统一包装（保持原 SDK 返回契约），记账不散落在业务代码里；
-- **配额**（SysConfig 可配，0 / 缺省 = 不限，默认宽松）：
+- **配额**（AI 设置页 / config.yml / 系统配置页任一可配，0 / 缺省 = 不限）：
   ``AI_QUOTA_USER_DAILY_CALLS`` / ``AI_QUOTA_USER_DAILY_TOKENS`` /
-  ``AI_QUOTA_MAX_CONCURRENT_STREAMS``（缓存计数信号量）；
+  ``AI_QUOTA_MAX_CONCURRENT_STREAMS``（缓存计数信号量，内置默认 20：流式每条独占
+  请求线程直至模型超时，无上限时高并发会耗尽线程拖垮 HTTP 面）；
 - **超限口径**：读类链路返回可读提示并拒绝本次调用（不静默、不半执行），写类动作
   在审批/执行前置直接 fail-closed；调用量与账本按用户日汇总（60s 短缓存）。
 """
@@ -32,13 +33,28 @@ USAGE_CACHE_TTL = 60
 
 
 def _quota_int(name: str) -> int:
-    """配额读取（SysConfig 属性 → 内置 0=不限）。"""
+    """配额读取：SystemConfig 行（系统配置页）→ django settings（AI 设置页 / config.yml）→ 0。
+
+    AI 设置页（``Setting`` 通路）与 config.yml 都落到 ``django.conf.settings`` 同名属性上，
+    只读 SystemConfig 会让页面配置静默失效；两者都读，任一显式配置即生效。
+    读取异常按不限（0）处理，不阻断 AI 链路。
+    """
+    raw = None
     try:
         from common.core.config import SysConfig
 
-        return max(0, int(getattr(SysConfig, name, 0) or 0))
-    except Exception:  # noqa: BLE001 配置读取异常按不限处理（不阻断 AI 链路）
+        raw = getattr(SysConfig, name, None)
+    except Exception:  # noqa: BLE001 配置读取异常按「未配置」继续回落
         logger.warning("read AI quota config failed: %s", name, exc_info=True)
+        raw = None
+    if raw in (None, "", {}):  # 无 SystemConfig 行时 get_value 返回空 dict
+        from django.conf import settings
+
+        raw = getattr(settings, name, 0)
+    try:
+        return max(0, int(raw or 0))
+    except (TypeError, ValueError):
+        logger.warning("AI quota config is not an integer: %s=%r", name, raw)
         return 0
 
 

@@ -122,6 +122,25 @@ class TestQuota:
         assert acquire_stream_slot() is True
         assert acquire_stream_slot() is True
 
+    def test_stream_slot_reads_setting_path(self, settings, monkeypatch):
+        """AI 设置页（Setting → django settings）配置的并发上限必须生效。"""
+        from common.core.config import SysConfig
+
+        # 无 SystemConfig 行时不干预，读取回落到 django settings
+        monkeypatch.setattr(
+            type(SysConfig), "AI_QUOTA_MAX_CONCURRENT_STREAMS", property(lambda self: {}), raising=False
+        )
+        settings.AI_QUOTA_MAX_CONCURRENT_STREAMS = 1
+        assert acquire_stream_slot() is True
+        assert acquire_stream_slot() is False
+        release_stream_slot()
+
+    def test_default_concurrent_streams_is_nonzero(self):
+        """默认并发流式上限非零：无上限时每条流独占线程，高并发会耗尽 HTTP 线程面。"""
+        from server.conf import Config
+
+        assert Config.defaults["AI_QUOTA_MAX_CONCURRENT_STREAMS"] > 0
+
 
 class TestTrackedWrappers:
     def test_tracked_chat_records_usage(self, superuser, monkeypatch):
