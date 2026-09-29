@@ -126,11 +126,11 @@ class TestAskPersist:
 
 class TestAskStreamPersist:
     def test_stream_persists_with_reasoning(self, ai_enabled, knowledge, auth_client, monkeypatch):
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "先检索文档"}
             yield {"type": "content", "text": "答案内容"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "数据集如何过滤"}, format="json")
         frames = _parse_sse(response)
         meta, done = frames[0][1], frames[-1][1]
@@ -154,10 +154,10 @@ class TestAskStreamPersist:
         """只有思考没有回答：保留思考（assistant + partial 标记），前端可回看。"""
         from django.utils.translation import gettext as _t
 
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "想了很久没结论"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         frames = _parse_sse(
             auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "数据集如何过滤"}, format="json")
         )

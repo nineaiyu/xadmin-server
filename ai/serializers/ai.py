@@ -12,6 +12,7 @@ from rest_framework import serializers
 
 from ai.models.ai import AiKnowledgeChunk, AiKnowledgeDocument, AiProfile
 from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_document_active
+from ai.utils.doc_extract import PARSABLE_EXTENSIONS
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
 from common.utils.outbound import OutboundBlocked, validate_outbound_url
@@ -144,10 +145,20 @@ class AiProfileSerializer(BaseModelSerializer):
 
 
 class KnowledgeUploadSerializer(serializers.Serializer):
-    """上传写入：name 唯一（同名覆盖更新）+ content 全文文本。"""
+    """上传写入：name 唯一（同名覆盖更新）+ content 全文文本。
+
+    二值载荷（7.3 文档解析扩展）：``file_type`` + ``file_b64`` 传 PDF/DOCX 原文
+    （base64），写入侧解析为纯文本后作为 content 落库（检索/分块链路零改动）。
+    二选一：文本直传（content）或二进制解析（file_type + file_b64）。
+    """
 
     name = serializers.CharField(max_length=MAX_UPLOAD_NAME_LENGTH)
-    content = serializers.CharField(max_length=MAX_UPLOAD_CONTENT_LENGTH)
+    content = serializers.CharField(
+        max_length=MAX_UPLOAD_CONTENT_LENGTH, required=False, allow_blank=True, allow_null=True
+    )
+    file_type = serializers.ChoiceField(choices=sorted(PARSABLE_EXTENSIONS), required=False)
+    # 2MB 二进制 ≈ 2.74M base64 字符：字段级上限即体积门（解码后仍二次校验）
+    file_b64 = serializers.CharField(max_length=2_800_000, required=False, allow_blank=True, write_only=True)
 
     def validate_name(self, value):
         name = (value or "").strip()
@@ -158,9 +169,42 @@ class KnowledgeUploadSerializer(serializers.Serializer):
         return name
 
     def validate_content(self, value):
-        if not (value or "").strip():
+        if value and not (value or "").strip():
             raise serializers.ValidationError(_("Document content cannot be empty"))
         return value
+
+    def validate(self, attrs):
+        file_type = attrs.get("file_type")
+        file_b64 = attrs.get("file_b64")
+        content = attrs.get("content")
+        if file_type or file_b64:
+            if not (file_type and file_b64):
+                raise serializers.ValidationError(_("Both file_type and file_b64 are required"))
+            attrs["content"] = self._extract(file_type, file_b64)
+        elif not (content or "").strip():
+            raise serializers.ValidationError(_("Provide either the document content or a pdf/docx file"))
+        attrs.pop("file_type", None)
+        attrs.pop("file_b64", None)
+        return attrs
+
+    @staticmethod
+    def _extract(file_type: str, file_b64: str) -> str:
+        """base64 → bytes → 纯文本（doc_extract；含体积与空文本门）。"""
+        import base64
+        import binascii
+
+        from ai.utils.doc_extract import extract_text
+
+        try:
+            raw = base64.b64decode(file_b64, validate=True)
+        except (binascii.Error, ValueError) as exc:
+            raise serializers.ValidationError(_("The uploaded file payload is invalid")) from exc
+        text = extract_text(str(file_type), raw)
+        if len(text) > MAX_UPLOAD_CONTENT_LENGTH:
+            raise serializers.ValidationError(
+                _("The extracted text exceeds the max length {}").format(MAX_UPLOAD_CONTENT_LENGTH)
+            )
+        return text
 
 
 class AiKnowledgeDocumentSerializer(BaseModelSerializer):

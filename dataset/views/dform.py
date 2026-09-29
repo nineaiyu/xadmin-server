@@ -77,6 +77,19 @@ class DynamicFormViewSet(BaseModelSet, ImpactPreviewAction):
     def perform_create(self, serializer):
         serializer.save(creator=self.request.user, modifier=self.request.user)
 
+    def _needs_rowwise_delete(self):
+        """删除表单有逐行副作用（绑定流程的 form_schema 再同步，见 perform_destroy），
+        批量删除必须走逐行分支（覆写契约见 docs/architecture/framework-cookbook.md）。"""
+        return True
+
+    def perform_destroy(self, instance):
+        """删除表单后对绑定流程做 form_schema 再同步（其他绑定表单仍存在时重投影）。"""
+        from dataset.utils.dform_flow import resync_flow_after_unbind
+
+        flow_id = instance.approval_flow_id
+        super().perform_destroy(instance)
+        resync_flow_after_unbind(flow_id)
+
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="schema-history")
     def schema_history(self, request, *args, **kwargs):

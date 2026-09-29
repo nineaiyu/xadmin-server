@@ -281,3 +281,96 @@ class TestRebuildPreservesVectors:
         assert rebuild_chunks(doc) == 2
         fresh = AiKnowledgeChunk.objects.filter(source_path="docs/keep.md", embedding_hash="").count()
         assert fresh == 1
+
+
+# ---------------------------------------------------------------- 7.3 异步构建与进度通道
+
+KNOWLEDGE_URL = "/api/ai/knowledge-documents"
+
+
+class TestAsyncBuildTask:
+    """异步构建任务：单飞锁 / 进度上报 / 终态摘要 / 端点契约。"""
+
+    def test_task_runs_and_writes_terminal_status(self, stub_client):
+        stub_client({"__default__": [1.0, 0.0]})
+        _make_embedding_profile()
+        _make_chunk("docs/a.md", 0, "数据库备份说明")
+
+        from ai.tasks import build_embeddings_task
+
+        result = build_embeddings_task.apply(args=["", False])
+        assert result.successful()
+        assert result.get()["embedded"] == 1
+
+        from ai.utils.embedding_progress import get_status
+
+        status = get_status()
+        assert status["state"] == "done"
+        assert status["percent"] == 100
+        assert status["summary"]["embedded"] == 1
+        # 任务结束释放单飞锁（可再次提交）
+        from ai.utils.embedding_progress import try_acquire_lock
+
+        assert try_acquire_lock() is True
+
+    def test_progress_callback_reports_batches(self, stub_client):
+        stub_client({"__default__": [1.0, 0.0]})
+        _make_embedding_profile()
+        for index in range(3):
+            _make_chunk("docs/a.md", index, f"数据库备份说明 {index}")
+        seen = []
+
+        from ai.utils.ai_embeddings import build_embeddings
+
+        build_embeddings(
+            batch_size=2, progress_cb=lambda percent, stage="", embedded=0: seen.append((percent, embedded))
+        )
+        assert seen[0][0] == 0  # 开工即上报
+        assert seen[-1][1] == 3  # 终点已构建数 = 总数
+        assert seen[-1][0] == 100
+
+    def test_single_flight_lock_rejects_second_submit(self, auth_client, stub_client, settings):
+        settings.CELERY_TASK_ALWAYS_EAGER = False  # 不真跑任务，只验证锁语义
+        stub_client({"__default__": [1.0, 0.0]})
+        _make_embedding_profile()
+
+        from ai.utils.embedding_progress import release_lock
+
+        release_lock()
+        first = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
+        assert first.status_code == 200, first.data
+        second = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
+        assert second.json()["code"] == 1001
+        release_lock()
+
+    def test_endpoint_requires_embedding_profile(self, auth_client):
+        from ai.utils.embedding_progress import release_lock
+
+        release_lock()
+        response = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
+        assert response.json()["code"] == 1001
+        assert "profile" in response.json()["detail"] or "配置" in response.json()["detail"]
+
+    def test_status_endpoint_idle_by_default(self, auth_client):
+        from django.core.cache import cache
+
+        cache.delete("ai_embedding_build_status")
+        response = auth_client.get(f"{KNOWLEDGE_URL}/build-embeddings/status")
+        assert response.status_code == 200
+        assert response.json()["data"]["state"] in ("idle", "done", "error", "running")
+
+    def test_eager_submit_writes_terminal_summary(self, auth_client, stub_client, settings):
+        """eager（测试）形态：提交即同步跑完，状态落终态（与导出任务同口径）。"""
+        settings.CELERY_TASK_ALWAYS_EAGER = True
+        stub_client({"__default__": [1.0, 0.0]})
+        _make_embedding_profile()
+        _make_chunk("docs/a.md", 0, "数据库备份说明")
+
+        from ai.utils.embedding_progress import release_lock
+
+        release_lock()
+        response = auth_client.post(f"{KNOWLEDGE_URL}/build-embeddings", {}, format="json")
+        assert response.status_code == 200, response.data
+        status = auth_client.get(f"{KNOWLEDGE_URL}/build-embeddings/status").json()["data"]
+        assert status["state"] == "done"
+        assert status["summary"]["embedded"] == 1

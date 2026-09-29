@@ -64,6 +64,9 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     nodes = ApprovalFlowNodeSerializer(many=True, required=False)
     creator = DisplayRelatedField(read_only=True, allow_null=True, label=_("Creator"), label_builder=_username)
     node_count = serializers.SerializerMethodField(label=_("Node count"))
+    # 表单字段编辑锁：流程被 dform 绑定后 form_schema 由绑定表单单向投影
+    # （dataset/utils/dform_flow.py::project_flow_form_schema），流程侧只读
+    form_schema_locked = serializers.SerializerMethodField(label=_("Form schema locked"))
 
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
     # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT。
@@ -77,6 +80,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             "name",
             "code",
             "form_schema",
+            "form_schema_locked",
             "is_active",
             "nodes",
             "node_count",
@@ -89,6 +93,10 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     def get_node_count(self, obj) -> int:
         annotated = getattr(obj, "node_count", None)
         return annotated if annotated is not None else obj.nodes.count()
+
+    def get_form_schema_locked(self, obj) -> bool:
+        """是否被 dform 绑定（绑定期 form_schema 由表单侧单向投影维护）。"""
+        return obj.bound_forms.filter(is_template=False).exists()
 
     def validate_form_schema(self, value):
         """表单字段定义校验：key/label/type 必填，type 白名单，select 需 options。"""
@@ -230,6 +238,10 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         nodes = validated_data.pop("nodes", None)
+        # 编辑锁：绑定期 form_schema 由绑定表单单向投影，客户端改动忽略不落库
+        # （响应带 form_schema_locked=true 供前端禁用编辑；防手滑覆盖投影结果）
+        if "form_schema" in validated_data and self.get_form_schema_locked(instance):
+            validated_data.pop("form_schema")
         # 行锁：并发改版时「版本号分配 + 旧行收口 + 新行落库」串行化
         # （版本快照的 (flow, version) 唯一约束仍作二层兜底）
         flow = ApprovalFlow.objects.select_for_update().get(pk=instance.pk)

@@ -20,6 +20,42 @@ class AiSdkError(Exception):
     """LLM 调用失败（网络/协议/供应商拒绝）。message 面向日志与可读转换。"""
 
 
+def parse_chat_message(payload: dict) -> tuple:
+    """choices[0].message → ``(content, reasoning, usage, tool_calls_raw)``（同步/异步共用）。
+
+    reasoning 规范化为 str | None（缺省 None）；usage 仅在 dict 形态时透传；
+    ``tool_calls_raw`` 为供应商原始列表（由调用方按各自口径规范化）。
+    """
+    choices = payload.get("choices") or []
+    message = ((choices[0] or {}).get("message") or {}) if choices else {}
+    content = message.get("content")
+    reasoning = message.get("reasoning_content")
+    usage = payload.get("usage")
+    tool_calls_raw = message.get("tool_calls")
+    return (
+        content,
+        (str(reasoning) if reasoning else None),
+        (usage if isinstance(usage, dict) else None),
+        tool_calls_raw,
+    )
+
+
+def raise_if_empty_answer(content, reasoning: str | None, *, with_tools: bool, raw: dict) -> None:
+    """空回答判定（同步/异步客户端共用）：既无内容又无（工具调用时）产出 → AiSdkError。
+
+    思考型模型「只有 reasoning」与「彻底空回答」分开报错，供前端给出可操作提示。
+    """
+    if content:
+        return
+    if with_tools:
+        logger.warning("ai chat tools rejected: %s", str(raw)[:300])
+    else:
+        logger.warning("ai chat rejected: %s", str(raw)[:300])
+    if reasoning:
+        raise AiSdkError("The AI provider returned only reasoning content without a final answer")
+    raise AiSdkError("The AI provider returned an empty answer")
+
+
 class ChatCompletionsClient:
     """凭据与采样参数由调用方注入（档案/Setting 读出的配置 dict）。
 
@@ -135,18 +171,10 @@ class ChatCompletionsClient:
             raise AiSdkError("The AI provider returned an invalid response") from exc
         if not isinstance(payload, dict):
             raise AiSdkError("The AI provider returned an invalid response")
-        choices = payload.get("choices") or []
-        message = ((choices[0] or {}).get("message") or {}) if choices else {}
-        content = message.get("content")
-        reasoning = message.get("reasoning_content")
-        self.last_reasoning = str(reasoning) if reasoning else None
-        usage = payload.get("usage")
-        self.last_usage = usage if isinstance(usage, dict) else None
-        if not content:
-            logger.warning("ai chat rejected: %s", str(payload)[:300])
-            if self.last_reasoning:
-                raise AiSdkError("The AI provider returned only reasoning content without a final answer")
-            raise AiSdkError("The AI provider returned an empty answer")
+        content, reasoning, usage, _raw_calls = parse_chat_message(payload)
+        self.last_reasoning = reasoning
+        self.last_usage = usage
+        raise_if_empty_answer(content, reasoning, with_tools=False, raw=payload)
         return str(content)
 
     @staticmethod
@@ -193,22 +221,15 @@ class ChatCompletionsClient:
             raise AiSdkError("The AI provider returned an invalid response") from exc
         if not isinstance(payload, dict):
             raise AiSdkError("The AI provider returned an invalid response")
-        choices = payload.get("choices") or []
-        message = ((choices[0] or {}).get("message") or {}) if choices else {}
-        content = message.get("content") or ""
-        reasoning = message.get("reasoning_content")
-        self.last_reasoning = str(reasoning) if reasoning else None
-        usage = payload.get("usage")
-        self.last_usage = usage if isinstance(usage, dict) else None
-        tool_calls = self._normalize_tool_calls(message.get("tool_calls"))
+        content, reasoning, usage, tool_calls_raw = parse_chat_message(payload)
+        self.last_reasoning = reasoning
+        self.last_usage = usage
+        tool_calls = self._normalize_tool_calls(tool_calls_raw)
         self.last_tool_calls = tool_calls
         if not content and not tool_calls:
-            logger.warning("ai chat tools rejected: %s", str(payload)[:300])
-            if self.last_reasoning:
-                raise AiSdkError("The AI provider returned only reasoning content without a final answer")
-            raise AiSdkError("The AI provider returned an empty answer")
+            raise_if_empty_answer(content, reasoning, with_tools=True, raw=payload)
         return {
-            "content": str(content),
+            "content": str(content or ""),
             "tool_calls": tool_calls,
             "usage": self.last_usage,
             "reasoning": self.last_reasoning,

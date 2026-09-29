@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 """全量审批流引擎：条件求值与审批人解析。"""
 
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -108,10 +109,16 @@ def resolve_assignee_pairs(node, applicant, form_data) -> list:
             return []
         queryset = queryset.filter(pk=leader.pk)
     elif assignee_type == node.AssigneeType.FIELD:
-        names = _split_values((form_data or {}).get(node.assignee_value))
-        if not names:
+        values = _split_values((form_data or {}).get(node.assignee_value))
+        if not values:
             return []
-        queryset = queryset.filter(username__in=names)
+        # pk/用户名双解析：独立流程表单的字段存用户名，dform 选人控件存用户主键
+        # （正整数，见 dataset/utils/dform.py::_validate_user_pk）——单按用户名解析
+        # 在 dform 场景必然为空（fail-closed 卡死发起）。数字值两侧都匹配（候选取
+        # 并集，超集无害：后续仍剔除申请人与停用用户）；非数字值只按用户名。
+        # 长度钳制防超 int 范围的畸形值炸查询。
+        pks = [int(value) for value in values if value.isdigit() and len(value) <= 18]
+        queryset = queryset.filter(Q(pk__in=pks) | Q(username__in=values))
     elif assignee_type == node.AssigneeType.POST:
         # 岗位人员维度（不参与权限判定）：code 多值，仅启用且未删除岗位的在岗用户
         codes = _split_values(node.assignee_value)

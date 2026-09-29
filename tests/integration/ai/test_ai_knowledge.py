@@ -222,3 +222,124 @@ class TestPermissions:
         client = APIClient(HTTP_USER_AGENT="pytest-agent")
         client.force_authenticate(user=normal_user)
         assert client.get(KNOWLEDGE_URL).status_code == 200
+
+
+# ---------------------------------------------------------------- 7.3 二进制文档解析
+
+
+def _build_pdf(text: str) -> bytes:
+    """构造含单行文本的最小合法 PDF（pypdf 可解析；测试专用）。"""
+    import io
+
+    stream = f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("latin-1")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R "
+        b"/Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out = io.BytesIO()
+    out.write(b"%PDF-1.4\n")
+    offsets = []
+    for index, body in enumerate(objects, start=1):
+        offsets.append(out.tell())
+        out.write(f"{index} 0 obj\n".encode() + body + b"\nendobj\n")
+    xref_pos = out.tell()
+    out.write(f"xref\n0 {len(objects) + 1}\n".encode())
+    out.write(b"0000000000 65535 f \n")
+    for offset in offsets:
+        out.write(f"{offset:010d} 00000 n \n".encode())
+    out.write(f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode())
+    return out.getvalue()
+
+
+def _build_docx(text: str) -> bytes:
+    """构造含单段文本的最小 DOCX（python-docx 生成；测试专用）。"""
+    import io
+
+    import docx
+
+    out = io.BytesIO()
+    docx.Document().save(out)  # 空文档建立包结构后追加段落
+    document = docx.Document(io.BytesIO(out.getvalue()))
+    document.add_paragraph(text)
+    buffer = io.BytesIO()
+    document.save(buffer)
+    return buffer.getvalue()
+
+
+class TestBinaryDocumentUpload:
+    """PDF/DOCX 上传：解析为纯文本入库，检索/分块链路零改动。"""
+
+    def test_pdf_upload_extracts_text_and_searchable(self, auth_client):
+        import base64
+
+        payload = {
+            "name": "平台白皮书",
+            "file_type": "pdf",
+            "file_b64": base64.b64encode(_build_pdf("xadmin white paper chapter one")).decode(),
+        }
+        response = auth_client.post(KNOWLEDGE_URL, payload, format="json")
+        assert response.status_code == 200, response.data
+        doc = AiKnowledgeDocument.objects.get(title="平台白皮书")
+        assert "white paper" in doc.content
+        assert AiKnowledgeChunk.objects.filter(source_path=doc.path).exists()
+        hits = retrieve("white paper")
+        assert any("white paper" in item["chunk"].content for item in hits)
+
+    def test_docx_upload_extracts_text(self, auth_client):
+        import base64
+
+        payload = {
+            "name": "入职手册",
+            "file_type": "docx",
+            "file_b64": base64.b64encode(_build_docx("入职手册正文内容")).decode(),
+        }
+        response = auth_client.post(KNOWLEDGE_URL, payload, format="json")
+        assert response.status_code == 200, response.data
+        doc = AiKnowledgeDocument.objects.get(title="入职手册")
+        assert "入职手册正文内容" in doc.content
+
+    def test_binary_upload_requires_both_fields(self, auth_client):
+        import base64
+
+        response = auth_client.post(
+            KNOWLEDGE_URL, {"name": "半载荷", "file_b64": base64.b64encode(_build_pdf("x")).decode()}, format="json"
+        )
+        assert response.status_code == 400
+        response = auth_client.post(KNOWLEDGE_URL, {"name": "半载荷", "file_type": "pdf"}, format="json")
+        assert response.status_code == 400
+        assert not AiKnowledgeDocument.objects.filter(title="半载荷").exists()
+
+    def test_invalid_base64_rejected(self, auth_client):
+        response = auth_client.post(
+            KNOWLEDGE_URL, {"name": "坏载荷", "file_type": "pdf", "file_b64": "not-base64!!"}, format="json"
+        )
+        assert response.status_code == 400
+
+    def test_broken_pdf_rejected(self, auth_client):
+        import base64
+
+        response = auth_client.post(
+            KNOWLEDGE_URL,
+            {"name": "坏PDF", "file_type": "pdf", "file_b64": base64.b64encode(b"%PDF-1.4 broken").decode()},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert not AiKnowledgeDocument.objects.filter(title="坏PDF").exists()
+
+    def test_unsupported_binary_type_rejected(self, auth_client):
+        import base64
+
+        response = auth_client.post(
+            KNOWLEDGE_URL,
+            {"name": "exe文档", "file_type": "exe", "file_b64": base64.b64encode(b"MZ").decode()},
+            format="json",
+        )
+        assert response.status_code == 400
+
+    def test_text_upload_contract_unchanged(self, auth_client):
+        """文本直传路径零变化（回归护栏）。"""
+        assert _upload(auth_client, name="纯文本回归").status_code == 200

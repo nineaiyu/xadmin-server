@@ -97,7 +97,11 @@ class DynamicFormSerializer(BaseModelSerializer):
         return normalize_schema(value if isinstance(value, dict) else {})
 
     def validate(self, attrs):
-        """模板约束：创建后不可改模板标记；模板不绑定审批流程（只做 schema 复用）。"""
+        """模板约束：创建后不可改模板标记；模板不绑定审批流程（只做 schema 复用）。
+
+        流程引用检查：绑定流程的表单删除「被流程引用」的字段 → 拒绝（改版后
+        条件失效节点会被静默跳过，见 dform_flow.assert_schema_safe_for_flow）。
+        """
         if self.instance is not None:
             requested = attrs.get("is_template", self.instance.is_template)
             if bool(requested) != bool(self.instance.is_template):
@@ -105,12 +109,25 @@ class DynamicFormSerializer(BaseModelSerializer):
         is_template = attrs.get("is_template", getattr(self.instance, "is_template", False))
         if is_template and attrs.get("approval_flow"):
             raise serializers.ValidationError(_("A form template cannot bind an approval flow"))
+        if self.instance is not None and attrs.get("schema") is not None:
+            from dataset.utils.dform_flow import assert_schema_safe_for_flow
+
+            assert_schema_safe_for_flow(self.instance, attrs["schema"])
         return attrs
+
+    def create(self, validated_data):
+        """新建后同步绑定流程的 form_schema 投影（绑定即投影，含创建时绑定）。"""
+        from dataset.utils.dform_flow import sync_bound_flow_schema
+
+        instance = super().create(validated_data)
+        sync_bound_flow_schema(instance)
+        return instance
 
     def update(self, instance, validated_data):
         """schema 实质变更 → 版本 +1 并归档变更前快照（保留最近 MAX_SCHEMA_HISTORY 个）。
 
         同内容保存（规范化后相等）不产生新版本，避免「点一次保存就 +1」的噪声版本。
+        绑定变化（换绑/解绑）后做流程侧 form_schema 再同步（单向投影）。
         """
         new_schema = validated_data.get("schema")
         if new_schema is not None and new_schema != (instance.schema or {}):
@@ -128,7 +145,16 @@ class DynamicFormSerializer(BaseModelSerializer):
             )
             validated_data["schema_history"] = history[:MAX_SCHEMA_HISTORY]
             validated_data["schema_version"] = (instance.schema_version or 1) + 1
-        return super().update(instance, validated_data)
+        previous_flow_id = instance.approval_flow_id
+        instance = super().update(instance, validated_data)
+        from dataset.utils.dform_flow import resync_flow_after_unbind, sync_bound_flow_schema
+
+        if instance.approval_flow_id:
+            sync_bound_flow_schema(instance)
+        elif previous_flow_id:
+            # 解绑（含换绑）：旧流程仍有其他绑定表单时重投影
+            resync_flow_after_unbind(previous_flow_id)
+        return instance
 
 
 class FormPkField(serializers.PrimaryKeyRelatedField):
@@ -273,6 +299,18 @@ class FormDataListSerializer(BaseModelSerializer):
         fields = ["pk", "form_name", "schema_version", "data", "status", "creator", "created_time", "updated_time"]
         read_only_fields = fields
         table_fields = ["form_name", "status", "creator", "created_time"]
+
+    def to_representation(self, instance):
+        """``?data_fields=key1,key2`` 收缩行内 data 载荷（大 schema 列表页整包回传的主开销）。
+
+        收缩只影响展示载荷（缺 key 视为空值），详情与导出不受影响；key 集合由视图
+        校验（合法字段 key 形态）后放入 context，缺省 = 全量（存量行为零变化）。
+        """
+        data = super().to_representation(instance)
+        allowed = self.context.get("data_fields")
+        if allowed and isinstance(data.get("data"), dict):
+            data["data"] = {key: value for key, value in data["data"].items() if key in allowed}
+        return data
 
 
 class FormDataDetailSerializer(FormDataListSerializer):

@@ -23,7 +23,7 @@ from ai.views.actions import AiActionExecuteMixin
 from ai.views.nl_query import AiNlQueryMixin
 from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
-from common.drf.renders import SseRendererMixin, sse_response
+from common.drf.renders import SseRendererMixin
 from common.sdk.ai.chat import AiSdkError, ChatCompletionsClient
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
@@ -331,12 +331,19 @@ class AiAssistantViewSet(AiThrottleMixin, AiNlQueryMixin, AiActionExecuteMixin, 
         接口错误提示）；流内失败（LLM 中断/只有思考）转 error 事件（头已发出，
         无法再改状态码）。事件载荷：reasoning/delta 为 `{"delta": "..."}`，
         done 为 `{"answer", "sources"}`。
+
+        **异步事件源（S7 根治②）**：LLM 增量经 ``AsyncChatCompletionsClient`` 在
+        事件循环内 await（帧组装零线程占用，数百并发流不再受线程池上限约束）；
+        流内 DB 写（审计/落库）经 ``sync_to_async`` 保持线程本地连接语义。
         """
-        from ai.utils.ai import ask_stream as ai_ask_stream
+        from asgiref.sync import sync_to_async
+
         from ai.utils.ai import prepare_ask
         from ai.utils.ai_actions import audit_ai_ask
+        from ai.utils.ai_async import ask_stream_async as ai_ask_stream_async
         from ai.utils.ai_chat import message_payload, persist_message, system_error_message
         from ai.utils.ai_usage import quota_error
+        from common.drf.renders import sse_response_async
 
         question = str(request.data.get("question") or "")
         quota = quota_error(request.user, "docs")
@@ -353,12 +360,45 @@ class AiAssistantViewSet(AiThrottleMixin, AiNlQueryMixin, AiActionExecuteMixin, 
         # 校验通过即落用户消息：即使流中断，刷新后也能看到本轮提问
         user_row = persist_message(request.user, "docs", "user", content=question)
 
-        def events():
-            yield {"event": "meta", "data": {"question": question, "user_message": message_payload(user_row)}}
-            content_chunks: list = []
-            reasoning_chunks: list = []
+        content_chunks: list = []
+        reasoning_chunks: list = []
+
+        @sync_to_async
+        def _finish_done(item):
+            audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
+            row = persist_message(
+                request.user,
+                "docs",
+                "assistant",
+                content=item["answer"],
+                reasoning="".join(reasoning_chunks),
+                extra={"sources": item["sources"]},
+            )
+            return message_payload(row)
+
+        @sync_to_async
+        def _finish_error(detail):
+            audit_ai_ask(request.user, question, ok=False, detail=detail)
+            if content_chunks or reasoning_chunks:
+                # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
+                row = persist_message(
+                    request.user,
+                    "docs",
+                    "assistant",
+                    content="".join(content_chunks) or detail,
+                    reasoning="".join(reasoning_chunks),
+                    extra={"partial": detail},
+                )
+                return {"detail": detail, "message": message_payload(row)}
+            return {"detail": detail, "message": system_error_message(request.user, "docs", detail)}
+
+        # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止 DB 访问）
+        user_payload = message_payload(user_row)
+
+        async def events():
+            yield {"event": "meta", "data": {"question": question, "user_message": user_payload}}
             try:
-                for item in ai_ask_stream(messages, sources, user=request.user):
+                async for item in ai_ask_stream_async(messages, sources, user=request.user):
                     kind = item.get("type")
                     if kind == "reasoning":
                         reasoning_chunks.append(item["text"])
@@ -367,41 +407,17 @@ class AiAssistantViewSet(AiThrottleMixin, AiNlQueryMixin, AiActionExecuteMixin, 
                         content_chunks.append(item["text"])
                         yield {"event": "delta", "data": {"delta": item["text"]}}
                     elif kind == "done":
-                        audit_ai_ask(request.user, question, ok=True, guard=item.get("guard"))
-                        row = persist_message(
-                            request.user,
-                            "docs",
-                            "assistant",
-                            content=item["answer"],
-                            reasoning="".join(reasoning_chunks),
-                            extra={"sources": item["sources"]},
-                        )
+                        payload_row = await _finish_done(item)
                         yield {
                             "event": "done",
                             "data": {
                                 "answer": item["answer"],
                                 "sources": item["sources"],
-                                "message": message_payload(row),
+                                "message": payload_row,
                             },
                         }
             except DjangoValidationError as exc:
                 detail = "; ".join(exc.messages)
-                audit_ai_ask(request.user, question, ok=False, detail=detail)
-                if content_chunks or reasoning_chunks:
-                    # 已有增量后中断：保留部分内容（与前端「已到达增量保留」一致）
-                    row = persist_message(
-                        request.user,
-                        "docs",
-                        "assistant",
-                        content="".join(content_chunks) or detail,
-                        reasoning="".join(reasoning_chunks),
-                        extra={"partial": detail},
-                    )
-                    yield {"event": "error", "data": {"detail": detail, "message": message_payload(row)}}
-                else:
-                    yield {
-                        "event": "error",
-                        "data": {"detail": detail, "message": system_error_message(request.user, "docs", detail)},
-                    }
+                yield {"event": "error", "data": await _finish_error(detail)}
 
-        return sse_response(events())
+        return sse_response_async(events())

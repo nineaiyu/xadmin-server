@@ -90,6 +90,11 @@ dependencies = [
     "cbor2==5.9.0",
     # 密码哈希 argon2id（PASSWORD_HASHERS 首位；登录时存量 PBKDF2 自动重哈希）
     "argon2-cffi==25.1.0",
+    # 知识库文档解析（PDF/DOCX 上传，见 ai/utils/doc_extract.py）
+    "pypdf==6.1.3",
+    "python-docx==1.2.0",
+    # AI 异步 SDK（httpx.AsyncClient，承接 S7 流式线程饥饿根治）
+    "httpx==0.28.1",
 ]
 
 [project.optional-dependencies]

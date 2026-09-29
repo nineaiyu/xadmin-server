@@ -368,12 +368,12 @@ class TestAskStream:
     def test_event_order_with_reasoning_and_sources(self, ai_enabled, knowledge, auth_client, monkeypatch):
         """事件序 meta → reasoning → delta* → done；done 携带 answer 与出处；写审计。"""
 
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "先检索文档"}
             yield {"type": "content", "text": "根据 [1]"}
             yield {"type": "content", "text": " 的说明。"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json")
         assert response["Content-Type"] == "text/event-stream"
         frames = self._parse_sse(response)
@@ -391,10 +391,10 @@ class TestAskStream:
         """只有思考没有回答：error 事件带可读文案（思考已单独上屏，前端保留面板）。"""
         from django.utils.translation import gettext as _t
 
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "reasoning", "text": "想了很久没结论"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         frames = self._parse_sse(auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json"))
         assert [event for event, __ in frames] == ["meta", "reasoning", "error"]
         assert frames[-1][1]["detail"] == _t("The model did not provide a final answer; please retry or switch models")
@@ -402,10 +402,10 @@ class TestAskStream:
     def test_accept_header_negotiation(self, ai_enabled, knowledge, auth_client, monkeypatch):
         """浏览器 fetch（Accept: text/event-stream）不得 406（ViewSet 按 action 覆写渲染器）。"""
 
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": "答案"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(
             self.STREAM_URL, {"question": "数据集如何过滤"}, format="json", HTTP_ACCEPT="text/event-stream"
         )
@@ -416,9 +416,9 @@ class TestAskStream:
     def test_stream_uses_async_iterator(self, ai_enabled, knowledge, auth_client, monkeypatch):
         """ASGI 实时性守护：streaming_content 必须是异步迭代器（同步生成器会被 Django 攒住）。"""
 
-        def fake_stream(self, messages, **kwargs):
+        async def fake_stream(self, messages, **kwargs):
             yield {"type": "content", "text": "答案"}
 
-        monkeypatch.setattr("common.sdk.ai.chat.ChatCompletionsClient.chat_stream", fake_stream)
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
         response = auth_client.post(self.STREAM_URL, {"question": "数据集如何过滤"}, format="json")
         assert response.is_async is True

@@ -10620,3 +10620,59 @@ msgstr "审批单已退回，需重新处理"
 msgid "Flow application returned"
 msgstr "审批申请已退回"
 
+
+#: ai/utils/doc_extract.py
+msgid "Unsupported document type: {} (supported: pdf, docx)"
+msgstr "不支持的文档类型：{}（支持 pdf、docx）"
+
+#: ai/utils/doc_extract.py
+msgid "The uploaded document is empty"
+msgstr "上传的文档内容为空"
+
+#: ai/utils/doc_extract.py
+msgid "The uploaded document exceeds the 2 MB size limit"
+msgstr "上传的文档超过 2MB 体积上限"
+
+#: ai/utils/doc_extract.py
+msgid "Failed to parse the PDF document, please verify the file"
+msgstr "PDF 文档解析失败，请确认文件是否损坏"
+
+#: ai/utils/doc_extract.py
+msgid "No extractable text found in the PDF document (it may be a scanned copy)"
+msgstr "PDF 文档中没有可提取的文本（可能是扫描件）"
+
+#: ai/utils/doc_extract.py
+msgid "Failed to parse the DOCX document, please verify the file"
+msgstr "DOCX 文档解析失败，请确认文件是否损坏"
+
+#: ai/utils/doc_extract.py
+msgid "No extractable text found in the DOCX document"
+msgstr "DOCX 文档中没有可提取的文本"
+
+#: ai/serializers/ai.py
+msgid "Both file_type and file_b64 are required"
+msgstr "file_type 与 file_b64 必须同时提供"
+
+#: ai/serializers/ai.py
+msgid "Provide either the document content or a pdf/docx file"
+msgstr "请提供文档正文，或上传 pdf/docx 文件"
+
+#: ai/serializers/ai.py
+msgid "The uploaded file payload is invalid"
+msgstr "上传的文件载荷无效"
+
+#: ai/serializers/ai.py
+msgid "The extracted text exceeds the max length {}"
+msgstr "提取的文本超过长度上限 {}"
+
+#: ai/views/knowledge.py
+msgid "An embedding build is already running"
+msgstr "已有向量构建任务在运行中"
+
+#: ai/views/knowledge.py
+msgid "Embedding build task submitted"
+msgstr "向量构建任务已提交"
+
+#: dataset/utils/dform_flow.py
+msgid "Fields referenced by the approval flow cannot be removed: {}"
+msgstr "以下字段已被审批流程引用，不能删除：{}"

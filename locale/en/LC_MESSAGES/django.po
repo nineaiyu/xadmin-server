@@ -9672,3 +9672,59 @@ msgstr ""
 #: dataset/utils/dform.py:436
 msgid "Field {} contains files that do not belong to you"
 msgstr ""
+#: xadmin
+msgid "Unsupported document type: {} (supported: pdf, docx)"
+msgstr ""
+
+#: xadmin
+msgid "The uploaded document is empty"
+msgstr ""
+
+#: xadmin
+msgid "The uploaded document exceeds the 2 MB size limit"
+msgstr ""
+
+#: xadmin
+msgid "Failed to parse the PDF document, please verify the file"
+msgstr ""
+
+#: xadmin
+msgid "No extractable text found in the PDF document (it may be a scanned copy)"
+msgstr ""
+
+#: xadmin
+msgid "Failed to parse the DOCX document, please verify the file"
+msgstr ""
+
+#: xadmin
+msgid "No extractable text found in the DOCX document"
+msgstr ""
+
+#: xadmin
+msgid "Both file_type and file_b64 are required"
+msgstr ""
+
+#: xadmin
+msgid "Provide either the document content or a pdf/docx file"
+msgstr ""
+
+#: xadmin
+msgid "The uploaded file payload is invalid"
+msgstr ""
+
+#: xadmin
+msgid "The extracted text exceeds the max length {}"
+msgstr ""
+
+#: xadmin
+msgid "An embedding build is already running"
+msgstr ""
+
+#: xadmin
+msgid "Embedding build task submitted"
+msgstr ""
+
+#: xadmin
+msgid "Fields referenced by the approval flow cannot be removed: {}"
+msgstr ""
+

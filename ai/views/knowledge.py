@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """AI 知识库文档管理视图：上传/预览/启停用/删除 + 仓库文档重建。"""
 
+from django.conf import settings
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -184,29 +186,54 @@ class AiKnowledgeDocumentViewSet(
     )
     @action(methods=["post"], detail=False, url_path="build-embeddings")
     def build_embeddings(self, request, *args, **kwargs):
-        """构建/刷新知识块向量（显式触发；未配置 embedding 档案时拒绝并给出引导）。
+        """提交向量构建后台任务（7.3 异步化；进度经 build-embeddings/status 轮询）。
 
-        幂等：只补「未向量化 / 模型变更 / 正文变更」的块；``force=true`` 全量重算。
-        供应商不可用时返回 1001 与已完成的条数（部分成功保留，不静默丢失语义）。
+        单飞：已有构建在跑时返回 1001 + 当前状态（不排队、不重复消耗供应商预算）；
+        未配置 embedding 档案直接拒绝并给出引导。终态摘要随状态通道保留 1 小时。
         """
-        from ai.utils.ai_embeddings import build_embeddings as build_knowledge_embeddings
+        from ai.utils.ai_config import embedding_credentials
+        from ai.utils.embedding_progress import get_status, try_acquire_lock
 
-        document = None
-        document_pk = request.data.get("document")
-        if document_pk:
-            document = self.get_queryset().filter(pk=document_pk).first()
-            if document is None:
-                raise ValidationError(_("Document does not exist"))
-        summary = build_knowledge_embeddings(document=document, force=bool(request.data.get("force")))
-        if not summary.get("enabled"):
-            return ApiResponse(code=1001, detail=_("No active embedding profile is configured"), data=summary)
-        if not summary.get("ok"):
+        if embedding_credentials() is None:
+            return ApiResponse(code=1001, detail=_("No active embedding profile is configured"))
+        if not try_acquire_lock():
             return ApiResponse(
                 code=1001,
-                detail=_("Embedding build stopped: {}").format(summary.get("detail") or ""),
-                data=summary,
+                detail=_("An embedding build is already running"),
+                data=get_status(),
             )
+        document_pk = ""
+        document = None
+        document_param = request.data.get("document")
+        if document_param:
+            document = self.get_queryset().filter(pk=document_param).first()
+            if document is None:
+                from ai.utils.embedding_progress import release_lock
+
+                release_lock()
+                raise ValidationError(_("Document does not exist"))
+            document_pk = str(document.pk)
+        force = bool(request.data.get("force"))
+
+        from ai.tasks import build_embeddings_task
+
+        task_args = [document_pk, force]
+        if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+            # 测试/E2E：eager 下 apply_async 不执行，改 apply 同步跑完（与导出同口径）
+            result = build_embeddings_task.apply(args=task_args)
+            task_id = str(result.id)
+        else:
+            transaction.on_commit(lambda: build_embeddings_task.apply_async(args=task_args))
+            task_id = ""
         return ApiResponse(
-            data=summary,
-            detail=_("Embeddings built: {} chunks").format(summary.get("embedded", 0)),
+            data={"task_id": task_id, "state": "running", "status_url": "build-embeddings/status"},
+            detail=_("Embedding build task submitted"),
         )
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="build-embeddings/status")
+    def build_embeddings_status(self, request, *args, **kwargs):
+        """向量构建运行状态（轮询端点）：state/percent/stage + 终态摘要。"""
+        from ai.utils.embedding_progress import get_status
+
+        return ApiResponse(data=get_status())

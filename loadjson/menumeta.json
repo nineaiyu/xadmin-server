@@ -17365,8 +17365,7 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
- }
-,
+ },
  {
   "model": "system.menumeta",
   "pk": "309f8363-b258-4940-996a-fc64fddb8a5b",
@@ -17437,6 +17436,32 @@
    "frame_loading": false,
    "transition_enter": "",
    "transition_leave": "",
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "3425475a-8968-5f9a-a7e0-9e4ba728ca11",
+  "fields": {
+   "created_time": "2026-09-29T00:00:00.000Z",
+   "updated_time": "2026-09-29T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "向量构建运行状态（轮询端点；单飞锁与终态摘要随状态通道保留）。",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "watermark": false,
+   "transition_enter": null,
+   "transition_leave": null,
    "is_hidden_tag": false,
    "fixed_tag": false,
    "dynamic_level": 0

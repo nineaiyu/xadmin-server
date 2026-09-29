@@ -296,13 +296,15 @@ def _pending_rows(qs, model: str, force: bool):
 
 
 def build_embeddings(
-    document=None, force: bool = False, batch_size: int = EMBED_BATCH_SIZE, dry_run: bool = False
+    document=None, force: bool = False, batch_size: int = EMBED_BATCH_SIZE, dry_run: bool = False, progress_cb=None
 ) -> dict:
     """批量构建/刷新知识块向量，返回摘要（``enabled/ok/model/dim/total/embedded/skipped/failed``）。
 
     - ``document``：限定单个文档（``source_path`` 匹配）；缺省全库；
     - ``force``：忽略既有向量全量重算；缺省只补缺失/陈旧块（幂等、可反复执行）；
     - ``dry_run``：只统计待构建条数，不调用供应商、不写库；
+    - ``progress_cb``：批次级进度回调 ``cb(percent, stage, embedded)``（异步任务
+      经 embedding_progress 通道上报；同步调用/命令不传 = 零开销）；
     - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
       ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示。
     """
@@ -341,6 +343,11 @@ def build_embeddings(
     if dry_run or not pending:
         return summary
 
+    def _report(done: int, stage: str) -> None:
+        if progress_cb is not None:
+            progress_cb(int(done * 100 / max(1, len(pending))), stage=stage, embedded=done)
+
+    _report(0, stage="embed")
     batch_size = max(1, min(int(batch_size or EMBED_BATCH_SIZE), 256))
     started = time.monotonic()
     usage_total: dict = {}
@@ -379,6 +386,7 @@ def build_embeddings(
             rows, ["embedding", "embedding_model", "embedding_hash", "embedding_dim"], batch_size=batch_size
         )
         summary["embedded"] += len(rows)
+        _report(summary["embedded"], stage="embed")
         usage_total = _accumulate_usage(usage_total, client.last_usage)
     summary["dim"] = dim
     invalidate_vector_index()

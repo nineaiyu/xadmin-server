@@ -48,6 +48,9 @@ async def async_sse_frames(events):
       新线程拿新连接——测试库表锁、生产事务隔离丢失）；
     - 阻塞粒度与既有实现一致（修复前 sync_to_async(list) 同样占用该线程整段跑完），
       流内 LLM 阻塞调用不改变现状。
+
+    **异步事件源**（LLM 增量已在事件循环内 await，无阻塞调用）请改用
+    ``async_sse_frames_async``（省去逐帧线程跳跃，见 ``sse_response_async``）。
     """
     from asgiref.sync import sync_to_async
 
@@ -59,8 +62,20 @@ async def async_sse_frames(events):
         yield sse_frame(event)
 
 
+async def async_sse_frames_async(events):
+    """异步事件字典序列 → SSE 帧（**零线程占用**形态，承接 S7 根治②）。
+
+    事件源为 async 生成器（帧组装已是纯 CPU）；LLM 增量由异步 SDK 在事件循环内
+    await，不再经 sync_to_async 逐帧占用视图线程——数百并发流不受线程池上限约束。
+    流内的 DB 写等同步操作由事件源自行 ``sync_to_async`` 包裹（保持线程本地连接
+    语义）。
+    """
+    async for event in events:
+        yield sse_frame(event)
+
+
 def sse_response(events):
-    """SSE 响应装配（HTTP 流式的唯一入口）：异步帧迭代器逐帧 flush + 关闭代理缓冲。
+    """SSE 响应装配（同步事件源入口）：异步帧迭代器逐帧 flush + 关闭代理缓冲。
 
     事件源为同步生成器（``event`` 字典序列，见 ``async_sse_frames`` 的「一次性输出」
     根因说明）；``Cache-Control`` / ``X-Accel-Buffering`` 两个响应头在所有流式端点
@@ -69,6 +84,20 @@ def sse_response(events):
     from django.http import StreamingHttpResponse
 
     response = StreamingHttpResponse(async_sse_frames(events), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+def sse_response_async(events):
+    """SSE 响应装配（**异步事件源**入口）：事件循环内逐帧 flush，零线程占用。
+
+    事件源为 async 生成器（LLM 增量已异步化）；响应头语义与 ``sse_response`` 完全
+    一致。流内的 DB 写等同步操作由事件源负责包裹 ``sync_to_async``。
+    """
+    from django.http import StreamingHttpResponse
+
+    response = StreamingHttpResponse(async_sse_frames_async(events), content_type="text/event-stream")
     response["Cache-Control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"
     return response
