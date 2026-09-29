@@ -25,7 +25,9 @@ from typing import Any
 from django.db.models import Q, QuerySet
 
 from common.core.filter import get_filter_queryset
+from common.core.mask import apply_output_mask
 from common.core.permission import get_menu_pk, get_user_permission
+from server.utils import get_current_request
 from system.models import DeptInfo, OperationLog, Post, Tag, UploadFile, UserInfo
 
 KEYWORD_MAX_LENGTH = 50
@@ -91,7 +93,7 @@ class SearchProvider:
             return True
         return bool(get_menu_pk(permission_data, f"/{self.list_url}"))
 
-    def search(self, user, keyword: str) -> dict | None:
+    def search(self, user, keyword: str, request=None) -> dict | None:
         queryset = _match_keyword(self.queryset(), self.text_fields, keyword)
         if self.row_scope is not None:
             queryset = self.row_scope(user, queryset)
@@ -99,21 +101,37 @@ class SearchProvider:
         total = queryset.count()
         if not total:
             return None
-        rows = queryset.values("pk", self.display_field, *self.meta_fields)[: self.limit]
+        rows = list(queryset.values("pk", self.display_field, *self.meta_fields)[: self.limit])
+        items = [
+            {
+                "pk": str(row["pk"]),
+                "text": row[self.display_field] or "",
+                "meta": {name: row[name] for name in self.meta_fields},
+            }
+            for row in rows
+        ]
         return {
             "key": self.key,
             "label": self.label,
             "route": self.route,
             "total": total,
-            "items": [
-                {
-                    "pk": str(row["pk"]),
-                    "text": row[self.display_field] or "",
-                    "meta": {name: row[name] for name in self.meta_fields},
-                }
-                for row in rows
-            ],
+            "items": self._mask_items(items, queryset.model, request, user),
         }
+
+    def _mask_items(self, items, model, request, user) -> list:
+        """分组输出过脱敏规则（与列表接口同源，防「列表已掩码、搜索仍原文」旁路）。
+
+        取值维度与声明一致：``text`` 对应 display_field、``meta`` 对应 meta_fields，
+        合并为字段名字典后统一掩码再拆回（字段名与模型不一致时不会被规则命中）。
+        """
+        if not items:
+            return items
+        for item in items:
+            flat = {self.display_field: item["text"], **item["meta"]}
+            apply_output_mask(flat, request, user, model)
+            item["text"] = flat.get(self.display_field) or ""
+            item["meta"] = {name: flat.get(name) for name in item["meta"]}
+        return items
 
 
 SEARCH_PROVIDERS = (
@@ -206,13 +224,15 @@ def run_global_search(user, keyword: str, scope: str | None = None) -> list[dict
     if not keyword or len(keyword) > KEYWORD_MAX_LENGTH:
         return []
     permission_data = get_user_permission(user, "GET")
+    # 输出脱敏需要请求上下文（超管/原文通道豁免判定）；无上下文时按脱敏口径输出
+    request = get_current_request()
     groups = []
     for provider in SEARCH_PROVIDERS:
         if scope and provider.key != scope:
             continue
         if not provider.visible_to(user, permission_data):
             continue
-        group = provider.search(user, keyword)
+        group = provider.search(user, keyword, request)
         if group:
             groups.append(group)
     return groups

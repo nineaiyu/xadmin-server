@@ -15,9 +15,10 @@ from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
 
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
+from common.core.mask import apply_mask, apply_output_mask, get_mask_rules, mask_exempt
 from common.utils import get_logger
 from server.utils import get_current_request
-from system.services import apply_grant_fields, apply_mask, get_mask_rules, record_original_channel_access
+from system.services import apply_grant_fields
 
 logger = get_logger(__name__)
 
@@ -215,62 +216,18 @@ class BaseModelSerializer(ModelSerializer):
         return result
 
     def _mask_exempt(self, request, user, model=None):
-        """脱敏豁免判定（与 get_allow_fields 同口径）：超管 / 显式豁免 / 原文通道。
+        """脱敏豁免判定：委托统一入口（``common.core.mask.mask_exempt``）。
 
-        原文通道 = 显式 ``?mask=false`` 且当前用户对该菜单有更新权限。编辑弹窗依赖
-        列表行数据，若拿不到原文则会把掩码值回写（to_internal_value 另有兜底守护）；
-        仅有更新权限的用户才被放行，只读用户的列表/详情/导出仍按规则掩码。
-        放行的原文访问会记一条审计日志（每个请求一次，含模型标识）。
+        保留此方法名：既有测试/子类按序列化器口径调用它。
         """
-        if user.is_superuser or self.ignore_field_permission or getattr(request, "ignore_field_permission", False):
-            return True
-        params = getattr(request, "query_params", None) or getattr(request, "GET", None)
-        if not params:
-            return False
-        if str(params.get("mask", "")).lower() not in ("false", "0", "no"):
-            return False
-        cached = getattr(request, "_mask_original_allowed", None)
-        if cached is None:
-            # 惰性 import：common 层不引 system（跨 app 门禁许可函数内惰性 import）
-            from common.core.permission import user_can_update_menu
-
-            # 按请求地址判定「对该资源的更新权限」（GET/PUT/PATCH 是三条不同菜单，
-            # 按菜单主键比对会让 GET 详情请求永远拿不到放行）
-            cached = user_can_update_menu(
-                user, getattr(request, "path_info", None) or getattr(request, "path", "") or ""
-            )
-            try:
-                request._mask_original_allowed = cached
-            except AttributeError:  # 只读请求对象兜底
-                pass
-        if cached:
-            # 审计内部按请求去重，列表逐行调用也只记一次
-            record_original_channel_access(request, user, model._meta.label_lower if model is not None else None)
-        return cached
-
-    def _mask_role_pks(self, request, user):
-        """当前用户角色 pk 集合（按请求缓存，避免列表逐行 N+1 查询）。"""
-        cached = getattr(request, "_mask_role_pks", None)
-        if cached is not None:
-            return cached
-        role_pks = set()
-        if hasattr(user, "roles"):
-            try:
-                role_pks = set(user.roles.values_list("pk", flat=True))
-            except Exception:  # noqa: BLE001 非 UserInfo 用户（Anonymous 等）兜底
-                role_pks = set()
-        try:
-            request._mask_role_pks = role_pks
-        except AttributeError:  # 只读请求对象兜底
-            pass
-        return role_pks
+        return mask_exempt(request, user, model, ignore_field_permission=self.ignore_field_permission)
 
     def to_representation(self, instance):
         """字段级数据脱敏钩子：列表/详情/导出同一条输出链路统一掩码。
 
-        豁免口径与 get_allow_fields 一致（超管 / ignore_field_permission / 原文通道）；
-        规则按模型 label_lower 缓存加载，命中则替换字段输出值——只脱敏输出，写入不受
-        影响（写入侧的掩码回写守护在 to_internal_value）。
+        掩码与豁免口径集中在 ``common.core.mask.apply_output_mask``（与关联字段、
+        全局搜索共用同一实现）；只脱敏输出，写入不受影响（写入侧的掩码回写守护
+        在 to_internal_value）。
         """
         ret = super().to_representation(instance)
         model = getattr(getattr(self, "Meta", None), "model", None)
@@ -278,26 +235,7 @@ class BaseModelSerializer(ModelSerializer):
         if model is None or request is None:
             return ret
         user = getattr(request, "user", None)
-        if user is None or not hasattr(user, "is_superuser"):
-            return ret
-        if self._mask_exempt(request, user, model):
-            return ret
-        rules = get_mask_rules(model._meta.label_lower)
-        if not rules:
-            return ret
-        role_pks = self._mask_role_pks(request, user)
-        # 规则按 sort 升序返回；同字段「sort 小者优先」——首个命中（字段匹配 + 角色匹配）
-        # 的规则生效，其后该字段规则跳过；不同字段互不干扰
-        masked_fields = set()
-        for rule in rules:
-            field_name = rule["field"]
-            if field_name in masked_fields or field_name not in ret:
-                continue
-            if rule["roles"] and not bool(role_pks & set(rule["roles"])):
-                continue
-            ret[field_name] = apply_mask(ret[field_name], rule)
-            masked_fields.add(field_name)
-        return ret
+        return apply_output_mask(ret, request, user, model, self.ignore_field_permission)
 
     def to_internal_value(self, data):
         """写入侧统一入口：丢弃「掩码回写」的字段值（数据完整性守护）。

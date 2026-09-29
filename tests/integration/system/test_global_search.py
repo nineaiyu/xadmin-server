@@ -84,6 +84,50 @@ class TestGlobalSearchAPI:
         assert file_group is not None
         assert file_group["items"][0]["text"] == "E2E采购合同.pdf"
 
+    def test_user_group_output_masked(self, api_client, menu_factory):
+        """分组输出同过脱敏规则：列表接口已掩码时搜索不得回原文（防旁路）。"""
+        from django.core.cache import cache
+
+        from system.models import DataMaskRule, DataPermission, UserRole
+
+        UserInfo.objects.create_user(username="mask-search-target", password="x", nickname="张三丰")
+        DataMaskRule.objects.create(
+            model="system.userinfo", field="nickname", mask_type="name", keep_head=1, keep_tail=1
+        )
+        data_permission = DataPermission.objects.create(
+            name="E2E-搜索可见全部用户",
+            rules=[
+                {
+                    "table": "system.userinfo",
+                    "field": "id",
+                    "type": "value.all",
+                    "match": "",
+                    "value": "",
+                    "exclude": False,
+                }
+            ],
+            mode_type=DataPermission.ModeChoices.OR,
+            is_active=True,
+        )
+        data_permission.menu.clear()
+        viewer = UserInfo.objects.create_user(username="mask-search-viewer", password="x")
+        viewer.rules.add(data_permission)
+        role = UserRole.objects.create(name="搜索用户页", code="search-user-page")
+        role.menu.add(
+            menu_factory("retrieve:SystemGlobalSearch", path="api/system/global-search$", method="GET"),
+            menu_factory("list:SystemUser", path="api/system/user$", method="GET"),
+        )
+        viewer.roles.add(role)
+        cache.clear()
+
+        api_client.force_authenticate(user=viewer)
+        resp = api_client.get(SEARCH_URL, {"keyword": "mask-search-target", "scope": "user"})
+        assert resp.status_code == 200
+        group = _group(resp.data["data"]["groups"], "user")
+        assert group is not None
+        assert group["items"][0]["text"] == "mask-search-target"
+        assert group["items"][0]["meta"]["nickname"] == "张*丰"
+
     def test_scope_limits_to_single_group(self, auth_client, searchable_data):
         resp = auth_client.get(SEARCH_URL, {"keyword": "alice", "scope": "user"})
         groups = resp.data["data"]["groups"]

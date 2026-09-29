@@ -187,6 +187,62 @@ class TestSerializerMasking:
         assert normal_user.phone == PHONE
 
 
+class TestNestedOutputMasking:
+    """嵌套输出收口：关联字段 attrs 同过目标模型规则（历史实现只掩码主链路）。"""
+
+    def test_related_field_attrs_masked(self, normal_user, superuser):
+        """DeptSerializer.leader（attrs 含 nickname）受 system.userinfo 规则约束。"""
+        from system.models import DeptInfo
+        from system.serializers.department import DeptSerializer
+
+        normal_user.nickname = "张三丰"
+        normal_user.save()
+        dept = DeptInfo.objects.create(name="研发部", leader=normal_user)
+        _rule(field="nickname", mask_type="name", keep_head=1, keep_tail=1)
+        fields = {
+            "system.userinfo": ["pk", "username", "nickname"],
+            "system.deptinfo": ["pk", "name", "leader"],
+        }
+
+        _make_request(normal_user, fields=fields)
+        data = DeptSerializer(dept).data
+        assert data["leader"]["nickname"] == "张*丰"
+
+        # 豁免口径与主链路一致：超管拿原文
+        _make_request(superuser, fields=fields)
+        assert DeptSerializer(dept).data["leader"]["nickname"] == "张三丰"
+
+    def test_related_field_arbitrary_attrs_masked(self, normal_user):
+        """自定义 attrs（含 phone）同样掩码；原文通道豁免同样生效。"""
+        from common.core.fields import BasePrimaryKeyRelatedField
+        from common.core.serializers import BaseModelSerializer
+        from system.models import DeptInfo
+
+        normal_user.phone = PHONE
+        normal_user.save()
+        dept = DeptInfo.objects.create(name="测试部", leader=normal_user)
+        _rule()  # phone 规则
+
+        class _ProbeSerializer(BaseModelSerializer):
+            leader = BasePrimaryKeyRelatedField(queryset=UserInfo.objects.all(), attrs=["pk", "nickname", "phone"])
+
+            class Meta:
+                model = DeptInfo
+                fields = ["pk", "name", "leader"]
+
+        fields = {
+            "system.userinfo": ["pk", "nickname", "phone"],
+            "system.deptinfo": ["pk", "name", "leader"],
+        }
+        _make_request(normal_user, fields=fields)
+        data = _ProbeSerializer(dept).data
+        assert data["leader"]["phone"] == "138******78"
+        assert data["leader"]["pk"] == normal_user.pk
+
+        # 显式豁免（编辑原文通道）：嵌套输出同样放行原文
+        assert _ProbeSerializer(dept, ignore_field_permission=True).data["leader"]["phone"] == PHONE
+
+
 class TestMaskOriginalChannel:
     """原文通道（?mask=false + 更新权限）与掩码回写守护。"""
 
