@@ -387,3 +387,66 @@ class TestOnCommitWritePath:
             pass
         # 事务回滚，占位行与日志写一并消失
         assert not OperationLog.objects.filter(module="demo").exists()
+
+
+class TestLogLevelGuard:
+    """P1-1/P1-2：日志正文与响应体的 eager 求值必须有 isEnabledFor 守卫。
+
+    f-string 会先求值再按级别过滤：DEBUG 关闭时若仍走脱敏 + json.dumps（正文预览）
+    或对 response.data 整体 repr（未开操作日志的每请求路径），开销白付。
+    """
+
+    @staticmethod
+    def _silence_debug(monkeypatch):
+        from common.core import middleware
+
+        monkeypatch.setattr(middleware.logger, "isEnabledFor", lambda level: False)
+        return middleware
+
+    def test_request_preview_skipped_when_debug_disabled(self, monkeypatch):
+        from django.test import RequestFactory
+
+        from common.core.middleware import ApiLoggingMiddleware
+
+        calls = []
+        middleware = self._silence_debug(monkeypatch)
+        monkeypatch.setattr(middleware, "log_body_preview", lambda payload: calls.append(payload) or "")
+
+        request = RequestFactory().get("/api/demo/book", {"page": 1})
+        ApiLoggingMiddleware(lambda r: None).process_request(request)
+
+        assert calls == []
+        # 契约不变：请求体照旧解析并挂到 request 上（审批指纹 / 刷新回退 / 操作日志消费）
+        assert request.request_data == {"page": "1"}
+
+    def test_request_preview_emitted_when_debug_enabled(self, monkeypatch):
+        from django.test import RequestFactory
+
+        from common.core import middleware as middleware_module
+        from common.core.middleware import ApiLoggingMiddleware
+
+        calls = []
+        monkeypatch.setattr(middleware_module.logger, "isEnabledFor", lambda level: True)
+        monkeypatch.setattr(middleware_module, "log_body_preview", lambda payload: calls.append(payload) or "PREVIEW")
+
+        request = RequestFactory().get("/api/demo/book", {"page": 1})
+        ApiLoggingMiddleware(lambda r: None).process_request(request)
+
+        assert calls == [{"page": "1"}]
+
+    def test_response_repr_skipped_when_debug_disabled(self, monkeypatch):
+        """未开操作日志的请求：DEBUG 关闭时不得触碰 response.data（分页大响应 repr）。"""
+        from django.test import RequestFactory
+
+        from common.core.middleware import ApiLoggingMiddleware
+
+        self._silence_debug(monkeypatch)
+
+        class _BoomResponse:
+            @property
+            def data(self):
+                raise AssertionError("DEBUG 关闭时不应读取 response.data")
+
+        response = _BoomResponse()
+        request = RequestFactory().get("/api/demo/book")
+        assert ApiLoggingMiddleware(lambda r: None).process_response(request, response) is response

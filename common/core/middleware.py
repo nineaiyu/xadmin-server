@@ -6,6 +6,7 @@
 # date : 6/27/2023
 
 import json
+import logging
 import time
 
 from django.conf import settings
@@ -294,8 +295,11 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         request.request_data = get_request_data(request)
         request.request_start_time = time.time()
         # DEBUG 正文同样脱敏 + 截断（与操作日志 / 慢请求日志同口径）：明文
-        # token / password 落日志文件等同泄露凭证（ADR-072）
-        logger.debug(f"request start. {request.method} {request.path} {log_body_preview(request.request_data)}")
+        # token / password 落日志文件等同泄露凭证（ADR-072）。
+        # isEnabledFor 守卫：f-string 会先求值再过滤级别，正文预览要做一遍脱敏 +
+        # json.dumps，DEBUG 关闭时白算（先例 common/cache/storage.py:23-29）
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"request start. {request.method} {request.path} {log_body_preview(request.request_data)}")
 
     def __handle_response(self, request, response):
         request_start_time = getattr(request, "request_start_time", time.time())
@@ -327,9 +331,10 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 logger.warning("sensitive operation alert failed", exc_info=True)
 
         transaction.on_commit(_after_commit)
-        logger.debug(
-            f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"request end. {request.method} {request.path} {log_body_preview(request.request_data)} log:{info}"
+            )
         return True
 
     def process_view(self, request, view_func, view_args, view_kwargs):
@@ -376,7 +381,9 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         if self.enable:
             if self.methods == "ALL" or request.method in self.methods:
                 show = self.__handle_response(request, response)
-        if not show:
+        # isEnabledFor 守卫（P1-2 口径）：f-string 会把整个 response.data（分页 100 行 ×
+        # 20 列量级）先 repr 成字符串再被级别过滤丢弃，未开操作日志的请求每请求白付一次
+        if not show and logger.isEnabledFor(logging.DEBUG):
             logger.debug(f" request end. {request.method} {request.path} {getattr(response, 'data', {})}")
         return response
 
