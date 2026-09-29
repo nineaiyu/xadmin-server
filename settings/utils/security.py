@@ -31,11 +31,16 @@ class BlockUtil:
 class BlockUtilBase:
     LIMIT_KEY_TMPL: str
     BLOCK_KEY_TMPL: str
+    #: 用户级「全局」计数键模板（可选）：设置后按 (用户, IP) 与「用户」双键计数，
+    #: 任一超限即锁。仅按 (用户, IP) 计数时，攻击者轮换出口 IP 即可拿到无限次
+    #: 独立额度（验证码空间有限的高价值目标必须叠加用户维度总闸）。
+    USER_LIMIT_KEY_TMPL: str = ""
 
     def __init__(self, username, ip):
         self.username = username
         self.ip = ip
         self.limit_key = self.LIMIT_KEY_TMPL.format(username, ip)
+        self.user_limit_key = self.USER_LIMIT_KEY_TMPL.format(username) if self.USER_LIMIT_KEY_TMPL else ""
         self.block_key = self.BLOCK_KEY_TMPL.format(username)
         self.key_ttl = int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60
 
@@ -46,22 +51,31 @@ class BlockUtilBase:
         return times_remainder
 
     def incr_failed_count(self) -> int:
-        limit_key = self.limit_key
-        count = cache.get(limit_key, 0)
-        count += 1
-        cache.set(limit_key, count, self.key_ttl)
-
+        count = self._incr(self.limit_key)
+        # 用户维度计数与 (用户, IP) 并行：任一达到上限即锁定
+        user_count = self._incr(self.user_limit_key) if self.user_limit_key else count
         limit_count = settings.SECURITY_LOGIN_LIMIT_COUNT
-        if count >= limit_count:
+        if count >= limit_count or user_count >= limit_count:
             cache.set(self.block_key, True, self.key_ttl)
-        return limit_count - count
+        return limit_count - max(count, user_count)
+
+    @staticmethod
+    def _incr(key: str) -> int:
+        count = cache.get(key, 0)
+        count += 1
+        cache.set(key, count, int(settings.SECURITY_LOGIN_LIMIT_TIME) * 60)
+        return count
 
     def get_failed_count(self):
         count = cache.get(self.limit_key, 0)
+        if self.user_limit_key:
+            count = max(count, cache.get(self.user_limit_key, 0))
         return count
 
     def clean_failed_count(self):
         cache.delete(self.limit_key)
+        if self.user_limit_key:
+            cache.delete(self.user_limit_key)
         cache.delete(self.block_key)
 
     @classmethod
@@ -70,6 +84,8 @@ class BlockUtilBase:
         key_block = cls.BLOCK_KEY_TMPL.format(username)
         # Redis 尽量不要用通配
         cache.delete_pattern(key_limit)
+        if cls.USER_LIMIT_KEY_TMPL:
+            cache.delete(cls.USER_LIMIT_KEY_TMPL.format(username))
         cache.delete(key_block)
 
     @classmethod
@@ -164,6 +180,9 @@ class SendVerifyCodeBlockUtil(BlockUtilBase):
 class MFABlockUtils(BlockUtilBase):
     LIMIT_KEY_TMPL = "_MFA_LIMIT_{}_{}"
     BLOCK_KEY_TMPL = "_MFA_BLOCK_{}"
+    # 双键计数：单一 (用户, IP) 计数可被轮换出口 IP 绕过（TOTP 6 位码空间有限，
+    # 多 IP 并行在线爆破不可接受），叠加用户维度总闸后任一超限即锁。
+    USER_LIMIT_KEY_TMPL = "_MFA_LIMIT_USER_{}"
 
 
 class LoginIpBlockUtil(BlockGlobalIpUtilBase):
