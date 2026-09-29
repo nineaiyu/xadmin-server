@@ -83,7 +83,8 @@ curl http://<host>/api/system/userinfo -H 'Authorization: Pat apst_xxx'
 
 - `redirect_uri` 必须与应用的 `callback_urls` 完全一致；
 - `scope` 可选（省略 = 应用全部 scope）；xadmin 的 scope 条目含空格，故用**逗号**分隔；
-- PKCE：提供 `code_challenge` 后换发必须带 `code_verifier`（`S256` 或 `plain`）；
+- PKCE：提供 `code_challenge` 后换发必须带 `code_verifier`（仅 `S256`；`plain` 已移除，
+  RFC 8252 / OAuth 2.0 Security BCP 建议仅 S256）；
 - 授权码一次性、5 分钟有效；refresh_token 一次即轮换（刷新后旧 refresh 与旧 access 同时失效）；
 - 撤销：`POST /api/system/open/oauth/revoke`（`token` 传 refresh 或 access 均可）；
 - access 的身份是**授权用户**，权限面 = 应用 scope × 应用资源授权 × 该用户权限（交集）。

@@ -144,6 +144,39 @@ class TestAuthorizeFlow:
         token_row = PersonalAccessToken.objects.get(name__startswith="oauth:")
         assert token_row.creator_id == superuser.pk
 
+    def test_plain_pkce_rejected(self, auth_client):
+        """plain 已移除（RFC 8252）：code_challenge_method=plain 直接 invalid_request。"""
+        application = _create_application(auth_client)
+        resp = auth_client.get(
+            f"{OAUTH_URL}/authorize",
+            _authorize_params(application, code_challenge="challenge-value", code_challenge_method="plain"),
+        )
+        assert resp.status_code == 400
+        assert resp.data["data"]["error"] == "invalid_request"
+
+    def test_legacy_plain_code_exchange_fails_closed(self, auth_client, superuser):
+        """历史缓存中的 plain 授权码：兑换一律失败（不再按 plain 比对，fail-closed）。"""
+        from system.views import open_oauth
+
+        application = _create_application(auth_client)
+        verifier = "legacy-plain-verifier"
+        code = "legacy-plain-code"
+        open_oauth.cache.set(
+            open_oauth._code_cache_key(code),
+            {
+                "user_pk": superuser.pk,
+                "application_pk": str(application["pk"]),
+                "redirect_uri": CALLBACK,
+                "scopes": [],
+                "code_challenge": verifier,
+                "code_challenge_method": "plain",
+            },
+            60,
+        )
+        resp = _exchange(application, code, verifier=verifier)
+        assert resp.status_code == 400
+        assert resp.data["data"]["error"] == "invalid_grant"
+
     def test_pkce_mismatch_rejected(self, auth_client):
         application = _create_application(auth_client)
         _verifier, challenge = _pkce_pair()

@@ -42,7 +42,8 @@ from system.views.open import verify_application_credentials
 AUTH_CODE_TTL_SECONDS = 300
 REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30
 CODE_CACHE_KEY = "oauth_authorize_code_{digest}"
-PKCE_METHODS = ("S256", "plain")
+#: PKCE 方法白名单：仅 S256（RFC 8252 / OAuth 2.0 Security BCP 建议）
+PKCE_METHODS = ("S256",)
 OAUTH_ACCESS_PREFIX = "aoat"
 OAUTH_REFRESH_PREFIX = "aort"
 
@@ -85,13 +86,18 @@ def consume_authorize_code(code: str):
 
 
 def verify_pkce(code_challenge: str, method: str, verifier: str) -> bool:
-    """PKCE 校验：未启用 challenge 时直接通过；启用时 verifier 必须匹配（S256/plain）。"""
+    """PKCE 校验：未启用 challenge 时直接通过；启用时**仅接受 S256**。
+
+    ``plain`` 已移除（RFC 8252 / OAuth 2.0 Security BCP 建议仅 S256：plain 下
+    授权码被截获即可直接重放，等同无效防护）。方法非 S256（含历史缓存中的 plain
+    授权码）一律 fail-closed；方法缺省按 S256 处理（与授权请求侧默认一致）。
+    """
     if not code_challenge:
         return True
     if not verifier:
         return False
-    if (method or "S256") == "plain":
-        return secrets.compare_digest(code_challenge, verifier)
+    if (method or "S256") != "S256":
+        return False
     digest = hashlib.sha256(verifier.encode("utf-8")).digest()
     expected = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("utf-8")
     return secrets.compare_digest(code_challenge, expected)
