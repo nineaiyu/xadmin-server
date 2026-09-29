@@ -29,3 +29,12 @@ def test_metrics_enabled_requires_bearer_token(api_client):
     response = api_client.get(URL, HTTP_AUTHORIZATION="Bearer s3cret")
     assert response.status_code == 200
     assert b"xadmin_http_requests_total" in response.content
+
+
+@override_settings(METRICS_ENABLED=True, METRICS_TOKEN="s3cret")
+def test_metrics_non_ascii_header_does_not_crash(api_client):
+    """非 ASCII 令牌头：常量时间比较不得抛异常（403 而非 500）。"""
+    response = api_client.get(URL, HTTP_AUTHORIZATION="Bearer 秘密")
+    assert response.status_code == 403
+    # 前缀命中但不是完整令牌同样拒绝
+    assert api_client.get(URL, HTTP_AUTHORIZATION="Bearer s3cre").status_code == 403

@@ -2,6 +2,8 @@
 # -*- coding:utf-8 -*-
 """Prometheus 指标抓取端点（默认关闭）。"""
 
+import secrets
+
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from drf_spectacular.utils import extend_schema
@@ -31,7 +33,10 @@ class MetricsAPIView(APIView):
         token = getattr(settings, "METRICS_TOKEN", "")
         if not token:
             return JsonResponse({"detail": "METRICS_TOKEN is not configured"}, status=403)
-        if request.META.get("HTTP_AUTHORIZATION", "") != f"Bearer {token}":
+        # 常量时间比较（与备份/运维告警端点同口径）：避免逐字符探测令牌
+        provided = str(request.META.get("HTTP_AUTHORIZATION", ""))
+        expected = f"Bearer {token}"
+        if not provided or not secrets.compare_digest(provided.encode("utf-8"), expected.encode("utf-8")):
             return JsonResponse({"detail": "Forbidden"}, status=403)
         if not metrics_available():
             return JsonResponse({"detail": "prometheus-client is not installed"}, status=503)

@@ -142,6 +142,20 @@ class TestRefererCheckMiddleware:
         assert middleware(request).status_code == 200
 
     @override_settings(REFERER_CHECK_ENABLED=True)
+    def test_rejects_lookalike_host_suffix(self):
+        """对抗性：站点名相同但域名不同（testserver.evil.com）必须拒绝。"""
+        middleware = RefererCheckMiddleware(lambda r: _response())
+        request = rf.get("/", HTTP_REFERER="https://testserver.evil.com/login", HTTP_HOST="testserver")
+        assert middleware(request).status_code == 403
+
+    @override_settings(REFERER_CHECK_ENABLED=True)
+    def test_allows_bare_host_referer(self):
+        """裸 host（无路径）仍放行：锚定不能收紧到只认 `host/`。"""
+        middleware = RefererCheckMiddleware(lambda r: _response())
+        request = rf.get("/", HTTP_REFERER="https://testserver", HTTP_HOST="testserver")
+        assert middleware(request).status_code == 200
+
+    @override_settings(REFERER_CHECK_ENABLED=True)
     def test_rejects_foreign_referer(self):
         middleware = RefererCheckMiddleware(lambda r: _response())
         request = rf.get("/", HTTP_REFERER="https://evil.example.com/x", HTTP_HOST="testserver")

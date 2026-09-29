@@ -53,3 +53,26 @@ class TestCaptchaAudio:
         _, key = _make_store()
         resp = api_client.get(f"/api/system/captcha/audio/{key}.wav")
         assert resp.status_code == 404
+
+
+class TestCaptchaRateLimit:
+    """匿名端点的每 IP 限流：取图/刷新都写库或耗 CPU，可被刷即等于可被灌。"""
+
+    def test_image_endpoint_limited_per_ip(self, api_client):
+        from captcha.views import CAPTCHA_IP_LIMIT_PER_MINUTE
+
+        _, key = _make_store()
+        url = CAPTCHA_IMAGE_URL.format(key=key)
+        for _ in range(CAPTCHA_IP_LIMIT_PER_MINUTE):
+            assert api_client.get(url).status_code in (200, 410)
+        assert api_client.get(url).status_code == 429
+
+    def test_refresh_endpoint_limited_per_ip(self, api_client):
+        from captcha.views import CAPTCHA_IP_LIMIT_PER_MINUTE
+
+        url = "/api/system/captcha/refresh/"
+        for _ in range(CAPTCHA_IP_LIMIT_PER_MINUTE):
+            assert api_client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code == 200
+        assert api_client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code == 429
+        # 限流不写库：拒绝的请求不生成新验证码行
+        assert CaptchaStore.objects.count() == CAPTCHA_IP_LIMIT_PER_MINUTE

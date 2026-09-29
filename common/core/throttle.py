@@ -9,6 +9,27 @@
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle, UserRateThrottle
 
 
+def allow_by_ip(request, scope: str, limit: int, window_seconds: int = 60) -> bool:
+    """IP 固定窗口限流（非 DRF 视图用，如 Django 原生验证码端点）：True = 放行。
+
+    验证码图片/刷新每次都会生成并写入 CaptchaStore 行，匿名可刷即等于可灌库；
+    DRF 的限流类只能在 DRF 视图上挂载，此函数提供同等语义的独立入口。
+    缓存故障时放行（fail-open）：限流是加固，不应因缓存抖动阻断登录流程。
+    """
+    from django.core.cache import cache
+
+    from common.utils.request import get_request_ip
+
+    ident = get_request_ip(request) or "unknown"
+    key = f"throttle_ip_{scope}_{ident}"
+    try:
+        if cache.add(key, 1, window_seconds):
+            return True
+        return int(cache.incr(key)) <= int(limit)
+    except Exception:  # noqa: BLE001 缓存故障不阻断业务（与 PatThrottle 容错口径一致）
+        return True
+
+
 class RegisterThrottle(AnonRateThrottle):
     scope = "register"
 

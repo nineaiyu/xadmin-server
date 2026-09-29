@@ -138,7 +138,8 @@ class RefererCheckMiddleware:
         if not referer:
             return True
         remote_host = request.get_host()
-        return referer.startswith(remote_host)
+        # 站点边界锚定：`xadmin.example.com.evil.com` 不得命中 `xadmin.example.com`
+        return referer == remote_host or referer.startswith(f"{remote_host}/")
 
     def __call__(self, request):
         match = self.check_referer(request)

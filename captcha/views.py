@@ -13,9 +13,18 @@ from ranged_response import RangedFileResponse
 
 from captcha.helpers import captcha_audio_url, captcha_image_url, filter_functions, makeimg, noise_functions
 from captcha.models import CaptchaStore
+from common.core.throttle import allow_by_ip
 
 # Distance of the drawn text from the top of the captcha image
 DISTANCE_FROM_TOP = 4
+
+#: 匿名验证码端点的每 IP 限流（次 / 分钟）：取图/刷新都会生成并写入 CaptchaStore 行，
+#: 无节流可被刷成灌库；正常登录流程每个会话只取一两次，60 次/分钟只挡滥用
+CAPTCHA_IP_LIMIT_PER_MINUTE = 60
+
+
+def _rate_limited(request, scope: str) -> bool:
+    return not allow_by_ip(request, scope=scope, limit=CAPTCHA_IP_LIMIT_PER_MINUTE, window_seconds=60)
 
 
 def getsize(font, text):
@@ -29,6 +38,8 @@ def getsize(font, text):
 
 
 def captcha_image(request, key, scale=1):
+    if _rate_limited(request, "captcha_image"):
+        return HttpResponse(status=429)
     if scale == 2 and not settings.CAPTCHA_2X_IMAGE:
         raise Http404
     try:
@@ -135,6 +146,8 @@ def captcha_image(request, key, scale=1):
 
 
 def captcha_audio(request, key):
+    if _rate_limited(request, "captcha_audio"):
+        return HttpResponse(status=429)
     if settings.CAPTCHA_FLITE_PATH:
         try:
             store = CaptchaStore.objects.get(hashkey=key)
@@ -194,6 +207,8 @@ def captcha_audio(request, key):
 
 def captcha_refresh(request):
     """Return json with new captcha for ajax refresh request"""
+    if _rate_limited(request, "captcha_refresh"):
+        return HttpResponse(status=429)
     if not request.headers.get("x-requested-with") == "XMLHttpRequest":
         raise Http404
 
