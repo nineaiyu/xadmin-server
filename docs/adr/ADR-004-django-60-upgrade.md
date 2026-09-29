@@ -115,3 +115,41 @@ Django 6.1.1 下全量测试 **2358 passed / 1 skipped 零回归**（运行时�
 
 配套：依赖审计 pip-audit / pnpm audit 双 0 漏洞；Python 线容器基线 `python:3.14.7-slim` 已提线，
 本机 venv 3.13.15 差异登记（工具链对齐列入下一年度评估）。
+
+## 复审记录（2026-09-29，第二轮规划 P0-D1：EOL 停留决策与安全监控登记）
+
+**触发**：第二轮重构规划（`REFACTORING-PLAN.md` §9.1 D1）把「Django 6.0.8 已退出安全支持」列为 P0 最高优先级，
+要求按本 ADR 既定流程复核升级可行性。
+
+**核验（当日实查 PyPI 元数据 + 本地安装声明，阻断面首次收敛到单包）**：
+
+| 依赖 | 声明 | 对 6.1 的影响 |
+|---|---|---|
+| **django-celery-beat 2.9.0** | `Django<6.1,>=2.2` | **阻断**（PyPI 最新仍为 2026-02-28 发布的 2.9.0，无新版时间表） |
+| django-timezone-field 7.2.2 | `>=4.2,<6.2` | 放行 6.1；**卡未来的 6.2 LTS** |
+| django-redis 7.0.0（`<7.0`）/ channels 4.3.2 / DRF 3.18.1 / django-filter 26.1 / django-csp 4.0 / simplejwt 5.5.1 / drf-spectacular 0.30.0 / django-celery-results 2.6.0 | 仅下界 | 放行 |
+
+对比 2026-09-16 记录（当时 beat 声明阻断、其余未逐一核对）：本轮确认**除了 beat 之外没有任何包声明卡 6.1**，
+「升级待评估」可以精确表述为「**等 django-celery-beat 一个包放宽声明**」。
+
+**决策（用户确认）**：**维持 Django 6.0.8**，本轮不启动 override 升级。理由：
+① 阻断来自不可替换核心依赖（beat 承载定时任务调度）的显式声明，override 等于推翻本 ADR 的「声明矩阵未覆盖即维持」纪律，
+须由安全事件驱动而非版本号焦虑驱动；② 6.0 线虽无新补丁，但本部署面为 Django + DRF + channels/daphne + celery 栈，
+无第三方 Django 插件面，历史公告命中面有限；③ 已具备监控 + 双路径处置能力（下节）。
+
+**配套动作（已交付）**：
+
+1. **EOL 期安全监控进清单**：`docs/ops/release-checklist.md` §0 新增「Django 线安全公告核对」基线项
+   （每次发布窗口 + 每季度依赖窗口执行），执行记录逐窗口追加；
+2. **处置双路径登记**（`docs/security-review.md` 六期登记 S-1）：命中 6.0 线公告时按影响面选择
+   「紧急升级 6.1（override：`[tool.uv] override-dependencies` 注释原因与撤销条件 + 全量门禁 + beat 周期任务链路专项验证 + 回滚预案）」
+   或「上游补丁后移到自有镜像（记录补丁来源与到期时间）」；
+3. **接受项入台账**：`docs/security-review.md` S-6 接受项台账新增「Django 6.0.8 停留」行（接受理由 + 重开条件）；
+4. **Python 口径对齐（D3，同批交付）**：`requires-python`/mypy `python_version` 与 9 处 CI workflow 由 3.13 对齐到 **3.14**
+   （容器基线 `python:3.14.7-slim` 与本机 venv 早已 3.14.7），`uv.lock` 重生成，server 内 6 处文档与文档站 4 文件
+   5 处受保护事实同步——本条关闭 2026-09-16 记录的「本机 venv 版本差异登记」。
+
+**重开条件（细化）**：`django-celery-beat` 发布声明支持 `Django>=6.1`（beat/results/timezone-field 三件同步覆盖），
+或 6.2 LTS 正式发布且全家桶声明覆盖；此外**新增安全触发**：出现影响本部署形态的 6.0 线高危公告时，
+立即按上述「紧急升级」路径执行（不再等待季度窗口）。届时仍按既定纪律：独立分支 + 兼容矩阵 + 全量门禁 + 回滚预案。
+

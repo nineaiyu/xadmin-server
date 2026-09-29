@@ -240,3 +240,29 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 | JWT 存 JS 可读 Cookie（`xadmin-client/src/utils/auth.ts`） | `SameSite=Lax` 挡 CSRF；XSS 面由 CSP 强制头（`script-src 'self'`）兜底 | 无感刷新与既有前端链路依赖 Cookie 读 token；改为 HttpOnly 需要整套刷新链路改造 | 出现可绕过 CSP 的 XSS 面，或前端改造为 BFF 形态 |
 | HTTP 直连部署时 Cookie 无 Secure（`SECURITY_HTTPS_ENABLED` 三态） | 非 HTTPS 部署不下发 Secure（否则浏览器丢弃，登录循环）；生产推荐 HTTPS + HSTS（nginx 已备注释开关） | 保留内网 HTTP 直连可用性 | 全站强制 HTTPS 后，服务端置 `SECURITY_HTTPS_ENABLED=true` 并启用 HSTS |
 | 注册链路账号占用提示（S-5 保留项） | 注册时明确返回「用户名/邮箱/手机已存在」 | 注册流程必须告知占用；已有验证码 + 限流门槛 | 注册改为邀请制（无需公开提示占用） |
+| Django 6.0.8 停留（6.1 发布后该线退出安全支持） | 生产运行 6.0.8；升级 6.1 的唯一阻断项 `django-celery-beat 2.9.0` 声明 `Django<6.1`（2026-09-29 实查 PyPI：最新版仍为 2026-02-28 的 2.9.0，无新版时间表） | beat 承载定时任务调度（beat/results 全家桶），属不可替换核心依赖；ADR-004（2026-09-16）实测 6.1.1 全量零回归，但按「声明矩阵未覆盖即维持」纪律整体回滚；停留期以**安全公告监控 + 必要时补丁后移**兜住风险（见六期登记） | `django-celery-beat` 发布声明支持 `Django>=6.1`（beat/results/timezone-field 三件同步），或 6.2 LTS 发布且全家系声明覆盖；或出现影响本部署形态的 6.0 线高危公告（此时走 override 升级流程：全量门禁 + 回滚预案） |
+
+## 六期登记（2026-09-29）：依赖线 EOL 停留与 Python 口径对齐
+
+本批伴随 P0 安全收口交付（越权面收口 / 审计只读化 / 并发正确性），依赖线两项当日复核：
+
+### S-1 Django 6.0.8 EOL 期安全监控 —— 已登记
+
+**事实**：Django 6.0 系列自 6.1 发布（2026-08-05）起不再获得安全修复；升级 6.1 的阻断面经实查（PyPI 元数据 + 本地安装声明）收敛为**唯一一个包**——`django-celery-beat 2.9.0` 声明 `Django<6.1,>=2.2`；其余全部放行（`django-timezone-field 7.2.2` 声明 `>=4.2,<6.2`，卡的是未来的 6.2 LTS，不阻断 6.1）。
+
+**决策**：维持 6.0.8，不启动 override 升级（依据 ADR-004「声明矩阵未覆盖即维持」纪律与用户确认）。
+
+**监控动作（每次发布窗口 + 每季度依赖窗口执行）**：
+
+1. 核对 Django 官方安全发布公告（weblog security releases），确认是否有落在 **6.0 线**且影响本部署形态（Django + DRF + channels/daphne + celery 栈，无第三方 Django 插件面）的漏洞；
+2. 命中时两条处置路径，按影响面选择：
+   - **紧急升级**：走 6.1 override 流程（`[tool.uv] override-dependencies` 注释原因与撤销条件 → 全量门禁 + beat 周期任务链路专项验证 + 回滚预案），升级后同步更新 ADR-004；
+   - **补丁后移**：上游修复落到 6.0 线的补丁后移至自有镜像，记录补丁来源（commit/PR）、适用版本与到期时间（下一次升级窗口必须重新评估）；
+3. 复核结论追加到 [ops/release-checklist.md](ops/release-checklist.md) 执行记录（与季度依赖窗口同窗口记录）。
+
+**重开条件**：`django-celery-beat` 声明放宽到 `Django>=6.1`（含 beat/results 全链路），或 6.2 LTS 发布且全家桶声明覆盖——届时按 ADR-004 升级流程（独立分支 + 兼容矩阵 + 全量门禁）执行。
+
+### S-2 Python 口径对齐 3.14 —— 已执行
+
+漂移事实：容器基线（`python:3.14.7-slim`，prod/base/dev）与本机 venv 早已是 3.14.7，但 `pyproject.toml` 的 `requires-python`/mypy `python_version` 与 9 处 CI workflow 仍停 3.13。
+处置：口径统一到 3.14（`requires-python = ">=3.14"` + mypy 3.14 + CI 9 处 + `uv.lock` 重生成），server 内 6 处文档与文档站 4 文件 5 处受保护事实（`check_doc_facts.py` 的 `workflow:python` 源）同步。

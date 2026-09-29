@@ -22,6 +22,10 @@
       （代码挂载不热加载）；迁移在全新库重建验证
 - [ ] **依赖窗口**（12/03/06/09）：client `pnpm audit --registry=https://registry.npmjs.org`、
       server `pip-audit` 零高危；Renovate 挂起项见 §3
+- [ ] **Django 线安全公告核对**（6.0.8 停留期，2026-09-29 起）：Django 6.0 线已退出安全支持而升级被
+      `django-celery-beat 2.9.0`（`Django<6.1`）阻断 → 每窗口核对官方安全发布公告是否落在 6.0 线；
+      命中走「紧急升级（6.1 override）」或「补丁后移」二选一，结论追加到 §4 执行记录
+      （完整口径见 [../security-review.md](../security-review.md) 六期登记 S-1）
 - [ ] **备份**：发布前执行备份（异地副本 + 媒体目录，RPO 6h 口径见演练记录）；确认失败告警可达
 - [ ] **发布后 30 分钟观察**：`GET /api/common/api/health`、`data/logs/server.log` 错误率、celery 队列无积压、
       `data/logs/unexpected_exception.log` 无新增
@@ -129,6 +133,7 @@
 | **季度审计与演练（2030-06）** | 2026-09-16 | — | — | audit 全链路：server/client **双 0**；docs 18 项（构建链传递依赖，内部站无输入面 → 分级可接受）。**备份恢复演练通过**：sha256 ✓ / 导入 0 错误 / 表数 89=89 / 核心表一致（记录 [backup-drill-2026-09-16](backup-drill-2026-09-16.md)）。CSP/AES 持续 0/0；权限覆盖无缺口 |
 | **全年核对（2030-08）** | 2026-09-16 | ✅ 持续干净（切换后 8h+ 违规 0） | ✅ 已关闭、零命中、回滚开关保留 | 第四年度全项核对：§0 基线项每窗口在跑（门禁 / E2E / 备份 / 发布后观察）；§1 CSP **页面层**待 web 部署形态（`default.conf` report-only 已备 + `nginx -t` 通过）——**2026-09-18 已切强制，见下**；§3 挂起项（异地副本 / Renovate / SCIM）状态不变；运营资源：磁盘 9% 充足、日志按天轮转（867M 存量、降噪后增速放缓）、备份 7 天保留生效（最老 09-09）、**Docker 清理释放 20.5GB**（构建缓存 20.35GB + 悬空镜像 175MB；非悬空 10.4GB 待评估） |
 | **页面层切强制（T3）** | 2026-09-18 | ✅ **页面层已切强制**：`xadmin-web/default.conf` 下发 `Content-Security-Policy`（去 `Report-Only`），策略串与服务端 `_CSP_DIRECTIVES`、验证服务 `csp-page-server.mjs` **三处同源**（新增守护 `tests/unit/common/test_csp.py::TestCSPPolicySync`）；真实 nginx 产物复验：`nginx -t` 通过 + `curl -I` 头为强制版 | — | 前置以「全量归因 + 隔离验证」替代观察窗口（测试服 192.168.0.200 不可达，无法累计 7 天真实流量），与 §1 服务端切换同口径：新增 `pnpm test:e2e:csp`（`e2e/csp-page.e2e.ts` + `scripts/csp-page-server.mjs` = 构建产物 + 强制头 + 真实浏览器扫核心页面）——**核心页面零违规**且 `/__csp_probe` 负对照命中（内联脚本被拦）。为通过强制头四处收口：① `index.html` 的 `window.process` 内联脚本 → 同源 `public/process-shim.js`；② 新增 `worker-src 'self' blob:`（version-rocket 的 Blob 轮询 Worker）；③ ~~`connect-src` 放行 Iconify 官方三处 API 镜像~~ **已收口（同日）**：**前端图标离线化**——常用图标随包注册 + 其余按 set 懒加载构建期内置图标集（同源 chunk），`connect-src` 不再放行任何外部主机（内网/离线部署可用；隔离验证新增「侧边栏菜单图标渲染」「图标选择器本地集渲染」断言）；④ **修复页面层上报死链**：`report-uri` 由 `/api/csp-report` 改为 `/api/common/api/csp-report`（原路径打到后端 404，违规上报静默丢失——隔离验证同时断言上报可达 204）。回滚：换回 `Content-Security-Policy-Report-Only` 同串 + reload。口径说明：~~验证仅 chromium~~ **已收口（2026-09-18 同日）**：跑批默认 `E2E_CSP_TLS=1`——验证服务以 HTTPS 提供（openssl 自签 + `ignoreHTTPSErrors`，webServer 与 context 双处放行），**chromium + webkit 双浏览器核心页零违规 + 探针命中**（生产构建认证 Cookie 带 `Secure`，http 下 WebKit 拒收无法登录，TLS 形态复现部署前提后纳入）；线上 http 形态下 WebKit 仍无法登录，生产/测试服部署应走 HTTPS |
+| **依赖线复核（Django 6.0 EOL + Python 3.14）** | 2026-09-29 | — | — | ① **Django 6.0.8 停留决策落地**：实查阻断面收敛为唯一一个包 `django-celery-beat 2.9.0`（`Django<6.1`，最新版 2026-02-28 无新版；`django-timezone-field 7.2.2` 的 `<6.2` 卡的是未来 6.2 LTS）→ 维持 6.0.8 + 登记 EOL 安全监控（§0 新增核对项 + security-review 六期登记 S-1 + ADR-004 复审记录），命中公告走「6.1 override 升级」或「补丁后移」二选一；② **Python 口径对齐 3.14**：`requires-python`/mypy + CI 9 处 workflow + `uv.lock` 重生成 + server 6 处文档与文档站 4 文件（`check_doc_facts.py` 受保护事实）同步（容器与 venv 早已 3.14.7，属口径追平） |
 
 ### 复核结论（2026-09-15，W9–W10）
 
