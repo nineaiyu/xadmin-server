@@ -190,3 +190,35 @@ async def test_chat_tools_normalizes_calls():
 
 async def _async_noop(_seconds):
     return None
+
+
+async def test_stream_self_built_client_5xx_retry_reads_status(monkeypatch):
+    """自建客户端分支（未注入 http_client）：流式包装器必须暴露 status_code。
+
+    回归（e2e 实测）：_OwnedStream 缺 status_code 时 _send_with_retry 的
+    5xx/429 判定在首轮即 AttributeError，流式问答整链瘫痪。
+    """
+    import httpx
+
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(500)
+        body = 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n'
+        return httpx.Response(200, content=body.encode())
+
+    real_cls = httpx.AsyncClient
+
+    def _factory(*args, **kwargs):
+        kwargs.pop("transport", None)
+        return real_cls(transport=httpx.MockTransport(handler), **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", _factory)
+    monkeypatch.setattr("common.sdk.ai.async_chat._RETRY_BASE_DELAY", 0)
+
+    client = AsyncChatCompletionsClient(CREDENTIALS)
+    frames = [item async for item in client.chat_stream([{"role": "user", "content": "hi"}])]
+    assert calls["n"] == 2  # 500 一次 + 成功一次：重试判定读到状态码后才可能重试
+    assert frames[-1] == {"type": "content", "text": "ok"}

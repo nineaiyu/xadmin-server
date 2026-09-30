@@ -261,6 +261,19 @@ class _OwnedStream:
         self.response = response
 
     @property
+    def status_code(self) -> int:
+        """重试判定需要读响应头状态码（与注入客户端分支的裸 Response 同形）。"""
+        return self._response.status_code
+
+    @property
+    def response(self):
+        return self._response
+
+    @response.setter
+    def response(self, value):
+        self._response = value
+
+    @property
     def aclose_all(self):
         async def _close():
             try:
