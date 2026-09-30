@@ -78,7 +78,7 @@ def ensure_preset_rules():
             dp = DataPermission.objects.create(name=spec["name"], rules=spec["rules"], is_active=True)
             logger.info("dept manager preset rule created: %s", spec["name"])
         else:
-            updates = {}
+            updates: dict = {}
             if dp.rules != spec["rules"]:
                 updates["rules"] = spec["rules"]
             if not dp.is_active:
