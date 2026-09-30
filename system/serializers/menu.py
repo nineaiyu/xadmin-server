@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
+from common.core.validation import ActiveUniqueValidationMixin
 from common.utils import get_logger
 from system.models import Menu, MenuMeta
 
@@ -25,7 +26,7 @@ class MenuMetaSerializer(BaseModelSerializer):
     pk = serializers.UUIDField(source="id", read_only=True)
 
 
-class MenuSerializer(BaseModelSerializer):
+class MenuSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
     meta = MenuMetaSerializer(label=_("Menu meta"))
 
     class Meta:
@@ -53,12 +54,8 @@ class MenuSerializer(BaseModelSerializer):
     # name 的 DB 唯一约束已改为"未删除数据"条件约束（见 Menu.Meta.constraints），
     # 显式校验活跃菜单唯一，保证重复时返回 400 而非数据库 IntegrityError
     def validate_name(self, value):
-        queryset = Menu.objects.filter(name=value)
-        if self.instance is not None:
-            queryset = queryset.exclude(pk=self.instance.pk)
-        if queryset.exists():
-            raise serializers.ValidationError(_("This field already exists"))
-        return value
+        # 菜单名对「未删除数据」唯一（软删模型），走共享 mixin 显式校验
+        return self._validate_active_unique("name", value)
 
     def update(self, instance, validated_data):
         with transaction.atomic():

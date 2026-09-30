@@ -16,6 +16,7 @@ from ai.models.mcp import McpServer
 from ai.utils.mcp_client import validate_server_url
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
+from common.core.validation import trim_required
 from system.services import DisplayRelatedField
 
 MAX_ALLOWED_TOOLS = 100
@@ -75,10 +76,7 @@ class McpServerSerializer(BaseModelSerializer):
         return bool(obj.auth_token)
 
     def validate_name(self, value):
-        name = (value or "").strip()
-        if not name:
-            raise serializers.ValidationError(_("Server name is required"))
-        return name
+        return trim_required(value, _("Server name is required"))
 
     def validate_url(self, value):
         try:

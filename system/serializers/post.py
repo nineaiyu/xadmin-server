@@ -9,6 +9,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
+from common.core.validation import ActiveUniqueValidationMixin
 from system.models import Post
 
 
@@ -24,7 +25,7 @@ class PostMemberSerializer(serializers.Serializer):
         return attrs
 
 
-class PostSerializer(BaseModelSerializer):
+class PostSerializer(ActiveUniqueValidationMixin, BaseModelSerializer):
     class Meta:
         model = Post
         fields = [
@@ -67,18 +68,8 @@ class PostSerializer(BaseModelSerializer):
         count = getattr(obj, "user_count", None)
         return count if count is not None else obj.users.count()
 
-    # 名称/编码的唯一性为「未删除数据」条件约束（见 Meta.constraints），
-    # DRF 不会为带 condition 的 UniqueConstraint 自动生成校验器，这里显式校验，
-    # 保证重复时返回 400 而非数据库 IntegrityError
-    def _validate_active_unique(self, field_name, value):
-        queryset = Post.objects.filter(**{field_name: value})
-        if self.instance is not None:
-            queryset = queryset.exclude(pk=self.instance.pk)
-        if queryset.exists():
-            raise serializers.ValidationError(_("This field already exists"))
-        return value
-
     def validate_name(self, value):
+        # 唯一性为「未删除数据」条件约束（见 Meta.constraints），走共享 mixin 显式校验
         return self._validate_active_unique("name", value)
 
     def validate_code(self, value):

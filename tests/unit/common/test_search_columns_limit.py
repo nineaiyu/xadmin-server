@@ -25,7 +25,7 @@ TOTAL_USERS = 230
 @pytest.fixture(autouse=True)
 def _reset_choices_max_cache():
     """进程内短 TTL 缓存跨测试必须重置，否则 monkeypatch 的配置值不生效"""
-    import common.core.fields as fields_mod
+    import common.core.fields_related as fields_mod
 
     fields_mod._CHOICES_MAX_CACHE = {"value": None, "expires": 0.0}
     yield
@@ -96,7 +96,7 @@ class TestChoicesMaxCount:
 
     def test_config_fallback_on_error(self, monkeypatch):
         """配置读取异常时退回默认值，不影响下拉数据（异常不缓存）"""
-        import common.core.fields as fields_mod
+        import common.core.fields_related as fields_mod
 
         monkeypatch.setattr(fields_mod, "_CHOICES_MAX_CACHE", {"value": None, "expires": 0.0})
         monkeypatch.setattr(
@@ -111,7 +111,7 @@ class TestChoicesMaxCount:
 
     def test_config_value_is_short_lived_cached(self, monkeypatch):
         """同一请求内多个关联字段共享一次配置读取（短 TTL 进程内缓存）"""
-        import common.core.fields as fields_mod
+        import common.core.fields_related as fields_mod
 
         monkeypatch.setattr(fields_mod, "_CHOICES_MAX_CACHE", {"value": None, "expires": 0.0})
         assert fields_mod.get_search_choices_max_count() == fields_mod.get_search_choices_max_count()

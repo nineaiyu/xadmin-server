@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
+from common.core.validation import trim_required
 from system.models.tag import TAGGABLE_MODELS, Tag
 from system.serializers.task import DisplayRelatedField
 
@@ -47,10 +48,7 @@ class TagSerializer(BaseModelSerializer):
         return obj.tagged_items.count()
 
     def validate_name(self, value):
-        name = (value or "").strip()
-        if not name:
-            raise serializers.ValidationError(_("Tag name is required"))
-        return name
+        return trim_required(value, _("Tag name is required"))
 
     def validate_color(self, value):
         color = (value or "").strip()

@@ -15,6 +15,7 @@ from ai.utils.ai import MAX_UPLOAD_CONTENT_LENGTH, MAX_UPLOAD_NAME_LENGTH, set_d
 from ai.utils.doc_extract import PARSABLE_EXTENSIONS
 from common.base.utils import signer
 from common.core.serializers import BaseModelSerializer
+from common.core.validation import trim_required
 from common.utils.outbound import OutboundBlocked, validate_outbound_url
 from system.services import DisplayRelatedField
 
@@ -114,10 +115,7 @@ class AiProfileSerializer(BaseModelSerializer):
         return []
 
     def validate_name(self, value):
-        name = (value or "").strip()
-        if not name:
-            raise serializers.ValidationError(_("Profile name is required"))
-        return name
+        return trim_required(value, _("Profile name is required"))
 
     def validate_base_url(self, value):
         url = (value or "").strip()
@@ -161,9 +159,7 @@ class KnowledgeUploadSerializer(serializers.Serializer):
     file_b64 = serializers.CharField(max_length=2_800_000, required=False, allow_blank=True, write_only=True)
 
     def validate_name(self, value):
-        name = (value or "").strip()
-        if not name:
-            raise serializers.ValidationError(_("Document name is required"))
+        name = trim_required(value, _("Document name is required"))
         if any(char in name for char in NAME_FORBIDDEN_CHARS) or ".." in name:
             raise serializers.ValidationError(_("Document name cannot contain path characters"))
         return name
