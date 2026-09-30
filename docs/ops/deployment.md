@@ -21,7 +21,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 依赖服务：PostgreSQL（或 SQLite）+ Redis。本地快速起 Redis：
 
 ```shell
-docker run -d --name xadmin-redis -p 6379:6379 redis:7.4
+docker run -d --name xadmin-redis -p 6379:6379 redis:8.10
 ```
 
 ### 1.2 配置与初始化
@@ -386,6 +386,14 @@ docker exec xadmin-server sh -c "cd /data/xadmin-server && python scripts/smoke_
    docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
    docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
    ```
+
+   > **prod overlay 的配置注入边界（2026-09-30 冒烟实测确认）**：生产形态 config.yml
+   > 不进镜像（构建期清空），容器配置只认环境变量——而 compose 仅向应用容器透传
+   > `DB_PASSWORD` / `REDIS_PASSWORD` / `DEBUG`。`SECRET_KEY`（生产必填）与
+   > `ALLOWED_HOSTS`（DEBUG=false 时强制校验，缺失时连 healthcheck 都会 400）等
+   > 其余键，需以临时 overlay 给应用容器补 `environment:` 声明并写入 `.env`
+   > （列表型配置用 JSON 数组，如 `ALLOWED_HOSTS=["xadmin.example.com"]`，
+   > env 值经 json.loads 解析）。docker compose run 单次动作可直接 `-e SECRET_KEY=...`。
 
    多副本 / 滚动发布必须同时给 web 侧配 `AUTO_MIGRATE=false`（web 容器不再在启动时迁移，
    由上述 `migrate` 服务承担）；单副本默认 `AUTO_MIGRATE=true`，行为与既有版本一致。

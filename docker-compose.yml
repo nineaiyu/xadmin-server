@@ -85,7 +85,7 @@ services:
       - net
 
   redis:
-    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.11
+    image: registry.cn-beijing.aliyuncs.com/nineaiyu/redis:8.10.2
     container_name: xadmin-redis
     hostname: xadmin-redis
     restart: always

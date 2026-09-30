@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "updated_at": "2026-09-08",
+  "updated_at": "2026-09-30",
   "source": "docs/metrics.md §五（2026-09-06 六接口三轮中位数）",
   "env": {
     "machine": "Apple Silicon macOS + OrbStack Docker",
     "server": "gunicorn + UvicornWorker×4（生产同参，容器化）",
     "db": "PostgreSQL 16.8 专用一次性容器",
-    "redis": "Redis 7.4.3 专用一次性容器",
+    "redis": "Redis 8.10.2 专用一次性容器",
     "seed": "1000 个 perf_ 用户 + 默认数据",
     "k6": "v2.0.0",
-    "note": "ASGI 每请求新建 DB 连接修复前的口径：修复后 routes 实测改善（P95 53.7→32.5ms、失败率 20.33%→0%），故本快照偏保守，复测后可用 check_baseline.py --update 收紧"
+    "note": "2026-09-30 复测收紧：三轮中位数（P1 每请求开销链优化 + Redis 8.10.2 后口径）；macOS 复现需 OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES（见 performance-baseline.md §3.1）；源快照 2026-09-08 为 ASGI 连接修复前保守口径"
   },
   "tolerance": {
     "p95_ratio": 1.2,
@@ -20,43 +20,43 @@
     "01-login": {
       "label": "登录（login/basic）",
       "load": "5 VU / 30s",
-      "rps": 31.3,
-      "p95": 173.9
+      "rps": 89.81,
+      "p95": 66.03
     },
     "02-routes": {
       "label": "菜单/路由（routes）",
       "load": "20 VU / 1m",
-      "rps": 682.0,
-      "p95": 61.8
+      "rps": 1185.16,
+      "p95": 28.06
     },
     "03-list": {
       "label": "列表页（user list）",
       "load": "20 VU / 1m",
-      "rps": 267.4,
-      "p95": 147.5
+      "rps": 224.39,
+      "p95": 198.94
     },
     "04-metadata": {
       "label": "元数据三变体混跑",
       "load": "20 VU / 1m",
-      "rps": 104.5,
-      "p95": 163.8,
+      "rps": 442.2,
+      "p95": 150.89,
       "trends": {
-        "meta_columns_duration": 81.5,
-        "meta_fields_duration": 78.3,
-        "meta_with_meta_duration": 203.8
+        "meta_columns_duration": 79.57,
+        "meta_fields_duration": 121.3,
+        "meta_with_meta_duration": 183.22
       }
     },
     "05-export": {
       "label": "导出（export-data xlsx）",
       "load": "5 VU / 1m",
-      "rps": 15.4,
-      "p95": 632.6
+      "rps": 9.91,
+      "p95": 770.78
     },
     "06-import": {
       "label": "导入（import-data update）",
       "load": "5 VU / 1m",
-      "rps": 130.8,
-      "p95": 48.5
+      "rps": 117.44,
+      "p95": 57.13
     }
   }
 }

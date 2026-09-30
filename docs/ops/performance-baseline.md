@@ -68,7 +68,7 @@ docker run -d --name xadmin-loadtest-pg \
   -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:17.11 \
   postgres -c max_connections=500
 docker run -d --name xadmin-loadtest-redis \
-  -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:7.4.11 \
+  -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:8.10.2 \
   redis-server --requirepass loadtest --port 6379
 
 # ② 以压测专用 settings 执行 migrate + 初始化 + 种子（密码仅本地压测环境）
@@ -78,9 +78,14 @@ export DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest XADMIN_ADMIN_PASSWORD='
 .venv/bin/python loadtest/seed_users.py --count 1000
 
 # ③ 生产同参启动被测服务后按 §四 压测；结束后 docker rm -f 两个容器
-DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest .venv/bin/gunicorn \
+# OBJC_DISABLE_INITIALIZE_FORK_SAFETY：macOS 必须——worker 到达 --max-requests 回收时
+# 由 master fork 重建，而 ObjC 运行时的 fork 安全检查会让每个新 worker 立即 SIGABRT
+# （实测 09-08 基线 shell 自带该变量掩盖了这一点；2026-09-30 复测缺它时 4 worker 全灭、
+# 服务僵死，日志为数千条 fork 崩溃循环）。
+OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES DJANGO_SETTINGS_MODULE=loadtest.settings_loadtest \
+  .venv/bin/gunicorn \
   server.asgi:application -b 127.0.0.1:8896 -k uvicorn.workers.UvicornWorker \
-  -w 4 --max-requests 10240 --max-requests-jitter 2048 --graceful-timeout 30
+  -w 4 --keep-alive 5 --max-requests 10240 --max-requests-jitter 2048 --graceful-timeout 30
 ```
 
 `loadtest/settings_loadtest.py` 职责：注入专用 DB/Redis 连接、关闭登录三开关、

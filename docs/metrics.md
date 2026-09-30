@@ -247,3 +247,14 @@
 - 非默认语言语料（en）此前已改 glob 懒加载（`src/plugins/i18n.ts`，产物落独立 chunk
   `virtual_intlify-i18n-*`，不在首屏闭包内），本项只补门禁分账。
 
+### 2026-09-30 验证收尾批（B8 恢复码 + Redis 8.x + k6 基线收紧 + e2e 时长预算）
+
+| 项 | 结果 |
+|------|------|
+| k6 基线（P1-37 三轮中位数收紧） | routes 682→**1185 rps** / P95 61.8→**28.1ms**（达成 <40ms 验收）；login P95 174→**66ms**（argon2id 单次校验快于 PBKDF2-87 万轮）；metadata P95 163.8→**150.9ms**（未达 <60ms，如实登记）；03-list P95 147.5→**198.9ms**（退化如实登记，成因待查：变化面含 cached_db session / 通知批量化 / 权限缓存 L1 等） |
+| 压测环境 | 专用容器 PG 17.11 + **Redis 8.10.2** + 1000 种子用户 + gunicorn×4（生产同参，keep-alive 5） |
+| e2e 时长预算 | `darwin-local-full/4`：596s → **792s**（并行全量 4/4 exit=0、490 passed / 0 flaky 后 `E2E_BUDGET_UPDATE=1` 实测刷新）；**坑**：agent 工具壳注入的 `CI=true` 会改预算环境键与重试档位，本地复跑必须 `env -u CI` |
+| 前端包体 | 代码 486.8/481.4（+5.4 ✓）/ i18n 65.0/55.9（+9.1 ✓，MFA 恢复码 8 词条 +0.2KB） |
+| 后端 | 全量 pytest **4496 passed / 2 skipped**（MFA 恢复码单测 14 + 集成 10；metadata 载荷缓存两处键盲区修补；异步 SDK `_OwnedStream` status_code 修补；codegen 批次 AI triage / 种子 title 欠账修复） |
+| 双副本冒烟 | prod+scale overlay：one-off migrate（mfa.0001）、双 server 副本 healthy、nginx multi 两副本 IP 轮询、celery ping 2 节点；暴露的 2 个 prod 形态缺口（SECRET_KEY/ALLOWED_HOSTS overlay 注入、镜像 procps）已收口并登记 deployment.md |
+
