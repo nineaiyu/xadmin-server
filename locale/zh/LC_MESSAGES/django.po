@@ -5287,6 +5287,14 @@ msgstr "该 Passkey 未绑定到当前账号"
 msgid "Passkey verification failed"
 msgstr "Passkey 验证失败"
 
+#: mfa/backends/recovery.py:24
+msgid "Recovery code"
+msgstr "恢复码"
+
+#: mfa/backends/recovery.py:25
+msgid "Please enter a recovery code"
+msgstr "请输入恢复码"
+
 #: mfa/backends/password.py:16 settings/serializers/security.py:388
 msgid "Login password"
 msgstr "登录密码"
@@ -5401,6 +5409,32 @@ msgstr "登录 MFA 已开启"
 #: mfa/views.py:257
 msgid "OTP unbinding successful"
 msgstr "OTP 解绑成功"
+
+#: mfa/views.py:155 mfa/views.py:176
+msgid ""
+"Bind at least one backup challenge channel (email or SMS) before enabling "
+"OTP"
+msgstr "请先至少配置一个备用挑战渠道（邮箱 / 短信）再开启 OTP"
+
+#: mfa/views.py:307
+msgid "Recovery codes have been regenerated"
+msgstr "恢复码已重新生成"
+
+#: mfa/recovery.py:65 mfa/recovery.py:72
+msgid "Recovery code is invalid or has been used"
+msgstr "恢复码无效或已被使用"
+
+#: mfa/models.py:30
+msgid "MFA recovery code"
+msgstr "MFA 恢复码"
+
+#: mfa/models.py:25
+msgid "Code hash"
+msgstr "码哈希"
+
+#: mfa/models.py:27
+msgid "Used time"
+msgstr "使用时间"
 
 #: notifications/apps.py:8
 msgid "App Notifications"

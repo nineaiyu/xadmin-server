@@ -150,6 +150,13 @@ def get_login_mfa_methods(user, request=None):
     return get_confirm_methods(user, request=request, confirm_type=ConfirmType.MFA)
 
 
+def clear_recovery_codes(user) -> None:
+    """作废用户全部 OTP 恢复码（供解绑 / 管理员重置 MFA 的链路同步调用）"""
+    from mfa import recovery
+
+    recovery.clear_codes(user)
+
+
 def ensure_user_confirmed(request, confirm_type=ConfirmType.MFA):
     """敏感操作二次确认校验（412 协议）——供其他 app 的 ViewSet/action 手动校验。
 

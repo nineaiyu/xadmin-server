@@ -21,6 +21,7 @@ from mfa.backends.email import EmailBackend
 from mfa.backends.otp import OtpBackend
 from mfa.backends.passkey import PasskeyBackend
 from mfa.backends.password import PasswordBackend
+from mfa.backends.recovery import RecoveryCodeBackend
 from mfa.backends.sms import SmsBackend
 
 logger = get_logger(__name__)
@@ -32,13 +33,14 @@ __all__ = [
     "EmailBackend",
     "PasswordBackend",
     "PasskeyBackend",
+    "RecoveryCodeBackend",
     "MFA_BACKEND_CLASSES",
     "get_backend",
     "get_enabled_backends",
     "get_user_mfa_policy",
 ]
 
-MFA_BACKEND_CLASSES = [OtpBackend, SmsBackend, EmailBackend, PasswordBackend, PasskeyBackend]
+MFA_BACKEND_CLASSES = [OtpBackend, SmsBackend, EmailBackend, PasswordBackend, PasskeyBackend, RecoveryCodeBackend]
 
 
 def _normalize_methods(value):

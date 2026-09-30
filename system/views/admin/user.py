@@ -32,6 +32,7 @@ from message.services import send_logout_msg
 from mfa.cache import UserConfirmStateCache
 from mfa.confirm import UserConfirmation
 from mfa.const import ConfirmType
+from mfa.services import clear_recovery_codes
 from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
 from system.models import OperationLog, Post, UserInfo, UserOAuthBinding
@@ -201,6 +202,7 @@ class UserViewSet(
         instance.otp_secret_key = ""
         instance.mfa_level = UserInfo.MFALevelChoices.DISABLED
         instance.save(update_fields=["otp_secret_key", "mfa_level"])
+        clear_recovery_codes(instance)
         UserConfirmStateCache(instance).clear()
         LoginBlockUtil.unblock_user(instance.username)
         return ApiResponse(detail=_("The user's MFA has been reset"))

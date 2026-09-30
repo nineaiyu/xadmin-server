@@ -11,6 +11,7 @@
 | 验证方式（可配置） | `otp`（TOTP 动态口令）/ `sms`（短信验证码）/ `email`（邮件验证码）/ `password`（登录密码），后台设置页可启停 |
 | 登录 MFA    | 绑定 OTP 的用户登录时强制二次验证（`mfa_required` + 一次性 `mfa_token`，通过后才签发 JWT）          |
 | OTP 绑定管理  | 个人中心发起绑定（otpauth URI 渲染二维码）→ 动态码确认 → 解绑（本身即敏感操作）                          |
+| OTP 恢复码     | 绑定时生成 10 个一次性恢复码（哈希落库），设备全丢时凭码完成登录 / 412 确认，解锁重绑（附录 B8）                   |
 
 ## 二、核心设计
 
@@ -19,11 +20,14 @@ mfa/
 ├── backends/            # 验证方式后端（策略模式，可插拔）
 │   ├── base.py          #   BaseMFA 抽象：check_code / send_challenge / is_active / global_enabled
 │   ├── otp.py           #   pyotp TOTP（防重放：同码在窗口期内一次性）
+│   ├── recovery.py      #   OTP 恢复码（绑定时生成 10 个一次性码，哈希落库）
 │   ├── sms.py           #   复用 SendAndVerifyCodeUtil（挑战型：服务端先下发）
 │   ├── email.py         #   复用 SendAndVerifyCodeUtil（挑战型）
 │   └── password.py      #   user.check_password
 ├── const.py             # ConfirmType：PASSWORD(级别1) < MFA(级别2)
 ├── confirm.py           # UserConfirmation 权限工厂 / ensure_user_confirmed / 装饰器
+├── models.py            # MfaRecoveryCode（恢复码哈希落库，一次性消费）
+├── recovery.py          # 恢复码生成 / 原子认领（sha256 摘要比对）
 ├── cache.py             # 确认状态 / OTP 绑定候选密钥 / OTP 已用码（Redis）
 ├── exceptions.py        # MFAConfirmRequired（HTTP 412 统一协议）
 ├── services.py          # 对外契约层（其他 app 只允许 import 本模块）
@@ -123,6 +127,7 @@ def reset_user_api_key(request, user_id): ...
 2. 挑战型方式调 `POST /api/system/login/mfa/send-code`（`mfa_token` + `method`）；
 3. `POST /api/system/login/mfa/verify`（`mfa_token` + `method` + `code`）
    → 通过后签发 `{access, refresh, *_token_lifetime}`；`mfa_token` 一次性，5 分钟有效。
+   `method=recovery` 为恢复码自救通道（设备全丢时使用），一次性消费后立即作废。
 
 ### xadmin-client 客户端已实现部分
 
@@ -156,7 +161,28 @@ def reset_user_api_key(request, user_id): ...
 | `SECURITY_MFA_OTP_VALID_WINDOW`      | `1`      | TOTP 容错周期数          |
 | `SECURITY_MFA_OTP_ISSUER`            | `XAdmin` | otpauth URI 签发方名称   |
 
-## 六、内置敏感操作接入点
+## 六、OTP 恢复码（附录 B8）
+
+TOTP 设备全丢时的自救通道，避免「只能管理员 reset」的死锁：
+
+- **生成**：绑定 OTP 确认成功时自动生成 10 个（`POST /api/mfa/otp/confirm` 响应
+  `data.recovery_codes`，明文仅此一次展示）；重新生成走
+  `POST /api/mfa/otp/recovery-codes/regenerate`（敏感操作，需密码 412 确认），
+  旧码整批作废；剩余数量查询 `GET /api/mfa/otp/recovery-codes`。
+- **存储**：沿用 UsedOtpCodeCache 的哈希口径但**落库**（`MfaRecoveryCode`，
+  sha256 摘要）——恢复码是「一次性直到用掉」的持久凭据，不是 90s 窗口防重放标记；
+  拖库不可还原，无效与已使用同文案（不暴露判定面）。
+- **消费**：作为注册表后端 `RecoveryCodeBackend`（`name="recovery"`）接入，
+  登录 MFA 与 412 敏感操作确认两条链路同口径可用；条件 UPDATE 原子认领，
+  并发重放只成功一次；失败统一计入 MFABlockUtils 防爆破。
+- **作废**：解绑 OTP（`disable`）与管理员重置（`reset-mfa`）一并清空恢复码——
+  它是当前 OTP 密钥的配套凭据。
+- **绑定前置（挑战渠道）**：部署侧存在可用挑战渠道（email/sms 后端启用且
+  `EMAIL_ENABLED`/`SMS_ENABLED` 开启）时，用户须至少配置一个（邮箱或手机号）
+  才能绑定 OTP；部署侧无任何渠道基础设施（纯 OTP 形态）时不拦截，
+  恢复码即唯一自救通道。Passkey 属持有型因素，不计入挑战渠道。
+
+## 七、内置敏感操作接入点
 
 以下系统内的高危操作已声明为敏感操作（未验证时统一 412，客户端自动弹验证窗）：
 
@@ -178,7 +204,7 @@ def reset_user_api_key(request, user_id): ...
 - 登录 MFA：用户已开启但无任何可用验证方式时（如管理员关闭全部方式）**降级放行**，
   避免登录死锁，同时记录 warning 日志。
 
-## 七、扩展新验证方式
+## 八、扩展新验证方式
 
 1. 在 `mfa/backends/` 新建后端继承 `BaseMFA`，实现 `check_code`（挑战型再实现 `send_challenge`）；
 2. 注册进 `mfa/backends/__init__.py` 的 `MFA_BACKEND_CLASSES`；
@@ -187,7 +213,7 @@ def reset_user_api_key(request, user_id): ...
 `global_enabled` 返回 `False`（如 sms 依赖 `SMS_ENABLED`）或 `is_active` 不满足
 （如 sms 要求用户已填手机号）的方式会自动从可选列表隐藏。
 
-## 八、注意事项
+## 九、注意事项
 
 - `/api/mfa/` 已加入 `PERMISSION_WHITE_URL`：登录用户即可访问（个人安全操作，不走菜单权限）；
   若新增管理类端点请勿复用该前缀白名单。

@@ -35,6 +35,8 @@ PERMISSION_WHITE_URL = {
     "^/api/mfa/otp/confirm$": ["POST"],
     "^/api/mfa/otp/disable$": ["POST"],
     "^/api/mfa/otp/open$": ["POST"],
+    "^/api/mfa/otp/recovery-codes$": ["GET"],  # 恢复码剩余数量
+    "^/api/mfa/otp/recovery-codes/regenerate$": ["POST"],
     "^/api/mfa/otp/start$": ["POST"],
     "^/api/mfa/otp/test$": ["POST"],
     "^/api/system/personal-access-tokens": ["*"],  # 个人访问令牌（PAT），个人凭证个人管，同 MFA 口径

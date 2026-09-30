@@ -39,14 +39,23 @@ def authed_client(api_client, normal_user):
 
 
 @pytest.fixture
-def otp_user(authed_client, normal_user):
+def email_ready(authed_client, normal_user, settings):
+    """绑定 OTP 的标准环境：挑战渠道基础设施开启 + 用户已配邮箱。"""
+    settings.EMAIL_ENABLED = True
+    normal_user.email = "zhangsan@example.com"
+    normal_user.save(update_fields=["email"])
+    return authed_client
+
+
+@pytest.fixture
+def otp_user(email_ready, normal_user):
     """已绑定 OTP 的登录用户，返回 (user, client, secret)。"""
-    resp = authed_client.post(OTP_START_URL)
+    resp = email_ready.post(OTP_START_URL)
     assert resp.data["code"] == 1000, resp.data
     secret = resp.data["data"]["secret"]
-    resp = authed_client.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
+    resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
     assert resp.data["code"] == 1000, resp.data
-    return normal_user, authed_client, secret
+    return normal_user, email_ready, secret
 
 
 class TestOTPBind:
@@ -55,15 +64,15 @@ class TestOTPBind:
         resp = client.get(OTP_URL)
         assert resp.data["data"]["enabled"] is True
 
-    def test_start_returns_otpauth_uri(self, authed_client):
-        resp = authed_client.post(OTP_START_URL)
+    def test_start_returns_otpauth_uri(self, email_ready):
+        resp = email_ready.post(OTP_START_URL)
         assert resp.data["code"] == 1000
         assert resp.data["data"]["uri"].startswith("otpauth://totp/")
         assert resp.data["data"]["secret"]
 
-    def test_confirm_wrong_code(self, authed_client):
-        authed_client.post(OTP_START_URL)
-        resp = authed_client.post(OTP_CONFIRM_URL, {"code": "000000"})
+    def test_confirm_wrong_code(self, email_ready):
+        email_ready.post(OTP_START_URL)
+        resp = email_ready.post(OTP_CONFIRM_URL, {"code": "000000"})
         assert resp.data["code"] == 1002
 
     def test_confirm_without_start(self, authed_client):
@@ -97,9 +106,25 @@ class TestBindingPolicyGate:
         normal_user.refresh_from_db()
         assert not normal_user.otp_secret_key
 
-    def test_unrestricted_account_still_binds(self, authed_client):
-        resp = authed_client.post(OTP_START_URL)
+    def test_unrestricted_account_still_binds(self, email_ready):
+        resp = email_ready.post(OTP_START_URL)
         assert resp.data["code"] == 1000
+
+    def test_start_rejected_without_backup_channel(self, authed_client, normal_user, settings):
+        """有挑战渠道基础设施而用户未配置任一渠道时，拒绝绑定 OTP。"""
+        settings.EMAIL_ENABLED = True
+        resp = authed_client.post(OTP_START_URL)
+        assert resp.data["code"] == 1001
+        assert "challenge channel" in resp.data["detail"] or "备用挑战渠道" in resp.data["detail"]
+        normal_user.refresh_from_db()
+        assert not normal_user.otp_secret_key
+
+    def test_start_allowed_when_no_channel_infra(self, authed_client, settings):
+        """部署侧无任何挑战渠道基础设施（EMAIL/SMS 均关）时不拦截：恢复码是唯一自救通道。"""
+        settings.EMAIL_ENABLED = False
+        settings.SMS_ENABLED = False
+        resp = authed_client.post(OTP_START_URL)
+        assert resp.data["code"] == 1000, resp.data
 
 
 class TestUserConfirm:
@@ -313,6 +338,7 @@ class TestBuiltinSensitiveOperations:
         user.refresh_from_db()
         assert user.mfa_enabled is False
         assert user.otp_secret_key == ""
+        assert user.mfa_recovery_codes.count() == 0  # 恢复码随重置一并作废
 
     def test_login_mfa_skipped_when_no_method_available(self, otp_user, api_client, settings, login_free):
         """已开启 MFA 但可用方式被管理员全部关闭时，降级放行避免登录死锁。"""
@@ -474,3 +500,150 @@ class TestLoginMFA:
         resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
         assert resp.data["data"]["access"]
         assert "mfa_required" not in resp.data["data"]
+
+
+RECOVERY_URL = "/api/mfa/otp/recovery-codes"
+RECOVERY_REGENERATE_URL = "/api/mfa/otp/recovery-codes/regenerate"
+
+
+class TestRecoveryCodes:
+    """OTP 恢复码：绑定生成 / 登录自救 / 一次性 / 重生成 / 解绑作废。"""
+
+    @pytest.fixture
+    def bound(self, email_ready, normal_user):
+        """完成绑定，返回 (user, client, secret, recovery_codes)。"""
+        resp = email_ready.post(OTP_START_URL)
+        assert resp.data["code"] == 1000, resp.data
+        secret = resp.data["data"]["secret"]
+        resp = email_ready.post(OTP_CONFIRM_URL, {"code": pyotp.TOTP(secret).now()})
+        assert resp.data["code"] == 1000, resp.data
+        return normal_user, email_ready, secret, resp.data["data"]["recovery_codes"]
+
+    def _mfa_token_and_methods(self, api_client, user):
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        data = resp.data["data"]
+        assert data["mfa_required"] is True, data
+        return data["mfa_token"], data["methods"]
+
+    def test_bind_returns_ten_codes_hashed_at_rest(self, bound):
+        from mfa.models import MfaRecoveryCode
+
+        user, client, _, codes = bound
+        assert len(codes) == 10 == len(set(codes))
+        assert all(len(code) == 11 and code[5] == "-" for code in codes)
+        assert MfaRecoveryCode.objects.filter(user=user, code_hash__in=codes).count() == 0
+        assert MfaRecoveryCode.objects.filter(user=user).count() == 10
+        resp = client.get(RECOVERY_URL)
+        assert resp.data["data"]["remaining"] == 10
+
+    def test_login_with_recovery_code_issues_jwt_once(self, bound, api_client, login_free):
+        user, client, _, codes = bound
+        mfa_token, methods = self._mfa_token_and_methods(api_client, user)
+        assert "recovery" in [m["name"] for m in methods]
+
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL, {"mfa_token": mfa_token, "method": "recovery", "code": codes[0]}, format="json"
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["access"]
+        assert resp.data["data"]["refresh"]
+
+        # 一次性：同码重放拒绝，剩余 9
+        mfa_token, _ = self._mfa_token_and_methods(api_client, user)
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL, {"mfa_token": mfa_token, "method": "recovery", "code": codes[0]}, format="json"
+        )
+        assert resp.status_code == 400
+        client.force_authenticate(user=user)  # api_client 与 authed_client 同源，恢复认证态
+        resp = client.get(RECOVERY_URL)
+        assert resp.data["data"]["remaining"] == 9
+
+    def test_recovery_code_entry_form_tolerant(self, bound, api_client, login_free):
+        user, _, _, codes = bound
+        mfa_token, _ = self._mfa_token_and_methods(api_client, user)
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL,
+            {"mfa_token": mfa_token, "method": "recovery", "code": codes[0].upper().replace("-", "")},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_recovery_brute_force_counts_block(self, bound, api_client, settings, login_free):
+        """恢复码爆破走统一 MFABlockUtils 防爆破：达到阈值后正确码也被拒。"""
+        user, client, _, codes = bound
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        mfa_token = resp.data["data"]["mfa_token"]
+        for _ in range(int(settings.SECURITY_LOGIN_LIMIT_COUNT)):
+            resp = api_client.post(
+                LOGIN_MFA_VERIFY_URL,
+                {"mfa_token": mfa_token, "method": "recovery", "code": "zzzzz-zzzzz"},
+                format="json",
+            )
+            assert resp.status_code == 400
+        # 锁定中：提交正确恢复码也直接拒绝，且不消费
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL, {"mfa_token": mfa_token, "method": "recovery", "code": codes[0]}, format="json"
+        )
+        assert resp.status_code == 400
+        client.force_authenticate(user=user)  # api_client 与 authed_client 同源，恢复认证态
+        assert client.get(RECOVERY_URL).data["data"]["remaining"] == 10
+
+    def test_confirm_methods_include_recovery(self, bound):
+        """恢复码同时服务 412 敏感操作确认（设备全丢的自救闭环）。"""
+        _, client, _, _ = bound
+        resp = client.get(CONFIRM_URL, {"confirm_type": "mfa"})
+        names = [m["name"] for m in resp.data["data"]["methods"]]
+        assert "recovery" in names and "otp" in names
+
+    def test_sensitive_confirm_with_recovery_code(self, bound):
+        user, client, _, codes = bound
+        resp = client.post(CONFIRM_URL, {"confirm_type": "mfa", "method": "recovery", "code": codes[0]})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.get(CONFIRM_URL, {"confirm_type": "mfa"})
+        assert resp.data["data"]["confirmed"] is True
+        assert client.get(RECOVERY_URL).data["data"]["remaining"] == 9
+
+    def test_regenerate_requires_password_confirm(self, bound):
+        _, client, _, _ = bound
+        resp = client.post(RECOVERY_REGENERATE_URL)
+        assert resp.status_code == 412
+        assert resp.data["type"] == "user_confirm_required"
+
+    def test_regenerate_rotates_batch(self, bound, api_client, login_free):
+        user, client, _, codes = bound
+        resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.post(RECOVERY_REGENERATE_URL)
+        assert resp.data["code"] == 1000, resp.data
+        new_codes = resp.data["data"]["recovery_codes"]
+        assert len(new_codes) == 10
+        assert not set(new_codes) & set(codes)
+        # 旧码整批作废：登录走旧码拒绝
+        api_client.force_authenticate(user=None)
+        resp = api_client.post(BASIC_LOGIN_URL, {"username": user.username, "password": "Test@123456"}, format="json")
+        mfa_token = resp.data["data"]["mfa_token"]
+        resp = api_client.post(
+            LOGIN_MFA_VERIFY_URL, {"mfa_token": mfa_token, "method": "recovery", "code": codes[1]}, format="json"
+        )
+        assert resp.status_code == 400
+        client.force_authenticate(user=user)  # api_client 与 authed_client 同源，恢复认证态
+        assert client.get(RECOVERY_URL).data["data"]["remaining"] == 10
+
+    def test_regenerate_without_bound_rejected(self, authed_client):
+        resp = authed_client.post(
+            CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"}
+        )
+        assert resp.data["code"] == 1000, resp.data
+        resp = authed_client.post(RECOVERY_REGENERATE_URL)
+        assert resp.data["code"] == 1001
+        assert "OTP is not bound" in resp.data["detail"] or "未绑定" in resp.data["detail"]
+
+    def test_disable_wipes_codes(self, bound):
+        _, client, _, _ = bound
+        resp = client.post(CONFIRM_URL, {"confirm_type": "password", "method": "password", "code": "Test@123456"})
+        assert resp.data["code"] == 1000, resp.data
+        resp = client.post(OTP_DISABLE_URL)
+        assert resp.data["code"] == 1000, resp.data
+        assert client.get(RECOVERY_URL).data["data"]["remaining"] == 0

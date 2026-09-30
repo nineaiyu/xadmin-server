@@ -29,8 +29,8 @@ from system.views.auth.login import login_success
 
 logger = get_logger(__name__)
 
-# 登录 MFA 允许的验证方式（密码方式在登录场景无意义）
-LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey"]
+# 登录 MFA 允许的验证方式（密码方式在登录场景无意义；recovery 为 OTP 恢复码自救通道）
+LOGIN_MFA_METHODS = ["otp", "sms", "email", "passkey", "recovery"]
 CHALLENGE_METHODS = ["sms", "email"]
 
 

@@ -14,6 +14,8 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from common.utils.request import get_request_ip
+from mfa import recovery
+from mfa.backends import MFA_BACKEND_CLASSES, get_enabled_backends
 from mfa.backends.otp import OtpBackend
 from mfa.cache import OtpBindCache, UserConfirmStateCache
 from mfa.confirm import UserConfirmation
@@ -42,6 +44,21 @@ def _binding_disallowed(user, backend_name):
     判定实现在 mfa.services.is_method_binding_allowed（契约层）。
     """
     return not is_method_binding_allowed(user, backend_name)
+
+
+def _missing_backup_channel(user) -> bool:
+    """绑定 OTP 要求至少一个备用挑战渠道（短信/邮件）。
+
+    只约束用户层：部署侧没有任何可用挑战渠道（后端未启用或 EMAIL_ENABLED /
+    SMS_ENABLED 关闭）时不拦截——纯 OTP 部署以恢复码为唯一自救通道，强制只会
+    让 MFA 无法开启；存在可用渠道而用户一个都没配置时拒绝，避免设备全丢后
+    除管理员 reset 外无任何入口。Passkey 属持有型因素而非挑战渠道，不计入。
+    """
+    challenge_backends = [cls for cls in MFA_BACKEND_CLASSES if cls.challenge_required]
+    if not any(cls.global_enabled() for cls in challenge_backends):
+        return False
+    user_channels = {b.name for b in get_enabled_backends(user) if b.challenge_required}
+    return not user_channels
 
 
 def _state_expire_at(state):
@@ -137,6 +154,10 @@ class UserOTPViewSet(GenericViewSet):
             return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if request.user.mfa_enabled:
             return ApiResponse(code=1001, detail=_("OTP is already bound"))
+        if _missing_backup_channel(request.user):
+            return ApiResponse(
+                code=1001, detail=_("Bind at least one backup challenge channel (email or SMS) before enabling OTP")
+            )
         bind_cache = OtpBindCache(request.user)
         secret = bind_cache.get_secret()
         if not secret:
@@ -147,12 +168,19 @@ class UserOTPViewSet(GenericViewSet):
     @extend_schema(request=OtpBindConfirmSerializer, responses=get_default_response_schema())
     @action(methods=["post"], detail=False, url_path="confirm", serializer_class=OtpBindConfirmSerializer)
     def confirm(self, request, *args, **kwargs):
-        """确认绑定：校验动态码后写入密钥，并自动开启登录 MFA"""
+        """确认绑定：校验动态码后写入密钥，并自动开启登录 MFA
+
+        绑定成功同时生成一批恢复码（``data.recovery_codes``，明文仅此一次展示）。
+        """
         user = request.user
         if _binding_disallowed(user, OtpBackend.name):
             return ApiResponse(code=1001, detail=_("MFA method is not allowed by account policy"))
         if user.mfa_enabled:
             return ApiResponse(code=1001, detail=_("OTP is already bound"))
+        if _missing_backup_channel(user):
+            return ApiResponse(
+                code=1001, detail=_("Bind at least one backup challenge channel (email or SMS) before enabling OTP")
+            )
         secret = OtpBindCache(user).get_secret()
         if not secret:
             return ApiResponse(code=1001, detail=_("Please start binding first"))
@@ -172,7 +200,8 @@ class UserOTPViewSet(GenericViewSet):
         user.mfa_level = get_user_model().MFALevelChoices.ENABLED
         user.save(update_fields=["otp_secret_key", "mfa_level"])
         OtpBindCache(user).clear()
-        return ApiResponse(detail=_("OTP binding successful"))
+        codes = recovery.generate_codes(user)
+        return ApiResponse(data={"recovery_codes": codes}, detail=_("OTP binding successful"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(
@@ -248,10 +277,38 @@ class UserOTPViewSet(GenericViewSet):
         permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
     )
     def disable(self, request, *args, **kwargs):
-        """解绑 OTP（敏感操作：需先通过二次验证，未验证时返回 412）"""
+        """解绑 OTP（敏感操作：需先通过二次验证，未验证时返回 412）
+
+        恢复码随解绑一并作废——它是当前 OTP 密钥的配套自救凭据，密钥不在即无意义。
+        """
         user = request.user
         user.otp_secret_key = ""
         user.mfa_level = get_user_model().MFALevelChoices.DISABLED
         user.save(update_fields=["otp_secret_key", "mfa_level"])
+        recovery.clear_codes(user)
         UserConfirmStateCache(user).clear()
         return ApiResponse(detail=_("OTP unbinding successful"))
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(methods=["get"], detail=False, url_path="recovery-codes")
+    def recovery_codes(self, request, *args, **kwargs):
+        """查询剩余恢复码数量（未用数；不回显任何码面）"""
+        return ApiResponse(data={"remaining": recovery.remaining_count(request.user)})
+
+    @extend_schema(responses=get_default_response_schema())
+    @action(
+        methods=["post"],
+        detail=False,
+        url_path="recovery-codes/regenerate",
+        permission_classes=[IsAuthenticated, UserConfirmation.require(ConfirmType.PASSWORD)],
+    )
+    def regenerate_recovery_codes(self, request, *args, **kwargs):
+        """重新生成恢复码（敏感操作：需先通过密码二次验证，未验证时返回 412）
+
+        旧码整批作废，新码明文仅本次响应内出现一次。
+        """
+        user = request.user
+        if not user.otp_secret_key:
+            return ApiResponse(code=1001, detail=_("OTP is not bound"))
+        codes = recovery.generate_codes(user)
+        return ApiResponse(data={"recovery_codes": codes}, detail=_("Recovery codes have been regenerated"))
