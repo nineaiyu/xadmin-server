@@ -31,6 +31,7 @@ def snapshot_payload(request) -> dict:
     try:
         data = request.data
     except Exception:
+        # request.data 解析失败（如非法 JSON）：按无可比较载荷处理（指纹降级为空）
         return {}
     if not isinstance(data, dict):
         return {}

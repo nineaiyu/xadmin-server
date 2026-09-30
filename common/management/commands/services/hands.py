@@ -103,6 +103,7 @@ def collect_static():
         management.call_command("collectstatic", "--no-input", "-c", verbosity=0, interactive=False)
         logger.info("Collect static files done")
     except Exception:
+        # 收集失败仅跳过（不阻断启动；静态缺失可在页面层/部署时发现）
         pass
 
 
@@ -133,6 +134,7 @@ def expire_caches():
     try:
         management.call_command("expire_caches", "config_*")
     except Exception:
+        # 缓存过期清理失败：不阻断启动（缓存本身有 TTL 兜底）
         pass
 
 

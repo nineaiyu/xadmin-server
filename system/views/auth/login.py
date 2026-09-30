@@ -261,6 +261,7 @@ class BasicLoginAPIView(TokenObtainPairView):
         try:
             serializer.is_valid(raise_exception=True)
         except Exception:
+            # 校验失败（含凭证错误）：统一按登录失败计数并返回通用文案（不回显差异，防账号枚举）
             return login_failed(request, username)
         user = serializer.user
         # 登录访问策略：密码校验通过后判定（避免匿名探测策略信息），命中写入登录日志

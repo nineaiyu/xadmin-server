@@ -161,6 +161,7 @@ class AiProfile(DbAuditModel, DbUuidModel):
         try:
             return signer.decrypt(self.api_key)
         except Exception:
+            # 解密失败（密钥轮换/密文损坏）：按未配置处理，不炸调用链
             return ""
 
     @api_key_plain.setter

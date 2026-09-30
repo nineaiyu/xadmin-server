@@ -19,6 +19,7 @@ def get_upload_input_type_suffix(value, default):
         ):
             return "_file"
     except Exception:
+        # 字段类型探测异常：按非文件字段处理（返回空标记）
         pass
     return ""
 

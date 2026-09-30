@@ -39,6 +39,7 @@ def get_request_user(request):
             raise ValueError("authentication failed")
         user, token = auth_result
     except Exception:
+        # 访问令牌不可用（过期/非法/未携带）：进入 refresh 兜底链路
         try:
             body = getattr(request, "request_data", {})
             refresh_token = body.get("refresh")
@@ -47,6 +48,7 @@ def get_request_user(request):
                 auth_class = import_string(settings.REST_FRAMEWORK.get("DEFAULT_AUTHENTICATION_CLASSES")[0])()
                 user = auth_class.get_user(token)
         except Exception:
+            # refresh 令牌同样不可用：按匿名用户处理（由视图权限决定 401）
             pass
     return user or AnonymousUser()
 
@@ -147,6 +149,7 @@ def get_request_data(request):
             if body:
                 data = json.loads(body)
         except Exception:
+            # 请求体非 JSON：按原始载荷处理（日志用途，不阻断请求）
             pass
         if not isinstance(data, dict):
             data = {"data": data}
@@ -234,6 +237,7 @@ def get_verbose_name(queryset=None, view=None, model=None):
         if model and not verbose_name:
             verbose_name = model._meta.verbose_name
     except Exception:
+        # 视图模型推断不可用：返回调用方传入的缺省值
         pass
     return model, verbose_name
 

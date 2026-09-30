@@ -42,13 +42,8 @@ def create_system_messages(app_config: AppConfig, **kwargs):
             info["cls"].post_insert_to_db(sub)
             logger.info(f"Create MsgSubscription: type={message_type}")
         except Exception:
-            pass
-
-
-# def invalid_notify_cache(pk):
-#     """清理消息缓存"""
-#     cache_response.invalid_cache(f'UserSiteMessageViewSet_unread_{pk}_*')
-#     cache_response.invalid_cache(f'UserSiteMessageViewSet_list_{pk}_*')
+            # 订阅补建失败不阻断迁移，但必须可见：该类型消息将没有订阅行
+            logger.warning(f"Create MsgSubscription failed: type={message_type}", exc_info=True)
 
 
 def invalid_notify_caches(instance, pk_set):
@@ -62,15 +57,12 @@ def invalid_notify_caches(instance, pk_set):
     if pks:
         if instance.publish:
             SiteMessageUtil.push_notice_messages(instance, set(pks))
-        # for pk in set(pks):
-        #     invalid_notify_cache(pk)
 
 
 @receiver(post_save, sender=MessageContent)
 def clean_notify_cache_handler_post_save(sender, instance, **kwargs):
     pk_set = None
     if instance.notice_type == MessageContent.NoticeChoices.NOTICE:
-        # invalid_notify_cache('*')
         if instance.publish:
             SiteMessageUtil.push_notice_messages(instance, UserInfo.objects.values_list("pk", flat=True))
     elif instance.notice_type == MessageContent.NoticeChoices.DEPT:
@@ -81,21 +73,11 @@ def clean_notify_cache_handler_post_save(sender, instance, **kwargs):
         pk_set = instance.notice_user.values_list("pk", flat=True)
     if pk_set:
         invalid_notify_caches(instance, pk_set)
-    logger.info(f"invalid cache {sender}")
+    logger.debug("notice fan-out handled: sender=%s content=%s", sender, instance.pk)
 
 
 @receiver(m2m_changed)
 def clean_m2m_notify_cache_handler(sender, instance, **kwargs):
     if kwargs.get("action") in ["post_add", "pre_remove"]:
-        # if issubclass(sender, MessageUserRead):
-        #     for pk in kwargs.get('pk_set', []):
-        #         invalid_notify_cache(pk)
-
         if isinstance(instance, MessageContent):
             invalid_notify_caches(instance, kwargs.get("pk_set", []))
-
-
-# @receiver([post_save, pre_delete])
-# def clean_notify_cache_handler(sender, instance, **kwargs):
-#     if issubclass(sender, MessageUserRead):
-#         invalid_notify_cache(instance.owner.pk)

@@ -115,4 +115,5 @@ def lookup_domain(domain):
     try:
         return socket.gethostbyname(domain), ""
     except Exception as e:
+        # 域名解析失败：返回可读原因（由调用方展示）
         return None, f"Cannot resolve {domain}: Unknown host, {e}"

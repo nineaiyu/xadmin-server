@@ -20,6 +20,7 @@ def format_return(data):
             data = data.decode(encoding="utf-8")
         return json.loads(data)
     except Exception:
+        # 非 JSON 缓存值：原样返回（兼容历史/外部写入）
         return data
 
 
@@ -27,6 +28,7 @@ def format_input(data):
     try:
         return json.dumps(data)
     except Exception:
+        # 不可 JSON 序列化的值：原样返回，由调用方按需处理
         return data
 
 

@@ -56,7 +56,7 @@ class LogoutAPIView(GenericAPIView):
             try:
                 token = RefreshToken(request.data.get("refresh"))
                 token.blacklist()  # 登出账户，并且将账户的access 和 refresh token 加入黑名单
-            except Exception:
+            except Exception:  # noqa: BLE001 refresh 缺失/已失效/已黑名单不阻断登出（本地登出仍完成）
                 pass
         logout(request)
         # 登出同时清除敏感操作二次确认状态，避免下个会话在有效期内绕过二次验证

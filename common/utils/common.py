@@ -65,6 +65,7 @@ def get_docker_mem_usage_if_limit():
         return ((usage_in_bytes - inactive_file) / limit_in_bytes) * 100
 
     except Exception:
+        # 磁盘用量读取失败：返回 None，调用方按「未知」处理（监控非关键路径）
         return None
 
 
@@ -84,6 +85,7 @@ def get_net_io_bytes():
         net = psutil.net_io_counters()
         return net.bytes_sent, net.bytes_recv
     except Exception:
+        # 网卡计数不可用：返回零值（监控采集降级，不阻断心跳）
         return 0, 0
 
 

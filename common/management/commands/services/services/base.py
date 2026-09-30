@@ -108,6 +108,7 @@ class BaseService:
             try:
                 self._process = psutil.Process(self.pid)
             except Exception:
+                # 进程句柄获取失败：保持 None（由调用方判 running 分支）
                 pass
         return self._process
 
@@ -169,6 +170,7 @@ class BaseService:
         try:
             self.process.wait(1)
         except Exception:
+            # wait 超时/进程已退出：忽略（后续轮询判定终态）
             pass
 
         for i in range(self.STOP_TIMEOUT):
@@ -194,6 +196,7 @@ class BaseService:
             try:
                 self.process.wait(1)  # 不wait，子进程可能无法回收
             except Exception:
+                # wait 异常（进程不存在等）：忽略，状态判定走下方 is_running
                 pass
 
         if self.is_running:

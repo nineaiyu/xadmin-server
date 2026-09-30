@@ -30,6 +30,7 @@ def get_ip_city_by_geoip(ip):
     try:
         init_ip_reader()
     except Exception:
+        # IP 库初始化失败：返回「未知」文案（归属信息为增强项，不阻断链路）
         return _("Unknown")
 
     try:

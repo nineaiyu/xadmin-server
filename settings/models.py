@@ -9,6 +9,9 @@ from django.utils.translation import gettext_lazy as _
 
 from common.base.utils import signer
 from common.core.models import DbAuditModel, DbUuidModel
+from common.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 class Setting(DbAuditModel, DbUuidModel):
@@ -50,11 +53,16 @@ class Setting(DbAuditModel, DbUuidModel):
 
     @classmethod
     def refresh_all_settings(cls):
-        try:
-            for setting in cls.objects.all():
+        """批量刷新设置项到运行时 settings：逐条容错。
+
+        单条设置损坏（密文认证失败 / 值不可序列化）只记日志、不中断其余设置，
+        也不向调用方抛出（启动与保存流程不因单条坏配置失败）。
+        """
+        for setting in cls.objects.all():
+            try:
                 setting.refresh_setting()
-        except Exception:
-            pass
+            except Exception:  # noqa: BLE001 单条损坏不中断批量刷新
+                logger.warning("refresh setting failed: %s", setting.name, exc_info=True)
 
     @classmethod
     def refresh_item(cls, data):

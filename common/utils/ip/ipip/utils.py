@@ -26,6 +26,7 @@ def get_ip_city_by_ipip(ip):
     try:
         init_ipip_db()
     except Exception:
+        # IP 库初始化失败：返回 None（保持「查不到」语义，调用方已判空）
         return None
     if ipip_db is None:  # 初始化失败时保持原有「查不到返回 None」语义
         return None

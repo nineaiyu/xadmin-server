@@ -154,6 +154,7 @@ class BlockGlobalIpUtilBase:
                 return parse_datetime(data)
             return "N/A"
         except Exception:
+            # 缓存不可用：返回 N/A（解除时间查询为展示用途，不阻断登录）
             return "N/A"
 
 

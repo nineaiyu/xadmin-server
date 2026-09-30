@@ -69,6 +69,7 @@ class ProcessedImageFieldFile(ImageFieldFile):
                     self.name = f"{name.split('.')[0]}_{i}.jpg"
                     super().delete(False)
             except Exception:
+                # 缩略图派生文件缺失/删除失败：忽略（主文件删除继续）
                 pass
         self.name = name
         super().delete(save)

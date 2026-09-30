@@ -85,7 +85,7 @@ class Config(dict):
                 v = json.loads(v)
             else:
                 v = tp(v)
-        except Exception:
+        except Exception:  # noqa: BLE001 类型转换失败保留原值（宽松读取，坏配置不阻断配置读取）
             pass
         return v
 

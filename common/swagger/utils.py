@@ -102,6 +102,7 @@ class OpenApiPrimaryKeyRelatedField(OpenApiSerializerFieldExtension):
                     if model_field:
                         return self._map_django_field_type(model_field)
         except Exception:
+            # 字段元数据取用异常：回退启发式判定（非致命）
             pass
 
         # 如果没有 queryset 或无法获取字段信息，使用启发式规则

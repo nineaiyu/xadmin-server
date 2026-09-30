@@ -101,6 +101,7 @@ def get_view_permissions(view_string, code_suffix=""):
                 try:
                     action_doc = action_doc.format(cls=view_doc)
                 except Exception:
+                    # docstring 含未知占位符：回退为视图摘要
                     action_doc = view_doc
             else:
                 action_doc = view_doc

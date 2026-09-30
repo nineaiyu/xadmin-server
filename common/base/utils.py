@@ -380,6 +380,7 @@ class AESCipherV2:
 
             return bool(getattr(settings, "SECURITY_AES_V1_DECRYPT_ENABLED", True))
         except Exception:
+            # 读不到配置时保持默认开启（兼容存量前端密文；显式关闭要求配置可达）
             return True
 
     @staticmethod

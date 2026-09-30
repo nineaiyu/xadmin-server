@@ -126,6 +126,7 @@ def recursion_urls(pre_namespace, pre_url, urlpatterns, url_ordered_dict):
                     view_set = import_string(item.lookup_str)
                     url_ordered_dict[name]["label"] = get_doc_first_line(view_set.__doc__)
                 except Exception:
+                    # 视图 docstring 解析失败：仅少一行文档说明，不影响路由收录
                     pass
 
         elif isinstance(item, URLResolver):  # 路由分发，递归操作

@@ -222,6 +222,7 @@ def build_operation_log_info(request, response, request_start_time):
             try:
                 response_data = json.loads(content)
             except Exception:
+                # 响应体非合法 JSON：按无可解析体处理（日志字段降级为空）
                 response_data = None
     if not isinstance(response_data, dict):
         response_data = {}
@@ -238,6 +239,7 @@ def build_operation_log_info(request, response, request_start_time):
             try:
                 action_doc = action_doc.format(cls=request_module)
             except Exception:
+                # docstring 含未知占位符：回退为模块名
                 action_doc = request_module
         else:
             action_doc = request_module

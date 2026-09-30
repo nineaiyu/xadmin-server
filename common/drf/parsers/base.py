@@ -140,6 +140,7 @@ class BaseFileParser(BaseParser):
             try:
                 value = json.loads(value)
             except Exception:
+                # 非 JSON 字符串：保留原值（数组/对象类字段的正常路径）
                 pass
         elif isinstance(field, serializers.CharField):
             if not isinstance(value, str):

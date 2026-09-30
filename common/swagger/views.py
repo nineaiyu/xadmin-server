@@ -78,6 +78,7 @@ class ApiLogin(GenericAPIView):
             serializer.is_valid(raise_exception=True)
             login(request, serializer.user)
         except Exception:
+            # 凭证错误与登录链路异常统一按失败处理（计数 + 限流），不回显差异避免账号枚举
             login_block.incr_failed_count()
             ip_block.set_block_if_need()
             return ApiResponse(code=1001, detail=_("Incorrect username/password"))
