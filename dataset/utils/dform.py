@@ -11,6 +11,9 @@ cascader 仅接受命中选项树叶子路径的值序列；
 select/radio/checkbox 的选项可以内联（options）或绑定数据字典（dict）——
 绑定字典时选项值集合在**提交校验时**从字典读取（带缓存），schema 侧只校验
 字典 code 格式且与内联 options 互斥（避免两处定义漂移）。
+formula（计算字段）只读：schema 声明公式表达式（`formula` 属性，语法与语义
+见 dataset/utils/dform_formula.py，前端镜像同口径），提交时由服务端按当前数据
+重算并覆盖（不接受客户端提交值），不可设为必填；
 草稿（DRAFT）走 `validate_draft_data` 轻校验：只做结构/体积收敛，
 必填与取值在「提交」时按完整规则统一校验。
 
@@ -29,6 +32,8 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from dataset.utils.dform_formula import evaluate_formula_fields, validate_formula_fields
+
 ALLOWED_TYPES = (
     "input",
     "textarea",
@@ -44,6 +49,7 @@ ALLOWED_TYPES = (
     "table",
     "user",
     "cascader",
+    "formula",
 )
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -69,6 +75,7 @@ FILTERABLE_TYPES = (
     "switch",
     "user",
     "cascader",
+    "formula",
 )
 # 明细子表：列类型限基础控件（禁 upload/daterange/table 嵌套），行列数封顶防超深 JSON
 TABLE_COLUMN_TYPES = ("input", "textarea", "number", "date", "select")
@@ -188,12 +195,18 @@ def validate_schema(schema: dict) -> list:
             raise ValidationError(_("Field {} of type {} does not accept options").format(key, ftype))
         if ftype == "user" and item.get("multiple") is not None and not isinstance(item.get("multiple"), bool):
             raise ValidationError(_("Field {} multiple must be boolean").format(key))
-        if ftype == "amount":
+        if ftype in ("amount", "formula"):
             precision = item.get("precision")
             if precision is not None and (
                 not isinstance(precision, int) or isinstance(precision, bool) or not 0 <= precision <= 6
             ):
                 raise ValidationError(_("Field {} precision must be 0-6").format(key))
+        if ftype == "formula":
+            expression = item.get("formula")
+            if not isinstance(expression, str) or not expression.strip():
+                raise ValidationError(_("Field {} requires a formula expression").format(key))
+            if item.get("required"):
+                raise ValidationError(_("Field {} is a computed field and cannot be required").format(key))
         if ftype == "table":
             columns = item.get("columns")
             if not isinstance(columns, list) or not columns:
@@ -233,6 +246,8 @@ def validate_schema(schema: dict) -> list:
             raise ValidationError(_("Field {} filterable must be boolean").format(key))
         if filterable and ftype not in FILTERABLE_TYPES:
             raise ValidationError(_("Field {} of type {} cannot be filterable").format(key, ftype))
+    # 公式字段的引用合法性与循环引用需在全部字段可见后统一校验
+    validate_formula_fields(fields)
     return fields
 
 
@@ -495,6 +510,11 @@ def validate_submission_data(schema: dict, data, user=None) -> dict:
         if control.get("hidden"):
             normalized[key] = None
             continue
+        if ftype == "formula":
+            # 计算字段：不接受客户端提交值，统一在循环后按依赖顺序求值覆盖
+            # （隐藏时保持 None，由求值阶段识别 hidden 集合）
+            normalized[key] = None
+            continue
         required = bool(item.get("required"))
         if control.get("required") is not None:
             required = bool(control["required"])
@@ -584,4 +604,7 @@ def validate_submission_data(schema: dict, data, user=None) -> dict:
             if len(value) > max_length:
                 raise ValidationError(_("Field {} exceeds the max length {}").format(label, max_length))
         normalized[key] = value
+    if any(item["type"] == "formula" for item in fields):
+        hidden_keys = {key for key, control in controls.items() if control.get("hidden")}
+        normalized.update(evaluate_formula_fields(fields, normalized, hidden_keys))
     return normalized

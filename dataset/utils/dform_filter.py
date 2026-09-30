@@ -114,7 +114,7 @@ def coerce_filter_value(item: dict, value):
         return None
     key = item["key"]
     ftype = item.get("type")
-    if ftype in ("number", "amount"):
+    if ftype in ("number", "amount", "formula"):
         coerced: Any = _coerce_number(key, value)
     elif ftype == "switch":
         coerced = _coerce_bool(key, value)
