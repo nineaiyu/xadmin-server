@@ -13,6 +13,7 @@ from rest_framework.routers import SimpleRouter
 from ai.views.assistant import AiAssistantSettingViewSet, AiAssistantViewSet
 from ai.views.knowledge import AiKnowledgeDocumentViewSet
 from ai.views.mcp import McpEndpointAPIView
+from ai.views.mcp_client import McpServerViewSet
 from ai.views.profiles import AiProfileViewSet
 from common.core.routers import NoDetailRouter
 
@@ -24,6 +25,7 @@ no_detail_router.register("assistant/config", AiAssistantSettingViewSet, basenam
 no_detail_router.register("assistant", AiAssistantViewSet, basename="ai-assistant")
 router.register("knowledge-documents", AiKnowledgeDocumentViewSet, basename="ai-knowledge-document")
 router.register("profiles", AiProfileViewSet, basename="ai-profile")
+router.register("mcp-servers", McpServerViewSet, basename="ai-mcp-server")
 
 urlpatterns = no_detail_router.urls + router.urls
 urlpatterns += [path("mcp", McpEndpointAPIView.as_view())]

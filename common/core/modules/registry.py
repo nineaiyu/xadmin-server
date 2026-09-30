@@ -79,7 +79,7 @@ MODULES: tuple[ModuleSpec, ...] = (
         "ai",
         "AI 助手与知识库",
         OPTIONAL,
-        menus=("AiAssistant", "AiAssistantConfig", "AiKnowledge"),
+        menus=("AiAssistant", "AiAssistantConfig", "AiKnowledge", "AiMcpServers"),
         routes=(r"^/api/ai/",),
         note="聊天室内的 AI 助手属于 chat 模块，不受本开关影响",
     ),
