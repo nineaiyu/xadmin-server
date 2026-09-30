@@ -8,6 +8,8 @@ list / create 口径——既有可使用文件中心的角色无需重新授权
 协议与安全策略见 :mod:`system.utils.upload_chunk`（与单请求上传同源）。
 """
 
+from typing import TYPE_CHECKING, Any
+
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
 from drf_spectacular.types import OpenApiTypes
@@ -46,7 +48,15 @@ def _parse_session_pk(raw):
 
 
 class ChunkUploadActionMixin:
-    """挂到 UploadFileViewSet 的分片上传动作组（url 前缀 chunk/*）。"""
+    """挂到 UploadFileViewSet 的分片上传动作组（url 前缀 chunk/*）。
+
+    宿主为 BaseModelSet 系视图集（运行期提供 ``get_serializer``）；
+    TYPE_CHECKING 块仅为 mypy 声明该契约面，不参与运行期。
+    """
+
+    if TYPE_CHECKING:
+
+        def get_serializer(self, *args: Any, **kwargs: Any) -> serializers.Serializer: ...
 
     @extend_schema(
         description="分片上传：创建或命中（断点续传）会话",
@@ -68,7 +78,7 @@ class ChunkUploadActionMixin:
                 fields={
                     "session": serializers.CharField(),
                     "chunk_size": serializers.IntegerField(),
-                    "received": build_array_type(build_basic_type(OpenApiTypes.NUMBER)),
+                    "received": build_array_type(build_basic_type(OpenApiTypes.NUMBER) or {}),
                     "created": serializers.BooleanField(),
                 },
             )

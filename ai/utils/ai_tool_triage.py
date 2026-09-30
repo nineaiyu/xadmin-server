@@ -30,6 +30,10 @@ TRIAGE_RESOURCES = {
     ),
     "system/account-risks": ("exempt", "账号安全巡检为安全运维面（AI 读侧另有统计口径）"),
     "system/api-applications": ("exempt", "开放平台应用凭据为集成运维面"),
+    "system/codegen": (
+        "exempt",
+        "代码生成器为开发者页面工具（模型清单/字段勾选/预览/下载为 GUI 向导链路，产物下载为文件动作），不进 AI 工具面",
+    ),
     "system/credentials": ("exempt", "凭据总览与轮换为高危运维动作，需人工确认"),
     "system/dept": ("exempt", "部门树维护在组织管理页面（权限与数据域强相关）"),
     "system/directory": ("exempt", "通讯录为只读人员名录页面链路（无写动作）"),
