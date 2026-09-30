@@ -83,70 +83,11 @@ MODULE_DISABLE = CONFIG.MODULE_DISABLE
 # DB_PREFIX='abc_'  : 所有表都添加 abc_
 DB_PREFIX = CONFIG.DB_PREFIX
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "system.apps.SystemConfig",  # 系统管理
-    "approval.apps.ApprovalConfig",  # 审批流（3.1 拆分批次2 自 system 迁出）
-    "ai.apps.AiConfig",  # AI 平台与知识库（3.1 拆分批次3 自 system 迁出）
-    "dataset.apps.DatasetConfig",  # 数据分析与动态表单（3.1 拆分批次4 自 system 迁出）
-    "settings.apps.SettingsConfig",  # 设置相关
-    "mfa.apps.MfaConfig",  # MFA / 敏感操作二次验证
-    "notifications.apps.NotificationsConfig",  # 消息通知相关
-    "captcha.apps.CaptchaConfig",  # 图片验证码
-    "message.apps.MessageConfig",  # websocket 消息
-    "rest_framework_simplejwt",
-    "rest_framework_simplejwt.token_blacklist",
-    "corsheaders",
-    "rest_framework",
-    "django_filters",
-    "django_celery_results",
-    "django_celery_beat",
-    "imagekit",
-    "drf_spectacular",
-    "drf_spectacular_sidecar",
-    *XADMIN_APPS,
-    "common.apps.CommonConfig",  # 这个放到最后, django ready
-]
+# 应用与中间件装配拆分至 apps.py（文件行数门禁），装配本体与注释见该模块
+from .apps import build_installed_apps, build_middleware  # noqa: E402
 
-# PostgreSQL 专有索引（GinIndex / pg_trgm）静态存在于模型 Meta，该 app 必须参与模型
-# 检查（postgres.E005），否则 `check --database` 失败会卡死服务启动（2026-09-18 部署事故根因）。
-# 无条件注册：非 PG 后端下 app 仅注册检查与 lookups、不产生任何 DDL（建索引迁移 0010 有
-# vendor 守卫）；若条件化，显式使用 mysql/sqlite3 的部署会踩同样的 E005。
-INSTALLED_APPS.append("django.contrib.postgres")
-
-if DEBUG or DEBUG_DEV:
-    INSTALLED_APPS.insert(0, "daphne")  # 支持websocket
-
-MIDDLEWARE = [
-    "server.middleware.StartMiddleware",
-    "server.middleware.RequestMiddleware",
-    # 功能模块裁剪：停用模块的请求直接 404（无停用模块时零开销）
-    "server.middleware.ModuleGateMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
-    # /admin/ 站点已启用且依赖 Session+CSRF，必须恢复该中间件；
-    # DRF API 视图自带 csrf_exempt，Bearer 接口不受影响
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "server.middleware.RefererCheckMiddleware",
-    "server.middleware.SQLCountMiddleware",
-    # CSP（S3）：CSPModeMiddleware 必须排在 csp 中间件之前——响应阶段自内向外执行，
-    # 它需要在 django-csp 生成策略头之后按系统配置改写/移除（disabled/report-only/enforce）
-    "common.core.middleware.CSPModeMiddleware",
-    "csp.middleware.CSPMiddleware",
-    "common.core.middleware.ApiLoggingMiddleware",
-    "server.middleware.EndMiddleware",
-]
+INSTALLED_APPS = build_installed_apps(XADMIN_APPS)
+MIDDLEWARE = build_middleware()
 
 # CSP 策略（S3 落地，独立于 Office 预览）：django-csp 生成，运行期模式由
 # CSPModeMiddleware + SysConfig.CSP_MODE 决定（默认 report-only 观察，再切 enforce）。
