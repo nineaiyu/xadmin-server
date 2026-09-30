@@ -26,14 +26,17 @@
 | 1 | 登录    | POST `/api/system/login/basic`                               | `01-login.js`    | 5 VU / 30s | 压测环境关闭登录三开关 + 放开 login 限流（见 §三） |
 | 2 | 菜单/路由 | GET `/api/system/routes`                                     | `02-routes.js`   | 20 VU / 1m | 普通登录态即可（白名单路由）                  |
 | 3 | 列表页   | GET `/api/system/user?page=1&size=20`                        | `03-list.js`     | 20 VU / 1m | 种子数据（`seed_users.py`）           |
-| 4 | 元数据   | GET `search-columns` / `search-fields` / `?with_meta=1`      | `04-metadata.js` | 20 VU / 1m | 同上；with_meta 组用于验证 T3.2 内联优化收益  |
+| 4a | 元数据·列 | GET `search-columns`（`VARIANT=columns`）                     | `04-metadata.js` | 20 VU / 1m | 同上；**元数据 P95 目标（<60ms）以本变体为准**  |
+| 4b | 元数据·字段 | GET `search-fields`（`VARIANT=fields`）                      | `04-metadata.js` | 20 VU / 1m | 同上；**元数据 P95 目标（<60ms）以本变体为准**  |
+| 4c | 页面首开 | GET `list?with_meta=1`（`VARIANT=with_meta`）                  | `04-metadata.js` | 20 VU / 1m | 同上；「列表+内联元数据」单请求路径，与 03-list 同域（不适用 <60ms 目标） |
 | 5 | 导出    | GET `/api/system/user/export-data?type=xlsx`                 | `05-export.js`   | 5 VU / 1m  | 种子数据 + `EXPORT_FILTER` 绑定导出范围   |
 | 6 | 导入    | POST `/api/system/user/import-data?action=update&task=false` | `06-import.js`   | 5 VU / 1m  | 种子数据（update 模式）或短时 create 模式    |
 
 脚本约定：
 
 - 所有参数经环境变量注入：`BASE_URL`（默认 `http://127.0.0.1:8896`）、`USERNAME`/`PASSWORD`、
-  `VUS`、`DURATION`、`LIST_PATH`、`LIST_SIZE`、`EXPORT_FILTER`、`IMPORT_MODE`、`IMPORT_ROWS`；
+  `VUS`、`DURATION`、`LIST_PATH`、`LIST_SIZE`、`EXPORT_FILTER`、`IMPORT_MODE`、`IMPORT_ROWS`、
+  `VARIANT`（04 元数据变体：`columns` / `fields` / `with_meta`，默认 `all` 混跑仅人工对比用）；
 - 结果 JSON 写入 `loadtest/results/`（已 gitignore），按脚本分文件，含按 group 拆分的
   avg/P50/P90/P95/P99/max 与错误率；
 - 阈值（`p(95)<2000`、失败率 <1%）是**异常波动护栏而非 SLO**，首轮基线回填后另行评审正式 SLO。
@@ -114,8 +117,9 @@ python loadtest/seed_users.py --count 1000
 # 2. 预热：短时低压，填充 ORM/权限缓存，避免首轮冷启动污染
 cd loadtest/k6 && VUS=2 DURATION=15s k6 run 03-list.js
 
-# 3. 正式压测：六接口顺序执行
+# 3. 正式压测：关键接口顺序执行（元数据 04 已拆三变体，run-all.sh 内自动依次跑）
 BASE_URL=http://127.0.0.1:8896 USERNAME=admin PASSWORD=<压测环境密码> ./run-all.sh
+# 单独复测某变体：VARIANT=columns k6 run 04-metadata.js（结果落 04-metadata-columns.json）
 
 # 4. 重复第 3 步共 3 轮（间隔 1 分钟），单指标取三轮中位数登记
 ```
@@ -155,6 +159,7 @@ python manage.py migrate          # 创建 silk 三张表
 | 字段  | 口径                                         |
 |-----|--------------------------------------------|
 | 数值  | 三轮中位数；P50/P95 为主，异常轮次（有 throttled/5xx）整轮作废 |
+| 元数据口径 | 04 按三变体独立成例（`04-metadata-columns` / `04-metadata-fields` / `04-metadata-with-meta`）：**<60ms 目标只对前两者（纯元数据端点）成立**；with_meta 是「列表 + 内联元数据」的页面首开路径，与 03-list 同域、不适用该目标。此前三变体混跑同队列，纯元数据的 P95 被 with_meta 的排队挤高（2026-09-30 修正口径） |
 | 环境  | 机器规格 / worker 数 / DB 引擎与版本 / 种子规模 / 压测日期   |
 | 档位  | 各脚本默认档位（§二表），改动过需注明                        |
 | 观测点 | k6 客户端口径（含网络与本机回环）；服务端 SQL 定位用 silk，不混入基线表 |
@@ -185,7 +190,7 @@ k6 跑完由脚本自动比对并给出退出码。
 
 | 文件 | 职责 |
 |------|------|
-| `loadtest/baseline.json` | 基线快照：六用例的 P95 / RPS 基线 + 环境元数据 + 容差（三轮中位数，来源 metrics.md §五） |
+| `loadtest/baseline.json` | 基线快照：各用例（元数据按 columns/fields/with_meta 三变体分列）的 P95 / RPS 基线 + 环境元数据 + 容差（三轮中位数，来源 metrics.md §五） |
 | `loadtest/check_baseline.py` | 比对脚本：读 `loadtest/k6/results/*.json` 与快照比对，输出表格/markdown/JSON，劣化非 0 退出 |
 | `loadtest/k6/run-all.sh` | `CHECK=1` 时跑完自动调比对（`CHECK_PYTHON` / `CHECK_FORMAT` / `CHECK_ARGS` 可覆盖） |
 | `.github/workflows/perf.yml` | 夜间 + 手动触发的 CI 压测档（PG/Redis service + gunicorn + k6 + 比对） |
@@ -260,7 +265,35 @@ cd ../..
 **快照刷新纪律**：改动 `common/core/`、元数据接口、索引、连接池、缓存策略后，
 在固定环境重跑三轮并 `--update` 刷新快照，同时在 metrics.md §三 回填记录中写明环境与方法。
 
-> **待办（P1-37）**：当前快照（2026-09-08）是「ASGI 每请求新建 DB 连接」修复**之前**的保守口径
-> （修复后实测 routes P95 53.7→32.5ms、失败率 20.33%→0%），门禁灵敏度因此打折。
-> 工具链已就绪（三轮中位数流程 + `--update`），**待固定环境（容器栈 + 专用 PG/Redis + 1000 种子用户）
-> 可用时执行一次复测并收紧快照**；复测前不放宽 `p95_ratio`（1.2）——收紧需用真实数据，不用估计值。
+> **P1-37 复测已完成（2026-09-30）**：固定环境（容器栈 + 专用 PG/Redis + 1000 种子用户）
+> 三轮中位数已 `--update` 收紧快照（routes 682→1185 rps / P95 61.8→28.1ms、login P95 174→66ms、
+> metadata 150.9ms、03-list P95 198.9ms 如实登记），后续劣化以该快照为参照。
+> 03-list 的 P95 与元数据目标缺口的成因归因见 §九。
+
+## 九、读路径优化批（2026-09-30）与 03-list / 元数据口径归因
+
+**归因结论（先量测后改动）**
+
+- 列表与元数据请求的服务时间以「数据库往返 + 少量 Python」为主：03-list 单请求 8 次 DB 往返
+  （分页 count + 页查询 + 4 条 M2M 预取 + BEGIN/COMMIT）与在线态、字段权限等少量 Redis 往返；
+  20 VU 下的 P95 是**排队放大**（P95 ≈（VUs / 并发槽）× 服务时间），不是单点代码退化；
+- 元数据目标（<60ms）此前用「三变体混跑」的 P95 判定：`with_meta`（=列表+内联，成本高一个量级）
+  在同一队列里把纯元数据（columns/fields，单 VU 4.7/5.6ms）的 P95 挤到 90-120ms。**口径已修正**：
+  三变体独立成例（§二 4a/4b/4c），目标只对 4a/4b 成立。
+
+**本批落地的三项优化（均带守护测试）**
+
+| 优化 | 机制 | 入口 | 实测 |
+|------|------|------|------|
+| 纯读请求免 `ATOMIC_REQUESTS` | GET/HEAD 且 action ∈ 读动作白名单（list/retrieve/search-*/choices/suggestions）的请求不套事务，省 BEGIN/COMMIT 两次往返；自定义 GET action（导出等有副作用）与写请求语义不变；`ATOMIC_REQUESTS_SKIP_READ_ACTIONS=false` 可回退 | `common/core/atomic_read.py` + `server/{asgi,wsgi}.py` | 03-list 单 VU p50 18.3→16.6ms；PG 事务计数验证豁免生效（20 请求事务数 ~1→~2.4/请求） |
+| 在线 channel 明细 5s 快照 | 用户列表「在线数」/登录日志「在线态」改读与在线页同源的 5s 快照（全量一次构建、按请求 pk 取子集）；强制下线等动作走 `use_snapshot=False` 实时口径 | `message/utils.py`（`ONLINE_LAYERS_CACHE_KEY`） | 列表请求（30 在线用户）进程内 A/B 16.68→14.27ms（−14.5%），在线数正确 |
+| 元数据载荷缓存单飞 | 缓存窗口到期瞬间的并发未命中只让一个请求回源重建（其余在锁上排队、拿到锁后二次检查复用首次结果）；等锁超时（`LockError`）降级为直接重建；`builder()` 返回 None 视为构建失败不回写缓存 | `common/core/modelset/metadata_cache.py::cached_payload`（`SearchFieldsAction` / `SearchColumnsAction` 接入） | 归因依据：fields 变体 p50 18.6ms 与 P95 106.7ms 的巨大落差 + 重尾集中于 5 分钟窗口切换点；修复后同一窗口的重复重建收敛为 1 次（守护测试断言 builder 调用数），k6 复测待固定环境窗口 |
+
+合计量测（1 VU 服务时间口径）：**20.7 → 16.6ms（−19.8%）**；20 VU 的 P95 在本机噪声下无显著差异
+（排队/CPU 竞争主导），不据此宣称收益。剩余成本结构：6 次 DB 往返（本机 OrbStack 链路每次约 1.2ms；
+生产同网络低一个量级）+ 框架 Python 开销（序列化器构建、权限解析等），无单点热点。
+
+**04-metadata-fields 重尾（P95 106.7ms）归因与修复**：三变体独立成例后 fields 仍超 <60ms 目标——
+p50 18.6ms（单请求本身极快）与 P95 逾 100ms 的落差，指向**缓存窗口到期瞬间的并发击穿**
+（20 VU 同时未命中 → 各自完整重建，重建耗时集中叠加在少数请求上）。修复=上表第三项单飞锁；
+复测需在固定环境重跑 `VARIANT=fields` 三轮中位数确认 P95 收敛（本机噪声下不复测宣称达标）。

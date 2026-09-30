@@ -269,3 +269,28 @@
 | 后端 | 全量 pytest **4524 collected / exit 0**（本批新增 28 例）+ ruff check/format / mypy（691 文件）/ 行数（0 超标）/ 跨 app / 缓存键 / `makemigrations --check` / 文档四件套全绿 |
 | 前端 | typecheck / eslint（--max-warnings 0）/ prettier / `check:i18n`（zh 3308 = en 3308）/ vitest **688**（+8：筛选纯函数 6 + 403 清快照 2）全绿；e2e：`dform.e2e.ts` 增设计器「可筛选」开关、`dform-data.e2e.ts` 增筛选命中/清空用例 |
 | 坑（已登记） | django-filter 元类只从「自身带 `declared_filters` 的基类」收集声明过滤器——普通 mixin 里声明的过滤器被静默丢弃（筛选参数被忽略、全量返回）；SQLite 不支持 JSONField `contains` 查询，物化筛选按后端分层 |
+
+### 2026-09-30 读路径优化批（纯读免事务 + 在线态快照 + 元数据口径修正）
+
+| 项 | 结果 |
+|------|------|
+| 纯读请求免 `ATOMIC_REQUESTS` | `common/core/atomic_read.py`：GET/HEAD 且 action ∈ {list, retrieve, search_fields, search_columns, choices, suggestions} 不套事务（省 BEGIN/COMMIT 两次 DB 往返）；自定义 GET action（导出等带写副作用）与全部写请求保持「整请求一个事务」；config.yml `ATOMIC_REQUESTS_SKIP_READ_ACTIONS=false` 可回退。实测 03-list 单 VU p50 **18.3→16.6ms**；PG 事务计数验证豁免生效（20 请求事务提交数 ~1/请求 → ~2.4/请求）。**实现约束**：ASGI 下 `make_view_atomic` 在事件循环线程执行、同步中间件在线程敏感执行器执行 → 用 contextvar（非 thread-local）绑定当前请求 |
+| 在线态 5s 快照 | `message/utils.py::ONLINE_LAYERS_CACHE_KEY`（与在线列表页/聊天在线态同源同 TTL）：用户列表「在线数」、登录日志「在线态」读快照；强制下线/登出走 `use_snapshot=False` 实时口径（不吃 5s 延迟）。30 在线用户下列表请求进程内 A/B **16.68→14.27ms（−14.5%）** |
+| 合计（1 VU 服务时间口径） | **20.7 → 16.6ms（−19.8%）**；**未达预估 −30%**——剩余成本以 6 次 DB 往返为主（本机 OrbStack 链路每次约 1.2ms，属环境放大；生产同网络低一个量级）。20 VU 的 P95 本机噪声下无显著差异（排队/CPU 竞争主导），不据此宣称收益 |
+| k6 复测（三轮中位数，20 VU/1m） | 03-list rps 224.39→**255.59** / p95 198.94→**196.9ms**；`04-metadata-columns` p95 **30.91ms → 达成 <60ms 目标** / rps 1047；`04-metadata-fields` p95 **106.71ms → 未达 <60ms**（**已归因**：p50 18.6ms 与 P95 逾 100ms 的落差 + 重尾集中于 5 分钟窗口切换点 ⇒ 缓存窗口到期瞬间的并发击穿；修复=载荷缓存单飞锁，见下「第二波」记录，复测待固定环境窗口）；`04-metadata-with-meta`（页面首开）p95 220.85ms / rps 232（列表+内联，与 03-list 同域，不适用该目标） |
+| 元数据口径修正（②） | `04-metadata.js` 增 `VARIANT=columns\|fields\|with_meta` 各落独立结果文件、`run-all.sh` 三变体独立跑批；`baseline.json` 以三变体独立成例（移除混跑 aggregate 例）；**<60ms 目标只对纯元数据端点（columns/fields）成立**——混跑时 with_meta 在同一队列把纯元数据的 P95 挤高，口径失真（修正记录见 `docs/ops/performance-baseline.md` §二/§六/§九） |
+| 守护测试 | 新增 `tests/unit/common/test_atomic_read.py`（动作矩阵 11 例 + handler 混入行为 + contextvar 复位 + ASGI/WSGI 入口混入断言）；`test_online_stats.py` 增快照用例（命中不二次访问 layer / 过期重建 / 反向索引为空降级 / 实时口径不写快照）并适配原实时口径用例 |
+
+### 2026-09-30 第二波（公式字段 / MCP client / ws-frame 生成 / metadata 单飞 / 依赖准备）
+
+| 项 | 结果 |
+|------|------|
+| dform 公式计算字段 | 后端 `dataset/utils/dform_formula.py`：显式 tokenizer + 递归下降（**无 eval**）、引用白名单（标量 `{key}` / 表格列 `{table.column}` 仅限聚合语境）、函数 SUM/AVG/MIN/MAX/ROUND/ABS、None 传播、结果统一 round 6 位（half up 与 JS 一致）、SUM/AVG 按行序累加（与前端 bit 级同结果）、嵌套公式按依赖序求值、自引用/循环引用 schema 校验期拒绝；前端镜像 `src/views/form/utils/formula.ts` + `formulaEval.ts`（同口径向量测试）；贯通设计器属性弹窗（公式字段类型 + 表达式编辑 + 环检测拦截保存）/填报联动/详情展示/数据页格式化 |
+| MCP client 侧 | `ai/models/mcp.py`（McpServer：名称/URL/鉴权头/超时/工具白名单快照）+ `ai/utils/mcp_client.py`（Streamable HTTP：initialize → notifications/initialized → tools/list → tools/call，JSON 与 SSE 双承载、`Mcp-Session-Id` 回带、SSE 按 bytes utf-8 解码）+ `ai/views/mcp_client.py`（CRUD + sync + call）；安全口径与出站 Webhook 同源（`common/utils/outbound.py`：https 强制、http 仅 loopback 或白名单、`pinned_request` 固定解析消除 DNS rebinding、响应体上限、白名单外的工具调用 fail-closed）+ 调用审计；7 权限点/菜单（AiMcpServers）+ 前端管理页（列表/档案表单/工具抽屉）；AI 模块裁剪面同步纳入该菜单 |
+| ws-frame schema 生成化 | 真源 `message/ws_schema.py`（action 枚举由 `MessageAction` 生成、payload properties 由 `protocol.py` 的 TypedDict 经 `typing.get_type_hints` 导出，required/additionalProperties/描述在真源声明）+ `scripts/gen_ws_frame_schema.py`（生成 / `--check`，纯 Python 无 Django 依赖）+ `docs/schema/ws-frame.schema.json` 由手工双写转生成物；守护 4 例（落盘==渲染 / properties 键集合与 TypedDict 双向对账 / required ⊆ properties / 枚举一致）；client 镜像与 `src/api/types/ws-frame.d.ts` 同步 |
+| metadata 载荷缓存单飞 | `common/core/modelset/metadata_cache.py::cached_payload`（窗口到期并发未命中单飞重建、锁内二次检查复用赢家、`LockError` 降级直建、`builder()` 返回 None 失败不入缓存），`search_fields` / `search_columns` 双端点接入（顺带修正 search_fields 的「失败也缓存」口径）；守护 5 例（赢家复用 / 未命中构建一次 / 锁超时降级 / None 不缓存 / bypass）；重尾归因与复测口径见 `docs/ops/performance-baseline.md` §九 |
+| 依赖准备 | `package.json` typecheck 拆 `typecheck:tsc`（tsc --noEmit）与 `typecheck:vue`（vue-tsc）两个子命令并组合（TS 7 切换时只替换前者）；renovate 新增 vue-tsc 规则（`allowedVersions: "<4"` + 主版本不自动合并）；Node 26 实查仍未转 LTS（v26.10.0 `lts:false`，窗口未到，登记待办） |
+| 后端验证 | 全量 `pytest` **4631 passed / 2 skipped / exit 0** + ruff check/format / mypy / 行数 / 跨 app / 缓存键 / `makemigrations --check` / 文档四件套全绿；本波新增：公式 28 例、MCP 单测 13 + 集成 11、ws-frame 4、单飞 5、读路径 9 与在线快照用例等 |
+| 前端验证 | typecheck（tsc + vue-tsc）/ eslint / prettier / stylelint / `check:i18n` / 契约三件套 / `as unknown as` 基线 / 行数 / vitest **717 passed（97 文件）** / build + 包体分账全绿 |
+| e2e | `dform-formula.e2e.ts` + `mcp-client.e2e.ts` 双浏览器 **4 passed**；并行全量两轮暴露的 3 项失败均定位为**测试等待条件缺陷**（等待条件被历史/残留信号提前满足；DB 取证证明产品行为正确）并修复：`dform-linkage` 回滚（专属文案等待）4 passed、`ai-action` 禁用用户与结果表（`expect.poll` 轮询结果）14 passed；`knowledge-vector` webkit 为既有负载瞬态（隔离复跑 2 passed）；经验回填 `e2e/README.md` |
+| 坑（已登记） | ① 共享会话/共享库场景下「存在性等待」（`getByText("操作成功")`、`.el-message` first()）会被历史消息或残留提示提前满足 → 同步点必须以「结果可达」为判据（`expect.poll` 轮询或专属文案过滤）；② locale 断言不能写死译文（本地有 .mo 显中文、CI 无 .mo 显英文）→ 用 gettext 同源取值；③ `.last()` 定位在连跑历史数据下会命中旧元素 → 以「含本 run 唯一文本」过滤后重定位 |
