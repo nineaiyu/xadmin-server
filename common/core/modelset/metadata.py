@@ -24,6 +24,7 @@ from rest_framework.utils import encoders
 from common.base.utils import get_choices_dict
 from common.core.fields import get_search_choices_max_count
 from common.core.modelset.input_types import get_format_intput_type
+from common.core.modelset.metadata_cache import cached_payload
 from common.core.modelset.suggest import expose_suggest_url
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
@@ -158,23 +159,27 @@ class SearchFieldsAction:
         """获取{cls}的查询字段"""
         cache_key = metadata_cache_key(self, "search_fields", request)
         cache_bypass = metadata_cache_bypass(request)
-        if not cache_bypass:
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return ApiResponse(data=cached)
-        results = []
+        results = cached_payload(cache_key, METADATA_CACHE_TIMEOUT, self._build_search_fields, bypass=cache_bypass)
+        if results is None:
+            # 整体无法构建（filterset 配置异常等）：返回失败码，
+            # 而不是 HTTP 200 + code=1000 的"成功但残缺"元数据让前端静默降级
+            return ApiResponse(code=500, detail=_("Failed to get search fields"))
+        return ApiResponse(data=results)
+
+    def _build_search_fields(self):
+        """构建查询字段元数据；返回 None 表示构建失败（调用方转失败码，且失败不入缓存）。"""
         if getattr(self, "filterset_class", None) is None:
             # 非模型视图集（内存 queryset / 未声明 filterset，如 IP 拦截名单）：
-            # 「没有可筛选字段」是正常语义，返回空元数据；真正的构建异常仍走下面失败码
-            return ApiResponse(data=[])
+            # 「没有可筛选字段」是正常语义，返回空元数据
+            return []
         try:
             filterset_class = self.filterset_class.get_filters()
             filter_fields = self.filterset_class.get_fields().keys()
         except Exception as e:
-            # 整体无法构建（filterset 配置异常等）：返回失败码，
-            # 而不是 HTTP 200 + code=1000 的"成功但残缺"元数据让前端静默降级
+            # 整体无法构建（filterset 配置异常等）：由调用方转失败码
             logger.error(f"get search-field failed {e}")
-            return ApiResponse(code=500, detail=_("Failed to get search fields"))
+            return None
+        results = []
         for field_name, value in filterset_class.items():
             if field_name not in filter_fields:
                 continue
@@ -249,9 +254,7 @@ class SearchFieldsAction:
         except Exception as e:
             # ordering 段失败不影响已收集的字段元数据
             logger.error(f"get search-field ordering failed {e}")
-        if not cache_bypass:
-            cache.set(cache_key, results, METADATA_CACHE_TIMEOUT)
-        return ApiResponse(data=results)
+        return results
 
 
 class SearchColumnsAction:
@@ -304,12 +307,17 @@ class SearchColumnsAction:
         """获取{cls}的展示字段"""
         cache_key = metadata_cache_key(self, "search_columns", request)
         cache_bypass = metadata_cache_bypass(request)
-        if not cache_bypass:
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return ApiResponse(data=cached)
-        results = []
+        results = cached_payload(
+            cache_key,
+            METADATA_CACHE_TIMEOUT,
+            lambda: self._build_search_columns(request),
+            bypass=cache_bypass,
+        )
+        return ApiResponse(data=results)
 
+    def _build_search_columns(self, request):
+        """构建展示字段元数据（request 供联想地址 / 排序声明解析）。"""
+        results = []
         # def check_upload_tp(value, tp):
         #     if hasattr(value, 'child_relation'):
         #         value = value.child_relation
@@ -432,6 +440,4 @@ class SearchColumnsAction:
                         info["lookups"] = lookups
                         break
             results.append(info)
-        if not cache_bypass:
-            cache.set(cache_key, results, METADATA_CACHE_TIMEOUT)
-        return ApiResponse(data=results)
+        return results

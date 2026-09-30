@@ -205,3 +205,97 @@ def test_tag_creation_invalidates_embedded_options(superuser):
     assert "回归标签e2e" not in _tag_options()
     Tag.objects.create(name="回归标签e2e")
     assert "回归标签e2e" in _tag_options()
+
+
+class _FakeLock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _RecordingCache:
+    """可编排的缓存替身：按序返回 get 结果、记录 set 与锁获取。"""
+
+    def __init__(self, gets=None, lock_error=None):
+        self._gets = list(gets or [])
+        self.get_calls = 0
+        self.set_calls = []
+        self.locked = 0
+        self._lock_error = lock_error
+
+    def get(self, key):
+        self.get_calls += 1
+        if self._gets:
+            return self._gets.pop(0)
+        return None
+
+    def set(self, key, value, timeout):
+        self.set_calls.append((key, value, timeout))
+
+    def lock(self, *args, **kwargs):
+        if self._lock_error:
+            raise self._lock_error
+        self.locked += 1
+        return _FakeLock()
+
+
+class TestSingleFlight:
+    """单飞重建（与 MagicCacheResponse 同范式）：冷缓存击穿只回源一次。"""
+
+    def test_lock_second_check_reuses_winner(self, monkeypatch):
+        """进入锁前未命中、锁内命中（并发对手已完成重建）时不再重建、不回写。"""
+        from common.core.modelset import metadata_cache
+
+        fake = _RecordingCache(gets=[None, ["cached"]])
+        monkeypatch.setattr(metadata_cache, "cache", fake)
+        built = []
+
+        def builder():
+            built.append(1)
+            return ["built"]
+
+        result = metadata_cache.cached_payload("k", 60, builder)
+        assert result == ["cached"]
+        assert built == []
+        assert fake.locked == 1
+        assert fake.set_calls == []
+
+    def test_miss_builds_and_writes_once(self, monkeypatch):
+        from common.core.modelset import metadata_cache
+
+        fake = _RecordingCache()
+        monkeypatch.setattr(metadata_cache, "cache", fake)
+        result = metadata_cache.cached_payload("k", 60, lambda: ["built"])
+        assert result == ["built"]
+        assert fake.set_calls == [("k", ["built"], 60)]
+
+    def test_lock_timeout_falls_back_to_direct_build(self, monkeypatch):
+        """等锁超时（生产 redis LockError）：降级直接重建，不把争用升级为错误。"""
+        from redis.exceptions import LockError
+
+        from common.core.modelset import metadata_cache
+
+        fake = _RecordingCache(lock_error=LockError("timeout"))
+        monkeypatch.setattr(metadata_cache, "cache", fake)
+        assert metadata_cache.cached_payload("k", 60, lambda: ["direct"]) == ["direct"]
+        assert fake.set_calls == []
+
+    def test_none_build_result_not_cached(self, monkeypatch):
+        """构建失败（None）不写缓存——避免把失败态缓存成「成功但残缺」。"""
+        from common.core.modelset import metadata_cache
+
+        fake = _RecordingCache()
+        monkeypatch.setattr(metadata_cache, "cache", fake)
+        assert metadata_cache.cached_payload("k", 60, lambda: None) is None
+        assert fake.set_calls == []
+
+    def test_bypass_skips_cache(self, monkeypatch):
+        from common.core.modelset import metadata_cache
+
+        fake = _RecordingCache(gets=[["stale"]])
+        monkeypatch.setattr(metadata_cache, "cache", fake)
+        assert metadata_cache.cached_payload("k", 60, lambda: ["fresh"], bypass=True) == ["fresh"]
+        assert fake.get_calls == 0
+        assert fake.set_calls == []
