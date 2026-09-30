@@ -4,7 +4,8 @@
 
 from rest_framework.routers import SimpleRouter
 
-from message.views import ChatAiViewSet, ChatContactViewSet, ChatMessageViewSet, ChatRoomViewSet
+from message.views import ChatContactViewSet, ChatMessageViewSet, ChatRoomViewSet
+from message.views_ai import ChatAiViewSet
 
 app_name = "chat"
 

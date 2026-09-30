@@ -26,126 +26,44 @@ formula（计算字段）只读：schema 声明公式表达式（`formula` 属�
 """
 
 import json
-import re
 from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from dataset.utils.dform_constants import (  # noqa: F401 再导出：常量事实源见该模块
+    ALLOWED_TYPES,
+    DATE_RE,
+    DICT_CODE_RE,
+    FILTERABLE_TYPES,
+    KEY_RE,
+    LINKAGE_EFFECTS,
+    LINKAGE_OPS,
+    MAX_CASCADER_DEPTH,
+    MAX_CASCADER_NODES,
+    MAX_DRAFT_BYTES,
+    MAX_FIELDS,
+    MAX_LINKAGES,
+    MAX_OPTIONS,
+    MAX_TABLE_COLUMNS,
+    MAX_TABLE_ROWS,
+    MAX_TEXT_LENGTH,
+    MAX_UPLOAD_FILES,
+    MAX_USER_PICKS,
+    OPTIONED_TYPES,
+    TABLE_COLUMN_TYPES,
+    TEXTUAL_TYPES,
+    VALUED_LINKAGE_OPS,
+)
+from dataset.utils.dform_fields import (  # noqa: F401 再导出：字段值工具调用面保持不变
+    _cascader_path_valid,
+    _validate_cascader_options,
+    _validate_user_pk,
+    assert_upload_ownership,
+    field_option_values,
+    normalize_table_row,
+)
 from dataset.utils.dform_formula import evaluate_formula_fields, validate_formula_fields
-
-ALLOWED_TYPES = (
-    "input",
-    "textarea",
-    "number",
-    "amount",
-    "select",
-    "radio",
-    "checkbox",
-    "date",
-    "switch",
-    "upload",
-    "daterange",
-    "table",
-    "user",
-    "cascader",
-    "formula",
-)
-KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
-DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-# 数据字典类型 code（与 DataDict.code 口径一致：小写字母开头，字母/数字/下划线）
-DICT_CODE_RE = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
-MAX_FIELDS = 50
-MAX_OPTIONS = 50
-MAX_TEXT_LENGTH = 2000
-# 草稿体积上限（字节）：草稿允许缺必填，但仍是用户可控 JSON，收敛写入体积
-MAX_DRAFT_BYTES = 64 * 1024
-TEXTUAL_TYPES = ("input", "textarea", "select", "radio", "date")
-OPTIONED_TYPES = ("select", "radio", "checkbox")
-# 可勾选「可筛选」的字段类型（提交时物化到筛选列；upload/table/daterange 不是等值筛选面）
-FILTERABLE_TYPES = (
-    "input",
-    "textarea",
-    "number",
-    "amount",
-    "select",
-    "radio",
-    "checkbox",
-    "date",
-    "switch",
-    "user",
-    "cascader",
-    "formula",
-)
-# 明细子表：列类型限基础控件（禁 upload/daterange/table 嵌套），行列数封顶防超深 JSON
-TABLE_COLUMN_TYPES = ("input", "textarea", "number", "date", "select")
-MAX_TABLE_COLUMNS = 12
-MAX_TABLE_ROWS = 100
-MAX_UPLOAD_FILES = 20
-# 级联选项树：节点总数与层级封顶（防超深/超大 JSON）
-MAX_CASCADER_NODES = 200
-MAX_CASCADER_DEPTH = 3
-# 选人控件多选上限
-MAX_USER_PICKS = 20
-# 联动规则：操作符与效果白名单 + 规则条数上限
-LINKAGE_OPS = ("eq", "ne", "in", "notin", "empty", "notempty")
-LINKAGE_EFFECTS = ("hide", "show", "require", "optional")
-MAX_LINKAGES = 50
-# 值型操作符（必须提供 value；empty/notempty 不看 value）
-VALUED_LINKAGE_OPS = ("eq", "ne", "in", "notin")
-
-
-def _validate_cascader_options(key: str, options):
-    """级联选项树校验：{value,label[,children]} 递归 ≤3 层、节点总数封顶。"""
-    if not isinstance(options, list) or not options:
-        raise ValidationError(_("Field {} requires options").format(key))
-    counter = {"total": 0}
-
-    def walk(nodes, depth):
-        if depth > MAX_CASCADER_DEPTH:
-            raise ValidationError(_("Field {} cascader options exceed {} levels").format(key, MAX_CASCADER_DEPTH))
-        for node in nodes:
-            if not isinstance(node, dict):
-                raise ValidationError(_("Field {} has an invalid cascader option").format(key))
-            value = node.get("value")
-            # 值允许字符串或整数（布尔是 int 子类，显式排除）
-            if isinstance(value, bool) or not isinstance(value, (str, int)) or str(value).strip() == "":
-                raise ValidationError(_("Field {} cascader option requires a value").format(key))
-            if not str(node.get("label") or "").strip():
-                raise ValidationError(_("Field {} cascader option requires a label").format(key))
-            counter["total"] += 1
-            if counter["total"] > MAX_CASCADER_NODES:
-                raise ValidationError(_("Field {} has too many cascader options").format(key))
-            children = node.get("children")
-            if children is not None:
-                if not isinstance(children, list) or not children:
-                    raise ValidationError(_("Field {} has an invalid cascader option").format(key))
-                walk(children, depth + 1)
-
-    walk(options, 1)
-
-
-def _validate_user_pk(label: str, value):
-    """选人控件取值：正整数用户主键（不接受布尔/字符串/浮点）。"""
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValidationError(_("Field {} must be a user id").format(label))
-
-
-def _cascader_path_valid(options, path: list) -> bool:
-    """级联取值必须命中选项树的叶子路径（逐段比对，值类型允许 str/int）。"""
-    nodes = options
-    for index, step in enumerate(path):
-        node = next((item for item in nodes if item.get("value") == step), None)
-        if node is None:
-            return False
-        last = index == len(path) - 1
-        children = node.get("children")
-        if last:
-            return not children
-        if not children:
-            return False
-        nodes = children
-    return False
 
 
 def validate_schema(schema: dict) -> list:
@@ -387,76 +305,6 @@ def evaluate_linkages(schema: dict, data) -> dict:
         elif effect == "optional":
             state[target]["required"] = False
     return state
-
-
-def normalize_table_row(item: dict, label: str, row) -> dict:
-    """明细子表单行校验：按列定义逐列校验，未知列键拒绝，返回规范化行。"""
-    if not isinstance(row, dict):
-        raise ValidationError(_("Field {} rows must be objects").format(label))
-    columns = item.get("columns") or []
-    known = {column["key"]: column for column in columns}
-    unknown = set(row) - set(known)
-    if unknown:
-        raise ValidationError(_("Field {} has unknown columns: {}").format(label, ", ".join(sorted(unknown))))
-    normalized: dict[str, Any] = {}
-    for column in columns:
-        column_key = column["key"]
-        column_type = column.get("type")
-        value = row.get(column_key)
-        if value is None or value == "":
-            normalized[column_key] = None
-            continue
-        if column_type == "number":
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
-                raise ValidationError(_("Field {} must be numeric").format(column_key))
-        elif column_type == "select":
-            if value not in (column.get("options") or []):
-                raise ValidationError(_("Field {} has an invalid option: {}").format(column_key, value))
-        elif column_type == "date":
-            if not isinstance(value, str) or not DATE_RE.match(value):
-                raise ValidationError(_("Field {} must be a date").format(column_key))
-        else:
-            if not isinstance(value, str):
-                raise ValidationError(_("Field {} must be text").format(column_key))
-            if len(value) > MAX_TEXT_LENGTH:
-                raise ValidationError(_("Field {} exceeds the max length {}").format(column_key, MAX_TEXT_LENGTH))
-        normalized[column_key] = value
-    return normalized
-
-
-def field_option_values(item: dict) -> list:
-    """选项型字段的合法取值集合：绑定字典时读字典项 value（5 分钟缓存，失败降级空集）。
-
-    空集合语义 = fail-closed：字典被清空/停用时该字段不接受任何取值（提交被拒）。
-    """
-    dict_code = item.get("dict")
-    if dict_code:
-        from system.utils.dict import get_dict_items
-
-        return [row.get("value") for row in get_dict_items(str(dict_code)) if row.get("value") is not None]
-    return list(item.get("options") or [])
-
-
-def assert_upload_ownership(value, label, user) -> None:
-    """upload 控件值归属断言：文件必须**存在且由提交人上传**（fail-closed）。
-
-    历史实现只校验「条目是带 pk 的对象」——可以引用他人文件 pk（访问侧靠
-    UploadFile 数据权限兜底，跨角色/字段权限配置下仍可能读到别人的附件）。
-    提交链路统一在提交校验时批量断言；无用户上下文（种子/脚本）由调用方传 None 跳过。
-    """
-    from system.services import UploadFile
-
-    pks = [str(item.get("pk") or "").strip() for item in value]
-    pks = [pk for pk in pks if pk]
-    if not pks:
-        return
-    try:
-        owned = {str(pk) for pk in UploadFile.objects.filter(pk__in=pks, creator=user).values_list("pk", flat=True)}
-    except Exception:  # noqa: BLE001 非法 pk 形态等：按全部不归属处理（fail-closed）
-        owned = set()
-    invalid = [pk for pk in pks if pk not in owned]
-    if invalid:
-        raise ValidationError(_("Field {} contains files that do not belong to you").format(label))
 
 
 def validate_draft_data(data) -> dict:
