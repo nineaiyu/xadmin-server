@@ -25,6 +25,7 @@ def test_action_enum_covers_known_actions():
     assert MessageAction.CHAT_UNREAD == "chat_unread"
     assert MessageAction.TASK_LOG == "task_log"
     assert MessageAction.MONITOR == "monitor"
+    assert MessageAction.SCREEN_COMMAND == "screen_command"
     assert PROTOCOL_VERSION == 1
 
 

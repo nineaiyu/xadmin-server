@@ -12,7 +12,10 @@
     }
 
 出站帧（send_base_json）额外含 code / detail / timestamp。
-新增 action 必须：① 在此登记枚举；② 补充对应 Payload TypedDict。
+新增 action 必须：① 在此登记枚举；② 补充对应 Payload TypedDict；
+③ 在 message/ws_schema.py 登记 payload definition 并重跑
+`python scripts/gen_ws_frame_schema.py`（docs/schema/ws-frame.schema.json 是生成物，
+由本模块枚举与 TypedDict 单源导出，禁止手改）。
 """
 
 from enum import StrEnum

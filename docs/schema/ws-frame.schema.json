@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "xadmin/schemas/ws-frame.schema.json",
   "title": "WebSocketFrameV1",
-  "description": "WebSocket 消息协议 v1 帧（message/protocol.py ↔ client src/utils/websocket/protocol.ts）。上行帧仅需 action；出站帧由 send_base_json 统一携带 code/detail/timestamp/v。新增 action 必须：① 双端 MessageAction 同步登记；② 补对应 payload 定义（可在此追加 definitions 并接入 tests/unit/message/test_protocol.py）。服务端由 tests/unit/common/test_contract_schemas.py 持续校验。",
+  "description": "WebSocket 消息协议 v1 帧（生成物：真源为 message/protocol.py 与 message/ws_schema.py）。上行帧仅需 action；出站帧由 send_base_json 统一携带 code/detail/timestamp/v。新增 action 必须：① 双端 MessageAction 同步登记；② 补对应 payload 定义（message/ws_schema.py 的 PAYLOAD_DECLARATIONS）。服务端由 tests/unit/common/test_contract_schemas.py 与 tests/unit/message/test_ws_frame_schema.py 持续校验。",
   "definitions": {
     "action": {
       "type": "string",
@@ -23,80 +23,181 @@
     "inboundFrame": {
       "type": "object",
       "description": "客户端 → 服务端帧（客户端受控，键集合封闭）",
-      "required": ["action"],
+      "required": [
+        "action"
+      ],
       "properties": {
-        "action": { "$ref": "#/definitions/action" },
-        "data": { "description": "载荷，由具体 action 决定" },
-        "mid": { "type": "string", "description": "客户端回显一致性标记" },
-        "v": { "type": "integer", "const": 1 }
+        "action": {
+          "$ref": "#/definitions/action"
+        },
+        "data": {
+          "description": "载荷，由具体 action 决定"
+        },
+        "mid": {
+          "type": "string",
+          "description": "客户端回显一致性标记"
+        },
+        "v": {
+          "type": "integer",
+          "const": 1
+        }
       },
       "additionalProperties": false
     },
     "outboundFrame": {
       "type": "object",
       "description": "服务端 → 客户端帧；服务端可经 send_base_json kwargs 追加顶层键，故不封闭 additionalProperties",
-      "required": ["code", "action", "detail", "timestamp", "v"],
+      "required": [
+        "code",
+        "action",
+        "detail",
+        "timestamp",
+        "v"
+      ],
       "properties": {
-        "code": { "type": "integer", "description": "业务码，语义同 ApiResponse.code" },
-        "action": { "$ref": "#/definitions/action" },
-        "detail": { "type": "string" },
-        "timestamp": { "type": "string" },
-        "data": { "description": "载荷，由具体 action 决定" },
-        "mid": { "type": "string" },
-        "v": { "type": "integer", "const": 1 }
+        "code": {
+          "type": "integer",
+          "description": "业务码，语义同 ApiResponse.code"
+        },
+        "action": {
+          "$ref": "#/definitions/action"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "data": {
+          "description": "载荷，由具体 action 决定"
+        },
+        "mid": {
+          "type": "string"
+        },
+        "v": {
+          "type": "integer",
+          "const": 1
+        }
       },
       "additionalProperties": true
     },
     "taskLogPayload": {
       "type": "object",
       "description": "task_log 增量帧载荷（system/ws.py push_once，前端 TaskLogDialog 增量渲染契约）",
-      "required": ["offset", "content", "finished"],
+      "required": [
+        "offset",
+        "content",
+        "finished"
+      ],
       "properties": {
-        "offset": { "type": "integer", "description": "已推送字节偏移" },
-        "content": { "type": "string", "description": "本轮新增内容（空串表示无新增）" },
-        "finished": { "type": "boolean", "description": "读到结束标记或执行已终态" }
+        "offset": {
+          "type": "integer",
+          "description": "已推送字节偏移"
+        },
+        "content": {
+          "type": "string",
+          "description": "本轮新增内容（空串表示无新增）"
+        },
+        "finished": {
+          "type": "boolean",
+          "description": "读到结束标记或执行已终态"
+        }
       },
       "additionalProperties": false
     },
     "chatRoomMessagePayload": {
       "type": "object",
       "description": "聊天室消息帧载荷（ws/chat/ 通道 ChatNotify 落库后广播；与历史 ws/message/* 通道的 chat_message 载荷不同）",
-      "required": ["id", "room_id", "content"],
+      "required": [
+        "id",
+        "room_id",
+        "content"
+      ],
       "properties": {
-        "id": { "type": "integer", "description": "消息自增主键（游标）" },
-        "room_id": { "type": "integer" },
-        "room_type": { "type": "string", "description": "public / private / ai" },
-        "sender_pk": { "type": ["integer", "null"] },
-        "sender_name": { "type": "string" },
-        "sender_avatar": { "type": "string" },
-        "message_type": { "type": "string", "description": "text / ai / system" },
-        "content": { "type": "string" },
-        "created_time": { "type": "string" },
-        "client_msg_id": { "type": "string", "description": "客户端幂等键" },
-        "extra": { "type": "object" }
+        "id": {
+          "type": "integer",
+          "description": "消息自增主键（游标）"
+        },
+        "room_id": {
+          "type": "integer"
+        },
+        "room_type": {
+          "type": "string",
+          "description": "public / private / ai"
+        },
+        "sender_pk": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sender_name": {
+          "type": "string"
+        },
+        "sender_avatar": {
+          "type": "string"
+        },
+        "message_type": {
+          "type": "string",
+          "description": "text / ai / system / image / file"
+        },
+        "content": {
+          "type": "string"
+        },
+        "created_time": {
+          "type": "string"
+        },
+        "client_msg_id": {
+          "type": "string",
+          "description": "客户端幂等键"
+        },
+        "extra": {
+          "type": "object"
+        }
       },
       "additionalProperties": true
     },
     "screenCommandPayload": {
       "type": "object",
       "description": "大屏远程控制帧载荷（ws/screen/<pk> 下行，system/ws_screen.py 广播；展示端被动接收）",
-      "required": ["command"],
+      "required": [
+        "command"
+      ],
       "properties": {
         "command": {
           "type": "string",
           "description": "switch / page / refresh / auto；连接回放时为 state"
         },
-        "mode": { "type": "string", "description": "auto 自动轮播 / manual 远程控制停播" },
-        "index": { "type": "integer", "description": "当前页码（0 基）" },
-        "refresh_rev": { "type": "integer", "description": "数据刷新代数（递增即重拉数据）" },
-        "rev": { "type": "integer", "description": "控制态版本号（单调递增）" },
-        "ts": { "type": "string", "description": "指令落态时间（ISO）" }
+        "mode": {
+          "type": "string",
+          "description": "auto 自动轮播 / manual 远程控制停播"
+        },
+        "index": {
+          "type": "integer",
+          "description": "当前页码（0 基）"
+        },
+        "refresh_rev": {
+          "type": "integer",
+          "description": "数据刷新代数（递增即重拉数据）"
+        },
+        "rev": {
+          "type": "integer",
+          "description": "控制态版本号（单调递增）"
+        },
+        "ts": {
+          "type": "string",
+          "description": "指令落态时间（ISO）"
+        }
       },
       "additionalProperties": false
     }
   },
   "oneOf": [
-    { "$ref": "#/definitions/inboundFrame" },
-    { "$ref": "#/definitions/outboundFrame" }
+    {
+      "$ref": "#/definitions/inboundFrame"
+    },
+    {
+      "$ref": "#/definitions/outboundFrame"
+    }
   ]
 }

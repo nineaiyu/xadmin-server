@@ -8,7 +8,7 @@
 | `search-columns.schema.json` / `search-fields.schema.json` | 元数据接口（RePlusPage 渲染契约，T2.3） | `test_metadata_schema.py` |
 | `api-response.schema.json` | 统一响应信封（`common/core/response.py`） | `test_contract_schemas.py` |
 | `routes-payload.schema.json` | 动态路由接口完整载荷（路由树 + auths 权限码） | `test_contract_schemas.py` |
-| `ws-frame.schema.json` | WebSocket 消息协议 v1 帧（`message/protocol.py`） | `test_contract_schemas.py` |
+| `ws-frame.schema.json` | WebSocket 消息协议 v1 帧（`message/protocol.py`） | `test_contract_schemas.py` / `test_ws_frame_schema.py` |
 
 ## 契约镜像关系
 
@@ -21,3 +21,8 @@
   重新生成 `src/api/types/*.d.ts`）→ 连同生成物一起提交。
   单仓检出（无服务端目录）时可用 `XADMIN_SERVER_DIR` 指向服务端仓库；
   CI 仍以 `pnpm check:contract` 校验镜像未被绕过手工修改。
+- **例外（生成物）**：`ws-frame.schema.json` 是生成物，禁止手工编辑——真源为
+  `message/protocol.py`（Action 枚举与 Payload TypedDict）与
+  `message/ws_schema.py`（payload 的 required / 描述声明）；改完真源后跑
+  `python scripts/gen_ws_frame_schema.py` 重新生成（`--check` 可校验漂移），
+  守护测试 `test_ws_frame_schema.py` 保证「落盘 == 渲染」与字段集合对账。
