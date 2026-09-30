@@ -105,7 +105,9 @@ class TestReportDue:
             created_time=now.replace(day=1, hour=8, minute=0) - datetime.timedelta(days=1)
         )
         monthly.refresh_from_db()
-        assert report_due(monthly, now) is True
+        # 用「本月 1 号 09:00」作判定时刻（显式 dt）：直接传 now 会在每月 1 日
+        # 00:00~08:00 窗口内取到「上月到期点 < 建单时间」而假失败（与真实时钟耦合）
+        assert report_due(monthly, now.replace(day=1, hour=9)) is True
 
     def test_invalid_send_time_fail_closed(self, dataset):
         report = make_report(dataset, frequency="daily", send_time="25:99")
