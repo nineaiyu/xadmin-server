@@ -21,6 +21,9 @@ channel_layer = get_channel_layer()
 # 避免多端同时刷新/推送时重复做在线统计。
 ONLINE_INFO_CACHE_TTL = 5
 ONLINE_INFO_CACHE_KEY = "online_info_snapshot"
+# 在线 channel 明细快照（user_pk -> [channel]）：用户列表「在线数」等展示字段与非
+# 实时动作共用；强制下线等需要实时明细的动作走 use_snapshot=False 直查。
+ONLINE_LAYERS_CACHE_KEY = "online_layers_snapshot"
 
 
 def parse_online_user_pk(group):
@@ -143,24 +146,64 @@ async def get_layers_form_group(group):
     return await channel_layer.get_layers(group)
 
 
-@async_to_sync
-async def get_online_users_layers(user_pks):
-    """批量获取多个用户的在线 channel layers，一次同步桥接完成全部查询，user_pk 自动去重。
+async def layers_for_groups(groups):
+    """批量取多组 channel（不支持批量接口的实现回退逐组）。
 
-    优先走 layer 的批量接口（get_layers_for_groups：按节点归并 pipeline，单 Redis
-    部署下整个请求一次往返），替代逐用户串行查询；不支持批量接口的实现回退逐用户。
+    get_layers_for_groups 按节点归并 pipeline，单 Redis 部署下整个请求一次往返。
+    """
+    if hasattr(channel_layer, "get_layers_for_groups"):
+        return await channel_layer.get_layers_for_groups(groups)
+    return {group: await get_layers_form_group(group) for group in groups}
+
+
+async def query_online_users_layers(pks):
+    """实时查询多个用户的在线 channel layers（一次同步桥接完成全部查询）。"""
+    groups = [get_user_layer_group_name(user_pk) for user_pk in pks]
+    layers = await layers_for_groups(groups)
+    return {user_pk: layers.get(group, []) for user_pk, group in zip(pks, groups, strict=True)}
+
+
+@async_to_sync
+async def build_online_layers_snapshot():
+    """全量在线用户的 channel 明细快照（user_pk -> [channel]）。
+
+    与在线列表页的快照（``get_online_info``）同源：先走反向索引 ``online:users``
+    一条 ZRANGEBYSCORE 取在线 pk，再一次批量 pipeline 取各组 channel；反向索引为空
+    （Redis 重启后首个心跳尚未到来的窗口）时回退 ``get_groups`` 重建。结果整体缓存
+    （5s TTL），把「每个列表请求各查一次 ZSET 管道」摊薄为 5 秒一次。
+    """
+    pks = []
+    if hasattr(channel_layer, "get_online_user_pks"):
+        pks = await channel_layer.get_online_user_pks()
+    groups = [get_user_layer_group_name(pk) for pk in pks]
+    if not groups:
+        groups = await channel_layer.get_groups()
+        pks = sorted(pk for pk in (parse_online_user_pk(g) for g in groups) if pk is not None)
+    if not groups:
+        return {}
+    by_group = await layers_for_groups(groups)
+    return {pk: by_group.get(group, []) for pk, group in zip(pks, groups, strict=True)}
+
+
+def get_online_users_layers(user_pks, *, use_snapshot=True):
+    """批量获取多个用户的在线 channel layers，user_pk 自动去重。
+
+    - ``use_snapshot=True``（默认，展示口径）：优先读 5s 快照（与在线列表页/聊天在线态
+      同一份心跳口径），未命中时重建快照。用户列表「在线数」、登录日志「在线态」这类
+      展示字段不需要心跳级实时性，快照把每请求一次的 ZSET 管道查询摊薄到 5 秒一次；
+    - ``use_snapshot=False``（动作口径）：强制实时查询——强制下线/登出踢连接必须拿到
+      当前真实 channel 列表，不能吃快照延迟。
     """
     pks = list(dict.fromkeys(user_pks))
     if not pks:
         return {}
-    if hasattr(channel_layer, "get_layers_for_groups"):
-        groups = [get_user_layer_group_name(user_pk) for user_pk in pks]
-        layers = await channel_layer.get_layers_for_groups(groups)
-        return {user_pk: layers.get(group, []) for user_pk, group in zip(pks, groups, strict=True)}
-    result = {}
-    for user_pk in pks:
-        result[user_pk] = await get_layers_form_group(get_user_layer_group_name(user_pk))
-    return result
+    if not use_snapshot:
+        return async_to_sync(query_online_users_layers)(pks)
+    snapshot = cache.get(ONLINE_LAYERS_CACHE_KEY)
+    if snapshot is None:
+        snapshot = build_online_layers_snapshot()
+        cache.set(ONLINE_LAYERS_CACHE_KEY, snapshot, ONLINE_INFO_CACHE_TTL)
+    return {user_pk: snapshot.get(user_pk, []) for user_pk in pks}
 
 
 @async_to_sync

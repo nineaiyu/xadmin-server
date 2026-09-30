@@ -71,6 +71,11 @@ BASE_CONFIG = {
     "DB_POOL": True,
     "DB_POOL_MIN_SIZE": 2,
     "DB_POOL_MAX_SIZE": 8,
+    # 纯读请求（GET/HEAD/OPTIONS 且 action 命中 DRF 读动作白名单）跳过
+    # ATOMIC_REQUESTS 事务：省 BEGIN/COMMIT 两次数据库往返（列表页/元数据接口
+    # 是调用量最大的一类）。写请求与自定义 GET action 不受影响，详见
+    # common/core/atomic_read.py；置 false 可整体回退到「每请求一个事务」。
+    "ATOMIC_REQUESTS_SKIP_READ_ACTIONS": True,
     # HOST 校验白名单，生产环境必须配置，如 ['xadmin.example.com']；DEBUG 模式默认放行
     "ALLOWED_HOSTS": [],
     # 反向代理信任清单（单个 IP 或 CIDR 字符串数组）。

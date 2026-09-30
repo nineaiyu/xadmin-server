@@ -258,3 +258,8 @@ CAPTCHA_MATH_CHALLENGE_OPERATOR = "*"
 CAPTCHA_GET_FROM_POOL = False
 CAPTCHA_GET_FROM_POOL_TIMEOUT = 5
 CAPTCHA_2X_IMAGE = True
+
+# 纯读请求免 ATOMIC_REQUESTS（见 common/core/atomic_read.py）：GET/HEAD 且 action 命中
+# DRF 读动作白名单的请求不套事务（省 BEGIN/COMMIT 两次数据库往返）；写请求与自定义
+# GET action（导出/同步等带副作用）保持原语义。config.yml 置 false 可整体回退。
+ATOMIC_REQUESTS_SKIP_READ_ACTIONS = bool(CONFIG.ATOMIC_REQUESTS_SKIP_READ_ACTIONS)

@@ -14,14 +14,28 @@ fi
 
 mkdir -p "${RESULT_DIR:-results}"
 
-for script in 01-login.js 02-routes.js 03-list.js 04-metadata.js 05-export.js 06-import.js; do
+for script in 01-login.js 02-routes.js 03-list.js; do
+  echo ""
+  echo "=== k6 run ${script%.js} ==="
+  k6 run "$script"
+done
+
+# 04 元数据三变体独立计量：纯元数据（columns/fields）与「列表+内联」（with_meta）
+# 成本量级不同，混跑会让目标口径失真（见 docs/ops/performance-baseline.md §二/§六）
+for variant in columns fields with_meta; do
+  echo ""
+  echo "=== k6 run 04-metadata (${variant}) ==="
+  VARIANT=$variant k6 run 04-metadata.js
+done
+
+for script in 05-export.js 06-import.js; do
   echo ""
   echo "=== k6 run ${script%.js} ==="
   k6 run "$script"
 done
 
 echo ""
-echo "六轮压测完成，结果见 ${RESULT_DIR:-results}/。"
+echo "压测完成（元数据按三变体独立落盘），结果见 ${RESULT_DIR:-results}/。"
 
 # 可选：跑完直接做基线回归比对（CHECK=1 开启，CI 由 perf.yml 调用 check_baseline.py）。
 # 比对口径见 docs/ops/performance-baseline.md §八。

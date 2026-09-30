@@ -39,6 +39,10 @@ _loadtest_config["REDIS_PORT"] = int(os.environ.get("LOADTEST_REDIS_PORT", "5637
 _loadtest_config["REDIS_PASSWORD"] = os.environ.get("LOADTEST_REDIS_PASSWORD", "loadtest")
 _loadtest_config["ALLOWED_HOSTS"] = ["127.0.0.1", "localhost"]
 _loadtest_config["GUNICORN_MAX_WORKER"] = int(os.environ.get("LOADTEST_WORKERS", "4"))
+# 读请求免事务开关（perf A/B 用；生产语义见 common/core/atomic_read.py）
+_loadtest_config["ATOMIC_REQUESTS_SKIP_READ_ACTIONS"] = (
+    os.environ.get("LOADTEST_SKIP_READ_ATOMIC", "true").lower() != "false"
+)
 
 ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _loadtest_config)
 

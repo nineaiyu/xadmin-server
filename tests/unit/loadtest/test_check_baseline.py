@@ -253,7 +253,7 @@ def test_render_outputs_contain_status(tmp_path):
 
 
 def test_real_baseline_snapshot_is_loadable():
-    """仓库内基线快照须保持可解析且六用例齐备，防止手改坏 JSON。"""
+    """仓库内基线快照须保持可解析且用例齐备（元数据按三变体独立成例），防止手改坏 JSON。"""
     from loadtest.check_baseline import DEFAULT_BASELINE, load_json
 
     data = load_json(DEFAULT_BASELINE)
@@ -261,7 +261,13 @@ def test_real_baseline_snapshot_is_loadable():
         "01-login",
         "02-routes",
         "03-list",
-        "04-metadata",
+        "04-metadata-columns",
+        "04-metadata-fields",
+        "04-metadata-with-meta",
         "05-export",
         "06-import",
     }
+    # 每个用例必须可判定：标签 / 档位 / RPS / P95 齐备（缺项会被比对静默跳过）
+    for case, item in data["cases"].items():
+        assert item.get("label") and item.get("load"), f"{case} 缺 label/load"
+        assert isinstance(item.get("rps"), (int, float)) and isinstance(item.get("p95"), (int, float)), case

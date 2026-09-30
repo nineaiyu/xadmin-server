@@ -26,8 +26,10 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture(autouse=True)
 def _clear_snapshot():
     cache.delete(msg_utils.ONLINE_INFO_CACHE_KEY)
+    cache.delete(msg_utils.ONLINE_LAYERS_CACHE_KEY)
     yield
     cache.delete(msg_utils.ONLINE_INFO_CACHE_KEY)
+    cache.delete(msg_utils.ONLINE_LAYERS_CACHE_KEY)
 
 
 @pytest.fixture
@@ -49,7 +51,7 @@ def layer(settings):
 def _beat(layer, user_pk, channel="chan"):
     """模拟一次前端心跳（每 10s 一次的 ping）。"""
     group = msg_utils.get_user_layer_group_name(user_pk)
-    layer.groups.setdefault(group, set()).add(channel)
+    layer.groups.setdefault(group, {})[channel] = time.time()
     layer._online_users[user_pk] = time.time()
 
 
@@ -107,24 +109,48 @@ class TestOnlineReverseIndex:
 
 
 class TestOnlineLayersBatch:
-    """批量在线 channel 查询：走 layer 的批量接口（单 Redis 部署一次往返）。"""
+    """批量在线 channel 查询：展示口径走 5s 快照，动作口径（强制下线）强制实时。"""
 
-    def test_uses_batch_interface_once(self, monkeypatch):
+    def test_snapshot_builds_once_and_serves_from_cache(self, layer):
+        _beat(layer, 1, "c1")
+        _beat(layer, 2, "c2")
         calls = []
+        original = layer.get_layers_for_groups
 
-        class SpyLayer:
-            async def get_layers_for_groups(self, groups):
-                calls.append(list(groups))
-                return {group: [f"chan-{group}"] for group in groups}
+        async def spy(groups):
+            calls.append(list(groups))
+            return await original(groups)
 
-        monkeypatch.setattr(msg_utils, "channel_layer", SpyLayer())
-        result = msg_utils.get_online_users_layers([1, 2, 1])  # 重复 pk 自动去重
-        expected = {
-            1: [f"chan-{msg_utils.get_user_layer_group_name(1)}"],
-            2: [f"chan-{msg_utils.get_user_layer_group_name(2)}"],
-        }
-        assert result == expected
-        assert len(calls) == 1, "应合并为一次批量调用（而非逐用户往返）"
+        layer.get_layers_for_groups = spy
+
+        first = msg_utils.get_online_users_layers([1, 2, 1])  # 重复 pk 自动去重
+        second = msg_utils.get_online_users_layers([2])
+        assert first == {1: ["c1"], 2: ["c2"]}
+        assert second == {2: ["c2"]}
+        assert len(calls) == 1, "5s 快照窗口内的重复查询不应再次访问 channel layer"
+        assert cache.get(msg_utils.ONLINE_LAYERS_CACHE_KEY) is not None
+
+    def test_snapshot_rebuilds_after_expiry(self, layer):
+        _beat(layer, 3, "c3")
+        assert msg_utils.get_online_users_layers([3]) == {3: ["c3"]}
+        cache.delete(msg_utils.ONLINE_LAYERS_CACHE_KEY)  # 等价 TTL 到期
+        _beat(layer, 4, "c4")
+        assert msg_utils.get_online_users_layers([3, 4]) == {3: ["c3"], 4: ["c4"]}
+
+    def test_snapshot_falls_back_to_groups_when_index_empty(self, layer):
+        group = msg_utils.get_user_layer_group_name(6)
+        layer.groups[group] = {"chan-6": 0}
+        # 反向索引为空（Redis 重启后首个心跳尚未到来）→ 降级 SCAN 重建
+        assert msg_utils.get_online_users_layers([6]) == {6: ["chan-6"]}
+
+    def test_realtime_path_queries_each_call_without_snapshot(self, layer):
+        _beat(layer, 5, "c5")
+        first = msg_utils.get_online_users_layers([5], use_snapshot=False)
+        layer.groups[msg_utils.get_user_layer_group_name(5)]["c6"] = 0  # 新连接
+        second = msg_utils.get_online_users_layers([5], use_snapshot=False)
+        assert first == {5: ["c5"]}
+        assert sorted(second[5]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"
+        assert cache.get(msg_utils.ONLINE_LAYERS_CACHE_KEY) is None, "实时口径不写快照"
 
     def test_falls_back_to_per_user_query(self, monkeypatch):
         class LegacyLayer:
@@ -132,7 +158,7 @@ class TestOnlineLayersBatch:
                 return ["legacy"]
 
         monkeypatch.setattr(msg_utils, "channel_layer", LegacyLayer())
-        assert msg_utils.get_online_users_layers([5]) == {5: ["legacy"]}
+        assert msg_utils.get_online_users_layers([5], use_snapshot=False) == {5: ["legacy"]}
 
     def test_empty_input_no_call(self, monkeypatch):
         class Boom:
@@ -281,7 +307,8 @@ class TestPushMessagesJob:
 
         result = json_safe({"pk": uuid.UUID(int=1), "label": _("Test label"), "items": [uuid.UUID(int=2)]})
         assert result["pk"] == str(uuid.UUID(int=1))
-        assert result["label"] == "Test label"
+        # 与 gettext 同源取值（本地有 .mo 时为中文译文、CI 无 .mo 时为 msgid 原文）
+        assert result["label"] == str(_("Test label"))
         assert result["items"] == [str(uuid.UUID(int=2))]
 
     def test_batch_user_config_single_get_many(self, monkeypatch):

@@ -10,15 +10,16 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 import os
 import uuid
 
+import django
 from channels.auth import AuthMiddlewareStack
 from channels.db import database_sync_to_async
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.conf import settings
-from django.core.asgi import get_asgi_application
-from django.core.handlers.asgi import ASGIRequest
+from django.core.handlers.asgi import ASGIHandler, ASGIRequest
 from django.utils.module_loading import import_string
 
+from common.core.atomic_read import SafeMethodAtomicSkipMixin
 from common.core.modules import ModuleTrimWebsocketMiddleware
 from common.core.utils import collect_app_ws_urls
 from common.utils import get_logger
@@ -27,7 +28,14 @@ from server.utils import set_current_request
 logger = get_logger(__name__)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "server.settings")
-django_asgi_app = get_asgi_application()
+django.setup(set_prefix=False)  # 等价 get_asgi_application 的 setup（后者返回无混入的默认 handler）
+
+
+class XadminASGIHandler(SafeMethodAtomicSkipMixin, ASGIHandler):
+    """HTTP 入口 handler：纯读请求免 ATOMIC_REQUESTS（见 common/core/atomic_read.py）。"""
+
+
+django_asgi_app = XadminASGIHandler()
 
 # 写到上面会导致gunicorn启动失败。WS 路由按约定自动收集（<app>/routing.py），
 # 新业务应用无需修改本工程层文件；收集必须在 django.setup() 之后执行

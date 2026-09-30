@@ -40,8 +40,9 @@ def force_logout_user(user_pk, operator=None):
     for token in tokens:
         BlacklistedToken.objects.get_or_create(token=token)
 
-    # ③ 踢掉在线 WS 连接（get_online_users_layers 批量接口：入参列表、返回 {user_pk: [channels]}）
-    channels = get_online_users_layers([user_pk]).get(user_pk, [])
+    # ③ 踢掉在线 WS 连接（get_online_users_layers 批量接口：入参列表、返回 {user_pk: [channels]}）。
+    # use_snapshot=False：踢连接必须拿实时 channel 明细，不能吃展示快照的 5s 延迟
+    channels = get_online_users_layers([user_pk], use_snapshot=False).get(user_pk, [])
     if channels:
         send_logout_msg(user_pk, channels)
 
