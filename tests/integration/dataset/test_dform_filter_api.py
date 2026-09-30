@@ -136,9 +136,10 @@ def test_list_filter_by_materialized_fields(form, normal_user, superuser):
     assert resp.json()["code"] == 1000, resp.data
     assert {row["data"]["name"] for row in resp.json()["data"]["results"]} == {"张三", "李四"}
 
-    # 未勾选「可筛选」的字段：fail-closed（可读报错，不回退扫原 data 列）
+    # 未勾选「可筛选」的字段：fail-closed（可读 400，不回退扫原 data 列）
     resp = admin.get(FORM_DATA_URL, {"form": str(form.pk), "filter_data": json.dumps({"remark": "x"})})
-    assert resp.json()["code"] != 1000
+    assert resp.status_code == 400, resp.data
+    assert "remark" in str(resp.json()["detail"])
 
     # 未选表单时按通用形态编译（不限表单的列表口径）：正常筛选
     resp = admin.get(FORM_DATA_URL, {"filter_data": json.dumps({"level": "P5"})})
@@ -151,6 +152,27 @@ def test_list_filter_by_materialized_fields(form, normal_user, superuser):
     assert mine.json()["code"] == 1000, mine.data
     rows = mine.json()["data"]["results"]
     assert [row["data"]["name"] for row in rows] == ["张三"]
+
+
+def test_list_filter_errors_are_readable_400(form, superuser):
+    """筛选参数错误一律可读 400（Django 校验异常须归一，不得落 500）。"""
+    admin = APIClient(HTTP_USER_AGENT="pytest-agent")
+    admin.force_authenticate(user=superuser)
+
+    # 非法 JSON / 非对象形态
+    resp = admin.get(FORM_DATA_URL, {"form": str(form.pk), "filter_data": "{not-json"})
+    assert resp.status_code == 400, resp.data
+    resp = admin.get(FORM_DATA_URL, {"form": str(form.pk), "filter_data": json.dumps(["name"])})
+    assert resp.status_code == 400, resp.data
+
+    # 表单不存在 / 主键形态非法（同上口径）
+    resp = admin.get(
+        FORM_DATA_URL,
+        {"form": "00000000-0000-0000-0000-000000000000", "filter_data": json.dumps({"name": "x"})},
+    )
+    assert resp.status_code == 400, resp.data
+    resp = admin.get(FORM_DATA_URL, {"form": "not-a-uuid", "filter_data": json.dumps({"name": "x"})})
+    assert resp.status_code == 400, resp.data
 
 
 def test_schema_filterable_flag_validation(auth_client):

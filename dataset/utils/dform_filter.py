@@ -28,6 +28,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
+from rest_framework.exceptions import ValidationError as RestValidationError
 
 from dataset.utils.dform import FILTERABLE_TYPES, KEY_RE
 
@@ -247,9 +248,19 @@ class MaterializedFilterMixin(filters.FilterSet):
         params = getattr(request, "query_params", None) or getattr(request, "GET", None)
         form_pk = params.get("form") if params is not None else None
         if form_pk:
-            form = DynamicForm.objects.filter(pk=form_pk).only("schema").first()
+            try:
+                form = DynamicForm.objects.filter(pk=form_pk).only("schema").first()
+            except ValidationError:
+                # 主键形态非法（非 UUID）与不存在同口径：可读 400，不落 500
+                form = None
             if form is None:
-                raise ValidationError(_("The form does not exist"))
+                raise RestValidationError(_("The form does not exist"))
             schema = form.schema
-        contains = compile_materialized_filters(value, schema)
+        try:
+            contains = compile_materialized_filters(value, schema)
+        except ValidationError as exc:
+            # Django 校验异常落在全局处理器的「未预期异常」分支（500）；筛选参数
+            # 错误一律归一为 DRF 校验异常，与其它筛选后端同口径（可读 400）
+            messages = getattr(exc, "messages", None) or [str(exc)]
+            raise RestValidationError(str(messages[0])) from exc
         return apply_materialized_contains(queryset, contains)
