@@ -9857,3 +9857,23 @@ msgstr ""
 #: xadmin
 msgid "Aborted"
 msgstr ""
+
+#: xadmin
+msgid "A flow supports at most {} nodes"
+msgstr ""
+
+#: xadmin
+msgid "Too many items, only the first {} are returned"
+msgstr ""
+
+#: xadmin
+msgid "Approval node auto-approved due to no available approver"
+msgstr ""
+
+#: xadmin
+msgid "Flow node auto-approved"
+msgstr ""
+
+#: xadmin
+msgid "An approval node was auto-approved because it has no available approver, please check the flow configuration"
+msgstr ""

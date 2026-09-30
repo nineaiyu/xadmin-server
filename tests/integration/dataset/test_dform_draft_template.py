@@ -203,6 +203,19 @@ class TestFormTemplate:
         resp = auth_client.post(f"{SUBMISSIONS_URL}", {"form": template.pk, "data": {}}, format="json")
         assert resp.status_code == 400, resp.data
 
+    def test_available_forms_truncated_at_limit(self, auth_client, monkeypatch):
+        """数据源量级上限：超限只回传前 N 条并随响应给出提示（小集合接口保护）。"""
+        from common.utils.datasource import truncation_detail
+
+        monkeypatch.setattr("common.utils.datasource.DATASOURCE_MAX_ROWS", 1)
+        _make_form(name="表单-A", is_active=True)
+        _make_form(name="表单-B", is_active=True)
+
+        resp = auth_client.get(f"{SUBMISSIONS_URL}/available-forms")
+        assert resp.data["code"] == 1000
+        assert len(resp.data["data"]) == 1
+        assert resp.data["detail"] == truncation_detail()
+
     def test_template_flag_immutable(self, auth_client):
         form = _make_form()
         resp = auth_client.patch(f"{FORMS_URL}/{form.pk}", {"is_template": True}, format="json")

@@ -30,6 +30,7 @@ from common.core.modelset import (
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils.datasource import limit_datasource, truncation_detail
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.serializers.dform import (
     FormDataDetailSerializer,
@@ -37,12 +38,13 @@ from dataset.serializers.dform import (
     SubmissionExportSerializer,
     export_dynamic_fields,
 )
+from dataset.utils.dform_filter import MaterializedFilterMixin
 from dataset.utils.dform_history import merged_fields
 from system.utils.user_options import search_user_options
 
 
-class FormDataFilter(BaseFilterSet):
-    """表单数据筛选：表单 / 状态 / 提交人（+ 继承的时间范围等通用筛选）。"""
+class FormDataFilter(MaterializedFilterMixin, BaseFilterSet):
+    """表单数据筛选：表单 / 状态 / 提交人（+ 时间范围等通用筛选 + 物化筛选列）。"""
 
     class Meta:
         model = DynamicFormSubmission
@@ -96,8 +98,9 @@ class DynamicFormDataViewSet(
 
         返回 schema 供前端渲染动态列；定义类资源不做行级数据权限过滤
         （与 available-forms 同口径），行可见性只作用于提交记录。
+        小集合接口：超过量级上限时截断并给出提示。
         """
-        forms = DynamicForm.objects.filter(is_template=False)
+        forms, truncated = limit_datasource(DynamicForm.objects.filter(is_template=False), name="form-options")
         data = []
         for form in forms:
             # schema 的 fields 用「当前 ∪ 历史」合并口径：改版删除的字段以历史标注出列，
@@ -114,6 +117,8 @@ class DynamicFormDataViewSet(
                     "schema_version": form.schema_version or 1,
                 }
             )
+        if truncated:
+            return ApiResponse(data=data, detail=truncation_detail())
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())

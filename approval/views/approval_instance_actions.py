@@ -41,6 +41,7 @@ from approval.utils.approval_flow import (
 from approval.utils.approval_mfa import ensure_approval_action_confirmed
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils.datasource import limit_datasource, truncation_detail
 
 # 评论 @ 提及：与聊天室提及同口径（用户名，允许 . - _）
 MENTION_PATTERN = re.compile(r"@([\w.\-]+)")
@@ -260,19 +261,23 @@ class ApprovalInstanceActionMixin:
 
         普通申请人通常没有「流程定义」页权限，因此单独开一个轻量只读入口，
         只回传发起所需的 pk/name/form_schema，不暴露节点审批人配置。
+        小集合接口：超过量级上限时截断并随响应给出提示（见 limit_datasource）。
         """
-        flows = ApprovalFlow.objects.filter(is_active=True).order_by("-created_time")
-        return ApiResponse(
-            data=[
-                {
-                    "pk": str(flow.pk),
-                    "name": flow.name,
-                    "code": flow.code,
-                    "form_schema": flow.form_schema or [],
-                }
-                for flow in flows
-            ]
+        flows, truncated = limit_datasource(
+            ApprovalFlow.objects.filter(is_active=True).order_by("-created_time"), name="available-flows"
         )
+        data = [
+            {
+                "pk": str(flow.pk),
+                "name": flow.name,
+                "code": flow.code,
+                "form_schema": flow.form_schema or [],
+            }
+            for flow in flows
+        ]
+        if truncated:
+            return ApiResponse(data=data, detail=truncation_detail())
+        return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="pending-count")

@@ -440,6 +440,23 @@ def test_dual_header_jwt_plus_pat_scope_still_enforced(superuser):
     assert _ScopeProbeView.as_view()(request).status_code == 200
 
 
+def test_dual_header_pat_scope_lookup_cached_by_hash(superuser, django_assert_num_queries):
+    """双 header 兜底路径的凭证查询按 token 哈希短缓存：第二次解析零查库、结果一致。"""
+    from common.core.permission import resolve_pat_scopes
+
+    plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
+    expected = PersonalAccessToken.objects.get(token_prefix=plain[:12]).scopes
+
+    def _resolve():
+        request = APIRequestFactory().get("/api/system/user", HTTP_AUTHORIZATION=f"Pat {plain}")
+        return resolve_pat_scopes(request)
+
+    with django_assert_num_queries(1):
+        assert _resolve() == expected
+    with django_assert_num_queries(0):
+        assert _resolve() == expected
+
+
 class _ThrottleProbeView(APIView):
     authentication_classes = [PersonalAccessTokenAuthentication]
     permission_classes = [ApiIsAuthenticated]

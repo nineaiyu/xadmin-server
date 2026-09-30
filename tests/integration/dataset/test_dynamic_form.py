@@ -209,6 +209,21 @@ class TestCreatorIsolation:
         submission.refresh_from_db()
         assert submission.data["name"] == "张三改"
 
+    def test_partial_update_merges_existing_data(self, form, normal_user):
+        """PATCH 局部更新：data 先与库内合并再整份校验，未提交的必填字段不误报。"""
+        grant_form_menus(normal_user)
+        client = client_for(normal_user)
+        # 缺 level/score 但 name 已满足必填 → 通过
+        client.post(SUBMISSION_URL, {"form": str(form.pk), "data": {"name": "张三", "level": "P5"}}, format="json")
+        submission = DynamicFormSubmission.objects.get()
+
+        response = client.patch(f"{SUBMISSION_URL}/{submission.pk}", {"data": {"level": "P6"}}, format="json")
+        assert response.json()["code"] == 1000, response.data
+        submission.refresh_from_db()
+        # 未提交的 name 键保留，提交的 level 更新
+        assert submission.data["name"] == "张三"
+        assert submission.data["level"] == "P6"
+
 
 def auth_client_list(superuser):
     from rest_framework.test import APIClient

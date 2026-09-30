@@ -24,6 +24,7 @@ from common.core.modelset import BaseModelSet, ImpactPreviewAction, OnlyExportDa
 from common.core.permission_meta import shared_list_action
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
+from common.utils.datasource import limit_datasource, truncation_detail
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.serializers.dform import (
     DynamicFormSerializer,
@@ -31,6 +32,7 @@ from dataset.serializers.dform import (
     SubmissionExportSerializer,
     export_dynamic_fields,
 )
+from dataset.utils.dform_filter import MaterializedFilterMixin
 from dataset.utils.dform_flow import create_flow_instance, resubmit_submission
 from system.utils.user_options import search_user_options
 
@@ -46,7 +48,9 @@ class DynamicFormFilter(BaseFilterSet):
         fields = ["is_active", "approval_required"]
 
 
-class SubmissionFilter(BaseFilterSet):
+class SubmissionFilter(MaterializedFilterMixin, BaseFilterSet):
+    """提交筛选：表单/提交人 + 物化筛选列（`filter_data` JSON 条件，见 dform_filter）。"""
+
     class Meta:
         model = DynamicFormSubmission
         fields = ["form", "creator"]
@@ -170,9 +174,11 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
 
         表单定义属定义类资源，取值域不做行级数据权限过滤——否则普通员工必须先被
         授予「表单设计器」的接口权限才能填报（定义与填报共用同一个列表接口的历史
-        耦合），配置门槛高且语义不合理。
+        耦合），配置门槛高且语义不合理。小集合接口：超过量级上限时截断并给出提示。
         """
-        forms = DynamicForm.objects.filter(is_active=True, is_template=False)
+        forms, truncated = limit_datasource(
+            DynamicForm.objects.filter(is_active=True, is_template=False), name="available-forms"
+        )
         data = [
             {
                 "pk": form.pk,
@@ -185,6 +191,8 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
             }
             for form in forms
         ]
+        if truncated:
+            return ApiResponse(data=data, detail=truncation_detail())
         return ApiResponse(data=data)
 
     @extend_schema(responses=get_default_response_schema())
@@ -305,6 +313,7 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
         from django.core.exceptions import ValidationError as DjangoValidationError
 
         from dataset.utils.dform import validate_submission_data
+        from dataset.utils.dform_filter import build_filter_data
 
         instance = self.get_object()
         guarded = self._creator_guard(instance, request)
@@ -351,7 +360,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
                 return ApiResponse(code=1001, detail=_("Only draft submissions can be submitted"))
             instance = locked
             instance.data = normalized
-            instance.save(update_fields=["data", "updated_time"])
+            # 物化筛选列随数据同步（列表筛选走 JSON 包含查询）
+            instance.filter_data = build_filter_data(form.schema, normalized)
+            instance.save(update_fields=["data", "filter_data", "updated_time"])
 
             if form.approval_flow_id:
                 ok, detail = create_flow_instance(instance, request.user)

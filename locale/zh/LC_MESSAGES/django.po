@@ -10805,3 +10805,23 @@ msgstr "已完成"
 #: system/models/upload.py
 msgid "Aborted"
 msgstr "已放弃"
+
+#: xadmin
+msgid "A flow supports at most {} nodes"
+msgstr "单个流程最多支持 {} 个节点"
+
+#: xadmin
+msgid "Too many items, only the first {} are returned"
+msgstr "条目过多，仅返回前 {} 条"
+
+#: xadmin
+msgid "Approval node auto-approved due to no available approver"
+msgstr "审批节点因无可用审批人自动通过"
+
+#: xadmin
+msgid "Flow node auto-approved"
+msgstr "流程节点自动通过"
+
+#: xadmin
+msgid "An approval node was auto-approved because it has no available approver, please check the flow configuration"
+msgstr "审批节点因无可用审批人已自动通过，请检查该流程配置"

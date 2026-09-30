@@ -926,7 +926,7 @@ class TestNotifyDeferredToCommit:
         events = []
 
         class _Recorder:
-            def __init__(self, user, event, instance, extra=None):
+            def __init__(self, user, event, instance, extra=None, node_name=None):
                 events.append(event)
 
             def publish(self, **kwargs):
@@ -986,3 +986,126 @@ class TestNotifyDeferredToCommit:
         with django_capture_on_commit_callbacks(execute=True):
             _notify([None, self._user()], "cc", self._instance())
         assert events == ["cc"]
+
+
+class TestNodeLimitAndBatchPaths:
+    """节点数量上限、一次取数推进与批量建任务（防畸形大图与 N+1）。"""
+
+    @staticmethod
+    def _nodes(count):
+        return [
+            {"name": f"节点{i}", "order": i + 1, "assignee_type": "role", "assignee_value": "flow_approver"}
+            for i in range(count)
+        ]
+
+    def test_node_count_limit(self):
+        """节点数上限：恰好上限通过，超过上限在保存时被拒。"""
+        from approval.utils.approval_flow import MAX_FLOW_NODES
+
+        ok = ApprovalFlowSerializer(data={"name": "上限流程", "code": "limit_ok", "nodes": self._nodes(MAX_FLOW_NODES)})
+        assert ok.is_valid(), ok.errors
+
+        over = ApprovalFlowSerializer(
+            data={"name": "超限流程", "code": "limit_over", "nodes": self._nodes(MAX_FLOW_NODES + 1)}
+        )
+        assert not over.is_valid()
+        assert str(MAX_FLOW_NODES) in str(over.errors)
+
+    def test_simulate_path_reads_nodes_once(self):
+        """模拟推进一次取数后内存推进：查询数不随流程长度增长（改造前逐步查库）。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from approval.utils.approval_flow import simulate_path
+
+        def node_queries(count):
+            flow = make_flow(
+                code=f"sim_flow_{count}", nodes=[{"name": f"节点{i}", "order": i} for i in range(1, count + 1)]
+            )
+            with CaptureQueriesContext(connection) as ctx:
+                path = simulate_path(flow, {})
+            assert len(path) == count
+            return [item for item in ctx.captured_queries if "system_approvalflownode" in item["sql"].lower()]
+
+        assert len(node_queries(3)) == len(node_queries(8)) == 1
+
+    def test_enter_node_bulk_creates_candidate_tasks(self, applicant, approver, approver2):
+        """多候选一次 INSERT，任务行（含显示名快照）语义不变。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from approval.utils.approval_flow.engine import _enter_node
+
+        flow = make_flow(code="bulk_flow", nodes=[{"name": "会签", "order": 1, "assignee_value": "flow_approver"}])
+        node = flow.nodes.get(order=1)
+        instance = ApprovalInstance.objects.create(
+            flow=flow, flow_name=flow.name, title="批量建任务", creator=applicant, flow_version=flow.version
+        )
+        with CaptureQueriesContext(connection) as ctx:
+            assert _enter_node(instance, node) is True
+        inserts = [
+            item
+            for item in ctx.captured_queries
+            if item["sql"].strip().lower().startswith("insert into")
+            and "system_approvalnodetask" in item["sql"].lower()
+        ]
+        assert len(inserts) == 1
+        tasks = list(ApprovalNodeTask.objects.filter(instance=instance))
+        assert {task.assignee_id for task in tasks} == {approver.pk, approver2.pk}
+        assert all(task.assignee_display for task in tasks)
+        assert all(task.status == ApprovalNodeTask.Status.PENDING for task in tasks)
+
+    def test_instance_cc_single_query(self, applicant, approver, approver2):
+        """抄送标识（pk 与用户名混合）一次批量解析，逐标识保持「主键优先」语义。"""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        from approval.utils.approval_flow.assignees import _resolve_instance_cc
+
+        with CaptureQueriesContext(connection) as ctx:
+            users = _resolve_instance_cc([], applicant, [str(approver.pk), approver2.username])
+        assert {user.pk for user in users} == {approver.pk, approver2.pk}
+        assert len([item for item in ctx.captured_queries if "system_userinfo" in item["sql"].lower()]) == 1
+
+    def test_auto_approved_alerts_webhook_and_admins(
+        self, monkeypatch, applicant, superuser, django_capture_on_commit_callbacks
+    ):
+        """无候选自动通过：审计行照旧 + 出站 Webhook + 知会超管（节点名不串上一节点）。"""
+        from approval.utils.approval_flow.engine import _enter_node
+
+        flow = make_flow(
+            code="no_candidate_flow", nodes=[{"name": "空节点", "order": 1, "assignee_value": "ghost_role"}]
+        )
+        node = flow.nodes.get(order=1)
+        instance = ApprovalInstance.objects.create(
+            flow=flow, flow_name=flow.name, title="无候选", creator=applicant, flow_version=flow.version
+        )
+
+        emitted = []
+        monkeypatch.setattr(
+            "system.utils.webhook.emit_webhook_event", lambda event, data: emitted.append((event, data))
+        )
+        notified = []
+
+        class _Recorder:
+            def __init__(self, user, event, instance, extra=None, node_name=None):
+                notified.append({"user": user.pk, "event": event, "node_name": node_name})
+
+            def publish(self, **kwargs):
+                pass
+
+        monkeypatch.setattr("system.notifications.ApprovalFlowMessage", _Recorder)
+
+        # 通知经 transaction.on_commit 入队：测试事务内需显式执行回调
+        with django_capture_on_commit_callbacks(execute=True):
+            assert _enter_node(instance, node) is False
+
+        assert [event for event, _data in emitted] == ["flow.node_auto_approved"]
+        assert emitted[0][1]["node_name"] == "空节点"
+        assert [item["event"] for item in notified] == ["auto_approved"]
+        assert notified[0]["node_name"] == "空节点"
+        assert notified[0]["user"] == superuser.pk
+
+        task = ApprovalNodeTask.objects.get(instance=instance, node=node)
+        assert task.status == ApprovalNodeTask.Status.APPROVED
+        assert task.assignee is None

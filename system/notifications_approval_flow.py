@@ -37,14 +37,18 @@ class ApprovalFlowMessage(UserMessage):
         "sign_removed": _("Your added approval task has been removed"),
         "returned": _("Approval returned for re-processing"),
         "cancelled": _("Approval application cancelled"),
+        # auto_approved = 节点无候选自动通过（治理告警，知会超管）
+        "auto_approved": _("Approval node auto-approved due to no available approver"),
         "cc": _("Approval application copied to you"),
         "mentioned": _("You were mentioned in the approval discussion"),
     }
 
-    def __init__(self, user, event: str, instance, extra: str = ""):
+    def __init__(self, user, event: str, instance, extra: str = "", node_name: str = ""):
         self.event = event
         self.instance = instance
         self.extra = extra
+        # 显式节点名（事件发生在节点尚未成为 current_node 时由调用方给出）
+        self.node_name = node_name
         super().__init__(user)
 
     @classmethod
@@ -67,7 +71,7 @@ class ApprovalFlowMessage(UserMessage):
         return {
             "title": instance.title or "-",
             "flow_name": instance.flow_name or "-",
-            "node_name": getattr(instance.current_node, "name", "") or self.extra or "-",
+            "node_name": self.node_name or getattr(instance.current_node, "name", "") or self.extra or "-",
             "instance_no": str(instance.pk or "")[:8].upper(),
             "reason": instance.reason or "",
             "extra": self.extra or "",

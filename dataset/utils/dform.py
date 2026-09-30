@@ -56,6 +56,20 @@ MAX_TEXT_LENGTH = 2000
 MAX_DRAFT_BYTES = 64 * 1024
 TEXTUAL_TYPES = ("input", "textarea", "select", "radio", "date")
 OPTIONED_TYPES = ("select", "radio", "checkbox")
+# 可勾选「可筛选」的字段类型（提交时物化到筛选列；upload/table/daterange 不是等值筛选面）
+FILTERABLE_TYPES = (
+    "input",
+    "textarea",
+    "number",
+    "amount",
+    "select",
+    "radio",
+    "checkbox",
+    "date",
+    "switch",
+    "user",
+    "cascader",
+)
 # 明细子表：列类型限基础控件（禁 upload/daterange/table 嵌套），行列数封顶防超深 JSON
 TABLE_COLUMN_TYPES = ("input", "textarea", "number", "date", "select")
 MAX_TABLE_COLUMNS = 12
@@ -214,6 +228,11 @@ def validate_schema(schema: dict) -> list:
             value = item.get(bound)
             if value is not None and not isinstance(value, (int, float)):
                 raise ValidationError(_("Field {} {} must be numeric").format(key, bound))
+        filterable = item.get("filterable")
+        if filterable is not None and not isinstance(filterable, bool):
+            raise ValidationError(_("Field {} filterable must be boolean").format(key))
+        if filterable and ftype not in FILTERABLE_TYPES:
+            raise ValidationError(_("Field {} of type {} cannot be filterable").format(key, ftype))
     return fields
 
 

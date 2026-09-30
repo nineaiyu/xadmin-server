@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """动态表单：收敛控件集 JSON Schema + 通用 JSON 存储提交。"""
 
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -72,6 +73,10 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
         DynamicForm, on_delete=models.CASCADE, related_name="submissions", verbose_name=_("Dynamic form")
     )
     data = models.JSONField(_("Data"), default=dict)
+    # 可筛选字段的物化列（设计器勾选 filterable）：提交时写入这些字段的规范化取值，
+    # 列表筛选编译为单条 JSON 包含查询（``filter_data @> {...}``，PostgreSQL 走 GIN）
+    # ——数据仍在 data 列，本列只是筛选索引面，见 dataset/utils/dform_filter.py
+    filter_data = models.JSONField(_("Filter data"), default=dict, blank=True)
     # 保存时的表单 schema 版本（审计与展示口径；提交校验始终按提交当时的 schema）
     schema_version = models.PositiveIntegerField(_("Form schema version"), default=1)
     status = models.CharField(
@@ -96,6 +101,10 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
         verbose_name = _("Dynamic form submission")
         verbose_name_plural = _("Dynamic form submissions")
         ordering = ("-created_time",)
+        indexes = [
+            # 物化筛选列的 GIN 索引（PostgreSQL 生效；其它后端按不支持跳过，语义不变）
+            GinIndex(fields=["filter_data"], name="idx_dformsub_filter_gin"),
+        ]
 
     def __str__(self):
         return f"{self.form_id}:{self.creator_id}"

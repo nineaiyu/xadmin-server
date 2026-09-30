@@ -258,3 +258,14 @@
 | 后端 | 全量 pytest **4496 passed / 2 skipped**（MFA 恢复码单测 14 + 集成 10；metadata 载荷缓存两处键盲区修补；异步 SDK `_OwnedStream` status_code 修补；codegen 批次 AI triage / 种子 title 欠账修复） |
 | 双副本冒烟 | prod+scale overlay：one-off migrate（mfa.0001）、双 server 副本 healthy、nginx multi 两副本 IP 轮询、celery ping 2 节点；暴露的 2 个 prod 形态缺口（SECRET_KEY/ALLOWED_HOSTS overlay 注入、镜像 procps）已收口并登记 deployment.md |
 
+
+### 2026-09-30 附录 B 收口批（安全/正确性小项 + 动态表单物化筛选列，ADR-075）
+
+| 项 | 结果 |
+|------|------|
+| 附录 B 后端七项（B1~B7） | 授权写入校验收敛到当前用户可授权面（非超管不可越面配置）；双 header PAT 兜底路径按哈希 60s 缓存（正常请求不触发，异常构造路径不再每请求查库）；审批流程节点数上限 100 + 推进/模拟一次取数（节点查询数不随流程长度增长）+ 环检测显式栈；节点任务 `bulk_create`（多候选一次 INSERT）+ 抄送标识一次批量解析；dform PATCH 局部更新先合并库内数据再整份校验（必填误报修复）；available-flows/available-forms/form-options 三个数据源接口统一 200 条上限与超限提示；节点无候选自动通过补出站 Webhook `flow.node_auto_approved` + 超管知会 |
+| 动态表单物化筛选列（ADR-075） | 新增 `filter_data` 物化列 + GIN 索引（迁移 dataset 0005）；五条写入路径统一物化；筛选编译为单条 JSON 包含查询（PostgreSQL 命中 GIN；sqlite 退化逐键精确比较，语义差异登记）；设计器「可筛选」开关 + 「表单数据」页字段筛选行（条件随列表与导出下发）；`rebuild_dform_filter_data` 兼容存量提交 |
+| 前端（B17 / B16） | 403 清动态路由快照（会话内被收权自愈；`clearRouteSnapshot` 唯一清入口）+ 快照版本校验失败 30s 退避重试 2 次；**B16 显式取舍**：维持「单测管逻辑、E2E 管界面」分工，UI 层盲区定量沿用 2026-09-27 行与 `xadmin-client/vitest.config.ts` 注释（本批不扩 vitest include） |
+| 后端 | 全量 pytest **4524 collected / exit 0**（本批新增 28 例）+ ruff check/format / mypy（691 文件）/ 行数（0 超标）/ 跨 app / 缓存键 / `makemigrations --check` / 文档四件套全绿 |
+| 前端 | typecheck / eslint（--max-warnings 0）/ prettier / `check:i18n`（zh 3308 = en 3308）/ vitest **688**（+8：筛选纯函数 6 + 403 清快照 2）全绿；e2e：`dform.e2e.ts` 增设计器「可筛选」开关、`dform-data.e2e.ts` 增筛选命中/清空用例 |
+| 坑（已登记） | django-filter 元类只从「自身带 `declared_filters` 的基类」收集声明过滤器——普通 mixin 里声明的过滤器被静默丢弃（筛选参数被忽略、全量返回）；SQLite 不支持 JSONField `contains` 查询，物化筛选按后端分层 |

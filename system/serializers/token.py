@@ -251,7 +251,9 @@ class ApiApplicationGrantSerializer(BaseModelSerializer):
         actions = attrs.get("actions", getattr(instance, "actions", None))
         fields = attrs.get("fields", getattr(instance, "fields", None))
         row_filter = attrs.get("row_filter", getattr(instance, "row_filter", None))
-        actions, fields, row_filter = validate_grant_payload(model_label, actions, fields, row_filter)
+        # 校验面与展示面同源：非超管只能保存本人可授权的模型/动作/字段
+        user = getattr(self.context.get("request"), "user", None)
+        actions, fields, row_filter = validate_grant_payload(model_label, actions, fields, row_filter, user=user)
         attrs["actions"] = actions
         attrs["fields"] = fields
         attrs["row_filter"] = row_filter

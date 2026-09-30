@@ -140,13 +140,21 @@ def match_permission_white_url(method: str, path: str) -> bool:
     return False
 
 
+# 双 header 兜底路径的 scope 短缓存（秒）：正常请求永不触发该路径（认证链首个成功
+# 认证器即短路），异常构造才会走到；缓存按 token 哈希取值，凭证被停用/删除后最迟
+# 一个 TTL 失效——只影响「是否继续施加 scope 限制」，不构成放行面扩大（该请求的
+# 有效凭证始终是 JWT 自身）。
+PAT_SCOPE_FALLBACK_CACHE_SECONDS = 60
+
+
 def resolve_pat_scopes(request):
     """解析本次请求的 PAT scope 清单，非 PAT 请求返回 None。
 
     - PAT 认证胜出：PersonalAccessTokenAuthentication 已把 scopes 挂 request.pat_scopes；
     - JWT 胜出但同请求携带 Pat 头（双 header）：认证链在首个成功认证器处短路，
       pat_scopes 缺失——此处从原始 Authorization 头解析凭证补校验（只取未过期且
-      启用的凭证），防绕过 scope；
+      启用的凭证），防绕过 scope；结果按 token 哈希短缓存（60s），避免每请求一次
+      查库，缓存故障降级直查；
     - 凭证无效时按无 scope 处理（该请求的有效凭证是 JWT，PAT 头本身认证不过）。
     """
     scopes = getattr(request, "pat_scopes", None)
@@ -157,20 +165,34 @@ def resolve_pat_scopes(request):
     if len(parts) != 2 or parts[0].lower() != "pat":
         return None
     from django.apps import apps
+    from django.core.cache import cache
     from django.utils import timezone
 
     from common.core.auth import hash_pat_token
 
-    token_model = apps.get_model("system", "PersonalAccessToken")
-    pat = (
-        token_model.objects.filter(token_hash=hash_pat_token(parts[1]), is_active=True)
-        .only("scopes", "expired_at")
-        .first()
-    )
-    if pat is None or (pat.expired_at and pat.expired_at <= timezone.now()):
-        scopes = []
+    cache_key = f"pat_scope_fallback_{hash_pat_token(parts[1])}"
+    cached = None
+    try:
+        cached = cache.get(cache_key)
+    except Exception:  # noqa: BLE001 缓存故障降级直查
+        cached = None
+    if cached is not None:
+        scopes = cached
     else:
-        scopes = pat.scopes or []
+        token_model = apps.get_model("system", "PersonalAccessToken")
+        pat = (
+            token_model.objects.filter(token_hash=hash_pat_token(parts[1]), is_active=True)
+            .only("scopes", "expired_at")
+            .first()
+        )
+        if pat is None or (pat.expired_at and pat.expired_at <= timezone.now()):
+            scopes = []
+        else:
+            scopes = pat.scopes or []
+        try:
+            cache.set(cache_key, scopes, PAT_SCOPE_FALLBACK_CACHE_SECONDS)
+        except Exception:  # noqa: BLE001 缓存故障不影响本次判定
+            pass
     request.pat_scopes = scopes
     return scopes
 

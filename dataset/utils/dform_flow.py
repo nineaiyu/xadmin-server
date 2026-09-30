@@ -235,6 +235,7 @@ def resubmit_submission(submission, user):
     否则旧数据可绕过新增必填直达流程引擎（引擎 validate_form 只看流程侧 form_schema）。
     """
     from dataset.utils.dform import validate_submission_data
+    from dataset.utils.dform_filter import build_filter_data
 
     with transaction.atomic():
         locked = (
@@ -254,7 +255,8 @@ def resubmit_submission(submission, user):
         except ValidationError as exc:
             messages = getattr(exc, "messages", None) or [str(exc)]
             return False, str(messages[0])
-        locked.save(update_fields=["data", "updated_time"])
+        locked.filter_data = build_filter_data(locked.form.schema, locked.data)
+        locked.save(update_fields=["data", "filter_data", "updated_time"])
         return create_flow_instance(locked, user)
 
 
@@ -265,6 +267,7 @@ def submit_from_approval(approval, user):
     表单提交走流程引擎，不会生成这类审批单。
     """
     from dataset.utils.dform import validate_submission_data
+    from dataset.utils.dform_filter import build_filter_data
 
     payload = approval.payload or {}
     form = DynamicForm.objects.filter(pk=payload.get("form") or "", is_active=True).first()
@@ -280,6 +283,7 @@ def submit_from_approval(approval, user):
     submission = DynamicFormSubmission.objects.create(
         form=form,
         data=data,
+        filter_data=build_filter_data(form.schema, data),
         creator=approval.creator,
         modifier=approval.creator,
     )
@@ -299,6 +303,7 @@ def update_from_approval(approval, user):
     因此按审批快照重校验数据后把状态从 DRAFT 落为已生效；行已提交（幂等重放）视为完成。
     """
     from dataset.utils.dform import validate_submission_data
+    from dataset.utils.dform_filter import build_filter_data
 
     payload = approval.payload or {}
     submission = DynamicFormSubmission.objects.filter(pk=approval.object_pk or "").first()
@@ -319,8 +324,9 @@ def update_from_approval(approval, user):
         return False, str(messages[0])
 
     submission.data = data
+    submission.filter_data = build_filter_data(form.schema, data)
     submission.status = ""
-    submission.save(update_fields=["data", "status", "updated_time"])
+    submission.save(update_fields=["data", "filter_data", "status", "updated_time"])
     logger.info("dform draft submitted by approval. approval:%s submission:%s", approval.pk, submission.pk)
     return True, None
 

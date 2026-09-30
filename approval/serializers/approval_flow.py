@@ -25,7 +25,7 @@ from approval.serializers.approval_instance import (  # noqa: F401 实例/任务
     ApprovalInstanceSerializer,
     ApprovalNodeTaskSerializer,
 )
-from approval.utils.approval_flow import CONDITION_OPS
+from approval.utils.approval_flow import CONDITION_OPS, MAX_FLOW_NODES
 from approval.utils.approval_flow.versioning import apply_definition, build_snapshot
 from common.core.serializers import BaseModelSerializer
 from system.services import DisplayRelatedField
@@ -122,11 +122,13 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         return value
 
     def validate_nodes(self, value):
-        """节点校验：至少 1 个；order 缺省按顺序补齐且不可重复；审批人配置与条件表达式合法。"""
+        """节点校验：数量上限；至少 1 个；order 缺省按顺序补齐且不可重复；审批人配置与条件表达式合法。"""
         if value is None:
             return value
         if not value:
             raise serializers.ValidationError(_("The flow requires at least one node"))
+        if len(value) > MAX_FLOW_NODES:
+            raise serializers.ValidationError(_("A flow supports at most {} nodes").format(MAX_FLOW_NODES))
         orders = []
         for index, node in enumerate(value):
             order = node.get("order")
@@ -212,21 +214,30 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             if targets:
                 edges[order] = targets
 
-        # DFS 环检测（colors: 0 未访问 1 在栈 2 完成）
+        # 环检测（colors: 0 未访问 1 在栈 2 完成）：显式栈迭代，深链不触发 Python 递归上限
         color = {order: 0 for order in orders}
-
-        def _visit(order):
-            if color.get(order, 0) == 1:
-                raise serializers.ValidationError(_("Branch routes contain a loop"))
-            if color.get(order, 0) == 2:
-                return
-            color[order] = 1
-            for target in edges.get(order, []):
-                _visit(target)
-            color[order] = 2
-
-        for order in edges:
-            _visit(order)
+        for start in edges:
+            if color.get(start, 0) != 0:
+                continue
+            stack = [(start, False)]
+            while stack:
+                order, exiting = stack.pop()
+                if exiting:
+                    color[order] = 2
+                    continue
+                state = color.get(order, 0)
+                if state == 2:
+                    continue
+                if state == 1:  # 防御：入栈时已拦同类边，此处兜底
+                    raise serializers.ValidationError(_("Branch routes contain a loop"))
+                color[order] = 1
+                stack.append((order, True))
+                for target in edges.get(order, []):
+                    target_state = color.get(target, 0)
+                    if target_state == 1:
+                        raise serializers.ValidationError(_("Branch routes contain a loop"))
+                    if target_state == 0:
+                        stack.append((target, False))
 
     @transaction.atomic
     def create(self, validated_data):

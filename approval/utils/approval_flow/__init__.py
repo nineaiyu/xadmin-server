@@ -34,6 +34,7 @@ from .conditions import (
     matching_nodes,
     next_node,
     nodes_effective_at,
+    ordered_nodes,
     resolve_assignee_pairs,
     resolve_assignees,
     simulate_path,
@@ -45,6 +46,7 @@ from .constants import (
     FLOW_PENDING_COUNT_CACHE_SECONDS,
     FLOW_REMIND_CACHE_SECONDS,
     FLOW_STATS_WINDOW_DAYS,
+    MAX_FLOW_NODES,
 )
 from .engine import (
     _emit_flow_event as _emit_flow_event,  # noqa: PLC0414 显式再导出（测试按私有名导入）
@@ -73,6 +75,7 @@ __all__ = [
     "FLOW_PENDING_COUNT_CACHE_SECONDS",
     "FLOW_REMIND_CACHE_SECONDS",
     "FLOW_STATS_WINDOW_DAYS",
+    "MAX_FLOW_NODES",
     "add_sign",
     "approve_task",
     "cancel_instance",
@@ -87,6 +90,7 @@ __all__ = [
     "next_node",
     "node_progress_for",
     "nodes_effective_at",
+    "ordered_nodes",
     "pending_count_for",
     "pending_tasks_for",
     "remind_pending_tasks",

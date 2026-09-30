@@ -19,28 +19,32 @@ from .assignees import (
 )
 from .conditions import (
     next_node,
+    ordered_nodes,
     resolve_assignee_pairs,
     resolve_assignees,
     simulate_path,
     validate_form,
 )
-from .constants import _FLOW_FINISH_EVENTS, _models
+from .constants import _FLOW_FINISH_EVENTS, MAX_AUTO_APPROVE_NOTIFY_ADMINS, _models, _users
 
 logger = get_logger(__name__)
 
 
-def _notify(users, event, instance, extra=None):
+def _notify(users, event, instance, extra=None, node_name=None):
     """向用户列表推送流程通知（单条失败只记日志，不阻断推进）。
 
     入队延迟到事务提交后（`transaction.on_commit`）：发起/通过/驳回/撤回/加签都在
     `transaction.atomic()` 内推进实例，提交前入队一旦事务回滚，就会留下指向不存在
     实例的通知（点进去 404）。无活动事务时 Django 立即执行回调，语义与改造前一致。
+
+    ``node_name`` 为显式节点名：事件发生在「节点尚未成为 current_node」时（如无候选
+    自动通过），由调用方直接给出，避免通知里显示上一个节点。
     """
     from system.notifications import ApprovalFlowMessage
 
     def _send(user):
         try:
-            ApprovalFlowMessage(user, event, instance, extra=extra).publish(is_async=True)
+            ApprovalFlowMessage(user, event, instance, extra=extra, node_name=node_name).publish(is_async=True)
         except Exception:  # noqa: BLE001 通知链路故障不影响审批主流程
             logger.warning("send approval flow notify failed. instance:%s user:%s", instance.pk, user.pk, exc_info=True)
 
@@ -66,12 +70,32 @@ def _invalidate_pending_count(users):
         cache.delete_many([f"approval_flow_pending_count_{pk}" for pk in pks])
 
 
+def _alert_auto_approved(instance, node) -> None:
+    """节点无候选自动通过的治理告警：出站 Webhook + 知会启用中的超管。
+
+    自动通过 = 流程按「无人可审」静默放行，属配置缺口，必须能被运维察觉
+    （原来只有服务端日志与审计行，无任何外发信号）；超管知会同提交/终态事件走
+    同一通知链路，单条失败只记日志。
+    """
+    _emit_flow_event(
+        "flow.node_auto_approved",
+        instance,
+        extra={"node_name": node.name, "current_node": node.name},
+    )
+    UserInfo = _users()
+    admins = list(UserInfo.objects.filter(is_superuser=True, is_active=True)[:MAX_AUTO_APPROVE_NOTIFY_ADMINS])
+    if admins:
+        _notify(admins, "auto_approved", instance, node_name=node.name)
+
+
 def _enter_node(instance, node) -> bool:
     """进入节点：解析候选并建 PENDING 任务 + 通知；无候选返回 False（调用方跳过该节点）。
 
     无候选（如部门 leader 被清空）在推进期发生时不阻塞流程：写一行 assignee 为空的
     审计任务（comment 注明自动通过），保证行为可追溯。委托代审的候选会记录
     delegate_from（原审批人），供审批轨迹标注「由 X 代理」。
+
+    任务行批量创建（候选数上限内单次 INSERT）；候选解析、通知与待办计数失效语义不变。
     """
     ApprovalNodeTask = _models().Task
     now = timezone.now()
@@ -89,25 +113,28 @@ def _enter_node(instance, node) -> bool:
             acted_at=now,
         )
         logger.warning("approval flow node auto-approved (no candidate). instance:%s node:%s", instance.pk, node.pk)
+        _alert_auto_approved(instance, node)
         return False
 
     candidates = [user for user, _source in pairs]
-    tasks = [
-        ApprovalNodeTask.objects.create(
-            instance=instance,
-            node=node,
-            node_name=node.name,
-            node_order=node.order,
-            assignee=user,
-            # 处理人显示名快照（用户删除/改名后轨迹仍可读）
-            assignee_display=user_display(user),
-            delegate_from=source,
-        )
-        for user, source in pairs
-    ]
+    ApprovalNodeTask.objects.bulk_create(
+        [
+            ApprovalNodeTask(
+                instance=instance,
+                node=node,
+                node_name=node.name,
+                node_order=node.order,
+                assignee=user,
+                # 处理人显示名快照（用户删除/改名后轨迹仍可读）
+                assignee_display=user_display(user),
+                delegate_from=source,
+            )
+            for user, source in pairs
+        ]
+    )
     _notify(candidates, "submitted", instance)
     _invalidate_pending_count(candidates)
-    return bool(tasks)
+    return True
 
 
 def _instance_version(instance):
@@ -179,27 +206,28 @@ def create_instance(*, flow, applicant, title, form_data, biz_type="", biz_id=""
     return instance, None
 
 
-def _emit_flow_event(event: str, instance) -> None:
+def _emit_flow_event(event: str, instance, extra=None) -> None:
     """出站 Webhook：流程实例事件（emit 全程吞异常，不影响审批流转）。
 
     payload 只含摘要字段，不含 form_data——表单内容可能敏感，订阅方需要明细时
     用自身凭证走 API 按流程取（与轻量审批 _emit_approval_event 同口径）。
+    ``extra`` 可覆盖/补充摘要字段（如自动通过事件的 node_name 与 current_node）。
     """
     from system.utils.webhook import emit_webhook_event
 
+    data = {
+        "instance_no": str(instance.pk)[:8].upper(),
+        "title": instance.title,
+        "flow_name": instance.flow_name,
+        "status": instance.status,
+        "creator": getattr(instance.creator, "username", ""),
+        "current_node": getattr(instance.current_node, "name", "") or "",
+        "reason": instance.reason or "",
+    }
+    if extra:
+        data.update(extra)
     try:
-        emit_webhook_event(
-            event,
-            {
-                "instance_no": str(instance.pk)[:8].upper(),
-                "title": instance.title,
-                "flow_name": instance.flow_name,
-                "status": instance.status,
-                "creator": getattr(instance.creator, "username", ""),
-                "current_node": getattr(instance.current_node, "name", "") or "",
-                "reason": instance.reason or "",
-            },
-        )
+        emit_webhook_event(event, data)
     except Exception:  # noqa: BLE001 双保险（emit 自身已吞异常）
         logger.warning("emit flow webhook failed: %s", event, exc_info=True)
 
@@ -278,13 +306,15 @@ def _advance(instance, node):
 
     并发安全：调用方（approve_task 等）持有实例行锁（select_for_update）时同一实例
     的推进会串行化；终态跃迁另有 CAS 兜底（见 _finish_instance）。
+
+    节点集一次取数后整段复用（连续跳过无候选节点时不再逐步查库）。
     """
     ApprovalInstance = _models().Instance
 
+    version = _instance_version(instance)
+    nodes = ordered_nodes(instance.flow, version)
     while True:
-        following = next_node(
-            instance.flow, node.order, instance.form_data, node=node, version=_instance_version(instance)
-        )
+        following = next_node(instance.flow, node.order, instance.form_data, node=node, version=version, nodes=nodes)
         if following is None:
             # 终态通过：当前节点任务已由本次动作处理完毕（含或签/比例会签的作废，
             # 失效集在调用点给出），实例到达终态后不存在遗留 PENDING 任务——

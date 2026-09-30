@@ -19,6 +19,8 @@
         {% trans 'An approval task has been transferred to you, please handle it as soon as possible' %}
     {% elif event == 'cancelled' %}
         {% trans 'The approval application has been cancelled by the applicant' %}
+    {% elif event == 'auto_approved' %}
+        {% trans 'An approval node was auto-approved because it has no available approver, please check the flow configuration' %}
     {% else %}
         {% trans 'You have a new approval flow notification' %}
     {% endif %}

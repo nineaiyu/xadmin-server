@@ -73,8 +73,11 @@ def _resolve_instance_cc(path, applicant, extra=None):
 
     标识兼容「用户 pk」与「用户名」两种形态：设计器节点与发起弹窗可直接沿用
     审批人选择器的用户名，API 调用方可传 pk；非法标识静默跳过（抄送为附加能力，
-    不阻断发起）。
+    不阻断发起）。标识集合一次批量解析（pk 与用户名各走同一查询），不逐标识查库，
+    逐标识仍保持「主键优先、用户名兜底」的解析语义。
     """
+    from django.db.models import Q
+
     UserInfo = _users()
 
     identifiers = []
@@ -89,16 +92,36 @@ def _resolve_instance_cc(path, applicant, extra=None):
             identifiers.append(text)
     if not identifiers:
         return []
+    identifiers = identifiers[:20]
     pk_field = UserInfo._meta.pk
+    pk_values, names = [], []
+    for text in identifiers:
+        try:
+            pk_values.append(pk_field.to_python(text))
+        except Exception:  # noqa: BLE001 非主键形态（用户名）走名称匹配
+            names.append(text)
+    if not pk_values and not names:
+        return []
+    query = Q()
+    if pk_values:
+        query |= Q(pk__in=pk_values)
+    if names:
+        query |= Q(username__in=names)
+    by_pk: dict = {}
+    by_name: dict = {}
+    for candidate in UserInfo.objects.filter(query):
+        by_pk[candidate.pk] = candidate
+        by_name.setdefault(candidate.username, candidate)
+
     users = []
-    for text in identifiers[:20]:
+    for text in identifiers:
         user = None
         try:
-            user = UserInfo.objects.filter(pk=pk_field.to_python(text)).first()
+            user = by_pk.get(pk_field.to_python(text))
         except Exception:  # noqa: BLE001 非主键形态（用户名）走下方兜底
             user = None
         if user is None:
-            user = UserInfo.objects.filter(username=text).first()
+            user = by_name.get(text)
         if user and user.is_active and user.pk != applicant.pk and user not in users:
             users.append(user)
     return users

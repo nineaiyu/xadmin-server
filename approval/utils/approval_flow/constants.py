@@ -12,6 +12,10 @@ FLOW_REMIND_CACHE_SECONDS = 60 * 60 * 24
 FLOW_NOTIFY_THROTTLE_SECONDS = 60
 # 统计默认回看窗口（天）
 FLOW_STATS_WINDOW_DAYS = 30
+# 单流程节点数上限：模拟路径/环检测/节点编辑校验的求值面按节点数收敛（防畸形大图）
+MAX_FLOW_NODES = 100
+# 节点无候选自动通过的告警收件人上限（启用中的超管；防异常数据下通知面失控）
+MAX_AUTO_APPROVE_NOTIFY_ADMINS = 20
 # 条件运算符白名单
 CONDITION_OPS = ("eq", "ne", "in", "not_in", "gt", "gte", "lt", "lte", "contains", "is_empty", "not_empty")
 # 实例终态 → 出站 Webhook 事件（flow.*）；PENDING 不经 _finish_instance 不映射

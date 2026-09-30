@@ -8,6 +8,7 @@
 """
 
 import pytest
+from django.core.cache import cache as django_cache
 from rest_framework.test import APIClient
 
 from system.models.field import ModelLabelField
@@ -327,3 +328,43 @@ class TestGrantOptions:
 
     def test_catalog_requires_login(self, api_client):
         assert api_client.get(f"{APPS_URL}/grant-options").status_code == 401
+
+
+class TestGrantValidationScope:
+    """写入校验面与展示面同源：非超管管理员只能保存本人可授权的模型/动作/字段。"""
+
+    @staticmethod
+    def _serializer(user, payload):
+        from rest_framework.test import APIRequestFactory
+
+        from system.serializers.token import ApiApplicationGrantSerializer
+
+        request = APIRequestFactory().post(APPS_URL)
+        request.user = user
+        return ApiApplicationGrantSerializer(data=payload, context={"request": request})
+
+    def test_superuser_can_grant_any_known_model(self, superuser, user_menus):
+        serializer = self._serializer(superuser, {"model": "system.deptinfo", "actions": ["list"]})
+        assert serializer.is_valid(), serializer.errors
+
+    def test_normal_user_scoped_to_own_grantable_models(self, normal_user, role, user_menus):
+        """普通管理员：仅本人菜单覆盖的模型/动作/字段可保存，面外一律拒绝。"""
+        role.menu.add(user_menus["list"])  # 仅 SystemUser 的 list 菜单
+        django_cache.clear()  # 权限数据 24h 缓存：授权变更后需失效
+
+        in_scope = self._serializer(
+            normal_user, {"model": "system.userinfo", "actions": ["list"], "fields": ["username"]}
+        )
+        assert in_scope.is_valid(), in_scope.errors
+
+        # 面外模型（部门菜单存在但未授予该用户）
+        out_of_model = self._serializer(normal_user, {"model": "system.deptinfo", "actions": ["list"]})
+        assert not out_of_model.is_valid()
+        # 面外动作（用户只有 list，没有 create）
+        out_of_action = self._serializer(normal_user, {"model": "system.userinfo", "actions": ["create"]})
+        assert not out_of_action.is_valid()
+        # 面外字段
+        out_of_field = self._serializer(
+            normal_user, {"model": "system.userinfo", "actions": ["list"], "fields": ["nickname"]}
+        )
+        assert not out_of_field.is_valid()

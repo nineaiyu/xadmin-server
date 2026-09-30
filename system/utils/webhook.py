@@ -190,6 +190,21 @@ EVENT_CATALOG = {
             "reason": {"type": "string", "required": False, "description": _("Finish reason")},
         },
     },
+    # 节点无候选自动通过（治理告警：配置缺口导致流程静默放行，实例仍为 PENDING）
+    "flow.node_auto_approved": {
+        "label": _("Flow node auto-approved"),
+        "version": 1,
+        "fields": {
+            "instance_no": {"type": "string", "required": True, "description": _("Instance number")},
+            "title": {"type": "string", "required": True, "description": _("Instance title")},
+            "flow_name": {"type": "string", "required": True, "description": _("Flow name")},
+            "status": {"type": "string", "required": True, "description": _("Instance status")},
+            "creator": {"type": "string", "required": True, "description": _("Creator username")},
+            "node_name": {"type": "string", "required": True, "description": _("Node name")},
+            "current_node": {"type": "string", "required": False, "description": _("Current node")},
+            "reason": {"type": "string", "required": False, "description": _("Finish reason")},
+        },
+    },
     # 开放平台：应用每日配额达阈值（软告警，不阻断）
     "api_quota.warning": {
         "label": _("API application quota warning"),

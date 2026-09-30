@@ -9,6 +9,7 @@ from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dform import MAX_SCHEMA_HISTORY, DynamicForm, DynamicFormSubmission
 from dataset.utils.dform import normalize_schema, validate_draft_data, validate_submission_data
+from dataset.utils.dform_filter import build_filter_data
 from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
 
 
@@ -213,6 +214,16 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
         data = attrs.get("data")
         if data is None and self.instance:
             data = self.instance.data
+        elif (
+            data is not None
+            and self.instance is not None
+            and getattr(self, "partial", False)
+            and isinstance(data, dict)
+        ):
+            # PATCH 局部更新：data 先与库内数据合并再整份校验——只校验提交子集会把
+            # 未提交的必填字段判成缺失（必填误报）。PUT（非 partial）维持整份替换
+            # 语义（省略键 = 删除该键）。
+            data = {**(self.instance.data or {}), **data}
         # 草稿（DRAFT）：轻校验（结构/体积），必填与取值在提交时按完整规则校验
         if self.context.get("draft"):
             attrs["data"] = validate_draft_data(data)
@@ -222,6 +233,8 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             attrs["data"] = validate_submission_data(form.schema, data, user=getattr(self.request, "user", None))
         # 记录保存时的表单版本（审计与展示；校验始终按提交当时的 schema）
         attrs["schema_version"] = form.schema_version or 1
+        # 物化筛选列：勾选「可筛选」的字段取值（列表筛选走 JSON 包含查询，可命中 GIN）
+        attrs["filter_data"] = build_filter_data(form.schema, attrs["data"])
         return attrs
 
 
