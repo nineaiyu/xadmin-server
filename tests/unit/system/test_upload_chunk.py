@@ -243,6 +243,9 @@ class TestCleanup:
         plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
         _part(superuser, plan["session"], 0, b"abcd")
         session = UploadSession.objects.get(pk=plan["session"])
+        # 分片必须已落行：上传失败（如限流 429）会在此暴露，而不是等清理断言时才表现为
+        # 「文件仍在」——历史上顺序/并行依赖的假失败即由此而来
+        assert session.parts.filter(index=0).exists()
         UploadSession.objects.filter(pk=session.pk).update(created_time=timezone.now() - timedelta(days=2))
 
         from common.storage import storage_exists

@@ -64,10 +64,18 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
-# 测试产生的上传文件统一写到 tmp 目录，避免污染 data/
+# 测试产生的上传文件统一写到 tmp 目录，避免污染 data/。
+# xdist 并行（`pytest -n auto`）按 worker 再分子目录：各 worker 的数据库独立、自增主键
+# 都从 1 开始，分片等按主键生成的存储路径（upload_sessions/<pk>/part-*）会**跨进程同名**
+# ——一个 worker 清理文件后另一个 worker 又写入同路径，断言「已清理」随机失败（历史 flaky）。
 import os  # noqa: E402
 
-MEDIA_ROOT = os.path.join(PROJECT_DIR, "tmp", "test_media")
+_worker = os.environ.get("PYTEST_XDIST_WORKER", "")
+MEDIA_ROOT = (
+    os.path.join(PROJECT_DIR, "tmp", "test_media", _worker)
+    if _worker
+    else os.path.join(PROJECT_DIR, "tmp", "test_media")
+)
 
 # 测试日志与生产日志隔离：data/logs/server.log 是发布窗口硬门禁（CSP enforce /
 # AES v1 关闭）的唯一判据来源，测试流量不得写入（机制与背景见 tests/logging_isolation.py）
