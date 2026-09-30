@@ -15,6 +15,7 @@ from rest_framework.validators import UniqueValidator
 
 from common.base.utils import AESCipherV2
 from common.core.fields import DictChoiceField
+from common.core.filter import assert_within_data_scope
 from common.core.serializers import BaseModelSerializer
 from common.fields.utils import input_wrapper
 from common.utils import get_logger
@@ -26,7 +27,7 @@ from settings.services import (
     check_password_rules,
     record_password_hash,
 )
-from system.models import UserInfo
+from system.models import DataPermission, DeptInfo, UserInfo, UserRole
 from system.models.ldap import LdapUserBinding
 from system.serializers.tag import TaggedObjectSerializerMixin
 from system.utils import user_invite
@@ -168,7 +169,44 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             self.context["user_online_layers"] = get_online_users_layers(pks)
         return len(self.context["user_online_layers"].get(obj.pk, []))
 
+    def _assert_scope_fields(self, attrs):
+        """写侧载荷范围校验：归属字段与关系字段必须落在可授权范围内。
+
+        与读侧同源（数据权限可见范围 = 可写范围）：
+        - ``dept``：非超管指定的目标部门须可见；把已有归属清空（挪出管辖）同样拒绝，
+          原本就无归属（原值为空）时放行（避免「编辑无部门用户」被误伤）；
+        - ``roles`` / ``rules``：赋值面须全部在可授权池内（与 empower 同口径，逐项
+          校验而非静默丢弃）；空值/未提交不校验（PATCH 语义：不碰即不变）。
+        """
+        user = getattr(self.request, "user", None) if self.request is not None else None
+        if user is None:
+            # 无请求上下文（导入/脚本/内部调用）：范围语义不存在，不引入新约束
+            return
+        if "dept" in attrs:
+            dept = attrs.get("dept")
+            if dept is None:
+                original = getattr(self.instance, "dept", None) if self.instance else None
+                if original is not None and not getattr(user, "is_superuser", False):
+                    raise ValidationError(_("The department is outside your data scope"))
+            else:
+                assert_within_data_scope(
+                    DeptInfo.objects.filter(pk=dept.pk), user, _("The department is outside your data scope")
+                )
+        roles = attrs.get("roles")
+        if roles:
+            pks = [getattr(item, "pk", item) for item in roles]
+            assert_within_data_scope(
+                UserRole.objects.filter(pk__in=pks), user, _("Role is outside your assignable scope")
+            )
+        rules = attrs.get("rules")
+        if rules:
+            pks = [getattr(item, "pk", item) for item in rules]
+            assert_within_data_scope(
+                DataPermission.objects.filter(pk__in=pks), user, _("Data permission is outside your assignable scope")
+            )
+
     def validate(self, attrs):
+        self._assert_scope_fields(attrs)
         if attrs.get("invite"):
             # 邀请模式：密码由被邀请人自行设置（服务端置不可用），提交中的密码一律忽略
             attrs.pop("password", None)

@@ -31,6 +31,28 @@ BUILTIN_ROLES = [
         "description": _("Builtin role: assign audit menus manually as needed"),
         "grant_all_menus": False,
     },
+    {
+        # 部门管理员（ADR-077）：成员与数据权限规则由部门任命端点维护，
+        # 菜单面为固定清单（用户管理子集 + 部门查看 + 我的管辖），同步强制对齐
+        "code": "DeptManager",
+        "name": _("Department Manager"),
+        "description": _(
+            "Builtin role: granted by department manager assignment; "
+            "members and data rules are maintained by the assignment endpoint"
+        ),
+        "grant_all_menus": False,
+        "menu_names": [
+            "list:SystemUser",
+            "retrieve:SystemUser",
+            "create:SystemUser",
+            "partialUpdate:SystemUser",
+            "list:SystemDept",
+            "retrieve:SystemDept",
+        ],
+        # 字段白名单（fail-closed：无白名单读写字段被整体裁剪）：开箱可用需要基础
+        # 白名单，同步为模型全字段；管理员在角色页细化后不再回写（见 _ensure_role_fields）
+        "field_models": ["system.userinfo", "system.deptinfo"],
+    },
 ]
 
 BUILTIN_ROLE_CODES = frozenset(spec["code"] for spec in BUILTIN_ROLES)
@@ -103,7 +125,42 @@ def sync_builtin_roles() -> int:
             if set(role.menu.values_list("pk", flat=True)) != set(active_menu_ids):
                 with transaction.atomic():
                     role.menu.set(active_menu_ids)
+        elif spec.get("menu_names"):
+            # 固定权限点清单（内置角色：治理面强制对齐，人工调整不保留）
+            wanted = list(Menu.objects.filter(name__in=spec["menu_names"], is_active=True).values_list("pk", flat=True))
+            if set(role.menu.values_list("pk", flat=True)) != set(wanted):
+                with transaction.atomic():
+                    role.menu.set(wanted)
+
+        if spec.get("field_models"):
+            _ensure_role_fields(role, spec["field_models"])
     return changed
+
+
+def _ensure_role_fields(role, model_names) -> None:
+    """内置角色字段白名单（缺失时补建为模型全字段，已有配置不覆盖）。
+
+    字段权限是 fail-closed 的（无白名单 = 读空对象 / 写忽略）：内置职能角色
+    开箱可用需要基础白名单。仅在 (角色, 菜单) 无行或行为空时补建——管理员
+    在角色页收敛字段后不回写（与 SystemAdmin 的菜单强制同步语义不同）。
+    """
+    from system.models import FieldPermission, ModelLabelField
+
+    all_fields = []
+    for name in model_names:
+        root = ModelLabelField.objects.filter(name=name, parent__isnull=True).first()
+        if root is None:
+            logger.warning("builtin role field whitelist skipped, model tree missing: %s", name)
+            continue
+        all_fields.extend(ModelLabelField.objects.filter(parent=root))
+    if not all_fields:
+        return
+    for menu in role.menu.all():
+        permission = FieldPermission.objects.filter(role=role, menu=menu).first()
+        if permission is None:
+            permission = FieldPermission.objects.create(role=role, menu=menu)
+        if not permission.field.exists():
+            permission.field.set(all_fields)
 
 
 def sync_builtin_tags() -> int:

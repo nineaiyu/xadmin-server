@@ -188,6 +188,8 @@ def validate_rules(rules):
             KeyChoices.OWNER_DEPARTMENTS,
             KeyChoices.LEADER_DEPARTMENTS,
             KeyChoices.LEADER_USERS,
+            KeyChoices.MANAGER_DEPARTMENTS,
+            KeyChoices.MANAGER_USERS,
         ):
             if rule.get("match", "exact") not in ("in", "exact"):
                 raise ValidationError(_("Rules of this type only support the in match"))

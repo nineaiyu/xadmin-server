@@ -128,6 +128,17 @@ class Command(BaseCommand):
                     self.style.WARNING(f"  ~ {role.name} | {menu.name} | {menu.method or '-'} {menu.path}")
                 )
 
+        wide_manager = sync.audit_wide_manager_grants()
+        if wide_manager:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"[宽授权] {len(wide_manager)} 个（部门管理员, 宽规则）组合：数据权限并集取最宽，"
+                    "管理员持有「全部数据」等宽规则时部门边界失效（去数据权限页调整或确认有意为之）"
+                )
+            )
+            for user, rule_name in wide_manager[:DETAIL_LIMIT]:
+                self.stdout.write(self.style.WARNING(f"  ~ {user.username} | {rule_name}"))
+
         if dry_run:
             return
 

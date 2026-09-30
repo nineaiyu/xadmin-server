@@ -38,6 +38,40 @@ def audit_field_permissions():
     return items
 
 
+def audit_wide_manager_grants():
+    """报告「部门管理员持有宽数据权限规则」的配置（只报告不落库）。
+
+    数据权限多授权并集取最宽（取最宽生效）：部门管理员一旦（经个人或所在部门
+    祖先链绑定）持有 ``value.all`` 等不收敛规则，部门边界即失效。本检查把该
+    配置风险显式暴露，不阻断不改语义——管理员可据此调整，或确认是有意为之。
+
+    返回 ``[(user, rule_name), ...]``（部门管理员 × 命中的宽规则名）。
+    """
+    from common.core.data_scope import KeyChoices
+    from system.models import DataPermission, DeptInfo, DeptManagerAssignment, UserInfo
+
+    manager_ids = set(DeptManagerAssignment.objects.values_list("user_id", flat=True))
+    if not manager_ids:
+        return []
+    findings = []
+    seen = set()
+    for user in UserInfo.objects.filter(pk__in=manager_ids, is_active=True).select_related("dept"):
+        bound = list(user.rules.filter(is_active=True))
+        if user.dept_id:
+            # 部门祖先链（含本部门，仅启用部门）绑定的授权与个人授权同池生效
+            chain = [str(pk) for pk in DeptInfo.recursion_dept_info(user.dept_id, is_parent=True)]
+            active_chain = list(DeptInfo.objects.filter(pk__in=chain, is_active=True).values_list("pk", flat=True))
+            if active_chain:
+                bound += list(DataPermission.objects.filter(is_active=True, deptinfo__in=active_chain).distinct())
+        for dp in bound:
+            if dp.pk in seen:
+                continue
+            seen.add(dp.pk)
+            if any(isinstance(rule, dict) and rule.get("type") == KeyChoices.ALL for rule in (dp.rules or [])):
+                findings.append((user, dp.name))
+    return findings
+
+
 def audit_permission_menus(routes, perms):
     """报告：未匹配任何路由的权限点 / 重复的 (path, method)。
 

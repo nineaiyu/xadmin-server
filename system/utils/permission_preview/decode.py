@@ -41,6 +41,8 @@ def _resolve_dept_subject_text(f_type, val) -> str:
         "value.user.dept.ids": "部门成员所在部门及下级",
         "value.leader.dept.ids": "部门成员主管的部门及下级",
         "value.leader.user.ids": "部门成员主管部门的成员",
+        "value.manager.dept.ids": "部门成员管理的部门及下级",
+        "value.manager.user.ids": "部门成员管理部门的成员",
     }
     if f_type in mapping:
         return mapping[f_type]
@@ -88,6 +90,25 @@ def _resolve_value_text_inner(rule: dict, user_obj: UserInfo | None, subject: st
             return "目标用户不是任何部门主管"
         dept_pks: list[str] = []
         for dept in led.filter(is_active=True):
+            dept_pks.extend(str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk))
+        queryset = UserInfo.objects.filter(dept__in=dept_pks)
+        rows = list(queryset.values_list("nickname", "username")[:PREVIEW_VALUE_NAME_LIMIT])
+        return _join_names([nickname or username for nickname, username in rows], total=queryset.count())
+    if f_type == "value.manager.dept.ids":
+        managed = getattr(user_obj, "managed_depts", None)
+        if managed is None or not managed.exists():
+            return "目标用户不是任何部门管理员"
+        names = []
+        for dept in managed.filter(is_active=True):
+            pks = [str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk)]
+            names.extend(DeptInfo.objects.filter(pk__in=pks).values_list("name", flat=True))
+        return _join_names(dict.fromkeys(names))
+    if f_type == "value.manager.user.ids":
+        managed = getattr(user_obj, "managed_depts", None)
+        if managed is None or not managed.exists():
+            return "目标用户不是任何部门管理员"
+        dept_pks: list[str] = []
+        for dept in managed.filter(is_active=True):
             dept_pks.extend(str(pk) for pk in DeptInfo.recursion_dept_info(dept.pk))
         queryset = UserInfo.objects.filter(dept__in=dept_pks)
         rows = list(queryset.values_list("nickname", "username")[:PREVIEW_VALUE_NAME_LIMIT])

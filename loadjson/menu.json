@@ -16606,5 +16606,51 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "2d97aabe-90cf-4c89-88b3-0f9a0fed35c2",
+  "fields": {
+   "created_time": "2026-09-30T16:15:00.764Z",
+   "updated_time": "2026-09-30T16:15:00.764Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "assignManagers:SystemDept",
+   "rank": 10000,
+   "path": "api/system/dept/(?P<pk>[^/.]+)/assign-managers$",
+   "component": null,
+   "is_active": true,
+   "meta": "ec14b804-dff0-454b-80e6-e69fff315713",
+   "method": "POST",
+   "model": []
+  }
+ },
+ {
+  "model": "system.menu",
+  "pk": "afa739c9-0568-4fab-aef4-ac4f6f5c5d41",
+  "fields": {
+   "created_time": "2026-09-30T16:16:12.714Z",
+   "updated_time": "2026-09-30T16:16:12.714Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "050f7e13-cf60-4c1d-b791-3ab6a97254f6",
+   "menu_type": 1,
+   "name": "SystemMyScope",
+   "rank": 23,
+   "path": "/system/my-scope/index",
+   "component": "system/my-scope/index",
+   "is_active": true,
+   "meta": "57e83d84-d93a-43de-8028-96ff45d40a2b",
+   "method": null,
+   "model": []
+  }
  }
 ]

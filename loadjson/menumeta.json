@@ -17911,5 +17911,55 @@
    "fixed_tag": false,
    "dynamic_level": 0
   }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "ec14b804-dff0-454b-80e6-e69fff315713",
+  "fields": {
+   "created_time": "2026-09-30T16:15:00.763Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "部门",
+   "icon": null,
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": null,
+   "frame_loading": false,
+   "watermark": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
+ },
+ {
+  "model": "system.menumeta",
+  "pk": "57e83d84-d93a-43de-8028-96ff45d40a2b",
+  "fields": {
+   "created_time": "2026-09-30T16:16:12.708Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "title": "menus.myScope",
+   "icon": "ri:shield-keyhole-line",
+   "r_svg_name": null,
+   "is_show_menu": true,
+   "is_show_parent": false,
+   "is_keepalive": true,
+   "frame_url": "",
+   "frame_loading": false,
+   "watermark": false,
+   "transition_enter": null,
+   "transition_leave": null,
+   "is_hidden_tag": false,
+   "fixed_tag": false,
+   "dynamic_level": 0
+  }
  }
 ]

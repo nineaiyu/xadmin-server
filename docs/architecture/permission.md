@@ -87,7 +87,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 - 规则可绑定菜单：仅对所选菜单对应的接口生效。
 - 部门维度的规则依赖 `DeptInfo.recursion_dept_info` 展开部门树。
 
-### 3.2 规则类型速查表（`ModelLabelField.KeyChoices`，共 16 种）
+### 3.2 规则类型速查表（`ModelLabelField.KeyChoices`，共 18 种）
 
 | 类型值                    | 含义               | value 形态 |
 |------------------------|------------------|----------|
@@ -103,6 +103,8 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 | `value.dept.ids`       | 指定部门及下级          | 部门 ID 列表 |
 | `value.leader.dept.ids` | 我主管部门及全部下级部门     | `*`（按绑定用户解析） |
 | `value.leader.user.ids` | 我主管部门及下级部门的成员    | `*`（按绑定用户解析） |
+| `value.manager.dept.ids` | 我管理的部门及全部下级部门（部门管理员） | `*`（按任命关系解析） |
+| `value.manager.user.ids` | 我管理部门的成员（部门管理员）    | `*`（按任命关系解析） |
 | `value.table.user.ids` | 指定用户集合           | 用户 ID 列表 |
 | `value.table.menu.ids` | 指定菜单集合           | 菜单 ID 列表 |
 | `value.table.role.ids` | 指定角色集合           | 角色 ID 列表 |
@@ -114,15 +116,34 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 [{"table": "demo.book", "field": "admin", "type": "value.user.id", "value": "*", "match": "exact"}]
 ```
 
-> 注：历史文档口径为「12 种」；`value.leader.*`（部门主管，2026-09 部门主管链路交付）与 `value.table.*`
-> 为后续增量，以代码为准共 **16 种**。**部门主管类规则**：不是任何部门主管的用户解析为空列表（恒假），
-> 属设计内语义；绑定对象中无主管时规则整体不生效，用 `audit_data_permission_rules` 巡检可提示。
+> 注：历史文档口径为「12 种」；`value.leader.*`（部门主管，2026-09 部门主管链路交付）、`value.table.*`
+> 与 `value.manager.*`（部门管理员，ADR-077）为后续增量，以代码为准共 **18 种**。**部门主管 / 部门管理员
+> 类规则**：不是主管部门主管 / 未获管理任命的用户解析为空列表（恒假），属设计内语义；绑定对象中无主管 /
+> 无管理员时规则整体不生效，用 `audit_data_permission_rules` 巡检可提示。
 
 ### 3.3 生效范围
 
 - 全局 `DEFAULT_FILTER_BACKENDS` 自动对所有 ViewSet 生效；视图内用 `self.filter_queryset(self.get_queryset())` 显式触发。
 - 导入（update 分支）、批量删除等写路径同样走 `filter_queryset`，因此**越权写同样被数据权限拦截**。
+- **写侧载荷范围校验**（ADR-077）：创建 / 改归属的载荷（如用户的 `dept`、部门的 `parent`）与关系字段
+  （`roles` / `rules`）同样按可见范围收敛——目标值必须落在 `get_filter_queryset` 可见面内，否则 400
+  （超管与无请求上下文路径豁免）。
 - 权限缓存与数据权限解耦：数据权限变更走 `DataPermission` 相关信号与角色失效链路。
+
+### 3.4 部门级自治（部门管理员，ADR-077）
+
+「部门管理员」= 被任命管理某部门及其全部下级的用户：任命事实源 `DeptInfo.managers`（through 记录任命人），
+唯一写口为部门页的「部门管理员」动作（`POST /api/system/dept/{pk}/assign-managers`，增量 `{add, remove}`）。
+
+- **任命即装配**：预置内置角色「部门管理员」（用户管理子集 + 部门查看 + 字段白名单，`system/builtin.py`
+  幂等同步）与两条预置数据权限规则（`value.manager.user.ids` / `value.manager.dept.ids`，用户级绑定，
+  规则挂用户而非角色——`UserRole` 无 rules 字段）一步就位；解任按「不再管理任何部门」回收角色与规则；
+- **能力边界**：可管理本部门及下级的用户（列表 / 详情 / 新建 / 编辑，字段白名单内）；对象级与载荷级的
+  写越界均被拒（404 / 400），不可见即不可写；建号/改号不涉及角色分配（可授权池收敛，越权挂角色 400）；
+- **边界保证**：数据权限多授权并集取最宽（3.3 优先级口径）——管理员若被额外授予宽规则会突破部门边界，
+  由 `sync_menu_permissions` 的 `[宽授权]` 段巡检暴露（只提示不阻断）；
+- **注册边界**：`DeptInfo.managers` 字段未纳入字段树（`sync_model_field` 未同步），普通角色的部门列表
+  里「部门管理员」列会被字段白名单裁剪（仅供查看，不影响任命与数据权限功能）。
 
 ## 四、第三层：字段权限
 

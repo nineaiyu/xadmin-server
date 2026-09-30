@@ -16,7 +16,7 @@
 """
 
 from .apply import apply_binding_fixes, apply_plans, grant_to_roles, plan_binding_fixes
-from .audit import audit_field_permissions, audit_permission_menus
+from .audit import audit_field_permissions, audit_permission_menus, audit_wide_manager_grants
 from .constants import (
     AUDIT_KNOWN_DUPLICATES,
     AUDIT_SKIP_PREFIXES,
@@ -60,6 +60,7 @@ __all__ = [
     "apply_plans",
     "audit_field_permissions",
     "audit_permission_menus",
+    "audit_wide_manager_grants",
     "build_plans",
     "build_route_index",
     "detect_indent",

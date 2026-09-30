@@ -32,7 +32,7 @@ from common.core.data_scope import KeyChoices, validate_rules
 # 与编译器读侧同源——巡检若自写一份解析，会与运行时对同一份数据产生两种口径
 from common.core.data_scope.values import _pk_list
 from common.utils import get_logger
-from system.models import DataPermission, DeptInfo, Menu, UserInfo, UserRole
+from system.models import DataPermission, DeptInfo, DeptManagerAssignment, Menu, UserInfo, UserRole
 
 logger = get_logger(__name__)
 
@@ -46,6 +46,9 @@ REFERENCE_MODELS = {
 
 # 「主管部门」类规则：按绑定用户的 leader 职责注入部门/成员，无主管职责即恒为空集
 LEADER_TYPES = {KeyChoices.LEADER_DEPARTMENTS, KeyChoices.LEADER_USERS}
+
+# 「管理部门」类规则：按绑定用户的部门管理任命注入部门/成员，无管理职责即恒为空集
+MANAGER_TYPES = {KeyChoices.MANAGER_DEPARTMENTS, KeyChoices.MANAGER_USERS}
 
 
 def _format_detail(exc: ValidationError) -> str:
@@ -92,6 +95,11 @@ def _ineffective_warnings(dp: DataPermission) -> list:
         bound_pks = _bound_user_pks(dp)
         if bound_pks and not UserInfo.objects.filter(pk__in=bound_pks, leader_depts__is_active=True).exists():
             warnings.append("「主管部门」类规则：绑定对象中没有任何部门主管，规则对所有绑定用户恒为空集")
+
+    if any(rule.get("type") in MANAGER_TYPES for rule in rules):
+        bound_pks = _bound_user_pks(dp)
+        if bound_pks and not DeptManagerAssignment.objects.filter(user_id__in=bound_pks, dept__is_active=True).exists():
+            warnings.append("「管理部门」类规则：绑定对象中没有任何部门管理员，规则对所有绑定用户恒为空集")
 
     for rule in rules:
         model = REFERENCE_MODELS.get(rule.get("type"))

@@ -55,6 +55,8 @@ RUNTIME_VALUE_TYPES = (
             KeyChoices.DEPARTMENTS,
             KeyChoices.LEADER_DEPARTMENTS,
             KeyChoices.LEADER_USERS,
+            KeyChoices.MANAGER_DEPARTMENTS,
+            KeyChoices.MANAGER_USERS,
         }
     )
     | TABLE_TYPES

@@ -39,6 +39,15 @@ class DeptInfo(DbAuditModel, DbUuidModel):
         related_name="leader_depts",
         help_text=_("Department leader, who can be granted data permissions of the led departments"),
     )
+    managers = models.ManyToManyField(
+        "system.UserInfo",
+        through="system.DeptManagerAssignment",
+        through_fields=("dept", "user"),
+        blank=True,
+        related_name="managed_depts",
+        verbose_name=_("Department managers"),
+        help_text=_("Users appointed to manage this department and its descendants"),
+    )
     roles = models.ManyToManyField("system.UserRole", verbose_name=_("Role permission"), blank=True)
     rules = models.ManyToManyField("system.DataPermission", verbose_name=_("Data permission"), blank=True)
     rank = models.IntegerField(verbose_name=_("Rank"), default=99)
@@ -149,3 +158,43 @@ class DeptInfo(DbAuditModel, DbUuidModel):
 
     def __str__(self):
         return f"{self.name}({self.pk})"
+
+
+class DeptManagerAssignment(DbUuidModel):
+    """部门管理员任命记录（``DeptInfo.managers`` 的 through 模型）。
+
+    记录「谁任命的、什么时候」供审计；任命与解任统一走部门 ViewSet 的
+    ``assign-managers`` 端点（同时维护预置角色成员与用户级数据权限规则），
+    不直接经序列化器写入。
+    """
+
+    dept = models.ForeignKey(
+        "system.DeptInfo",
+        on_delete=models.CASCADE,
+        related_name="manager_assignments",
+        verbose_name=_("Department"),
+    )
+    user = models.ForeignKey(
+        "system.UserInfo",
+        on_delete=models.CASCADE,
+        related_name="manager_assignments",
+        verbose_name=_("Manager"),
+    )
+    created_by = models.ForeignKey(
+        "system.UserInfo",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        verbose_name=_("Assigned by"),
+    )
+    created_time = models.DateTimeField(auto_now_add=True, verbose_name=_("Created time"))
+
+    class Meta:
+        unique_together = ("dept", "user")
+        ordering = ("-created_time",)
+        verbose_name = _("Department manager assignment")
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"{self.dept_id}:{self.user_id}"

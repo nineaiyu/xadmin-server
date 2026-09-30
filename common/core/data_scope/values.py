@@ -149,6 +149,23 @@ def _leader_user_pks(user):
     return list(UserInfo.objects.filter(dept__in=dept_pks).values_list("pk", flat=True))
 
 
+def _manager_dept_pks(user):
+    """用户作为部门管理员（DeptInfo.managers）的启用部门及其全部下级并集（无管理职责返回空）。"""
+    if user is None or not hasattr(user, "managed_depts"):
+        return []
+    managed_pks = list(user.managed_depts.filter(is_active=True).values_list("pk", flat=True))
+    if not managed_pks:
+        return []
+    return DeptInfo.dept_tree_pks(managed_pks)
+
+
+def _manager_user_pks(user):
+    dept_pks = _manager_dept_pks(user)
+    if not dept_pks:
+        return []
+    return list(UserInfo.objects.filter(dept__in=dept_pks).values_list("pk", flat=True))
+
+
 def resolve_rule(rule, user):
     """单条规则 JSON → 归一化条件 dict（按规则类型注入用户/部门上下文，不改写传入 rule）。"""
     cond = {
@@ -177,6 +194,12 @@ def resolve_rule(rule, user):
     elif f_type == KeyChoices.LEADER_USERS:
         cond["match"] = "in"
         cond["value"] = _leader_user_pks(user)
+    elif f_type == KeyChoices.MANAGER_DEPARTMENTS:
+        cond["match"] = "in"
+        cond["value"] = _manager_dept_pks(user)
+    elif f_type == KeyChoices.MANAGER_USERS:
+        cond["match"] = "in"
+        cond["value"] = _manager_user_pks(user)
     elif f_type in TABLE_TYPES:
         # 历史数据可能带 exact 占位，运行时统一按 in 编译（value 已归一化为 pk 数组）
         cond["match"] = "in"

@@ -11,7 +11,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from common.core.filter import get_filter_queryset
+from common.core.filter import assert_within_data_scope, get_filter_queryset
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
 from system.models import DataPermission, DeptInfo, UserRole
@@ -28,6 +28,7 @@ class DeptSerializer(BaseModelSerializer):
             "code",
             "parent",
             "leader",
+            "managers",
             "rank",
             "is_active",
             "roles",
@@ -47,6 +48,7 @@ class DeptSerializer(BaseModelSerializer):
             "auto_bind",
             "is_active",
             "leader",
+            "managers",
             "roles",
             "rules",
             "created_time",
@@ -67,6 +69,14 @@ class DeptSerializer(BaseModelSerializer):
                 # 用户表易超 SEARCH_CHOICES_MAX_COUNT 截断阈值，必须走远程搜索
                 "input_type": "api-search-user",
             },
+            # 部门管理员只读展示：写口唯一 = assign-managers 端点（任命同时装配角色与数据权限）
+            "managers": {
+                "required": False,
+                "read_only": True,
+                "attrs": ["pk", "nickname", "username"],
+                "format": "{nickname}({username})",
+                "many": True,
+            },
             "parent": {"required": False, "attrs": ["pk", "name", "parent_id"]},
         }
 
@@ -80,6 +90,13 @@ class DeptSerializer(BaseModelSerializer):
         parent = attrs.get("parent", self.instance.parent if self.instance else None)
         if not parent:
             attrs["parent"] = self.request.user.dept
+        elif "parent" in attrs:
+            # 写侧载荷范围校验：非超管指定上级部门时须在数据权限可见范围内
+            assert_within_data_scope(
+                DeptInfo.objects.filter(pk=parent.pk),
+                self.request.user,
+                _("The superior department is outside your data scope"),
+            )
         return attrs
 
     def _assign_authorizations(self, instance, roles, rules):
@@ -126,3 +143,10 @@ class DeptSerializer(BaseModelSerializer):
         # 未走该 mixin 的场景（直接序列化单个对象）回退为单对象聚合，结果保持一致
         count = getattr(obj, "user_count", None)
         return count if count is not None else obj.userinfo_set.count()
+
+
+class DeptManagerAssignSerializer(serializers.Serializer):
+    """部门管理员任命参数：``{add, remove}`` 增量变更（幂等，照岗位成员分配口径）。"""
+
+    add = serializers.ListField(child=serializers.CharField(), required=False, label=_("Add managers"))
+    remove = serializers.ListField(child=serializers.CharField(), required=False, label=_("Remove managers"))
