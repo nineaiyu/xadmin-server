@@ -115,7 +115,6 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
     ordering_fields = ["created_time"]
     filterset_class = UserSiteMessageViewSetFilter
 
-    # @cache_response(timeout=600, key_func='get_cache_key')
     def list(self, request, *args, **kwargs):
         if set(request.query_params) - UNREAD_IRRELEVANT_PARAMS:
             # 带筛选条件：未读数按当前条件实时统计（与原语义一致）
@@ -158,7 +157,6 @@ class UserSiteMessageViewSet(OnlyListModelSet, CacheListResponseMixin):
             )
         },
     )
-    # @cache_response(timeout=600, key_func='get_cache_key')
     @action(methods=["get"], detail=False)
     def unread(self, request, *args, **kwargs):
         """用户未读消息"""

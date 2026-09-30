@@ -20,7 +20,7 @@
 ## 自查清单
 
 - [ ] `ruff check .` 通过
-- [ ] `pytest -n auto --cov --cov-fail-under=82` 全绿
+- [ ] `pytest -n auto --cov` 全绿（覆盖率门禁 85% 定义在 `.coveragerc`）
 - [ ] `python scripts/check_file_length.py` 通过（新增 >500 行文件即失败，存量基线只减不增）
 - [ ] `python scripts/check_cross_app_imports.py` 通过（业务层走 `<app>.services`）
 - [ ] 改动元数据接口时：`docs/schema/` 已同步 + 契约测试通过

@@ -318,17 +318,6 @@ class SearchColumnsAction:
     def _build_search_columns(self, request):
         """构建展示字段元数据（request 供联想地址 / 排序声明解析）。"""
         results = []
-        # def check_upload_tp(value, tp):
-        #     if hasattr(value, 'child_relation'):
-        #         value = value.child_relation
-        #     try:
-        #         if (value.queryset.model._meta.label == "system.UploadFile"
-        #                 and isinstance(value, BasePrimaryKeyRelatedField)
-        #                 and tp in ['object_related_field', 'm2m_related_field']):
-        #             return tp + "_file"
-        #     except Exception:
-        #         pass
-        #     return tp
 
         def get_input_type(value, info):
             if hasattr(value, "child_relation") and isinstance(value.child_relation, BasePrimaryKeyRelatedField):

@@ -13,3 +13,7 @@ omit =
     **/management/commands/*
 [report]
 skip_covered = True
+# 覆盖率门禁：本地 `pytest -n auto --cov` 与 CI 同口径（CI 另在命令行显式传 --cov-fail-under，
+# 该处同时作为文档事实源 workflow:cov_fail_under）。两处数值必须一致，
+# 由 tests/unit/test_coverage_gate.py 守护，避免"本地绿 / CI 红"的口径漂移。
+fail_under = 85
