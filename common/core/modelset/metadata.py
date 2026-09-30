@@ -40,11 +40,15 @@ METADATA_CACHE_TIMEOUT = 60 * 5
 
 
 def metadata_cache_key(view_instance, method_name, request) -> str:
-    """载荷缓存键：视图集 + 方法 + 用户主键（+ ``?fields=`` 摘要）。
+    """载荷缓存键：视图集 + 方法 + 用户主键（+ ``?fields=`` 摘要 + 视图集扩展槽位）。
 
     ``?fields=`` 会收窄 search-columns 的序列化器字段（BaseViewSet.get_serializer），
     因此并入键；其余查询参数（分页/排序/搜索）不影响元数据输出，不入键——独立元数据
     接口与列表内联调用因此共用同一份缓存。
+
+    序列化器字段面还可能依赖**其他查询参数**（如 setting 类视图集按
+    ``?channel=`` / ``?category=`` 收敛序列化器）：视图集可覆写
+    ``metadata_extra_cache_key(request)`` 返回额外键段，缺省空串不入键。
     """
     user_pk = getattr(getattr(request, "user", None), "pk", "anonymous")
     query = getattr(request, "query_params", None)
@@ -52,7 +56,22 @@ def metadata_cache_key(view_instance, method_name, request) -> str:
         query = getattr(request, "GET", {}) or {}
     raw_fields = query.get("fields") if hasattr(query, "get") else None
     digest = f"_{md5(str(raw_fields).encode('utf-8')).hexdigest()[:12]}" if raw_fields else ""
-    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}"
+    extra_hook = getattr(view_instance, "metadata_extra_cache_key", None)
+    extra = f"_x{md5(str(extra_hook(request)).encode('utf-8')).hexdigest()[:12]}" if callable(extra_hook) else ""
+    return f"metadata_payload_{view_instance.__class__.__name__}_{method_name}_{user_pk}{digest}{extra}"
+
+
+def invalidate_metadata_payload_cache() -> None:
+    """嵌入元数据的可变引用数据（如标签选项）变更后整族失效载荷缓存。
+
+    载荷缓存键（用户 / ?fields= / 视图集扩展槽位）不随引用数据变化——标签等
+    选项在构建时被固化进载荷，不失效则「新建标签最长 TTL 内不可选」。键族小、
+    重建廉价，按信号整族失效即可；调用量大的引用数据应改走独立接口而非内嵌。
+    """
+    try:
+        cache.delete_pattern("metadata_payload_*")
+    except Exception:  # noqa: BLE001 缓存不可用时依赖 TTL 自愈
+        logger.debug("invalidate metadata payload cache failed", exc_info=True)
 
 
 def metadata_cache_bypass(request) -> bool:

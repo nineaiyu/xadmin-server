@@ -33,6 +33,10 @@ class BaseSettingViewSet(NoDetailModelSet):
         cls = self.serializer_class_mapper.get(self.category, self.serializer_class)
         return cls
 
+    def metadata_extra_cache_key(self, request) -> str:
+        """元数据字段面随 `?category=` 变化（get_serializer_class 收敛），并入缓存键。"""
+        return str(self.request.query_params.get("category") or "")
+
     def get_fields(self):
         serializer = self.get_serializer_class()()
         fields = serializer.get_fields()

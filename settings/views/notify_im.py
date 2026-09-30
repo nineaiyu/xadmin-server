@@ -114,6 +114,10 @@ class ImNotifySettingViewSet(BaseSettingViewSet):
             return _CHANNELS[channel]["serializer"]
         return self.serializer_class
 
+    def metadata_extra_cache_key(self, request) -> str:
+        """元数据字段面随 `?channel=` 变化（get_serializer_class 收敛），并入缓存键。"""
+        return str(self.request.query_params.get("channel") or "")
+
     def create(self, request, *args, **kwargs):
         """测试{cls}"""
         serializer = self.get_serializer_class()(data=request.data)

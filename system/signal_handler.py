@@ -296,6 +296,23 @@ def post_migrate_sync_builtin_roles(sender, **kwargs):
         logger.exception("sync builtin roles failed")
 
 
+@receiver([post_save, post_delete], sender="system.Tag", dispatch_uid="system.signal_handler.clean_tag_metadata_cache")
+def clean_tag_metadata_cache_handler(sender, instance, **kwargs):
+    """标签变更：下拉选项缓存 + 元数据载荷缓存同源失效。
+
+    标签名单在构建 user 等列表元数据时被固化进载荷（TagChoiceFilter choices），
+    元数据载荷缓存后「新建标签立即可选」需要随变更失效，否则最长 5min（TTL）
+    不可选——并行 e2e 实测踩中（预热缓存 + 新建标签 → 下拉缺项）。ORM 直改
+    （内置标签同步）也走此信号，故挂模型而非视图。
+    """
+    from common.core.modelset.metadata import invalidate_metadata_payload_cache
+    from system.utils.tags import invalidate_tag_options_cache
+
+    invalidate_tag_options_cache()
+    invalidate_metadata_payload_cache()
+    logger.info(f"invalid tag derived caches {instance}")
+
+
 @receiver(post_migrate, dispatch_uid="system.signal_handler.sync_builtin_tags")
 def post_migrate_sync_builtin_tags(sender, **kwargs):
     """migrate 后同步内置标签（幂等）：与内置角色同一时点与容错口径。"""
