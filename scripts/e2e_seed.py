@@ -18,6 +18,18 @@ import sys
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_DIR)
 
+# 场景种子拆至同目录模块（scripts/ 非包目录：按脚本执行时其目录天然在 sys.path[0]）。
+# 必须在 main() 执行前导入——文件尾导入对"原模块自身 main() 的调用"不生效（NameError）。
+from e2e_seed_scenes import (  # noqa: E402
+    disable_login_mfa_policy,
+    seed_demo_book_scene,
+    seed_directory_scene,
+    seed_monitor_scene,
+    seed_oauth_im_provider,
+    seed_periodic_task,
+    seed_user_notice_scene,
+)
+
 E2E_DB = os.path.join(PROJECT_DIR, "tmp", os.environ.get("E2E_DB_FILENAME", "e2e.sqlite3"))
 
 # (username, password, nickname, is_superuser, role_code)
@@ -289,14 +301,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-from e2e_seed_scenes import (  # noqa: E402  (场景种子拆至同目录模块，此处导入保持调用面)
-    disable_login_mfa_policy,
-    seed_demo_book_scene,
-    seed_directory_scene,
-    seed_monitor_scene,
-    seed_oauth_im_provider,
-    seed_periodic_task,
-    seed_user_notice_scene,
-)
