@@ -294,3 +294,12 @@
 | 前端验证 | typecheck（tsc + vue-tsc）/ eslint / prettier / stylelint / `check:i18n` / 契约三件套 / `as unknown as` 基线 / 行数 / vitest **717 passed（97 文件）** / build + 包体分账全绿 |
 | e2e | `dform-formula.e2e.ts` + `mcp-client.e2e.ts` 双浏览器 **4 passed**；并行全量两轮暴露的 3 项失败均定位为**测试等待条件缺陷**（等待条件被历史/残留信号提前满足；DB 取证证明产品行为正确）并修复：`dform-linkage` 回滚（专属文案等待）4 passed、`ai-action` 禁用用户与结果表（`expect.poll` 轮询结果）14 passed；`knowledge-vector` webkit 为既有负载瞬态（隔离复跑 2 passed）；经验回填 `e2e/README.md` |
 | 坑（已登记） | ① 共享会话/共享库场景下「存在性等待」（`getByText("操作成功")`、`.el-message` first()）会被历史消息或残留提示提前满足 → 同步点必须以「结果可达」为判据（`expect.poll` 轮询或专属文案过滤）；② locale 断言不能写死译文（本地有 .mo 显中文、CI 无 .mo 显英文）→ 用 gettext 同源取值；③ `.last()` 定位在连跑历史数据下会命中旧元素 → 以「含本 run 唯一文本」过滤后重定位 |
+
+### 2026-10-01 O1 性能复测收口（k6 固定环境三轮中位数 + 回写）
+
+| 项 | 结果 |
+|------|------|
+| 环境 | §3.1 专用一次性容器（PG 17.11 + Redis 8.10.2，仅绑 127.0.0.1）+ 1000 perf_ 种子 + gunicorn×4（UvicornWorker、keep-alive 5、生产同参，本机 8897 端口避开常驻栈）；`OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`（macOS fork 安全，§3.1） |
+| 结果（三轮中位数 → baseline.json 全量回写） | 01-login P95 66.18ms（基线 66.03）；02-routes 28.38（28.06）；03-list **192.20**（196.90，连续两轮复现，佐证 §九「排队放大」归因、非代码退化）；04-metadata-columns **28.67**（30.91，<60ms 达标）；04-metadata-fields **117.62**（106.71）；04-metadata-with-meta 218.07（220.85）；05-export 776.91（770.78）；06-import 57.06（57.13）；全部用例 0 错误、`login_throttled` 0，环境复现性 1.0x 量级 |
+| **04-metadata-fields 未达标（显式登记）** | P95 117.62ms，未达 <60ms 目标且与基线同平台——单飞锁（2026-09-30）修复的「窗口切换并发击穿」已消除，但 20 VU 尾部由**排队放大 + ASGI 每请求新建 DB 连接开销**主导（§3.1 ⚠️ 根因）。p50 ~18ms 与 P95 落差与首测归因一致；进一步收敛不在元数据端点内继续做，走 ASGI 连接池根因技术债（psycopg3 `OPTIONS.pool` / pgbouncer）。已在 `loadtest/baseline.json` 该用例加 `target/target_met/target_note` 显式登记 |
+| 结论 | O1 收口：唯一量化缺口（fields <60ms）判定为「受 ASGI 连接模型主导、端点内无单点热点」，不再作为元数据端点优化项挂账；基线 JSON 八用例全部回写为 2026-10-01 固定环境三轮中位数 |
