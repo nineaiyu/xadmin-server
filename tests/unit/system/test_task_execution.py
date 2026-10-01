@@ -102,7 +102,7 @@ def test_revoked_transition():
 
 
 def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_on_commit_callbacks):
-    # 生产投递分支：eager 关闭 → on_commit send_task（settings_test 默认 eager，需按用例还原）
+    # 生产投递分支：eager 关闭 → on_commit send_task（settings_base 默认 eager，需按用例还原）
     monkeypatch.setattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
     user = _make_user()
     instance = _make_periodic_task()

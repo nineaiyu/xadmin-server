@@ -127,7 +127,9 @@ class TestScreenDisplayChannel:
         assert replay["action"] == "screen_command"
         assert replay["data"]["command"] == "state"
         assert replay["data"]["mode"] == "auto"
-        assert consumer.channel_name in layer.groups[screen_group_name(screen.pk)]
+        # get_layers 为双栈公开 API（InMemory 内存结构 / 真层 group zset）
+        layers_of_group = async_to_sync(layer.get_layers)(screen_group_name(screen.pk))
+        assert consumer.channel_name in layers_of_group
 
         frame = {"command": "switch", "mode": "manual", "index": 1, "refresh_rev": 0, "rev": 1, "ts": ""}
         async_to_sync(consumer.screen_command)({"type": "screen_command", "data": frame})

@@ -65,7 +65,7 @@ class TestDbEngineResolution:
         assert _resolve_db_engine("myapp.backends.custom") == "myapp.backends.custom"
 
     def test_configured_engine_is_dotted_path(self):
-        """测试配置显式钉住 postgresql（见 tests/settings_test.py），ENGINE 必须是后端路径。"""
+        """测试配置显式钉住 postgresql（见 tests/settings_real.py 的前置 Config 注入），ENGINE 必须是后端路径。"""
         from server.settings.base import ENGINE
 
         assert ENGINE == "django.db.backends.postgresql"
@@ -84,7 +84,7 @@ class TestHalfOpenConnectionOptions:
     def test_postgres_options_include_half_open_guards(self):
         from server.settings.base import DB_ENGINE, DB_OPTIONS
 
-        assert DB_ENGINE == "postgresql", "测试配置应与生产形态一致（见 tests/settings_test.py）"
+        assert DB_ENGINE == "postgresql", "测试配置应与生产形态一致（见 tests/settings_real.py）"
         assert DB_OPTIONS["tcp_user_timeout"] == 30000
         assert DB_OPTIONS["keepalives"] == 1
         assert DB_OPTIONS["keepalives_idle"] == 30

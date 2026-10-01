@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 """E2E 环境种子脚本：一键重置并填充 Playwright 所需数据。
 
-用法（配合 tests/settings_e2e.py，sqlite 文件库 + 进程内 FakeRedis）：
+用法（配合 tests/settings_e2e.py，PG 真库 + 进程内 FakeRedis；依赖 compose.test.yml）：
 
     cd xadmin-server
     DJANGO_SETTINGS_MODULE=tests.settings_e2e XADMIN_ADMIN_PASSWORD='E2E-Admin-2026!' \
         .venv/bin/python scripts/e2e_seed.py
 
-步骤：删除旧库 → migrate → utils/init_data 初始化（菜单/角色/超管）→
-创建 E2E 场景用户（普通用户 / 受限用户 / 数据权限 / 字段权限 / 锁定测试）。
+步骤：DROP/CREATE 独立库（WITH (FORCE) 兜底残留连接）→ migrate → utils/init_data
+初始化（菜单/角色/超管）→ 创建 E2E 场景用户（普通用户 / 受限用户 / 数据权限 /
+字段权限 / 锁定测试）。
 """
 
 import os
@@ -29,8 +30,6 @@ from e2e_seed_scenes import (  # noqa: E402
     seed_periodic_task,
     seed_user_notice_scene,
 )
-
-E2E_DB = os.path.join(PROJECT_DIR, "tmp", os.environ.get("E2E_DB_FILENAME", "e2e.sqlite3"))
 
 # (username, password, nickname, is_superuser, role_code)
 # role_code 为 None 表示不绑定任何角色（无菜单权限）
@@ -150,14 +149,43 @@ def grant_field_permission(role, excluded_field):
     return fp
 
 
+def reset_pg_database() -> None:
+    """真库化重置（阶段 4）：DROP DATABASE WITH (FORCE) + CREATE，取代 sqlite「删文件重开」。
+
+    连接参数与库名以 tests/settings_e2e 为单一来源（_e2e_config / _e2e_db_name，
+    并行跑批按 shard 独立库名）；FORCE 兜底上一轮未退净的 daphne 残留连接（PG 13+，
+    容器为 17）；管理连接走 postgres 库。PG 不可达时给与 conftest 预检一致的恢复指引。
+    """
+    import psycopg
+
+    from tests.settings_e2e import _e2e_config, _e2e_db_name
+
+    try:
+        # autocommit：DROP/CREATE DATABASE 不得运行在事务块内（psycopg 默认隐式开启）
+        admin = psycopg.connect(
+            dbname="postgres",
+            host=_e2e_config["DB_HOST"],
+            port=_e2e_config["DB_PORT"],
+            user=_e2e_config["DB_USER"],
+            password=_e2e_config["DB_PASSWORD"],
+            connect_timeout=3,
+            autocommit=True,
+        )
+    except psycopg.OperationalError as e:
+        raise SystemExit(
+            f"E2E PostgreSQL 不可达（{_e2e_config['DB_HOST']}:{_e2e_config['DB_PORT']}）：{e}\n"
+            "先起依赖：docker compose -f compose.test.yml up -d"
+        ) from e
+    with admin:
+        with admin.cursor() as cur:
+            cur.execute(f'DROP DATABASE IF EXISTS "{_e2e_db_name}" WITH (FORCE)')
+            cur.execute(f'CREATE DATABASE "{_e2e_db_name}"')
+    admin.close()
+    print(f"reset pg database: {_e2e_db_name}")
+
+
 def main() -> None:
-    # sqlite WAL 模式会伴随 -wal/-shm 边车文件，只删主库会导致旧 WAL 被错误恢复
-    for suffix in ("", "-wal", "-shm"):
-        path = E2E_DB + suffix
-        if os.path.exists(path):
-            os.remove(path)
-            print(f"removed old db: {path}")
-    os.makedirs(os.path.dirname(E2E_DB), exist_ok=True)
+    reset_pg_database()
 
     import django
 

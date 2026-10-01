@@ -8,7 +8,6 @@
 - 强制下线/登出/过期任务置离线，保留期任务回收历史记录。
 """
 
-import time
 from datetime import timedelta
 
 import pytest
@@ -43,24 +42,22 @@ def _clear_online_snapshot():
 
 @pytest.fixture
 def layer(settings):
-    """测试用内存 channel layer（tests/channel_layer.py 提供同名方法）。"""
+    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。"""
     from channels.layers import get_channel_layer
 
+    from tests.channel_layer import reset_layer_state
+
     layer = get_channel_layer()
-    layer._online_users = {}
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
     yield layer
-    layer._online_users = {}
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
 
 
 def _beat(layer, user_pk, channel="chan"):
-    group = msg_utils.get_user_layer_group_name(user_pk)
-    # groups 值为 {channel: score} dict（get_layers_for_groups 按 .keys() 取 channel）
-    layer.groups.setdefault(group, {})[channel] = 0
-    layer._online_users[user_pk] = time.time()
+    """模拟一次前端心跳：update_active_layers 为双栈同名的公开 API。"""
+    from tests.channel_layer import beat_layer
+
+    beat_layer(layer, user_pk, channel)
 
 
 @pytest.fixture

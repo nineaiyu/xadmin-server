@@ -13,7 +13,7 @@
 SECRET_KEY 同时是 JWT 签名与字段级加密（signer）密钥，密钥稳定性由
 ``data/.secret_key`` 的持久化保证——本文件是「不自愈、只钉死」的守护。
 
-实现说明：``tests/settings_test.py`` 在进程启动时把 ``ConfigManager.load_user_config``
+实现说明：测试档（``tests/settings_real.py`` 等）在进程启动时把 ``ConfigManager.load_user_config``
 替换为测试桩（隔离真实配置文件依赖），因此本文件通过 ``importlib.reload`` 取回
 未打桩的类，覆盖真实装配链路；``load_from_object``（config.py 分支）的查找路径不受
 root_path 控制，为隔离本机环境一并打桩。

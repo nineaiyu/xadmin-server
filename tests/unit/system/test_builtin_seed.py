@@ -19,15 +19,19 @@ loadjson/datamaskrule.json、approvalflow*.json、dynamicform*.json 是新装环
 
 import json
 import os
+from io import StringIO
 
 import pytest
 from django.apps import apps
 from django.conf import settings as dj_settings
+from django.core.management import call_command
 
 from approval.serializers.approval_flow import FORM_FIELD_TYPES
 from approval.utils.approval_flow import CONDITION_OPS
 from dataset.utils.dform import validate_schema, validate_submission_data
+from system.builtin import BUILTIN_ROLES
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
+from system.models import FieldPermission, Menu, ModelLabelField, UserRole
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 
@@ -193,3 +197,51 @@ def test_seed_demo_flows_command_aligns_with_seed():
     # 否则其中一人发起申请时全节点候选为空（fail-closed）
     targets = command.DEMO_ASSIGNEE_VALUE.split(",")
     assert command.DEMO_APPLIER in targets and command.DEMO_APPROVER in targets
+
+
+class TestSeedOrderingFillsBuiltinRoles:
+    """种子时序守护：内置角色的菜单/字段白名单依赖本命令种入的数据。
+
+    migrate 的 post_migrate 同步先于 load_init_json 执行，彼时 Menu 表与
+    ModelLabelField 字段树均为空，内置角色只能空挂（字段权限 fail-closed，
+    缺白名单 = 非超管接口输出空对象）。2026-10-01 E2E 真库种子实证该缺口：
+    SystemAdmin 0 菜单、DeptManager 0 菜单 0 白名单（ADR-077 任命装配后
+    用户列表被裁剪成空对象）。本类锁定「load_init_json 收尾必须补齐」。
+    """
+
+    @pytest.mark.django_db
+    def test_load_init_json_fills_builtin_role_menus_and_fields(self, seed_creator_user):
+        spec = {s["code"]: s for s in BUILTIN_ROLES}
+
+        # 前提（缺口态）：测试建库时 post_migrate 已建内置角色，但彼时菜单/字段树为空
+        assert UserRole.objects.filter(code="SystemAdmin", builtin=True).exists()
+        assert UserRole.objects.get(code="SystemAdmin").menu.count() == 0
+        assert FieldPermission.objects.count() == 0
+
+        out = StringIO()
+        call_command("load_init_json", verbosity=0, stdout=out)
+        assert "[内置角色]" in out.getvalue(), "load_init_json 收尾必须补跑内置角色同步"
+
+        # SystemAdmin：全部活跃菜单（grant_all_menus）
+        active_menus = Menu.objects.filter(is_active=True).count()
+        assert active_menus > 0, "菜单种子未入库"
+        assert UserRole.objects.get(code="SystemAdmin").menu.count() == active_menus
+
+        # DeptManager：固定权限点清单 + userinfo/deptinfo 字段白名单（每菜单一份全字段）
+        manager_spec = spec["DeptManager"]
+        manager = UserRole.objects.get(code="DeptManager")
+        assert set(manager.menu.values_list("name", flat=True)) == set(manager_spec["menu_names"])
+        for model_name in manager_spec["field_models"]:
+            assert ModelLabelField.objects.filter(name=model_name, parent__isnull=True).exists(), (
+                f"字段树缺 {model_name} 根节点"
+            )
+        field_perms = FieldPermission.objects.filter(role=manager)
+        assert field_perms.count() == manager.menu.count() > 0
+        assert all(fp.field.count() > 0 for fp in field_perms), "字段白名单不得为空行（fail-closed 裁空）"
+
+        # 幂等：重复导入不重复建行（get_or_create / menu.set 对齐语义）
+        before_menu = manager.menu.count()
+        before_fp = field_perms.count()
+        call_command("load_init_json", verbosity=0)
+        assert UserRole.objects.get(code="DeptManager").menu.count() == before_menu
+        assert FieldPermission.objects.filter(role=manager).count() == before_fp

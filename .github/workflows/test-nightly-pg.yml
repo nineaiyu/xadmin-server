@@ -1,0 +1,79 @@
+name: PG Container Tests (Weekly)
+
+# 容器化 PG 的测试档（docs/plans/容器化PG-nightly测试档立项-2026.10.md）：每周对真实
+# PostgreSQL 17（与生产/loadtest 同大版本）跑全量后端 pytest，收口 sqlite 门禁
+# （test.yml）的方言盲区——迁移真实执行、GinIndex/JSONField DDL、psycopg3 连接池
+# 真实创建、PG 函数/规划器语义。单变量原则：除 DATABASES 外与 sqlite 档完全一致
+# （tests/settings_pg.py star-import settings_base 继承 eager celery 等，CACHES/CHANNEL 为档内自有定义）。
+#
+# 2026-10-01 由每日（UTC 18:30）改为每周一次：GitHub 免费额度对高频 schedule 档
+# 有约束，且方言类缺陷每周分诊一次即可（红不阻断任何 PR，走邮件通知 + 修复或登记
+# 立项文档 §五台账）。全真容器化（PG + Redis 进 PR 门禁）的迁移路线见
+# docs/plans/全真容器化测试迁移方案-2026.10.md。
+on:
+  workflow_dispatch:
+  schedule:
+    # 每周六 UTC 18:30 ≈ 北京时间周日 02:30，错开 PR 高峰
+    - cron: "30 18 * * 6"
+
+jobs:
+  test-pg:
+    runs-on: ubuntu-latest
+    # PG 建库迁移 × N worker + 真 SQL 执行慢于内存 sqlite，立项文档 §八估 15-25 min
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        # 大版本与生产/loadtest 对齐（生产 compose 与 loadtest 基线均为 postgres:17.11 同源）
+        image: postgres:17
+        env:
+          POSTGRES_USER: server
+          POSTGRES_PASSWORD: pgtest
+          POSTGRES_DB: xadmin_pgtest
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SETTINGS_MODULE: tests.settings_pg
+      DB_HOST: 127.0.0.1
+      DB_PORT: "55433"
+      DB_USER: server
+      DB_PASSWORD: pgtest
+      # DB_DATABASE 用 settings_pg 缺省 xadmin_pgtest（与 POSTGRES_DB 对齐）；
+      # xdist 下 settings_pg 按 worker 自动加后缀，各 worker 独立建 test_<库名> 并跑迁移
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        # 版本由 pyproject.toml 的 [tool.uv].required-version 决定；缓存按 uv.lock 命中（与 test.yml 共享）
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        # 以 uv.lock 为唯一安装依据（与 test.yml 同款）；psycopg3/psycopg-pool 已在依赖内
+        run: uv sync --locked --no-install-package mysqlclient
+
+      - name: Verify lockfile is in sync
+        run: uv lock --check
+
+      - name: Run tests (parallel, real PostgreSQL)
+        # 不带 --cov：本档目标是方言正确性，coverage 拦路 ~20-30% 时长且口径由
+        # PR 门禁（test.yml --cov-fail-under=85）负责
+        run: uv run --no-sync pytest -n auto
+
+      - name: Django system checks (database-tagged, real PostgreSQL)
+        # 与 test.yml 同款检查，但在真库上执行：PG 专属模型检查（postgres.E005 /
+        # models.E034 等）在此之外还会由测试首次覆盖「迁移与查询」层（立项文档 §一.1-2）
+        run: uv run --no-sync python manage.py check --database default

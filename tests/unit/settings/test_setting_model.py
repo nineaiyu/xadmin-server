@@ -76,6 +76,15 @@ class TestSettingModel:
         monkeypatch.setattr(Setting, "refresh_setting", boom)
         Setting.refresh_all_settings()
 
+    def test_refresh_all_settings_skips_when_table_missing(self, db, monkeypatch, caplog):
+        """裸库（未迁移）上整体跳过而非裸崩：django_ready 后台线程无兜底（§五 #21）。"""
+        from django.db import connection
+
+        monkeypatch.setattr(connection.introspection, "table_names", lambda *a, **kw: [])
+        with caplog.at_level("WARNING"):
+            Setting.refresh_all_settings()
+        assert any("skip refresh_all_settings" in record.message for record in caplog.records)
+
     def test_save_to_file_and_update_or_create_with_upload(self, monkeypatch):
         storage = InMemoryStorage()
         monkeypatch.setattr("settings.models.default_storage", storage)

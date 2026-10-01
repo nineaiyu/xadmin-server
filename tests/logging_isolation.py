@@ -4,7 +4,7 @@
 
 背景：`data/logs/server.log` 是发布窗口两项硬门禁（CSP enforce 切换 / AES v1
 解密关闭）的**唯一判据来源**——运维按该文件中 `CSP violation:` 与
-`aes_v1_decrypt_used` 的连续清零天数决定是否切换开关。而 pytest（settings_test）
+`aes_v1_decrypt_used` 的连续清零天数决定是否切换开关。而 pytest（settings_real，经 settings_base 统一隔离）
 与 E2E 后端（settings_e2e）此前与生产共用同一份 LOGGING，测试流量持续写入该文件：
 
 - 集成测试用 `AESCipherV2(...).encrypt()` 构造登录 / 改密请求，而服务端加密器

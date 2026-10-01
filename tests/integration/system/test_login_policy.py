@@ -206,7 +206,7 @@ class TestBuiltinDefaultPolicies:
 
         call_command("loaddata", "loadjson/loginaccesspolicy.json", verbosity=0)
 
-    def test_builtin_policies_loaded(self, superuser):
+    def test_builtin_policies_loaded(self, superuser, seed_creator_user):
         self._load_seed()
         policies = {p.name: p for p in LoginAccessPolicy.objects.all()}
         assert set(policies) == {"非工作时间登录需二次验证", "管理员账号登录留痕"}
@@ -219,7 +219,7 @@ class TestBuiltinDefaultPolicies:
         assert admin.target_type == LoginAccessPolicy.TargetType.ROLE
         assert admin.target_value == "SystemAdmin"
 
-    def test_builtin_priorities_do_not_shadow_admin_policies(self, superuser, normal_user):
+    def test_builtin_priorities_do_not_shadow_admin_policies(self, superuser, normal_user, seed_creator_user):
         self._load_seed()
         LoginAccessPolicy.objects.create(
             name="管理员自建拒绝",
@@ -233,7 +233,9 @@ class TestBuiltinDefaultPolicies:
         assert result["policy"] == "管理员自建拒绝"
         assert result["action"] == "reject"
 
-    def test_night_policy_requires_mfa_but_never_locks_out(self, api_client, normal_user, login_free):
+    def test_night_policy_requires_mfa_but_never_locks_out(
+        self, api_client, normal_user, login_free, seed_creator_user
+    ):
         self._load_seed()
         # 无可用 MFA 方式 → 降级放行（即使命中内置夜间策略也不得拒登）
         result = evaluate_login_policy(

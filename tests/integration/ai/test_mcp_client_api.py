@@ -10,7 +10,6 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
-from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from ai.models.mcp import McpServer
@@ -103,13 +102,6 @@ def stub():
     thread.start()
     yield f"http://127.0.0.1:{server.server_address[1]}/mcp", _McpStub
     server.shutdown()
-
-
-@pytest.fixture(autouse=True)
-def _clean_cache():
-    cache.clear()
-    yield
-    cache.clear()
 
 
 @pytest.fixture

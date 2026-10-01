@@ -5,7 +5,7 @@ import pytest
 
 from server.conf import Config, ConfigManager, DoesNotExist, import_string
 
-# 说明：load_user_config 被 tests/settings_test.py 全局替换为测试配置，
+# 说明：load_user_config 被测试档（tests/settings_real.py 等）全局替换为测试配置，
 # 不直接对入口函数断言，回退链以组件方法重建验证（见 TestConfigManager 末尾）。
 
 
@@ -177,7 +177,7 @@ class TestConfigManager:
     def test_load_user_config_fallback_chain(self, tmp_path, monkeypatch):
         """回退链：config.py → config 模块 → config.yml/yaml → 报 ImportError。
 
-        tests/settings_test.py 已全局把 load_user_config 替换为返回测试配置，
+        测试档（tests/settings_real.py 等）已全局把 load_user_config 替换为返回测试配置，
         这里按 conf.py 原始语义用组件方法显式重建回退链验证。
         """
 

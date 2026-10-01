@@ -9,7 +9,6 @@
 import json
 
 import pytest
-from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from ai.models.ai import AiKnowledgeChunk
@@ -47,13 +46,6 @@ KNOWLEDGE_DOC = """# 测试知识文档
 
 仪表盘由卡片组成，卡片引用数据集并选择图表类型。
 """
-
-
-@pytest.fixture(autouse=True)
-def _clean_cache():
-    cache.clear()
-    yield
-    cache.clear()
 
 
 @pytest.fixture

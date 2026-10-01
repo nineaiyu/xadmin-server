@@ -5,7 +5,7 @@
 幂等（重复执行不改内容 / 生成块不重复）、共享文件合并（import 去重、urls 注册行插入）、
 菜单种子结构（权限码 / 路径正则 / uuid5 确定性）、--dry-run 不落盘。
 
-样本用 `demo.Book`（demo 仅在测试 settings 启用，见 tests/settings_test.py）。
+样本用 `demo.Book`（demo 仅在测试 settings 启用，见 tests/settings_real.py 的 XADMIN_APPS 注入）。
 """
 
 import json

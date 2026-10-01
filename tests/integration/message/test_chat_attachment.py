@@ -73,14 +73,12 @@ def chat_perms(menu_factory):
 
 @pytest.fixture
 def ws_layer():
+    from tests.channel_layer import reset_layer_state
+
     layer = get_channel_layer()
-    layer._online_users = {}
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
     yield layer
-    layer._online_users = {}
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
 
 
 def _make_consumer(ws_layer, user, channel="specific.chat-attach"):

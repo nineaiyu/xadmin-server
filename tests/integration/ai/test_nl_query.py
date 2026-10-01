@@ -9,7 +9,6 @@
 import json
 
 import pytest
-from django.core.cache import cache
 from django.utils.translation import gettext
 from rest_framework.test import APIClient
 
@@ -38,13 +37,6 @@ def _iter_stream(response):
 
 INTERPRET_URL = "/api/ai/assistant/nl-query/interpret"
 RUN_URL = "/api/ai/assistant/nl-query/run"
-
-
-@pytest.fixture(autouse=True)
-def _clean_cache():
-    cache.clear()
-    yield
-    cache.clear()
 
 
 @pytest.fixture

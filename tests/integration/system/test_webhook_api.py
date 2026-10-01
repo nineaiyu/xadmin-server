@@ -13,7 +13,6 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.test import RequestFactory
 
@@ -31,13 +30,6 @@ pytestmark = pytest.mark.django_db
 
 WEBHOOK_URL = "/api/system/webhooks/subscriptions"
 DELIVERY_URL = "/api/system/webhooks/deliveries"
-
-
-@pytest.fixture(autouse=True)
-def _clean_cache():
-    cache.clear()
-    yield
-    cache.clear()
 
 
 # ---------------------------------------------------------------- 单元
@@ -223,7 +215,8 @@ class TestEventWiring:
         from common.core.config import SysConfig
 
         SysConfig.set_value("APPROVAL_ENABLED", True)
-        cache.clear()
+        # 定向失效配置缓存（delete_pattern 带 worker 前缀，真环境档下不得 flushdb）
+        SysConfig.invalid_config_cache()
         factory = RequestFactory()
         request = factory.post("/api/system/user/1", HTTP_USER_AGENT="pytest-agent")
         request.user = normal_user

@@ -234,7 +234,7 @@ class TestLazyInitialization:
             capture_output=True,
             text=True,
             cwd=str(PROJECT_ROOT),
-            env={**os.environ, "DJANGO_SETTINGS_MODULE": "tests.settings_test"},
+            env={**os.environ, "DJANGO_SETTINGS_MODULE": "tests.settings_real"},
             timeout=120,
         )
         assert proc.returncode == 0, f"stdout={proc.stdout}\nstderr={proc.stderr}"

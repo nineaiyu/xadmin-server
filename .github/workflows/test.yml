@@ -10,6 +10,52 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # 时长预算 ≤ 20 min（方案 G4：容器启动 + uv sync 占大头，pytest 本体真库实测分钟级）；
+    # 40 min 为安全天花板，超时即门禁红
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        # 真环境门禁（全真容器化测试迁移方案 §3.3 / §四 阶段 3）：大版本与生产/loadtest 对齐
+        # （同 test-nightly-pg.yml），方言/连接池/pk 序列类缺陷在 PR 阶段暴露而非逃逸到生产
+        image: postgres:17
+        env:
+          POSTGRES_USER: server
+          POSTGRES_PASSWORD: pgtest
+          POSTGRES_DB: xadmin_realtest
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        # 真 Redis（生产同款 django_redis backend 与 channel layer），同 perf.yml 既有形态
+        image: redis:8.10
+        ports:
+          - 56379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # 真环境档为 pytest.ini 缺省（方案 G2：sqlite 从测试链路退役）；此处显式注入
+      # 使 check 步骤同档。DB_DATABASE 用 settings_real 缺省 xadmin_realtest（与
+      # POSTGRES_DB 对齐）；xdist 下 settings_real 按 worker 自动加后缀，各 worker
+      # 独立建 test_<库名> 并跑迁移。Redis 服务的 xdist 隔离（db 编号 + 键前缀）
+      # 见 tests/settings_real.py 模块 docstring
+      DJANGO_SETTINGS_MODULE: tests.settings_real
+      DB_HOST: 127.0.0.1
+      DB_PORT: "55433"
+      DB_USER: server
+      DB_PASSWORD: pgtest
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "56379"
+      # CI 的 redis 服务不设密码，settings_real 缺省 REDIS_PASSWORD=""（同 perf.yml 口径）
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +72,7 @@ jobs:
 
       - name: Install dependencies
         # 以 uv.lock 为唯一安装依据（requirements*.txt 仅用于 pip-audit 与手工安装）；
-        # 测试环境使用 sqlite3，无需编译 mysqlclient
+        # psycopg3/psycopg-pool 已在依赖内。MySQL 档维持 ADR 触发制，mysqlclient 不参与编译
         run: uv sync --locked --no-install-package mysqlclient
 
       - name: Verify lockfile is in sync
@@ -34,19 +80,17 @@ jobs:
         # lock ↔ pyproject 的一致性校验在此补齐
         run: uv lock --check
 
-      - name: Run tests (parallel)
-        # -n auto 并行（sqlite 内存库每 worker 独立、FakeRedis 进程内无交叉污染）
-        # --cov-fail-under=85 覆盖率门禁：2026-09-18 上调 82 → 85（实测 87%，满足
-        # ≤ 实测 -2pp 上移规则；Q1 阶段二目标提前达成），关键模块另行按模块跟踪。
-        # 2026-09-27 测量口径扩至 ADR-057 拆分后的全部 app（补 ai/approval/dataset/utils），
-        # 全口径实测 88%（ai 88% / approval 88% / dataset 86%），85% 门禁维持不变
+      - name: Run tests (parallel, real PostgreSQL + Redis)
+        # 口径不变（G1）：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
+        # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
+        # 测量口径扩至 ADR-057 拆分后的全部 app，真环境档实测 89%，门禁维持不变
         run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85
 
-      - name: Django system checks (database-tagged)
+      - name: Django system checks (database-tagged, real PostgreSQL)
         # 守护「启动即炸」类缺陷：索引名超长（models.E034）/ GinIndex 缺
         # django.contrib.postgres（postgres.E005）等模型检查仅在 `check --database`
-        # 运行时执行（普通 check 不跑）——2026-09-18 部署实测曾因此卡死 manage.py start，
-        # CI 此前无覆盖。sqlite 内存库即可承载该检查（与数据库后端无关）。
-        run: DJANGO_SETTINGS_MODULE=tests.settings_test uv run --no-sync python manage.py check --database default
+        # 运行时执行（普通 check 不跑）。真库执行（方案 §3.3）：PG 专属模型检查
+        # 覆盖更强；settings 由 job env 继承（tests.settings_real）
+        run: uv run --no-sync python manage.py check --database default
 
       # 代码风格检查由 lint.yml 独立负责，此处不再重复执行 ruff

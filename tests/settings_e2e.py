@@ -2,30 +2,56 @@
 """
 E2E 专用配置（Playwright 驱动的真实后端）。
 
-与 settings_test 同源（sqlite + 进程内 FakeRedis + 内存 channel layer +
-eager celery），但差异点：
+真库化（全真容器化测试迁移方案 §四 阶段 4，2026-10-01）：DATABASES 指向真实
+PostgreSQL（compose.test.yml 同一容器，库名按 shard 隔离），重置语义由
+scripts/e2e_seed.py 承担（原 sqlite「删文件重开」→ PG「DROP DATABASE WITH (FORCE)
++ CREATE」）；sqlite WAL/busy_timeout/IMMEDIATE 专项配置随之作废。缓存仍为进程内
+FakeRedis、channel 仍为内存层——E2E 追求确定性回放，站点设置缓存与 WS 推送语义
+已由真环境门禁档（settings_real）覆盖。
 
-- sqlite 使用文件库（tmp/e2e.sqlite3），供 runserver 进程持续读写，
-  可被种子脚本一键重置
-- 登录关闭验证码与前端加密（E2E 以明文密码走真实登录链路）
+与 pytest 档的差异点：
+
 - DEBUG=True + ALLOWED_HOSTS=*，仅限本机 E2E 使用，禁止用于任何真实部署
+- 登录关闭验证码与前端加密（E2E 以明文密码走真实登录链路）
+- 公共面（PASSWORD_HASHERS / MEDIA_ROOT / 日志隔离 / eager celery）经
+  tests/settings_base star-import 继承——旧档只 `import settings_test as _base`
+  无 star-import，PASSWORD_HASHERS / MEDIA_ROOT 实际从未继承（生产哈希 + data/media
+  泄漏面），本档一并修复
 
 同样不能放在 server/settings/ 包内，避免父包 __init__ 强制加载 config.yml。
 """
 
 import os
 
-from server.conf import ConfigManager
-from tests import settings_test as _base
+from server.conf import Config, ConfigManager
 
-# 说明：对 _test_config 的注入必须发生在 server.settings 导入之前才生效，
-# settings_test 先于本模块加载了 server.settings，因此 E2E 差异项统一放在
-# 本模块尾部的显式覆盖区（见文件下方）。
-_test_config = _base._test_config
+# 库名按 shard 隔离：并行跑批器（xadmin-client scripts/e2e-parallel.mjs）传
+# E2E_DB_NAME=xadmin_e2e_shard<i>；兼容旧分片变量 E2E_DB_FILENAME（去 .sqlite3 后缀）
+_e2e_db_name = os.environ.get("E2E_DB_NAME", "")
+if not _e2e_db_name and os.environ.get("E2E_DB_FILENAME"):
+    _e2e_db_name = os.environ["E2E_DB_FILENAME"].removesuffix(".sqlite3")
+if not _e2e_db_name:
+    _e2e_db_name = "xadmin_e2e"
 
-ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _test_config)
+_e2e_config = Config()
+_e2e_config["SECRET_KEY"] = "test-only-secret-key-0123456789abcdef"
+_e2e_config["XADMIN_APPS"] = ["demo"]  # 二开样板页场景（demo.Book）依赖
+# 前置 Config 注入（settings_real/settings_pg 同款形态）：DATABASES 由 base settings
+# 按 PG 分支整体构造（ATOMIC_REQUESTS=True、psycopg 连接参数与生产同构），本模块
+# 不再自行拼 DATABASES——库名经 DB_DATABASE 注入，每 shard 独立库互不串扰
+_e2e_config["DB_ENGINE"] = "postgresql"
+_e2e_config["DB_HOST"] = os.environ.get("DB_HOST", "127.0.0.1")
+_e2e_config["DB_PORT"] = int(os.environ.get("DB_PORT", "55433"))
+_e2e_config["DB_DATABASE"] = _e2e_db_name
+_e2e_config["DB_USER"] = os.environ.get("DB_USER", "server")
+_e2e_config["DB_PASSWORD"] = os.environ.get("DB_PASSWORD", "pgtest")
+
+ConfigManager.load_user_config = classmethod(lambda cls, root_path=None, config_class=None: _e2e_config)
 
 from server.settings import *  # noqa: F401,F403,E402
+
+# 公共测试基座（DEBUG/CELERY eager/PASSWORD_HASHERS/EMAIL_BACKEND/MEDIA_ROOT/日志隔离）
+from tests.settings_base import *  # noqa: F401,F403,E402
 
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
@@ -36,7 +62,7 @@ ALLOWED_HOSTS = ["*"]
 LANGUAGE_CODE = "zh-hans"
 MIDDLEWARE = [m for m in MIDDLEWARE if m != "django.middleware.locale.LocaleMiddleware"]  # noqa: F405
 
-# SECURITY_* 常量在 server.settings.custom 导入时即从 CONFIG 冻结（彼时 _test_config
+# SECURITY_* 常量在 server.settings.custom 导入时即从 CONFIG 冻结（彼时 _e2e_config
 # 尚未注入 E2E 差异），必须在此后显式覆盖才会生效：
 # 登录关验证码/加密（E2E 明文密码走真实链路），放宽失败锁定阈值避免用例互相影响
 SECURITY_LOGIN_CAPTCHA_ENABLED = False
@@ -86,33 +112,22 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
     },
 }
 
-DATABASES = {
+# 站点配置等系统设置缓存走 FakeRedis（进程内），跨请求一致；channel 走内存层。
+# 原定义随 sqlite 档（tests/settings_test.py，已退役删除）收编至此——仅 E2E 消费
+CACHES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(str(_base.PROJECT_DIR), "tmp", os.environ.get("E2E_DB_FILENAME", "e2e.sqlite3")),
-        "ATOMIC_REQUESTS": True,
-        # daphne 并发处理请求 + ATOMIC_REQUESTS 下裸 sqlite 会互踩写锁
-        # （实测单请求可拖到 5s+ 并抛 "database is locked"）：
-        # IMMEDIATE 在事务开始即取写锁避免锁升级死锁，WAL + busy_timeout
-        # 让并发写排队而非直接报错（Django 5.1+ sqlite OPTIONS）
-        "OPTIONS": {
-            "transaction_mode": "IMMEDIATE",
-            "init_command": ("PRAGMA journal_mode=WAL;PRAGMA busy_timeout=15000;PRAGMA synchronous=NORMAL;"),
-        },
+        "BACKEND": "tests.cache_backend.FakeRedisCache",
+        "LOCATION": "test-cache",
+    }
+}
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "tests.channel_layer.TestInMemoryChannelLayer",
     }
 }
 
-# 站点配置等系统设置缓存走 FakeRedis（进程内），跨请求一致
-CACHES = _base.CACHES
-CHANNEL_LAYERS = _base.CHANNEL_LAYERS
-
-# eager celery 与 settings_test 对齐。注意：本模块不能只依赖 _base —— settings_e2e
-# 与 settings_test 之间没有 star-import，CELERY_* 必须在此显式声明；否则
-# apply_async 会按 celery 默认值连接 localhost:5672（rabbitmq），连接重试
-# 在 thread-sensitive 同步线程里可达分钟级，实测拖死整个 daphne 进程。
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
-CELERY_BROKER_URL = "memory://"
+# eager celery 继承自 settings_base（真实 broker 只引入时序 flaky）；此处补齐
+# memory broker 的两个探针豁免（原档注释保留）：
 
 # memory broker 上 inspect.ping() 会无限阻塞，healthz 跳过 celery 探测
 HEALTH_CHECK_SKIP_CELERY = True
@@ -134,10 +149,3 @@ def _e2e_no_workers(self, *args, **kwargs):
 
 Inspect.active = _e2e_no_workers
 Inspect.ping = _e2e_no_workers
-
-# 测试日志与生产日志隔离：本模块 star-import 的是原生 LOGGING（settings_test 的
-# 改写不会传递过来），须单独改写——E2E 后端进程同样不得写入 data/logs/server.log
-# （该文件是发布窗口硬门禁的唯一判据来源，背景见 tests/logging_isolation.py）
-from tests.logging_isolation import isolate_file_handlers  # noqa: E402
-
-isolate_file_handlers(LOGGING, PROJECT_DIR)  # noqa: F405

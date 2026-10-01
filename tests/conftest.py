@@ -3,10 +3,45 @@
 
 import pytest
 from django.core.cache import cache
+from django.db import connections
 from rest_framework.test import APIClient
 
 from server.utils import set_current_request
 from system.models import DeptInfo, Menu, MenuMeta, UserInfo, UserRole
+
+
+def pytest_configure(config):
+    """真环境档（tests.settings_real，门禁缺省）预检：PG/Redis 不可达即 fail-fast。
+
+    容器事故的教训（OrbStack 宿主故障连环杀容器，全真容器化测试迁移方案 §五 #20）：
+    Connection refused / PoolTimeout 会在数千用例上铺开成误导性红海，且与容量类
+    flaky（#15）难以区分。此处用裸 socket 探测（不触碰 Django 连接层，避开
+    pytest-django 阻断器），环境变量读取与缺省值同 settings_real 口径；
+    只对真环境档生效、只由非 xdist worker 进程执行；E2E（settings_e2e）不经 pytest
+    启动，不受影响。
+    """
+    import os
+    import socket
+
+    if os.environ.get("DJANGO_SETTINGS_MODULE") != "tests.settings_real":
+        return
+    if os.environ.get("PYTEST_XDIST_WORKER"):
+        return
+    targets = (
+        ("PostgreSQL", os.environ.get("DB_HOST", "127.0.0.1"), int(os.environ.get("DB_PORT", "55433"))),
+        ("Redis", os.environ.get("REDIS_HOST", "127.0.0.1"), int(os.environ.get("REDIS_PORT", "56379"))),
+    )
+    down = []
+    for name, host, port in targets:
+        try:
+            socket.create_connection((host, port), timeout=1.0).close()
+        except OSError:
+            down.append(f"{name} {host}:{port}")
+    if down:
+        pytest.exit(
+            "真环境档依赖不可达：{}\n先起依赖：docker compose -f compose.test.yml up -d".format("、".join(down)),
+            returncode=1,
+        )
 
 
 @pytest.fixture(autouse=True)
@@ -28,14 +63,84 @@ def _clean_index_meta():
 
 @pytest.fixture(autouse=True)
 def _clean_cache():
-    """每个测试前后清空缓存，避免 MagicCacheData（权限缓存 24h）跨测试污染。"""
+    """每个测试前后清空缓存，避免 MagicCacheData（权限缓存 24h）跨测试污染。
+
+    真环境档（tests/settings_real.py）下 cache.clear() 走 django_redis 的 flushdb，
+    会清掉整个逻辑库——多 worker 共享 Redis（>15 worker 时 db 循环复用、两 worker
+    共库）下互踩。delete_pattern 的模式经 KEY_FUNCTION 同源拼前缀（make_pattern），
+    传逻辑模式 "*" 即精确命中本 worker 键空间（settings_real 的 test_redis_key_func
+    加 "tN:" 前缀），等价于「只清本 worker 前缀」、永不 flushdb；sqlite 档无该属性，
+    保持 cache.clear() 原语义，PR 门禁零变化。
+    注意模式必须是逻辑键（"*"），不能传 f"{prefix}:*"——否则会被 key_func 二次加前缀，
+    变成 tN:tN:* 一个都清不到（首轮全量 30 例连环红的根因）。
+    """
+    from django.conf import settings as django_settings
+
     from common.core.config.base import ConfigCacheBase
 
-    cache.clear()
-    ConfigCacheBase._L1_STORE.clear()  # 配置 L1 为进程内层，cache.clear() 清不到
+    worker_scoped = getattr(django_settings, "TEST_REDIS_KEY_PREFIX", None) is not None
+
+    def _flush():
+        if worker_scoped:
+            cache.delete_pattern("*")
+        else:
+            cache.clear()
+        ConfigCacheBase._L1_STORE.clear()  # 配置 L1 为进程内层，cache 清理清不到
+
+    _flush()
     yield
-    cache.clear()
-    ConfigCacheBase._L1_STORE.clear()
+    _flush()
+
+
+@pytest.fixture(scope="session")
+def django_db_modify_db_settings(django_db_modify_db_settings_parallel_suffix):
+    """丢弃「测试库换名前」误建的 PG 连接池，守护 nightly PG 档（tests/settings_pg.py）。
+
+    Django postgres 后端的 pool property 是「读即建池」语义，而 `_cursor()` 在
+    ensure_connection（pytest-django 的 DB 阻断点）**之前**会先经
+    close_if_health_check_failed() 读一次 pool——应用启动后台线程
+    （common/apps.py django_ready → Setting.refresh_all_settings）因此在
+    pytest 收集阶段就把连接池固化到「尚未创建的测试库名」上；之后
+    django_db_setup 换库名，migrate 经旧池取连接全部 PoolTimeout
+    （2026-10-01 nightly PG 首轮 3630 errors 的根因，处置登记见
+    docs/plans/容器化PG-nightly测试档立项-2026.10.md §五）。
+
+    此处挂 pytest-django 官方扩展点（默认 tox/xdist 后缀链经参数原样保留），
+    在换库名前 close_pool() 丢弃误建池，migrate 首次建连时按 test_<库名> 重建。
+    sqlite 后端无 pool（无 close_pool 属性）——no-op，PR 门禁行为不变。
+    """
+    from django.db import connections
+
+    for connection in connections.all():
+        close_pool = getattr(connection, "close_pool", None)
+        if close_pool is not None:
+            close_pool()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _safe_channels_conn_recycle():
+    """channels 的 database_sync_to_async 每次执行前后调 close_old_connections()。
+
+    sqlite :memory: 上 Django 特意跳过 close（内存库关闭即销毁数据），该清理天然
+    no-op；PG 真库（池模式 CONN_MAX_AGE=0，close_at 立即过期）则会把 pytest-django
+    测试原子块内的连接关掉（closed_in_transaction=True），Django 禁止原子块内重连，
+    消费者后续 ORM 全部炸「Cannot open a new connection in an atomic block」
+    （2026-10-01 nightly PG 档首轮暴露 23 例，见 docs/plans/容器化PG-nightly测试档立项-2026.10.md §五）。
+
+    生产语义保持不变：仅在「处于原子块中」时跳过回收（生产消费线程没有请求级原子，
+    该分支不可达）；测试进程内的连接回收本无意义（事务回滚即还原状态）。
+    """
+    from channels import db as channels_db
+
+    def _safe_close_old_connections(**kwargs):
+        for conn in connections.all(initialized_only=True):
+            if not conn.in_atomic_block:
+                conn.close_if_unusable_or_obsolete()
+
+    original = channels_db.close_old_connections
+    channels_db.close_old_connections = _safe_close_old_connections
+    yield
+    channels_db.close_old_connections = original
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -79,6 +184,24 @@ def api_client():
 @pytest.fixture
 def superuser(db):
     return UserInfo.objects.create_superuser(username="admin", email="admin@example.com", password="Admin@123456")
+
+
+@pytest.fixture
+def seed_creator_user(superuser):
+    """loadjson 种子把 creator/modifier 硬编码为 1（生产口径：新装环境 init_data 的首个超管）。
+
+    sqlite 的 AUTOINCREMENT 序列随事务回滚复位，superuser 在每个测试里恒为
+    pk=1，种子可直接 loaddata；PG 的序列**不随事务回滚**，superuser 的 pk 会
+    随同 worker 先前用例漂移（2026-10-01 nightly PG 档首轮暴露，见
+    docs/plans/容器化PG-nightly测试档立项-2026.10.md §五），loaddata 解析
+    creator=1 时报 UserInfo.DoesNotExist。此 fixture 依赖 superuser 并只在
+    不变量被破坏时补一个 pk=1 的引用目标——sqlite 档恒为 no-op，PR 门禁零变化。
+
+    需要装载含 creator 引用的种子的测试，显式请求本 fixture（置于 superuser 之后）。
+    """
+    if superuser.pk != 1 and not UserInfo.objects.filter(pk=1).exists():
+        UserInfo.objects.create(pk=1, username="init-admin", password="!")  # "!" 为 Django 不可用密码标记
+    return None
 
 
 @pytest.fixture

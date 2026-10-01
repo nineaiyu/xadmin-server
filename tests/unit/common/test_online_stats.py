@@ -34,32 +34,31 @@ def _clear_snapshot():
 
 @pytest.fixture
 def layer(settings):
-    """测试用内存 channel layer（tests/channel_layer.py 提供同名方法）。"""
+    """channel layer（InMemory 档 / 真 Redis 层通用，清理走 tests/channel_layer helper）。"""
     from channels.layers import get_channel_layer
 
+    from tests.channel_layer import reset_layer_state
+
     layer = get_channel_layer()
-    layer._online_users = {}
-    # layer 实例在进程内复用，必须清理上一条用例遗留的 group
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
     yield layer
-    layer._online_users = {}
-    if hasattr(layer, "groups") and hasattr(layer.groups, "clear"):
-        layer.groups.clear()
+    reset_layer_state(layer)
 
 
 def _beat(layer, user_pk, channel="chan"):
-    """模拟一次前端心跳（每 10s 一次的 ping）。"""
-    group = msg_utils.get_user_layer_group_name(user_pk)
-    layer.groups.setdefault(group, {})[channel] = time.time()
-    layer._online_users[user_pk] = time.time()
+    """模拟一次前端心跳（每 10s 一次的 ping）：双栈同名的公开 API。"""
+    from tests.channel_layer import beat_layer
+
+    beat_layer(layer, user_pk, channel)
 
 
 class TestOnlineReverseIndex:
     def test_online_users_from_reverse_index(self, layer):
+        from tests.channel_layer import inject_online_user
+
         _beat(layer, 1, "c1")
         _beat(layer, 2, "c2")
-        layer._online_users[3] = time.time() - 999  # 超过 30s 未心跳，视为离线
+        inject_online_user(layer, 3, at=time.time() - 999)  # 超过 30s 未心跳，视为离线
 
         assert sorted(get_online_users()) == [1, 2]
 
@@ -73,28 +72,34 @@ class TestOnlineReverseIndex:
         assert get_online_users() == [7]
 
     def test_get_online_info_returns_sockets(self, layer):
+        from tests.channel_layer import inject_group_channels, inject_online_user
+
         group = msg_utils.get_user_layer_group_name(11)
-        layer.groups[group] = {"chan-1": 0, "chan-2": 0}
-        layer._online_users = {11: time.time()}
+        inject_group_channels(layer, group, ["chan-1", "chan-2"])
+        inject_online_user(layer, 11)
 
         pks, sockets = get_online_info()
         assert pks == [11]
         assert sorted(sockets) == ["chan-1", "chan-2"]
 
     def test_online_info_snapshot_cached(self, layer):
+        from tests.channel_layer import inject_group_channels, inject_online_user
+
         group = msg_utils.get_user_layer_group_name(21)
-        layer.groups[group] = {"chan-a": 0}
-        layer._online_users = {21: time.time()}
+        inject_group_channels(layer, group, ["chan-a"])
+        inject_online_user(layer, 21)
 
         first = get_online_info()
-        layer._online_users[22] = time.time()  # 新心跳，但快照仍在有效期内
+        inject_online_user(layer, 22)  # 新心跳，但快照仍在有效期内
         second = get_online_info()
         assert first == second == ([21], ["chan-a"])
         assert cache.get(msg_utils.ONLINE_INFO_CACHE_KEY) is not None
 
     def test_falls_back_to_groups_when_index_empty(self, layer):
+        from tests.channel_layer import inject_group_channels
+
         group = msg_utils.get_user_layer_group_name(31)
-        layer.groups[group] = {"chan-b": 0}
+        inject_group_channels(layer, group, ["chan-b"])
         # 反向索引为空（Redis 重启后首个心跳尚未到来的窗口）-> 降级走 get_groups 重建
         result = get_online_info()
         assert result[0] == [31]
@@ -102,7 +107,9 @@ class TestOnlineReverseIndex:
 
     def test_chat_room_group_never_in_results(self, layer):
         """旧实现 int(group.split('_')[-1]) 会把聊天室解析成 pk=0 混入结果"""
-        layer.groups["message_system_default_0"] = {"chan-room": 0}
+        from tests.channel_layer import inject_group_channels
+
+        inject_group_channels(layer, "message_system_default_0", ["chan-room"])
         pks, sockets = get_online_info()
         assert 0 not in pks
         assert pks == []
@@ -138,15 +145,19 @@ class TestOnlineLayersBatch:
         assert msg_utils.get_online_users_layers([3, 4]) == {3: ["c3"], 4: ["c4"]}
 
     def test_snapshot_falls_back_to_groups_when_index_empty(self, layer):
+        from tests.channel_layer import inject_group_channels
+
         group = msg_utils.get_user_layer_group_name(6)
-        layer.groups[group] = {"chan-6": 0}
+        inject_group_channels(layer, group, ["chan-6"])
         # 反向索引为空（Redis 重启后首个心跳尚未到来）→ 降级 SCAN 重建
         assert msg_utils.get_online_users_layers([6]) == {6: ["chan-6"]}
 
     def test_realtime_path_queries_each_call_without_snapshot(self, layer):
+        from tests.channel_layer import inject_group_channels
+
         _beat(layer, 5, "c5")
         first = msg_utils.get_online_users_layers([5], use_snapshot=False)
-        layer.groups[msg_utils.get_user_layer_group_name(5)]["c6"] = 0  # 新连接
+        inject_group_channels(layer, msg_utils.get_user_layer_group_name(5), ["c6"])  # 新连接
         second = msg_utils.get_online_users_layers([5], use_snapshot=False)
         assert first == {5: ["c5"]}
         assert sorted(second[5]) == ["c5", "c6"], "实时口径必须拿到最新 channel 明细"

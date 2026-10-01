@@ -1,0 +1,34 @@
+# 全真容器化测试档依赖（docs/plans/全真容器化测试迁移方案-2026.10.md §3.5）：
+#   docker compose -f compose.test.yml up -d
+# 一次性专用容器：数据不落盘（无 volume），禁止指向日常/生产实例。
+# PG 端口 55433 与 loadtest（55432）错开可共存；Redis 56379 与 loadtest 同端口，
+# 两者不可同时运行（Redis 无状态，先后运行即可）。
+# 若此前按 nightly runbook 用 docker run 起过 xadmin-pgtest-pg，需先移除再 up（端口冲突）。
+# E2E（tests/settings_e2e，xadmin-client 跑批器）复用本文件的 postgres 服务（库名 xadmin_e2e*，
+# 由 scripts/e2e_seed.py DROP/CREATE 重置）；E2E 缓存为进程内 FakeRedis，无需 redis 服务。
+services:
+  postgres:
+    image: postgres:17
+    container_name: xadmin-test-pg
+    environment:
+      POSTGRES_USER: server
+      POSTGRES_PASSWORD: pgtest
+      POSTGRES_DB: xadmin_realtest
+    ports:
+      - "127.0.0.1:55433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U server"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.10
+    container_name: xadmin-test-redis
+    ports:
+      - "127.0.0.1:56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

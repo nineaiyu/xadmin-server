@@ -120,7 +120,7 @@ class TestSyncModelField:
         assert "BrokenProbeSerializer" in result["role"]["failed_serializers"]
         assert result["role"]["kept"] > 0
 
-    def test_seed_matches_sync_scope(self, superuser):
+    def test_seed_matches_sync_scope(self, superuser, seed_creator_user):
         """种子字段树不得在同步时被判为陈旧删除（单向守护）。
 
         失败模式：app 拆分批次（如 system → approval/ai）只改种子里的模型前缀、
