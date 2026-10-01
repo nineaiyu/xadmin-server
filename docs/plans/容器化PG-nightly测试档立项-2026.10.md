@@ -54,11 +54,11 @@ sqlite 门禁的方言盲区（已发生 / 可预判）：
 
 ### 3.2 `.github/workflows/test-nightly-pg.yml`
 
-- 触发：`schedule`（cron 每日一次，UTC 18:30 ≈ 北京 02:30，错开 PR 高峰）+ `workflow_dispatch`（手动/分诊后补跑）；
+- 触发：`schedule` + `workflow_dispatch`（手动/分诊后补跑）。**2026-10-01 调整**：cron 由每日（UTC 18:30）改为**每周六 UTC 18:30 ≈ 北京时间周日 02:30**（GitHub 免费额度对高频 schedule 有约束，且方言类缺陷每周分诊一次即可；首轮实测已证明本档能一次性暴露全部方言盲区，频率重要性下降）；
 - `services:` 块挂 `postgres:17`（`POSTGRES_USER/PASSWORD/DB`，健康检查 `pg_isready`）——大版本与生产/loadtest 对齐（17.11 / `registry...nineaiyu/postgres:17.11` 同源）；
-- 步骤与 `test.yml` 同构（uv sync → `uv lock --check`），测试命令：`DJANGO_SETTINGS_MODULE=tests.settings_pg uv run --no-sync pytest -n auto`——**不带 `--cov`**（夜间档目标是方言正确性，coverage 拦路 ~20-30% 时长且口径由 PR 门禁负责）；
+- 步骤与 `test.yml` 同构（uv sync → `uv lock --check`），测试命令：`DJANGO_SETTINGS_MODULE=tests.settings_pg uv run --no-sync pytest -n auto`——**不带 `--cov`**（本档目标是方言正确性，coverage 拦路 ~20-30% 时长且口径由 PR 门禁负责）；
 - 追加一步 `manage.py check --database default`（与 test.yml 同款，在真库上跑）；
-- 失败处理：nightly 红**不阻断**任何 PR；失败即 GitHub 邮件通知 + 次日窗口分诊（修复 commit 或登记），台账记在本文档 §五。
+- 失败处理：红**不阻断**任何 PR；失败即 GitHub 邮件通知 + 周窗口分诊（修复 commit 或登记），台账记在本文档 §五。
 
 ### 3.3 本地等价跑法（runbook，与 loadtest 容器端口错开）
 
@@ -92,17 +92,28 @@ DJANGO_SETTINGS_MODULE=tests.settings_pg \
 
 ## 五、分诊台账（滚动登记）
 
+首轮（2026-10-01，本地 runbook 实跑，第 1-4 轮收敛过程）：
+
 | 日期 | 用例 | 差异描述 | 处置 |
 |------|------|----------|------|
-| — | — | 首轮 nightly 尚未执行 | — |
+| 2026-10-01 | 全量（首轮 3630 errors） | Django pool property「读即建池」：启动后台线程（django_ready → refresh_all_settings）在 pytest-django 换测试库名前触发建池，池被固化到不存在的库名，migrate 全部 PoolTimeout。sqlite 无池无此形态 | **修复**：pytest 进程不启动该线程（`common/apps.py` argv 守护，E2E daphne 子进程不受影响）+ `django_db_modify_db_settings` 前置 `close_pool()` 守护（`tests/conftest.py`）。直发 django_ready 的用例不受影响 |
+| 2026-10-01 | `system/utils/upload_chunk.py`（complete_session 等 6 例） | `select_for_update()` + 可空 FK `select_related("upload")` 生成 LEFT OUTER JOIN，PG 拒绝对可空侧加行锁（`FOR UPDATE cannot be applied to the nullable side of an outer join`）；sqlite 无锁语义静默通过。若生产跑 PG 即为分片上传完成接口 500 | **修复**：去掉该预取（upload 列仅在 complete 时赋值、PENDING 恒 NULL，本无消费者）；`of=("self",)` 方案在 sqlite 门禁会 NotSupportedError，不可用 |
+| 2026-10-01 | `test_db_utils` / `test_reentrant_lock` 及连带 76 errors | 池归还连接不恢复 psycopg 级 autocommit：事务内 `close_old_connections()`（`safe_atomic_db_connection(auto_close=True)`）把 autocommit=False + INTRANS 连接还池；判活探针 `SELECT 1` 又开启新事务，下一个取用者 set_autocommit 即炸并循环污染 | **修复**：`check_db_connection` 探针 finally 自清 INTRANS（`common/db.py`，兼容测试伪连接）；`auto_close` 尊重其注释已声明的事务守卫（`common/core/db/utils.py`） |
+| 2026-10-01 | `test_login_policy`（3）+ `test_modelfield`（1） | PG 序列**不随事务回滚**（sqlite AUTOINCREMENT 回滚即复位）：「测试首个用户 pk=1」不变量漂移，loadjson 种子 `creator=1` 解析报 UserInfo.DoesNotExist | **修复**：`seed_creator_user` fixture——仅在不变量被破坏时补 pk=1 引用目标（sqlite 档恒 no-op，门禁零变化） |
+| 2026-10-01 | `test_index_usage`（6） | `EXPLAIN QUERY PLAN` 为 sqlite 专属；PG 空表规划器在并列成本索引间取更窄者（`..._module_objectpk` 胜 `..._module_created`；单列 owner_id 胜 (owner,unread) 复合） | **修复**：`explain_plan()` 方言自适应 + PG 分支 `SET LOCAL enable_seqscan=off`（沿用文件内 trigram 用例既有口径）；规划器博弈类断言降为「前缀命中 / 目录表存在性」守护，sqlite 断言不变 |
+| 2026-10-01 | `test_db_check`（2） | 首轮判活探针修复引入的测试替身回归：`_FakeConn` 无 `pgconn` | **修复**：探针清理分支 `getattr(conn, "pgconn", None)` 兼容伪连接 |
+| 2026-10-01 | `test_chat_consumer` 等 websocket/集成（23） | channels `database_sync_to_async` 每次执行前后 `close_old_connections()`：sqlite `:memory:` 上 Django 特意跳过 close（天然 no-op），PG 真库（池模式 CONN_MAX_AGE=0）把测试原子块内连接关闭（closed_in_transaction），Django 禁止原子块内重连 → 消费者 ORM 全炸 | **修复**：`_safe_channels_conn_recycle` fixture（`tests/conftest.py`）——回收时跳过处于原子块的连接（生产消费线程无请求级原子，该分支不可达，生产语义不变） |
+| 2026-10-01 | `test_dataset_json_columns::test_ordering_numeric_desc`（1） | PG 对 DESC 默认 **NULLS FIRST**，sqlite 把 NULL 当最小值排最后：JSON 缺键行在 `-data.amount|number` 排序下反超（ADR-069「缺键不参与」契约被打破） | **修复**：`execute_dataset` 排序显式 `F(alias).desc/asc(nulls_last=True)`（sqlite ≥3.30 支持），与缺省方向解耦 |
+
+收敛结果：第 4 轮全量 `pytest -n auto` **全绿**（本地实测，真库迁移 × 18 worker）。
 
 ## 六、阶段与工作量
 
 | 阶段 | 内容 | 工作量 | 状态 |
 |------|------|--------|------|
-| 一 | `tests/settings_pg.py` + `test-nightly-pg.yml` + 首轮跑通与分诊 | 0.5–1 人日 | 待启动 |
-| 二（触发制） | 真实 Redis service container 替换 FakeRedis（TTL/INCR/锁语义）；**前置**：xdist 跨 worker 共享 Redis 需按 worker 隔离 db/键前缀，限流类用例需重审 | 1 人日 | 触发条件：出现缓存语义类缺陷逃逸到 loadtest/生产 |
-| 三 | — 不做 — | — | MySQL 档 / E2E 容器档（见 §二 非目标） |
+| 一 | `tests/settings_pg.py` + `test-nightly-pg.yml` + 首轮跑通与分诊 | 0.5–1 人日 | **✅ 已完成（2026-10-01）**：本地 runbook 四轮收敛全绿，8 类差异处置完毕（§五）；调度按用户决策改为每周 |
+| 二 | ~~真实 Redis 触发制档~~ **升级为全面真环境化**：真实 PG + Redis 进 PR 门禁、sqlite 退役、E2E 真库化——按用户决策（2026-10-01）另行立项 | 见新方案 | → [全真容器化测试迁移方案](全真容器化测试迁移方案-2026.10.md) |
+| 三 | — 不做 — | — | MySQL 档 / E2E 容器档（原 §二 非目标，随阶段二方案一并重新评估） |
 
 ## 七、验收
 
@@ -113,7 +124,7 @@ DJANGO_SETTINGS_MODULE=tests.settings_pg \
 
 ## 八、成本
 
-- GHA 私有仓：单次 ~15–25 min（PG 建库迁移 × N worker + 真 SQL 执行慢于内存 sqlite），每日一次 ≈ **450–750 min/月**，位于 2000 min/月免费额度内；`uv` 缓存与 test.yml 共享命中。
+- GHA 私有仓：单次 ~15–25 min（PG 建库迁移 × N worker + 真 SQL 执行慢于内存 sqlite）。**2026-10-01 由每日改为每周一次**：≈ **60–125 min/月**（原每日口径 450–750 min/月），位于 2000 min/月免费额度内；`uv` 缓存与 test.yml 共享命中。首轮本地实测全量真库仅 ~43s（`-n auto`），CI 时长由 runner/容器启动主导，真 SQL 并非瓶颈。
 - 本地：runbook 单命令，容器与 loadtest 端口错开可共存。
 
 ## 九、关联
