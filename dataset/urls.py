@@ -11,7 +11,8 @@ from rest_framework.routers import SimpleRouter
 from dataset.views.analysis import ReportViewSet, ScreenViewSet
 from dataset.views.dataset import DashboardViewSet as DataDashboardViewSet
 from dataset.views.dataset import DatasetViewSet
-from dataset.views.dform import DynamicFormSubmissionViewSet, DynamicFormViewSet
+from dataset.views.dform import DynamicFormViewSet
+from dataset.views.dform_submission import DynamicFormSubmissionViewSet
 from dataset.views.form_data import DynamicFormDataViewSet
 
 app_name = "dataset"

@@ -1,6 +1,3 @@
-import hashlib
-import re
-
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 
@@ -369,53 +366,13 @@ class ApprovalRequestMessage(UserMessage):
 # ApprovalFlowMessage（流程审批通知）已随行数门禁抽至独立模块；此 re-export 维持既有导入面
 from system.notifications_approval_flow import ApprovalFlowMessage  # noqa: E402,F401 显式再导出
 
-SENSITIVE_ALERT_THROTTLE_SECONDS = 60
+# 实现拆至 system.notifications_alert：经模块级 __getattr__ 延迟再导出（保持调用面，避免循环导入）。
+_MOVED_EXPORTS = ("SENSITIVE_ALERT_THROTTLE_SECONDS", "maybe_alert_sensitive_operation")
 
 
-def maybe_alert_sensitive_operation(info: dict):
-    """敏感操作命中判定 + 节流告警（由操作日志中间件在日志落库后调用）。
+def __getattr__(name):
+    if name in _MOVED_EXPORTS:
+        from importlib import import_module
 
-    方法清单（SysConfig.SENSITIVE_OPERATION_METHODS，默认 ["DELETE"]）与路径正则
-    清单（SENSITIVE_OPERATION_PATHS，默认空）AND 组合；同一 方法+路径 60 秒内
-    只告警一次。任何异常都不影响请求响应。
-    """
-    from django.core.cache import cache
-
-    from common.core.config import SysConfig
-
-    methods = SysConfig.SENSITIVE_OPERATION_METHODS
-    method = info.get("method")
-    if methods and methods != "ALL" and method not in methods:
-        return
-    paths = SysConfig.SENSITIVE_OPERATION_PATHS
-    path = info.get("path") or ""
-    if paths:
-        try:
-            matched = any(re.search(pattern, path) for pattern in paths if pattern)
-        except re.error:
-            # 管理员配置了非法正则：跳过路径过滤并在本函数内消化告警，
-            # 避免把 re.error 抛回中间件造成每个命中请求一条带堆栈的 warning
-            logger.warning("sensitive operation alert skipped: invalid path regex %s", paths)
-            return
-        if not matched:
-            return
-
-    digest = hashlib.md5(f"{method}:{path}".encode()).hexdigest()
-    if not cache.add(f"sensitive_op_alert_{digest}", 1, SENSITIVE_ALERT_THROTTLE_SECONDS):
-        return
-    try:
-        SensitiveOperationMessage(
-            {
-                "module": info.get("module"),
-                "path": path,
-                "method": method,
-                "ipaddress": info.get("ipaddress"),
-                "created_time": local_now_display(),
-            }
-        ).publish(is_async=True)
-    except Exception:
-        logger.warning("send sensitive operation alert failed", exc_info=True)
-    # 出站 Webhook：敏感操作事件（emit 全程吞异常）
-    from system.utils.webhook import emit_webhook_event
-
-    emit_webhook_event("security.sensitive_operation", info or {})
+        return getattr(import_module("system.notifications_alert"), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

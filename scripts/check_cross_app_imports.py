@@ -98,6 +98,9 @@ CONTRACT_SEAMS = {
     "common/core/middleware.py": {
         "system.services": "审计日志模型 OperationLog + PAT 类型判定 + 敏感操作告警分流",
     },
+    "common/core/oplog_recorder.py": {
+        "system.services": "审计日志模型 OperationLog + PAT 类型判定（自 middleware.py 拆分，行为不变）",
+    },
     "common/core/permission.py": {
         "system.services": "菜单/字段权限模型 + 应用凭证动作级授权（api_grant 三函数）",
     },

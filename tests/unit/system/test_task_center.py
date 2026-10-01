@@ -12,7 +12,7 @@ from django.utils import timezone
 from system.models.export import ExportRecord
 from system.models.import_ import ImportRecord
 from system.models.task import TaskExecution
-from system.utils import task_center
+from system.utils import task_center, task_center_unified
 from system.utils.task_center import (
     TaskCancelled,
     cancel_record,
@@ -217,8 +217,11 @@ class TestRerun:
 
     def test_export_rerun_clones_and_dispatches(self, superuser, monkeypatch):
         dispatched = []
+        # 重跑派发实现位于 task_center_unified（task_center 仅再导出），patch 须与实现同源
         monkeypatch.setattr(
-            task_center, "_dispatch", lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args)
+            task_center_unified,
+            "_dispatch",
+            lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args),
         )
         record = _export(superuser, status=ExportRecord.Status.SUCCESS)
         result = rerun_record(superuser, "export", str(record.pk))

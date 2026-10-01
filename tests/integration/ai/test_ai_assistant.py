@@ -124,12 +124,14 @@ class TestKnowledgeSync:
     def test_sync_creates_chunks(self, tmp_path, monkeypatch, settings):
         from ai.models.ai import AiKnowledgeDocument
         from ai.utils import ai as ai_utils
+        from ai.utils import ai_knowledge
 
         doc = tmp_path / "docs"
         doc.mkdir()
         (doc / "demo.md").write_text("# Demo\n\n## Alpha\n\n内容甲\n\n## Beta\n\n内容乙", encoding="utf-8")
-        monkeypatch.setattr(ai_utils, "DOCS_DIR", doc)
-        monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
+        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
 
         summary = ai_utils.sync_knowledge()
         # created 为文档级计数（同步登记文档实体 + 重建分块）
@@ -146,12 +148,13 @@ class TestKnowledgeSync:
 
     def test_sync_removes_stale(self, tmp_path, monkeypatch):
         from ai.utils import ai as ai_utils
+        from ai.utils import ai_knowledge
 
         AiKnowledgeChunk.objects.create(source_path="docs/gone.md", chunk_index=0, content="旧", content_hash="x" * 64)
         doc = tmp_path / "docs"
         doc.mkdir()
-        monkeypatch.setattr(ai_utils, "DOCS_DIR", doc)
-        monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", doc)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
         assert summary["removed"] == 1
         assert not AiKnowledgeChunk.objects.filter(source_path="docs/gone.md").exists()

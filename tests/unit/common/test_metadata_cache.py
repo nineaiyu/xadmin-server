@@ -12,6 +12,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 import common.core.modelset.metadata as metadata_module
+import common.core.modelset.metadata_columns as metadata_columns_module
 
 pytestmark = pytest.mark.django_db
 
@@ -20,15 +21,22 @@ FIELDS_URL = "/api/demo/book/search-fields"
 
 
 def _spy_build(monkeypatch):
-    """记录元数据「逐字段求值」真实发生的次数（命中缓存时不应再执行）。"""
+    """记录元数据「逐字段求值」真实发生的次数（命中缓存时不应再执行）。
+
+    search-fields 与 search-columns 的构建体分处 metadata / metadata_columns
+    两个模块（拆分仅保调用面），探针须同时挂钩两侧的绑定。
+    """
     calls = []
-    original = metadata_module.get_format_intput_type
 
-    def spy(*args, **kwargs):
-        calls.append(args)
-        return original(*args, **kwargs)
+    def make_spy(original):
+        def spy(*args, **kwargs):
+            calls.append(args)
+            return original(*args, **kwargs)
 
-    monkeypatch.setattr(metadata_module, "get_format_intput_type", spy)
+        return spy
+
+    for mod in (metadata_module, metadata_columns_module):
+        monkeypatch.setattr(mod, "get_format_intput_type", make_spy(mod.get_format_intput_type))
     return calls
 
 

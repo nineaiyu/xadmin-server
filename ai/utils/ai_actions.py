@@ -27,6 +27,8 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
 
 # 注册表是唯一白名单入口（再导出：调用方只 import 本模块）
+from ai.utils.ai_action_audit import audit_ai_action, audit_ai_ask  # noqa: F401  (审计实现拆出，再导出保持调用面)
+from ai.utils.ai_action_target import verify_action_target
 from ai.utils.ai_api_registry import API_ACTION_SPECS  # noqa: F401
 from ai.utils.ai_builtin_actions import (
     DASHBOARD_ENDPOINTS,
@@ -332,82 +334,6 @@ def draft_summary(drafts: list) -> str:
     return str(_("I will perform {} actions: {}").format(len(drafts), " → ".join(draft["label"] for draft in drafts)))
 
 
-def verify_action_target(user, spec, params) -> str:
-    """动作参数行级复核：参数指向的目标对象必须在调用者数据权限内可达。
-
-    现有服务端校验覆盖字段与格式（菜单权限点 + 序列化器），但不校验「这个 pk 是否
-    在调用者数据权限内」——参数里的 pk 由 LLM 产出，可能指向权限外对象。本函数对
-    声明式 API 动作（可解析 ViewSet 与模型）且参数含单一标量主键时，按调用者数据
-    权限再查一次；不可达即拒绝。解析失败/无模型声明/只读动作一律跳过（不阻断，
-    避免误杀既有能力）。
-
-    返回不可达原因（可读文案），空串 = 通过。
-    """
-    from django.urls import Resolver404, resolve
-
-    from ai.utils.ai_api_actions import ApiActionSpec, build_action_url, resolve_api_params
-    from common.core.filter import get_filter_queryset
-
-    if not isinstance(spec, ApiActionSpec) or str(spec.method).upper() == "GET":
-        return ""
-    path_params, __body, __query, error = resolve_api_params(spec, user, params if isinstance(params, dict) else {})
-    if error:
-        return ""
-    url = build_action_url(spec, path_params)
-    if url is None:
-        return ""
-    pk = None
-    for name, value in (path_params or {}).items():
-        if name in ("pk", "id") or name.endswith(("_pk", "_id")):
-            pk = value
-            break
-    if pk in (None, ""):
-        return ""
-    try:
-        match = resolve(url.split("?", 1)[0])
-    except Resolver404:
-        return ""
-    view_class = getattr(match.func, "cls", None)
-    model = getattr(getattr(view_class, "queryset", None), "model", None)
-    if model is None:
-        return ""
-    try:
-        reachable = get_filter_queryset(model.objects.all(), user).filter(pk=pk).exists()
-    except Exception:  # noqa: BLE001 主键形态不符/模型查询异常：跳过复核（不误杀）
-        logger.info("ai action target check skipped. action:%s pk:%s", getattr(spec, "key", ""), pk, exc_info=True)
-        return ""
-    if not reachable:
-        return str(_("The target object does not exist or you do not have permission to access it"))
-    return ""
-
-
-def audit_ai_action(user, action_key: str, params, ok: bool, detail: str, extra: dict | None = None) -> None:
-    """AI 动作语义审计：落 OperationLog(module=AI:action, auth_type=ai)。"""
-    from system.models import OperationLog
-
-    try:
-        OperationLog.objects.create(
-            module="AI:action",
-            object_pk=str(getattr(user, "pk", "")),
-            auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if ok else 1001,
-            response_code=1000 if ok else 1001,
-            changes=json.dumps(
-                {
-                    "action": action_key,
-                    "params": params,
-                    "status": "ok" if ok else "failed",
-                    "detail": detail,
-                    **(extra or {}),
-                },
-                ensure_ascii=False,
-                default=str,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响业务
-        logger.warning("write AI action audit failed", exc_info=True)
-
-
 def execute_action(user, action_key: str, params) -> dict:
     """执行动作（调用方已完成门禁/审批）：返回 (ok, detail, data) 语义的 dict。
 
@@ -423,39 +349,6 @@ def execute_action(user, action_key: str, params) -> dict:
     if target_error:
         return {"ok": False, "detail": target_error, "data": {}}
     return spec.execute(user, clean)
-
-
-def audit_ai_ask(
-    user_obj, question: str, ok: bool, detail: str = "", usage: dict | None = None, guard: dict | None = None
-) -> None:
-    """文档问答语义审计：落 OperationLog(module=AI:ask, auth_type=ai)。
-
-    与 AI:action / AI:nl_query 同一采集口径（AI 观测看板的统一数据源：用量/成功率/趋势）。
-    usage：LLM 供应商返回的 token 用量（成本维度观测，缺省不写）。
-    guard 护栏摘要（prompt 摘要 / 注入标记 / 脱敏命中数 / 输出长度，缺省不写）。
-    """
-    from system.models import OperationLog
-
-    try:
-        OperationLog.objects.create(
-            module="AI:ask",
-            object_pk=str(getattr(user_obj, "pk", "")),
-            auth_type=OperationLog.AuthType.AI,
-            status_code=1000 if ok else 1001,
-            response_code=1000 if ok else 1001,
-            changes=json.dumps(
-                {
-                    "question": (question or "")[:200],
-                    "status": "ok" if ok else "failed",
-                    "detail": (detail or "")[:200],
-                    **({"usage": usage} if usage else {}),
-                    **({"guard": guard} if guard else {}),
-                },
-                ensure_ascii=False,
-            )[:4096],
-        )
-    except Exception:  # noqa: BLE001 审计失败不影响业务
-        logger.warning("write AI ask audit failed", exc_info=True)
 
 
 # 原生 function calling 双轨（工具调用 → 草稿结构）拆至 ai_draft_tools（仅行数门禁）：

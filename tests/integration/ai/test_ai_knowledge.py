@@ -118,12 +118,14 @@ class TestSyncIsolation:
     def test_sync_keeps_upload_documents(self, tmp_path, monkeypatch, auth_client):
         """关键守护：仓库同步（含清理）不得触碰上传文档及其分块。"""
         from ai.utils import ai as ai_utils
+        from ai.utils import ai_knowledge
 
         _upload(auth_client)
         empty_docs = tmp_path / "docs"
         empty_docs.mkdir()
-        monkeypatch.setattr(ai_utils, "DOCS_DIR", empty_docs)
-        monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
+        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", empty_docs)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         summary = ai_utils.sync_knowledge()
         assert summary["removed"] == 0
         assert AiKnowledgeChunk.objects.filter(source_path__startswith="upload/").count() == 3
@@ -132,13 +134,14 @@ class TestSyncIsolation:
 
 class TestRepoRebuildAction:
     def test_sync_repo_action(self, auth_client, tmp_path, monkeypatch):
-        from ai.utils import ai as ai_utils
+        from ai.utils import ai_knowledge
 
         docs = tmp_path / "docs"
         docs.mkdir()
         (docs / "guide.md").write_text("# Guide\n\n## Setup\n\n安装说明内容", encoding="utf-8")
-        monkeypatch.setattr(ai_utils, "DOCS_DIR", docs)
-        monkeypatch.setattr(ai_utils, "ROOT_DOCS", [])
+        # 实现位于 ai_knowledge（ai.utils.ai 仅再导出），patch 目标须与实现同源
+        monkeypatch.setattr(ai_knowledge, "DOCS_DIR", docs)
+        monkeypatch.setattr(ai_knowledge, "ROOT_DOCS", [])
         response = auth_client.post(f"{KNOWLEDGE_URL}/sync-repo", {}, format="json")
         assert response.status_code == 200, response.data
         assert response.json()["data"]["created"] == 1

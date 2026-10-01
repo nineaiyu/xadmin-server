@@ -21,49 +21,22 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from ai.utils.ai_quota import quota_limits
+from ai.utils.ai_stream_slots import (  # noqa: F401  (并发信号量实现拆出，再导出保持调用面)
+    STREAM_SLOT_KEY,
+    STREAM_SLOT_TTL,
+    StreamSlot,
+    acquire_stream_slot,
+    release_stream_slot,
+    stream_slot,
+    stream_slots_in_use,
+)
 from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-# 并发流式计数键（进程间共享；带 TTL 兜底，避免异常退出后的计数泄漏永久化）
-STREAM_SLOT_KEY = "ai_stream_slots"
-STREAM_SLOT_TTL = 1800
 # 日用量汇总缓存时长（配额判定读缓存，避免每次调用都聚合账本）
 USAGE_CACHE_TTL = 60
-
-
-def _quota_int(name: str) -> int:
-    """配额读取：SystemConfig 行（系统配置页）→ django settings（AI 设置页 / config.yml）→ 0。
-
-    AI 设置页（``Setting`` 通路）与 config.yml 都落到 ``django.conf.settings`` 同名属性上，
-    只读 SystemConfig 会让页面配置静默失效；两者都读，任一显式配置即生效。
-    读取异常按不限（0）处理，不阻断 AI 链路。
-    """
-    raw = None
-    try:
-        from common.core.config import SysConfig
-
-        raw = getattr(SysConfig, name, None)
-    except Exception:  # noqa: BLE001 配置读取异常按「未配置」继续回落
-        logger.warning("read AI quota config failed: %s", name, exc_info=True)
-        raw = None
-    if raw in (None, "", {}):  # 无 SystemConfig 行时 get_value 返回空 dict
-        from django.conf import settings
-
-        raw = getattr(settings, name, 0)
-    try:
-        return max(0, int(raw or 0))
-    except (TypeError, ValueError):
-        logger.warning("AI quota config is not an integer: %s=%r", name, raw)
-        return 0
-
-
-def quota_limits() -> dict:
-    return {
-        "daily_calls": _quota_int("AI_QUOTA_USER_DAILY_CALLS"),
-        "daily_tokens": _quota_int("AI_QUOTA_USER_DAILY_TOKENS"),
-        "concurrent_streams": _quota_int("AI_QUOTA_MAX_CONCURRENT_STREAMS"),
-    }
 
 
 def extract_tokens(usage) -> dict:
@@ -179,72 +152,6 @@ def quota_error(user, feature: str = "") -> str:
             _("Daily AI token quota reached ({}/{}); it resets tomorrow").format(used["tokens"], limits["daily_tokens"])
         )
     return ""
-
-
-def stream_slots_in_use() -> int:
-    try:
-        return int(cache.get(STREAM_SLOT_KEY) or 0)
-    except Exception:  # noqa: BLE001
-        return 0
-
-
-def acquire_stream_slot() -> bool:
-    """全局并发流式配额（Redis 计数信号量）：超限返回 False（调用方给可读提示）。
-
-    两步保持「先自增再判定」的原子语义（``INCR`` 自带读改写原子性）：
-    超限时立即回退本次自增；成功后对计数键**续期**（``touch``）——
-    旧实现只在首次创建时设 TTL，长会话（>STREAM_SLOT_TTL）会让键中途过期、
-    计数被清零而失去并发上限（配额静默失效）。
-
-    非 Redis 后端（LocMem/测试后端）对缺失键 ``incr`` 抛 ValueError：
-    补一次 ``add`` 占位后重试，语义一致。
-    """
-    limit = quota_limits()["concurrent_streams"]
-    if limit <= 0:
-        return True
-    try:
-        try:
-            count = int(cache.incr(STREAM_SLOT_KEY))
-        except ValueError:
-            cache.add(STREAM_SLOT_KEY, 0, STREAM_SLOT_TTL)
-            count = int(cache.incr(STREAM_SLOT_KEY))
-        if count > limit:
-            release_stream_slot()  # 回退本次自增，计数维持在上限
-            return False
-        cache.touch(STREAM_SLOT_KEY, STREAM_SLOT_TTL)
-        return True
-    except Exception:  # noqa: BLE001 缓存异常不阻断业务（观测面 fail-open）
-        logger.warning("acquire AI stream slot failed", exc_info=True)
-        return True
-
-
-def release_stream_slot() -> None:
-    try:
-        current = int(cache.get(STREAM_SLOT_KEY) or 0)
-        if current > 0:
-            cache.decr(STREAM_SLOT_KEY)
-    except Exception:  # noqa: BLE001
-        logger.debug("release AI stream slot failed", exc_info=True)
-
-
-class StreamSlot:
-    """并发流式配额上下文（``with stream_slot() as ok:``）：异常路径也保证释放。"""
-
-    def __init__(self):
-        self.acquired = False
-
-    def __enter__(self) -> bool:
-        self.acquired = acquire_stream_slot()
-        return self.acquired
-
-    def __exit__(self, *exc_info):
-        if self.acquired:
-            release_stream_slot()
-        return False
-
-
-def stream_slot() -> StreamSlot:
-    return StreamSlot()
 
 
 # --------------------------------------------------------------------- 统一包装

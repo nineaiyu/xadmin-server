@@ -262,7 +262,8 @@ class TestReportRun:
         report = _make_report(dataset, superuser, recipients=["boss@corp.com"])
         from unittest import mock
 
-        with mock.patch("dataset.analysis_tasks.EmailMessage.send", side_effect=Exception("smtp down")):
+        # 邮件投递实现位于 dataset.report_render（analysis_tasks 仅再导出），patch 目标须与实现同源
+        with mock.patch("dataset.report_render.EmailMessage.send", side_effect=Exception("smtp down")):
             auth_client.post(f"{REPORT_URL}/{report.pk}/run", {}, format="json")
         report.refresh_from_db()
         assert report.last_status == "SUCCESS_WITH_DELIVERY_ERROR"

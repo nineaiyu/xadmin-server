@@ -110,7 +110,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
-    with mock.patch("system.views.task.app.send_task") as send_task:
+    with mock.patch("system.views.task_periodic.app.send_task") as send_task:
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request, pk=str(instance.pk))
     assert response.data["code"] == 1000
@@ -315,8 +315,8 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
-        mock.patch("system.views.task.app.send_task") as send_task,
-        mock.patch("system.views.task.app.autodiscover_tasks"),
+        mock.patch("system.views.task_periodic.app.send_task") as send_task,
+        mock.patch("system.views.task_periodic.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -334,7 +334,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("system.views.task.app.autodiscover_tasks"):
+    with mock.patch("system.views.task_periodic.app.autodiscover_tasks"):
         response = view(request)
     assert response.data["code"] == 1000
     assert response.data["data"]["success"] == 0

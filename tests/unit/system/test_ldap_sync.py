@@ -11,6 +11,7 @@ from unittest import mock
 import pytest
 
 from system.ldap import sync as ldap_sync
+from system.ldap import sync_dir
 from system.models import DeptInfo, LdapUserBinding, OperationLog, UserInfo
 
 pytestmark = pytest.mark.django_db
@@ -63,6 +64,9 @@ def stub_directory(monkeypatch):
 
     monkeypatch.setattr(ldap_sync, "service_connection", lambda: FakeConn())
     monkeypatch.setattr(ldap_sync, "paged_search_entries", fake_search)
+    # 部门/用户同步实现位于 sync_dir（sync.py 仅再导出），连接桩须同时挂钩两侧绑定
+    monkeypatch.setattr(sync_dir, "service_connection", lambda: FakeConn(), raising=False)
+    monkeypatch.setattr(sync_dir, "paged_search_entries", fake_search, raising=False)
     return holder
 
 

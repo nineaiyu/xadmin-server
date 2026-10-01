@@ -88,11 +88,14 @@ class TestCancelEndpoint:
 
 class TestRerunEndpoint:
     def test_rerun_export_creates_clone(self, auth_client, superuser, monkeypatch):
-        from system.utils import task_center
+        from system.utils import task_center_unified
 
         dispatched = []
+        # 重跑派发实现位于 task_center_unified（task_center 仅再导出），patch 须与实现同源
         monkeypatch.setattr(
-            task_center, "_dispatch", lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args)
+            task_center_unified,
+            "_dispatch",
+            lambda task, args=None, kwargs=None, task_id=None: dispatched.append(args),
         )
         record = _export(superuser, status=ExportRecord.Status.SUCCESS)
         response = auth_client.post(f"{UNIFIED_URL}/rerun", {"type": "export", "pk": str(record.pk)}, format="json")
