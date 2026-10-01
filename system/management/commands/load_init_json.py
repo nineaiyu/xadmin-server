@@ -67,8 +67,21 @@ class Command(LoadCommand):
         pass
 
     def handle(self, *args, **options):
+        # 载入期屏蔽模型信号（loaddata 按 pk 覆盖不应触发失效/审计钩子）。屏蔽只限
+        # 本次载入：收尾的内置角色补齐同步在信号恢复后执行（角色/菜单 m2m 变更的
+        # 缓存失效钩子依赖它），否则进程内信号被永久替换（历史行为）
         ModelSignal.send = lambda *args, **kwargs: []  # 忽略任何信号
+        try:
+            self._load_seed(*args, **options)
+        finally:
+            try:
+                # send 定义在父类 Signal 上，删除子类遮蔽即恢复原方法
+                del ModelSignal.send
+            except AttributeError:
+                pass
+        self._sync_builtin_roles_after_seed()
 
+    def _load_seed(self, *args, **options):
         file_root = os.path.join(settings.PROJECT_DIR, "loadjson")
         options["ignore"] = ""
         options["database"] = DEFAULT_DB_ALIAS
@@ -111,6 +124,20 @@ class Command(LoadCommand):
         # post_save 失效钩子同样被屏蔽：不清路由与权限点缓存时，存量用户最长
         # 24 小时仍看到旧菜单树（改了种子却"没生效"的典型表现）
         self._invalidate_route_caches()
+
+    def _sync_builtin_roles_after_seed(self):
+        """种子收尾补齐内置角色（幂等）。
+
+        migrate 的 post_migrate 同步先于本命令执行：彼时 Menu 表与
+        ModelLabelField 字段树均未种入，内置角色的菜单与字段白名单拿不到
+        （SystemAdmin 全部活跃菜单、DeptManager 权限点清单 + userinfo/deptinfo
+        字段白名单；字段权限 fail-closed，缺失 = 非超管接口输出空对象）。
+        本命令恰好种入上述数据，收尾补跑一次同步使新装环境开箱可用。
+        """
+        from system.builtin import sync_builtin_roles
+
+        changed = sync_builtin_roles()
+        self.stdout.write(f"[内置角色] 种子收尾同步完成（幂等，角色行变更 {changed}）")
 
     @staticmethod
     def _invalidate_route_caches():

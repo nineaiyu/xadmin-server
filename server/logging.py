@@ -4,6 +4,7 @@
 # filename : logging
 # author : ly_13
 # date : 10/18/2024
+import asyncio
 import json
 import logging
 import os
@@ -55,6 +56,22 @@ class DailyTimedRotatingFileHandler(TimedRotatingFileHandler):
         filename = os.path.join(*path)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         return filename
+
+
+class SuppressShieldedCancelledError(logging.Filter):
+    """过滤 Python 3.14 asyncio.shield 的断连噪音（asyncio.tasks._log_on_exception）。
+
+    客户端中断在途请求（浏览器页面跳转/关闭的常态）会让 asgiref sync_to_async
+    的内层 future 被取消，3.14 起 asyncio 对「shield 后的 future 被 CancelledError
+    结束」一律在 asyncio logger 上记 ERROR 并附全栈——属正常流量形态而非故障。
+    按「消息前缀 + 异常类型」双匹配精准丢弃，asyncio 的其余日志原样放行。
+    """
+
+    def filter(self, record):
+        if not record.getMessage().startswith("CancelledError exception in shielded future"):
+            return True
+        exc_type = record.exc_info[0] if record.exc_info else None
+        return exc_type is not asyncio.CancelledError
 
 
 class ServerFormatter(logging.Formatter):

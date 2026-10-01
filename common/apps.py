@@ -1,3 +1,4 @@
+import os
 import sys
 import threading
 import time
@@ -39,4 +40,14 @@ class CommonConfig(AppConfig):
             time.sleep(0.1)
             django_ready.send(CommonConfig)
 
+        # pytest 进程下不启动：测试进程的 DB 访问由 pytest-django 阻断器统一管控，
+        # 该线程的早期查询只会以阻断异常告终（sqlite 档表现为线程告警噪音）；而在
+        # PG nightly 档（tests/settings_pg.py），Django 的 pool property「读即建池」
+        # 且发生在阻断点（ensure_connection）之前，线程会把连接池固化到「尚未创建的
+        # 测试库名」上，毒化后续全部用例（2026-10-01 首轮 nightly 3630 errors 根因，
+        # 处置见 docs/plans/容器化PG-nightly测试档立项-2026.10.md §五）。
+        # E2E 的 daphne 子进程不经 pytest 启动，不受影响；直发 django_ready 的
+        # 测试（test_signal_handlers.py）也不经本线程，行为不变。
+        if any("pytest" in arg for arg in sys.argv) or "PYTEST_XDIST_WORKER" in os.environ:
+            return
         threading.Thread(target=background_task, daemon=True).start()

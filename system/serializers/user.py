@@ -221,8 +221,9 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
                 try:
                     plain_password = AESCipherV2(attrs.get("username")).decrypt(password)
                 except Exception as e:
+                    # 解密失败 = 提交值本身是明文（导入 / E2E 等场景），按明文落库
                     plain_password = password
-                    logger.warning(f"create user and set password failed:{e}. so set default password")
+                    logger.warning(f"create user password decrypt failed:{e}. fallback to submitted plaintext")
                 if not check_password_rules(plain_password):
                     raise ValidationError(_("Password does not match security rules"))
                 if check_leak_password(plain_password):

@@ -21,6 +21,10 @@ LOG_BACKUP_COUNT = int(CONFIG.LOG_BACKUP_COUNT or 0)
 LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        # Python 3.14 asyncio.shield 对「客户端断连取消在途请求」一律记 ERROR（见类注释）
+        "suppress_shielded_cancelled_error": {"()": "server.logging.SuppressShieldedCancelledError"},
+    },
     "formatters": {
         "verbose": {
             "()": "server.logging.ServerFormatter",
@@ -112,6 +116,11 @@ LOGGING: dict[str, Any] = {
         "unexpected_exception": {
             "handlers": ["console", "unexpected_exception"],
             "level": LOG_LEVEL,
+        },
+        "asyncio": {
+            # 仅挂过滤器不接管 handlers：屏蔽 shielded-cancelled 噪音，其余 asyncio
+            # 日志保持原有传播行为（root/last-resort handler）
+            "filters": ["suppress_shielded_cancelled_error"],
         },
     },
 }

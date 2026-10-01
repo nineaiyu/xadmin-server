@@ -179,7 +179,13 @@ def complete_session(user_obj, session_pk, *, declared_md5=""):
     一致性校验（可选）→ ``store_upload_file``（配额 / 去重 / 分类 / 落库）→
     清理分片（存储 + 行）→ 会话置 completed。
     """
-    session = UploadSession.objects.select_for_update().select_related("upload").filter(pk=session_pk).first()
+    # 注意：锁定查询不得 select_related("upload")——upload 为可空 FK，会生成
+    # LEFT OUTER JOIN，PG 拒绝对外连接可空侧加行锁（FOR UPDATE cannot be applied
+    # to the nullable side of an outer join；sqlite 无锁语义静默通过，2026-10-01
+    # nightly PG 档首轮暴露）。upload 列仅在 complete 时赋值、PENDING 会话恒为
+    # NULL，此处预取本无消费者，直接去掉即可；of=("self",) 方案在 sqlite 门禁
+    # 上会 NotSupportedError，不可用。
+    session = UploadSession.objects.select_for_update().filter(pk=session_pk).first()
     if not session or session.creator_id != user_obj.pk:
         raise UploadError(INVALID_CODE, _("Invalid upload session"))
     if session.status != UploadSession.Status.PENDING:

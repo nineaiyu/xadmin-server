@@ -67,7 +67,14 @@ def get_pending_result(
         logger.warning(f"unique_key:{unique_key}  cache_data: {cache_data}  ")
         return True, {"err_msg": "请求重复,请稍后再试"}
     try:
-        with cache.lock(f"get_pending_result_{locker_key}", timeout=loop_count * sleep_time):
+        # 锁 TTL 必须覆盖整个轮询窗口（loop_count+1 轮 func+sleep 后才返回）并在其内
+        # 完成 release：若取 loop_count*sleep_time，真 Redis 上锁先于 release 过期，
+        # redis-py release 抛 LockNotOwnedError 被下方 except 兜住，超时路径会被
+        # 误报成「内部错误」（FakeRedis 无 TTL 释放语义，掩盖了该缺陷）。
+        # 下限 2s：每轮除 sleep 外还有 redis 往返开销，sleep_time 极小时
+        # (loop_count+2)*sleep_time 不足以覆盖窗口。
+        lock_timeout = max((loop_count + 2) * sleep_time, 2)
+        with cache.lock(f"get_pending_result_{locker_key}", timeout=lock_timeout):
             count = 1
             while True:
                 cache_data = cache_obj.get_storage_cache()

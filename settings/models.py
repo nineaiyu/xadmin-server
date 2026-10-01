@@ -57,7 +57,22 @@ class Setting(DbAuditModel, DbUuidModel):
 
         单条设置损坏（密文认证失败 / 值不可序列化）只记日志、不中断其余设置，
         也不向调用方抛出（启动与保存流程不因单条坏配置失败）。
+
+        表不存在（新装环境 migrate 之前 / CI 对裸库 ``manage.py check``）时整体
+        跳过：django_ready 后台线程里的查询会以 UndefinedTable（PG）/
+        OperationalError「no such table」（sqlite）裸崩，逐条容错管不到查询本身
+        （2026-10-01 真环境档暴露，处置登记见
+        docs/plans/全真容器化测试迁移方案-2026.10.md §五 #21）。表存在性经
+        introspection 前置探测，方言无关。
         """
+        from django.db import connection
+
+        if cls._meta.db_table not in connection.introspection.table_names():
+            logger.warning(
+                "settings table %s missing; skip refresh_all_settings (database not migrated?)",
+                cls._meta.db_table,
+            )
+            return
         for setting in cls.objects.all():
             try:
                 setting.refresh_setting()

@@ -70,8 +70,12 @@ def safe_atomic_db_connection(auto_close=False):
             recreated = True
         yield
     finally:
-        # 只在非事务、autocommit 模式下，才考虑主动清理连接
-        if auto_close or (recreated and not in_atomic and autocommit):
+        # 只在非事务、autocommit 模式下，才考虑主动清理连接。
+        # auto_close 同样受此守卫：事务内 close 会把「psycopg 级 autocommit=False +
+        # 事务中」的连接还给 PG 连接池——池只回滚事务不恢复 autocommit，该连接随后
+        # 会在判活探针/Django set_autocommit 上循环炸（PG nightly 档首轮暴露，
+        # 见 docs/plans/容器化PG-nightly测试档立项-2026.10.md §五；sqlite 无池无感）。
+        if not in_atomic and autocommit and (auto_close or recreated):
             close_old_connections()
 
 

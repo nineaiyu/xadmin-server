@@ -12,7 +12,7 @@
 
 from django.apps import apps
 from django.core.exceptions import ValidationError
-from django.db.models import BooleanField
+from django.db.models import BooleanField, F
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
@@ -239,7 +239,11 @@ def build_queryset(dataset, user_obj, extra_filters=None):
         ordering = str(dataset.ordering)
         descending = ordering.startswith("-")
         alias = parse_column(model, ordering.lstrip("-"), whitelist).alias
-        queryset = queryset.order_by(f"-{alias}" if descending else alias)
+        # 显式 NULLS LAST：PG 对 DESC 默认 NULLS FIRST、sqlite 把 NULL 当最小值排最后，
+        # 两侧默认相反（nightly PG 档首轮暴露）。JSON 缺键行的契约是「缺键不参与数值
+        # 列」（ADR-069），排序必须与缺省方向解耦；sqlite ≥3.30 起支持 NULLS FIRST/LAST。
+        direction = F(alias).desc(nulls_last=True) if descending else F(alias).asc(nulls_last=True)
+        queryset = queryset.order_by(direction)
     # 行级数据权限：fail-closed 继承数据权限编译器（无授权 → none()）
     from common.core.filter import get_filter_queryset
 
