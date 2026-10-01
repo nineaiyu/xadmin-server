@@ -512,6 +512,10 @@ msgstr "AI 请求过多，请稍后重试"
 msgid "The model did not provide a final answer; please retry or switch models"
 msgstr "模型未返回最终回答，请重试或更换模型"
 
+#: ai/views/assistant.py
+msgid "Answer stream interrupted; partial content retained"
+msgstr "回答流被中断，已保留已到达的内容"
+
 #: ai/utils/ai.py:332 tests/integration/ai/test_ai_assistant.py:221
 msgid "The model returned an empty answer; please retry or switch models"
 msgstr "模型返回了空回答，请重试或更换模型"

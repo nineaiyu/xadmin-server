@@ -10,6 +10,8 @@
   URL 与权限点不变）。
 """
 
+import asyncio
+
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.translation import gettext_lazy as _
@@ -297,6 +299,25 @@ class AiAssistantViewSet(
                 return {"detail": detail, "message": message_payload(row)}
             return {"detail": detail, "message": system_error_message(request.user, "docs", detail)}
 
+        @sync_to_async
+        def _finish_interrupted():
+            """客户端中途断开（刷新/离开页）的收尾：按「已到达增量保留」口径落部分回答。
+
+            无增量（还在思考/未首帧）不落任何行——此时历史里只有本轮提问，与流前
+            断开语义一致。尽力而为：清理期再次被取消则放弃保留。
+            """
+            if not content_chunks and not reasoning_chunks:
+                return None
+            row = persist_message(
+                request.user,
+                "docs",
+                "assistant",
+                content="".join(content_chunks),
+                reasoning="".join(reasoning_chunks),
+                extra={"partial": str(_("Answer stream interrupted; partial content retained"))},
+            )
+            return message_payload(row)
+
         # meta 载荷在同步段预构建（message_payload 可能触发 FK 懒加载，异步段禁止 DB 访问）
         user_payload = message_payload(user_row)
 
@@ -324,5 +345,15 @@ class AiAssistantViewSet(
             except DjangoValidationError as exc:
                 detail = "; ".join(exc.messages)
                 yield {"event": "error", "data": await _finish_error(detail)}
+            except (GeneratorExit, asyncio.CancelledError):
+                # 客户端断开使 done 帧不再到达（响应任务被取消/生成器被关闭）：
+                # 此时正常收尾不执行，若不在此落库，刷新后本轮已上屏的回答会从
+                # 历史中消失（E2E 文档问答用例实测踩中）。保留后原样上抛——
+                # GeneratorExit 必须继续传播（不得再 yield），取消语义同理。
+                try:
+                    await _finish_interrupted()
+                except asyncio.CancelledError:  # noqa: BLE001 清理期再次被取消：放弃保留
+                    pass
+                raise
 
         return sse_response_async(events())

@@ -167,6 +167,47 @@ class TestAskStreamPersist:
         assert row.reasoning == "想了很久没结论"
         assert frames[-1][1]["detail"] == _t("The model did not provide a final answer; please retry or switch models")
 
+    def test_client_disconnect_persists_partial(self, ai_enabled, knowledge, auth_client, monkeypatch):
+        """客户端流中断开（刷新/离开页）：done 帧不再到达，已到达的增量照常保留。
+
+        与浏览器刷新同型：消费任务在首个增量后取消（ASGI 断开路径），生成器在
+        取消点收尾——断言历史里除了提问还有已上屏的回答（而非整轮丢失）。
+        """
+        import asyncio
+
+        from asgiref.sync import async_to_sync
+
+        hang = asyncio.Event()
+
+        async def fake_stream(self, messages, **kwargs):
+            yield {"type": "content", "text": "答案前半"}
+            await hang.wait()  # 挂起：模拟后续帧未达即断开
+            yield {"type": "content", "text": "后半（不应到达）"}
+
+        monkeypatch.setattr("common.sdk.ai.async_chat.AsyncChatCompletionsClient.chat_stream", fake_stream)
+        response = auth_client.post(f"{ASSISTANT_URL}/ask/stream", {"question": "数据集如何过滤"}, format="json")
+
+        async def consume_then_disconnect():
+            content = response.streaming_content
+            task = asyncio.current_task()
+            seen_delta = False
+            try:
+                async for chunk in content:
+                    if b"event: delta" in chunk:
+                        seen_delta = True
+                        task.cancel()
+            except asyncio.CancelledError:
+                pass  # 断开在取消点传播：生成器已按「已到达增量保留」收尾
+            return seen_delta
+
+        assert async_to_sync(consume_then_disconnect)() is True
+        roles = list(AiChatMessage.objects.filter(feature="docs").order_by("id").values_list("role", flat=True))
+        assert roles == ["user", "assistant"]
+        row = AiChatMessage.objects.get(role="assistant")
+        assert row.content == "答案前半"
+        assert "后半" not in row.content
+        assert row.extra.get("partial")
+
 
 class TestHistory:
     @staticmethod
