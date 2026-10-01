@@ -16652,5 +16652,28 @@
    "method": null,
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "a393c3dc-3229-4084-ad7b-5ee2bc6a4ea8",
+  "fields": {
+   "created_time": "2026-10-01T00:00:00.000Z",
+   "updated_time": "2026-10-01T00:00:00.000Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "4f9726d3-3796-4602-a716-1337ee2a168e",
+   "menu_type": 2,
+   "name": "impersonate:SystemUser",
+   "rank": 30,
+   "path": "api/system/user/(?P<pk>[^/.]+)/impersonate$",
+   "component": null,
+   "is_active": true,
+   "meta": "16a3b90a-c2a4-40f9-8168-ec4c0b5f3559",
+   "method": "POST",
+   "model": []
+  }
  }
 ]

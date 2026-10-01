@@ -77,6 +77,7 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
             "date_expired",
             "invite_status",
             "invited_time",
+            "is_superuser",
             "roles",
             "posts",
             "rules",
@@ -107,6 +108,8 @@ class UserSerializer(TaggedObjectSerializerMixin, BaseModelSerializer):
         ]
         extra_kwargs = {
             "pk": {"read_only": True},
+            # 仅随行下发供前端行级显隐（隐藏不可模拟的超级管理员），写入口在管理命令
+            "is_superuser": {"read_only": True},
             "last_login": {"read_only": True},
             "date_joined": {"read_only": True},
             "avatar": {"read_only": True},

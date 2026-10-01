@@ -38,6 +38,7 @@ from settings.services import LoginBlockUtil
 from system.models import OperationLog, Post, UserInfo, UserOAuthBinding
 from system.serializers.user import ResetPasswordSerializer, UserSerializer
 from system.utils import user_invite
+from system.utils.impersonation import is_impersonating, start_impersonation
 from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
 from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
@@ -105,9 +106,9 @@ class UserViewSet(
     # export_as_zip = True  导出zip压缩包，密码是用户名
 
     def get_permissions(self):
-        """删除用户（单删/批量删）为敏感操作，需先通过密码二次确认"""
+        """删除用户（单删/批量删）与模拟用户为敏感操作，需先通过密码二次确认"""
         permissions = super().get_permissions()
-        if self.action in ("destroy", "batch_destroy"):
+        if self.action in ("destroy", "batch_destroy", "impersonate"):
             permissions.append(UserConfirmation.require(ConfirmType.PASSWORD)())
         return permissions
 
@@ -224,6 +225,22 @@ class UserViewSet(
         channel_names = request.data.get("channel_names", [])
         send_logout_msg(instance.pk, channel_names)
         return ApiResponse()
+
+    @extend_schema(responses=get_default_response_schema(), request=None)
+    @action(methods=["post"], detail=True)
+    def impersonate(self, request, *args, **kwargs):
+        """模拟用户（签发被模拟用户的 token，以其身份使用后台；impersonate 权限点 + 密码二次确认）"""
+        if is_impersonating(request):
+            return ApiResponse(code=1001, detail=_("You are already impersonating another user, exit first"))
+        target = self.get_object()
+        if target.pk == request.user.pk:
+            return ApiResponse(code=1001, detail=_("Impersonating yourself is not allowed"))
+        if target.is_superuser:
+            return ApiResponse(code=1001, detail=_("Impersonating a super administrator is not allowed"))
+        if not target.is_active:
+            return ApiResponse(code=1001, detail=_("Disabled users cannot be impersonated"))
+        data = start_impersonation(request, target, request.user)
+        return ApiResponse(data=data, detail=_("Now impersonating user {}").format(target.username))
 
     @extend_schema(
         request=OpenApiRequest(

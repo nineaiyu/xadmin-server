@@ -30,6 +30,9 @@ class UserLoginLog(DbAuditModel):
         LDAP = 3, _("LDAP directory account")
         WEBSOCKET = 8, _("Websocket")
         UNKNOWN = 9, _("Unknown")
+        # 用户模拟（管理员以该用户身份使用后台）：非真实登录，登录日志与
+        # 在线会话以此类型区分；模拟发起人记录在同请求的操作日志里
+        IMPERSONATE = 6, _("Impersonation")
 
     status = models.BooleanField(default=True, verbose_name=_("Login status"))
     ipaddress = models.GenericIPAddressField(verbose_name=_("IpAddress"), null=True, blank=True)

@@ -46,6 +46,9 @@ PERMISSION_WHITE_URL = {
     "^/api/system/saved-views": ["*"],
     # 登录前 Passkey 挑战值（匿名，凭一次性 mfa_token）：与登录流程同级，不参与菜单权限
     "^/api/system/login/mfa/passkey/": ["*"],
+    # 退出用户模拟：被模拟用户未必有任何菜单权限，退出模拟是安全阀必须无条件可达
+    # （POST，视图内以登录态 + token claim imp 收口，见 views/auth/impersonation.py）
+    "^/api/system/impersonate/exit$": ["POST"],
     # 应用接口范围选项（API 应用管理页表单枚举，同 choices/search-fields 口径）：
     # 返回的只是「当前用户可授权的接口」元数据（用户自己权限菜单派生，无业务数据行），
     # 且管理页的查看/编辑是两个独立权限点——按菜单收紧会让只有编辑权限的用户打不开勾选器。

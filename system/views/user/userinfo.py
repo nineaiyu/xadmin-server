@@ -53,6 +53,19 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
         payload = data.get("data") if isinstance(data, dict) else None
         if isinstance(payload, dict):
             payload["must_change_password"] = bool(getattr(request.user, "must_change_password", False))
+            # 用户模拟态：随用户信息下发发起人摘要（前端据此渲染「模拟用户中」横幅；
+            # 硬刷新后横幅不丢——状态跟 token 走，不落在前端本地存储）
+            from system.utils.impersonation import get_impersonator_pk
+
+            imp_pk = get_impersonator_pk(request)
+            if imp_pk:
+                impersonator = UserInfo.objects.filter(pk=imp_pk).first()
+                if impersonator:
+                    payload["impersonator"] = {
+                        "pk": impersonator.pk,
+                        "username": impersonator.username,
+                        "nickname": impersonator.nickname,
+                    }
         # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue）
         return ApiResponse(
             **data,

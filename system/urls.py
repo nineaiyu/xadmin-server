@@ -30,6 +30,7 @@ from system.views.admin.post import PostViewSet
 from system.views.admin.role import RoleViewSet
 from system.views.admin.saved_view import SavedListViewSet
 from system.views.admin.user import UserViewSet
+from system.views.auth.impersonation import ImpersonateExitAPIView
 from system.views.auth.invite import InviteAcceptAPIView, InviteValidateAPIView
 from system.views.auth.login import BasicLoginAPIView, VerifyCodeLoginAPIView
 from system.views.auth.logout import LogoutAPIView
@@ -135,6 +136,7 @@ no_auth_url = [
 
 auth_url = [
     re_path("^logout$", LogoutAPIView.as_view(), name="logout"),
+    re_path("^impersonate/exit$", ImpersonateExitAPIView.as_view(), name="impersonate-exit"),
     re_path("^refresh$", RefreshTokenAPIView.as_view(), name="refresh"),
     re_path("^rules/password$", PasswordRulesAPIView.as_view(), name="password-rules"),
 ]
