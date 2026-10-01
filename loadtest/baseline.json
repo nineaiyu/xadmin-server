@@ -51,7 +51,7 @@
       "p95": 117.62,
       "target": "P95 <60ms",
       "target_met": false,
-      "target_note": "未达标（显式登记，2026-10-01 深度定位后修正归因）：固定环境 20 VU 复测 P95 117.62ms 与基线 106.71 同平台。对照实验（4/8/20/40 并发扫描 + 双端点对照 + worker 内栈采样）证明：非缓存重建、非 SQL、非逐请求代码浪费——4 并发下 P95 仅 7.8ms 且吞吐与 20 并发持平（~780 rps 封顶），为 ASGI 同步执行段的串行容量膝点，20 VU 需求踩线产生排队尾；8 worker 验证 P95 26.5ms（<60ms 达标）、吞吐 1209 rps。达标杠杆是容量（worker 数）与同步段优化（异步中间件链），非元数据端点代码；是否上调生产 worker 数走容量规划另立。",
+      "target_note": "未达标（显式登记，2026-10-01 深度定位后修正归因）：固定环境 20 VU 复测 P95 117.62ms 与基线 106.71 同平台。对照实验（4/8/20/40 并发扫描 + 双端点对照 + worker 内栈采样）证明：非缓存重建、非 SQL、非逐请求代码浪费——4 并发下 P95 仅 7.8ms 且吞吐与 20 并发持平（~780 rps 封顶），为 ASGI 同步执行段的串行容量膝点，20 VU 需求踩线产生排队尾；8 worker 验证 P95 26.5ms（<60ms 达标）、吞吐 1209 rps。达标杠杆是容量（worker 数）与同步段优化（异步中间件链），非元数据端点代码；是否上调生产 worker 数走容量规划另立。 8-worker 档位（capacity_reference）三轮中位数 P95 25.74ms 达标、吞吐 1101.5 rps（2026-10-01 容量立项批 A1）；<60ms 目标在默认 4-worker 形态下不可达的判定不变。",
       "trends": {
         "meta_fields_duration": 117.61
       }
@@ -76,6 +76,57 @@
       "load": "5 VU / 1m",
       "rps": 111.69,
       "p95": 57.06
+    }
+  },
+  "capacity_reference": {
+    "machine": "Apple Silicon macOS + OrbStack Docker",
+    "server": "gunicorn + UvicornWorker×8（容量立项批 A1 档位；其余同 §3.1 生产同参）",
+    "db": "PostgreSQL 17.11 专用一次性容器（§3.1，与 2026-09-30 复测一致）",
+    "redis": "Redis 8.10.2 专用一次性容器",
+    "seed": "1000 个 perf_ 用户 + 默认数据",
+    "k6": "v2.0.0",
+    "note": "8-worker 容量档位参考（ASGI 同步段容量立项批 A1，2026-10-01 三轮中位数）：worker 数为主要容量杠杆（ADR-006 池化形态上，sync 段 GIL 膝点）；快照主体（env.server）仍为 4-worker 生产默认形态，本键不参与 check_baseline 回归判定。06-import 的 cap8-round1 因失败率非 0（max=0.0001，1 个请求）按 §六 作废，取 2/3 轮中位数",
+    "cases": {
+      "01-login": {
+        "load": "20 VU / 1m",
+        "rps": 88.17,
+        "p95": 67.31
+      },
+      "02-routes": {
+        "load": "20 VU / 1m",
+        "rps": 1563.28,
+        "p95": 17.8
+      },
+      "03-list": {
+        "load": "20 VU / 1m",
+        "rps": 413.13,
+        "p95": 105.12
+      },
+      "04-metadata-columns": {
+        "load": "20 VU / 1m",
+        "rps": 1607.29,
+        "p95": 22.91
+      },
+      "04-metadata-fields": {
+        "load": "20 VU / 1m",
+        "rps": 1101.5,
+        "p95": 25.74
+      },
+      "04-metadata-with_meta": {
+        "load": "20 VU / 1m",
+        "rps": 325.17,
+        "p95": 192.51
+      },
+      "05-export": {
+        "load": "20 VU / 1m",
+        "rps": 12.5,
+        "p95": 476.93
+      },
+      "06-import": {
+        "load": "20 VU / 1m",
+        "rps": 138.81,
+        "p95": 45.49
+      }
     }
   }
 }

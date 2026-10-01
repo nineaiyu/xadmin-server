@@ -133,6 +133,8 @@ REDIS_PORT: 6379
 # 运行时绑定端口
 HTTP_BIND_HOST: 0.0.0.0
 HTTP_LISTEN_PORT: 8896
+# API worker 数：默认 4 面向低配部署；生产按核数与峰值负载上调
+# （容量规划与实测数据见 docs/ops/deployment.md §3.3；上调时同步核对 DB 连接核算）
 GUNICORN_MAX_WORKER: 4
 CELERY_WORKER_COUNT: 4
 # heavy 队列（导入/导出/批量重任务）worker 配置。

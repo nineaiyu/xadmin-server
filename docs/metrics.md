@@ -313,3 +313,13 @@
 | **并发扫描（定案）** | fields：4 并发 = **725 rps / P95 7.8ms / 慢桶 0.02%**；8 并发 P95 83ms；20 并发 = 820 rps / P95 105-130ms；40 并发 = 778 rps / P95 169ms——吞吐在 ~780 rps 封顶、加并发只加延迟 = **串行容量膝点**（ASGI 同步执行段，栈采样定位在 sync→async 交接等待，占请求线程时间 21.6%）。columns 膝点 ~1100 rps（40 并发才现桶）、book ~2000+，解释了此前 endpoint 差异 |
 | **容量验证** | 8 worker（其余同参）+ 20 VU：fields **P95 26.5ms（<60ms 达标）**、吞吐 1209 rps、慢桶 1.73% |
 | 登记修正 | `loadtest/baseline.json` fields 条目 target_note 改写：未达标根因 = ASGI 同步段串行容量（4 worker ≈780 rps），非元数据端点代码问题；达标杠杆 = 容量（worker 数）或同步段优化（异步中间件链迁移），均另立容量规划，不在端点内继续优化 |
+
+### 2026-10-01 晚 8-worker 容量档位复测（容量立项批 A1，承接上节「另立容量规划」）
+
+| 项 | 结果 |
+|------|------|
+| 环境 | §3.1 同款固定环境（专用 PG 17.11 + Redis 8.10.2 + 1000 perf_ 种子），gunicorn UvicornWorker **×8**（其余同参，本机 8897）；Redis 发布端口改 56380（56379 被测试套件真库容器占用，仅端口差异）；压测轮次落 `loadtest/k6/results/cap8-round1..3` |
+| 结果（三轮中位数） | 01-login P95 67.31ms（4-worker 基线 66.18，持平）/ 02-routes 17.80（28.38）/ 03-list **105.12**（192.20）/ 04-metadata-columns 22.91（28.67）/ **04-metadata-fields 25.74（<60ms 达标**，基线 117.62，0.22x）/ with_meta 192.51（218.07）/ 05-export 476.93（776.91）/ 06-import 45.49（57.06）；全部用例 0 错误（06-import 的 round1 因 1 个请求失败率非 0 按 §六 作废，取 2/3 轮中位数） |
+| 登记口径（决策点 D1） | 快照主体（`env.server`）**维持 4-worker 生产默认形态不变**（护栏对默认形态负责，fields `target_met=false` 保留作容量参照）；8-worker 三轮中位数登记到 `baseline.json` 顶层 `capacity_reference`（不参与 `check_baseline` 回归判定），fields `target_note` 追加 8-worker 达标档位 |
+| 复验 | `check_baseline.py --results cap8-median`（不 `--update`）**0 项劣化** PASS；fields rps 777.1→1101.5（1.42x） |
+| 批 A2 同步 | `docs/ops/deployment.md` 新增 §3.3「Web 层容量规划」（worker 数杠杆实测表 / 容量指引 / DB 连接联动核算）+ §9.4 速查表行更新 + `config_example.yml` `GUNICORN_MAX_WORKER` 注释；完整台账见 [ASGI 同步段容量立项](plans/ASGI同步段容量立项-2026.10.md) §八 |

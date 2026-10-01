@@ -314,6 +314,26 @@ CORS_ALLOWED_ORIGINS:     # 跨域部署时配置；nginx 同源反代无需配�
   （逗号分隔域名 / IP），白名单是私网目标的唯一放行途径；
 - AI 服务地址允许私网 / 环回（内网自建推理、本地联调），但拒绝云元数据与 link-local 地址。
 
+### 3.3 Web 层容量规划：worker 数与 DB 连接（2026-10-01，容量立项）
+
+默认 `GUNICORN_MAX_WORKER: 4` 面向低配 / 最小化部署；生产按核数与峰值负载在 `config.yml` 上调（改后按 §6.1 重启 web 容器生效）。
+
+**worker 数是首要容量杠杆（ASGI 形态实测）**：同步执行段（同步中间件链 + DRF 同步视图）在单个 worker 进程内受 GIL 约束，单 worker 吞吐存在封顶——加并发只会拉长排队尾（P95 恶化、吞吐持平），扩 worker 才是线性扩容。固定环境实测（[performance-baseline.md §3.1](performance-baseline.md) 同款环境，元数据 fields 端点 20 VU）：
+
+| worker 数 | 端点吞吐膝点 | 20 VU P95（目标 <60ms） | 出处 |
+|---|---|---|---|
+| 4（默认） | ~780 rps（≈195 rps/worker） | 117.62ms（排队尾，默认容量下不可达） | `docs/metrics.md` 2026-10-01 深度定位 |
+| 8 | 未触顶（20 VU 需求内） | **26.5ms 达标**、吞吐 1209 rps | 同上（单轮验证，详见容量立项） |
+
+参照：columns 端点 4-worker 膝点 ~1100 rps、复杂列表（book）~2000+——接口越重膝点越低，容量按**最重高频接口**核算。完整证据链与达标杠杆见 [ASGI 同步段容量立项](../plans/ASGI同步段容量立项-2026.10.md)。
+
+**容量指引**：
+
+- worker 数起步：`峰值 RPS ÷ ~150 rps/worker`（保守值，按重接口口径），且不超过 CPU 核数（每 worker 一个事件循环 + 同步线程段，核不足时排队在 CPU）；上调后以监控（§4）复看 P95 与错误率；
+- 内存：以部署后单 worker 进程实际 RSS 为准预留（容器 limit = worker 数 × RSS + 余量）；
+- **DB 连接联动核算（必查）**：`GUNICORN_MAX_WORKER × DB_POOL_MAX_SIZE + celery 子进程数 × DB_POOL_MAX_SIZE < PG max_connections`。默认池 2-8：4 worker = 4×8+2×8=48，8 worker = 8×8+2×8=80，均低于 compose 默认 200；继续扩 worker 时同步核对（池配置见 §6.1 TD-25/ADR-006 注意项）；
+- 低配边界（1-2 核 / 小内存 VPS）：维持默认 4，优先观察监控再动容量，不盲调。
+
 ## 4. 可观测性
 
 ### 4.1 健康检查
@@ -568,7 +588,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | 配置键 | 环境变量 | 默认值 | 必填 | 说明 |
 |---|---|---|---|---|
 | `HTTP_BIND_HOST` / `HTTP_LISTEN_PORT` | 同名 | `0.0.0.0` / `8896` | 否 | |
-| `GUNICORN_MAX_WORKER` | 同名 | `4` | 否 | API worker 数 |
+| `GUNICORN_MAX_WORKER` | 同名 | `4` | 否 | API worker 数；容量规划与实测数据见 §3.3 |
 | `CELERY_WORKER_COUNT` | 同名 | `4` | 否 | 默认队列 worker 并发（模板与代码兜底已对齐） |
 | `CELERY_HEAVY_POOL` / `CELERY_HEAVY_CONCURRENCY` | 同名 | `threads` / `4` | 否 | heavy 队列（导入/导出/批量）worker |
 | `CELERY_FLOWER_HOST` / `CELERY_FLOWER_PORT` | 同名 | `127.0.0.1` / `5566` | 否 | |
