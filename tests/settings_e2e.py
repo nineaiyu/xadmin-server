@@ -109,6 +109,12 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
         "anon": "100000/m",
         "user": "100000/m",
         "login": "10000/h",
+        # O8 专用限流档同步放开：登录握手链路（临时令牌 / 验证码）与开放平台
+        # 端点的 E2E 用例同样高频匿名请求，收紧档会先于业务断言打满（429 雪崩）
+        "temp_token": "100000/m",
+        "verify_code": "100000/m",
+        "open_client": "100000/m",
+        "oauth_client": "100000/m",
     },
 }
 

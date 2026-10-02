@@ -16,6 +16,7 @@ from rest_framework.generics import GenericAPIView
 
 from common.base.utils import AESCipherV2
 from common.core.response import ApiResponse
+from common.core.throttle import VerifyCodeThrottle
 from common.fields.utils import get_file_absolute_uri
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger, random_string
@@ -136,6 +137,14 @@ class SendVerifyCodeAPIView(GenericAPIView):
         if config is None:
             return ApiResponse(code=1004, detail=_("Operation failed. Abnormal data"))
         return ApiResponse(data=config)
+
+    def get_throttles(self):
+        """O8-3：IP 维度专用限流只打在发送动作上（GET 配置读取便宜且页面加载必调）；
+        保留默认链（全局匿名限流），发送请求在其上叠加更严专用档。"""
+        throttles = super().get_throttles()
+        if self.request.method.upper() == "POST":
+            throttles.append(VerifyCodeThrottle())
+        return throttles
 
     def post(self, request):
         """发送验证码"""

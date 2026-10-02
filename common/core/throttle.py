@@ -50,6 +50,64 @@ class LoginThrottle(AnonRateThrottle):
     scope = "login"
 
 
+class IpScopedThrottle(SimpleRateThrottle):
+    """匿名端点按来源 IP 限流基类：IP 口径走 ``get_request_ip``（防 XFF 伪造，
+    与 IP 封禁/审计同源）；全局 AnonRateThrottle 之外的单列收紧档用此基类。"""
+
+    def get_cache_key(self, request, view):
+        from common.utils.request import get_request_ip
+
+        return self.cache_format % {"scope": self.scope, "ident": get_request_ip(request)}
+
+
+class ClientScopedThrottle(SimpleRateThrottle):
+    """匿名凭证端点按 client_id 限流基类：凭据即身份，计数维度跟 client 走。
+
+    请求未带 client_id 时回退来源 IP（防随机 id 洗桶绕过 client 维度）；键内
+    以 ``client_`` / ``ip_`` 前缀区分两个维度，避免互相撞键。
+    """
+
+    def get_cache_key(self, request, view):
+        from common.utils.request import get_request_ip
+
+        data = getattr(request, "data", None)
+        # JSON 解析产物与 QueryDict 均为 dict 子类；其余形态（None 等）直接走 IP 维度
+        client_id = str(data.get("client_id") or "").strip() if isinstance(data, dict) else ""
+        if client_id:
+            ident = f"client_{client_id}"
+        else:
+            ident = f"ip_{get_request_ip(request)}"
+        return self.cache_format % {"scope": self.scope, "ident": ident}
+
+
+class OpenClientThrottle(ClientScopedThrottle):
+    """开放平台 client-credentials 换发限流（O8-1）：按 client 维度防
+    client_secret 在线爆破与换发风暴（换发即轮换，频繁调用等于凭证写放大）。"""
+
+    scope = "open_client"
+
+
+class OAuthClientThrottle(ClientScopedThrottle):
+    """OAuth token/revoke 限流（O8-2）：授权码/刷新/撤销按 client 维度收敛；
+    多用户共用同一应用的后端调用，速率须覆盖正常登录高峰。"""
+
+    scope = "oauth_client"
+
+
+class VerifyCodeThrottle(IpScopedThrottle):
+    """发送验证码限流（O8-3）：IP 维度收敛短信/邮件轰炸与 Redis 写放大；
+    按目标计数的锁定由 SendVerifyCodeBlockUtil 兜底（互补维度）。"""
+
+    scope = "verify_code"
+
+
+class TempTokenThrottle(IpScopedThrottle):
+    """临时令牌限流（O8-3）：每次调用强制生成新缓存令牌（Redis 写放大面），
+    收紧到低于全局匿名档。"""
+
+    scope = "temp_token"
+
+
 class UploadThrottle(UserRateThrottle):
     """上传速率限制"""
 

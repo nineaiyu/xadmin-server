@@ -527,3 +527,28 @@ class TestSendVerifyCodeFailurePaths:
         assert resp.status_code == 200, resp.data
         assert resp.data["code"] == 1002
         assert "send failed" in str(resp.data["detail"])
+
+
+class TestO8EndpointThrottle:
+    """O8-3：验证码发送（仅 POST）与临时令牌的 IP 维度专用限流。"""
+
+    @staticmethod
+    def _patch_rate(monkeypatch, scope, rate):
+        from django.conf import settings as dj_settings
+
+        monkeypatch.setitem(dj_settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"], scope, rate)
+
+    def test_temp_token_throttled_per_ip(self, api_client, monkeypatch):
+        self._patch_rate(monkeypatch, "temp_token", "1/m")
+        assert api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json").status_code == 200
+        assert api_client.get(TEMP_TOKEN_URL, HTTP_ACCEPT="application/json").status_code == 429
+
+    def test_verify_code_post_throttled_but_config_get_not(self, api_client, register_free, monkeypatch):
+        """专用限流只打在发送动作上：GET 配置读取便宜且页面加载必调，不占发送桶。"""
+        self._patch_rate(monkeypatch, "verify_code", "1/m")
+        for _ in range(3):
+            resp = api_client.get(SEND_VERIFY_URL + "?category=register")
+            assert resp.status_code == 200
+        payload = {"form_type": "username", "target": "throttleuser"}
+        assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 200
+        assert api_client.post(SEND_VERIFY_URL + "?category=register", payload, format="json").status_code == 429

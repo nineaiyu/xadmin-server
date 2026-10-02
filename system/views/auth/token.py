@@ -9,10 +9,12 @@ from drf_spectacular.plumbing import build_basic_type
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework.generics import GenericAPIView
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from captcha.services import CaptchaAuth
 from common.core.response import ApiResponse
+from common.core.throttle import TempTokenThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ident
 from common.utils.token import make_token_cache
@@ -20,10 +22,15 @@ from system.utils.auth import get_token_lifetime
 
 
 class TempTokenAPIView(GenericAPIView):
-    """临时Token"""
+    """临时Token
+
+    匿名可达；O8-3：每次调用强制生成新缓存令牌（Redis 写放大面），在全局匿名
+    限流（IP 维度）之上叠加更严的专用档。
+    """
 
     permission_classes: list[type] = []
     authentication_classes: list[type] = []
+    throttle_classes = [AnonRateThrottle, TempTokenThrottle]
 
     @extend_schema(responses=get_default_response_schema({"token": build_basic_type(OpenApiTypes.STR)}))
     def get(self, request):

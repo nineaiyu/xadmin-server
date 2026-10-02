@@ -5111,31 +5111,6 @@
  },
  {
   "model": "system.menumeta",
-  "pk": "b8a953ca-1c74-492b-ab28-6e4c2304ad26",
-  "fields": {
-   "created_time": "2024-01-22T09:32:01.104Z",
-   "updated_time": "2024-10-31T08:10:11.440Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "title": "U-删除登录日志数据",
-   "icon": "",
-   "r_svg_name": "",
-   "is_show_menu": true,
-   "is_show_parent": false,
-   "is_keepalive": true,
-   "frame_url": "",
-   "frame_loading": false,
-   "transition_enter": "",
-   "transition_leave": "",
-   "is_hidden_tag": false,
-   "fixed_tag": false,
-   "dynamic_level": 0
-  }
- },
- {
-  "model": "system.menumeta",
   "pk": "b9ea02a8-4781-46ea-ba66-80cf08737f0f",
   "fields": {
    "created_time": "2024-01-22T09:32:15.837Z",
@@ -5596,31 +5571,6 @@
    "modifier": null,
    "dept_belong": null,
    "title": "R-获取资源告警配置",
-   "icon": "",
-   "r_svg_name": "",
-   "is_show_menu": true,
-   "is_show_parent": false,
-   "is_keepalive": true,
-   "frame_url": "",
-   "frame_loading": false,
-   "transition_enter": "",
-   "transition_leave": "",
-   "is_hidden_tag": false,
-   "fixed_tag": false,
-   "dynamic_level": 0
-  }
- },
- {
-  "model": "system.menumeta",
-  "pk": "cdcf0871-bca0-491c-a364-32ea3aa02613",
-  "fields": {
-   "created_time": "2024-01-22T09:32:00.894Z",
-   "updated_time": "2024-10-31T08:10:11.380Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "title": "U-批量删除登录日志",
    "icon": "",
    "r_svg_name": "",
    "is_show_menu": true,

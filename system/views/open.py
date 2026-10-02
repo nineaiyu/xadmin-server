@@ -23,12 +23,14 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from common.core.auth import hash_pat_token
 from common.core.filter import BaseFilterSet
 from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
+from common.core.throttle import OpenClientThrottle
 from common.swagger.utils import get_default_response_schema
 from system.models.token import ApiApplication, PersonalAccessToken
 from system.serializers.token import ApiApplicationGrantSerializer, ApiApplicationSerializer
@@ -181,10 +183,13 @@ class ApiApplicationTokenAPIView(APIView):
     """换发端点（client-credentials）：凭 client_id/client_secret 换 PAT 凭证。
 
     匿名可达（白名单 + AllowAny）：凭证即身份，与登录接口同口径。
+    O8-1：保留全局匿名限流（IP 维度），叠加 client 维度专用限流——
+    client_secret 在线爆破 / 换发风暴（换发即轮换，频繁调用等于凭证写放大）。
     """
 
     authentication_classes: list[type] = []
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, OpenClientThrottle]
 
     @staticmethod
     def _unauthorized(detail=None):

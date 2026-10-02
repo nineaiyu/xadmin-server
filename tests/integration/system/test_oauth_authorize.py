@@ -283,3 +283,33 @@ class TestGrantEnforcementOnOAuthToken:
         client = _pat_client(issued["access_token"])
         assert client.get(USER_URL).status_code == 200
         assert client.get("/api/system/dept").status_code == 403
+
+
+class TestOAuthClientThrottle:
+    """O8-2：token/revoke 端点 client 维度专用限流（IP 维度全局匿名档之上叠加）。
+
+    桶按请求体 client_id 划分；凭据错误（401）与限流（429 + 业务码 999）可区分。
+    """
+
+    @staticmethod
+    def _patch_rate(monkeypatch, rate):
+        from django.conf import settings as dj_settings
+
+        monkeypatch.setitem(dj_settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"], "oauth_client", rate)
+
+    def test_token_endpoint_throttled_per_client(self, monkeypatch):
+        self._patch_rate(monkeypatch, "2/m")
+        client = APIClient()
+        payload = {"client_id": "app_oauth_thr_a", "client_secret": "wrong", "grant_type": "authorization_code"}
+        assert client.post(f"{OAUTH_URL}/token", payload, format="json").status_code == 401
+        assert client.post(f"{OAUTH_URL}/token", payload, format="json").status_code == 401
+        blocked = client.post(f"{OAUTH_URL}/token", payload, format="json")
+        assert blocked.status_code == 429
+        assert blocked.data["code"] == 999
+
+    def test_revoke_endpoint_throttled_per_client(self, monkeypatch):
+        self._patch_rate(monkeypatch, "1/m")
+        client = APIClient()
+        payload = {"client_id": "app_oauth_thr_r", "client_secret": "wrong", "token": "aort_x"}
+        assert client.post(f"{OAUTH_URL}/revoke", payload, format="json").status_code == 401
+        assert client.post(f"{OAUTH_URL}/revoke", payload, format="json").status_code == 429

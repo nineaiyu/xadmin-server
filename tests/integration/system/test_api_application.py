@@ -166,6 +166,47 @@ class TestClientCredentials:
         assert str(blocked.data["detail"]) == _("Rate limit exceeded for this application")
 
 
+class TestOpenTokenClientThrottle:
+    """O8-1：换发端点 client 维度专用限流（在全局匿名限流的 IP 维度之上叠加）。
+
+    桶按请求体 client_id 划分，未带 client_id 回退 IP 桶；凭据错误（401）与
+    限流（429 + 业务码 999）可区分。
+    """
+
+    @staticmethod
+    def _patch_rate(monkeypatch, rate):
+        from django.conf import settings as dj_settings
+
+        monkeypatch.setitem(dj_settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"], "open_client", rate)
+
+    def test_throttled_per_client(self, monkeypatch):
+        self._patch_rate(monkeypatch, "2/m")
+        client = APIClient()
+        payload = {"client_id": "app_thr_a", "client_secret": "aps_wrong"}
+        assert client.post(TOKEN_URL, payload, format="json").status_code == 401
+        assert client.post(TOKEN_URL, payload, format="json").status_code == 401
+        blocked = client.post(TOKEN_URL, payload, format="json")
+        assert blocked.status_code == 429
+        assert blocked.data["code"] == 999  # Throttled 统一业务码（common_exception_handler）
+
+    def test_buckets_isolated_per_client(self, monkeypatch):
+        self._patch_rate(monkeypatch, "2/m")
+        client = APIClient()
+        payload_a = {"client_id": "app_thr_iso_a", "client_secret": "aps_wrong"}
+        payload_b = {"client_id": "app_thr_iso_b", "client_secret": "aps_wrong"}
+        for _ in range(2):
+            assert client.post(TOKEN_URL, payload_a, format="json").status_code == 401
+        assert client.post(TOKEN_URL, payload_a, format="json").status_code == 429
+        # 另一 client 独立桶：仍是凭据错误（401）而非限流（429）
+        assert client.post(TOKEN_URL, payload_b, format="json").status_code == 401
+
+    def test_missing_client_id_falls_back_to_ip_bucket(self, monkeypatch):
+        self._patch_rate(monkeypatch, "1/m")
+        client = APIClient()
+        assert client.post(TOKEN_URL, {"client_secret": "aps_wrong"}, format="json").status_code == 401
+        assert client.post(TOKEN_URL, {"client_secret": "aps_wrong"}, format="json").status_code == 429
+
+
 class TestCallbackProbe:
     def test_test_callback_dispatches_signed_probe(self, auth_client, monkeypatch):
         calls = []

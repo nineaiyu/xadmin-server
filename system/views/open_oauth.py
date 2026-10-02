@@ -28,10 +28,12 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import AllowAny
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from common.core.auth import hash_pat_token, normalize_scope_entry
 from common.core.response import ApiResponse
+from common.core.throttle import OAuthClientThrottle
 from common.swagger.utils import get_default_response_schema
 from system.models.log import OperationLog
 from system.models.token import ApiApplication, OAuthRefreshToken, PersonalAccessToken
@@ -276,10 +278,15 @@ class OpenOAuthApproveAPIView(APIView):
 
 
 class OpenOAuthTokenAPIView(APIView):
-    """授权码 / 刷新令牌换发（匿名可达，凭 client 凭据 + code/refresh 双重校验）。"""
+    """授权码 / 刷新令牌换发（匿名可达，凭 client 凭据 + code/refresh 双重校验）。
+
+    O8-2：保留全局匿名限流（IP 维度），叠加 client 维度专用限流（授权码/刷新
+    换发为登录高峰共享桶，速率覆盖正常峰值）。
+    """
 
     authentication_classes: list[type] = []
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, OAuthClientThrottle]
 
     def post(self, request, *args, **kwargs):
         client_id = str(request.data.get("client_id") or "").strip()
@@ -357,10 +364,14 @@ class OpenOAuthTokenAPIView(APIView):
 
 
 class OpenOAuthRevokeAPIView(APIView):
-    """撤销（RFC 7009）：优先 refresh（联动失效关联 access），其次 access 凭证本身。"""
+    """撤销（RFC 7009）：优先 refresh（联动失效关联 access），其次 access 凭证本身。
+
+    O8-2：同 token 端点挂 client 维度专用限流（登出风暴场景速率已覆盖）。
+    """
 
     authentication_classes: list[type] = []
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle, OAuthClientThrottle]
 
     def post(self, request, *args, **kwargs):
         client_id = str(request.data.get("client_id") or "").strip()

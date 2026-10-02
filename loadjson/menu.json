@@ -1492,29 +1492,6 @@
  },
  {
   "model": "system.menu",
-  "pk": "3946ac20-1dd1-4fce-aa6f-3372694024ac",
-  "fields": {
-   "created_time": "2024-01-22T09:32:00.898Z",
-   "updated_time": "2024-10-31T08:10:11.384Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
-   "menu_type": 2,
-   "name": "batchDestroy:SystemUserLoginLog",
-   "rank": 115,
-   "path": "api/system/logs/login/batch-destroy$",
-   "component": null,
-   "is_active": true,
-   "meta": "cdcf0871-bca0-491c-a364-32ea3aa02613",
-   "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
   "pk": "3949728a-8f7c-45a8-b84f-122b82e9c45e",
   "fields": {
    "created_time": "2024-01-22T09:32:11.433Z",
@@ -5108,29 +5085,6 @@
    "is_active": true,
    "meta": "e515fd0a-8eef-431a-a1bf-b260d9e8789a",
    "method": "POST",
-   "model": []
-  }
- },
- {
-  "model": "system.menu",
-  "pk": "c20ef280-7894-493c-b14a-1646fc5ce73b",
-  "fields": {
-   "created_time": "2024-01-22T09:32:01.107Z",
-   "updated_time": "2024-10-31T08:10:11.443Z",
-   "description": null,
-   "creator": 1,
-   "modifier": 1,
-   "dept_belong": null,
-   "deleted_at": null,
-   "parent": "45b14edf-5f9e-4ec8-bc4d-3c6f0b9c851b",
-   "menu_type": 2,
-   "name": "destroy:SystemUserLoginLog",
-   "rank": 118,
-   "path": "api/system/logs/login/(?P<pk>[^/.]+)$",
-   "component": null,
-   "is_active": true,
-   "meta": "b8a953ca-1c74-492b-ab28-6e4c2304ad26",
-   "method": "DELETE",
    "model": []
   }
  },
