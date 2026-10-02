@@ -24,6 +24,9 @@ LOGGING: dict[str, Any] = {
     "filters": {
         # Python 3.14 asyncio.shield 对「客户端断连取消在途请求」一律记 ERROR（见类注释）
         "suppress_shielded_cancelled_error": {"()": "server.logging.SuppressShieldedCancelledError"},
+        # 运行日志脱敏（O8-6）：按 SENSITIVE_FIELDS 键名掩码消息与异常栈，
+        # 与操作日志链路（oplog_recorder）同一份名单
+        "mask_sensitive_data": {"()": "server.logging.SensitiveDataFilter"},
     },
     "formatters": {
         "verbose": {
@@ -50,7 +53,12 @@ LOGGING: dict[str, Any] = {
             "level": "DEBUG",
             "class": "logging.NullHandler",
         },
-        "console": {"level": "DEBUG", "class": "server.logging.ColorHandler", "formatter": FILE_FORMATTER},
+        "console": {
+            "level": "DEBUG",
+            "class": "server.logging.ColorHandler",
+            "formatter": FILE_FORMATTER,
+            "filters": ["mask_sensitive_data"],
+        },
         "server": {
             "encoding": "utf8",
             "level": "DEBUG",
@@ -59,6 +67,7 @@ LOGGING: dict[str, Any] = {
             "formatter": FILE_FORMATTER,
             "filename": SERVER_LOG_FILE,
             "backupCount": LOG_BACKUP_COUNT,
+            "filters": ["mask_sensitive_data"],
         },
         "drf_exception": {
             "encoding": "utf8",
@@ -68,6 +77,7 @@ LOGGING: dict[str, Any] = {
             "formatter": "exception" if FILE_FORMATTER == "main" else FILE_FORMATTER,
             "filename": DRF_EXCEPTION_LOG_FILE,
             "backupCount": LOG_BACKUP_COUNT,
+            "filters": ["mask_sensitive_data"],
         },
         "unexpected_exception": {
             "encoding": "utf8",
@@ -77,6 +87,7 @@ LOGGING: dict[str, Any] = {
             "formatter": "exception" if FILE_FORMATTER == "main" else FILE_FORMATTER,
             "filename": UNEXPECTED_EXCEPTION_LOG_FILE,
             "backupCount": LOG_BACKUP_COUNT,
+            "filters": ["mask_sensitive_data"],
         },
     },
     "loggers": {

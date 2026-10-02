@@ -266,3 +266,55 @@ Deprecated，窗口期评估替换（WebCrypto 原生 API 或 aes-js）。
 
 漂移事实：容器基线（`python:3.14.7-slim`，prod/base/dev）与本机 venv 早已是 3.14.7，但 `pyproject.toml` 的 `requires-python`/mypy `python_version` 与 9 处 CI workflow 仍停 3.13。
 处置：口径统一到 3.14（`requires-python = ">=3.14"` + mypy 3.14 + CI 9 处 + `uv.lock` 重生成），server 内 6 处文档与文档站 4 文件 5 处受保护事实（`check_doc_facts.py` 的 `workflow:python` 源）同步。
+
+## 七期登记（2026-10-02）：敏感读取审计/运行日志脱敏收口 + CSP 分层口径 + 供应链停维核实
+
+本批伴随 O8-5～O8-8 安全收口交付（操作日志敏感 GET 埋点 / 运行日志脱敏过滤器 / 导出导入专用限流，见 `NEXT-DEV-PLAN.md` 执行记录九），登记两项评估结论与一份供应链核实台账。
+
+### S-1 CSP：Django 侧默认 report-only 与 nginx 页面层强制头分层 —— 已评估，维持现状（O8-7）
+
+**事实**：nginx 页面层（`xadmin-web/default.conf`）对页面流量下发**强制** `Content-Security-Policy`（2026-09-16 服务端 CSP 切换同口径）；Django 侧 django-csp 生成策略后由 `CSPModeMiddleware` 按 `CSP_MODE` 运行期档位下发，默认 `report-only`（观察期）。直连 Django 不经 nginx 的流量（仅 JSON API 与 swagger/api-docs）因此只在观察档。
+
+**评估结论（维持现状，属有意分层）**：
+
+1. 浏览器可达的 HTML 面（前端页面）全部经 nginx，已强制——CSP 实际防护的脚本执行面没有缺口；
+2. JSON API 响应无脚本执行面，强制 CSP 无防护增量；
+3. Django 直出 HTML 仅 swagger/api-docs：django-csp 策略按 swagger 资源放行（S3 落地收口），切 enforce 是行为变更（可能打断 swagger 内联脚本面），需独立观察窗口，不由默认值翻转完成；
+4. 需要对 API 面强制的部署，运行期把系统配置 `CSP_MODE=enforce` 即可，无需改代码。
+
+**重开条件**：django-csp 策略对 swagger 的 enforce 兼容性完成一轮观察验证（CI 含 api-docs 页面用例全绿），或出现「绕过 nginx 直连 Django 的 HTML 面」的新部署形态。
+
+### S-2 供应链：疑似停维依赖核实台账（O9-6，季度依赖窗口执行）
+
+`pyproject.toml` 六个「疑似停维」直连依赖 2026-10-02 经 PyPI 元数据逐包核实（发布时间取 PyPI 上该版本 `upload_time`），结论与重开（处置）条件如下：
+
+| 包 | 锁定版本 | 最近发布 | 用途（代码位置） | 核实结论 | 处置 / 重开条件 |
+|---|---|---|---|---|---|
+| `unicodecsv` | 0.14.1 | **2015-09-22** | CSV 导入解析/导出渲染（`common/drf/parsers/csv.py`、`common/drf/renders/csv.py`） | **停维**（11 年无发布，作者已弃） | 出现 CVE 或需 Python 3.15 兼容时替换为 stdlib `csv`（手工包 encoding，改动面 2 文件）；无 CVE 前不动 |
+| `django-ranged-response` | 0.2.0 | **2017-07-18** | 验证码图片 Range 响应（`captcha/views.py`） | **停维**（9 年无发布） | 跟随 `django-simple-captcha` 生态决策；出现 CVE 时用 Django 原生 `FileResponse` Range 支持替换（改动面 1 文件） |
+| `user-agents` | 2.2.0 | **2020-08-23** | UA 解析（操作日志 system/browser 列，`common/utils/request.py`） | **停维**（6 年无发布；底层 ua-parser 亦低频） | UA 解析仅做日志展示非安全判定；出现解析错乱面扩大或 CVE 时评估换 `ua-parser` 直连/自维护精简正则 |
+| `ldap3` | 2.9.1 | **2021-07-18** | LDAP 登录/同步客户端（`system/ldap/client.py`） | **事实停维**（5 年无稳定版；2.10.2 停在 rc；无官方公告，上游 issue 1169 证实停滞） | LDAP 功能默认关闭（F7-3）；启用部署出现 CVE 时补丁后移（六期 S-1 同款流程）或换 `python-ldap`/社区 fork，走独立立项 |
+| `pilkit` | 3.0 | 2023-09-27 | 图片处理器（缩略图 ResizeToFill，`common/fields/image.py`、`system/models/user.py`） | **低频维护**（3 年无发布，非弃维信号明确） | 随 PIL 生态观察；Pillow 大版本升级门禁若报 pilkit 不兼容，届时评估 |
+| `pyexcel` | 0.7.6 | **2026-06-29** | xlsx 解析（`common/drf/parsers/excel.py`） | **仍活跃**（本轮核实纠正了此前「疑似停维」判定，从清单移除） | 无动作；`pyexcel-xlsx 0.6.1` 适配器较旧，随季度窗口观察 |
+
+**窗口纪律**：本表每季度依赖窗口（与六期 S-1 监控动作同窗口）复核一次「最近发布」列与各包 CVE 公告，结论追加到 [ops/release-checklist.md](ops/release-checklist.md) 执行记录。
+
+### S-3 前端供应链：wangEditor 停维登记与 @iconify/vue 锁版口径（O9-7 / O9-8）
+
+**wangEditor（`@wangeditor/editor` 5.1.23，`xadmin-client`）—— 停维已登记**
+
+事实：上游 `wangeditor-team/wangEditor` 于 2023-08 发布官方公告「暂停维护（作者时间原因）但仍可继续使用」（issue #5678，issue 创建随之受限），此后无版本发布；npm 包仍可安装使用，无修复通道。
+
+仓内使用面：富文本编辑与回显（`src/components/RePlusPage/src/components/WangEditor.vue`、消息模板正文 `MessageTemplateForm.vue`、公告 `useNoticeFormOptions.tsx` / `NoticeShow.vue`，引导见 `src/utils/wangEditorBoot.ts`）。
+
+**触发条件（命中任一即立项替换评估，候选 Tiptap / Lexical 等同能力编辑器）**：
+
+1. 出现 XSS 或其他安全公告且上游无修复（包停维 = 不会出现官方补丁），此时先做净化层加固（模板链路已有净化补链）再评估替换；
+2. 出现协同编辑 / 更复杂排版等 wangEditor 无 roadmap 的产品需求；
+3. Vue 主版本演进导致其 Vue 适配层（`@wangeditor/editor-for-vue`）不可用。
+
+替换前不动现有集成（组件化收口在 `WangEditor.vue` 单文件，替换面可控）。
+
+**@iconify/vue（`5.0.1` 精确锁版，`xadmin-client/package.json`）—— 评估结论：维持，无需放开**
+
+「唯一精确锁版项」并非漂移：renovate 配置 `rangeStrategy: "pin"`（`xadmin-client/renovate.json`）的既定终态就是精确锁版，该版本号即 renovate 更新时写回的形态；renovate 对精确锁版依赖照常自动提单升级，「升级需手工」的前提不成立。放开 `^` 区间反而与配置的锁版策略相悖。维持现状，无动作。

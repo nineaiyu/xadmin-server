@@ -72,6 +72,9 @@ REST_FRAMEWORK = {
         "ai_chat": "120/m",
         # AI 管理类重操作（连接测试/档案探测/知识库同步/向量构建）
         "ai_admin": "10/m",
+        # 导出/导入重 IO 端点（export-data/-async、import-*、下载中心 download，O8-8）：
+        # 按用户维度防突发提交/下载风暴（并发上限另有 EXPORT_ASYNC_MAX_RUNNING 兜底）
+        "export_import": "30/m",
         **CONFIG.DEFAULT_THROTTLE_RATES,
     },
     "DEFAULT_PAGINATION_CLASS": "common.core.pagination.PageNumber",

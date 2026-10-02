@@ -16,6 +16,7 @@ from drf_spectacular.utils import OpenApiRequest, extend_schema
 from common.core.import_mapping import first_column_candidates, writable_field_options
 from common.core.permission_meta import parent_fallback_action
 from common.core.response import ApiResponse
+from common.core.throttle import ExportImportThrottleMixin
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 
@@ -24,7 +25,7 @@ from .celery_utils import _flatten_row_errors
 logger = get_logger(__name__)
 
 
-class ImportAsyncAction:
+class ImportAsyncAction(ExportImportThrottleMixin):
     """导入前校验与异步导入（大数据量场景，记录与错误报告在下载中心获取）。
 
     协议与同步 import-data 完全同源：请求体即文件原始内容（Content-Type
@@ -34,6 +35,9 @@ class ImportAsyncAction:
     - import-async：行数据序列化为 JSON 落 UploadFile(is_tmp=True)，任务内
       直接读行导入（大文件不塞 broker 消息，也不重复解析）。
     """
+
+    # O8-8 专用限流：文件解析/校验/异步提交三段都按 export_import 档收敛
+    export_import_actions: tuple[str, ...] = ("import_headers", "import_validate", "import_async")
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
 

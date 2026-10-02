@@ -169,6 +169,41 @@ class AiThrottleMixin:
         return throttles
 
 
+class ExportImportThrottle(UserRateThrottle):
+    """导出/导入重 IO 端点限流（O8-8）：按用户维度收敛导出/导入风暴。
+
+    覆盖面（经 ExportImportThrottleMixin 按声明联合命中）：同步导出
+    export-data、异步提交 export-async、导入三段 import-headers/-validate/-async、
+    下载中心产物 download。并发上限另有 EXPORT_ASYNC_MAX_RUNNING 兜底，本档补
+    「短时间突发提交/下载」一层；k6 压测与 E2E 档在各自 settings 放开。
+    """
+
+    scope = "export_import"
+
+
+class ExportImportThrottleMixin:
+    """导出/导入端点限流挂载（AiThrottleMixin 同款模式）。
+
+    声明集合 ``export_import_actions`` 沿 MRO 取**并集**：导出/导入 Action mixin
+    （OnlyExportDataAction / ImportAsyncAction）与下载 mixin
+    （RecordFileDownloadMixin）各自声明、组合视图自动合并——与
+    ``SENSITIVE_GET_ACTIONS``（O8-5）同口径，避免覆盖式属性互相屏蔽。
+    """
+
+    export_import_actions: tuple[str, ...] = ()
+
+    def get_throttles(self):
+        throttles = list(super().get_throttles())  # type: ignore[misc]  # 宿主 ViewSet 提供基类实现（mixin 模式）
+        action = getattr(self, "action", None)
+        if action:
+            declared: set = set()
+            for klass in type(self).__mro__:
+                declared.update(getattr(klass, "export_import_actions", ()) or ())
+            if action in declared:
+                throttles.append(ExportImportThrottle())
+        return throttles
+
+
 class PatThrottle(SimpleRateThrottle):
     """PAT 凭证级限流：按 token_hash 计数（PAT_RATE_LIMIT，空/0 = 不限）。
 

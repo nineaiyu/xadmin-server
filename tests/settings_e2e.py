@@ -115,6 +115,9 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
         "verify_code": "100000/m",
         "open_client": "100000/m",
         "oauth_client": "100000/m",
+        # 导出/导入与下载中心（O8-8）：多套件共享同一后端，连续导入导出/下载用例
+        # 会把收紧档打满（429 雪崩），限流语义由 pytest 集成档真实覆盖
+        "export_import": "100000/m",
     },
 }
 

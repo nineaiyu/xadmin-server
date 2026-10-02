@@ -73,6 +73,9 @@ REST_FRAMEWORK = {  # noqa: F405  # star-import 覆写
         "anon": "1000000/m",
         "user": "1000000/m",
         "login": "1000000/h",
+        # 导出/导入重 IO 端点（O8-8）：k6 的 05-export / 06-import 用例单用户高频
+        # 请求，收紧档会把 429 混进采样污染基线，压测档一并放开
+        "export_import": "1000000/m",
     },
 }
 

@@ -184,6 +184,10 @@ SETTINGS_CONFIG = {
     "SCIM_RATE_LIMIT": "600/min",  # 凭证级限流；空或 0 = 不限
     "SCIM_DEFAULT_ROLE_CODE": "",  # 新建用户默认角色 code（空 = 不分配）
     # CSP（S3）：django-csp 生成策略，模式与上报地址运行期可配
+    # O8-7 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
+    # 的差异是**有意分层**——浏览器页面流量经 nginx 已强制；直连 Django 的仅 JSON API
+    # （无脚本执行面）与 swagger/api-docs（django-csp 策略已按 swagger 放行，切 enforce
+    # 属行为变更需独立观察）。评估结论与重开条件见 docs/security-review.md 七期登记
     "CSP_MODE": "report-only",  # disabled / report-only（观察期）/ enforce
     "CSP_REPORT_URI": "",  # 空 = 不下发 report-uri；建议 /api/common/api/csp-report
     # PAT 凭证级限流速率（SimpleRateThrottle 速率串；空或 0 = 不限）

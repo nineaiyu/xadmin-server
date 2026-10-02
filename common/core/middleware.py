@@ -103,6 +103,22 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         self.ignores = getattr(settings, "API_LOG_IGNORE", None) or {}
         self.operation_log_id = "__operation_log_id"
 
+    def _should_log(self, request, view_func) -> bool:
+        """请求是否落操作日志：``API_LOG_METHODS`` 命中，或敏感 GET action 白名单命中。
+
+        O8-5：``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全落库即日志洪水），
+        导出/下载等敏感读取由视图侧 ``SENSITIVE_GET_ACTIONS`` 单列声明（经
+        ``sensitive_get_actions`` 沿 MRO 取并集）；是否豁免仍由调用方的
+        ``API_LOG_IGNORE``（模型 / 路径维度）与 ``API_LOG_ENABLE`` 决定。
+        """
+        if self.methods == "ALL" or request.method in self.methods:
+            return True
+        if request.method != "GET":
+            return False
+        actions = sensitive_get_actions(view_func.cls)
+        # view.actions 为 DRF as_view 挂载的 {HTTP method(小写): action 方法名} 映射
+        return bool(actions) and getattr(view_func, "actions", {}).get("get") in actions
+
     @classmethod
     def __handle_request(cls, request):
         request.request_ip = get_request_ip(request)
@@ -153,28 +169,28 @@ class ApiLoggingMiddleware(MiddlewareMixin):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if hasattr(view_func, "cls") and hasattr(view_func.cls, "queryset"):
-            if self.enable:
-                if self.methods == "ALL" or request.method in self.methods:
-                    model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
-                    if (model and request.method in self.ignores.get(model._meta.label, [])) or (
-                        request.method in self.ignores.get(request.path, [])
-                    ):
-                        return
-                    if not v:
-                        v = settings.API_MODEL_MAP.get(request.path, v)
-                        if not v and model:
-                            v = model._meta.label
-                    log = OperationLog(
-                        module=str(v)[:OPERATION_LOG_MODULE_MAX],
-                        # 行级变更历史：detail 路由从 URL kwargs 提取对象主键（pk 兜底 id），
-                        # list/create 等无 pk 路由留空；转 str 兼容 UUID/整型主键
-                        object_pk=str(object_pk)
-                        if (object_pk := view_kwargs.get("pk") or view_kwargs.get("id"))
-                        else None,
-                    )
-                    log.save()
-                    setattr(request, self.operation_log_id, log.id)
-                    request.request_module = v
+            if self.enable and self._should_log(request, view_func):
+                if not (self.methods == "ALL" or request.method in self.methods):
+                    # 敏感 GET 白名单路径（O8-5）：标记给 process_response 放行响应装配
+                    request.operation_log_get_audit = True
+                model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
+                if (model and request.method in self.ignores.get(model._meta.label, [])) or (
+                    request.method in self.ignores.get(request.path, [])
+                ):
+                    return
+                if not v:
+                    v = settings.API_MODEL_MAP.get(request.path, v)
+                    if not v and model:
+                        v = model._meta.label
+                log = OperationLog(
+                    module=str(v)[:OPERATION_LOG_MODULE_MAX],
+                    # 行级变更历史：detail 路由从 URL kwargs 提取对象主键（pk 兜底 id），
+                    # list/create 等无 pk 路由留空；转 str 兼容 UUID/整型主键
+                    object_pk=str(object_pk) if (object_pk := view_kwargs.get("pk") or view_kwargs.get("id")) else None,
+                )
+                log.save()
+                setattr(request, self.operation_log_id, log.id)
+                request.request_module = v
 
         return
 
@@ -193,7 +209,12 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             return response
         show = False
         if self.enable:
-            if self.methods == "ALL" or request.method in self.methods:
+            if (
+                self.methods == "ALL"
+                or request.method in self.methods
+                # 敏感 GET 白名单路径（O8-5）：process_view 已建占位行，响应装配照走
+                or getattr(request, "operation_log_get_audit", False)
+            ):
                 show = self.__handle_response(request, response)
         # isEnabledFor 守卫（P1-2 口径）：f-string 会把整个 response.data（分页 100 行 ×
         # 20 列量级）先 repr 成字符串再被级别过滤丢弃，未开操作日志的请求每请求白付一次
@@ -234,5 +255,6 @@ from common.core.oplog_recorder import (  # noqa: F401  (日志辅助拆至 oplo
     desensitize_payload,
     log_body_preview,
     resolve_auth_identity,
+    sensitive_get_actions,
     write_operation_log,
 )

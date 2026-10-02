@@ -450,3 +450,63 @@ class TestLogLevelGuard:
         response = _BoomResponse()
         request = RequestFactory().get("/api/demo/book")
         assert ApiLoggingMiddleware(lambda r: None).process_response(request, response) is response
+
+
+class TestSensitiveGetAudit:
+    """O8-5：敏感 GET（导出/下载）单列落操作日志。
+
+    ``API_LOG_METHODS`` 默认不含 GET——导出/下载等敏感读取由视图侧
+    ``SENSITIVE_GET_ACTIONS`` 声明（沿 MRO 并集），中间件单独放行；普通
+    列表/详情 GET 维持不落库。pytest 事务内 on_commit 不回填，断言占位行。
+    """
+
+    def test_export_data_get_creates_log(self, auth_client, superuser):
+        from demo.models import Book
+
+        Book.objects.create(name="审计书", isbn="i-o8-5", author="a", admin=superuser, admin2=superuser)
+        before = OperationLog.objects.count()
+        resp = auth_client.get(f"{DEMO_URL}/export-data?type=xlsx")
+        assert resp.status_code == 200
+        assert OperationLog.objects.count() == before + 1
+
+    def test_list_get_not_logged(self, auth_client, superuser):
+        before = OperationLog.objects.count()
+        resp = auth_client.get(DEMO_URL)
+        assert resp.status_code == 200
+        assert OperationLog.objects.count() == before
+
+    def test_sensitive_get_actions_mro_union(self):
+        """声明沿 MRO 取并集：导出 mixin 声明 export_data，下载 mixin 声明 download。"""
+        from common.core.oplog_recorder import sensitive_get_actions
+        from demo.views import BookViewSet
+        from system.views.admin.export import ExportRecordViewSet
+        from system.views.admin.import_ import ImportRecordViewSet
+
+        assert sensitive_get_actions(BookViewSet) == frozenset({"export_data"})
+        assert sensitive_get_actions(ExportRecordViewSet) == frozenset({"download"})
+        assert sensitive_get_actions(ImportRecordViewSet) == frozenset({"download"})
+
+    def test_should_log_decision(self, rf):
+        from common.core.middleware import ApiLoggingMiddleware
+        from demo.views import BookViewSet
+
+        middleware = ApiLoggingMiddleware(lambda r: None)
+        export_view = BookViewSet.as_view({"get": "export_data"})
+        list_view = BookViewSet.as_view({"get": "list"})
+        assert middleware._should_log(rf.get(f"{DEMO_URL}/export-data"), export_view) is True
+        assert middleware._should_log(rf.get(DEMO_URL), list_view) is False
+        assert middleware._should_log(rf.post(DEMO_URL, {}), list_view) is True
+
+    def test_get_audit_flag_not_set_for_regular_methods(self, rf):
+        """白名单路径才打 GET 审计标记：API_LOG_METHODS 命中的请求不带该标记。"""
+        from common.core.middleware import ApiLoggingMiddleware
+        from demo.views import BookViewSet
+
+        middleware = ApiLoggingMiddleware(lambda r: None)
+        request = rf.get(f"{DEMO_URL}/export-data")
+        middleware.process_view(request, BookViewSet.as_view({"get": "export_data"}), (), {})
+        assert getattr(request, "operation_log_get_audit", False) is True
+
+        post_request = rf.post(DEMO_URL, {})
+        middleware.process_view(post_request, BookViewSet.as_view({"post": "create"}), (), {})
+        assert getattr(post_request, "operation_log_get_audit", False) is False

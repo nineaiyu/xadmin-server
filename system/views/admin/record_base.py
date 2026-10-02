@@ -17,6 +17,7 @@ from rest_framework.filters import BaseFilterBackend
 
 from common.base.magic import cache_response
 from common.core.response import ApiResponse
+from common.core.throttle import ExportImportThrottleMixin
 from common.storage import storage_exists, storage_open
 from system.utils.record_stats import (
     RECORD_STATS_CACHE_SECONDS,
@@ -66,7 +67,7 @@ class RecordOwnerFilter(BaseFilterBackend):
         return queryset.filter(creator=user)
 
 
-class RecordFileDownloadMixin:
+class RecordFileDownloadMixin(ExportImportThrottleMixin):
     if TYPE_CHECKING:
 
         def get_object(self, *args, **kwargs) -> Any: ...
@@ -79,6 +80,11 @@ class RecordFileDownloadMixin:
 
     download_file_field = ""
     download_not_found_message = _("File not found")
+    # O8-5 敏感读取审计：导出文件/错误报告含业务数据，下载动作单列落操作日志
+    # （API_LOG_METHODS 默认不含 GET，由中间件按本声明单独放行）
+    SENSITIVE_GET_ACTIONS: tuple[str, ...] = ("download",)
+    # O8-8 专用限流：产物文件下载按 export_import 档收敛
+    export_import_actions: tuple[str, ...] = ("download",)
 
     def download_upload_file(self, upload):
         """文件缺失返回可读业务错误，否则返回 FileResponse。"""

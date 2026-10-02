@@ -10,6 +10,7 @@ from rest_framework.utils import encoders
 
 from common.contracts import OperationLog, PersonalAccessToken
 from common.core.config import SysConfig
+from common.core.sensitive import SENSITIVE_FIELDS
 from common.core.utils import get_doc_first_line
 from common.utils import get_logger
 from common.utils.request import (
@@ -24,22 +25,8 @@ logger = get_logger(__name__)
 # 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
 # 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
-# 操作日志脱敏字段清单（按**键名**匹配，递归生效——请求体与响应体共用）
-# code：二次验证提交体里的登录密码/动态验证码（POST /api/mfa/confirm 等），
-# token / verify_token：临时令牌与验证码票据（登录/注册/重置/绑定加密握手），
-# access / refresh：登录响应里的 JWT（响应快照同口径收敛），
-# 严禁明文落日志
-SENSITIVE_FIELDS = {
-    "password",
-    "old_password",
-    "new_password",
-    "sure_password",
-    "access",
-    "refresh",
-    "code",
-    "token",
-    "verify_token",
-}
+# 操作日志脱敏字段清单单一事实源在 common.core.sensitive（O8-6 拆出，顶部导入，
+# SENSITIVE_FIELDS 随之再导出保持既有导入路径不变）
 
 
 def _log_field_limit():
@@ -82,6 +69,22 @@ def desensitize_payload(value):
 def desensitize_body(body):
     """对请求体中的敏感字段做掩码处理（递归入口，兼容既有调用点）。"""
     return desensitize_payload(body)
+
+
+def sensitive_get_actions(view_cls) -> frozenset:
+    """视图类声明的「敏感 GET action」集合（O8-5 敏感读取审计）。
+
+    ``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全部落库即日志洪水），
+    导出/下载等敏感读取由视图侧按 action 白名单单列声明：类（或其任一祖先
+    mixin）定义 ``SENSITIVE_GET_ACTIONS = (action 名, …)``，此处沿 MRO 取并集
+    （多 mixin 各自声明、组合视图自动合并，覆盖式属性会互相屏蔽故不用单值）。
+    命中与否最终仍受 ``API_LOG_IGNORE``（模型 / 路径维度）与 ``API_LOG_ENABLE``
+    管辖。
+    """
+    actions: set = set()
+    for klass in getattr(view_cls, "__mro__", ()):
+        actions.update(getattr(klass, "SENSITIVE_GET_ACTIONS", ()) or ())
+    return frozenset(actions)
 
 
 def log_body_preview(payload) -> str:
