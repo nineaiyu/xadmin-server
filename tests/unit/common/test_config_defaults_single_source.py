@@ -27,7 +27,12 @@ SEED_EXEMPT_KEYS = {"WEB_SITE_CONFIG"}
 
 
 def _property_keys(cls):
-    return {name for name, value in vars(cls).items() if isinstance(value, property)}
+    # BaseConfCache 的属性按域拆分在 conf_upload/conf_security/conf_ops 三个 mixin 上，
+    # 守护口径不变：沿 MRO 收集组合全体的 property（仍覆盖 SysConfig 全部键）
+    keys: set[str] = set()
+    for klass in cls.__mro__:
+        keys |= {name for name, value in vars(klass).items() if isinstance(value, property)}
+    return keys
 
 
 ALL_SYSCONFIG_KEYS = _property_keys(BaseConfCache) | _property_keys(MessagePushConfCache) | _property_keys(ConfigCache)

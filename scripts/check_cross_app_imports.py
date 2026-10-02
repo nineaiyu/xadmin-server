@@ -134,8 +134,8 @@ CONTRACT_SEAMS = {
     "common/management/commands/_generate_crud/analysis.py": {
         "system.services": "生成器回填种子关联（Menu / UserRole / sync_model_field）",
     },
-    "common/management/commands/_generate_crud/renderers.py": {
-        "system.services": "生成器消费 ModelLabelField（模型节点 pk 解析）",
+    "common/management/commands/_generate_crud/render_seed.py": {
+        "system.services": "生成器消费 ModelLabelField（模型节点 pk 解析；renderers 拆分前登记于 renderers.py）",
     },
     "common/management/commands/services/hands.py": {
         "settings.services": "启动自检消费 Setting（迁移就绪重试探测）",

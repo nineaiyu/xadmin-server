@@ -1,7 +1,8 @@
 """Django settings for server project（Django 核心设置层）。
 
 框架/库级配置（DRF / JWT / CORS / 会话与密码哈希 / Celery）见 libs.py；
-HTTPS 与安全响应头覆盖见 security_https.py。
+HTTPS 与安全响应头覆盖见 security_https.py；Redis 缓存与 Channels 通道层见
+cache_channel.py；数据库连接配置见 databases.py（均经 star-import 并入本模块）。
 参考：https://docs.djangoproject.com/en/stable/ref/settings/
 """
 
@@ -147,174 +148,14 @@ ASGI_APPLICATION = "server.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Redis 配置
-REDIS_HOST = CONFIG.REDIS_HOST
-REDIS_PORT = CONFIG.REDIS_PORT
-REDIS_PASSWORD = CONFIG.REDIS_PASSWORD
+# Redis 缓存与 Channels 通道层拆分至 cache_channel.py（文件行数门禁），经 star-import 并入本模块
+from .cache_channel import *  # noqa: F401,F403
 
-DEFAULT_CACHE_ID = CONFIG.DEFAULT_CACHE_ID
-CHANNEL_LAYERS_CACHE_ID = CONFIG.CHANNEL_LAYERS_CACHE_ID
-CELERY_BROKER_CACHE_ID = CONFIG.CELERY_BROKER_CACHE_ID
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{DEFAULT_CACHE_ID}",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # 故障演练 2029-10 复测修复：Redis 冻结（容器 stop，连接挂起而非拒绝）时
-            # socket 无超时会让请求挂在中间件/配置读取阶段（实测 10s+ 被 worker
-            # timeout 打断、health 端点被拖挂）。局域网 redis 操作 <5ms，1s 超时充裕，
-            # 冻结时快速失败（配合 ConfigCache 回落读库，见 common/core/config.py）。
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 8000,
-                # 连接超时 0.2s：局域网建连正常 <1ms；冻结（连接挂起）时每个调用
-                # 0.2s 快速失败（实测 1s 时多个串行调用累积到 10s，0.2s 收敛到秒级）
-                "socket_connect_timeout": 0.2,
-                # 读写超时 0.5s：正常操作 <10ms（大 pattern SCAN 留余量），仅兜底
-                "socket_timeout": 0.5,
-                "retry_on_timeout": False,
-            },
-            "PASSWORD": REDIS_PASSWORD,
-            "DECODE_RESPONSES": True,
-            "REDIS_CLIENT_KWARGS": {"health_check_interval": 30},
-            # 故障演练 2029-10 复测（第二轮）：Redis 冻结时 TimeoutError 被
-            # django_redis 转换为 ConnectionInterrupted，但默认继续向上抛——
-            # DRF 限流器等框架层调用点不兜异常 → 请求 500（实测 health 返回
-            # 500）。开启 IGNORE_EXCEPTIONS：读返回 None、写静默失败（标准降级
-            # 语义：缓存不可用时 fail-open，业务回落数据源/重算）。
-            "IGNORE_EXCEPTIONS": True,
-        },
-        "TIMEOUT": 60 * 15,
-        "KEY_FUNCTION": "common.base.utils.redis_key_func",
-        "REVERSE_KEY_FUNCTION": "common.base.utils.redis_reverse_key_func",
-    },
-}
-
-# create database xadmin default character set utf8 COLLATE utf8_general_ci;
-# grant all on xadmin.* to server@'127.0.0.1' identified by 'KGzKjZpWBp4R4RSa';
-# python manage.py makemigrations
-# python manage.py migrate
-
-
-def _resolve_db_engine(value: str) -> str:
-    """数据库后端解析：短名 → Django 后端路径，其余按完整路径原样使用（第三方后端）。
-
-    短名清单与 config_example.yml 的注释一致（sqlite3 / mysql / oracle / postgresql / vastbase）。
-    """
-    name = value.lower()
-    if name in ("mysql", "oracle", "postgresql", "sqlite3"):
-        return f"django.db.backends.{name}"
-    if name == "vastbase":
-        return "django_vastbase_backend"
-    return value
-
-
-DB_OPTIONS: dict[str, object] = {}
-DB_ENGINE = CONFIG.DB_ENGINE.lower()
-ENGINE = _resolve_db_engine(CONFIG.DB_ENGINE)
-
-if DB_ENGINE == "postgresql":
-    # 连接建立超时（演练第五轮·网络分区修复，2026-09-16）：PG 断网时 TCP 无响应，
-    # 无该超时会让 DB 操作挂到 TCP 默认超时（实测 health 20s+ 完全无响应）；
-    # 局域网建连 <10ms，3s 充裕且保证故障时快速失败（池/非池模式均透传 psycopg）
-    DB_OPTIONS["connect_timeout"] = 3
-    # 半开连接快速失败（第十七轮·真丢包演练修复，2026-09-18）：TCP 丢包时已建立连接
-    # 进入半开态（对端收不到包、本端不知情），查询/SELECT 1 判活阻塞在 recv，无 socket 级
-    # 超时则要等 TCP 重传耗竭（Linux 默认 ~15 分钟）——期间 worker 同步处理线程被逐个占死
-    # （实测 health 亦排队无响应，~1 分钟自愈依赖 TCP 重传成功）。tcp_user_timeout 让内核在
-    # 未确认数据超时后强制断开连接（recv 立即报错 → 池淘汰重建）；keepalives 三件套用于
-    # 空闲连接的探活。注：tcp_user_timeout 仅 Linux 生效（libpq 在其它平台忽略该参数）。
-    DB_OPTIONS["tcp_user_timeout"] = 30000  # ms；未确认数据 30s 即断开
-    DB_OPTIONS["keepalives"] = 1
-    DB_OPTIONS["keepalives_idle"] = 30  # 空闲 30s 开始探测
-    DB_OPTIONS["keepalives_interval"] = 10  # 探测间隔 10s
-    DB_OPTIONS["keepalives_count"] = 3  # 3 次未应答判定连接死亡
-
-# ASGI 形态下 ASGIHandler 为每请求创建独立线程（ThreadSensitiveContext），
-# 线程随请求结束消亡，持久连接机制（CONN_MAX_AGE）在此形态下无效，等效每请求新建 DB
-# 连接——压测 ~600rps 时临时端口耗尽致 13-27% 500。postgresql 引擎默认启用 Django 5.1+
-# server 端连接池（psycopg3 + psycopg_pool）；池模式下 CONN_MAX_AGE 必须为 0，
-# CONN_HEALTH_CHECKS 使池在取用连接前做轻量存活校验
-DB_POOL_ENABLED = DB_ENGINE == "postgresql" and bool(CONFIG.DB_POOL)
-if DB_POOL_ENABLED:
-    # 池判活回调替换（真实 SELECT 1）：psycopg_pool 默认 check_connection 用空查询，
-    # 检测不到「PG 重启后半开连接」（2030-03 演练实测坏连接反复被取出、服务不自愈，
-    # 直到进程重启）。Django 硬编码读取 ConnectionPool.check_connection 且不允许
-    # OPTIONS["pool"] 重复传 check（实测 duplicate keyword 启动失败），故在配置期
-    # 替换该静态方法——settings 加载早于任何池创建，对全部池生效。
-    from psycopg_pool import ConnectionPool
-
-    from common.db import check_db_connection
-
-    # 运行期替换第三方类方法（配置期生效于全部连接池，mypy 视其为不可赋值）
-    ConnectionPool.check_connection = staticmethod(check_db_connection)  # type: ignore[method-assign, assignment]
-
-    DB_OPTIONS["pool"] = {
-        "min_size": int(CONFIG.DB_POOL_MIN_SIZE),
-        "max_size": max(int(CONFIG.DB_POOL_MIN_SIZE), int(CONFIG.DB_POOL_MAX_SIZE)),
-        # 取用连接的最长等待（psycopg_pool 默认 30s）：故障（半开/丢包）时池重建期间
-        # 请求快速失败（≤5s），而不是每个请求排队等满 30s（第十七轮演练复演实测）。
-        # 正常负载取用 <10ms，5s 余量充足；容量由 min/max_size 控制不受影响。
-        "timeout": 5,
-        # 失败连接的重连调度间隔（psycopg_pool 默认 300s）：DB 恢复后健康指示 10s 级回正，
-        # 而不是最长等 5 分钟（第十七轮复演观察：删规则后 db 指示恢复慢且抖动）。
-        "reconnect_timeout": 10,
-    }
-
-DATABASES = {
-    "default": {
-        "ENGINE": ENGINE,
-        "NAME": CONFIG.DB_DATABASE,
-        "HOST": CONFIG.DB_HOST,
-        "PORT": CONFIG.DB_PORT,
-        "USER": CONFIG.DB_USER,
-        "PASSWORD": CONFIG.DB_PASSWORD,
-        "ATOMIC_REQUESTS": True,
-        "CONN_MAX_AGE": 0 if DB_POOL_ENABLED else 600,
-        "CONN_HEALTH_CHECKS": DB_POOL_ENABLED,
-        "OPTIONS": DB_OPTIONS,
-    }
-}
-
-if DB_ENGINE == "mysql":
-    DB_OPTIONS["init_command"] = "SET sql_mode='STRICT_TRANS_TABLES'"
-    DB_OPTIONS["charset"] = "utf8mb4"
-    DB_OPTIONS["collation"] = "utf8mb4_bin"
-
-# https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
-# 读写分离 可能会出现 the current database router prevents this relation.
-# 1.项目设置了router读写分离，且在ORM create()方法中，使用了前边filter()方法得到的数据，
-# 2.由于django是惰性查询，前边的filter()并没有立即查询，而是在create()中引用了filter()的数据时，执行了filter()，
-# 3.此时写操作的db指针指向write_db，filter()的db指针指向read_db，两者发生冲突，导致服务禁止了此次与mysql的交互
-# 解决办法：
-# 在前边filter()方法中，使用using()方法，使filter()方法立即与数据库交互，查出数据。
-# Author.objects.using("default")
-# >>> p = Person(name="Fred")
-# >>> p.save(using="second")  # (statement 2)
-
-DATABASE_ROUTERS = ["common.core.db.router.DBRouter"]
-
-# websocket 消息需要用到redis的消息发布订阅
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "common.cache.channel.RedisChannelLayer",
-        # "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
-        "CONFIG": {
-            # 注意：这里必须用 dict 形式的 host，channels_redis 会把额外 kwargs
-            # 透传给 redis-py ConnectionPool。redis-py 8.x 起默认 socket_timeout
-            # 从 None 改为 5s，而 channels_redis 的 receive() 使用 BZPOPMIN
-            # 服务端阻塞 5s 长轮询，两个 5s 竞速会导致偶发
-            # "Timeout reading from redis" 并杀死整个 websocket consumer。
-            # 显式关闭 socket_timeout 以恢复无限阻塞等待。
-            "hosts": [
-                {
-                    "address": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{CHANNEL_LAYERS_CACHE_ID}",
-                    "socket_timeout": None,
-                }
-            ],
-        },
-    },
-}
+# 数据库连接配置拆分至 databases.py（文件行数门禁），经 star-import 并入本模块；
+# _resolve_db_engine 为下划线名不经 star-export，显式再导出维持既有导入路径
+# （tests/unit/common/test_db_check.py 直接 from server.settings.base import _resolve_db_engine）
+from .databases import *  # noqa: F401,F403
+from .databases import _resolve_db_engine  # noqa: F401
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
