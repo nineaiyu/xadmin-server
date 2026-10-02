@@ -5,16 +5,23 @@
 1. SQLCountMiddleware 仅在 DEBUG 下启用，启用时输出 X-SQL-COUNT；
 2. StartMiddleware / EndMiddleware 仅在 DEBUG_DEV 下启用；
 3. RequestMiddleware 生成/透传 X-Request-Id 并设置 thread-local request；
-4. RefererCheckMiddleware 的放行与拦截分支。
+4. RefererCheckMiddleware 的放行与拦截分支；
+5. ADR-078：双模中间件 async 链（__acall__）与 sync 链行为等价，
+   current_request 经 contextvars + sync_to_async 在同步视图线程可读。
 """
 
+import asyncio
+import re
+
 import pytest
+from asgiref.sync import sync_to_async
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
 
 from server.middleware import (
     EndMiddleware,
+    ModuleGateMiddleware,
     RefererCheckMiddleware,
     RequestMiddleware,
     SQLCountMiddleware,
@@ -28,6 +35,10 @@ rf = RequestFactory()
 
 
 def _response():
+    return HttpResponse("ok")
+
+
+async def _async_response(request):
     return HttpResponse("ok")
 
 
@@ -162,3 +173,72 @@ class TestRefererCheckMiddleware:
         response = middleware(request)
         assert response.status_code == 403
         assert "CSRF" in response.content.decode()
+
+
+class TestAsyncMiddlewareChain:
+    """ADR-078：双模中间件在 async 链上的行为与 sync 链等价。"""
+
+    def test_request_middleware_acall_equivalence(self):
+        middleware = RequestMiddleware(_async_response)
+        request = rf.get("/api/system/user", HTTP_X_REQUEST_ID="gw-abc-123")
+        response = asyncio.run(middleware(request))
+        assert request.request_uuid == "gw-abc-123"
+        assert response["X-Request-Id"] == "gw-abc-123"
+
+    def test_acall_request_visible_in_sync_view_thread(self):
+        """contextvars 传播实证：__acall__ 写入的 current_request
+        在同步视图线程（经 sync_to_async 的 context 复制）可读。"""
+
+        async def handler(request):
+            def _view():
+                assert get_current_request() is request
+                return _response()
+
+            return await sync_to_async(_view, thread_sensitive=True)()
+
+        middleware = RequestMiddleware(handler)
+        request = rf.get("/api/system/user")
+        asyncio.run(middleware(request))
+
+    def test_acall_generates_uuid_when_upstream_empty(self):
+        middleware = RequestMiddleware(_async_response)
+        request = rf.get("/")
+        response = asyncio.run(middleware(request))
+        assert request.request_uuid
+        assert response["X-Request-Id"] == str(request.request_uuid)
+
+    def test_module_gate_acall_returns_404(self, monkeypatch):
+        from common.core import modules as modules_mod
+
+        monkeypatch.setattr(
+            modules_mod, "match_disabled_module", lambda path: "chat" if path.startswith("/api/chat") else None
+        )
+        middleware = ModuleGateMiddleware(_async_response)
+        middleware.patterns = [re.compile("^/api/chat")]
+        response = asyncio.run(middleware(rf.get("/api/chat/messages")))
+        assert response.status_code == 404
+
+        request = rf.get("/api/system/user")
+        assert asyncio.run(middleware(request)).status_code == 200
+
+    def test_module_gate_sync_chain_unchanged(self, monkeypatch):
+        """sync 链（WSGI / 测试 client）行为不回归。"""
+        from common.core import modules as modules_mod
+
+        monkeypatch.setattr(modules_mod, "match_disabled_module", lambda path: "chat")
+        middleware = ModuleGateMiddleware(lambda r: _response())
+        middleware.patterns = [re.compile("^/api/chat")]
+        assert middleware(rf.get("/api/chat/messages")).status_code == 404
+
+    @override_settings(REFERER_CHECK_ENABLED=True)
+    def test_referer_check_acall_rejects_foreign(self):
+        middleware = RefererCheckMiddleware(_async_response)
+        request = rf.get("/", HTTP_REFERER="https://evil.example.com/x", HTTP_HOST="testserver")
+        response = asyncio.run(middleware(request))
+        assert response.status_code == 403
+
+    @override_settings(REFERER_CHECK_ENABLED=True)
+    def test_referer_check_acall_allows_same_host(self):
+        middleware = RefererCheckMiddleware(_async_response)
+        request = rf.get("/", HTTP_REFERER="https://testserver/login", HTTP_HOST="testserver")
+        assert asyncio.run(middleware(request)).status_code == 200

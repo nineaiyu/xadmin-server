@@ -8,6 +8,7 @@
 import logging
 import time
 
+from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
 from django.conf import settings
 from django.db import transaction
 from django.utils.deprecation import MiddlewareMixin
@@ -42,13 +43,36 @@ class CSPModeMiddleware:
     本中间件需要在其之后执行才能改写到已生成的策略头。
     """
 
+    sync_capable = True
+    async_capable = True  # ADR-078 D1：双模；SysConfig 读（L1→Redis→DB）经 sync_to_async 包裹
+
     def __init__(self, get_response):
         self.get_response = get_response
+        self.async_mode = iscoroutinefunction(self.get_response)
+        if self.async_mode:
+            markcoroutinefunction(self)
+
+    @staticmethod
+    def _read_csp_config() -> tuple[str, str]:
+        """响应期配置读合并为一次 sync→async 交接（两次属性访问可能触 Redis/DB）。"""
+        mode = str(getattr(SysConfig, "CSP_MODE", None) or "report-only").strip().lower()
+        report_uri = str(getattr(SysConfig, "CSP_REPORT_URI", None) or "").strip()
+        return mode, report_uri
 
     def __call__(self, request):
+        if self.async_mode:
+            return self.__acall__(request)
         response = self.get_response(request)
-        mode = str(getattr(SysConfig, "CSP_MODE", None) or "report-only").strip().lower()
+        mode, report_uri = self._read_csp_config()
+        return self._apply(response, mode, report_uri)
 
+    async def __acall__(self, request):
+        response = await self.get_response(request)
+        mode, report_uri = await sync_to_async(self._read_csp_config, thread_sensitive=True)()
+        return self._apply(response, mode, report_uri)
+
+    @staticmethod
+    def _apply(response, mode, report_uri):
         if mode == "disabled":
             response.headers.pop(CSP_HEADER, None)
             response.headers.pop(CSP_HEADER_REPORT_ONLY, None)
@@ -64,7 +88,6 @@ class CSPModeMiddleware:
             response.headers.pop(CSP_HEADER, None)
 
         # report-uri 运行期可配（默认空 = 不下发）：观察期把违规上报到本服务端点
-        report_uri = str(getattr(SysConfig, "CSP_REPORT_URI", None) or "").strip()
         header_name = CSP_HEADER if mode == "enforce" else CSP_HEADER_REPORT_ONLY
         policy = response.headers.get(header_name, "")
         if report_uri and policy and "report-uri" not in policy:

@@ -4,11 +4,13 @@
 # filename : middleware
 # author : ly_13
 # date : 10/18/2024
+import asyncio
 import json
 import re
 import time
 import uuid
 
+from asgiref.sync import markcoroutinefunction
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpResponseForbidden, JsonResponse
@@ -19,6 +21,11 @@ from .utils import set_current_request
 
 
 class SQLCountMiddleware:
+    """SQL 计数响应头（DEBUG only）：依赖同步调试连接（connection.queries），
+    按立项文档 §6.1 的第二种口径**有意保持同步**并显式声明边界（ADR-078 D3）。"""
+
+    sync_capable = True
+
     def __init__(self, get_response):
         self.get_response = get_response
         if not settings.DEBUG:
@@ -33,6 +40,11 @@ class SQLCountMiddleware:
 
 
 class StartMiddleware:
+    """请求计时起点 + health 三段耗时改写（DEBUG_DEV only，生产 MiddlewareNotUsed）：
+    有意保持同步并显式声明边界（ADR-078 D3）。"""
+
+    sync_capable = True
+
     def __init__(self, get_response):
         self.get_response = get_response
         if not settings.DEBUG_DEV:
@@ -54,6 +66,11 @@ class StartMiddleware:
 
 
 class EndMiddleware:
+    """请求计时终点（与 StartMiddleware 成对消费 `_e_time_*`，DEBUG_DEV only）：
+    有意保持同步并显式声明边界（ADR-078 D3）。"""
+
+    sync_capable = True
+
     def __init__(self, get_response):
         self.get_response = get_response
         if not settings.DEBUG_DEV:
@@ -86,29 +103,64 @@ class ModuleGateMiddleware:
     响应体携带 ``module``（命中模块 id），供前端给出「模块已停用」专用提示。
     """
 
+    sync_capable = True
+    async_capable = True  # ADR-078 D1：请求相纯内存正则，双模留在事件循环
+
     def __init__(self, get_response):
         self.get_response = get_response
+        self.async_mode = asyncio.iscoroutinefunction(self.get_response)
+        if self.async_mode:
+            markcoroutinefunction(self)
 
         from common.core.modules import disabled_route_patterns
 
         self.patterns = disabled_route_patterns()
 
     def __call__(self, request):
-        if self.patterns:
-            from common.core.modules import match_disabled_module
-
-            module_id = match_disabled_module(request.path)
-            if module_id:
-                return JsonResponse(
-                    {"code": 1001, "detail": _module_gate_detail(request), "data": None, "module": module_id},
-                    status=404,
-                )
+        if self.async_mode:
+            return self.__acall__(request)
+        module_id = self._match(request)
+        if module_id:
+            return self._forbidden(module_id, request)
         return self.get_response(request)
+
+    async def __acall__(self, request):
+        module_id = self._match(request)
+        if module_id:
+            return self._forbidden(module_id, request)
+        return await self.get_response(request)
+
+    def _match(self, request):
+        if not self.patterns:
+            return None
+        from common.core.modules import match_disabled_module
+
+        return match_disabled_module(request.path)
+
+    @staticmethod
+    def _forbidden(module_id, request):
+        return JsonResponse(
+            {"code": 1001, "detail": _module_gate_detail(request), "data": None, "module": module_id},
+            status=404,
+        )
 
 
 class RequestMiddleware:
+    """请求 ID 透传与 current_request 上下文装配（链首，ADR-078 D1/D2）。
+
+    双模中间件：sync 链（WSGI / 测试）走 `__call__`，ASGI 链走 `__acall__`
+    留在事件循环执行；`set_current_request` 经 contextvars 存储（common/local.py）
+    在同步视图线程经 sync_to_async 的 context 复制照常可读。
+    """
+
+    sync_capable = True
+    async_capable = True
+
     def __init__(self, get_response):
         self.get_response = get_response
+        self.async_mode = asyncio.iscoroutinefunction(self.get_response)
+        if self.async_mode:
+            markcoroutinefunction(self)
 
     @staticmethod
     def get_request_uuid(request):
@@ -117,19 +169,39 @@ class RequestMiddleware:
         return upstream_id or uuid.uuid4()
 
     def __call__(self, request):
+        if self.async_mode:
+            return self.__acall__(request)
+        return self._handle_sync(request)
+
+    async def __acall__(self, request):
+        request.request_uuid = self.get_request_uuid(request)
+        set_current_request(request)
+        response = await self.get_response(request)
+        # 回写响应头，便于前端/网关按请求 ID 关联日志与反馈问题
+        response["X-Request-Id"] = str(request.request_uuid)
+        return response
+
+    def _handle_sync(self, request):
         request.request_uuid = self.get_request_uuid(request)
         set_current_request(request)
         response = self.get_response(request)
-        # 回写响应头，便于前端/网关按请求 ID 关联日志与反馈问题
         response["X-Request-Id"] = str(request.request_uuid)
         return response
 
 
 class RefererCheckMiddleware:
+    """Referer 同源校验（默认关，ADR-078 D1：纯 header 判断，双模零成本对齐）。"""
+
+    sync_capable = True
+    async_capable = True
+
     def __init__(self, get_response):
         if not settings.REFERER_CHECK_ENABLED:
             raise MiddlewareNotUsed
         self.get_response = get_response
+        self.async_mode = asyncio.iscoroutinefunction(self.get_response)
+        if self.async_mode:
+            markcoroutinefunction(self)
         self.http_pattern = re.compile("https?://")
 
     def check_referer(self, request):
@@ -142,8 +214,13 @@ class RefererCheckMiddleware:
         return referer == remote_host or referer.startswith(f"{remote_host}/")
 
     def __call__(self, request):
-        match = self.check_referer(request)
-        if not match:
+        if self.async_mode:
+            return self.__acall__(request)
+        if not self.check_referer(request):
             return HttpResponseForbidden("CSRF CHECK ERROR")
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
+
+    async def __acall__(self, request):
+        if not self.check_referer(request):
+            return HttpResponseForbidden("CSRF CHECK ERROR")
+        return await self.get_response(request)

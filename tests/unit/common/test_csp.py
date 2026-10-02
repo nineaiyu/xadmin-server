@@ -248,3 +248,61 @@ class TestSyntheticReasonHostBasis:
         """多域名部署：ALLOWED_HOSTS 中的其它站点同样视为本站。"""
         settings.ALLOWED_HOSTS = ["xadmin.example.com", "ops.example.com"]
         assert _synthetic_reason("https://ops.example.com/#/x", BROWSER_UA, "xadmin.example.com") == ""
+
+
+class TestCSPModeAsyncChain:
+    """ADR-078：CSPModeMiddleware 双模——async 链行为与 sync 链等价，
+    SysConfig 读经 sync_to_async 包裹（不阻塞事件循环）。"""
+
+    def _acall(self, middleware, request):
+        import asyncio
+
+        return asyncio.run(middleware(request))
+
+    def test_acall_report_only_default(self, rf, monkeypatch):
+        from django.http import HttpResponse
+
+        from common.core.middleware import CSPModeMiddleware
+
+        async def handler(request):
+            response = HttpResponse()
+            response.headers[CSP_HEADER_REPORT_ONLY] = "default-src 'self'"
+            return response
+
+        middleware = CSPModeMiddleware(handler)
+        response = self._acall(middleware, rf.get("/"))
+        assert CSP_HEADER_REPORT_ONLY in response.headers
+        assert CSP_HEADER not in response.headers
+
+    def test_acall_enforce_rewrites_header(self, rf, monkeypatch):
+        from django.http import HttpResponse
+
+        from common.core.middleware import CSPModeMiddleware
+
+        patch_config(monkeypatch, "CSP_MODE", "enforce")
+
+        async def handler(request):
+            response = HttpResponse()
+            response.headers[CSP_HEADER_REPORT_ONLY] = "default-src 'self'"
+            return response
+
+        middleware = CSPModeMiddleware(handler)
+        response = self._acall(middleware, rf.get("/"))
+        assert CSP_HEADER in response.headers
+        assert CSP_HEADER_REPORT_ONLY not in response.headers
+
+    def test_acall_report_uri_injected(self, rf, monkeypatch):
+        from django.http import HttpResponse
+
+        from common.core.middleware import CSPModeMiddleware
+
+        patch_config(monkeypatch, "CSP_REPORT_URI", "/api/common/api/csp-report")
+
+        async def handler(request):
+            response = HttpResponse()
+            response.headers[CSP_HEADER_REPORT_ONLY] = "default-src 'self'"
+            return response
+
+        middleware = CSPModeMiddleware(handler)
+        response = self._acall(middleware, rf.get("/"))
+        assert "report-uri /api/common/api/csp-report" in response.headers[CSP_HEADER_REPORT_ONLY]
