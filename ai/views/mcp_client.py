@@ -21,7 +21,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from ai.models.mcp import McpServer
 from ai.serializers.mcp import McpServerSerializer
-from ai.utils.mcp_client import McpClientError, audit_mcp_call, client_for, summarize_tool_result
+from ai.utils.mcp_client import MAX_ARGUMENTS_BYTES, McpClientError, audit_mcp_call, client_for, summarize_tool_result
 from common.core.filter import BaseFilterSet
 from common.core.modelset import (
     BaseViewSet,
@@ -37,8 +37,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import AiThrottleMixin
 from common.swagger.utils import get_default_response_schema
 
-#: 调用参数 JSON 体积上限（防超大请求打爆第三方与审计）
-MAX_ARGUMENTS_BYTES = 32 * 1024
+# 说明：调用参数 JSON 体积上限常量下沉到 ai/utils/mcp_client.py（MAX_ARGUMENTS_BYTES），
+# AI 动作链路（ai_mcp_actions）与这里共用同一口径，避免两处漂移。
 
 
 class McpServerFilter(BaseFilterSet):

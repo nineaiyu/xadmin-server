@@ -60,6 +60,10 @@ MAX_DRAFTS_PER_REQUEST = 3
 ACTION_LEAVE_SUBMIT = "leave.submit"
 ACTION_DFORM_SUBMIT = "dform.submit"
 ACTION_DASHBOARD_OVERVIEW = "dashboard.overview"
+#: 外接 MCP 工具动态动作的 key 前缀（动态 spec 见 ai_mcp_actions，不入静态注册表）。
+#: 注意守护测试的 KEY_FORMAT 允许静态域叫 mcp——因此动态解析未命中时回落静态查找，
+#: 未来若出现静态 mcp.* 域动作不会被动态前缀遮蔽。
+MCP_ACTION_PREFIX = "mcp."
 
 
 def ai_action_enabled() -> bool:
@@ -199,13 +203,33 @@ ACTION_SPECS: dict[str, Any] = {
 }
 
 
-def get_action(key: str):
-    return ACTION_SPECS.get(str(key or "").strip())
+def get_action(key: str, user=None):
+    """按 key 取动作 spec（``user`` 供 ``mcp.`` 前缀动态动作按当前用户现查）。
+
+    外接 MCP 工具动作（F3）不落静态注册表：import 期守护测试按静态字典对账，
+    动态条目并进去会失真；这里按 user 现查可用动态集合后按**完整 key** 命中
+    （spec 自持 server_pk + tool_name，不解析 key 定位）。无 user（外部 MCP
+    端点 tools/call 等场景）动态 key 一律解析不到，fail-closed。
+    """
+    key = str(key or "").strip()
+    if user is not None and key.startswith(MCP_ACTION_PREFIX):
+        from ai.utils.ai_mcp_actions import mcp_action_specs
+
+        dynamic = mcp_action_specs(user).get(key)
+        if dynamic is not None:
+            return dynamic
+    return ACTION_SPECS.get(key)
 
 
 def available_actions(user) -> list:
-    """当前用户可用的动作（权限 + 可用性双门）。"""
-    return [spec for spec in ACTION_SPECS.values() if spec.has_permission(user)]
+    """当前用户可用的动作（权限 + 可用性双门；静态注册表 + 外接 MCP 动态目录）。
+
+    动态部分（``mcp_action_specs``）内部已做等价双门（服务器开关 + 权限点 +
+    白名单 + 快照完整性），这里不再逐 spec 重复求值（目录构建期避免 N 次查库）。
+    """
+    from ai.utils.ai_mcp_actions import mcp_action_specs
+
+    return [spec for spec in ACTION_SPECS.values() if spec.has_permission(user)] + list(mcp_action_specs(user).values())
 
 
 def build_catalog(user) -> dict:
@@ -271,7 +295,7 @@ def _build_one_draft(user, item: dict, index: int) -> dict:
     action_key = item.get("action")
     if not action_key:
         raise DjangoValidationError(str(prefix) + str(_("The model did not return an actionable request")))
-    spec = get_action(action_key)
+    spec = get_action(action_key, user)
     if spec is None:
         raise DjangoValidationError(
             str(prefix) + str(_("The model requested an unknown action: {}").format(str(action_key)[:64]))
@@ -339,7 +363,7 @@ def execute_action(user, action_key: str, params) -> dict:
 
     执行前做参数指向对象的行级复核（见 ``verify_action_target``）。
     """
-    spec = get_action(action_key)
+    spec = get_action(action_key, user)
     if spec is None:
         return {"ok": False, "detail": str(_("Unknown action")), "data": {}}
     clean, error = spec.validate(user, params if isinstance(params, dict) else {})

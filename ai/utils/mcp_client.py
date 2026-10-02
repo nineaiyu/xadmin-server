@@ -37,7 +37,27 @@ CLIENT_VERSION = "1.0"
 MAX_BODY_BYTES = 2 * 1024 * 1024
 #: 调用结果回传前文本截断长度
 RESULT_TEXT_LIMIT = 4000
+#: 工具调用参数 JSON 体积上限（AI 动作链路与 mcp-servers/call 端点同一口径）
+MAX_ARGUMENTS_BYTES = 32 * 1024
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
+
+# ---------------------------------------------------------------------------
+# 快照 input_schema 有界化（F3：快照要喂给 LLM 工具目录，必须收敛体积与形态）
+# ---------------------------------------------------------------------------
+
+#: 每工具 input_schema 序列化尺寸上限
+MAX_SCHEMA_BYTES = 8 * 1024
+#: 单个 object 节点 properties 键数上限
+MAX_SCHEMA_PROPERTIES = 32
+#: enum 取值个数上限
+MAX_SCHEMA_ENUM = 50
+#: 嵌套深度上限（超深回落为不透明 object；$ref 已剔除，深度是最后一道递归防线）
+MAX_SCHEMA_DEPTH = 4
+#: 单条 description 截断长度（描述是 schema 体积的主要来源）
+MAX_SCHEMA_DESCRIPTION = 200
+#: 白名单关键字：只保留对 LLM 有用且无递归风险的字段；
+#: $ref/definitions/oneOf/allOf/anyOf/not/if/patternProperties 等一律剔除
+SCHEMA_KEEP_KEYS = ("type", "description", "enum", "properties", "required")
 
 
 class McpClientError(Exception):
@@ -86,6 +106,106 @@ def _error_text(exc) -> str:
     if messages:
         return str(messages[0])
     return str(exc)
+
+
+def _schema_bytes(schema: dict) -> int:
+    return len(json.dumps(schema, ensure_ascii=False, default=str).encode("utf-8"))
+
+
+def _sanitize_schema_node(node, depth: int, flags: dict):
+    """递归白名单化单个 schema 节点：只留 LLM 友好关键字，additionalProperties 一律 False。
+
+    为什么不做完整 JSON Schema 透传：第三方 inputSchema 可能携带 $ref/definitions
+    （递归引用，喂给 LLM 既费 token 又可能让模型生成不可解析输出）、oneOf/allOf
+    （分支组合语义对 function calling 无意义）以及超深嵌套——白名单化是最保守且
+    可预期的收敛方式；被剔除的关键字只影响「描述精度」，不影响「能调用」。
+    """
+    truncated = False
+    if depth > MAX_SCHEMA_DEPTH:
+        flags["truncated"] = True
+        return {"type": "object"}
+    if not isinstance(node, dict):
+        return {}
+    out: dict = {}
+    kind = node.get("type")
+    if isinstance(kind, str) and kind:
+        out["type"] = kind
+    elif isinstance(kind, list) and kind:
+        out["type"] = [str(item) for item in kind if isinstance(item, str)]
+    description = node.get("description")
+    if isinstance(description, str) and description.strip():
+        out["description"] = description.strip()[:MAX_SCHEMA_DESCRIPTION]
+    enum_values = node.get("enum")
+    if isinstance(enum_values, list) and enum_values:
+        scalars = [item for item in enum_values if isinstance(item, (str, int, float, bool))]
+        if len(scalars) > MAX_SCHEMA_ENUM:
+            scalars = scalars[:MAX_SCHEMA_ENUM]
+            truncated = True
+        out["enum"] = scalars
+    raw_properties = node.get("properties")
+    if isinstance(raw_properties, dict) and raw_properties:
+        properties = {}
+        for index, (name, rule) in enumerate(raw_properties.items()):
+            if index >= MAX_SCHEMA_PROPERTIES:
+                truncated = True
+                break
+            properties[str(name)] = _sanitize_schema_node(rule, depth + 1, flags)
+        out["properties"] = properties
+        raw_required = node.get("required")
+        if isinstance(raw_required, list) and raw_required:
+            # required 与（截断后的）properties 对齐：模型无法提供目录里没有的参数
+            names = {str(item) for item in raw_required if isinstance(item, str)}
+            required = [str(item) for item in raw_required if isinstance(item, str) and item in properties]
+            if len(names) > len(required):
+                truncated = True
+            out["required"] = required[:MAX_SCHEMA_PROPERTIES]
+    # object 节点一律收口为封闭 schema：明确告诉模型「只接受列出的参数」
+    if out.get("type") == "object" or "properties" in out:
+        out["additionalProperties"] = False
+    if truncated:
+        flags["truncated"] = True
+    return out
+
+
+def _strip_schema_descriptions(node):
+    """尺寸降级第一步：递归剥 description（保留结构与类型）。"""
+    if isinstance(node, dict):
+        return {key: _strip_schema_descriptions(value) for key, value in node.items() if key != "description"}
+    if isinstance(node, list):
+        return [_strip_schema_descriptions(item) for item in node]
+    return node
+
+
+def _flatten_schema(schema: dict) -> dict:
+    """尺寸降级第二步（保底）：只留顶层参数名 + 类型（32 键上限下必然 ≤ 8KB）。"""
+    properties = schema.get("properties")
+    flat_properties = {}
+    if isinstance(properties, dict):
+        for name, rule in properties.items():
+            flat_properties[str(name)] = (
+                {"type": rule.get("type")} if isinstance(rule, dict) and rule.get("type") else {}
+            )
+    flat: dict = {"type": "object", "properties": flat_properties, "additionalProperties": False}
+    if schema.get("required"):
+        flat["required"] = schema["required"]
+    return flat
+
+
+def bound_input_schema(raw) -> tuple:
+    """第三方 inputSchema → 有界白名单 schema。返回 ``(schema, truncated)``。
+
+    三级收敛：白名单化（含 32 键 / 深度 / enum 上限）→ 超尺寸剥 description →
+    仍超尺寸拍平为「参数名 + 类型」。任一降级发生即置 ``truncated``，快照据此
+    标记 ``schema_truncated``，管理页可识别不完整 schema。
+    """
+    flags: dict = {"truncated": False}
+    schema = _sanitize_schema_node(raw if isinstance(raw, dict) else {}, 0, flags)
+    if _schema_bytes(schema) > MAX_SCHEMA_BYTES:
+        flags["truncated"] = True
+        schema = _strip_schema_descriptions(schema)
+    if _schema_bytes(schema) > MAX_SCHEMA_BYTES:
+        schema = _flatten_schema(schema)
+    return schema, flags["truncated"]
 
 
 class McpClient:
@@ -235,7 +355,13 @@ class McpClient:
 
     @staticmethod
     def _tool_summary(item: dict) -> dict:
-        """工具快照条目（只留展示字段：名称/描述/只读标注/参数名）。"""
+        """工具快照条目：展示字段 + 有界 ``input_schema``（F3：AI 动作目录的数据源）。
+
+        完整 inputSchema 不直接落快照（$ref/oneOf 等对 LLM 不友好且可能递归/超大），
+        经 ``bound_input_schema`` 白名单化 + 三级尺寸收敛；``schema_truncated`` 标记
+        发生过截断。历史快照（本字段出现前同步的）没有 ``input_schema`` 键——动作
+        目录侧对其 fail-closed 跳过，重新 sync 后恢复可见。
+        """
         raw_schema = item.get("inputSchema")
         schema = raw_schema if isinstance(raw_schema, dict) else {}
         raw_properties = schema.get("properties")
@@ -245,22 +371,29 @@ class McpClient:
         raw_required = schema.get("required")
         required_values = raw_required if isinstance(raw_required, list) else []
         required = [str(entry) for entry in required_values if isinstance(entry, (str, int))]
+        input_schema, schema_truncated = bound_input_schema(schema)
         return {
             "name": str(item.get("name") or ""),
             "description": str(item.get("description") or "")[:500],
             "read_only": bool(annotations.get("readOnlyHint")),
             "params": [str(key) for key in properties][:50],
             "required": required[:50],
+            "input_schema": input_schema,
+            "schema_truncated": schema_truncated,
         }
 
 
-def client_for(server) -> McpClient:
-    """按 McpServer 配置构建客户端（令牌解密在此发生）。"""
+def client_for(server, *, timeout=None) -> McpClient:
+    """按 McpServer 配置构建客户端（令牌解密在此发生）。
+
+    ``timeout`` 覆盖 ``server.timeout``：AI 动作链路用它把同步等待钳到更短上限
+    （执行 HTTP 请求在等结果，不能吃满管理面配置的长超时）。
+    """
     return McpClient(
         server.url,
         auth_header=server.auth_header,
         auth_token=server.auth_token_plain,
-        timeout=server.timeout,
+        timeout=server.timeout if timeout is None else timeout,
     )
 
 
@@ -278,8 +411,14 @@ def summarize_tool_result(result: dict, limit: int = RESULT_TEXT_LIMIT) -> dict:
     return {"is_error": bool(result.get("isError")), "text": text}
 
 
-def audit_mcp_call(user, server, tool: str, ok: bool, detail: str = "", arguments: dict | None = None) -> None:
-    """MCP 调用语义审计：落 OperationLog(module=AI:mcp:client)。"""
+def audit_mcp_call(
+    user, server, tool: str, ok: bool, detail: str = "", arguments: dict | None = None, extra: dict | None = None
+) -> None:
+    """MCP 调用语义审计：落 OperationLog(module=AI:mcp:client)。
+
+    ``extra``：补充对账维度——AI 动作链路（F3）传 ``channel=mcp_tool``，与
+    同请求落下的 AI:action 审计行按调用参数对上双模块记录。
+    """
     import logging
 
     from system.models import OperationLog
@@ -299,6 +438,7 @@ def audit_mcp_call(user, server, tool: str, ok: bool, detail: str = "", argument
                     "arguments": arguments or {},
                     "status": "ok" if ok else "failed",
                     "detail": detail,
+                    **(extra or {}),
                 },
                 ensure_ascii=False,
                 default=str,

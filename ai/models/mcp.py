@@ -32,7 +32,11 @@ class McpServer(DbAuditModel, DbUuidModel):
     # 工具白名单：为空 = 不允许调用任何工具（同步仅展示清单，调用 fail-closed）
     allowed_tools = models.JSONField(_("Allowed tools"), default=list, blank=True)
     enabled = models.BooleanField(_("Enabled"), default=True, db_index=True)
-    # 同步快照：[{name, description, read_only}]，仅展示用（调用前会再校验白名单）
+    # 是否把白名单内的工具暴露进 AI 动作目录（F3）：默认 False fail-closed——
+    # 接入 ≠ 授权，管理员须显式开启后工具才会出现在 LLM 工具目录/确认卡片里
+    expose_to_ai = models.BooleanField(_("Expose to AI actions"), default=False, db_index=True)
+    # 同步快照：[{name, description, read_only, input_schema, schema_truncated}]，
+    # 展示 + AI 动作目录用（调用前会再校验白名单；input_schema 为白名单化有界 schema）
     tools_snapshot = models.JSONField(_("Tools snapshot"), default=list, blank=True)
     last_synced_time = models.DateTimeField(_("Last synced time"), null=True, blank=True)
     last_sync_error = models.CharField(_("Last sync error"), max_length=255, blank=True, default="")

@@ -149,7 +149,21 @@ class TestToolSummary:
             "read_only": True,
             "params": ["text", "count"],
             "required": ["text"],
+            # F3：快照补有界 input_schema（白名单关键字 + additionalProperties 收口）
+            "input_schema": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}, "count": {}},
+                "required": ["text"],
+                "additionalProperties": False,
+            },
+            "schema_truncated": False,
         }
+
+    def test_summary_missing_input_schema_keeps_empty(self):
+        """无 inputSchema 的工具：input_schema 为空 dict（动作目录侧对其 fail-closed 跳过）。"""
+        summary = mcp.McpClient._tool_summary({"name": "bare"})
+        assert summary["input_schema"] == {}
+        assert summary["schema_truncated"] is False
 
     def test_summarize_tool_result_truncates(self):
         result = {"content": [{"type": "text", "text": "x" * 10}], "isError": False}

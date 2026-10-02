@@ -4,7 +4,8 @@
 
 - ``url`` 写入侧过出站守卫（https 强制 / http 仅 loopback 或白名单）；
 - ``auth_token`` 明文进 → signer 加密落库；回显只给 ``auth_token_set`` 布尔；
-- ``allowed_tools`` 为调用白名单（空 = 全部禁止，fail-closed），写入侧去重收敛。
+- ``allowed_tools`` 为调用白名单（空 = 全部禁止，fail-closed），写入侧去重收敛；
+- ``expose_to_ai`` 控制白名单内工具是否进 AI 动作目录（默认 False，fail-closed）。
 """
 
 import re
@@ -53,6 +54,7 @@ class McpServerSerializer(BaseModelSerializer):
             "timeout",
             "allowed_tools",
             "enabled",
+            "expose_to_ai",
             "tools_snapshot",
             "last_synced_time",
             "last_sync_error",

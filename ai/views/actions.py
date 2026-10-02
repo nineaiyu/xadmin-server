@@ -241,7 +241,8 @@ class AiActionExecuteMixin:
             persist_failure(quota)
             return ApiResponse(code=1001, detail=quota)
 
-        spec = get_action(action_key)
+        # 传 user：mcp.* 动态动作按当前用户现查（无 user 的解析不到动态 key）
+        spec = get_action(action_key, request.user)
         if spec is None:
             audit_ai_action(request.user, action_key, params, False, str(_("Unknown action")))
             return ApiResponse(code=1001, detail=_("Unknown action"))

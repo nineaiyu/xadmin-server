@@ -40,12 +40,30 @@ def _param_schema(rule: dict) -> dict:
     return schema
 
 
-def tool_catalog(user) -> list:
-    """当前用户可用动作的标准化目录（按权限 + 可用性双门过滤后的子集）。"""
-    from ai.utils.ai_actions import ACTION_DFORM_SUBMIT, available_actions, available_forms
+def tool_catalog(user, exclude_mcp: bool = False) -> list:
+    """当前用户可用动作的标准化目录（按权限 + 可用性双门过滤后的子集）。
+
+    ``exclude_mcp=True`` 仅输出内置动作：外部 MCP 端点（``ai/views/mcp.py``）的
+    tools/list 语义是「本系统作为 MCP server 暴露的内置动作」——外接 MCP 工具
+    不得经此再暴露给外部客户端（防递归代理与能力二次扩散）。助手 tools 端点、
+    openai_tools 与 prompt 目录默认含外接 MCP 工具（F3 动作面）。
+    """
+    from ai.utils.ai_actions import ACTION_DFORM_SUBMIT, MCP_ACTION_PREFIX, available_actions, available_forms
 
     tools = []
     for spec in available_actions(user):
+        if exclude_mcp and str(spec.key).startswith(MCP_ACTION_PREFIX):
+            continue
+        # 外接 MCP 动作：params 即 JSON Schema（同步快照已白名单化 + 有界化），直接
+        # 下发原文——经 _param_schema 逐参重映射会丢 enum/嵌套/数值类型等精度。
+        # 判据用 input_schema 属性存在性（只有 McpActionSpec 携带），静态路径零变化。
+        raw_schema = getattr(spec, "input_schema", None)
+        if isinstance(raw_schema, dict) and raw_schema:
+            schema = dict(raw_schema)
+            schema.setdefault("type", "object")
+            schema.setdefault("properties", {})
+            tools.append({"name": spec.key, "description": str(spec.description), "inputSchema": schema})
+            continue
         properties = {}
         required = []
         for name, rule in spec.params.items():

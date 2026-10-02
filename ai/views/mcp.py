@@ -15,6 +15,9 @@
   以令牌属主身份执行，权限双门与 Web 控制台同口径（视图权限点 + 动作权限点）；
 - ``tools/call`` 高危动作（requires_approval）直接拒绝：MCP 无 412 审批通道，
   提示改走 Web 控制台的 AI 助手（确认卡片 + 审批流）；
+- 外接 MCP 工具（mcp.* 动态动作，F3）不进本端点：tools/list 用 ``exclude_mcp``
+  目录，tools/call 不传 user 解析不到动态 key——本端点只暴露内置动作，
+  防止外部客户端经此把外接调用再代理出去（递归代理 + 能力二次扩散）；
 - 全量审计：``tools/call`` 每次落 ``OperationLog(module=AI:action, auth_type=ai)``。
 
 安全红线不变：白名单外一律拒绝、LLM/客户端参数按不可信输入逐项校验、
@@ -108,8 +111,11 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
 
         user = request.user
         tools = []
-        for entry in tool_catalog(user):
-            spec = get_action(entry["name"])
+        # exclude_mcp：本端点语义 =「本系统作为 MCP server 暴露的内置动作」。外接
+        # MCP 工具（mcp.* 动态动作）不在此下发——外部客户端经本端点把外接调用再
+        # 代理出去会形成递归代理链，且能力面被二次扩散。
+        for entry in tool_catalog(user, exclude_mcp=True):
+            spec = get_action(entry["name"])  # 目录已排除动态动作，静态注册表即可解析
             if spec is None:  # 目录与注册表同源，理论不可达（防御式跳过）
                 continue
             entry["annotations"] = {"readOnlyHint": _tool_read_only(spec)}
@@ -132,6 +138,8 @@ class McpEndpointAPIView(AiThrottleMixin, APIView):
         if not name:
             return _rpc_error(msg_id, JSONRPC_INVALID_PARAMS, str(_("The request cannot be empty")))
 
+        # 不传 user：mcp.* 动态动作（外接 MCP 工具）对外部 MCP 客户端不可解析
+        # （fail-closed）——与 tools/list 的 exclude_mcp 同一语义，防递归代理。
         spec = get_action(name)
         if spec is None:
             audit_ai_action(user, name, arguments, False, str(_("Unknown action")), {"channel": "mcp"})
