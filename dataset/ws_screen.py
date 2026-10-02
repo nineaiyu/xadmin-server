@@ -9,7 +9,15 @@
 - 准入与 HTTP 可见性同口径（超管 / 创建者 / shared），个人大屏不向他人开放展示通道；
 - 展示端为被动接收：不上行指令、不做在线登记（组名不在个人推送组命名空间内，
   不会混入在线列表统计）。
+
+数据推送（F2）：组内只广播 `screen.data_trigger` 触发事件（无载荷），各展示连接
+收到后以**连接自身用户**视角聚合整屏数据并只发给自己（dataset/screen_data.py）——
+execute/aggregate 的数据权限绑定浏览者，直接组广播数据帧会跨用户泄露。
+触发源：REST refresh 指令（立即一轮）与 beat 周期任务 push_screen_data（按屏
+refresh 周期节流）。
 """
+
+import time
 
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
@@ -19,6 +27,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
+from dataset.screen_data import build_screen_data_payload, load_visible_screen
 from message.base import AsyncJsonWebsocket
 from message.protocol import MessageAction
 
@@ -29,6 +38,11 @@ SCREEN_STATE_TTL = 3600 * 24
 
 SCREEN_COMMANDS = ("switch", "page", "refresh", "auto")
 
+# beat 推送节流的下限（秒）：与展示端 refreshTimer 的 10s 钳位同口径
+MIN_DATA_PUSH_INTERVAL = 10
+# last_push 时间戳的缓存时长：覆盖 refresh 上限（3600s）的两倍即可保证节流有效
+DATA_PUSH_TS_TTL = 3600 * 2
+
 
 def screen_group_name(screen_pk) -> str:
     return f"screen_display_{screen_pk}"
@@ -36,6 +50,11 @@ def screen_group_name(screen_pk) -> str:
 
 def screen_state_key(screen_pk) -> str:
     return f"screen_display_state_{screen_pk}"
+
+
+def screen_push_ts_key(screen_pk) -> str:
+    """beat 数据推送节流键（last_push epoch 秒）；与控制态键同命名空间。"""
+    return f"screen_display_data_push_{screen_pk}"
 
 
 def load_screen_state(screen_pk) -> dict:
@@ -100,6 +119,45 @@ def broadcast_screen_command(screen_pk, frame: dict) -> None:
     )
 
 
+def broadcast_screen_data_trigger(screen_pk) -> None:
+    """请求该大屏的所有在线展示连接各自聚合并自推一帧数据（离屏时静默丢弃）。
+
+    只投递无载荷触发事件：数据聚合在各连接内以浏览者自身权限执行，见模块 docstring。
+    """
+    from channels.layers import get_channel_layer
+
+    layer = get_channel_layer()
+    if layer is None:
+        return
+    async_to_sync(layer.group_send)(screen_group_name(screen_pk), {"type": "screen_data_trigger"})
+
+
+def data_push_interval(screen) -> int:
+    """单屏推送节流周期：Screen.refresh 秒，下限钳 10s（refresh 可被配置成极小值）。"""
+    try:
+        return max(int(screen.refresh or 0), MIN_DATA_PUSH_INTERVAL)
+    except (TypeError, ValueError):
+        return MIN_DATA_PUSH_INTERVAL
+
+
+def screen_push_due(screen, now=None) -> bool:
+    """beat 节流判定：距上次推送不足该屏 refresh 周期（钳 10s）则跳过。"""
+    now = int(now if now is not None else time.time())
+    last = cache.get(screen_push_ts_key(screen.pk))
+    if last:
+        try:
+            if now - int(last) < data_push_interval(screen):
+                return False
+        except (TypeError, ValueError):
+            pass  # 脏值视同未推送，交由本轮重置
+    return True
+
+
+def mark_screen_pushed(screen_pk, now=None) -> None:
+    """记录本轮推送时刻（离屏不落键：观众上线后能尽快收到首帧）。"""
+    cache.set(screen_push_ts_key(screen_pk), int(now if now is not None else time.time()), DATA_PUSH_TS_TTL)
+
+
 def can_view_screen(user, screen_pk) -> bool:
     """展示通道准入（与 HTTP _visible_queryset 同口径）：超管 / 创建者 / shared 可见。"""
     if not user or not getattr(user, "is_authenticated", False):
@@ -115,7 +173,7 @@ def can_view_screen(user, screen_pk) -> bool:
 
 
 class ScreenDisplayNotify(AsyncJsonWebsocket):
-    """大屏展示端连接：连接回放控制态，随后被动接收控制帧。"""
+    """大屏展示端连接：连接回放控制态，随后被动接收控制帧与数据触发事件。"""
 
     disconnected = False  # 已断开标记（disconnect 后不再续期所在组）
 
@@ -150,3 +208,39 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
 
     async def screen_command(self, event):
         await self._send_base(event)
+
+    async def screen_data_trigger(self, event):
+        """数据触发事件（组广播、无载荷）：以本连接的浏览者视角聚合整屏并只发给自己。
+
+        权限语义与旧「客户端逐卡 HTTP 重拉」逐字节等价（同走 dataset_query 的
+        fail-closed 过滤），仅把 M 卡 × N 观察者的请求收敛为每观察者每轮 1 帧。
+
+        event 无载荷不取用；不能写 ``_ = event``——会遮蔽模块级 gettext 别名 ``_``，
+        下方错误帧的 ``_()`` 将变成对 dict 的调用。
+        """
+        # 断开后仍可能收到排队中的触发事件：丢弃，不再向已死连接写帧
+        if getattr(self, "disconnected", False):
+            return
+        pk = getattr(self, "pk", "")
+        # 可见性兜底（connect 已把关）：屏被删 / 共享被收回时静默跳过
+        screen = await database_sync_to_async(load_visible_screen)(self.user, pk)
+        if screen is None:
+            return
+        state = await database_sync_to_async(load_screen_state)(pk)
+        rev = int(state.get("rev") or 0)
+        try:
+            payloads = await database_sync_to_async(build_screen_data_payload)(self.user, screen, rev)
+        except Exception:  # noqa: BLE001 构建失败不让连接死：降级为全屏级错误帧（旧链路单卡报错同语义）
+            logger.warning("screen data build failed: screen=%s", pk, exc_info=True)
+            payloads = [
+                {
+                    "screen": str(pk),
+                    "dashboard": None,
+                    "rev": rev,
+                    "cards": [],
+                    "errors": [{"card": "*", "detail": _("Screen data build failed")}],
+                    "ts": int(time.time()),
+                }
+            ]
+        for payload in payloads:
+            await self.send_base_json(MessageAction.SCREEN_DATA.value, data=payload)

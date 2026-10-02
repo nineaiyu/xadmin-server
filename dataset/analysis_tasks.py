@@ -13,10 +13,16 @@
 - 投递按 `notify_channels` 逐渠道独立执行（空 = 仅邮件）：邮件携带附件，IM 为
   文本消息（报表名/行数/下载中心提示，收件人取 `im_recipients` 用户主键并按各
   渠道 OAuth 绑定可达性过滤）；任一渠道失败仅记 error 与交付状态，不回滚产物。
+
+大屏数据推送（F2，``push_screen_data``）：beat 每 15s 扫描大屏，仅向「有在线
+展示端且距上次推送超过其 refresh 周期（钳 10s）」的屏投递无载荷触发事件
+（``screen.data_trigger``）；真正的数据聚合在各展示连接内以浏览者自身权限执行
+（dataset/screen_data.py），服务端不做跨用户广播数据。
 """
 
 from datetime import datetime, timedelta
 
+from asgiref.sync import async_to_sync
 from celery import shared_task
 from django.core.files.base import ContentFile
 from django.utils import timezone
@@ -253,3 +259,55 @@ def schedule_report_run(report_id: str):
     task_id = _precreate_record(report)
     run_scheduled_report.apply_async(kwargs={"report_id": str(report.pk)}, task_id=task_id)
     return task_id
+
+
+def _screen_has_viewers(layer, group) -> bool:
+    """组内是否有在线展示连接（get_layers 为自定义 channel layer 扩展）。
+
+    层未提供 get_layers（极简内存层）时保守视为在线：宁可多触发一次空推送，
+    也不让观众在节流窗口内收不到数据。
+    """
+    getter = getattr(layer, "get_layers", None)
+    if getter is None:
+        return True
+    return bool(async_to_sync(getter)(group))
+
+
+@shared_task
+@register_as_period_task(interval=15, description="大屏在线展示端周期数据推送", module="analysis")
+def push_screen_data():
+    """扫描大屏：向「有在线展示端且已到 refresh 周期」的屏投递数据触发事件。
+
+    beat 只做「谁该刷」的节流判定（逐屏 last_push 缓存键，见 ws_screen.screen_push_due），
+    不做任何数据集查询；离屏（组内无连接）不触发也不落节流键，观众上线后能尽快
+    收到首帧。屏数量小（模板级资源），MVP 全表扫描足够。
+    """
+    from channels.layers import get_channel_layer
+
+    from dataset.models.dataset import Screen
+    from dataset.ws_screen import (
+        broadcast_screen_data_trigger,
+        mark_screen_pushed,
+        screen_group_name,
+        screen_push_due,
+    )
+
+    layer = get_channel_layer()
+    if layer is None:
+        return 0
+    pushed = 0
+    for screen in Screen.objects.iterator():
+        try:
+            # 先判节流（一次 cache get）再查在线（一次 Redis 往返），离屏不落节流键
+            if not screen_push_due(screen):
+                continue
+            if not _screen_has_viewers(layer, screen_group_name(screen.pk)):
+                continue
+            broadcast_screen_data_trigger(screen.pk)
+            mark_screen_pushed(screen.pk)
+            pushed += 1
+        except Exception:  # noqa: BLE001 单屏失败不中断扫描（与报表分发同口径）
+            logger.warning("screen data push trigger failed: %s", screen.pk, exc_info=True)
+    if pushed:
+        logger.info("triggered screen data push for %s screen(s)", pushed)
+    return pushed
