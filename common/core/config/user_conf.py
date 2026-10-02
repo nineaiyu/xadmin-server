@@ -11,8 +11,8 @@ import json
 from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
+from common.contracts import UserPersonalConfig
 from common.utils import get_logger
-from system.services import UserPersonalConfig
 
 from .system_conf import ConfigCache, SysConfig
 

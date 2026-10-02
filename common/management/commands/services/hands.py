@@ -7,12 +7,11 @@ from django.core import management
 from django.core.management.base import SystemCheckError
 from django.db.utils import OperationalError
 
+from common.contracts import Setting, scan_permission_gaps
 from common.core.utils import PrintLogFormat
 from common.utils import test_ip_connectivity
 from common.utils.file import download_file
 from server.const import CONFIG
-from settings.services import Setting
-from system.services import scan_permission_gaps
 
 logger = PrintLogFormat("xAdmin API Server", title_width=30, body_width=0)
 

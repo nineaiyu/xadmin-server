@@ -20,9 +20,9 @@ from rest_framework.filters import BaseFilterBackend
 
 from common.base.magic import count_sql_queries, timeit
 from common.cache.storage import CommonResourceIDsCache
+from common.contracts import DataPermission, DeptInfo, apply_grant_row_scope
 from common.core.data_scope import ScopeResult, combine, compile_grant
 from common.utils import get_logger
-from system.services import DataPermission, DeptInfo, apply_grant_row_scope
 
 logger = get_logger(__name__)
 

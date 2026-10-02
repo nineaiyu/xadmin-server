@@ -17,9 +17,9 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
+from common.contracts import guarded_models, impact_for_many
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.services import guarded_models, impact_for_many
 
 #: 单次预检的主键数上限（防大 payload 打爆计算器）
 IMPACT_MAX_ITEMS = 200

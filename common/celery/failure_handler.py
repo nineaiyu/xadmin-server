@@ -13,8 +13,13 @@ from celery.signals import task_failure
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
-from notifications.services import BACKEND, SystemMessage, SystemMsgSubscription, register_message
-from system.services import get_active_superuser_queryset
+from common.contracts import (
+    BACKEND,
+    SystemMessage,
+    SystemMsgSubscription,
+    get_active_superuser_queryset,
+    register_message,
+)
 
 logger = logging.getLogger("xadmin")
 

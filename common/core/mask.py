@@ -14,8 +14,8 @@
 （``?mask=false`` 且对当前地址有更新权限，放行时按请求留一条审计日志）。
 """
 
+from common.contracts import apply_mask, get_mask_rules, record_original_channel_access
 from common.utils import get_logger
-from system.services import apply_mask, get_mask_rules, record_original_channel_access
 
 logger = get_logger(__name__)
 

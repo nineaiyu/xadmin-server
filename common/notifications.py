@@ -7,15 +7,15 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from common.models import Monitor
-from notifications.services import (
+from common.contracts import (
     BACKEND,
     SystemMessage,
     SystemMsgSubscription,
     UserMessage,
+    get_active_superuser_queryset,
     register_message,
 )
-from system.services import get_active_superuser_queryset
+from common.models import Monitor
 
 
 @register_message

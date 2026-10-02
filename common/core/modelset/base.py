@@ -13,9 +13,9 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db.models import QuerySet
 from rest_framework import serializers
 
+from common.contracts import ensure_impact_confirmed
 from common.core.serializers import BaseModelSerializer
 from common.utils import get_logger
-from system.services import ensure_impact_confirmed
 
 if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）
     from rest_framework.request import Request

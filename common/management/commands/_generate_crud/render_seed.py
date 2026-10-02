@@ -8,7 +8,7 @@ RenderMixin 按域拆分（文件行数门禁）的种子部分；组合与入�
 import json
 import uuid
 
-from system.services import ModelLabelField
+from common.contracts import ModelLabelField
 
 from .constants import IMPORT_EXPORT_PERMISSIONS, PERMISSION_ACTIONS, SEED_NAMESPACE
 

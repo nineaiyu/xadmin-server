@@ -13,7 +13,7 @@ from django.forms.utils import from_current_timezone
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from system.services import DeptInfo, UserInfo
+from common.contracts import DeptInfo, UserInfo
 
 from .constants import _NUMERIC_LOOKUPS, AND_MODE, OR_MODE, TABLE_TYPES, KeyChoices
 

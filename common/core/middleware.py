@@ -13,6 +13,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.deprecation import MiddlewareMixin
 
+from common.contracts import OperationLog, maybe_alert_sensitive_operation
 from common.core.config import SysConfig
 from common.utils import get_logger
 from common.utils.request import (
@@ -20,7 +21,6 @@ from common.utils.request import (
     get_request_ip,
     get_verbose_name,
 )
-from system.services import OperationLog, maybe_alert_sensitive_operation
 
 logger = get_logger(__name__)
 

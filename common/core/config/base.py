@@ -17,9 +17,9 @@ from django.template.base import VariableNode
 from rest_framework import serializers
 
 from common.cache.storage import UserSystemConfigCache
+from common.contracts import SystemConfig
 from common.core.credentials import decrypt_setting_value, encrypt_setting_value
 from common.utils import get_logger
-from system.services import SystemConfig
 
 logger = get_logger(__name__)
 

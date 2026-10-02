@@ -16,8 +16,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from common.cache.storage import BlackAccessTokenCache, SessionTokenRevokedCache, UserTokenRevokedCache
+from common.contracts import emit_webhook_event, publish_api_quota_warning
 from common.utils import get_logger
-from system.services import emit_webhook_event, publish_api_quota_warning
 
 logger = get_logger(__name__)
 

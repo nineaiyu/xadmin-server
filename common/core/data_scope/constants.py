@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """数据权限编译器：匹配符白名单与模式常量。"""
 
-from system.services import ModelLabelField, ModeTypeAbstract
+from common.contracts import ModelLabelField, ModeTypeAbstract
 
 KeyChoices = ModelLabelField.KeyChoices
 AND_MODE = ModeTypeAbstract.ModeChoices.AND

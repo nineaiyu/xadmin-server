@@ -7,8 +7,10 @@ notifications / backends / signal(s) 直接 import——这是契约层收口的
 跨 app 引用一律走 `<app>.services` 契约层；确实无法立即收口的存量，
 显式登记在 ALLOWLIST 并注明原因，禁止无台账新增。
 
-框架层方向规则：common 消费业务 app 只允许经 `<app>.services`（各 app 的
-契约门面），且每条缝在 CONTRACT_SEAMS 登记原因（双向漂移校验）；
+框架层方向规则（ADR-079 单缝收敛）：common 消费业务 app 的唯一出口是
+`common/contracts.py`（声明式契约面）——common 内除该文件外，任何模块级
+业务 import（含 `*.services` 形态）一律违例；contracts.py 自身仍受
+「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
 函数级惰性 import 属逃生门，作为观察项打印。
 
 用法：python scripts/check_cross_app_imports.py
@@ -55,97 +57,30 @@ ALLOWLIST = {
 }
 
 # ---------------------------------------------------------------------------
-# 方向规则（框架层依赖治理）：common 是框架层，消费业务 app 只允许经
-# `<app>.services` 对外契约层（各 app services.py 即官方契约门面），且每条
-# 契约缝必须在此登记（含原因）——把框架层耦合从「隐形」变成「显式、可审计、
-# 有上限」。登记双向校验：出现未登记的缝、或登记的缝已不存在，均为违例。
-# 函数级（缩进）业务 import 仍属官方逃生门，不阻断，作为观察项打印。
+# 方向规则（框架层依赖治理，ADR-079 单缝收敛）：common 是框架层，业务能力
+# 消费唯一出口是 common/contracts.py（声明式契约面：白名单 + Protocol +
+# PEP 562 惰性解析）——common 内其余文件出现任何业务 app 模块级 import
+# （含 `*.services`）即违例。contracts.py 自身只允许经 `<app>.services`
+# 消费，且每条缝在 CONTRACT_SEAMS 登记原因。登记双向校验：出现未登记的缝、
+# 或登记的缝已不存在，均为违例。函数级（缩进）业务 import 仍属官方逃生门，
+# 不阻断，作为观察项打印。
 # ---------------------------------------------------------------------------
 FRAMEWORK_APP = "common"
 
+CONTRACTS_MODULE = "common/contracts.py"
+
+# contracts.py 的缝以 _CONTRACT_PROVIDERS 白名单声明（PEP 562 惰性解析，文件无
+# 模块级业务 import），漂移校验对照白名单的提供方声明而非 import 语句：
+# 条目形如 `"Name": ("app.services", "原因"),`，捕获提供方模块
+CONTRACT_PROVIDER_RE = re.compile(r'^\s*"[A-Za-z_]\w*": \("([a-z_]+\.[a-z_]+)",', re.M)
+
 CONTRACT_SEAMS = {
-    "common/notifications.py": {
-        "notifications.services": "通知渠道注册与系统消息发送（common 是渠道的通用生产者）",
-        "system.services": "告警收件人解析（get_active_superuser_queryset）",
-    },
-    "common/ops_alert.py": {
-        "notifications.services": "运维告警经系统消息渠道投递",
-        "system.services": "告警收件人解析 + 出站 Webhook 事件投递",
-    },
-    "common/backup_alert.py": {
-        "notifications.services": "备份结果告警经系统消息渠道投递",
-        "system.services": "告警收件人解析 + 出站 Webhook 事件投递",
-    },
-    "common/celery/failure_handler.py": {
-        "notifications.services": "任务失败告警经系统消息渠道投递",
-        "system.services": "告警收件人解析（get_active_superuser_queryset）",
-    },
-    "common/core/config/base.py": {
-        "system.services": "运行期配置模型 SystemConfig（settings 加载期即消费，结构性依赖）",
-    },
-    "common/core/config/user_conf.py": {
-        "system.services": "用户个人配置模型 UserPersonalConfig",
-    },
-    "common/core/data_scope/constants.py": {
-        "system.services": "数据权限模式常量（ModelLabelField / ModeTypeAbstract）",
-    },
-    "common/core/data_scope/values.py": {
-        "system.services": "数据权限主体模型（UserInfo / DeptInfo 行级过滤）",
-    },
-    "common/core/filter.py": {
-        "system.services": "数据行权限过滤面 + 应用凭证行级授权（apply_grant_row_scope）",
-    },
-    "common/core/middleware.py": {
-        "system.services": "审计日志模型 OperationLog + PAT 类型判定 + 敏感操作告警分流",
-    },
-    "common/core/oplog_recorder.py": {
-        "system.services": "审计日志模型 OperationLog + PAT 类型判定（自 middleware.py 拆分，行为不变）",
-    },
-    "common/core/permission.py": {
-        "system.services": "菜单/字段权限模型 + 应用凭证动作级授权（api_grant 三函数）",
-    },
-    "common/core/auth.py": {
-        "system.services": "API 配额告警发布（系统消息 + 出站 Webhook）",
-    },
-    "common/core/approval.py": {
-        "approval.services": "审批流拦截入口（process_approval 装饰器消费，3.1 拆分批次2 起 approval 自持契约门面）",
-    },
-    "common/core/credentials.py": {
-        "system.services": "凭据巡检消费 SystemConfig（属性访问式引用，保留迁移期降级）",
-    },
-    "common/core/serializers.py": {
-        "system.services": "应用凭证字段授权 + 字段掩码应用/规则/明文访问审计",
-    },
-    "common/core/mask.py": {
-        "system.services": "字段掩码规则加载/应用与原文通道访问审计（与 common/core/serializers.py 同一契约缝）",
-    },
-    "common/core/modelset/base.py": {
-        "system.services": "删除影响面确认校验（ensure_impact_confirmed）",
-    },
-    "common/core/modelset/batch.py": {
-        "system.services": "批量删除影响面确认校验（ensure_impact_confirmed）",
-    },
-    "common/core/modelset/impact.py": {
-        "system.services": "影响面预览（impact_for_many / guarded_models）",
-    },
-    "common/core/modules/gate.py": {
-        "system.services": "模块裁剪消费 Menu（属性访问式引用，保留迁移期降级）",
-    },
-    "common/management/commands/_generate_crud/analysis.py": {
-        "system.services": "生成器回填种子关联（Menu / UserRole / sync_model_field）",
-    },
-    "common/management/commands/_generate_crud/render_seed.py": {
-        "system.services": "生成器消费 ModelLabelField（模型节点 pk 解析；renderers 拆分前登记于 renderers.py）",
-    },
-    "common/management/commands/services/hands.py": {
-        "settings.services": "启动自检消费 Setting（迁移就绪重试探测）",
-        "system.services": "启动自检权限点缺口扫描（scan_permission_gaps）",
-    },
-    "common/swagger/ai_meta.py": {
-        "ai.services": "AI 动作声明注册表（API_ACTION_SPECS，OpenAPI 元数据派生，3.1 拆分批次3 起 ai 自持契约门面）",
-    },
-    "common/swagger/views.py": {
-        "settings.services": "文档站登录接入账号/IP 锁定（LoginBlockUtil / LoginIpBlockUtil，与主登录链路同计数）",
+    "common/contracts.py": {
+        "notifications.services": "框架层业务消费唯一显式契约出口（ADR-079）：消息渠道生产面（5 名字）",
+        "system.services": "框架层业务消费唯一显式契约出口（ADR-079）：模型契约 12 项 + 契约委托函数 17 项",
+        "approval.services": "框架层业务消费唯一显式契约出口（ADR-079）：审批流拦截入口",
+        "ai.services": "框架层业务消费唯一显式契约出口（ADR-079）：AI 动作声明注册表",
+        "settings.services": "框架层业务消费唯一显式契约出口（ADR-079）：Setting 启动自检 + 文档站登录锁定",
     },
 }
 
@@ -195,6 +130,11 @@ def scan_framework_direction():
                 continue
             app, module_path = parsed
             line = text[: m.start()].count("\n") + 1
+            if rel != CONTRACTS_MODULE:
+                violations.append(
+                    (rel, line, f"框架层业务消费须统一经 {CONTRACTS_MODULE}（ADR-079），禁止直接 import {module_path}")
+                )
+                continue
             if not module_path.startswith(f"{app}.services"):
                 violations.append(
                     (rel, line, f"框架层须经 <app>.services 契约层消费业务 app，禁止直接 import {module_path}")
@@ -210,10 +150,18 @@ def scan_framework_direction():
                 continue
             _, module_path = parsed
             observations.setdefault(rel, set()).add(module_path)
-        # 双向漂移：台账里登记的缝在文件中已不存在（缝隙移入函数级也需清理台账重登）
-        for module_path in CONTRACT_SEAMS.get(rel, {}):
-            if module_path not in found_seams:
+        # 双向漂移：台账里登记的缝在文件中已不存在（缝隙移入函数级也需清理台账重登）。
+        # contracts.py 无模块级业务 import，漂移改为「白名单提供方 ↔ 台账」双向对照
+        if rel == CONTRACTS_MODULE:
+            declared = set(CONTRACT_PROVIDER_RE.findall(text))
+            for module_path in sorted(set(CONTRACT_SEAMS.get(rel, {})) - declared):
                 violations.append((rel, 0, f"登记的契约缝 {module_path} 已不存在——请清理 CONTRACT_SEAMS 台账"))
+            for module_path in sorted(declared - set(CONTRACT_SEAMS.get(rel, {}))):
+                violations.append((rel, 0, f"未登记的契约缝 {module_path}——请在 CONTRACT_SEAMS 登记并注明原因"))
+        else:
+            for module_path in CONTRACT_SEAMS.get(rel, {}):
+                if module_path not in found_seams:
+                    violations.append((rel, 0, f"登记的契约缝 {module_path} 已不存在——请清理 CONTRACT_SEAMS 台账"))
     return violations, observations
 
 
@@ -255,7 +203,8 @@ def main() -> int:
         print(
             "\n跨 app 引用请改走 <app>.services 契约层；确需保留的，"
             "在 scripts/check_cross_app_imports.py 的 ALLOWLIST 登记原因。\n"
-            "common（框架层）→ 业务 app 的契约缝请在 CONTRACT_SEAMS 登记并注明原因。"
+            "common（框架层）→ 业务 app 的消费统一经 common/contracts.py 契约面（ADR-079）："
+            "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。"
         )
         return 1
     if observations:

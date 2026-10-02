@@ -10,7 +10,7 @@ from django.apps import apps
 from django.conf import settings
 from django.core.management.base import CommandError
 
-from system.services import Menu, UserRole, sync_model_field
+from common.contracts import Menu, UserRole, sync_model_field
 
 from .constants import IMPORT_EXPORT_PERMISSIONS, PERMISSION_ACTIONS
 from .field_plan import FieldPlanMixin

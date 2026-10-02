@@ -43,6 +43,8 @@ def xcai(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "SCAN_DIRS", ["alpha", "beta"])
     monkeypatch.setattr(module, "ALLOWLIST", {})
     monkeypatch.setattr(module, "CONTRACT_SEAMS", {})
+    # 单缝出口（ADR-079）：路径名判定，与 tmp 树中是否真有该文件无关
+    monkeypatch.setattr(module, "CONTRACTS_MODULE", "common/contracts.py")
     return module
 
 
@@ -98,30 +100,51 @@ class TestCrossAppImports:
 
 
 class TestFrameworkDirection:
-    """common（框架层）→ 业务 app 只许经 <app>.services，且契约缝须登记（双向）。"""
+    """common（框架层）→ 业务 app 单缝收敛（ADR-079）：唯一出口 common/contracts.py。"""
 
     def test_direct_model_import_violation(self, xcai, tmp_path):
         write(tmp_path, "common/foo.py", "from system.models import UserInfo\n")
         violations, _ = xcai.scan_framework_direction()
-        assert any("框架层须经" in msg for _, _, msg in violations)
+        assert any("须统一经 common/contracts.py" in msg for _, _, msg in violations)
 
-    def test_unregistered_seam_violation(self, xcai, tmp_path):
+    def test_services_import_outside_contracts_flagged_even_if_registered(self, xcai, tmp_path):
+        # 单缝规则的 precedence：缝登记只对 contracts.py 生效，其余文件登记了也违例
         write(tmp_path, "common/foo.py", "from system.services import getSomething\n")
+        xcai.CONTRACT_SEAMS.update({"common/foo.py": {"system.services": "历史登记"}})
         violations, _ = xcai.scan_framework_direction()
-        assert any("未登记的契约缝" in msg for _, _, msg in violations)
+        assert any("须统一经 common/contracts.py" in msg for _, _, msg in violations)
 
-    def test_registered_seam_passes(self, xcai, tmp_path):
-        write(tmp_path, "common/foo.py", "from system.services import getSomething\n")
-        xcai.CONTRACT_SEAMS.update({"common/foo.py": {"system.services": "测试缝"}})
+    def test_contracts_registered_seam_passes(self, xcai, tmp_path):
+        write(
+            tmp_path,
+            "common/contracts.py",
+            '_CONTRACT_PROVIDERS = {\n    "X": ("system.services", "原因"),\n}\n',
+        )
+        xcai.CONTRACT_SEAMS.update({"common/contracts.py": {"system.services": "测试缝"}})
         violations, _ = xcai.scan_framework_direction()
         assert violations == []
 
-    def test_registered_seam_drift_detected(self, xcai, tmp_path):
-        # 台账登记了缝但文件里已没有该 import：双向漂移必须报
-        write(tmp_path, "common/foo.py", "import os\n")
-        xcai.CONTRACT_SEAMS.update({"common/foo.py": {"system.services": "已迁移的缝"}})
+    def test_contracts_unregistered_seam_violation(self, xcai, tmp_path):
+        write(
+            tmp_path,
+            "common/contracts.py",
+            '_CONTRACT_PROVIDERS = {\n    "X": ("system.services", "原因"),\n}\n',
+        )
         violations, _ = xcai.scan_framework_direction()
-        assert any("已不存在" in msg for _, _, msg in violations)
+        assert any("未登记的契约缝 system.services" in msg for _, _, msg in violations)
+
+    def test_contracts_registered_seam_drift_detected(self, xcai, tmp_path):
+        # 台账登记了缝但白名单里已无该提供方：双向漂移必须报
+        write(tmp_path, "common/contracts.py", '_CONTRACT_PROVIDERS = {"X": ("system.services", "r")}\n')
+        xcai.CONTRACT_SEAMS.update({"common/contracts.py": {"approval.services": "已迁移的缝"}})
+        violations, _ = xcai.scan_framework_direction()
+        assert any("登记的契约缝 approval.services 已不存在" in msg for _, _, msg in violations)
+
+    def test_contracts_module_level_import_still_shape_checked(self, xcai, tmp_path):
+        # contracts.py 自身的模块级 import 仍受「仅 *.services」+ 登记约束
+        write(tmp_path, "common/contracts.py", "from system.models import UserInfo\n")
+        violations, _ = xcai.scan_framework_direction()
+        assert any("框架层须经" in msg for _, _, msg in violations)
 
     def test_lazy_import_is_observation_not_violation(self, xcai, tmp_path):
         write(
@@ -152,6 +175,15 @@ class TestFrameworkDirection:
         assert parse("from common.models import x") is None
         # 非业务 app（三方/stdlib）：不构成缝
         assert parse("from os.path import join") is None
+
+    def test_contract_provider_regex(self, xcai):
+        text = (
+            "_CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {\n"
+            '    "SystemConfig": ("system.services", "原因"),\n'
+            '    "process_approval": ("approval.services", "原因"),\n'
+            "}\n"
+        )
+        assert set(xcai.CONTRACT_PROVIDER_RE.findall(text)) == {"system.services", "approval.services"}
 
     def test_main_exit_codes(self, xcai, tmp_path, capsys):
         write(tmp_path, "alpha/views/x.py", "from beta.models import Book\n")

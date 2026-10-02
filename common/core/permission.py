@@ -14,18 +14,18 @@ from rest_framework.exceptions import NotAuthenticated, PermissionDenied
 from rest_framework.permissions import BasePermission
 
 from common.base.magic import MagicCacheData
-from common.core import permission_meta
-from common.core.modules import filter_menu_queryset
-from common.core.utils import permission_path_matches
-from common.utils import get_logger
-from server.utils import get_current_request, set_current_request
-from system.services import (
+from common.contracts import (
     FieldPermission,
     Menu,
     application_of_request,
     enforce_application_grant,
     resolve_request_menu_pk,
 )
+from common.core import permission_meta
+from common.core.modules import filter_menu_queryset
+from common.core.utils import permission_path_matches
+from common.utils import get_logger
+from server.utils import get_current_request, set_current_request
 
 logger = get_logger(__name__)
 

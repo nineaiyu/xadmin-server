@@ -18,7 +18,7 @@
 
 import re
 
-import system.services as system_services
+import common.contracts as contracts
 from common.base.utils import signer
 from common.utils import get_logger
 
@@ -163,7 +163,8 @@ def sensitive_setting_names() -> list:
     异常降级为空清单，与其它巡检函数同口径。
     """
     try:
-        from settings.models import Setting
+        # 属性访问式契约引用（ADR-079）：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
+        Setting = contracts.Setting
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []
     try:
@@ -181,7 +182,8 @@ def plaintext_setting_names() -> list:
     避免命令与视图各写一份导致口径漂移。
     """
     try:
-        from settings.models import Setting
+        # 属性访问式契约引用（ADR-079）：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
+        Setting = contracts.Setting
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []
     try:
@@ -198,7 +200,7 @@ def plaintext_sensitive_keys() -> list:
     """
     try:
         # 属性访问式契约引用：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
-        SystemConfig = system_services.SystemConfig
+        SystemConfig = contracts.SystemConfig
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []
     offenders = []

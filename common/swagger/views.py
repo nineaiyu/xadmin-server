@@ -23,9 +23,9 @@ from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 from common.base.magic import cache_response
+from common.contracts import LoginBlockUtil, LoginIpBlockUtil
 from common.core.response import ApiResponse
 from common.utils.request import get_request_ip
-from settings.services import LoginBlockUtil, LoginIpBlockUtil
 
 # 文档站登录默认回跳（next 缺失或校验不通过时使用）
 DOCS_DEFAULT_NEXT = "/api-docs/swagger/"

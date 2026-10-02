@@ -8,6 +8,7 @@ import time
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.utils import encoders
 
+from common.contracts import OperationLog, PersonalAccessToken
 from common.core.config import SysConfig
 from common.core.utils import get_doc_first_line
 from common.utils import get_logger
@@ -16,7 +17,6 @@ from common.utils.request import (
     get_os,
     get_request_user,
 )
-from system.services import OperationLog, PersonalAccessToken
 
 logger = get_logger(__name__)
 

@@ -15,10 +15,10 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
 
+from common.contracts import ensure_impact_confirmed
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
-from system.services import ensure_impact_confirmed
 
 logger = get_logger(__name__)
 
