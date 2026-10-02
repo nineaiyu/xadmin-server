@@ -45,13 +45,25 @@ def _mapping() -> dict:
 
 
 class TestImageMapping:
+    @staticmethod
+    def _upstream_keys(image: str) -> list:
+        """上游键候选（与 check_images.sh 同一口径）：官方 library 镜像、
+        Docker Hub 带命名空间裸引、org 与本地短名同名形态（pgvector:pg17
+        → docker.io/pgvector/pgvector:pg17）。"""
+        return [
+            f"docker.io/library/{image}",
+            f"docker.io/{image}",
+            f"docker.io/{image.split(':', 1)[0]}/{image}",
+        ]
+
     def test_every_compose_image_has_offline_mapping(self):
         """缺映射 = 离线安装拉不到镜像（季度核对流程第 3 步同一口径）。"""
         images = _compose_third_party_images()
         mapping = _mapping()
         assert images, "installer compose 未发现第三方镜像，路径或格式已变"
-        missing = {f"docker.io/library/{image}": source for image, source in images.items()}
-        missing = {key: value for key, value in missing.items() if key not in mapping}
+        missing = {
+            source for image, source in images.items() if not any(key in mapping for key in self._upstream_keys(image))
+        }
         assert not missing, f"以下镜像缺少 utils/base-images.yml 映射：{missing}"
 
     def test_mapping_targets_pinned_tags(self):

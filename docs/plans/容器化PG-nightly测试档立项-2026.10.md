@@ -55,7 +55,7 @@ sqlite 门禁的方言盲区（已发生 / 可预判）：
 ### 3.2 `.github/workflows/test-nightly-pg.yml`
 
 - 触发：`schedule` + `workflow_dispatch`（手动/分诊后补跑）。**2026-10-01 调整**：cron 由每日（UTC 18:30）改为**每周六 UTC 18:30 ≈ 北京时间周日 02:30**（GitHub 免费额度对高频 schedule 有约束，且方言类缺陷每周分诊一次即可；首轮实测已证明本档能一次性暴露全部方言盲区，频率重要性下降）；
-- `services:` 块挂 `postgres:17`（`POSTGRES_USER/PASSWORD/DB`，健康检查 `pg_isready`）——大版本与生产/loadtest 对齐（17.11 / `registry...nineaiyu/postgres:17.11` 同源）；
+- `services:` 块挂 `pgvector/pgvector:pg17`（`POSTGRES_USER/PASSWORD/DB`，健康检查 `pg_isready`）——大版本与生产/loadtest 对齐（`registry...nineaiyu/pgvector:pg17` 同源；**2026-10-02 F4 起**测试/生产镜像统一带 pgvector 扩展，同 PG17 大版本数据目录兼容）；
 - 步骤与 `test.yml` 同构（uv sync → `uv lock --check`），测试命令：`DJANGO_SETTINGS_MODULE=tests.settings_pg uv run --no-sync pytest -n auto`——**不带 `--cov`**（本档目标是方言正确性，coverage 拦路 ~20-30% 时长且口径由 PR 门禁负责）；
 - 追加一步 `manage.py check --database default`（与 test.yml 同款，在真库上跑）；
 - 失败处理：红**不阻断**任何 PR；失败即 GitHub 邮件通知 + 周窗口分诊（修复 commit 或登记），台账记在本文档 §五。
@@ -65,7 +65,7 @@ sqlite 门禁的方言盲区（已发生 / 可预判）：
 ```bash
 docker run -d --name xadmin-pgtest-pg \
   -e POSTGRES_USER=server -e POSTGRES_PASSWORD=pgtest -e POSTGRES_DB=xadmin_pgtest \
-  -p 127.0.0.1:55433:5432 postgres:17
+  -p 127.0.0.1:55433:5432 pgvector/pgvector:pg17
 cd xadmin-server
 DJANGO_SETTINGS_MODULE=tests.settings_pg \
   DB_HOST=127.0.0.1 DB_PORT=55433 DB_USER=server DB_PASSWORD=pgtest \

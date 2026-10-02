@@ -8,7 +8,7 @@
 # 由 scripts/e2e_seed.py DROP/CREATE 重置）；E2E 缓存为进程内 FakeRedis，无需 redis 服务。
 services:
   postgres:
-    image: postgres:17
+    image: pgvector/pgvector:pg17
     container_name: xadmin-test-pg
     environment:
       POSTGRES_USER: server

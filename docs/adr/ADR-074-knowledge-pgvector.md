@@ -1,6 +1,6 @@
-# ADR-074: 知识库检索 pgvector 演进（ADR 先行，暂不实施）
+# ADR-074: 知识库检索 pgvector 演进
 
-> 状态：**已决策，未实施**（触发条件见「五、重开条件」）。2026-09-29 由第二轮重构计划 7.3「AI 演进」立项，只做决策不落代码。
+> 状态：**已交付**（2026-10-02 落地，交付记录见「七」）。2026-09-29 由第二轮重构计划 7.3「AI 演进」立项为 ADR 先行；触发条件满足（语料已过 1000 线且按计划窗口提前实施）后于 2026-10 开发窗口实施。
 
 ## 一、背景
 
@@ -76,3 +76,38 @@
 - 不做向量检索的多后端抽象（YAGNI：pgvector 一条路走通即止，抽象层等第二个
   真实需求出现再立）；
 - 不在触发条件前「顺手迁移」——现形态与规模匹配，提前迁移只有风险没有收益。
+
+## 七、交付记录（2026-10-02）
+
+目标形态全量落地，与「三、目标形态」的差异与细化如下：
+
+- **无维度列策略（对目标形态第 1 条的修正）**：`embedding_vector` 列保持**无维度**
+  `vector`（而非迁 `VectorField(dim=...)`）——embedding 模型可换档，迁移期/换档窗口
+  存量向量维度混存，带维度的列类型会让写入/回填直接失败。迁移
+  `ai/migrations/0005_aiknowledgechunk_embedding_vector`：扩展创建（容错，pg_trgm
+  同口径）→ `SeparateDatabaseAndState` 加列（DDL 幂等、扩展缺失不阻断 migrate）→
+  存量二进制 500 批 `RunPython` 回填。
+- **HNSW 定型助手**（`ai/utils/ai_vector_ddl.py` + `build_ai_vector_index` 命令）：
+  维度稳定 → `ALTER TYPE vector(N)` + `CREATE INDEX ... hnsw vector_cosine_ops
+  WITH (m=16, ef_construction=64)`；维度混存（换档窗口）→ **反向定型**撤索引退回
+  无维度；<1000 行 no-op；`pg_advisory_lock` 串行化；`build_embeddings` 成功后自动
+  尝试，且写库前调 `ensure_column_accepts_dim(dim)` 反向定型护栏（列定型后模型换档
+  仍能写进新维度，有测试守护）。
+- **检索重写**（`ai/utils/ai_embeddings.py`）：内存索引（`_INDEX`/`VectorEntry`/
+  逐块余弦）退役；`search_vectors` = SQL 余弦（`CosineDistance` 升序），新鲜度
+  `embedding_hash=F("content_hash")`、模型一致、**维度一致**全在 WHERE 收敛（复刻
+  旧逐块 skip 语义且不触发 pgvector 维度错误）；RRF 融合层与 `retrieve` 契约零变化；
+  DB 层异常一律吞掉回退词频。
+- **双写回滚口径**：`build_embeddings` 向 `embedding_vector` 与二进制 `embedding`
+  列**双写**（二进制列保留一个版本窗口，回滚 = 代码回退到内存索引实现，存量向量
+  不丢）；`vector_index()` 保留为可用性探针（返回 `{pk: dim}`/None）。
+- **依赖与镜像**：`pgvector==0.5.0`（pyproject + uv.lock + requirements 重导出）；
+  PG 镜像要求更新——生产 compose / installer / CI 全部换 `pgvector` 变体
+  （`registry...nineaiyu/pgvector:pg17`，测试与本地为 `pgvector/pgvector:pg17`），
+  同 PG17 大版本数据目录兼容，见 `docs/ops/deployment.md`。**旧 `postgres:17`
+  镜像上禁止跑 0005 迁移**（扩展缺失时 DDL 告警跳过、状态照登记，向量通道不可用）。
+- **验证**：`tests/integration/ai/test_ai_vector_pg.py` 9 用例（最小门槛/维度不一致
+  排除/陈旧与模型排除/余弦排序/双写/定型建索引+幂等/换档反向定型/vendor 守卫，
+  DDL 用例标 `transaction=True`——ALTER TYPE 在测试事务内撞 pending trigger
+  events，生产为 autocommit 无此问题）；依赖 manifest 测试 10 例绿；后端 ai 套件
+  全量绿。

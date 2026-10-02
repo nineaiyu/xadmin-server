@@ -95,6 +95,7 @@ dependencies = [
     "python-docx==1.2.0",
     # AI 异步 SDK（httpx.AsyncClient，承接 S7 流式线程饥饿根治）
     "httpx==0.28.1",
+    "pgvector>=0.5.0",
 ]
 
 [project.optional-dependencies]

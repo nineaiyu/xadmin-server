@@ -86,6 +86,13 @@ python manage.py sync_ai_knowledge   # ① 同步知识库（幂等，秒级，�
   - 上传文档：管理端「集成管理 → 知识库」页自助上传（选择本地 .md 读取或直接粘贴文本，同名覆盖更新），
     与仓库文档并存参与检索，可预览全文/分块、启停（停用即退出检索）、删除；
 - **同步时机**：仓库文档变更后重跑 ①（或管理页「同步仓库文档」按钮）；未同步时助手页会提示知识库为空，问答无召回。
+- **向量索引（pgvector，ADR-074）**：向量检索依赖 PG 的 `vector` 扩展（内置 compose 镜像已带，见 §3；
+  外置 PG 需自行安装）。`build_embeddings` 每次构建成功后自动尝试 HNSW 索引定型，一般无需手工干预；
+  存量部署升级后可手工执行一次确认状态：
+
+  ```shell
+  python manage.py build_ai_vector_index   # 语料 ≥1000 块且维度稳定时定型 vector(N) + HNSW；混存窗口反向定型；<1000 行 no-op
+  ```
 
 ### 1.5 演示数据（可选，开发 / 演示环境）
 
@@ -187,6 +194,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
   （`${DB_PASSWORD:?}`）。`config.yml` 是唯一定义处：`dev_up.sh` / `dev_down.sh` 每次运行都会把同名键的值
   自动同步到 `.env`（脚本维护的派生缓存，供绕过脚本直接操作 compose 的命令使用），你只需编辑 `config.yml`。
   **生产部署必须**使用随机值，复用任何公开示例密码等于裸奔。
+- **PostgreSQL 镜像要求（2026-10-02 起，ADR-074）**：`postgresql` / `db-backup` 使用
+  **pgvector 变体镜像**（`registry.cn-beijing.aliyuncs.com/nineaiyu/pgvector:pg17`）——AI 知识库
+  向量检索依赖 `vector` 扩展（ADR-074）；同 PG17 大版本，数据目录兼容，原地换镜像重启即可。
+  外置数据库需自行安装 pgvector 扩展。**旧 `postgres:17` 镜像（无 vector 扩展）上禁止执行
+  `ai/migrations/0005`**：扩展缺失时迁移的 DDL 会告警跳过、状态照登记，向量通道不可用且后续无法回填。
 - HTTPS 部署（可选，默认关闭 = HTTP 直连部署零影响）：TLS 终止于反向代理/网关后，在 `config.yml`
   设 `SECURITY_HTTPS_ENABLED: true`，即下发 HSTS 一年（含子域/preload）与 Secure Cookie；
   若还需 Django 侧执行 HTTP→HTTPS 跳转，再开 `SECURITY_HTTPS_REDIRECT_ENABLED: true`

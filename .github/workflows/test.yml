@@ -18,7 +18,7 @@ jobs:
       postgres:
         # 真环境门禁（全真容器化测试迁移方案 §3.3 / §四 阶段 3）：大版本与生产/loadtest 对齐
         # （同 test-nightly-pg.yml），方言/连接池/pk 序列类缺陷在 PR 阶段暴露而非逃逸到生产
-        image: postgres:17
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: server
           POSTGRES_PASSWORD: pgtest

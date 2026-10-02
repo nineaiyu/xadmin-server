@@ -16,6 +16,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from pgvector.django import VectorField
 
 from common.base.utils import signer
 from common.core.models import DbAuditModel, DbUuidModel
@@ -82,6 +83,11 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
     # 向量以 float32 小端二进制落库（见 ai/utils/ai_embeddings.py 的编解码），
     # 比 JSON 文本省 ~5 倍体积且省去检索时的文本解析
     embedding = models.BinaryField(_("Embedding"), null=True, blank=True, editable=False)
+    # pgvector 向量列（ADR-074）：与 embedding 二进制列**双写**（迁移窗口，回滚=代码回退），
+    # 检索改 SQL 余弦（embedding <=> query）替代进程内索引。维度不固定（embedding 模型
+    # 可换档），列保持无维度 `vector`；维度稳定后由 ensure_vector_index（ai_vector_ddl.py）
+    # 定型列并建 HNSW 索引，运行期 DDL 不进迁移状态
+    embedding_vector = VectorField(_("Embedding vector"), null=True, blank=True, editable=False)
     embedding_model = models.CharField(_("Embedding model"), max_length=128, blank=True, default="")
     embedding_hash = models.CharField(_("Embedding source hash"), max_length=64, blank=True, default="")
     embedding_dim = models.IntegerField(_("Embedding dimension"), default=0)

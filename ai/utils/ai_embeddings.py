@@ -1,27 +1,31 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""知识库向量检索：embedding 构建、缓存索引与 RRF 混合融合。
+# -*- coding:utf-8 -*-
+"""知识库向量检索：embedding 构建、pgvector 检索与 RRF 混合融合。
 
-口径（与 ADR-037「若将来升级」预研一致，落地见 ADR-065）：
-- **启用条件**：存在 ``purpose=embedding`` 的激活档案；无档案 = 词频检索零变化，
-  不新增部署依赖（OpenAI 兼容 ``/embeddings`` + Python 侧余弦，语料超 1 万块再评估
-  pgvector，须另立 ADR）；
+口径（ADR-065 建立混合检索，ADR-074 落地 pgvector，2026-10-02 交付）：
+- **启用条件**：存在 ``purpose=embedding`` 的激活档案；无档案 = 词频检索零变化；
 - **构建**：管理端显式触发（知识库页按钮 / ``build_ai_embeddings`` 命令），批量调用
-  后按块落库（float32 小端二进制）；正文变更后旧向量按 ``embedding_hash`` 判定陈旧，
-  向量通道跳过该块（词频通道兜底），不做隐式重算——构建耗时与 API 成本可见可控；
-- **检索**：词频排名 + 向量排名 **RRF 融合**（k=60；词频权重 1.0 / 向量权重 0.5，
-  见 ``TOKEN_WEIGHT`` 注释），返回结构保持 ``[(score, pk)]``（消费方契约不变）；
-  向量链路任一异常（未配置 / 网络失败 / 维度不一致 / 超容量）都回退词频结果——
-  问答可用性不被向量可用性绑定；
-- **内存**：向量索引与分词索引同款增量缓存（签名 = 正文 hash + 向量 hash + 模型 +
-  维度，按模型 ordering 对齐），超容量停用缓存（该次查询退回词频）。
+  后按块落库——``embedding``（float32 二进制，迁移窗口保留，回滚=代码回退）与
+  ``embedding_vector``（pgvector 列）**双写**；正文变更后旧向量按 ``embedding_hash``
+  判定陈旧，向量通道跳过该块（词频通道兜底），不做隐式重算；
+- **检索**：SQL 余弦（``embedding <=> query``，``CosineDistance`` 升序）替代进程内
+  索引——新鲜度（``embedding_hash == content_hash``）、模型一致性、维度一致性都在
+  SQL WHERE 内收敛（维度不一致的行直接排除，复刻旧内存索引的逐块 skip 语义）；
+  返回结构保持 ``[(score, pk)]``（消费方契约不变）；向量链路任一异常（未配置 /
+  扩展缺失 / 网络失败 / 超容量）都回退词频结果——问答可用性不被向量可用性绑定；
+- **索引**：列保持无维度，语料规模小的时候精确扫描（≤2 万块，P95 ≪ 50ms）；
+  维度稳定后由 ``ai_vector_ddl.ensure_vector_index`` 定型列并建 HNSW
+  （m=16, ef_construction=64，构建任务完成后自动尝试，也可用
+  ``build_ai_vector_index`` 命令手工执行）；
+- **缓存**：仅保留查询向量短缓存（评测集连跑 / 重复提问省一次远端调用）与
+  ``index_meta`` 元数据行 TTL 缓存（可用性判定不再每次全表拉元数据）。
 """
 
-import array
-import math
 import threading
 import time
-from typing import Any, NamedTuple
+from typing import Any
+
+from django.db.models import F
 
 from ai.utils.ai_embedding_math import (  # noqa: F401  (纯函数拆出，再导出保持调用面)
     RRF_K,
@@ -38,7 +42,7 @@ logger = get_logger(__name__)
 
 #: 单次构建的批大小（按供应商 /embeddings 的常见批量上限取保守值）
 EMBED_BATCH_SIZE = 32
-#: 向量索引容量上限：超过即停用向量通道（与分词索引同口径，避免异常规模内存失控）
+#: 向量通道容量上限：超过即停用向量通道（与分词索引同口径，避免异常规模拖垮查询）
 MAX_INDEXED_VECTORS = 20000
 #: 参与融合的向量候选数（取相似度前 N 名；词频通道候选为全部达标块）
 VECTOR_CANDIDATES = 50
@@ -46,24 +50,13 @@ VECTOR_CANDIDATES = 50
 QUERY_CACHE_SIZE = 128
 #: 向量通道的最小可用条数（低于该值向量排名噪声大，直接走词频）
 MIN_INDEXED_VECTORS = 5
-#: 变更块批量回填分片大小（避免超长 IN 查询）
-LOAD_BATCH_SIZE = 200
 
 _LOCK = threading.Lock()
-_INDEX: dict = {}
 _QUERY_CACHE: dict = {}
 _OVERFLOW_WARNED = False
 
 
-class VectorEntry(NamedTuple):
-    """单块向量（float32 数组，只读使用；可安全跨线程共享）。"""
-
-    signature: str
-    norm: float
-    vector: array.array
-
-
-# ------------------------------------------------------------------ 索引（增量缓存）
+# ------------------------------------------------------------------ 可用性判定
 
 
 def _load_meta_rows():
@@ -77,16 +70,16 @@ def _load_meta_rows():
 
 
 def vector_index():
-    """pk → VectorEntry（增量刷新后返回浅拷贝）；不可用时返回 None。
+    """新鲜向量可用性探针：``{pk: dim}``（键序稳定）；不可用时返回 None。
 
-    可用性判据：存在 embedding 档案 + 未超容量 + 索引条数达到最小可用条数。
-    只纳管「新鲜」向量（``embedding_hash == content_hash`` 且模型与当前档案一致），
-    陈旧向量不参与向量通道（避免用旧正文的语义召回当前问题）。
+    可用性判据与内存索引时代一致（ADR-074 迁移前的口径原样保留）：
+    存在 embedding 档案 + 已向量化总量未超容量 + 新鲜条数达到最小可用条数。
+    新鲜 = ``embedding_hash == content_hash`` 且模型与当前档案一致（陈旧向量
+    不参与向量通道，避免用旧正文的语义召回当前问题）。
 
-    元数据行经 ``index_meta`` 短 TTL 缓存（同 scope 的签名比对在窗口内复用），
-    构建/写入路径会显式清缓存（见 ``invalidate_vector_index``）。
+    返回值只作为「向量通道是否可用 + 候选集合规模」的判定面（检索本体走 SQL，
+    不再经该 dict 逐块算余弦）；元数据行经 ``index_meta`` 短 TTL 缓存。
     """
-    from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials
     from ai.utils.index_meta import SCOPE_VECTOR_META, cached_meta_rows
 
@@ -100,60 +93,30 @@ def vector_index():
     if len(rows) > MAX_INDEXED_VECTORS:
         if not _OVERFLOW_WARNED:
             logger.warning(
-                "knowledge vector index disabled: %s vectors exceed capacity %s", len(rows), MAX_INDEXED_VECTORS
+                "knowledge vector channel disabled: %s vectors exceed capacity %s", len(rows), MAX_INDEXED_VECTORS
             )
             _OVERFLOW_WARNED = True
         return None
 
-    usable = [
-        (pk, content_hash, int(dim or 0))
+    usable = {
+        pk: int(dim or 0)
         for pk, content_hash, embedding_hash, embedding_model, dim in rows
         if embedding_hash == content_hash and embedding_model == model
-    ]
+    }
     if len(usable) < MIN_INDEXED_VECTORS:
         return None
-
-    with _LOCK:
-        signatures = {pk: f"{content_hash}:{dim}:{model}" for pk, content_hash, dim in usable}
-        changed = [
-            pk
-            for pk, signature in signatures.items()
-            if (entry := _INDEX.get(pk)) is None or entry.signature != signature
-        ]
-        for pk in [pk for pk in _INDEX if pk not in signatures]:
-            _INDEX.pop(pk, None)
-        # 向量字节只在签名变化时回读（避免每次检索搬运全量二进制）
-        for start in range(0, len(changed), LOAD_BATCH_SIZE):
-            batch = changed[start : start + LOAD_BATCH_SIZE]
-            for pk, blob in AiKnowledgeChunk.objects.filter(pk__in=batch).values_list("pk", "embedding"):
-                entry = _build_entry(signatures[pk], blob)
-                if entry is None:
-                    _INDEX.pop(pk, None)
-                else:
-                    _INDEX[pk] = entry
-        return {pk: _INDEX[pk] for pk in signatures if pk in _INDEX}
-
-
-def _build_entry(signature: str, blob):
-    """二进制向量 → 索引条目（长度非法/零向量返回 None）。"""
-    decoded = decode_vector(blob)
-    if decoded is None:
-        return None
-    norm = math.sqrt(sum(value * value for value in decoded))
-    if norm <= 0:
-        return None
-    return VectorEntry(signature=signature, norm=norm, vector=decoded)
+    return usable
 
 
 def invalidate_vector_index() -> None:
-    """清空向量索引与查询缓存（构建完成后调用；签名比对本身也能发现变化）。
+    """清查询向量缓存与元数据签名缓存（构建完成后调用，本进程立即生效）。
 
-    同时清本进程的元数据签名缓存：构建写库后无需等短 TTL 即可检索到新向量。
+    进程内向量索引已随 pgvector 落地退役（SQL 直查永远读到最新已提交数据，
+    无需索引失效）；本函数保留原调用面，只清仍存在的两层短缓存。
     """
     from ai.utils.index_meta import SCOPE_VECTOR_META, invalidate_index_meta
 
     with _LOCK:
-        _INDEX.clear()
         _QUERY_CACHE.clear()
     invalidate_index_meta(SCOPE_VECTOR_META)
 
@@ -184,14 +147,19 @@ def _embed_query(client, question: str):
 
 
 def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
-    """向量通道排名（pk 列表，余弦降序）；任何不可用情形返回空列表。"""
+    """向量通道排名（pk 列表，余弦降序）；任何不可用情形返回空列表。
+
+    SQL 口径（ADR-074）：候选 = 新鲜（embedding_hash == content_hash）且模型与
+    当前档案一致、维度与查询向量一致、pgvector 列非空的块；排序 = ``embedding
+    <=> query`` 升序（余弦距离 = 1 - 余弦相似度，序与旧实现逐块余弦降序一致）。
+    扩展缺失 / 列缺失等数据库层异常在此吞掉（返回 []），由调用方回退词频。
+    """
     from ai.utils.ai_config import embedding_credentials
 
     credentials = embedding_credentials()
     if credentials is None:
         return []
-    index = vector_index()
-    if not index:
+    if not vector_index():
         return []
     from common.sdk.ai.embeddings import EmbeddingClient
 
@@ -199,14 +167,26 @@ def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
     query_vector = _embed_query(client, question)
     if query_vector is None:
         return []
-    scored = []
-    for pk, entry in index.items():
-        if len(entry.vector) != len(query_vector):
-            continue
-        similarity = cosine_similarity(query_vector, entry.vector)
-        scored.append((similarity, pk))
-    scored.sort(key=lambda item: (-item[0], str(item[1])))
-    return [pk for _score, pk in scored[: max(1, top_k)]]
+    try:
+        return _rank_vectors(model=str(client.model), query_vector=query_vector, top_k=top_k)
+    except Exception as exc:  # noqa: BLE001 数据库层异常（扩展缺失/列缺失）回退词频
+        logger.warning("ai vector search failed, fallback to token channel: %s", exc)
+        return []
+
+
+def _rank_vectors(*, model: str, query_vector: list, top_k: int) -> list:
+    """SQL 余弦排名本体（独立成函数便于测试注入）。"""
+    from pgvector.django import CosineDistance
+
+    from ai.models.ai import AiKnowledgeChunk
+
+    qs = (
+        AiKnowledgeChunk.objects.exclude(embedding_vector__isnull=True)
+        .filter(embedding_hash=F("content_hash"), embedding_model=model, embedding_dim=len(query_vector))
+        .annotate(distance=CosineDistance("embedding_vector", query_vector))
+        .order_by("distance", "pk")
+    )
+    return [pk for pk in qs.values_list("pk", flat=True)[: max(1, top_k)]]
 
 
 def hybrid_rank(question: str, token_ranked: list, top_k: int):
@@ -245,7 +225,10 @@ def build_embeddings(
     - ``progress_cb``：批次级进度回调 ``cb(percent, stage, embedded)``（异步任务
       经 embedding_progress 通道上报；同步调用/命令不传 = 零开销）；
     - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
-      ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示。
+      ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示；
+    - 写入为 ``embedding``（二进制）+ ``embedding_vector``（pgvector）**双写**：
+      二进制列在迁移窗口保留（ADR-074 步骤④后半段「删二进制列与内存索引代码」
+      登记为稳定一个版本后的独立清理项），回滚 = 代码回退，数据无需重建。
     """
     from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials
@@ -309,6 +292,13 @@ def build_embeddings(
             logger.warning("build knowledge embeddings stopped: dimension mismatch")
             break
         dim = batch_dim
+        # 写入前护栏：列已定型为其他维度（模型换档）时先反向定型，否则本批写库必失败
+        try:
+            from ai.utils.ai_vector_ddl import ensure_column_accepts_dim
+
+            ensure_column_accepts_dim(dim)
+        except Exception:  # noqa: BLE001 反向定型失败维持原行为（写库报错计入 failed）
+            logger.warning("revert typed vector column failed", exc_info=True)
         rows = []
         for (pk, content_hash, _content), vector in zip(batch, vectors, strict=False):
             rows.append(
@@ -319,10 +309,13 @@ def build_embeddings(
                     embedding_model=model,
                     embedding_dim=dim,
                     embedding=encode_vector(vector),
+                    embedding_vector=vector,
                 )
             )
         AiKnowledgeChunk.objects.bulk_update(
-            rows, ["embedding", "embedding_model", "embedding_hash", "embedding_dim"], batch_size=batch_size
+            rows,
+            ["embedding", "embedding_vector", "embedding_model", "embedding_hash", "embedding_dim"],
+            batch_size=batch_size,
         )
         summary["embedded"] += len(rows)
         _report(summary["embedded"], stage="embed")
@@ -330,6 +323,13 @@ def build_embeddings(
     summary["dim"] = dim
     invalidate_vector_index()
     if summary["embedded"]:
+        # 维度稳定时尝试定型列并建 HNSW（小语料 no-op；失败只告警，检索走精确扫描）
+        try:
+            from ai.utils.ai_vector_ddl import ensure_vector_index
+
+            ensure_vector_index()
+        except Exception:  # noqa: BLE001 索引定型失败不影响构建结果与检索可用性
+            logger.warning("ensure pgvector hnsw index failed; retrieval uses exact scan", exc_info=True)
         _record_build_usage(usage_total, model, started, summary)
     return summary
 
@@ -360,8 +360,6 @@ def _record_build_usage(usage: dict, model: str, started: float, summary: dict) 
 
 def vector_stats() -> dict:
     """向量通道状态（知识库页提示 / 命令输出）：总量、已向量化、可用、陈旧。"""
-    from django.db.models import F
-
     from ai.models.ai import AiKnowledgeChunk
     from ai.utils.ai_config import embedding_credentials
 

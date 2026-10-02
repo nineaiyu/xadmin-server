@@ -68,7 +68,7 @@
 # ① 一次性专用容器（仅绑 127.0.0.1，与日常开发库/Redis 完全隔离）
 docker run -d --name xadmin-loadtest-pg \
   -e POSTGRES_USER=server -e POSTGRES_PASSWORD=loadtest -e POSTGRES_DB=xadmin_loadtest \
-  -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/postgres:17.11 \
+  -p 127.0.0.1:55432:5432 registry.cn-beijing.aliyuncs.com/nineaiyu/pgvector:pg17 \
   postgres -c max_connections=500
 docker run -d --name xadmin-loadtest-redis \
   -p 127.0.0.1:56379:6379 registry.cn-beijing.aliyuncs.com/nineaiyu/redis:8.10.2 \
