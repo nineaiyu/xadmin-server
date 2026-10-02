@@ -23,7 +23,7 @@ bash utils/dev_up.sh              # --with-demo 追加演示数据；--backend-o
 ```shell
 # 方式二：本机源码启动（Python 3.14+，需自备数据库（PostgreSQL/MySQL/SQLite）与 Redis）
 uv sync --all-groups          # 依赖以 uv.lock 为准，见下方「依赖管理」
-#   无 uv 时：python3.13 -m venv .venv && source .venv/bin/activate
+#   无 uv 时：python3.14 -m venv .venv && source .venv/bin/activate
 #             && pip install -r requirements.txt -r requirements-dev.txt
 cp config_example.yml config.yml   # 可跳过：不创建时自动使用内置默认配置并自动生成 SECRET_KEY
 uv run python manage.py migrate    # 走 uv 时命令加 `uv run`；或 source .venv/bin/activate 后直接用 python

@@ -13,7 +13,7 @@
 uv sync --all-groups
 
 # 无 uv 环境（pip 路径，安装 uv export 产物；用途见 README「依赖管理」）
-python3.13 -m venv .venv
+python3.14 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 ```
@@ -21,7 +21,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 依赖服务：PostgreSQL（或 SQLite）+ Redis。本地快速起 Redis：
 
 ```shell
-docker run -d --name xadmin-redis -p 6379:6379 redis:8.10
+docker run -d --name xadmin-redis -p 6379:6379 redis:8.10.2
 ```
 
 ### 1.2 配置与初始化

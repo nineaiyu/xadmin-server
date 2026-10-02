@@ -32,7 +32,7 @@ jobs:
           --health-retries 10
       redis:
         # 真 Redis（生产同款 django_redis backend 与 channel layer），同 perf.yml 既有形态
-        image: redis:8.10
+        image: redis:8.10.2
         ports:
           - 56379:6379
         options: >-

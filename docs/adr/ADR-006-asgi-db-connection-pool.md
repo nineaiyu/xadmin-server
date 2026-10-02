@@ -1,7 +1,7 @@
 # ADR-006: ASGI 形态下 DB 连接策略——psycopg3 server 端连接池（OPTIONS.pool），不引入 pgbouncer
 
 - 状态：已接受（2026-09-07，TD-25 根因修复）
-- 关联：半年规划 TD-25 / T3.1 性能基线 / ADR-004（Django 停留 5.2 LTS）
+- 关联：半年规划 TD-25 / T3.1 性能基线 / ADR-004（Django 升级线；写作时点停留 5.2 LTS，后修订为维持 6.0.8）
 - 位置：`server/settings/base.py`（DATABASES）、`server/conf.py`（DB_POOL* 配置）、`requirements.txt`（psycopg2-binary →
   psycopg[binary,pool]）
 
@@ -35,7 +35,7 @@ psycopg2 不支持 Django 5.1+ 的 server 端连接池（该特性仅 psycopg3 �
 3. **语义风险更低**：pgbouncer transaction pooling 模式与 `ATOMIC_REQUESTS`、migrate 的 advisory lock、session 级状态（`SET`
    、prepared statements）存在已知兼容陷阱；Django 对 psycopg3 池已默认禁用 prepared statements 并在 `close()` 时归还连接（
    `ATOMIC_REQUESTS` 请求结束时连接正确归还池），语义由 Django 官方支持；
-4. **与 ADR-004 对齐**：Django 停留 5.2 LTS（连接池为 5.1+ 特性），无需等 6.2 升级窗口即可落地；
+4. **与 ADR-004 对齐**：Django 停留 5.2 LTS（连接池为 5.1+ 特性），无需等 6.2 升级窗口即可落地（ADR-004 后修订为维持 6.0.8，本结论不受影响）；
 5. 代价可控：psycopg2 → psycopg3 是 Django 官方推荐的现代驱动路线；本仓库无任何 psycopg2 直接 import（已 grep 验证），ORM
    层完全透明。
 

@@ -23,7 +23,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:8.10
+    image: redis:8.10.2
     container_name: xadmin-test-redis
     ports:
       - "127.0.0.1:56379:6379"

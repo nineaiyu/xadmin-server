@@ -24,7 +24,7 @@ fi
 echo "[reset] 销毁测试容器（${PG_CONTAINER} / ${REDIS_CONTAINER}，数据随容器清空）..."
 docker compose -f "${COMPOSE_FILE}" down --remove-orphans >/dev/null
 
-echo "[reset] 重新拉起 postgres:17 + redis:8.10 ..."
+echo "[reset] 重新拉起 postgres:17 + redis:8.10.2 ..."
 docker compose -f "${COMPOSE_FILE}" up -d >/dev/null
 
 for _ in $(seq 1 30); do
