@@ -21,19 +21,25 @@
       "label": "登录（login/basic）",
       "load": "5 VU / 30s",
       "rps": 89.52,
-      "p95": 66.18
+      "p95": 66.18,
+      "target": null,
+      "target_note": "无独立 P95 目标：登录为环境复现锚点（含口令哈希开销），不参与目标判定"
     },
     "02-routes": {
       "label": "菜单/路由（routes）",
       "load": "20 VU / 1m",
       "rps": 1143.72,
-      "p95": 28.38
+      "p95": 28.38,
+      "target": "P95 <40ms",
+      "target_met": true
     },
     "03-list": {
       "label": "列表页（user list，读请求免事务 + 在线态快照后复测）",
       "load": "20 VU / 1m",
       "rps": 226.08,
-      "p95": 192.2
+      "p95": 192.2,
+      "target": null,
+      "target_note": "无独立目标：退化已登记（2026-10-01 记录三——连续两轮稳定于 ~192ms，归因排队放大），环境复现观察项"
     },
     "04-metadata-columns": {
       "label": "元数据·列（search-columns，纯元数据端点，目标 P95 <60ms）",
@@ -42,7 +48,9 @@
       "p95": 28.67,
       "trends": {
         "meta_columns_duration": 28.67
-      }
+      },
+      "target": "P95 <60ms",
+      "target_met": true
     },
     "04-metadata-fields": {
       "label": "元数据·搜索字段（search-fields，纯元数据端点，目标 P95 <60ms）",
@@ -63,19 +71,25 @@
       "p95": 218.07,
       "trends": {
         "meta_with_meta_duration": 218.08
-      }
+      },
+      "target": null,
+      "target_note": "无独立目标：与 03-list 同域（列表+内联元数据），随容量规划观察"
     },
     "05-export": {
       "label": "导出（export-data xlsx）",
       "load": "5 VU / 1m",
       "rps": 10.56,
-      "p95": 776.91
+      "p95": 776.91,
+      "target": null,
+      "target_note": "无独立目标：重 IO 偶发动作，量级波动大，不设 P95 门限（O8-8 限流档在压测档放开）"
     },
     "06-import": {
       "label": "导入（import-data update）",
       "load": "5 VU / 1m",
       "rps": 111.69,
-      "p95": 57.06
+      "p95": 57.06,
+      "target": null,
+      "target_note": "无独立目标：导入耗时随文件规模线性变化，不设跨环境 P95 门限"
     }
   },
   "capacity_reference": {

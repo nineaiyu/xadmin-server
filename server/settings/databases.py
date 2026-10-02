@@ -103,4 +103,6 @@ if DB_ENGINE == "mysql":
 # >>> p = Person(name="Fred")
 # >>> p.save(using="second")  # (statement 2)
 
+# O11-1：DBRouter 为预留占位（所有方法 return None，等价单 default 库），不是读写分离
+# 实现；边界登记见 common/core/db/router.py 类注释，勿据此认定已具备多库能力
 DATABASE_ROUTERS = ["common.core.db.router.DBRouter"]

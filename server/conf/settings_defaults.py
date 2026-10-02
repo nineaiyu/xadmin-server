@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""服务器配置默认值（安全/功能/业务配置字典）。"""
+"""服务器配置默认值（安全/功能/业务配置字典）。
+
+与 defaults.py（通用/基础 + 三方库域）的物理分离是**有意设计**（R5 已评估否决
+合并）：两者都经 ``server/conf/config.py`` 并入同一 ``Config.defaults``，运行期
+热更不区分来源文件，合并无行为收益；分离保住产品/安全键与基础设施键各自的
+评审节奏，键不重叠由 ``test_config_defaults_single_source`` 守护。
+"""
 
 SETTINGS_CONFIG = {
     # 密码安全配置

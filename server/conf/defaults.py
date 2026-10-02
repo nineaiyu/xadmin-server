@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""服务器配置默认值（静态字典部分：通用/基础 + 三方库）。"""
+"""服务器配置默认值（静态字典部分：通用/基础 + 三方库）。
+
+与 settings_defaults.py（安全/功能/业务域）的物理分离是**有意设计**（R5 已评估
+否决合并）：两者都经 ``server/conf/config.py`` 并入同一 ``Config.defaults``，
+运行期热更（SysConfig.get_value → DB 行覆盖 → CONFIG 兜底）不区分来源文件，
+合并无行为收益；分离保住基础设施键与产品/安全键各自的评审节奏，键不重叠由
+``test_config_defaults_single_source`` 守护。
+"""
 
 BASE_CONFIG = {
     "SECRET_KEY": "",
