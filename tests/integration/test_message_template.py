@@ -4,13 +4,15 @@
 口径钉死：
 - 覆盖为可选层：未配置时渲染结果与代码默认完全一致（零行为变化）；
 - subject / body 可分别覆盖，变量插值走沙箱渲染（未知变量留空，不抛错）；
-- 保存时校验模板语法与变量白名单；reset 回到默认。
+- 保存时校验模板语法与变量白名单；reset 回到默认；
+- HTML 渠道（站内信/邮件）正文在渲染收口统一白名单净化，SMS 纯文本渠道不净化。
 """
 
 import pytest
 
-from notifications.models import MessageTemplate
-from notifications.notifications import Message, UserMessage
+from notifications.backends import BACKEND
+from notifications.models import MessageContent, MessageTemplate, SystemMsgSubscription
+from notifications.notifications import Message, SystemMessage, UserMessage
 from notifications.template_registry import apply_override, extract_variables, invalidate_overrides, validate_template
 
 pytestmark = pytest.mark.django_db
@@ -163,3 +165,110 @@ class TestTemplateApi:
         mapper = _Msg(superuser).get_backend_msg_mapper(["site_msg"])
         assert mapper
         assert next(iter(mapper.values()))["subject"] == "[定制] 导出完成"
+
+
+class TestTemplateSanitization:
+    """F5①：HTML 渠道模板渲染净化补链（存量缺口——覆盖渲染路径此前不经净化直落库）。"""
+
+    PAYLOAD = '<script>alert(1)</script><img src=x onerror="alert(1)">'
+
+    def _override_body(self, body_template):
+        MessageTemplate.objects.create(message_type="_DummyMessage", body_template=body_template)
+        invalidate_overrides()
+
+    def test_site_msg_mapper_sanitizes_override_body(self, superuser):
+        """站内信渠道：模板正文携带 payload → 渲染收口剥离，{{var}} 插值保留。"""
+        self._override_body("<p>{{ message }}——{{ name }}</p>" + self.PAYLOAD)
+        mapper = _DummyMessage().get_backend_msg_mapper(["site_msg"])
+        body = mapper[BACKEND.SITE_MSG]["message"]
+        assert "正文" in body and "测试用户" in body, "变量插值照常生效"
+        assert "<script" not in body
+        assert "onerror" not in body
+        assert "<p>" in body, "白名单排版标签保留"
+
+    def test_email_mapper_sanitizes_body(self, superuser, settings):
+        """邮件渠道（html_message 投递）同样净化，签名（白名单内标签）不受影响。"""
+        settings.EMAIL_ENABLED = True
+        self._override_body("<p>{{ message }}</p>" + self.PAYLOAD)
+        mapper = _DummyMessage().get_backend_msg_mapper(["email"])
+        assert "<script" not in mapper[BACKEND.EMAIL]["message"]
+        assert "onerror" not in mapper[BACKEND.EMAIL]["message"]
+        assert "Xadmin Server" in mapper[BACKEND.EMAIL]["message"]
+
+    def test_variable_value_payload_sanitized(self, superuser):
+        """变量值（用户可控业务数据）携带 payload → 渠道渲染后同样被剥离。"""
+        payload = self.PAYLOAD
+
+        class _PayloadVars(_DummyMessage):
+            def get_template_vars(self):
+                return {"name": payload}
+
+        self._override_body("<div>{{ name }}</div>")
+        mapper = _PayloadVars().get_backend_msg_mapper(["site_msg"])
+        body = mapper[BACKEND.SITE_MSG]["message"]
+        assert "<script" not in body
+        assert "onerror" not in body
+
+    def test_publish_lands_sanitized_message(self, superuser):
+        """落库断言：site_msg 渠道 base_notify 落库的 MessageContent.message 已剥离 payload。"""
+        MessageTemplate.objects.create(
+            message_type="_SanitizedMsg", body_template="<p>{{ message }}</p>" + self.PAYLOAD
+        )
+        invalidate_overrides()
+
+        class _SanitizedMsg(SystemMessage):
+            category = "x"
+            category_label = "x"
+            message_type_label = "x"
+
+            def get_html_msg(self):
+                return {"subject": "净化断言", "message": "<p>正文</p>"}
+
+        sub = SystemMsgSubscription.objects.create(message_type="_SanitizedMsg", receive_backends=["site_msg"])
+        sub.users.add(superuser)
+        _SanitizedMsg().publish()
+        content = MessageContent.objects.get(title="净化断言")
+        assert "正文" in content.message
+        assert "<script" not in content.message
+        assert "onerror" not in content.message
+
+    def test_sms_channel_body_not_html_sanitized(self, superuser, monkeypatch, settings):
+        """SMS 纯文本渠道不做 HTML 净化（正文经 html2text 剥标签，净化反而会转义）。
+
+        以标记函数作对照：site_msg（站内信恒发）走了净化，SMS 渠道输出未经触碰。
+        """
+        settings.SMS_ENABLED = True
+        # SMS 渠道可用还需通知签名/模板配置（is_enable 双重门槛）
+        settings.SMS_NOTIFY_SIGN_NAME = "签名"
+        settings.SMS_NOTIFY_TEMPLATE_CODE = "SMS_TEST"
+
+        def spy(value):
+            return "SANITIZED-MARKER"
+
+        monkeypatch.setattr("notifications.notifications.sanitize_rich_text", spy)
+
+        class _SmsMsg(UserMessage):
+            message_type_label = "x"
+            category = "x"
+            category_label = "x"
+
+            def get_html_msg(self):
+                return {"subject": "s", "message": "<p>1 &lt; 2</p>"}
+
+        mapper = _SmsMsg(superuser).get_backend_msg_mapper(["sms"])
+        assert set(mapper) == {BACKEND.SITE_MSG, BACKEND.SMS}
+        assert "SANITIZED-MARKER" not in mapper[BACKEND.SMS]["message"], "SMS 正文未被 HTML 净化"
+        assert "SANITIZED-MARKER" in mapper[BACKEND.SITE_MSG]["message"], "对照：HTML 渠道走了净化"
+
+    def test_preview_output_sanitized(self, auth_client):
+        """preview 端点输出净化：草稿模板携带 payload → 响应正文已剥离，插值保留。"""
+        resp = auth_client.post(
+            PREVIEW_URL,
+            {"message_type": "ApprovalFlowMessage", "body_template": "<p>{{ title }}</p>" + self.PAYLOAD},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        body = resp.data["data"]["message"]
+        assert "<script" not in body
+        assert "onerror" not in body
+        assert "<p>" in body

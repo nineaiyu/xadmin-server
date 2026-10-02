@@ -9,15 +9,15 @@
 - `POST /api/chat/room/{pk}/rename`     群聊改名（仅群主）
 - `POST /api/chat/room/{pk}/leave`      退出群聊（群主退出自动转让，最后一人退出解散）
 - `GET  /api/chat/message`              历史游标分页（before_id 倒序拉取，响应内按时间正序）
-- `POST /api/chat/message/upload`       附件上传（图片/文件消息共用；复用文件中心安全策略）
-- `GET  /api/chat/message/{id}/file`    附件取件（受鉴权：仅房间可访问者，图片支持 ?size=）
+- `POST /api/chat/message/upload`       附件上传（图片/音视频/文件消息共用；复用文件中心安全策略）
+- `GET  /api/chat/message/{id}/file`    附件取件（受鉴权：仅房间可访问者，图片支持 ?size=，音视频 inline）
 - `POST /api/chat/message/{id}/recall`  撤回（仅本人、2 分钟内），广播双方同步
 - `GET  /api/chat/contacts`             最近在线联系人（在线优先、按最近活跃排序）
 - `GET  /api/chat/contacts/user-options` 群成员候选（关键字搜索，与联系人 list 权限同口径）
 - `POST /api/chat/ai/message`           AI 助手提问（通用多轮；`/kb` 前缀走知识库 RAG）
 - `POST /api/chat/ai/stream`            AI 助手流式提问（SSE：meta → delta* → done | error）
 
-附件消息（image / file）经 WS 上行 `chat_message{room_id, message_type, file_pk}` 发送：
+附件消息（image / video / audio / file）经 WS 上行 `chat_message{room_id, message_type, file_pk}` 发送：
 `file_pk` 先由上传端点取得，服务端做归属校验（只能引用本人上传的文件）并落库引用。
 
 权限：菜单权限点（`list:ChatRoom` / `create:ChatRoom` / `createGroup:ChatRoom` /
@@ -253,12 +253,13 @@ class ChatMessageViewSet(GenericViewSet):
         parser_classes=(MultiPartParser,),
     )
     def upload(self, request, *args, **kwargs):
-        """聊天附件上传（图片/文件消息共用）。
+        """聊天附件上传（图片/音视频/文件消息共用）。
 
         复用文件中心的安全策略与落库内核（扩展名黑名单/白名单、大小上限、配额、
         md5 去重、自动分类、存储适配）；落库为临时件——发送消息时由服务端转正，
         未发送的临时件由每日临时文件清理回收，不长期占用存储。
-        `kind=image` 时校验确为图片（不匹配即删记录返回 1001）。
+        `kind` 白名单 image|video|audio|file 且必须与真实种类一致（不匹配即删记录
+        返回 1001，防伪造 kind 让前端按错误种类渲染气泡）。
         """
         file_obj = (request.FILES.getlist("file") or [None])[0]
         if file_obj is None:
@@ -274,9 +275,9 @@ class ChatMessageViewSet(GenericViewSet):
             return ApiResponse(code=1001, detail=_("Failed to save uploaded file"))
         kind = str(request.data.get("kind") or "").strip().lower()
         if not validate_upload_kind(upload, kind):
-            # 种类不符（如图片消息选了非图片）：删除刚落的记录，不留无主上传件
+            # 种类不符（声明 kind 与真实 MIME 判定不一致）：删除刚落的记录，不留无主上传件
             upload.hard_delete()
-            return ApiResponse(code=1001, detail=_("Only image files can be sent as image messages"))
+            return ApiResponse(code=1001, detail=_("The upload kind does not match the file type"))
         invalidate_upload_stats_cache(request.user.pk)
         log_file_access(upload=upload, user=request.user, action="upload", request=request)
         return ApiResponse(data=attachment_extra(upload), detail=_("Upload successful"))
@@ -286,7 +287,8 @@ class ChatMessageViewSet(GenericViewSet):
     def file(self, request, *args, **kwargs):
         """附件取件（受鉴权）：仅消息所在房间的可访问者可读；撤回/附件失效返回 1001。
 
-        图片支持 `?size=thumb|preview`（缩略图/预览缓存，inline）；其余类型按附件下载。
+        图片支持 `?size=thumb|preview`（缩略图/预览缓存，inline）；音/视频按真实
+        MIME inline 返回（浏览器原生播放）；其余类型按附件下载。
         """
         message = ChatMessage.objects.select_related("attachment").filter(pk=kwargs.get("pk")).first()
         if message is None:

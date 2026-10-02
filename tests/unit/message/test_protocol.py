@@ -21,6 +21,7 @@ def test_action_enum_covers_known_actions():
     assert MessageAction.PUSH_MESSAGE == "push_message"
     assert MessageAction.CHAT_MESSAGE == "chat_message"
     assert MessageAction.CHAT_RECALL == "chat_recall"
+    assert MessageAction.CHAT_REACTION == "chat_reaction"
     assert MessageAction.CHAT_READ == "chat_read"
     assert MessageAction.CHAT_UNREAD == "chat_unread"
     assert MessageAction.TASK_LOG == "task_log"
@@ -46,8 +47,35 @@ def test_chat_payloads_registered():
     """聊天室新增载荷类型必须在协议模块中有定义。"""
     from message import protocol
 
-    for name in ("ChatRoomMessagePayload", "ChatRecallPayload", "ChatReadPayload", "ChatUnreadPayload"):
+    for name in (
+        "ChatRoomMessagePayload",
+        "ChatRecallPayload",
+        "ChatReactionPayload",
+        "ChatReactionUpdatePayload",
+        "ChatReadPayload",
+        "ChatUnreadPayload",
+    ):
         assert hasattr(protocol, name), f"协议缺少载荷定义 {name}"
+
+
+def test_chat_reaction_payloads_match_schema():
+    """表情回应载荷：protocol.py 定义 ↔ ws-frame.schema.json 定义键集合一致。"""
+    import json
+    import os
+
+    from django.conf import settings
+
+    from message import protocol
+
+    schema_path = os.path.join(settings.PROJECT_DIR, "docs", "schema", "ws-frame.schema.json")
+    with open(schema_path, encoding="utf-8") as fp:
+        schema = json.load(fp)
+    inbound = schema["definitions"]["chatReactionPayload"]
+    assert sorted(inbound["properties"]) == sorted(protocol.ChatReactionPayload.__annotations__)
+    assert inbound["required"] == ["message", "emoji", "op"]
+    outbound = schema["definitions"]["chatReactionUpdatePayload"]
+    assert sorted(outbound["properties"]) == sorted(protocol.ChatReactionUpdatePayload.__annotations__)
+    assert outbound["required"] == ["room", "message", "reactions", "ts"]
 
 
 def test_screen_command_payload_matches_schema():

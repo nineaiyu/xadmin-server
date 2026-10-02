@@ -11,12 +11,14 @@
 
 上行 action（protocol.MessageAction）：
 - `chat_message {room_id, content, client_msg_id, message_type?, file_pk?}` → 落库后广播
-  （幂等：同 client_msg_id 不重复落库/广播）；message_type=image/file 时携带 `file_pk`
-  （先经 `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；
+  （幂等：同 client_msg_id 不重复落库/广播）；message_type=image/video/audio/file 时
+  携带 `file_pk`（先经 `POST /api/chat/message/upload` 取得，服务端校验归属后引用）；
 - `chat_recall {message_id}` → 本人在 2 分钟内撤回，双方同步；
+- `chat_reaction {message, emoji, op}` → 表情回应落库（extra.reactions 全量表）后
+  向房间广播；消息不存在/已撤回/非成员/机器消息静默忽略（fail-closed）；
 - `chat_read {room_id}` → 清零未读并回执最新已读游标。
 
-下行 action：`chat_message` / `chat_recall` / `chat_read` / `chat_unread`。
+下行 action：`chat_message` / `chat_recall` / `chat_reaction` / `chat_read` / `chat_unread`。
 """
 
 import asyncio
@@ -149,6 +151,8 @@ class ChatNotify(AsyncJsonWebsocket):
                 await self.handle_send(data)
             case MessageAction.CHAT_RECALL.value:
                 await self.handle_recall(data)
+            case MessageAction.CHAT_REACTION.value:
+                await self.handle_reaction(data)
             case MessageAction.CHAT_READ.value:
                 await self.handle_read(data)
             case _:
@@ -165,7 +169,8 @@ class ChatNotify(AsyncJsonWebsocket):
             )
             return
 
-        # 消息类型：text（缺省）/ image / file；附件消息携带 file_pk（先经 REST 上传取得）
+        # 消息类型：text（缺省）/ image / video / audio / file；附件消息携带 file_pk
+        # （先经 REST 上传取得）
         message_type = str(data.get("message_type") or ChatMessage.MessageType.TEXT)
         if message_type not in ChatMessage.MessageType.values:
             message_type = str(ChatMessage.MessageType.TEXT)
@@ -214,6 +219,34 @@ class ChatNotify(AsyncJsonWebsocket):
         payload = {"message_id": message.pk, "id": message.pk, "room_id": message.room_id, "operator_pk": self.user.pk}
         await self.broadcast(room, MessageAction.CHAT_RECALL.value, payload)
 
+    async def handle_reaction(self, data):
+        # 限流与消息发送同源：回应同样是「落库 + 房间广播」的上行写操作，
+        # 恶意连接高频刷回应会放大成 DB 写与广播风暴
+        if not await database_sync_to_async(allow_chat_send)(self.user.pk):
+            logger.warning("chat reaction rate limited: user=%s", self.user.pk)
+            await self.send_base_json(
+                MessageAction.CHAT_REACTION.value, code=1001, detail=str(_("Sending too fast, please slow down"))
+            )
+            return
+        try:
+            result = await database_sync_to_async(chat_service.toggle_reaction)(
+                self.user, data.get("message"), data.get("emoji"), data.get("op")
+            )
+        except DjangoValidationError as exc:
+            await self.send_base_json(MessageAction.CHAT_REACTION.value, code=1001, detail="; ".join(exc.messages))
+            return
+        if result is None:
+            # 消息不存在/已撤回/非成员/机器消息：静默忽略（fail-closed，不回错误帧）
+            return
+        room, message_pk, reactions, ts = result
+        # 全量回应表广播（幂等，客户端整体替换）：即使本次 op 落空也下发当前表，
+        # 让 stale 客户端借同一帧对齐
+        await self.broadcast(
+            room,
+            MessageAction.CHAT_REACTION.value,
+            {"room": room.pk, "message": message_pk, "reactions": reactions, "ts": ts},
+        )
+
     async def handle_read(self, data):
         try:
             room = await database_sync_to_async(chat_service.accessible_room)(data.get("room_id"), self.user)
@@ -228,6 +261,9 @@ class ChatNotify(AsyncJsonWebsocket):
     # ------------------------------------------------------------ 下行事件
 
     async def chat_recall(self, event):
+        await self._send_base(event)
+
+    async def chat_reaction(self, event):
         await self._send_base(event)
 
     async def chat_unread(self, event):

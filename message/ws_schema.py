@@ -97,13 +97,36 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
         "fields": {
             "id": "消息自增主键（游标）",
             "room_type": "public / private / ai",
-            "message_type": "text / ai / system / image / file",
+            "message_type": "text / ai / system / image / video / audio / file",
             "client_msg_id": "客户端幂等键",
+        },
+    },
+    "chatReactionPayload": {
+        "typed_dict": "ChatReactionPayload",
+        "description": "表情回应上行帧载荷（ws/chat/ 通道 ChatNotify；对消息 add/remove 自己的 emoji 回应，落库后广播全量表）",
+        "required": ["message", "emoji", "op"],
+        "open": False,
+        "fields": {
+            "message": "目标消息 pk（ChatMessage 自增主键）",
+            "emoji": "回应表情（去首尾空白后 1-16 字符）",
+            "op": "add 添加 / remove 移除（remove 只移除自己，不能替他人移除）",
+        },
+    },
+    "chatReactionUpdatePayload": {
+        "typed_dict": "ChatReactionUpdatePayload",
+        "description": "表情回应广播帧载荷（ws/chat/ 下行；reactions 为该消息全量回应表，客户端整体替换即可）",
+        "required": ["room", "message", "reactions", "ts"],
+        "open": False,
+        "fields": {
+            "room": "房间 pk",
+            "message": "消息 pk",
+            "reactions": "全量回应表 {emoji: [user_pk, ...]}（整体替换，幂等）",
+            "ts": "广播时刻（epoch 秒），客户端可据此丢弃乱序到达的旧帧",
         },
     },
     "screenCommandPayload": {
         "typed_dict": "ScreenCommandPayload",
-        "description": "大屏远程控制帧载荷（ws/screen/<pk> 下行，system/ws_screen.py 广播；展示端被动接收）",
+        "description": "大屏远程控制帧载荷（ws/screen/<pk> 下行，dataset/ws_screen.py 广播；展示端被动接收）",
         "required": ["command"],
         "open": False,
         "fields": {
@@ -113,6 +136,23 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
             "refresh_rev": "数据刷新代数（递增即重拉数据）",
             "rev": "控制态版本号（单调递增）",
             "ts": "指令落态时间（ISO）",
+        },
+    },
+    "screenDataPayload": {
+        "typed_dict": "ScreenDataPayload",
+        "description": (
+            "大屏聚合数据帧载荷（ws/screen/<pk> 下行；按观察者权限各自聚合后自推，"
+            "dataset/ws_screen.py 的 screen_data_trigger，不做组广播）"
+        ),
+        "required": ["screen", "dashboard", "rev", "cards", "errors", "ts"],
+        "open": False,
+        "fields": {
+            "screen": "大屏 pk",
+            "dashboard": "所属仪表盘 pk（canvas 画布模式为 null；carousel 轮播模式逐仪表盘一帧）",
+            "rev": "控制态版本号（取当前控制态缓存 rev，未下发过指令为 0）",
+            "cards": "卡片数据 {card, kind: execute|aggregate, data}；data 为 execute/aggregate 返回结构",
+            "errors": "失败卡片 {card, detail}：数据集被删 / 字段权限 fail-closed 等，不影响其余卡片",
+            "ts": "推送时刻（epoch 秒）",
         },
     },
 }

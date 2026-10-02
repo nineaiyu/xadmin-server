@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from html2text import HTML2Text
 
 from common.utils import get_logger
+from common.utils.sanitize import sanitize_rich_text
 from notifications.backends import BACKEND
 from notifications.models import SystemMsgSubscription, UserMsgSubscription
 from system.services import UserInfo, get_superusers, get_users_by_pks
@@ -26,6 +27,14 @@ user_msgs = USER_MESSAGE_REGISTRY
 # 后端消息渲染方法注册表（新增后端不再修改 Message 基类）。
 # key: BACKEND 成员；value: Message 实例上的渲染方法名；未注册的后端回退 get_common_msg
 BACKEND_MSG_RENDERERS: dict = {}
+
+# 正文按 HTML 渲染的渠道（站内信前端 v-html 展示、邮件 html_message 投递）：
+# 渲染收口处对正文做白名单净化。存量缺口：公告路径在 serializer 入库前已净化，
+# 但通知链路（含 DB 模板覆盖渲染）从未净化——模板文本与变量值（如审批标题等
+# 用户可控数据）都可能携带 <script>/on* 注入 payload，落库 MessageContent 后即成
+# 存储型 XSS。SMS/IM 渠道正文是纯文本（get_text_msg 已用 html2text 剥离标签），
+# 不做 HTML 净化（净化反而会把纯文本当片段转义）。
+HTML_MESSAGE_BACKENDS = frozenset({BACKEND.SITE_MSG, BACKEND.EMAIL})
 
 
 def register_backend_msg(backend, method_name):
@@ -83,6 +92,11 @@ class Message:
             get_msg_method = getattr(self, method_name)
             # 模板覆盖收口：渠道渲染完成后统一套用 DB 覆盖（未配置零行为变化）
             msg = self.apply_template_override(get_msg_method())
+            if backend in HTML_MESSAGE_BACKENDS:
+                # HTML 渠道正文统一白名单净化（按渠道分派，覆盖默认模板与 DB 覆盖渲染
+                # 两条路径，测试消息同口径）。净化幂等：公告路径已在 serializer 净化过，
+                # 此处二次净化结果一致，无行为漂移。
+                msg = {**msg, "message": sanitize_rich_text(msg.get("message"))}
             backends_msg_mapper[backend] = msg
         return backends_msg_mapper
 

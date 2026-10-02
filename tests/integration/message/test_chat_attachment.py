@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
-"""聊天附件（图片 / 文件消息）集成测试。
+"""聊天附件（图片 / 音视频 / 文件消息）集成测试。
 
-覆盖四条口径：
+覆盖五条口径：
 1. 上传端点：复用文件中心安全策略（种类门槛 / 扩展名 / 大小 / 配额）+ 落临时件；
+   kind 白名单 image|video|audio|file 且必须与真实种类一致（伪造 kind 拒绝）；
 2. WS 附件消息：归属 fail-closed（只能引用本人上传件）、消息类型与附件种类匹配、
    内容缺省取文件名、附件随消息转正（is_tmp=False）；
 3. 受鉴权取件：房间可访问者可读、非成员 / 撤回后拒绝、文本消息无附件；
-4. 会话列表最后消息随附件消息更新。
+   图片走缩略图缓存（inline JPEG）；音/视频按真实 MIME inline（浏览器原生播放）；
+   其余类型保持附件下载（Content-Disposition: attachment）；
+4. 会话列表最后消息随附件消息更新；
+5. 种类判定：mp4→video / mp3→audio / txt→file / png→image（MIME 优先、扩展名兜底，
+   复用上传分类判定，不重复维护扩展名表）。
 
 权限点（upload:ChatMessage / file:ChatMessage）在用例内以 menu_factory 现场登记并授权，
 与种子口径一致（种子守护见 tests/unit/system/test_chat_menu_seed.py）。
@@ -21,6 +26,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from message import chat as chat_service
+from message.attachments import attachment_kind
 from message.consumers import ChatNotify
 from message.models import ChatMessage
 from message.utils import get_chat_user_group_name, get_public_chat_group_name
@@ -164,6 +170,80 @@ class TestAttachmentUpload:
         )
         assert resp.data["code"] == 1001, resp.data
         assert UploadFile.objects.filter(creator=alice).count() == 0, "种类不符的临时件应被清理"
+
+    def test_unknown_kind_rejected(self, alice, chat_perms):
+        """kind 白名单（image|video|audio|file）外的取值 fail-closed。"""
+        chat_perms["grant"](alice)
+        resp = _upload(_api_client(alice), name="pic.png", content=PNG_BYTES, content_type="image/png", kind="movie")
+        assert resp.data["code"] == 1001, resp.data
+        assert UploadFile.objects.filter(creator=alice).count() == 0
+
+    def test_missing_kind_rejected(self, alice, chat_perms):
+        """旧实现 kind 缺省不校验（任意记录可落），白名单收紧后缺省即拒绝。"""
+        chat_perms["grant"](alice)
+        resp = _upload(_api_client(alice), kind=None)
+        assert resp.data["code"] == 1001, resp.data
+        assert UploadFile.objects.filter(creator=alice).count() == 0
+
+    def test_video_upload_accepted(self, alice, chat_perms):
+        chat_perms["grant"](alice)
+        resp = _upload(
+            _api_client(alice),
+            name="clip.mp4",
+            content=b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom",
+            content_type="video/mp4",
+            kind="video",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        data = resp.data["data"]
+        assert data["kind"] == "video"
+        assert data["mime_type"] == "video/mp4"
+        upload = UploadFile.objects.get(pk=data["pk"])
+        assert upload.is_tmp is True
+
+    def test_audio_upload_accepted(self, alice, chat_perms):
+        chat_perms["grant"](alice)
+        resp = _upload(
+            _api_client(alice),
+            name="song.mp3",
+            content=b"ID3\x03\x00\x00\x00\x00\x00\x00",
+            content_type="audio/mpeg",
+            kind="audio",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["kind"] == "audio"
+
+    def test_forged_video_kind_rejected(self, alice, chat_perms):
+        """伪造 kind=video 上传文本文件：拒绝且不留无主记录。"""
+        chat_perms["grant"](alice)
+        resp = _upload(_api_client(alice), name="note.txt", content=b"hello", content_type="text/plain", kind="video")
+        assert resp.data["code"] == 1001, resp.data
+        assert UploadFile.objects.filter(creator=alice).count() == 0
+
+    def test_forged_audio_kind_rejected(self, alice, chat_perms):
+        chat_perms["grant"](alice)
+        resp = _upload(
+            _api_client(alice),
+            name="clip.mp4",
+            content=b"\x00\x00\x00\x18ftypmp42",
+            content_type="video/mp4",
+            kind="audio",
+        )
+        assert resp.data["code"] == 1001, resp.data
+        assert UploadFile.objects.filter(creator=alice).count() == 0
+
+    def test_file_kind_accepts_media(self, alice, chat_perms):
+        """kind=file 对实际种类不限（音视频也可按文件消息发送，下载语义与旧行为一致）。"""
+        chat_perms["grant"](alice)
+        resp = _upload(
+            _api_client(alice),
+            name="clip.mp4",
+            content=b"\x00\x00\x00\x18ftypmp42",
+            content_type="video/mp4",
+            kind="file",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["kind"] == "video", "记录真实种类，发送端决定按哪种消息类型引用"
 
     def test_blocked_extension_rejected(self, alice, chat_perms):
         chat_perms["grant"](alice)
@@ -335,6 +415,116 @@ class TestAttachmentServing:
         payload = chat_service.message_payload(message, room=room)
         assert payload["extra"]["file"]["missing"] is True
         assert payload["extra"]["file"]["url"] == ""
+
+
+class TestAttachmentKindInference:
+    """种类判定：MIME 前缀优先、扩展名兜底（复用上传分类判定）。"""
+
+    @pytest.mark.parametrize(
+        "filename,mime_type,expected",
+        [
+            ("clip.mp4", "video/mp4", "video"),
+            ("clip.mov", "application/octet-stream", "video"),  # MIME 缺失按扩展名兜底
+            ("song.mp3", "audio/mpeg", "audio"),
+            ("song.flac", "application/octet-stream", "audio"),
+            ("note.txt", "text/plain", "file"),
+            ("doc.pdf", "application/pdf", "file"),
+            ("archive.zip", "application/zip", "file"),
+        ],
+    )
+    def test_media_and_file_kinds(self, filename, mime_type, expected):
+        assert attachment_kind(UploadFile(filename=filename, mime_type=mime_type)) == expected
+
+    def test_image_kind_unchanged(self):
+        """图片分支零漂移：仍按在线预览判定（MIME 前缀），不引入扩展名兜底。"""
+        assert attachment_kind(UploadFile(filename="pic.png", mime_type="image/png")) == "image"
+        # 无 MIME 的 .png 历史口径为 file（下载），不因音视频扩展名兜底而漂移
+        assert attachment_kind(UploadFile(filename="pic.png", mime_type="")) == "file"
+
+
+class TestMediaMessage:
+    def test_video_message_links_attachment(self, ws_layer, alice, chat_perms, monkeypatch):
+        room = chat_service.get_public_room()
+        _capture_group_send(ws_layer, monkeypatch)
+        chat_perms["grant"](alice)
+        file_pk = _upload(
+            _api_client(alice),
+            name="clip.mp4",
+            content=b"\x00\x00\x00\x18ftypmp42",
+            content_type="video/mp4",
+            kind="video",
+        ).data["data"]["pk"]
+
+        __, captured = _send(
+            ws_layer,
+            alice,
+            {"room_id": room.pk, "message_type": "video", "file_pk": file_pk, "client_msg_id": "c-video"},
+        )
+
+        assert captured == []
+        message = ChatMessage.objects.get(room=room)
+        assert message.message_type == ChatMessage.MessageType.VIDEO
+        assert message.content == "clip.mp4", "内容缺省取文件名"
+        assert message.extra["file"]["kind"] == "video"
+        assert UploadFile.objects.get(pk=file_pk).is_tmp is False
+
+    def test_video_message_rejects_non_video_attachment(self, ws_layer, alice, chat_perms):
+        """消息类型与附件种类匹配：video 消息只接受视频附件（fail-closed）。"""
+        room = chat_service.get_public_room()
+        chat_perms["grant"](alice)
+        file_pk = _upload(
+            _api_client(alice), name="note.txt", content=b"hello", content_type="text/plain", kind="file"
+        ).data["data"]["pk"]
+
+        __, captured = _send(ws_layer, alice, {"room_id": room.pk, "message_type": "video", "file_pk": file_pk})
+
+        assert captured[0]["code"] == 1001
+        assert ChatMessage.objects.filter(room=room).count() == 0
+
+
+class TestMediaServing:
+    """音/视频取件：inline + 真实 Content-Type（浏览器原生播放）；图片分支不回归。"""
+
+    @pytest.fixture
+    def media_room(self, alice, bob):
+        return chat_service.get_or_create_private_room(alice, bob)
+
+    def _media_message(self, room, alice, filename, mime_type, message_type):
+        upload = UploadFile.objects.create(
+            creator=alice,
+            filename=filename,
+            filesize=64,
+            mime_type=mime_type,
+            is_upload=True,
+            category=message_type,
+            filepath=SimpleUploadedFile(filename, b"\x00" * 64, content_type=mime_type),
+        )
+        message, __ = chat_service.create_message(room, alice, "", message_type=message_type, attachment=upload)
+        return message
+
+    def test_video_served_inline_with_real_mime(self, media_room, alice, bob, chat_perms):
+        chat_perms["grant"](bob)
+        message = self._media_message(media_room, alice, "clip.mp4", "video/mp4", ChatMessage.MessageType.VIDEO)
+        resp = _api_client(bob).get(f"/api/chat/message/{message.pk}/file")
+        assert resp.status_code == 200, getattr(resp, "data", None)
+        assert resp["Content-Type"].startswith("video/mp4")
+        assert resp["Content-Disposition"].startswith("inline")
+        assert resp["X-Content-Type-Options"] == "nosniff"
+
+    def test_audio_served_inline_with_real_mime(self, media_room, alice, bob, chat_perms):
+        chat_perms["grant"](bob)
+        message = self._media_message(media_room, alice, "song.mp3", "audio/mpeg", ChatMessage.MessageType.AUDIO)
+        resp = _api_client(bob).get(f"/api/chat/message/{message.pk}/file")
+        assert resp.status_code == 200, getattr(resp, "data", None)
+        assert resp["Content-Type"].startswith("audio/mpeg")
+        assert resp["Content-Disposition"].startswith("inline")
+
+    def test_video_non_member_rejected(self, media_room, alice, charlie, chat_perms):
+        """音/视频 inline 不降低鉴权口径：非房间成员拒绝。"""
+        chat_perms["grant"](charlie)
+        message = self._media_message(media_room, alice, "clip.mp4", "video/mp4", ChatMessage.MessageType.VIDEO)
+        resp = _api_client(charlie).get(f"/api/chat/message/{message.pk}/file")
+        assert resp.data["code"] == 1001
 
 
 class TestLastMessageSummary:

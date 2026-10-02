@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""聊天附件（图片 / 文件消息）：种类判定、归属校验、载荷构造与受鉴权取件。
+"""聊天附件（图片 / 音视频 / 文件消息）：种类判定、归属校验、载荷构造与受鉴权取件。
 
 设计要点：
 - **只存引用**：`ChatMessage.attachment` 外键指向 system.UploadFile，`extra["file"]`
@@ -34,9 +34,15 @@ from system.utils.preview import (
     preview_kind,
     touch_preview_cache,
 )
+from system.utils.upload_category import CATEGORY_AUDIO, CATEGORY_VIDEO, guess_upload_category
 
-#: 附件种类（与上传分类 upload_category 的 image 值同口径）
+#: 附件种类（image 与在线预览判定同口径；video/audio 与上传分类同口径）
 KIND_FILE = "file"
+KIND_VIDEO = "video"
+KIND_AUDIO = "audio"
+
+#: 上传端点 kind 白名单（与附件消息类型集合同源；kind=file 对实际种类不限）
+UPLOAD_KINDS = (KIND_IMAGE, KIND_VIDEO, KIND_AUDIO, KIND_FILE)
 
 # 文件取件路径（受鉴权；与权限点 file:ChatMessage 的 path 同源）
 FILE_URL_TEMPLATE = "/api/chat/message/{pk}/file"
@@ -46,8 +52,22 @@ MAX_ATTACHMENT_CAPTION_LENGTH = 2000
 
 
 def attachment_kind(upload) -> str:
-    """附件种类：图片（与在线预览判定同源）→ image，其余 → file。"""
-    return KIND_IMAGE if preview_kind(upload) == KIND_IMAGE else KIND_FILE
+    """附件种类：图片 → image，音/视频 → video/audio，其余 → file。
+
+    - 图片沿用在线预览判定（存量口径零漂移：仅按 MIME 前缀判图，不引入扩展名
+      兜底，避免 svg 等无 MIME 记录从「按文件下载」漂移成「缩略图渲染失败」）；
+    - 音/视频复用上传分类的公开判定（system.utils.upload_category：MIME 前缀优先、
+      扩展名兜底），不在本模块重复维护扩展名表；
+    - pdf/office/压缩包/未知一律 file（沿用附件下载语义）。
+    """
+    if preview_kind(upload) == KIND_IMAGE:
+        return KIND_IMAGE
+    category = guess_upload_category(upload.filename, upload.mime_type)
+    if category == CATEGORY_VIDEO:
+        return KIND_VIDEO
+    if category == CATEGORY_AUDIO:
+        return KIND_AUDIO
+    return KIND_FILE
 
 
 def attachment_extra(upload) -> dict:
@@ -78,15 +98,35 @@ def resolve_sender_attachment(file_pk, sender) -> UploadFile:
     return upload
 
 
+#: 消息类型 → 允许的附件种类（文件消息对实际种类不限）。
+#: 经 str() 取 Choices 成员的值：mypy 的 Django 插件把成员类型推成 tuple，
+#: 直接作 dict 键会误报；运行期 str(member) 即其字符串值
+_KIND_BY_MESSAGE_TYPE: dict[str, str] = {
+    str(ChatMessage.MessageType.IMAGE): KIND_IMAGE,
+    str(ChatMessage.MessageType.VIDEO): KIND_VIDEO,
+    str(ChatMessage.MessageType.AUDIO): KIND_AUDIO,
+}
+
+
 def validate_attachment_kind(upload, message_type: str) -> None:
-    """消息类型与附件种类匹配：图片消息只接受图片附件（文件消息不限）。"""
-    if message_type == ChatMessage.MessageType.IMAGE and attachment_kind(upload) != KIND_IMAGE:
-        raise DjangoValidationError(_("Only image files can be sent as image messages"))
+    """消息类型与附件种类匹配：图片/音视频消息只接受对应种类附件（文件消息不限）。"""
+    required = _KIND_BY_MESSAGE_TYPE.get(message_type)
+    if required and attachment_kind(upload) != required:
+        raise DjangoValidationError(_("The message type does not match the attachment kind"))
 
 
 def validate_upload_kind(upload, kind: str) -> bool:
-    """上传端点的种类门槛：`kind=image` 时必须确为图片（其余 kind 不做限制）。"""
-    return not (kind == KIND_IMAGE and attachment_kind(upload) != KIND_IMAGE)
+    """上传端点的种类门槛：kind 必须在白名单内，且与实际种类一致。
+
+    - 白名单收紧：旧实现只校验 `kind=image`，其余取值（含伪造的 `video`）不限，
+      「声明与实际不符」的记录会流入消息协议让前端按错误种类渲染气泡；
+    - `kind=file` 对实际种类不限：图片/音视频也允许按文件消息发送（下载语义，
+      与旧行为一致）；`kind=image|video|audio` 必须与真实 MIME 判定一致。
+    """
+    kind = str(kind or "").strip().lower()
+    if kind not in UPLOAD_KINDS:
+        return False
+    return kind == KIND_FILE or attachment_kind(upload) == kind
 
 
 def mark_attachment_used(upload) -> None:
@@ -100,13 +140,16 @@ def attachment_response(message, request):
     """受鉴权取件响应。
 
     - 图片：`?size=thumb|preview` 取缩略图/预览缓存（JPEG，inline，浏览器直接渲染）；
+    - 音/视频：按存储文件真实 MIME inline 返回（浏览器原生播放器直接播放）；
+      Range 断点续播首版不做（nginx L7 场景待登记后续补齐）；
     - 其余：按附件下载（Content-Disposition: attachment），对象存储经 storage 原语读取。
     """
     upload = message.attachment
     if upload is None:
         return None
+    kind = attachment_kind(upload)
     size = str(request.query_params.get("size") or SIZE_THUMB).lower()
-    if attachment_kind(upload) == KIND_IMAGE:
+    if kind == KIND_IMAGE:
         if size not in (SIZE_THUMB, SIZE_PREVIEW):
             size = SIZE_THUMB
         cache_path = ensure_image_cache(upload, size)
@@ -119,6 +162,14 @@ def attachment_response(message, request):
     name = getattr(upload.filepath, "name", "") if upload.filepath else ""
     if not name or not storage_exists(name):
         return None
+    if kind in (KIND_VIDEO, KIND_AUDIO):
+        # inline 渲染按存储的真实 MIME 下发（浏览器以该类型交给播放器，不做嗅探改判）；
+        # nosniff 兜底：即便 MIME 记录被污染也不会被浏览器嗅探成 HTML 执行
+        content_type = (upload.mime_type or "").split(";")[0].strip() or "application/octet-stream"
+        response = FileResponse(storage_open(name, "rb"), as_attachment=False, content_type=content_type)
+        response["Content-Disposition"] = "inline; filename*=UTF-8''{}".format(quote(upload.filename or ""))
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
     response = FileResponse(
         storage_open(name, "rb"),
         as_attachment=True,

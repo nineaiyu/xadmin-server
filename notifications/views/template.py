@@ -149,6 +149,11 @@ class MessageTemplateViewSet(GenericViewSet):
             result["subject"] = render_template(subject_template, context)
         if str(body_template or "").strip():
             result["message"] = render_template(body_template, context)
+        # 与正式发送同口径净化：正文（草稿或默认模板）以 HTML 展示，注入 payload
+        # 不得经预览直达管理页；净化幂等，默认正文（代码模板）二次净化结果不变。
+        from common.utils.sanitize import sanitize_rich_text
+
+        result["message"] = sanitize_rich_text(result["message"])
         return ApiResponse(data=result)
 
     @extend_schema(

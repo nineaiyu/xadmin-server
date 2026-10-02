@@ -126,6 +126,8 @@ class ChatMessage(DbBaseModel):
         SYSTEM = "system", _("System message")
         # 附件消息（内容为文件名 + 附件外键引用；见 message/attachments.py）
         IMAGE = "image", _("Image")
+        VIDEO = "video", _("Video")
+        AUDIO = "audio", _("Audio")
         FILE = "file", _("File")
 
     room = models.ForeignKey(ChatRoom, verbose_name=_("Room"), on_delete=models.CASCADE, related_name="messages")
@@ -146,9 +148,10 @@ class ChatMessage(DbBaseModel):
     client_msg_id = models.CharField(_("Client message id"), max_length=64, blank=True, default="")
     is_recalled = models.BooleanField(_("Recalled"), default=False)
     recalled_time = models.DateTimeField(_("Recalled time"), null=True, blank=True)
-    # AI 回复的引用来源等结构化附加信息（text 消息为空 dict）
+    # 结构化附加信息：AI 回复的引用来源（extra.sources）/ 动作草稿（extra.action_draft）/
+    # 表情回应表（extra.reactions = {emoji: [user_pk, ...]}，见 message.chat.toggle_reaction）
     extra = models.JSONField(_("Extra"), default=dict, blank=True)
-    # 附件（图片 / 文件消息）：外键引用上传件，兼作「附件是否仍被业务使用」的引用依据
+    # 附件（图片 / 音视频 / 文件消息）：外键引用上传件，兼作「附件是否仍被业务使用」的引用依据
     # （UploadFile.has_business_reference 由此保护磁盘文件不被保留期清理误删）
     attachment = models.ForeignKey(
         "system.UploadFile",
@@ -177,5 +180,30 @@ class ChatMessage(DbBaseModel):
         return f"{self.room_id}#{self.pk}"
 
 
-# 附件消息类型（图片 / 文件）：发送时必须携带 attachment，渲染信息存 extra["file"]
-ATTACHMENT_MESSAGE_TYPES = frozenset({ChatMessage.MessageType.IMAGE, ChatMessage.MessageType.FILE})
+# 附件消息类型（图片 / 音视频 / 文件）：发送时必须携带 attachment，渲染信息存 extra["file"]
+ATTACHMENT_MESSAGE_TYPES = frozenset(
+    {
+        ChatMessage.MessageType.IMAGE,
+        ChatMessage.MessageType.VIDEO,
+        ChatMessage.MessageType.AUDIO,
+        ChatMessage.MessageType.FILE,
+    }
+)
+
+# 允许表情回应的消息类型：仅用户产生的内容消息（ai / system 为机器生成，回应没有
+# 对象语义，服务端静默忽略；前端也不提供入口）
+REACTION_MESSAGE_TYPES = frozenset(
+    {
+        ChatMessage.MessageType.TEXT,
+        ChatMessage.MessageType.IMAGE,
+        ChatMessage.MessageType.VIDEO,
+        ChatMessage.MessageType.AUDIO,
+        ChatMessage.MessageType.FILE,
+    }
+)
+
+# 表情回应约束（存 extra["reactions"] = {emoji: [user_pk, ...]}，不建新表）：
+# 上限只为限制 extra 体积与滥用面，不追求大群全员表情的产品容量
+REACTION_EMOJI_MAX_LENGTH = 16
+REACTION_MAX_EMOJI_KEYS = 20
+REACTION_MAX_USERS_PER_EMOJI = 50

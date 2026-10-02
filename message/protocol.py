@@ -37,11 +37,13 @@ class MessageAction(StrEnum):
     PUSH_MESSAGE = "push_message"  # 站内信/通知推送
     CHAT_MESSAGE = "chat_message"  # 聊天室消息（双向）
     CHAT_RECALL = "chat_recall"  # 消息撤回（双向，ws/chat/）
+    CHAT_REACTION = "chat_reaction"  # 消息表情回应（双向，ws/chat/）
     CHAT_READ = "chat_read"  # 已读回执（上行 chat_read → 下行游标）
     CHAT_UNREAD = "chat_unread"  # 未读红点推送（下行，ws/chat/）
     TASK_LOG = "task_log"  # 任务执行日志增量推送（system/ws.py）
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
-    SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（system/ws_screen.py，下行单向）
+    SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（dataset/ws_screen.py，下行单向）
+    SCREEN_DATA = "screen_data"  # 大屏服务端聚合数据推送（dataset/ws_screen.py，下行单向）
 
 
 class InboundMessage(TypedDict, total=False):
@@ -90,9 +92,9 @@ class ChatRoomMessagePayload(TypedDict, total=False):
     """聊天室消息载荷（ws/chat/ 通道）：落库后广播的完整消息记录。
 
     id 为自增主键（即游标），client_msg_id 供发送端做本地幂等对齐。
-    message_type 取值 text / ai / system / image / file；附件消息（image / file）
-    的上行帧额外携带 `file_pk`（先经上传端点取得），下行载荷的 extra 内附
-    ChatAttachmentPayload（含受鉴权取件 url）。
+    message_type 取值 text / ai / system / image / video / audio / file；附件消息
+    （image / video / audio / file）的上行帧额外携带 `file_pk`（先经上传端点取得），
+    下行载荷的 extra 内附 ChatAttachmentPayload（含受鉴权取件 url）。
     """
 
     id: int
@@ -132,6 +134,37 @@ class ChatRecallPayload(TypedDict, total=False):
     id: int
     room_id: int
     operator_pk: int
+
+
+class ChatReactionPayload(TypedDict, total=False):
+    """表情回应帧（上行）：对某条消息添加 / 移除自己的 emoji 回应。
+
+    - ``message``：目标消息 pk（ChatMessage 自增主键）；
+    - ``emoji``：回应表情，去首尾空白后 1-16 字符；
+    - ``op``：add 添加 / remove 移除。add 幂等（重复 add 不重复记录）；
+      remove 只能移除自己的回应（载荷不含目标用户字段，无法替他人移除）。
+
+    消息不存在 / 已撤回 / 操作者非房间成员 / 机器消息（ai / system）时服务端
+    静默忽略（不回执也不广播）；emoji 超长或回应数超上限时回执 code=1001。
+    """
+
+    message: int
+    emoji: str
+    op: str
+
+
+class ChatReactionUpdatePayload(TypedDict, total=False):
+    """表情回应广播帧（下行）：房间内所有可访问该消息的连接各收一帧。
+
+    ``reactions`` 为该消息**全量**回应表（emoji → 回应用户 pk 列表），客户端收到后
+    整体替换本地状态即可（幂等，无需自行合并增量）。``ts`` 为广播时刻（epoch 秒），
+    客户端可据此丢弃乱序到达的旧帧。
+    """
+
+    room: int
+    message: int
+    reactions: dict[str, list[int]]
+    ts: int
 
 
 class ChatReadPayload(TypedDict, total=False):
@@ -182,6 +215,27 @@ class ScreenCommandPayload(TypedDict, total=False):
     refresh_rev: int
     rev: int
     ts: str
+
+
+class ScreenDataPayload(TypedDict, total=False):
+    """大屏聚合数据帧（ws/screen/<pk> 下行，按观察者各自计算后自推）。
+
+    服务端不做组广播数据：execute/aggregate 的数据权限绑定浏览者，触发事件到达
+    各展示连接后以**连接自身用户**视角聚合（dataset/screen_data.py），再只发给
+    自己——权限语义与旧「客户端逐卡 HTTP 重拉」逐字节等价，M 卡 × N 观察者的
+    HTTP 请求收敛为每观察者每轮 1 帧。
+
+    canvas（Screen.layout 非空）单帧 dashboard=None；carousel（layout 空）逐
+    dashboards 清单各一帧（dashboard=仪表盘 pk）。cards.data 为 execute/aggregate
+    的返回结构；单卡失败（数据集被删 / 字段权限 fail-closed 等）进 errors，不中断整帧。
+    """
+
+    screen: str
+    dashboard: str | None
+    rev: int
+    cards: list[dict[str, Any]]
+    errors: list[dict[str, Any]]
+    ts: int
 
 
 class MonitorPushPayload(TypedDict, total=False):
