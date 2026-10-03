@@ -6,6 +6,8 @@
 # 若此前按 nightly runbook 用 docker run 起过 xadmin-pgtest-pg，需先移除再 up（端口冲突）。
 # E2E（tests/settings_e2e，xadmin-client 跑批器）复用本文件的 postgres 服务（库名 xadmin_e2e*，
 # 由 scripts/e2e_seed.py DROP/CREATE 重置）；E2E 缓存为进程内 FakeRedis，无需 redis 服务。
+# 独立项目名：避免与开发栈（默认项目 xadmin-server）同项目，防止 down --remove-orphans 误删开发容器。
+name: xadmin-test
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -17,7 +19,7 @@ services:
     ports:
       - "127.0.0.1:55433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U server"]
+      test: ["CMD-SHELL", "pg_isready -U server -d xadmin_realtest"]
       interval: 10s
       timeout: 5s
       retries: 10
