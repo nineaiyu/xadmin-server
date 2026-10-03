@@ -59,8 +59,8 @@
 
 | 文档 | 内容 |
 |------|------|
-| [adr/README.md](adr/README.md) | **架构决策记录索引（77 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
-| [plans/README.md](plans/README.md) | 规划与治理：长期优化方案 / 当前年度计划 / 最近年度回顾；**已完成的一次性台账在 `plans/archive/`** |
+| [adr/README.md](adr/README.md) | **架构决策记录索引（78 篇；ADR-050~055 为废弃草案号，不回收）**——"当时为什么这样选"；新增决策按编号顺延并登记（篇数由 `check_doc_facts.py` 按 `docs/adr/ADR-*.md` 计数守护） |
+| [plans/README.md](plans/README.md) | 规划与治理：活跃台账（触发制任务清单）；**已完成的一次性台账在 `plans/archive/`**，预生成未来年度的填充文档已于 2026-10-03 清理 |
 | [metrics.md](metrics.md) | 基线指标看板（测试 / 体积 / 性能 KPI 基线 → 实测履历） |
 | [security-review.md](security-review.md) | 安全自查归档（按轮次追加） |
 | [cache-keys-audit.md](cache-keys-audit.md) | 缓存键与 JWT 审计（`scripts/check_cache_keys.py --strict`） |
@@ -74,7 +74,7 @@ docs/
 ├── architecture/         架构与组件（现状文档：组件手册 / 协议 / 权限 / 模块化…）
 ├── adr/                  架构决策记录（历史决策，含索引 README）
 ├── ops/                  部署与运维（手册 / runbook / 演练记录）
-├── plans/                规划与治理（活跃 3 篇；历史归档在 archive/）
+├── plans/                规划与治理（活跃 1 篇：触发制任务清单；历史归档在 archive/）
 ├── open-platform/        开放平台接入（指南 + 事件契约）
 ├── schema/               前后端契约 JSON Schema
 ├── imgs/                 文档配图

@@ -33,8 +33,8 @@
 
 全局搜索的 `icontains` 是**前缀通配**（`LIKE '%关键词%'`），B-tree 无法命中；
 PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontains，非 PG / 扩展不可用
-自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`，建索引/回滚见
-快照按表归属拆在 `system/migrations/0004_accountrisk_apiapplication_apiapplicationgrant_and_more.py`（system 侧 5 个）与 `approval/migrations/0001_initial.py`（approval 侧 4 个）（vendor 守卫 + 失败只告警，见 ADR-058）。
+自动回退顺序扫描）。清单与豁免见 `system/search_indexes.py`；建索引/回滚快照按表归属拆在
+`system/migrations/0004_accountrisk_apiapplication_apiapplicationgrant_and_more.py`（system 侧 5 个）与 `approval/migrations/0001_initial.py`（approval 侧 4 个）（vendor 守护 + 失败只告警；合并口径见 ADR-084——快照即以现名冻结）。
 
 | 表                     | 索引                                                                                  | 服务的检索字段                     |
 |-----------------------|-------------------------------------------------------------------------------------|-----------------------------|
@@ -43,9 +43,8 @@ PostgreSQL 部署下补 pg_trgm GIN 索引加速（语义不变：仍是 icontai
 | approval_approvalrequest | `idx_approvalrequest_path_trgm` / `idx_approval_module_trgm` / `idx_approval_object_pk_trgm` | 审批单分组 path/module/object_pk   |
 | approval_leave        | `idx_leave_reason_trgm`                                                             | 请假分组 reason                   |
 
-> TG-3（ADR-080）表归域改名：approval 侧两表已由 `system_*` 改名（索引名不变、随表跟随；
-> 历史快照折算见 `approval/migrations/0005` 的 `TRGM_TABLE_RENAMES`）。索引名仍沿用建索引
-> 时的原登记（不含表前缀），故未随改名重录。
+> 索引名沿用 2026-09-18 首次登记的原名（不含表前缀）；2026-10 迁移合并（ADR-084）后
+> approval 侧初始迁移即以现名建表建索引，不再需要改名折算登记。
 
 **豁免**（登记理由，覆盖守护在 `tests/unit/system/test_search_indexes.py`）：
 DeptInfo.name/code（小表）；OperationLog.path/module/ipaddress（写热表 + 超管低频检索，维持 §二 结论）；
