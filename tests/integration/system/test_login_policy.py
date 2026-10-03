@@ -239,6 +239,57 @@ class TestPolicyApi:
         assert resp.data["data"]["mfa_usable"] is False
         assert resp.data["data"]["username"] == normal_user.username
 
+    def test_preview_sample_time_drives_result(self, auth_client, normal_user):
+        """样例时间驱动判定：窗口外不命中、窗口内命中。
+
+        回归：naive 样例时间（「YYYY-MM-DD HH:mm:ss」）曾在 localtime() 处抛
+        ValueError，被误报成「时间格式无效」——端点级测试此前未覆盖 when 路径。
+        """
+        LoginAccessPolicy.objects.create(
+            name="work-hours",
+            priority=10,
+            target_type=LoginAccessPolicy.TargetType.ALL,
+            action=LoginAccessPolicy.Action.REJECT,
+            start_time=time(9, 0),
+            end_time=time(18, 0),
+        )
+        # 窗口外（naive 墙上时间，按当前时区解释）→ 不命中
+        resp = auth_client.post(
+            PREVIEW_URL,
+            {"username": normal_user.username, "when": "2026-10-04 21:11:42"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["matched"] is False
+        assert resp.data["data"]["items"][0]["time_matched"] is False
+        # 窗口内 → 命中
+        resp = auth_client.post(
+            PREVIEW_URL,
+            {"username": normal_user.username, "when": "2026-10-05 10:00:00"},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["matched"] is True
+        assert resp.data["data"]["items"][0]["time_matched"] is True
+        # 带时区的 ISO 输入同样接受：取「本地 10:00」对应的 UTC 时刻，
+        # 断言与 TIME_ZONE 配置解耦
+        import datetime as datetime_mod
+
+        local_ten = timezone.make_aware(timezone.datetime(2026, 10, 5, 10, 0))
+        utc_iso = local_ten.astimezone(datetime_mod.UTC).isoformat()
+        resp = auth_client.post(
+            PREVIEW_URL,
+            {"username": normal_user.username, "when": utc_iso},
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["matched"] is True
+
+    def test_preview_invalid_time_still_rejected(self, auth_client):
+        """真正无法解析的时间仍需报错，而不是静默按当前时间预演"""
+        resp = auth_client.post(PREVIEW_URL, {"when": "not-a-time"}, format="json")
+        assert resp.data["code"] != 1000
+
 
 class TestBuiltinDefaultPolicies:
     """内置默认登录策略：新装即具备基础安全策略，且不得把任何人锁在门外。

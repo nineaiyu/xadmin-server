@@ -78,9 +78,14 @@ class LoginAccessPolicyViewSet(BaseModelSet):
         raw_when = str(request.data.get("when") or "").strip()
         if raw_when:
             try:
-                when = timezone.localtime(datetime.fromisoformat(raw_when))
+                parsed = datetime.fromisoformat(raw_when)
             except ValueError:
                 return ApiResponse(code=1004, detail=_("Invalid time format"))
+            # fromisoformat 对无时区输入产出 naive datetime，而 localtime() 只接受
+            # aware datetime——naive 直传会在同一 try 里抛 ValueError，被误报成
+            # 「时间格式无效」。按当前时区解释 naive 输入（管理页 datetime picker
+            # 传本地墙上时间，语义正确）。
+            when = timezone.localtime(parsed if timezone.is_aware(parsed) else timezone.make_aware(parsed))
         result = preview_login_policy(user, ip, when)
         # require_mfa 的预演与真实登录存在已知分叉：真实登录在用户无可用
         # 二次验证方式时降级放行（防自锁）。这里探测该用户是否有可用方式，
