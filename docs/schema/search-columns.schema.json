@@ -97,6 +97,18 @@
         "type": "number",
         "description": "字符长度上限（CharField 及路径类字段）"
       },
+      "min_value": {
+        "type": "number",
+        "description": "数值下限（DRF min_value，字段声明时下发；前端 input-number 消费）"
+      },
+      "max_value": {
+        "type": "number",
+        "description": "数值上限（DRF max_value，字段声明时下发；前端 input-number 消费）"
+      },
+      "step": {
+        "type": "number",
+        "description": "数值步进（StepFloatField 显式声明时下发；前端 input-number 消费）"
+      },
       "default": {
         "description": "字段默认值（类型随字段而定；仅非 required 且有默认值时出现）"
       },

@@ -55,6 +55,9 @@ class SearchColumnsAction:
                             "write_only": build_basic_type(OpenApiTypes.BOOL),
                             "multiple": build_basic_type(OpenApiTypes.BOOL),
                             "max_length": build_basic_type(OpenApiTypes.NUMBER),
+                            "min_value": build_basic_type(OpenApiTypes.NUMBER),
+                            "max_value": build_basic_type(OpenApiTypes.NUMBER),
+                            "step": build_basic_type(OpenApiTypes.NUMBER),
                             "table_show": build_basic_type(OpenApiTypes.NUMBER),
                             "choices": build_array_type(
                                 build_object_type(
@@ -168,6 +171,12 @@ class SearchColumnsAction:
                 info["input_type"] = "textarea"
             else:
                 info["input_type"] = get_input_type(value, info)
+            # 数值字段扩展元数据：step 由字段显式声明（StepFloatField）才下发，
+            # 前端 input-number 据此渲染步进；min_value/max_value 是 DRF 标准属性，
+            # 已随 get_field_info 原生下发，无需在此处理
+            step = getattr(value, "step", None)
+            if step is not None:
+                info["step"] = step
             # 混入 SuggestionsAction 的视图，对 api-search-* 关联字段下发联想地址
             expose_suggest_url(self, request, info, info["input_type"])
             del info["type"]

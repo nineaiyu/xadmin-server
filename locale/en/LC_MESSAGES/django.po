@@ -6479,12 +6479,57 @@ msgstr ""
 msgid "Front-end web watermark text"
 msgstr ""
 
-#: settings/serializers/basic.py:35
-msgid "Leave empty to use 'username-nickname-time' as the watermark text"
+#: settings/serializers/basic.py:37
+msgid ""
+"Watermark text template; placeholders: {username} {nickname} {phone} {email}"
+" {pk} {time}; leave empty for '{username}-{nickname}-{time}'; use '、' for "
+"line breaks"
 msgstr ""
 
 #: settings/serializers/basic.py:42
 msgid "Front-end web watermark pages"
+msgstr ""
+
+#: settings/serializers/basic.py:52
+msgid "Front-end web watermark font size"
+msgstr ""
+
+#: settings/serializers/basic.py:54
+msgid "Watermark text font size in pixels (8-72)"
+msgstr ""
+
+#: settings/serializers/basic.py:62
+msgid "Front-end web watermark opacity"
+msgstr ""
+
+#: settings/serializers/basic.py:64
+msgid "Watermark opacity (0.01-1); larger values are more visible"
+msgstr ""
+
+#: settings/serializers/basic.py:72
+msgid "Front-end web watermark rotation"
+msgstr ""
+
+#: settings/serializers/basic.py:74
+msgid "Watermark rotation angle in degrees (-90 to 90)"
+msgstr ""
+
+#: settings/serializers/basic.py:82
+msgid "Front-end web watermark color"
+msgstr ""
+
+#: settings/serializers/basic.py:84
+msgid "Watermark text color, hex (e.g. #909399) or rgba(...); leave empty for default gray"
+msgstr ""
+
+#: settings/serializers/basic.py:131
+msgid "Invalid watermark color: %(value)s; use hex like #909399 or rgba(...)"
+msgstr ""
+
+#: settings/serializers/basic.py:90
+msgid ""
+"Invalid watermark pages: %(value)s; each entry must be a route path "
+"starting with '/'"
 msgstr ""
 
 #: settings/serializers/basic.py:44

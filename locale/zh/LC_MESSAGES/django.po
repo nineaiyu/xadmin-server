@@ -6431,9 +6431,15 @@ msgstr "开启前端页面水印"
 msgid "Front-end web watermark text"
 msgstr "前端水印文案"
 
-#: settings/serializers/basic.py:35
-msgid "Leave empty to use 'username-nickname-time' as the watermark text"
-msgstr "留空则使用「用户名-昵称-时间」作为水印文案"
+#: settings/serializers/basic.py:37
+msgid ""
+"Watermark text template; placeholders: {username} {nickname} {phone} {email}"
+" {pk} {time}; leave empty for '{username}-{nickname}-{time}'; use '、' for "
+"line breaks"
+msgstr ""
+"水印文案模板，支持占位符：{username} 登录名、{nickname} 昵称、{phone} 手机号、"
+"{email} 邮箱、{pk} 用户唯一标识、{time} 当前时间；留空 = 「{username}-"
+"{nickname}-{time}」；用「、」可实现换行"
 
 #: settings/serializers/basic.py:42
 msgid "Front-end web watermark pages"
@@ -6446,6 +6452,48 @@ msgid ""
 msgstr ""
 "水印生效的路由路径前缀，多个用英文逗号分隔；留空则全部页面生效。如：/system/"
 "user/index,/system/role/index"
+
+#: settings/serializers/basic.py:52
+msgid "Front-end web watermark font size"
+msgstr "前端水印字号"
+
+#: settings/serializers/basic.py:54
+msgid "Watermark text font size in pixels (8-72)"
+msgstr "水印文字字号，单位像素（8-72）"
+
+#: settings/serializers/basic.py:62
+msgid "Front-end web watermark opacity"
+msgstr "前端水印透明度"
+
+#: settings/serializers/basic.py:64
+msgid "Watermark opacity (0.01-1); larger values are more visible"
+msgstr "水印透明度（0.01-1），数值越大越明显"
+
+#: settings/serializers/basic.py:72
+msgid "Front-end web watermark rotation"
+msgstr "前端水印旋转角度"
+
+#: settings/serializers/basic.py:74
+msgid "Watermark rotation angle in degrees (-90 to 90)"
+msgstr "水印旋转角度，单位度（-90 到 90）"
+
+#: settings/serializers/basic.py:82
+msgid "Front-end web watermark color"
+msgstr "前端水印文字颜色"
+
+#: settings/serializers/basic.py:84
+msgid "Watermark text color, hex (e.g. #909399) or rgba(...); leave empty for default gray"
+msgstr "水印文字颜色，支持十六进制（如 #909399）或 rgba(...)；留空 = 默认灰色"
+
+#: settings/serializers/basic.py:131
+msgid "Invalid watermark color: %(value)s; use hex like #909399 or rgba(...)"
+msgstr "水印文字颜色无效：%(value)s；请使用十六进制（如 #909399）或 rgba(...)"
+
+#: settings/serializers/basic.py:90
+msgid ""
+"Invalid watermark pages: %(value)s; each entry must be a route path "
+"starting with '/'"
+msgstr "水印生效页面无效：%(value)s；每项必须是以 / 开头的路由路径"
 
 #: settings/serializers/basic.py:51 system/models/permission.py:42
 msgid "Field permission"

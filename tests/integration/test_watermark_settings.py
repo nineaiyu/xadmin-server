@@ -22,6 +22,10 @@ WATERMARK_KEYS = (
     "FRONT_END_WEB_WATERMARK_ENABLED",
     "FRONT_END_WEB_WATERMARK_TEXT",
     "FRONT_END_WEB_WATERMARK_PATHS",
+    "FRONT_END_WEB_WATERMARK_FONT_SIZE",
+    "FRONT_END_WEB_WATERMARK_OPACITY",
+    "FRONT_END_WEB_WATERMARK_ROTATE",
+    "FRONT_END_WEB_WATERMARK_COLOR",
 )
 
 
@@ -60,6 +64,69 @@ class TestBasicWatermarkSettings:
         assert resp.data["code"] == 1000
         setting = Setting.objects.filter(name="FRONT_END_WEB_WATERMARK_PATHS", category="basic").first()
         assert setting.cleaned_value == ""
+
+    def test_paths_normalizes_chinese_comma_and_blank(self, auth_client):
+        """中文逗号/空白分隔的路径在保存期归一化为英文逗号列表。"""
+        resp = auth_client.patch(BASIC_URL, {"FRONT_END_WEB_WATERMARK_PATHS": "/a/b ， /c/d，"})
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+        setting = Setting.objects.filter(name="FRONT_END_WEB_WATERMARK_PATHS", category="basic").first()
+        assert setting.cleaned_value == "/a/b,/c/d"
+
+    def test_paths_rejects_entries_without_leading_slash(self, auth_client):
+        """无效路径（非路由前缀）保存期直接拒绝：避免水印因范围匹配不上而静默失效。"""
+        resp = auth_client.patch(BASIC_URL, {"FRONT_END_WEB_WATERMARK_PATHS": "是大丰收的"})
+        assert resp.status_code == 400
+
+    def test_style_fields_persist(self, auth_client):
+        payload = {
+            "FRONT_END_WEB_WATERMARK_FONT_SIZE": 24,
+            "FRONT_END_WEB_WATERMARK_OPACITY": 0.2,
+            "FRONT_END_WEB_WATERMARK_ROTATE": -30,
+        }
+        resp = auth_client.patch(BASIC_URL, payload)
+        assert resp.status_code == 200
+        assert resp.data["code"] == 1000
+        for key, value in payload.items():
+            setting = Setting.objects.filter(name=key, category="basic").first()
+            assert setting is not None, f"未持久化 {key}"
+            assert setting.cleaned_value == value
+
+    def test_color_accepts_hex_rgba_and_name(self, auth_client):
+        for color in ("#909399", "rgba(0, 0, 0, 0.3)", "red"):
+            resp = auth_client.patch(BASIC_URL, {"FRONT_END_WEB_WATERMARK_COLOR": color})
+            assert resp.status_code == 200, f"颜色 {color} 应合法"
+            assert resp.data["code"] == 1000
+
+    def test_color_rejects_non_color_text(self, auth_client):
+        resp = auth_client.patch(BASIC_URL, {"FRONT_END_WEB_WATERMARK_COLOR": "深灰色"})
+        assert resp.status_code == 400
+
+    def test_text_template_with_placeholders_persists(self, auth_client):
+        """文案模板含占位符原样持久化（占位符由前端按当前用户解析）。"""
+        template = "{username}-{phone}-{time}"
+        resp = auth_client.patch(BASIC_URL, {"FRONT_END_WEB_WATERMARK_TEXT": template})
+        assert resp.status_code == 200
+        setting = Setting.objects.filter(name="FRONT_END_WEB_WATERMARK_TEXT", category="basic").first()
+        assert setting.cleaned_value == template
+
+    def test_columns_metadata_drives_form_controls(self, auth_client):
+        """元数据驱动表单控件：颜色走 color-picker（color 渲染器），数值带边界与步进。"""
+        resp = auth_client.get(f"{BASIC_URL}/search-columns")
+        assert resp.status_code == 200
+        columns = {item["key"]: item for item in resp.data["data"]}
+
+        assert columns["FRONT_END_WEB_WATERMARK_COLOR"]["input_type"] == "color"
+
+        opacity = columns["FRONT_END_WEB_WATERMARK_OPACITY"]
+        assert opacity["input_type"] == "float"
+        assert opacity["step"] == 0.1
+        assert opacity["min_value"] == 0.01
+        assert opacity["max_value"] == 1
+
+        font_size = columns["FRONT_END_WEB_WATERMARK_FONT_SIZE"]
+        assert font_size["min_value"] == 8
+        assert font_size["max_value"] == 72
 
 
 class TestUserInfoWatermarkConfig:

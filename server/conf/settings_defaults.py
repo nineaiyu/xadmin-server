@@ -142,6 +142,10 @@ SETTINGS_CONFIG = {
     "FRONT_END_WEB_WATERMARK_ENABLED": False,  # 前端水印展示
     "FRONT_END_WEB_WATERMARK_TEXT": "",  # 前端水印文案（留空 = 用户名-昵称-时间）
     "FRONT_END_WEB_WATERMARK_PATHS": "",  # 前端水印生效页面（逗号分隔路由前缀，留空 = 全部页面）
+    "FRONT_END_WEB_WATERMARK_FONT_SIZE": 16,  # 前端水印字号（像素）
+    "FRONT_END_WEB_WATERMARK_OPACITY": 0.3,  # 前端水印透明度（0.01-1）
+    "FRONT_END_WEB_WATERMARK_ROTATE": -10,  # 前端水印旋转角度（度）
+    "FRONT_END_WEB_WATERMARK_COLOR": "",  # 前端水印文字颜色（十六进制/rgba，留空 = 默认灰）
     "PERMISSION_FIELD_ENABLED": True,  # 字段权限控制
     "PERMISSION_DATA_ENABLED": True,  # 数据权限控制
     "REFERER_CHECK_ENABLED": False,  # referer 校验

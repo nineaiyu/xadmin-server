@@ -114,6 +114,19 @@ class ColorField(serializers.CharField):
         super().__init__(**kwargs)
 
 
+class StepFloatField(serializers.FloatField):
+    """带步进的数值字段：``step`` 随 search-columns 元数据下发，前端 input-number 消费。
+
+    min_value/max_value 是 DRF 标准属性（SimpleMetadata.get_field_info 原生下发）；
+    step 是扩展属性，由 metadata_columns 显式透出（字段显式声明才下发，缺省不影响
+    其他数值字段的既有渲染）。
+    """
+
+    def __init__(self, **kwargs):
+        self.step = kwargs.pop("step", None)
+        super().__init__(**kwargs)
+
+
 # 数据字典驱动字段拆分至 fields_dict.py（文件行数门禁）；此处保留兼容再导出，
 # 既有 `from common.core.fields import DictChoiceField / register_dict_items_resolver`
 # 的消费点无需改动，新代码建议直接 import common.core.fields_dict

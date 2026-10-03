@@ -66,13 +66,17 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
                         "username": impersonator.username,
                         "nickname": impersonator.nickname,
                     }
-        # 水印三项配置随用户信息下发（应用/刷新时机在客户端 App.vue）
+        # 水印配置随用户信息下发（应用/刷新时机在客户端 App.vue）
         return ApiResponse(
             **data,
             config={
                 "FRONT_END_WEB_WATERMARK_ENABLED": settings.FRONT_END_WEB_WATERMARK_ENABLED,
                 "FRONT_END_WEB_WATERMARK_TEXT": settings.FRONT_END_WEB_WATERMARK_TEXT,
                 "FRONT_END_WEB_WATERMARK_PATHS": settings.FRONT_END_WEB_WATERMARK_PATHS,
+                "FRONT_END_WEB_WATERMARK_FONT_SIZE": settings.FRONT_END_WEB_WATERMARK_FONT_SIZE,
+                "FRONT_END_WEB_WATERMARK_OPACITY": settings.FRONT_END_WEB_WATERMARK_OPACITY,
+                "FRONT_END_WEB_WATERMARK_ROTATE": settings.FRONT_END_WEB_WATERMARK_ROTATE,
+                "FRONT_END_WEB_WATERMARK_COLOR": settings.FRONT_END_WEB_WATERMARK_COLOR,
             },
         )
 

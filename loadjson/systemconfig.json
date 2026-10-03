@@ -89,11 +89,9 @@
         "ShowLogo": true,
         "TagsStyle": "smart",
         "ThemeMode": "light",
-        "Watermark": false,
         "HideFooter": false,
         "EpThemeColor": "#409EFF",
         "SidebarStatus": true,
-        "WatermarkText": "",
         "MultiTagsCache": false,
         "SplitPanes": {}
       },
