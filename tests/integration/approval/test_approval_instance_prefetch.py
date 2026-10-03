@@ -60,7 +60,7 @@ def advance_to_second_node(flow, applicant, first_approver):
 
 
 def task_queries(ctx):
-    return [q["sql"] for q in ctx.captured_queries if "system_approvalnodetask" in q["sql"]]
+    return [q["sql"] for q in ctx.captured_queries if "approval_approvalnodetask" in q["sql"]]
 
 
 class TestListTaskPrefetchScope:

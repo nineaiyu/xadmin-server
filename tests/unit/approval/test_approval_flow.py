@@ -1025,7 +1025,7 @@ class TestNodeLimitAndBatchPaths:
             with CaptureQueriesContext(connection) as ctx:
                 path = simulate_path(flow, {})
             assert len(path) == count
-            return [item for item in ctx.captured_queries if "system_approvalflownode" in item["sql"].lower()]
+            return [item for item in ctx.captured_queries if "approval_approvalflownode" in item["sql"].lower()]
 
         assert len(node_queries(3)) == len(node_queries(8)) == 1
 
@@ -1047,7 +1047,7 @@ class TestNodeLimitAndBatchPaths:
             item
             for item in ctx.captured_queries
             if item["sql"].strip().lower().startswith("insert into")
-            and "system_approvalnodetask" in item["sql"].lower()
+            and "approval_approvalnodetask" in item["sql"].lower()
         ]
         assert len(inserts) == 1
         tasks = list(ApprovalNodeTask.objects.filter(instance=instance))

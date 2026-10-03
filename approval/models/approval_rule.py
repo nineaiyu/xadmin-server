@@ -37,7 +37,6 @@ class ApprovalRule(DbAuditModel):
     remark = models.CharField(_("Remark"), max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = "system_approvalrule"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["-priority", "-created_time"]
         verbose_name = _("Approval rule")
         verbose_name_plural = verbose_name
@@ -87,7 +86,6 @@ class ApprovalRuleLevel(DbAuditModel):
     assignee_value = models.CharField(_("Assignee value"), max_length=255, blank=True, default="")
 
     class Meta:
-        db_table = "system_approvalrulelevel"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["order", "created_time"]
         verbose_name = _("Approval rule level")
         verbose_name_plural = verbose_name
@@ -160,7 +158,6 @@ class ApprovalRequestStep(DbAuditModel):
     acted_at = models.DateTimeField(_("Acted at"), null=True, blank=True)
 
     class Meta:
-        db_table = "system_approvalrequeststep"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["order", "created_time"]
         verbose_name = _("Approval request step")
         verbose_name_plural = verbose_name
@@ -209,7 +206,6 @@ class ApprovalRequestStepAction(DbAuditModel):
     comment = models.CharField(_("Comment"), max_length=255, blank=True, null=True)
 
     class Meta:
-        db_table = "system_approvalrequeststepaction"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["created_time"]
         verbose_name = _("Approval step action")
         verbose_name_plural = verbose_name

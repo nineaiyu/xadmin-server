@@ -33,7 +33,6 @@ class ApprovalFlow(DbAuditModel):
     version = models.IntegerField(_("Definition version"), default=0)
 
     class Meta:
-        db_table = "system_approvalflow"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["-created_time"]
         verbose_name = _("Approval flow")
         verbose_name_plural = verbose_name
@@ -145,7 +144,6 @@ class ApprovalFlowNode(DbAuditModel):
     all_objects = ApprovalFlowNodeQuerySet.as_manager()
 
     class Meta:
-        db_table = "system_approvalflownode"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["order", "created_time"]
         verbose_name = _("Approval flow node")
         verbose_name_plural = verbose_name
@@ -183,7 +181,6 @@ class ApprovalFlowVersion(DbAuditModel):
     remark = models.CharField(_("Remark"), max_length=128, blank=True, default="")
 
     class Meta:
-        db_table = "system_approvalflowversion"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["-version"]
         verbose_name = _("Approval flow version")
         verbose_name_plural = verbose_name

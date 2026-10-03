@@ -43,7 +43,6 @@ class McpServer(DbAuditModel, DbUuidModel):
     remark = models.CharField(_("Remark"), max_length=255, blank=True, default="")
 
     class Meta:
-        db_table = "system_mcpserver"
         verbose_name = _("External MCP server")
         verbose_name_plural = _("External MCP servers")
         ordering = ("name",)

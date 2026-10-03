@@ -19,9 +19,17 @@ from common.utils import get_logger
 
 logger = get_logger(__name__)
 
-TABLE = "system_aiknowledgechunk"
 COLUMN = "embedding_vector"
 INDEX_NAME = "aichunk_embedding_vector_hnsw"
+
+
+def _chunk_table() -> str:
+    """知识块表名取自模型 Meta（TG-3/ADR-080 表归域后随 ORM 单源，不再硬编码）。"""
+    from ai.models import AiKnowledgeChunk
+
+    return AiKnowledgeChunk._meta.db_table
+
+
 #: HNSW 参数（ADR-074：m=16, ef_construction=64）
 HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 64
@@ -44,18 +52,19 @@ def _cursor():
 
 def vector_index_state() -> dict:
     """当前索引形态（命令/状态页展示）：列类型、是否有 HNSW、向量维度分布。"""
+    table = _chunk_table()
     with _cursor() as cursor:
         cursor.execute(
             "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
             "WHERE attrelid = %s::regclass AND attname = %s AND NOT attisdropped",
-            [TABLE, COLUMN],
+            [table, COLUMN],
         )
         row = cursor.fetchone()
         column_type = row[0] if row else ""
         # 索引按 search_path 解析（表/索引同库同 schema）
         cursor.execute("SELECT to_regclass(%s)", [INDEX_NAME])
         index_row = cursor.fetchone()
-        cursor.execute(f"SELECT DISTINCT vector_dims({COLUMN}) FROM {TABLE} WHERE {COLUMN} IS NOT NULL ORDER BY 1")
+        cursor.execute(f"SELECT DISTINCT vector_dims({COLUMN}) FROM {table} WHERE {COLUMN} IS NOT NULL ORDER BY 1")
         dims = [int(db_row[0]) for db_row in cursor.fetchall()]
     return {
         "column_type": column_type,
@@ -88,7 +97,7 @@ def ensure_vector_index() -> dict:
     if state["hnsw"] and state["column_type"] == f"vector({dim})":
         return {**state, "action": ACTION_NOOP, "reason": "already typed and indexed", "dim": dim}
     with _cursor() as cursor:
-        cursor.execute(f"SELECT count(*) FROM {TABLE} WHERE {COLUMN} IS NOT NULL")
+        cursor.execute(f"SELECT count(*) FROM {_chunk_table()} WHERE {COLUMN} IS NOT NULL")
         total = int(cursor.fetchone()[0])
     if total < INDEX_MIN_ROWS:
         return {**state, "action": ACTION_NOOP, "reason": f"rows {total} < {INDEX_MIN_ROWS}", "dim": dim}
@@ -120,11 +129,12 @@ def ensure_column_accepts_dim(dim: int) -> dict:
 
 def _apply_typed_index(dim: int) -> None:
     """定型列 + 建索引（持锁调用；两步都幂等）。"""
+    table = _chunk_table()
     with _cursor() as cursor:
         if _column_type(cursor) == "vector":  # 无维度形态才需要 ALTER（带维度则幂等跳过）
-            cursor.execute(f"ALTER TABLE {TABLE} ALTER COLUMN {COLUMN} TYPE vector({dim})")
+            cursor.execute(f"ALTER TABLE {table} ALTER COLUMN {COLUMN} TYPE vector({dim})")
         cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS {INDEX_NAME} ON {TABLE} "
+            f"CREATE INDEX IF NOT EXISTS {INDEX_NAME} ON {table} "
             f"USING hnsw ({COLUMN} vector_cosine_ops) WITH (m = {HNSW_M}, ef_construction = {HNSW_EF_CONSTRUCTION})"
         )
 
@@ -134,14 +144,14 @@ def _drop_index_and_untype() -> None:
     with _cursor() as cursor:
         cursor.execute(f"DROP INDEX IF EXISTS {INDEX_NAME}")
         if _column_type(cursor) != "vector":
-            cursor.execute(f"ALTER TABLE {TABLE} ALTER COLUMN {COLUMN} TYPE vector")
+            cursor.execute(f"ALTER TABLE {_chunk_table()} ALTER COLUMN {COLUMN} TYPE vector")
 
 
 def _column_type(cursor) -> str:
     cursor.execute(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
         "WHERE attrelid = %s::regclass AND attname = %s AND NOT attisdropped",
-        [TABLE, COLUMN],
+        [_chunk_table(), COLUMN],
     )
     row = cursor.fetchone()
     return row[0] if row else ""

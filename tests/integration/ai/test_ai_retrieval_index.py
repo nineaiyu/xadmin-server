@@ -128,9 +128,7 @@ class TestMetaRowsShortCache:
     def _meta_queries(ctx):
         """元数据签名查询（values_list 带 content_hash 列）；命中回读不含该列。"""
         return [
-            q["sql"]
-            for q in ctx.captured_queries
-            if "system_aiknowledgechunk" in q["sql"] and "content_hash" in q["sql"]
+            q["sql"] for q in ctx.captured_queries if "ai_aiknowledgechunk" in q["sql"] and "content_hash" in q["sql"]
         ]
 
     def test_repeated_retrieval_reuses_meta_rows(self):

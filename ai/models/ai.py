@@ -49,7 +49,6 @@ class AiKnowledgeDocument(DbAuditModel, DbUuidModel):
     synced_at = models.DateTimeField(_("Synced at"), auto_now=True)
 
     class Meta:
-        db_table = "system_aiknowledgedocument"  # 3.1 拆分批次3：迁 ai app，表名不变
         verbose_name = _("AI knowledge document")
         verbose_name_plural = _("AI knowledge documents")
         ordering = ("-synced_at",)
@@ -94,7 +93,6 @@ class AiKnowledgeChunk(DbAuditModel, DbUuidModel):
     synced_at = models.DateTimeField(_("Synced at"), auto_now=True)
 
     class Meta:
-        db_table = "system_aiknowledgechunk"  # 3.1 拆分批次3：迁 ai app，表名不变
         verbose_name = _("AI knowledge chunk")
         verbose_name_plural = _("AI knowledge chunks")
         ordering = ("source_path", "chunk_index")
@@ -145,7 +143,6 @@ class AiProfile(DbAuditModel, DbUuidModel):
     remark = models.CharField(_("Remark"), max_length=255, blank=True, default="")
 
     class Meta:
-        db_table = "system_aiprofile"  # 3.1 拆分批次3：迁 ai app，表名不变
         verbose_name = _("AI profile")
         verbose_name_plural = _("AI profiles")
         ordering = ("-is_active", "name")
@@ -218,7 +215,6 @@ class AiUsageRecord(DbAuditModel, DbUuidModel):
     detail = models.CharField(_("Detail"), max_length=255, blank=True, default="")
 
     class Meta:
-        db_table = "system_aiusagerecord"  # 3.1 拆分批次3：迁 ai app，表名不变
         verbose_name = _("AI usage record")
         verbose_name_plural = _("AI usage records")
         ordering = ("-created_time",)
@@ -260,7 +256,6 @@ class AiChatMessage(DbAuditModel):
     extra = models.JSONField(_("Extra"), default=dict, blank=True, encoder=DjangoJSONEncoder)
 
     class Meta:
-        db_table = "system_aichatmessage"  # 3.1 拆分批次3：迁 ai app，表名不变
         verbose_name = _("AI chat message")
         verbose_name_plural = _("AI chat messages")
         ordering = ("-id",)

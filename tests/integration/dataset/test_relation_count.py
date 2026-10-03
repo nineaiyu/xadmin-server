@@ -120,7 +120,7 @@ class TestDatasetReportCount:
         mapping = {item["name"]: item["report_count"] for item in rows}
         assert mapping["计数数据集A"] == 2
         assert mapping["计数数据集B"] == 0
-        assert _per_row_count_queries(ctx, "system_report") == []
+        assert _per_row_count_queries(ctx, "dataset_report") == []
 
 
 class TestCrossPageFilter:

@@ -37,7 +37,6 @@ class Dataset(DbAuditModel, DbUuidModel):
     )
 
     class Meta:
-        db_table = "system_dataset"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Dataset")
         verbose_name_plural = _("Datasets")
         ordering = ("-created_time",)
@@ -60,7 +59,6 @@ class Dashboard(DbAuditModel, DbUuidModel):
     )
 
     class Meta:
-        db_table = "system_dashboard"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Dashboard")
         verbose_name_plural = _("Dashboards")
         ordering = ("-created_time",)
@@ -92,7 +90,6 @@ class Screen(DbAuditModel, DbUuidModel):
     )
 
     class Meta:
-        db_table = "system_screen"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Screen")
         verbose_name_plural = _("Screens")
         ordering = ("-created_time",)
@@ -144,7 +141,6 @@ class Report(DbAuditModel, DbUuidModel):
     last_status = models.CharField(_("Last status"), max_length=32, blank=True, default="")
 
     class Meta:
-        db_table = "system_report"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Report")
         verbose_name_plural = _("Reports")
         ordering = ("-created_time",)

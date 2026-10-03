@@ -45,7 +45,6 @@ class DynamicForm(DbAuditModel, DbUuidModel):
     schema_history = models.JSONField(_("Schema history"), default=list, blank=True)
 
     class Meta:
-        db_table = "system_dynamicform"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Dynamic form")
         verbose_name_plural = _("Dynamic forms")
         ordering = ("-created_time",)
@@ -97,7 +96,6 @@ class DynamicFormSubmission(DbAuditModel, DbUuidModel):
     )
 
     class Meta:
-        db_table = "system_dynamicformsubmission"  # 3.1 拆分批次4：迁 dataset app，表名不变
         verbose_name = _("Dynamic form submission")
         verbose_name_plural = _("Dynamic form submissions")
         ordering = ("-created_time",)

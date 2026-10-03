@@ -64,7 +64,6 @@ class ApprovalInstance(DbAuditModel):
     )
 
     class Meta:
-        db_table = "system_approvalinstance"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["-created_time"]
         verbose_name = _("Approval instance")
         verbose_name_plural = verbose_name
@@ -142,7 +141,6 @@ class ApprovalNodeTask(DbAuditModel):
     is_added = models.BooleanField(_("Added by counter-sign"), default=False)
 
     class Meta:
-        db_table = "system_approvalnodetask"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["node_order", "created_time"]
         verbose_name = _("Approval node task")
         verbose_name_plural = verbose_name
@@ -177,7 +175,6 @@ class ApprovalInstanceComment(DbAuditModel):
     mentions = models.JSONField(_("Mentions"), default=list, blank=True)
 
     class Meta:
-        db_table = "system_approvalinstancecomment"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["created_time"]
         verbose_name = _("Approval instance comment")
         verbose_name_plural = verbose_name

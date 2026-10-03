@@ -84,7 +84,6 @@ class ApprovalRequest(DbAuditModel):
     )
 
     class Meta:
-        db_table = "system_approvalrequest"  # 3.1 拆分批次2：迁 approval app，表名不变
         ordering = ["-created_time"]
         verbose_name = _("Approval request")
         verbose_name_plural = verbose_name

@@ -29,16 +29,18 @@ class TrigramIndex:
 
 
 # 检索加速清单：用户/文件/审批单/请假（检索面向使用者且表随业务增长）
+# 表名为 ADR-080 表归域改名后的现名；approval/0001 迁移内历史快照（system_*）
+# 到现名的折算登记见 approval/migrations/0005 的 TRGM_TABLE_RENAMES
 SEARCH_TRGM_INDEXES = (
     TrigramIndex("system_userinfo", "username", "idx_userinfo_username_trgm"),
     TrigramIndex("system_userinfo", "nickname", "idx_userinfo_nickname_trgm"),
     TrigramIndex("system_userinfo", "email", "idx_userinfo_email_trgm"),
     TrigramIndex("system_userinfo", "phone", "idx_userinfo_phone_trgm"),
     TrigramIndex("system_uploadfile", "filename", "idx_uploadfile_filename_trgm"),
-    TrigramIndex("system_approvalrequest", "path", "idx_approvalrequest_path_trgm"),
-    TrigramIndex("system_approvalrequest", "module", "idx_approval_module_trgm"),
-    TrigramIndex("system_approvalrequest", "object_pk", "idx_approval_object_pk_trgm"),
-    TrigramIndex("system_leave", "reason", "idx_leave_reason_trgm"),
+    TrigramIndex("approval_approvalrequest", "path", "idx_approvalrequest_path_trgm"),
+    TrigramIndex("approval_approvalrequest", "module", "idx_approval_module_trgm"),
+    TrigramIndex("approval_approvalrequest", "object_pk", "idx_approval_object_pk_trgm"),
+    TrigramIndex("approval_leave", "reason", "idx_leave_reason_trgm"),
 )
 
 # 豁免清单（(表, 字段) → 理由）：覆盖守护要求每个检索字段要么在索引清单、要么在此登记
