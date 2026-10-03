@@ -205,7 +205,7 @@ class TestSeedOrderingFillsBuiltinRoles:
     migrate 的 post_migrate 同步先于 load_init_json 执行，彼时 Menu 表与
     ModelLabelField 字段树均为空，内置角色只能空挂（字段权限 fail-closed，
     缺白名单 = 非超管接口输出空对象）。2026-10-01 E2E 真库种子实证该缺口：
-    SystemAdmin 0 菜单、DeptManager 0 菜单 0 白名单（ADR-077 任命装配后
+    SystemAdmin 0 菜单、DeptManager 0 菜单 0 白名单（任命装配后
     用户列表被裁剪成空对象）。本类锁定「load_init_json 收尾必须补齐」。
     """
 

@@ -24,7 +24,7 @@ from system.utils.auth import get_token_lifetime
 class TempTokenAPIView(GenericAPIView):
     """临时Token
 
-    匿名可达；O8-3：每次调用强制生成新缓存令牌（Redis 写放大面），在全局匿名
+    匿名可达；每次调用强制生成新缓存令牌（Redis 写放大面），在全局匿名
     限流（IP 维度）之上叠加更严的专用档。
     """
 

@@ -8,7 +8,7 @@
 
 from asgiref.local import Local
 
-# 上下文本地存储（ADR-078 D2）：thread_critical=False → contextvars 存储。
+# 上下文本地存储：thread_critical=False → contextvars 存储。
 # 依据：ASGI 异步中间件链（RequestMiddleware __acall__）在事件循环任务里写入
 # current_request，asgiref SyncToAsync 会把当前 context 复制进同步视图线程
 # （thread_sensitive 同线程执行），使 26+ 消费方（serializers 字段权限 / 日志

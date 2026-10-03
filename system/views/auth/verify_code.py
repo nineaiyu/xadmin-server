@@ -139,7 +139,7 @@ class SendVerifyCodeAPIView(GenericAPIView):
         return ApiResponse(data=config)
 
     def get_throttles(self):
-        """O8-3：IP 维度专用限流只打在发送动作上（GET 配置读取便宜且页面加载必调）；
+        """IP 维度专用限流只打在发送动作上（GET 配置读取便宜且页面加载必调）；
         保留默认链（全局匿名限流），发送请求在其上叠加更严专用档。"""
         throttles = super().get_throttles()
         if self.request.method.upper() == "POST":

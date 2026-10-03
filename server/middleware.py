@@ -22,7 +22,7 @@ from .utils import set_current_request
 
 class SQLCountMiddleware:
     """SQL 计数响应头（DEBUG only）：依赖同步调试连接（connection.queries），
-    按立项文档 §6.1 的第二种口径**有意保持同步**并显式声明边界（ADR-078 D3）。"""
+    按立项文档 §6.1 的第二种口径**有意保持同步**并显式声明边界。"""
 
     sync_capable = True
 
@@ -41,7 +41,7 @@ class SQLCountMiddleware:
 
 class StartMiddleware:
     """请求计时起点 + health 三段耗时改写（DEBUG_DEV only，生产 MiddlewareNotUsed）：
-    有意保持同步并显式声明边界（ADR-078 D3）。"""
+    有意保持同步并显式声明边界。"""
 
     sync_capable = True
 
@@ -67,7 +67,7 @@ class StartMiddleware:
 
 class EndMiddleware:
     """请求计时终点（与 StartMiddleware 成对消费 `_e_time_*`，DEBUG_DEV only）：
-    有意保持同步并显式声明边界（ADR-078 D3）。"""
+    有意保持同步并显式声明边界。"""
 
     sync_capable = True
 
@@ -104,7 +104,7 @@ class ModuleGateMiddleware:
     """
 
     sync_capable = True
-    async_capable = True  # ADR-078 D1：请求相纯内存正则，双模留在事件循环
+    async_capable = True  # 请求相纯内存正则，双模留在事件循环
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -146,7 +146,7 @@ class ModuleGateMiddleware:
 
 
 class RequestMiddleware:
-    """请求 ID 透传与 current_request 上下文装配（链首，ADR-078 D1/D2）。
+    """请求 ID 透传与 current_request 上下文装配（链首）。
 
     双模中间件：sync 链（WSGI / 测试）走 `__call__`，ASGI 链走 `__acall__`
     留在事件循环执行；`set_current_request` 经 contextvars 存储（common/local.py）
@@ -190,7 +190,7 @@ class RequestMiddleware:
 
 
 class RefererCheckMiddleware:
-    """Referer 同源校验（默认关，ADR-078 D1：纯 header 判断，双模零成本对齐）。"""
+    """Referer 同源校验（默认关：纯 header 判断，双模零成本对齐）。"""
 
     sync_capable = True
     async_capable = True

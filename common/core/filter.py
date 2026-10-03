@@ -164,7 +164,7 @@ def assert_within_data_scope(queryset, user_obj, message) -> None:
 
     与读侧同源（``get_filter_queryset``）：可见即可写、不可见即拒（fail-closed）——
     对象级写侧已由 ``get_object()`` → ``filter_queryset`` 统一拦截（按 pk 定位越界 404），
-    本函数补「载荷级」面：创建时的归属字段、改归属、关系字段赋值（ADR-077 D2）。
+    本函数补「载荷级」面：创建时的归属字段、改归属、关系字段赋值。
 
     空目标（无值/空数组）由调用方先行短路；超管与 ``PERMISSION_DATA_ENABLED``
     关闭时由 ``get_filter_queryset`` 自身直通，行为与既有读侧一致。

@@ -7,7 +7,7 @@
   与管理端上传（存 DB 全文）；ask 链路不查询任何业务模型（不触生产数据）；
 - 检索基线为零依赖词频重叠评分（CJK 二元组 + ASCII 词 + 标题加成）；
   配置 ``purpose=embedding`` 激活档案并构建向量后走 RRF 混合检索
-  （``ai/utils/ai_embeddings.py``，见 ADR-065），未配置 = 零变化；
+  （``ai/utils/ai_embeddings.py``），未配置 = 零变化；
 - LLM 配置经 Setting 值级加密（AI_API_KEY write_only），未启用/未配置统一
   可读降级。
 """

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""系统配置的类型契约守护（ADR-072，observability 评估出口收口）。
+"""系统配置的类型契约守护（observability 评估出口收口）。
 
 背景：`convert_type` 对**不在 defaults 中的键**原样返回字符串（弱类型）；若
 `SysConfig` 的 property 未做显式类型转换，坏值会以 str 形态静默流入消费点

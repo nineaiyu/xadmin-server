@@ -121,7 +121,7 @@ class TestMaskText:
         masked, hits = mask_text("联系电话 13812345678", normal_user)
         assert hits == 1
         assert "13812345678" not in masked
-        # 超管豁免（与 ADR-009 脱敏豁免同口径）：形态类仍生效、规则类不生效
+        # 超管豁免（与脱敏豁免同口径）：形态类仍生效、规则类不生效
         masked_admin, hits_admin = mask_text("联系电话 13812345678", superuser)
         assert hits_admin == 0
         assert masked_admin == "联系电话 13812345678"

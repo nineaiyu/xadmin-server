@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""common（框架层）→ 业务 app 的唯一显式契约出口（ADR-079）。
+"""common（框架层）→ 业务 app 的唯一显式契约出口。
 
 方向规则：common 内禁止直接 import 业务 app 的 services / models，业务能力
 统一经本模块消费。契约接口 = 「声明式白名单 + Protocol 消费面」，全部写在
@@ -22,7 +22,7 @@ import 期（或调用期，对属性访问式消费点），模型加载时机�
 出现任何业务 app 模块级 import 即违例；本模块的缝在 CONTRACT_SEAMS 登记
 （双向漂移校验）。
 
-注入制（ADR-081，TG-5 收口）：二开生态经 ``register_contract`` 在
+注入制：二开生态经 ``register_contract`` 在
 ``AppConfig.ready()`` 注册实现，或经 entry points（group 见
 ``ENTRY_POINT_GROUP``）由 ``common/apps.py`` 装配。解析序 = 注入覆盖 →
 白名单默认 → 未声明名 AttributeError；白名单外名字不可注入（缝面不因
@@ -83,7 +83,7 @@ _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
 
 __all__ = tuple(_CONTRACT_PROVIDERS)
 
-#: entry points group：外置分发包声明契约提供方的装配通道（ADR-081 D3）。
+#: entry points group：外置分发包声明契约提供方的装配通道。
 #: 条目名 = 契约名（须在白名单声明），条目值 = 提供方对象（``pkg.mod:attr``）。
 ENTRY_POINT_GROUP = "xadmin.contracts"
 
@@ -94,7 +94,7 @@ _CONTRACT_OVERRIDES: dict[str, Any] = {}
 
 
 def register_contract(name: str, provider: Any) -> None:
-    """注册契约提供方覆盖（二开注入制，ADR-081 D1/D2）。
+    """注册契约提供方覆盖（二开注入制）。
 
     - 仅白名单声明过的契约名可注入：缝面不因注入扩大，新能力须先在
       ``_CONTRACT_PROVIDERS`` 声明（连同门禁 CONTRACT_SEAMS 同步）；
@@ -107,7 +107,7 @@ def register_contract(name: str, provider: Any) -> None:
     if name not in _CONTRACT_PROVIDERS:
         raise ValueError(
             f"contract name {name!r} is not declared in _CONTRACT_PROVIDERS"
-            "（契约面外不可注入——先在白名单声明并同步 CONTRACT_SEAMS，见 ADR-081）"
+            "（契约面外不可注入——先在白名单声明并同步 CONTRACT_SEAMS）"
         )
     if name in _CONTRACT_OVERRIDES:
         raise ValueError(
@@ -126,7 +126,7 @@ def unregister_contract(name: str) -> None:
 
 
 def load_contract_entry_points() -> list[str]:
-    """装配外置分发包经 entry points 声明的契约提供方（ADR-081 D3）。
+    """装配外置分发包经 entry points 声明的契约提供方。
 
     由 ``common/apps.py ready()`` 调用（全部 app ready 之后、URLConf 之前；
     migrate/doctor 等修复命令早退路径不装配）。加载失败 / 白名单外名字一律
@@ -181,7 +181,7 @@ def __getattr__(name: str) -> Any:
     if provider is None:
         raise AttributeError(
             f"module {__name__!r} has no attribute {name!r} "
-            f"(框架层契约面未声明该名字——业务能力须经 common/contracts.py 声明后消费，见 ADR-079)"
+            f"(框架层契约面未声明该名字——业务能力须经 common/contracts.py 声明后消费)"
         )
     from importlib import import_module
 

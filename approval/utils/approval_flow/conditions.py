@@ -171,7 +171,7 @@ def _expand_delegations(users, node, applicant) -> list:
 def nodes_effective_at(flow, version=None):
     """节点定义查询面：实例钉住版本时取该版本生效行；``None`` → 当前生效定义。
 
-    历史行只在 ``all_objects`` 中（默认管理器只暴露当前生效行，见 ADR-073）；
+    历史行只在 ``all_objects`` 中（默认管理器只暴露当前生效行）；
     version 为空/0（历史脏数据）回退当前定义，与绑版本改造前行为一致。
     """
     if version and version > 0:

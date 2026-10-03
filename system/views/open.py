@@ -183,7 +183,7 @@ class ApiApplicationTokenAPIView(APIView):
     """换发端点（client-credentials）：凭 client_id/client_secret 换 PAT 凭证。
 
     匿名可达（白名单 + AllowAny）：凭证即身份，与登录接口同口径。
-    O8-1：保留全局匿名限流（IP 维度），叠加 client 维度专用限流——
+    保留全局匿名限流（IP 维度），叠加 client 维度专用限流——
     client_secret 在线爆破 / 换发风暴（换发即轮换，频繁调用等于凭证写放大）。
     """
 

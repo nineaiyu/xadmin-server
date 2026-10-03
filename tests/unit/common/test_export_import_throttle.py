@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""导出/导入重 IO 专用限流（ExportImportThrottle，O8-8）守护测试。
+"""导出/导入重 IO 专用限流（ExportImportThrottle）守护测试。
 
 覆盖：档位登记、mixin 按 MRO 并集命中声明 action、非声明 action 不挂档、
 真实请求打满后 429（业务码路径在集成测试另有覆盖）。限流计数经 autouse

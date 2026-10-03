@@ -206,7 +206,7 @@ class _FakeRoute:
 
 
 class TestStartupPermissionCheck:
-    """启动自检（hands.check_permission_gaps）：仅 DEV 告警、不阻塞启动（P1-2）。"""
+    """启动自检（hands.check_permission_gaps）：仅 DEV 告警、不阻塞启动。"""
 
     def _hands(self, monkeypatch, debug: bool):
         from common.management.commands.services import hands

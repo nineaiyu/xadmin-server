@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""部署拓扑资产（P1-35 独立盘迁移 / 生产强制异地副本、P1-40 依赖条件）。
+"""部署拓扑资产（独立盘迁移 / 生产强制异地副本、依赖条件）。
 
 这些是部署期资产（compose + 备份脚本入口），用源码级断言守护
 「可迁移性被误删」与「依赖语义回退」；宿主路径插值另有 docker CLI 实测
@@ -25,7 +25,7 @@ def _server_block() -> str:
 
 
 class TestBackupTopology:
-    """P1-35：归档/异地副本的宿主路径可由环境变量迁移到独立盘，容器内路径不变。"""
+    """归档/异地副本的宿主路径可由环境变量迁移到独立盘，容器内路径不变。"""
 
     def test_pitr_archive_host_path_overridable(self):
         text = _compose_text()
@@ -57,7 +57,7 @@ class TestBackupTopology:
 
 
 class TestServiceDependencies:
-    """P1-40：只声明真实依赖并等依赖健康（nginx 无 healthcheck，排序语义弱）。"""
+    """只声明真实依赖并等依赖健康（nginx 无 healthcheck，排序语义弱）。"""
 
     def test_server_waits_for_datastores_healthy(self):
         block = _server_block()

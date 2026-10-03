@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """审批流在途实例绑版本（节点有效区间）：改版解锁 / 旧单走旧版 / 回滚隔离 / 区间查询。
 
-语义与边界见 docs/adr/ADR-073-in-flight-flow-versioning.md。
+语义与边界。
 """
 
 import pytest

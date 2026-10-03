@@ -15,7 +15,7 @@
   以令牌属主身份执行，权限双门与 Web 控制台同口径（视图权限点 + 动作权限点）；
 - ``tools/call`` 高危动作（requires_approval）直接拒绝：MCP 无 412 审批通道，
   提示改走 Web 控制台的 AI 助手（确认卡片 + 审批流）；
-- 外接 MCP 工具（mcp.* 动态动作，F3）不进本端点：tools/list 用 ``exclude_mcp``
+- 外接 MCP 工具（mcp.* 动态动作）不进本端点：tools/list 用 ``exclude_mcp``
   目录，tools/call 不传 user 解析不到动态 key——本端点只暴露内置动作，
   防止外部客户端经此把外接调用再代理出去（递归代理 + 能力二次扩散）；
 - 全量审计：``tools/call`` 每次落 ``OperationLog(module=AI:action, auth_type=ai)``。

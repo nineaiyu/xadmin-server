@@ -29,11 +29,11 @@ class CommonConfig(AppConfig):
                 return
         super().ready()
 
-        # 契约注入装配（ADR-081）：外置分发包经 entry points 注册契约提供方。
+        # 契约注入装配：外置分发包经 entry points 注册契约提供方。
         # 位于修复命令早退之后（migrate/doctor 不装配，broken 提供方不堵修复
         # 通道）；此时全部业务 app ready() 已完成、URLConf 未加载——common 是
         # INSTALLED_APPS 末位的 django ready，即框架层最晚的统一装配点（需要
-        # 更早生效的注入走二开自身 app 的 ready() 注册，见 ADR-081 D2/D3）。
+        # 更早生效的注入走二开自身 app 的 ready() 注册）。
         from .contracts import load_contract_entry_points
 
         load_contract_entry_points()

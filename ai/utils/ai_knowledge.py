@@ -144,7 +144,7 @@ def upsert_upload_document(name: str, content: str, creator=None):
         if created:
             doc.creator = creator
     doc.save()
-    # 正文变更自动补齐向量（ADR-082）：文档行已落库后调度，无档案/无待建静默跳过
+    # 正文变更自动补齐向量：文档行已落库后调度，无档案/无待建静默跳过
     from ai.utils.ai_embeddings import schedule_auto_rebuild
 
     schedule_auto_rebuild(doc)
@@ -160,7 +160,7 @@ def set_document_active(doc, active: bool) -> None:
         doc.chunk_count = 0
     doc.is_active = bool(active)
     doc.save(update_fields=["is_active", "chunk_count", "synced_at"])
-    # 启用路径重建的分块全为待建（停用期分块已清、向量保留图失效），自动补齐（ADR-082）；
+    # 启用路径重建的分块全为待建（停用期分块已清、向量保留图失效），自动补齐；
     # 停用路径无块可建，调度入口按「无待建块」静默跳过
     from ai.utils.ai_embeddings import schedule_auto_rebuild
 
@@ -173,7 +173,7 @@ def sync_knowledge() -> dict:
     只维护 repo 来源（双来源边界）：上传文档（source_type=upload 与
     upload/ 前缀分块）不参与扫描与清理；仓库文件消失、或历史遗留的孤儿块
     （无文档登记的 repo 块）会被清理。本批有变更且向量链路可用时调度一次
-    全量增量向量构建（摘要 ``vector_rebuild`` 标记，ADR-082）。
+    全量增量向量构建（摘要 ``vector_rebuild`` 标记）。
     """
     from ai.models.ai import UPLOAD_PATH_PREFIX, AiKnowledgeChunk, AiKnowledgeDocument
 
@@ -225,7 +225,7 @@ def sync_knowledge() -> dict:
     removed += orphans.count()
     orphans.delete()
     # 仓库同步可能跨多文档变更：只调度一次全量增量构建（一次任务吃掉全部陈旧块，
-    # 不逐文档排队）；无档案 / 无待建 / 构建中由调度入口静默跳过（ADR-082）
+    # 不逐文档排队）；无档案 / 无待建 / 构建中由调度入口静默跳过
     from ai.utils.ai_embeddings import schedule_auto_rebuild
 
     vector_rebuild = schedule_auto_rebuild(None) if rebuilt else False

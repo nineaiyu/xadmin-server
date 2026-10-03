@@ -138,7 +138,7 @@ def validate_dataset(instance) -> None:
         return
     spec = parse_column(model, date_field, whitelist)
     if spec.is_json:
-        # JSON 趋势字段必须带 |date 标注且在 columns 内（与聚合分桶要求同源，ADR-071 D4）
+        # JSON 趋势字段必须带 |date 标注且在 columns 内（与聚合分桶要求同源）
         if spec.value_type != "date":
             raise ValidationError(_("JSON trend field requires |date type: {}").format(spec.raw))
         if spec.raw not in (instance.columns or []):
@@ -218,7 +218,7 @@ def build_queryset(dataset, user_obj, extra_filters=None):
     """执行侧查询构建：白名单复核 → JSON 列注解 → filters → 排序 → 数据权限过滤。
 
     JSON 路径列统一注解为 ``json_<根>_<键>`` 别名：筛选 / 排序 / 分组全部走别名，
-    使 ``|number`` 标注列的比较与聚合作用于 Cast 表达式（跨库语义一致，见 ADR-069 D2）。
+    使 ``|number`` 标注列的比较与聚合作用于 Cast 表达式（跨库语义一致）。
     数据权限过滤 fail-closed（无授权 → none()）。
     """
     model = get_whitelisted_model(dataset.bound_model)
@@ -241,7 +241,7 @@ def build_queryset(dataset, user_obj, extra_filters=None):
         alias = parse_column(model, ordering.lstrip("-"), whitelist).alias
         # 显式 NULLS LAST：PG 对 DESC 默认 NULLS FIRST、sqlite 把 NULL 当最小值排最后，
         # 两侧默认相反（nightly PG 档首轮暴露）。JSON 缺键行的契约是「缺键不参与数值
-        # 列」（ADR-069），排序必须与缺省方向解耦；sqlite ≥3.30 起支持 NULLS FIRST/LAST。
+        # 列」，排序必须与缺省方向解耦；sqlite ≥3.30 起支持 NULLS FIRST/LAST。
         direction = F(alias).desc(nulls_last=True) if descending else F(alias).asc(nulls_last=True)
         queryset = queryset.order_by(direction)
     # 行级数据权限：fail-closed 继承数据权限编译器（无授权 → none()）

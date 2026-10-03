@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""AI 外接 MCP 工具 → 受限动作动态目录（F3：ActionSpec 动态目录）。
+"""AI 外接 MCP 工具 → 受限动作动态目录（ActionSpec 动态目录）。
 
 为什么是「动态」、为什么不并入 ``ai_actions.ACTION_SPECS``（重要）：
 

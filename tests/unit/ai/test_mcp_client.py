@@ -149,7 +149,7 @@ class TestToolSummary:
             "read_only": True,
             "params": ["text", "count"],
             "required": ["text"],
-            # F3：快照补有界 input_schema（白名单关键字 + additionalProperties 收口）
+            # 快照补有界 input_schema（白名单关键字 + additionalProperties 收口）
             "input_schema": {
                 "type": "object",
                 "properties": {"text": {"type": "string"}, "count": {}},

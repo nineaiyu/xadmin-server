@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""F3 外接 MCP 工具动作面单测：快照 schema 有界化 / key 规范化 / 动态目录过滤 / 审批与校验。
+"""外接 MCP 工具动作面单测：快照 schema 有界化 / key 规范化 / 动态目录过滤 / 审批与校验。
 
 背景：外接 MCP 工具经「同步快照 + allowed_tools 白名单 + expose_to_ai 开关」进入
 AI 动作目录（动态 spec，不入静态注册表）。本文件覆盖：
@@ -31,7 +31,7 @@ from system.models import OperationLog
 
 pytestmark = [pytest.mark.django_db]
 
-#: 快照条目样例（与桩 MCP server 的 tools/list 形态一致，另含 F3 新增字段）
+#: 快照条目样例（与桩 MCP server 的 tools/list 形态一致，另含新增字段）
 SNAPSHOT = [
     {
         "name": "echo",

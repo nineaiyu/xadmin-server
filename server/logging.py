@@ -76,7 +76,7 @@ class SuppressShieldedCancelledError(logging.Filter):
 
 
 class SensitiveDataFilter(logging.Filter):
-    """运行日志脱敏过滤器（O8-6）：按敏感字段键名对最终输出文本做掩码。
+    """运行日志脱敏过滤器：按敏感字段键名对最终输出文本做掩码。
 
     操作日志链路的请求体/响应体已由 ``oplog_recorder.desensitize_payload`` 收敛，
     本过滤器补齐**运行日志面**：自定义 logger 的 f-string 插值、第三方库拼进消息

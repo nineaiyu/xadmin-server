@@ -190,7 +190,7 @@ SETTINGS_CONFIG = {
     "SCIM_RATE_LIMIT": "600/min",  # 凭证级限流；空或 0 = 不限
     "SCIM_DEFAULT_ROLE_CODE": "",  # 新建用户默认角色 code（空 = 不分配）
     # CSP（S3）：django-csp 生成策略，模式与上报地址运行期可配
-    # O8-7 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
+    # 口径标注：本档默认 report-only 与 nginx 页面层强制头（xadmin-web/default.conf）
     # 的差异是**有意分层**——浏览器页面流量经 nginx 已强制；直连 Django 的仅 JSON API
     # （无脚本执行面）与 swagger/api-docs（django-csp 策略已按 swagger 放行，切 enforce
     # 属行为变更需独立观察）。评估结论与重开条件见 docs/security-review.md 七期登记
@@ -208,7 +208,7 @@ SETTINGS_CONFIG = {
     # 个人上传文件数量上限（0 = 不限）
     "FILE_UPLOAD_COUNT_LIMIT": 0,
     # 正式上传文件保留天数：仅清理非临时、无业务引用的历史文件（0 = 不清理）。
-    # 2026-10-03 默认转 180（ADR-082 卫生默认值，与 FILE_ACCESS_LOG_KEEP_DAYS 同档）；
+    # 2026-10-03 默认转 180（卫生默认值，与 FILE_ACCESS_LOG_KEEP_DAYS 同档）；
     # 存量部署以种子 SystemConfig 行优先不受影响，新装可在系统配置页调整
     "FILE_KEEP_DAYS": 180,
     # 文本预览读取上限（字节）：超出即截断并提示下载查看
@@ -321,7 +321,7 @@ SETTINGS_CONFIG = {
     "SESSION_ONLINE_TIMEOUT": 300,
     "USER_SESSION_RETENTION_DAYS": 30,
     # 聊天消息保留天数：活协作数据取保守一年（0 = 不清理）。
-    # 2026-10-03 默认转 365（ADR-082 卫生默认值，与 LOGIN_LOG_RETENTION_DAYS 同档）；
+    # 2026-10-03 默认转 365（卫生默认值，与 LOGIN_LOG_RETENTION_DAYS 同档）；
     # 存量部署以种子 SystemConfig 行优先不受影响，新装可在系统配置页调整
     "CHAT_HISTORY_DAYS": 365,
     # 审批人职能权限码清单（与 APPROVAL_APPROVER_ROLES 取并集；两者皆空 = 全部在用超管）

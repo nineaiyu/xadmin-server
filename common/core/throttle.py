@@ -81,28 +81,28 @@ class ClientScopedThrottle(SimpleRateThrottle):
 
 
 class OpenClientThrottle(ClientScopedThrottle):
-    """开放平台 client-credentials 换发限流（O8-1）：按 client 维度防
+    """开放平台 client-credentials 换发限流：按 client 维度防
     client_secret 在线爆破与换发风暴（换发即轮换，频繁调用等于凭证写放大）。"""
 
     scope = "open_client"
 
 
 class OAuthClientThrottle(ClientScopedThrottle):
-    """OAuth token/revoke 限流（O8-2）：授权码/刷新/撤销按 client 维度收敛；
+    """OAuth token/revoke 限流：授权码/刷新/撤销按 client 维度收敛；
     多用户共用同一应用的后端调用，速率须覆盖正常登录高峰。"""
 
     scope = "oauth_client"
 
 
 class VerifyCodeThrottle(IpScopedThrottle):
-    """发送验证码限流（O8-3）：IP 维度收敛短信/邮件轰炸与 Redis 写放大；
+    """发送验证码限流：IP 维度收敛短信/邮件轰炸与 Redis 写放大；
     按目标计数的锁定由 SendVerifyCodeBlockUtil 兜底（互补维度）。"""
 
     scope = "verify_code"
 
 
 class TempTokenThrottle(IpScopedThrottle):
-    """临时令牌限流（O8-3）：每次调用强制生成新缓存令牌（Redis 写放大面），
+    """临时令牌限流：每次调用强制生成新缓存令牌（Redis 写放大面）
     收紧到低于全局匿名档。"""
 
     scope = "temp_token"
@@ -170,7 +170,7 @@ class AiThrottleMixin:
 
 
 class ExportImportThrottle(UserRateThrottle):
-    """导出/导入重 IO 端点限流（O8-8）：按用户维度收敛导出/导入风暴。
+    """导出/导入重 IO 端点限流：按用户维度收敛导出/导入风暴。
 
     覆盖面（经 ExportImportThrottleMixin 按声明联合命中）：同步导出
     export-data、异步提交 export-async、导入三段 import-headers/-validate/-async、
@@ -187,7 +187,7 @@ class ExportImportThrottleMixin:
     声明集合 ``export_import_actions`` 沿 MRO 取**并集**：导出/导入 Action mixin
     （OnlyExportDataAction / ImportAsyncAction）与下载 mixin
     （RecordFileDownloadMixin）各自声明、组合视图自动合并——与
-    ``SENSITIVE_GET_ACTIONS``（O8-5）同口径，避免覆盖式属性互相屏蔽。
+    ``SENSITIVE_GET_ACTIONS`` 同口径，避免覆盖式属性互相屏蔽。
     """
 
     export_import_actions: tuple[str, ...] = ()

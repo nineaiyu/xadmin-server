@@ -206,7 +206,7 @@ ACTION_SPECS: dict[str, Any] = {
 def get_action(key: str, user=None):
     """按 key 取动作 spec（``user`` 供 ``mcp.`` 前缀动态动作按当前用户现查）。
 
-    外接 MCP 工具动作（F3）不落静态注册表：import 期守护测试按静态字典对账，
+    外接 MCP 工具动作不落静态注册表：import 期守护测试按静态字典对账
     动态条目并进去会失真；这里按 user 现查可用动态集合后按**完整 key** 命中
     （spec 自持 server_pk + tool_name，不解析 key 定位）。无 user（外部 MCP
     端点 tools/call 等场景）动态 key 一律解析不到，fail-closed。

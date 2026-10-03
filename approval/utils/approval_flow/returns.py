@@ -7,7 +7,7 @@
 engine 的 approve → _advance 正常向前流转）。engine 不反向依赖本模块（包级
 ``__init__`` 统一再导出）。
 
-版本化联动（ADR-073）：目标节点行按实例钉住的 ``flow_version`` 解析
+版本化联动：目标节点行按实例钉住的 ``flow_version`` 解析
 （``nodes_effective_at``），退回只重开「实例实际经过的那一行」，改版不影响在途单。
 """
 

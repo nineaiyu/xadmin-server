@@ -7,7 +7,7 @@ notifications / backends / signal(s) 直接 import——这是契约层收口的
 跨 app 引用一律走 `<app>.services` 契约层；确实无法立即收口的存量，
 显式登记在 ALLOWLIST 并注明原因，禁止无台账新增。
 
-框架层方向规则（ADR-079 单缝收敛）：common 消费业务 app 的唯一出口是
+框架层方向规则（单缝收敛）：common 消费业务 app 的唯一出口是
 `common/contracts.py`（声明式契约面）——common 内除该文件外，任何模块级
 业务 import（含 `*.services` 形态）一律违例；contracts.py 自身仍受
 「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
@@ -57,7 +57,7 @@ ALLOWLIST = {
 }
 
 # ---------------------------------------------------------------------------
-# 方向规则（框架层依赖治理，ADR-079 单缝收敛）：common 是框架层，业务能力
+# 方向规则（框架层依赖治理，单缝收敛）：common 是框架层，业务能力
 # 消费唯一出口是 common/contracts.py（声明式契约面：白名单 + Protocol +
 # PEP 562 惰性解析）——common 内其余文件出现任何业务 app 模块级 import
 # （含 `*.services`）即违例。contracts.py 自身只允许经 `<app>.services`
@@ -76,11 +76,11 @@ CONTRACT_PROVIDER_RE = re.compile(r'^\s*"[A-Za-z_]\w*": \("([a-z_]+\.[a-z_]+)",'
 
 CONTRACT_SEAMS = {
     "common/contracts.py": {
-        "notifications.services": "框架层业务消费唯一显式契约出口（ADR-079）：消息渠道生产面（5 名字）",
-        "system.services": "框架层业务消费唯一显式契约出口（ADR-079）：模型契约 12 项 + 契约委托函数 17 项",
-        "approval.services": "框架层业务消费唯一显式契约出口（ADR-079）：审批流拦截入口",
-        "ai.services": "框架层业务消费唯一显式契约出口（ADR-079）：AI 动作声明注册表",
-        "settings.services": "框架层业务消费唯一显式契约出口（ADR-079）：Setting 启动自检 + 文档站登录锁定",
+        "notifications.services": "框架层业务消费唯一显式契约出口：消息渠道生产面（5 名字）",
+        "system.services": "框架层业务消费唯一显式契约出口：模型契约 12 项 + 契约委托函数 17 项",
+        "approval.services": "框架层业务消费唯一显式契约出口：审批流拦截入口",
+        "ai.services": "框架层业务消费唯一显式契约出口：AI 动作声明注册表",
+        "settings.services": "框架层业务消费唯一显式契约出口：Setting 启动自检 + 文档站登录锁定",
     },
 }
 
@@ -132,7 +132,7 @@ def scan_framework_direction():
             line = text[: m.start()].count("\n") + 1
             if rel != CONTRACTS_MODULE:
                 violations.append(
-                    (rel, line, f"框架层业务消费须统一经 {CONTRACTS_MODULE}（ADR-079），禁止直接 import {module_path}")
+                    (rel, line, f"框架层业务消费须统一经 {CONTRACTS_MODULE}，禁止直接 import {module_path}")
                 )
                 continue
             if not module_path.startswith(f"{app}.services"):
@@ -203,7 +203,7 @@ def main() -> int:
         print(
             "\n跨 app 引用请改走 <app>.services 契约层；确需保留的，"
             "在 scripts/check_cross_app_imports.py 的 ALLOWLIST 登记原因。\n"
-            "common（框架层）→ 业务 app 的消费统一经 common/contracts.py 契约面（ADR-079）："
+            "common（框架层）→ 业务 app 的消费统一经 common/contracts.py 契约面："
             "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。"
         )
         return 1

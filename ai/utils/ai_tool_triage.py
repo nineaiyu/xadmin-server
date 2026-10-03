@@ -16,7 +16,7 @@
 TRIAGE_RESOURCES = {
     "notifications": ("exempt", "站内信 / 公告 / 消息模板 / 订阅矩阵为用户消息中心，由页面链路维护"),
     "settings": ("exempt", "系统设置面（邮件/短信/MFA/注册/LDAP/登录限流）为管理员人工配置"),
-    # 独立前缀 app（ADR-059）：resource_key 取 api/ 后第一段，整域一条登记
+    # 独立前缀 app：resource_key 取 api/ 后第一段，整域一条登记
     "approval": (
         "exempt",
         "审批域整体不 AI 直调——审批单（412 协议载体）由业务页面与审批中心处理，"

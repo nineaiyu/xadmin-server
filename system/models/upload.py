@@ -50,7 +50,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
     )
 
     def file_still_referenced(self, file_field_name="filepath", file_name=None) -> bool:
-        """磁盘删除守护：文件被别处引用时只删记录、保留磁盘文件（三期 P0-2 销项）。
+        """磁盘删除守护：文件被别处引用时只删记录、保留磁盘文件（三期销项）。
 
         两类引用：
         1. 物理文件被其他活动记录共用（去重复用同一 filepath，或同 md5 的活动上传记录）——

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """审批流程列表 form_schema_locked 预聚合：逐行 EXISTS 收敛为 Count(filter) 注解。
 
-O11-3 抽样实测定位的 N+1（45 行列表 40 次逐行 ``bound_forms.filter().exists()``），
+抽样实测定位的 N+1（45 行列表 40 次逐行 ``bound_forms.filter().exists()``）
 随 ``relation_count_fields`` 声明式口径预聚合；本文件守护该收敛不回退。
 """
 

@@ -18,7 +18,7 @@ action 上，DRF dispatch 在权限校验之后执行 handler，装饰器因此�
 
 本包按职责拆分（constants / approved_actions / payload / approvers / notify /
 lifecycle / queries / periodic），对外 API 由本文件统一再导出。原路径
-``system.utils.approval`` 已随 ADR-057 app 拆分迁移为 ``approval.utils.approval``
+``system.utils.approval`` 已随 app 拆分迁移为 ``approval.utils.approval``
 （旧路径 shim 已退役）。
 """
 

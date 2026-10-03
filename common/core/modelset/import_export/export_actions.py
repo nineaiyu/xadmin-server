@@ -18,10 +18,10 @@ from common.swagger.utils import get_default_response_schema
 
 
 class OnlyExportDataAction(ExportImportThrottleMixin, ListAction):
-    # O8-5 敏感读取审计：同步导出把全表数据渲染成文件外发，单列落操作日志
+    # 敏感读取审计：同步导出把全表数据渲染成文件外发，单列落操作日志
     # （API_LOG_METHODS 默认不含 GET，由中间件按本声明单独放行）
     SENSITIVE_GET_ACTIONS: tuple[str, ...] = ("export_data",)
-    # O8-8 专用限流：同步导出与异步提交都按 export_import 档收敛
+    # 专用限流：同步导出与异步提交都按 export_import 档收敛
     export_import_actions: tuple[str, ...] = ("export_data", "export_async")
 
     @extend_schema(

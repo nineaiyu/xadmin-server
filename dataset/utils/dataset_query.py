@@ -63,7 +63,7 @@ def aggregate_dataset(dataset, user_obj, group_by, metric="count", date_trunc=No
     model = get_whitelisted_model(dataset.bound_model)
     whitelist = set(available_fields(dataset.bound_model))
     group_spec = parse_column(model, group_by, whitelist) if group_by else None
-    # JSON 趋势列必须带 |date 标注（值契约 YYYY-MM-DD，分桶走 Substr 前缀截断，见 ADR-071）
+    # JSON 趋势列必须带 |date 标注（值契约 YYYY-MM-DD，分桶走 Substr 前缀截断）
     if date_trunc and group_spec is not None and group_spec.is_json and group_spec.value_type != "date":
         raise ValidationError(_("JSON trend column requires |date type: {}").format(group_spec.raw))
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""pgvector 通道专属守护（ADR-074 落地）：SQL 检索语义与 HNSW 索引定型。
+"""pgvector 通道专属守护（落地）：SQL 检索语义与 HNSW 索引定型。
 
 内存索引退役后的等价性口径：
 - 新鲜/模型/维度三重过滤在 SQL WHERE 内收敛（维度不一致的行直接排除，等价旧

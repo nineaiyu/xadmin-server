@@ -135,7 +135,7 @@ class ScreenViewSet(BaseAnalysisViewSet, ImpactPreviewAction):
             return ApiResponse(code=1001, detail="; ".join(exc.messages))
         broadcast_screen_command(screen.pk, frame)
         if serializer.validated_data["command"] == "refresh":
-            # F2：refresh 立即触发一轮服务端聚合推送（switch/page/auto 只动浏览位置，不重拉数据）；
+            # refresh 立即触发一轮服务端聚合推送（switch/page/auto 只动浏览位置，不重拉数据）；
             # 触发事件无载荷，各在线展示连接以自身权限聚合后自推，见 ws_screen 模块 docstring
             broadcast_screen_data_trigger(screen.pk)
         return ApiResponse(data={"state": frame}, detail=_("Command sent"))

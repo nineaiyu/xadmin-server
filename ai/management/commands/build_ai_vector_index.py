@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""定型 pgvector 列并建 HNSW 索引（ADR-074；构建任务完成后也会自动尝试）。
+"""定型 pgvector 列并建 HNSW 索引（构建任务完成后也会自动尝试）。
 
 用法::
 
@@ -16,7 +16,7 @@ from ai.utils.ai_vector_ddl import ensure_vector_index, vector_index_state
 
 
 class Command(BaseCommand):
-    help = "Type the pgvector column and build the HNSW index when vector dims are stable (ADR-074)"
+    help = "Type the pgvector column and build the HNSW index when vector dims are stable "
 
     def add_arguments(self, parser):
         parser.add_argument("--status", action="store_true", help="只查看当前索引形态，不做变更")

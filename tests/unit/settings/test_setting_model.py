@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""settings app 模型与序列化器单元测试（P2.8 盲区收口）。
+"""settings app 模型与序列化器单元测试（盲区收口）。
 
 settings app 此前不在 .coveragerc source 内，从未被覆盖率测量；
 本文件覆盖 Setting 模型加解密 / 刷新 / 文件存取与 BasicSettingSerializer 钩子。

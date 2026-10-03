@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""全量审批流引擎：定义版本化写入（节点有效区间，见 docs/adr/ADR-073-in-flight-flow-versioning.md）。
+"""全量审批流引擎：定义版本化写入（节点有效区间）。
 
 改版统一口径（同一事务内）：
 

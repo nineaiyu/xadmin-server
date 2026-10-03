@@ -47,7 +47,7 @@ def flow_referenced_keys(flow) -> set:
 
     节点条件（condition.field）、分支路由条件（routes[].condition.field）、
     FIELD 型审批人（assignee_value 即字段 key）。默认管理器只暴露当前生效行
-    （ADR-073），历史版本行不参与——在途单按钉住版本的行推进，不受影响。
+    ，历史版本行不参与——在途单按钉住版本的行推进，不受影响。
     """
     keys: set = set()
     for node in flow.nodes.all():
@@ -65,7 +65,7 @@ def flow_referenced_keys(flow) -> set:
 def assert_schema_safe_for_flow(form, new_schema) -> None:
     """schema 实质变更的流程引用检查：被绑定流程引用的字段不可删除。
 
-    在途单已按版本钉住定义（ADR-073），本检查保护的是**改版后新建/重提**的实例：
+    在途单已按版本钉住定义，本检查保护的是**改版后新建/重提**的实例：
     引用字段被删后条件恒 False、节点被静默跳过（FIELD 审批人解析为空时节点甚至
     自动通过），审批路径无声改变。先调整流程（或保留字段）再改表单。
     """

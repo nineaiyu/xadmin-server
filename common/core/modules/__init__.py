@@ -25,8 +25,8 @@
     3. 依赖未满足时启动期 fail-fast，不做隐式连带禁用；
     4. 默认 ``preset=full``（全部开启），与改造前行为零差异。
 
-已知边界（P1）：前端构建产物仍包含全部页面（按需构建裁剪见后续批次）。
-边界与后续计划见 ``docs/adr/ADR-045-modular-trimmable-architecture.md``。
+已知边界：前端构建产物仍包含全部页面（按需构建裁剪见后续批次）。
+边界与后续计划见 docs/adr 模块化裁剪档案。
 
 本包按职责拆分（specs / registry / gate / seeding），对外 API 由本文件统一再导出，
 导入路径保持 ``common.core.modules`` 不变。

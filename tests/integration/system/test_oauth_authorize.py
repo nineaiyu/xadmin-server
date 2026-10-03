@@ -79,7 +79,7 @@ def _pat_client(raw_token):
 
 class TestAuthorizeFlow:
     def test_authorize_returns_consent_data(self, auth_client):
-        """同意页数据：scope 以可读形态展示（存储/判定为锚定正则，见 P1-21 收口）。"""
+        """同意页数据：scope 以可读形态展示（存储/判定为锚定正则，见收口）。"""
         application = _create_application(auth_client, scopes=["api/system/user"])
         resp = auth_client.get(f"{OAUTH_URL}/authorize", _authorize_params(application))
         assert resp.data["code"] == 1000
@@ -286,7 +286,7 @@ class TestGrantEnforcementOnOAuthToken:
 
 
 class TestOAuthClientThrottle:
-    """O8-2：token/revoke 端点 client 维度专用限流（IP 维度全局匿名档之上叠加）。
+    """token/revoke 端点 client 维度专用限流（IP 维度全局匿名档之上叠加）。
 
     桶按请求体 client_id 划分；凭据错误（401）与限流（429 + 业务码 999）可区分。
     """

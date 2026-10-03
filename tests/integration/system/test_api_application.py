@@ -167,7 +167,7 @@ class TestClientCredentials:
 
 
 class TestOpenTokenClientThrottle:
-    """O8-1：换发端点 client 维度专用限流（在全局匿名限流的 IP 维度之上叠加）。
+    """换发端点 client 维度专用限流（在全局匿名限流的 IP 维度之上叠加）。
 
     桶按请求体 client_id 划分，未带 client_id 回退 IP 桶；凭据错误（401）与
     限流（429 + 业务码 999）可区分。

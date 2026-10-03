@@ -446,7 +446,7 @@ class TestApprovalActions:
 
 
 class TestApprovalOperations:
-    """批量驳回 / 待办计数 / 统计（第四期 F4 运营增强）。"""
+    """批量驳回 / 待办计数 / 统计（第四期运营增强）。"""
 
     def test_batch_reject_requires_reason_and_selection(self, superuser, normal_user, api_client):
         _enable_interception()

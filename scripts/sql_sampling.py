@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""O11-3 SQL 抽样实测：含 SerializerMethodField 的 list 端点每请求 SQL 数。
+"""SQL 抽样实测：含 SerializerMethodField 的 list 端点每请求 SQL 数。
 
-触发制任务 TG-2（NEXT-DEV-PLAN §一 O11-3 / docs/plans/触发制任务清单-长期.md）的实测工具：
+触发制任务（NEXT-DEV-PLAN §一 / docs/plans/触发制任务清单-长期.md）的实测工具：
 自动发现「序列化器声明了 SerializerMethodField」的 list 端点，在种子数据上按两档页宽
 （5 / 40 行）实测每请求 SQL 数。SQL 数随行数线性增长（斜率 ≈ 每行额外查询数）即 N+1
 特征，配合高频 SQL 指纹可直接定位到具体取数路径。
@@ -479,7 +479,7 @@ def main() -> int:
 
     from django.core.cache import cache
 
-    print("== O11-3 SQL 抽样实测 ==")
+    print("== SQL 抽样实测 ==")
     print(f"库：{connection.settings_dict['NAME']}（--keepdb 复用）")
     connection.creation.create_test_db(keepdb=args.keepdb)
     cache.clear()

@@ -163,7 +163,7 @@ def sensitive_setting_names() -> list:
     异常降级为空清单，与其它巡检函数同口径。
     """
     try:
-        # 属性访问式契约引用（ADR-079）：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
+        # 属性访问式契约引用：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
         Setting = contracts.Setting
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []
@@ -182,7 +182,7 @@ def plaintext_setting_names() -> list:
     避免命令与视图各写一份导致口径漂移。
     """
     try:
-        # 属性访问式契约引用（ADR-079）：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
+        # 属性访问式契约引用：模型加载推迟到调用期，迁移期模型不可用时按 except 降级
         Setting = contracts.Setting
     except Exception:  # noqa: BLE001 模型不可用（迁移期）不巡检
         return []

@@ -32,7 +32,7 @@ BUILTIN_ROLES = [
         "grant_all_menus": False,
     },
     {
-        # 部门管理员（ADR-077）：成员与数据权限规则由部门任命端点维护，
+        # 部门管理员：成员与数据权限规则由部门任命端点维护
         # 菜单面为固定清单（用户管理子集 + 部门查看 + 我的管辖），同步强制对齐
         "code": "DeptManager",
         "name": _("Department Manager"),

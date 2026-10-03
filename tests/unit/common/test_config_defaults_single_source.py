@@ -68,7 +68,7 @@ def test_conf_defaults_are_not_none_for_sysconfig_keys():
 
 
 def test_graduated_switch_defaults_adr082():
-    """TG-4/F7 转正默认值守护（ADR-082）：逐键断言，防无意回退。
+    """/ 转正默认值守护：逐键断言，防无意回退。
 
     AI 四开关（消费面另有 is_configured/能力探测门控）、METRICS_ENABLED（端点仍有
     token 门控）、保留期卫生默认值（种子同步转值，存量部署种子行优先）。
@@ -80,7 +80,7 @@ def test_graduated_switch_defaults_adr082():
         "AI_NATIVE_TOOLS_ENABLED",
         "METRICS_ENABLED",
     ):
-        assert Config.defaults[key] is True, f"{key} 应保持转正默认 True（ADR-082）"
+        assert Config.defaults[key] is True, f"{key} 应保持转正默认 True"
     assert Config.defaults["CHAT_HISTORY_DAYS"] == 365
     assert Config.defaults["FILE_KEEP_DAYS"] == 180
 

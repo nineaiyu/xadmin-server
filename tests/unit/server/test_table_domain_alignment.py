@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""表名归域守护（TG-3 / ADR-080）。
+"""表名归域守护。
 
-ADR-057 把 approval / ai / dataset 从 system 拆出时，物理表名以显式
-``Meta.db_table = "system_*"`` 冻结；ADR-080 解除冻结（表名回落 Django 默认
+ 把 approval / ai / dataset 从 system 拆出时，物理表名以显式
+``Meta.db_table = "system_*"`` 冻结；解除冻结（表名回落 Django 默认
 ``<app>_<模型名小写>``）。本守护防两类回潮：
 
 - **跨域前缀**：非 system app 的模型再挂 ``system_`` 表名（拆分冻结旧形态复辟）；
@@ -17,7 +17,7 @@ from django.conf import settings
 #: 允许偏离「app 域内默认命名」的显式登记（model label → 期望 db_table）；空 = 无例外。
 TABLE_NAME_OVERRIDES = {}
 
-#: 已按域拆分的业务 app（ADR-057 批次 2/3/4）
+#: 已按域拆分的业务 app（批次 2/3/4）
 SPLIT_APPS = ("ai", "approval", "dataset")
 
 
@@ -37,7 +37,7 @@ def test_no_split_app_model_carries_system_prefix():
         for model in _split_app_models()
         if model._meta.db_table.startswith("system_")
     ]
-    assert violations == [], f"拆分 app 模型仍挂 system_ 冻结表名（TG-3 回潮）：{violations}"
+    assert violations == [], f"拆分 app 模型仍挂 system_ 冻结表名（回潮）：{violations}"
 
 
 def test_split_app_tables_follow_default_domain_naming():

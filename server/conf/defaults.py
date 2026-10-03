@@ -32,7 +32,7 @@ BASE_CONFIG = {
     # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
     # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
     "SILK_ENABLED": False,
-    # Prometheus 指标（默认开启，ADR-082 灰度转正）：采集为进程内计数器（无每请求 IO），
+    # Prometheus 指标（默认开启，灰度转正）：采集为进程内计数器（无每请求 IO）
     # 抓取仍需配置 METRICS_TOKEN 并以 Authorization: Bearer <token> 访问
     # /api/common/api/metrics——token 未配置时端点 403，无暴露面
     "METRICS_ENABLED": True,
@@ -171,7 +171,7 @@ BASE_CONFIG = {
     # AI 助手：OpenAI 兼容协议；API Key 值级加密落库。
     # 多档案（AiProfile）为主通路：激活档案供全部 AI 链路使用；
     # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）。
-    # 开关 2026-10-03 灰度转正（ADR-082）：消费面仍有 is_configured 门控（激活档案或
+    # 开关 2026-10-03 灰度转正：消费面仍有 is_configured 门控（激活档案或
     # 凭据齐全），未配置部署行为零变化，配置档案后 AI 面即刻生效无需再开开关；
     # 显式关过的部署以 Setting 行优先，不受代码默认影响
     "AI_ASSISTANT_ENABLED": True,
@@ -183,10 +183,10 @@ BASE_CONFIG = {
     # 该路径无落库/无校验直广播，前端已切换 ws/chat（落库 + 校验 + 权限 + 限流），
     # 仅确需兼容老客户端时显式开启（见 message/notify.py）
     "CHAT_LEGACY_WS_BROADCAST_ENABLED": False,
-    # AI 二期 NL 查数：2026-10-03 灰度转正（ADR-082）；视图侧仍有 is_enabled 双闸
+    # AI 二期 NL 查数：2026-10-03 灰度转正；视图侧仍有 is_enabled 双闸
     # 与数据权限（visible_datasets）口径
     "AI_NL_QUERY_ENABLED": True,
-    # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：2026-10-03 灰度转正（ADR-082），
+    # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：2026-10-03 灰度转正
     # 协议自身 fail-closed；白名单动作与审计见 system/utils/ai_actions.py
     "AI_ACTION_ENABLED": True,
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
@@ -206,7 +206,7 @@ BASE_CONFIG = {
     "AI_MAX_RETRIES": 0,
     "AI_CONTEXT_LIMIT": 20,
     "AI_PERSONA": "",
-    # 原生 function calling 双轨：2026-10-03 灰度转正（ADR-082）；消费面仍有能力探测
+    # 原生 function calling 双轨：2026-10-03 灰度转正；消费面仍有能力探测
     # fail-closed 门控（无画像 / 探测不过一律回落稳定的 prompt-JSON 轨道，弱模型零破坏）
     "AI_NATIVE_TOOLS_ENABLED": True,
     # 用量配额（0 = 不限）：用户日调用次数 / 用户日 token 估算 /

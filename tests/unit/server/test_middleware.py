@@ -6,7 +6,7 @@
 2. StartMiddleware / EndMiddleware 仅在 DEBUG_DEV 下启用；
 3. RequestMiddleware 生成/透传 X-Request-Id 并设置 thread-local request；
 4. RefererCheckMiddleware 的放行与拦截分支；
-5. ADR-078：双模中间件 async 链（__acall__）与 sync 链行为等价，
+5. ：双模中间件 async 链（__acall__）与 sync 链行为等价
    current_request 经 contextvars + sync_to_async 在同步视图线程可读。
 """
 
@@ -176,7 +176,7 @@ class TestRefererCheckMiddleware:
 
 
 class TestAsyncMiddlewareChain:
-    """ADR-078：双模中间件在 async 链上的行为与 sync 链等价。"""
+    """双模中间件在 async 链上的行为与 sync 链等价。"""
 
     def test_request_middleware_acall_equivalence(self):
         middleware = RequestMiddleware(_async_response)

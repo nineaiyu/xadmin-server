@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""大屏服务端聚合推送（F2）集成测试。
+"""大屏服务端聚合推送集成测试。
 
 覆盖：
 - collect_screen_cards：canvas/carousel 两种形态的卡片展开、kind 判定

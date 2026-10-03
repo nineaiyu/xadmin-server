@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 # 日志大字段截断上限（系统配置 OPERATION_LOG_FIELD_MAX 的默认值），
 # 避免大请求体/大响应整包入库；运行期取值见 _log_field_limit()
 MAX_LOG_FIELD = 4096
-# 操作日志脱敏字段清单单一事实源在 common.core.sensitive（O8-6 拆出，顶部导入，
+# 操作日志脱敏字段清单单一事实源在 common.core.sensitive（拆出，顶部导入
 # SENSITIVE_FIELDS 随之再导出保持既有导入路径不变）
 
 
@@ -72,7 +72,7 @@ def desensitize_body(body):
 
 
 def sensitive_get_actions(view_cls) -> frozenset:
-    """视图类声明的「敏感 GET action」集合（O8-5 敏感读取审计）。
+    """视图类声明的「敏感 GET action」集合（敏感读取审计）。
 
     ``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全部落库即日志洪水），
     导出/下载等敏感读取由视图侧按 action 白名单单列声明：类（或其任一祖先
@@ -215,7 +215,7 @@ def build_operation_log_info(request, response, request_start_time):
         if (changes := getattr(request, "operation_log_changes", None))
         else None,
         # 响应体同口径脱敏：登录响应（access/refresh）与临时令牌响应（token）等
-        # 敏感值不落操作日志（与请求体 body 共用 desensitize_payload，ADR-072）
+        # 敏感值不落操作日志（与请求体 body 共用 desensitize_payload）
         "response_result": json.dumps(
             {
                 "code": response_data.get("code"),

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""越权矩阵扩展（F2 全量审批流引擎一期）：覆盖流程定义 / 流程实例的新攻击面（M30-M37）。
+"""越权矩阵扩展（全量审批流引擎一期）：覆盖流程定义 / 流程实例的新攻击面（M30-M37）。
 
 与 `test_privilege_escalation_matrix.py` / `test_privilege_matrix_phase5.py` 同口径
 （HTTP 集成、菜单授权按生产正则惯例），编号顺延。

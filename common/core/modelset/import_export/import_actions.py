@@ -36,7 +36,7 @@ class ImportAsyncAction(ExportImportThrottleMixin):
       直接读行导入（大文件不塞 broker 消息，也不重复解析）。
     """
 
-    # O8-8 专用限流：文件解析/校验/异步提交三段都按 export_import 档收敛
+    # 专用限流：文件解析/校验/异步提交三段都按 export_import 档收敛
     export_import_actions: tuple[str, ...] = ("import_headers", "import_validate", "import_async")
 
     if TYPE_CHECKING:  # 宿主 ViewSet 提供的接口（mixin 模式）

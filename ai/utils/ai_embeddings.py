@@ -2,10 +2,10 @@
 # -*- coding:utf-8 -*-
 """知识库向量检索：embedding 构建、pgvector 检索与 RRF 混合融合。
 
-口径（ADR-065 建立混合检索，ADR-074 落地 pgvector，2026-10-02 交付）：
+口径（建立混合检索，落地 pgvector，2026-10-02 交付）：
 - **启用条件**：存在 ``purpose=embedding`` 的激活档案；无档案 = 词频检索零变化；
 - **构建**：管理端显式触发（知识库页按钮 / ``build_ai_embeddings`` 命令，支持全量
-  force / dry_run）**+ 正文变更后自动增量补齐**（``schedule_auto_rebuild``，ADR-082：
+  force / dry_run）**+ 正文变更后自动增量补齐**（``schedule_auto_rebuild``：
   上传/覆盖、停用再启用、仓库同步三个挂点，只补缺失/陈旧块，无档案/无待建/构建中
   静默跳过），批量调用后按块落库——``embedding``（float32 二进制，迁移窗口保留，
   回滚=代码回退）与 ``embedding_vector``（pgvector 列）**双写**；正文变更后的旧向量
@@ -75,7 +75,7 @@ def _load_meta_rows():
 def vector_index():
     """新鲜向量可用性探针：``{pk: dim}``（键序稳定）；不可用时返回 None。
 
-    可用性判据与内存索引时代一致（ADR-074 迁移前的口径原样保留）：
+    可用性判据与内存索引时代一致（迁移前的口径原样保留）：
     存在 embedding 档案 + 已向量化总量未超容量 + 新鲜条数达到最小可用条数。
     新鲜 = ``embedding_hash == content_hash`` 且模型与当前档案一致（陈旧向量
     不参与向量通道，避免用旧正文的语义召回当前问题）。
@@ -152,7 +152,7 @@ def _embed_query(client, question: str):
 def search_vectors(question: str, top_k: int = VECTOR_CANDIDATES) -> list:
     """向量通道排名（pk 列表，余弦降序）；任何不可用情形返回空列表。
 
-    SQL 口径（ADR-074）：候选 = 新鲜（embedding_hash == content_hash）且模型与
+    SQL 口径：候选 = 新鲜（embedding_hash == content_hash）且模型与
     当前档案一致、维度与查询向量一致、pgvector 列非空的块；排序 = ``embedding
     <=> query`` 升序（余弦距离 = 1 - 余弦相似度，序与旧实现逐块余弦降序一致）。
     扩展缺失 / 列缺失等数据库层异常在此吞掉（返回 []），由调用方回退词频。
@@ -230,7 +230,7 @@ def build_embeddings(
     - 失败语义：单批失败即停止（供应商多半整体不可用），已成功的批次保留，
       ``ok=False`` + ``failed`` 计数返回，调用方据此给出可读提示；
     - 写入为 ``embedding``（二进制）+ ``embedding_vector``（pgvector）**双写**：
-      二进制列在迁移窗口保留（ADR-074 步骤④后半段「删二进制列与内存索引代码」
+      二进制列在迁移窗口保留（步骤④后半段「删二进制列与内存索引代码」
       登记为稳定一个版本后的独立清理项），回滚 = 代码回退，数据无需重建。
     """
     from ai.models.ai import AiKnowledgeChunk
@@ -355,7 +355,7 @@ def _has_pending_chunks(source_path: str | None, model: str) -> bool:
 
 
 def schedule_auto_rebuild(document=None) -> bool:
-    """正文变更后自动补齐向量（ADR-082 / F7-6），返回是否实际调度。
+    """正文变更后自动补齐向量，返回是否实际调度。
 
     与手工构建共用同一条状态机（单飞锁 → ``build_embeddings_task`` → 进度/终态/释放），
     增量口径（force=False）只补缺失/陈旧块。三重前置，任一不满足即静默跳过：

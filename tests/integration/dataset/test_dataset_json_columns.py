@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据集 JSON 路径列集成测试（ADR-069）。
+"""数据集 JSON 路径列集成测试。
 
 覆盖：明细输出（行键 = 列声明 / 缺键为空不扰其它列）、筛选（文本与数值语义）、
 排序、分组与 sum/avg 聚合、JSON 趋势 fail-closed、字段权限按根字段收敛、
@@ -118,7 +118,7 @@ class TestAggregateJsonColumns:
             aggregate_dataset(dataset, superuser, group_by="data.kind", metric="sum", value_field="data.amount")
 
     def test_rejects_json_trend(self, dataset, submissions, superuser):
-        """JSON 路径的日期趋势在本段不支持（ADR-069 D3）：fail-closed。"""
+        """JSON 路径的日期趋势在本段不支持：fail-closed。"""
         with pytest.raises(ValidationError):
             aggregate_dataset(dataset, superuser, group_by="data.kind", metric="count", date_trunc="day")
 

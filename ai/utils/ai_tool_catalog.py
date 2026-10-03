@@ -46,7 +46,7 @@ def tool_catalog(user, exclude_mcp: bool = False) -> list:
     ``exclude_mcp=True`` 仅输出内置动作：外部 MCP 端点（``ai/views/mcp.py``）的
     tools/list 语义是「本系统作为 MCP server 暴露的内置动作」——外接 MCP 工具
     不得经此再暴露给外部客户端（防递归代理与能力二次扩散）。助手 tools 端点、
-    openai_tools 与 prompt 目录默认含外接 MCP 工具（F3 动作面）。
+    openai_tools 与 prompt 目录默认含外接 MCP 工具（动作面）。
     """
     from ai.utils.ai_actions import ACTION_DFORM_SUBMIT, MCP_ACTION_PREFIX, available_actions, available_forms
 

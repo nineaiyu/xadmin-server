@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据集列声明解析（ADR-069）：模型字段 / JSON 路径 / 数值标注与失败面。"""
+"""数据集列声明解析：模型字段 / JSON 路径 / 数值标注与失败面。"""
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -64,7 +64,7 @@ class TestParseColumn:
 
     def test_plain_json_path_casts_to_text(self, whitelist):
         # 文本列也必须 Cast：裸 KeyTextTransform 参与比较时值会被按 JSON 文档准备
-        # （SQLite 报 malformed JSON，见 ADR-069 D2）
+        # （SQLite 报 malformed JSON）
         spec = parse_column(MODEL, "data.kind", whitelist)
         expression = expression_of(spec)
         assert isinstance(expression, Cast)
@@ -73,7 +73,7 @@ class TestParseColumn:
     def test_json_date_annotation(self, whitelist):
         spec = parse_column(MODEL, "data.deadline|date", whitelist)
         assert spec.value_type == "date"
-        # 日期列保持文本（分桶走 Substr 前缀截断，见 ADR-071 D2）
+        # 日期列保持文本（分桶走 Substr 前缀截断）
         expression = expression_of(spec)
         assert isinstance(expression, Cast)
         assert isinstance(expression.output_field, TextField)

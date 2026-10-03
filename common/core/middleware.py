@@ -44,7 +44,7 @@ class CSPModeMiddleware:
     """
 
     sync_capable = True
-    async_capable = True  # ADR-078 D1：双模；SysConfig 读（L1→Redis→DB）经 sync_to_async 包裹
+    async_capable = True  # 双模；SysConfig 读（L1→Redis→DB）经 sync_to_async 包裹
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -106,7 +106,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
     def _should_log(self, request, view_func) -> bool:
         """请求是否落操作日志：``API_LOG_METHODS`` 命中，或敏感 GET action 白名单命中。
 
-        O8-5：``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全落库即日志洪水），
+        ：``API_LOG_METHODS`` 默认不含 GET（列表/详情读请求全落库即日志洪水）
         导出/下载等敏感读取由视图侧 ``SENSITIVE_GET_ACTIONS`` 单列声明（经
         ``sensitive_get_actions`` 沿 MRO 取并集）；是否豁免仍由调用方的
         ``API_LOG_IGNORE``（模型 / 路径维度）与 ``API_LOG_ENABLE`` 决定。
@@ -125,7 +125,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         request.request_data = get_request_data(request)
         request.request_start_time = time.time()
         # DEBUG 正文同样脱敏 + 截断（与操作日志 / 慢请求日志同口径）：明文
-        # token / password 落日志文件等同泄露凭证（ADR-072）。
+        # token / password 落日志文件等同泄露凭证。
         # isEnabledFor 守卫：f-string 会先求值再过滤级别，正文预览要做一遍脱敏 +
         # json.dumps，DEBUG 关闭时白算（先例 common/cache/storage.py:23-29）
         if logger.isEnabledFor(logging.DEBUG):
@@ -171,7 +171,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
         if hasattr(view_func, "cls") and hasattr(view_func.cls, "queryset"):
             if self.enable and self._should_log(request, view_func):
                 if not (self.methods == "ALL" or request.method in self.methods):
-                    # 敏感 GET 白名单路径（O8-5）：标记给 process_response 放行响应装配
+                    # 敏感 GET 白名单路径：标记给 process_response 放行响应装配
                     request.operation_log_get_audit = True
                 model, v = get_verbose_name(view_func.cls.queryset, view_func.cls)
                 if (model and request.method in self.ignores.get(model._meta.label, [])) or (
@@ -212,11 +212,11 @@ class ApiLoggingMiddleware(MiddlewareMixin):
             if (
                 self.methods == "ALL"
                 or request.method in self.methods
-                # 敏感 GET 白名单路径（O8-5）：process_view 已建占位行，响应装配照走
+                # 敏感 GET 白名单路径：process_view 已建占位行，响应装配照走
                 or getattr(request, "operation_log_get_audit", False)
             ):
                 show = self.__handle_response(request, response)
-        # isEnabledFor 守卫（P1-2 口径）：f-string 会把整个 response.data（分页 100 行 ×
+        # isEnabledFor 守卫（口径）：f-string 会把整个 response.data（分页 100 行 ×
         # 20 列量级）先 repr 成字符串再被级别过滤丢弃，未开操作日志的请求每请求白付一次
         if not show and logger.isEnabledFor(logging.DEBUG):
             logger.debug(f" request end. {request.method} {request.path} {getattr(response, 'data', {})}")

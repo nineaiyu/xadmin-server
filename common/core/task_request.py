@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """导入导出执行链：任务内请求与视图上下文（显式构造，不重放 WSGIRequest）。
 
-历史实现从 ``request.META`` 拼 WSGI environ 让 ``WSGIRequest`` 重新解析（ADR-036 登记的
+历史实现从 ``request.META`` 拼 WSGI environ 让 ``WSGIRequest`` 重新解析（登记的
 A4 风险：绕过 middleware、强依赖 DRF 内部字段、框架升级易碎）。本模块把这条链路的输入
 **显式化**，并把「视图 action 执行依赖的契约」集中到唯一装配点：
 

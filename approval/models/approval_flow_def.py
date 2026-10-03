@@ -46,7 +46,7 @@ class ApprovalFlowNodeQuerySet(models.QuerySet):
 
     有效区间语义：``version_from <= V AND (version_to IS NULL OR version_to > V)``。
     历史行（``version_to`` 已落值）只对钉住旧版本的实例可见——改版不再物理删除节点，
-    在途单按自身 flow_version 推进（见 docs/adr/ADR-073-in-flight-flow-versioning.md）。
+    在途单按自身 flow_version 推进。
     """
 
     def effective_at(self, version=None):

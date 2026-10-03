@@ -24,7 +24,7 @@ jobs:
 
     services:
       postgres:
-        # 大版本与生产/loadtest 对齐（生产 compose 与 loadtest 基线均为 pgvector:pg17 同源，F4 起需 vector 扩展）
+        # 大版本与生产/loadtest 对齐（生产 compose 与 loadtest 基线均为 pgvector:pg17 同源，需 vector 扩展）
         image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: server

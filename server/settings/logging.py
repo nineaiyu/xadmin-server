@@ -24,7 +24,7 @@ LOGGING: dict[str, Any] = {
     "filters": {
         # Python 3.14 asyncio.shield 对「客户端断连取消在途请求」一律记 ERROR（见类注释）
         "suppress_shielded_cancelled_error": {"()": "server.logging.SuppressShieldedCancelledError"},
-        # 运行日志脱敏（O8-6）：按 SENSITIVE_FIELDS 键名掩码消息与异常栈，
+        # 运行日志脱敏：按 SENSITIVE_FIELDS 键名掩码消息与异常栈
         # 与操作日志链路（oplog_recorder）同一份名单
         "mask_sensitive_data": {"()": "server.logging.SensitiveDataFilter"},
     },

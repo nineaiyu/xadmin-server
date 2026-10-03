@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""F3 动态目录专属守护测试：key 唯一 / 目录可见 ⇔ get_action 可解析 / 总量上限。
+"""动态目录专属守护测试：key 唯一 / 目录可见 ⇔ get_action 可解析 / 总量上限。
 
 背景：外接 MCP 工具动作不入静态注册表（import 期守护 test_ai_api_registry_guard
 按静态字典对账，动态条目并进去会失真），因此动态侧需要自己的守护——尤其防

@@ -81,7 +81,7 @@
       "rps": 10.56,
       "p95": 776.91,
       "target": null,
-      "target_note": "无独立目标：重 IO 偶发动作，量级波动大，不设 P95 门限（O8-8 限流档在压测档放开）"
+      "target_note": "无独立目标：重 IO 偶发动作，量级波动大，不设 P95 门限（限流档在压测档放开）"
     },
     "06-import": {
       "label": "导入（import-data update）",
@@ -99,7 +99,7 @@
     "redis": "Redis 8.10.2 专用一次性容器",
     "seed": "1000 个 perf_ 用户 + 默认数据",
     "k6": "v2.0.0",
-    "note": "8-worker 容量档位参考（ASGI 同步段容量立项批 A1，2026-10-01 三轮中位数）：worker 数为主要容量杠杆（ADR-006 池化形态上，sync 段 GIL 膝点）；快照主体（env.server）仍为 4-worker 生产默认形态，本键不参与 check_baseline 回归判定。06-import 的 cap8-round1 因失败率非 0（max=0.0001，1 个请求）按 §六 作废，取 2/3 轮中位数",
+    "note": "8-worker 容量档位参考（ASGI 同步段容量立项批 A1，2026-10-01 三轮中位数）：worker 数为主要容量杠杆（池化形态上，sync 段 GIL 膝点）；快照主体（env.server）仍为 4-worker 生产默认形态，本键不参与 check_baseline 回归判定。06-import 的 cap8-round1 因失败率非 0（max=0.0001，1 个请求）按 §六作废，取 2/3 轮中位数",
     "cases": {
       "01-login": {
         "load": "20 VU / 1m",

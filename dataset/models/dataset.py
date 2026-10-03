@@ -68,7 +68,7 @@ class Dashboard(DbAuditModel, DbUuidModel):
 
 
 class Screen(DbAuditModel, DbUuidModel):
-    """大屏模板：跨仪表盘的全屏轮播配置；layout 非空时按画布窗格渲染（P2.2 批次一）。"""
+    """大屏模板：跨仪表盘的全屏轮播配置；layout 非空时按画布窗格渲染（批次一）。"""
 
     name = models.CharField(_("Name"), max_length=128, unique=True)
     dashboards = models.JSONField(_("Dashboards"), default=list, help_text=_("Ordered dashboard pks"))
@@ -111,7 +111,7 @@ class Report(DbAuditModel, DbUuidModel):
     mode = models.CharField(
         _("Mode"), max_length=16, default="rows", choices=[("rows", _("Rows")), ("aggregate", _("Aggregate"))]
     )
-    #: 报表设计（P2.2 批次二）：明细列 + 行数上限 + 聚合组件；空 = 存量口径（全列明细单表）
+    #: 报表设计（批次二）：明细列 + 行数上限 + 聚合组件；空 = 存量口径（全列明细单表）
     design = models.JSONField(
         _("Design"),
         default=dict,

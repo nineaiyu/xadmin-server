@@ -251,7 +251,7 @@ class TestSyntheticReasonHostBasis:
 
 
 class TestCSPModeAsyncChain:
-    """ADR-078：CSPModeMiddleware 双模——async 链行为与 sync 链等价，
+    """CSPModeMiddleware 双模——async 链行为与 sync 链等价
     SysConfig 读经 sync_to_async 包裹（不阻塞事件循环）。"""
 
     def _acall(self, middleware, request):

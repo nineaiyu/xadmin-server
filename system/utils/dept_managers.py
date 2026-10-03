@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """部门管理员任命装配：through 行 + 预置角色成员 + 用户级数据权限规则的统一维护。
 
-设计（ADR-077 D1）：
+设计：
 
 - 任命事实源 = ``DeptInfo.managers``（through 记录任命人/时间），写口唯一 =
   部门 ViewSet 的 ``assign-managers`` 端点；序列化器对该字段只读；

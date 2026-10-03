@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""横向扩展资产（P1-33）：scale overlay 的必需项 / nginx 后端两形态 / 文档登记。
+"""横向扩展资产：scale overlay 的必需项 / nginx 后端两形态 / 文档登记。
 
 这些是部署期资产（compose + nginx conf），用源码级断言守护「必需项被误删」或
 「两形态漂移」；compose 的可合并性另有一条 docker CLI 实测用例（无 CLI 时跳过）。
@@ -72,7 +72,7 @@ class TestScaleOverlay:
 
 
 class TestZeroDowntimeAssets:
-    """零停机发布（P1-39）：宽限期与启动宽限的关系、runbook 登记。"""
+    """零停机发布：宽限期与启动宽限的关系、runbook 登记。"""
 
     def test_server_grace_period_exceeds_gunicorn_graceful_timeout(self, capsys):
         """停止宽限期必须大于 gunicorn 优雅退出时长，否则 docker 默认 10s 就 SIGKILL。"""

@@ -280,7 +280,7 @@ class OpenOAuthApproveAPIView(APIView):
 class OpenOAuthTokenAPIView(APIView):
     """授权码 / 刷新令牌换发（匿名可达，凭 client 凭据 + code/refresh 双重校验）。
 
-    O8-2：保留全局匿名限流（IP 维度），叠加 client 维度专用限流（授权码/刷新
+    保留全局匿名限流（IP 维度），叠加 client 维度专用限流（授权码/刷新
     换发为登录高峰共享桶，速率覆盖正常峰值）。
     """
 
@@ -366,7 +366,7 @@ class OpenOAuthTokenAPIView(APIView):
 class OpenOAuthRevokeAPIView(APIView):
     """撤销（RFC 7009）：优先 refresh（联动失效关联 access），其次 access 凭证本身。
 
-    O8-2：同 token 端点挂 client 维度专用限流（登出风暴场景速率已覆盖）。
+    同 token 端点挂 client 维度专用限流（登出风暴场景速率已覆盖）。
     """
 
     authentication_classes: list[type] = []

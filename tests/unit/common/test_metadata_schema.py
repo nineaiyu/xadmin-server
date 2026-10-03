@@ -5,7 +5,7 @@ search-columns / search-fields 的 data 载荷必须符合 docs/schema/ 下的
 JSON Schema——这是前后端元数据协议（RePlusPage 渲染契约）的门禁。
 Schema 变更属于破坏性契约变更，需同步前端生成类型并评审。
 
-input_type 词表（稳定公共契约，ADR-083）由本模块两面守护：
+input_type 词表（稳定公共契约）由本模块两面守护：
 - **载荷闭包**：真实端点下发的 input_type 必须落在声明词表（DECLARED_INPUT_TYPES
   ∪ api-* 前缀族）内——平台侧新增类型未登记即 fail；
 - **Schema 锁步**：两份 Schema 的 input_type 枚举 / api-* pattern 例外 /
@@ -96,7 +96,7 @@ class TestMetadataContract:
         """真实载荷 input_type 闭包：全部落在声明词表（封闭核心 ∪ api-* 族）内。
 
         平台侧新增可下发类型（DRF 长尾 / 自定义字段 / widget 覆写 / 业务显式声明）
-        而未在 ``DECLARED_INPUT_TYPES`` 登记时，在此 fail——先登记再扩展（ADR-083）。
+        而未在 ``DECLARED_INPUT_TYPES`` 登记时，在此 fail——先登记再扩展。
         """
         emitted = {
             (endpoint, item["input_type"])
@@ -108,12 +108,12 @@ class TestMetadataContract:
         assert not undeclared, (
             f"{viewset_cls.__name__} 下发了未登记的 input_type：{sorted(undeclared)}——"
             "先在 common/core/modelset/input_types.py 词表登记（连同呈现归宿），"
-            "再同步 docs/schema 枚举与前端渲染器（ADR-083 扩展流程）"
+            "再同步 docs/schema 枚举与前端渲染器（扩展流程）"
         )
 
 
 class TestVocabularyLockstep:
-    """词表真源 ⇄ Schema 落盘锁步（ADR-083）：单向漂移双向拦截。"""
+    """词表真源 ⇄ Schema 落盘锁步：单向漂移双向拦截。"""
 
     @pytest.mark.parametrize("schema_name", METADATA_SCHEMAS)
     def test_schema_enum_matches_declared_vocabulary(self, schema_name):
@@ -121,7 +121,7 @@ class TestVocabularyLockstep:
         enum_branch, pattern_branch = property_schema["anyOf"]
         assert set(enum_branch["enum"]) == set(DECLARED_INPUT_TYPES), (
             f"{schema_name} input_type 枚举与 DECLARED_INPUT_TYPES 真源不一致——"
-            "两处须同批修改（词表扩展流程见 ADR-083 / input_types.py 模块注释）"
+            "两处须同批修改（词表扩展流程见 / input_types.py 模块注释）"
         )
         assert pattern_branch.get("pattern") == "^api-" and pattern_branch.get("type") == "string", (
             "api-* 前缀族例外分支须保持 string + ^api-（type 显式声明使生成 TS 类型收敛为 string——"

@@ -83,7 +83,7 @@ jobs:
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变（G1）：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
         # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
-        # 测量口径扩至 ADR-057 拆分后的全部 app，真环境档实测 89%，门禁维持不变
+        # 测量口径扩至拆分后的全部 app，真环境档实测 89%，门禁维持不变
         run: uv run --no-sync pytest -n auto --cov --cov-report=term-missing --cov-fail-under=85
 
       - name: Django system checks (database-tagged, real PostgreSQL)

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """AI 平台路由：独立前缀挂载（server/urls.py ``^api/ai/``）。
 
-URL 前缀与 app 对齐（ADR-059）：``/api/ai/...``（原注册串的 ``ai/`` 冗余
+URL 前缀与 app 对齐：``/api/ai/...``（原注册串的 ``ai/`` 冗余
 前导已随之去除）；Menu.path 权限点、前端 API 层、模块裁剪 ModuleSpec 的
 routes 正则已同步平移。
 """

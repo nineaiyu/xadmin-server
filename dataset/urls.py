@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """数据分析与动态表单路由：独立前缀挂载（server/urls.py ``^api/dataset/``）。
 
-URL 前缀与 app 对齐（ADR-059）：``/api/dataset/...``；Menu.path 权限点、
+URL 前缀与 app 对齐：``/api/dataset/...``；Menu.path 权限点、
 前端 API 层、模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 

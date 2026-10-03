@@ -227,7 +227,7 @@ router.register("tasks/unified", SystemTaskCenterViewSet, basename="task_center"
 router.register("tags", TagViewSet, basename="tag")
 
 urlpatterns = no_auth_url + auth_url + router_url + router.urls + no_detail_router.urls
-# 审批流 / AI 平台 / 数据分析与动态表单三域已迁独立前缀（server/urls.py，ADR-059）：
+# 审批流 / AI 平台 / 数据分析与动态表单三域已迁独立前缀（server/urls.py）：
 # /api/approval/... /api/ai/... /api/dataset/...
 # 全局搜索：独立 GET 接口，权限码 retrieve:SystemGlobalSearch（种子登记）
 urlpatterns += [path("global-search", GlobalSearchAPIView.as_view())]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""知识库检索：词频评分（基线）+ 向量通道 RRF 混合（可选，见 ADR-065）。
+"""知识库检索：词频评分（基线）+ 向量通道 RRF 混合（可选）。
 
 口径与历史实现一致：CJK 二元组 + ASCII 词、命中数（去重词元）+ 标题加成、
 ``boosted / sqrt(token 总数)`` 打分、阈值过滤、score 降序取 top_k。

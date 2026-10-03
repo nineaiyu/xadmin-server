@@ -178,7 +178,7 @@ class ReportSerializer(BaseModelSerializer):
 
     def validate(self, attrs):
         merged_mode = attrs.get("mode", getattr(self.instance, "mode", "rows"))
-        # 报表设计（P2.2 批次二）：列 / 聚合字段都按数据集与数值列校验，单一事实源在
+        # 报表设计（批次二）：列 / 聚合字段都按数据集与数值列校验，单一事实源在
         # dataset.utils.report_design；空载荷 = 存量口径（全列明细单表），不做强制。
         if "design" in attrs:
             dataset = attrs.get("dataset", getattr(self.instance, "dataset", None))

@@ -104,7 +104,7 @@ class DynamicFormDataViewSet(
         data = []
         for form in forms:
             # schema 的 fields 用「当前 ∪ 历史」合并口径：改版删除的字段以历史标注出列，
-            # 管理端列表仍能看到旧提交里的值（与导出口径同源，见 ADR-070）
+            # 管理端列表仍能看到旧提交里的值（与导出口径同源）
             schema = dict(form.schema or {})
             schema["fields"] = merged_fields(form)
             data.append(

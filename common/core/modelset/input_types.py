@@ -4,7 +4,7 @@
 
 供元数据 Action（search-columns / search-fields）使用。拆分自 modelset.py。
 
-本模块同时是 ``input_type`` **词表的单一事实源**（稳定公共契约，ADR-083）：
+本模块同时是 ``input_type`` **词表的单一事实源**（稳定公共契约）：
 ``DECLARED_INPUT_TYPES`` 是平台元数据端点可下发的渲染器类型全集，前端
 RePlusPage 渲染器注册表（registry.ts + renderers-*.tsx）与 ``docs/schema/``
 两份元数据 Schema 的 ``input_type`` 枚举都以此对账（守护测试
@@ -16,7 +16,7 @@ client 侧补注册表/守护——未经登记的类型经真实载荷闭包测
 
 from common.core.serializers import BasePrimaryKeyRelatedField
 
-#: 稳定公共契约（ADR-083）：平台可下发的 input_type 全集（封闭核心，不含 api-* 族）。
+#: 稳定公共契约：平台可下发的 input_type 全集（封闭核心，不含 api-* 族）。
 #: 构成 = DRF label_lookup 实际可达面（string/field/integer/float/boolean/date/datetime/
 #: choice/multiple choice/email/file upload/image upload/list）+ 自定义字段声明面
 #: （labeled_choice/labeled_multiple_choice/object_related_field/m2m_related_field/json/
@@ -70,7 +70,7 @@ DECLARED_INPUT_TYPES: frozenset[str] = frozenset(
 )
 
 #: 开放前缀族：业务可扩展面（``api-search-*`` 等）。前端 apiSearch 注册组件 +
-#: suggest_url 远程联想（ADR-043）；Schema 侧以 pattern 例外放行，不做封闭枚举。
+#: suggest_url 远程联想；Schema 侧以 pattern 例外放行，不做封闭枚举。
 INPUT_TYPE_PREFIX_FAMILIES: tuple[str, ...] = ("api-",)
 
 #: 无内置渲染器、依赖注册表回退语义呈现的登记类型（declared 的子集）：

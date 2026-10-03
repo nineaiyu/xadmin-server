@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """设置中心邮件 / 短信连通性测试接口（超管诊断入口）集成测试。
 
-P2.8 盲区收口：settings/views/email.py 与 settings/views/sms.py 此前
+ 盲区收口：settings/views/email.py 与 settings/views/sms.py 此前
 31% / 48% 覆盖。外部依赖（SMTP / 阿里云短信）全部替换为桩，不发真实请求。
 """
 

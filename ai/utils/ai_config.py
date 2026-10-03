@@ -39,7 +39,7 @@ def structured_chat_client():
 
     四条链路共用同一口径（聊天室 ``/do``、助手页 ``action/interpret/stream``、
     ``nl-query/interpret`` 与其流式版）：max_tokens 未配置时套用结构化安全上限，
-    避免思考型模型无界推理挂起（实测见 ADR-049）；凭据按 ``structured`` 用途取档案
+    避免思考型模型无界推理挂起（实测）；凭据按 ``structured`` 用途取档案
     （未配该用途档案时回落 chat 激活档案，单档案场景零变化）。
     """
     from common.sdk.ai.chat import ChatCompletionsClient

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据集 JSON 日期列与趋势分桶集成测试（ADR-071）。
+"""数据集 JSON 日期列与趋势分桶集成测试。
 
 覆盖：month/day 桶（Substr 前缀，桶名与模型字段路径同格式）、date_trunc 需要
 ``|date`` 标注（fail-closed）、日期区间过滤（ISO 文本序）、``config.date_field``

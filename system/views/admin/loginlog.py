@@ -35,7 +35,7 @@ class LoginLogFilter(BaseFilterSet):
 class LoginLogViewSet(OnlyListModelSet, OnlyExportDataAction):
     """登录日志（只读 + 导出 + 强退）
 
-    审计痕迹不可经 API 抹除（O8-4）：与操作日志（OperationLogViewSet）同口径，
+    审计痕迹不可经 API 抹除：与操作日志（OperationLogViewSet）同口径
     不提供删除 / 批量删除端点，避免「登录成功记录可删」与只读操作日志不对称。
     强退是会话管理动作（不影响日志留存），保留。
     """

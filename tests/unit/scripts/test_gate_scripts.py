@@ -43,7 +43,7 @@ def xcai(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "SCAN_DIRS", ["alpha", "beta"])
     monkeypatch.setattr(module, "ALLOWLIST", {})
     monkeypatch.setattr(module, "CONTRACT_SEAMS", {})
-    # 单缝出口（ADR-079）：路径名判定，与 tmp 树中是否真有该文件无关
+    # 单缝出口：路径名判定，与 tmp 树中是否真有该文件无关
     monkeypatch.setattr(module, "CONTRACTS_MODULE", "common/contracts.py")
     return module
 
@@ -100,7 +100,7 @@ class TestCrossAppImports:
 
 
 class TestFrameworkDirection:
-    """common（框架层）→ 业务 app 单缝收敛（ADR-079）：唯一出口 common/contracts.py。"""
+    """common（框架层）→ 业务 app 单缝收敛：唯一出口 common/contracts.py。"""
 
     def test_direct_model_import_violation(self, xcai, tmp_path):
         write(tmp_path, "common/foo.py", "from system.models import UserInfo\n")

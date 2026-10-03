@@ -1,4 +1,4 @@
-# 季度备份恢复演练提醒（N5 备份演练常态化）。
+# 季度备份恢复演练提醒（备份演练常态化）。
 # 3/6/9/12 月 8 日（北京时间 10:00）自动开 issue 提醒执行
 # docs/ops/deployment.md §3.1 的检查清单与 utils/backup_drill.sh 演练，
 # 演练报告落 docs/ops/backup-drill-<年>-<季度>.md。

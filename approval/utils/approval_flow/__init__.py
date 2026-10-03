@@ -25,7 +25,7 @@ ApprovalInstance（一次申请）→ ApprovalNodeTask（一行一个候选审�
 终态 CAS」语义。
 
 本包按职责拆分（constants / conditions / engine / extra_actions / queries / periodic），
-对外 API 由本文件统一再导出。原路径 ``system.utils.approval_flow`` 已随 ADR-057
+对外 API 由本文件统一再导出。原路径 ``system.utils.approval_flow`` 已随
 app 拆分迁移为 ``approval.utils.approval_flow``（旧路径 shim 已退役）。
 """
 

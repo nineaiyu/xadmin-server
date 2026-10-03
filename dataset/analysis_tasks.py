@@ -14,7 +14,7 @@
   文本消息（报表名/行数/下载中心提示，收件人取 `im_recipients` 用户主键并按各
   渠道 OAuth 绑定可达性过滤）；任一渠道失败仅记 error 与交付状态，不回滚产物。
 
-大屏数据推送（F2，``push_screen_data``）：beat 每 15s 扫描大屏，仅向「有在线
+大屏数据推送（``push_screen_data``）：beat 每 15s 扫描大屏，仅向「有在线
 展示端且距上次推送超过其 refresh 周期（钳 10s）」的屏投递无载荷触发事件
 （``screen.data_trigger``）；真正的数据聚合在各展示连接内以浏览者自身权限执行
 （dataset/screen_data.py），服务端不做跨用户广播数据。

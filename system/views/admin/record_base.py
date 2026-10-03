@@ -80,10 +80,10 @@ class RecordFileDownloadMixin(ExportImportThrottleMixin):
 
     download_file_field = ""
     download_not_found_message = _("File not found")
-    # O8-5 敏感读取审计：导出文件/错误报告含业务数据，下载动作单列落操作日志
+    # 敏感读取审计：导出文件/错误报告含业务数据，下载动作单列落操作日志
     # （API_LOG_METHODS 默认不含 GET，由中间件按本声明单独放行）
     SENSITIVE_GET_ACTIONS: tuple[str, ...] = ("download",)
-    # O8-8 专用限流：产物文件下载按 export_import 档收敛
+    # 专用限流：产物文件下载按 export_import 档收敛
     export_import_actions: tuple[str, ...] = ("download",)
 
     def download_upload_file(self, upload):

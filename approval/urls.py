@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """审批流路由：独立前缀挂载（server/urls.py ``^api/approval/``）。
 
-URL 前缀与 app 对齐（ADR-059）：``/api/approval/...``；Menu.path 权限点、
+URL 前缀与 app 对齐：``/api/approval/...``；Menu.path 权限点、
 前端 API 层、模块裁剪 ModuleSpec 的 routes 正则已同步平移。
 """
 

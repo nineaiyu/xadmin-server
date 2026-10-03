@@ -42,7 +42,7 @@ MAX_ARGUMENTS_BYTES = 32 * 1024
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
 
 # ---------------------------------------------------------------------------
-# 快照 input_schema 有界化（F3：快照要喂给 LLM 工具目录，必须收敛体积与形态）
+# 快照 input_schema 有界化（快照要喂给 LLM 工具目录，必须收敛体积与形态）
 # ---------------------------------------------------------------------------
 
 #: 每工具 input_schema 序列化尺寸上限
@@ -355,7 +355,7 @@ class McpClient:
 
     @staticmethod
     def _tool_summary(item: dict) -> dict:
-        """工具快照条目：展示字段 + 有界 ``input_schema``（F3：AI 动作目录的数据源）。
+        """工具快照条目：展示字段 + 有界 ``input_schema``（AI 动作目录的数据源）。
 
         完整 inputSchema 不直接落快照（$ref/oneOf 等对 LLM 不友好且可能递归/超大），
         经 ``bound_input_schema`` 白名单化 + 三级尺寸收敛；``schema_truncated`` 标记
@@ -416,7 +416,7 @@ def audit_mcp_call(
 ) -> None:
     """MCP 调用语义审计：落 OperationLog(module=AI:mcp:client)。
 
-    ``extra``：补充对账维度——AI 动作链路（F3）传 ``channel=mcp_tool``，与
+    ``extra``：补充对账维度——AI 动作链路传 ``channel=mcp_tool``，与
     同请求落下的 AI:action 审计行按调用参数对上双模块记录。
     """
     import logging

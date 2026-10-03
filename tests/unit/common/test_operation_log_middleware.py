@@ -390,7 +390,7 @@ class TestOnCommitWritePath:
 
 
 class TestLogLevelGuard:
-    """P1-1/P1-2：日志正文与响应体的 eager 求值必须有 isEnabledFor 守卫。
+    """/：日志正文与响应体的 eager 求值必须有 isEnabledFor 守卫。
 
     f-string 会先求值再按级别过滤：DEBUG 关闭时若仍走脱敏 + json.dumps（正文预览）
     或对 response.data 整体 repr（未开操作日志的每请求路径），开销白付。
@@ -453,7 +453,7 @@ class TestLogLevelGuard:
 
 
 class TestSensitiveGetAudit:
-    """O8-5：敏感 GET（导出/下载）单列落操作日志。
+    """敏感 GET（导出/下载）单列落操作日志。
 
     ``API_LOG_METHODS`` 默认不含 GET——导出/下载等敏感读取由视图侧
     ``SENSITIVE_GET_ACTIONS`` 声明（沿 MRO 并集），中间件单独放行；普通

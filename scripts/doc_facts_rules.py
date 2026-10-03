@@ -17,13 +17,13 @@ FACTS = [
     },
     {
         "doc": "docs/architecture/overview.md",
-        "label": "ADR-004 摘要「当前运行 Django」",
+        "label": " 摘要「当前运行 Django」",
         "pattern": r"当前运行 Django (\d+\.\d+\.\d+)",
         "source": "requirements:django",
     },
     {
         "doc": "docs/adr/README.md",
-        "label": "ADR 索引 ADR-004 行「当前运行」",
+        "label": "ADR 索引行「当前运行」",
         "pattern": r"当前运行 (\d+\.\d+\.\d+)；",
         "source": "requirements:django",
     },

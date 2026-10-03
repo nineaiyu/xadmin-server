@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """MFA 验证后端单元测试：sms / email / otp / passkey / 抽象基类 / 注册表策略。
 
-P2.8 盲区收口：mfa app 此前未纳入覆盖率测量（.coveragerc source 缺失），
+ 盲区收口：mfa app 此前未纳入覆盖率测量（.coveragerc source 缺失）
 本文件补齐各后端 challenge / check_code / 策略分支的缺口。
 """
 

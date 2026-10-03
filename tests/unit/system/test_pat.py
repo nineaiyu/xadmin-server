@@ -239,7 +239,7 @@ def test_pat_owner_user_inactive_rejected(superuser):
 
 
 # ---------------------------------------------------------------------------
-# F4：scope 与调用审计 / 限流
+# scope 与调用审计 / 限流
 # ---------------------------------------------------------------------------
 
 
@@ -427,7 +427,7 @@ def test_scope_invalid_regex_not_500(superuser):
 
 def test_dual_header_jwt_plus_pat_scope_still_enforced(superuser):
     """同请求带 JWT + Pat 双 header：JWT 认证胜出（pat_scopes 未挂），scope 仍生效
-    （PatScopePermission 从原始头补解析凭证，评审复盘 P1-4）。"""
+    （PatScopePermission 从原始头补解析凭证，评审复盘）。"""
     plain = _create_token(superuser, scopes=["/api/system/user"]).data["data"]["token"]
     request = APIRequestFactory().get("/api/system/role", HTTP_AUTHORIZATION=f"Pat {plain}")
     force_authenticate(request, user=superuser)  # 模拟 JWT 胜出：user 直挂、认证类不触发

@@ -10,7 +10,7 @@
 - 展示端为被动接收：不上行指令、不做在线登记（组名不在个人推送组命名空间内，
   不会混入在线列表统计）。
 
-数据推送（F2）：组内只广播 `screen.data_trigger` 触发事件（无载荷），各展示连接
+数据推送：组内只广播 `screen.data_trigger` 触发事件（无载荷），各展示连接
 收到后以**连接自身用户**视角聚合整屏数据并只发给自己（dataset/screen_data.py）——
 execute/aggregate 的数据权限绑定浏览者，直接组广播数据帧会跨用户泄露。
 触发源：REST refresh 指令（立即一轮）与 beat 周期任务 push_screen_data（按屏

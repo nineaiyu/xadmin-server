@@ -7,11 +7,11 @@
 
 # https://docs.djangoproject.com/zh-hans/5.0/topics/db/multi-db/#automatic-database-routing
 class DBRouter:
-    """数据库路由占位（预留，O11-1 登记边界）：**不是**读写分离实现。
+    """数据库路由占位（预留，登记边界）：**不是**读写分离实现。
 
     本类已挂载 ``DATABASE_ROUTERS``（server/settings/databases.py），但所有方法
     均返回 None——按 Django 路由协议等价于「全部走 default 库」，与不挂载行为
-    一致。当前部署形态为单 PG 库 + 连接池（ADR-006），不存在多库别名。
+    一致。当前部署形态为单 PG 库 + 连接池，不存在多库别名。
 
     登记目的：防止误读为「已有读写分离」。若未来引入读副本/多库，需在此实现
     db_for_read / db_for_write 并配套失效语义（读副本延迟、事务强制走主库），

@@ -3,7 +3,7 @@
 """全量审批流引擎一期序列化器。
 
 - ApprovalFlowSerializer：流程定义 + 节点列表嵌套写入（nodes 整体替换式更新）。
-  改版走版本化路径（收口当前生效行 + 新版本落行，见 docs/adr/ADR-073-in-flight-
+  改版走版本化路径（收口当前生效行 + 新版本落行
   flow-versioning.md）：有 PENDING 实例时同样允许改节点/回滚——在途实例按自身
   ``flow_version`` 过滤节点集，定义变更只影响之后发起的新单。
 - ApprovalInstanceSerializer：实例只读展示 + 发起申请写入（flow/title/form_data）；
@@ -71,7 +71,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
     # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT/EXISTS。
     # filter 限定当前生效行：历史版本节点不计入「节点数」展示；form_schema_locked
-    # 以 Count(filter) 预聚合、取值侧转布尔（O11-3 抽样实测定位的逐行 EXISTS N+1）。
+    # 以 Count(filter) 预聚合、取值侧转布尔（抽样实测定位的逐行 EXISTS N+1）。
     # 两处均 distinct：同查询带两处反向关联 join，不 distinct 会交叉膨胀计数。
     relation_count_fields = {
         "node_count": Count("nodes", filter=Q(nodes__version_to__isnull=True), distinct=True),

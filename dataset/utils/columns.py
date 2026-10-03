@@ -3,7 +3,7 @@
 """数据集列声明解析：模型字段 / JSON 路径（+ 数值类型标注）。
 
 列声明语法（``columns`` / ``filters[].field`` / ``ordering`` / ``group_by`` /
-``value_field`` 通用，见 ADR-069）：
+``value_field`` 通用）：
 
 - ``created_time``：模型字段（现状）；
 - ``data.kind``：JSON 路径（首段 = 模型上的 JSONField，第二段 = 键）；
@@ -22,7 +22,7 @@ from django.db.models.fields.json import KeyTextTransform
 from django.db.models.functions import Cast, Substr
 from django.utils.translation import gettext_lazy as _
 
-#: 类型标注白名单：number（数值聚合/比较）与 date（趋势分桶，值契约 YYYY-MM-DD，见 ADR-071）
+#: 类型标注白名单：number（数值聚合/比较）与 date（趋势分桶，值契约 YYYY-MM-DD）
 JSON_COLUMN_TYPES = ("number", "date")
 #: 路径段字符集（与表单设计器生成的字段 key 口径一致）
 _SEGMENT_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -107,7 +107,7 @@ def expression_of(spec: ColumnSpec):
     文本列也必须 Cast（``output_field=TextField()``）：裸 ``KeyTextTransform`` 参与
     过滤时会继承 JSON 字段语义，比较值被按 JSON 文档准备——SQLite 直接报
     ``malformed JSON``、PG 的语义也不符文本比较预期；``number`` 标注 Cast 为
-    ``FloatField`` 以支持数值比较与 sum / avg（ADR-069 D2）。
+    ``FloatField`` 以支持数值比较与 sum / avg。
     """
     if not spec.is_json:
         return None
@@ -161,7 +161,7 @@ def visible_root_of(spec: ColumnSpec) -> str:
 
 
 def date_bucket_expression(spec: ColumnSpec, date_trunc: str):
-    """JSON 日期列的趋势桶：``Substr`` 前缀截断（跨库一致，见 ADR-071 D2）。
+    """JSON 日期列的趋势桶：``Substr`` 前缀截断（跨库一致）。
 
     不用 ``Trunc(Cast(expr, DateTimeField()))``：SQLite 的 ``CAST(x AS datetime)``
     无类型亲和性会数值化，PG 则需显式 ``::timestamp``——两端方言不一致。

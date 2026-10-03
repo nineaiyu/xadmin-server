@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""运行日志脱敏过滤器（server.logging.SensitiveDataFilter，O8-6）守护测试。
+"""运行日志脱敏过滤器（server.logging.SensitiveDataFilter）守护测试。
 
 覆盖：三种键值形态（JSON 双引号 / repr 单引号 / kv 裸值）、裸数字不掩码
 （业务响应包络 code: 200 是日志主诊断信息）、异常栈与 args 记录、幂等

@@ -38,7 +38,7 @@ from server.utils import set_current_request
 logger = get_task_logger(__name__)
 
 
-# 邮件发送重试参数（P3）：SMTP 属外部 IO，瞬时失败（连接超时/限流）不再直接丢。
+# 邮件发送重试参数：SMTP 属外部 IO，瞬时失败（连接超时/限流）不再直接丢。
 # 任务路径失败按指数退避重试；同步直接调用路径（通知渠道 publish 同步分支）
 # 保持「记录错误并返回 None」的既有语义，不抛异常打断业务。
 MAIL_MAX_RETRIES = 3

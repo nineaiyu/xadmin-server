@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""部门管理员（ADR-077）：manager 规则解析、任命装配与宽授权巡检单测。"""
+"""部门管理员：manager 规则解析、任命装配与宽授权巡检单测。"""
 
 import pytest
 

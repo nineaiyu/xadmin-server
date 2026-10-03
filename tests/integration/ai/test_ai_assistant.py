@@ -251,7 +251,7 @@ class TestConfigApi:
     def test_retrieve_masks_key(self, auth_client):
         body = auth_client.get(CONFIG_URL).json()["data"]
         assert "AI_API_KEY" not in body
-        # 默认值已灰度转正为 True（ADR-082）；回显的是 Config 默认值（无 Setting 行时）
+        # 默认值已灰度转正为 True；回显的是 Config 默认值（无 Setting 行时）
         assert body["AI_ASSISTANT_ENABLED"] is True
 
     def test_partial_update_encrypts_key(self, auth_client):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common/contracts.py 契约面守护（ADR-079）。
+"""common/contracts.py 契约面守护。
 
 contracts 是框架层消费业务 app 的唯一显式出口：白名单即接口声明。这里的
 守护保证声明不漂移——白名单里的每个名字都能从提供方解析出**同一对象**
@@ -62,7 +62,7 @@ class TestProtocolSurface:
 
 @pytest.mark.django_db
 class TestProviderInjection:
-    """注入制生命周期（ADR-081）：覆盖即时生效、越界拒绝、fail-fast、回落。"""
+    """注入制生命周期：覆盖即时生效、越界拒绝、fail-fast、回落。"""
 
     @pytest.fixture(autouse=True)
     def _clean_injections(self):

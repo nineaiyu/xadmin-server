@@ -530,7 +530,7 @@ class TestSendVerifyCodeFailurePaths:
 
 
 class TestO8EndpointThrottle:
-    """O8-3：验证码发送（仅 POST）与临时令牌的 IP 维度专用限流。"""
+    """验证码发送（仅 POST）与临时令牌的 IP 维度专用限流。"""
 
     @staticmethod
     def _patch_rate(monkeypatch, scope, rate):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""系统配置进程内 L1 缓存（P1-4）。
+"""系统配置进程内 L1 缓存。
 
 固定开销链上标量配置（CSP_MODE / CSP_REPORT_URI / SLOW_REQUEST_THRESHOLD）每请求读
 3+ 次，每次都是 Redis 往返。L1 承担 30s 内的重复读；失效口径必须与 Redis 同款

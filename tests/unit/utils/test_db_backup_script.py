@@ -224,7 +224,7 @@ class TestDbBackupScript:
 
 
 class TestRemoteRequired:
-    """生产强制异地副本（P1-35）：缺失要可见（告警文案 + 单次模式退出码），
+    """生产强制异地副本：缺失要可见（告警文案 + 单次模式退出码）
     但**不得阻断本地备份**（本地备份永远优先）。"""
 
     def test_missing_remote_fails_single_run_but_keeps_local_backup(self, sandbox):

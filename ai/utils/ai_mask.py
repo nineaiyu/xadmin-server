@@ -4,7 +4,7 @@
 
 敏感形态（api_key / token / JWT / 密文前缀 / ``password=`` 形态，**对所有人生效**）
 + 既有 DataMaskRule 的形态类规则（手机号 / 身份证 / 银行卡 / 邮箱 / custom 正则；
-超管与 ADR-009「脱敏豁免」同口径豁免）。命中即替换为 ``[REDACTED]`` 占位符并计数
+超管与「脱敏豁免」同口径豁免）。命中即替换为 ``[REDACTED]`` 占位符并计数
 （不静默截断）。流式输出走 :class:`StreamMasker`：带 hold-back 的增量脱敏，跨帧
 敏感串不泄漏。
 
@@ -42,7 +42,7 @@ _KV_SECRET_PATTERN = re.compile(
     r"(?i)\b(api[_-]?key|secret|token|password|passwd|access[_-]?key)\b(\s*[:=]\s*)[\"']?([A-Za-z0-9_\-./+=]{8,})[\"']?"
 )
 
-#: 规则形态类：DataMaskRule.mask_type → 文本级正则（与 ADR-009 同口径，超管豁免）
+#: 规则形态类：DataMaskRule.mask_type → 文本级正则（与同口径，超管豁免）
 _RULE_SHAPE_PATTERNS = {
     "phone": re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
     "idcard": re.compile(r"(?<!\d)\d{17}[\dXx](?!\w)"),

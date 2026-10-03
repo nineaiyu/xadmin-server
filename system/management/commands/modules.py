@@ -36,7 +36,7 @@ LEVEL_LABELS = {CORE: "内核", "standard": "标配", "optional": "可选"}
 
 class Command(BaseCommand):
     # 注意：argparse 的 help 必须是 str —— 惰性翻译对象（gettext_lazy）在
-    # Python 3.12+ 的 argparse 文本换行处理中会抛 TypeError（见 ADR-045 附注）
+    # Python 3.12+ 的 argparse 文本换行处理中会抛 TypeError（见附注）
     help = "List functional modules and preview a trimmed combination"
 
     def add_arguments(self, parser):
