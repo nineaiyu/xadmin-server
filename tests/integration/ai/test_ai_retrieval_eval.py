@@ -1,6 +1,6 @@
 """AI 知识库检索评测（A1「评测驱动」）：评测集 hit@5 门禁入 CI。
 
-评测口径（与 docs/plans/archive/下一年度规划建议-2027.10-2028.09.md §四.A1 一致）：
+评测口径（A1「评测驱动」立项时定稿）：
 - 语料 = 仓库文档（system/utils/ai.py 的 _iter_doc_files，docs/**.md + 根 README/CONTRIBUTING）；
 - 评测集 = tests/data/ai_retrieval_eval.json（问题 + 期望出处），命中 top-5 任一期望出处即 hit；
 - 门禁：hit@5 ≥ 75%（低于阈值按规划升级向量检索）；
@@ -28,14 +28,19 @@ def _load_eval() -> dict:
     return json.loads(EVAL_FILE.read_text(encoding="utf-8"))
 
 
-@pytest.fixture(scope="module")
-def corpus(django_db_setup, django_db_blocker):
-    """同步仓库文档入库一次，模块内复用（真实语料，与生产同源）。"""
+@pytest.fixture
+def corpus(db):
+    """同步仓库文档入库（真实语料，与生产同源）。
+
+    函数作用域 + 事务内执行：语料随用例事务回滚，不向其它用例泄漏已提交行——
+    module 作用域提交版本会让后续用例（如 TestBuildDualWrite 的全库构建）把
+    1211 行语料当待建数据（embedded=1212）并跨过向量 DDL 门槛，全量跑批序下
+    必然互相污染（2026-10-03 修复）。
+    """
     from ai.models.ai import AiKnowledgeChunk
 
-    with django_db_blocker.unblock():
-        summary = sync_knowledge()
-        chunk_total = AiKnowledgeChunk.objects.count()
+    summary = sync_knowledge()
+    chunk_total = AiKnowledgeChunk.objects.count()
     return {**summary, "chunk_total": chunk_total}
 
 

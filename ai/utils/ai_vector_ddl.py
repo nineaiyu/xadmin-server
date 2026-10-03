@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""pgvector HNSW 索引定型助手（ADR-074 目标形态的索引半边）。
+"""pgvector HNSW 索引定型助手（目标形态的索引半边）。
 
 维度策略：``embedding_vector`` 列保持**无维度** ``vector``（embedding 模型可换档，
 迁移期/换档窗口内存量向量维度混存，带维度的列类型会让写入/回填直接失败）；本模块
 在「全库向量维度稳定」时把列定型为 ``vector(N)`` 并建 HNSW 索引
-（``vector_cosine_ops``，m=16 / ef_construction=64，ADR-074 口径）——
+（``vector_cosine_ops``，m=16 / ef_construction=64，口径）——
 
 - 语料低于 ``INDEX_MIN_ROWS`` 时 no-op（精确扫描足够，避免无谓 DDL）；
 - 维度混存（换档窗口）时**反向定型**：撤索引、列退回无维度（写入恢复任意维度）；
@@ -24,13 +24,13 @@ INDEX_NAME = "aichunk_embedding_vector_hnsw"
 
 
 def _chunk_table() -> str:
-    """知识块表名取自模型 Meta（TG-3/ADR-080 表归域后随 ORM 单源，不再硬编码）。"""
+    """知识块表名取自模型 Meta（/ 表归域后随 ORM 单源，不再硬编码）。"""
     from ai.models import AiKnowledgeChunk
 
     return AiKnowledgeChunk._meta.db_table
 
 
-#: HNSW 参数（ADR-074：m=16, ef_construction=64）
+#: HNSW 参数（m=16, ef_construction=64）
 HNSW_M = 16
 HNSW_EF_CONSTRUCTION = 64
 #: 语料规模门槛：低于该值精确扫描足够（≤2 万块上限内 P95 远低于 50ms 预算）
@@ -158,12 +158,27 @@ def _column_type(cursor) -> str:
 
 
 def _advisory_locked(fn, *args):
-    """会话级咨询锁串行化 DDL（锁键 = 固定命名空间，同连接加锁/解锁）。"""
+    """会话级咨询锁串行化 DDL（锁键 = 固定命名空间，同连接加锁/解锁）。
+
+    事务包裹的调用方（测试原子块）中 fn 失败会把连接留在 aborted 态，finally
+    的解锁语句会随之执行失败，session 级锁随连接归还连接池后泄漏——后续所有
+    取锁方永久阻塞。故事务内用 savepoint 包裹 fn：异常只回滚到保存点，连接
+    保持可用，解锁必然可达；autocommit（生产 celery/命令路径）无需保存点。
+    """
     from django.db import connection
 
+    in_atomic = connection.in_atomic_block
     with connection.cursor() as cursor:
+        if in_atomic:
+            cursor.execute("SAVEPOINT xadmin_ai_vector_ddl_sp")
         cursor.execute("SELECT pg_advisory_lock(hashtext('xadmin_ai_vector_ddl'))")
         try:
             fn(*args)
+        except Exception:
+            if in_atomic:
+                cursor.execute("ROLLBACK TO SAVEPOINT xadmin_ai_vector_ddl_sp")
+            raise
         finally:
             cursor.execute("SELECT pg_advisory_unlock(hashtext('xadmin_ai_vector_ddl'))")
+            if in_atomic:
+                cursor.execute("RELEASE SAVEPOINT xadmin_ai_vector_ddl_sp")
