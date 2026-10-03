@@ -29,8 +29,8 @@ class TrigramIndex:
 
 
 # 检索加速清单：用户/文件/审批单/请假（检索面向使用者且表随业务增长）
-# 表名为 ADR-080 表归域改名后的现名；approval/0001 迁移内历史快照（system_*）
-# 到现名的折算登记见 approval/migrations/0005 的 TRGM_TABLE_RENAMES
+# 表名为现名（与初始迁移建表名一致）；迁移侧快照（system/0004 与 approval/0001）
+# 与本清单的漂移由 tests/unit/system/test_search_indexes.py 守护
 SEARCH_TRGM_INDEXES = (
     TrigramIndex("system_userinfo", "username", "idx_userinfo_username_trgm"),
     TrigramIndex("system_userinfo", "nickname", "idx_userinfo_nickname_trgm"),

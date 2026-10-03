@@ -4,8 +4,8 @@
 三类守护：
 - **覆盖**：每个搜索提供者的检索字段必须落在「索引清单」或「豁免清单」（新增检索字段
   忘补索引/豁免时红灯——否则会静默退回顺序扫描，且只有上线后才可能被发现）；
-- **漂移**：迁移快照（经改名折算）↔ 运行期清单 ↔ 迁移 state_operations 三处
-  索引名/表/字段一致（表名折算 = approval/0005 的 ``TRGM_TABLE_RENAMES``，TG-3/ADR-080）；
+- **漂移**：迁移快照 ↔ 运行期清单 ↔ 迁移 state_operations 三处索引名/表/字段一致
+  （迁移快照直接以当前表名冻结——2026-10-03 迁移合并后初始迁移即建现名表，无改名折算）；
 - **降级与形态**：建索引 SQL 为 pg_trgm GIN 且幂等；非 PostgreSQL 不执行任何 DDL；
   扩展不可用时只告警、不再尝试建索引（不阻断迁移）。
 """
@@ -17,7 +17,7 @@ import pytest
 from system import search_indexes
 from system.search import SEARCH_PROVIDERS
 
-# trgm 索引快照按表归属拆在两个迁移里（ADR-058）：system 侧 5 个 + approval 侧 4 个
+# trgm 索引快照按表归属拆在两个迁移里：system 侧 5 个 + approval 侧 4 个
 MIGRATIONS = [
     importlib.import_module(module_path)
     for module_path in (
@@ -26,22 +26,12 @@ MIGRATIONS = [
     )
 ]
 
-# 表归域改名迁移（TG-3 / ADR-080）：登记表名折算、本身不含 trgm DDL——索引本体
-# 随 ALTER TABLE RENAME 自动跟随。漂移守护用它把迁移内历史快照折算到当前表名。
-RENAME_MIGRATIONS = [
-    importlib.import_module(module_path)
-    for module_path in ("approval.migrations.0005_alter_approvaldelegation_table_and_more",)
-]
-
 
 def _folded_snapshot() -> dict:
-    """迁移快照（建索引时点的历史表名）→ 折算改名 → 与运行期清单同口径。"""
+    """迁移快照 → 与运行期清单同口径（键：索引名，值：(表, 字段)）。"""
     snapshot = {}
     for migration in MIGRATIONS:
         snapshot.update({name: (table, field) for name, table, field in migration.TRGM_INDEXES})
-    for migration in RENAME_MIGRATIONS:
-        renames = migration.TRGM_TABLE_RENAMES
-        snapshot = {name: (renames.get(table, table), field) for name, (table, field) in snapshot.items()}
     return snapshot
 
 
@@ -88,13 +78,6 @@ class TestMigrationDrift:
     def test_snapshot_matches_runtime_registry(self):
         registry = {item.name: (item.table, item.field) for item in search_indexes.SEARCH_TRGM_INDEXES}
         assert _folded_snapshot() == registry, "迁移快照与 system/search_indexes.py 清单漂移（新增字段请补新迁移）"
-
-    def test_rename_registration_covers_only_known_tables(self):
-        """改名折算登记只允许引用历史快照里真实存在的表（防登记本身腐化）。"""
-        historical_tables = {table for migration in MIGRATIONS for _name, table, _field in migration.TRGM_INDEXES}
-        for migration in RENAME_MIGRATIONS:
-            unknown = set(migration.TRGM_TABLE_RENAMES) - historical_tables
-            assert unknown == set(), f"改名折算登记引用了快照中不存在的表：{unknown}"
 
     @pytest.mark.parametrize("migration", MIGRATIONS, ids=lambda m: m.__name__)
     def test_state_operations_match_snapshot(self, migration):
