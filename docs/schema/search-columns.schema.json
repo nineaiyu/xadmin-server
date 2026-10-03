@@ -45,7 +45,53 @@
       },
       "input_type": {
         "type": "string",
-        "description": "前端渲染器类型：string/integer/float/boolean/datetime/labeled_choice/api-search-user/object_related_field/m2m_related_field/image upload/textarea 等"
+        "description": "前端渲染器类型。封闭核心词表（单一事实源 common/core/modelset/input_types.py DECLARED_INPUT_TYPES，与本枚举锁步对账）+ 开放 api-* 前缀族；x-fallback-rendered 为无内置渲染器、依赖注册表回退语义呈现的登记类型。",
+        "anyOf": [
+          {
+            "enum": [
+              "boolean",
+              "choice",
+              "color",
+              "date",
+              "datetime",
+              "datetimerange",
+              "email",
+              "field",
+              "file upload",
+              "float",
+              "image upload",
+              "input",
+              "integer",
+              "json",
+              "labeled_choice",
+              "labeled_multiple_choice",
+              "list",
+              "m2m_related_field",
+              "m2m_related_field_file",
+              "m2m_related_field_image",
+              "multiple choice",
+              "number",
+              "object_related_field",
+              "object_related_field_file",
+              "object_related_field_image",
+              "phone",
+              "select",
+              "select-multiple",
+              "select-ordering",
+              "string",
+              "text",
+              "textarea"
+            ]
+          },
+          {
+            "pattern": "^api-",
+            "type": "string"
+          }
+        ],
+        "x-fallback-rendered": [
+          "email",
+          "input"
+        ]
       },
       "max_length": {
         "type": "number",

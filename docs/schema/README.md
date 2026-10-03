@@ -26,3 +26,11 @@
   `message/ws_schema.py`（payload 的 required / 描述声明）；改完真源后跑
   `python scripts/gen_ws_frame_schema.py` 重新生成（`--check` 可校验漂移），
   守护测试 `test_ws_frame_schema.py` 保证「落盘 == 渲染」与字段集合对账。
+- **input_type 词表（ADR-083，稳定公共契约）**：两份元数据 Schema 的
+  `input_type` 属性 = 封闭核心枚举 ∨ `^api-` 前缀族（分支显式 `type: string`，
+  生成 TS 类型收敛为 `string` 开放边界）；`x-fallback-rendered` 自定义关键字
+  登记无内置渲染器的回退呈现类型。**单一事实源为服务端
+  `common/core/modelset/input_types.py`（`DECLARED_INPUT_TYPES` 等）**，
+  与本目录枚举锁步对账（`test_metadata_schema.py`）；client 侧
+  `metadata-vocabulary.spec.ts` 做词表 ⇄ 渲染器注册表双向覆盖对账。
+  新增类型的扩展流程见 ADR-083（词表 → Schema → sync:contract → 注册表）。
