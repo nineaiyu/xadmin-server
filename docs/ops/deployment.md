@@ -621,7 +621,7 @@ add_header Content-Security-Policy "default-src 'self'; script-src 'self'; worke
 | `LOG_LEVEL` / `LOG_FORMAT` / `LOG_BACKUP_COUNT` | 同名 | `WARNING` / `text` / `30` | 否 | 日志级别 / `text` 或 `json` / 按天滚动保留天数（0 = 不清理） |
 | `SENTRY_DSN` | 同名 | 空 | 否 | 空 = 完全不初始化 |
 | `SENTRY_ENVIRONMENT` / `SENTRY_TRACES_SAMPLE_RATE` | 同名 | `production` / `0.0` | 否 | |
-| `METRICS_ENABLED` / `METRICS_TOKEN` | 同名 | `false` / 空 | 否 | 启用需同时配置 token（`Authorization: Bearer <token>`） |
+| `METRICS_ENABLED` / `METRICS_TOKEN` | 同名 | `true` / 空 | 否 | 默认开启（ADR-082 转正）；抓取仍需配置 token（`Authorization: Bearer <token>`），未配置时端点 403 |
 | `BASIC_AUTH_ENABLED` | 同名 | `false` | 否 | base64 明文凭证，仅本地调试开启 |
 | `SILK_ENABLED` | 同名 | `false` | 否 | 仅 `DEBUG` / `DEBUG_DEV` 生效，需装 `requirements-dev.txt` |
 

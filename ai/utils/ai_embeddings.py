@@ -4,10 +4,12 @@
 
 口径（ADR-065 建立混合检索，ADR-074 落地 pgvector，2026-10-02 交付）：
 - **启用条件**：存在 ``purpose=embedding`` 的激活档案；无档案 = 词频检索零变化；
-- **构建**：管理端显式触发（知识库页按钮 / ``build_ai_embeddings`` 命令），批量调用
-  后按块落库——``embedding``（float32 二进制，迁移窗口保留，回滚=代码回退）与
-  ``embedding_vector``（pgvector 列）**双写**；正文变更后旧向量按 ``embedding_hash``
-  判定陈旧，向量通道跳过该块（词频通道兜底），不做隐式重算；
+- **构建**：管理端显式触发（知识库页按钮 / ``build_ai_embeddings`` 命令，支持全量
+  force / dry_run）**+ 正文变更后自动增量补齐**（``schedule_auto_rebuild``，ADR-082：
+  上传/覆盖、停用再启用、仓库同步三个挂点，只补缺失/陈旧块，无档案/无待建/构建中
+  静默跳过），批量调用后按块落库——``embedding``（float32 二进制，迁移窗口保留，
+  回滚=代码回退）与 ``embedding_vector``（pgvector 列）**双写**；正文变更后的旧向量
+  按 ``embedding_hash`` 判定陈旧，补齐完成前向量通道跳过该块（词频通道兜底）；
 - **检索**：SQL 余弦（``embedding <=> query``，``CosineDistance`` 升序）替代进程内
   索引——新鲜度（``embedding_hash == content_hash``）、模型一致性、维度一致性都在
   SQL WHERE 内收敛（维度不一致的行直接排除，复刻旧内存索引的逐块 skip 语义）；
@@ -25,6 +27,7 @@ import threading
 import time
 from typing import Any
 
+from django.db import transaction
 from django.db.models import F
 
 from ai.utils.ai_embedding_math import (  # noqa: F401  (纯函数拆出，再导出保持调用面)
@@ -332,6 +335,64 @@ def build_embeddings(
             logger.warning("ensure pgvector hnsw index failed; retrieval uses exact scan", exc_info=True)
         _record_build_usage(usage_total, model, started, summary)
     return summary
+
+
+# ------------------------------------------------------------------ 自动重算（正文变更触发）
+
+
+def _has_pending_chunks(source_path: str | None, model: str) -> bool:
+    """是否存在待建块（缺向量 / 正文变更 / 模型不符），判定与 ``_pending_rows`` 同口径。
+
+    ``embedding_hash`` 为非空默认 ""（未构建块），与 64 位十六进制 ``content_hash``
+    恒不相等，SQL 比较无 NULL 三值逻辑坑。
+    """
+    from ai.models.ai import AiKnowledgeChunk
+
+    qs = AiKnowledgeChunk.objects.all()
+    if source_path:
+        qs = qs.filter(source_path=source_path)
+    return qs.exclude(embedding_hash=F("content_hash"), embedding_model=model).exists()
+
+
+def schedule_auto_rebuild(document=None) -> bool:
+    """正文变更后自动补齐向量（ADR-082 / F7-6），返回是否实际调度。
+
+    与手工构建共用同一条状态机（单飞锁 → ``build_embeddings_task`` → 进度/终态/释放），
+    增量口径（force=False）只补缺失/陈旧块。三重前置，任一不满足即静默跳过：
+
+    - embedding 档案未配置：向量链路未启用，部署行为零变化；
+    - 无待建块：未变内容重传等场景不空转占锁（避免挤掉手工构建入口）；
+    - 构建单飞锁被占：不排队，防重复消耗供应商预算（进行中的全量构建会顺带覆盖）。
+
+    模型换档不做自动全量重嵌（成本不可控，走构建按钮 force）；旧模型块由
+    ``vector_index`` 的模型一致性判据跳过（词频通道兜底）——自动调度只保证
+    「正文新鲜度」，不保证「模型一致性」。
+    """
+    from django.conf import settings
+
+    from ai.utils.ai_config import embedding_credentials
+    from ai.utils.embedding_progress import try_acquire_lock
+
+    credentials = embedding_credentials()
+    if credentials is None:
+        return False
+    model = str(credentials.get("model") or "")
+    source_path = getattr(document, "path", None) if document is not None else None
+    if not _has_pending_chunks(source_path, model):
+        return False
+    if not try_acquire_lock():
+        logger.info("embedding auto rebuild skipped: a build is already running")
+        return False
+
+    from ai.tasks import build_embeddings_task
+
+    task_args = [str(document.pk) if document is not None else "", False]
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+        # 测试/E2E：eager 下 apply_async 不执行，改 apply 同步跑完（与手工构建入口同口径）
+        build_embeddings_task.apply(args=task_args)
+    else:
+        transaction.on_commit(lambda: build_embeddings_task.apply_async(args=task_args))
+    return True
 
 
 def _accumulate_usage(previous: dict, usage) -> dict:

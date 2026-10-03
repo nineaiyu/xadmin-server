@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Prometheus 指标端点：默认关闭、令牌保护语义。"""
+"""Prometheus 指标端点：令牌保护与显式关闭语义（默认值转正见 ADR-082）。"""
 
 import pytest
 from django.test import override_settings
@@ -9,8 +9,9 @@ pytestmark = pytest.mark.django_db
 URL = "/api/common/api/metrics"
 
 
+@override_settings(METRICS_ENABLED=False)
 def test_metrics_disabled_returns_404(api_client):
-    """默认关闭：返回 404，不暴露端点存在性。"""
+    """显式关闭：返回 404，不暴露端点存在性（默认已转开启，ADR-082）。"""
     assert api_client.get(URL).status_code == 404
 
 

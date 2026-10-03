@@ -207,8 +207,10 @@ SETTINGS_CONFIG = {
     "FILE_STORAGE_QUOTA_MB": 0,
     # 个人上传文件数量上限（0 = 不限）
     "FILE_UPLOAD_COUNT_LIMIT": 0,
-    # 正式上传文件保留天数（0 = 不清理）：仅清理非临时、无业务引用的历史文件
-    "FILE_KEEP_DAYS": 0,
+    # 正式上传文件保留天数：仅清理非临时、无业务引用的历史文件（0 = 不清理）。
+    # 2026-10-03 默认转 180（ADR-082 卫生默认值，与 FILE_ACCESS_LOG_KEEP_DAYS 同档）；
+    # 存量部署以种子 SystemConfig 行优先不受影响，新装可在系统配置页调整
+    "FILE_KEEP_DAYS": 180,
     # 文本预览读取上限（字节）：超出即截断并提示下载查看
     "FILE_PREVIEW_TEXT_MAX_BYTES": 256 * 1024,
     # 预览缩略图宽度（像素）：列表行内缩略图 / 抽屉大图
@@ -318,8 +320,10 @@ SETTINGS_CONFIG = {
     # 纯 HTTP 会话在线判定窗口（秒）/ 已结束会话记录保留天数
     "SESSION_ONLINE_TIMEOUT": 300,
     "USER_SESSION_RETENTION_DAYS": 30,
-    # 聊天消息保留天数（0 = 不清理）
-    "CHAT_HISTORY_DAYS": 0,
+    # 聊天消息保留天数：活协作数据取保守一年（0 = 不清理）。
+    # 2026-10-03 默认转 365（ADR-082 卫生默认值，与 LOGIN_LOG_RETENTION_DAYS 同档）；
+    # 存量部署以种子 SystemConfig 行优先不受影响，新装可在系统配置页调整
+    "CHAT_HISTORY_DAYS": 365,
     # 审批人职能权限码清单（与 APPROVAL_APPROVER_ROLES 取并集；两者皆空 = 全部在用超管）
     "APPROVAL_APPROVER_PERMS": [],
     # 备份失败告警回调令牌（空 = 端点未启用）

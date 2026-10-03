@@ -32,9 +32,10 @@ BASE_CONFIG = {
     # django-silk 性能剖析开关（性能基线）：仅允许 DEBUG/DEBUG_DEV 环境开启，
     # 依赖在 requirements-dev.txt（django-silk）；开启后需执行 migrate 创建 silk 表
     "SILK_ENABLED": False,
-    # Prometheus 指标（默认关闭）：启用需同时配置 METRICS_TOKEN，
-    # 抓取方以 Authorization: Bearer <token> 访问 /api/common/api/metrics
-    "METRICS_ENABLED": False,
+    # Prometheus 指标（默认开启，ADR-082 灰度转正）：采集为进程内计数器（无每请求 IO），
+    # 抓取仍需配置 METRICS_TOKEN 并以 Authorization: Bearer <token> 访问
+    # /api/common/api/metrics——token 未配置时端点 403，无暴露面
+    "METRICS_ENABLED": True,
     "METRICS_TOKEN": "",
     "LOG_LEVEL": "WARNING",
     # 应用日志格式 text（默认）/ json（结构化，供 Loki/ELK 采集）
@@ -167,10 +168,13 @@ BASE_CONFIG = {
     "FEISHU_ENABLED": False,
     "FEISHU_APP_ID": "",
     "FEISHU_APP_SECRET": "",
-    # AI 助手：OpenAI 兼容协议，默认全关；API Key 值级加密落库。
+    # AI 助手：OpenAI 兼容协议；API Key 值级加密落库。
     # 多档案（AiProfile）为主通路：激活档案供全部 AI 链路使用；
-    # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）
-    "AI_ASSISTANT_ENABLED": False,
+    # 以下键是「无激活档案时」的 Setting 回落默认值（category=ai 可热更新覆盖）。
+    # 开关 2026-10-03 灰度转正（ADR-082）：消费面仍有 is_configured 门控（激活档案或
+    # 凭据齐全），未配置部署行为零变化，配置档案后 AI 面即刻生效无需再开开关；
+    # 显式关过的部署以 Setting 行优先，不受代码默认影响
+    "AI_ASSISTANT_ENABLED": True,
     "AI_BASE_URL": "",
     "AI_API_KEY": "",
     "AI_MODEL": "gpt-4o-mini",
@@ -179,11 +183,12 @@ BASE_CONFIG = {
     # 该路径无落库/无校验直广播，前端已切换 ws/chat（落库 + 校验 + 权限 + 限流），
     # 仅确需兼容老客户端时显式开启（见 message/notify.py）
     "CHAT_LEGACY_WS_BROADCAST_ENABLED": False,
-    # AI 二期 NL 查数：默认关闭灰度
-    "AI_NL_QUERY_ENABLED": False,
-    # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：默认关闭灰度，
-    # 白名单动作与审计见 system/utils/ai_actions.py
-    "AI_ACTION_ENABLED": False,
+    # AI 二期 NL 查数：2026-10-03 灰度转正（ADR-082）；视图侧仍有 is_enabled 双闸
+    # 与数据权限（visible_datasets）口径
+    "AI_NL_QUERY_ENABLED": True,
+    # AI 四期受限动作（A2：草稿→确认→以用户身份执行）：2026-10-03 灰度转正（ADR-082），
+    # 协议自身 fail-closed；白名单动作与审计见 system/utils/ai_actions.py
+    "AI_ACTION_ENABLED": True,
     # AI 三期采样/行为参数（档案未配置的参数按此回落；None = 不下发走供应商默认）
     "AI_TEMPERATURE": 0.2,
     "AI_MAX_TOKENS": 0,
@@ -201,9 +206,9 @@ BASE_CONFIG = {
     "AI_MAX_RETRIES": 0,
     "AI_CONTEXT_LIMIT": 20,
     "AI_PERSONA": "",
-    # 原生 function calling 双轨：默认关（AI 配置页能力探测通过后可开启）；
-    # 关闭时动作草稿走稳定的 prompt-JSON 轨道（存量桩 / 弱模型零破坏）
-    "AI_NATIVE_TOOLS_ENABLED": False,
+    # 原生 function calling 双轨：2026-10-03 灰度转正（ADR-082）；消费面仍有能力探测
+    # fail-closed 门控（无画像 / 探测不过一律回落稳定的 prompt-JSON 轨道，弱模型零破坏）
+    "AI_NATIVE_TOOLS_ENABLED": True,
     # 用量配额（0 = 不限）：用户日调用次数 / 用户日 token 估算 /
     # 全局并发流式上限（超限给可读提示；写类动作 fail-closed）。
     # 并发流式非零兜底：流式每条独占一个请求线程直至模型超时，无上限时高并发会
