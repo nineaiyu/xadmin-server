@@ -69,9 +69,14 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     form_schema_locked = serializers.SerializerMethodField(label=_("Form schema locked"))
 
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
-    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT。
-    # filter 限定当前生效行：历史版本节点不计入「节点数」展示。
-    relation_count_fields = {"node_count": Count("nodes", filter=Q(nodes__version_to__isnull=True))}
+    # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT/EXISTS。
+    # filter 限定当前生效行：历史版本节点不计入「节点数」展示；form_schema_locked
+    # 以 Count(filter) 预聚合、取值侧转布尔（O11-3 抽样实测定位的逐行 EXISTS N+1）。
+    # 两处均 distinct：同查询带两处反向关联 join，不 distinct 会交叉膨胀计数。
+    relation_count_fields = {
+        "node_count": Count("nodes", filter=Q(nodes__version_to__isnull=True), distinct=True),
+        "form_schema_locked": Count("bound_forms", filter=Q(bound_forms__is_template=False), distinct=True),
+    }
 
     class Meta:
         model = ApprovalFlow
@@ -95,7 +100,14 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         return annotated if annotated is not None else obj.nodes.count()
 
     def get_form_schema_locked(self, obj) -> bool:
-        """是否被 dform 绑定（绑定期 form_schema 由表单侧单向投影维护）。"""
+        """是否被 dform 绑定（绑定期 form_schema 由表单侧单向投影维护）。
+
+        列表/详情/导出走 ``relation_count_fields`` 预聚合（注解为 Count，转布尔）；
+        单对象序列化（无注解）回退为单次 EXISTS。
+        """
+        annotated = getattr(obj, "form_schema_locked", None)
+        if annotated is not None:
+            return annotated > 0
         return obj.bound_forms.filter(is_template=False).exists()
 
     def validate_form_schema(self, value):
