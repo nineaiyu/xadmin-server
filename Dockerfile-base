@@ -31,7 +31,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=core \
 WORKDIR /data/
 
 # 默认官方源：本 Dockerfile 由 CI（海外 runner）构建基础镜像。
-# 国内本地构建可 --build-arg PIP_MIRROR=https://mirrors.cloud.tencent.com/pypi/simple
+# 国内本地构建可 --build-arg PIP_MIRROR=https://mirrors.huaweicloud.com/repository/pypi/simple --build-arg APT_MIRROR=http://mirrors.huaweicloud.com
 ARG PIP_MIRROR=https://pypi.org/simple
 ARG UV_VERSION=0.12.5
 # UV_CONCURRENT_DOWNLOADS 默认 50（uv 默认值）；镜像源按 IP 限流明显时调小（如 4~8）总吞吐反而更高

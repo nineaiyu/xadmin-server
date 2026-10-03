@@ -1,8 +1,9 @@
 FROM registry.cn-beijing.aliyuncs.com/nineaiyu/python:3.14.7-slim
 
-# add pip cn mirrors（腾讯云：阿里云 PyPI 镜像偶有版本同步滞后，曾缺 psycopg-pool==3.3.3 导致构建失败）
-ARG PIP_MIRROR=https://mirrors.cloud.tencent.com/pypi/simple
-ARG APT_MIRROR=http://mirrors.aliyun.com
+# 国内镜像统一华为云（2026-10 实测：PyPI 下载 ~15MB/s、apt ~27-34MB/s，均为各源最快，同步及时）
+# 历史注记：阿里云 PyPI 曾因同步滞后缺 psycopg-pool==3.3.3 导致构建失败；apt 镜像实测仅 ~0.6MB/s，故弃用
+ARG PIP_MIRROR=https://mirrors.huaweicloud.com/repository/pypi/simple
+ARG APT_MIRROR=http://mirrors.huaweicloud.com
 
 # Install APT dependencies
 ARG DEPENDENCIES="                    \
