@@ -54,12 +54,29 @@ class ScreenSerializer(BaseModelSerializer):
         return value
 
     def validate_layout(self, value):
-        """窗格载荷：规范化 + 越界/重叠/未知仪表盘校验（单一事实源见 dataset.utils.screen_layout）。"""
-        known = Dashboard.objects.values_list("pk", flat=True)
+        """窗格载荷：规范化 + 越界/重叠/未知仪表盘/数据集校验（单一事实源见 dataset.utils.screen_layout）。
+
+        指标卡窗格的 sum/avg 取值列必须落在该数据集的数值列白名单内
+        （与报表组件同口径的 fail-closed：源头挡住执行期必然 400 的组合）。
+        """
+        from dataset.models.dataset import Dataset
+        from dataset.utils.dataset import numeric_columns_of
+
+        known_dashboards = Dashboard.objects.values_list("pk", flat=True)
+        datasets = {str(item.pk): item for item in Dataset.objects.all().only("pk", "bound_model", "columns")}
         try:
-            return normalize_screen_layout(value, known)
+            layout = normalize_screen_layout(value, known_dashboards, datasets.keys())
         except ScreenLayoutError as exc:
             raise serializers.ValidationError(str(exc)) from exc
+        for pane in layout:
+            if pane["type"] != "metric" or pane.get("metric") in (None, "count"):
+                continue
+            dataset = datasets.get(pane["dataset"])
+            if dataset is None:
+                continue
+            if pane.get("value_field") not in numeric_columns_of(dataset):
+                raise serializers.ValidationError(_("Value field is not numeric in pane: {}").format(pane["pk"]))
+        return layout
 
     def validate_interval(self, value):
         if not (5 <= int(value) <= 3600):
@@ -115,6 +132,7 @@ class ReportSerializer(BaseModelSerializer):
             "frequency",
             "send_time",
             "weekday",
+            "month_day",
             "cron_expression",
             "recipients",
             "notify_channels",
@@ -200,6 +218,15 @@ class ReportSerializer(BaseModelSerializer):
         weekday = attrs.get("weekday", getattr(self.instance, "weekday", 0))
         if not (0 <= int(weekday) <= 6):
             raise serializers.ValidationError(_("Weekday must be between 0 and 6"))
+        # 每月几号（monthly 用）：1~28 避开月末歧义（2 月 30 号等永不命中的日期）
+        month_day = attrs.get("month_day", getattr(self.instance, "month_day", 1))
+        try:
+            month_day = int(month_day)
+        except (TypeError, ValueError) as exc:
+            raise serializers.ValidationError(_("Month day must be between 1 and 28")) from exc
+        if not 1 <= month_day <= 28:
+            raise serializers.ValidationError(_("Month day must be between 1 and 28"))
+        attrs["month_day"] = month_day
         # cron 表达式：非空时优先于三档频次；非法表达式直接拒绝
         cron_expression = (attrs.get("cron_expression", getattr(self.instance, "cron_expression", "")) or "").strip()
         if cron_expression:

@@ -52,9 +52,97 @@ def test_text_pane_defaults():
     assert pane["size"] == 24
 
 
-def test_clock_pane_keeps_only_box():
+def test_clock_pane_keeps_box_and_default_size():
+    """时钟窗格默认字号 40（与前端历史硬编码一致）；size 显式下发时保留。"""
     raw = [{"pk": "c1", "type": "clock", "x": 9, "y": 0, "w": 3, "h": 2}]
-    assert normalize_screen_layout(raw, [DASH]) == [{"pk": "c1", "type": "clock", "x": 9, "y": 0, "w": 3, "h": 2}]
+    assert normalize_screen_layout(raw, [DASH]) == [
+        {"pk": "c1", "type": "clock", "x": 9, "y": 0, "w": 3, "h": 2, "size": 40}
+    ]
+    raw = [{"pk": "c1", "type": "clock", "x": 9, "y": 0, "w": 3, "h": 2, "size": 96}]
+    assert normalize_screen_layout(raw, [DASH])[0]["size"] == 96
+
+
+class TestMetricPane:
+    def test_normalised_with_dataset_and_metric(self):
+        raw = [
+            {
+                "pk": "m1",
+                "type": "metric",
+                "x": 0,
+                "y": 0,
+                "w": 3,
+                "h": 2,
+                "dataset": "ds-1",
+                "metric": "sum",
+                "value_field": "amount",
+            }
+        ]
+        assert normalize_screen_layout(raw, [DASH], ["ds-1"]) == [
+            {
+                "pk": "m1",
+                "type": "metric",
+                "x": 0,
+                "y": 0,
+                "w": 3,
+                "h": 2,
+                "dataset": "ds-1",
+                "metric": "sum",
+                "value_field": "amount",
+            }
+        ]
+
+    def test_metric_defaults_to_count_without_value_field(self):
+        raw = [{"pk": "m1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "dataset": "ds-1", "metric": "count"}]
+        pane = normalize_screen_layout(raw, [DASH], ["ds-1"])[0]
+        assert pane["metric"] == "count"
+        assert "value_field" not in pane
+
+    def test_unknown_dataset_rejected(self):
+        raw = [{"pk": "m1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "dataset": "missing"}]
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout(raw, [DASH], ["ds-1"])
+
+    def test_invalid_metric_rejected(self):
+        raw = [{"pk": "m1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "dataset": "ds-1", "metric": "median"}]
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout(raw, [DASH], ["ds-1"])
+
+    def test_sum_requires_value_field(self):
+        raw = [{"pk": "m1", "type": "metric", "x": 0, "y": 0, "w": 3, "h": 2, "dataset": "ds-1", "metric": "sum"}]
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout(raw, [DASH], ["ds-1"])
+
+
+class TestImagePane:
+    def test_normalised_with_url_and_fit(self):
+        raw = [
+            {"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": "https://a.b/c.png", "fit": "contain"}
+        ]
+        assert normalize_screen_layout(raw, [DASH]) == [
+            {"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": "https://a.b/c.png", "fit": "contain"}
+        ]
+
+    def test_fit_defaults_to_cover(self):
+        raw = [{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": "https://a.b/c.png"}]
+        assert normalize_screen_layout(raw, [DASH])[0]["fit"] == "cover"
+
+    def test_missing_url_rejected(self):
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout([{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2}], [DASH])
+
+    def test_non_http_url_rejected(self):
+        for url in ("javascript:alert(1)", "data:image/png;base64,xxx", "/media/local.png"):
+            with pytest.raises(ScreenLayoutError):
+                normalize_screen_layout(
+                    [{"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": url}], [DASH]
+                )
+
+    def test_invalid_fit_rejected(self):
+        raw = [
+            {"pk": "i1", "type": "image", "x": 0, "y": 0, "w": 3, "h": 2, "url": "https://a.b/c.png", "fit": "stretch"}
+        ]
+        with pytest.raises(ScreenLayoutError):
+            normalize_screen_layout(raw, [DASH])
 
 
 class TestRejections:

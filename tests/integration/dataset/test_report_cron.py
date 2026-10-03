@@ -109,6 +109,26 @@ class TestReportDue:
         # 00:00~08:00 窗口内取到「上月到期点 < 建单时间」而假失败（与真实时钟耦合）
         assert report_due(monthly, now.replace(day=1, hour=9)) is True
 
+    def test_monthly_month_day_due_moment(self, dataset):
+        """monthly + month_day：到期点 = 最近一次已过的「每月 month_day 08:00」。"""
+        now = timezone.localtime().replace(second=0, microsecond=0)
+        monthly = make_report(dataset, name="月报-15号", frequency="monthly", send_time="08:00", month_day=15)
+        # 上月 15 号 08:00 已执行过（引用点）
+        Report.objects.filter(pk=monthly.pk).update(
+            created_time=now.replace(day=1, hour=8, minute=0) - datetime.timedelta(days=40),
+            last_run_at=now.replace(day=1, hour=8) - datetime.timedelta(days=16),
+        )
+        monthly.refresh_from_db()
+        from dataset.analysis_tasks import last_due_at
+
+        # 月中（15 号 09:00，当月到期点已过）：应触发
+        assert report_due(monthly, now.replace(day=15, hour=9)) is True
+        # 月初（10 号，本月到期点未到，且上月期次已跑）：不触发；
+        # 到期点回落上月 15 号
+        assert report_due(monthly, now.replace(day=10, hour=9)) is False
+        due_at = last_due_at(monthly, now.replace(day=10, hour=9))
+        assert due_at.day == 15 and due_at < now.replace(day=10, hour=9)
+
     def test_invalid_send_time_fail_closed(self, dataset):
         report = make_report(dataset, frequency="daily", send_time="25:99")
         assert report_due(report, timezone.localtime()) is False

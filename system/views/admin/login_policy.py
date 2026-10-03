@@ -8,6 +8,7 @@
 
 from datetime import datetime
 
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.plumbing import build_basic_type, build_object_type
@@ -48,7 +49,7 @@ class LoginAccessPolicyViewSet(BaseModelSet):
                     "ip": build_basic_type(OpenApiTypes.STR),
                     "when": build_basic_type(OpenApiTypes.STR),
                 },
-                description="命中预演：用户（用户名或 pk）/ IP / 时间（ISO 格式，默认当前）",
+                description="命中预演：用户（用户名或 pk，查无此用户报错而非回退）/ IP / 时间（ISO 格式，默认当前）",
             )
         ),
         responses=get_default_response_schema(),
@@ -61,7 +62,15 @@ class LoginAccessPolicyViewSet(BaseModelSet):
         if username:
             user = UserInfo.objects.filter(username=username).first()
             if user is None:
-                user = UserInfo.objects.filter(pk=username).first()
+                try:
+                    user = UserInfo.objects.filter(pk=username).first()
+                except (ValueError, ValidationError):
+                    # pk 为 UUID：非法字符串按查无此用户处理（而非 500）
+                    user = None
+            if user is None:
+                # 静默回退到当前用户会让管理员把别人的预演结果当成目标用户的，
+                # 必须显式报错（预演的价值在于准确）
+                return ApiResponse(code=1004, detail=_("Sample user not found: {}").format(username))
         if user is None:
             user = request.user
         ip = str(request.data.get("ip") or "").strip() or get_request_ip(request)
@@ -73,5 +82,15 @@ class LoginAccessPolicyViewSet(BaseModelSet):
             except ValueError:
                 return ApiResponse(code=1004, detail=_("Invalid time format"))
         result = preview_login_policy(user, ip, when)
+        # require_mfa 的预演与真实登录存在已知分叉：真实登录在用户无可用
+        # 二次验证方式时降级放行（防自锁）。这里探测该用户是否有可用方式，
+        # 供前端提示「require_mfa 不会真的拦住此用户」；探测失败置 None（未知，
+        # 前端不提示），不影响预演主体结果。
+        try:
+            from mfa.services import get_login_mfa_methods
+
+            result["mfa_usable"] = bool(get_login_mfa_methods(user))
+        except Exception:  # noqa: BLE001
+            result["mfa_usable"] = None
         result.update({"username": user.username, "ip": ip, "when": when.isoformat()})
         return ApiResponse(data=result)

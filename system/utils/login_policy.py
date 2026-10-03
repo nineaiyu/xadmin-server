@@ -74,8 +74,24 @@ def match_ip(policy, ip: str) -> bool:
     return contains_ip(ip, ranges)
 
 
+def match_policy_detail(policy, user, ip, when: datetime) -> dict:
+    """逐维度匹配明细：对象 / 时段 / 网段各自命中与否。
+
+    预演专用：只返回总命中结果时，管理员无法定位「为什么没生效」。
+    """
+    target = match_target(policy, user)
+    time_matched = match_time(policy, when)
+    ip_matched = match_ip(policy, ip)
+    return {
+        "matched": target and time_matched and ip_matched,
+        "target": target,
+        "time": time_matched,
+        "ip": ip_matched,
+    }
+
+
 def match_policy(policy, user, ip, when: datetime) -> bool:
-    return match_target(policy, user) and match_time(policy, when) and match_ip(policy, ip)
+    return match_policy_detail(policy, user, ip, when)["matched"]
 
 
 def evaluate_login_policy(user, ip, when=None) -> dict:
@@ -101,26 +117,35 @@ def evaluate_login_policy(user, ip, when=None) -> dict:
 
 
 def preview_login_policy(user, ip, when=None) -> dict:
-    """命中预演（管理页用）：返回全部激活策略的逐条匹配结果与最终判定。"""
+    """命中预演（管理页用）：返回全部策略的逐条、逐维度匹配结果与最终判定。
+
+    未启用策略也列出（``is_active=False``，仅展示不参与判定），便于评估
+    「启用后会怎样」；最终判定仍只在激活策略中按首个命中取值。
+    """
     from system.models import LoginAccessPolicy
 
     when = when or timezone.localtime()
     items = []
     final = {"action": None, "policy": ""}
     decided = False
-    for policy in LoginAccessPolicy.objects.filter(is_active=True).order_by("priority", "created_time"):
-        matched = match_policy(policy, user, ip, when)
+    policies = LoginAccessPolicy.objects.all().order_by("priority", "created_time")
+    for policy in policies:
+        detail = match_policy_detail(policy, user, ip, when)
         items.append(
             {
                 "pk": str(policy.pk),
                 "name": policy.name,
                 "priority": policy.priority,
                 "action": policy.action,
-                "matched": matched,
-                "effective": bool(matched and not decided),
+                "matched": detail["matched"],
+                "effective": bool(policy.is_active and detail["matched"] and not decided),
+                "is_active": policy.is_active,
+                "target_matched": detail["target"],
+                "time_matched": detail["time"],
+                "ip_matched": detail["ip"],
             }
         )
-        if matched and not decided:
+        if policy.is_active and detail["matched"] and not decided:
             final = {"action": policy.action, "policy": policy.name}
             decided = True
     return {"matched": bool(final["action"]), "action": final["action"], "policy": final["policy"], "items": items}

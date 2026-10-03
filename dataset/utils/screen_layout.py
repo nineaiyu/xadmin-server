@@ -19,8 +19,8 @@ from typing import Any
 
 from django.utils.translation import gettext_lazy as _
 
-#: 允许的窗格类型：仪表盘 / 文本 / 时钟（首批三件组件）
-SCREEN_PANE_TYPES = ("dashboard", "text", "clock")
+#: 允许的窗格类型：仪表盘 / 文本 / 时钟 / 指标卡 / 图片
+SCREEN_PANE_TYPES = ("dashboard", "text", "clock", "metric", "image")
 #: 栅格列数（与前端 grid-template-columns 一致）
 SCREEN_GRID_COLS = 12
 #: 行数上限：够大屏纵向堆叠，同时挡住无意义的天文数字
@@ -33,6 +33,15 @@ SCREEN_MAX_TEXT = 2000
 SCREEN_MAX_TITLE = 64
 #: 窗格标识长度上限（前端生成，仅用于定位）
 SCREEN_MAX_PANE_ID = 64
+#: 字号范围：大屏远距离阅读，低于 14 无意义；上限放宽到 200（标语 / 时钟等大幅文字）
+SCREEN_MIN_FONT_SIZE = 14
+SCREEN_MAX_FONT_SIZE = 200
+#: 指标卡窗格的聚合口径（与数据集聚合 ALLOWED_METRICS 同口径）
+SCREEN_METRIC_TYPES = ("count", "sum", "avg")
+#: 图片窗格的填充方式
+SCREEN_IMAGE_FITS = ("cover", "contain", "fill")
+#: 图片地址长度上限
+SCREEN_MAX_IMAGE_URL = 512
 
 
 class ScreenLayoutError(ValueError):
@@ -56,14 +65,19 @@ def _as_int(value, field: str) -> int:
     return value
 
 
-def normalize_screen_layout(raw, dashboard_pks) -> list:
-    """归一化并校验窗格列表；非法即抛 ``ScreenLayoutError``（消息可读）。"""
+def normalize_screen_layout(raw, dashboard_pks, dataset_pks=()) -> list:
+    """归一化并校验窗格列表；非法即抛 ``ScreenLayoutError``（消息可读）。
+
+    ``dataset_pks``：指标卡窗格引用的数据集白名单（pk 字符串集合/序列），
+    不传则跳过存在性校验（兼容仅做结构校验的调用方，如单测）。
+    """
     if raw in (None, ""):
         return []
     if not isinstance(raw, list):
         raise ScreenLayoutError(_("Invalid screen layout"))
 
     known_dashboards = {str(pk) for pk in dashboard_pks}
+    known_datasets = {str(pk) for pk in (dataset_pks or ())}
     normalised: list[dict[str, Any]] = []
     for index, item in enumerate(raw):
         if not isinstance(item, dict):
@@ -113,12 +127,48 @@ def normalize_screen_layout(raw, dashboard_pks) -> list:
             if align not in ("left", "center", "right"):
                 raise ScreenLayoutError(_("Invalid screen pane align: {}").format(pane_id))
             pane["align"] = align
-            # 字号：14~72px（大屏远距离阅读，低于 14 无意义）
-            size = item.get("size", 24)
+
+        if pane_type in ("text", "clock"):
+            # 字号：14~200px（时钟 / 标语等大幅文字需要更大的字号空间）
+            size = item.get("size", 24 if pane_type == "text" else 40)
             size = _as_int(size, "size")
-            if not 14 <= size <= 72:
-                raise ScreenLayoutError(_("Screen pane font size must be 14~72: {}").format(pane_id))
+            if not SCREEN_MIN_FONT_SIZE <= size <= SCREEN_MAX_FONT_SIZE:
+                raise ScreenLayoutError(
+                    _("Screen pane font size must be {}~{}: {}").format(
+                        SCREEN_MIN_FONT_SIZE, SCREEN_MAX_FONT_SIZE, pane_id
+                    )
+                )
             pane["size"] = size
+
+        if pane_type == "metric":
+            dataset_pk = str(item.get("dataset") or "").strip()
+            if not dataset_pk or (known_datasets and dataset_pk not in known_datasets):
+                raise ScreenLayoutError(_("Unknown dataset in pane: {}").format(pane_id))
+            metric = str(item.get("metric") or "count").strip()
+            if metric not in SCREEN_METRIC_TYPES:
+                raise ScreenLayoutError(_("Invalid screen pane metric: {}").format(pane_id))
+            value_field = str(item.get("value_field") or "").strip()
+            if metric in ("sum", "avg") and not value_field:
+                raise ScreenLayoutError(_("Value field is required for {} in {}").format(metric, pane_id))
+            if len(value_field) > 128:
+                raise ScreenLayoutError(_("Invalid screen pane value field: {}").format(pane_id))
+            pane["dataset"] = dataset_pk
+            pane["metric"] = metric
+            if value_field:
+                pane["value_field"] = value_field
+
+        if pane_type == "image":
+            url = str(item.get("url") or "").strip()
+            if not url or len(url) > SCREEN_MAX_IMAGE_URL:
+                raise ScreenLayoutError(_("Invalid screen pane image url: {}").format(pane_id))
+            # 仅允许 http(s) 绝对地址：阻止 javascript:/data: 等注入向量
+            if not (url.startswith("https://") or url.startswith("http://")):
+                raise ScreenLayoutError(_("Screen pane image url must be http(s): {}").format(pane_id))
+            fit = str(item.get("fit") or "cover").strip()
+            if fit not in SCREEN_IMAGE_FITS:
+                raise ScreenLayoutError(_("Invalid screen pane image fit: {}").format(pane_id))
+            pane["url"] = url
+            pane["fit"] = fit
 
         for placed in normalised:
             if boxes_overlap(placed, pane):

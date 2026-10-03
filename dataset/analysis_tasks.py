@@ -113,10 +113,14 @@ def _three_tier_due_at(report, now=None):
             candidate -= timedelta(days=7)
         return candidate
     if frequency == "monthly":
+        # month_day（1~28，序列化器保证范围）：取「最近一次已过的每月 month_day 时刻」；
+        # 钳到 28 后任意月份的 replace(day=month_day) 都合法，无月末歧义
+        month_day = min(max(int(getattr(report, "month_day", 1) or 1), 1), 28)
         first_of_month = today_at.replace(day=1)
-        if first_of_month <= now:
-            return first_of_month
-        return (first_of_month - timedelta(days=1)).replace(day=1)
+        candidate = first_of_month.replace(day=month_day)
+        if candidate <= now:
+            return candidate
+        return (first_of_month - timedelta(days=1)).replace(day=month_day)
     return None
 
 

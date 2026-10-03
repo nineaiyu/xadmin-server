@@ -55,8 +55,9 @@ class TestLayoutWrite:
             {"layout": [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2}]},
             format="json",
         ).json()
+        # 时钟窗格缺省字号 40（服务端补齐，前端渲染口径一致）
+        assert resp["data"]["layout"] == [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2, "size": 40}]
         assert resp["code"] == 1000, resp
-        assert resp["data"]["layout"] == [{"pk": "c1", "type": "clock", "x": 0, "y": 0, "w": 3, "h": 2}]
         assert Screen.objects.get(pk=pk).layout[0]["type"] == "clock"
 
     def test_clear_layout_back_to_carousel(self, auth_client, dashboard):

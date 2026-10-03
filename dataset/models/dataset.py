@@ -129,6 +129,8 @@ class Report(DbAuditModel, DbUuidModel):
         _("Cron expression"), max_length=64, blank=True, default="", help_text=_("5-field cron, takes precedence")
     )
     weekday = models.IntegerField(_("Weekday"), default=0, help_text=_("0=Monday, weekly only"))
+    # 每月几号投递（1~28，避开月末歧义）：monthly only
+    month_day = models.IntegerField(_("Month day"), default=1, help_text=_("1-28, monthly only"))
     recipients = models.JSONField(_("Recipients"), default=list, help_text=_("Email addresses"))
     # 投递渠道：email / dingtalk / wecom / feishu；空 = 仅邮件（存量兼容）
     notify_channels = models.JSONField(_("Notify channels"), default=list, blank=True, help_text=_("Delivery channels"))

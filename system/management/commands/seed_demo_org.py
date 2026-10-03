@@ -101,15 +101,21 @@ ROLE_NAMES = {
     "demo_staff_role": "示例-员工",
     "demo_leader_role": "示例-主管",
 }
-# 需要放行的模型（字段权限按模型全字段，数据权限按 value.all 全量放行）
+# 需要放行的模型（字段权限按模型全字段，数据权限按 value.all 全量放行）。
+# 标签必须是模型真实 app_label（审批三模型定义在 approval 应用）：字段树根节点按
+# label_lower 建档，标签写错会让字段树查不到根 → 字段权限被跳过；数据权限规则的
+# table 也永远匹配不上（compiler 按 label_lower 匹配）→ fail-closed 空输出。
 GRANT_MODELS = [
-    "system.approvalflow",
+    "approval.approvalflow",
     "approval.approvalinstance",
-    "system.approvalrequest",
+    "approval.approvalrequest",
     "dataset.dynamicform",
     "dataset.dynamicformsubmission",
-    "system.leave",
+    "approval.leave",
 ]
+# 旧版本误用 system.* 标签建出的死数据权限行：规则匹配不上任何模型，残留还会被
+# _bind_users 绑到示例账号。update_or_create 按 name 建新行不会覆盖旧行，需按名清理。
+LEGACY_GRANT_MODELS = ("system.approvalflow", "system.approvalrequest", "system.leave")
 
 
 #: 页面授权时排除的权限点：
@@ -246,6 +252,7 @@ class Command(BaseCommand):
                 permission.field.set(all_fields)
 
         # 数据权限：全量放行规则（fail-closed：无授权则列表为空）
+        DataPermission.objects.filter(name__in=[f"示例-{name}" for name in LEGACY_GRANT_MODELS]).delete()
         for model_name in GRANT_MODELS:
             DataPermission.objects.update_or_create(
                 name=f"示例-{model_name}",

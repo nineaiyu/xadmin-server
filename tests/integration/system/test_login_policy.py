@@ -109,6 +109,42 @@ class TestEvaluatePolicy:
         assert preview["action"] == "record"
         assert preview["policy"] == "p1"
         assert [item["matched"] for item in preview["items"]] == [True, False]
+        # 逐维度明细：p2 仅对象维度不匹配（时段/网段未配置即不限）
+        p2 = preview["items"][1]
+        assert p2["target_matched"] is False
+        assert p2["time_matched"] is True
+        assert p2["ip_matched"] is True
+
+    def test_preview_lists_inactive_policy_but_never_decides(self, normal_user):
+        """未启用策略在预演中列出（供评估启用后的影响）但不参与判定"""
+        LoginAccessPolicy.objects.create(
+            name="reject-all",
+            priority=10,
+            target_type=LoginAccessPolicy.TargetType.ALL,
+            action=LoginAccessPolicy.Action.REJECT,
+            is_active=False,
+        )
+        preview = preview_login_policy(normal_user, "127.0.0.1")
+        assert [item["name"] for item in preview["items"]] == ["reject-all"]
+        item = preview["items"][0]
+        assert item["is_active"] is False
+        assert item["matched"] is True
+        assert item["effective"] is False
+        assert preview["action"] is None
+
+    def test_preview_ip_dimension_detail(self, normal_user):
+        LoginAccessPolicy.objects.create(
+            name="intranet-only",
+            priority=10,
+            target_type=LoginAccessPolicy.TargetType.ALL,
+            action=LoginAccessPolicy.Action.REJECT,
+            ip_ranges="192.168.0.0/24",
+        )
+        preview = preview_login_policy(normal_user, "8.8.8.8")
+        item = preview["items"][0]
+        assert item["matched"] is False
+        assert item["ip_matched"] is False
+        assert preview["action"] is None
 
 
 class TestLoginBlockedByPolicy:
@@ -189,6 +225,19 @@ class TestPolicyApi:
         # 时段只给一半 → 校验失败
         resp = auth_client.patch(f"{POLICY_URL}/{pk}", {"start_time": "09:00:00"}, format="json")
         assert resp.data["code"] != 1000
+
+    def test_preview_unknown_user_rejected(self, auth_client):
+        """样例用户查无此人必须报错：静默回退成当前操作者会让预演结果张冠李戴"""
+        resp = auth_client.post(PREVIEW_URL, {"username": "ghost-user"}, format="json")
+        assert resp.data["code"] != 1000
+        assert "ghost-user" in str(resp.data["detail"])
+
+    def test_preview_reports_mfa_usability(self, auth_client, normal_user):
+        """预演附带给该用户是否有可用二次验证方式（require_mfa 降级放行的提示依据）"""
+        resp = auth_client.post(PREVIEW_URL, {"username": normal_user.username}, format="json")
+        assert resp.data["code"] == 1000, resp.data
+        assert resp.data["data"]["mfa_usable"] is False
+        assert resp.data["data"]["username"] == normal_user.username
 
 
 class TestBuiltinDefaultPolicies:

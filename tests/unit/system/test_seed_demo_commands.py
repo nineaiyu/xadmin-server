@@ -30,6 +30,7 @@ from approval.models.approval import (
 from dataset.models import DynamicForm, DynamicFormSubmission
 from message.models import ChatMessage
 from notifications.models import MessageContent
+from system.management.commands.seed_demo_org import GRANT_MODELS
 from system.models import (
     DeptInfo,
     Menu,
@@ -49,14 +50,6 @@ PAGE_PATHS = [
     "/approval/index",
     "/user/notice/index",
     "/approval/leave/index",
-]
-GRANT_MODELS = [
-    "system.approvalflow",
-    "system.approvalinstance",
-    "system.approvalrequest",
-    "dataset.dynamicform",
-    "dataset.dynamicformsubmission",
-    "system.leave",
 ]
 
 

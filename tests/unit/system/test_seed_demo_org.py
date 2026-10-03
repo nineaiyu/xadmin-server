@@ -15,6 +15,7 @@ from dataset.models.dform import DynamicForm
 from system.models import (
     DataPermission,
     DeptInfo,
+    FieldPermission,
     Menu,
     MenuMeta,
     ModelLabelField,
@@ -54,7 +55,7 @@ def menus(db):
 
 @pytest.fixture
 def field_trees(db):
-    for model_name in ("system.approvalflow", "system.approvalinstance", "system.leave"):
+    for model_name in ("approval.approvalflow", "approval.approvalinstance", "approval.leave"):
         root = ModelLabelField.objects.create(name=model_name, label=model_name, field_type=0)
         ModelLabelField.objects.create(name="id", label="ID", parent=root, field_type=1)
 
@@ -77,6 +78,12 @@ def test_seed_creates_org_roles_and_scenes(menus, field_trees):
     staff = UserInfo.objects.get(username="demo_staff")
     assert staff.rules.exists()
     assert DataPermission.objects.filter(name__startswith="示例-").exists()
+
+    # 回归守护：GRANT_MODELS 曾误用 system.* 旧标签（模型实际在 approval 应用）——
+    # 字段树查不到根节点 → 字段权限被整体跳过；数据权限规则 table 匹配不上任何模型
+    assert not DataPermission.objects.filter(name__startswith="示例-system.").exists()
+    granted_models = set(FieldPermission.objects.values_list("field__parent__name", flat=True))
+    assert {"approval.approvalflow", "approval.leave"} <= granted_models
 
     # 场景模板：报销流程（含条件节点）+ 绑定流程的入职登记表
     assert ApprovalFlow.objects.filter(code="demo_expense").exists()

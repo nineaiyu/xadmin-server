@@ -11,7 +11,7 @@ from common.core.serializers import BaseModelSerializer
 from dataset.models.dataset import Dashboard, Dataset
 from dataset.utils.dataset import filter_layout_for_user, numeric_columns_of, validate_dataset
 
-ALLOWED_CHART_TYPES = ("number", "line", "bar", "pie")
+ALLOWED_CHART_TYPES = ("number", "metric", "line", "bar", "pie")
 
 
 class DatasetSerializer(BaseModelSerializer):

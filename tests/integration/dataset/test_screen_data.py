@@ -191,6 +191,39 @@ class TestCollectScreenCards:
         # 同仪表盘重复清单只展开一次；已删仪表盘跳过
         assert [ref["card"] for ref in collect_screen_cards(screen)] == ["c1", "c2"]
 
+    def test_canvas_metric_pane_synthesized_and_aggregated(self, dashboard_a, superuser, dataset):
+        """指标卡窗格：collect 合成单卡引用（dashboard 置空），payload 走无分组纯聚合。"""
+        screen = _make_screen(
+            superuser,
+            layout=[
+                {"pk": "p1", "type": "dashboard", "dashboard": str(dashboard_a.pk), "x": 0, "y": 0, "w": 6, "h": 4},
+                {
+                    "pk": "m1",
+                    "type": "metric",
+                    "x": 6,
+                    "y": 0,
+                    "w": 3,
+                    "h": 2,
+                    "dataset": str(dataset.pk),
+                    "metric": "count",
+                },
+            ],
+        )
+        refs = collect_screen_cards(screen)
+        metric = [ref for ref in refs if ref["card"] == "m1"]
+        assert len(metric) == 1
+        assert metric[0]["dashboard"] == ""
+        assert metric[0]["chart_type"] == "metric"
+        assert metric[0]["kind"] == "aggregate"
+
+        payloads = build_screen_data_payload(superuser, screen, rev=1)
+        assert len(payloads) == 1
+        assert payloads[0]["dashboard"] is None
+        cards = {item["card"]: item for item in payloads[0]["cards"]}
+        assert "m1" in cards
+        # 无分组 count 纯聚合：单桶 Total
+        assert len(cards["m1"]["data"]["series"]) == 1
+
     def test_empty_screen_yields_nothing(self, superuser):
         screen = _make_screen(superuser)
         assert collect_screen_cards(screen) == []

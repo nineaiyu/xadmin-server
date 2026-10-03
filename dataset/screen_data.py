@@ -65,7 +65,8 @@ def load_visible_screen(user, screen_pk):
 def collect_screen_cards(screen, user=None) -> list[CardRef]:
     """展开大屏引用的全部卡片定义（纯函数核心：不做任何数据集查询）。
 
-    - canvas：``layout`` 内 type=dashboard 的窗格按列表序展开；
+    - canvas：``layout`` 内 type=dashboard 的窗格按列表序展开；type=metric 的
+      指标卡窗格直接合成单卡引用（无所属仪表盘，``dashboard`` 置空串）；
     - carousel：``dashboards`` 清单按页序展开（服务端按该原序计页）；
     - ``user`` 传入时按 ``filter_layout_for_user`` 过滤卡片级权限（allowed_roles，
       与仪表盘读取侧同口径）；None（纯函数单测 / 全量展开）不过滤；
@@ -73,21 +74,39 @@ def collect_screen_cards(screen, user=None) -> list[CardRef]:
       数据一致，无需重复查询；
     - 引用的仪表盘已删：静默跳过（展示端本来也渲染不出该仪表盘）。
     """
+    from dataset.models.dataset import Dashboard
+
     dashboard_pks: list[str] = []
+    metric_refs: list[CardRef] = []
     if screen.layout:
         for pane in screen.layout:
-            if isinstance(pane, dict) and pane.get("type", "dashboard") == "dashboard" and pane.get("dashboard"):
+            if not isinstance(pane, dict):
+                continue
+            if pane.get("type", "dashboard") == "dashboard" and pane.get("dashboard"):
                 dashboard_pks.append(str(pane["dashboard"]))
+            elif pane.get("type") == "metric" and pane.get("dataset"):
+                # 指标卡窗格：无所属仪表盘，card id 即窗格 pk（展示端以同 id 合成卡接收）
+                metric_refs.append(
+                    CardRef(
+                        card=str(pane["pk"]),
+                        dashboard="",
+                        dataset=str(pane["dataset"]),
+                        chart_type="metric",
+                        kind=KIND_AGGREGATE,
+                        group_by="",
+                        metric=str(pane.get("metric") or "count"),
+                        date_trunc="",
+                        value_field=str(pane.get("value_field") or ""),
+                    )
+                )
     else:
         dashboard_pks = [str(item) for item in (screen.dashboards or [])]
 
     # in_bulk 的键是字段原值（UUID），统一 str(pk) 自建映射，避免类型不一致漏查
-    from dataset.models.dataset import Dashboard
-
     dashboards = {str(item.pk): item for item in Dashboard.objects.filter(pk__in=dashboard_pks)}
 
-    refs: list[CardRef] = []
-    seen: set[tuple[str, str]] = set()
+    refs: list[CardRef] = list(metric_refs)
+    seen: set[tuple[str, str]] = {("", ref["card"]) for ref in metric_refs}
     for dashboard_pk in dashboard_pks:
         dashboard = dashboards.get(dashboard_pk)
         if dashboard is None:
@@ -167,6 +186,14 @@ def _execute_card(ref: CardRef, user) -> dict:
     if dataset is None:
         # 数据集在建卡后被删：旧链路里该卡 HTTP 404 报错，此处进 errors 同语义
         raise ValidationError(_("Unknown dataset in layout"))
+    # 数据集定义可见性与旧「逐卡 HTTP 重拉」对齐：REST 路径经 get_object 过滤
+    # （personal 数据集对非创建者 404），聚合路径同样 fail-closed 进 errors
+    if not (
+        getattr(user, "is_superuser", False)
+        or dataset.visibility == "shared"
+        or dataset.creator_id == getattr(user, "pk", None)
+    ):
+        raise ValidationError(_("No permission for dataset: {}").format(dataset.name))
     if ref["kind"] == KIND_EXECUTE:
         return execute_dataset(dataset, user)
     # date_trunc 仅折线卡下发（前端 ChartCard 同口径：其余图表忽略趋势分桶，
