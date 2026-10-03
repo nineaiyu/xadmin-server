@@ -132,12 +132,14 @@ class TestManagerDataScope:
 
 class TestManagedScopeAPI:
     def test_managed_lists_direct_and_subtree(self, api_client, dept, normal_user, role, menu_factory):
-        """我的管辖：直接任命部门 + 全部下级；统计与成员数随行。"""
+        """我的管辖：直接任命部门 + 全部下级；统计、成员数与主管/管理员随行。"""
         child = DeptInfo.objects.create(name="子部门", code="managed-child", parent=dept)
         manager_member = UserInfo.objects.create_user(username="managed1", password="Test@123456")
         manager_member.dept = child
         manager_member.save(update_fields=["dept"])
         DeptManagerAssignment.objects.create(dept=dept, user=normal_user)
+        dept.leader = manager_member
+        dept.save(update_fields=["leader"])
         grant_menu(role, menu_factory, DEPT_DETAIL_PATH, "GET", name="p-dept-detail")
 
         api_client.force_authenticate(user=normal_user)
@@ -150,6 +152,11 @@ class TestManagedScopeAPI:
         assert rows[str(child.pk)]["is_direct"] is False
         assert data["dept_count"] == 2
         assert data["user_count"] >= 1
+        # 联系人信息：主管与管理员清单（供管辖页直接展示）
+        assert rows[str(dept.pk)]["leader"]["pk"] == manager_member.pk
+        assert [m["pk"] for m in rows[str(dept.pk)]["managers"]] == [normal_user.pk]
+        assert rows[str(child.pk)]["leader"] is None
+        assert rows[str(child.pk)]["managers"] == []
 
 
 class TestWriteScopeGuardAPI:

@@ -107,15 +107,25 @@ class DeptViewSet(
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=False, url_path="managed")
     def managed(self, request, *args, **kwargs):
-        """我的管辖：当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）。"""
+        """我的管辖：当前用户任管理员的部门（含全部下级）与成员统计（恒定本人范围，只读）。
+
+        部门行附带主管（leader）与管理员清单（managers，含共管同事），供管辖页
+        直接展示联系人；user_count 为直属成员数，总体成员数在顶层 user_count。
+        """
         direct_pks = list(request.user.managed_depts.filter(is_active=True).values_list("pk", flat=True))
         tree_pks = [str(pk) for pk in DeptInfo.dept_tree_pks(direct_pks)] if direct_pks else []
         rows = (
             DeptInfo.objects.filter(pk__in=tree_pks, is_active=True)
             .annotate(member_count=Count("dept_query"))
+            .select_related("leader")
+            .prefetch_related("managers")
             .order_by("rank", "name")
         )
         direct_set = {str(pk) for pk in direct_pks}
+
+        def user_ref(user):
+            return {"pk": user.pk, "nickname": user.nickname, "username": user.username}
+
         depts = [
             {
                 "pk": row.pk,
@@ -124,6 +134,8 @@ class DeptViewSet(
                 "parent_id": row.parent_id,
                 "user_count": row.member_count,
                 "is_direct": str(row.pk) in direct_set,
+                "leader": user_ref(row.leader) if row.leader else None,
+                "managers": [user_ref(m) for m in row.managers.all()],
             }
             for row in rows
         ]

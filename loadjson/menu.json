@@ -16629,5 +16629,30 @@
    "method": "POST",
    "model": []
   }
+ },
+ {
+  "model": "system.menu",
+  "pk": "9d58b258-997d-4d01-8f69-5f00d7cbbf2f",
+  "fields": {
+   "created_time": "2026-10-03T00:00:00Z",
+   "updated_time": "2026-10-03T00:00:00Z",
+   "description": null,
+   "creator": 1,
+   "modifier": 1,
+   "dept_belong": null,
+   "deleted_at": null,
+   "parent": "8c6f0f01-a29e-4d72-96a8-abf67a4ede65",
+   "menu_type": 2,
+   "name": "changeHistory:SystemDept",
+   "rank": 10004,
+   "path": "api/system/logs/operation$",
+   "component": null,
+   "is_active": true,
+   "meta": "99fc32dc-6237-49b5-8c27-3d8254577601",
+   "method": "GET",
+   "model": [
+    "b5e9a978-60a6-41d4-843c-bbb5f1339113"
+   ]
+  }
  }
 ]

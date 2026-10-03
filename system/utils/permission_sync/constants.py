@@ -40,7 +40,8 @@ AUDIT_SKIP_PREFIXES = (
 )
 # 已知「同端点双权限码」重复点：各自服务不同 UI 入口/动作（非脏数据，不报告、不合并）：
 # - tasks/executions GET：任务页「日志」按钮(log:SystemTask) 与任务中心抽屉(list:SystemTaskExecution)；
-# - logs/operation GET：操作日志页(list:SystemOperationLog) 与用户页「变更历史」(changeHistory:SystemUser)；
+# - logs/operation GET：操作日志页(list:SystemOperationLog)、用户页「变更历史」
+#   (changeHistory:SystemUser) 与部门页「变更历史」(changeHistory:SystemDept)；
 # - tasks/periodic/batch-enable POST：批量启用/停用共用端点（batchEnable / batchDisable 两码，
 #   授权不区分方向，属已知边界）。
 AUDIT_KNOWN_DUPLICATES = {
