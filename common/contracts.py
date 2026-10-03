@@ -22,8 +22,13 @@ import 期（或调用期，对属性访问式消费点），模型加载时机�
 出现任何业务 app 模块级 import 即违例；本模块的缝在 CONTRACT_SEAMS 登记
 （双向漂移校验）。
 
-注入制升级留触发（ADR-079 D4）：二开生态 / common 独立包化时，本模块升级
-为可注入提供方（AppConfig.ready 注册实现），common 其余代码零改动。
+注入制（ADR-081，TG-5 收口）：二开生态经 ``register_contract`` 在
+``AppConfig.ready()`` 注册实现，或经 entry points（group 见
+``ENTRY_POINT_GROUP``）由 ``common/apps.py`` 装配。解析序 = 注入覆盖 →
+白名单默认 → 未声明名 AttributeError；白名单外名字不可注入（缝面不因
+注入扩大），重复注册 fail-fast。from-import 消费点在消费方模块 import 期
+绑定对象——注入须先于其 import；属性访问式消费点（credentials / gate）
+调用期解析，注册后即时生效。
 """
 
 from typing import Any, Protocol
@@ -78,6 +83,63 @@ _CONTRACT_PROVIDERS: dict[str, tuple[str, str]] = {
 
 __all__ = tuple(_CONTRACT_PROVIDERS)
 
+#: entry points group：外置分发包声明契约提供方的装配通道（ADR-081 D3）。
+#: 条目名 = 契约名（须在白名单声明），条目值 = 提供方对象（``pkg.mod:attr``）。
+ENTRY_POINT_GROUP = "xadmin.contracts"
+
+#: 已注入的提供方覆盖（契约名 → 实现对象）：AppConfig.ready() 或 entry-point
+#: 装配写入；解析序优先于白名单默认。白名单外名字被 register 拒绝，注册表
+#: 本身不扩大缝面。
+_CONTRACT_OVERRIDES: dict[str, Any] = {}
+
+
+def register_contract(name: str, provider: Any) -> None:
+    """注册契约提供方覆盖（二开注入制，ADR-081 D1/D2）。
+
+    - 仅白名单声明过的契约名可注入：缝面不因注入扩大，新能力须先在
+      ``_CONTRACT_PROVIDERS`` 声明（连同门禁 CONTRACT_SEAMS 同步）；
+    - 须在启动装配期（AppConfig.ready / entry-point 装配）调用；重复注册
+      fail-fast，替换须先 unregister 显式表达意图（防二开包静默互踩）；
+    - 注册即时生效：清除该名字的默认解析缓存。属性访问式消费点调用期解析、
+      即时可见；from-import 消费点在消费方模块 import 期绑定——注册先于其
+      import 才生效（common.ready() 为框架层最晚 ready 的统一装配点）。
+    """
+    if name not in _CONTRACT_PROVIDERS:
+        raise ValueError(
+            f"contract name {name!r} is not declared in _CONTRACT_PROVIDERS"
+            "（契约面外不可注入——先在白名单声明并同步 CONTRACT_SEAMS，见 ADR-081）"
+        )
+    if name in _CONTRACT_OVERRIDES:
+        raise ValueError(
+            f"contract {name!r} already has an injected provider（重复注册；替换请先 unregister_contract）"
+        )
+    _CONTRACT_OVERRIDES[name] = provider
+    globals().pop(name, None)  # 覆盖随时生效：清除可能已缓存的默认解析值
+
+
+def unregister_contract(name: str) -> None:
+    """撤销注入、回落白名单默认提供方（二开自测 / 测试清理；幂等）。"""
+    if name not in _CONTRACT_PROVIDERS:
+        raise ValueError(f"contract name {name!r} is not declared in _CONTRACT_PROVIDERS（契约面外无注册态）")
+    _CONTRACT_OVERRIDES.pop(name, None)
+    globals().pop(name, None)
+
+
+def load_contract_entry_points() -> list[str]:
+    """装配外置分发包经 entry points 声明的契约提供方（ADR-081 D3）。
+
+    由 ``common/apps.py ready()`` 调用（全部 app ready 之后、URLConf 之前；
+    migrate/doctor 等修复命令早退路径不装配）。加载失败 / 白名单外名字一律
+    抛错（启动期 fail-fast，不静默降级）；同名重复声明由重复注册校验拦截。
+    """
+    from importlib.metadata import entry_points
+
+    loaded = []
+    for ep in entry_points(group=ENTRY_POINT_GROUP):
+        register_contract(ep.name, ep.load())
+        loaded.append(ep.name)
+    return loaded
+
 
 class MenuChoicesContract(Protocol):
     """模块裁剪消费的菜单类型常量面（只读 PERMISSION 一项）。"""
@@ -106,11 +168,15 @@ class SystemConfigContract(Protocol):
 
 
 def __getattr__(name: str) -> Any:
-    """PEP 562 惰性解析：契约名按白名单从提供方模块取值并缓存。
+    """PEP 562 惰性解析：注入覆盖 → 白名单默认 → 未声明名 AttributeError。
 
-    与 ``system.services.__getattr__`` 同构：解析失败（迁移期模型不可用 /
-    未声明名字）原样抛出，不在此降级——降级口径归调用方。
+    默认值按白名单从提供方模块取值并缓存（与 ``system.services.__getattr__``
+    同构）；注入覆盖查注册表返回、不写 globals 缓存（注册/撤销随时生效）。
+    解析失败（迁移期模型不可用 / 未声明名字）原样抛出，不在此降级——降级
+    口径归调用方。
     """
+    if name in _CONTRACT_OVERRIDES:
+        return _CONTRACT_OVERRIDES[name]
     provider = _CONTRACT_PROVIDERS.get(name)
     if provider is None:
         raise AttributeError(

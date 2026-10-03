@@ -29,6 +29,15 @@ class CommonConfig(AppConfig):
                 return
         super().ready()
 
+        # 契约注入装配（ADR-081）：外置分发包经 entry points 注册契约提供方。
+        # 位于修复命令早退之后（migrate/doctor 不装配，broken 提供方不堵修复
+        # 通道）；此时全部业务 app ready() 已完成、URLConf 未加载——common 是
+        # INSTALLED_APPS 末位的 django ready，即框架层最晚的统一装配点（需要
+        # 更早生效的注入走二开自身 app 的 ready() 注册，见 ADR-081 D2/D3）。
+        from .contracts import load_contract_entry_points
+
+        load_contract_entry_points()
+
         # 功能模块裁剪：校验部署基线（未知模块/内核被关/依赖未满足 → 启动期 fail-fast）。
         # 后台覆盖层（DB 单行）的解析与受裁剪影响的缓存清理推迟到首次实际使用：
         # 此处访问数据库会建立指向「尚未创建的测试库」的连接，破坏测试库创建。
