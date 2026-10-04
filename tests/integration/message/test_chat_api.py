@@ -161,7 +161,7 @@ class TestRecall:
         message, __ = chat_service.create_message(room, superuser, "撤回我")
         calls = []
         monkeypatch.setattr(
-            "message.views.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
+            "message.utils.push_room_event", lambda room, payload, message_type=None: calls.append(payload)
         )
 
         response = auth_client.post(f"{MESSAGE_URL}/{message.pk}/recall", {}, format="json")

@@ -17,12 +17,14 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from common.utils import get_logger
-from message.attachments import (  # noqa: F401 再导出：附件链路（上传/取件/载荷）统一经 chat_service 调用
+from message.attachments import (  # noqa: F401 再导出：附件链路（上传/取件/载荷）统一经 chat_service 调用  # noqa: F401 再导出：附件上传编排经 chat_service 调用
     ATTACHMENT_MESSAGE_TYPES,
+    AttachmentUploadError,
     attachment_extra,
     attachment_payload,
     mark_attachment_used,
     resolve_sender_attachment,
+    store_message_attachment,
     validate_attachment_kind,
 )
 from message.chat_ops import (  # noqa: F401 再导出：chat_service 调用面（含内部使用）保持不变
@@ -42,6 +44,7 @@ from message.chat_room_ops import (  # noqa: F401 再导出：房间开通与群
     create_group,
     get_or_create_ai_room,
     get_or_create_private_room,
+    get_or_create_private_room_by_pk,
     get_public_room,
     group_room_or_deny,
     leave_group,
@@ -244,6 +247,60 @@ def recall_message(user, message_id) -> ChatMessage:
     message.recalled_time = timezone.now()
     message.content = ""
     message.save(update_fields=["is_recalled", "recalled_time", "content", "updated_time"])
+    return message
+
+
+# ---------------------------------------------------------------- 历史 / 附件取件
+
+
+def _can_recall(message: ChatMessage, user) -> bool:
+    """撤回资格：仅本人、未撤回、撤回窗口内（与 recall_message 同口径的读侧判定）。"""
+    if message.is_recalled or not message.sender_id or message.sender_id != user.pk:
+        return False
+    created = message.created_time or timezone.now()
+    return timezone.now() - created <= timezone.timedelta(minutes=RECALL_WINDOW_MINUTES)
+
+
+def history_messages(room: ChatRoom, user, before_id=None, limit: int = 20) -> dict:
+    """历史消息游标分页：`before_id` 倒序拉取（响应内按时间正序），附带撤回资格。
+
+    `room` 须为调用方可访问的房间（视图层先经 accessible_room 校验）；`limit`
+    由视图层完成解析与夹取。载荷含房间快照与 has_more 游标标志。
+    """
+    queryset = ChatMessage.objects.filter(room=room).select_related("room")
+    if before_id:
+        queryset = queryset.filter(id__lt=int(before_id))
+    rows = list(queryset.order_by("-id")[: limit + 1])
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    avatar_map = sender_avatar_map(rows)
+
+    messages = []
+    for message in rows:
+        payload = message_payload(message, room=room, avatar_map=avatar_map)
+        payload["can_recall"] = _can_recall(message, user)
+        messages.append(payload)
+    messages.reverse()  # 前端按时间正序渲染
+    return {
+        "results": messages,
+        "has_more": has_more,
+        "room": room_to_dict(room, user, 0, online_user_pks()),
+    }
+
+
+def get_attachment_message(message_pk, user) -> ChatMessage:
+    """附件取件定位：消息存在 → 房间可访问（fail-closed）→ 未撤回。
+
+    消息不存在抛「Message not found」、已撤回抛「File not found」（错误文案
+    与原视图口径一致，不合并——存在性探测面保持原样）；非可访问者经
+    accessible_room 抛「房间不存在」可读校验错误。
+    """
+    message = ChatMessage.objects.select_related("attachment").filter(pk=message_pk).first()
+    if message is None:
+        raise DjangoValidationError(_("Message not found"))
+    accessible_room(message.room_id, user)
+    if message.is_recalled:
+        raise DjangoValidationError(_("File not found"))
     return message
 
 

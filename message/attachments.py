@@ -24,8 +24,10 @@ from django.http import FileResponse
 from django.utils.translation import gettext_lazy as _
 
 from common.storage import storage_exists, storage_open
+from common.utils import get_logger
 from message.models import ATTACHMENT_MESSAGE_TYPES, ChatMessage  # noqa: F401 再导出消息类型常量
 from system.services import UploadFile
+from system.utils.file.file_audit import log_file_access
 from system.utils.file.preview import (
     KIND_IMAGE,
     SIZE_PREVIEW,
@@ -35,6 +37,14 @@ from system.utils.file.preview import (
     touch_preview_cache,
 )
 from system.utils.file.upload_category import CATEGORY_AUDIO, CATEGORY_VIDEO, guess_upload_category
+from system.utils.file.upload_store import (
+    UploadError,
+    check_upload_limits,
+    invalidate_upload_stats_cache,
+    store_upload_file,
+)
+
+logger = get_logger(__name__)
 
 #: 附件种类（image 与在线预览判定同口径；video/audio 与上传分类同口径）
 KIND_FILE = "file"
@@ -192,3 +202,41 @@ def attachment_payload(message) -> dict | None:
     if message.is_recalled or message.attachment_id is None:
         return {**info, "url": "", "missing": True}
     return {**info, "url": attachment_file_url(message.pk), "missing": False}
+
+
+class AttachmentUploadError(Exception):
+    """聊天附件上传失败（``code`` = 业务码，``detail`` = 可读文案），视图按其回包。"""
+
+    def __init__(self, code: int, detail):
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
+def store_message_attachment(user, file_obj, kind: str, request=None) -> dict:
+    """聊天附件上传落库编排：限额校验 → 落库（临时件）→ 种类匹配 → 缓存失效 → 审计留痕。
+
+    复用文件中心的安全策略与落库内核；落库为临时件——发送消息时由服务端转正，
+    未发送的临时件由每日临时文件清理回收。``kind`` 白名单 image|video|audio|file
+    且必须与真实种类一致（不匹配即删记录并报错，防伪造 kind 让前端按错误种类
+    渲染气泡）。
+
+    成功返回渲染载荷（attachment_extra）；失败抛 AttachmentUploadError。
+    """
+    try:
+        check_upload_limits(user, [file_obj])
+    except UploadError as exc:
+        raise AttachmentUploadError(exc.code, exc.detail) from exc
+    try:
+        upload, __ = store_upload_file(user, file_obj, is_tmp=True)
+    except Exception:  # noqa: BLE001 落盘/写库失败按上传失败归一（细节进日志）
+        logger.exception("chat attachment save failed user=%s", user)
+        raise AttachmentUploadError(1001, _("Failed to save uploaded file")) from None
+    kind = str(kind or "").strip().lower()
+    if not validate_upload_kind(upload, kind):
+        # 种类不符（声明 kind 与真实 MIME 判定不一致）：删除刚落的记录，不留无主上传件
+        upload.hard_delete()
+        raise AttachmentUploadError(1001, _("The upload kind does not match the file type"))
+    invalidate_upload_stats_cache(user.pk)
+    log_file_access(upload=upload, user=user, action="upload", request=request)
+    return attachment_extra(upload)

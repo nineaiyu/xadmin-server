@@ -29,7 +29,6 @@ AI 接口额外受 `AI_ASSISTANT_ENABLED` + 凭据完整性门禁（未启用返
 """
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
@@ -42,30 +41,15 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from message import ai as chat_ai
 from message import chat as chat_service
-from message.attachments import (
-    attachment_extra,
-    attachment_response,
-    validate_upload_kind,
-)
-from message.models import (
-    RECALL_WINDOW_MINUTES,
-    ChatMessage,
-    ChatRoom,
-)
+from message.attachments import attachment_response
+from message.models import ChatMessage, ChatRoom
 from message.serializers import (
     CreateGroupSerializer,
     GroupMembersSerializer,
     OpenPrivateRoomSerializer,
     RenameGroupSerializer,
 )
-from message.utils import push_room_event
-from system.utils.file.file_audit import log_file_access
-from system.utils.file.upload_store import (
-    UploadError,
-    check_upload_limits,
-    invalidate_upload_stats_cache,
-    store_upload_file,
-)
+from message.utils import broadcast_message_recall
 from system.utils.identity.user_options import search_user_options
 
 logger = get_logger(__name__)
@@ -77,13 +61,6 @@ HISTORY_MAX_LIMIT = 50
 
 def _validation_detail(exc) -> str:
     return "; ".join(getattr(exc, "messages", None) or [str(exc)])
-
-
-def _can_recall(message: ChatMessage, user) -> bool:
-    if message.is_recalled or not message.sender_id or message.sender_id != user.pk:
-        return False
-    created = message.created_time or timezone.now()
-    return timezone.now() - created <= timezone.timedelta(minutes=RECALL_WINDOW_MINUTES)
 
 
 class ChatRoomViewSet(GenericViewSet):
@@ -109,15 +86,10 @@ class ChatRoomViewSet(GenericViewSet):
     @action(methods=["post"], detail=False, url_path="open-private")
     def open_private(self, request, *args, **kwargs):
         """开通私聊：`room_key` 幂等，重复调用返回同一会话（双端可同时发起）。"""
-        from system.models import UserInfo
-
         serializer = OpenPrivateRoomSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        target = UserInfo.objects.filter(pk=serializer.validated_data["user_pk"], is_active=True).first()
-        if target is None:
-            return ApiResponse(code=1001, detail=_("User not found"))
         try:
-            room = chat_service.get_or_create_private_room(request.user, target)
+            room = chat_service.get_or_create_private_room_by_pk(request.user, serializer.validated_data["user_pk"])
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
         return ApiResponse(
@@ -217,32 +189,14 @@ class ChatMessageViewSet(GenericViewSet):
         except (TypeError, ValueError):
             limit = HISTORY_DEFAULT_LIMIT
         limit = max(1, min(limit, HISTORY_MAX_LIMIT))
-
-        queryset = ChatMessage.objects.filter(room=room).select_related("room")
         before_id = request.query_params.get("before_id")
         if before_id:
             try:
-                queryset = queryset.filter(id__lt=int(before_id))
+                int(before_id)
             except (TypeError, ValueError):
                 return ApiResponse(code=1001, detail=_("Invalid pagination cursor"))
-        rows = list(queryset.order_by("-id")[: limit + 1])
-        has_more = len(rows) > limit
-        rows = rows[:limit]
-        avatar_map = chat_service.sender_avatar_map(rows)
 
-        messages = []
-        for message in rows:
-            payload = chat_service.message_payload(message, room=room, avatar_map=avatar_map)
-            payload["can_recall"] = _can_recall(message, request.user)
-            messages.append(payload)
-        messages.reverse()  # 前端按时间正序渲染
-        return ApiResponse(
-            data={
-                "results": messages,
-                "has_more": has_more,
-                "room": chat_service.room_to_dict(room, request.user, 0, chat_service.online_user_pks()),
-            }
-        )
+        return ApiResponse(data=chat_service.history_messages(room, request.user, before_id=before_id, limit=limit))
 
     @extend_schema(responses=get_default_response_schema())
     @action(
@@ -265,22 +219,10 @@ class ChatMessageViewSet(GenericViewSet):
         if file_obj is None:
             return ApiResponse(code=1001, detail=_("No file uploaded"))
         try:
-            check_upload_limits(request.user, [file_obj])
-        except UploadError as exc:
+            data = chat_service.store_message_attachment(request.user, file_obj, request.data.get("kind"), request)
+        except chat_service.AttachmentUploadError as exc:
             return ApiResponse(code=exc.code, detail=exc.detail)
-        try:
-            upload, __ = store_upload_file(request.user, file_obj, is_tmp=True)
-        except Exception:  # noqa: BLE001 落盘/写库失败按上传失败归一（细节进日志）
-            logger.exception("chat attachment save failed user=%s", request.user)
-            return ApiResponse(code=1001, detail=_("Failed to save uploaded file"))
-        kind = str(request.data.get("kind") or "").strip().lower()
-        if not validate_upload_kind(upload, kind):
-            # 种类不符（声明 kind 与真实 MIME 判定不一致）：删除刚落的记录，不留无主上传件
-            upload.hard_delete()
-            return ApiResponse(code=1001, detail=_("The upload kind does not match the file type"))
-        invalidate_upload_stats_cache(request.user.pk)
-        log_file_access(upload=upload, user=request.user, action="upload", request=request)
-        return ApiResponse(data=attachment_extra(upload), detail=_("Upload successful"))
+        return ApiResponse(data=data, detail=_("Upload successful"))
 
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["get"], detail=True, url_path="file")
@@ -290,15 +232,10 @@ class ChatMessageViewSet(GenericViewSet):
         图片支持 `?size=thumb|preview`（缩略图/预览缓存，inline）；音/视频按真实
         MIME inline 返回（浏览器原生播放）；其余类型按附件下载。
         """
-        message = ChatMessage.objects.select_related("attachment").filter(pk=kwargs.get("pk")).first()
-        if message is None:
-            return ApiResponse(code=1001, detail=_("Message not found"))
         try:
-            chat_service.accessible_room(message.room_id, request.user)
+            message = chat_service.get_attachment_message(kwargs.get("pk"), request.user)
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
-        if message.is_recalled:
-            return ApiResponse(code=1001, detail=_("File not found"))
         response = attachment_response(message, request)
         if response is None:
             return ApiResponse(code=1001, detail=_("File not found"))
@@ -312,15 +249,7 @@ class ChatMessageViewSet(GenericViewSet):
             message = chat_service.recall_message(request.user, kwargs.get("pk"))
         except DjangoValidationError as exc:
             return ApiResponse(code=1001, detail=_validation_detail(exc))
-        room = ChatRoom.objects.filter(pk=message.room_id).first()
-        payload = {
-            "message_id": message.pk,
-            "id": message.pk,
-            "room_id": message.room_id,
-            "operator_pk": request.user.pk,
-        }
-        if room is not None:
-            push_room_event(room, payload, message_type="chat_recall")
+        payload = broadcast_message_recall(message, request.user.pk)
         return ApiResponse(data=payload, detail=_("Message recalled"))
 
 

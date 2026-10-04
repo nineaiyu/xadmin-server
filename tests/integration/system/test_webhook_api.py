@@ -197,7 +197,7 @@ class TestEventWiring:
     def test_login_success_emits(self, receiver, superuser):
         url, handler = receiver
         make_subscription(url=url, event="user.login_succeeded")
-        from system.views.auth.login import login_success
+        from system.services.auth_login import login_success
 
         request = RequestFactory().post("/api/system/login/basic", HTTP_USER_AGENT="pytest-agent")
         request.user = superuser

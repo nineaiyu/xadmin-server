@@ -7,14 +7,14 @@
 """
 
 import ipaddress
-import secrets
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from common.core.auth import hash_pat_token, normalize_scope_entry
+from common.core.auth import normalize_scope_entry
 from common.core.serializers import BaseModelSerializer
 from system.models.token import ApiApplication, ApiApplicationGrant, PersonalAccessToken
+from system.services.token_issue import new_token_secret
 
 
 def _clean_scope_entries(value):
@@ -134,10 +134,10 @@ class PersonalAccessTokenSerializer(BaseModelSerializer):
         return cleaned
 
     def create(self, validated_data):
-        # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串
-        raw_token = f"pat_{secrets.token_urlsafe(32)}"
-        validated_data["token_hash"] = hash_pat_token(raw_token)
-        validated_data["token_prefix"] = raw_token[:12]
+        # 明文仅此一次：pat_ 前缀 + 32 字节 URL 安全随机串（签发口径经 token service）
+        raw_token, token_hash, token_prefix = new_token_secret()
+        validated_data["token_hash"] = token_hash
+        validated_data["token_prefix"] = token_prefix
         instance = super().create(validated_data)
         instance._plain_token = raw_token
         return instance

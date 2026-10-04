@@ -11,6 +11,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models.log import UserLoginLog
 from system.models.oauth import UserOAuthBinding
+from system.services.auth_login import complete_login
 from system.utils.identity.oauth import (
     OAUTH_STATE_TTL,
     OAuthError,
@@ -22,7 +23,6 @@ from system.utils.identity.oauth import (
     make_unique_username,
     validate_providers,
 )
-from system.views.auth.login import complete_login
 from system.views.auth.oauth import (
     OAUTH_ERROR_CODE,
     OAuthBindAuthorizeAPIView,
@@ -120,8 +120,8 @@ class TestCompleteLoginSingleEntry:
     )
     def test_mfa_required_returns_response(self, superuser, monkeypatch, login_type):
         """MFA 开启时任何路径都必须返回 MFA 响应（漏接即后门）。"""
-        monkeypatch.setattr("system.views.auth.login.is_login_mfa_required", lambda user: True)
-        monkeypatch.setattr("system.views.auth.login.get_login_mfa_methods", lambda user, request: ["otp"])
+        monkeypatch.setattr("system.services.auth_login.is_login_mfa_required", lambda user: True)
+        monkeypatch.setattr("system.services.auth_login.get_login_mfa_methods", lambda user, request: ["otp"])
         request = APIRequestFactory().post("/api/system/login")
         request.user = superuser
         response = complete_login(request, superuser, login_type=login_type)
@@ -130,10 +130,10 @@ class TestCompleteLoginSingleEntry:
 
     def test_no_mfa_runs_success_hook(self, superuser, monkeypatch):
         """未开启 MFA：走登录成功链路（日志/会话/提醒），不返回 MFA 响应。"""
-        monkeypatch.setattr("system.views.auth.login.is_login_mfa_required", lambda user: False)
+        monkeypatch.setattr("system.services.auth_login.is_login_mfa_required", lambda user: False)
         called = {}
         monkeypatch.setattr(
-            "system.views.auth.login.login_success",
+            "system.services.auth_login.login_success",
             lambda request, user_obj, login_type=None, save_log=True: called.update(
                 {"user": user_obj, "login_type": login_type}
             ),

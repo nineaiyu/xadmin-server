@@ -5,7 +5,9 @@ system app 对外服务契约层。
 
 其他 app 需要使用 system 的业务能力时，只允许从本模块导入，
 禁止直接 import system.views / system.serializers / system.models 等内部实现，
-避免 app 间横向依赖扩散。
+避免 app 间横向依赖扩散。业务逻辑实现在本包的服务子模块
+（``system.services.auth_login`` / ``open_oauth`` / ``token_issue`` / ``file``），
+本模块只做契约面：跨 app 消费方从这里 import，系统内部视图直接消费子模块。
 
 模型再导出说明：跨 app 关联（isinstance 判断、类型标注、related field
 queryset、serializer Meta.model 等场景）统一经由本模块引用，禁止绕过
@@ -14,8 +16,9 @@ queryset、serializer Meta.model 等场景）统一经由本模块引用，禁�
 惰性导出说明：模型 / 序列化器 / 信号经 __getattr__ 按需加载并缓存到模块
 globals，``from system.services import Menu`` 这类 from-import 仍然可用；
 本模块自身保持零重导入（顶层不 import system.models 等），供 common.core
-等底层模块安全顶层引用，避免循环导入。login_success 位于视图层
-（import 链很重：login → verify_code → common.tasks），同理按需加载。
+等底层模块安全顶层引用，避免循环导入。login_success（登录成功处置，位于
+服务子模块 auth_login，import 链很重：login → verify_code → common.tasks）
+同理按需加载。
 """
 
 # 惰性导出名经 PEP 562 __getattr__ 提供，静态分析不可见，统一 noqa F822
@@ -50,6 +53,7 @@ __all__ = [
     "serialize_user_info",
     "register_user_session",
     "websocket_session_logout",
+    "login_success",  # noqa: F822
     # 契约委托函数（观察项收口：common 侧函数级业务 import 的模块级替代）
     "emit_webhook_event",
     "maybe_alert_sensitive_operation",
@@ -93,16 +97,12 @@ _LAZY_EXPORTS = {
     "DisplayRelatedField": "system.serializers.task",
     "TaggedObjectSerializerMixin": "system.serializers.tag",
     "invalid_user_cache_signal": "system.signal",
+    # 登录成功处置（服务子模块；import 链重，按需加载）
+    "login_success": "system.services.auth_login",
 }
 
 
 def __getattr__(name):
-    if name == "login_success":
-        from system.views.auth.login import login_success
-
-        globals()[name] = login_success
-        return login_success
-
     module_path = _LAZY_EXPORTS.get(name)
     if module_path is not None:
         from importlib import import_module

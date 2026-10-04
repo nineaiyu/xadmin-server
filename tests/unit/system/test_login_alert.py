@@ -150,7 +150,7 @@ def test_exception_never_breaks_login(superuser, alert_enabled):
 
 def test_websocket_login_skips_alert(superuser, alert_enabled):
     """计划登记边界：WS 接入不触发异常登录提醒（页面伴随登录已提醒过）。"""
-    from system.views.auth.login import login_success
+    from system.services.auth_login import login_success
 
     _login_history(superuser)  # 新 IP/设备/城市本应全部命中
     request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
@@ -161,7 +161,7 @@ def test_websocket_login_skips_alert(superuser, alert_enabled):
 
 def test_http_login_triggers_alert(superuser, alert_enabled):
     """HTTP 登录收敛点正常触发提醒（WS 边界的对照用例）。"""
-    from system.views.auth.login import login_success
+    from system.services.auth_login import login_success
 
     _login_history(superuser)
     request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")

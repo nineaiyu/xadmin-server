@@ -5,7 +5,7 @@
 """账号有效期与到期处置。
 
 - **登录拦截**：``date_expired`` 非空且已过期 → 登录被拒（与密码过期同一拦截面，
-  见 ``system/views/auth/login.py::login_success``）；
+  见 ``system/services/auth_login.py::login_success``）；
 - **到期提醒**：每日任务对「N 天内到期」的在用账号发站内信 + 邮件
   （N = ``SysConfig.ACCOUNT_EXPIRY_REMIND_DAYS``，0 = 关闭；同一账号同一天最多提醒一次）；
 - **到期停用**：每日任务对已过期账号自动 ``is_active=False`` 并通知本人；

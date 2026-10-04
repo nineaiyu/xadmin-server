@@ -5,13 +5,8 @@
 # author : ly_13
 # date : 7/24/2024
 
-import datetime
-
 from django.db import transaction
-from django.db.models import Count, Sum
-from django.db.models.functions import TruncDate
 from django.http import HttpResponse
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.plumbing import build_array_type, build_basic_type, build_object_type
@@ -26,53 +21,42 @@ from common.core.filter import BaseFilterSet, ControlledLookupFilterBackend
 from common.core.modelset import BaseModelSet, RecycleBinAction
 from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
-from common.storage import storage_exists, storage_open
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import FileAccessLog, UploadFile
 from system.serializers.upload import UploadFileSerializer
-from system.utils.file.file_audit import log_file_access
-from system.utils.file.preview import (
-    KIND_IMAGE,
-    KIND_OFFICE,
-    KIND_PDF,
-    KIND_TEXT,
-    PREVIEW_STATUS_PREPARING,
-    PREVIEW_STATUS_READY,
-    SIZE_THUMB,
-    ensure_image_cache,
-    ensure_office_pdf,
-    preview_kind,
-    read_text_preview,
-    touch_preview_cache,
+from system.services.file import (
+    PREVIEW_PREPARING_CODE,
+    PREVIEW_STATE_FILE_MISSING,
+    PREVIEW_STATE_IMAGE,
+    PREVIEW_STATE_OFFICE_PREPARING,
+    PREVIEW_STATE_OFFICE_READY,
+    PREVIEW_STATE_PDF,
+    PREVIEW_STATE_TEXT,
+    PREVIEW_UNSUPPORTED_CODE,
+    build_personal_file_stats,
+    resolve_preview,
 )
-from system.utils.file.upload_category import UPLOAD_CATEGORY_DICT
+from system.utils.file.file_audit import log_file_access
+from system.utils.file.preview import preview_kind
 from system.utils.file.upload_store import (
     INVALID_CODE,
     UploadError,
     check_upload_limits,
-    get_user_quota_mb,
     invalidate_upload_stats_cache,
     store_upload_file,
 )
-from system.utils.platform.dict import get_dict_items
 from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
 from system.views.admin.file_chunk import ChunkUploadActionMixin
 
 logger = get_logger(__name__)
 
-# 超出个人配额（存储/数量）的业务码：前端按该码提示配额不足
-QUOTA_EXCEEDED_CODE = 1004
-# 不支持在线预览的业务码：前端按该码禁用预览按钮并说明原因
-PREVIEW_UNSUPPORTED_CODE = 1005
-# Office 转换中的业务码：前端稍后重试预览请求
-PREVIEW_PREPARING_CODE = 1006
-
 
 # 上传落库内核（扩展名/大小/配额校验、md5 去重、分类、存储）见
 # system/utils/file/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
 # 避免两处规则各自演化；本模块的 upload / stats 响应口径不变。
+# 统计聚合与预览状态机见 system/services/file.py：本模块只保留鉴权、审计与响应构造。
 
 
 class UploadFileFilter(TagFilterMixin, BaseFilterSet):
@@ -158,76 +142,9 @@ class UploadFileViewSet(
 
         顶部统计面板的数据源：列表口径（活动记录）+ 一次聚合出多组维度，
         由 10s 短缓存兜住重复刷新；`?no_cache=1` 可穿透缓存取即时值。
+        聚合口径见 system/services/file.py（build_personal_file_stats）。
         """
-        # 配额按上传人维度聚合（creator 索引），与管理页「我的文件」口径一致
-        queryset = UploadFile.objects.filter(creator=request.user)
-        agg = queryset.aggregate(count=Count("pk"), total_size=Sum("filesize"))
-        count = agg["count"] or 0
-        total_size = agg["total_size"] or 0
-        # 配额概览（存储用量/文件数）：个人行优先，未设置继承系统级（0 = 不限）
-        quota_mb = get_user_quota_mb(request.user) or 0
-        quota_bytes = quota_mb * 1024 * 1024
-        usage_rate = round(total_size / quota_bytes * 100, 2) if quota_bytes else 0
-        return ApiResponse(
-            data={
-                "count": count,
-                "total_size": total_size,
-                "quota_mb": quota_mb,
-                "usage_rate": usage_rate,
-                # 剩余空间：无配额（0=不限）时给 null，前端显示「不限」
-                "remaining_size": max(quota_bytes - total_size, 0) if quota_bytes else None,
-                "avg_size": round(total_size / count) if count else 0,
-                "category_stats": self._category_stats(queryset),
-                "recent_trend": self._recent_trend(queryset),
-                "top_files": list(queryset.order_by("-filesize").values("pk", "filename", "filesize")[:5]),
-            }
-        )
-
-    @staticmethod
-    def _category_stats(queryset):
-        """分类分布（数量/大小）：label/color 取自字典，字典缺失时回退分类 code。
-
-        `value=None` 表示未分类（历史数据），label/color 一并给 null，
-        展示文案（「未分类」）由前端 i18n 负责，不写进缓存载荷。
-        """
-        dict_items = {item["value"]: item for item in get_dict_items(UPLOAD_CATEGORY_DICT)}
-        rows = queryset.values("category").annotate(count=Count("pk"), size=Sum("filesize")).order_by("-size")
-        result = []
-        for row in rows:
-            item = dict_items.get(row["category"]) or {}
-            result.append(
-                {
-                    "value": row["category"],
-                    # 字典项已删除的历史值：label 回退 code 本身，保证图表仍可读
-                    "label": item.get("label") or row["category"],
-                    "color": item.get("color"),
-                    "count": row["count"],
-                    "size": row["size"] or 0,
-                }
-            )
-        return result
-
-    @staticmethod
-    def _recent_trend(queryset, days=7):
-        """近 N 天上传趋势（按天聚合，空缺日期补 0，前端无需再做日历运算）。
-
-        日期口径与 Django 当前时区一致（TruncDate 走 USE_TZ 时区转换）。
-        """
-        today = timezone.localdate()
-        start = today - datetime.timedelta(days=days - 1)
-        rows = (
-            queryset.filter(created_time__date__gte=start)
-            .annotate(day=TruncDate("created_time"))
-            .values("day")
-            .annotate(count=Count("pk"), size=Sum("filesize"))
-        )
-        by_day = {row["day"]: row for row in rows}
-        trend = []
-        for offset in range(days):
-            day = start + datetime.timedelta(days=offset)
-            row = by_day.get(day) or {}
-            trend.append({"date": day.isoformat(), "count": row.get("count", 0), "size": row.get("size") or 0})
-        return trend
+        return ApiResponse(data=build_personal_file_stats(request.user))
 
     @action(methods=["get"], detail=True, url_path="preview")
     def preview(self, request, *args, **kwargs):
@@ -242,6 +159,9 @@ class UploadFileViewSet(
           转换在 heavy 队列执行；产物未就绪返回业务码 1006（前端稍后重试），
           转换器缺失/超限/关闭时降级为 1005；
         - 其余类型：返回业务码 1005（前端按 `preview_kind` 已提前禁用按钮）。
+
+        状态判定见 system/services/file.py（resolve_preview），本方法只做
+        状态 → 响应的映射。
         """
         upload = self.get_object()
         kind = preview_kind(upload)
@@ -253,59 +173,29 @@ class UploadFileViewSet(
             request=request,
             detail=f"kind={kind or ''}",
         )
-        if kind is None or not upload.filepath:
-            return ApiResponse(
-                code=PREVIEW_UNSUPPORTED_CODE,
-                detail=_("This file type does not support preview"),
-            )
-
-        if kind == KIND_TEXT:
-            content, truncated = read_text_preview(upload)
-            if not content:
-                return ApiResponse(
-                    code=PREVIEW_UNSUPPORTED_CODE,
-                    detail=_("This file type does not support preview"),
-                )
+        state, payload = resolve_preview(upload, kind, request.query_params.get("size"))
+        if state == PREVIEW_STATE_FILE_MISSING:
+            return ApiResponse(code=1001, detail=_("File not found"))
+        if state == PREVIEW_STATE_TEXT:
+            content, truncated = payload
             response = HttpResponse(content, content_type="text/plain; charset=utf-8")
             response["X-Preview-Truncated"] = "1" if truncated else "0"
             return response
-
-        if kind == KIND_IMAGE:
-            size = request.query_params.get("size") or SIZE_THUMB
-            cache_path = ensure_image_cache(upload, size)
-            if not cache_path:
-                return ApiResponse(
-                    code=PREVIEW_UNSUPPORTED_CODE,
-                    detail=_("This file type does not support preview"),
-                )
-            touch_preview_cache(cache_path)
-            return inline_file_response(cache_path, "image/jpeg", upload.filename)
-
-        # PDF：原样 inline 返回（浏览器内嵌渲染，不生成缓存）
-        if kind == KIND_PDF:
-            # 存储适配：对象存储无本地路径，统一走 storage 原语
-            name = getattr(upload.filepath, "name", "")
-            if not name or not storage_exists(name):
-                return ApiResponse(code=1001, detail=_("File not found"))
-            return inline_file_response(
-                storage_open(name, "rb"), upload.mime_type or "application/pdf", upload.filename
+        if state == PREVIEW_STATE_IMAGE:
+            return inline_file_response(payload, "image/jpeg", upload.filename)
+        if state == PREVIEW_STATE_PDF:
+            stream, mime_type = payload
+            return inline_file_response(stream, mime_type, upload.filename)
+        if state == PREVIEW_STATE_OFFICE_READY:
+            return inline_file_response(payload, "application/pdf", upload.filename)
+        if state == PREVIEW_STATE_OFFICE_PREPARING:
+            # 425 Too Early：前端按「转换中」轮询重试（http 层对该状态码不弹全局错误）
+            return ApiResponse(
+                code=PREVIEW_PREPARING_CODE,
+                status=425,
+                detail=_("The document is being converted, please try again later"),
+                data={"status": "preparing"},
             )
-
-        # Office：转换产物就绪即 inline 返回；转换中回 1006 由前端重试
-        if kind == KIND_OFFICE:
-            path, status = ensure_office_pdf(upload)
-            if status == PREVIEW_STATUS_READY and path:
-                touch_preview_cache(path)
-                return inline_file_response(path, "application/pdf", upload.filename)
-            if status == PREVIEW_STATUS_PREPARING:
-                # 425 Too Early：前端按「转换中」轮询重试（http 层对该状态码不弹全局错误）
-                return ApiResponse(
-                    code=PREVIEW_PREPARING_CODE,
-                    status=425,
-                    detail=_("The document is being converted, please try again later"),
-                    data={"status": "preparing"},
-                )
-
         return ApiResponse(
             code=PREVIEW_UNSUPPORTED_CODE,
             detail=_("This file type does not support preview"),

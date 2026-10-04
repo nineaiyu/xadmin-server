@@ -51,6 +51,19 @@ def get_or_create_private_room(user_a, user_b) -> ChatRoom:
     return room
 
 
+def get_or_create_private_room_by_pk(user, target_pk) -> ChatRoom:
+    """按主键开通（幂等复用）与目标用户的一对一私聊（REST 入口口径）。
+
+    目标不存在或已停用抛可读校验错误（视图层映射 1001「User not found」）。
+    """
+    from system.models import UserInfo
+
+    target = UserInfo.objects.filter(pk=target_pk, is_active=True).first()
+    if target is None:
+        raise DjangoValidationError(_("User not found"))
+    return get_or_create_private_room(user, target)
+
+
 def get_or_create_ai_room(owner) -> ChatRoom:
     """AI 助手房间：每用户一间（`ai:{pk}`），归属校验靠 owner。"""
     key = ai_room_key(_user_pk(owner))

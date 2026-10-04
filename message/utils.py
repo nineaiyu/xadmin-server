@@ -126,6 +126,25 @@ def push_room_event(room, payload: dict, message_type="chat_message"):
     _group_broadcast(room_event_groups(room), payload, message_type)
 
 
+def broadcast_message_recall(message, operator_pk) -> dict:
+    """向房间广播撤回事件（双方/多端同步），返回广播载荷（REST 响应 data 复用）。
+
+    撤回事件的载荷形状是 WS/REST 共同契约；房间不存在（已解散）只落静默。
+    """
+    from message.models import ChatRoom
+
+    room = ChatRoom.objects.filter(pk=message.room_id).first()
+    payload = {
+        "message_id": message.pk,
+        "id": message.pk,
+        "room_id": message.room_id,
+        "operator_pk": operator_pk,
+    }
+    if room is not None:
+        push_room_event(room, payload, message_type="chat_recall")
+    return payload
+
+
 async def async_push_message(user_pk: str | int, message: dict, message_type="push_message"):
     await channel_layer.group_send(get_user_layer_group_name(user_pk), {"type": message_type, "data": message})
 

@@ -34,6 +34,7 @@ from common.core.throttle import OpenClientThrottle
 from common.swagger.utils import get_default_response_schema
 from system.models.token import ApiApplication, PersonalAccessToken
 from system.serializers.token import ApiApplicationGrantSerializer, ApiApplicationSerializer
+from system.services.token_issue import issue_application_token, revoke_application_tokens
 from system.utils.identity.api_grant import grant_options_for_user
 from system.utils.identity.pat_scope import scope_options_for_user
 from system.utils.task.webhook import decrypt_secret, encrypt_secret, sign_payload
@@ -55,30 +56,6 @@ def build_callback_secret() -> tuple[str, str]:
     """生成回调签名密钥（密文存储，明文只在创建/重置响应返回一次）。"""
     raw_secret = f"apc_{secrets.token_urlsafe(32)}"
     return raw_secret, encrypt_secret(raw_secret)
-
-
-def issue_application_token(application: ApiApplication) -> tuple[PersonalAccessToken, str]:
-    """为应用轮换一条 PAT 凭证：失效旧凭证 → 新建（明文只返回一次）。"""
-    now = timezone.now()
-    expires_at = None
-    if application.token_ttl_seconds:
-        expires_at = now + timedelta(seconds=application.token_ttl_seconds)
-    if application.expired_at:
-        expires_at = min(expires_at, application.expired_at) if expires_at else application.expired_at
-    raw_token = f"{CLIENT_SECRET_PREFIX}t_{secrets.token_urlsafe(32)}"
-    with transaction.atomic():
-        PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(is_active=False)
-        token = PersonalAccessToken.objects.create(
-            name=f"app:{application.client_id}",
-            token_hash=hash_pat_token(raw_token),
-            token_prefix=raw_token[:12],
-            scopes=application.scopes or [],
-            ip_allowlist=application.ip_allowlist or [],
-            expired_at=expires_at,
-            api_application=application,
-            creator=application.creator,
-        )
-    return token, raw_token
 
 
 def verify_application_credentials(client_id: str, client_secret: str):
@@ -275,7 +252,7 @@ class ApiApplicationViewSet(BaseModelSet):
         """应用停用与凭证联动：停用即失效其全部有效凭证（即时生效）。"""
         application = serializer.save()
         if not application.is_active:
-            PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(is_active=False)
+            revoke_application_tokens(application)
 
     @action(methods=["post"], detail=True, url_path="regenerate-secret")
     def regenerate_secret(self, request, *args, **kwargs):
@@ -284,7 +261,7 @@ class ApiApplicationViewSet(BaseModelSet):
         client_id, raw_secret, secret_hash, secret_prefix = build_client_credentials()
         raw_callback_secret, callback_secret_encrypted = build_callback_secret()
         with transaction.atomic():
-            PersonalAccessToken.objects.filter(api_application=application, is_active=True).update(is_active=False)
+            revoke_application_tokens(application)
             application.client_id = client_id
             application.client_secret_hash = secret_hash
             application.client_secret_prefix = secret_prefix

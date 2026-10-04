@@ -156,13 +156,15 @@ class TestAuthorizeFlow:
 
     def test_legacy_plain_code_exchange_fails_closed(self, auth_client, superuser):
         """历史缓存中的 plain 授权码：兑换一律失败（不再按 plain 比对，fail-closed）。"""
-        from system.views.open import open_oauth
+        from django.core.cache import cache
+
+        from system.services.open_oauth import _code_cache_key
 
         application = _create_application(auth_client)
         verifier = "legacy-plain-verifier"
         code = "legacy-plain-code"
-        open_oauth.cache.set(
-            open_oauth._code_cache_key(code),
+        cache.set(
+            _code_cache_key(code),
             {
                 "user_pk": superuser.pk,
                 "application_pk": str(application["pk"]),
