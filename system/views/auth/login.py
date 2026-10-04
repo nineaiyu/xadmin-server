@@ -79,7 +79,7 @@ class SessionTokenObtainPairSerializer(TokenObtainPairSerializer):
         if session:
             try:
                 # simplejwt 标注入参为 Token，运行期接受已编码串
-                refresh = RefreshToken(data["refresh"])  # type: ignore[arg-type]
+                refresh = RefreshToken(data["refresh"])
                 data["refresh"], data["access"] = bind_session_claim(refresh, session.pk)
             except Exception:  # noqa: BLE001 claim 注入失败退回无 sid 行为
                 logger.warning("bind session claim failed", exc_info=True)

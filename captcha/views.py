@@ -89,7 +89,7 @@ def captcha_image(request, key, scale=1):
             charimage = charimage.rotate(
                 random.randrange(*settings.CAPTCHA_LETTER_ROTATION),
                 expand=0,
-                resample=Image.BICUBIC,  # type: ignore[attr-defined]  # Pillow 运行期存在、stub 未导出
+                resample=Image.BICUBIC,
             )
         charimage = charimage.crop(charimage.getbbox())
         maskimage = Image.new("L", size)

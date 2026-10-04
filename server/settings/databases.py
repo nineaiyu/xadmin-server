@@ -57,8 +57,8 @@ if DB_POOL_ENABLED:
 
     from common.db import check_db_connection
 
-    # 运行期替换第三方类方法（配置期生效于全部连接池，mypy 视其为不可赋值）
-    ConnectionPool.check_connection = staticmethod(check_db_connection)  # type: ignore[method-assign, assignment]
+    # 运行期替换第三方类方法（配置期生效于全部连接池）
+    ConnectionPool.check_connection = staticmethod(check_db_connection)
 
     DB_OPTIONS["pool"] = {
         "min_size": int(CONFIG.DB_POOL_MIN_SIZE),
