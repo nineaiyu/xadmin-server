@@ -16,6 +16,7 @@ AI 动作目录（动态 spec，不入静态注册表）。本文件覆盖：
 import json
 
 import pytest
+from django.utils.translation import gettext as _
 
 from ai.models.mcp import McpServer
 from ai.utils import ai_mcp_actions as mcp_actions
@@ -310,7 +311,8 @@ class TestExecuteFailClosed:
         server.save(update_fields=["enabled"])
         result = spec.execute(superuser, {"text": "x"})
         assert result["ok"] is False
-        assert "not available" in result["detail"]
+        # detail 走 gettext（.mo 编译后为中文）：断言同一 msgid 的译文而非语言子串
+        assert result["detail"] == str(_("The MCP server is not available for AI actions"))
 
     def test_server_deleted_after_catalog(self, superuser):
         server = _server()
