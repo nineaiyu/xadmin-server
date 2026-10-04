@@ -83,8 +83,11 @@ jobs:
       - name: Compile i18n catalogs (django.mo)
         # .mo 为 gitignore 项（不随仓库分发），CI 检出后没有编译产物；不编译则
         # gettext 对全部 msgid 回退英文，断言中文文案的测试（如超管删除 400 文案）
-        # 必然失败。与生产镜像构建期编译（Dockerfile）同口径。runner 预装 gettext。
-        run: uv run --no-sync python manage.py compilemessages
+        # 必然失败。与生产镜像构建期编译（Dockerfile）同口径。
+        # runner 未预装 gettext（msgfmt），先装。
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq gettext
+          uv run --no-sync python manage.py compilemessages
 
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变（G1）：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：

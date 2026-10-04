@@ -69,8 +69,11 @@ jobs:
         run: uv lock --check
 
       - name: Compile i18n catalogs (django.mo)
-        # 同 test.yml：.mo 不随仓库分发，不编译则中文文案断言回退英文必挂
-        run: uv run --no-sync python manage.py compilemessages
+        # 同 test.yml：.mo 不随仓库分发，不编译则中文文案断言回退英文必挂；
+        # runner 未预装 gettext，先装
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq gettext
+          uv run --no-sync python manage.py compilemessages
 
       - name: Run tests (parallel, real PostgreSQL)
         # 不带 --cov：本档目标是方言正确性，coverage 拦路 ~20-30% 时长且口径由
