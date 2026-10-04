@@ -98,18 +98,54 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
         write_only=True, many=True, queryset=UserInfo.objects, label=_("Users"), input_type="api-search-user"
     )
 
+    def _dedupe_users(self, users) -> list:
+        """同一用户重复提交只建一条：否则第二次 create 撞 (owner, key) 唯一约束。"""
+        seen, result = set(), []
+        for user in users:
+            pk = user.pk
+            if pk in seen:
+                continue
+            seen.add(pk)
+            result.append(user)
+        return result
+
+    def _check_conflicts(self, users, key) -> None:
+        """冲突预检：任一用户已有同名 key 时给出含用户名的可读明细，而不是 IntegrityError 500。"""
+        existing = UserPersonalConfig.objects.filter(owner__in=users, key=key).select_related("owner")
+        usernames = [row.owner.username for row in existing]
+        if usernames:
+            raise ValidationError(
+                _("Config key already exists for user(s): {}").format(", ".join(sorted(set(usernames))))
+            )
+
     def create(self, validated_data):
+        """批量建用户参数：事务包裹 + 冲突预检（T02-05）。
+
+        原实现循环逐个 create：任一用户已有同名 key 即 IntegrityError 500，且
+        前序用户已落库（部分写入）。现预查冲突返回可读错误（含冲突用户明细），
+        并以事务保证「要么全部建成、要么一条不写」；残余并发竞态由 IntegrityError
+        捕获转可读错误兜底（事务回滚，同样不落半批）。
+        """
+        from django.db import IntegrityError, transaction
+
         config_user = validated_data.pop("config_user", [])
         owner = validated_data.pop("owner", None)
-        instance = None
         if not config_user and not owner:
             raise ValidationError(_("User cannot be null"))
         if owner:
             config_user.append(owner)
-        for owner in config_user:
-            validated_data["owner"] = owner
-            instance = super().create(validated_data)
-        return instance
+        users = self._dedupe_users(config_user)
+        key = validated_data.get("key")
+        try:
+            with transaction.atomic():
+                self._check_conflicts(users, key)
+                instance = None
+                for user in users:
+                    validated_data["owner"] = user
+                    instance = super().create(validated_data)
+                return instance
+        except IntegrityError:
+            raise ValidationError(_("Config key already exists for some user(s), please check and retry")) from None
 
     def update(self, instance, validated_data):
         validated_data.pop("config_user", None)

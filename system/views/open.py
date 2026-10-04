@@ -99,7 +99,14 @@ def verify_application_credentials(client_id: str, client_secret: str):
 
 
 def send_test_callback(application: ApiApplication, url: str, client=None) -> dict:
-    """向单个回调地址投递一次签名探测（返回值 = 投递结果，供管理页展示）。"""
+    """向单个回调地址投递一次签名探测（返回值 = 投递结果，供管理页展示）。
+
+    生产路径（client=None）与 webhook 投递链路同口径走 ``pinned_request``：
+    发送侧严格校验目标归属（私网/环回/link-local 拒绝，OUTBOUND_ALLOWED_HOSTS
+    放行）并把连接固定为已校验 IP——裸 ``requests.post`` 对域名型回调存在 DNS
+    rebinding 触达内网的 SSRF 窗口，且探测携带真实 HMAC 签名，绝不能打到内网。
+    注入客户端路径（测试离线桩）保持原样调用，不做固定连接。
+    """
     secret = decrypt_secret(application.callback_secret_encrypted) if application.callback_secret_encrypted else ""
     body = json.dumps(
         {
@@ -116,14 +123,25 @@ def send_test_callback(application: ApiApplication, url: str, client=None) -> di
         "X-Webhook-Signature": signature,
         "X-Webhook-Timestamp": str(timestamp),
     }
-    if client is None:  # 惰性导入：requests 仅投递路径需要
-        import requests
-
-        client = requests
     try:
-        response = client.post(url, data=body, headers=headers, timeout=CALLBACK_TIMEOUT_SECONDS)
+        if client is None:
+            from common.utils.outbound import pinned_request
+            from system.utils.webhook import outbound_allowed_hosts
+
+            response = pinned_request(
+                "POST",
+                url,
+                allow_private=False,
+                allow_loopback=True,
+                allowed_hosts=outbound_allowed_hosts(),
+                data=body,
+                headers=headers,
+                timeout=CALLBACK_TIMEOUT_SECONDS,
+            )
+        else:
+            response = client.post(url, data=body, headers=headers, timeout=CALLBACK_TIMEOUT_SECONDS)
         return {"url": url, "success": 200 <= response.status_code < 300, "status_code": response.status_code}
-    except Exception as exc:  # noqa: BLE001 网络异常按失败结果返回，不打断管理页
+    except Exception as exc:  # noqa: BLE001 网络异常与拒绝同语义，按失败结果返回不打断管理页
         return {"url": url, "success": False, "detail": str(exc)}
 
 

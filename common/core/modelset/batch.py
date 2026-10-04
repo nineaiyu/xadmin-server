@@ -100,6 +100,9 @@ class BatchDestroyAction:
         count = 0
         success = []
         for instance in queryset:
+            # pk 明细先于删除取值：硬删模型 delete() 后 Django 会把 instance.pk 置 None
+            # （django.db.models.deletion.Collector.delete），事后取值会把明细记成 "None"
+            row_pk = str(instance.pk)
             try:
                 result = self.perform_destroy(instance)
                 # Django delete() 返回 (total, per_model_dict) 元组；
@@ -107,12 +110,12 @@ class BatchDestroyAction:
                 deleted = result[0] if isinstance(result, tuple) else (result or 0)
                 if deleted:
                     count += 1
-                    success.append(str(instance.pk))
+                    success.append(row_pk)
                 else:
-                    failures.append({"pk": str(instance.pk), "reason": str(_("Not deleted"))})
+                    failures.append({"pk": row_pk, "reason": str(_("Not deleted"))})
             except Exception as e:
                 logger.error(f"failed to destroy instance {instance} with error {e}")
-                failures.append({"pk": str(instance.pk), "reason": _batch_error_message(e)})
+                failures.append({"pk": row_pk, "reason": _batch_error_message(e)})
         return ApiResponse(
             detail=_("Operation successful. Batch deleted {} data").format(count),
             data={"success": success, "failures": failures},

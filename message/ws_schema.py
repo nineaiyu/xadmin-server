@@ -148,11 +148,23 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
         "open": False,
         "fields": {
             "screen": "大屏 pk",
-            "dashboard": "所属仪表盘 pk（canvas 画布模式为 null；carousel 轮播模式逐仪表盘一帧）",
+            "dashboard": "所属仪表盘 pk（canvas 画布模式为 null；carousel 轮播模式为展示连接上报的当前页）",
             "rev": "控制态版本号（取当前控制态缓存 rev，未下发过指令为 0）",
             "cards": "卡片数据 {card, kind: execute|aggregate, data}；data 为 execute/aggregate 返回结构",
             "errors": "失败卡片 {card, detail}：数据集被删 / 字段权限 fail-closed 等，不影响其余卡片",
             "ts": "推送时刻（epoch 秒）",
+        },
+    },
+    "screenPageStatePayload": {
+        "typed_dict": "ScreenPageStatePayload",
+        "description": (
+            "大屏展示端当前页上报帧载荷（ws/screen/<pk> 上行，dataset/ws_screen.py 接收；"
+            "carousel 触发聚合按上报页取数，避免整屏逐页聚合白跑查询——T02-08）"
+        ),
+        "required": ["index"],
+        "open": False,
+        "fields": {
+            "index": "当前页码（0 基，按 Screen.dashboards 原序；canvas 模式不上报，非法/越界回退全页聚合）",
         },
     },
 }

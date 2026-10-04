@@ -13,6 +13,7 @@ from drf_spectacular.plumbing import build_array_type, build_basic_type, build_o
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiRequest, extend_schema
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 
 from common.core.modelset import BaseModelSet, BatchPartialUpdateAction
 from common.core.response import ApiResponse
@@ -52,9 +53,57 @@ class IntervalScheduleFilter(filters.FilterSet):
         fields = ["every", "period"]
 
 
-class CrontabScheduleViewSet(BaseModelSet):
+# 删除拒绝时受影响任务名的展示上限：超出部分以计数收尾，避免超长调度名撑爆响应
+SCHEDULE_REF_PREVIEW_LIMIT = 5
+
+
+class ScheduleDeleteGuardMixin:
+    """调度（crontab / interval）删除引用预检。
+
+    django_celery_beat 的 ``PeriodicTask.crontab/interval`` 均为
+    ``on_delete=CASCADE``：直接删除调度会把引用它的周期任务**静默级联删除**
+    （beat 停跑且无逐任务确认）。删除前做引用预检：
+
+    - 单删（destroy → perform_destroy）：被引用即抛 ValidationError（DRF 400
+      可读拒绝，并列出受影响任务名）；
+    - 批删（batch-destroy）：覆写 ``_needs_rowwise_delete`` 强制逐行分支——
+      否则调度模型非软删会走整批 ``delete()``，级联绕过预检；被引用项进
+      ``data.failures`` 明细（原因同单删文案），未引用项正常删除。
+    """
+
+    # PeriodicTask 关联本调度模型的外键字段名（子类声明：crontab / interval）
+    schedule_field = ""
+
+    def perform_destroy(self, instance):
+        self._ensure_schedule_unreferenced(instance)
+        # 必须回传删除结果：batch_destroy 逐行分支以返回值区分 success / failures，
+        # 丢弃返回值会把已成功删除的调度误报为「未删除」（mixin 模式，见 file_access 同款）
+        return super().perform_destroy(instance)  # type: ignore[misc]  # 宿主 ViewSet 提供同名方法
+
+    def _needs_rowwise_delete(self):
+        return True
+
+    def _ensure_schedule_unreferenced(self, instance) -> None:
+        if not self.schedule_field:  # pragma: no cover - 子类未声明时 fail-closed 不放行
+            raise ValidationError(_("Schedule reference guard is not configured"))
+        queryset = PeriodicTask.objects.filter(**{self.schedule_field: instance})
+        total = queryset.count()
+        if not total:
+            return
+        names = list(queryset.order_by("name").values_list("name", flat=True)[:SCHEDULE_REF_PREVIEW_LIMIT])
+        preview = ", ".join(names)
+        if total > len(names):
+            preview = _("%(names)s and %(count)s more") % {"names": preview, "count": total - len(names)}
+        raise ValidationError(
+            _("Cannot delete: %(count)s periodic task(s) reference this schedule: %(tasks)s")
+            % {"count": total, "tasks": preview}
+        )
+
+
+class CrontabScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     """crontab 表达式管理"""
 
+    schedule_field = "crontab"
     queryset = CrontabSchedule.objects.all().order_by("minute", "hour", "day_of_week", "month_of_year")
     serializer_class = CrontabScheduleSerializer
     filterset_class = CrontabScheduleFilter
@@ -62,9 +111,10 @@ class CrontabScheduleViewSet(BaseModelSet):
     ordering_fields = ["id"]
 
 
-class IntervalScheduleViewSet(BaseModelSet):
+class IntervalScheduleViewSet(ScheduleDeleteGuardMixin, BaseModelSet):
     """固定间隔调度管理"""
 
+    schedule_field = "interval"
     queryset = IntervalSchedule.objects.all().order_by("every", "period")
     serializer_class = IntervalScheduleSerializer
     filterset_class = IntervalScheduleFilter
@@ -76,8 +126,15 @@ def _dispatch_periodic_run(instance):
     """为周期任务派发一次立即执行，返回新建的 TaskExecution。
 
     Raises:
-        ValueError: 任务未注册或 args/kwargs 不是合法 JSON。
+        ValueError: 任务未注册、不在可手动执行白名单，或 args/kwargs 不是合法 JSON。
     """
+    from system.utils.task_whitelist import is_task_runnable
+
+    if not is_task_runnable(instance.task):
+        # 白名单在执行侧再拦一道（T02-04）：只挡写入不挡执行，存量任务可绕过
+        raise ValueError(
+            _('Task "{}" is not allowed for manual execution (not in the runnable whitelist)').format(instance.task)
+        )
     if instance.task not in app.tasks:
         # web 进程不启动 worker，任务模块（autodiscover）按需懒加载注册
         app.autodiscover_tasks(force=True)
@@ -178,16 +235,18 @@ class PeriodicTaskViewSet(BatchPartialUpdateAction, BaseModelSet):
     )
     @action(methods=["get"], detail=False, url_path="registered")
     def registered(self, request, *args, **kwargs):
-        """已注册任务列表"""
+        """已注册任务列表（附 runnable 标记：是否在可手动执行白名单内）"""
         # web 进程不启动 worker，任务模块（autodiscover）按需懒加载注册；
         # 进程内可能已零散注册部分业务任务但缺 system.tasks 等，故每次强制补齐
         app.autodiscover_tasks(force=True)
+        from system.utils.task_whitelist import is_task_runnable
+
         items = []
         for name, task in sorted(app.tasks.items()):
             if name.startswith("celery."):
                 continue
             verbose_name = getattr(task, "verbose_name", None) or ""
-            items.append({"name": name, "verbose_name": str(verbose_name)})
+            items.append({"name": name, "verbose_name": str(verbose_name), "runnable": is_task_runnable(name)})
         return ApiResponse(data=items)
 
     @extend_schema(

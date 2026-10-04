@@ -7,8 +7,9 @@
 - 展示端（大屏页面）连接 `ws/screen/<pk>`：连接即回放当前控制态，保证后开的
   展示端与最近一次指令一致；断线重连同样以回放对齐；
 - 准入与 HTTP 可见性同口径（超管 / 创建者 / shared），个人大屏不向他人开放展示通道；
-- 展示端为被动接收：不上行指令、不做在线登记（组名不在个人推送组命名空间内，
-  不会混入在线列表统计）。
+- 展示端基本被动接收：唯一上行动作为 ``screen_page_state``（carousel 当前页上报，
+  供触发聚合只算当前页，见 T02-08）；不上行控制指令、不做在线登记（组名不在
+  个人推送组命名空间内，不会混入在线列表统计）。
 
 数据推送：组内只广播 `screen.data_trigger` 触发事件（无载荷），各展示连接
 收到后以**连接自身用户**视角聚合整屏数据并只发给自己（dataset/screen_data.py）——
@@ -176,6 +177,8 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
     """大屏展示端连接：连接回放控制态，随后被动接收控制帧与数据触发事件。"""
 
     disconnected = False  # 已断开标记（disconnect 后不再续期所在组）
+    # 展示连接当前页（carousel；展示端经 screen_page_state 上报，None = 未上报）
+    page_index: int | None = None
 
     async def connect(self):
         self.user = self.scope["user"]
@@ -188,6 +191,9 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
             return
         self.group_name = screen_group_name(self.pk)
         self.disconnected = False
+        # 展示连接当前页（carousel；展示端经 screen_page_state 上报，None = 未上报）：
+        # 触发聚合只算该页，避免 (N-1)/N 的逐页聚合白跑（T02-08）
+        self.page_index = None
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
         # 回放当前控制态：后开/重连的展示端与最近一次指令对齐
@@ -198,6 +204,24 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         self.disconnected = True
         if getattr(self, "group_name", ""):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive_json(self, action, data, content, **kwargs):
+        """上行通道：仅接受展示端当前页上报（screen_page_state），非法载荷静默丢弃。
+
+        页码合法性在聚合侧兜底（越界回退全页），这里只做类型收敛；canvas 模式
+        展示端不上报，误报也被忽略（画布单帧与页码无关）。
+        """
+        if action != MessageAction.SCREEN_PAGE_STATE.value:
+            await self._send_base_json_error(action)
+            return
+        try:
+            self.page_index = int(data.get("index"))
+        except (TypeError, ValueError, AttributeError):
+            self.page_index = None
+
+    async def _send_base_json_error(self, action):
+        """未知上行动作回执（大屏展示端协议内只有页码上报一种上行）。"""
+        await self.send_base_json(action, code=1001, detail=_("Unknown action for screen display channel"))
 
     async def ping(self, event):
         """心跳：沿用基类续期本连接所在组（组名不在个人推送组命名空间，不参与在线统计）。"""
@@ -229,7 +253,12 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         state = await database_sync_to_async(load_screen_state)(pk)
         rev = int(state.get("rev") or 0)
         try:
-            payloads = await database_sync_to_async(build_screen_data_payload)(self.user, screen, rev)
+            # carousel 按展示连接上报的当前页聚合（未上报回退全页，T02-08）；
+            # canvas 单帧与页码无关（build 内部忽略）
+            page_index = getattr(self, "page_index", None)
+            payloads = await database_sync_to_async(build_screen_data_payload)(
+                self.user, screen, rev, page_index=page_index
+            )
         except Exception:  # noqa: BLE001 构建失败不让连接死：降级为全屏级错误帧（旧链路单卡报错同语义）
             logger.warning("screen data build failed: screen=%s", pk, exc_info=True)
             payloads = [

@@ -26,9 +26,11 @@ from common.utils.datasource import limit_datasource, truncation_detail
 from dataset.models.dform import DynamicForm, DynamicFormSubmission
 from dataset.serializers.dform import (
     DynamicFormSubmissionSerializer,
+    MySubmissionListSerializer,
     SubmissionExportSerializer,
     export_dynamic_fields,
 )
+from dataset.utils.dform import trim_stale_schema_keys
 from dataset.utils.dform_filter import MaterializedFilterMixin
 from dataset.utils.dform_flow import create_flow_instance, resubmit_submission
 from system.utils.user_options import search_user_options
@@ -54,6 +56,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
 
     queryset = DynamicFormSubmission.objects.select_related("form", "creator")
     serializer_class = DynamicFormSubmissionSerializer
+    # 列表走轻量序列化器（T02-10）：列表页不渲染 form_schema / approval_trail，
+    # 逐行展开 schema 与流程任务是「我的填报」列表的主开销；详情仍走读写序列化器
+    list_serializer_class = MySubmissionListSerializer
     # 导出专用序列化器（get_serializer_class 按 {action}_serializer_class 自动识别）
     export_data_serializer_class = SubmissionExportSerializer
     ordering = ["-created_time"]
@@ -238,7 +243,9 @@ class DynamicFormSubmissionViewSet(BaseModelSet, OnlyExportDataAction):
 
         data = request.data.get("data")
         if data is None:
-            data = instance.data or {}
+            # 存储数据回填（T02-14）：schema 演进后草稿可能含已删字段的历史键，
+            # 先裁剪再校验，否则草稿提交被 Unknown submission keys 卡死
+            data = trim_stale_schema_keys(form.schema, instance.data or {})
         try:
             normalized = validate_submission_data(form.schema, data, user=request.user)
         except DjangoValidationError as exc:

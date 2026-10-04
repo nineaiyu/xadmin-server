@@ -44,6 +44,7 @@ class MessageAction(StrEnum):
     MONITOR = "monitor"  # 监控面板指标推送（system/ws_monitor.py）
     SCREEN_COMMAND = "screen_command"  # 大屏远程控制指令（dataset/ws_screen.py，下行单向）
     SCREEN_DATA = "screen_data"  # 大屏服务端聚合数据推送（dataset/ws_screen.py，下行单向）
+    SCREEN_PAGE_STATE = "screen_page_state"  # 大屏展示端当前页上报（dataset/ws_screen.py，上行单向）
 
 
 class InboundMessage(TypedDict, total=False):
@@ -225,9 +226,10 @@ class ScreenDataPayload(TypedDict, total=False):
     自己——权限语义与旧「客户端逐卡 HTTP 重拉」逐字节等价，M 卡 × N 观察者的
     HTTP 请求收敛为每观察者每轮 1 帧。
 
-    canvas（Screen.layout 非空）单帧 dashboard=None；carousel（layout 空）逐
-    dashboards 清单各一帧（dashboard=仪表盘 pk）。cards.data 为 execute/aggregate
-    的返回结构；单卡失败（数据集被删 / 字段权限 fail-closed 等）进 errors，不中断整帧。
+    canvas（Screen.layout 非空）单帧 dashboard=None；carousel（layout 空）按展示
+    连接上报的当前页聚合单帧（dashboard=仪表盘 pk；未上报/越界回退全页帧）。
+    cards.data 为 execute/aggregate 的返回结构；单卡失败（数据集被删 / 字段权限
+    fail-closed 等）进 errors，不中断整帧。
     """
 
     screen: str
@@ -236,6 +238,18 @@ class ScreenDataPayload(TypedDict, total=False):
     cards: list[dict[str, Any]]
     errors: list[dict[str, Any]]
     ts: int
+
+
+class ScreenPageStatePayload(TypedDict, total=False):
+    """大屏展示端当前页上报（上行）：carousel 轮播的当前页由展示端本地推进
+    （auto 模式服务端控制态不含翻页轨迹），触发事件聚合需按**展示连接实际
+    所在页**取数——不上报会导致 (N-1)/N 的聚合查询白跑（T02-08）。
+
+    index：当前页码（0 基，按 Screen.dashboards 原序）；canvas 画布模式无页概念，
+    展示端不上报（或 index=-1），服务端忽略。非法/越界值服务端丢弃并回退全页聚合。
+    """
+
+    index: int
 
 
 class MonitorPushPayload(TypedDict, total=False):

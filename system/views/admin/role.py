@@ -59,8 +59,9 @@ class RoleViewSet(
     def get_queryset(self):
         # 内置角色（builtin）禁止删除：代码与治理配置按 code 引用，误删会让
         # 审批人角色等配置凭空失效（同内置字典 is_locked 保护口径）；批量删除
-        # 同样基于 get_queryset 收口
-        if self.action == "destroy":
+        # 同样基于 get_queryset 收口（batch_destroy 走 get_queryset，单删被拦
+        # 而批删放行会让内置角色可被软删，两个入口必须同口径）
+        if self.action in ("destroy", "batch_destroy"):
             return super().get_queryset().exclude(code__in=BUILTIN_ROLE_CODES)
         return super().get_queryset()
 

@@ -104,10 +104,13 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     @extend_schema(responses=get_default_response_schema())
     @action(methods=["post"], detail=True, url_path="execute")
     def execute(self, request, *args, **kwargs):
-        """执行数据集（行级数据权限随调用者过滤，fail-closed）。"""
+        """执行数据集（行级数据权限随调用者过滤，fail-closed）。
+
+        ``count_only=true``：仅取行数（数字卡场景，跳过行物化——T02-09）。
+        """
         dataset = self.get_object()
         try:
-            result = execute_dataset(dataset, request.user)
+            result = execute_dataset(dataset, request.user, count_only=bool(request.data.get("count_only")))
         except ValidationError as exc:
             return ApiResponse(code=1001, detail="; ".join(exc.messages), status_code=status.HTTP_400_BAD_REQUEST)
         return ApiResponse(data=result)

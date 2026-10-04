@@ -13,8 +13,9 @@
 
 - canvas（``Screen.layout`` 非空）：单帧，``dashboard=None``，卡片 = 各窗格
   引用仪表盘的卡片并集；
-- carousel（``layout`` 空）：逐 ``Screen.dashboards`` 清单各一帧（与展示端当前
-  页无关：全页都推，远程翻页 / 轮播切换零等待）。
+- carousel（``layout`` 空）：按展示连接上报的当前页（``screen_page_state``）
+  只聚合该页一帧——展示端只应用当前页帧，全页聚合是 (N-1)/N 查询白跑
+  （T02-08）；未上报/越界回退全页帧（旧调用方与兜底语义不变）。
 """
 
 import time
@@ -140,20 +141,26 @@ def collect_screen_cards(screen, user=None) -> list[CardRef]:
     return refs
 
 
-def build_screen_data_payload(user, screen, rev: int) -> list[dict[str, Any]]:
+def build_screen_data_payload(user, screen, rev: int, page_index: int | None = None) -> list[dict[str, Any]]:
     """以浏览者视角聚合整屏数据帧（逐卡执行，异常逐卡捕获不中断整帧）。
 
-    返回帧列表：canvas 单帧；carousel 逐仪表盘一帧；两种形态的引用都为空时
-    返回空列表（无可推数据，展示端维持空态）。
+    返回帧列表：canvas 单帧；carousel 按 ``page_index`` 只聚合当前页一帧（展示
+    连接上报所在页，避免每轮为其余页做白跑查询——(N-1)/N 查询优化，T02-08），
+    ``page_index`` 为 None（旧调用方/未上报页码）或越界时回退逐仪表盘全页帧；
+    两种形态的引用都为空时返回空列表（无可推数据，展示端维持空态）。
     """
     refs = collect_screen_cards(screen, user=user)
     ts = int(time.time())
     if screen.layout:
         groups: list[tuple[str | None, list[CardRef]]] = [(None, refs)]
     else:
-        # carousel：按首现顺序分仪表盘成帧（dedupe 保序，同清单重复项只推一次）
+        # carousel：按首现顺序分仪表盘成帧（dedupe 保序，同清单重复项只推一次）；
+        # page_index 命中时只聚合该页（越界/None 回退全页，fail-open 不丢数据）
         ordered = list(dict.fromkeys(ref["dashboard"] for ref in refs))
         groups = [(dashboard_pk, [ref for ref in refs if ref["dashboard"] == dashboard_pk]) for dashboard_pk in ordered]
+        if page_index is not None and 0 <= int(page_index) < len(ordered):
+            current_pk = ordered[int(page_index)]
+            groups = [(current_pk, [ref for ref in refs if ref["dashboard"] == current_pk])]
 
     payloads: list[dict[str, Any]] = []
     for dashboard_pk, group_refs in groups:
@@ -195,7 +202,8 @@ def _execute_card(ref: CardRef, user) -> dict:
     ):
         raise ValidationError(_("No permission for dataset: {}").format(dataset.name))
     if ref["kind"] == KIND_EXECUTE:
-        return execute_dataset(dataset, user)
+        # 数字卡只读 total：count_only 跳过全量行物化（T02-09，与 ChartCard 同口径）
+        return execute_dataset(dataset, user, count_only=True)
     # date_trunc 仅折线卡下发（前端 ChartCard 同口径：其余图表忽略趋势分桶，
     # 折线未存值时缺省 day）
     date_trunc = (ref["date_trunc"] or "day") if ref["chart_type"] == "line" else ""

@@ -33,6 +33,13 @@ def _make_user():
     return UserInfo.objects.create_superuser(username="taskrunner", password="x")
 
 
+def _allow_runnable_tasks(monkeypatch, tasks):
+    """放宽可手动执行白名单（T02-04 默认拒绝）：run/batch-run 执行侧拦截的用例白名单。"""
+    from common.core.config import SysConfig
+
+    monkeypatch.setattr(type(SysConfig), "MANUAL_RUNNABLE_TASKS", property(lambda self: list(tasks)), raising=False)
+
+
 def _make_periodic_task():
     crontab = CrontabSchedule.objects.create(minute="0", hour="4", day_of_week="*", day_of_month="*", month_of_year="*")
     return PeriodicTask.objects.create(
@@ -103,6 +110,7 @@ def test_revoked_transition():
 
 def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_on_commit_callbacks):
     # 生产投递分支：eager 关闭 → on_commit send_task（settings_base 默认 eager，需按用例还原）
+    _allow_runnable_tasks(monkeypatch, ["system.tasks.auto_clean_operation_job"])
     monkeypatch.setattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
     user = _make_user()
     instance = _make_periodic_task()
@@ -125,6 +133,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
 def test_run_action_eager_applies_synchronously(monkeypatch):
     """E2E/测试：eager 下 send_task 无效（AlwaysEagerIgnored），改走 apply 同步执行，
     执行记录应流转到 SUCCESS 且带耗时。"""
+    _allow_runnable_tasks(monkeypatch, ["system.tasks.auto_clean_operation_job"])
     user = _make_user()
     instance = _make_periodic_task()
     factory = APIRequestFactory()
@@ -307,6 +316,7 @@ def test_ws_push_once_waits_when_file_missing(monkeypatch, tmp_path):
 
 
 def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_commit_callbacks):
+    _allow_runnable_tasks(monkeypatch, ["system.tasks.auto_clean_operation_job"])
     monkeypatch.setattr(settings, "CELERY_TASK_ALWAYS_EAGER", False)
     user = _make_user()
     instance = _make_periodic_task()

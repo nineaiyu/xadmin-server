@@ -234,7 +234,7 @@ def resubmit_submission(submission, user):
     重校验：驳回后表单可能已改版（新增必填/删除字段），重提按**当前 schema** 完整校验——
     否则旧数据可绕过新增必填直达流程引擎（引擎 validate_form 只看流程侧 form_schema）。
     """
-    from dataset.utils.dform import validate_submission_data
+    from dataset.utils.dform import trim_stale_schema_keys, validate_submission_data
     from dataset.utils.dform_filter import build_filter_data
 
     with transaction.atomic():
@@ -250,8 +250,12 @@ def resubmit_submission(submission, user):
         if not locked.form.is_active:
             return False, str(_("This form is no longer accepting submissions"))
         try:
+            # 存储数据回填（T02-14）：schema 演进后旧提交可能含已删字段的历史键，
+            # 先裁剪再校验，否则驳回重提被 Unknown submission keys 卡死
             # upload 归属按申请人断言（超管代重提时文件仍属原申请人）
-            locked.data = validate_submission_data(locked.form.schema, locked.data or {}, user=locked.creator)
+            locked.data = validate_submission_data(
+                locked.form.schema, trim_stale_schema_keys(locked.form.schema, locked.data or {}), user=locked.creator
+            )
         except ValidationError as exc:
             messages = getattr(exc, "messages", None) or [str(exc)]
             return False, str(messages[0])

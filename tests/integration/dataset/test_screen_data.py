@@ -35,6 +35,7 @@ from dataset.ws_screen import (
     screen_push_due,
     screen_push_ts_key,
 )
+from message.protocol import MessageAction
 from system.models import ModelLabelField
 
 pytestmark = pytest.mark.django_db
@@ -501,3 +502,86 @@ class TestPushHelpers:
 
     def test_layer_without_get_layers_assumes_online(self):
         assert _screen_has_viewers(object(), "any_group") is True
+
+
+class TestCarouselPageState:
+    """carousel 轮播按展示连接上报的当前页聚合（T02-08）。
+
+    展示端只应用当前页帧：全页逐帧聚合是 (N-1)/N 查询白跑。修复后
+    ``build_screen_data_payload`` 支持 ``page_index`` 只聚合当前页；
+    展示连接经 ``screen_page_state`` 上行上报所在页（唯一上行动作）。
+    """
+
+    def test_page_index_aggregates_only_current_page(self, dashboard_a, dashboard_b, superuser):
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+        payloads = build_screen_data_payload(superuser, screen, rev=1, page_index=1)
+        assert [payload["dashboard"] for payload in payloads] == [str(dashboard_b.pk)]
+        assert [card["card"] for card in payloads[0]["cards"]] == ["c3"]
+
+    def test_page_index_out_of_range_falls_back_to_all_pages(self, dashboard_a, dashboard_b, superuser):
+        """越界页码 fail-open 回退全页帧（不丢数据）。"""
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+        payloads = build_screen_data_payload(superuser, screen, rev=1, page_index=5)
+        assert [payload["dashboard"] for payload in payloads] == [str(dashboard_a.pk), str(dashboard_b.pk)]
+
+    def test_page_index_none_keeps_legacy_all_pages(self, dashboard_a, dashboard_b, superuser):
+        """未上报页码（旧调用方）：语义不变，仍逐仪表盘全页帧。"""
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+        payloads = build_screen_data_payload(superuser, screen, rev=1, page_index=None)
+        assert len(payloads) == 2
+
+    def test_canvas_ignores_page_index(self, dashboard_a, dashboard_b, superuser):
+        screen = _make_screen(
+            superuser,
+            layout=[
+                {"pk": "p1", "type": "dashboard", "dashboard": str(dashboard_a.pk), "x": 0, "y": 0, "w": 6, "h": 4},
+            ],
+        )
+        payloads = build_screen_data_payload(superuser, screen, rev=1, page_index=3)
+        assert len(payloads) == 1
+        assert payloads[0]["dashboard"] is None
+
+    def test_report_page_state_then_trigger_builds_single_frame(self, dashboard_a, dashboard_b, superuser):
+        """展示连接上报 screen_page_state 后，触发事件只推当前页帧。"""
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+        consumer, captured, closed = _make_consumer(get_channel_layer(), superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+        before = len(captured)
+
+        async_to_sync(consumer.receive_json)(MessageAction.SCREEN_PAGE_STATE.value, {"index": 1}, "")
+        async_to_sync(consumer.screen_data_trigger)({"type": "screen_data_trigger"})
+
+        frames = [item for item in captured[before:] if item["action"] == "screen_data"]
+        assert len(frames) == 1  # 只聚合上报的当前页
+        assert frames[0]["data"]["dashboard"] == str(dashboard_b.pk)
+
+    def test_report_page_state_invalid_payload_ignored(self, dashboard_a, dashboard_b, superuser):
+        """非法载荷静默丢弃（page_index 回退 None → 触发时全页兜底），不致命。"""
+        screen = _make_screen(superuser, [dashboard_a, dashboard_b])
+        consumer, captured, closed = _make_consumer(get_channel_layer(), superuser, screen.pk)
+        async_to_sync(consumer.connect)()
+
+        async_to_sync(consumer.receive_json)(MessageAction.SCREEN_PAGE_STATE.value, {"index": "abc"}, "")
+        assert consumer.page_index is None
+
+        async_to_sync(consumer.receive_json)(MessageAction.SCREEN_PAGE_STATE.value, None, "")
+        assert consumer.page_index is None
+
+    def test_unknown_upstream_action_rejected(self, dashboard_a, superuser):
+        """展示通道唯一上行动作是页码上报：其余动作回执错误帧。
+
+        _make_consumer 的 fake 吞掉 kwargs，这里单独注入记录 code 的 fake。
+        """
+        screen = _make_screen(superuser, [dashboard_a])
+        consumer, captured, closed = _make_consumer(get_channel_layer(), superuser, screen.pk)
+
+        async def recording_send_base_json(action, data=None, **kwargs):
+            captured.append({"action": action, "data": data, **kwargs})
+
+        consumer.send_base_json = recording_send_base_json
+        async_to_sync(consumer.connect)()
+        before = len(captured)
+        async_to_sync(consumer.receive_json)("screen_command", {"command": "refresh"}, "")
+        rejects = [item for item in captured[before:] if item.get("code") == 1001]
+        assert len(rejects) == 1
+        assert rejects[0]["action"] == "screen_command"

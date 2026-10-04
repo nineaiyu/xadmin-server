@@ -185,6 +185,25 @@ def _exchange_choices():
     return [("", _("Default exchange"))] + [(exchange, exchange) for exchange in options]
 
 
+def _validate_task_runnable(name) -> str:
+    """task 字段白名单校验（T02-04）：仅白名单内的任务可被配置为周期任务。
+
+    celery 注册表里的任务即系统全部 @shared_task（含删数据/改密等高危任务），
+    不设白名单等于把任务执行权完全暴露给管理面；执行侧（run/batch-run）另有
+    同口径拦截，只挡写入不挡执行会让存量任务绕过。
+    """
+    from system.utils.task_whitelist import is_task_runnable
+
+    name = str(name or "").strip()
+    if not name:
+        raise serializers.ValidationError(_("Task name is required"))
+    if not is_task_runnable(name):
+        raise serializers.ValidationError(
+            _('Task "{}" is not allowed for manual scheduling (not in the runnable whitelist)').format(name)
+        )
+    return name
+
+
 class PeriodicTaskSerializer(BaseModelSerializer):
     # 调度关联默认只序列化 {pk}，前端显示为数字主键不可读；
     # 换用带 label 的关联字段：列表/详情/下拉直接显示
@@ -236,6 +255,8 @@ class PeriodicTaskSerializer(BaseModelSerializer):
         allow_null=True,
         label=_("Exchange"),
     )
+    # 任务名白名单：仅可手动执行清单内的任务可被配置（默认拒绝未登记任务）
+    task = serializers.CharField(label=_("Task"), validators=[_validate_task_runnable])
 
     class Meta:
         model = PeriodicTask

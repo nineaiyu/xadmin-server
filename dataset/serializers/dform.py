@@ -8,7 +8,12 @@ from rest_framework import serializers
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.serializers import BaseModelSerializer
 from dataset.models.dform import MAX_SCHEMA_HISTORY, DynamicForm, DynamicFormSubmission
-from dataset.utils.dform import normalize_schema, validate_draft_data, validate_submission_data
+from dataset.utils.dform import (
+    normalize_schema,
+    trim_stale_schema_keys,
+    validate_draft_data,
+    validate_submission_data,
+)
 from dataset.utils.dform_filter import build_filter_data
 from dataset.utils.dform_history import key_of, merged_fields_of_forms, submission_schema
 
@@ -165,6 +170,37 @@ class FormPkField(serializers.PrimaryKeyRelatedField):
         return DynamicForm.objects.all()
 
 
+class MySubmissionListSerializer(BaseModelSerializer):
+    """「我的填报」列表序列化器：固定列 + data 摘要（读写序列化器分离，T02-10）。
+
+    列表契约只承载列表语义：不做写校验、不含 form_schema / approval_trail——
+    逐行展开 schema 快照与 ``approval_trail_of``（每行触发 ``instance.tasks.all()``
+    且无 prefetch）是「我的填报」列表的主开销，而列表页不需要这两个详情口径字段。
+    详情（抽屉）经 retrieve 单条取全量（SubmissionDetail 自行拉取），
+    与「表单数据」页的 FormDataListSerializer 同口径。
+    """
+
+    ignore_field_permission = True
+    form_name = serializers.CharField(source="form.name", read_only=True)
+    status = LabeledChoiceField(choices=DynamicFormSubmission.Status.choices, required=False, read_only=True)
+
+    class Meta:
+        model = DynamicFormSubmission
+        fields = [
+            "pk",
+            "form",
+            "form_name",
+            "schema_version",
+            "data",
+            "status",
+            "creator",
+            "created_time",
+            "updated_time",
+        ]
+        read_only_fields = fields
+        table_fields = ["form_name", "status", "creator", "created_time"]
+
+
 class DynamicFormSubmissionSerializer(BaseModelSerializer):
     ignore_field_permission = True
     form_name = serializers.CharField(source="form.name", read_only=True)
@@ -223,7 +259,12 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             # PATCH 局部更新：data 先与库内数据合并再整份校验——只校验提交子集会把
             # 未提交的必填字段判成缺失（必填误报）。PUT（非 partial）维持整份替换
             # 语义（省略键 = 删除该键）。
-            data = {**(self.instance.data or {}), **data}
+            # 合并底数先按当前 schema 裁剪历史键（T02-14）：schema 演进后旧提交
+            # 的已删字段键无法经表单清理，合并不裁剪会随载荷重新入库并被拒绝
+            data = {
+                **trim_stale_schema_keys(form.schema, self.instance.data or {}),
+                **data,
+            }
         # 草稿（DRAFT）：轻校验（结构/体积），必填与取值在提交时按完整规则校验
         if self.context.get("draft"):
             attrs["data"] = validate_draft_data(data)

@@ -95,7 +95,8 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             raise serializers.ValidationError(
                 _("Level {order} requires at least one approver").format(order=level.get("order"))
             )
-        if level.get("assignee_type") == ApprovalRuleLevel.AssigneeType.ROLE:
+        assignee_type = level.get("assignee_type")
+        if assignee_type == ApprovalRuleLevel.AssigneeType.ROLE:
             from system.models import UserRole
 
             existing = set(
@@ -105,12 +106,29 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             if missing:
                 raise serializers.ValidationError(_("Role does not exist: {}").format(", ".join(missing)))
             return
-        from system.models import UserInfo
+        if assignee_type == ApprovalRuleLevel.AssigneeType.POST:
+            # 岗位分支（引擎 resolve_level_users 同口径：按 code 解析，仅启用且未删除岗位）：
+            # 原实现缺此分支，选「岗位」保存时被当用户名查询必报 User does not exist
+            from system.models import Post
 
-        existing = set(UserInfo.objects.filter(username__in=values).values_list("username", flat=True))
-        missing = [value for value in values if value not in existing]
-        if missing:
-            raise serializers.ValidationError(_("User does not exist: {}").format(", ".join(missing)))
+            existing = set(
+                Post.objects.filter(code__in=values, is_active=True, deleted_at__isnull=True).values_list(
+                    "code", flat=True
+                )
+            )
+            missing = [value for value in values if value not in existing]
+            if missing:
+                raise serializers.ValidationError(_("Post does not exist: {}").format(", ".join(missing)))
+            return
+        if assignee_type == ApprovalRuleLevel.AssigneeType.USER:
+            from system.models import UserInfo
+
+            existing = set(UserInfo.objects.filter(username__in=values).values_list("username", flat=True))
+            missing = [value for value in values if value not in existing]
+            if missing:
+                raise serializers.ValidationError(_("User does not exist: {}").format(", ".join(missing)))
+            return
+        raise serializers.ValidationError(_("Unknown assignee type: {}").format(str(assignee_type) or "(empty)"))
 
     @transaction.atomic
     def create(self, validated_data):

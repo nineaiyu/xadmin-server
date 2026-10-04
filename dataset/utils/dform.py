@@ -31,6 +31,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
+from common.utils import get_logger
 from dataset.utils.dform_constants import (  # noqa: F401 再导出：常量事实源见该模块
     ALLOWED_TYPES,
     DATE_RE,
@@ -65,6 +66,8 @@ from dataset.utils.dform_fields import (  # noqa: F401 再导出：字段值工�
 )
 from dataset.utils.dform_formula import evaluate_formula_fields, validate_formula_fields
 from dataset.utils.dform_linkage import evaluate_linkages, validate_linkages
+
+logger = get_logger(__name__)
 
 
 def validate_schema(schema: dict) -> list:
@@ -201,6 +204,26 @@ def validate_draft_data(data) -> dict:
         raise ValidationError(_("Invalid submission data")) from exc
     if size > MAX_DRAFT_BYTES:
         raise ValidationError(_("Draft data exceeds the size limit"))
+    return data
+
+
+def trim_stale_schema_keys(schema: dict, data):
+    """按当前 schema 裁剪 data 中的历史键（仅用于**存储数据回填**路径，T02-14）。
+
+    场景：表单 schema 演进（字段删除/改名）后，旧提交/草稿的 data 含已删除字段
+    的键——渲染端不展示、用户无法清理，直接按当前 schema 严格校验必被
+    「Unknown submission keys」拒绝（编辑重提 / 草稿提交 / 驳回重提全部卡死）。
+    存储数据的回填路径先经此处裁剪再校验；客户端请求**显式提交**的数据不走
+    本函数，未知键仍由 validate_submission_data 严格拒绝（写入侧口径不变）。
+    """
+    fields = schema.get("fields") if isinstance(schema, dict) else None
+    if not isinstance(fields, list) or not isinstance(data, dict):
+        return data
+    known = {item.get("key") for item in fields if isinstance(item, dict)}
+    stale = [key for key in data if key not in known]
+    if stale:
+        logger.warning("drop stale submission keys after schema change: %s", ", ".join(sorted(map(str, stale))))
+        return {key: value for key, value in data.items() if key in known}
     return data
 
 

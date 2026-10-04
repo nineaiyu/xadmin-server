@@ -18,7 +18,8 @@
         "task_log",
         "monitor",
         "screen_command",
-        "screen_data"
+        "screen_data",
+        "screen_page_state"
       ],
       "description": "消息动作枚举（MessageAction）"
     },
@@ -267,7 +268,7 @@
             "string",
             "null"
           ],
-          "description": "所属仪表盘 pk（canvas 画布模式为 null；carousel 轮播模式逐仪表盘一帧）"
+          "description": "所属仪表盘 pk（canvas 画布模式为 null；carousel 轮播模式为展示连接上报的当前页）"
         },
         "rev": {
           "type": "integer",
@@ -284,6 +285,20 @@
         "ts": {
           "type": "integer",
           "description": "推送时刻（epoch 秒）"
+        }
+      },
+      "additionalProperties": false
+    },
+    "screenPageStatePayload": {
+      "type": "object",
+      "description": "大屏展示端当前页上报帧载荷（ws/screen/<pk> 上行，dataset/ws_screen.py 接收；carousel 触发聚合按上报页取数，避免整屏逐页聚合白跑查询——T02-08）",
+      "required": [
+        "index"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "description": "当前页码（0 基，按 Screen.dashboards 原序；canvas 模式不上报，非法/越界回退全页聚合）"
         }
       },
       "additionalProperties": false

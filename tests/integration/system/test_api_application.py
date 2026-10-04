@@ -209,24 +209,47 @@ class TestOpenTokenClientThrottle:
 
 class TestCallbackProbe:
     def test_test_callback_dispatches_signed_probe(self, auth_client, monkeypatch):
+        # 生产路径走 pinned_request（与 webhook 投递同口径，T02-07）：惰性导入，
+        # mock 落在事实源模块 common.utils.outbound 上
         calls = []
 
         class FakeResponse:
             status_code = 200
 
-        def fake_post(url, data=None, headers=None, timeout=None):
-            calls.append({"url": url, "data": data, "headers": headers or {}, "timeout": timeout})
+        def fake_pinned_request(method, url, **kwargs):
+            calls.append({"method": method, "url": url, **kwargs})
             return FakeResponse()
 
-        monkeypatch.setattr("requests.post", fake_post)
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
         application = _create_application(auth_client, callback_urls=["https://example.com/hook"])
         resp = auth_client.post(f"{APPS_URL}/{application['pk']}/test-callback")
         assert resp.data["code"] == 1000
         results = resp.data["data"]["results"]
         assert results[0]["success"] is True and results[0]["status_code"] == 200
         assert calls and calls[0]["url"] == "https://example.com/hook"
+        assert calls[0]["method"] == "POST"
         assert calls[0]["headers"]["X-Webhook-Signature"].startswith("sha256=")
         assert calls[0]["headers"]["X-Webhook-Timestamp"]
+
+    def test_test_callback_keeps_outbound_guard(self, auth_client, monkeypatch):
+        """探测与投递链路同口径过出站守卫：私网拒绝（allow_private=False），
+        OUTBOUND_ALLOWED_HOSTS 透传放行；守卫拒绝按失败结果返回而非 500（T02-07）。"""
+        seen_kwargs = {}
+
+        def fake_pinned_request(method, url, **kwargs):
+            seen_kwargs.update(kwargs)
+            raise ConnectionError("blocked by outbound guard")
+
+        monkeypatch.setattr("common.utils.outbound.pinned_request", fake_pinned_request)
+        application = _create_application(auth_client, callback_urls=["https://example.com/hook"])
+        resp = auth_client.post(f"{APPS_URL}/{application['pk']}/test-callback")
+        assert resp.data["code"] == 1000
+        results = resp.data["data"]["results"]
+        assert results[0]["success"] is False
+        assert "blocked by outbound guard" in results[0]["detail"]
+        assert seen_kwargs["allow_private"] is False
+        assert seen_kwargs["allow_loopback"] is True
+        assert isinstance(seen_kwargs["allowed_hosts"], tuple)
 
     def test_test_callback_without_urls(self, auth_client):
         application = _create_application(auth_client)

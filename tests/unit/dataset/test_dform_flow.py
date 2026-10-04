@@ -396,8 +396,9 @@ class TestResubmitRevalidatesCurrentSchema:
         ok, detail = resubmit_submission(submission, applicant)
         assert ok and detail is None
 
-    def test_resubmit_rejects_removed_key(self, form, applicant):
-        """改版删除字段后，携带旧键的数据重提被拒（未知键拒绝口径）。"""
+    def test_resubmit_trims_stale_keys_from_stored_data(self, form, applicant):
+        """改版删除字段后，旧提交携带的历史键先被裁剪再校验——重提不再被
+        Unknown submission keys 卡死（T02-14），落库数据不含 ghost 键。"""
         submission = make_submission(form, applicant, data={"name": "张三", "ghost": "x"})
         create_flow_instance(submission, applicant)
         sync_dform_instance(submission.instance, ApprovalInstance.Status.REJECTED, "材料不齐")
@@ -406,8 +407,11 @@ class TestResubmitRevalidatesCurrentSchema:
         form.save(update_fields=["schema", "updated_time"])
 
         ok, detail = resubmit_submission(submission, applicant)
-        assert ok is False
-        assert "ghost" in detail
+        assert ok and detail is None
+        submission.refresh_from_db()
+        assert "ghost" not in (submission.data or {})
+        assert submission.data["name"] == "张三"
+        assert ApprovalInstance.objects.filter(biz_type=DFORM_BIZ_TYPE, biz_id=str(submission.pk)).count() == 2
 
 
 class TestSchemaChangeFlowReferenceGuard:
