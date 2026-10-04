@@ -98,7 +98,7 @@ PERMISSION_SHOW_PREFIX = [
 # approval / ai 是 3.1 批次自 system 拆出的 app：模型原以 system.* 前缀在表树内，
 # 拆分后未回归导致规则选择器看不到审批/AI 模型（写入校验与读侧编译均按 table
 # 现算，表树只是选择器数据源，登记即恢复拆分前的可选面）。
-# demo 按需注入（T01-06）：仅当 demo 应用实际安装（config.yml XADMIN_APPS）时
+# demo 按需注入：仅当 demo 应用实际安装（config.yml XADMIN_APPS）时
 # 进入表树——Book 示例的数据/字段权限是文档化演示场景（demo/README.md），内置
 # 种子含 demo.book 字段树，缺席会让「字段同步」把 demo 子树清掉。生产裁剪 demo
 # 无需再手工清理本清单（路由装配期 auto_register_app_url 的注入与本次装配期

@@ -15,7 +15,7 @@ INTERVAL_URL = "/api/system/tasks/interval"
 
 @pytest.fixture(autouse=True)
 def _allow_test_task(monkeypatch):
-    """放宽可手动执行白名单（T02-04 默认拒绝）：本文件 CRUD 用例使用
+    """放宽可手动执行白名单（默认拒绝）：本文件 CRUD 用例使用
     common.tasks.expire_caches 作样本任务，与 test_task_execution 同手法覆写。"""
     from common.core.config import SysConfig
 

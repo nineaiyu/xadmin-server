@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""安全设置"绑定手机 / 绑定邮箱"配置读写互不干扰回归测试（T01-01）。
+"""安全设置"绑定手机 / 绑定邮箱"配置读写互不干扰回归测试。
 
 历史缺陷（2026-10 P0）：SecurityBindPhoneAuthSerializer 字段误用
 SECURITY_BIND_EMAIL_* 前缀，"绑定手机"页签实际读写邮箱配置（Setting 按

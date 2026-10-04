@@ -34,7 +34,7 @@ def refresh_settings_on_changed(sender, instance=None, **kwargs):
 
 @receiver(post_delete, sender=Setting)
 def reset_settings_on_deleted(sender, instance=None, **kwargs):
-    """删除 Setting 行后回收运行时热更值（T03-07）：恢复静态默认值并广播。
+    """删除 Setting 行后回收运行时热更值：恢复静态默认值并广播。
 
     绕过 UI 的删除（批量删除 / admin / 脚本）此前无人回收——被删键的旧值在
     进程内继续生效，形同删除失败。选 post_delete 而非 pre_delete：删除 SQL

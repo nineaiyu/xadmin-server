@@ -132,7 +132,7 @@ class ImNotifySettingViewSet(BaseSettingViewSet):
             raise ValidationError({"channel": _("Unknown channel: {}").format(scope)})
         channels = {scope: _CHANNELS[scope]} if scope else _CHANNELS
 
-        # 测试连接统一口径（T03-09）：按表单值构造生效配置快照传参（未提交键
+        # 测试连接统一口径：按表单值构造生效配置快照传参（未提交键
         # 回退已存配置、write_only 密文留空沿用已存值），不临时 setattr(settings,
         # ...)——并发期间真实请求不可能读到测试值
         values = build_test_values(data, request.data, keys=_SETTINGS_KEYS, secret_keys=_SECRET_KEYS)

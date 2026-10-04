@@ -163,7 +163,7 @@ class SecurityConfMixin(ConfigCacheBase):
     def MANUAL_RUNNABLE_TASKS(self):
         """可手动执行任务白名单（fnmatch 通配符 JSON 数组，默认仅演示任务）。
 
-        任务管理页创建周期任务 / 「立即执行」只放行命中项（T02-04：防止任意
+        任务管理页创建周期任务 / 「立即执行」只放行命中项（防止任意
         已注册任务——含删数据/改密等系统任务——被配置执行）；业务方确认范围后
         在系统配置页扩容。见 `system/utils/task_whitelist.py`。
         """

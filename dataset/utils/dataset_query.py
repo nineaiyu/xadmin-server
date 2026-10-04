@@ -33,7 +33,7 @@ def execute_dataset(dataset, user_obj, count_only: bool = False):
     超管/无字段配置 = 全量，显式授权即收敛）；交集为空返回空结果（不泄露行数等
     任何业务数据）。JSON 列经别名注解后重命名回列声明，行键与列头始终一致。
 
-    ``count_only=True``（T02-09）：数字卡场景只取行数——全量物化 ≤row_limit 行 ×
+    ``count_only=True``：数字卡场景只取行数——全量物化 ≤row_limit 行 ×
     全列只为读 total 是纯开销，挂屏 M 张数字卡每刷新周期即 M 次全量行查询；
     此模式跳过列展开与行物化，仅 count。字段权限口径与全量路径一致：浏览者
     无任何可见字段（显式配置为空集）时 total 恒 0，不泄露行数（fail-closed）。

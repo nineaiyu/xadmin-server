@@ -4,7 +4,7 @@
 # filename : setting
 # author : ly_13
 # date : 10/18/2024
-"""Django settings 的业务配置转发层（T03-06 表驱动）。
+"""Django settings 的业务配置转发层（表驱动）。
 
 此前 200+ 行逐键手写 ``X = CONFIG.X``：新增 CONFIG 键漏转发时，读取方
 ``getattr(settings, X, 默认值)`` 永远落默认值、无任何报错（SECURITY_AES_V1_
@@ -20,7 +20,7 @@ DECRYPT_ENABLED 曾因漏转发无法关闭，METRICS_ENABLED 漏转发端点永
 
 只把「django settings 消费面」的键登记进 FORWARD_KEYS：运行期经 Setting 表
 热更新覆盖的键全在此清单；装配期键（DB_*/REDIS_*/CELERY_* 等，本包其他模块
-装配 django settings 时直接读 CONFIG）与 common 注入面（T03-04 后经
+装配 django settings 时直接读 CONFIG）与 common 注入面（经
 common.injection.get_server_config 读取的 FILE_*/APPROVAL_* 等）不转发，
 逐键登记在 NON_FORWARDED_KEYS 并注明消费方。
 """
@@ -287,7 +287,7 @@ ATOMIC_REQUESTS_SKIP_READ_ACTIONS = bool(CONFIG.ATOMIC_REQUESTS_SKIP_READ_ACTION
 # ---------------------------------------------------------------------------
 # 有意不转发到 django settings 的 CONFIG 键豁免登记（key -> 消费方/原因）。
 # 这些键由消费方直接读 CONFIG（装配期或经 common.injection.get_server_config
-# 注入面，T03-04），不进 django settings；新键必须登记到这里或 FORWARD_KEYS。
+# 注入面），不进 django settings；新键必须登记到这里或 FORWARD_KEYS。
 # ---------------------------------------------------------------------------
 NON_FORWARDED_KEYS = {
     # 启动装配条件（非 django settings 面）

@@ -34,7 +34,7 @@ def _make_user():
 
 
 def _allow_runnable_tasks(monkeypatch, tasks):
-    """放宽可手动执行白名单（T02-04 默认拒绝）：run/batch-run 执行侧拦截的用例白名单。"""
+    """放宽可手动执行白名单（默认拒绝）：run/batch-run 执行侧拦截的用例白名单。"""
     from common.core.config import SysConfig
 
     monkeypatch.setattr(type(SysConfig), "MANUAL_RUNNABLE_TASKS", property(lambda self: list(tasks)), raising=False)

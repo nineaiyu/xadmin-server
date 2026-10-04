@@ -1,7 +1,7 @@
 # 菜单维护口径（种子 / 路径 / 映射）
 
 > 本文是菜单种子（`loadjson/menu.json`）与前端路由目录关系的维护口径登记处，
-> 防止后续"顺手修齐"造成断链。权限点双向对账 CI 门禁（专项 09 · T09-04）落地时，
+> 防止后续"顺手修齐"造成断链。权限点双向对账 CI 门禁落地时，
 > 以本文登记的例外清单为白名单依据。
 
 ## 1. 基本口径
@@ -13,7 +13,7 @@
   `path` 落库并被角色授权引用，**改种子的 path 不会自动迁移线上数据**，
   旧 URL 上的书签/收藏/历史/外部链接会全部断链。
 
-## 2. 分析域 URL≠目录 映射（T01-05 口径结论，2026-10）
+## 2. 分析域 URL≠目录 映射（口径结论，2026-10）
 
 **决策：保留映射，不修齐。**
 
@@ -43,8 +43,8 @@
 
 | 菜单 name | URL | 组件 | 登记来源 |
 |---|---|---|---|
-| DataDashboard | `/analysis/dashboard/index` | `dashboard/index` | T01-05（与 DataDataset 同源的历史口径） |
-| DataDataset | `/analysis/dataset/index` | `dashboard/dataset/index` | T01-05；menu.json 该行 description 有同文护栏 |
+| DataDashboard | `/analysis/dashboard/index` | `dashboard/index` | 历史口径（与 DataDataset 同源） |
+| DataDataset | `/analysis/dataset/index` | `dashboard/dataset/index` | menu.json 该行 description 有同文护栏 |
 
 ## 4. 新增页面规范
 

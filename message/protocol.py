@@ -243,7 +243,7 @@ class ScreenDataPayload(TypedDict, total=False):
 class ScreenPageStatePayload(TypedDict, total=False):
     """大屏展示端当前页上报（上行）：carousel 轮播的当前页由展示端本地推进
     （auto 模式服务端控制态不含翻页轨迹），触发事件聚合需按**展示连接实际
-    所在页**取数——不上报会导致 (N-1)/N 的聚合查询白跑（T02-08）。
+    所在页**取数——不上报会导致 (N-1)/N 的聚合查询白跑。
 
     index：当前页码（0 基，按 Screen.dashboards 原序）；canvas 画布模式无页概念，
     展示端不上报（或 index=-1），服务端忽略。非法/越界值服务端丢弃并回退全页聚合。

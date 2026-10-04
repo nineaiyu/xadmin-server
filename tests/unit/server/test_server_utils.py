@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""server.utils 兼容层回归（T03-01/T03-02 归位后保留一个版本周期）。
+"""server.utils 兼容层回归（归位后保留一个版本周期）。
 
 本体已迁 common.local / common.core.db.prefix（本体测试见 tests/unit/common/）；
 本文件守护兼容 re-export 与归位实现同源、兼容路径行为不变。归位期结束后

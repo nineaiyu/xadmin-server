@@ -1,6 +1,6 @@
 # 安全设置「绑定手机」配置键错写修复与数据清理（2026-10）
 
-> 对应 CODE-REVIEW-TASKS/01 · T01-01（全报告唯一 P0）。
+> 2026-10 代码评审的唯一 P0 项。
 > 缺陷：`SecurityBindPhoneAuthSerializer` 序列化器字段误用 `SECURITY_BIND_EMAIL_*` 前缀，
 > 「绑定手机」页签实际读写邮箱配置——关手机绑定会同步关掉邮箱绑定；
 > 运行时真正消费的 `SECURITY_BIND_PHONE_*`（`system/views/auth/verify_code.py`）在 UI 上不可配。

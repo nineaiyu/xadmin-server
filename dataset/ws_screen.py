@@ -8,7 +8,7 @@
   展示端与最近一次指令一致；断线重连同样以回放对齐；
 - 准入与 HTTP 可见性同口径（超管 / 创建者 / shared），个人大屏不向他人开放展示通道；
 - 展示端基本被动接收：唯一上行动作为 ``screen_page_state``（carousel 当前页上报，
-  供触发聚合只算当前页，见 T02-08）；不上行控制指令、不做在线登记（组名不在
+  供触发聚合只算当前页）；不上行控制指令、不做在线登记（组名不在
   个人推送组命名空间内，不会混入在线列表统计）。
 
 数据推送：组内只广播 `screen.data_trigger` 触发事件（无载荷），各展示连接
@@ -192,7 +192,7 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         self.group_name = screen_group_name(self.pk)
         self.disconnected = False
         # 展示连接当前页（carousel；展示端经 screen_page_state 上报，None = 未上报）：
-        # 触发聚合只算该页，避免 (N-1)/N 的逐页聚合白跑（T02-08）
+        # 触发聚合只算该页，避免 (N-1)/N 的逐页聚合白跑
         self.page_index = None
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
@@ -253,7 +253,7 @@ class ScreenDisplayNotify(AsyncJsonWebsocket):
         state = await database_sync_to_async(load_screen_state)(pk)
         rev = int(state.get("rev") or 0)
         try:
-            # carousel 按展示连接上报的当前页聚合（未上报回退全页，T02-08）；
+            # carousel 按展示连接上报的当前页聚合（未上报回退全页）；
             # canvas 单帧与页码无关（build 内部忽略）
             page_index = getattr(self, "page_index", None)
             payloads = await database_sync_to_async(build_screen_data_payload)(

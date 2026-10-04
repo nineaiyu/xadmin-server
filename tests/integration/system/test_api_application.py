@@ -209,7 +209,7 @@ class TestOpenTokenClientThrottle:
 
 class TestCallbackProbe:
     def test_test_callback_dispatches_signed_probe(self, auth_client, monkeypatch):
-        # 生产路径走 pinned_request（与 webhook 投递同口径，T02-07）：惰性导入，
+        # 生产路径走 pinned_request（与 webhook 投递同口径）：惰性导入，
         # mock 落在事实源模块 common.utils.outbound 上
         calls = []
 
@@ -233,7 +233,7 @@ class TestCallbackProbe:
 
     def test_test_callback_keeps_outbound_guard(self, auth_client, monkeypatch):
         """探测与投递链路同口径过出站守卫：私网拒绝（allow_private=False），
-        OUTBOUND_ALLOWED_HOSTS 透传放行；守卫拒绝按失败结果返回而非 500（T02-07）。"""
+        OUTBOUND_ALLOWED_HOSTS 透传放行；守卫拒绝按失败结果返回而非 500。"""
         seen_kwargs = {}
 
         def fake_pinned_request(method, url, **kwargs):

@@ -115,7 +115,7 @@ def run_ldap_sync() -> dict:
 def test_ldap_connection(config=None) -> dict:
     """连接测试（管理页「测试」按钮）：服务 bind + 按配置快照实际搜索计数。
 
-    ``config`` 传 ``LdapConfig`` 快照时完全按快照连搜（T03-09：测试连接按表单值
+    ``config`` 传 ``LdapConfig`` 快照时完全按快照连搜（测试连接按表单值
     传参，不临时改写进程全局 settings）；传 None（缺省）读 django settings，
     与登录/同步链路同源。
     """

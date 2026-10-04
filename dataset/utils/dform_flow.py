@@ -250,7 +250,7 @@ def resubmit_submission(submission, user):
         if not locked.form.is_active:
             return False, str(_("This form is no longer accepting submissions"))
         try:
-            # 存储数据回填（T02-14）：schema 演进后旧提交可能含已删字段的历史键，
+            # 存储数据回填：schema 演进后旧提交可能含已删字段的历史键，
             # 先裁剪再校验，否则驳回重提被 Unknown submission keys 卡死
             # upload 归属按申请人断言（超管代重提时文件仍属原申请人）
             locked.data = validate_submission_data(

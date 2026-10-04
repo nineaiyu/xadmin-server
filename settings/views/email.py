@@ -29,7 +29,7 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 测试连接统一口径（T03-09）：按表单值传参构造连接（未提交键回退已存
+        # 测试连接统一口径：按表单值传参构造连接（未提交键回退已存
         # 配置、密码留空沿用已存值），不改进程全局 settings——并发期间真实
         # 请求不可能读到测试值
         values = build_test_values(
@@ -50,7 +50,7 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
 
         try:
             # 括号必须：`or` 优先级低于 `+`，裸写 `prefix or "" + "Test"` 在已设前缀时
-            # subject 只剩前缀、丢失 "Test"（T01-07）
+            # subject 只剩前缀、丢失 "Test"
             subject = (values["EMAIL_SUBJECT_PREFIX"] or "") + "Test"
             message = _("Test smtp setting")
             email_recipient = email_recipient or values["EMAIL_HOST_USER"]

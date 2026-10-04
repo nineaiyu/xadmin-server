@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BaseSettingViewSet 保存链路显式契约测试（T03-08）。
+"""BaseSettingViewSet 保存链路显式契约测试。
 
 锁定 perform_update 与 SettingSaveContractMixin 的组合行为：只存提交键、
 write_only 密文留空不修改、响应载荷合并视图、change_fields 只含真变更、

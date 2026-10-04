@@ -131,7 +131,7 @@ def _dispatch_periodic_run(instance):
     from system.utils.task_whitelist import is_task_runnable
 
     if not is_task_runnable(instance.task):
-        # 白名单在执行侧再拦一道（T02-04）：只挡写入不挡执行，存量任务可绕过
+        # 白名单在执行侧再拦一道：只挡写入不挡执行，存量任务可绕过
         raise ValueError(
             _('Task "{}" is not allowed for manual execution (not in the runnable whitelist)').format(instance.task)
         )

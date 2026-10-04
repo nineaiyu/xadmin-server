@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""DB 表名前缀信号（T03-02 自 server/utils.py 归位）。
+"""DB 表名前缀信号（自 server/utils.py 归位）。
 
 ``class_prepared`` 在每个模型类装配时触发，按 settings.DB_PREFIX 给 managed 模型
 叠加表名前缀（字符串全局前缀 / dict 按 label·app_label 精确或 app 兜底）。

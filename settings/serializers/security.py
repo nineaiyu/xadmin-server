@@ -263,7 +263,7 @@ class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Seri
 
 class SecurityBindPhoneAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     # 字段名即 Setting 行名与运行时 settings 键（verify_code.py 按 SECURITY_BIND_PHONE_* 消费），
-    # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 P0 修复，见 CODE-REVIEW-TASKS/01 T01-01）
+    # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 P0 修复）
     SECURITY_BIND_PHONE_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
     )

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""server 层装配产物注入点（T03-04/T03-05）：消除 common → server 反向依赖。
+"""server 层装配产物注入点：消除 common → server 反向依赖。
 
 common 是被所有人依赖的框架层，此前直接 ``from server.const import CONFIG``
 读静态配置（config.yml / 环境变量的装配结果），构成 14 处反向依赖中最大的一股。
@@ -11,7 +11,7 @@ common 是被所有人依赖的框架层，此前直接 ``from server.const impo
 登记发生在 settings 导入链最前端（server.settings → base/apps/setting →
 ..const），先于一切 common 配置消费（conf_* 属性为请求期惰性读取，services
 命令的 hands.py 在命令执行期读——均晚于注入），未登记即读属装配顺序破坏，
-直接抛 ImproperlyConfigured 暴露（静默回退默认值正是 T03-04 要治的病）。
+直接抛 ImproperlyConfigured 暴露（静默回退默认值正是它要治的病）。
 
 本模块必须保持零重依赖：server/const.py 在 Django settings 完成前 import 它，
 不得引入任何访问 django.conf.settings 的模块。

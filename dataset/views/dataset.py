@@ -106,7 +106,7 @@ class DatasetViewSet(RelationCountMixin, BaseModelSet, ImpactPreviewAction):
     def execute(self, request, *args, **kwargs):
         """执行数据集（行级数据权限随调用者过滤，fail-closed）。
 
-        ``count_only=true``：仅取行数（数字卡场景，跳过行物化——T02-09）。
+        ``count_only=true``：仅取行数（数字卡场景，跳过行物化）。
         """
         dataset = self.get_object()
         try:

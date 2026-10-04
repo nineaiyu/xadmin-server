@@ -64,7 +64,7 @@ class BaseSettingViewSet(NoDetailModelSet):
         return data
 
     def perform_update(self, serializer):
-        """设置项保存（T03-08 显式契约，配对 settings/serializers/contract.py）。
+        """设置项保存（显式契约，配对 settings/serializers/contract.py）。
 
         - 仅 request.data 显式提交的键持久化（带 default 的可选字段未提交不落库，
           PUT 同口径——设置页语义是「改了什么存什么」）；write_only 密文提交
