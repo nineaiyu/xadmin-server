@@ -261,28 +261,30 @@ class SecurityBindEmailAuthSerializer(serializers.Serializer):
 
 
 class SecurityBindPhoneAuthSerializer(serializers.Serializer):
-    SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
+    # 字段名即 Setting 行名与运行时 settings 键（verify_code.py 按 SECURITY_BIND_PHONE_* 消费），
+    # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 P0 修复，见 CODE-REVIEW-TASKS/01 T01-01）
+    SECURITY_BIND_PHONE_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Bind phone enable"), help_text=_("Enable bind phone for user")
     )
-    SECURITY_BIND_EMAIL_CAPTCHA_ENABLED = serializers.BooleanField(
+    SECURITY_BIND_PHONE_CAPTCHA_ENABLED = serializers.BooleanField(
         required=False,
         default=True,
         label=_("Bind phone captcha"),
         help_text=_("Enable captcha to prevent robot reset password"),
     )
 
-    SECURITY_BIND_EMAIL_TEMP_TOKEN_ENABLED = serializers.BooleanField(
-        required=False,
-        default=True,
-        label=_("Bind phone encrypted"),
-        help_text=_("Enable encryption to prevent information leakage"),
-    )
-
-    SECURITY_BIND_EMAIL_ENCRYPTED_ENABLED = serializers.BooleanField(
+    SECURITY_BIND_PHONE_TEMP_TOKEN_ENABLED = serializers.BooleanField(
         required=False,
         default=True,
         label=_("Bind phone temp token"),
         help_text=_("Enable temporary tokens to prevent attacks"),
+    )
+
+    SECURITY_BIND_PHONE_ENCRYPTED_ENABLED = serializers.BooleanField(
+        required=False,
+        default=True,
+        label=_("Bind phone encrypted"),
+        help_text=_("Enable encryption to prevent information leakage"),
     )
 
 

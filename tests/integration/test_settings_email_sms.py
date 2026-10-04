@@ -84,6 +84,9 @@ class TestEmailSettingView:
 
     def test_test_send_success_via_locmem(self, auth_client, settings):
         settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+        # T01-07：测试邮件主题 = EMAIL_SUBJECT_PREFIX + "Test"（运行时 settings，
+        # 非 POST payload）；显式设前缀以锁定「前缀 + Test」拼接不被 or 优先级吞掉
+        settings.EMAIL_SUBJECT_PREFIX = "[xadmin] "
         mail.outbox = []
 
         resp = auth_client.post(EMAIL_URL, EMAIL_PAYLOAD)
@@ -93,6 +96,8 @@ class TestEmailSettingView:
         assert "to@test.local" in resp.data["detail"]
         assert len(mail.outbox) == 1
         assert mail.outbox[0].to == ["to@test.local"]
+        # T01-07：`or` 低于 `+` 的优先级 bug 曾让已设前缀时 subject 只剩前缀
+        assert mail.outbox[0].subject == "[xadmin] Test"
 
     def test_test_send_sender_refused_gbk_decoded(self, auth_client, monkeypatch):
         from settings.views import email as email_view

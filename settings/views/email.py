@@ -39,7 +39,9 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
         email_recipient = serializer.validated_data.get("EMAIL_RECIPIENT")
 
         try:
-            subject = settings.EMAIL_SUBJECT_PREFIX or "" + "Test"
+            # 括号必须：`or` 优先级低于 `+`，裸写 `prefix or "" + "Test"` 在已设前缀时
+            # subject 只剩前缀、丢失 "Test"（T01-07）
+            subject = (settings.EMAIL_SUBJECT_PREFIX or "") + "Test"
             message = _("Test smtp setting")
             email_recipient = email_recipient or email_host_user
             connection = get_connection(

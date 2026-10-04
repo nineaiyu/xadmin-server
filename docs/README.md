@@ -28,6 +28,7 @@
 |------|------|
 | 元数据协议 | [architecture/metadata-protocol.md](architecture/metadata-protocol.md)：字段语义 / `input_type` 推断链 / 四通道注册表 / 失败可见性 |
 | 权限体系 | [architecture/permission.md](architecture/permission.md)（三层 + 应用级授权）；配置操作教程 [architecture/data-permission.md](architecture/data-permission.md) / [architecture/field-permission.md](architecture/field-permission.md) |
+| 菜单维护口径 | [guide/menu-maintenance.md](guide/menu-maintenance.md)：种子 path↔组件目录基本口径 / URL≠目录 例外清单（对账门禁白名单）/ 新增页面规范 |
 | 模块化与裁剪 | [architecture/模块化与功能裁剪.md](architecture/模块化与功能裁剪.md)：三级分层 / 发行预设 / 六层裁剪 / CLI 与管理页 |
 | 认证扩展 | [architecture/mfa.md](architecture/mfa.md)（MFA / 412 协议）、[architecture/oauth-login.md](architecture/oauth-login.md)（第三方登录 / IM 扫码） |
 | 目录同步 | [architecture/ldap-readiness.md](architecture/ldap-readiness.md)、[architecture/scim.md](architecture/scim.md)、[architecture/scim-idp-readiness.md](architecture/scim-idp-readiness.md) |
@@ -52,6 +53,7 @@
 | [ops/observability.md](ops/observability.md) | 可观测性与 SLO（指标 / 告警分级 / 演练记录） |
 | [ops/monitoring-stack.md](ops/monitoring-stack.md) | 监控参考栈（Prometheus + Grafana + blackbox + 告警桥接 + systemd 单元） |
 | [ops/release-checklist.md](ops/release-checklist.md) | 发布窗口 checklist（基线门禁 + 执行记录） |
+| [ops/fix-bind-phone-setting-keys-2026-10.md](ops/fix-bind-phone-setting-keys-2026-10.md) | 安全设置「绑定手机」配置键错写（P0）修复的数据核查与清理 SQL |
 | [ops/performance-baseline.md](ops/performance-baseline.md) | 性能基线测定流程（silk + k6） |
 | [ops/backup-drill-2026-09.md](ops/backup-drill-2026-09.md)、[ops/backup-drill-2026-09-16.md](ops/backup-drill-2026-09-16.md)、[ops/backup-drill-2026-Q4.md](ops/backup-drill-2026-Q4.md)、[ops/backup-drill-2027-03.md](ops/backup-drill-2027-03.md) | 备份恢复演练记录（历史归档） |
 
