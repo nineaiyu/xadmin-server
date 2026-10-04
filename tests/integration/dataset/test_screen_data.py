@@ -505,7 +505,7 @@ class TestPushHelpers:
 
 
 class TestCarouselPageState:
-    """carousel 轮播按展示连接上报的当前页聚合（T02-08）。
+    """carousel 轮播按展示连接上报的当前页聚合。
 
     展示端只应用当前页帧：全页逐帧聚合是 (N-1)/N 查询白跑。修复后
     ``build_screen_data_payload`` 支持 ``page_index`` 只聚合当前页；

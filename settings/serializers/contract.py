@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""BaseSettingViewSet 保存链路的序列化器侧显式契约（T03-08）。
+"""BaseSettingViewSet 保存链路的序列化器侧显式契约。
 
 19 个设置端点共用 BaseSettingViewSet.perform_update 这单一故障面，此前契约
 隐晦：视图直接改写 ``serializer._data``、以 ``serializer._change_fields``
@@ -46,9 +46,7 @@ class SettingSaveContractMixin:
     @property
     def _change_fields(self):
         warnings.warn(
-            str(
-                _("settings 序列化器 _change_fields 已更名为 change_fields（T03-08 显式契约），别名将在下个大版本移除")
-            ),
+            str(_("settings 序列化器 _change_fields 已更名为 change_fields（显式契约），别名将在下个大版本移除")),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -57,9 +55,7 @@ class SettingSaveContractMixin:
     @_change_fields.setter
     def _change_fields(self, value):
         warnings.warn(
-            str(
-                _("settings 序列化器 _change_fields 已更名为 change_fields（T03-08 显式契约），别名将在下个大版本移除")
-            ),
+            str(_("settings 序列化器 _change_fields 已更名为 change_fields（显式契约），别名将在下个大版本移除")),
             DeprecationWarning,
             stacklevel=2,
         )

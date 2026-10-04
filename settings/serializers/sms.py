@@ -39,7 +39,7 @@ class BaseSMSSettingSerializer(SettingSaveContractMixin, serializers.Serializer)
     )
 
     def post_save(self):
-        # 响应整形（T03-08 契约）：把 SMS_TEST_PHONE 归一为 {code, phone} 便于前端回显
+        # 响应整形（契约）：把 SMS_TEST_PHONE 归一为 {code, phone} 便于前端回显
         value = self.response_data["SMS_TEST_PHONE"]
         if isinstance(value, dict):
             return

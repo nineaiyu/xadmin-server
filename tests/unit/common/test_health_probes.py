@@ -117,7 +117,7 @@ class TestProbeCeleryCache:
             def inspect(timeout=None):
                 return _FakeInspect()
 
-        # T03-03 起 health 经 celery.current_app 取 app（不再 import server.celery），
+        # health 经 celery.current_app 取 app（不再 import server.celery），
         # 桩替换 celery 模块命名空间里的 current_app 绑定，monkeypatch 自动还原
         monkeypatch.setattr("celery.current_app", types.SimpleNamespace(control=_FakeControl()))
 

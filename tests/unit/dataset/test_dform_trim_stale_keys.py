@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""schema 演进后存储数据的历史键裁剪（T02-14）。
+"""schema 演进后存储数据的历史键裁剪。
 
 表单字段删除/改名后，旧提交/草稿的 data 含已删字段键——渲染端不展示、用户无法
 清理，直接按当前 schema 严格校验必被「Unknown submission keys」拒绝，编辑重提 /
@@ -66,7 +66,7 @@ class TestPatchMergeTrimsStoredBase:
 
 class TestDraftSubmitTrimsStoredData:
     def test_submit_draft_with_stale_stored_keys(self, superuser):
-        """草稿提交：data 缺省沿用草稿已存数据，先裁剪再校验（T02-14）。"""
+        """草稿提交：data 缺省沿用草稿已存数据，先裁剪再校验。"""
         form, submission = _make_form_and_submission({"name": "张三", "ghost": "x"})
         submission.status = DynamicFormSubmission.Status.DRAFT
         submission.creator = superuser

@@ -23,7 +23,7 @@ def _find(attr):
 
 
 def set_current_request(request) -> None:
-    """绑定当前请求到上下文本地存储（T03-01 自 server/utils.py 归位）。"""
+    """绑定当前请求到上下文本地存储（自 server/utils.py 归位）。"""
     thread_local.current_request = request
 
 

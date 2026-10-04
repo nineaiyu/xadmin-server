@@ -4,7 +4,7 @@
 # filename : utils
 # author : ly_13
 # date : 10/18/2024
-"""兼容 re-export 层（T03-01/T03-02 归位，保留一个版本周期）。
+"""兼容 re-export 层（实现已归位，保留一个版本周期）。
 
 实现已迁出：thread-local 请求持有器 → ``common/local.py``；DB 表前缀信号 →
 ``common/core/db/prefix.py``。common 内已禁止 import server（门禁见

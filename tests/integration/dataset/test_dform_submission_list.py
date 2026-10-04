@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""「我的填报」列表轻量序列化（T02-10）。
+"""「我的填报」列表轻量序列化。
 
 列表逐行序列化 ``form_schema`` + ``approval_trail``（每行触发
 ``instance.tasks.all()`` 且无 prefetch）是列表页主开销，而列表页不需要这两个

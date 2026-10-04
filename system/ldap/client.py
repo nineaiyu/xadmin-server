@@ -6,7 +6,7 @@
 由调用方按异常类型/结果区分。连接对象可整体替换（测试注入 fake 连接）。
 
 连接函数默认读 django settings（``config=None`` → ``LdapConfig.from_settings``）；
-显式传 ``LdapConfig`` 快照时完全按快照连搜（T03-09：管理页「测试连接」按表单值
+显式传 ``LdapConfig`` 快照时完全按快照连搜（管理页「测试连接」按表单值
 构造快照传参，不临时改写进程全局 settings）。
 """
 
@@ -103,7 +103,7 @@ class LdapConfig:
 
     @classmethod
     def from_values(cls, values: dict) -> "LdapConfig":
-        """从 settings 键名 dict 构造快照（测试连接：表单值 ∪ 已存配置，T03-09）。"""
+        """从 settings 键名 dict 构造快照（测试连接：表单值 ∪ 已存配置）。"""
         kwargs = {field: values[key] for key, field in _SETTING_KEY_TO_FIELD.items() if values.get(key) is not None}
         return cls(**kwargs)
 

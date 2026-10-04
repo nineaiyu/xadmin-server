@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common.injection 注入器契约与 server/const 装配接线（T03-04）。
+"""common.injection 注入器契约与 server/const 装配接线。
 
 契约：common 侧只经 get_server_config / get_server_version 读 server 装配产物；
 server/const.py 在 settings 导入链最前端登记。未登记即读 = 装配顺序破坏，

@@ -119,7 +119,7 @@ class UserPersonalConfigSerializer(SystemConfigSerializer):
             )
 
     def create(self, validated_data):
-        """批量建用户参数：事务包裹 + 冲突预检（T02-05）。
+        """批量建用户参数：事务包裹 + 冲突预检。
 
         原实现循环逐个 create：任一用户已有同名 key 即 IntegrityError 500，且
         前序用户已落库（部分写入）。现预查冲突返回可读错误（含冲突用户明细），

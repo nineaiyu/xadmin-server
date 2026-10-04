@@ -171,7 +171,7 @@ class FormPkField(serializers.PrimaryKeyRelatedField):
 
 
 class MySubmissionListSerializer(BaseModelSerializer):
-    """「我的填报」列表序列化器：固定列 + data 摘要（读写序列化器分离，T02-10）。
+    """「我的填报」列表序列化器：固定列 + data 摘要（读写序列化器分离）。
 
     列表契约只承载列表语义：不做写校验、不含 form_schema / approval_trail——
     逐行展开 schema 快照与 ``approval_trail_of``（每行触发 ``instance.tasks.all()``
@@ -259,7 +259,7 @@ class DynamicFormSubmissionSerializer(BaseModelSerializer):
             # PATCH 局部更新：data 先与库内数据合并再整份校验——只校验提交子集会把
             # 未提交的必填字段判成缺失（必填误报）。PUT（非 partial）维持整份替换
             # 语义（省略键 = 删除该键）。
-            # 合并底数先按当前 schema 裁剪历史键（T02-14）：schema 演进后旧提交
+            # 合并底数先按当前 schema 裁剪历史键：schema 演进后旧提交
             # 的已删字段键无法经表单清理，合并不裁剪会随载荷重新入库并被拒绝
             data = {
                 **trim_stale_schema_keys(form.schema, self.instance.data or {}),

@@ -13,8 +13,8 @@ notifications / backends / signal(s) 直接 import——这是契约层收口的
 「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
 函数级惰性 import 属逃生门，作为观察项打印。
 
-反向依赖规则（T03-05）：common（框架层）禁止 import server（工程层）——
-common 是被所有人依赖的基座，反向依赖破坏分层单向性（CODE-REVIEW 3.2）。
+反向依赖规则：common（框架层）禁止 import server（工程层）——
+common 是被所有人依赖的基座，反向依赖破坏分层单向性。
 server 装配产物经 common/injection.py 依赖注入下发，无契约缝可言，
 模块级与函数级 import 一律违例（不留逃生门）。
 
@@ -171,7 +171,7 @@ def scan_framework_direction():
 
 
 # ---------------------------------------------------------------------------
-# 反向依赖门禁（T03-05）：common（框架层）→ server（工程层）禁止 import。
+# 反向依赖门禁：common（框架层）→ server（工程层）禁止 import。
 # 例外从无：server 装配产物（CONFIG / VERSION）经 common/injection.py 依赖注入
 # 下发（server/const.py 末尾登记），thread-local 请求持有器与表前缀信号已归位
 # （common/local.py、common/core/db/prefix.py，server/utils.py 留兼容 re-export）。

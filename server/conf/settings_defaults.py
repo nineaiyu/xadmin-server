@@ -244,7 +244,7 @@ SETTINGS_CONFIG = {
     # 内网自建接收端必须显式登记在此，登记后跳过地址归属校验（仍拒绝 link-local/元数据）。
     "OUTBOUND_ALLOWED_HOSTS": "",
     # 可手动执行任务白名单（fnmatch 通配符，默认仅演示任务 = 其余全部拒绝）。
-    # 任务管理页创建周期任务 / 立即执行只放行命中项（T02-04：任意已注册任务可被
+    # 任务管理页创建周期任务 / 立即执行只放行命中项（任意已注册任务可被
     # 执行的安全阀）；业务方确认可手动执行范围后，在系统配置页或此处扩容。
     "MANUAL_RUNNABLE_TASKS": ["demo.tasks.auto_off_shelf_books"],
     # 字段级审计 diff 白名单（模型 _meta.label）：命中白名单的 update 请求会额外

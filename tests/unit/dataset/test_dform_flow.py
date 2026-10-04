@@ -398,7 +398,7 @@ class TestResubmitRevalidatesCurrentSchema:
 
     def test_resubmit_trims_stale_keys_from_stored_data(self, form, applicant):
         """改版删除字段后，旧提交携带的历史键先被裁剪再校验——重提不再被
-        Unknown submission keys 卡死（T02-14），落库数据不含 ghost 键。"""
+        Unknown submission keys 卡死，落库数据不含 ghost 键。"""
         submission = make_submission(form, applicant, data={"name": "张三", "ghost": "x"})
         create_flow_instance(submission, applicant)
         sync_dform_instance(submission.instance, ApprovalInstance.Status.REJECTED, "材料不齐")

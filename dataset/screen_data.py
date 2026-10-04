@@ -15,7 +15,7 @@
   引用仪表盘的卡片并集；
 - carousel（``layout`` 空）：按展示连接上报的当前页（``screen_page_state``）
   只聚合该页一帧——展示端只应用当前页帧，全页聚合是 (N-1)/N 查询白跑
-  （T02-08）；未上报/越界回退全页帧（旧调用方与兜底语义不变）。
+  ；未上报/越界回退全页帧（旧调用方与兜底语义不变）。
 """
 
 import time
@@ -145,7 +145,7 @@ def build_screen_data_payload(user, screen, rev: int, page_index: int | None = N
     """以浏览者视角聚合整屏数据帧（逐卡执行，异常逐卡捕获不中断整帧）。
 
     返回帧列表：canvas 单帧；carousel 按 ``page_index`` 只聚合当前页一帧（展示
-    连接上报所在页，避免每轮为其余页做白跑查询——(N-1)/N 查询优化，T02-08），
+    连接上报所在页，避免每轮为其余页做白跑查询——(N-1)/N 查询优化），
     ``page_index`` 为 None（旧调用方/未上报页码）或越界时回退逐仪表盘全页帧；
     两种形态的引用都为空时返回空列表（无可推数据，展示端维持空态）。
     """
@@ -202,7 +202,7 @@ def _execute_card(ref: CardRef, user) -> dict:
     ):
         raise ValidationError(_("No permission for dataset: {}").format(dataset.name))
     if ref["kind"] == KIND_EXECUTE:
-        # 数字卡只读 total：count_only 跳过全量行物化（T02-09，与 ChartCard 同口径）
+        # 数字卡只读 total：count_only 跳过全量行物化（与 ChartCard 同口径）
         return execute_dataset(dataset, user, count_only=True)
     # date_trunc 仅折线卡下发（前端 ChartCard 同口径：其余图表忽略趋势分桶，
     # 折线未存值时缺省 day）

@@ -208,7 +208,7 @@ def validate_draft_data(data) -> dict:
 
 
 def trim_stale_schema_keys(schema: dict, data):
-    """按当前 schema 裁剪 data 中的历史键（仅用于**存储数据回填**路径，T02-14）。
+    """按当前 schema 裁剪 data 中的历史键（仅用于**存储数据回填**路径）。
 
     场景：表单 schema 演进（字段删除/改名）后，旧提交/草稿的 data 含已删除字段
     的键——渲染端不展示、用户无法清理，直接按当前 schema 严格校验必被

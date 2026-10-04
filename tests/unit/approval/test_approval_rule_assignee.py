@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""审批规则级次审批人校验（T02-06）：四类 assignee 的保存校验与引擎解析一致性。
+"""审批规则级次审批人校验：四类 assignee 的保存校验与引擎解析一致性。
 
 历史缺陷：``_validate_assignee`` 只特判 ROLE，其余一律按用户名查 UserInfo——
 选「岗位」保存必报 "User does not exist"（模型与引擎均支持 post）。

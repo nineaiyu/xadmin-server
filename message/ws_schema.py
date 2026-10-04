@@ -159,7 +159,7 @@ PAYLOAD_DECLARATIONS: dict[str, dict[str, Any]] = {
         "typed_dict": "ScreenPageStatePayload",
         "description": (
             "大屏展示端当前页上报帧载荷（ws/screen/<pk> 上行，dataset/ws_screen.py 接收；"
-            "carousel 触发聚合按上报页取数，避免整屏逐页聚合白跑查询——T02-08）"
+            "carousel 触发聚合按上报页取数，避免整屏逐页聚合白跑查询）"
         ),
         "required": ["index"],
         "open": False,

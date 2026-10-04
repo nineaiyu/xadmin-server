@@ -186,7 +186,7 @@ def _exchange_choices():
 
 
 def _validate_task_runnable(name) -> str:
-    """task 字段白名单校验（T02-04）：仅白名单内的任务可被配置为周期任务。
+    """task 字段白名单校验：仅白名单内的任务可被配置为周期任务。
 
     celery 注册表里的任务即系统全部 @shared_task（含删数据/改密等高危任务），
     不设白名单等于把任务执行权完全暴露给管理面；执行侧（run/batch-run）另有

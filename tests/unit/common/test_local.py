@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common.local 请求持有器（T03-01 自 server/utils.py 归位后的本体行为）。"""
+"""common.local 请求持有器（自 server/utils.py 归位后的本体行为）。"""
 
 from common.local import get_current_request, set_current_request
 

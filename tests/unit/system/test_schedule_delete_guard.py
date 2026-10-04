@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""调度（crontab / interval）删除引用预检（T02-02 / T02-03）。
+"""调度（crontab / interval）删除引用预检。
 
 django_celery_beat 的 ``PeriodicTask.crontab / interval`` 均为
 ``on_delete=CASCADE``：直接删除被引用的调度会**静默级联删除**周期任务。

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """LDAP/AD 设置视图：retrieve 回显 / partialUpdate 保存 / create 连接测试。
 
-与邮件/IM 测试同口径（T03-09）：``POST`` 即「测试」——按表单当前值（未带字段
+与邮件/IM 测试同口径：``POST`` 即「测试」——按表单当前值（未带字段
 回退到已存配置）构造 ``LdapConfig`` 快照显式传参，实际 bind + 搜索并返回
 用户/部门计数；失败转可读 ApiResponse，不影响登录。全程不 ``setattr(settings,
 ...)``，并发期间真实请求不可能读到测试值。

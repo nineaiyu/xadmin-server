@@ -13,7 +13,7 @@ CELERY_LOG_DIR = os.path.join(LOG_DIR, "task")
 VERSION = "4.2.5"
 CONFIG = ConfigManager.load_user_config()
 
-# T03-04：装配产物（静态配置 / 版本号）依赖注入给 common 框架层——common 不再
+# 装配产物（静态配置 / 版本号）依赖注入给 common 框架层——common 不再
 # 反向 import server（门禁：scripts/check_cross_app_imports.py），统一经
 # common.injection.get_server_config / get_server_version 读取。
 # 本文件位于 settings 导入链最前端，此处注入先于一切 common 配置消费。

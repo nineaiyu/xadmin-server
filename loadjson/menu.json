@@ -8392,7 +8392,7 @@
   "fields": {
    "created_time": "2026-09-13T00:00:00.000Z",
    "updated_time": "2026-09-13T00:00:00.000Z",
-   "description": "护栏（T01-05）：URL 命名空间 /analysis 与组件目录 views/dashboard/ 不同，属既有显式映射（线上菜单行已按此 path 落库）。口径结论：保留映射，勿顺手修齐 URL 或移动组件目录，否则断链。详见 docs/guide/menu-maintenance.md",
+   "description": "护栏：URL 命名空间 /analysis 与组件目录 views/dashboard/ 不同，属既有显式映射（线上菜单行已按此 path 落库）。口径结论：保留映射，勿顺手修齐 URL 或移动组件目录，否则断链。详见 docs/guide/menu-maintenance.md",
    "creator": 1,
    "modifier": 1,
    "dept_belong": null,

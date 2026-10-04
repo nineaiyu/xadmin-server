@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""common.core.db.prefix 表前缀信号（T03-02 自 server/utils.py 归位后的本体行为）。"""
+"""common.core.db.prefix 表前缀信号（自 server/utils.py 归位后的本体行为）。"""
 
 import weakref
 from types import SimpleNamespace

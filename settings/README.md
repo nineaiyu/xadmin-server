@@ -11,7 +11,7 @@
 同名易混：仓库顶层的 `server/settings/` 是 Django 工程配置包（`base.py` / `libs.py` …），
 改数据库、缓存、CSP 等运行参数去那里；改"设置内容"来本目录。
 
-## 保存链路显式契约（T03-08）
+## 保存链路显式契约
 
 19 个设置端点共用 `views/settings.py` 的 `BaseSettingViewSet.perform_update` 单一故障面，
 与 `serializers/contract.py` 的 `SettingSaveContractMixin` 配对，行为如下：
@@ -29,7 +29,7 @@
 `serializer._data` / `serializer._change_fields` 保留读写别名并告
 DeprecationWarning，一个版本周期后移除。
 
-## 运行时热更链路与删除闭环（T03-07）
+## 运行时热更链路与删除闭环
 
 - 保存：`post_save` 钩子发布 `(name, value)` 到 Redis pub/sub，各进程订阅者
   `setattr` 热更 django settings；

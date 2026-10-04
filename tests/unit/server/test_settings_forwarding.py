@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""server/settings 包「CONFIG 转发」一致性守护（A1/A6，T03-06 表驱动化扩展）。
+"""server/settings 包「CONFIG 转发」一致性守护（表驱动化扩展）。
 
 `server/settings/*.py` 把 CONFIG（config.yml / 环境变量 / 代码默认值的装配结果）
 暴露给 django settings。手写转发有两类静默风险：
@@ -11,7 +11,7 @@
    （SECURITY_AES_V1_DECRYPT_ENABLED 漏转发曾导致开关无法关闭，METRICS_ENABLED
    漏转发端点永远 404）。
 
-T03-06 后 setting.py 改声明式转发（FORWARD_KEYS 清单 + 循环写 globals），
+现在 setting.py 已改为声明式转发（FORWARD_KEYS 清单 + 循环写 globals），
 本测试对 AST 做静态校验实现全量覆盖：CONFIG.defaults 的每个键必须落在——
 
 - FORWARD_KEYS（setting.py 声明清单，同名转发）；
@@ -53,7 +53,7 @@ def _forwarding_pairs():
 
 
 def _declared_forward_keys() -> list[str]:
-    """抽取 setting.py 声明式转发清单 FORWARD_KEYS（T03-06 表驱动）。"""
+    """抽取 setting.py 声明式转发清单 FORWARD_KEYS（表驱动）。"""
     tree = ast.parse(SETTING_MODULE.read_text(encoding="utf-8"))
     for node in tree.body:
         if (
@@ -157,7 +157,7 @@ def test_non_forwarded_registry_reasons_meaningful():
 
 
 def test_all_config_keys_forwarded_or_registered():
-    """全量覆盖守护（T03-06 核心）：新增 CONFIG 键未接线即失败。
+    """全量覆盖守护（核心）：新增 CONFIG 键未接线即失败。
 
     CONFIG.defaults 的每个键必须落在三处之一：FORWARD_KEYS 声明清单、
     server/ 装配模块的 `CONFIG.<key>` 直接引用、NON_FORWARDED_KEYS 豁免登记。

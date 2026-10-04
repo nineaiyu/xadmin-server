@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""数据集 execute 的 count_only 模式（T02-09）。
+"""数据集 execute 的 count_only 模式。
 
 number/metric 卡全量物化 ≤row_limit 行 × 全列只为读 total：挂屏 M 张数字卡
 每刷新周期 = M 次全量行查询。``count_only=True`` 跳过列展开与行物化仅 count，
