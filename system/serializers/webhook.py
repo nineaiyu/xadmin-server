@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from common.core.serializers import BaseModelSerializer
 from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.webhook import encrypt_secret, validate_events, validate_url
+from system.utils.task.webhook import encrypt_secret, validate_events, validate_url
 
 
 class WebhookSubscriptionSerializer(BaseModelSerializer):

@@ -16,15 +16,15 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.core.config import SysConfig
 from system.models import UploadFile
-from system.utils.ctasks import auto_clean_preview_cache
-from system.utils.preview import (
+from system.utils.file.preview import (
     SIZE_PREVIEW,
     SIZE_THUMB,
     clean_preview_cache,
     preview_cache_path,
     preview_kind,
 )
-from system.utils.preview import media as preview_media
+from system.utils.file.preview import media as preview_media
+from system.utils.task.ctasks import auto_clean_preview_cache
 from system.views.admin.file import PREVIEW_UNSUPPORTED_CODE, UploadFileViewSet
 
 pytestmark = pytest.mark.django_db

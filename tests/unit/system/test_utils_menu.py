@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""system.utils.menu 单元测试（权限名公共前缀、关联模型探测）。"""
+"""system.utils.platform.menu 单元测试（权限名公共前缀、关联模型探测）。"""
 
 import pytest
 
 from demo.models import Book
-from system.utils.menu import get_long_str, get_related_models
+from system.utils.platform.menu import get_long_str, get_related_models
 
 pytestmark = pytest.mark.django_db
 

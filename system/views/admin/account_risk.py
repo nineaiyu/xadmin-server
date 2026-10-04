@@ -18,7 +18,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import AccountRisk
 from system.serializers.security import AccountRiskSerializer
-from system.utils.account_risk import HANDLE_ACTIONS, handle_account_risk, scan_account_risks
+from system.utils.identity.account_risk import HANDLE_ACTIONS, handle_account_risk, scan_account_risks
 
 
 class AccountRiskFilter(BaseFilterSet):

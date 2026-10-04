@@ -192,7 +192,7 @@ def run_scheduled_report(self, report_id: str):
     from dataset.models.dataset import Report
     from system.models.export import ExportRecord
     from system.models.upload import UploadFile
-    from system.utils.task_progress import KIND_REPORT, update_progress
+    from system.utils.task.task_progress import KIND_REPORT, update_progress
 
     record = ExportRecord.objects.filter(pk=self.request.id).first()
     report = Report.objects.filter(pk=report_id).select_related("dataset", "creator").first()

@@ -22,7 +22,7 @@ from common.swagger.utils import get_default_response_schema
 from system.models.token import PersonalAccessToken
 from system.serializers.log import OperationLogSerializer
 from system.serializers.token import PersonalAccessTokenSerializer
-from system.utils.pat_scope import scope_options_for_user
+from system.utils.identity.pat_scope import scope_options_for_user
 
 # 调用统计回看窗口（近 7 天）
 PAT_STATS_WINDOW_DAYS = 7

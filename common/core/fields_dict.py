@@ -6,7 +6,7 @@
 DictChoiceField 把选项来源切到数据字典，管理员增删选项/改标签即时生效。
 common 不依赖任何业务 app：字典项解析器由字典能力的所属 app 在
 AppConfig.ready() 经 register_dict_items_resolver 注册（system app 已注册
-system.utils.dict.get_dict_items——带缓存 + 变更信号失效）；未注册时
+system.utils.platform.dict.get_dict_items——带缓存 + 变更信号失效）；未注册时
 （如最小化部署裁掉字典能力）安全回退 fallback_choices。
 
 拆分自 common/core/fields.py（文件行数门禁）；原路径保留兼容再导出，

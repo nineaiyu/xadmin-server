@@ -157,8 +157,8 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | API/菜单权限 | `IsAuthenticated`（白名单 → `get_user_permission` → 菜单 pk 解析） | `common/core/permission.py` |
 | 数据权限 | `get_filter_queryset` + `core/data_scope/`（16 种规则，fail-closed） | `common/core/filter.py` |
 | 字段权限 | `BaseModelSerializer` 自动裁剪 | `common/core/serializers.py` |
-| 应用级授权 | `system/utils/api_grant.py`（仅 PAT 凭证，只收敛不提权） | 三处挂载 |
-| 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/menu.py`、`permission_sync/` |
+| 应用级授权 | `system/utils/identity/api_grant.py`（仅 PAT 凭证，只收敛不提权） | 三处挂载 |
+| 权限点治理 | `get_view_permissions` / `scan_gaps` / `sync_menu_permissions` / `doctor` | `system/utils/platform/menu.py`、`system/utils/identity/permission_sync/` |
 | 前端消费 | `hasAuth("动作:组件名")` / `<Auth>` / `getDefaultAuths` | 见 §2.6 |
 
 - 权限码约定 `{action}:{ViewSetName}`；**新增端点必须登记权限点**（生成器种子或 `sync_menu_permissions`），漏登记 = 非超管 403。
@@ -483,7 +483,7 @@ class KnowledgeApi extends BaseApi {
 | 定时跑一件事 | `@register_as_period_task(interval=..., module=...)` |
 | 发一条多通道通知 | 消息类实例 `.publish(is_async=True)`（新渠道加 `backends/<name>.py`） |
 | 让业务走审批 | `approval_flow.engine.create_instance(biz_type=..., biz_id=...)` + 终态信号 |
-| 对外投递事件 | `system/utils/webhook.py::emit_webhook_event`（事件先登记 `EVENT_CATALOG`） |
+| 对外投递事件 | `system/utils/task/webhook.py::emit_webhook_event`（事件先登记 `EVENT_CATALOG`） |
 | 枚举文案可运营 | `DictChoiceField` + 字典页维护 |
 | 让功能可裁剪 | `{app}/modules.py`（`generate_module`）+ `config.yml` 的 `MODULE_*` |
 | 升级后收尾 | `manage.py post_upgrade` / `doctor` |
@@ -504,7 +504,7 @@ class KnowledgeApi extends BaseApi {
 | 周期任务 | `@register_as_period_task(module=...)` | module 归属可裁剪 | `system/tasks/` |
 | 通知渠道 | `notifications/backends/<name>.py`（模块级 `backend`） | 渠道枚举补 `BACKEND` | `notifications/backends/email.py` |
 | 通知消息类型 | `@register_message` + `register_backend_msg` | 渲染映射补齐各渠道 | `notifications/notifications.py` |
-| Webhook 事件 | `EVENT_CATALOG` 登记 + `emit_webhook_event` | 事件契约守护测试 | `system/utils/webhook.py` |
+| Webhook 事件 | `EVENT_CATALOG` 登记 + `emit_webhook_event` | 事件契约守护测试 | `system/utils/task/webhook.py` |
 | 审批业务绑定 | `create_instance(biz_type, biz_id)` + 监听 `approval_instance_finished` | 终态信号在 `system/signal.py` | 请假业务 `approval/utils/leave.py` |
 | 可裁剪模块 | `{app}/modules.py`（`ModuleSpec`） | `generate_module` 生成 | `common/core/modules/registry.py` |
 | 配置键 | 部署期 `config_example.yml`+`defaults.py`；运行期 `system_conf.py`+种子 | 两处同名；种子守护测试 | — |

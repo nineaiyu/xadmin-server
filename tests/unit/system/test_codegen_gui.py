@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""代码生成器 GUI 端点守护测试（适配层 system/utils/codegen_gui.py）。
+"""代码生成器 GUI 端点守护测试（适配层 system/utils/platform/codegen_gui.py）。
 
 覆盖：模型清单过滤（仓库内 / 非抽象）、字段计划回显、字段选择收敛
 （include/exclude 与未知字段拒绝）、产物预览（不落盘）、zip 下载。
@@ -11,7 +11,7 @@ import zipfile
 import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.utils import codegen_gui
+from system.utils.platform import codegen_gui
 from system.views.admin.codegen import SystemCodeGenViewSet
 
 pytestmark = pytest.mark.django_db

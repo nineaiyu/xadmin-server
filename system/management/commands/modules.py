@@ -135,7 +135,7 @@ class Command(BaseCommand):
     def _write_impact(self, resolution):
         from django.db import OperationalError, ProgrammingError
 
-        from system.utils.module_impact import module_impact
+        from system.utils.platform.module_impact import module_impact
 
         if not resolution.disabled:
             self.stdout.write("影响面：全量启用，无菜单/权限点被隐藏。")

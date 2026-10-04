@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models import DataDict, UploadFile
-from system.utils.dict import invalid_dict_cache
+from system.utils.platform.dict import invalid_dict_cache
 from system.views.admin.file import UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
@@ -305,7 +305,7 @@ class TestKeepDaysCleanup:
 
     def test_zero_means_no_cleanup(self, superuser):
         """0 = 不清理（默认值，避免误删历史文件）。"""
-        from system.utils.ctasks import auto_clean_upload_file
+        from system.utils.task.ctasks import auto_clean_upload_file
 
         record = self._formal_file(superuser, "keep-zero.txt", b"keep-zero", age_days=30)
         assert auto_clean_upload_file(keep_days=0) == 0
@@ -315,7 +315,7 @@ class TestKeepDaysCleanup:
         """超保留期且无引用：记录与磁盘文件一并清理。"""
         import os
 
-        from system.utils.ctasks import auto_clean_upload_file
+        from system.utils.task.ctasks import auto_clean_upload_file
 
         record = self._formal_file(superuser, "expired.txt", b"expired-bytes", age_days=30)
         disk_path = record.filepath.path
@@ -330,7 +330,7 @@ class TestKeepDaysCleanup:
         import os
 
         from system.models import ExportRecord
-        from system.utils.ctasks import auto_clean_upload_file
+        from system.utils.task.ctasks import auto_clean_upload_file
 
         record = self._formal_file(superuser, "referenced.txt", b"referenced-bytes", age_days=30)
         ExportRecord.objects.create(name="keep.xlsx", file=record)
@@ -346,7 +346,7 @@ class TestKeepDaysCleanup:
 
         from django.utils import timezone
 
-        from system.utils.ctasks import auto_clean_upload_file
+        from system.utils.task.ctasks import auto_clean_upload_file
 
         tmp = _uploaded_file(superuser, name="tmp.txt", content=b"tmp-bytes")  # is_tmp=True
         UploadFile.all_objects.filter(pk=tmp.pk).update(created_time=timezone.now() - datetime.timedelta(days=30))

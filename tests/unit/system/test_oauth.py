@@ -11,7 +11,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models.log import UserLoginLog
 from system.models.oauth import UserOAuthBinding
-from system.utils.oauth import (
+from system.utils.identity.oauth import (
     OAUTH_STATE_TTL,
     OAuthError,
     build_authorize_url,
@@ -99,7 +99,7 @@ def stub_idp(monkeypatch):
 
     def install(client):
         holder["client"] = client
-        monkeypatch.setattr("system.utils.oauth._default_client", lambda: holder["client"], raising=True)
+        monkeypatch.setattr("system.utils.identity.oauth._default_client", lambda: holder["client"], raising=True)
 
     return install
 

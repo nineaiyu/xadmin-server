@@ -113,7 +113,7 @@ def field_option_values(item: dict) -> list:
     """
     dict_code = item.get("dict")
     if dict_code:
-        from system.utils.dict import get_dict_items
+        from system.utils.platform.dict import get_dict_items
 
         return [row.get("value") for row in get_dict_items(str(dict_code)) if row.get("value") is not None]
     return list(item.get("options") or [])

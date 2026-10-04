@@ -22,7 +22,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models.dict import DataDict
 from system.serializers.dict import DataDictSerializer
-from system.utils.dict import get_dict_items, invalid_dict_cache
+from system.utils.platform.dict import get_dict_items, invalid_dict_cache
 
 
 class DataDictFilter(filters.FilterSet):

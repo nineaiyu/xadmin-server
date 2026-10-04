@@ -20,7 +20,7 @@
    ``related_query_name="dept_query"``；``UserInfo.roles`` 未声明时用默认反向名
    ``userinfo``）——写错会在查询期抛 FieldError。
 
-与影响面**同源**：计数表达式与 ``system/utils/impact.py`` 的引用计算器指向同一关系
+与影响面**同源**：计数表达式与 ``system/utils/audit/impact.py`` 的引用计算器指向同一关系
 （角色→用户、数据集→报表），「列表计数」与「删除前影响面」回答同一件事。
 
 未声明 ``relation_count_fields`` 的视图行为零变化。存量两处「注解名与字段名不一致」的

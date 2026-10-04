@@ -28,7 +28,7 @@ def _risk_of(user, risk_type):
 
 class TestAccountRiskScan:
     def test_scan_creates_superuser_no_mfa(self, superuser):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         stats = scan_account_risks()
         assert stats["created"] >= 1
@@ -38,7 +38,7 @@ class TestAccountRiskScan:
         assert risk.status == AccountRisk.Status.PENDING
 
     def test_scan_is_idempotent(self, superuser):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         total = AccountRisk.objects.count()
@@ -47,7 +47,7 @@ class TestAccountRiskScan:
         assert AccountRisk.objects.count() == total
 
     def test_risk_auto_resolved_when_disappeared(self, superuser, settings):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         settings.SECURITY_SUPERUSER_MAX_COUNT = 0
         scan_account_risks()
@@ -61,7 +61,7 @@ class TestAccountRiskScan:
         assert risk.status == AccountRisk.Status.RESOLVED
 
     def test_ignored_risk_kept_by_next_scan(self, superuser, auth_client):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         risk = _risk_of(superuser, AccountRisk.RiskType.SUPERUSER_NO_MFA)
@@ -77,7 +77,7 @@ class TestAccountRiskScan:
         assert risk.status == AccountRisk.Status.IGNORED
 
     def test_unsupported_handle_action(self, superuser, auth_client):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         risk = _risk_of(superuser, AccountRisk.RiskType.SUPERUSER_NO_MFA)
@@ -88,7 +88,7 @@ class TestAccountRiskScan:
 class TestAccountRiskDispose:
     def test_force_change_password_then_login_flag(self, superuser, auth_client, settings):
         from settings.services import record_password_hash
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         risk = _risk_of(superuser, AccountRisk.RiskType.SUPERUSER_NO_MFA)
@@ -110,7 +110,7 @@ class TestAccountRiskDispose:
         assert resp.data["data"]["must_change_password"] is True
 
     def test_disable_user_action(self, normal_user, superuser, auth_client):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         risk = AccountRisk.objects.create(
@@ -125,7 +125,7 @@ class TestAccountRiskDispose:
         assert normal_user.is_active is False
 
     def test_batch_handle_returns_detail(self, superuser, normal_user, auth_client):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         risks = list(AccountRisk.objects.filter(status=AccountRisk.Status.PENDING)[:2])
@@ -147,7 +147,7 @@ class TestAccountRiskDispose:
         assert "ignore" in resp.data["data"]["actions"]
 
     def test_list_endpoint_filters(self, auth_client, superuser):
-        from system.utils.account_risk import scan_account_risks
+        from system.utils.identity.account_risk import scan_account_risks
 
         scan_account_risks()
         resp = auth_client.get(LIST_URL, {"risk_type": "superuser_no_mfa"})

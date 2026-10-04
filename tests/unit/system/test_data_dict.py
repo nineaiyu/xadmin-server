@@ -9,7 +9,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models.dict import DataDict
 from system.models.user import UserInfo
-from system.utils.dict import get_dict_items
+from system.utils.platform.dict import get_dict_items
 from system.views.admin.dict import DataDictViewSet
 
 pytestmark = pytest.mark.django_db
@@ -73,7 +73,7 @@ def test_items_degrades_to_empty_on_db_error(monkeypatch):
     2026-09-18 真丢包演练定位：读取点位于 serializer 字段绑定与请求路径上，
     异常冒泡会把每个请求打成 500；失败结果不写缓存保证恢复后立即重试。
     """
-    from system.utils import dict as dict_utils
+    from system.utils.platform import dict as dict_utils
 
     class _BrokenManager:
         def filter(self, *args, **kwargs):
@@ -102,7 +102,7 @@ def test_items_load_success_writes_cache(monkeypatch):
     """正常路径：缓存未命中时读取并写入缓存（降级改造不改变原语义）。"""
     from types import SimpleNamespace
 
-    from system.utils import dict as dict_utils
+    from system.utils.platform import dict as dict_utils
 
     set_calls = []
 

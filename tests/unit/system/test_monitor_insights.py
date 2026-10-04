@@ -13,7 +13,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from common.models import Monitor, MonitorAlert
 from system.models.log import OperationLog
 from system.models.task import TaskExecution
-from system.views.monitor import MonitorViewSet
+from system.views.platform.monitor import MonitorViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -145,7 +145,7 @@ class TestHistory:
 
 class TestHealthSummary:
     def test_critical_resource_and_degraded_celery(self):
-        from system.utils import metrics
+        from system.utils.platform import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 100, "cpu_load": 0.1, "memory_used": 10, "disk_used": 10},
@@ -165,7 +165,7 @@ class TestHealthSummary:
         assert health["score"] < 100
 
     def test_all_healthy_scores_full(self):
-        from system.utils import metrics
+        from system.utils.platform import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
@@ -180,7 +180,7 @@ class TestHealthSummary:
         assert health["score"] == 100
 
     def test_skipped_celery_not_counted(self):
-        from system.utils import metrics
+        from system.utils.platform import metrics
 
         health = metrics.collect_health_summary(
             live={"cpu_percent": 10, "cpu_load": 0.5, "memory_used": 20, "disk_used": 30},
@@ -302,7 +302,7 @@ class TestEvents:
 
 class TestExport:
     def test_history_csv_and_xlsx(self, superuser):
-        from system.utils.monitor_history import metric_label
+        from system.utils.platform.monitor_history import metric_label
 
         seed_monitor([(timezone.now(), {"cpu_percent": 42.0})])
         resp = invoke("export", user=superuser, query="kind=history&type=csv&range=1h&metrics=cpu_percent")

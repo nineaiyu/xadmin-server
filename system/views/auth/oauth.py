@@ -26,8 +26,8 @@ from common.utils import get_logger
 from system.models.log import UserLoginLog
 from system.models.oauth import UserOAuthBinding
 from system.serializers.oauth import OAuthBindingSerializer
-from system.utils.auth import get_token_lifetime
-from system.utils.oauth import (
+from system.utils.identity.auth import get_token_lifetime
+from system.utils.identity.oauth import (
     OAuthError,
     build_authorize_url,
     consume_bind_state,
@@ -44,13 +44,13 @@ from system.utils.oauth import (
     mask_providers,
     resolve_subject,
 )
-from system.utils.oidc import (
+from system.utils.identity.oidc import (
     fetch_oidc_identity,
     is_oidc_provider,
     prepare_oidc_provider,
     sync_group_roles,
 )
-from system.utils.session import bind_session_claim
+from system.utils.identity.session import bind_session_claim
 from system.views.auth.login import _register_session_safe, complete_login
 
 logger = get_logger(__name__)

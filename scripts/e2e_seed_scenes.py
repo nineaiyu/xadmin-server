@@ -18,7 +18,7 @@ def seed_periodic_task():
     PeriodicTask.objects.get_or_create(
         name="E2E-演示清理任务",
         defaults={
-            "task": "system.utils.ctasks.auto_clean_tmp_file",
+            "task": "system.utils.task.ctasks.auto_clean_tmp_file",
             "crontab": schedule,
             "enabled": False,
         },

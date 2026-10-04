@@ -24,7 +24,7 @@ class ImBindingBackend(BackendBase):
     @classmethod
     def provider_keys_for_flavor(cls) -> list:
         """flavor 匹配的所有已配置 provider key（含管理员自定义命名）。"""
-        from system.utils.oauth import get_providers
+        from system.utils.identity.oauth import get_providers
 
         return [
             item["key"] for item in get_providers(enabled_only=False) if (item.get("flavor") or "oauth2") == cls.flavor

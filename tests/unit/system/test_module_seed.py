@@ -17,7 +17,7 @@ from django.core.management.commands.loaddata import Command as LoadDataCommand
 from common.core.modules import ModuleSeedFilter, compute_hidden_menu_pks
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
 from system.models import FieldPermission, Menu, MenuMeta, UserRole
-from system.utils.seed import build_seed_fixtures
+from system.utils.platform.seed import build_seed_fixtures
 
 LOADJSON_DIR = os.path.join(dj_settings.PROJECT_DIR, "loadjson")
 TRIMMED_MODULES = ("chat", "analysis")

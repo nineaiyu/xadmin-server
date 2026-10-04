@@ -23,7 +23,7 @@ from system.signal_task_execution import (
     task_execution_on_revoked,
     task_execution_on_start,
 )
-from system.views.task import PeriodicTaskViewSet, TaskExecutionViewSet
+from system.views.task.task import PeriodicTaskViewSet, TaskExecutionViewSet
 
 pytestmark = pytest.mark.django_db
 
@@ -118,7 +118,7 @@ def test_run_action_creates_execution_and_publishes(monkeypatch, django_capture_
     request = factory.post(f"/api/system/tasks/periodic/{instance.pk}/run")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "run"})
-    with mock.patch("system.views.task_periodic.app.send_task") as send_task:
+    with mock.patch("system.views.task.task_periodic.app.send_task") as send_task:
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request, pk=str(instance.pk))
     assert response.data["code"] == 1000
@@ -325,8 +325,8 @@ def test_batch_run_action_dispatches_selected(monkeypatch, django_capture_on_com
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
     with (
-        mock.patch("system.views.task_periodic.app.send_task") as send_task,
-        mock.patch("system.views.task_periodic.app.autodiscover_tasks"),
+        mock.patch("system.views.task.task_periodic.app.send_task") as send_task,
+        mock.patch("system.views.task.task_periodic.app.autodiscover_tasks"),
     ):
         with django_capture_on_commit_callbacks(execute=True):
             response = view(request)
@@ -344,7 +344,7 @@ def test_batch_run_action_reports_unregistered(monkeypatch):
     request = factory.post("/api/system/tasks/periodic/batch-run", data=[str(instance.pk)], format="json")
     force_authenticate(request, user=user)
     view = PeriodicTaskViewSet.as_view({"post": "batch_run"})
-    with mock.patch("system.views.task_periodic.app.autodiscover_tasks"):
+    with mock.patch("system.views.task.task_periodic.app.autodiscover_tasks"):
         response = view(request)
     assert response.data["code"] == 1000
     assert response.data["data"]["success"] == 0
@@ -499,7 +499,7 @@ def test_execution_list_exposes_product_info(superuser):
 def test_product_type_filter(superuser):
     """记录类型过滤（导出/导入/任务）与列表注解同源：按产物表同 pk 记录判定。"""
     from system.models.export import ExportRecord
-    from system.views.task import TaskExecutionFilter
+    from system.views.task.task import TaskExecutionFilter
 
     export = ExportRecord.objects.create(name="导出记录", creator=superuser)
     TaskExecution.objects.create(pk=export.pk, name="system.tasks.run_export", creator=superuser)

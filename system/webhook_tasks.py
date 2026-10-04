@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from common.utils import get_logger
 from common.utils.outbound import pinned_request
-from system.utils.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
+from system.utils.task.webhook import MAX_ATTEMPTS, RETRY_BASE_SECONDS, RETRY_MAX_SECONDS, decrypt_secret, sign_payload
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,7 @@ def _post(client, url, body: bytes, headers: dict):
     白名单放行），再把连接目标固定为已校验 IP（防 DNS rebinding）；
     注入客户端路径（测试离线桩）保持原样调用，不做固定连接。
     """
-    from system.utils.webhook import outbound_allowed_hosts
+    from system.utils.task.webhook import outbound_allowed_hosts
 
     merged_headers = {"Content-Type": "application/json", **headers}
     try:

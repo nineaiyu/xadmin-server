@@ -10,7 +10,7 @@
 | `common/core/exception.py`（未处理异常分支）                                                              | 全站兜底异常处理器           | **已修复**      | 未预期异常不再直出 `str(exc)`，改为通用文案；完整堆栈仍由 `unexpected_exception_logger` 记录 |
 | `common/core/exception.py`（list detail 分支）                                                       | DRF 校验错误 detail 为列表 | **已修复**      | 保留列表结构透传，不再 `str(exc)` 扁平化（避免 ErrorDetail repr 泄露/乱码）               |
 | `system/views/auth/verify_code.py` check 配置接口                                                    | 用户侧（登录/注册/重置发码）     | **已修复**      | 业务校验改抛 `ValidateError`（APIException 子类）按原文案透传；非预期异常返回通用文案并记录日志      |
-| `system/utils/auth.py` 登录失败提示                                                                    | 用户侧登录限流提示           | 保留           | `error=str(e)` 内容为登录校验的业务文案（如"用户名或密码错误"），非内部信息                      |
+| `system/utils/identity/auth.py` 登录失败提示                                                                    | 用户侧登录限流提示           | 保留           | `error=str(e)` 内容为登录校验的业务文案（如"用户名或密码错误"），非内部信息                      |
 | `settings/views/email.py` 测试邮件接口                                                                 | 超管诊断接口              | 保留 + 已有日志    | SMTP 报错是诊断能力的一部分，接口仅超管可达                                            |
 | `settings/views/sms.py` 测试短信接口                                                                   | 超管诊断接口              | 保留 + **补日志** | 同上，新增 `logger.warning`                                              |
 | `common/api/common.py` healthz 探测                                                                | 运维健康检查              | 保留           | 返回给 healthz 状态字段，含探测错误便于定位                                          |

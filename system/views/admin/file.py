@@ -31,9 +31,8 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import FileAccessLog, UploadFile
 from system.serializers.upload import UploadFileSerializer
-from system.utils.dict import get_dict_items
-from system.utils.file_audit import log_file_access
-from system.utils.preview import (
+from system.utils.file.file_audit import log_file_access
+from system.utils.file.preview import (
     KIND_IMAGE,
     KIND_OFFICE,
     KIND_PDF,
@@ -47,9 +46,8 @@ from system.utils.preview import (
     read_text_preview,
     touch_preview_cache,
 )
-from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
-from system.utils.upload_category import UPLOAD_CATEGORY_DICT
-from system.utils.upload_store import (
+from system.utils.file.upload_category import UPLOAD_CATEGORY_DICT
+from system.utils.file.upload_store import (
     INVALID_CODE,
     UploadError,
     check_upload_limits,
@@ -57,6 +55,8 @@ from system.utils.upload_store import (
     invalidate_upload_stats_cache,
     store_upload_file,
 )
+from system.utils.platform.dict import get_dict_items
+from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 from system.views.admin.file_access import FileAccessActionMixin, inline_file_response
 from system.views.admin.file_chunk import ChunkUploadActionMixin
 
@@ -71,7 +71,7 @@ PREVIEW_PREPARING_CODE = 1006
 
 
 # 上传落库内核（扩展名/大小/配额校验、md5 去重、分类、存储）见
-# system/utils/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
+# system/utils/file/upload_store.py：聊天室附件等业务上传入口复用同一套安全策略，
 # 避免两处规则各自演化；本模块的 upload / stats 响应口径不变。
 
 
@@ -339,7 +339,7 @@ class UploadFileViewSet(
         """上传文件"""
 
         files = request.FILES.getlist("file", [])
-        # 先全量校验再统一落库（内核见 system/utils/upload_store.py）：任一文件不合规
+        # 先全量校验再统一落库（内核见 system/utils/file/upload_store.py）：任一文件不合规
         # 直接返回错误（1002/1003/1004 且不落盘），避免多文件上传时「前面的已落库、
         # 后面的被拒」造成部分写入
         try:

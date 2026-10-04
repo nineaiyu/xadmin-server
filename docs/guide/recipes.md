@@ -224,7 +224,7 @@ def clean_xxx_job(): ...
 
 ### R18 对外投递 Webhook 事件
 
-1. 事件登记：`system/utils/webhook.py::EVENT_CATALOG` 加工件条目（含 label 与 payload 契约说明；契约有守护测试）；
+1. 事件登记：`system/utils/task/webhook.py::EVENT_CATALOG` 加工件条目（含 label 与 payload 契约说明；契约有守护测试）；
 2. 发射：业务终态处调 `emit_webhook_event("crm.customer.created", {"pk": ..., "name": ...})`（**唯一发射口**：吞异常、不阻断业务）；
 3. 订阅方在「集成 → Webhook 订阅」页配置；投递记录在「投递审计」查询（签名 HMAC-SHA256 + 指数退避重试 + 耗尽告警）；
 4. 新增事件的 payload 只放摘要字段，敏感数据不放事件体。

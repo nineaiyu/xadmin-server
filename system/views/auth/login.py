@@ -31,8 +31,8 @@ from settings.services import (
     is_password_expired,
 )
 from system.models import UserInfo, UserLoginLog
-from system.utils.account_expiry import ACCOUNT_EXPIRED_MESSAGE, is_account_expired
-from system.utils.auth import (
+from system.utils.identity.account_expiry import ACCOUNT_EXPIRED_MESSAGE, is_account_expired
+from system.utils.identity.auth import (
     ValidateError,
     check_different_city_login_if_need,
     check_is_block,
@@ -42,7 +42,7 @@ from system.utils.auth import (
     save_login_log,
     verify_sms_email_code,
 )
-from system.utils.session import bind_session_claim, register_user_session
+from system.utils.identity.session import bind_session_claim, register_user_session
 
 logger = get_logger(__name__)
 
@@ -93,7 +93,7 @@ def login_failed(request, username):
     request.user = UserInfo.objects.filter(username=username).first()
     save_login_log(request, status=False)
     # 出站 Webhook：登录失败事件
-    from system.utils.webhook import emit_webhook_event
+    from system.utils.task.webhook import emit_webhook_event
 
     emit_webhook_event("user.login_failed", {"username": username, "ip": get_request_ip(request)})
     login_block_util.incr_failed_count()
@@ -133,14 +133,14 @@ def login_success(request, user_obj, login_type=UserLoginLog.LoginTypeChoices.US
         return
     request.user = user_obj
     # 出站 Webhook：登录成功事件（emit 全程吞异常）
-    from system.utils.webhook import emit_webhook_event
+    from system.utils.task.webhook import emit_webhook_event
 
     emit_webhook_event("user.login_succeeded", {"username": user_obj.username, "ip": ipaddr})
     check_different_city_login_if_need(user_obj, ipaddr)
     if login_type != UserLoginLog.LoginTypeChoices.WEBSOCKET:
         # 新设备/新 IP/新城市登录提醒（默认关闭；内部全吞异常，绝不影响登录）。
         # WS 接入不触发：页面伴随登录已提醒过，WS 再提醒只制造重复噪音（计划登记边界）
-        from system.utils.login_alert import maybe_alert_abnormal_login
+        from system.utils.identity.login_alert import maybe_alert_abnormal_login
 
         maybe_alert_abnormal_login(
             user_obj,
@@ -158,7 +158,7 @@ def evaluate_login_policy_for_request(request, user_obj, ipaddr):
     命中结果写 ``request.login_policy_result``（由 save_login_log 落入登录日志）；
     reject 时调用方需自行记失败日志并返回可读文案（含策略名）。
     """
-    from system.utils.login_policy import evaluate_login_policy
+    from system.utils.identity.login_policy import evaluate_login_policy
 
     policy = evaluate_login_policy(user_obj, ipaddr)
     if policy.get("result"):

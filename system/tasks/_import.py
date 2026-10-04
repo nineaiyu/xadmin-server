@@ -15,7 +15,7 @@ from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
 from server.utils import set_current_request
-from system.utils.task_center import TaskCancelled, ensure_not_cancelled, mark_execution_revoked
+from system.utils.task.task_center import TaskCancelled, ensure_not_cancelled, mark_execution_revoked
 
 from ._export import EXPORT_MIME_TYPES
 
@@ -34,7 +34,7 @@ def _upload_import_error_report(record, user, column_titles, errors):
     from django.core.files.base import ContentFile
 
     from system.models.upload import UploadFile
-    from system.utils.import_report import build_error_report
+    from system.utils.task.import_report import build_error_report
 
     fd, tmp_path = tempfile.mkstemp(suffix=".xlsx")
     os.close(fd)
@@ -91,8 +91,8 @@ def run_async_import(record_id, view_path, user_pk):
     from system.models.import_ import ImportRecord
     from system.models.task import TaskExecution
     from system.models.user import UserInfo
-    from system.utils.import_progress import clear_import_progress
-    from system.utils.task_progress import KIND_IMPORT, update_progress
+    from system.utils.task.import_progress import clear_import_progress
+    from system.utils.task.task_progress import KIND_IMPORT, update_progress
 
     record = ImportRecord.objects.filter(pk=record_id).first()
     if record is None:

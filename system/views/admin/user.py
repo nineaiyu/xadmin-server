@@ -37,10 +37,10 @@ from notifications.message import SiteMessageUtil
 from settings.services import LoginBlockUtil
 from system.models import OperationLog, Post, UserInfo, UserOAuthBinding
 from system.serializers.user import ResetPasswordSerializer, UserSerializer
-from system.utils import user_invite
-from system.utils.impersonation import is_impersonating, start_impersonation
-from system.utils.modelset import ChangeRolePermissionAction, PermissionPreviewAction
-from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
+from system.utils.identity import user_invite
+from system.utils.identity.impersonation import is_impersonating, start_impersonation
+from system.utils.platform.modelset import ChangeRolePermissionAction, PermissionPreviewAction
+from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 logger = get_logger(__name__)
 

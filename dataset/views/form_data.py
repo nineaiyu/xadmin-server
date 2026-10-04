@@ -40,7 +40,7 @@ from dataset.serializers.dform import (
 )
 from dataset.utils.dform_filter import MaterializedFilterMixin
 from dataset.utils.dform_history import merged_fields
-from system.utils.user_options import search_user_options
+from system.utils.identity.user_options import search_user_options
 
 
 class FormDataFilter(MaterializedFilterMixin, BaseFilterSet):

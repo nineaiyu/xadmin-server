@@ -24,7 +24,7 @@ from common.utils import get_logger
 from common.utils.verify_code import TokenTempCache
 from mfa.services import check_user_mfa_code, send_user_mfa_code, validate_login_mfa_token
 from system.models import UserLoginLog
-from system.utils.auth import ValidateError, get_token_lifetime
+from system.utils.identity.auth import ValidateError, get_token_lifetime
 from system.views.auth.login import login_success
 
 logger = get_logger(__name__)
@@ -65,7 +65,7 @@ class LoginMFAPasskeyChallengeAPIView(APIView):
     )
     def post(self, request, *args, **kwargs):
         """获取 Passkey 挑战值"""
-        from system.utils.webauthn import SCENE_AUTHENTICATE, generate_challenge, rp_id_and_origin
+        from system.utils.identity.webauthn import SCENE_AUTHENTICATE, generate_challenge, rp_id_and_origin
 
         user = _get_mfa_user(request)
         rp_id, _origin = rp_id_and_origin(request)
@@ -150,7 +150,7 @@ class LoginMFAVerifyAPIView(APIView):
         # 会话登记 + sid claim 绑定（同账密/验证码登录；失败不影响登录主流程）
         session = None
         try:
-            from system.utils.session import bind_session_claim, register_user_session
+            from system.utils.identity.session import bind_session_claim, register_user_session
 
             session = register_user_session(request, user, UserLoginLog.LoginTypeChoices.USERNAME)
         except Exception:  # noqa: BLE001 会话管理属附加能力

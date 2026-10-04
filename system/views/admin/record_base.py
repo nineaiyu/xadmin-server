@@ -19,11 +19,11 @@ from common.base.magic import cache_response
 from common.core.response import ApiResponse
 from common.core.throttle import ExportImportThrottleMixin
 from common.storage import storage_exists, storage_open
-from system.utils.record_stats import (
+from system.utils.task.record_stats import (
     RECORD_STATS_CACHE_SECONDS,
     record_stats,
 )
-from system.utils.task_log import read_task_log_chunk
+from system.utils.task.task_log import read_task_log_chunk
 
 
 class RecordStatsMixin:
@@ -33,7 +33,7 @@ class RecordStatsMixin:
     """记录类视图的统计 action 公共实现（导出 / 导入 / 任务执行）。
 
     口径与缓存键集中在此，避免三处各自实现后漂移：
-    - 统计口径走 `system.utils.record_stats.record_stats` 纯函数；
+    - 统计口径走 `system.utils.task.record_stats.record_stats` 纯函数；
     - 10s 短缓存（与审批 pending-count 同范式），`?no_cache=1` 旁路由
       `MagicCacheResponse` 内建，无需各视图重复实现。
     """

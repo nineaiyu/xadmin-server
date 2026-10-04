@@ -156,7 +156,7 @@ class TestAuthorizeFlow:
 
     def test_legacy_plain_code_exchange_fails_closed(self, auth_client, superuser):
         """历史缓存中的 plain 授权码：兑换一律失败（不再按 plain 比对，fail-closed）。"""
-        from system.views import open_oauth
+        from system.views.open import open_oauth
 
         application = _create_application(auth_client)
         verifier = "legacy-plain-verifier"

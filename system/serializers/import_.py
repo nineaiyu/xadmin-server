@@ -88,7 +88,7 @@ class ImportRecordSerializer(BaseModelSerializer):
 
     def get_progress(self, obj):
         if obj.status == ImportRecord.Status.RUNNING:
-            from system.utils.import_progress import get_import_progress
+            from system.utils.task.import_progress import get_import_progress
 
             cached = get_import_progress(obj.pk)
             if cached is not None:

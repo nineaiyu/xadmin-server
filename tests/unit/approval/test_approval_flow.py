@@ -1083,7 +1083,7 @@ class TestNodeLimitAndBatchPaths:
 
         emitted = []
         monkeypatch.setattr(
-            "system.utils.webhook.emit_webhook_event", lambda event, data: emitted.append((event, data))
+            "system.utils.task.webhook.emit_webhook_event", lambda event, data: emitted.append((event, data))
         )
         notified = []
 

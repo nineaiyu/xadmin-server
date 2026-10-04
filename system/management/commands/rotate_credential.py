@@ -67,7 +67,7 @@ class Command(BaseCommand):
             return self._audit_only(keys, setting_keys)
 
         from system.models import SystemConfig
-        from system.utils.credential import rotate_setting, rotate_system_config
+        from system.utils.platform.credential import rotate_setting, rotate_system_config
 
         execute = bool(options.get("yes")) and not options.get("dry_run")
         rotated = skipped = 0

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""system.utils.auth 单元测试（token 生命周期、验证码校验）。"""
+"""system.utils.identity.auth 单元测试（token 生命周期、验证码校验）。"""
 
 import pytest
 from django.conf import settings
@@ -7,7 +7,7 @@ from rest_framework.exceptions import APIException
 
 from captcha.models import CaptchaStore
 from captcha.utils import CaptchaAuth
-from system.utils.auth import check_captcha, get_token_lifetime
+from system.utils.identity.auth import check_captcha, get_token_lifetime
 
 pytestmark = pytest.mark.django_db
 

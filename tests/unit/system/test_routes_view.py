@@ -161,12 +161,12 @@ class TestRoutesVersion:
 
 class TestGetRoutesVersionUnit:
     def test_stable_for_same_content(self):
-        from system.views.routes import get_routes_version
+        from system.views.user.routes import get_routes_version
 
         assert get_routes_version([{"path": "/a"}], ["auth1"]) == get_routes_version([{"path": "/a"}], ["auth1"])
 
     def test_sensitive_to_data_and_auths(self):
-        from system.views.routes import get_routes_version
+        from system.views.user.routes import get_routes_version
 
         base = get_routes_version([{"path": "/a"}], ["auth1"])
         assert get_routes_version([{"path": "/b"}], ["auth1"]) != base

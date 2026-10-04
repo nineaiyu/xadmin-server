@@ -16,8 +16,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from common.core.config import SysConfig
 from system.models import UploadFile
-from system.utils import preview as preview_module
-from system.utils.preview import (
+from system.utils.file import preview as preview_module
+from system.utils.file.preview import (
     KIND_OFFICE,
     PREVIEW_STATUS_READY,
     PREVIEW_STATUS_UNSUPPORTED,
@@ -111,7 +111,7 @@ def patch_config(monkeypatch, key, value):
 def patch_converter(monkeypatch, available=True):
     # 拆分后实现位于 office 子模块（包级导出仅再导出），补丁打在实现模块上
     monkeypatch.setattr(
-        "system.utils.preview.office.office_converter_bin",
+        "system.utils.file.preview.office.office_converter_bin",
         (lambda: "/usr/bin/soffice") if available else (lambda: None),
     )
 

@@ -80,7 +80,7 @@ class Command(BaseCommand):
         from ai.utils.ai_api_registry import API_ACTION_SPECS
         from ai.utils.ai_tool_triage import triage_for
         from common.swagger.ai_meta import normalize_path
-        from system.utils.permission_sync import build_route_index
+        from system.utils.identity.permission_sync import build_route_index
 
         routes = [route for route in build_route_index() if route.requires_permission]
         declared = {}

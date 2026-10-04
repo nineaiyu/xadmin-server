@@ -190,7 +190,7 @@ class ApiApplicationSerializer(BaseModelSerializer):
 
     def validate_callback_urls(self, value):
         """回调地址写入校验：https 强制（loopback http 例外），复用 webhook 同口径。"""
-        from system.utils.webhook import validate_url
+        from system.utils.task.webhook import validate_url
 
         if not isinstance(value, list):
             raise serializers.ValidationError(_("Callback urls must be a list"))
@@ -244,7 +244,7 @@ class ApiApplicationGrantSerializer(BaseModelSerializer):
         table_fields = ["model", "actions", "fields", "is_active", "created_time"]
 
     def validate(self, attrs):
-        from system.utils.api_grant import validate_grant_payload
+        from system.utils.identity.api_grant import validate_grant_payload
 
         instance = self.instance
         model_label = attrs.get("model", getattr(instance, "model", None))

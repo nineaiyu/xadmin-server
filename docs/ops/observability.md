@@ -420,7 +420,7 @@ libpq/Python `getaddrinfo` 真失败）；期间 server 陷入 migrate 失败的
 `ensure_connection`，DB 故障时 health 在请求入口直接 500 → health/metrics/csp-report 用官方
 `non_atomic_requests` 包装 URLconf callback；②**DB 半开快速失败**：`tcp_user_timeout=30s`
 （内核对未确认数据超时强制断开）+ keepalives 三件套 + 池 `timeout=5s`（取用等待上限）
-+ 池 `reconnect_timeout=10s`（失败重连调度）；③**字典读取降级**（`system/utils/dict.py`）：
++ 池 `reconnect_timeout=10s`（失败重连调度）；③**字典读取降级**（`system/utils/platform/dict.py`）：
 DB 故障返回空列表不阻断请求（读取点在 serializer 字段绑定/请求路径上，曾是"每请求 500"
 直接来源；失败不写缓存、恢复即重试）；④**日志格式器兜底**（`server/logging.py`）：无
 `user` 属性的请求不再崩溃（500 traceback 曾被 Logging error 吞掉）。配套：启动自检快速失败

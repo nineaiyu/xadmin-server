@@ -19,7 +19,7 @@
 
 from django.core.management.base import BaseCommand
 
-from system.utils import log_archive
+from system.utils.audit import log_archive
 
 _TABLE_FIELDS = {
     "operation": ("created_time", "module", "method", "path", "status_code", "object_pk", "creator_id"),

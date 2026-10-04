@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-"""AI 平台周期任务（自 system/tasks/__init__.py 与 system/utils/ctasks.py 随域迁出）。"""
+"""AI 平台周期任务（自 system/tasks/__init__.py 与 system/utils/task/ctasks.py 随域迁出）。"""
 
 from celery import shared_task
 

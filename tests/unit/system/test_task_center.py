@@ -12,8 +12,8 @@ from django.utils import timezone
 from system.models.export import ExportRecord
 from system.models.import_ import ImportRecord
 from system.models.task import TaskExecution
-from system.utils import task_center, task_center_unified
-from system.utils.task_center import (
+from system.utils.task import task_center, task_center_unified
+from system.utils.task.task_center import (
     TaskCancelled,
     cancel_record,
     clear_cancel,

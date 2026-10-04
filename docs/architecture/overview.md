@@ -69,7 +69,7 @@ class BookViewSet(BaseModelSet, ImportExportDataAction):
 | 菜单/API 权限 | 页面可达性 + 接口调用（method+path 正则匹配） | `common/core/permission.py` `IsAuthenticated`     | Menu(目录/菜单/按钮) ←→ UserRole / DeptInfo |
 | 数据权限      | 数据行可见范围（16 种规则，AND/OR 组合，可绑菜单） | `common/core/filter.py` `get_filter_queryset()`   | DataPermission.rules(JSON)            |
 | 字段权限      | 序列化字段可见性（角色×菜单维度）              | `common/core/serializers.py` `get_allow_fields()` | FieldPermission ←→ ModelLabelField    |
-| 应用级授权     | API 应用的模型×动作×字段×行收敛（仅 PAT 凭证） | `system/utils/api_grant.py`（三处挂载）              | ApiApplication.grant                  |
+| 应用级授权     | API 应用的模型×动作×字段×行收敛（仅 PAT 凭证） | `system/utils/identity/api_grant.py`（三处挂载）              | ApiApplication.grant                  |
 
 权限编码约定：`{action}:{ViewSetName}`（如 `create:UserViewSet`）；前端 `hasAuth()` / `<Auth>` 组件 /
 `getDefaultAuths()` 消费（无 `v-auth` 指令）。缓存失效由信号驱动（见 cache.md），变更即时生效。

@@ -13,7 +13,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.core.models import AutoCleanFileMixin, DbAuditModel, SoftDeleteModel, upload_directory_path
-from system.utils.preview import remove_preview_cache_by_pk
+from system.utils.file.preview import remove_preview_cache_by_pk
 
 # 非业务引用关系（related_name 口径）：审计 / 日志类关联表，不参与「附件是否在用」判定
 NON_BUSINESS_RELATIONS = {"access_logs"}
@@ -131,7 +131,7 @@ class UploadFile(SoftDeleteModel, AutoCleanFileMixin, DbAuditModel):
 
 
 class UploadSession(DbAuditModel):
-    """分片上传会话：大文件分片/断点续传协议的会话侧记录（协议见 system/utils/upload_chunk.py）。
+    """分片上传会话：大文件分片/断点续传协议的会话侧记录（协议见 system/utils/file/upload_chunk.py）。
 
     会话只承载「传输中」状态，不承载文件本体：分片写入存储的
     ``upload_sessions/<pk>/part-<index>``，完成时合并并经既有上传内核

@@ -19,7 +19,7 @@ from system.models import (
     UserInfo,
     UserRole,
 )
-from system.utils.dept_managers import DEPT_MANAGER_ROLE_CODE, sync_manager_assembly
+from system.utils.identity.dept_managers import DEPT_MANAGER_ROLE_CODE, sync_manager_assembly
 
 pytestmark = pytest.mark.django_db
 

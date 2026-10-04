@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from system.models.log import UserLoginLog
 from system.models.user import UserInfo
-from system.utils.login_alert import maybe_alert_abnormal_login
+from system.utils.identity.login_alert import maybe_alert_abnormal_login
 
 pytestmark = pytest.mark.django_db
 
@@ -143,7 +143,7 @@ def test_throttle_same_user_dimensions_once_per_day(superuser, alert_enabled):
 def test_exception_never_breaks_login(superuser, alert_enabled):
     """判定/发送链路任何异常全吞，绝不影响登录主流程。"""
     _login_history(superuser)
-    with mock.patch("system.utils.login_alert._detect_new_dimensions", side_effect=RuntimeError("boom")):
+    with mock.patch("system.utils.identity.login_alert._detect_new_dimensions", side_effect=RuntimeError("boom")):
         # 不抛异常即通过
         maybe_alert_abnormal_login(superuser, "8.8.8.8", "洛杉矶", "Firefox", "Windows")
 
@@ -154,7 +154,7 @@ def test_websocket_login_skips_alert(superuser, alert_enabled):
 
     _login_history(superuser)  # 新 IP/设备/城市本应全部命中
     request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
-    with mock.patch("system.utils.login_alert.maybe_alert_abnormal_login") as maybe_alert:
+    with mock.patch("system.utils.identity.login_alert.maybe_alert_abnormal_login") as maybe_alert:
         login_success(request, superuser, login_type=UserLoginLog.LoginTypeChoices.WEBSOCKET)
     maybe_alert.assert_not_called()
 
@@ -165,6 +165,6 @@ def test_http_login_triggers_alert(superuser, alert_enabled):
 
     _login_history(superuser)
     request = RequestFactory().post("/api/system/user/login", REMOTE_ADDR="8.8.8.8", HTTP_USER_AGENT="Mozilla/5.0")
-    with mock.patch("system.utils.login_alert.maybe_alert_abnormal_login", autospec=True) as maybe_alert:
+    with mock.patch("system.utils.identity.login_alert.maybe_alert_abnormal_login", autospec=True) as maybe_alert:
         login_success(request, superuser, login_type=UserLoginLog.LoginTypeChoices.USERNAME)
     maybe_alert.assert_called_once()

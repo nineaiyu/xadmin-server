@@ -21,8 +21,8 @@ from common.core.throttle import RegisterThrottle
 from common.swagger.utils import get_default_response_schema
 from settings.services import RegisterBlockUtil, check_leak_password, check_password_rules, record_password_hash
 from system.models import DeptInfo, UserInfo, UserLoginLog
-from system.utils.auth import get_token_lifetime, save_login_log, verify_sms_email_code
-from system.utils.session import bind_session_claim, register_user_session
+from system.utils.identity.auth import get_token_lifetime, save_login_log, verify_sms_email_code
+from system.utils.identity.session import bind_session_claim, register_user_session
 
 
 class RegisterViewAPIView(GenericAPIView):

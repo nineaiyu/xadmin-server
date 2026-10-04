@@ -20,8 +20,8 @@ from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from system.models import DeptInfo, UserInfo
 from system.serializers.department import DeptManagerAssignSerializer, DeptSerializer
-from system.utils.dept_managers import assign_dept_managers
-from system.utils.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction, DeptPreviewAction
+from system.utils.identity.dept_managers import assign_dept_managers
+from system.utils.platform.modelset import AnnotateUserCountMixin, ChangeRolePermissionAction, DeptPreviewAction
 
 logger = get_logger(__name__)
 
@@ -93,10 +93,10 @@ class DeptViewSet(
     def user_options(self, request, *args, **kwargs):
         """管理员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
-        与选人控件同源（system/utils/user_options.py）；权限与 list 同口径
+        与选人控件同源（system/utils/identity/user_options.py）；权限与 list 同口径
         （框架 shared_list 注册表，无需新增权限点）。
         """
-        from system.utils.user_options import search_user_options
+        from system.utils.identity.user_options import search_user_options
 
         data = search_user_options(
             keyword=request.query_params.get("keyword", ""),

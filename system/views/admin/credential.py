@@ -20,7 +20,7 @@ from rest_framework.viewsets import GenericViewSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from system.models import SystemConfig
-from system.utils.credential import (
+from system.utils.platform.credential import (
     NOT_ROTATABLE_DETAIL,
     credential_overview,
     regenerate_system_config,

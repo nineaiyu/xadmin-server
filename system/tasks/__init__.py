@@ -25,7 +25,7 @@ from common.celery.decorator import register_as_period_task
 from common.celery.utils import get_celery_task_log_path
 from common.utils import get_logger
 from system.models.task import TaskExecution
-from system.utils.ctasks import (
+from system.utils.task.ctasks import (
     auto_clean_black_token,
     auto_clean_operation_log,
     auto_clean_preview_cache,
@@ -59,7 +59,7 @@ def auto_clean_black_token_job():
 @register_as_period_task(crontab="0 8 * * *")
 def account_expiry_job():
     """账号有效期维护：到期前 N 天提醒（站内信 + 邮件），到期自动停用。"""
-    from system.utils.account_expiry import disable_expired_accounts, notify_expiring_accounts
+    from system.utils.identity.account_expiry import disable_expired_accounts, notify_expiring_accounts
 
     notified = notify_expiring_accounts()
     disabled = disable_expired_accounts()
@@ -168,7 +168,7 @@ def auto_expire_user_session_job():
     WS 会话不在此列：其在线判定由 channel 存活决定，优雅断开由 WS logout
     钩子标记，异常残留由 auto_clean_user_session_job 按保留期回收。
     """
-    from system.utils.session import expire_stale_sessions
+    from system.utils.identity.session import expire_stale_sessions
 
     count = expire_stale_sessions()
     if count:
@@ -180,7 +180,7 @@ def auto_expire_user_session_job():
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_user_session_job():
     """删除超过保留期的会话记录（USER_SESSION_RETENTION_DAYS，默认 30 天）。"""
-    from system.utils.session import clean_expired_sessions
+    from system.utils.identity.session import clean_expired_sessions
 
     removed = clean_expired_sessions()
     if removed:
@@ -192,7 +192,7 @@ def auto_clean_user_session_job():
 @register_as_period_task(crontab="6 3 * * *")
 def auto_clean_upload_sessions_job():
     """清理过期分片上传会话（分片文件 + 会话行；断点续传「传到一半放弃」的兜底）。"""
-    from system.utils.upload_chunk import auto_clean_upload_sessions
+    from system.utils.file.upload_chunk import auto_clean_upload_sessions
 
     return auto_clean_upload_sessions(clean_day=1)
 
@@ -222,7 +222,7 @@ def convert_office_preview_task(upload_pk):
     from django.core.cache import cache
 
     from system.models import UploadFile
-    from system.utils.preview import convert_office_to_pdf
+    from system.utils.file.preview import convert_office_to_pdf
 
     try:
         upload = UploadFile.all_objects.filter(pk=upload_pk).first()
@@ -250,7 +250,7 @@ def async_export_data_task(self, record_id, view_path, query_params, user_pk):
 @register_as_period_task(crontab="23 4 * * *")
 def scan_account_risk_job():
     """账号安全风险巡检：弱项巡检一次，产出/刷新待处置风险清单。"""
-    from system.utils.account_risk import scan_account_risks
+    from system.utils.identity.account_risk import scan_account_risks
 
     return scan_account_risks()
 
@@ -259,7 +259,7 @@ def scan_account_risk_job():
 @register_as_period_task(crontab="12 3 * * *")
 def auto_clean_file_access_log_job():
     """清理超过保留期的文件访问日志（FILE_ACCESS_LOG_KEEP_DAYS，0 = 不清理）。"""
-    from system.utils.file_audit import clean_expired_file_access_logs
+    from system.utils.file.file_audit import clean_expired_file_access_logs
 
     return clean_expired_file_access_logs()
 

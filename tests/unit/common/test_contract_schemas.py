@@ -18,7 +18,7 @@ from rest_framework.utils import encoders
 from demo.views import BookViewSet
 from message.base import AsyncJsonWebsocket
 from message.protocol import MessageAction
-from system.views.routes import UserRoutesAPIView
+from system.views.user.routes import UserRoutesAPIView
 
 pytestmark = pytest.mark.django_db
 

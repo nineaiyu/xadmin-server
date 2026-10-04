@@ -18,7 +18,7 @@ from rest_framework import serializers
 from common.core.fields import DictChoiceField
 from common.core.serializers import BaseModelSerializer, BasePrimaryKeyRelatedField
 from system.models.task import TaskExecution
-from system.utils.task_center import ACTIVE_STATUSES
+from system.utils.task.task_center import ACTIVE_STATUSES
 
 # celery crontab_parser 各字段的取值跨度（min-max 由 parser 按 steps 推导）
 _CRONTAB_STEPS = {
@@ -192,7 +192,7 @@ def _validate_task_runnable(name) -> str:
     不设白名单等于把任务执行权完全暴露给管理面；执行侧（run/batch-run）另有
     同口径拦截，只挡写入不挡执行会让存量任务绕过。
     """
-    from system.utils.task_whitelist import is_task_runnable
+    from system.utils.task.task_whitelist import is_task_runnable
 
     name = str(name or "").strip()
     if not name:

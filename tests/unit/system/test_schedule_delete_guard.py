@@ -11,7 +11,7 @@ import pytest
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from system.views.task_periodic import CrontabScheduleViewSet, IntervalScheduleViewSet
+from system.views.task.task_periodic import CrontabScheduleViewSet, IntervalScheduleViewSet
 
 pytestmark = pytest.mark.django_db
 

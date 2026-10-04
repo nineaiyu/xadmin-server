@@ -65,7 +65,7 @@ class Command(BaseCommand):
             if not UserInfo.objects.exists():
                 self.stdout.write("      数据库尚未初始化，跳过（先执行 python utils/init_data.py）")
                 return
-            from system.utils import permission_sync as sync
+            from system.utils.identity import permission_sync as sync
 
             gaps = sync.scan_permission_gaps()
             if gaps:

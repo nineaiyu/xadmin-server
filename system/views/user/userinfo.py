@@ -25,7 +25,7 @@ from settings.services import ResetBlockUtil
 from system.models import UserInfo
 from system.notifications import ResetPasswordSuccessMsg
 from system.serializers.userinfo import ChangePasswordSerializer, UserInfoSerializer
-from system.utils.auth import verify_sms_email_code
+from system.utils.identity.auth import verify_sms_email_code
 
 logger = get_logger(__name__)
 
@@ -55,7 +55,7 @@ class UserInfoViewSet(DetailUpdateModelSet, ChoicesAction, UploadFileAction):
             payload["must_change_password"] = bool(getattr(request.user, "must_change_password", False))
             # 用户模拟态：随用户信息下发发起人摘要（前端据此渲染「模拟用户中」横幅；
             # 硬刷新后横幅不丢——状态跟 token 走，不落在前端本地存储）
-            from system.utils.impersonation import get_impersonator_pk
+            from system.utils.identity.impersonation import get_impersonator_pk
 
             imp_pk = get_impersonator_pk(request)
             if imp_pk:

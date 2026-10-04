@@ -25,7 +25,7 @@ from settings.services import (
 )
 from system.models import UserInfo
 from system.models.ldap import LdapUserBinding
-from system.utils.auth import verify_sms_email_code
+from system.utils.identity.auth import verify_sms_email_code
 
 
 class ResetPasswordAPIView(GenericAPIView):

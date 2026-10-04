@@ -179,8 +179,8 @@ def serialize_user_info(user) -> dict:
 
 
 def register_user_session(request, user, login_type, channel_name=""):
-    """登录/WS 接入时登记会话（system.utils.session 契约导出，供 message app 使用）。"""
-    from system.utils.session import register_user_session as _register
+    """登录/WS 接入时登记会话（system.utils.identity.session 契约导出，供 message app 使用）。"""
+    from system.utils.identity.session import register_user_session as _register
 
     return _register(request, user, login_type, channel_name=channel_name)
 
@@ -205,8 +205,8 @@ def websocket_session_logout(channel_name):
 
 
 def emit_webhook_event(event, payload):
-    """出站 Webhook 事件投递（system.utils.webhook 契约导出）。"""
-    from system.utils.webhook import emit_webhook_event as _emit
+    """出站 Webhook 事件投递（system.utils.task.webhook 契约导出）。"""
+    from system.utils.task.webhook import emit_webhook_event as _emit
 
     return _emit(event, payload)
 
@@ -226,91 +226,91 @@ def publish_api_quota_warning(info):
 
 
 def apply_grant_fields(request, model_label, allowed):
-    """应用凭证字段授权：可见字段收敛（system.utils.api_grant 契约导出）。"""
-    from system.utils.api_grant import apply_grant_fields as _apply
+    """应用凭证字段授权：可见字段收敛（system.utils.identity.api_grant 契约导出）。"""
+    from system.utils.identity.api_grant import apply_grant_fields as _apply
 
     return _apply(request, model_label, allowed)
 
 
 def apply_grant_row_scope(request, queryset):
-    """应用凭证行级授权：queryset 收敛（system.utils.api_grant 契约导出）。"""
-    from system.utils.api_grant import apply_grant_row_scope as _apply
+    """应用凭证行级授权：queryset 收敛（system.utils.identity.api_grant 契约导出）。"""
+    from system.utils.identity.api_grant import apply_grant_row_scope as _apply
 
     return _apply(request, queryset)
 
 
 def application_of_request(request):
-    """请求关联的应用凭证（system.utils.api_grant 契约导出）。"""
-    from system.utils.api_grant import application_of_request as _resolve
+    """请求关联的应用凭证（system.utils.identity.api_grant 契约导出）。"""
+    from system.utils.identity.api_grant import application_of_request as _resolve
 
     return _resolve(request)
 
 
 def enforce_application_grant(request, view):
-    """应用凭证权限点校验（system.utils.api_grant 契约导出）。"""
-    from system.utils.api_grant import enforce_application_grant as _enforce
+    """应用凭证权限点校验（system.utils.identity.api_grant 契约导出）。"""
+    from system.utils.identity.api_grant import enforce_application_grant as _enforce
 
     return _enforce(request, view)
 
 
 def resolve_request_menu_pk(request):
-    """按请求路径解析应用凭证菜单（system.utils.api_grant 契约导出）。"""
-    from system.utils.api_grant import resolve_request_menu_pk as _resolve
+    """按请求路径解析应用凭证菜单（system.utils.identity.api_grant 契约导出）。"""
+    from system.utils.identity.api_grant import resolve_request_menu_pk as _resolve
 
     return _resolve(request)
 
 
 def apply_mask(value, rule):
-    """按掩码规则脱敏单值（system.utils.mask 契约导出）。"""
-    from system.utils.mask import apply_mask as _apply
+    """按掩码规则脱敏单值（system.utils.audit.mask 契约导出）。"""
+    from system.utils.audit.mask import apply_mask as _apply
 
     return _apply(value, rule)
 
 
 def get_mask_rules(model_label):
-    """取模型掩码规则（system.utils.mask 契约导出）。"""
-    from system.utils.mask import get_mask_rules as _get
+    """取模型掩码规则（system.utils.audit.mask 契约导出）。"""
+    from system.utils.audit.mask import get_mask_rules as _get
 
     return _get(model_label)
 
 
 def record_original_channel_access(request, user, model_label=None):
-    """掩码通道明文访问审计（system.utils.mask 契约导出）。"""
-    from system.utils.mask import record_original_channel_access as _record
+    """掩码通道明文访问审计（system.utils.audit.mask 契约导出）。"""
+    from system.utils.audit.mask import record_original_channel_access as _record
 
     return _record(request, user, model_label)
 
 
 def ensure_impact_confirmed(view, request, instances=None, queryset=None):
-    """删除影响面确认校验（system.utils.impact 契约导出）。"""
-    from system.utils.impact import ensure_impact_confirmed as _ensure
+    """删除影响面确认校验（system.utils.audit.impact 契约导出）。"""
+    from system.utils.audit.impact import ensure_impact_confirmed as _ensure
 
     return _ensure(view, request, instances=instances, queryset=queryset)
 
 
 def impact_for_many(objects) -> dict:
-    """批量影响面预览（system.utils.impact 契约导出）。"""
-    from system.utils.impact import impact_for_many as _impact
+    """批量影响面预览（system.utils.audit.impact 契约导出）。"""
+    from system.utils.audit.impact import impact_for_many as _impact
 
     return _impact(objects)
 
 
 def guarded_models() -> set:
-    """登记影响面保护的模型清单（system.utils.impact 契约导出）。"""
-    from system.utils.impact import guarded_models as _guarded
+    """登记影响面保护的模型清单（system.utils.audit.impact 契约导出）。"""
+    from system.utils.audit.impact import guarded_models as _guarded
 
     return _guarded()
 
 
 def sync_model_field():
-    """模型字段权限树同步（system.utils.modelfield 契约导出）。"""
-    from system.utils.modelfield import sync_model_field as _sync
+    """模型字段权限树同步（system.utils.platform.modelfield 契约导出）。"""
+    from system.utils.platform.modelfield import sync_model_field as _sync
 
     return _sync()
 
 
 def scan_permission_gaps():
-    """权限点缺口扫描（system.utils.permission_sync 契约导出）。"""
-    from system.utils.permission_sync import scan_permission_gaps as _scan
+    """权限点缺口扫描（system.utils.identity.permission_sync 契约导出）。"""
+    from system.utils.identity.permission_sync import scan_permission_gaps as _scan
 
     return _scan()

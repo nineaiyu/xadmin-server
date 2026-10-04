@@ -15,7 +15,7 @@ from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 from common.utils import get_logger
 from mfa.cache import UserConfirmStateCache
-from system.utils.impersonation import (
+from system.utils.identity.impersonation import (
     blacklist_impersonated_refresh,
     is_impersonating,
     stop_impersonation,

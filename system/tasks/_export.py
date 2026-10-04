@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from common.core.task_request import bind_view_task_context, build_task_request
 from common.utils import get_logger
 from common.utils.timezone import local_now_display
-from system.utils.task_center import TaskCancelled, mark_execution_revoked
+from system.utils.task.task_center import TaskCancelled, mark_execution_revoked
 
 logger = get_logger(__name__)
 
@@ -48,7 +48,7 @@ def _save_progress(record, percent, stage=""):
 
     终态由任务结束分支覆盖（终态 100 不做取消检查，避免已完成的导出被翻成取消）。
     """
-    from system.utils.task_progress import KIND_EXPORT, update_progress
+    from system.utils.task.task_progress import KIND_EXPORT, update_progress
 
     update_progress(KIND_EXPORT, record.pk, percent, stage=stage)
     # 同步调用方内存对象（后续分支可能基于 record 继续 save）

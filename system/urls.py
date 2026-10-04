@@ -52,37 +52,37 @@ from system.views.auth.reset import ResetPasswordAPIView
 from system.views.auth.rule import PasswordRulesAPIView
 from system.views.auth.token import CaptchaAPIView, RefreshTokenAPIView, TempTokenAPIView
 from system.views.auth.verify_code import SendVerifyCodeAPIView
-from system.views.configs import ConfigsViewSet
-from system.views.dashboard import DashboardViewSet
-from system.views.directory import DirectoryViewSet
-from system.views.modules import SystemModuleViewSet
-from system.views.monitor import MonitorViewSet
-from system.views.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
-from system.views.open_oauth import (
+from system.views.open.open import ApiApplicationTokenAPIView, ApiApplicationViewSet
+from system.views.open.open_oauth import (
     OpenOAuthApproveAPIView,
     OpenOAuthAuthorizeAPIView,
     OpenOAuthRevokeAPIView,
     OpenOAuthTokenAPIView,
 )
-from system.views.routes import UserRoutesAPIView
+from system.views.platform.dashboard import DashboardViewSet
+from system.views.platform.modules import SystemModuleViewSet
+from system.views.platform.monitor import MonitorViewSet
+from system.views.platform.tag import TagViewSet
 from system.views.search.dept import SearchDeptViewSet
 from system.views.search.global_search import GlobalSearchAPIView
 from system.views.search.menu import SearchMenuViewSet
 from system.views.search.post import SearchPostViewSet
 from system.views.search.role import SearchRoleViewSet
 from system.views.search.user import SearchUserViewSet
-from system.views.tag import TagViewSet
-from system.views.task import (
+from system.views.task.task import (
     CrontabScheduleViewSet,
     IntervalScheduleViewSet,
     PeriodicTaskViewSet,
     TaskExecutionViewSet,
 )
-from system.views.task_center import SystemTaskCenterViewSet
+from system.views.task.task_center import SystemTaskCenterViewSet
+from system.views.task.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
+from system.views.user.configs import ConfigsViewSet
+from system.views.user.directory import DirectoryViewSet
 from system.views.user.login_log import UserLoginLogViewSet
+from system.views.user.routes import UserRoutesAPIView
 from system.views.user.token import PersonalAccessTokenViewSet
 from system.views.user.userinfo import UserInfoViewSet
-from system.views.webhook import WebhookDeliveryViewSet, WebhookSubscriptionViewSet
 
 app_name = "system"
 

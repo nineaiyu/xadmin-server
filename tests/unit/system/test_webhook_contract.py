@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.webhook import EVENT_CATALOG, emit_webhook_event, encrypt_secret
+from system.utils.task.webhook import EVENT_CATALOG, emit_webhook_event, encrypt_secret
 
 pytestmark = pytest.mark.django_db
 
@@ -44,7 +44,7 @@ class TestEventContract:
 
         import approval.utils.approval as approval_module
         import approval.utils.approval_flow as flow_module
-        import system.utils.webhook as webhook_module
+        import system.utils.task.webhook as webhook_module
 
         original = webhook_module.emit_webhook_event
         webhook_module.emit_webhook_event = fake_emit

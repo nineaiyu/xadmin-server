@@ -13,7 +13,7 @@ class SystemConfig(AppConfig):
         # 获得字典读取能力（带缓存 + 变更信号失效），common 保持零业务依赖
         from common.core.fields import register_dict_items_resolver
 
-        from .utils.dict import get_dict_items
+        from .utils.platform.dict import get_dict_items
 
         register_dict_items_resolver(get_dict_items)
 

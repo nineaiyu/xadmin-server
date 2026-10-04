@@ -27,8 +27,8 @@
 
 | 缓存内容      | 位置                                          | TTL                            | 说明                 |
 |-----------|---------------------------------------------|--------------------------------|--------------------|
-| 用户路由菜单    | `system/views/routes.py::UserRoutesAPIView` | 24h                            | 与权限映射同步失效          |
-| 面板统计卡片 ×N | `system/views/dashboard.py`                 | 60s                            | 短 TTL 吞吐保护，允许分钟级延迟 |
+| 用户路由菜单    | `system/views/user/routes.py::UserRoutesAPIView` | 24h                            | 与权限映射同步失效          |
+| 面板统计卡片 ×N | `system/views/platform/dashboard.py`                 | 60s                            | 短 TTL 吞吐保护，允许分钟级延迟 |
 | 导出数据      | —                                           | `request.no_cache = True` 强制绕过 | 导出必须实时             |
 
 规范：响应缓存只用于「读多写少 + 按用户隔离」的 GET；写路径接口禁止使用；

@@ -197,7 +197,7 @@ class TestPasskeyBackend:
         def raise_value_error(**kwargs):
             raise ValueError("bad signature")
 
-        monkeypatch.setattr("system.utils.webauthn.verify_assertion", raise_value_error)
+        monkeypatch.setattr("system.utils.identity.webauthn.verify_assertion", raise_value_error)
         ok, err = PasskeyBackend(normal_user, request=self._request()).check_code(
             json.dumps({"credential_id": "cred-1"})
         )
@@ -209,7 +209,7 @@ class TestPasskeyBackend:
         def raise_runtime_error(**kwargs):
             raise RuntimeError("kaboom")
 
-        monkeypatch.setattr("system.utils.webauthn.verify_assertion", raise_runtime_error)
+        monkeypatch.setattr("system.utils.identity.webauthn.verify_assertion", raise_runtime_error)
         ok, err = PasskeyBackend(normal_user, request=self._request()).check_code(
             json.dumps({"credential_id": "cred-2"})
         )

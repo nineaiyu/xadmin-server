@@ -212,21 +212,21 @@ class TestMenuMatchBoundary:
     """菜单解析的段边界口径（对抗性）：不得跨字符粘连、不得漏覆盖子路径。"""
 
     def test_no_cross_char_prefix_match(self):
-        from system.utils.api_grant import _match_menu_pk
+        from system.utils.identity.api_grant import _match_menu_pk
 
         data = {"api/system/user": "pk-a"}
         assert _match_menu_pk(data, "/api/system/userfoo") is None
         assert _match_menu_pk(data, "/api/system/user-exports") is None
 
     def test_segment_prefix_covers_children(self):
-        from system.utils.api_grant import _match_menu_pk
+        from system.utils.identity.api_grant import _match_menu_pk
 
         data = {"api/system/user": "pk-a"}
         assert _match_menu_pk(data, "/api/system/user") == "pk-a"
         assert _match_menu_pk(data, "/api/system/user/1") == "pk-a"
 
     def test_exact_anchor_keeps_exact_semantics(self):
-        from system.utils.api_grant import _match_menu_pk
+        from system.utils.identity.api_grant import _match_menu_pk
 
         data = {"api/system/user$": "pk-a"}
         assert _match_menu_pk(data, "/api/system/user") == "pk-a"
@@ -238,7 +238,7 @@ class TestMenuMatchBoundary:
 
         from common.core.permission import get_menu_pk
         from system.models import Menu
-        from system.utils.api_grant import resolve_request_menu_pk
+        from system.utils.identity.api_grant import resolve_request_menu_pk
 
         menu_factory("list:SystemUser", path="api/system/user", method="GET")
         menu_factory("list:SystemDept", path="api/system/dept$", method="GET")
@@ -271,7 +271,7 @@ class TestMenuPathCache:
         from django.db import connection
         from django.test.utils import CaptureQueriesContext
 
-        from system.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+        from system.utils.identity.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
         menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
         invalid_menu_path_cache()  # 清掉工厂创建期间可能写入的缓存
@@ -286,7 +286,7 @@ class TestMenuPathCache:
         assert len(second_ctx.captured_queries) == 0  # 第二次命中缓存
 
     def test_method_dimension_is_independent(self, menu_factory):
-        from system.utils.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
+        from system.utils.identity.api_grant import invalid_menu_path_cache, resolve_request_menu_pk
 
         menu_factory("list:SystemUser", path="api/system/user$", method="GET")
         invalid_menu_path_cache()
@@ -295,7 +295,7 @@ class TestMenuPathCache:
         assert resolve_request_menu_pk(self._request("/api/system/user", "POST")) is None
 
     def test_menu_change_signal_invalidates_cache(self, menu_factory):
-        from system.utils.api_grant import resolve_request_menu_pk
+        from system.utils.identity.api_grant import resolve_request_menu_pk
 
         request = self._request("/api/system/user")
         assert resolve_request_menu_pk(request) is None  # 空映射同样入缓存
@@ -304,15 +304,15 @@ class TestMenuPathCache:
         assert resolve_request_menu_pk(request) == menu.pk
 
     def test_cache_failure_falls_back_to_query(self, menu_factory, monkeypatch):
-        from system.utils.api_grant import resolve_request_menu_pk
+        from system.utils.identity.api_grant import resolve_request_menu_pk
 
         menu = menu_factory("list:SystemUser", path="api/system/user$", method="GET")
 
         def boom(*args, **kwargs):
             raise RuntimeError("cache down")
 
-        monkeypatch.setattr("system.utils.api_grant.cache.get", boom)
-        monkeypatch.setattr("system.utils.api_grant.cache.set", boom)
+        monkeypatch.setattr("system.utils.identity.api_grant.cache.get", boom)
+        monkeypatch.setattr("system.utils.identity.api_grant.cache.set", boom)
         assert resolve_request_menu_pk(self._request("/api/system/user")) == menu.pk
 
 

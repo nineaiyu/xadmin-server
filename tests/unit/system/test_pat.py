@@ -548,7 +548,7 @@ class TestScopeAnchoring:
 
     def test_scope_display_value_readable_forms(self):
         """展示形态还原（仅展示层，判定语义不变）。"""
-        from system.utils.pat_scope import scope_display_value
+        from system.utils.identity.pat_scope import scope_display_value
 
         assert scope_display_value("GET ^/api/system/user/?$") == "GET /api/system/user"
         assert scope_display_value("^(?:/api/system/user)(/.*)?$") == "/api/system/user"
@@ -599,7 +599,7 @@ class TestScopeAnchoring:
         from rest_framework.test import APIRequestFactory, force_authenticate
 
         from system.models.token import ApiApplication
-        from system.views.open import ApiApplicationViewSet
+        from system.views.open.open import ApiApplicationViewSet
 
         request = APIRequestFactory().post(
             "/api/system/api-applications",

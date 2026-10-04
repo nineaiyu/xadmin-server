@@ -175,7 +175,7 @@ def test_decode_role_ids_and_exclude(normal_user, role):
             },
         ],
     )
-    from system.utils.permission_preview import decode_data_permission
+    from system.utils.identity.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == role.name
@@ -192,7 +192,7 @@ def test_decode_single_rule_forced_or(normal_user):
         mode_type=ModeTypeAbstract.ModeChoices.AND,
         rules=[{"table": "demo.book", "field": "name", "type": "value.text", "value": "x", "match": "exact"}],
     )
-    from system.utils.permission_preview import decode_data_permission
+    from system.utils.identity.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rule_text"].startswith("或模式")
@@ -208,7 +208,7 @@ def test_decode_all_ignored_in_and_mode(normal_user):
             {"table": "demo.book", "field": "isbn", "type": "value.text", "value": "x-1", "match": "exact"},
         ],
     )
-    from system.utils.permission_preview import decode_data_permission
+    from system.utils.identity.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == "且模式下被忽略"
@@ -227,7 +227,7 @@ def test_data_permission_dept_chain_grouping(normal_user, role, dept):
     normal_user.save()
     normal_user.rules.add(make_owner_book_permission("个人规则"))
 
-    from system.utils.permission_preview import get_user_data_permissions
+    from system.utils.identity.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert len(result["personal"]) == 1
@@ -374,7 +374,7 @@ def test_inactive_dept_grant_not_effective(normal_user, dept):
     normal_user.dept = dept
     normal_user.save()
 
-    from system.utils.permission_preview import get_user_data_permissions
+    from system.utils.identity.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert result["has_any_grant"] is False
@@ -394,7 +394,7 @@ def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
     normal_user.dept = dept
     normal_user.save()
 
-    from system.utils.permission_preview import get_user_data_permissions
+    from system.utils.identity.permission_preview import get_user_data_permissions
 
     result = get_user_data_permissions(normal_user)
     assert result["has_any_grant"] is False
@@ -405,7 +405,7 @@ def test_inactive_ancestor_dept_grant_not_effective(normal_user, dept):
 def test_menu_scoped_grant_flagged_not_general_effective(normal_user, menu_factory):
     """绑定菜单的授权仅在对应菜单上下文生效：标 menu_scoped，不计入通用 has_any_grant。"""
     from system.models import Menu
-    from system.utils.permission_preview import get_user_data_permissions
+    from system.utils.identity.permission_preview import get_user_data_permissions
 
     dp = make_owner_book_permission("绑定菜单规则")
     dp.menu.add(menu_factory(name="书籍列表", menu_type=Menu.MenuChoices.MENU))
@@ -646,7 +646,7 @@ def test_decode_dirty_value_falls_back(normal_user):
             {"table": "demo.book", "field": "name", "type": "value.table.role.ids", "value": "not-json", "match": "in"},
         ],
     )
-    from system.utils.permission_preview import decode_data_permission
+    from system.utils.identity.permission_preview import decode_data_permission
 
     decoded = decode_data_permission(dp, normal_user)
     assert decoded["rules"][0]["value_text"] == "not-json"

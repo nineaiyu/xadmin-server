@@ -18,7 +18,7 @@ from system.serializers.config import (
     UserPersonalConfigExportImportSerializer,
     UserPersonalConfigSerializer,
 )
-from system.utils.modelset import InvalidConfigCacheAction
+from system.utils.platform.modelset import InvalidConfigCacheAction
 
 logger = get_logger(__name__)
 

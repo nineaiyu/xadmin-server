@@ -31,9 +31,9 @@ from system.models import (
     UserRole,
 )
 from system.signal import approval_instance_finished, invalid_user_cache_signal
-from system.utils.api_grant import invalid_menu_path_cache
-from system.utils.dict import invalid_dict_cache
-from system.utils.mask import invalid_mask_cache
+from system.utils.audit.mask import invalid_mask_cache
+from system.utils.identity.api_grant import invalid_menu_path_cache
+from system.utils.platform.dict import invalid_dict_cache
 
 logger = get_logger(__name__)
 
@@ -306,7 +306,7 @@ def clean_tag_metadata_cache_handler(sender, instance, **kwargs):
     （内置标签同步）也走此信号，故挂模型而非视图。
     """
     from common.core.modelset.metadata import invalidate_metadata_payload_cache
-    from system.utils.tags import invalidate_tag_options_cache
+    from system.utils.platform.tags import invalidate_tag_options_cache
 
     invalidate_tag_options_cache()
     invalidate_metadata_payload_cache()

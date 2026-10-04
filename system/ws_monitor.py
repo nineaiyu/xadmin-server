@@ -7,7 +7,7 @@
 - panel：服务健康 / Redis / Celery / 慢请求 / 趋势，30s 一推（重采集），
   连接建立时立即推一帧兜底。
 
-与 HTTP action（system/views/monitor.py + system/utils/metrics.py）共用同一套
+与 HTTP action（system/views/platform/monitor.py + system/utils/platform/metrics.py）共用同一套
 采集函数，保证 WS 与 HTTP 两路口径一致。采集为阻塞调用，统一经
 database_sync_to_async 丢线程池执行，避免拖慢共享事件循环。
 
@@ -24,7 +24,7 @@ from channels.db import database_sync_to_async
 from common.utils import get_logger
 from message.base import AsyncJsonWebsocket
 from message.protocol import MessageAction
-from system.utils import metrics
+from system.utils.platform import metrics
 
 logger = get_logger(__name__)
 

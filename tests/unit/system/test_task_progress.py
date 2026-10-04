@@ -13,8 +13,8 @@ import pytest
 
 from system.models.export import ExportRecord
 from system.models.import_ import ImportRecord
-from system.utils.task_center import TaskCancelled
-from system.utils.task_progress import (
+from system.utils.task.task_center import TaskCancelled
+from system.utils.task.task_progress import (
     KIND_EXPORT,
     KIND_IMPORT,
     KIND_REPORT,
@@ -59,7 +59,7 @@ class TestUpdateProgress:
         assert record.progress == 100
 
     def test_import_running_uses_cache_channel(self):
-        from system.utils.import_progress import get_import_progress
+        from system.utils.task.import_progress import get_import_progress
 
         record = ImportRecord.objects.create(name="用户导入")
         update_progress(KIND_IMPORT, record.pk, 42)
@@ -80,7 +80,7 @@ class TestUpdateProgress:
         def _boom(record_id):
             raise TaskCancelled("用户取消")
 
-        monkeypatch.setattr("system.utils.task_center.ensure_not_cancelled", _boom)
+        monkeypatch.setattr("system.utils.task.task_center.ensure_not_cancelled", _boom)
         with pytest.raises(TaskCancelled):
             update_progress(KIND_EXPORT, record.pk, 50)
 
@@ -91,7 +91,7 @@ class TestUpdateProgress:
         def _boom(record_id):
             raise AssertionError("终态不应触发取消检查")
 
-        monkeypatch.setattr("system.utils.task_center.ensure_not_cancelled", _boom)
+        monkeypatch.setattr("system.utils.task.task_center.ensure_not_cancelled", _boom)
         assert update_progress(KIND_EXPORT, record.pk, 100) == 100
 
     def test_unknown_kind_warns_without_raise(self):

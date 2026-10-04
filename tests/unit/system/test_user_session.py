@@ -21,7 +21,7 @@ from common.core.auth import ServerAccessToken
 from message import utils as msg_utils
 from system.models import UserSession
 from system.models.log import UserLoginLog
-from system.utils.session import (
+from system.utils.identity.session import (
     bind_session_claim,
     clean_expired_sessions,
     expire_stale_sessions,

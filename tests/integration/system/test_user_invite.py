@@ -20,9 +20,9 @@ from django.core import mail
 from django.utils import timezone
 
 from system.models import UserInfo
-from system.utils import account_expiry, user_invite
-from system.utils.account_expiry import disable_expired_accounts, is_account_expired, notify_expiring_accounts
-from system.utils.auth import ValidateError
+from system.utils.identity import account_expiry, user_invite
+from system.utils.identity.account_expiry import disable_expired_accounts, is_account_expired, notify_expiring_accounts
+from system.utils.identity.auth import ValidateError
 from system.views.auth.login import login_success
 
 pytestmark = pytest.mark.django_db

@@ -19,7 +19,7 @@ from common.swagger.utils import get_default_response_schema
 from mfa.services import is_method_binding_allowed
 from system.models import UserPasskey
 from system.serializers.security import UserPasskeySerializer
-from system.utils.webauthn import (
+from system.utils.identity.webauthn import (
     SCENE_AUTHENTICATE,
     SCENE_REGISTER,
     b64url_encode,

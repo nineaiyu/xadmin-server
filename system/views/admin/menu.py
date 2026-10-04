@@ -30,8 +30,8 @@ from common.swagger.utils import get_default_response_schema
 from system.models import Menu, ModelLabelField
 from system.serializers.menu import MenuSerializer
 from system.signal_handler import clean_cache_handler, invalidate_menu_user_caches
-from system.utils import permission_sync as sync
-from system.utils.menu import get_view_permissions
+from system.utils.identity import permission_sync as sync
+from system.utils.platform.menu import get_view_permissions
 
 
 class MenuFilter(BaseFilterSet):

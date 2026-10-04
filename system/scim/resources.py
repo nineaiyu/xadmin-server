@@ -311,7 +311,7 @@ def _apply_patch_path(user, path: str, value) -> list:
 
 def deactivate_user(user, operator: str = "scim") -> int:
     """停用用户并踢掉全部会话（与在线用户强制下线同一链路）。"""
-    from system.utils.session import force_logout_user
+    from system.utils.identity.session import force_logout_user
 
     ensure_user_writable(user)
     if user.is_active:

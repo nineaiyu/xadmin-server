@@ -24,7 +24,7 @@ from common.utils.request import get_request_ip
 from common.utils.verify_code import SendAndVerifyCodeUtil, TokenTempCache
 from settings.services import LoginIpBlockUtil, SendVerifyCodeBlockUtil, get_password_check_rules
 from system.models import UserInfo
-from system.utils.auth import ValidateError, check_is_block, check_token_and_captcha
+from system.utils.identity.auth import ValidateError, check_is_block, check_token_and_captcha
 
 logger = get_logger(__name__)
 

@@ -18,7 +18,7 @@ from common.core.throttle import TempTokenThrottle
 from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ident
 from common.utils.token import make_token_cache
-from system.utils.auth import get_token_lifetime
+from system.utils.identity.auth import get_token_lifetime
 
 
 class TempTokenAPIView(GenericAPIView):

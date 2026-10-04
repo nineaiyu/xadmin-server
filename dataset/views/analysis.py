@@ -33,7 +33,7 @@ from dataset.ws_screen import (
     broadcast_screen_data_trigger,
     load_screen_state,
 )
-from system.utils.user_options import search_user_options
+from system.utils.identity.user_options import search_user_options
 
 _EDIT_DENY = "Only the creator can modify it"
 
@@ -153,7 +153,7 @@ class ReportViewSet(BaseAnalysisViewSet):
     def user_options(self, request, *args, **kwargs):
         """IM 收件人候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
-        口径与选人控件同源（system/utils/user_options.py）；权限与该视图 list
+        口径与选人控件同源（system/utils/identity/user_options.py）；权限与该视图 list
         权限同口径（common/core/permission.py 的 user-options 特例）。
         """
         data = search_user_options(

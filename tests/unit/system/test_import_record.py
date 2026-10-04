@@ -120,7 +120,7 @@ def test_import_async_runs_task_when_eager(superuser):
     execution = TaskExecution.objects.get(pk=record.pk)
     assert execution.name == "system.tasks.async_import_data_task"
     # 终态收尾清理运行期缓存进度（未清理会残留 1h）
-    from system.utils.import_progress import get_import_progress
+    from system.utils.task.import_progress import get_import_progress
 
     assert get_import_progress(record.pk) is None
 
@@ -132,7 +132,7 @@ def test_import_progress_served_from_cache_while_running(superuser):
     库内进度，故运行期进度写缓存（见 system/utils/import_progress）。
     """
     from system.serializers.import_ import ImportRecordSerializer
-    from system.utils.import_progress import clear_import_progress, set_import_progress
+    from system.utils.task.import_progress import clear_import_progress, set_import_progress
 
     record = ImportRecord.objects.create(
         creator=superuser, name="progress-case", status=ImportRecord.Status.RUNNING, progress=0

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-"""分片上传 / 断点续传协议守护测试（协议内核见 system/utils/upload_chunk.py）。
+"""分片上传 / 断点续传协议守护测试（协议内核见 system/utils/file/upload_chunk.py）。
 
 覆盖：init 计划校验（大小上限 / 扩展名 / 分片数）、断点续传命中、分片幂等、
 complete 合并落库与 md5 一致性、abort 清理、过期会话清理。
@@ -11,8 +11,8 @@ from django.db import transaction
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.models import UploadFile, UploadSession
-from system.utils.upload_chunk import CHECKSUM_MISMATCH_CODE, part_storage_name
-from system.utils.upload_store import UploadError
+from system.utils.file.upload_chunk import CHECKSUM_MISMATCH_CODE, part_storage_name
+from system.utils.file.upload_store import UploadError
 from system.views.admin.file import UploadFileViewSet
 
 pytestmark = pytest.mark.django_db
@@ -37,7 +37,7 @@ def _file_center_config(db):
 @pytest.fixture
 def _small_chunks(monkeypatch):
     """把分片尺寸钳制压到 4 字节，测试可用微小载荷走完整协议。"""
-    from system.utils import upload_chunk
+    from system.utils.file import upload_chunk
 
     monkeypatch.setattr(upload_chunk, "MIN_CHUNK_SIZE", 1)
     monkeypatch.setattr(upload_chunk, "MAX_CHUNK_SIZE", 1024)
@@ -132,7 +132,7 @@ class TestChunkPart:
         response = _part(normal_user, plan["session"], 0, b"abcd")
         assert response.status_code == 403
         # 权限门之内还有属主校验（纵深）：直接调内核断言
-        from system.utils.upload_chunk import store_part
+        from system.utils.file.upload_chunk import store_part
 
         session = UploadSession.objects.get(pk=plan["session"])
         with pytest.raises(UploadError) as exc_info:
@@ -202,7 +202,7 @@ class TestChunkComplete:
         response = _post(normal_user, "chunk_complete", {"pk": plan["session"]})
         assert response.status_code == 403
         # 内核层属主校验（纵深）：superuser 的会话对 normal_user 不可完成
-        from system.utils.upload_chunk import complete_session
+        from system.utils.file.upload_chunk import complete_session
 
         with pytest.raises(UploadError) as exc_info:
             complete_session(normal_user, int(plan["session"]))
@@ -238,7 +238,7 @@ class TestCleanup:
 
         from django.utils import timezone
 
-        from system.utils.upload_chunk import auto_clean_upload_sessions
+        from system.utils.file.upload_chunk import auto_clean_upload_sessions
 
         plan = _init(superuser, filesize=10, total_chunks=3, chunk_size=4)
         _part(superuser, plan["session"], 0, b"abcd")
@@ -261,7 +261,7 @@ class TestCleanup:
 
         from django.utils import timezone
 
-        from system.utils.upload_chunk import auto_clean_upload_sessions
+        from system.utils.file.upload_chunk import auto_clean_upload_sessions
 
         _plan, response = self._full_upload_of(superuser)
         session = UploadSession.objects.get(pk=_plan["session"])

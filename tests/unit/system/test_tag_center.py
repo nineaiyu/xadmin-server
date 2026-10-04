@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from system.models import UserInfo
 from system.models.tag import TAGGABLE_MODELS, Tag, TaggedItem
-from system.utils.tags import (
+from system.utils.platform.tags import (
     ensure_tag_permission,
     filter_by_tag_name,
     filter_by_tags,

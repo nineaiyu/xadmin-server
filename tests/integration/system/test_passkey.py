@@ -22,7 +22,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from system.models import UserPasskey
-from system.utils.webauthn import (
+from system.utils.identity.webauthn import (
     SCENE_AUTHENTICATE,
     SCENE_REGISTER,
     generate_challenge,

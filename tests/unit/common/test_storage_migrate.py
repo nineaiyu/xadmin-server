@@ -12,7 +12,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
 from system.models import UploadFile
-from system.utils.storage_migrate import (
+from system.utils.file.storage_migrate import (
     migrate_uploads,
     object_md5,
     summary_line,

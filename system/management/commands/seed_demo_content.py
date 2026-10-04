@@ -41,7 +41,7 @@ from system.models import UserInfo
 from system.models.token import ApiApplication
 from system.models.upload import UploadFile
 from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.webhook import encrypt_secret
+from system.utils.task.webhook import encrypt_secret
 
 # ---- 幂等 / 清理标识（演示数据统一带可识别的固定标识） ----
 NOTICE_TITLE_PREFIX = "演示："
@@ -353,7 +353,7 @@ class Command(BaseCommand):
             self.stdout.write("demo api application already exists, skip")
             return
         # 延迟导入：避免模块加载期依赖视图层
-        from system.views.open import build_callback_secret, build_client_credentials
+        from system.views.open.open import build_callback_secret, build_client_credentials
 
         client_id, _raw_secret, secret_hash, secret_prefix = build_client_credentials()
         _callback_raw, callback_encrypted = build_callback_secret()

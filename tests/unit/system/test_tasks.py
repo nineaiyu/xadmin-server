@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""system 定时任务清理逻辑单元测试（system/utils/ctasks.py 与 system/tasks.py）。"""
+"""system 定时任务清理逻辑单元测试（system/utils/task/ctasks.py 与 system/tasks.py）。"""
 
 import datetime
 import uuid
@@ -10,7 +10,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from system import tasks
 from system.models import OperationLog, UploadFile
-from system.utils.ctasks import (
+from system.utils.task.ctasks import (
     auto_clean_black_token,
     auto_clean_operation_log,
     auto_clean_tmp_file,

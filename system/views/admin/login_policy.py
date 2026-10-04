@@ -23,7 +23,7 @@ from common.swagger.utils import get_default_response_schema
 from common.utils.request import get_request_ip
 from system.models import LoginAccessPolicy, UserInfo
 from system.serializers.security import LoginAccessPolicySerializer
-from system.utils.login_policy import preview_login_policy
+from system.utils.identity.login_policy import preview_login_policy
 
 
 class LoginAccessPolicyFilter(BaseFilterSet):

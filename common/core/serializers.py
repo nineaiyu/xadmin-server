@@ -79,7 +79,7 @@ class BaseModelSerializer(ModelSerializer):
         # 取角色-菜单维度的字段白名单（request.fields[模型]）；**未配置 = 零字段**
         # （fail-closed，接口输出空对象，而非"未配置即全字段"）——漏配字段权限会被
         # 静默裁空，故审计面把「角色有权限点无字段权限」列为告警
-        # （system/utils/permission_sync/audit.py::audit_field_permissions）。
+        # （system/utils/identity/permission_sync/audit.py::audit_field_permissions）。
         if self.request and settings.PERMISSION_FIELD_ENABLED and not self.ignore_field_permission:
             if hasattr(self.request, "user") and self.request.user and self.request.user.is_superuser:
                 allow_fields = _fields

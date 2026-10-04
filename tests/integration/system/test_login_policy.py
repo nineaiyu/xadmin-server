@@ -15,7 +15,7 @@ import pytest
 from django.utils import timezone
 
 from system.models import LoginAccessPolicy, UserLoginLog, UserSession
-from system.utils.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
+from system.utils.identity.login_policy import evaluate_login_policy, match_ip, match_time, preview_login_policy
 
 pytestmark = pytest.mark.django_db
 
@@ -350,7 +350,7 @@ class TestBuiltinDefaultPolicies:
 
 class TestSessionLimit:
     def test_limit_kicks_oldest_session(self, normal_user, settings):
-        from system.utils.session import register_user_session
+        from system.utils.identity.session import register_user_session
 
         settings.SECURITY_LOGIN_MAX_SESSIONS = 2
         sessions = [register_user_session(None, normal_user, UserLoginLog.LoginTypeChoices.USERNAME) for _ in range(3)]
@@ -363,7 +363,7 @@ class TestSessionLimit:
         assert SessionTokenRevokedCache(sessions[0].pk).get_storage_cache()
 
     def test_limit_zero_means_unlimited(self, normal_user, settings):
-        from system.utils.session import register_user_session
+        from system.utils.identity.session import register_user_session
 
         settings.SECURITY_LOGIN_MAX_SESSIONS = 0
         for _ in range(3):

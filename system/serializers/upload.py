@@ -16,7 +16,7 @@ from common.fields.utils import get_file_absolute_uri
 from common.utils import get_logger
 from system.models import UploadFile
 from system.serializers.tag import TaggedObjectSerializerMixin
-from system.utils.preview import preview_kind
+from system.utils.file.preview import preview_kind
 
 logger = get_logger(__name__)
 

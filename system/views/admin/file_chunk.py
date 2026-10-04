@@ -5,7 +5,7 @@
 四个子 action 全部以 ``parent_fallback_action`` 声明：权限优先按自身权限点
 （如角色显式绑定 ``api/system/file/chunk/init$``），未绑定时回退父级
 list / create 口径——既有可使用文件中心的角色无需重新授权即可获得分片能力。
-协议与安全策略见 :mod:`system.utils.upload_chunk`（与单请求上传同源）。
+协议与安全策略见 :mod:`system.utils.file.upload_chunk`（与单请求上传同源）。
 """
 
 from typing import TYPE_CHECKING, Any
@@ -22,8 +22,8 @@ from common.core.response import ApiResponse
 from common.core.throttle import UploadThrottle
 from common.utils import get_logger
 from system.models import FileAccessLog, UploadSession
-from system.utils.file_audit import log_file_access
-from system.utils.upload_chunk import (
+from system.utils.file.file_audit import log_file_access
+from system.utils.file.upload_chunk import (
     CHECKSUM_MISMATCH_CODE,
     DEFAULT_CHUNK_SIZE,
     abort_session,
@@ -31,7 +31,7 @@ from system.utils.upload_chunk import (
     init_session,
     store_part,
 )
-from system.utils.upload_store import UploadError, invalidate_upload_stats_cache
+from system.utils.file.upload_store import UploadError, invalidate_upload_stats_cache
 
 logger = get_logger(__name__)
 

@@ -6,7 +6,7 @@
 - **只存引用**：`ChatMessage.attachment` 外键指向 system.UploadFile，`extra["file"]`
   存渲染用元信息快照（文件名 / 大小 / MIME / 分类 / 种类）；取件 URL 由消息 pk 派生
   （不在库里存路径，避免迁移/域名变化后失效）；
-- **上传复用文件落库内核**（system.utils.upload_store：扩展名黑名单/白名单、大小、
+- **上传复用文件落库内核**（system.utils.file.upload_store：扩展名黑名单/白名单、大小、
   配额、md5 去重、分类、存储），聊天侧只做「种类匹配 + 归属校验」；
 - **归属 fail-closed**：只能引用本人上传的记录（他人文件 pk 一律拒绝）；
 - **临时态转正**：附件随消息落库时把 `is_tmp` 置 False（否则每日临时文件清理会把
@@ -26,7 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from common.storage import storage_exists, storage_open
 from message.models import ATTACHMENT_MESSAGE_TYPES, ChatMessage  # noqa: F401 再导出消息类型常量
 from system.services import UploadFile
-from system.utils.preview import (
+from system.utils.file.preview import (
     KIND_IMAGE,
     SIZE_PREVIEW,
     SIZE_THUMB,
@@ -34,7 +34,7 @@ from system.utils.preview import (
     preview_kind,
     touch_preview_cache,
 )
-from system.utils.upload_category import CATEGORY_AUDIO, CATEGORY_VIDEO, guess_upload_category
+from system.utils.file.upload_category import CATEGORY_AUDIO, CATEGORY_VIDEO, guess_upload_category
 
 #: 附件种类（image 与在线预览判定同口径；video/audio 与上传分类同口径）
 KIND_FILE = "file"
@@ -56,7 +56,7 @@ def attachment_kind(upload) -> str:
 
     - 图片沿用在线预览判定（存量口径零漂移：仅按 MIME 前缀判图，不引入扩展名
       兜底，避免 svg 等无 MIME 记录从「按文件下载」漂移成「缩略图渲染失败」）；
-    - 音/视频复用上传分类的公开判定（system.utils.upload_category：MIME 前缀优先、
+    - 音/视频复用上传分类的公开判定（system.utils.file.upload_category：MIME 前缀优先、
       扩展名兜底），不在本模块重复维护扩展名表；
     - pdf/office/压缩包/未知一律 file（沿用附件下载语义）。
     """

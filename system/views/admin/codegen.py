@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """代码生成器 GUI 端点：模型清单 / 字段计划 / 产物预览 / zip 下载。
 
-适配层与安全口径见 :mod:`system.utils.codegen_gui`（复用 generate_crud 引擎，
+适配层与安全口径见 :mod:`system.utils.platform.codegen_gui`（复用 generate_crud 引擎，
 不落盘不写库；权限走菜单种子权限点，默认仅超管可用，授予角色即开放）。
 """
 
@@ -17,7 +17,7 @@ from rest_framework.decorators import action
 
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.utils import codegen_gui
+from system.utils.platform import codegen_gui
 
 
 class SystemCodeGenViewSet(viewsets.ViewSet):

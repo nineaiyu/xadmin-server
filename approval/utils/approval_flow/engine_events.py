@@ -83,7 +83,7 @@ def _emit_flow_event(event: str, instance, extra=None) -> None:
     用自身凭证走 API 按流程取（与轻量审批 _emit_approval_event 同口径）。
     ``extra`` 可覆盖/补充摘要字段（如自动通过事件的 node_name 与 current_node）。
     """
-    from system.utils.webhook import emit_webhook_event
+    from system.utils.task.webhook import emit_webhook_event
 
     data = {
         "instance_no": str(instance.pk)[:8].upper(),

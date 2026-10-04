@@ -12,7 +12,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 
 from common.core.auth import ServerAccessToken
 from system.models.user import UserInfo
-from system.utils.session import force_logout_user
+from system.utils.identity.session import force_logout_user
 from system.views.admin.online import UserOnlineViewSet
 
 pytestmark = pytest.mark.django_db

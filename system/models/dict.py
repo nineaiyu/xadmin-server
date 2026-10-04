@@ -3,7 +3,7 @@
 """数据字典：业务可枚举选项的统一管理（字典类型 → 字典项两级）。
 
 与 SystemConfig（键值配置）职责分离：字典服务「可枚举、带排序/分组的下拉选项」，
-供表单 choices / 前端下拉消费（system/utils/dict.py 的 get_dict_items 带缓存）。
+供表单 choices / 前端下拉消费（system/utils/platform/dict.py 的 get_dict_items 带缓存）。
 
 parent=None 为字典类型（code 全局唯一，代码层校验），parent 非空为字典项。
 is_locked 标记被代码引用的内置字典，禁止删除与改 code（见 serializer / viewset 校验）。

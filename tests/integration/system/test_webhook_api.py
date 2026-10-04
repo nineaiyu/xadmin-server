@@ -17,7 +17,7 @@ from django.core.exceptions import ValidationError
 from django.test import RequestFactory
 
 from system.models.webhook import WebhookDelivery, WebhookSubscription
-from system.utils.webhook import (
+from system.utils.task.webhook import (
     EVENT_CATALOG,
     decrypt_secret,
     emit_webhook_event,

@@ -151,7 +151,7 @@ class TestModulesImpact:
         from common.core.modules import preview_modules
         from common.core.permission import filter_menu_queryset
         from system.models import Menu
-        from system.utils.module_impact import module_impact
+        from system.utils.platform.module_impact import module_impact
 
         directory = menu_factory("integration", menu_type=Menu.MenuChoices.DIRECTORY, path="/integration")
         menu_factory("Chat", menu_type=Menu.MenuChoices.MENU, path="/chat/index", parent=directory)

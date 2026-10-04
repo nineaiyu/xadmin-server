@@ -18,8 +18,8 @@ from django.core.management import call_command
 from django.utils import timezone
 
 from system.models import OperationLog, UserLoginLog
-from system.utils import log_archive
-from system.utils.ctasks import auto_clean_operation_log
+from system.utils.audit import log_archive
+from system.utils.task.ctasks import auto_clean_operation_log
 
 pytestmark = pytest.mark.django_db
 
@@ -198,7 +198,7 @@ class TestWatermarkDrivenPrune:
         def _boom(*args, **kwargs):
             raise RuntimeError("archive storage down")
 
-        monkeypatch.setattr("system.utils.log_archive.archive_expired", _boom)
+        monkeypatch.setattr("system.utils.audit.log_archive.archive_expired", _boom)
         with pytest.raises(RuntimeError):
             auto_clean_operation_log(clean_day=RETENTION_DAYS)
         # 归档失败 → 不清理（保数据优先）

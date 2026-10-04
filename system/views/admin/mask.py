@@ -14,7 +14,7 @@ from common.core.response import ApiResponse
 from common.utils import get_logger
 from system.models.mask import DataMaskRule
 from system.serializers.mask import DataMaskRuleSerializer
-from system.utils.mask import apply_mask
+from system.utils.audit.mask import apply_mask
 
 logger = get_logger(__name__)
 

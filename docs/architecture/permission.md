@@ -22,7 +22,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 | ① API/菜单权限 | DRF `DEFAULT_PERMISSION_CLASSES` | `common/core/permission.py`  | URL × Method | `Menu`（menu_type=PERMISSION）× `UserRole`        |
 | ② 数据权限     | `DEFAULT_FILTER_BACKENDS`        | `common/core/filter.py`      | 表的行          | `DataPermission`（规则 JSON）× 角色/用户                |
 | ③ 字段权限     | `BaseModelSerializer.__init__`   | `common/core/serializers.py` | 表的列          | `FieldPermission`（角色 × 菜单）× `ModelLabelField` 树 |
-| ④ 应用级授权    | 权限类 + 过滤后端 + 序列化层三处挂载       | `system/utils/api_grant.py`  | 模型 × 动作 × 字段 × 行 | `ApiApplication.grant`（开放平台 API 应用，仅 PAT 凭证）   |
+| ④ 应用级授权    | 权限类 + 过滤后端 + 序列化层三处挂载       | `system/utils/identity/api_grant.py`  | 模型 × 动作 × 字段 × 行 | `ApiApplication.grant`（开放平台 API 应用，仅 PAT 凭证）   |
 
 前三层共享同一套角色-用户-部门关系（`UserInfo → UserRole → Menu`，部门可挂角色），并共享 `MagicCacheData` 缓存体系与信号失效链路；第四层挂在应用凭证维度，与前三层取交集。
 
@@ -64,7 +64,7 @@ xadmin 的权限模型由三层组成；开放平台 API 应用以 PAT（个人�
 ### 2.4 应用级授权（开放平台 API 应用，第四道收敛）
 
 仅供以 **PAT 应用凭证**（`request.auth` 绑定 `ApiApplication`）访问的请求生效；JWT / 匿名请求不适用。
-实现见 `system/utils/api_grant.py`，由三处挂载叠加在原有三层之上：
+实现见 `system/utils/identity/api_grant.py`，由三处挂载叠加在原有三层之上：
 
 | 维度 | 挂载点 | 行为 |
 |------|--------|------|

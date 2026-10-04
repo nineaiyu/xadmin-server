@@ -18,8 +18,8 @@ from common.core.modules import ModuleSeedFilter
 from dataset.models import Dashboard, Dataset, DynamicForm, DynamicFormSubmission, Report, Screen
 from settings.models import Setting
 from system.models import *
-from system.utils.dict import invalid_dict_cache
-from system.utils.seed import backfill_null_timestamps, build_seed_fixtures
+from system.utils.platform.dict import invalid_dict_cache
+from system.utils.platform.seed import backfill_null_timestamps, build_seed_fixtures
 
 
 class Command(LoadCommand):
@@ -89,7 +89,7 @@ class Command(LoadCommand):
         options["exclude"] = []
         options["format"] = "json"
 
-        # 装配待导入的种子（system/utils/seed.py）：
+        # 装配待导入的种子（system/utils/platform/seed.py）：
         # 1. 功能模块裁剪：停用模块的菜单/权限点/字段权限绑定不入库（口径与运行期一致）；
         # 2. 冲突预检：自然键被库内数据占用时跳过该行（loaddata 是单事务，一行冲突会回滚全部）；
         # 未做任何裁剪且无冲突时直接用仓库里的原始种子文件

@@ -29,7 +29,7 @@ from common.swagger.utils import get_default_response_schema
 from message.services import get_online_info, send_logout_msg
 from system.models import UserInfo, UserSession
 from system.serializers.log import UserSessionSerializer
-from system.utils.session import force_logout_user
+from system.utils.identity.session import force_logout_user
 
 
 class UserOnlineFilter(BaseFilterSet):

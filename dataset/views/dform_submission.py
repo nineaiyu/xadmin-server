@@ -33,7 +33,7 @@ from dataset.serializers.dform import (
 from dataset.utils.dform import trim_stale_schema_keys
 from dataset.utils.dform_filter import MaterializedFilterMixin
 from dataset.utils.dform_flow import create_flow_instance, resubmit_submission
-from system.utils.user_options import search_user_options
+from system.utils.identity.user_options import search_user_options
 
 _EDIT_DENY = _("Only the creator can modify a submission")
 _PENDING_DENY = _("The submission is in approval and cannot be modified")

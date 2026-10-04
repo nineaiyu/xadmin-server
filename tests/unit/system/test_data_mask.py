@@ -9,7 +9,7 @@ from django.test import RequestFactory, override_settings
 from server.utils import set_current_request
 from system.models import DataMaskRule, UserInfo
 from system.serializers.userinfo import UserInfoSerializer
-from system.utils.mask import apply_mask, get_mask_rules, invalid_mask_cache
+from system.utils.audit.mask import apply_mask, get_mask_rules, invalid_mask_cache
 from system.views.admin.mask import PREVIEW_MAX_VALUE_LENGTH, PREVIEW_MAX_VALUES
 
 pytestmark = pytest.mark.django_db
@@ -308,7 +308,7 @@ class TestMaskOriginalChannel:
 
         request = _make_request_with_params(normal_user, {"mask": "false"}, path=f"/api/system/user/{normal_user.pk}")
         other = UserInfo.objects.create_user(username="audit_target", password="Test@123456")
-        with patch("system.utils.mask.logger") as mock_logger:
+        with patch("system.utils.audit.mask.logger") as mock_logger:
             _ = UserInfoSerializer([normal_user, other], many=True, context={"request": request}).data
         mock_logger.warning.assert_called_once()
         _, audited_user_pk, _path, model_label = mock_logger.warning.call_args[0]
@@ -317,7 +317,7 @@ class TestMaskOriginalChannel:
 
         # 未走原文通道（无 ?mask=false）不记审计
         _make_request_with_params(normal_user)
-        with patch("system.utils.mask.logger") as mock_logger_plain:
+        with patch("system.utils.audit.mask.logger") as mock_logger_plain:
             _serialize(normal_user)
         mock_logger_plain.warning.assert_not_called()
 

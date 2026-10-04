@@ -30,7 +30,7 @@ from settings.services import (
 from system.models import DataPermission, DeptInfo, UserInfo, UserRole
 from system.models.ldap import LdapUserBinding
 from system.serializers.tag import TaggedObjectSerializerMixin
-from system.utils import user_invite
+from system.utils.identity import user_invite
 
 logger = get_logger(__name__)
 

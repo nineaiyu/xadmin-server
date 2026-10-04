@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 from rest_framework.test import APIRequestFactory
 
 from system.models import SystemConfig, UserInfo
-from system.utils.oauth import (
+from system.utils.identity.oauth import (
     OAuthError,
     build_authorize_url,
     exchange_code,
@@ -30,8 +30,8 @@ REDIRECT = "https://app.example.com/#/oauth/callback?provider=x"
 
 def make_provider(flavor, **kw):
     """按「通用默认 < flavor 预设 < 显式配置」合成 provider（与 get_providers 同序）。"""
-    from system.utils.oauth import OPTIONAL_DEFAULTS
-    from system.utils.oauth_flavors import FLAVOR_PRESETS
+    from system.utils.identity.oauth import OPTIONAL_DEFAULTS
+    from system.utils.identity.oauth_flavors import FLAVOR_PRESETS
 
     return {**OPTIONAL_DEFAULTS, **FLAVOR_PRESETS[flavor], "flavor": flavor, **kw}
 
@@ -76,8 +76,8 @@ def stub_client(monkeypatch):
     def install(client):
         holder["client"] = client
         # flavors 与 oauth 各有独立的 _default_client，统一替换
-        monkeypatch.setattr("system.utils.oauth._default_client", lambda: holder["client"])
-        monkeypatch.setattr("system.utils.oauth_flavors._default_client", lambda: holder["client"])
+        monkeypatch.setattr("system.utils.identity.oauth._default_client", lambda: holder["client"])
+        monkeypatch.setattr("system.utils.identity.oauth_flavors._default_client", lambda: holder["client"])
 
     return install
 
@@ -124,7 +124,7 @@ class TestFlavorConfig:
             "client_secret": "s",
             "subject_field": "open_id",
         }
-        from system.utils import oauth
+        from system.utils.identity import oauth
 
         merged = {**oauth.OPTIONAL_DEFAULTS, **{}, **item}
         assert merged["subject_field"] == "open_id"

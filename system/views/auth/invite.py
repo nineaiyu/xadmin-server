@@ -19,7 +19,7 @@ from rest_framework.generics import GenericAPIView
 from common.core.response import ApiResponse
 from common.core.throttle import ResetPasswordThrottle
 from common.swagger.utils import get_default_response_schema
-from system.utils import user_invite
+from system.utils.identity import user_invite
 
 
 class InviteValidateAPIView(GenericAPIView):

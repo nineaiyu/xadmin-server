@@ -48,7 +48,7 @@ from common.core.modelset.import_export.export_actions import OnlyExportDataActi
 from common.core.permission import user_has_permission
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
-from system.utils.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
+from system.utils.platform.tags import TagChoiceFilter, TagFilterBackend, TagFilterMixin, TaggedPrefetchMixin
 
 #: 「全部在途」管理视角的权限点 path（无独立路由的功能授权，登记于 loadjson/menu.json）
 ONGOING_PERMISSION_PATH = "api/approval/approval-instances/ongoing$"

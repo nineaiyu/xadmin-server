@@ -29,11 +29,11 @@
 | `approval_pending_count_{user.pk}` | system/utils/approval.py | 10s | 用户 | `invalidate_pending_count_cache()`（审批状态变化全量删） |
 | `approval_flow_pending_count_{user.pk}` | system/utils/approval_flow.py | 10s | 用户 | `_invalidate_pending_count()`（节点推进/任务处理：全量或指定用户删） |
 | `approval_flow_remind_{task.pk}` | system/utils/approval_flow.py | 24h | 单节点任务 | TTL 到期（同一任务每日最多提醒一次的超时占位） |
-| `{DICT_CACHE_PREFIX}{code}` | system/utils/dict.py | 常量 TTL | 字典编码（全局） | 字典写路径 `cache.delete` |
-| `{MASK_CACHE_PREFIX}{model_label}` | system/utils/mask.py | 常量 TTL | 模型（全局） | 脱敏规则写路径 + roles m2m 信号 |
+| `{DICT_CACHE_PREFIX}{code}` | system/utils/platform/dict.py | 常量 TTL | 字典编码（全局） | 字典写路径 `cache.delete` |
+| `{MASK_CACHE_PREFIX}{model_label}` | system/utils/audit/mask.py | 常量 TTL | 模型（全局） | 脱敏规则写路径 + roles m2m 信号 |
 | `magic_cache_response_UploadFileViewSet_stats_{user_pk}` | system/views/admin/file.py | 10s | 用户 | TTL 到期（统计口径可容忍） |
 | `data_permission_grants_{version}_{user_pk}_{dept_pk}_{menu_pk}` | common/core/filter.py | 300s | 用户 × 部门 × 菜单 | 全局版本号自增（数据权限/部门/授权关系变更，见 signal_handler）；**观察项**：键空间随「用户 × 菜单」增长，维持现状 + `/metrics` 的 `xadmin_authz_grants_cache_keys` gauge 监控；超预期时的收敛方案 = 键去 `menu_pk`（需评估菜单上下文语义）或版本键分段淘汰 |
-| 进度/锁类（`import_progress`、`preview` 锁） | system/utils/* | 短 TTL | 单记录 | 任务结束即删 |
+| 进度/锁类（`import_progress`、`preview` 锁） | system/utils/{task,file}/* | 短 TTL | 单记录 | 任务结束即删 |
 
 ### 扫描结论
 

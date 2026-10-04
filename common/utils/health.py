@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """服务健康探测（DB / Redis / Celery）。
 
-healthz（common/api/common.py）与系统监控面板（system/views/monitor.py）
+healthz（common/api/common.py）与系统监控面板（system/views/platform/monitor.py）
 共用同一套探测逻辑，保证两处口径一致（状态 + 耗时）。探测函数返回
 (ok, cost)：ok 为布尔，cost 为耗时秒数或异常信息字符串。
 """

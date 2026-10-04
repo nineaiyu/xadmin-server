@@ -24,7 +24,7 @@ from common.storage.utils import PRESIGN_DEFAULT_EXPIRES
 from common.swagger.utils import get_default_response_schema
 from system.models import FileAccessLog
 from system.serializers.security import FileAccessLogSerializer
-from system.utils.file_audit import get_upload_policy, log_file_access
+from system.utils.file.file_audit import get_upload_policy, log_file_access
 
 
 def inline_file_response(source, content_type, filename):
@@ -125,7 +125,7 @@ class FileAccessActionMixin:
         """获取上传配置"""
         # 延迟导入：上传配置内核在 utils 层（与文件中心/聊天附件同源），
         # 延迟取用避免与主视图模块形成模块级循环
-        from system.utils.upload_store import get_upload_max_size
+        from system.utils.file.upload_store import get_upload_max_size
 
         return ApiResponse(
             data={

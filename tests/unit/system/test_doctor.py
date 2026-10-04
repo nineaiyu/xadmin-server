@@ -215,7 +215,7 @@ class TestStartupPermissionCheck:
         return hands
 
     def test_disabled_when_debug_off(self, monkeypatch):
-        from system.utils import permission_sync
+        from system.utils.identity import permission_sync
 
         hands = self._hands(monkeypatch, debug=False)
         called = []
@@ -226,7 +226,7 @@ class TestStartupPermissionCheck:
         assert called == [], "生产（DEBUG=false）不应执行启动期权限点扫描"
 
     def test_warns_when_gaps_found(self, monkeypatch):
-        from system.utils import permission_sync
+        from system.utils.identity import permission_sync
 
         hands = self._hands(monkeypatch, debug=True)
         warnings = []
@@ -238,7 +238,7 @@ class TestStartupPermissionCheck:
         assert warnings and "权限点缺口" in warnings[0]
 
     def test_swallows_scan_errors(self, monkeypatch):
-        from system.utils import permission_sync
+        from system.utils.identity import permission_sync
 
         hands = self._hands(monkeypatch, debug=True)
         warnings = []

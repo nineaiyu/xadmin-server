@@ -13,7 +13,7 @@ from common.core.pagination import DynamicPageNumber
 from common.utils import get_logger
 from system.models import DeptInfo
 from system.serializers.department import DeptSerializer
-from system.utils.modelset import AnnotateUserCountMixin
+from system.utils.platform.modelset import AnnotateUserCountMixin
 
 logger = get_logger(__name__)
 

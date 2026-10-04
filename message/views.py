@@ -59,14 +59,14 @@ from message.serializers import (
     RenameGroupSerializer,
 )
 from message.utils import push_room_event
-from system.utils.file_audit import log_file_access
-from system.utils.upload_store import (
+from system.utils.file.file_audit import log_file_access
+from system.utils.file.upload_store import (
     UploadError,
     check_upload_limits,
     invalidate_upload_stats_cache,
     store_upload_file,
 )
-from system.utils.user_options import search_user_options
+from system.utils.identity.user_options import search_user_options
 
 logger = get_logger(__name__)
 
@@ -344,7 +344,7 @@ class ChatContactViewSet(GenericViewSet):
     def user_options(self, request, *args, **kwargs):
         """群成员候选：按关键字搜索在用用户（≤20 条，仅 pk/用户名/昵称）。
 
-        口径与选人控件同源（system/utils/user_options.py）；权限与该视图 list 权限
+        口径与选人控件同源（system/utils/identity/user_options.py）；权限与该视图 list 权限
         同口径（common/core/permission.py 的 user-options 特例），无需新增权限点。
         """
         data = search_user_options(

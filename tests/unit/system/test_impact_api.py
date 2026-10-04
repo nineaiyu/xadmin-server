@@ -109,7 +109,7 @@ class TestImpactRegistryAlignment:
         from django.utils.module_loading import import_string
 
         from common.core.modelset import ImpactPreviewAction
-        from system.utils.impact import IMPACT_CALCULATORS
+        from system.utils.audit.impact import IMPACT_CALCULATORS
 
         models = set()
         for module, name in self.VIEWSETS:

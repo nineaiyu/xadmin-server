@@ -15,8 +15,8 @@ import pytest
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from system.serializers.task import PeriodicTaskSerializer
-from system.utils.task_whitelist import is_task_runnable, manual_runnable_tasks
-from system.views.task_periodic import PeriodicTaskViewSet
+from system.utils.task.task_whitelist import is_task_runnable, manual_runnable_tasks
+from system.views.task.task_periodic import PeriodicTaskViewSet
 
 pytestmark = pytest.mark.django_db
 

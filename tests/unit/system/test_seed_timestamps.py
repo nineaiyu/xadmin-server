@@ -13,7 +13,7 @@ from django.core.management.commands.loaddata import Command as LoadDataCommand
 
 from dataset.models import Dataset
 from system.management.commands.load_init_json import Command as LoadInitJsonCommand
-from system.utils.seed import backfill_null_timestamps
+from system.utils.platform.seed import backfill_null_timestamps
 
 pytestmark = pytest.mark.django_db
 

@@ -94,7 +94,7 @@ class TestFileAccessAudit:
 
         from django.utils import timezone
 
-        from system.utils.file_audit import clean_expired_file_access_logs
+        from system.utils.file.file_audit import clean_expired_file_access_logs
 
         settings.FILE_ACCESS_LOG_KEEP_DAYS = 30
         old = FileAccessLog.objects.create(filename="old.txt", action=FileAccessLog.Action.DOWNLOAD)

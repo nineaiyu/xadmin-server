@@ -113,7 +113,7 @@ class TestListQueryCount:
         # 预热字典缓存（DictChoiceField bind 时读一次；notice_level 还会在 URL 模块
         # 首次导入时被 UserNoticeSerializer 模块级实例化读取），避免读取落入
         # 基线/优化任一窗口造成 16 的差值漂移
-        from system.utils.dict import get_dict_items
+        from system.utils.platform.dict import get_dict_items
 
         get_dict_items("user_gender")
         get_dict_items("notice_level")
