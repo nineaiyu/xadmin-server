@@ -77,8 +77,6 @@ msgid "Embedding"
 msgstr "向量"
 
 #: ai/models/ai.py:89
-#, fuzzy
-#| msgid "Embedding"
 msgid "Embedding vector"
 msgstr "向量"
 
@@ -370,10 +368,8 @@ msgid "Enabled"
 msgstr "启用"
 
 #: ai/models/mcp.py:37
-#, fuzzy
-#| msgid "AI actions"
 msgid "Expose to AI actions"
-msgstr "AI 动作"
+msgstr "暴露进 AI 动作目录"
 
 #: ai/models/mcp.py:40
 msgid "Tools snapshot"
@@ -937,10 +933,8 @@ msgid "Tool arguments exceed the size limit"
 msgstr "工具参数超出体积上限"
 
 #: ai/utils/ai_mcp_actions.py:169
-#, fuzzy
-#| msgid "Field {} is not available for datasets"
 msgid "The MCP server is not available for AI actions"
-msgstr "字段 {} 不可用于数据集"
+msgstr "MCP 服务端当前不可用于 AI 动作"
 
 #: ai/utils/ai_mcp_actions.py:174 ai/views/mcp_client.py:121
 #, python-brace-format
@@ -949,7 +943,7 @@ msgstr "工具 {} 不在白名单内"
 
 #: ai/utils/ai_mcp_actions.py:186
 msgid "Tool call failed"
-msgstr ""
+msgstr "工具调用失败"
 
 #: ai/utils/ai_registry_infra.py:21
 msgid "List system configurations"
@@ -4291,7 +4285,7 @@ msgstr "每月投递日"
 
 #: dataset/models/dataset.py:133
 msgid "1-28, monthly only"
-msgstr ""
+msgstr "1-28，仅每月频率使用"
 
 #: dataset/models/dataset.py:134
 msgid "Recipients"
@@ -5496,10 +5490,8 @@ msgid "Attachment not found"
 msgstr "附件不存在"
 
 #: message/attachments.py:115
-#, fuzzy
-#| msgid "This message type does not support test sending"
 msgid "The message type does not match the attachment kind"
-msgstr "该消息类型不支持发送测试"
+msgstr "消息类型与附件种类不匹配"
 
 #: message/chat.py:88
 msgid "Message content cannot be empty"
@@ -5528,34 +5520,27 @@ msgid "Messages can only be recalled within {} minutes"
 msgstr "消息只能在 {} 分钟内撤回"
 
 #: message/chat.py:277
-#, fuzzy
-#| msgid "Actions cannot be empty"
 msgid "Reaction emoji cannot be empty"
-msgstr "动作不能为空"
+msgstr "回应表情不能为空"
 
 #: message/chat.py:280
-#, fuzzy, python-brace-format
-#| msgid "Message is too long (max {} characters)"
+#, python-brace-format
 msgid "Reaction emoji is too long (max {} characters)"
-msgstr "消息过长（最多 {} 个字符）"
+msgstr "回应表情过长（最多 {} 个字符）"
 
 #: message/chat.py:283
-#, fuzzy
-#| msgid "Invalid patch operation"
 msgid "Invalid reaction operation"
-msgstr "无效的补丁操作"
+msgstr "无效的回应操作"
 
 #: message/chat.py:306
-#, fuzzy, python-brace-format
-#| msgid "Too many items to update (max {})"
+#, python-brace-format
 msgid "Too many emojis on this message (max {})"
-msgstr "待更新条目过多（最多 {} 项）"
+msgstr "该消息的回应表情过多（最多 {} 个）"
 
 #: message/chat.py:310
-#, fuzzy, python-brace-format
-#| msgid "Too many items to sort (max {})"
+#, python-brace-format
 msgid "Too many users reacted with this emoji (max {})"
-msgstr "排序项过多（最多 {} 项）"
+msgstr "同一回应表情的人数过多（最多 {} 人）"
 
 #: message/chat_room_ops.py:38
 msgid "Cannot start a private chat with yourself"
@@ -5704,13 +5689,11 @@ msgstr "图片"
 
 #: message/models.py:129
 msgid "Video"
-msgstr ""
+msgstr "视频"
 
 #: message/models.py:130
-#, fuzzy
-#| msgid "Auditor"
 msgid "Audio"
-msgstr "审计员"
+msgstr "音频"
 
 #: message/models.py:131 system/models/security.py:162 system/models/tag.py:29
 msgid "File"
@@ -5818,10 +5801,8 @@ msgid "Failed to save uploaded file"
 msgstr "保存上传文件失败"
 
 #: message/views.py:280
-#, fuzzy
-#| msgid "Authorization code does not match this client"
 msgid "The upload kind does not match the file type"
-msgstr "授权码与该客户端不匹配"
+msgstr "上传种类与文件类型不匹配"
 
 #: message/views.py:283 system/views/admin/file.py:367
 #: system/views/admin/file_chunk.py:182
@@ -7839,10 +7820,8 @@ msgid "Websocket"
 msgstr "WebSocket"
 
 #: system/models/log.py:35
-#, fuzzy
-#| msgid "Import action"
 msgid "Impersonation"
-msgstr "导入动作"
+msgstr "用户模拟"
 
 #: system/models/log.py:37
 msgid "Login status"
@@ -10923,30 +10902,24 @@ msgstr "验证码已发送"
 
 #: system/views/admin/user.py:234
 msgid "You are already impersonating another user, exit first"
-msgstr ""
+msgstr "当前已在对其他用户进行模拟，请先退出"
 
 #: system/views/admin/user.py:237
-#, fuzzy
-#| msgid "Metric {} is not allowed"
 msgid "Impersonating yourself is not allowed"
-msgstr "聚合方式 {} 不在允许范围"
+msgstr "不能对自己进行模拟"
 
 #: system/views/admin/user.py:239
-#, fuzzy
-#| msgid "The super administrator disallows deletion"
 msgid "Impersonating a super administrator is not allowed"
-msgstr "超级管理员禁止删除"
+msgstr "超级管理员不允许被模拟"
 
 #: system/views/admin/user.py:241
-#, fuzzy
-#| msgid "Timeout hours cannot be negative"
 msgid "Disabled users cannot be impersonated"
-msgstr "超时小时数不能为负数"
+msgstr "已禁用的用户不能被模拟"
 
 #: system/views/admin/user.py:243
 #, python-brace-format
 msgid "Now impersonating user {}"
-msgstr ""
+msgstr "正在模拟用户 {}"
 
 #: system/views/admin/user.py:275
 msgid "Provider and subject are required"
@@ -10978,16 +10951,16 @@ msgstr "IM 身份已解绑"
 
 #: system/views/auth/impersonation.py:41
 msgid "Not impersonating any user"
-msgstr ""
+msgstr "当前未在模拟任何用户"
 
 #: system/views/auth/impersonation.py:46
 msgid "The original account is unavailable, please sign in again"
-msgstr ""
+msgstr "原账号不可用，请重新登录"
 
 #: system/views/auth/impersonation.py:50
 #, python-brace-format
 msgid "Exited impersonation of user {}"
-msgstr ""
+msgstr "已退出对用户 {} 的模拟"
 
 #: system/views/auth/login.py:105
 #, python-brace-format

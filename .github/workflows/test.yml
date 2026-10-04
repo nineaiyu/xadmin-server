@@ -80,6 +80,12 @@ jobs:
         # lock ↔ pyproject 的一致性校验在此补齐
         run: uv lock --check
 
+      - name: Compile i18n catalogs (django.mo)
+        # .mo 为 gitignore 项（不随仓库分发），CI 检出后没有编译产物；不编译则
+        # gettext 对全部 msgid 回退英文，断言中文文案的测试（如超管删除 400 文案）
+        # 必然失败。与生产镜像构建期编译（Dockerfile）同口径。runner 预装 gettext。
+        run: uv run --no-sync python manage.py compilemessages
+
       - name: Run tests (parallel, real PostgreSQL + Redis)
         # 口径不变（G1）：-n auto + --cov-fail-under=85；--cov-fail-under=85 覆盖率门禁：
         # 2026-09-18 上调 82 → 85（实测 87%，满足 ≤ 实测 -2pp 上移规则），2026-09-27
