@@ -46,7 +46,7 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
         return ApiResponse(data=codegen_gui.list_generatable_models())
 
     @extend_schema(
-        description="选中模型的字段计划与命名默认值（GUI 表单初始值）",
+        description="选中模型的字段计划与命名默认值（GUI 表单初始值，含可绑定字典类型）",
         responses=get_default_response_schema(
             {
                 "data": build_object_type(
@@ -67,7 +67,21 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
                                     "verbose_name": build_basic_type(OpenApiTypes.STR),
                                     "type": build_basic_type(OpenApiTypes.STR),
                                     "in_table": build_basic_type(OpenApiTypes.BOOL),
+                                    "in_search": build_basic_type(OpenApiTypes.BOOL),
+                                    "can_search": build_basic_type(OpenApiTypes.BOOL),
                                     "required": build_basic_type(OpenApiTypes.BOOL),
+                                    "is_relation": build_basic_type(OpenApiTypes.BOOL),
+                                    "has_choices": build_basic_type(OpenApiTypes.BOOL),
+                                    "default_input_type": build_basic_type(OpenApiTypes.STR),
+                                    "can_filter_custom": build_basic_type(OpenApiTypes.BOOL),
+                                }
+                            )
+                        ),
+                        "dict_types": build_array_type(
+                            build_object_type(
+                                properties={
+                                    "code": build_basic_type(OpenApiTypes.STR),
+                                    "label": build_basic_type(OpenApiTypes.STR),
                                 }
                             )
                         ),
@@ -85,19 +99,28 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             return ApiResponse(code=1001, detail=str(exc))
 
     @extend_schema(
-        description="生成产物预览（不落盘）：按表单配置渲染全部文件内容",
+        description="生成产物预览（不落盘）：按表单配置渲染全部文件内容（含 NEXT_STEPS.md）",
         request=build_object_type(
             properties={
                 "model": build_basic_type(OpenApiTypes.STR),
                 "component": build_basic_type(OpenApiTypes.STR),
                 "url_prefix": build_basic_type(OpenApiTypes.STR),
                 "frontend_dir": build_basic_type(OpenApiTypes.STR),
+                "menu_parent": build_basic_type(OpenApiTypes.STR),
+                "menu_icon": build_basic_type(OpenApiTypes.STR),
                 # build_basic_type 的 stub 返回 dict | None：与 file.py 的 `or {}` 同口径
                 "include_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
                 "exclude_fields": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+                # 字段级覆盖：name / include / label / required / read_only / in_table /
+                # in_search / input_type（仅关联字段）/ dict_code（仅非关联字段），顺序即字段序
+                "fields": build_array_type(build_object_type() or {}),
                 "with_import_export": build_basic_type(OpenApiTypes.BOOL),
                 "with_tags": build_basic_type(OpenApiTypes.BOOL),
+                "with_tests": build_basic_type(OpenApiTypes.BOOL),
                 "with_module": build_basic_type(OpenApiTypes.BOOL),
+                "module_id": build_basic_type(OpenApiTypes.STR),
+                "module_level": build_basic_type(OpenApiTypes.STR),
+                "skip_menu_seed": build_basic_type(OpenApiTypes.BOOL),
             },
             required=["model"],
         ),
@@ -126,10 +149,13 @@ class SystemCodeGenViewSet(viewsets.ViewSet):
             return ApiResponse(code=1001, detail=str(exc))
 
     @extend_schema(
-        description="生成产物打包下载（zip，路径 = 仓库相对路径）",
+        description="生成产物打包下载（zip，路径 = 仓库相对路径；models 传多模型清单走批量打包）",
         request=build_object_type(
-            properties={"model": build_basic_type(OpenApiTypes.STR)},
-            required=["model"],
+            properties={
+                "model": build_basic_type(OpenApiTypes.STR),
+                "models": build_array_type(build_basic_type(OpenApiTypes.STR) or {}),
+            },
+            required=[],
         ),
         responses={200: inline_serializer(name="zipFile", fields={})},
     )

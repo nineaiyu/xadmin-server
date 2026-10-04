@@ -523,6 +523,149 @@ class TestImportGrouping:
         assert MergeMixin._group_imports(lines, {"demo"}) == MergeMixin._group_imports(lines)
 
 
+class TestDictFields:
+    """--dict-field：字段绑定数据字典（DictChoiceField 显式声明，GUI 同源能力）。"""
+
+    def test_integer_field_gets_value_cast(self, workspace):
+        backend, _ = _generate(workspace, "--dict-field", "category=book_category")
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "from common.core.fields_dict import DictChoiceField" in serializer
+        assert 'category = DictChoiceField(dict_code="book_category", value_cast=int)' in serializer
+        _assert_python_compiles(backend)
+        _assert_ruff_clean(backend)
+
+    def test_char_field_without_cast(self, workspace):
+        backend, _ = _generate(workspace, "--dict-field", "name=book_tag")
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert 'name = DictChoiceField(dict_code="book_tag")' in serializer
+        assert "value_cast" not in serializer
+        _assert_ruff_clean(backend)
+
+    def test_without_dict_field_no_declaration(self, workspace):
+        """未绑定时产物与历史形态逐字节一致（幂等回归保护）。"""
+        backend, _ = _generate(workspace)
+        serializer = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        assert "DictChoiceField" not in serializer
+
+    def test_unknown_field_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--dict-field",
+                "not_a_field=book_tag",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_malformed_pair_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--dict-field",
+                "just-a-name",
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_idempotent_second_run(self, workspace):
+        backend, _ = _generate(workspace, "--dict-field", "category=book_category")
+        first = (backend / "demo" / "serializers.py").read_text(encoding="utf-8")
+        _generate(workspace, "--dict-field", "category=book_category")
+        assert (backend / "demo" / "serializers.py").read_text(encoding="utf-8") == first
+
+
+class TestMenuIcon:
+    """--menu-icon：菜单种子图标可配置（默认 ep:document）。"""
+
+    @staticmethod
+    def _page_meta_icon(workspace, *extra):
+        backend, _ = _generate(workspace, *extra)
+        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        page_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
+        )
+        return page_meta["fields"]["icon"]
+
+    def test_default_icon_is_ep_document(self, workspace):
+        assert self._page_meta_icon(workspace) == "ep:document"
+
+    def test_custom_icon(self, workspace):
+        assert self._page_meta_icon(workspace, "--menu-icon", "ep:grid") == "ep:grid"
+
+
+class TestMenuTitleAndOrdering:
+    """--menu-title / --ordering：菜单标题与列表排序覆盖。"""
+
+    def test_menu_title_overrides_seed_title(self, workspace):
+        backend, _ = _generate(workspace, "--menu-title", "书籍管理")
+        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        page_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
+        )
+        assert page_meta["fields"]["title"] == "书籍管理"
+        permission_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" not in item["fields"]
+        )
+        assert permission_meta["fields"]["title"].startswith("书籍管理-")
+
+    def test_menu_title_defaults_to_verbose_name(self, workspace):
+        backend, _ = _generate(workspace)
+        entries = json.loads((backend / "loadjson" / "seed_demo_book.json").read_text(encoding="utf-8"))
+        page_meta = next(
+            item for item in entries if item["model"] == "system.menumeta" and "is_show_menu" in item["fields"]
+        )
+        assert page_meta["fields"]["title"] == "书籍名称"
+
+    def test_ordering_override_in_views(self, workspace):
+        backend, _ = _generate(workspace, "--ordering", "isbn")
+        views = (backend / "demo" / "views.py").read_text(encoding="utf-8")
+        assert 'ordering = ["isbn"]' in views
+        _assert_ruff_clean(backend)
+
+    def test_ordering_desc_prefix(self, workspace):
+        # argparse 选项式参数：负前缀值需用 = 传参
+        backend, _ = _generate(workspace, "--ordering=-isbn")
+        views = (backend / "demo" / "views.py").read_text(encoding="utf-8")
+        assert 'ordering = ["-isbn"]' in views
+
+    def test_invalid_ordering_rejected(self, workspace):
+        from django.core.management.base import CommandError
+
+        backend, client = workspace
+        with pytest.raises(CommandError):
+            call_command(
+                "generate_crud",
+                "demo.Book",
+                "--ordering",
+                'name"; import os',
+                output=str(backend),
+                frontend_root=str(client),
+            )
+
+    def test_skip_ai_omits_declaration(self, workspace):
+        backend, _ = _generate(workspace, "--skip-ai")
+        assert not (backend / "demo" / "ai_declarations.py").exists()
+
+
+class TestClientHookScaffold:
+    """前端 hook 产物自带自定义按钮样板（工具栏 / 行内，注释形态不参与 lint 语义）。"""
+
+    def test_hook_contains_button_scaffold(self, workspace):
+        _, client = _generate(workspace)
+        hook = (client / "src" / "views" / "demo" / "book" / "utils" / "hook.tsx").read_text(encoding="utf-8")
+        assert "tableBarButtonsProps" in hook
+        assert "operationButtonsProps" in hook
+        assert "customAction" in hook
+
+
 class TestDefaultOrdering:
     """列表默认排序：模型未声明 Meta.ordering 时由生成物补声明。
 

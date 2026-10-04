@@ -37,13 +37,14 @@ class RenderBackendMixin:
         ]
 
     def _render_serializer_module(self, ctx, existing, standalone):
-        imports = self._render_imports(
-            (
-                ("common.core.serializers", [("BaseModelSerializer", None)]),
-                (ctx["app_label"], [("models", None)]),
-            ),
-            self._imported_names(existing),
-        )
+        dict_fields = ctx.get("dict_fields") or {}
+        specs = [
+            ("common.core.serializers", [("BaseModelSerializer", None)]),
+            (ctx["app_label"], [("models", None)]),
+        ]
+        if dict_fields:
+            specs.append(("common.core.fields_dict", [("DictChoiceField", None)]))
+        imports = self._render_imports(specs, self._imported_names(existing))
         lines = [
             *self._module_header(
                 ctx,
@@ -56,6 +57,7 @@ class RenderBackendMixin:
             "",
             "",
             f"class {ctx['model_name']}Serializer(BaseModelSerializer):",
+            *self._render_dict_declarations(ctx, dict_fields),
             "    class Meta:",
             f"        model = models.{ctx['model_name']}",
             "        fields = [",
@@ -71,6 +73,32 @@ class RenderBackendMixin:
             "",
         ]
         return "\n".join(lines)
+
+    @staticmethod
+    def _render_dict_declarations(ctx, dict_fields):
+        """字典绑定字段的显式声明：DictChoiceField(dict_code=...)，整型值带 value_cast=int。
+
+        显式声明放在 class 体首、Meta 之前（与 system/serializers/user.py 的 gender 同范式）；
+        空绑定返回空列表（产物与未启用字典时逐字节一致，保证幂等）。
+        """
+        if not dict_fields:
+            return []
+        model = ctx["model"]
+        integer_types = {
+            "IntegerField",
+            "SmallIntegerField",
+            "BigIntegerField",
+            "PositiveIntegerField",
+            "PositiveSmallIntegerField",
+            "PositiveBigIntegerField",
+        }
+        lines = []
+        for name, code in dict_fields.items():
+            field = next((item for item in model._meta.fields if item.name == name), None)
+            cast = ", value_cast=int" if field is not None and field.get_internal_type() in integer_types else ""
+            lines.append(f'    {name} = DictChoiceField(dict_code="{code}"{cast})')
+        lines.append("")
+        return lines
 
     @staticmethod
     def _render_kwargs(name, kwargs):

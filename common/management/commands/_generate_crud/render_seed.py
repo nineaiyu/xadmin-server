@@ -19,6 +19,7 @@ class RenderSeedMixin:
     def _render_menu_seed(self, ctx, parent):
         # model_label_pk 由 _collect_artifacts 预先解析（后续步骤提示复用）；兜底现场解析
         model_pk = ctx["model_label_pk"] if "model_label_pk" in ctx else self._model_label_pk(ctx["model"])
+        menu_title = ctx.get("menu_title") or ctx["verbose_name"]
         meta_pk = self._seed_pk(ctx, "meta")
         menu_pk = self._seed_pk(ctx, "menu")
         permissions = list(PERMISSION_ACTIONS)
@@ -29,8 +30,8 @@ class RenderSeedMixin:
                 "model": "system.menumeta",
                 "pk": str(meta_pk),
                 "fields": {
-                    "title": ctx["verbose_name"],
-                    "icon": "ep:document",
+                    "title": menu_title,
+                    "icon": ctx.get("menu_icon") or "ep:document",
                     "r_svg_name": "",
                     "is_show_menu": True,
                     "is_show_parent": False,
@@ -84,7 +85,7 @@ class RenderSeedMixin:
                     {
                         "model": "system.menumeta",
                         "pk": str(permission_meta_pk),
-                        "fields": {"title": f"{ctx['verbose_name']}-{action}"},
+                        "fields": {"title": f"{menu_title}-{action}"},
                     },
                 ]
             )

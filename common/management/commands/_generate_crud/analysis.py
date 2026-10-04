@@ -3,6 +3,7 @@
 """代码生成器：模型解析、字段规划与产物收集。"""
 
 import json
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -68,12 +69,14 @@ class AnalysisMixin(FieldPlanMixin):
         app_label = model._meta.app_label
         component = options["component"] or f"{app_label.title()}{model.__name__}"
         router_path = model_snake.replace("_", "-")
+        ordering = self._parse_ordering(options)
         ctx = {
             "model": model,
             "app_label": app_label,
             "model_name": model.__name__,
             "model_snake": model_snake,
             "verbose_name": str(model._meta.verbose_name),
+            "menu_title": str(options.get("menu_title") or "").strip() or str(model._meta.verbose_name),
             "component": component,
             "router_path": router_path,
             "url_prefix": options["url_prefix"] or f"api/{app_label}/{router_path}",
@@ -81,10 +84,47 @@ class AnalysisMixin(FieldPlanMixin):
             "locale_name": component[:1].lower() + component[1:],
             "basename": router_path,
             "with_import_export": options["with_import_export"],
-            "default_ordering": self._default_ordering(model),
+            "menu_icon": str(options.get("menu_icon") or "").strip(),
+            "default_ordering": ordering or self._default_ordering(model),
         }
         ctx.update(self._field_plan(model))
         return ctx
+
+    @staticmethod
+    def _parse_ordering(options) -> str:
+        """显式排序覆盖（--ordering）：单个字段名（可带 - 前缀），空串走引擎推导。
+
+        生成物里 ordering 直接落进源码，先做标识符校验防注入；模型已声明
+        Meta.ordering 时显式覆盖仍然生效（开发者明确的意图优先）。
+        """
+        ordering = str(options.get("ordering") or "").strip()
+        if not ordering:
+            return ""
+        if not re.fullmatch(r"-?[A-Za-z_][A-Za-z0-9_]*", ordering):
+            raise CommandError(f"--ordering 需为单个模型字段名（可带 - 前缀），收到：{ordering!r}")
+        return ordering
+
+    def _apply_dict_fields(self, ctx, pairs):
+        """字典绑定：``字段名=字典 code`` 对收敛为 ctx["dict_fields"]（渲染 DictChoiceField 声明）。
+
+        字段名越界即报错（CLI CommandError / GUI CodegenError 文案一致）；字典 code 的
+        存在性由调用方校验（CLI 无库环境降级为警告，GUI 侧硬校验）。
+        """
+        dict_fields = {}
+        for pair in pairs:
+            name, _, code = str(pair).partition("=")
+            name, code = name.strip(), code.strip()
+            if not name or not code:
+                raise CommandError(f"--dict-field 需形如 <字段名>=<字典code>，收到：{pair!r}")
+            known = {item.name for item in ctx["model"]._meta.fields} | {
+                item.name for item in ctx["model"]._meta.many_to_many
+            }
+            if name not in known:
+                raise CommandError(f"未知字段：{name}（模型 {ctx['model']._meta.label} 无此字段）")
+            dict_fields[name] = code
+        if dict_fields:
+            ctx["dict_fields"] = dict_fields
+        return dict_fields
 
     # --------------------------------------------------------------- 产物收集
 
@@ -159,16 +199,18 @@ class AnalysisMixin(FieldPlanMixin):
             }
         )
 
-        # 「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架
-        artifacts.append(
-            {
-                "label": "AI 动作声明",
-                "path": app_dir / "ai_declarations.py",
-                "content": self._render_ai_declarations(ctx, options),
-                "mode": "create",
-                "key": f"ai-declarations-{ctx['model_snake']}",
-            }
-        )
+        # 「生成即接入」：AI 动作声明骨架（只读动作直接可用）+ 可选测试骨架；
+        # --skip-ai 时不产出（纯内部管理表等无需 AI 接入的场景）
+        if not options.get("skip_ai"):
+            artifacts.append(
+                {
+                    "label": "AI 动作声明",
+                    "path": app_dir / "ai_declarations.py",
+                    "content": self._render_ai_declarations(ctx, options),
+                    "mode": "create",
+                    "key": f"ai-declarations-{ctx['model_snake']}",
+                }
+            )
         if options.get("with_tests"):
             artifacts.append(
                 {
@@ -357,8 +399,8 @@ class AnalysisMixin(FieldPlanMixin):
                 role.menu.add(*menus)
             self.stdout.write(f"--bootstrap: 已授予角色 {[role.code for role in roles]} 共 {len(menus)} 个菜单/权限点")
 
-    def _print_next_steps(self, ctx, options):
-        """生成后「后续步骤」清单：把散落教程里的手工动作收敛为可复制命令。
+    def _next_steps(self, ctx, options):
+        """后续步骤清单（可复用：CLI 打印 / GUI 生成 NEXT_STEPS.md 同一口径）。
 
         口径与 docs/guide/first-module-30min.md 同步：权限点种子入库 →
         字段权限树（模型节点缺失时）→ 菜单与授权 → doctor 自检 →（可选）模块声明。
@@ -391,7 +433,11 @@ class AnalysisMixin(FieldPlanMixin):
         steps.append("自检：python manage.py doctor（权限点缺口 / 依赖 / 契约一次看全）")
         if not options["with_module"]:
             steps.append("（可选）声明为可裁剪模块：重跑本命令加 --with-module，或 manage.py generate_module")
+        return steps
 
+    def _print_next_steps(self, ctx, options):
+        """生成后「后续步骤」清单：把散落教程里的手工动作收敛为可复制命令。"""
+        steps = self._next_steps(ctx, options)
         lines = ["", "后续步骤（命令在项目根执行）："] if steps else [""]
         lines.extend(f"  {index}) {text}" for index, text in enumerate(steps, start=1))
         lines.append("")

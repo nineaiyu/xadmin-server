@@ -99,3 +99,33 @@ python manage.py generate_crud demo.Book \
   （`common/core/modules/scaffold.py`，单一模板源，双仓命令不再各写一份），模块 id 已存在时
   降级为提示、不中断生成；元组字面量渲染为 ruff format 口径的双引号
   （`generate_module` 既有产物同步修正为一次过 `ruff format --check`）。
+
+## 7. 增量（2026-10-04，GUI 字段级自定义与体验完善）
+
+GUI（`system/utils/codegen_gui.py` + 客户端 `views/system/codegen/`）从「模型下拉 + zip」
+升级为完整生成工作台；安全口径不变——**端点只读**（模型内省 + 字典查询 + 模板渲染 + zip
+下载），落盘 / 入库仍由 CLI `--bootstrap` / `--register-app` 承担。引擎模板增强（CLI/GUI 同源）：
+
+- **字段级自定义**（GUI 核心能力，域拆分见 `system/utils/codegen_fields.py`）：显示名覆盖
+  （`extra_kwargs["label"]`，DRF 原生）、必填 / 只读覆盖、`input_type` 覆盖、**字典绑定**
+  （生成 `DictChoiceField` 显式声明，整型值自动 `value_cast=int`）、表格列 / 搜索开关、
+  字段排序（GUI 拖拽 → `serializer_fields` 顺序）。两条框架约束（越界即报错）：
+  `input_type` 覆盖仅限**关联字段**（`fields_related` 只在关系字段上 pop `input_type`，
+  非关联字段的渲染器由字段类型决定）；字典绑定仅限**非关联字段**（`DictChoiceField` 是
+  `LabeledChoiceField` 子类，值为标量而非关联对象）。校验 input_type 须在
+  `DECLARED_INPUT_TYPES` 词表或 `api-` 前缀族内、dict_code 须为启用中的字典类型行；
+- **CLI/GUI 能力对齐**：GUI 新增 `with_tests` / `menu_parent`（菜单树选择）/
+  `menu_icon`（菜单种子图标，默认仍是 `ep:document`）/ `module_id` / `module_level` /
+  `skip_menu_seed`；CLI 对应新增 `--menu-icon`、`--dict-field 字段=字典code`（可多次）；
+- **批量生成**：`download` 端点传 `models`（多模型清单）走批量打包——共享表单选项 +
+  逐模型引擎默认字段计划；同路径产物去重保留首个，内容冲突（如各自 urls.py 注册行）
+  附合并提示；NEXT_STEPS.md 合并为单文档分节；
+- **zip 附 NEXT_STEPS.md**：`_print_next_steps` 的清单口径抽取为 `_next_steps`（CLI 打印 /
+  GUI markdown 同源），产物预览树同步可见；
+- **前端产物**：`hook.tsx` 自带自定义按钮注释样板（工具栏 `tableBarButtonsProps` /
+  行内 `operationButtonsProps`，`code` 对应权限码 `动作:组件名`），范式指向
+  `views/system/dict/utils/hook.tsx`；
+- **生成方案本地保存**：GUI 表单 + 字段配置整体存浏览器 localStorage（命名保存 / 载入 /
+  删除 / 导出导入 JSON）——代码生成不落库的定位不变，跨设备用 JSON 文件迁移；
+- **预览体验**：文件树按仓库分组、highlight.js 语法高亮（按需注册语言、动态 import
+  懒加载）、行号、单文件复制 / 下载、notice 徽标。

@@ -62,6 +62,25 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
         parser.add_argument("--frontend-dir", default="", help="前端目录（相对 src/views，默认 <app>/<model>）")
         parser.add_argument("--frontend-root", default="", help="前端仓库根（默认同级 xadmin-client，存在时使用）")
         parser.add_argument("--parent", default="", help="菜单种子的上级菜单 pk（默认顶级）")
+        parser.add_argument("--menu-title", default="", help="菜单种子的菜单标题（默认模型 verbose_name）")
+        parser.add_argument(
+            "--ordering",
+            default="",
+            help="列表视图默认排序（单个模型字段名，可带 - 前缀；默认 created_time/pk 倒序推导）",
+        )
+        parser.add_argument(
+            "--skip-ai",
+            action="store_true",
+            help="不生成 AI 动作声明骨架（默认生成，纯内部管理表等场景可跳过）",
+        )
+        parser.add_argument("--menu-icon", default="", help="菜单种子的图标（默认 ep:document，如 ep:grid）")
+        parser.add_argument(
+            "--dict-field",
+            action="append",
+            default=[],
+            metavar="字段=字典code",
+            help="字段绑定数据字典（生成 DictChoiceField 声明，可多次）：如 --dict-field status=task_status",
+        )
         parser.add_argument("--with-import-export", action="store_true", help="ViewSet 追加导入导出 Mixin 与权限码")
         parser.add_argument("--with-tags", action="store_true", help="AI 声明文件附带标签接入声明（白名单）")
         parser.add_argument("--with-tests", action="store_true", help="生成 pytest 测试骨架（tests/unit/<app>/）")
@@ -99,6 +118,7 @@ class Command(AnalysisMixin, RegistrationMixin, MergeMixin, RenderMixin, BaseCom
     def handle(self, *args, **options):
         model = self._resolve_model(options["model"])
         ctx = self._build_context(model, options)
+        self._apply_dict_fields(ctx, options.get("dict_field") or [])
         artifacts = self._collect_artifacts(ctx, options)
         self._emit(artifacts, options)
         ctx["app_registered"] = False
