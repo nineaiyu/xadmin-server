@@ -9,7 +9,7 @@ import datetime
 from django.utils.translation import gettext_lazy as _
 from rest_framework.response import Response
 
-from server.utils import get_current_request
+from common.local import get_current_request
 
 
 class ApiResponse(Response):

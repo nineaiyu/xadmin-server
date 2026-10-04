@@ -97,7 +97,6 @@ class TestProbeCeleryCache:
 
     def test_expired_cache_returns_stale_and_refreshes_in_background(self, monkeypatch):
         """过期时立即返回旧值（不阻塞），后台线程刷新出真实结果。"""
-        import sys
         import time
         import types
 
@@ -118,11 +117,9 @@ class TestProbeCeleryCache:
             def inspect(timeout=None):
                 return _FakeInspect()
 
-        monkeypatch.setitem(
-            sys.modules,
-            "server.celery",
-            types.SimpleNamespace(app=types.SimpleNamespace(control=_FakeControl())),
-        )
+        # T03-03 起 health 经 celery.current_app 取 app（不再 import server.celery），
+        # 桩替换 celery 模块命名空间里的 current_app 绑定，monkeypatch 自动还原
+        monkeypatch.setattr("celery.current_app", types.SimpleNamespace(control=_FakeControl()))
 
         # 前序测试可能触发过真实后台刷新：等其释放锁（避免本次刷新被防重入锁跳过），
         # 且该线程可能横跨 monkeypatch 时刻写入了本 dict——等锁后再重置一次缓存状态

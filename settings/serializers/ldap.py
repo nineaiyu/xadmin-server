@@ -9,8 +9,10 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from settings.serializers.contract import SettingSaveContractMixin
 
-class LdapSettingSerializer(serializers.Serializer):
+
+class LdapSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     # 认证接入
     LDAP_AUTH_ENABLED = serializers.BooleanField(
         default=False, label=_("LDAP authentication"), help_text=_("Enable LDAP/AD account login")

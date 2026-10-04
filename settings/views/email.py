@@ -6,13 +6,13 @@
 # date : 7/31/2024
 from smtplib import SMTPSenderRefused
 
-from django.conf import settings
 from django.core.mail import get_connection, send_mail
 from django.utils.translation import gettext_lazy as _
 
 from common.core.response import ApiResponse
 from common.utils import get_logger
 from settings.serializers.email import EmailSettingSerializer
+from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -29,30 +29,40 @@ class EmailServerSettingViewSet(BaseSettingViewSet):
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # 测试邮件时，邮件服务器信息从配置中获取
-        email_host = settings.EMAIL_HOST
-        email_port = settings.EMAIL_PORT
-        email_host_user = settings.EMAIL_HOST_USER
-        email_host_password = settings.EMAIL_HOST_PASSWORD
-        email_use_ssl = settings.EMAIL_USE_SSL
-        email_use_tls = settings.EMAIL_USE_TLS
+        # 测试连接统一口径（T03-09）：按表单值传参构造连接（未提交键回退已存
+        # 配置、密码留空沿用已存值），不改进程全局 settings——并发期间真实
+        # 请求不可能读到测试值
+        values = build_test_values(
+            serializer.validated_data,
+            request.data,
+            keys=[
+                "EMAIL_HOST",
+                "EMAIL_PORT",
+                "EMAIL_HOST_USER",
+                "EMAIL_HOST_PASSWORD",
+                "EMAIL_SUBJECT_PREFIX",
+                "EMAIL_USE_SSL",
+                "EMAIL_USE_TLS",
+            ],
+            secret_keys={"EMAIL_HOST_PASSWORD"},
+        )
         email_recipient = serializer.validated_data.get("EMAIL_RECIPIENT")
 
         try:
             # 括号必须：`or` 优先级低于 `+`，裸写 `prefix or "" + "Test"` 在已设前缀时
             # subject 只剩前缀、丢失 "Test"（T01-07）
-            subject = (settings.EMAIL_SUBJECT_PREFIX or "") + "Test"
+            subject = (values["EMAIL_SUBJECT_PREFIX"] or "") + "Test"
             message = _("Test smtp setting")
-            email_recipient = email_recipient or email_host_user
+            email_recipient = email_recipient or values["EMAIL_HOST_USER"]
             connection = get_connection(
-                host=email_host,
-                port=email_port,
-                username=email_host_user,
-                password=email_host_password,
-                use_tls=email_use_tls,
-                use_ssl=email_use_ssl,
+                host=values["EMAIL_HOST"],
+                port=int(values["EMAIL_PORT"]),
+                username=values["EMAIL_HOST_USER"],
+                password=values["EMAIL_HOST_PASSWORD"],
+                use_tls=bool(values["EMAIL_USE_TLS"]),
+                use_ssl=bool(values["EMAIL_USE_SSL"]),
             )
-            send_mail(subject, message, email_host_user, [email_recipient], connection=connection)
+            send_mail(subject, message, values["EMAIL_HOST_USER"], [email_recipient], connection=connection)
         except SMTPSenderRefused as e:
             error = e.smtp_error
             if isinstance(error, bytes):

@@ -13,6 +13,11 @@ notifications / backends / signal(s) 直接 import——这是契约层收口的
 「仅 `*.services`」+ CONTRACT_SEAMS 登记约束（双向漂移校验）。
 函数级惰性 import 属逃生门，作为观察项打印。
 
+反向依赖规则（T03-05）：common（框架层）禁止 import server（工程层）——
+common 是被所有人依赖的基座，反向依赖破坏分层单向性（CODE-REVIEW 3.2）。
+server 装配产物经 common/injection.py 依赖注入下发，无契约缝可言，
+模块级与函数级 import 一律违例（不留逃生门）。
+
 用法：python scripts/check_cross_app_imports.py
 新增违例时退出码 1（CI 阻断）。
 """
@@ -165,6 +170,46 @@ def scan_framework_direction():
     return violations, observations
 
 
+# ---------------------------------------------------------------------------
+# 反向依赖门禁（T03-05）：common（框架层）→ server（工程层）禁止 import。
+# 例外从无：server 装配产物（CONFIG / VERSION）经 common/injection.py 依赖注入
+# 下发（server/const.py 末尾登记），thread-local 请求持有器与表前缀信号已归位
+# （common/local.py、common/core/db/prefix.py，server/utils.py 留兼容 re-export）。
+# 函数级惰性 import 同样违例——工程层不是业务 app，不存在「运行期才可判定」的
+# 循环依赖，逃生门只会让反向依赖回潮。
+# ---------------------------------------------------------------------------
+REVERSE_DEP_FRAMEWORK = "common"
+REVERSE_DEP_PROJECT = "server"
+
+# 语句级锚定（含函数级缩进）：from server[.x] import / import server[.x]
+REVERSE_DEP_IMPORT_RE = re.compile(
+    r"^[ \t]*(?:from server(?:\.[\w.]+)?\s+import\b|import server(?:\.[\w.]+)?\b)",
+    re.M,
+)
+
+
+def scan_common_to_server() -> list[tuple[str, int, str]]:
+    """common 内任何形式的 server import（模块级/函数级）均为违例。"""
+    violations = []
+    common_dir = REPO_ROOT / REVERSE_DEP_FRAMEWORK
+    for py in sorted(common_dir.rglob("*.py")):
+        if {"migrations", "tests", "__pycache__"} & set(py.parts):
+            continue
+        rel = relative_module(py)
+        text = py.read_text(encoding="utf-8", errors="ignore")
+        for m in REVERSE_DEP_IMPORT_RE.finditer(text):
+            line = text[: m.start()].count("\n") + 1
+            violations.append(
+                (
+                    rel,
+                    line,
+                    f"框架层禁止 import 工程层 {m.group(0).strip()}——"
+                    "server 产物经 common/injection.py 注入或归位模块读取",
+                )
+            )
+    return violations
+
+
 def scan() -> list[tuple[str, int, str]]:
     violations = []
     for path in REPO_ROOT.iterdir():
@@ -196,6 +241,7 @@ def main() -> int:
     violations = scan()
     direction_violations, observations = scan_framework_direction()
     violations.extend(direction_violations)
+    violations.extend(scan_common_to_server())
     if violations:
         print("发现未收口的跨 app 直接 import：")
         for rel, line, stmt in sorted(violations):
@@ -204,7 +250,9 @@ def main() -> int:
             "\n跨 app 引用请改走 <app>.services 契约层；确需保留的，"
             "在 scripts/check_cross_app_imports.py 的 ALLOWLIST 登记原因。\n"
             "common（框架层）→ 业务 app 的消费统一经 common/contracts.py 契约面："
-            "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。"
+            "在 _CONTRACT_PROVIDERS 声明名字，并在 CONTRACT_SEAMS 登记提供方缝。\n"
+            "common（框架层）→ server（工程层）禁止 import：装配产物经 common/injection.py "
+            "依赖注入，请求持有器/表前缀信号用归位模块（common.local、common.core.db）。"
         )
         return 1
     if observations:
@@ -213,7 +261,8 @@ def main() -> int:
             print(f"  {rel}: {sorted(modules)}")
     print(
         f"跨 app import 门禁通过（allowlist {len(ALLOWLIST)} 项合法保留；"
-        f"框架层契约缝 {sum(len(v) for v in CONTRACT_SEAMS.values())} 条已登记）。"
+        f"框架层契约缝 {sum(len(v) for v in CONTRACT_SEAMS.values())} 条已登记；"
+        f"common → server 反向依赖 0 处）。"
     )
     return 0
 

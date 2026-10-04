@@ -112,24 +112,33 @@ def run_ldap_sync() -> dict:
     return summary
 
 
-def test_ldap_connection() -> dict:
-    """连接测试（管理页「测试」按钮）：服务 bind + 按当前配置实际搜索计数。"""
-    if not settings.LDAP_SERVER_URI:
+def test_ldap_connection(config=None) -> dict:
+    """连接测试（管理页「测试」按钮）：服务 bind + 按配置快照实际搜索计数。
+
+    ``config`` 传 ``LdapConfig`` 快照时完全按快照连搜（T03-09：测试连接按表单值
+    传参，不临时改写进程全局 settings）；传 None（缺省）读 django settings，
+    与登录/同步链路同源。
+    """
+    from system.ldap.client import LdapConfig
+
+    cfg = config if config is not None else LdapConfig.from_settings()
+    if not cfg.server_uri:
         raise LdapConfigError("LDAP_SERVER_URI is empty")
-    with service_connection() as conn:
+    with service_connection(cfg) as conn:
         user_count = 0
-        if settings.LDAP_USER_SEARCH_BASE:
+        if cfg.user_search_base:
             user_count = len(
                 paged_search_entries(
                     conn,
-                    settings.LDAP_USER_SEARCH_BASE,
-                    settings.LDAP_USER_FILTER,
-                    [get_attr_map().get("username", "sAMAccountName")],
+                    cfg.user_search_base,
+                    cfg.user_filter,
+                    [get_attr_map(cfg).get("username", "sAMAccountName")],
+                    config=cfg,
                 )
             )
         dept_count = 0
-        if settings.LDAP_DEPT_ENABLED and settings.LDAP_DEPT_SEARCH_BASE:
-            dept_count = len(paged_search_entries(conn, settings.LDAP_DEPT_SEARCH_BASE, LDAP_FILTER_OU, ["ou"]))
+        if cfg.dept_enabled and cfg.dept_search_base:
+            dept_count = len(paged_search_entries(conn, cfg.dept_search_base, LDAP_FILTER_OU, ["ou"], config=cfg))
     return {"user_count": user_count, "dept_count": dept_count}
 
 

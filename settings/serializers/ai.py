@@ -11,8 +11,10 @@ API Key write_only ⇒ 值级加密落库、retrieve 回显自动剔除（G12 �
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from settings.serializers.contract import SettingSaveContractMixin
 
-class AiAssistantSettingSerializer(serializers.Serializer):
+
+class AiAssistantSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     AI_ASSISTANT_ENABLED = serializers.BooleanField(
         default=False, label=_("AI assistant"), help_text=_("Enable the docs-based usage/development assistant")
     )

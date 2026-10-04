@@ -10,13 +10,14 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from common.core.fields import ColorField, StepFloatField
+from settings.serializers.contract import SettingSaveContractMixin
 from system.services import invalid_user_cache_signal
 
 # 水印文字颜色：#rgb/#rrggbbaa 十六进制、rgb()/rgba()/hsl()/hsla() 函数、CSS 颜色名
 WATERMARK_COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|(rgb|rgba|hsl|hsla)\([^)]*\)|[a-zA-Z]+)$")
 
 
-class BasicSettingSerializer(serializers.Serializer):
+class BasicSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     SITE_URL = serializers.URLField(
         required=False,
         label=_("Site URL"),
@@ -152,5 +153,5 @@ class BasicSettingSerializer(serializers.Serializer):
         return value
 
     def post_save(self):
-        if set(getattr(self, "_change_fields", [])) & {"PERMISSION_FIELD_ENABLED", "PERMISSION_DATA_ENABLED"}:
+        if set(self.change_fields) & {"PERMISSION_FIELD_ENABLED", "PERMISSION_DATA_ENABLED"}:
             invalid_user_cache_signal.send(sender=self, user_pk="*")

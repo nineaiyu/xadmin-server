@@ -7,7 +7,7 @@
 import datetime
 import os
 
-from celery import Task, shared_task
+from celery import Task, current_app, shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -29,11 +29,10 @@ from common.celery.utils import (
 )
 from common.core.task_request import build_task_request
 from common.core.utils import get_doc_first_line
+from common.local import set_current_request
 from common.models import Monitor, MonitorAlert
 from common.notifications import BatchDeleteDataMessage, ImportDataMessage, ServerPerformanceCheckUtil
 from common.utils.timezone import local_now_display
-from server.celery import app
-from server.utils import set_current_request
 
 logger = get_task_logger(__name__)
 
@@ -175,7 +174,7 @@ def clean_celery_periodic_tasks():
     logger.info("Start clean celery periodic tasks.")
     register_tasks = PeriodicTask.objects.all()
     for task in register_tasks:
-        if task.task in app.tasks:
+        if task.task in current_app.tasks:
             continue
 
         task_name = task.name

@@ -16,8 +16,10 @@ serializer_class_mapper 同思路），各页签只读写/校验自己的字段�
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from settings.serializers.contract import SettingSaveContractMixin
 
-class DingTalkSettingSerializer(serializers.Serializer):
+
+class DingTalkSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     """钉钉工作通知：应用三元组（AppKey / AppSecret / AgentId）"""
 
     DINGTALK_ENABLED = serializers.BooleanField(
@@ -40,7 +42,7 @@ class DingTalkSettingSerializer(serializers.Serializer):
     )
 
 
-class WeComSettingSerializer(serializers.Serializer):
+class WeComSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     """企业微信应用消息：企业三元组（CorpId / CorpSecret / AgentId）"""
 
     WECOM_ENABLED = serializers.BooleanField(
@@ -58,7 +60,7 @@ class WeComSettingSerializer(serializers.Serializer):
     WECOM_AGENT_ID = serializers.CharField(max_length=64, required=True, label=_("WeCom AgentId"))
 
 
-class FeiShuSettingSerializer(serializers.Serializer):
+class FeiShuSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     """飞书 IM 消息：应用二元组（App ID / App Secret）"""
 
     FEISHU_ENABLED = serializers.BooleanField(
@@ -75,7 +77,7 @@ class FeiShuSettingSerializer(serializers.Serializer):
     )
 
 
-class ImNotifySettingSerializer(serializers.Serializer):
+class ImNotifySettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     """全量合并入口（不带 ?channel=）：字段非必填，保持旧接口形态不变"""
 
     # 钉钉（工作通知）

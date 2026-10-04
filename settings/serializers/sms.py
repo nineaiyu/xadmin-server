@@ -11,9 +11,10 @@ from rest_framework import serializers
 from common.core.fields import PhoneField
 from common.core.validators import PhoneValidator
 from common.sdk.sms.endpoint import BACKENDS
+from settings.serializers.contract import SettingSaveContractMixin
 
 
-class SMSSettingSerializer(serializers.Serializer):
+class SMSSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     SMS_ENABLED = serializers.BooleanField(
         default=False, label=_("SMS"), help_text=_("Enable Short Message Service (SMS)")
     )
@@ -25,7 +26,7 @@ class SMSSettingSerializer(serializers.Serializer):
     )
 
 
-class BaseSMSSettingSerializer(serializers.Serializer):
+class BaseSMSSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     PREFIX_TITLE = _("SMS")
 
     SMS_TEST_PHONE = PhoneField(
@@ -38,7 +39,8 @@ class BaseSMSSettingSerializer(serializers.Serializer):
     )
 
     def post_save(self):
-        value = self._data["SMS_TEST_PHONE"]
+        # 响应整形（T03-08 契约）：把 SMS_TEST_PHONE 归一为 {code, phone} 便于前端回显
+        value = self.response_data["SMS_TEST_PHONE"]
         if isinstance(value, dict):
             return
         try:
@@ -46,7 +48,7 @@ class BaseSMSSettingSerializer(serializers.Serializer):
             value = {"code": f"+{phone.country_code}", "phone": phone.national_number}
         except phonenumbers.NumberParseException:
             value = {"code": "+86", "phone": value}
-        self._data["SMS_TEST_PHONE"] = value
+        self.response_data["SMS_TEST_PHONE"] = value
 
 
 class AlibabaSMSSettingSerializer(BaseSMSSettingSerializer):

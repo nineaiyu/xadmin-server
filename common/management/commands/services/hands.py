@@ -9,22 +9,17 @@ from django.db.utils import OperationalError
 
 from common.contracts import Setting, scan_permission_gaps
 from common.core.utils import PrintLogFormat
+from common.injection import get_server_config, get_server_version
 from common.utils import test_ip_connectivity
 from common.utils.file import download_file
-from server.const import CONFIG
 
 logger = PrintLogFormat("xAdmin API Server", title_width=30, body_width=0)
 
-try:
-    from server import const
+# 版本单一事实源在 server/const.py（文档门禁按此校验），经 common.injection 注入读取；
+# 未注入（未经 Django settings 启动）直接抛异常，与旧 import 失败即退出的口径一致
+__version__ = get_server_version()
 
-    __version__ = const.VERSION
-except ImportError as e:
-    print(f"Not found __version__: {e}")
-    print("Python is: ")
-    logger.info(sys.executable)
-    __version__ = "Unknown"
-    sys.exit(1)
+CONFIG = get_server_config()
 
 HTTP_HOST = CONFIG.HTTP_BIND_HOST or "127.0.0.1"
 HTTP_PORT = CONFIG.HTTP_LISTEN_PORT or 8896

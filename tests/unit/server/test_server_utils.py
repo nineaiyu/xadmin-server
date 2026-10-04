@@ -1,17 +1,29 @@
 # -*- coding: utf-8 -*-
-"""server.utils 单元测试（thread-local 请求上下文、DB 表前缀）。"""
+"""server.utils 兼容层回归（T03-01/T03-02 归位后保留一个版本周期）。
+
+本体已迁 common.local / common.core.db.prefix（本体测试见 tests/unit/common/）；
+本文件守护兼容 re-export 与归位实现同源、兼容路径行为不变。归位期结束后
+随 server/utils.py 一并删除。
+"""
 
 from types import SimpleNamespace
 
-import pytest
 from django.test import override_settings
 
+import common.core.db.prefix as db_prefix
+import common.local as common_local
 from server.utils import add_db_prefix, get_current_request, set_current_request
 
-pytestmark = pytest.mark.django_db
+
+class TestShimReexports:
+    def test_reexports_are_canonical_objects(self):
+        """re-export 与归位实现对象同一（非拷贝），行为漂移不可能发生。"""
+        assert get_current_request is common_local.get_current_request
+        assert set_current_request is common_local.set_current_request
+        assert add_db_prefix is db_prefix.add_db_prefix
 
 
-class TestCurrentRequest:
+class TestCurrentRequestViaShim:
     def test_round_trip(self):
         assert get_current_request() is None
         set_current_request("fake-request")
@@ -20,7 +32,7 @@ class TestCurrentRequest:
         assert get_current_request() is None
 
 
-class TestAddDbPrefix:
+class TestAddDbPrefixViaShim:
     def _make_sender(self, db_table="system_userinfo"):
         meta = SimpleNamespace(
             managed=True,

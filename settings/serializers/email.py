@@ -7,8 +7,10 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from settings.serializers.contract import SettingSaveContractMixin
 
-class EmailSettingSerializer(serializers.Serializer):
+
+class EmailSettingSerializer(SettingSaveContractMixin, serializers.Serializer):
     EMAIL_ENABLED = serializers.BooleanField(
         default=False, label=_("Email"), help_text=_("Enable Email Service (Email)")
     )
@@ -41,6 +43,7 @@ class EmailSettingSerializer(serializers.Serializer):
         max_length=128,
         allow_blank=True,
         required=False,
+        trim_whitespace=False,  # 尾部空格有意义（"[xadmin] Test" 拼接），不剥
         label=_("Subject prefix"),
         help_text=_("The subject line prefix of the sent email"),
     )

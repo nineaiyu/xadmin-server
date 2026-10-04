@@ -23,9 +23,9 @@ from common.base.utils import remove_file
 from common.celery.decorator import get_after_app_ready_tasks, get_after_app_shutdown_clean_tasks
 from common.celery.logger import CeleryThreadTaskFileHandler
 from common.celery.utils import get_celery_task_log_path
+from common.local import get_current_request
 from common.signals import django_ready
 from common.utils import get_logger
-from server.utils import get_current_request
 
 logger = get_logger(__name__)
 

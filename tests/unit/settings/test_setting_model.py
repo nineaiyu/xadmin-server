@@ -124,12 +124,12 @@ class TestBasicSettingSerializerHooks:
         invalid_user_cache_signal.connect(receiver, weak=False)
         try:
             serializer = BasicSettingSerializer()
-            serializer._change_fields = ["PERMISSION_FIELD_ENABLED"]
+            serializer.change_fields = ["PERMISSION_FIELD_ENABLED"]
             serializer.post_save()
             assert received and received[0]["user_pk"] == "*"
 
             received.clear()
-            serializer._change_fields = ["EMAIL_ENABLED"]
+            serializer.change_fields = ["EMAIL_ENABLED"]
             serializer.post_save()
             assert received == []
         finally:

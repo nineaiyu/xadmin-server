@@ -57,10 +57,11 @@ _celery_probe_refreshing = threading.Lock()
 def _refresh_celery_probe():
     """后台刷新 celery 探测结果（失败记录原因，由下次刷新重试）。"""
     try:
-        from server.celery import app
+        # current_app 代理解析到当前进程的 Celery app（server.celery），common 不反向 import server
+        from celery import current_app
 
         start = time.time()
-        workers = app.control.inspect(timeout=_CELERY_PROBE_TIMEOUT).ping()
+        workers = current_app.control.inspect(timeout=_CELERY_PROBE_TIMEOUT).ping()
         _celery_probe_cache["value"] = (bool(workers), time.time() - start)
     except Exception as e:  # noqa: BLE001 探测失败记录原因
         _celery_probe_cache["value"] = (False, str(e))

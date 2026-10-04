@@ -64,9 +64,22 @@ class BaseSettingViewSet(NoDetailModelSet):
         return data
 
     def perform_update(self, serializer):
-        post_data_names = list(self.request.data.keys())
+        """设置项保存（T03-08 显式契约，配对 settings/serializers/contract.py）。
+
+        - 仅 request.data 显式提交的键持久化（带 default 的可选字段未提交不落库，
+          PUT 同口径——设置页语义是「改了什么存什么」）；write_only 密文提交
+          空值 = 不修改（回退已存值）；
+        - 响应载荷 = 未提交键取运行时当前值 + 变更键取新值的合并视图，经
+          set_response_data 显式回写（不再裸改 serializer._data）；
+        - serializer.change_fields = 实际落库且值变化的键名；
+        - 序列化器可实现 post_save() 做联动失效/响应整形（change_fields 与响应
+          载荷已就绪；运行时 settings 由 pub/sub 订阅者异步热更）。
+        未经契约混入的序列化器（二开存量）维持旧 _data/_change_fields 写入一个
+        版本周期。
+        """
+        post_data_names = set(self.request.data.keys())
         settings_items = self.parse_serializer_data(serializer)
-        serializer_data = getattr(serializer, "data", {})
+        serializer_data = serializer.data
         change_fields = []
         for item in settings_items:
             if item["name"] not in post_data_names:
@@ -76,10 +89,16 @@ class BaseSettingViewSet(NoDetailModelSet):
                 continue
             change_fields.append(setting.name)
             serializer_data[setting.name] = setting.cleaned_value
-        serializer._data = serializer_data
-        serializer._change_fields = change_fields
-        if hasattr(serializer, "post_save"):
-            serializer.post_save()
+        if hasattr(serializer, "set_response_data"):
+            serializer.set_response_data(serializer_data)
+            serializer.change_fields = change_fields
+        else:
+            # 未接入契约混入的存量序列化器：维持旧私有属性写入（下个版本周期移除）
+            serializer._data = serializer_data
+            serializer._change_fields = change_fields
+        post_save = getattr(serializer, "post_save", None)
+        if callable(post_save):
+            post_save()
 
 
 class SettingFilter(BaseFilterSet):

@@ -17,8 +17,8 @@ from rest_framework.serializers import ModelSerializer
 from common.contracts import apply_grant_fields
 from common.core.fields import BasePrimaryKeyRelatedField, LabeledChoiceField
 from common.core.mask import apply_mask, apply_output_mask, get_mask_rules, mask_exempt
+from common.local import get_current_request
 from common.utils import get_logger
-from server.utils import get_current_request
 
 logger = get_logger(__name__)
 

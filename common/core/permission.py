@@ -24,8 +24,8 @@ from common.contracts import (
 from common.core import permission_meta
 from common.core.modules import filter_menu_queryset
 from common.core.utils import permission_path_matches
+from common.local import get_current_request, set_current_request
 from common.utils import get_logger
-from server.utils import get_current_request, set_current_request
 
 logger = get_logger(__name__)
 

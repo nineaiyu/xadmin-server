@@ -83,6 +83,18 @@ class Setting(DbAuditModel, DbUuidModel):
     def refresh_item(cls, data):
         setattr(settings, data[0], data[1])
 
+    @classmethod
+    def default_value(cls, name):
+        """行删除后的运行时回收值：同名静态配置默认值（config.yml / 环境变量 / 代码默认值）。
+
+        CONFIG 经 common.injection 注入（T03-04），不反向 import server。键完全
+        未知（运行期自建的自定义键）时回落 None：回收统一走 setattr 语义（pub/sub
+        载荷须可 JSON 序列化），未知键的运行时属性收敛为 None 而非删除属性。
+        """
+        from common.injection import get_server_config
+
+        return get_server_config().get(name)
+
     def refresh_setting(self):
         setattr(settings, self.name, self.cleaned_value)
 

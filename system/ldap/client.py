@@ -4,7 +4,13 @@
 
 只依赖 ldap3 与 django.conf.settings；不吞异常——「目录不可达」与「密码错误」
 由调用方按异常类型/结果区分。连接对象可整体替换（测试注入 fake 连接）。
+
+连接函数默认读 django settings（``config=None`` → ``LdapConfig.from_settings``）；
+显式传 ``LdapConfig`` 快照时完全按快照连搜（T03-09：管理页「测试连接」按表单值
+构造快照传参，不临时改写进程全局 settings）。
 """
+
+from dataclasses import dataclass
 
 from django.conf import settings
 from ldap3 import ALL, SUBTREE, Connection, Server
@@ -17,6 +23,7 @@ logger = get_logger(__name__)
 
 __all__ = [
     "LDAPException",
+    "LdapConfig",
     "LdapConfigError",
     "build_server",
     "service_connection",
@@ -24,6 +31,8 @@ __all__ = [
     "paged_search_entries",
     "entry_to_attrs",
     "escape_filter",
+    "get_attr_map",
+    "normalize_dn",
 ]
 
 # AD userAccountControl 禁用位（ACCOUNTDISABLE）
@@ -34,43 +43,114 @@ class LdapConfigError(Exception):
     """LDAP 配置不完整（如未填 SERVER_URI / SEARCH_BASE），区别于连接失败。"""
 
 
-def build_server():
-    uri = settings.LDAP_SERVER_URI
+# settings 键名 -> 快照字段名（from_values 消费；测试连接的表单快照同键名）
+_SETTING_KEY_TO_FIELD = {
+    "LDAP_SERVER_URI": "server_uri",
+    "LDAP_START_TLS": "start_tls",
+    "LDAP_BIND_DN": "bind_dn",
+    "LDAP_BIND_PASSWORD": "bind_password",
+    "LDAP_CONNECT_TIMEOUT": "connect_timeout",
+    "LDAP_USER_SEARCH_BASE": "user_search_base",
+    "LDAP_USER_FILTER": "user_filter",
+    "LDAP_ATTR_USERNAME": "attr_username",
+    "LDAP_ATTR_NICKNAME": "attr_nickname",
+    "LDAP_ATTR_EMAIL": "attr_email",
+    "LDAP_ATTR_PHONE": "attr_phone",
+    "LDAP_DEPT_ENABLED": "dept_enabled",
+    "LDAP_DEPT_SEARCH_BASE": "dept_search_base",
+    "LDAP_SYNC_PAGE_SIZE": "sync_page_size",
+}
+
+
+@dataclass(frozen=True)
+class LdapConfig:
+    """LDAP 运行配置快照：显式传参形态（缺省值与 server/conf 默认值表对齐）。"""
+
+    server_uri: str = ""
+    start_tls: bool = False
+    bind_dn: str = ""
+    bind_password: str = ""
+    connect_timeout: int = 10
+    user_search_base: str = ""
+    user_filter: str = "(objectClass=person)"
+    attr_username: str = "sAMAccountName"
+    attr_nickname: str = "cn"
+    attr_email: str = "mail"
+    attr_phone: str = "telephoneNumber"
+    dept_enabled: bool = False
+    dept_search_base: str = ""
+    sync_page_size: int = 500
+
+    @classmethod
+    def from_settings(cls) -> "LdapConfig":
+        """读 django settings 当前生效值（登录/同步链路的默认形态）。"""
+        return cls(
+            server_uri=settings.LDAP_SERVER_URI or "",
+            start_tls=bool(settings.LDAP_START_TLS),
+            bind_dn=settings.LDAP_BIND_DN or "",
+            bind_password=settings.LDAP_BIND_PASSWORD or "",
+            connect_timeout=settings.LDAP_CONNECT_TIMEOUT,
+            user_search_base=settings.LDAP_USER_SEARCH_BASE or "",
+            user_filter=settings.LDAP_USER_FILTER or "(objectClass=person)",
+            attr_username=getattr(settings, "LDAP_ATTR_USERNAME", "sAMAccountName"),
+            attr_nickname=getattr(settings, "LDAP_ATTR_NICKNAME", "cn"),
+            attr_email=getattr(settings, "LDAP_ATTR_EMAIL", "mail"),
+            attr_phone=getattr(settings, "LDAP_ATTR_PHONE", "telephoneNumber"),
+            dept_enabled=bool(getattr(settings, "LDAP_DEPT_ENABLED", False)),
+            dept_search_base=getattr(settings, "LDAP_DEPT_SEARCH_BASE", "") or "",
+            sync_page_size=settings.LDAP_SYNC_PAGE_SIZE,
+        )
+
+    @classmethod
+    def from_values(cls, values: dict) -> "LdapConfig":
+        """从 settings 键名 dict 构造快照（测试连接：表单值 ∪ 已存配置，T03-09）。"""
+        kwargs = {field: values[key] for key, field in _SETTING_KEY_TO_FIELD.items() if values.get(key) is not None}
+        return cls(**kwargs)
+
+
+def _resolve(config: "LdapConfig | None") -> LdapConfig:
+    return config if config is not None else LdapConfig.from_settings()
+
+
+def build_server(config: "LdapConfig | None" = None):
+    cfg = _resolve(config)
+    uri = cfg.server_uri
     if not uri:
         raise LdapConfigError("LDAP_SERVER_URI is empty")
     return Server(
         uri,
         use_ssl=uri.lower().startswith("ldaps://"),
-        connect_timeout=settings.LDAP_CONNECT_TIMEOUT,
+        connect_timeout=cfg.connect_timeout,
         get_info=ALL,
     )
 
 
-def service_connection():
-    """服务账号连接（读配置 bind_dn/bind_password）；bind 失败抛 LDAPException。"""
-    server = build_server()
+def service_connection(config: "LdapConfig | None" = None):
+    """服务账号连接（按快照 bind_dn/bind_password）；bind 失败抛 LDAPException。"""
+    cfg = _resolve(config)
+    server = build_server(cfg)
     conn = Connection(
         server,
-        user=settings.LDAP_BIND_DN or None,
-        password=settings.LDAP_BIND_PASSWORD or None,
+        user=cfg.bind_dn or None,
+        password=cfg.bind_password or None,
         auto_bind=True,
         read_only=True,
     )
-    if settings.LDAP_START_TLS:
+    if cfg.start_tls:
         conn.start_tls()
     return conn
 
 
-def user_connection(user_dn, password):
+def user_connection(user_dn, password, config: "LdapConfig | None" = None):
     """以用户 DN + 密码 bind（认证判定）；auto_bind 失败抛 LDAPException。"""
-    server = build_server()
+    server = build_server(config)
     conn = Connection(server, user=user_dn, password=password, auto_bind=True, read_only=True)
-    if settings.LDAP_START_TLS:
+    if _resolve(config).start_tls:
         conn.start_tls()
     return conn
 
 
-def paged_search_entries(conn, search_base, search_filter, attributes):
+def paged_search_entries(conn, search_base, search_filter, attributes, config: "LdapConfig | None" = None):
     """分页搜索，返回条目属性 dict 列表（每条含 dn 与 attributes）。"""
     if not search_base:
         raise LdapConfigError("LDAP search base is empty")
@@ -79,7 +159,7 @@ def paged_search_entries(conn, search_base, search_filter, attributes):
         search_filter=search_filter,
         search_scope=SUBTREE,
         attributes=attributes,
-        paged_size=settings.LDAP_SYNC_PAGE_SIZE,
+        paged_size=_resolve(config).sync_page_size,
         generator=False,
     )
     return [entry for entry in entries if entry.get("type") == "searchResEntry"]
@@ -119,13 +199,14 @@ def escape_filter(value: str) -> str:
     return escape_filter_chars(value or "")
 
 
-def get_attr_map() -> dict:
+def get_attr_map(config: "LdapConfig | None" = None) -> dict:
     """字段映射（固定四键）：平台字段 -> 目录属性名（LDAP_ATTR_* 可在管理页改）。"""
+    cfg = _resolve(config)
     return {
-        "username": getattr(settings, "LDAP_ATTR_USERNAME", "sAMAccountName"),
-        "nickname": getattr(settings, "LDAP_ATTR_NICKNAME", "cn"),
-        "email": getattr(settings, "LDAP_ATTR_EMAIL", "mail"),
-        "phone": getattr(settings, "LDAP_ATTR_PHONE", "telephoneNumber"),
+        "username": cfg.attr_username,
+        "nickname": cfg.attr_nickname,
+        "email": cfg.attr_email,
+        "phone": cfg.attr_phone,
     }
 
 

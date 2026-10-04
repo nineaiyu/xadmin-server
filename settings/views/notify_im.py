@@ -13,7 +13,6 @@ Disabled、不计入失败，但**没有任何渠道真正测通**时按失败�
 提示测试完成"。detail 始终可直接展示：首个失败原因 / 渠道未启用 / 测试完成。
 """
 
-from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
@@ -29,6 +28,7 @@ from settings.serializers.notify_im import (
     ImNotifySettingSerializer,
     WeComSettingSerializer,
 )
+from settings.utils.test_connection import build_test_values
 from settings.views.settings import BaseSettingViewSet
 
 logger = get_logger(__name__)
@@ -83,14 +83,17 @@ _CHANNELS = {
 }
 
 
-def _test_channel(channel: dict) -> str:
-    """单渠道连通性：返回可直接展示的结果文本（Disabled / 缺配置 / 渠道错误 / OK）。"""
-    if not getattr(settings, channel["required"][0]):
+def _test_channel(channel: dict, values: dict) -> str:
+    """单渠道连通性：按生效配置快照（表单值 ∪ 已存配置）测试，不改进程全局。
+
+    返回可直接展示的结果文本（Disabled / 缺配置 / 渠道错误 / OK）。
+    """
+    if not values.get(channel["required"][0]):
         return str(_("Disabled"))
-    missing = [key for key in channel["required"][1:] if not getattr(settings, key)]
+    missing = [key for key in channel["required"][1:] if not values.get(key)]
     if missing:
         return str(_("Missing configuration: {}").format(", ".join(missing)))
-    credentials = {alias: getattr(settings, key) for alias, key in channel["credentials"].items()}
+    credentials = {alias: values[key] for alias, key in channel["credentials"].items()}
     try:
         channel["client"](credentials)._cached_token()
     except ImSdkError as exc:
@@ -129,20 +132,11 @@ class ImNotifySettingViewSet(BaseSettingViewSet):
             raise ValidationError({"channel": _("Unknown channel: {}").format(scope)})
         channels = {scope: _CHANNELS[scope]} if scope else _CHANNELS
 
-        saved = {key: getattr(settings, key) for key in _SETTINGS_KEYS}
-        try:
-            for key in _SETTINGS_KEYS:
-                if key in request.data:
-                    setattr(settings, key, data.get(key))
-            for key in _SECRET_KEYS:
-                # write_only secret：表单未重新输入时回退已存配置
-                if data.get(key):
-                    setattr(settings, key, data.get(key))
-
-            results = {channel["name"]: _test_channel(channel) for channel in channels.values()}
-        finally:
-            for key, value in saved.items():
-                setattr(settings, key, value)
+        # 测试连接统一口径（T03-09）：按表单值构造生效配置快照传参（未提交键
+        # 回退已存配置、write_only 密文留空沿用已存值），不临时 setattr(settings,
+        # ...)——并发期间真实请求不可能读到测试值
+        values = build_test_values(data, request.data, keys=_SETTINGS_KEYS, secret_keys=_SECRET_KEYS)
+        results = {channel["name"]: _test_channel(channel, values) for channel in channels.values()}
 
         ok, disabled = str(_("OK")), str(_("Disabled"))
         failed = [name for name, result in results.items() if result not in (ok, disabled)]

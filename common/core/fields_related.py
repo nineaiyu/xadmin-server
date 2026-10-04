@@ -20,7 +20,7 @@ from rest_framework.request import Request
 from common.core.filter import get_filter_queryset
 from common.core.mask import apply_related_output_mask
 from common.fields.utils import get_file_absolute_uri
-from server.utils import get_current_request
+from common.local import get_current_request
 
 
 def attr_get(obj, attr, sp="."):

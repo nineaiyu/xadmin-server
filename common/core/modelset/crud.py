@@ -8,8 +8,8 @@
 from rest_framework import mixins
 
 from common.core.response import ApiResponse
+from common.local import get_current_request
 from common.utils import get_logger
-from server.utils import get_current_request
 
 logger = get_logger(__name__)
 

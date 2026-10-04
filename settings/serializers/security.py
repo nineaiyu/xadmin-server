@@ -10,9 +10,10 @@ from rest_framework import serializers
 
 from common.core.fields import ColorField
 from common.utils.ip import is_ip_address, is_ip_network, is_ip_segment
+from settings.serializers.contract import SettingSaveContractMixin
 
 
-class SecurityPasswordRuleSerializer(serializers.Serializer):
+class SecurityPasswordRuleSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_PASSWORD_MIN_LENGTH = serializers.IntegerField(
         min_value=6, max_value=30, required=True, label=_("Minimum length (User)")
     )
@@ -48,7 +49,7 @@ def ip_group_child_validator(ip_group_child):
         raise serializers.ValidationError(error)
 
 
-class SecurityLoginLimitSerializer(serializers.Serializer):
+class SecurityLoginLimitSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_CHECK_DIFFERENT_CITY_LOGIN = serializers.BooleanField(
         required=False,
         label=_("Suspicious Login Verification"),
@@ -109,7 +110,7 @@ class SecurityLoginLimitSerializer(serializers.Serializer):
     )
 
 
-class SecurityLoginAuthSerializer(serializers.Serializer):
+class SecurityLoginAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_LOGIN_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Login enabled"), help_text=_("Enable login for user")
     )
@@ -156,7 +157,7 @@ class SecurityLoginAuthSerializer(serializers.Serializer):
     )
 
 
-class SecurityRegisterAuthSerializer(serializers.Serializer):
+class SecurityRegisterAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_REGISTER_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Register enable"), help_text=_("Enable register for user")
     )
@@ -194,7 +195,7 @@ class SecurityRegisterAuthSerializer(serializers.Serializer):
     )
 
 
-class SecurityResetPasswordAuthSerializer(serializers.Serializer):
+class SecurityResetPasswordAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_RESET_PASSWORD_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Reset password enable"), help_text=_("Enable reset password for user")
     )
@@ -234,7 +235,7 @@ class SecurityResetPasswordAuthSerializer(serializers.Serializer):
     )
 
 
-class SecurityBindEmailAuthSerializer(serializers.Serializer):
+class SecurityBindEmailAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     SECURITY_BIND_EMAIL_ACCESS_ENABLED = serializers.BooleanField(
         required=False, default=True, label=_("Bind email enable"), help_text=_("Enable bind email for user")
     )
@@ -260,7 +261,7 @@ class SecurityBindEmailAuthSerializer(serializers.Serializer):
     )
 
 
-class SecurityBindPhoneAuthSerializer(serializers.Serializer):
+class SecurityBindPhoneAuthSerializer(SettingSaveContractMixin, serializers.Serializer):
     # 字段名即 Setting 行名与运行时 settings 键（verify_code.py 按 SECURITY_BIND_PHONE_* 消费），
     # 不得复用 EMAIL 前缀，否则手机页签会读写邮箱配置（2026-10 P0 修复，见 CODE-REVIEW-TASKS/01 T01-01）
     SECURITY_BIND_PHONE_ACCESS_ENABLED = serializers.BooleanField(
@@ -294,7 +295,7 @@ class SecurityBlockIPSerializer(serializers.Serializer):
     created_time = serializers.DateTimeField(label=_("Created time"))
 
 
-class SecurityVerifyCodeSerializer(serializers.Serializer):
+class SecurityVerifyCodeSerializer(SettingSaveContractMixin, serializers.Serializer):
     VERIFY_CODE_TTL = serializers.IntegerField(
         min_value=5,
         max_value=60 * 60 * 10,
@@ -324,7 +325,7 @@ class SecurityVerifyCodeSerializer(serializers.Serializer):
     VERIFY_CODE_DIGIT_CASE = serializers.BooleanField(required=False, label=_("Digits"))
 
 
-class SecurityCaptchaCodeSerializer(serializers.Serializer):
+class SecurityCaptchaCodeSerializer(SettingSaveContractMixin, serializers.Serializer):
     class ChallengeChoices(TextChoices):
         RANDOM_CHAR = "captcha.helpers.random_char_challenge", _("Random char")
         MATH_CHALLENGE = "captcha.helpers.math_challenge", _("Math challenge")

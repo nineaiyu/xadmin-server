@@ -12,8 +12,8 @@ BaseConfCache 按域拆分（文件行数门禁）：文件上传/Office 预览/
 维持既有导入面（common.core.config 再导出）不变。
 """
 
+from common.injection import get_server_config
 from common.utils import get_logger
-from server.const import CONFIG
 
 from .base import ConfigCacheBase
 from .conf_ops import OpsConfMixin
@@ -26,9 +26,10 @@ logger = get_logger(__name__)
 class BaseConfCache(UploadConfMixin, SecurityConfMixin, OpsConfMixin):
     """系统级配置读取（键 → 值）。
 
-    默认值单一来源：全部回读 ``server/conf.py`` 的静态配置实例 ``CONFIG``
-    （即 config.yml / 环境变量的值或代码默认值），本类不再硬编码任何默认值；
-    ``loadjson/systemconfig.json`` 的种子初值须与 conf.py 一致（守护测试校验）。
+    默认值单一来源：全部回读 server 装配的静态配置实例 ``CONFIG``
+    （经 common.injection 注入，即 config.yml / 环境变量的值或代码默认值），
+    本类不再硬编码任何默认值；``loadjson/systemconfig.json`` 的种子初值须与
+    conf.py 一致（守护测试校验）。
     """
 
     def __init__(self, *args, **kwargs):
@@ -41,11 +42,11 @@ class MessagePushConfCache(ConfigCacheBase):
 
     @property
     def PUSH_MESSAGE_NOTICE(self):
-        return self.get_value("PUSH_MESSAGE_NOTICE", CONFIG.PUSH_MESSAGE_NOTICE)
+        return self.get_value("PUSH_MESSAGE_NOTICE", get_server_config().PUSH_MESSAGE_NOTICE)
 
     @property
     def PUSH_CHAT_MESSAGE(self):
-        return self.get_value("PUSH_CHAT_MESSAGE", CONFIG.PUSH_CHAT_MESSAGE)
+        return self.get_value("PUSH_CHAT_MESSAGE", get_server_config().PUSH_CHAT_MESSAGE)
 
 
 class ConfigCache(BaseConfCache, MessagePushConfCache):

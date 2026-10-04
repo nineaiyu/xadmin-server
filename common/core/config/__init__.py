@@ -11,7 +11,8 @@
 
 - ``SysConfig = ConfigCache()``：系统级配置读取单例（属性 = 配置键）；
 - ``UserConfig(user_obj)``：个人级配置（真实个人行优先、缺席继承系统级）；
-- ``BaseConfCache`` 的默认值单源在 ``server/conf.py``（键未登记时回退默认值）。
+- ``BaseConfCache`` 的默认值单源为 server 装配的静态配置 ``CONFIG``
+  （经 common.injection 注入读取；键未登记时回退默认值）。
 
 本包按职责拆分（base / system_conf / user_conf），对外 API 由本文件统一再导出，
 导入路径保持 ``common.core.config`` 不变。

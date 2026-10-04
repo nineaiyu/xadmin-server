@@ -15,7 +15,7 @@ A4 风险：绕过 middleware、强依赖 DRF 内部字段、框架升级易碎�
   3. ``view.kwargs``：detail action 路由参数（本链路为空 dict）；
   4. ``view.format_kwarg = None``：``get_serializer_context`` 依赖（漏设直接 AttributeError）；
   5. ``set_current_request``：creator 信号赋值 + 操作审计 request_uuid，由调用方绑定并在出口清理
-     （``server.utils.set_current_request``）；
+     （``common.local.set_current_request``）；
 - 每任务构造独立请求对象：字段权限的关联对象 memo（``request._related_memo``）按请求隔离。
 
 契约由 ``tests/unit/system/test_import_export_execution_context.py`` 以 spy 视图集守护。

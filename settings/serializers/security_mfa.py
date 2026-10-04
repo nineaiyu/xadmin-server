@@ -8,8 +8,10 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from settings.serializers.contract import SettingSaveContractMixin
 
-class SecurityMFASerializer(serializers.Serializer):
+
+class SecurityMFASerializer(SettingSaveContractMixin, serializers.Serializer):
     """MFA / 敏感操作二次验证设置"""
 
     SECURITY_MFA_CONFIRM_ENABLED = serializers.BooleanField(
@@ -89,7 +91,7 @@ class SecurityMFASerializer(serializers.Serializer):
     )
 
 
-class SecurityMonitorSerializer(serializers.Serializer):
+class SecurityMonitorSerializer(SettingSaveContractMixin, serializers.Serializer):
     """资源告警阈值设置（check_server_performance_period 周期检查使用）"""
 
     SECURITY_MONITOR_DISK_USED_MAX = serializers.IntegerField(

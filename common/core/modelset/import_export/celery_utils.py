@@ -27,15 +27,15 @@ CELERY_IMPORT_SINGLE_BATCH = 99999999
 
 def has_active_celery_worker():
     """探测是否存在活跃 Celery worker（结果短缓存，避免请求线程内反复广播阻塞）。"""
+    # current_app 代理解析到当前进程的 Celery app（server.celery），common 不反向 import server
+    from celery import current_app
     from django.core.cache import cache
-
-    from server.celery import app
 
     cached = cache.get(CELERY_WORKER_PROBE_CACHE_KEY)
     if cached is not None:
         return cached
     try:
-        active_workers = app.control.inspect().active()
+        active_workers = current_app.control.inspect().active()
         result = bool(active_workers)
     except Exception as e:
         # 探测失败（broker 不可达等）视为无 worker，走同步降级
