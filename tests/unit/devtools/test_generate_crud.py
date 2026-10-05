@@ -18,7 +18,7 @@ import yaml
 from django.conf import settings
 from django.core.management import call_command
 
-from common.management.commands.generate_crud import (
+from devtools.management.commands.generate_crud import (
     BLOCK_END,
     BLOCK_START,
     PERMISSION_ACTIONS,
@@ -498,7 +498,7 @@ class TestImportGrouping:
         其 import 被当成第三方与 common.* 分组，产物 ruff check 直接 I001——
         即「生成即过门禁」对内置 demo app 成立、对新 app 不成立。
         """
-        from common.management.commands._generate_crud.merging import MergeMixin
+        from devtools.management.commands._generate_crud.merging import MergeMixin
 
         lines = [
             "from brandnew.models import Thing",
@@ -514,7 +514,7 @@ class TestImportGrouping:
 
     def test_extra_app_keeps_builtin_first_party_intact(self):
         """已登记 app（demo）重复传入 extra 时分组结果不变（幂等）。"""
-        from common.management.commands._generate_crud.merging import MergeMixin
+        from devtools.management.commands._generate_crud.merging import MergeMixin
 
         lines = [
             "from demo.models import Book",
@@ -692,17 +692,17 @@ class TestDefaultOrdering:
         return _Model
 
     def test_falls_back_to_pk_without_created_time(self):
-        from common.management.commands._generate_crud.analysis import AnalysisMixin
+        from devtools.management.commands._generate_crud.analysis import AnalysisMixin
 
         assert AnalysisMixin._default_ordering(self._model(["id", "name"])) == "-pk"
 
     def test_uses_created_time_when_present(self):
-        from common.management.commands._generate_crud.analysis import AnalysisMixin
+        from devtools.management.commands._generate_crud.analysis import AnalysisMixin
 
         assert AnalysisMixin._default_ordering(self._model(["created_time"])) == "-created_time"
 
     def test_empty_when_model_declares_ordering(self):
-        from common.management.commands._generate_crud.analysis import AnalysisMixin
+        from devtools.management.commands._generate_crud.analysis import AnalysisMixin
 
         assert AnalysisMixin._default_ordering(self._model(["pk"], ordering=("pk",))) == ""
 

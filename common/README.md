@@ -32,7 +32,7 @@
 | `sdk/` | 对外服务 SDK：`ai/`（chat / chat_stream，OpenAI 兼容）/ `im/`（钉钉·企微·飞书发送）/ `sms/` | 业务调用 AI/IM/短信的唯一入口 |
 | `utils/` | 通用工具：logger / health（探活）/ token / verify_code / sanitize（HTML 清洗）/ country / timezone / file / request / connection / ip / pending / random | `get_logger(__name__)` 统一日志 |
 | `api/` | 内核自带只读端点：health / countries / 资源缓存 / CSP 上报 / metrics / 备份与运维告警 | 基础设施端点（AllowAny + 非事务豁免） |
-| `decorators/` / `swagger/` / `templates/` / `management/` | 装饰器 / OpenAPI 扩展 / 内核模板 / 管理命令（`generate_crud` 生成器、`manage.py start/stop/status` 进程管理） | — |
+| `decorators/` / `swagger/` / `templates/` / `management/` | 装饰器 / OpenAPI 扩展 / 内核模板 / 管理命令（`manage.py start/stop/status` 进程管理；`generate_crud` 生成器已迁 devtools app） | — |
 | 顶层模块 | `models.py` / `serializers.py` / `signals.py` / `signal_handlers.py` / `startup.py` / `tasks.py` / `notifications.py`（通知后端注册表）/ `metrics.py` / `db.py` / `local.py` / `backup_alert.py` / `ops_alert.py` / `apps.py` | `apps.py::ready` 完成信号与周期任务装配 |
 
 ## 二、边界规则（什么放内核、什么放业务 app）

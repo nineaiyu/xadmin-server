@@ -25,8 +25,8 @@ from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.management.base import CommandError
 
-from common.management.commands._generate_crud import Command
 from common.utils import get_logger
+from devtools.management.commands._generate_crud import Command
 from system.utils.platform.codegen_fields import CodegenError, apply_field_overrides, list_dict_types, plan_fields
 
 logger = get_logger(__name__)

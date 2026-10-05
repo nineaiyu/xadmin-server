@@ -11,7 +11,7 @@
 （constants / analysis / merging / renderers），本模块仅做再导出。
 """
 
-from common.management.commands._generate_crud import (
+from devtools.management.commands._generate_crud import (
     BLOCK_END,
     BLOCK_START,
     PERMISSION_ACTIONS,
