@@ -174,6 +174,60 @@ class TestDelegationCrud:
         )
         assert resp.status_code == 400, resp.data
 
+    def test_inactive_delegate_rejected(self, auth_client, target, agent):
+        """停用用户不可被配置为代理人：解析会丢弃停用代理人，节点候选可能被清空。"""
+        now = timezone.now()
+        agent.is_active = False
+        agent.save(update_fields=["is_active"])
+        resp = auth_client.post(
+            DELEGATIONS_URL,
+            {
+                "delegator": str(target.pk),
+                "delegate": str(agent.pk),
+                "start_time": now.isoformat(),
+                "end_time": (now + datetime.timedelta(hours=1)).isoformat(),
+            },
+            format="json",
+        )
+        assert resp.status_code == 400, resp.data
+
+    def test_inactive_new_row_may_overlap(self, auth_client, target, agent):
+        """未启用的委托模板允许先保存：重叠校验按本行落库后的 is_active 收口。"""
+        now = timezone.now()
+        make_delegation(target, agent)
+        resp = auth_client.post(
+            DELEGATIONS_URL,
+            {
+                "delegator": str(target.pk),
+                "delegate": str(agent.pk),
+                "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
+                "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "is_active": False,
+            },
+            format="json",
+        )
+        assert resp.data["code"] == 1000, resp.data
+
+    def test_activating_overlapping_row_rejected(self, auth_client, target, agent):
+        """未启用模板补启用时同样过重叠校验：与既有生效委托重叠即拒绝。"""
+        now = timezone.now()
+        make_delegation(target, agent)
+        created = auth_client.post(
+            DELEGATIONS_URL,
+            {
+                "delegator": str(target.pk),
+                "delegate": str(agent.pk),
+                "start_time": (now + datetime.timedelta(minutes=10)).isoformat(),
+                "end_time": (now + datetime.timedelta(hours=2)).isoformat(),
+                "is_active": False,
+            },
+            format="json",
+        )
+        assert created.data["code"] == 1000, created.data
+        pk = created.data["data"]["pk"]
+        resp = auth_client.patch(f"{DELEGATIONS_URL}/{pk}", {"is_active": True}, format="json")
+        assert resp.status_code == 400, resp.data
+
 
 class TestDelegationOwnership:
     """委托归属越权护栏（对抗性用例）。

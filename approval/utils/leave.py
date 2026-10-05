@@ -95,9 +95,11 @@ def validate_leave_payload(*, start_date, end_date, days=None, creator=None, exc
 
 
 def resolve_leave_flow(leave_type: str = ""):
-    """解析请假审批流程：配置 code 优先 → ``leave_<type>`` → ``leave`` 前缀的启用流程。
+    """解析请假审批流程：配置 code（默认 ``leave``）优先 → ``leave_<type>`` 类型专用流程。
 
-    找不到返回 None（调用方拒绝提交并提示管理员配置流程，而不是静默直通）。
+    两级都未命中返回 None（调用方拒绝提交并提示管理员配置流程）。不再按 ``leave``
+    前缀模糊兜底：``leave_sick`` 配了而 ``leave_annual`` 未配时，年假单会被静默挂到
+    病假流程上走错业务流，绑错流程比拒绝提交更难收拾。
     """
     from approval.models.approval import ApprovalFlow
 
@@ -110,7 +112,7 @@ def resolve_leave_flow(leave_type: str = ""):
         flow = ApprovalFlow.objects.filter(code=code, is_active=True).first()
         if flow is not None:
             return flow
-    return ApprovalFlow.objects.filter(is_active=True, code__startswith="leave").order_by("pk").first()
+    return None
 
 
 def submit_leave(leave, user):
@@ -196,7 +198,7 @@ def cancel_leave(leave, user):
 
 
 def sync_leave_instance(instance, status, reason: str = "") -> None:
-    """审批终态回写业务单：由 system/signal_handler.py 的接收器调用（幂等）。"""
+    """审批终态回写业务单：由 approval/signal_handler.py 的接收器经 biz_sync 注册表分发调用（幂等）。"""
     from approval.models.approval import ApprovalInstance
 
     if getattr(instance, "biz_type", "") != LEAVE_BIZ_TYPE or not instance.biz_id:

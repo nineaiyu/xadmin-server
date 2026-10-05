@@ -2,9 +2,11 @@
 # -*- coding:utf-8 -*-
 """审批规则序列化器（多级审批链配置）。
 
-- ApprovalRuleSerializer：规则 + 级次列表嵌套写入（levels 整体替换式更新）；
-  保存时校验路径正则可编译、级次审批人存在（用户名 / 角色 code），
-  避免「配错人名」拖到建单（拦截发生）时才发现；
+- ApprovalRuleSerializer：规则 + 级次列表嵌套写入（levels 按 order upsert：
+  同 order 原位更新、缺失删除、新增创建，级次行主键与创建审计跨编辑稳定）；
+  保存时校验路径正则可编译、级次审批人真实可用（用户名 / 角色 code / 岗位 code，
+  与引擎解析同口径过滤 is_active），避免「配错人名/配了停用账号」拖到建单
+  （拦截发生）时才发现；
 - 规则改动只影响之后新建的审批单：在途单的级次是建单瞬间的快照，不受影响。
 """
 
@@ -90,6 +92,9 @@ class ApprovalRuleSerializer(BaseModelSerializer):
         return value
 
     def _validate_assignee(self, level):
+        """审批人存在性校验：与引擎 resolve_level_users 的解析口径完全一致（含
+        is_active 过滤）——停用账号/角色若在这里放行，建单时该级候选人被过滤为空，
+        fail-closed 报「该级无可用审批人」，配置错误被推迟到拦截发生时才暴露。"""
         values = [value.strip() for value in str(level.get("assignee_value") or "").split(",") if value.strip()]
         if not values:
             raise serializers.ValidationError(
@@ -100,15 +105,15 @@ class ApprovalRuleSerializer(BaseModelSerializer):
             from identity.models import UserRole
 
             existing = set(
-                UserRole.objects.filter(code__in=values, deleted_at__isnull=True).values_list("code", flat=True)
+                UserRole.objects.filter(code__in=values, is_active=True, deleted_at__isnull=True).values_list(
+                    "code", flat=True
+                )
             )
             missing = [value for value in values if value not in existing]
             if missing:
                 raise serializers.ValidationError(_("Role does not exist: {}").format(", ".join(missing)))
             return
         if assignee_type == ApprovalRuleLevel.AssigneeType.POST:
-            # 岗位分支（引擎 resolve_level_users 同口径：按 code 解析，仅启用且未删除岗位）：
-            # 原实现缺此分支，选「岗位」保存时被当用户名查询必报 User does not exist
             from identity.models import Post
 
             existing = set(
@@ -123,7 +128,9 @@ class ApprovalRuleSerializer(BaseModelSerializer):
         if assignee_type == ApprovalRuleLevel.AssigneeType.USER:
             from identity.models import UserInfo
 
-            existing = set(UserInfo.objects.filter(username__in=values).values_list("username", flat=True))
+            existing = set(
+                UserInfo.objects.filter(username__in=values, is_active=True).values_list("username", flat=True)
+            )
             missing = [value for value in values if value not in existing]
             if missing:
                 raise serializers.ValidationError(_("User does not exist: {}").format(", ".join(missing)))
@@ -134,7 +141,7 @@ class ApprovalRuleSerializer(BaseModelSerializer):
     def create(self, validated_data):
         levels = validated_data.pop("levels", [])
         rule = super().create(validated_data)
-        self._replace_levels(rule, levels)
+        self._sync_levels(rule, levels)
         return rule
 
     @transaction.atomic
@@ -142,11 +149,30 @@ class ApprovalRuleSerializer(BaseModelSerializer):
         levels = validated_data.pop("levels", None)
         rule = super().update(instance, validated_data)
         if levels is not None:
-            rule.levels.all().delete()
-            self._replace_levels(rule, levels)
+            self._sync_levels(rule, levels)
         return rule
 
-    def _replace_levels(self, rule, levels):
+    def _sync_levels(self, rule, levels):
+        """级次按 order upsert：order 相同的既有行原位更新，缺失的删除，新出现的创建。
+
+        不再 delete+recreate——级次行主键与创建审计在编辑间保持稳定（重复编辑
+        不重置 created_time/created_by），order 在规则内唯一（DB 约束）天然可作
+        upsert 键；在途单不受影响（级次快照在建单时已落到独立表）。
+        """
+        existing = {level.order: level for level in rule.levels.all()}
+        incoming_orders = set()
         for level in levels:
             level.pop("pk", None)
-            ApprovalRuleLevel.objects.create(rule=rule, **level)
+            order = int(level["order"])
+            level["order"] = order
+            incoming_orders.add(order)
+            row = existing.get(order)
+            if row is None:
+                ApprovalRuleLevel.objects.create(rule=rule, **level)
+                continue
+            for attr, value in level.items():
+                setattr(row, attr, value)
+            row.save()
+        for order, row in existing.items():
+            if order not in incoming_orders:
+                row.delete()

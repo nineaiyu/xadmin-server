@@ -216,7 +216,7 @@ def clean_xxx_job(): ...
 参考实现：请假业务 `approval/utils/leave.py`（含注释版四步）。
 
 1. **提交**：`instance, error = create_instance(flow=<流程>, applicant=user, title=..., form_data={...}, biz_type="leave", biz_id=str(obj.pk))`——`biz_type/biz_id` 是业务绑定，引擎不感知业务字段；
-2. **回写**：监听终态信号 `system.signal.approval_instance_finished`，按 `instance.biz_type / biz_id` 更新业务状态（信号里做幂等；引擎侧失败不阻断审批）；
+2. **回写**：在业务 app 自身 `config.py` 声明同步器 `APPROVAL_BIZ_SYNCERS = {"my_biz": "myapp.services.sync_my_biz_instance"}`，引擎终态广播 `approval.signal.approval_instance_finished` 后由 `approval/signal_handler.py` 按声明分发（先例：Celery `TASK_ROUTES` 声明式合并；同步器内做幂等，异常只记日志不阻断审批）；
 3. **流转**：审批动作（通过/驳回/退回/加签/减签/转交/催办/委托）全部在流程审批中心完成，业务页只展示状态与轨迹（`ApprovalInstance` 查询）；
 4. 前置：流程/节点/审批人在流程设计器配置；`biz_type` 常量放本业务模块。
 

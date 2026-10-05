@@ -187,12 +187,15 @@ class TestLeaveSubmitAndSync:
         make_leave_flow(code="leave_personal")
         flow = resolve_leave_flow(Leave.LeaveType.PERSONAL)
         assert flow.code == "leave_personal"
-        # 类型专用流程不存在时回退 leave 前缀流程
-        flow = resolve_leave_flow(Leave.LeaveType.SICK)
-        assert flow.code == "leave_personal"
+        # 类型专用流程未配置时不再按 leave 前缀模糊兜底（leave_sick 配了而
+        # leave_annual 未配时年假单会被静默挂到病假流程），直接返回 None
+        assert resolve_leave_flow(Leave.LeaveType.SICK) is None
+        make_leave_flow(code="leave_sick")
+        # 病假流程存在也不外借：年假单解析不到年假流程即拒绝提交
+        assert resolve_leave_flow(Leave.LeaveType.ANNUAL) is None
         # 停用后不再被解析
         ApprovalFlow.objects.filter(code="leave_personal").update(is_active=False)
-        assert resolve_leave_flow(Leave.LeaveType.SICK) is None
+        assert resolve_leave_flow(Leave.LeaveType.PERSONAL) is None
 
     def test_unbound_instance_skips_business_callback(self, applicant, approver):
         """未绑业务的实例（历史用法）不触发业务回写，引擎行为保持不变。"""

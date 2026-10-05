@@ -42,8 +42,9 @@
 - **为什么用自定义信号而不是 `post_save`**：终态写库走 `queryset.update()`（条件更新 + 并发占位语义），
   根本不会触发 `post_save`；信号是显式发送的，语义更清楚；
 - **只在 `biz_type` 非空时发送**：未绑业务的实例不产生任何回调，引擎与历史用例零影响；
-- 接收方在 `system/signal_handler.py` 按 `biz_type` 分发（当前仅 `leave`；新增业务加一个分支即可，
-  引擎侧不需要再改），异常只记日志——业务回写失败不得反向阻断审批状态机。
+- 接收方在 `approval/signal_handler.py` 经 `approval/biz_sync.py` 的注册表按 `biz_type` 分发
+  （内置 `leave`；其余业务在自己 app 的 `config.py` 声明 `APPROVAL_BIZ_SYNCERS` 即可，引擎与
+  核心文件不需要再改），异常只记日志——业务回写失败不得反向阻断审批状态机。
 
 ### 3. 第一个业务：请假（`Leave`）
 
@@ -54,8 +55,9 @@
   业务视图**不提供审批动作**（审批统一在「流程审批」中心处理，杜绝第二套审批入口）；
 - 校验（`approval/utils/leave.py:validate_leave_payload`，接口与提交前各校验一次）：结束日期不得早于开始日期、
   天数 ≤ 起止跨度（允许半天 0.5）、同一申请人不得存在区间重叠的未结束申请；
-- 流程解析（`resolve_leave_flow`）：配置 `LEAVE_APPROVAL_FLOW_CODE`（默认 `leave`）→ `leave_<类型>` →
-  `leave` 前缀的启用流程；**找不到流程即拒绝提交**并提示管理员，而不是静默直通。
+- 流程解析（`resolve_leave_flow`）：配置 `LEAVE_APPROVAL_FLOW_CODE`（默认 `leave`）→
+  `leave_<类型>` 类型专用流程；两级都未命中**即拒绝提交**并提示管理员，而不是静默直通，
+  也不按 `leave` 前缀模糊兜底（`leave_sick` 配了而 `leave_annual` 未配时年假单会绑错流程）。
 
 ### 4. 新增即提交；提交失败退化为草稿（不静默丢数据）
 

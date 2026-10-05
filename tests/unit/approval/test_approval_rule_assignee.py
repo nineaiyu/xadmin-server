@@ -70,6 +70,23 @@ class TestAssigneeValidation:
             _validated_serializer(_payload("role", "no_such_role"))
         assert "no_such_role" in str(role_exc.value.detail)
 
+    def test_inactive_user_assignee_rejected(self):
+        """停用用户不可作为审批人（与引擎 resolve_level_users 的 is_active 口径一致）：
+        否则建单时该级候选人被过滤为空，fail-closed 报「该级无可用审批人」。"""
+        UserInfo.objects.create_user(username="idle_user", password="Test@123456", is_active=False)
+        with pytest.raises(ValidationError) as excinfo:
+            _validated_serializer(_payload("user", "idle_user"))
+        assert "idle_user" in str(excinfo.value.detail)
+
+    def test_inactive_role_assignee_rejected(self):
+        """停用角色不可作为审批人（引擎解析过滤 roles__is_active，保存必须同口径）。"""
+        from identity.models import UserRole
+
+        UserRole.objects.create(name="停用角色", code="rule_role_inactive", is_active=False)
+        with pytest.raises(ValidationError) as excinfo:
+            _validated_serializer(_payload("role", "rule_role_inactive"))
+        assert "rule_role_inactive" in str(excinfo.value.detail)
+
     def test_unknown_assignee_type_rejected(self):
         """未知类型拒绝：级次序列化器 assignee_type 收敛到枚举（fail-closed）。"""
         serializer = ApprovalRuleSerializer(data=_payload("ghost", "anything"))

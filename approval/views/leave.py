@@ -27,6 +27,10 @@ from common.core.modelset import BaseModelSet
 from common.core.response import ApiResponse
 from common.swagger.utils import get_default_response_schema
 
+# 业务码：保存成功但未能提交审批（已存草稿）。区别于成功 1000 与失败 1001，
+# 前端据此给警告提示而不是成功/失败，避免用户把草稿当成已提交。
+LEAVE_DRAFT_SAVED_CODE = 1002
+
 
 class LeaveFilter(BaseFilterSet):
     reason = filters.CharFilter(field_name="reason", lookup_expr="icontains")
@@ -77,7 +81,7 @@ class LeaveViewSet(BaseModelSet):
         serializer.save(creator=user, modifier=user, dept_belong=getattr(user, "dept", None))
 
     def create(self, request, *args, **kwargs):
-        """新增请假申请（保存后立即提交审批；无可用流程时保留草稿并提示）"""
+        """新增请假申请（保存后立即提交审批；无可用流程时保留草稿并以业务码 1002 返回）"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -86,7 +90,7 @@ class LeaveViewSet(BaseModelSet):
         leave.refresh_from_db()
         data = self.get_serializer(leave).data
         if not ok:
-            return ApiResponse(data=data, detail=_("Saved as draft: {}").format(error))
+            return ApiResponse(code=LEAVE_DRAFT_SAVED_CODE, data=data, detail=_("Saved as draft: {}").format(error))
         return ApiResponse(data=data, detail=_("The leave request has been submitted for approval"))
 
     def perform_destroy(self, instance):

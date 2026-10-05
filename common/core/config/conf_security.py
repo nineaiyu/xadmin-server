@@ -89,9 +89,9 @@ class SecurityConfMixin(ConfigCacheBase):
     def LEAVE_APPROVAL_FLOW_CODE(self):
         """请假审批流程 code（默认 leave）：请假单提交时绑定的流程定义。
 
-        该 code 的流程不存在或未启用时，按「leave_<请假类型>」再回退「leave 前缀的
-        启用流程」查找（见 system/utils/leave.py:resolve_leave_flow），全找不到则拒绝
-        提交并提示管理员配置流程。
+        该 code 未命中时按「leave_<请假类型>」找类型专用流程；两级都未命中则拒绝
+        提交并提示管理员配置流程（见 approval/utils/leave.py:resolve_leave_flow，
+        不做 leave 前缀模糊兜底，避免类型专用流程缺失时绑错业务流）。
         """
         return self.get_value("LEAVE_APPROVAL_FLOW_CODE", get_server_config().LEAVE_APPROVAL_FLOW_CODE)
 

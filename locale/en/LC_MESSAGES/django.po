@@ -11237,3 +11237,15 @@ msgstr ""
 #: tests/unit/common/test_online_stats.py:322
 msgid "Test label"
 msgstr ""
+
+#: approval/serializers/approval_delegation.py:93
+msgid "Delegate must be an active user"
+msgstr ""
+
+#: approval/serializers/approval_flow.py:215
+msgid "Condition value for operator {} must be a number"
+msgstr ""
+
+#: approval/serializers/approval_flow.py:317
+msgid "The flow was modified by someone else, please refresh and retry"
+msgstr ""

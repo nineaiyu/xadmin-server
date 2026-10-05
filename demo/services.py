@@ -6,11 +6,11 @@
 
 1. **提交**：校验业务状态 → 解析启用的流程定义 → ``create_instance``
    （``biz_type`` / ``biz_id`` 绑定业务单）→ 业务单置 PENDING 并挂上实例；
-2. **回写**：实例终态经 ``approval_instance_finished`` 信号（``system/signal_handler.py``
-   的集中分发器按 ``biz_type`` 分发）回到 :func:`sync_book_instance`，
+2. **回写**：实例终态经 ``approval_instance_finished`` 信号（``approval/signal_handler.py``
+   的接收器按 ``biz_type`` 经 ``approval/biz_sync.py`` 注册表分发）回到 :func:`sync_book_instance`，
    把 APPROVED / REJECTED / CANCELLED 同步为业务状态；
 3. **组织方式**：跨 app 的引擎调用一律**函数内惰性导入**（跨 app import 门禁合规），
-   与 ``system/utils/leave.py`` 的请假业务接入互为对照。
+   与 ``approval/utils/leave.py`` 的请假业务接入互为对照。
 """
 
 from django.utils import timezone
@@ -83,7 +83,7 @@ def submit_book(book, user):
 
 
 def sync_book_instance(instance, status, reason: str = "") -> None:
-    """审批终态回写业务单：由 ``system/signal_handler.py`` 的信号分发器调用（幂等）。
+    """审批终态回写业务单：由 ``approval/signal_handler.py`` 按 biz_type 分发调用（幂等）。
 
     - APPROVED → 已上架（同时启用 ``is_active``，演示「审批通过产生业务效果」）；
     - REJECTED → 已驳回；CANCELLED → 回到草稿。

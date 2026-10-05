@@ -483,6 +483,44 @@ class TestApprovalOperations:
         assert approval.status == ApprovalRequest.Status.REJECTED
         assert approval.reason == "风险操作"
 
+    def test_batch_approve_missing_pk_counted_as_failed(self, superuser, normal_user, api_client):
+        """取值域外/已失效 pk 计入 failed 明细：勾选数 = 成功数 + 未处理数（不静默跳过）。"""
+        _enable_interception()
+        approval_id = _submit(normal_user, path="/api/test/1").data["data"]["approval_id"]
+        ghost_pk = "00000000-0000-0000-0000-000000000000"
+
+        api_client.force_authenticate(user=superuser)
+        response = api_client.post(
+            "/api/approval/approvals/batch-approve", {"pks": [approval_id, ghost_pk]}, format="json"
+        )
+        assert response.data["code"] == 1000
+        assert response.data["data"]["succeeded"] == 1
+        failed = response.data["data"]["failed"]
+        assert [item["no"] for item in failed] == [str(ghost_pk)[:8].upper()]
+        # 明细带上可读原因（具体文案随语言，断言非空即可）
+        assert failed[0]["reason"]
+        assert ApprovalRequest.objects.get(pk=approval_id).status == APPROVED_STATUS
+
+    def test_batch_reject_missing_pk_counted_as_failed(self, superuser, normal_user, api_client):
+        """批量驳回同样把取值域外/已失效 pk 计入 failed 明细。"""
+        _enable_interception()
+        approval_id = _submit(normal_user, path="/api/test/1").data["data"]["approval_id"]
+        ghost_pk = "ffffffff-0000-0000-0000-000000000000"
+
+        api_client.force_authenticate(user=superuser)
+        response = api_client.post(
+            "/api/approval/approvals/batch-reject",
+            {"pks": [ghost_pk, approval_id], "reason": "风险操作"},
+            format="json",
+        )
+        assert response.data["code"] == 1000
+        assert response.data["data"]["succeeded"] == 1
+        failed = response.data["data"]["failed"]
+        assert [item["no"] for item in failed] == [str(ghost_pk)[:8].upper()]
+        assert failed[0]["reason"]
+        approval = ApprovalRequest.objects.get(pk=approval_id)
+        assert approval.status == ApprovalRequest.Status.REJECTED
+
     def test_batch_reject_requires_approver(self, superuser, normal_user):
         """批量驳回同样要求审批人身份（与单条 reject 口径一致）。"""
         _enable_interception()

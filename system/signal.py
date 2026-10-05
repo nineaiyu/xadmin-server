@@ -7,12 +7,9 @@
 
 """platform 域信号定义。
 
-invalid_user_cache_signal（用户缓存失效）已随 identity 域拆分至 identity/signal.py。
+invalid_user_cache_signal（用户缓存失效）已随 identity 域拆分至 identity/signal.py；
+approval_instance_finished（审批终态回写）已随 approval 域归位至 approval/signal.py
+（接收器同源迁移 approval/signal_handler.py，业务回写注册表 approval/biz_sync.py）。
 """
 
-from django.dispatch import Signal
-
-# 流程实例到达终态（APPROVED/REJECTED/CANCELLED）：kwargs = instance/status/reason。
-# 终态写入走 queryset.update()（不触发 post_save），故由 _finish_instance 显式发送；
-# 业务模块据此把审批结果回写自己的业务单（biz_type/biz_id 绑定的实例才会有业务接收方）。
-approval_instance_finished = Signal()
+# 本文件当前无 platform 域自有信号；identity / approval 各域信号见对应 app 的 signal 模块。

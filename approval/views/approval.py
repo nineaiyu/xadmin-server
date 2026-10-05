@@ -120,6 +120,15 @@ class ApprovalRequestViewSet(
             raise PermissionDenied(_("Permission denied"))
         return approval
 
+    def _missing_pk_failures(self, pks, handled_pks) -> list:
+        """取值域外/已失效 pk 的失败明细（不可见单不泄露存在性，原因统一口径）。
+
+        批量入口只对取值域内可见的单逐条处理；勾选中其余 pk 若静默跳过，
+        前端「勾选 N 条」与结果数就对不上——统一计入 failed 明细返回。
+        """
+        detail = str(_("No visible application for the given id"))
+        return [{"no": str(pk)[:8].upper(), "reason": detail} for pk in pks if str(pk) not in handled_pks]
+
     @extend_schema(
         request=OpenApiRequest(
             build_object_type(
@@ -145,13 +154,15 @@ class ApprovalRequestViewSet(
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed = 0, []
+        succeeded, failed, handled_pks = 0, [], set()
         for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+            handled_pks.add(str(approval.pk))
             ok, detail = approve_request(approval, request.user)
             if ok:
                 succeeded += 1
             else:
-                failed.append(f"{str(approval.pk)[:8].upper()}: {detail}")
+                failed.append({"no": str(approval.pk)[:8].upper(), "reason": str(detail)})
+        failed.extend(self._missing_pk_failures(pks, handled_pks))
         return ApiResponse(
             data={"succeeded": succeeded, "failed": failed},
             detail=_("Operation successful. Approved {} data").format(succeeded),
@@ -184,14 +195,16 @@ class ApprovalRequestViewSet(
         pks = request.data.get("pks") or []
         if not pks:
             raise ValidationError(_("Please select the data to operate"))
-        succeeded, failed = 0, []
+        succeeded, failed, handled_pks = 0, [], set()
         for approval in self.filter_queryset(self.get_queryset()).filter(pk__in=pks):
+            handled_pks.add(str(approval.pk))
             ok, detail = reject_request(approval, request.user, reason)
             if ok:
                 succeeded += 1
             else:
                 # 与 batch-approve 的「单号: 原因」等价的可读明细（前端逐条展示）
                 failed.append({"no": str(approval.pk)[:8].upper(), "reason": str(detail)})
+        failed.extend(self._missing_pk_failures(pks, handled_pks))
         return ApiResponse(
             data={"succeeded": succeeded, "failed": failed},
             detail=_("Operation successful. Rejected {} data").format(succeeded),

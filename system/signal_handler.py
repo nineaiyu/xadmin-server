@@ -4,11 +4,12 @@
 # filename : signal_handler.py
 # author : ly_13
 # date : 12/15/2023
-"""platform 域信号接收器：菜单 / 配置 / 字典 / 标签 / 授权规则缓存失效 + 审批回写。
+"""platform 域信号接收器：菜单 / 配置 / 字典 / 标签 / 授权规则缓存失效。
 
 用户/角色/部门缓存失效接收器已随 identity 域拆分（identity/signal_handler.py）；
 DataMaskRule 脱敏缓存失效已随 audit 域拆分（audit/signal_handler.py）；
-TaskExecution 日志清理已随 task 域拆分（task/signal_handler.py）。
+TaskExecution 日志清理已随 task 域拆分（task/signal_handler.py）；
+审批终态回写已随 approval 域归位（approval/signal_handler.py + approval/biz_sync.py）。
 """
 
 from django.db.models.signals import m2m_changed, post_delete, post_migrate, post_save, pre_delete
@@ -26,7 +27,6 @@ from system.models import (
     SystemConfig,
     UserPersonalConfig,
 )
-from system.signal import approval_instance_finished
 from system.utils.platform.dict import invalid_dict_cache
 
 logger = get_logger(__name__)
@@ -104,39 +104,6 @@ def invalid_dict_cache_handler(sender, instance, **kwargs):
     else:
         invalid_dict_cache()
     logger.info(f"invalid dict cache {instance}")
-
-
-@receiver(approval_instance_finished)
-def sync_business_status_handler(sender, instance, status=None, reason="", **kwargs):
-    """流程实例终态回写业务单：按 biz_type 分发给业务同步器。
-
-    目前接入请假业务（biz_type=leave）与动态表单提交（biz_type=dform_submission）；
-    新增业务在此处追加分支即可（引擎侧无需改动）。回写失败只记日志——业务状态由
-    审批结果驱动，不应反过来阻断审批。
-    """
-    biz_type = getattr(instance, "biz_type", "")
-    if not biz_type:
-        return
-    try:
-        if biz_type == "leave":
-            from approval.utils.leave import sync_leave_instance
-
-            sync_leave_instance(instance, status, reason)
-        elif biz_type == "dform_submission":
-            from dataset.utils.dform_flow import sync_dform_instance
-
-            sync_dform_instance(instance, status, reason)
-        elif biz_type == "demo_book":
-            # demo 示例 app 的上架审批回写（demo 未装载时不会产生该 biz_type 的实例）
-            from demo.services import sync_book_instance
-
-            sync_book_instance(instance, status, reason)
-        else:
-            logger.warning("no business sync handler for biz_type:%s", biz_type)
-    except Exception:
-        logger.exception(
-            "sync business status failed. instance:%s biz_type:%s", getattr(instance, "pk", None), biz_type
-        )
 
 
 @receiver([post_save, post_delete], sender="system.Tag", dispatch_uid="system.signal_handler.clean_tag_metadata_cache")

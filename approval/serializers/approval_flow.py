@@ -6,6 +6,8 @@
   改版走版本化路径（收口当前生效行 + 新版本落行
   flow-versioning.md）：有 PENDING 实例时同样允许改节点/回滚——在途实例按自身
   ``flow_version`` 过滤节点集，定义变更只影响之后发起的新单。
+  列表裁剪 nodes/form_schema（编辑走 retrieve 取全量）；写入支持
+  base_updated_time 乐观锁基线，拦截并发编辑的后写覆盖。
 - ApprovalInstanceSerializer：实例只读展示 + 发起申请写入（flow/title/form_data）；
   列表附带 my_task（当前用户在当前节点的待办任务），供待办面板直接发起审批动作。
 - ApprovalNodeTaskSerializer：节点任务（审批轨迹）。
@@ -31,6 +33,9 @@ from common.core.serializers import BaseModelSerializer
 from task.services import DisplayRelatedField
 
 FORM_FIELD_TYPES = ("text", "textarea", "number", "date", "select")
+# 数值比较运算符：条件值必须可转数值。引擎对转换失败一律按不命中处理（节点静默跳过、
+# 流程走向改变且无告警），保存期不拦会把配错静默带进流程
+NUMERIC_CONDITION_OPS = ("gt", "gte", "lt", "lte")
 
 
 def _username(value):
@@ -67,6 +72,18 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     # 表单字段编辑锁：流程被 dform 绑定后 form_schema 由绑定表单单向投影
     # （dataset/utils/dform_flow.py::project_flow_form_schema），流程侧只读
     form_schema_locked = serializers.SerializerMethodField(label=_("Form schema locked"))
+    # 乐观锁基线：客户端编辑抽屉带回它所见行的 updated_time，保存时与当前行比对；
+    # 两管理员并发编辑时后写不再静默覆盖先写（否则先写内容无提示丢失且各落一版）
+    base_updated_time = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 仅 list 裁剪（实例侧 LIST_EXCLUDED_FIELDS 同款口径）：列表页只渲染 table_fields，
+        # nodes / form_schema 随节点数与字段数线性膨胀；编辑走 retrieve 独立取全量
+        if getattr(self.context.get("view"), "action", None) != "list":
+            return
+        for name in ("nodes", "form_schema"):
+            self.fields.pop(name, None)
 
     # 关联计数声明（注解名与字段名一致）：列表/详情/导出由 RelationCountMixin
     # 预聚合，避免逐行 COUNT；单对象序列化（无注解）回退为单次 COUNT/EXISTS。
@@ -92,6 +109,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
             "creator",
             "created_time",
             "updated_time",
+            "base_updated_time",
         ]
         table_fields = ["name", "code", "node_count", "is_active", "creator", "created_time"]
 
@@ -183,11 +201,20 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         return value
 
     def _validate_condition(self, condition):
-        """条件表达式校验：field 必填、op 白名单（routes 与节点条件共用）。"""
+        """条件表达式校验：field 必填、op 白名单、数值运算符的值必须可转数值（routes 与节点条件共用）。"""
         if not isinstance(condition, dict) or not (condition.get("field") or "").strip():
             raise serializers.ValidationError(_("Condition requires a field"))
-        if (condition.get("op") or "eq") not in CONDITION_OPS:
+        op = condition.get("op") or "eq"
+        if op not in CONDITION_OPS:
             raise serializers.ValidationError(_("Unsupported condition operator: {}").format(condition.get("op")))
+        if op in NUMERIC_CONDITION_OPS:
+            value = condition.get("value")
+            try:
+                float(value)
+            except (TypeError, ValueError):
+                raise serializers.ValidationError(
+                    _("Condition value for operator {} must be a number").format(op)
+                ) from None
 
     def validate_code(self, value):
         value = (value or "").strip()
@@ -261,6 +288,7 @@ class ApprovalFlowSerializer(BaseModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         nodes = validated_data.pop("nodes", None)
+        base_updated_time = validated_data.pop("base_updated_time", None)
         # 编辑锁：绑定期 form_schema 由绑定表单单向投影，客户端改动忽略不落库
         # （响应带 form_schema_locked=true 供前端禁用编辑；防手滑覆盖投影结果）
         if "form_schema" in validated_data and self.get_form_schema_locked(instance):
@@ -268,11 +296,25 @@ class ApprovalFlowSerializer(BaseModelSerializer):
         # 行锁：并发改版时「版本号分配 + 旧行收口 + 新行落库」串行化
         # （版本快照的 (flow, version) 唯一约束仍作二层兜底）
         flow = ApprovalFlow.objects.select_for_update().get(pk=instance.pk)
+        self._check_not_concurrently_modified(flow, base_updated_time)
         flow = super().update(flow, validated_data)
         # 定义（节点或表单）有实质变化才落新版本；无变化时节点行保持原样（主键不变）
         if nodes is not None and self._definition_changed(flow, nodes):
             apply_definition(flow, nodes, remark=_("Nodes updated"))
         return flow
+
+    def _check_not_concurrently_modified(self, flow, base_updated_time) -> None:
+        """乐观锁：编辑基线落后于当前行说明他人已先保存，拒绝整单覆盖（fail-closed）。
+
+        基线值是客户端原样回传的 updated_time 渲染串，这里用同款 DateTimeField 渲染
+        当前行再比较，避免日期解析/时区/精度（DATETIME_FORMAT 为秒级）比对歧义；
+        未携带基线的历史客户端保持原有语义（不做拦截）。
+        """
+        if not base_updated_time:
+            return
+        current = serializers.DateTimeField().to_representation(flow.updated_time)
+        if str(base_updated_time) != str(current):
+            raise serializers.ValidationError(_("The flow was modified by someone else, please refresh and retry"))
 
     def _definition_changed(self, flow, nodes) -> bool:
         """与最新版本快照比较：nodes 或 form_schema 有变化返回 True。

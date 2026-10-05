@@ -11184,3 +11184,15 @@ msgstr "投递已重新派发"
 #: tests/unit/common/test_online_stats.py:322
 msgid "Test label"
 msgstr "测试标签"
+
+#: approval/serializers/approval_delegation.py:93
+msgid "Delegate must be an active user"
+msgstr "代理人必须为启用状态的用户"
+
+#: approval/serializers/approval_flow.py:215
+msgid "Condition value for operator {} must be a number"
+msgstr "运算符 {} 的条件值必须是数字"
+
+#: approval/serializers/approval_flow.py:317
+msgid "The flow was modified by someone else, please refresh and retry"
+msgstr "流程已被他人修改，请刷新后重试"

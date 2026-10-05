@@ -36,7 +36,7 @@ class ApprovalInstance(DbAuditModel):
     form_data = models.JSONField(_("Form data"), default=dict, blank=True)
     # 通用业务绑定：biz_type 为业务标识（如 "leave"），biz_id 为业务行主键
     # 字符串。业务模块经 create_instance(biz_type=..., biz_id=...) 挂载，实例终态时由
-    # system/utils/approval_flow.py 的 _finish_instance 发 approval_instance_finished
+    # approval/utils/approval_flow/engine_events.py 的 _finish_instance 发 approval_instance_finished
     # 信号回写业务状态；两者皆空 = 引擎自带表单的独立申请（历史行为不变）。
     biz_type = models.CharField(_("Business type"), max_length=64, blank=True, default="", db_index=True)
     biz_id = models.CharField(_("Business id"), max_length=64, blank=True, default="")

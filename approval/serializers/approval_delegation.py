@@ -2,8 +2,10 @@
 # -*- coding:utf-8 -*-
 """审批委托序列化器（审批流三期）。
 
-- 写入校验：委托人与代理人不得相同、结束时间晚于开始时间、
-  同一委托人不得存在时间重叠的生效委托（解析歧义兜底）；
+- 写入校验：委托人与代理人不得相同、代理人必须为启用用户（停用代理人会被解析
+  丢弃，节点候选可能因此清空而被「自动通过」放行）、结束时间晚于开始时间、
+  同一委托人不得存在时间重叠的生效委托（重叠校验按本行落库后的 is_active 收口，
+  未启用的委托模板允许先保存）；
 - 列表展示：委托人/代理人用户名与昵称、流程范围（空 = 全部流程）。
 """
 
@@ -81,13 +83,18 @@ class ApprovalDelegationSerializer(BaseModelSerializer):
         delegate = attrs.get("delegate") or getattr(self.instance, "delegate", None)
         start = attrs.get("start_time") or getattr(self.instance, "start_time", None)
         end = attrs.get("end_time") or getattr(self.instance, "end_time", None)
+        # 重叠校验按「本行落库后是否生效」收口：未启用的委托模板允许先保存
+        # （既有行侧冲突查询本就只看 is_active=True，本行是否参与由自身 is_active 决定）
+        row_active = attrs["is_active"] if "is_active" in attrs else getattr(self.instance, "is_active", True)
         self._check_delegator_ownership(delegator)
         if delegator and delegate and delegator.pk == delegate.pk:
             raise serializers.ValidationError({"delegate": _("Delegator and delegate cannot be the same person")})
+        if delegate is not None and not delegate.is_active:
+            raise serializers.ValidationError({"delegate": _("Delegate must be an active user")})
         if start and end and end <= start:
             raise serializers.ValidationError({"end_time": _("End time must be later than start time")})
         # 同一委托人时间重叠的生效委托：解析会取「最新一条」，重叠即歧义，直接拒绝
-        if delegator and start and end:
+        if delegator and start and end and row_active:
             conflict = ApprovalDelegation.objects.filter(
                 delegator=delegator,
                 is_active=True,

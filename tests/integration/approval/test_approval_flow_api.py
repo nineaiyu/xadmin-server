@@ -70,7 +70,13 @@ class TestApprovalFlowCrud:
 
         listed = auth_client.get(FLOWS_URL, {"code": "leave_crud"})
         assert listed.data["data"]["total"] == 1
-        assert listed.data["data"]["results"][0]["nodes"][0]["name"] == "初审"
+        row = listed.data["data"]["results"][0]
+        # 列表裁剪 nodes/form_schema（只渲染 table_fields；编辑走 retrieve 取全量）
+        assert "nodes" not in row and "form_schema" not in row
+        assert row["node_count"] == 2
+        detail = auth_client.get(f"{FLOWS_URL}/{flow_pk}")
+        assert [node["name"] for node in detail.data["data"]["nodes"]] == ["初审", "终审"]
+        assert detail.data["data"]["form_schema"][0]["key"] == "days"
 
         # 节点整体替换式更新
         updated = auth_client.patch(
@@ -128,6 +134,53 @@ class TestApprovalFlowCrud:
             format="json",
         )
         assert no_value.status_code == 400
+
+    def test_numeric_condition_value_required(self, auth_client):
+        """数值运算符的条件值必须可转数值：引擎对转换失败按不命中跳节点，保存期拦截。"""
+        payload = {
+            "name": "数值条件",
+            "code": "numeric_condition",
+            "nodes": [
+                {
+                    "name": "A",
+                    "assignee_type": "user",
+                    "assignee_value": "u1",
+                    "condition": {"field": "amount", "op": "gte", "value": "abc"},
+                },
+                {"name": "B", "order": 2, "assignee_type": "user", "assignee_value": "u2"},
+            ],
+        }
+        assert auth_client.post(FLOWS_URL, payload, format="json").status_code == 400
+        # 路由条件同口径：空串同样不可转数值
+        payload["nodes"][0]["condition"] = {"field": "amount", "op": "gte", "value": 100}
+        payload["nodes"][0]["routes"] = [{"condition": {"field": "amount", "op": "lt", "value": ""}, "target": 2}]
+        assert auth_client.post(FLOWS_URL, payload, format="json").status_code == 400
+        # 数字字符串合法（表单提交字符串，引擎按 float 解析）
+        payload["nodes"][0]["routes"] = [{"condition": {"field": "amount", "op": "lt", "value": "200"}, "target": 2}]
+        assert auth_client.post(FLOWS_URL, payload, format="json").data["code"] == 1000
+
+    def test_flow_optimistic_lock(self, auth_client):
+        """并发编辑：基线落后于当前行拒绝整单覆盖；携带最新基线或未携带基线正常保存。"""
+        flow = make_flow(code="lock_flow", nodes=[{"name": "初审", "assignee_type": "user", "assignee_value": "u1"}])
+        # 基线是客户端回传的 updated_time 渲染串：构造一个必然过期的基线（避免同秒写入的计时依赖）
+        stale = auth_client.patch(
+            f"{FLOWS_URL}/{flow.pk}",
+            {"name": "后写覆盖", "base_updated_time": "2000-01-01 00:00:00"},
+            format="json",
+        )
+        assert stale.status_code == 400, stale.data
+        assert ApprovalFlow.objects.get(pk=flow.pk).name == "流程-lock_flow"
+
+        baseline = auth_client.get(f"{FLOWS_URL}/{flow.pk}").data["data"]["updated_time"]
+        ok = auth_client.patch(
+            f"{FLOWS_URL}/{flow.pk}",
+            {"name": "刷新后再改", "base_updated_time": baseline},
+            format="json",
+        )
+        assert ok.data["code"] == 1000, ok.data
+        # 未携带基线（历史客户端）保持原语义，不拦截
+        ok_none = auth_client.patch(f"{FLOWS_URL}/{flow.pk}", {"name": "无基线修改"}, format="json")
+        assert ok_none.data["code"] == 1000
 
     def test_flow_delete_guard(self, auth_client, approver):
         flow = make_flow(

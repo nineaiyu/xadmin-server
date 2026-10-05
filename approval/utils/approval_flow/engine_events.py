@@ -138,12 +138,13 @@ def _finish_instance(instance, status, reason=None) -> bool:
 def _notify_business_finished(instance, status, reason=None) -> None:
     """业务回调：实例到达终态时通知绑定的业务模块回写状态。
 
-    仅在 biz_type 非空时发送；接收方在 system/signal_handler.py 注册，异常只记
-    日志——业务回写失败不应影响审批主链路（与通知/Webhook 同口径）。
+    仅在 biz_type 非空时发送；接收方在 approval/signal_handler.py，同步器经
+    approval/biz_sync.py 注册表解析，异常只记日志——业务回写失败不应影响审批
+    主链路（与通知/Webhook 同口径）。
     """
     if not getattr(instance, "biz_type", ""):
         return
-    from system.signal import approval_instance_finished
+    from approval.signal import approval_instance_finished
 
     try:
         approval_instance_finished.send(

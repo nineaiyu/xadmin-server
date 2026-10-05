@@ -125,7 +125,8 @@ class TestLeaveApiFlow:
 
     def test_create_without_flow_keeps_draft(self, auth_client):
         response = auth_client.post(LEAVES_URL, payload(), format="json")
-        assert response.data["code"] == 1000
+        # 业务码 1002 区分「已存草稿」与成功提交（1000），前端据此给警告而非成功提示
+        assert response.data["code"] == 1002
         assert response.data["data"]["status"]["value"] == "DRAFT"
         assert "草稿" in str(response.data["detail"]) or "draft" in str(response.data["detail"]).lower()
 
@@ -242,4 +243,5 @@ class TestLeavePermission:
         grant(role, menu_factory, "list:SystemLeave", "api/approval/leaves$", "GET")
         assert api_client.post(LEAVES_URL, payload(), format="json").status_code == 403
         grant(role, menu_factory, "create:SystemLeave", "api/approval/leaves$", "POST")
-        assert api_client.post(LEAVES_URL, payload(), format="json").data["code"] == 1000
+        # 权限生效即返回业务响应；本用例未配流程，走「已存草稿」码 1002
+        assert api_client.post(LEAVES_URL, payload(), format="json").data["code"] == 1002
